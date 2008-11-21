@@ -1,0 +1,16 @@
+
+
+INSTALL
+=======
+
+* Prerequisites:
+
+  - LLVM 1.4
+    
+  - For generating the documentation:
+  
+    * Sphinx 0.5 
+      hg clone http://bitbucket.org/birkenfeld/sphinx
+
+      (or to update: hg pull http://bitbucket.org/birkenfeld/sphinx)
+
