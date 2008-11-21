@@ -3,9 +3,10 @@
 # A constant.
 
 import type
+import location
 
 class Constant(object):
-    def __init__(self, value, type, location = None):
+    def __init__(self, value, type, location = location.Location()):
         self._value = value
         self._type = type
         self._location = location

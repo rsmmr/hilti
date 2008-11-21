@@ -15,7 +15,7 @@ class Instruction(object):
     def signature(self):
         return self.__class__._signature
     
-    def __init__(self, op1 = None, op2 = None, target = None, location = location.Location()):
+    def __init__(self, op1 = None, op2 = None, target = None, location=location.Location()):
         self._op1 = op1
         self._op2 = op2
         self._target = target
@@ -49,9 +49,10 @@ class Instruction(object):
 
 # Base class. Don't instantiate.    
 class Operand(object):
-    def __init__(self, value, type):
+    def __init__(self, value, type, location):
         self._value = value
         self._type = type
+        self._location = location
 
     def value(self):
         return self._value
@@ -59,30 +60,33 @@ class Operand(object):
     def type(self):
         return self._type
 
+    def location(self):
+        return self._location
+    
     def __str__(self):
         return "%s %s" % (self._type, self._value)
 
 class ConstOperand(Operand):
-    def __init__(self, constant):
-        super(ConstOperand, self).__init__(constant.value(), constant.type())
+    def __init__(self, constant, location=location.Location()):
+        super(ConstOperand, self).__init__(constant.value(), constant.type(), location)
         self._constant = constant
 
     def constant(self):
         return self._constant
 
 class IDOperand(Operand):
-    def __init__(self, id):
-        super(IDOperand, self).__init__(id.name(), id.type())
+    def __init__(self, id, location=location.Location()):
+        super(IDOperand, self).__init__(id.name(), id.type(), location)
         self._id = id
 
     def constant(self):
         return self._constant
     
 class TupleOperand(Operand):
-    def __init__(self, ops):
+    def __init__(self, ops, location=location.Location()):
         vals = [op.value() for op in ops]
         types = [op.type() for op in ops]
-        super(TupleOperand, self).__init__(vals, type.TupleType(types))
+        super(TupleOperand, self).__init__(vals, type.TupleType(types), location)
         self._ops = ops
 
     def __str__(self):
@@ -159,10 +163,10 @@ def instruction(name, op1 = None, op2 = None, target = None):
     def register(ins):
         global _Instructions
         ins._signature = Signature(name, op1, op2, target)
-        _Instructions[name] = ins
         d = dict(ins.__dict__)
         d["__init__"] = make_ins_init(ins)
         newclass = builtin_type(ins.__name__, (ins.__base__,), d)
+        _Instructions[name] = newclass
         return newclass
     
     return register
@@ -178,6 +182,10 @@ _Instructions = {}
 
 def getInstructions():
     return _Instructions
-        
+
+def createInstruction(name, op1 = None, op2 = None, target = None, location=location.Location()):
+    return _Instructions[name](op1, op2, target, location)
+
+
     
         

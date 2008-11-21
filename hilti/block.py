@@ -6,7 +6,7 @@
 import location
 
 class Block(object):
-    def __init__(self, instructions, name = None, location = location.Location()):
+    def __init__(self, instructions = [], name = None, location = location.Location()):
         self._ins = instructions
         self._name = name
         self._location = location
