@@ -1,0 +1,169 @@
+#! /usr/bin/env python
+#
+# Main test driver.
+
+import os
+import os.path
+import sys
+import fnmatch
+import optparse
+import re
+import tempfile
+import subprocess
+
+Name ="tester"
+Extension = "*.test"
+Version = 0.1
+
+TmpDir = ".tmp"
+
+# Commands as tuple (tag, regexp, more-than-ok-is-ok, optional)
+RE_EXEC = ("exec", re.compile("@TEST-EXEC: *(.*)"), True, False)
+RE_NAME = ("name", re.compile("@TEST-NAME: *(.*)"), False, False)
+RE_GROUP = ("group", re.compile("@TEST-GROUP: *(.*)"), False, False)
+
+Commands = (RE_EXEC, RE_NAME, RE_GROUP)
+
+RE_INPUT = re.compile("%INPUT")
+
+def output(msg, nl=True):
+    if nl:
+        print >>sys.stderr, msg
+    else:
+        print >>sys.stderr, msg,
+
+def error(msg):
+    print >>sys.stderr, msg
+    sys.exit(1)
+
+class Test(object):
+    def __init__(self, file):
+        self.file = file
+        self.name = None
+        self.group = None
+        self.cmdlines = []
+        self.tmpdir = None
+        
+        # Read test file and parse commmands.
+    def read(self):
+        cmds = {}
+        for line in open(self.file):
+            for (tag, regexp, multiple, optional) in Commands:
+                m = regexp.search(line)
+            
+                if m:
+                    value = m.group(1)
+                
+                    if not multiple:
+                        if tag in cmds:
+                            error("%s: %d defined multiple times." % (test, tag))
+                        
+                        cmds[tag] = value
+                    
+                    else:
+                        try:
+                            cmds[tag] += [value]
+                        except KeyError:
+                            cmds[tag] = [value]
+    
+        # Make sure all non-optional commands are there.
+        for (tag, regexp, multiple, optional) in Commands:
+            if not optional and not tag in cmds:
+                error("%s: mandatory %s command not found." % (test, tag))
+                
+        self.name = cmds["name"]
+        self.group = cmds["group"]
+        self.cmdlines = cmds["exec"]
+        self.tmpdir = TmpDir
+        
+        self.rmTmp()
+        os.mkdir(self.tmpdir)        
+        
+        self.log = open(os.path.join(self.tmpdir, ".log"), "w")
+        self.stdout = open(os.path.join(self.tmpdir, ".stdout"), "w")
+        self.stderr = open(os.path.join(self.tmpdir, ".stderr"), "w")
+
+    def run(self):
+        output("%s ..." % self.name, nl=False)
+    
+        try:
+            for cmdline in self.cmdlines:
+                self.execute(cmdline)
+            
+        except subprocess.CalledProcessError:
+            output("failed")
+            return
+            
+        output("ok")
+        
+        self.rmTmp()
+        
+    def execute(self, cmdline):
+
+        # Replace special names. 
+        cmdline = RE_INPUT.sub(self.file, cmdline)
+        print >>self.log, cmdline
+        
+        os.chdir(self.tmpdir)
+        
+        env = os.environ
+        subprocess.check_call(cmdline, shell=True, env=env, stderr=self.stderr, stdout=self.stdout)
+    
+        os.chdir(self.tmpdir)
+        
+    def rmTmp(self):
+        try:
+            if os.path.isfile(TmpDir):
+                os.remove(TmpDir)
+            
+            if os.path.isdir(TmpDir):
+                subprocess.call("rm -rf %s" % TmpDir, shell=True)
+            
+        except OSError, e:
+            error("cannot remove tmp directory %s: %s" % (TmpDir, e))
+
+    
+# Walk the given directory and return all test files.    
+def findTests(dirs):    
+    tests = []
+
+    for dir in dirs:
+        if not os.path.isdir(dir):
+            error("%s is not a directory" % dir)
+        
+        try:
+            def addNames(tests, dir, names):
+                tests += [Test(os.path.abspath(fn)) for fn in fnmatch.filter(names, Extension)]
+            
+            os.path.walk(dir, addNames, tests)
+        
+        except IOError, e:
+            error("cannot traverse directory %s" % dir)
+    
+    return tests
+                
+### Main
+
+optparser = optparse.OptionParser(usage="%prog [options] <directorys>", version=Version)
+#optparser.add_option("-b", "--bytes", action="store_true", dest="bytes", default=False,
+#                     help="count fractions in terms of bytes rather than packets/connections")
+
+(Options, args) = optparser.parse_args()
+
+if len(args) < 1:
+    optparser.error("wrong number of arguments")
+
+tests = findTests(args)
+
+TmpDir = os.path.abspath(TmpDir)
+
+for test in tests:
+    test.read()
+    
+for test in tests:
+    test.run()
+    
+
+
+
+

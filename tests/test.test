@@ -1,0 +1,13 @@
+#
+#  @TEST-NAME:  little-test-test
+#  @TEST-GROUP: test-tests
+#  @TEST-EXEC:  source %INPUT >test.output 
+#  @TEST-EXEC:  ls -al / >>test.output 
+#  TEST-EXEC:  tester-diff test.output
+
+echo Hurz
+
+
+
+
+
