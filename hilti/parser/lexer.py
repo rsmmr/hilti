@@ -22,12 +22,20 @@ tokens = (
    'NUMBER',
    'STRING',
    'IDENT', 
+   'LABEL',
    
    'INSTRUCTION',
    'TYPE',
+   
+   'NL',
 ) 
 
 literals = ['(',')','{','}', '=', ',', ':' ]
+
+states = (
+   # In nolines mode, newlines are ignored. Per default, they are passed on as token NL.
+   ('nolines', 'inclusive'),
+)
 
 def t_NUMBER(t):
     r'\d+'
@@ -42,6 +50,11 @@ def t_NUMBER(t):
 def t_STRING(t):
     r'"[^"]*"'
     t.value = t.value[1:-1]    
+    return t
+
+def t_LABEL(t):
+    r'@[_a-zA-Z][a-zA-Z0-9._]*:'
+    t.value = t.value[1:-1]
     return t
 
 def t_IDENT(t):
@@ -61,14 +74,20 @@ def t_IDENT(t):
         # Real IDENT.
         if t.value.startswith("__"):
             pass
-            # error(t, "Indentifiers starting with '__' are reserved for internal use")
+            # error(t, "Identifiers starting with '__' are reserved for internal use")
         
     return t
 
 # Track line numbers.
-def t_newline(t):
+def t_nolines_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
+
+def t_INITIAL_newline(t):
+    r'\n+'
+    t.type = "NL"
+    t.lexer.lineno += len(t.value)
+    return t
 
 # Ignore comments.
 def t_comment(t):

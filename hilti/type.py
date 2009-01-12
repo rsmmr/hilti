@@ -14,30 +14,39 @@ class Type(object):
         return self._name
     
     def docname(self):
-        return self._name
+        return self._docname
     
     def __str__(self):
         return self.name()
     
-    def __eq__(self, other):
-        # FIXME: All types overiding __eq__ must do these checks too. Is there a nice way to achieve that?
+    def _eq_common(self, other):
         if isinstance(other, OneOf):
-            return OneOf.__eq__(other, self)
+            return (True, OneOf.__eq__(other, self))
         
         if id(other) == id(Any):
-            return True
-      
+            return (True, True)
+    
+        if self.__class__ != other.__class__:
+            return (True, False)
+        
+        return (False, False)
+        
+    def __eq__(self, other):
+        (done, result) = self._eq_common(other)
+        if done:
+            return result
+        
         return self._name == other._name
 
 ###
     
 class StorageType(Type):
-    def __init__(self, name):
-        super(StorageType, self).__init__(name)
+    def __init__(self, name,docname=None):
+        super(StorageType, self).__init__(name,docname=docname)
         
 class AtomicType(StorageType):
-    def __init__(self, name):
-        super(AtomicType, self).__init__(name)
+    def __init__(self, name, docname=None):
+        super(AtomicType, self).__init__(name,docname=docname)
 
 class CompositeType(StorageType):
     def __init__(self, name):
@@ -48,9 +57,28 @@ class StringType(AtomicType):
         super(StringType, self).__init__(name)
         
 class IntegerType(AtomicType):
-    def __init__(self, name):
-        super(IntegerType, self).__init__(name)
+    # 0 means "any"
+    def __init__(self, width = 0):
+        if width > 0:
+            super(IntegerType, self).__init__("int:%d" % width)
+        else: 
+            super(IntegerType, self).__init__("int:*", docname="int")
+            
+        self._width = width
+        
+    def width(self):
+        return self._width
 
+    def __eq__(self, other):
+        (done, result) = self._eq_common(other)
+        if done:
+            return result
+
+        if self._width == 0 or other._width == 0:
+            return True
+        
+        return self._width == other._width
+    
 class BoolType(AtomicType):
     def __init__(self, name):
         super(BoolType, self).__init__(name)
@@ -67,6 +95,10 @@ class StructType(StorageType):
         return self._ids
 
     def __eq__(self, other):
+        (done, result) = self._eq_common(other)
+        if done:
+            return result
+        
         return self.name() == other.name() and self._ids == other._ids
     
 ###
@@ -80,6 +112,10 @@ class TypeDeclType(Type):
         return self._type
 
     def __eq__(self, other):
+        (done, result) = self._eq_common(other)
+        if done:
+            return result
+        
         return self._type == other._type
     
 class StructDeclType(TypeDeclType):
@@ -102,6 +138,10 @@ class FunctionType(Type):
         return self._result
 
     def __eq__(self, other):
+        (done, result) = self._eq_common(other)
+        if done:
+            return result
+        
         
         if not isinstance(other, FunctionType):
             return
@@ -139,6 +179,10 @@ class AnyType(Type):
         super(AnyType, self).__init__(name)
 
     def __eq__(self, other):
+        (done, result) = self._eq_common(other)
+        if done:
+            return result
+        
         return True
         
 class TupleType(Type):
@@ -148,6 +192,10 @@ class TupleType(Type):
         self._generic = generic
 
     def __eq__(self, other):
+        (done, result) = self._eq_common(other)
+        if done:
+            return result
+        
         if isinstance(other, TupleType):
             # Generic tuple matches all other tuples
             if self._generic or other._generic:
@@ -166,14 +214,20 @@ class OneOf(Type):
         self._types = types
         
     def __eq__(self, other):
+        #(done, result) = self._eq_common(other)
+        #if done:
+        #    return result
+        
         if isinstance(other, OneOf):
             return self._types == other._types
-        
+
         return other in self._types
 
-Int16 = IntegerType("int16")        
-Int32 = IntegerType("int32")        
-Integer = OneOf((Int16, Int32))
+###
+
+Int16 = IntegerType(16)        
+Int32 = IntegerType(32)        
+Integer = IntegerType()
 
 String = StringType("string")
 Bool = BoolType("bool")
@@ -182,6 +236,9 @@ Void = VoidType("void")
 Any = AnyType("any")
 AnyTuple = TupleType((), generic=True)
 Function = FunctionType(generic=True)
+
+def Optional(t):
+    return OneOf((t, None))
 
 # Returns a readable respresentation of the given type (which might be a tuple of types)
 def name(t, docstring = False):
@@ -193,15 +250,24 @@ def name(t, docstring = False):
         return t.docname()
 
 _types = {
-	"int16": Int16,
-    "int32": Int32,
+	"int": Integer, 
+	"int16": Int16, # Short-cut
+	"int32": Int32, # Short-cut
     "string": String,
     "bool": Bool,
     "void": Void,
     }
 
 # Turns a type name as specificed in the input code into an actual type. 
-def type(name):
+def type(name, width=0):
+    
+    if width:
+        # FIXME: Not nice to hard-code that here. 
+        if name == "int":
+            return IntegerType(width)
+        else:
+            return None
+    
     try:
         return _types[name]
     except KeyError:

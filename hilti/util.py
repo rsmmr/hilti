@@ -15,10 +15,10 @@ def error(msg, context=None, fatal=True):
     if fatal:
         sys.exit(1)
     
-def warning(str, context=None):
+def warning(msg, context=None):
     _print("warning", msg, context)
     
-def debug(str, context=None):
+def debug(msg, context=None):
     _print("error", msg, context)
     
 def internal_error(msg, context=None):

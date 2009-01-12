@@ -66,7 +66,7 @@ def _(self, id):
     self.push()
     
     for id in type.IDs():
-        self.output("%s %s" % (id.type().name(), id.name()))
+        self.output("%s %s, " % (id.type().name(), id.name()))
         
     self.output("}")
     self.pop()
@@ -105,12 +105,14 @@ def _(self, id):
     
 @printer.pre(block.Block)
 def _(self, b):
-    if b.name():
+    if b.name() or b.next():
         self.pop()
         self.output("")
         
         next = " # next: %s" % b.next().name() if b.next() else ""
-        self.output("%s: %s" % (b.name(), next))
+        name = "@%s: " % b.name() if b.name() else ""
+        
+        self.output("%s%s" % (name, next))
         self.push()
 
 ### Instructions.
@@ -129,6 +131,7 @@ def _(self, i):
     target = "%s = " % fmtOp(i.target().value()) if i.target() else ""
     op1 = " %s" % fmtOp(i.op1().value()) if i.op1() else ""
     op2 = " %s" % fmtOp(i.op2().value()) if i.op2() else ""
+    op3 = " %s" % fmtOp(i.op3().value()) if i.op3() else ""
     
-    self.output("%s%s%s%s" % (target, name, op1, op2))  
+    self.output("%s%s%s%s%s" % (target, name, op1, op2, op3))  
     

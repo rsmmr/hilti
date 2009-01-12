@@ -25,8 +25,8 @@ class Scope(object):
     def remove(self, name):
         del self._ids[id.name()]
 
-    def IDs(self, type):
-        return self.values()
+    def IDs(self):
+        return self._ids
 
     def __getitem__(self, key):
         return self._ids[key]

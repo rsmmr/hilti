@@ -6,12 +6,15 @@ import location
 import scope
 
 class Function(object):
-    def __init__(self, name, type, location = location.Location()):
+    def __init__(self, name, type, location = location.Location(), parentfunc = None):
         self._name = name
         self._type = type
         self._bodies = []
         self._location = location
         self._scope = scope.Scope()
+        self._parent = parentfunc
+        if parentfunc:
+            self._scope = parentfunc._scope
 
     def name(self):
         return self._name
@@ -25,18 +28,23 @@ class Function(object):
     def addID(self, id):
         self._scope.insert(id)
         
-    def addBlock(self, b):
+    def addBlock(self, b, clear_next=True):
         if self._bodies:
             self._bodies[-1].setNext(b)
             
         self._bodies += [b] 
+        if clear_next:
+            b.setNext(None)
     
     def blocks(self):
         return self._bodies
 
     def clearBlocks(self):
         self._bodies = []
-    
+
+    def parentFunc(self):
+        return self._parent
+        
     def location(self):
         return self._location
 

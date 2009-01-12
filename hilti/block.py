@@ -6,8 +6,8 @@
 import location
 
 class Block(object):
-    def __init__(self, instructions = [], name = None, location = location.Location()):
-        self._ins = instructions
+    def __init__(self, instructions = None, name = None, location = location.Location()):
+        self._ins = instructions if instructions else []
         self._name = name
         self._location = location
         self._next = None
@@ -27,6 +27,9 @@ class Block(object):
     def name(self):
         return self._name
 
+    def setName(self, name):
+        self._name = name
+    
     def next(self):
         return self._next
     
@@ -47,5 +50,5 @@ class Block(object):
         
     def __str__(self):
         name = self._name if self._name else "<anonymous-block>"
-        next = " (next: %s)" % self._next.name() if self._next else ""
+        next = " (next: %s)" % self._next.name() if self._next else "(next not set)"
         return "block <%s>%s\n" % (name, next)

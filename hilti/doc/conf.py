@@ -190,6 +190,7 @@ latex_documents = [
 
 import copy
 import sys
+import type
 
 sys.path += [".."]
 
@@ -206,6 +207,9 @@ def reformat_signature(app, what, name, obj, options, signature, return_annotati
     
     if sig.op2():
         str += "op2, "
+        
+    if sig.op3():
+        str += "op3, "
         
     if sig.target():
         str += "target"

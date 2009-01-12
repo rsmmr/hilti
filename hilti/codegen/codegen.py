@@ -17,6 +17,8 @@ import type
 import util
 import visitor
 
+import ins
+
 from codegen_utils import *
 
 ### Codegen visitor.
@@ -24,7 +26,7 @@ from codegen_utils import *
 class CodeGen(visitor.Visitor):
     def __init__(self):
         super(CodeGen, self).__init__()
-        self._infunction = False
+        self._function = None
         
         # Dummy class to create a sub-namespace.
         class llvm:
@@ -34,14 +36,17 @@ class CodeGen(visitor.Visitor):
         self._llvm.module = None
 
     # Returns the final LLVM module once code-generation has finished.
-    def llvmModule(self):
+    def llvmModule(self, fatalerrors=True):
         try:
             self._llvm.module.verify()
         except llvm.LLVMException, e:
-            util.error("LLVM error: %s" % e)
+            if fatalerrors:
+                util.error("LLVM error: %s" % e)
+            else:
+                util.warning("LLVM error: %s" % e)
             
         return self._llvm.module
-        
+    
 codegen = CodeGen()
 
 ### Overall control structures.
@@ -65,7 +70,7 @@ def _(self, id):
     
 @codegen.when(id.ID, type.StorageType)
 def _(self, id):
-    if self._infunction:
+    if self._function:
         # Ignore locals, we do them when we're generating the function's code. 
         return
     
@@ -75,17 +80,45 @@ def _(self, id):
 
 @codegen.pre(function.Function)
 def _(self, f):
-    self._infunction = True
+    self._function = f
+    self._llvm.module.add_type_name(nameFunctionFrame(f), structFunctionFrame(f))
+    self._llvm.functions = {}
 
 @codegen.post(function.Function)
 def _(self, f):
-    self._infunction = False
+    self._function = None
+    
+    self._llvm.function = None
+    self._llvm.functions = None
+    self._llvm.frameptr = None
     
 ### Block definitions.    
-    
+
+# Returns LLVM function for the given block name, creating one if it doesn't exist yet. 
+def _getFunction(cg, name):
+    try:
+        return cg._llvm.functions[name]
+    except KeyError:
+        rt = typeToLLVM(cg._function.type().resultType())
+        ft = llvm.core.Type.function(rt, [llvm.core.Type.pointer(structFunctionFrame(cg._function))])
+        func = cg._llvm.module.add_function(ft, blockFunctionName(name, cg._function))
+        func.args[0].name = "__frame"
+        cg._llvm.functions[name] = func
+        return func
+
 @codegen.pre(block.Block)
 def _(self, b):
-    pass
+    assert self._function
+    assert b.name()
+
+    # Generate an LLVM function for this block.
+    self._llvm.function = _getFunction(self, b.name())
+    self._llvm.frameptr = self._llvm.function.args[0]
+    
+    block = self._llvm.function.append_basic_block("")
+    self._llvm.builder = llvm.core.Builder.new(block)
+
+#tmp = builder.add(f_sum.args[0], f_sum.args[1], "tmp")
     
 ### Instructions.
 
@@ -96,8 +129,38 @@ def _(self, i):
     #assert False, "instruction %s not handled in CodeGen" % i.name()
     pass
 
+@codegen.when(ins.flow.ReturnVoid)
+def _(self, i):
+    self._llvm.builder.ret_void()
+        
+@codegen.when(ins.flow.ReturnResult)
+def _(self, i):
+    self._llvm.builder.ret(opToLLVM(self, i.op1(), "result"))
+
+@codegen.when(ins.flow.Jump)
+def _(self, i):
+    function = _getFunction(self, i.op1().value())
+    
+    block = self._llvm.function.append_basic_block("return")
+    builder = llvm.core.Builder.new(block)
+
+    result = self._llvm.builder.invoke(function, [self._llvm.frameptr], block, block, "result")
+    
+    if self._function.type().resultType() != type.Void:
+        builder.ret(result)
+    else:
+        builder.unreachable()
+
 ### Operands.
 @codegen.when(instruction.IDOperand)
 def _(self, i):
     #assert False, "instruction %s not handled in CodeGen" % i.name()
     pass
+
+## Integer
+@codegen.when(ins.integer.Add)
+def _(self, i):
+    op1 = opToLLVM(self, i.op1(), "op1.")
+    op2 = opToLLVM(self, i.op2(), "op2.")
+    result = self._llvm.builder.add(op1, op2, "tmp")
+    targetToLLVM(self, i.target(), result, "target.")

@@ -15,6 +15,9 @@ import util
 class Checker(visitor.Visitor):
     def __init__(self):
         super(Checker, self).__init__(all=True)
+        self.reset()
+
+    def reset(self):
         self._infunction = False
         self._have_module = False
 
@@ -77,17 +80,20 @@ def _(self, i):
         self.error(i, "type of %s does not match signature (expected %s but is %s) " % (tag, str(expected), str(actual)))
         
     def checkOp(op, sig, tag):
-        if op and not sig:
-            typeError(type.name(op.type()), "undefined", tag)
+        
+# FIXME: Does not work for optional arguments. Doe we need these still?        
+#        if op and not sig:
+#           typeError(type.name(op.type()), "none", tag)
             
-        if not op and sig:
-            typeError("undefined", type.name(sig.type), tag)
+#        if not op and sig and not sig == None:
+#           typeError("none", type.name(sig), tag)
         
         if op and sig and not op.type() == sig:
             typeError(type.name(op.type()), type.name(sig), tag)
-                
+            
     checkOp(i.op1(), i.signature().op1(), "operand 1")
     checkOp(i.op2(), i.signature().op2(), "operand 2")
+    checkOp(i.op3(), i.signature().op3(), "operand 3")
     checkOp(i.target(), i.signature().target(),"target")
 
 

@@ -34,8 +34,16 @@ class State:
         self.block = None
 
 def p_module(p):
-    """module : MODULE _instantiate_module IDENT module_decl_list"""
+    """module : MODULE _instantiate_module IDENT NL module_decl_list"""
     p[0] = p.parser.current.module
+
+def p_begin_nolines(p):
+    """_begin_nolines : """
+    p.lexer.push_state('nolines') 
+    
+def p_end_nolines(p):
+    """_end_nolines : """
+    p.lexer.pop_state() 
     
 def p_instantiate_module(p):
     """_instantiate_module :"""
@@ -43,6 +51,7 @@ def p_instantiate_module(p):
     
 def p_module_decl_list(p):
     """module_decl_list :   module_decl module_decl_list
+                        |   empty_line module_decl_list
                         |   """
     pass
     
@@ -59,11 +68,11 @@ def p_module_decl_error(p):
     pass
 
 def p_def_global(p):
-    """def_global : GLOBAL id"""
+    """def_global : GLOBAL id NL"""
     p.parser.current.module.addID(p[2])
 
 def p_def_local(p):
-    """def_local : LOCAL id"""
+    """def_local : LOCAL id NL"""
     p.parser.current.function.addID(p[2])
     
 def p_def_type(p):
@@ -71,21 +80,21 @@ def p_def_type(p):
     pass
     
 def p_def_struct(p):
-    """def_struct : STRUCT IDENT '{' id_list '}'"""
-    stype = type.StructType(p[4])
+    """def_struct : STRUCT _begin_nolines IDENT '{' id_list '}' _end_nolines"""
+    stype = type.StructType(p[5])
     struct = type.StructDeclType(stype)
-    sid = id.ID(p[2], struct, location=loc(p, 1))
+    sid = id.ID(p[3], struct, location=loc(p, 1))
     p.parser.current.module.addID(sid)
 
 def p_def_function(p):
-    """def_function : TYPE IDENT '(' param_list ')' '{' _instantiate_function instruction_list '}' """
+    """def_function : type IDENT '(' param_list ')' _begin_nolines '{' _instantiate_function  _end_nolines instruction_list _begin_nolines '}' _end_nolines """
     p.parser.current.function = None
     p.parser.current.block = None
     
 def p_instantiate_function(p):
     """_instantiate_function :"""
-    ftype = type.FunctionType(p[-3], p[-6])
-    func = function.Function(p[-5], ftype, location=loc(p, 0))
+    ftype = type.FunctionType(p[-4], p[-7])
+    func = function.Function(p[-6], ftype, location=loc(p, 0))
     p.parser.current.function = func
     p.parser.current.block = block.Block(location=loc(p, 0))
     
@@ -95,38 +104,66 @@ def p_instantiate_function(p):
 def p_instruction_list(p):
     """instruction_list : def_local instruction_list
                         | instruction instruction_list
+                        | LABEL _set_block_name instruction instruction_list
+                        | LABEL _set_block_name NL instruction instruction_list
+                        | empty_line instruction_list
                         | """
 
-def p_instruction(p):
-    """instruction : IDENT '=' INSTRUCTION operand operand"""
-    """            |           INSTRUCTION operand operand"""
+def p_empty_line(p):
+    """empty_line : NL"""
+    pass
+
+def p_set_block_name(p):
+    """_set_block_name : """
     
-    if len(p) == 6:
+    if len(p.parser.current.block.instructions()):
+        # Start a new block.
+        p.parser.current.block = block.Block(name=p[-1], location=loc(p, 0))
+        p.parser.current.function.addBlock(p.parser.current.block)
+    else:
+        # Current block still empty so just set its name.
+        p.parser.current.block.setName(p[-1])
+
+def p_instruction(p):
+    """instruction : operand '=' INSTRUCTION operand operand operand NL
+                   |             INSTRUCTION operand operand operand NL"""
+    
+    if p[2] == "=":
         name = p[3]
         op1 = p[4]
         op2 = p[5]
+        op3 = p[6]
         target = p[1]
+        print name, p[2], p[1]
     else:
         name = p[1]
         op1 = p[2]
         op2 = p[3]
+        op3 = p[4]
         target = None
+
+        
+    ins = instruction.createInstruction(name, op1, op2, op3, target, location=loc(p, 1))
+    if not ins:
+        error(p, "unknown instruction %s" % name)
+        raise ply.yacc.SyntaxError
     
-    ins = instruction.createInstruction(name, op1, op2, target, location=loc(p, 1))
     p.parser.current.block.addInstruction(ins)
 
 def p_operand_ident(p):
     """operand : IDENT"""
     
+    local = True
     ident = p.parser.current.function.scope().lookup(p[1])
     if not ident:
-        indent = p.parser.current.module.scope().lookup(p[1])
+        local = False
+        ident = p.parser.current.module.scope().lookup(p[1])
         
         if not ident:
-            error(p.parser, "unknown identifier %s" % p[1])
+            error(p, "unknown identifier %s" % p[1])
             raise ply.yacc.SyntaxError
     
-    p[0] = instruction.IDOperand(ident, location=loc(p, 1))
+    p[0] = instruction.IDOperand(ident, local, location=loc(p, 1))
 
 def p_operand_number(p):
     """operand : NUMBER"""
@@ -168,21 +205,40 @@ def p_param_list(p):
         p[0] = [p[1]] + p[3]
     
 def p_id(p):
-    """id : TYPE IDENT"""
+    """id : type IDENT"""
     p[0] = id.ID(p[2], p[1], location=loc(p, 1))
 
-def p_id_list(p):
-    """id_list : id id_list
-               | """
-    if len(p) == 1:
-        p[0] = []
+def p_type(p):
+    """type : TYPE
+            | TYPE ':' NUMBER"""
+    if len(p) == 2:
+        p[0] = p[1]
     else:
-        p[0] = [p[1]] + p[2]
+        if p[1] != type.Integer:
+            error(p, "only integer type allows width specifications, not %s" % p[1])
+            raise ply.yacc.SyntaxError
 
-def error(parser, msg, lineno=0):
+        p[0] = type.IntegerType(p[3])
+    
+def p_id_list(p):
+    """id_list : id "," id_list
+    
+               | id"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
+
+def error(p, msg, parser=None, lineno=0):
+
+    if p:
+        parser = p.parser
+        lineno = p.lineno(1)
+    else:
+        assert parser
     
     if lineno > 0:
-        context = "%s:%s" % (parser.current.filename, p.lineno)
+        context = "%s:%s" % (parser.current.filename, lineno)
     else:
         context = parser.current.filename
     
@@ -190,9 +246,9 @@ def error(parser, msg, lineno=0):
         
 def p_error(p):    
     if p:
-        error(Parser, "unexpected %s '%s'" % (p.type.lower(), p.value), p.lineno)
+        error(None, "unexpected %s '%s'" % (p.type.lower(), p.value), parser=Parser, lineno=p.lineno)
     else:
-        error(Parser, "unexpected end of file")
+        error(Noner, "unexpected end of file", parser=Parser)
     
 def parse(filename):
     global Parser
@@ -200,7 +256,7 @@ def parse(filename):
     Parser.current = State(filename)
 
     lines = open(filename).read()
-    return Parser.parse(lines, lexer=lexer.lexer)
+    return Parser.parse(lines, lexer=lexer.lexer, debug=0)
         
 
     
