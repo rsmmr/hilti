@@ -22,6 +22,9 @@ def typeToLLVM(t):
     if isinstance(t, type.IntegerType):
         return llvm.core.Type.int(t.width())
     
+    if isinstance(t, type.VoidType):
+        return llvm.core.Type.void()
+    
     try:
         return mapping[t]
     except KeyError:
@@ -151,9 +154,16 @@ def constOpToLLVM(op):
 # Returns the name for the function the block name is converted into.
 # Function is the function the block is part of.
 def blockFunctionName(name, function):
-    if name == function.blocks()[0].name():
-        return function.name()
+    first_block = function.blocks()[0].name()
+    if first_block.startswith("@"):
+        first_block = first_block[1:]
 
+    if name.startswith("@"):
+        name = name[1:]
+        
+    if name == first_block:
+        return function.name()
+        
     if name.startswith("__"):
         name = name[2:]
     

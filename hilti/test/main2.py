@@ -48,7 +48,7 @@ if m:
 ##    checker.checker.reset()
 ##    checker.checker.dispatch(m)
     
-#    m = codegen.codegen.codegen.dispatch(m)
-#    print "--------------"
-#    print codegen.codegen.codegen.llvmModule(fatalerrors=False)
+    m = codegen.codegen.codegen.dispatch(m)
+    print "--------------"
+    print codegen.codegen.codegen.llvmModule(fatalerrors=False)
 

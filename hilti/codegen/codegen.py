@@ -53,6 +53,7 @@ codegen = CodeGen()
 
 @codegen.when(module.Module)
 def _(self, m):
+    self._module = m
     self._llvm.module = llvm.core.Module.new(m.name())
 
     self._llvm.module.add_type_name("__basic_frame", structBasicFrame())
@@ -106,6 +107,31 @@ def _getFunction(cg, name):
         cg._llvm.functions[name] = func
         return func
 
+# Generates LLVM tail call code. From the LLVM 1.5 release notes:
+#
+#    To ensure a call is interpreted as a tail call, a front-end must
+#    mark functions as "fastcc", mark calls with the 'tail' marker,
+#    and follow the call with a return of the called value (or void).
+#    The optimizer and code generator attempt to handle more general
+#    cases, but the simple case will always work if the code
+#    generator supports tail calls. Here is an example:
+#
+#    fastcc int %bar(int %X, int(double, int)* %FP) {       ; fastcc
+#        %Y = tail call fastcc int %FP(double 0.0, int %X)  ; tail, fastcc
+#        ret int %Y
+#    }
+def _genTailCall(cg, funcname, args):
+    llvm_func = _getFunction(cg, funcname)
+    if cg._function.type().resultType() == type.Void:
+        result = cg._llvm.builder.call(llvm_func, args)
+    else:
+        result = cg._llvm.builder.call(llvm_func, args, "result")
+        
+    result.calling_convention = llvm.core.CC_FASTCALL
+    # FIXME: How do we get the "tail" modifier in there?
+    cg._llvm.builder.ret(result)
+    
+    
 @codegen.pre(block.Block)
 def _(self, b):
     assert self._function
@@ -139,17 +165,7 @@ def _(self, i):
 
 @codegen.when(ins.flow.Jump)
 def _(self, i):
-    function = _getFunction(self, i.op1().value())
-    
-    block = self._llvm.function.append_basic_block("return")
-    builder = llvm.core.Builder.new(block)
-
-    result = self._llvm.builder.invoke(function, [self._llvm.frameptr], block, block, "result")
-    
-    if self._function.type().resultType() != type.Void:
-        builder.ret(result)
-    else:
-        builder.unreachable()
+    _genTailCall(self, i.op1().value(), [self._llvm.frameptr])
 
 ### Operands.
 @codegen.when(instruction.IDOperand)

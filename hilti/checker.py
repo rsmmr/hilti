@@ -1,6 +1,9 @@
 # $Id$
 #
 # Visitor to checks the validity of the visited code.
+#
+# Checks TODO:
+#    * we do not support Jumps to labels in other functions. Check that all Jumps are local.
 
 import block
 import module
