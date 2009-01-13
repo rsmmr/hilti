@@ -54,7 +54,7 @@ def t_STRING(t):
 
 def t_LABEL(t):
     r'@[_a-zA-Z][a-zA-Z0-9._]*:'
-    t.value = t.value[1:-1]
+    t.value = t.value[0:-1]
     return t
 
 def t_IDENT(t):

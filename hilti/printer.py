@@ -110,7 +110,7 @@ def _(self, b):
         self.output("")
         
         next = " # next: %s" % b.next().name() if b.next() else ""
-        name = "@%s: " % b.name() if b.name() else ""
+        name = "%s: " % b.name() if b.name() else ""
         
         self.output("%s%s" % (name, next))
         self.push()
