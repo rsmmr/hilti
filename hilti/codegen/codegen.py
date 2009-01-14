@@ -39,6 +39,7 @@ class CodeGen(visitor.Visitor):
     def llvmModule(self, fatalerrors=True):
         try:
             self._llvm.module.verify()
+            pass
         except llvm.LLVMException, e:
             if fatalerrors:
                 util.error("LLVM error: %s" % e)
@@ -100,6 +101,7 @@ def _getFunction(cg, name):
     try:
         return cg._llvm.functions[name]
     except KeyError:
+        
         rt = typeToLLVM(cg._function.type().resultType())
         ft = llvm.core.Type.function(rt, [llvm.core.Type.pointer(structFunctionFrame(cg._function))])
         func = cg._llvm.module.add_function(ft, blockFunctionName(name, cg._function))
@@ -123,13 +125,14 @@ def _getFunction(cg, name):
 def _genTailCall(cg, funcname, args):
     llvm_func = _getFunction(cg, funcname)
     if cg._function.type().resultType() == type.Void:
-        result = cg._llvm.builder.call(llvm_func, args)
+        cg._llvm.builder.call(llvm_func, args)
+        cg._llvm.builder.ret_void()
     else:
         result = cg._llvm.builder.call(llvm_func, args, "result")
+        result.calling_convention = llvm.core.CC_FASTCALL
+        cg._llvm.builder.ret(result)
         
-    result.calling_convention = llvm.core.CC_FASTCALL
     # FIXME: How do we get the "tail" modifier in there?
-    cg._llvm.builder.ret(result)
     
     
 @codegen.pre(block.Block)
@@ -176,7 +179,7 @@ def _(self, i):
 ## Integer
 @codegen.when(ins.integer.Add)
 def _(self, i):
-    op1 = opToLLVM(self, i.op1(), "op1.")
-    op2 = opToLLVM(self, i.op2(), "op2.")
+    op1 = opToLLVM(self, i.op1(), "op1")
+    op2 = opToLLVM(self, i.op2(), "op2")
     result = self._llvm.builder.add(op1, op2, "tmp")
-    targetToLLVM(self, i.target(), result, "target.")
+    targetToLLVM(self, i.target(), result, "target")
