@@ -1,3 +1,5 @@
 # $Id$
 
-__all__ = [ "lexer", "parser" ]
+import canonify
+import codegen
+import codegen_utils

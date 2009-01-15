@@ -2,8 +2,8 @@
 #
 # String data type.
 
-from instruction import *
-from type import *
+from hilti.core.type import *
+from hilti.core.instruction import *
 
 @instruction("string.add", op1=String, op2=String, target=String)
 class Add(Instruction):

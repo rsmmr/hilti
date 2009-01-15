@@ -8,23 +8,13 @@
 #    - Turn call instructions into terminator call.tail.void or call.tail.result.  
 #    - Each block get name unique within its function. 
 
+import sys
+
 import llvm
 import llvm.core 
 
-import block
-import module
-import function
-import instruction
-import scope
-import id
-import type
-import util
-import constant
-import visitor
-
-import ins.flow
-
-import sys
+from hilti.core import *
+from hilti import ins
 
 ### Helpers
 

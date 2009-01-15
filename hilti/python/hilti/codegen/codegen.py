@@ -123,17 +123,8 @@ import sys
 import llvm
 import llvm.core 
 
-import block
-import module
-import function
-import instruction
-import scope
-import id
-import type
-import util
-import visitor
-
-import ins
+from hilti.core import *
+from hilti import ins
 
 from codegen_utils import *
 

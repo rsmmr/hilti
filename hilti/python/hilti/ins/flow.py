@@ -2,8 +2,8 @@
 #
 # Control flow operations. 
 
-from instruction import *
-from type import *
+from hilti.core.type import *
+from hilti.core.instruction import *
 
 @instruction("jump", op1=Label)
 class Jump(Instruction):

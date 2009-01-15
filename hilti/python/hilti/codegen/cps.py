@@ -3,18 +3,13 @@
 # Visitor to perform tranformation into CPS form. 
 # "Canonify" pass must have been applied already. 
 
+import sys
+
 import llvm
 import llvm.core 
 
-import visitor
-import block
-import function
-import instruction
-import module
-
-import ins.flow
-
-import sys
+from hilti.core import *
+import hilti.ins.flow
 
 ### CPS visitor.
 

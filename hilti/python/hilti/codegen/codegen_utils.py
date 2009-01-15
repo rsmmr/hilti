@@ -7,9 +7,7 @@ import sys
 import llvm
 import llvm.core
 
-import util
-import type
-import instruction
+from hilti.core import *
 
 # Converts a StorageType into the corresponding type for LLVM variable declarations.
 def typeToLLVM(t):

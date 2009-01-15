@@ -2,8 +2,8 @@
 #
 # Integer data type.
 
-from instruction import *
-from type import *
+from hilti.core.type import *
+from hilti.core.instruction import *
 
 @instruction("integer.add", op1=Integer, op2=Integer, target=Integer)
 class Add(Instruction):
