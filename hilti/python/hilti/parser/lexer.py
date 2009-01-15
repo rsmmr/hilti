@@ -2,12 +2,9 @@
 #
 # The lexer. 
 
-import instruction
-import ins
-import util
-import type
-
 import ply.lex
+
+from hilti.core import *
 
 instructions = instruction.getInstructions().keys()
 types = type.typenames()

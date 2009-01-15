@@ -6,6 +6,8 @@ import sys
 
 import ply.yacc
 
+from hilti.core import *
+
 import lexer
 from lexer import tokens
 
