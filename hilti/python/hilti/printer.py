@@ -16,12 +16,15 @@ import visitor
 ### Printer visitor.
 
 class Printer(visitor.Visitor):
-    def __init__(self, output = sys.stdout):
+    def __init__(self):
         super(Printer, self).__init__()
-        self._output = output
+        self._output = sys.stdout
         self._indent = 0;
         self._module = None
         self._infunction = False
+        
+    def setOutput(self, file):
+        self._output = file
         
     def push(self):
         self._indent += 1

@@ -2,22 +2,11 @@
 #
 # The parser.
 
-import module
-import id
-import location
-import util
-import type
-import block
-import constant
-import function
-import instruction
-
 import sys
-
-import lexer
 
 import ply.yacc
 
+import lexer
 from lexer import tokens
 
 # Creates a Location object from the parser object for the given symbol.
