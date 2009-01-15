@@ -7,21 +7,21 @@ Instruction Set
 Integer Operations
 ------------------
 
-.. automodule:: ins.integer
+.. automodule:: hilti.ins.integer
    :members:
    :undoc-members:
    
 String Operations
 -----------------
 
-.. automodule:: ins.string
+.. automodule:: hilti.ins.string
    :members:
    :undoc-members:
 
 Control Flow Operations
 ------------------------
 
-.. automodule:: ins.flow
+.. automodule:: hilti.ins.flow
    :members:
    :undoc-members:
 

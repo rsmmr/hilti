@@ -190,7 +190,7 @@ latex_documents = [
 
 import copy
 import sys
-import type
+import hilti.type
 
 sys.path += [".."]
 
