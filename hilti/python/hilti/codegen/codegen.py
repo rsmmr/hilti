@@ -133,12 +133,14 @@ from codegen_utils import *
 class CodeGen(visitor.Visitor):
     def __init__(self):
         super(CodeGen, self).__init__()
-        self._function = None
+        self.reset()
         
+    def reset(self):
         # Dummy class to create a sub-namespace.
         class llvm:
             pass
         
+        self._function = None
         self._llvm = llvm()
         self._llvm.module = None
 
@@ -156,6 +158,12 @@ class CodeGen(visitor.Visitor):
         return self._llvm.module
     
 codegen = CodeGen()
+
+def generate(ast):
+    """Compiles *ast* into LLVM module. *ast* must have been already canonified."""
+    codegen.reset()
+    codegen.dispatch(ast)
+    return codegen.llvmModule(fatalerrors=False)
 
 ### Overall control structures.
 
@@ -290,3 +298,4 @@ def _(self, i):
     op2 = opToLLVM(self, i.op2(), "op2")
     result = self._llvm.builder.add(op1, op2, "tmp")
     targetToLLVM(self, i.target(), result, "target")
+

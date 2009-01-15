@@ -6,6 +6,8 @@ import ply.lex
 
 from hilti.core import *
 
+import parser
+
 instructions = instruction.getInstructions().keys()
 types = type.typenames()
 keywords = {"local": "LOCAL", "global" : "GLOBAL", "struct": "STRUCT", "module": "MODULE"}
@@ -96,12 +98,7 @@ t_ignore  = ' \t'
 
 # Error handling rule
 def t_error(t):
-    error(t, "cannot parse input '%s...'" % t.value[0:10], fatal=True)
-    
-def error(t, msg, fatal = False):
-    t.lexer.errors += 1
-    util.error(msg, fatal=fatal)
+    parser.error(None, "cannot parse input '%s...'" % t.value[0:10], lineno=t.lexer.lineno)
     
 # Build the lexer
 lexer = ply.lex.lex()
-lexer.errors = 0

@@ -23,18 +23,26 @@ class Checker(visitor.Visitor):
     def reset(self):
         self._infunction = False
         self._have_module = False
+        self._errors = 0
 
     def error(self, obj, str):
-        util.error(str, context=obj)
+        self._errors += 1
+        util.error(str, context=obj, fatal=False)        
 
 checker = Checker()
+
+def checkAST(ast):
+    """Returns number of errors found."""
+    checker.reset()
+    checker.dispatch(ast)
+    return checker._errors
 
 ### Overall control structures.
 
 @checker.when(module.Module)
 def _(self, m):
     if self._have_module:
-        util.error("more than one module declaration in input file", context=m)
+        error("more than one module declaration in input file", context=m)
     
     self._have_module = True
 
@@ -45,15 +53,15 @@ def _(self, m):
 @checker.when(id.ID, type.StructDeclType)
 def _(self, id):
     if not self._have_module:
-        util.error("input file must start with module declaration", context=id)
+        error("input file must start with module declaration", context=id)
 
     if self._infunction:
-        util.error("structs cannot be declared inside functions", context=id)
+        error("structs cannot be declared inside functions", context=id)
         
 @checker.when(id.ID, type.StorageType)
 def _(self, id):
     if not self._have_module:
-        util.error("input file must start with module declaration", context=id)
+        error("input file must start with module declaration", context=id)
 
 ### Function definitions.
 
@@ -63,7 +71,7 @@ def _(self, f):
     self._infunction = True
     
     if not self._have_module:
-        util.error("input file must start with module declaration", context=f)
+        error("input file must start with module declaration", context=f)
         
 @checker.post(function.Function)
 def _(self, f):
@@ -71,7 +79,7 @@ def _(self, f):
     self._infunction = False
     
     if not self._have_module:
-        util.error("input file must start with module declaration", context=f)
+        error("input file must start with module declaration", context=f)
         
 ### Instructions.
 
@@ -99,5 +107,6 @@ def _(self, i):
     checkOp(i.op3(), i.signature().op3(), "operand 3")
     checkOp(i.target(), i.signature().target(),"target")
 
+    
 
 

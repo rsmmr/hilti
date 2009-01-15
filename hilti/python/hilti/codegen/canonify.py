@@ -42,11 +42,20 @@ def unifyBlock(block):
 class Canonify(visitor.Visitor):
     def __init__(self):
         super(Canonify, self).__init__()
+        self.reset()
+        
+    def reset(self):
         self._transformed = None
         self._current_function = None
         self._label_counter = 0
         
 canonify = Canonify()
+
+def canonifyAST(ast):
+    """Canonifies *ast* in place"""
+    canonify.reset()
+    canonify.dispatch(ast)
+    return True
 
 ### Function
 
@@ -140,9 +149,8 @@ def _(self, i):
     current_block = canonify._transformed_blocks[-1]
     current_block.addInstruction(i)
     _splitBlock(self)
-        
-    
-    
+
+
     
     
     

@@ -18,6 +18,9 @@ import visitor
 class Printer(visitor.Visitor):
     def __init__(self):
         super(Printer, self).__init__()
+        self.reset()
+        
+    def reset(self):
         self._output = sys.stdout
         self._indent = 0;
         self._module = None
@@ -36,6 +39,12 @@ class Printer(visitor.Visitor):
         print >>self._output, ("    " * self._indent) + str
 
 printer = Printer()
+
+def printAST(ast, output=sys.stdout):
+    printer.reset()
+    printer.setOutput(output)
+    printer.dispatch(ast)
+    return True
 
 ### Overall control structures.
 
@@ -137,4 +146,6 @@ def _(self, i):
     op3 = " %s" % fmtOp(i.op3().value()) if i.op3() else ""
     
     self.output("%s%s%s%s%s" % (target, name, op1, op2, op3))  
+
+
     

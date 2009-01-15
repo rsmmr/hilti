@@ -20,6 +20,7 @@ def loc(p, num):
 class State:
     def __init__(self, filename):
         self.filename = filename
+        self.errors = 0
         self.module = None
         self.function = None
         self.block = None
@@ -125,7 +126,6 @@ def p_instruction(p):
         op2 = p[5]
         op3 = p[6]
         target = p[1]
-        print name, p[2], p[1]
     else:
         name = p[1]
         op1 = p[2]
@@ -219,35 +219,45 @@ def p_id_list(p):
         p[0] = [p[1]]
     else:
         p[0] = [p[1]] + p[3]
-
-def error(p, msg, parser=None, lineno=0):
-
-    if p:
-        parser = p.parser
-        lineno = p.lineno(1)
-    else:
-        assert parser
-    
-    if lineno > 0:
-        context = "%s:%s" % (parser.current.filename, lineno)
-    else:
-        context = parser.current.filename
-    
-    util.error(msg, context=context, fatal=False)
         
 def p_error(p):    
     if p:
-        error(None, "unexpected %s '%s'" % (p.type.lower(), p.value), parser=Parser, lineno=p.lineno)
+        error(None, "unexpected %s '%s'" % (p.type.lower(), p.value), lineno=p.lineno)
     else:
-        error(Noner, "unexpected end of file", parser=Parser)
+        error(None, "unexpected end of file")
+
+def error(p, msg, lineno=0):
+    global Parser
+    if p and lineno < 0:
+        lineno = p.lineno(1)
     
+    if lineno > 0:
+        context = "%s:%s" % (Parser.current.filename, lineno)
+    else:
+        context = parser.current.filename
+
+    Parser.current.errors += 1
+    util.error(msg, context=context, fatal=False)
+        
 def parse(filename):
+    """Returns tuple (errs, ast) where *errs* is the number errors found and *ast* is the parsed input.""" 
+    
     global Parser
     Parser = ply.yacc.yacc(debug=0, write_tables=0)
+    
     Parser.current = State(filename)
-
     lines = open(filename).read()
-    return Parser.parse(lines, lexer=lexer.lexer, debug=0)
+
+    try:
+        ast = Parser.parse(lines, lexer=lexer.lexer, debug=0)
+    except ply.lex.LexError, e:
+        # Already reported.
+        pass
+    
+    return (Parser.current.errors, ast)
+    
+    
+    
         
 
     

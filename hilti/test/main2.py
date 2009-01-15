@@ -7,7 +7,7 @@ from hilti import *
 #lexer = parser.lexer.lexer
 #lexer = parser.lexer
 
-m = parser.parser.parse("test.bir")
+(errs, ast) = parser.parser.parse("test.bir")
 
 #data = sys.stdin.read()
 #lexer.input(data)
@@ -22,27 +22,27 @@ m = parser.parser.parse("test.bir")
 #    print "%d error%s, exiting." % (lexer.errors, "s" if lexer.errors > 1 else "")
 #    sys.exit(1)
     
-if m:
+if not errs:
 #    print 
 #    printer.printer.dispatch(m)
 #    
 #    print "--------------"
-    core.checker.checker.dispatch(m)
+    errs = core.checker.checkAST(ast)
+    if errs:
+        sys.exit()
+    
     print "---- Original ----------"
-    core.printer.printer.dispatch(m)
+    core.printer.printAST(ast)
     
     print "---- Canonified ----------"
-    codegen.canonify.canonify.dispatch(m)
-    core.printer.printer.dispatch(m)
-    core.checker.checker.reset()
-    core.checker.checker.dispatch(m)
-##    print "---- CPS ----------"
-##    codegen.cps.cps.dispatch(m)
-##    printer.printer.dispatch(m)
-##    checker.checker.reset()
-##    checker.checker.dispatch(m)
+    codegen.canonify.canonifyAST(ast)
+    core.printer.printAST(ast)
+    errs = core.checker.checkAST(ast)
+    if errs:
+        sys.exit()
     
-    m = codegen.codegen.codegen.dispatch(m)
+    mod = codegen.codegen.generate(ast)
+    
     print "--------------"
-    print codegen.codegen.codegen.llvmModule(fatalerrors=False)
+    print mod 
 
