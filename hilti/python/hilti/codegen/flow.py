@@ -249,7 +249,9 @@ def _(self, i):
     self.llvmInit(null, addr)
       
     # Initialize function arguments. 
-    #   callee_frame.arg_<i> = args[i] 
+    for arg in i.op2().value():
+	    #   callee_frame.arg_<i> = args[i] 
+        pass
     
     self.llvmGenerateTailCallToFunction(func, [callee_frame])
     

@@ -129,8 +129,10 @@ def _(self, i):
         tc = ins.flow.CallTailResult(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
         
     _splitBlock(self, tc)
-    label = constant.Constant(self._transformed_blocks[-1].name(), type.Label, location=i.location())
-    tc.setOp3(instruction.ConstOperand(label, True))
+    
+    i = id.ID(self._transformed_blocks[-1].name(), type.Label, location=i.location())
+    label = instruction.IDOperand(i, False, location=i.location())
+    tc.setOp3(label)
     
 @canonify.when(ins.flow.Jump)
 def _(self, i):

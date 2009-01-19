@@ -93,10 +93,13 @@ class ConstOperand(Operand):
 
 class IDOperand(Operand):
     def __init__(self, id, local, location=location.Location()):
-        super(IDOperand, self).__init__(id.name(), id.type(), location)
+        super(IDOperand, self).__init__(id, id.type(), location)
         self._id = id
         self._local = local
 
+    def id(self):
+        return self._id
+        
     def constant(self):
         return self._constant
     

@@ -98,8 +98,8 @@ class CodeGen(visitor.Visitor):
 
     # Looksup the function belonging to the given name. Returns None if not found. 
     # FIXME: Not sure this belongs here. We need to lookup functions from other modules as well.
-    def lookupFunction(self, name):
-        return self._module.function(name)
+    def lookupFunction(self, id):
+        return self._module.function(id.name())
 
     # Returns the internal LLVM name for the given function.
     # FIXME: Integrate module name.
@@ -183,16 +183,28 @@ class CodeGen(visitor.Visitor):
 
     # Returns the LLVM for the function's frame.
     def llvmTypeFunctionFrame(self, function):
+        
+        try:
+            # Is it cached?
+            if function._llvm_frame != None:
+                return function._llvm_frame
+        except AttributeError:
+            pass
+        
         fields = [("__bf", self.llvmTypeBasicFrame())]
-        fields += [(id.name(), self.llvmTypeConvert(id.type())) for id in function.scope().IDs().values()]
-    
+        ids = function.type().IDs() + function.scope().IDs().values()
+        fields += [(id.name(), self.llvmTypeConvert(id.type())) for id in ids]
+        
+        print "QQQ", fields
+        
         # Build map of indices and store with function.
         function._frame_index = {}
         for i in range(0, len(fields)):
             function._frame_index[fields[i][0]] = i
 
         frame = [f[1] for f in fields]
-        return llvm.core.Type.struct(frame)
+        function._llvm_frame = llvm.core.Type.struct(frame) # Cache it.
+        return function._llvm_frame
 
     def _llvmAddrInBasicFrame(self, frame, index1, index2, cast_to, tag):
         zero = self.llvmConstInt(0)
@@ -235,6 +247,23 @@ class CodeGen(visitor.Visitor):
     def llvmAddrExceptionData(self, frame, cast_to=None):
         return self._llvmAddrInBasicFrame(frame, 3, -1, cast_to, "excep_data")
     
+    # Returns the address of the local variable in the given frame.
+    # V is given via it's string name. 
+    def llvmAddrLocalVar(self, frameptr, id, tag):
+        # The Python interface (as well as LLVM's C interface, which is used
+        # by the Python interface) does not have builder.extract_value() method,
+        # so we simulate it with a gep/load combination.
+        try:
+            frame_idx = self._function._frame_index
+        except AttributeError:
+            # Not yet calculated.
+            llvmTypeFunctionFrame()
+            frame_idx = self._function._frame_index
+            
+        zero = self.llvmConstInt(0)
+        index = self.llvmConstInt(frame_idx[id.name()])
+        return self.builder().gep(frameptr, [zero, index], tag)
+
     # Returns LLVM function for the given block, creating one if it doesn't exist yet. 
     def llvmGetFunctionForBlock(self, block):
         name = self.nameFunctionForBlock(block) 
@@ -328,19 +357,7 @@ class CodeGen(visitor.Visitor):
 
         if isinstance(op, instruction.IDOperand):
             if op.isLocal():
-                # The Python interface (as well as LLVM's C interface, which is used
-                # by the Python interface) does not have builder.extract_value() method,
-                # so we simulate it with a gep/load combination.
-                try:
-                    frame_idx = self._function._frame_index
-                except AttributeError:
-                    # Not yet calculated.
-                    llvmTypeFunctionFrame()
-                    frame_idx = self._function._frame_index
-                
-                zero = self.llvmConstInt(0)
-                index = self.llvmConstInt(frame_idx[op.value()])
-                addr = self.builder().gep(self._llvm.frameptr, [zero, index], tag)
+                addr = self.llvmAddrLocalVar(self._llvm.frameptr, op.id(), tag)
                 return self.builder().load(addr, tag)
             
         util.internal_error("opToLLVM: unknown op class: %s" % op)
@@ -385,19 +402,7 @@ class CodeGen(visitor.Visitor):
         # FIXME: Don't hardcode operand types here (or?)
         if isinstance(target, instruction.IDOperand):
             if target.isLocal():
-                # The Python interface (as well as LLVM's C interface, which is used
-                # by the Python interface) does not have builder.extract_value() method,
-                # so we simulate it with a gep/load combination.
-                try:
-                    frame_idx = self._function._frame_index
-                except AttributeError:
-                    # Not yet calculated.
-                    llvmTypeFunctionFrame()
-                    frame_idx = self._function._frame_index
-                
-                zero = self.llvmConstInt(0)
-                index = self.llvmConstInt(frame_idx[target.value()])
-                addr = self.builder().gep(self._llvm.frameptr, [zero, index], tag)
+                addr = self.llvmAddrLocalVar(self._llvm.frameptr, target.id(), tag)
                 self.llvmAssign(val, addr)
                 return 
                 

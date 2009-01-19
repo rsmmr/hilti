@@ -134,8 +134,11 @@ def _(self, b):
 def _(self, i):
     
     def fmtOp(op):
+        if isinstance(op, id.ID):
+            return op.name()
+        
         if isinstance(op, tuple) or isinstance(op, list):
-            return "(%s)" % ", ".join(op)
+            return "(%s)" % ", ".join([fmtOp(o) for o in op])
         
         return op
     
