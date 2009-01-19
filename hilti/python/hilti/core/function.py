@@ -42,6 +42,12 @@ class Function(object):
     def clearBlocks(self):
         self._bodies = []
 
+    def lookupBlock(self, name):
+        for b in self._bodies:
+            if b.name() == name:
+                return b
+        return None
+        
     def parentFunc(self):
         return self._parent
         

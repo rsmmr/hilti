@@ -4,6 +4,8 @@ import sys
 
 from hilti import *
 
+import hilti.codegen
+
 #lexer = parser.lexer.lexer
 #lexer = parser.lexer
 
@@ -40,7 +42,7 @@ if not errs:
     errs = core.checker.checkAST(ast)
     if errs:
         sys.exit()
-    
+
     mod = codegen.codegen.generate(ast, False)
     
     print "--------------"

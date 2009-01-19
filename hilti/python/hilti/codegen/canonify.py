@@ -95,7 +95,7 @@ def _(self, b):
         
     # While we proceed, we copy each instruction over to a new block, 
     # potentially after transforming it first.
-    self._transformed_blocks += [block.Block(instructions=[], name=name, location=b.location())]
+    self._transformed_blocks += [block.Block(self._current_function, instructions=[], name=name, location=b.location())]
 
 ### Instructions.
 
@@ -118,12 +118,12 @@ def _splitBlock(canonify, ins=None):
         current_block.addInstruction(ins)
     
     canonify._label_counter += 1
-    new_block = block.Block(instructions = [], name="@__l%d" % (canonify._label_counter))
+    new_block = block.Block(canonify._current_function, instructions = [], name="@__l%d" % (canonify._label_counter))
     canonify._transformed_blocks.append(new_block)
     
 @canonify.when(ins.flow.Call)
 def _(self, i):
-    if not i.target():
+    if i.op1().type().resultType() == type.Void:
         tc = ins.flow.CallTailVoid(op1=i.op1(), op2=i.op2(), op3=None, location=i.location())
     else:
         tc = ins.flow.CallTailResult(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())

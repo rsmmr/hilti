@@ -3,8 +3,12 @@
 # The parser.
 
 import sys
+import warnings
 
-import ply.yacc
+# ply.yacc triggers "DeprecationWarning: the md5 module is deprecated; use hashlib instead"
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import ply.yacc
 
 from hilti.core import *
 
@@ -88,7 +92,7 @@ def p_instantiate_function(p):
     ftype = type.FunctionType(p[-4], p[-7])
     func = function.Function(p[-6], ftype, location=loc(p, 0))
     p.parser.current.function = func
-    p.parser.current.block = block.Block(location=loc(p, 0))
+    p.parser.current.block = block.Block(func, location=loc(p, 0))
     
     p.parser.current.function.addBlock(p.parser.current.block)
     p.parser.current.module.addFunction(p.parser.current.function)
@@ -110,7 +114,7 @@ def p_set_block_name(p):
     
     if len(p.parser.current.block.instructions()):
         # Start a new block.
-        p.parser.current.block = block.Block(name=p[-1], location=loc(p, 0))
+        p.parser.current.block = block.Block(p.parser.current.function, name=p[-1], location=loc(p, 0))
         p.parser.current.function.addBlock(p.parser.current.block)
     else:
         # Current block still empty so just set its name.

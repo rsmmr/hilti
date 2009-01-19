@@ -6,12 +6,16 @@
 import location
 
 class Block(object):
-    def __init__(self, instructions = None, name = None, location = location.Location()):
+    def __init__(self, function, instructions = None, name = None, location = location.Location()):
+        self._function = function
         self._ins = instructions if instructions else []
         self._name = name
         self._location = location
         self._next = None
 
+    def function(self):
+        return self._function
+        
     def instructions(self):
         return self._ins
 
