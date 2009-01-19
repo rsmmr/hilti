@@ -41,7 +41,7 @@ if not errs:
     if errs:
         sys.exit()
     
-    mod = codegen.codegen.generate(ast)
+    mod = codegen.codegen.generate(ast, False)
     
     print "--------------"
     print mod 

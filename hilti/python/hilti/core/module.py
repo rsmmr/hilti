@@ -11,7 +11,7 @@ class Module(object):
         self._name = name
         self._location = location
         self._scope = scope.Scope()
-        self._functions = []
+        self._functions = {}
 
     def name(self):
         return self._name
@@ -22,19 +22,25 @@ class Module(object):
     def scope(self):
         return self._scope
 
+    def function(self, name):
+        try:
+            return self._functions[name]
+        except LookupError:
+            return None
+    
     def addID(self, id):
         self._scope.insert(id)
 
     def addFunction(self, function):
         self.addID(id.ID(function.name(), function.type()))
-        self._functions += [function]
+        self._functions[function.name()] = function
         
     # Visitor support.
     def dispatch(self, visitor):
         visitor.visit_pre(self)
         
         self._scope.dispatch(visitor)
-        for func in self._functions:
+        for func in self._functions.values():
             visitor.dispatch(func)
         
         visitor.visit_post(self)
