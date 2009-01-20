@@ -35,8 +35,10 @@ class Printer(visitor.Visitor):
     def pop(self):
         self._indent -= 1
         
-    def output(self, str = ""):
-        print >>self._output, ("    " * self._indent) + str
+    def output(self, str = "", nl=True):
+        print >>self._output, ("    " * self._indent) + str,
+        if nl:
+            print >>self._output
 
 printer = Printer()
 
@@ -52,7 +54,6 @@ def printAST(ast, output=sys.stdout):
 def _(self, m):
     self._module = m
     self.output("module %s" % m.name())
-    self.output()
     
 ### ID definitions. 
 
@@ -100,17 +101,29 @@ def _(self, f):
     result = type.resultType().name()
     name = f.name()
     args = ", ".join(["%s %s" % (id.type().name(), id.name())for id in type.IDs()])
+    linkage = ""
+
+    if f.linkage() == function.Function.LINK_EXTERN:
+        assert f.callingConvention() == function.Function.CC_C
+        linkage = "extern \"C\" "
     
     self.output()
-    self.output("%s %s(%s) {" % (result, name, args))
+    self.output("%s%s %s(%s)" % (linkage, result, name, args), nl=False)
+    
+    if f.hasImplementation():
+        self.output(" {")
+    else:
+        self.output("")
     
     self.push()
 
 @printer.post(function.Function)
-def _(self, id):
+def _(self, f):
     self._infunction = False
     
-    self.output("}")
+    if f.hasImplementation():
+        self.output("}")
+        
     self.pop()
 
 ### Block definitions.    

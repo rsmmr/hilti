@@ -295,7 +295,7 @@ class CodeGen(visitor.Visitor):
     def llvmGenerateCCall(self, function, args):
         llvm_func = self.llvmGetCFunction(function)
         call = self.builder().call(llvm_func, args, "result")
-        call.calling_convention = llvm.core.CC_FASTCALL
+        call.calling_convention = llvm.core.CC_C
         
     # Returns the LLVM function for the given function if it was already created, and None otherwise.
     def llvmFunction(self, function):

@@ -30,9 +30,14 @@ class State:
         self.block = None
 
 def p_module(p):
-    """module : MODULE _instantiate_module IDENT NL module_decl_list"""
+    """module : _eat_newlines MODULE _instantiate_module IDENT NL module_decl_list"""
     p[0] = p.parser.current.module
 
+def p_eat_newlines(p):
+    """_eat_newlines : NL _eat_newlines
+                     | """
+    pass
+    
 def p_begin_nolines(p):
     """_begin_nolines : """
     p.lexer.push_state('nolines') 
@@ -211,8 +216,12 @@ def p_operand_list(p):
 
 def p_param_list(p):
     """param_list : id ',' param_list
-                  | id """
-    if len(p) == 2:
+                  | id 
+                  | """
+                  
+    if len(p) == 1:
+        p[0] = []
+    elif len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = [p[1]] + p[3]
@@ -274,7 +283,7 @@ def parse(filename):
         ast = Parser.parse(lines, lexer=lexer.lexer, debug=0)
     except ply.lex.LexError, e:
         # Already reported.
-        pass
+        ast = None
     
     return (Parser.current.errors, ast)
     
