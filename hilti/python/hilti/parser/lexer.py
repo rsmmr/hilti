@@ -10,23 +10,27 @@ import parser
 
 instructions = instruction.getInstructions().keys()
 types = type.typenames()
-keywords = {"local": "LOCAL", "global" : "GLOBAL", "struct": "STRUCT", "module": "MODULE"}
+keywords = {
+	"extern": "EXTERN",
+	"local": "LOCAL", 
+    "global" : "GLOBAL", 
+    "module": "MODULE",
+    "struct": "STRUCT", 
+    }
 
 tokens = (
    'LOCAL',
    'GLOBAL',
-   'STRUCT',
+   'EXTERN', 
+   'IDENT', 
+   'INSTRUCTION',
+   'LABEL',
    'MODULE',
-   
+   'NL',
    'NUMBER',
    'STRING',
-   'IDENT', 
-   'LABEL',
-   
-   'INSTRUCTION',
+   'STRUCT',
    'TYPE',
-   
-   'NL',
 ) 
 
 literals = ['(',')','{','}', '=', ',', ':' ]

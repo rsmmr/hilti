@@ -197,6 +197,10 @@ from hilti.core import *
 from hilti import ins
 from codegen import codegen
 
+@codegen.when(ins.flow.Call)
+def _(self, i):
+    assert False
+
 @codegen.when(ins.flow.CallTailVoid)
 def _(self, i):
     func = self.lookupFunction(i.op1().value())
@@ -249,9 +253,15 @@ def _(self, i):
     self.llvmInit(null, addr)
       
     # Initialize function arguments. 
-    for arg in i.op2().value():
+    args = i.op2().value()
+    ids = func.type().IDs()
+    assert len(args) == len(ids)
+    
+    for i in range(0, len(args)):
 	    #   callee_frame.arg_<i> = args[i] 
-        pass
+        val = self.llvmOp(args[i], "arg%d" % i)
+        addr = self.llvmAddrLocalVar(callee_frame, ids[i], "addr-arg%d" % i)
+        self.llvmInit(val, addr)
     
     self.llvmGenerateTailCallToFunction(func, [callee_frame])
     
@@ -279,3 +289,10 @@ def _(self, i):
     assert b
     self.llvmGenerateTailCallToBlock(b, [self._llvm.frameptr])
 
+@codegen.when(ins.flow.CallC)
+def _(self, i):
+    func = self.lookupFunction(i.op1().value())
+    assert func
+    
+    args = [self.llvmOpToC(op, "arg") for op in i.op2().value()]
+    self.llvmGenerateCCall(func, args)

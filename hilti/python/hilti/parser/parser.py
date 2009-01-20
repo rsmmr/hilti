@@ -54,6 +54,7 @@ def p_module_decl_list(p):
 def p_module_decl(p):
     """module_decl : def_global
                    | def_type
+                   | def_extern
                    | def_function"""
     pass
                    
@@ -82,20 +83,37 @@ def p_def_struct(p):
     sid = id.ID(p[3], struct, location=loc(p, 1))
     p.parser.current.module.addID(sid)
 
-def p_def_function(p):
-    """def_function : type IDENT '(' param_list ')' _begin_nolines '{' _instantiate_function  _end_nolines instruction_list _begin_nolines '}' _end_nolines """
+def p_def_extern(p):
+    """def_extern : EXTERN STRING function_head"""
+    func = p[3]
+    
+    func.setLinkage(function.Function.LINK_EXTERN)
+    
+    if p[2] == "C":
+        func.setCallingConvention(function.Function.CC_C)
+    else:
+        error(p, "unknown calling convention \"%s\"" % p[2])
+        raise ply.yacc.SyntaxError
+
+def p_def_function_head(p):
+    """function_head : type IDENT '(' param_list ')'"""
+    ftype = type.FunctionType(p[4], p[1])
+    func = function.Function(p[2], ftype, location=loc(p, 0))
+    p.parser.current.module.addFunction(func)
+    p[0] = func
+    
     p.parser.current.function = None
     p.parser.current.block = None
+     
+def p_def_function(p):
+    """def_function : function_head _begin_nolines '{' _instantiate_function  _end_nolines instruction_list _begin_nolines '}' _end_nolines """
     
 def p_instantiate_function(p):
     """_instantiate_function :"""
-    ftype = type.FunctionType(p[-4], p[-7])
-    func = function.Function(p[-6], ftype, location=loc(p, 0))
+    func = p[-3]
     p.parser.current.function = func
     p.parser.current.block = block.Block(func, location=loc(p, 0))
-    
     p.parser.current.function.addBlock(p.parser.current.block)
-    p.parser.current.module.addFunction(p.parser.current.function)
 
 def p_instruction_list(p):
     """instruction_list : def_local instruction_list
@@ -238,7 +256,7 @@ def error(p, msg, lineno=0):
     if lineno > 0:
         context = "%s:%s" % (Parser.current.filename, lineno)
     else:
-        context = parser.current.filename
+        context = Parser.current.filename
 
     Parser.current.errors += 1
     util.error(msg, context=context, fatal=False)

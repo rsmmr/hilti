@@ -134,19 +134,22 @@ def _(self, b):
 def _(self, i):
     
     def fmtOp(op):
-        if isinstance(op, id.ID):
-            return op.name()
+        if isinstance(op, instruction.IDOperand):
+            return op.value().name()
+
+        if isinstance(op, instruction.ConstOperand):
+            return str(op.value())
         
-        if isinstance(op, tuple) or isinstance(op, list):
-            return "(%s)" % ", ".join([fmtOp(o) for o in op])
+        if isinstance(op, instruction.TupleOperand):
+            return "(%s)" % ", ".join([fmtOp(o) for o in op.value()])
         
         return op
     
     name = i.name()
-    target = "%s = " % fmtOp(i.target().value()) if i.target() else ""
-    op1 = " %s" % fmtOp(i.op1().value()) if i.op1() else ""
-    op2 = " %s" % fmtOp(i.op2().value()) if i.op2() else ""
-    op3 = " %s" % fmtOp(i.op3().value()) if i.op3() else ""
+    target = "%s = " % fmtOp(i.target()) if i.target() else ""
+    op1 = " %s" % fmtOp(i.op1()) if i.op1() else ""
+    op2 = " %s" % fmtOp(i.op2()) if i.op2() else ""
+    op3 = " %s" % fmtOp(i.op3()) if i.op3() else ""
     
     self.output("%s%s%s%s%s" % (target, name, op1, op2, op3))  
 

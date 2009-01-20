@@ -6,6 +6,15 @@ import location
 import scope
 
 class Function(object):
+
+    # Linkage.  
+    LINK_PRIVATE = 1 
+    LINK_EXTERN = 2
+    
+    # Calling conventions.
+    CC_HILTI = 1
+    CC_C = 2
+    
     def __init__(self, name, type, location = location.Location(), parentfunc = None):
         self._name = name
         self._type = type
@@ -13,6 +22,9 @@ class Function(object):
         self._location = location
         self._scope = scope.Scope()
         self._parent = parentfunc
+        self._linkage = self.LINK_PRIVATE
+        self._cc = self.CC_HILTI
+        
         if parentfunc:
             self._scope = parentfunc._scope
 
@@ -22,6 +34,18 @@ class Function(object):
     def type(self):
         return self._type
 
+    def linkage(self):
+        return self._linkage
+    
+    def callingConvention(self):
+        return self._cc
+
+    def setLinkage(self, linkage):
+        self._linkage = linkage
+    
+    def setCallingConvention(self, cc):
+        self._cc = cc
+    
     def scope(self):
         return self._scope
     
@@ -48,6 +72,9 @@ class Function(object):
                 return b
         return None
         
+    def hasImplementation(self):
+        return len(self._bodies) > 0
+    
     def parentFunc(self):
         return self._parent
         

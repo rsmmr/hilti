@@ -108,7 +108,7 @@ class IDOperand(Operand):
     
 class TupleOperand(Operand):
     def __init__(self, ops, location=location.Location()):
-        vals = [op.value() for op in ops]
+        vals = ops
         types = [op.type() for op in ops]
         super(TupleOperand, self).__init__(vals, type.TupleType(types), location)
         self._ops = ops

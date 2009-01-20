@@ -44,6 +44,18 @@ class Call(Instruction):
     """
     pass
 
+@instruction("call.c", op1=Function, op2=AnyTuple, target=Any)
+class CallC(Instruction):
+    """
+    For internal use only.
+    
+    Calls the external C *function* using the tuple in *op2* as 
+    arguments. The argument types as well as the target's type must 
+    match the function's signature.
+    """
+    pass
+
+
 @instruction("call.tail.void", op1=Function, op2=AnyTuple, op3=Label)
 class CallTailVoid(Instruction):
     """

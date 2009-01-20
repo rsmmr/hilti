@@ -7,6 +7,7 @@
 #    - No terminators at other locations, split blocks where necessary.
 #    - Turn call instructions into terminator call.tail.void or call.tail.result.  
 #    - Each block get name unique within its function. 
+#    - Turn calls to function with C calling convention into call.c instructions.
 
 import sys
 
@@ -46,6 +47,7 @@ class Canonify(visitor.Visitor):
         
     def reset(self):
         self._transformed = None
+        self._current_module = None
         self._current_function = None
         self._label_counter = 0
         
@@ -57,10 +59,23 @@ def canonifyAST(ast):
     canonify.dispatch(ast)
     return True
 
+### Module
+
+@canonify.pre(module.Module)
+def _(self, m):
+    self._current_module = m
+    
+@canonify.post(module.Module)
+def _(self, m):
+    self._current_module = None
+
 ### Function
 
 @canonify.pre(function.Function)
 def _(self, f):
+    if not f.hasImplementation():
+        return
+    
     self._current_function = f
     self._label_counter = 0
     self._transformed_blocks = []
@@ -73,6 +88,9 @@ def _(self, f):
 
 @canonify.post(function.Function)
 def _(self, f):
+    if not f.hasImplementation():
+        return
+    
     assert self._transformed_blocks
     
     f.clearBlocks()
@@ -123,6 +141,17 @@ def _splitBlock(canonify, ins=None):
     
 @canonify.when(ins.flow.Call)
 def _(self, i):
+    
+    name = i.op1().value().name()
+    func = self._current_module.function(name)
+    assert func 
+    
+    if func.linkage() == function.Function.CC_C:
+        callc = ins.flow.CallC(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
+        current_block = canonify._transformed_blocks[-1]
+        current_block.addInstruction(callc)
+        return
+    
     if i.op1().type().resultType() == type.Void:
         tc = ins.flow.CallTailVoid(op1=i.op1(), op2=i.op2(), op3=None, location=i.location())
     else:

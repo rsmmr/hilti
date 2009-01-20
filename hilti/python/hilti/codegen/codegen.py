@@ -76,6 +76,7 @@ class CodeGen(visitor.Visitor):
         self._llvm = _llvm_data()
         self._llvm.module = None
         self._llvm.block_funcs = {}
+        self._llvm.c_funcs = {}
         self._llvm.type_generic_pointer = llvm.core.Type.int(8)
         self._llvm.int_consts = []
         self._llvm.frameptr = None
@@ -195,8 +196,6 @@ class CodeGen(visitor.Visitor):
         ids = function.type().IDs() + function.scope().IDs().values()
         fields += [(id.name(), self.llvmTypeConvert(id.type())) for id in ids]
         
-        print "QQQ", fields
-        
         # Build map of indices and store with function.
         function._frame_index = {}
         for i in range(0, len(fields)):
@@ -279,6 +278,25 @@ class CodeGen(visitor.Visitor):
             self._llvm.block_funcs[name] = func
             return func
 
+    # Returns LLVM for external C function.
+    def llvmGetCFunction(self, function):
+        name = function.name() 
+        
+        try:
+            return self._llvm.c_funcs[name]
+        except KeyError:
+            rt = self.llvmTypeConvert(function.type().resultType())
+            args = [self.llvmTypeConvertToC(id.type()) for id in function.type().IDs()]
+            ft = llvm.core.Type.function(rt, args)
+            func = self._llvm.module.add_function(ft, name)
+            self._llvm.c_funcs[name] = func
+            return func
+        
+    def llvmGenerateCCall(self, function, args):
+        llvm_func = self.llvmGetCFunction(function)
+        call = self.builder().call(llvm_func, args, "result")
+        call.calling_convention = llvm.core.CC_FASTCALL
+        
     # Returns the LLVM function for the given function if it was already created, and None otherwise.
     def llvmFunction(self, function):
         try:
@@ -349,6 +367,12 @@ class CodeGen(visitor.Visitor):
         except KeyError:
             util.internal_error("codegen: cannot translate type %s" % t.name())    
 
+    # Converts a StorageType into the corresponding type for passing to a C function. 
+    # FIXME: Don't hardcode types here.
+    # FIXME: Do not just redirect to llvmTypeConvert()
+    def llvmTypeConvertToC(self, t):
+        return self.llvmTypeConvert(t)
+            
     # Turns an operand into LLVM speak.
     # FIXME: Don't hardcode operand types here (or?)
     def llvmOp(self, op, tag):
@@ -371,6 +395,12 @@ class CodeGen(visitor.Visitor):
             return llvm.core.Constant.string(op.value())
         
         util.internal_error("constOpToLLVM: illegal type %s" % op.type())
+
+    # Turns an operand into LLVM speak suitable for passing to a C function.
+    # FIXME: Don't hardcode operand types here (or?)
+    # FIXME: Do not just redirect to llvmOp()
+    def llvmOpToC(self, op, tag):
+        return self.llvmOp(op, tag)
         
     # Acts like a builder.store() yet signals that the assignment
     # initializes the address for the first time, there hasn't been anything else
