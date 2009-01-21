@@ -1,0 +1,116 @@
+#! /usr/bin/env python2.6
+#
+# Command-line compiler for HILTI programs. 
+#
+
+Version = 0.1
+
+import hilti
+
+import sys
+import os.path
+import optparse
+
+optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=Version)
+optparser.add_option("-b", "--bitcode", action="store_true", dest="bitcode", default=False,
+                     help="Output LLVM bitcode")
+optparser.add_option("-l", "--ll", action="store_true", dest="ll", default=False,
+                     help="Output human-readable LLVM .ll code")
+optparser.add_option("-L", "--ll-no-verify", action="store_true", dest="ll_noverify", default=False,
+                     help="Output human-readable LLVM .ll code but do  not verify correctness")
+optparser.add_option("-p", "--hilti-plain", action="store_true", dest="hilti_plain", default=False,
+                     help="Output HILTI code as it is parsed (per default to stdout)")
+optparser.add_option("-c", "--hilti-canonfied", action="store_true", dest="hilti_canon", default=False,
+                     help="Output HILTI code after canonification (per default to stdout)")
+optparser.add_option("-o", "--output", action="store", type="string", dest="output", default=None,
+                     help="Store output in file", metavar="FILE")
+
+(options, args) = optparser.parse_args()
+
+if options.ll_noverify:
+    options.ll = True
+
+if not (options.bitcode or options.ll or options.hilti_plain or options.hilti_canon):
+    optparser.error("no output type specified")
+
+if len(args) != 1:
+    optparser.error("no input file specified")
+    
+input = args[0]    
+dest = options.output    
+    
+if not dest:
+    (root, ext) = os.path.splitext(input)
+    if options.bitcode:
+        dest = root + ".bc"
+
+    if options.ll:
+        dest = root + ".ll"
+        
+    if options.hilti_plain or options.hilti_canon:
+        dest = "/dev/stdout"
+
+try:
+    output = open(dest, "w")        
+except IOError, e:
+    print >>sys.stderr, "cannot open %s: %s" % (dest, e)
+        
+# Parse input.    
+(errors, ast) = hilti.parser.parser.parse(input)
+
+if errors == 0:
+    # Verify semantic correctness.
+    errors = hilti.core.checker.checkAST(ast)
+
+if errors > 0:
+    print >>sys.stderr, "\n%d error%s found" % (errors, "s" if errors > 1 else "")
+    sys.exit(1)
+    
+if options.hilti_plain:
+    # Output HILTI code as it is parsed. 
+    hilti.core.printer.printAST(ast, output)
+    sys.exit(0)
+
+# Canonify the code.     
+if not hilti.codegen.canonify.canonifyAST(ast):
+    print >>sys.stderr, "error during canonicalization"
+    sys.exit(1)
+
+# Make sure it's still valid code.    
+errs = hilti.core.checker.checkAST(ast)
+
+if errs > 0:
+    print >>sys.stderr, "%d error(s) after canonicalization"
+    sys.exit(1)
+        
+if options.hilti_canon:
+    # Output canonified HILTI code.
+    hilti.core.printer.printAST(ast, output)
+    sys.exit(0)
+
+# Generate code. 
+(success, llvm_module) = hilti.codegen.codegen.generate(ast, verify=(not options.ll_noverify))
+
+if not success:
+    print >>sys.stderr, "error during code generation"
+    sys.exit(1)
+
+if options.ll:
+    # Output human-readable code.
+    print >>output, llvm_module
+    sys.exit(0)
+    
+if options.bitcode:
+    # Output bitcode. 
+    llvm_module.to_bitcode(output)
+    sys.exit(0)
+    
+# Cannot be reached.     
+assert False    
+    
+    
+    
+
+    
+    
+    
