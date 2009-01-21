@@ -30,7 +30,7 @@ class State:
         self.block = None
 
 def p_module(p):
-    """module : _eat_newlines MODULE _instantiate_module IDENT NL module_decl_list"""
+    """module : _eat_newlines MODULE IDENT _instantiate_module NL module_decl_list"""
     p[0] = p.parser.current.module
 
 def p_eat_newlines(p):
@@ -103,7 +103,7 @@ def p_def_extern(p):
 def p_def_function_head(p):
     """function_head : type IDENT '(' param_list ')'"""
     ftype = type.FunctionType(p[4], p[1])
-    func = function.Function(p[2], ftype, location=loc(p, 0))
+    func = function.Function(p[2], ftype, p.parser.current.module, location=loc(p, 0))
     p.parser.current.module.addFunction(func)
     p[0] = func
     

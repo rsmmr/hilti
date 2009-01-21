@@ -103,14 +103,24 @@ class CodeGen(visitor.Visitor):
         return self._module.function(id.name())
 
     # Returns the internal LLVM name for the given function.
-    # FIXME: Integrate module name.
-    def nameFunction(self, function):
-        return function.name()
+    def nameFunction(self, func):
+        
+        if func.callingConvention() == function.Function.CC_C:
+            # Don't mess with the names of C functions.
+            return func.name()
+        
+        if func.callingConvention() == function.Function.CC_HILTI:
+            return "hilti_%s_%s" % (func.module().name().lower(), func.name())
+        
+        # Cannot be reached
+        assert False
+            
     
     # Returns the internal function name for the given block.
     # FIXME: Integrate module name.
     def nameFunctionForBlock(self, block):
         function = block.function()
+        funcname = self.nameFunction(function)
         name = block.name()
         
         first_block = function.blocks()[0].name()
@@ -121,12 +131,12 @@ class CodeGen(visitor.Visitor):
             name = name[1:]
         
         if name == first_block:
-            return self.nameFunction(function)
+            return funcname
         
         if name.startswith("__"):
             name = name[2:]
     
-        return "__%s_%s" % (function.name(), name)
+        return "__%s_%s" % (funcname, name)
 
     def nameFunctionFrame(self, function):
         # FIXME: include module name

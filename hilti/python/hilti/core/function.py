@@ -15,7 +15,7 @@ class Function(object):
     CC_HILTI = 1
     CC_C = 2
     
-    def __init__(self, name, type, location = location.Location(), parentfunc = None):
+    def __init__(self, name, type, module, location = location.Location(), parentfunc = None):
         self._name = name
         self._type = type
         self._bodies = []
@@ -24,6 +24,7 @@ class Function(object):
         self._parent = parentfunc
         self._linkage = self.LINK_PRIVATE
         self._cc = self.CC_HILTI
+        self._module = module
         
         if parentfunc:
             self._scope = parentfunc._scope
@@ -34,6 +35,9 @@ class Function(object):
     def type(self):
         return self._type
 
+    def module(self):
+        return self._module
+    
     def linkage(self):
         return self._linkage
     
