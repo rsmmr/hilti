@@ -103,14 +103,27 @@ def _(self, f):
     args = ", ".join(["%s %s" % (id.type().name(), id.name())for id in type.IDs()])
     linkage = ""
 
-    if f.linkage() == function.Function.LINK_EXTERN:
-        assert f.callingConvention() == function.Function.CC_C
-        linkage = "extern \"C\" "
+    if f.linkage() == function.Function.LINK_EXPORTED:
+        
+        if f.isImported():
+            linkage = "declare "
+        else:
+            linkage = "extern "
+        
+        if f.callingConvention() == function.Function.CC_HILTI:
+            pass
+            
+        elif f.callingConvention() == function.Function.CC_C:
+            linkage += "\"C\" "
+            
+        else:
+            # Cannot be reached
+            assert False
     
     self.output()
     self.output("%s%s %s(%s)" % (linkage, result, name, args), nl=False)
     
-    if f.hasImplementation():
+    if not f.isImported():
         self.output(" {")
     else:
         self.output("")
@@ -121,7 +134,7 @@ def _(self, f):
 def _(self, f):
     self._infunction = False
     
-    if f.hasImplementation():
+    if not f.isImported():
         self.output("}")
         
     self.pop()

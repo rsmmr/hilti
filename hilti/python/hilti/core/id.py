@@ -13,6 +13,9 @@ class ID(object):
     def name(self):
         return self._name
 
+    def setName(self, name):
+        self._name = name
+    
     def type(self):
         return self._type
     

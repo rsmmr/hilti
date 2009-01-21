@@ -11,7 +11,9 @@ import parser
 instructions = instruction.getInstructions().keys()
 types = type.typenames()
 keywords = {
-	"extern": "EXTERN",
+	"export": "EXPORT",
+	"import": "IMPORT",
+	"declare": "DECLARE",
 	"local": "LOCAL", 
     "global" : "GLOBAL", 
     "module": "MODULE",
@@ -21,8 +23,10 @@ keywords = {
 tokens = (
    'LOCAL',
    'GLOBAL',
-   'EXTERN', 
+   'DECLARE',
+   'EXPORT',
    'IDENT', 
+   'IMPORT', 
    'INSTRUCTION',
    'LABEL',
    'MODULE',
@@ -61,7 +65,7 @@ def t_LABEL(t):
     return t
 
 def t_IDENT(t):
-    r'[_a-zA-Z][a-zA-Z0-9._]*'
+    r'[_a-zA-Z]([a-zA-Z0-9._]|::)*'
 
     if t.value in instructions:
         t.type = "INSTRUCTION"
@@ -105,4 +109,5 @@ def t_error(t):
     parser.error(None, "cannot parse input '%s...'" % t.value[0:10], lineno=t.lexer.lineno)
     
 # Build the lexer
-lexer = ply.lex.lex()
+def buildLexer():
+    return ply.lex.lex()

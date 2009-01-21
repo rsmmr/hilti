@@ -11,6 +11,13 @@ import sys
 import os.path
 import optparse
 
+# Collection -I arguments. 
+def import_path_callback(option, opt, value, parser):
+    try:
+        parser.values.import_paths += [value]
+    except AttributeError:
+        parser.values.import_paths = [value]
+    
 optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=Version)
 optparser.add_option("-b", "--bitcode", action="store_true", dest="bitcode", default=False,
                      help="Output LLVM bitcode")
@@ -24,17 +31,28 @@ optparser.add_option("-c", "--hilti-canonfied", action="store_true", dest="hilti
                      help="Output HILTI code after canonification (per default to stdout)")
 optparser.add_option("-o", "--output", action="store", type="string", dest="output", default=None,
                      help="Store output in file", metavar="FILE")
+optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
+                     help="Add DIR to search path for imports", metavar="DIR")
 
 (options, args) = optparser.parse_args()
 
 if options.ll_noverify:
     options.ll = True
 
+if not "import_paths" in options.__dict__:
+    options.import_paths = []
+
+# Always search in current directory.    
+options.import_paths += ["."]    
+    
+if len(args) < 1:
+    optparser.error("no input file specified")
+
+if len(args) > 1:
+    optparser.error("more than one input file specified")
+    
 if not (options.bitcode or options.ll or options.hilti_plain or options.hilti_canon):
     optparser.error("no output type specified")
-
-if len(args) != 1:
-    optparser.error("no input file specified")
     
 input = args[0]    
 dest = options.output    
@@ -56,7 +74,7 @@ except IOError, e:
     print >>sys.stderr, "cannot open %s: %s" % (dest, e)
         
 # Parse input.    
-(errors, ast) = hilti.parser.parser.parse(input)
+(errors, ast) = hilti.parser.parser.parse(input, options.import_paths)
 
 if errors == 0:
     # Verify semantic correctness.

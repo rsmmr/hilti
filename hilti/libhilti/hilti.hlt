@@ -1,0 +1,4 @@
+
+module Hilti
+
+declare "C" void print(int32 n)

@@ -73,7 +73,7 @@ def _(self, m):
 
 @canonify.pre(function.Function)
 def _(self, f):
-    if not f.hasImplementation():
+    if f.isImported():
         return
     
     self._current_function = f
@@ -88,7 +88,7 @@ def _(self, f):
 
 @canonify.post(function.Function)
 def _(self, f):
-    if not f.hasImplementation():
+    if f.isImported():
         return
     
     assert self._transformed_blocks
@@ -100,7 +100,7 @@ def _(self, f):
 
     for b in f.blocks():
         unifyBlock(b)
-        
+
 ### Block
 
 @canonify.pre(block.Block)
@@ -143,8 +143,8 @@ def _splitBlock(canonify, ins=None):
 def _(self, i):
     
     name = i.op1().value().name()
-    func = self._current_module.function(name)
-    assert func 
+    func = self._current_module.lookupGlobal(name)
+    assert func and isinstance(func.type(), type.FunctionType)
     
     if func.linkage() == function.Function.CC_C:
         callc = ins.flow.CallC(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())

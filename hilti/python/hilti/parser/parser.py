@@ -2,6 +2,7 @@
 #
 # The parser.
 
+import os.path
 import sys
 import warnings
 
@@ -28,6 +29,7 @@ class State:
         self.module = None
         self.function = None
         self.block = None
+        self.import_paths = []
 
 def p_module(p):
     """module : _eat_newlines MODULE IDENT _instantiate_module NL module_decl_list"""
@@ -59,7 +61,8 @@ def p_module_decl_list(p):
 def p_module_decl(p):
     """module_decl : def_global
                    | def_type
-                   | def_extern
+                   | def_declare
+                   | def_import
                    | def_function"""
     pass
                    
@@ -71,7 +74,7 @@ def p_module_decl_error(p):
 
 def p_def_global(p):
     """def_global : GLOBAL id NL"""
-    p.parser.current.module.addID(p[2])
+    p.parser.current.module.addGlobal(id)
 
 def p_def_local(p):
     """def_local : LOCAL id NL"""
@@ -86,36 +89,56 @@ def p_def_struct(p):
     stype = type.StructType(p[5])
     struct = type.StructDeclType(stype)
     sid = id.ID(p[3], struct, location=loc(p, 1))
-    p.parser.current.module.addID(sid)
+    p.parser.current.module.addGlobal(sid)
 
-def p_def_extern(p):
-    """def_extern : EXTERN STRING function_head"""
-    func = p[3]
-    
-    func.setLinkage(function.Function.LINK_EXTERN)
-    
-    if p[2] == "C":
-        func.setCallingConvention(function.Function.CC_C)
-    else:
-        error(p, "unknown calling convention \"%s\"" % p[2])
+def p_def_import(p):
+    """def_import : IMPORT IDENT"""
+    if not _importFile(p[2], loc(p, 1)):
         raise ply.yacc.SyntaxError
 
+def p_def_declare(p):
+    """def_declare : DECLARE function_head"""
+    p[2].setLinkage(function.Function.LINK_EXPORTED)
+    p[2].setImported(True) 
+
 def p_def_function_head(p):
-    """function_head : type IDENT '(' param_list ')'"""
-    ftype = type.FunctionType(p[4], p[1])
-    func = function.Function(p[2], ftype, p.parser.current.module, location=loc(p, 0))
-    p.parser.current.module.addFunction(func)
+    """function_head : opt_cc type IDENT '(' param_list ')'"""
+    ftype = type.FunctionType(p[5], p[2])
+    func = function.Function(p[3], ftype, p.parser.current.module, location=loc(p, 0))
+    func.setCallingConvention(p[1])
+    p.parser.current.module.addGlobal(id.ID(func.name(), func.type()), func)
     p[0] = func
     
     p.parser.current.function = None
     p.parser.current.block = None
      
+def p_def_opt_cc(p):
+    """opt_cc : STRING
+              | """
+
+    if len(p) == 1:
+        p[0] = function.Function.CC_HILTI
+        return 
+    
+    if p[1] == "HILTI":
+        p[0] =  function.Function.CC_HILTI
+        return
+    
+    if p[1] == "C":
+        p[0] = function.Function.CC_C
+        return
+        
+    error(p, "unknown calling convention \"%s\"" % p[1])
+    raise ply.yacc.SyntaxError
+                   
+    
 def p_def_function(p):
     """def_function : function_head _begin_nolines '{' _instantiate_function  _end_nolines instruction_list _begin_nolines '}' _end_nolines """
     
 def p_instantiate_function(p):
     """_instantiate_function :"""
     func = p[-3]
+    func.setImported(False) 
     p.parser.current.function = func
     p.parser.current.block = block.Block(func, location=loc(p, 0))
     p.parser.current.function.addBlock(p.parser.current.block)
@@ -175,7 +198,7 @@ def p_operand_ident(p):
     ident = p.parser.current.function.scope().lookup(p[1])
     if not ident:
         local = False
-        ident = p.parser.current.module.scope().lookup(p[1])
+        ident = p.parser.current.module.lookupID(p[1])
         
         if not ident:
             error(p, "unknown identifier %s" % p[1])
@@ -269,18 +292,74 @@ def error(p, msg, lineno=0):
 
     Parser.current.errors += 1
     util.error(msg, context=context, fatal=False)
+
+# Find file in dirs and returns full pathname or None if not found.
+def _findFile(filename, dirs):
+    
+    for dir in dirs:
+        fullpath = os.path.realpath(os.path.join(dir, filename))
+        if os.path.exists(fullpath) and os.path.isfile(fullpath):
+            return fullpath
         
-def parse(filename):
+    return None
+    
+# Recursively imports another file and makes all declared/exported IDs available 
+# to the current module. 
+def _importFile(filename, location):
+
+    global Parser
+    oldparser = Parser
+
+    (root, ext) = os.path.splitext(filename)
+    if not ext:
+        ext = ".hlt"
+        
+    filename = root + ext
+    
+    fullpath = _findFile(filename, oldparser.current.import_paths)
+    if not fullpath:
+        util.error("cannot find %s for import" % filename, context=location)
+        
+    (errors, ast) = parse(fullpath, oldparser.current.import_paths)
+    if errors > 0:
+        return (errors, None)
+    
+    substate = Parser.current
+    Parser = oldparser
+
+    for i in substate.module.IDs().values():
+        t = i.type()
+        
+        if isinstance(t, type.FunctionType):
+            func = substate.module.lookupGlobal(i.name())
+            assert func and isinstance(func.type(), type.FunctionType)
+            
+            if func.linkage() == function.Function.LINK_EXPORTED:
+                Parser.current.module.addGlobal(id.ID(func.name(), func.type()), func)
+            
+            continue
+        
+        # Cannot export types other than functions at the moment. 
+        assert False
+        
+def parse(filename, import_paths=["."]):
     """Returns tuple (errs, ast) where *errs* is the number errors found and *ast* is the parsed input.""" 
     
     global Parser
     Parser = ply.yacc.yacc(debug=0, write_tables=0)
     
     Parser.current = State(filename)
-    lines = open(filename).read()
+    Parser.current.import_paths = import_paths
+
+    filename = os.path.expanduser(filename)
+    
+    try:
+        lines = open(filename).read()
+    except IOError:
+        util.error("cannot open file %s: %s" % (filename, e))
 
     try:
-        ast = Parser.parse(lines, lexer=lexer.lexer, debug=0)
+        ast = Parser.parse(lines, lexer=lexer.buildLexer(), debug=0)
     except ply.lex.LexError, e:
         # Already reported.
         ast = None

@@ -8,7 +8,7 @@
 
 #include "hilti.h"
 
-void hilti_print(int number)
+void hilti_print(int32_t n)
 {
-    printf("%d\n", number);
+    printf("%d\n", n);
 }

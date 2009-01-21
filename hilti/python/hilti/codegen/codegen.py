@@ -97,20 +97,22 @@ class CodeGen(visitor.Visitor):
     def builder(self):
         return self._llvm.builder
 
-    # Looksup the function belonging to the given name. Returns None if not found. 
-    # FIXME: Not sure this belongs here. We need to lookup functions from other modules as well.
+    # Looks up the function belonging to the given name. Returns None if not found. 
     def lookupFunction(self, id):
-        return self._module.function(id.name())
-
+        func = self._module.lookupGlobal(id.name())
+        assert (not func) or (isinstance(func.type(), type.FunctionType))
+        return func
+    
     # Returns the internal LLVM name for the given function.
     def nameFunction(self, func):
+        name = func.name().replace("::", "_")
         
         if func.callingConvention() == function.Function.CC_C:
             # Don't mess with the names of C functions.
-            return func.name()
+            return name
         
         if func.callingConvention() == function.Function.CC_HILTI:
-            return "hilti_%s_%s" % (func.module().name().lower(), func.name())
+            return "hlt_%s" % name
         
         # Cannot be reached
         assert False
@@ -139,20 +141,19 @@ class CodeGen(visitor.Visitor):
         return "__%s_%s" % (funcname, name)
 
     def nameFunctionFrame(self, function):
-        # FIXME: include module name
-        return "__frame_%s" % function.name()
+        return "__frame_%s" % self.nameFunction(function)
     
     # Returns the final LLVM module once code-generation has finished.
     def llvmModule(self, verify=True):
-        try:
-            if verify:
-                if not self._llvm.module.verify():
-                    return None
-                
-        except llvm.LLVMException, e:
-            util.warning("LLVM error: %s" % e)
+        
+        if verify:
+            try:
+                self._llvm.module.verify()
+            except llvm.LLVMException:
+                util.error("LLVM error: %s" % e, fatal=False)
+                return (False, None)
             
-        return self._llvm.module
+        return (True, self._llvm.module)
 
     # Return the LLVM constant representing the given integer.
     def llvmConstInt(self, n):
@@ -290,7 +291,7 @@ class CodeGen(visitor.Visitor):
 
     # Returns LLVM for external C function.
     def llvmGetCFunction(self, function):
-        name = function.name() 
+        name = function.name().replace("::", "_")
         
         try:
             return self._llvm.c_funcs[name]
@@ -304,7 +305,13 @@ class CodeGen(visitor.Visitor):
         
     def llvmGenerateCCall(self, function, args):
         llvm_func = self.llvmGetCFunction(function)
-        call = self.builder().call(llvm_func, args, "result")
+        
+        tag = None
+        if function.type().resultType() == type.Void:
+            call = self.builder().call(llvm_func, args)
+        else:
+            call = self.builder().call(llvm_func, args, "result")
+        
         call.calling_convention = llvm.core.CC_C
         
     # Returns the LLVM function for the given function if it was already created, and None otherwise.

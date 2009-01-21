@@ -8,23 +8,27 @@ import scope
 class Function(object):
 
     # Linkage.  
-    LINK_PRIVATE = 1 
-    LINK_EXTERN = 2
+    LINK_LOCAL = 1 
+    LINK_EXPORTED = 2
     
     # Calling conventions.
     CC_HILTI = 1
     CC_C = 2
     
     def __init__(self, name, type, module, location = location.Location(), parentfunc = None):
-        self._name = name
+
+        assert name.find("::") < 0 # must be non-qualified
+        
+        self._name = "%s::%s" % (module.name(), name)
         self._type = type
         self._bodies = []
         self._location = location
         self._scope = scope.Scope()
         self._parent = parentfunc
-        self._linkage = self.LINK_PRIVATE
+        self._linkage = self.LINK_LOCAL
         self._cc = self.CC_HILTI
         self._module = module
+        self._is_imported = False
         
         if parentfunc:
             self._scope = parentfunc._scope
@@ -35,7 +39,10 @@ class Function(object):
     def type(self):
         return self._type
 
-    def module(self):
+    # Returns the module that the function was *defined in*. Note
+    # that a function can be # in the scope of other modules as well
+    # if they imported it.
+    def module(self): 
         return self._module
     
     def linkage(self):
@@ -75,9 +82,12 @@ class Function(object):
             if b.name() == id.name():
                 return b
         return None
-        
-    def hasImplementation(self):
-        return len(self._bodies) > 0
+    
+    def setImported(self, is_imported):
+        self._is_imported = is_imported
+    
+    def isImported(self):
+        return self._is_imported
     
     def parentFunc(self):
         return self._parent
