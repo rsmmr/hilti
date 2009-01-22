@@ -6,24 +6,55 @@
 # Honors the following environment variables to pass flags on to the 
 # corresponding tools:
 #
-# HILTICFLAGS
-# LLVMASFLAGS
-# LLCFLAGS
-# ASFLAGS
-# LDFLAGS
+#     HILTICFLAGS
+#     LLVMASFLAGS
+#     LLCFLAGS
+#     ASFLAGS
+#     LDFLAGS
+#
+#
+# If TEST_DIAGNOSTICS is set, it's content is supposed to be a filename 
+# receiving the -v outut. TEST_DIAGNOSTICS also implies -t. 
 
 LIBS="-lhiltimain -lc"
 
-if [ "$1" == "-t" ]; then
+function execute {
+    if [ "$verbose" != "" ]; then
+       echo $@ >>$verbose
+    fi
+
+    eval $@
+}
+
+function delete_tmps {
+     # Delete at exit.
+     if [ "$keeptmp" != "1" ]; then
+         rm -f $ll $asm $doto
+     fi
+}
+
+while [ "$1" != "" ]; do
+    case $1 in 
+        -t)
+            keeptmp=1; shift;;
+        -v)
+            verbose=/dev/stdout; shift;;
+        *)
+            break;;
+    esac
+done    
+
+if [ "$TEST_DIAGNOSTICS" != "" ]; then
+   verbose=$TEST_DIAGNOSTICS
    keeptmp=1
-   shift
 fi   
 
 if [ "$#" -lt "1" -o "$#" -gt "2" ]; then
-   echo "Usage: hilti-build [-t] <input.hlt> [<output>]"
+   echo "Usage: hilti-build [-t] [-v] <input.hlt> [<output>]"
    echo 
    echo "Options:"
    echo "  -t      Do not delete temporary files."
+   echo "  -v      Output command lines as they are executed."
    echo
    exit 1 
 fi   
@@ -46,23 +77,17 @@ doto=$dir/$base.o
 
 # Turns into human-readable LLVM code 
 # (We could skip this step but keep it for debugging.)
-hiltic $HILTICFLAGS -l $input -o $ll || exit 1
+execute hiltic $HILTICFLAGS -l $input -o $ll || exit 1
 
 # Turn it into bytecode and then native code. 
-llvm-as $LLVMASFLAGS < $ll | llc >$asm || exit 1
+execute llvm-as $LLVMASFLAGS < $ll | llc >$asm || exit 1
 
 # Assemble. 
-as $ASFLAGS $asm -o $doto || exit 1 
+execute as $ASFLAGS $asm -o $doto || exit 1 
 
 # Link. 
-gcc $LDFLAGS $doto $LIBS -o $output
+execute gcc $LDFLAGS $doto $LIBS -o $output
 
-function delete_tmps {
-     # Delete at exit.
-     if [ "$keeptmp" != "1" ]; then
-         rm -f $ll $asm $doto
-     fi
-}
 
 
 

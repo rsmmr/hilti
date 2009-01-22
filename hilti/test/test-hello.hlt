@@ -1,0 +1,18 @@
+#
+#  @TEST-NAME:  hello-world
+#  @TEST-GROUP: hilti-core
+#  @TEST-EXEC:  hilti-build %INPUT a.out 
+#  @TEST-EXEC:  ./a.out >stdout
+#  @TEST-EXEC:  test-diff stdout
+
+module Main
+
+import hilti.hlt
+
+void run() {
+    call Hilti::print (42)
+    return.void
+}     
+     
+
+
