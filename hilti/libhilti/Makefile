@@ -28,7 +28,7 @@ clean:
 	gcc -c $(CFLAGS) $< -o $@
     
 %.bc : %.ll 
-	llvm-as $(LLVMAS_FLAGS) $< -o $@
+	llvm-as -f $(LLVMAS_FLAGS) $< -o $@
     
 $(TMP_BC_OBJ) : $(BITCODE)
 	llvm-link $(BITCODE) | llc $(LLCFLAGS) >$(TMP_BC_ASM)

@@ -7,7 +7,7 @@
 %__continuation = type { i8*, i8* }
 %__frame_hilti_main = type { %__basic_frame }
 
-declare void @hilti_main_run(%__frame_hilti_main*)
+declare void @hlt_main_run(%__frame_hilti_main*)
 
 ; Entry point for C program.
 ; Uses C calling convention. 
@@ -56,7 +56,7 @@ define ccc void @hilti_run() {
     store i8* null, i8** %exception_data
 
     ; Call Main::Run()
-    tail call fastcc void @hilti_main_run(%__frame_hilti_main* %callee_frame)
+    tail call fastcc void @hlt_main_run(%__frame_hilti_main* %callee_frame)
     ret void
 }
 

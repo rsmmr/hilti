@@ -9,4 +9,5 @@
 int main(int argc, char** argv)
 {
     hilti_run();
+    return 0;
 }

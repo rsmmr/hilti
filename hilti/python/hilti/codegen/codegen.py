@@ -77,7 +77,7 @@ class CodeGen(visitor.Visitor):
         self._llvm.module = None
         self._llvm.block_funcs = {}
         self._llvm.c_funcs = {}
-        self._llvm.type_generic_pointer = llvm.core.Type.int(8)
+        self._llvm.type_generic_pointer = llvm.core.Type.pointer(llvm.core.Type.int(8))
         self._llvm.int_consts = []
         self._llvm.frameptr = None
         self._llvm.functions = {}
@@ -285,6 +285,7 @@ class CodeGen(visitor.Visitor):
             args = [llvm.core.Type.pointer(self.llvmTypeFunctionFrame(block.function()))]
             ft = llvm.core.Type.function(rt, args)
             func = self._llvm.module.add_function(ft, self.nameFunctionForBlock(block))
+            func.calling_convention = llvm.core.CC_FASTCALL
             func.args[0].name = "__frame"
             self._llvm.block_funcs[name] = func
             return func

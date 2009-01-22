@@ -1,0 +1,72 @@
+#! /usr/bin/env bash
+#
+# Turns a HILTI source into an executable by compiling, assembling, 
+# and linking with libhiltimain. 
+#
+# Honors the following environment variables to pass flags on to the 
+# corresponding tools:
+#
+# HILTICFLAGS
+# LLVMASFLAGS
+# LLCFLAGS
+# ASFLAGS
+# LDFLAGS
+
+LIBS="-lhiltimain -lc"
+
+if [ "$1" == "-t" ]; then
+   keeptmp=1
+   shift
+fi   
+
+if [ "$#" -lt "1" -o "$#" -gt "2" ]; then
+   echo "Usage: hilti-build [-t] <input.hlt> [<output>]"
+   echo 
+   echo "Options:"
+   echo "  -t      Do not delete temporary files."
+   echo
+   exit 1 
+fi   
+
+trap delete_tmps 0
+
+input=$1
+output=$2
+
+dir=`dirname $input`
+base=`basename $input .hlt`
+
+if [ "$2" == "" ]; then
+   output=$dir/$base
+fi
+
+ll=$dir/$base.ll
+asm=$dir/$base.S
+doto=$dir/$base.o
+
+# Turns into human-readable LLVM code 
+# (We could skip this step but keep it for debugging.)
+hiltic $HILTICFLAGS -l $input -o $ll || exit 1
+
+# Turn it into bytecode and then native code. 
+llvm-as $LLVMASFLAGS < $ll | llc >$asm || exit 1
+
+# Assemble. 
+as $ASFLAGS $asm -o $doto || exit 1 
+
+# Link. 
+gcc $LDFLAGS $doto $LIBS -o $output
+
+function delete_tmps {
+     # Delete at exit.
+     if [ "$keeptmp" != "1" ]; then
+         rm -f $ll $asm $doto
+     fi
+}
+
+
+
+
+
+
+

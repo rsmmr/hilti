@@ -355,7 +355,7 @@ def parse(filename, import_paths=["."]):
     
     try:
         lines = open(filename).read()
-    except IOError:
+    except IOError, e:
         util.error("cannot open file %s: %s" % (filename, e))
 
     try:
