@@ -74,11 +74,11 @@ except IOError, e:
     print >>sys.stderr, "cannot open %s: %s" % (dest, e)
         
 # Parse input.    
-(errors, ast) = hilti.parser.parser.parse(input, options.import_paths)
+(errors, ast) = hilti.parser.parse(input, options.import_paths)
 
 if errors == 0:
     # Verify semantic correctness.
-    errors = hilti.core.checker.checkAST(ast)
+    errors = hilti.checker.checkAST(ast)
 
 if errors > 0:
     print >>sys.stderr, "\n%d error%s found" % (errors, "s" if errors > 1 else "")
@@ -86,16 +86,16 @@ if errors > 0:
     
 if options.hilti_plain:
     # Output HILTI code as it is parsed. 
-    hilti.core.printer.printAST(ast, output)
+    hilti.printer.printAST(ast, output)
     sys.exit(0)
 
 # Canonify the code.     
-if not hilti.codegen.canonify.canonifyAST(ast):
+if not hilti.canonifier.canonifyAST(ast):
     print >>sys.stderr, "error during canonicalization"
     sys.exit(1)
 
 # Make sure it's still valid code.    
-errs = hilti.core.checker.checkAST(ast)
+errs = hilti.checker.checkAST(ast)
 
 if errs > 0:
     print >>sys.stderr, "%d error(s) after canonicalization"
@@ -103,11 +103,11 @@ if errs > 0:
         
 if options.hilti_canon:
     # Output canonified HILTI code.
-    hilti.core.printer.printAST(ast, output)
+    hilti.printer.printAST(ast, output)
     sys.exit(0)
 
 # Generate code. 
-(success, llvm_module) = hilti.codegen.codegen.generate(ast, verify=(not options.ll_noverify))
+(success, llvm_module) = hilti.codegen.generateLLVM(ast, verify=(not options.ll_noverify))
 
 if not success:
     print >>sys.stderr, "error during code generation"
