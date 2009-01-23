@@ -11,7 +11,7 @@ import parser
 instructions = instruction.getInstructions().keys()
 types = type.typenames()
 keywords = {
-	"export": "EXPORT",
+#	"export": "EXPORT",
 	"import": "IMPORT",
 	"declare": "DECLARE",
 	"local": "LOCAL", 
@@ -24,7 +24,7 @@ tokens = (
    'LOCAL',
    'GLOBAL',
    'DECLARE',
-   'EXPORT',
+#   'EXPORT',
    'IDENT', 
    'IMPORT', 
    'INSTRUCTION',

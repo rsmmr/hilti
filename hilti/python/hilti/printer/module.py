@@ -1,54 +1,9 @@
-#! /usr/bin/env
+# $Id$
 #
-# Prints a module out in re-parseable form.
+# Overall control structures plus generic instruction printing.
 
-import sys
-
-import block
-import function
-import id
-import instruction
-import module
-import scope
-import type
-import visitor
-
-### Printer visitor.
-
-class Printer(visitor.Visitor):
-    def __init__(self):
-        super(Printer, self).__init__()
-        self.reset()
-        
-    def reset(self):
-        self._output = sys.stdout
-        self._indent = 0;
-        self._module = None
-        self._infunction = False
-        
-    def setOutput(self, file):
-        self._output = file
-        
-    def push(self):
-        self._indent += 1
-        
-    def pop(self):
-        self._indent -= 1
-        
-    def output(self, str = "", nl=True):
-        print >>self._output, ("    " * self._indent) + str,
-        if nl:
-            print >>self._output
-
-printer = Printer()
-
-def printAST(ast, output=sys.stdout):
-    printer.reset()
-    printer.setOutput(output)
-    printer.dispatch(ast)
-    return True
-
-### Overall control structures.
+from hilti.core import *
+from printer import printer
 
 @printer.when(module.Module)
 def _(self, m):
@@ -178,6 +133,3 @@ def _(self, i):
     op3 = " %s" % fmtOp(i.op3()) if i.op3() else ""
     
     self.output("%s%s%s%s%s" % (target, name, op1, op2, op3))  
-
-
-    

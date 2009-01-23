@@ -93,7 +93,12 @@ class CodeGen(visitor.Visitor):
 		    llvm.core.Type.int(16),           # Current exception
             self._llvm.type_generic_pointer,  # Current exception's data.
             ])
-        
+
+    def generateLLVM(self, ast, verify=True):
+        self.reset()
+        self.dispatch(ast)
+        return self.llvmModule(verify)
+            
     def builder(self):
         return self._llvm.builder
 
@@ -456,23 +461,6 @@ class CodeGen(visitor.Visitor):
                 
         util.internal_error("targetToLLVM: unknown target class: %s" % target)
             
-##############            
-            
 codegen = CodeGen()
 
-def generate(ast, verify=True):
-    """Compiles *ast* into LLVM module. *ast* must have been already canonified."""
-    codegen.reset()
-    codegen.dispatch(ast)
-    return codegen.llvmModule(verify)
-
-### Overall control structures.
-
-    
-# Generic instruction handler that shouldn't be reached because
-# we write specialized handlers for all instructions.
-@codegen.when(instruction.Instruction)
-def _(self, i):
-    #assert False, "instruction %s not handled in CodeGen" % i.name()
-    pass
 

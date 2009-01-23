@@ -1,67 +1,31 @@
 # $Id$
 #
-# Visitor to checks the validity of the visited code.
-#
-# Checks TODO:
-#    * we do not support Jumps to labels in other functions. Check that all Jumps are local.
+# Modulel-level checks as well some applying to all instructions. 
 
-import block
-import module
-import function
-import scope
-import id
-import instruction
-import type
-import visitor
-import util
-
-class Checker(visitor.Visitor):
-    def __init__(self):
-        super(Checker, self).__init__(all=True)
-        self.reset()
-
-    def reset(self):
-        self._infunction = False
-        self._have_module = False
-        self._errors = 0
-
-    def error(self, obj, str):
-        self._errors += 1
-        util.error(str, context=obj, fatal=False)        
-
-checker = Checker()
-
-def checkAST(ast):
-    """Returns number of errors found."""
-    checker.reset()
-    checker.dispatch(ast)
-    return checker._errors
-
-### Overall control structures.
+from hilti.core import *
+from checker import checker
 
 @checker.when(module.Module)
 def _(self, m):
     if self._have_module:
-        error("more than one module declaration in input file", context=m)
+        self.error(m, "more than one module declaration in input file")
     
     self._have_module = True
-
-### 
 
 ### Global ID definitions. 
 
 @checker.when(id.ID, type.StructDeclType)
 def _(self, id):
     if not self._have_module:
-        error("input file must start with module declaration", context=id)
+        self.error(id, "input file must start with module declaration")
 
     if self._infunction:
-        error("structs cannot be declared inside functions", context=id)
+        self.error(id, "structs cannot be declared inside functions")
         
 @checker.when(id.ID, type.StorageType)
 def _(self, id):
     if not self._have_module:
-        error("input file must start with module declaration", context=id)
+        self.error(id, "input file must start with module declaration")
 
 ### Function definitions.
 
@@ -71,7 +35,7 @@ def _(self, f):
     self._infunction = True
     
     if not self._have_module:
-        error("input file must start with module declaration", context=f)
+        self.error(f, "input file must start with module declaration")
         
 @checker.post(function.Function)
 def _(self, f):
@@ -79,7 +43,7 @@ def _(self, f):
     self._infunction = False
     
     if not self._have_module:
-        error("input file must start with module declaration", context=f)
+        self.error(f, "input file must start with module declaration")
         
 ### Instructions.
 
@@ -106,7 +70,3 @@ def _(self, i):
     checkOp(i.op2(), i.signature().op2(), "operand 2")
     checkOp(i.op3(), i.signature().op3(), "operand 3")
     checkOp(i.target(), i.signature().target(),"target")
-
-    
-
-

@@ -2,7 +2,6 @@
 
 __all__ = [
     "block",
-    "checker",
     "constant",
     "function",
     "id",
