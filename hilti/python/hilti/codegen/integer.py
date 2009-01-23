@@ -2,9 +2,15 @@
 #
 # Code generator for integer instructions.
 
+import llvm.core
+
 from hilti.core import *
 from hilti import instructions
 from codegen import codegen
+
+@codegen.convertToLLVM(type.IntegerType)
+def _(type):
+    return llvm.core.Type.int(type.width())
 
 @codegen.when(instructions.integer.Add)
 def _(self, i):

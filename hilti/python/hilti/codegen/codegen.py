@@ -304,11 +304,16 @@ class CodeGen(visitor.Visitor):
         except KeyError:
             rt = self.llvmTypeConvert(function.type().resultType())
             args = [self.llvmTypeConvertToC(id.type()) for id in function.type().IDs()]
+            print >>sys.stderr, args[0]
             ft = llvm.core.Type.function(rt, args)
             func = self._llvm.module.add_function(ft, name)
             self._llvm.c_funcs[name] = func
             return func
-        
+
+    # Generates a call to a C function.
+    # FIXME: If the LLVM type differs from the one supposed to be used
+    # for the C call, we don't convert yet and thus will likely get
+    # a "bad signature" assertion. See llvmOpToC.
     def llvmGenerateCCall(self, function, args):
         llvm_func = self.llvmGetCFunction(function)
         
@@ -371,33 +376,7 @@ class CodeGen(visitor.Visitor):
     def llvmGenerateTailCallToFunctionPtr(self, ptr, args):
         self._llvmGenerateTailCall(ptr, args)
         
-    # Converts a StorageType into the corresponding type for LLVM variable declarations.
-    # FIXME: Don't hardcode types here.
-    def llvmTypeConvert(self, t):
-        mapping = {
-        	type.String: llvm.core.Type.array(llvm.core.Type.int(8), 0),
-            type.Bool:   llvm.core.Type.int(1), 
-            }
-            
-        if isinstance(t, type.IntegerType):
-            return llvm.core.Type.int(t.width())
-    
-        if isinstance(t, type.VoidType):
-            return llvm.core.Type.void()
-    
-        try:
-            return mapping[t]
-        except KeyError:
-            util.internal_error("codegen: cannot translate type %s" % t.name())    
-
-    # Converts a StorageType into the corresponding type for passing to a C function. 
-    # FIXME: Don't hardcode types here.
-    # FIXME: Do not just redirect to llvmTypeConvert()
-    def llvmTypeConvertToC(self, t):
-        return self.llvmTypeConvert(t)
-            
     # Turns an operand into LLVM speak.
-    # FIXME: Don't hardcode operand types here (or?)
     def llvmOp(self, op, tag):
         if isinstance(op, instruction.ConstOperand):
             return self.llvmConstOp(op)
@@ -410,7 +389,6 @@ class CodeGen(visitor.Visitor):
         util.internal_error("opToLLVM: unknown op class: %s" % op)
 
     def llvmConstOp(self, op):
-        # FIXME: Don't hardcode operand types here
         if isinstance(op.type(), type.IntegerType):
             return llvm.core.Constant.int(self.llvmTypeConvert(op.type()), op.value())
             
@@ -420,8 +398,7 @@ class CodeGen(visitor.Visitor):
         util.internal_error("constOpToLLVM: illegal type %s" % op.type())
 
     # Turns an operand into LLVM speak suitable for passing to a C function.
-    # FIXME: Don't hardcode operand types here (or?)
-    # FIXME: Do not just redirect to llvmOp()
+    # FIXME: We need to do the conversion.
     def llvmOpToC(self, op, tag):
         return self.llvmOp(op, tag)
         
@@ -452,7 +429,6 @@ class CodeGen(visitor.Visitor):
         
     # Stores value in target.
     def llvmStoreInTarget(self, target, val, tag):
-        # FIXME: Don't hardcode operand types here (or?)
         if isinstance(target, instruction.IDOperand):
             if target.isLocal():
                 addr = self.llvmAddrLocalVar(self._llvm.frameptr, target.id(), tag)
@@ -460,7 +436,60 @@ class CodeGen(visitor.Visitor):
                 return 
                 
         util.internal_error("targetToLLVM: unknown target class: %s" % target)
+
+    # Table of callbacks for type conversions. 
+    _CONV_TYPE_TO_LLVM = 1
+    _CONV_TYPE_TO_LLVM_C = 2
+    
+    _Conversions = { _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [] }
+
+    # Converts a StorageType into the corresponding type for LLVM variable declarations.
+    def llvmTypeConvert(self, type):
+        for (t, func) in CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM]:
+            if isinstance(type, t):
+                return func(type)
             
+        util.internal_error("llvmConvertType: cannot translate type %s" % type.name())
+
+    # Converts a StorageType into the corresponding type for passing to a C function. 
+    def llvmTypeConvertToC(self, type):
+        for (t, func) in CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM_C]:
+            if isinstance(type, t):
+                return func(type)
+
+        # Fall back as default.
+        return self.llvmTypeConvert(type)
+
+    ### Decorators.
+    
+    # Decorator @convertToLLVM(type) to define a conversion from a StorageType
+    # to the corresponding LLVM type.
+    def convertToLLVM(self, type):
+        def register(func):
+            CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM] += [(type, func)]
+    
+        return register
+    
+    # Decorator @convertToC(type) to define a conversion from a StorageType
+    # to the  LLVM type used for passing it to the C functions. The default,
+    # if nothing is defined for a type, is to fall back on @convertToLLVM.
+    def convertToC(self, type):
+        def register(func):
+            CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM_C] += [(type, func)]
+    
+        return register
+    
+        
+        
 codegen = CodeGen()
+
+# We do the void type conversion right here as there is no separate module for it.    
+@codegen.convertToLLVM(type.VoidType)
+def _(type):
+    return llvm.core.Type.void()
+
+
+
+
 
 
