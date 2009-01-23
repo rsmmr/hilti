@@ -194,14 +194,14 @@ import llvm
 import llvm.core 
 
 from hilti.core import *
-from hilti import ins
+from hilti import instructions
 from codegen import codegen
 
-@codegen.when(ins.flow.Call)
+@codegen.when(instructions.flow.Call)
 def _(self, i):
     assert False
 
-@codegen.when(ins.flow.CallTailVoid)
+@codegen.when(instructions.flow.CallTailVoid)
 def _(self, i):
     func = self.lookupFunction(i.op1().value())
     assert func
@@ -265,7 +265,7 @@ def _(self, i):
     
     self.llvmGenerateTailCallToFunction(func, [callee_frame])
     
-@codegen.when(ins.flow.ReturnVoid)
+@codegen.when(instructions.flow.ReturnVoid)
 def _(self, i):
     # return (*__frame.bf.cont_normal.label) (*__frame.bf.cont_normal)
     fpt = self.llvmTypeBasicFunctionPtr()
@@ -278,18 +278,18 @@ def _(self, i):
     
     self.llvmGenerateTailCallToFunctionPtr(ptr, [frame])
         
-@codegen.when(ins.flow.ReturnResult)
+@codegen.when(instructions.flow.ReturnResult)
 def _(self, i):
     # TODO
     pass
 
-@codegen.when(ins.flow.Jump)
+@codegen.when(instructions.flow.Jump)
 def _(self, i):
     b = self._function.lookupBlock(i.op1().value())
     assert b
     self.llvmGenerateTailCallToBlock(b, [self._llvm.frameptr])
 
-@codegen.when(ins.flow.CallC)
+@codegen.when(instructions.flow.CallC)
 def _(self, i):
     func = self.lookupFunction(i.op1().value())
     assert func

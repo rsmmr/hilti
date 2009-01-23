@@ -15,27 +15,27 @@ import llvm
 import llvm.core 
 
 from hilti.core import *
-from hilti import ins
+from hilti import instructions
 
 ### Helpers
 
 # Returns true if instruction terminates a block in canonified form.
 def _isTerminator(i):
-    return isinstance(i, ins.flow.Jump) or \
-           isinstance(i, ins.flow.IfElse) or \
-           isinstance(i, ins.flow.CallTailVoid) or \
-           isinstance(i, ins.flow.CallTailResult) or \
-           isinstance(i, ins.flow.ReturnVoid) or \
-           isinstance(i, ins.flow.ReturnResult)
+    return isinstance(i, instructions.flow.Jump) or \
+           isinstance(i, instructions.flow.IfElse) or \
+           isinstance(i, instructions.flow.CallTailVoid) or \
+           isinstance(i, instructions.flow.CallTailResult) or \
+           isinstance(i, instructions.flow.ReturnVoid) or \
+           isinstance(i, instructions.flow.ReturnResult)
 
 # If the last instruction is not a terminator, add it. 
 def unifyBlock(block):
     instr = block.instructions()
     if not len(instr) or not _isTerminator(instr[-1]):
         if block.next():
-            newins = ins.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label), True))
+            newins = instructions.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label), True))
         else:
-            newins = ins.flow.ReturnVoid(None)
+            newins = instructions.flow.ReturnVoid(None)
         block.addInstruction(newins)
 
 ### Canonify visitor.
@@ -139,7 +139,7 @@ def _splitBlock(canonify, ins=None):
     new_block = block.Block(canonify._current_function, instructions = [], name="@__l%d" % (canonify._label_counter))
     canonify._transformed_blocks.append(new_block)
     
-@canonify.when(ins.flow.Call)
+@canonify.when(instructions.flow.Call)
 def _(self, i):
     
     name = i.op1().value().name()
@@ -147,15 +147,15 @@ def _(self, i):
     assert func and isinstance(func.type(), type.FunctionType)
     
     if func.linkage() == function.Function.CC_C:
-        callc = ins.flow.CallC(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
+        callc = instructions.flow.CallC(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
         current_block = canonify._transformed_blocks[-1]
         current_block.addInstruction(callc)
         return
     
     if i.op1().type().resultType() == type.Void:
-        tc = ins.flow.CallTailVoid(op1=i.op1(), op2=i.op2(), op3=None, location=i.location())
+        tc = instructions.flow.CallTailVoid(op1=i.op1(), op2=i.op2(), op3=None, location=i.location())
     else:
-        tc = ins.flow.CallTailResult(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
+        tc = instructions.flow.CallTailResult(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
         
     _splitBlock(self, tc)
     
@@ -163,19 +163,19 @@ def _(self, i):
     label = instruction.IDOperand(i, False, location=i.location())
     tc.setOp3(label)
     
-@canonify.when(ins.flow.Jump)
+@canonify.when(instructions.flow.Jump)
 def _(self, i):
     current_block = canonify._transformed_blocks[-1]
     current_block.addInstruction(i)
     _splitBlock(self)
 
-@canonify.when(ins.flow.ReturnVoid)
+@canonify.when(instructions.flow.ReturnVoid)
 def _(self, i):
     current_block = canonify._transformed_blocks[-1]
     current_block.addInstruction(i)
     _splitBlock(self)
 
-@canonify.when(ins.flow.ReturnResult)
+@canonify.when(instructions.flow.ReturnResult)
 def _(self, i):
     current_block = canonify._transformed_blocks[-1]
     current_block.addInstruction(i)

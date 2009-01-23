@@ -8,9 +8,9 @@
 import block
 import module
 import function
-import instruction
 import scope
 import id
+import instruction
 import type
 import visitor
 import util

@@ -6,7 +6,7 @@ import llvm
 import llvm.core 
 
 from hilti.core import *
-from hilti import ins
+from hilti import instructions
 from codegen import codegen
 
 @codegen.when(module.Module)

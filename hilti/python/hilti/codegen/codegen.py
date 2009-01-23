@@ -58,7 +58,7 @@ import llvm
 import llvm.core 
 
 from hilti.core import *
-from hilti import ins
+from hilti import instructions
 
 ### Codegen visitor.
 
