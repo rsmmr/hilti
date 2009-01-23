@@ -10,7 +10,12 @@ module Main
 import hilti.hlt
 
 void run() {
-    call Hilti::print (42)
+
+    local int:32 sum
+    
+    sum = integer.add 21 21
+    call Hilti::print (sum)
+    
     return.void
 }     
      
