@@ -18,6 +18,16 @@
 
 LIBS="-lhiltimain -lc"
 
+function usage {
+   echo "Usage: hilti-build [-t] [-v] <input.hlt> [<output>]"
+   echo 
+   echo "Options:"
+   echo "  -t      Do not delete temporary files."
+   echo "  -v      Output command lines as they are executed."
+   echo
+   exit 1 
+}
+
 function execute {
     if [ "$verbose" != "" ]; then
        echo $@ >>$verbose
@@ -39,6 +49,8 @@ while [ "$1" != "" ]; do
             keeptmp=1; shift;;
         -v)
             verbose=/dev/stdout; shift;;
+        -h) 
+            usage;; 
         *)
             break;;
     esac
@@ -50,13 +62,7 @@ if [ "$TEST_DIAGNOSTICS" != "" ]; then
 fi   
 
 if [ "$#" -lt "1" -o "$#" -gt "2" ]; then
-   echo "Usage: hilti-build [-t] [-v] <input.hlt> [<output>]"
-   echo 
-   echo "Options:"
-   echo "  -t      Do not delete temporary files."
-   echo "  -v      Output command lines as they are executed."
-   echo
-   exit 1 
+   usage
 fi   
 
 trap delete_tmps 0
@@ -68,25 +74,25 @@ dir=`dirname $input`
 base=`basename $input .hlt`
 
 if [ "$2" == "" ]; then
-   output=$dir/$base
+   output=$base
 fi
 
-ll=$dir/$base.ll
-asm=$dir/$base.S
-doto=$dir/$base.o
+ll=$base.ll
+asm=$base.S
+doto=$base.o
 
 # Turns into human-readable LLVM code 
 # (We could skip this step but keep it for debugging.)
-execute hiltic $HILTICFLAGS -l $input -o $ll || exit 1
+execute "hiltic $HILTICFLAGS -l $input -o $ll" || exit 1
 
 # Turn it into bytecode and then native code. 
-execute llvm-as $LLVMASFLAGS < $ll | llc >$asm || exit 1
+execute "llvm-as $LLVMASFLAGS < $ll | llc >$asm" || exit 1
 
 # Assemble. 
-execute as $ASFLAGS $asm -o $doto || exit 1 
+execute "as $ASFLAGS $asm -o $doto" || exit 1 
 
 # Link. 
-execute gcc $LDFLAGS $doto $LIBS -o $output
+execute "gcc $LDFLAGS $doto $LIBS -o $output" || exit 1
 
 
 

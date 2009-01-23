@@ -304,7 +304,6 @@ class CodeGen(visitor.Visitor):
         except KeyError:
             rt = self.llvmTypeConvert(function.type().resultType())
             args = [self.llvmTypeConvertToC(id.type()) for id in function.type().IDs()]
-            print >>sys.stderr, args[0]
             ft = llvm.core.Type.function(rt, args)
             func = self._llvm.module.add_function(ft, name)
             self._llvm.c_funcs[name] = func
