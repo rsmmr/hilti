@@ -1,0 +1,283 @@
+#! /usr/bin/env python
+#
+# Main test driver.
+
+import os
+import os.path
+import sys
+import shutil
+import fnmatch
+import optparse
+import re
+import tempfile
+import subprocess
+import copy
+import glob
+
+Name ="tester"
+Glob = "test-*"
+Version = 0.1
+
+TmpDir = ".tmp"
+BaselineDir = ".baseline"
+BinDir = None
+
+# Commands as tuple (tag, regexp, more-than-ok-is-ok, optional)
+RE_EXEC = ("exec", re.compile("@TEST-EXEC: *(.*)"), True, False)
+RE_NAME = ("name", re.compile("@TEST-NAME: *(.*)"), False, False)
+RE_GROUP = ("group", re.compile("@TEST-GROUP: *(.*)"), False, False)
+
+Commands = (RE_EXEC, RE_NAME, RE_GROUP)
+
+RE_INPUT = re.compile("%INPUT")
+
+RE_START_NEXT_TEST = re.compile("@TEST-START-NEXT")
+
+def output(msg, nl=True):
+    if nl:
+        print >>sys.stderr, msg
+    else:
+        print >>sys.stderr, msg,
+
+def error(msg):
+    print >>sys.stderr, msg
+    sys.exit(1)
+
+def mkdir(dir):
+    if not os.path.exists(dir):
+        try:
+            os.mkdir(dir)
+        except OSError, e:
+            error("cannot create directory %s: %s" % (dir, e))
+        
+    else:
+        if not os.path.isdir(dir):
+            error("path %s exists but is not a directory" % dir)
+    
+class Test(object):
+    def __init__(self, file = None):
+        self.file = file
+        self.name = None
+        self.number = 1
+        self.group = None
+        self.cmdlines = []
+        self.tmpdir = None
+        self.diag = None 
+        self.baseline = None
+
+        # Parse the test's content. 
+    def parse(self, content):
+        cmds = {}
+        for line in content:
+            for (tag, regexp, multiple, optional) in Commands:
+                m = regexp.search(line)
+            
+                if m:
+                    value = m.group(1)
+                
+                    if not multiple:
+                        if tag in cmds:
+                            error("%s: %d defined multiple times." % (test, tag))
+                        
+                        cmds[tag] = value
+                    
+                    else:
+                        try:
+                            cmds[tag] += [value]
+                        except KeyError:
+                            cmds[tag] = [value]
+    
+        # Make sure all non-optional commands are there.
+        for (tag, regexp, multiple, optional) in Commands:
+            if not optional and not tag in cmds:
+                error("%s: mandatory %s command not found." % (test.file, tag))
+
+        self.name = cmds["name"]
+        self.group = cmds["group"]
+        self.cmdlines = cmds["exec"]
+        self.content = content
+        
+    # Copies all control information over t a new Test but replaces test content
+    # with a new one.
+    def clone(self, content):
+        clone = Test()
+        clone.file = self.file
+        clone.name = self.name 
+        clone.number = self.number + 1
+        clone.group = self.group
+        clone.cmdlines = self.cmdlines
+        
+        clone.content = content
+        return clone        
+        
+    def run(self):
+        if self.number > 1:
+            self.name = "%s-%d" % (self.name, self.number)
+            
+        output("%s ..." % self.name, nl=False)
+            
+        self.tmpdir = os.path.abspath(os.path.join(TmpDir, self.name))
+        self.diag = os.path.join(self.tmpdir, ".diag")
+        self.baseline = os.path.abspath(os.path.join(BaselineDir, self.name))
+        
+        self.rmTmp()
+        mkdir(self.baseline)        
+        mkdir(self.tmpdir)        
+        os.chdir(self.tmpdir)
+        
+        self.localfile = os.path.join(self.tmpdir, os.path.basename(self.file))
+        
+        content = open(self.localfile, "w")
+        for line in self.content:
+            print >>content, line,
+        content.close()
+        
+        self.log = open(os.path.join(self.tmpdir, ".log"), "w")
+        self.stdout = open(os.path.join(self.tmpdir, ".stdout"), "w")
+        self.stderr = open(os.path.join(self.tmpdir, ".stderr"), "w")
+        
+        try:
+            for cmdline in self.cmdlines:
+                self.execute(cmdline)
+            
+        except subprocess.CalledProcessError:
+            output("failed")
+            
+        else:
+            output("ok")
+            self.rmTmp()
+        
+        try:
+            # Try removing the baseline directory. If it works, it's empty, i.e., no baseline was created.
+            os.rmdir(self.baseline)
+        except OSError, e:
+            pass
+        
+    def execute(self, cmdline):
+
+        # Replace special names. 
+        cmdline = RE_INPUT.sub(self.localfile, cmdline)
+        print >>self.log, cmdline
+        
+        env = self.prepareEnv()
+        subprocess.check_call(cmdline, shell=True, env=env, stderr=self.stderr, stdout=self.stdout)
+        
+    def rmTmp(self):
+        os.chdir(TmpDir)
+        
+        try:
+            if os.path.isfile(self.tmpdir):
+                os.remove(self.tmpdir)
+            
+            if os.path.isdir(self.tmpdir):
+                subprocess.call("rm -rf %s" % self.tmpdir, shell=True)
+            
+        except OSError, e:
+            error("cannot remove tmp directory %s: %s" % (self.tmpdir, e))
+
+    # Prepares the environment for the child processes.
+    def prepareEnv(self):
+        env = copy.deepcopy(os.environ)
+        
+        # Add the directory where this executable is located to PATH.
+        addpath = BinDir
+        oldpath = os.environ["PATH"]
+        env["PATH"] = "%s:%s" % (oldpath, addpath) if oldpath else addpath
+
+        env["TEST_BASELINE"] = self.baseline
+        env["TEST_DIAGNOSTICS"] = self.diag
+        env["TEST_MODE"] = Options.mode.upper()
+        
+        return env
+            
+# Walk the given directory and return all test files.    
+def findTests(dirs):    
+    tests = []
+
+    for dir in dirs:
+        for fn in glob.glob(Glob):
+            tests += readTestFile(os.path.abspath(fn))
+        
+    return tests
+
+# Read the given test file and instantiate one or more tests from it.
+def readTestFile(filename):
+
+    def newTest(content, previous):
+        if not previous:
+            t = Test(filename)
+            t.parse(content)
+            return t
+        else:
+            return previous.clone(content)
+    
+    try:
+        file = open(filename)
+    except IOError, e:
+        error("cannot read test file: %s" % e)
+
+    tests = []
+    content = []
+    previous = None
+        
+    for line in file:
+        m = RE_START_NEXT_TEST.match(line)
+        
+        if not m:
+            content += [line]
+            continue
+
+        t = newTest(content, previous)
+        tests += [t]
+        
+        previous = t
+        content = []
+
+    tests += [newTest(content, previous)]
+    
+    return tests
+    
+#    tests = []
+#
+#    for dir in dirs:
+#        if not os.path.isdir(dir):
+#            error("%s is not a directory" % dir)
+#            
+#        try:
+#            def addNames(tests, dir, names):
+#                tests += [Test(os.path.abspath(fn)) for fn in fnmatch.filter(names, Glob)]
+#            
+#            os.path.walk(dir, addNames, tests)
+#        
+#        except IOError, e:
+#            error("cannot traverse directory %s" % dir)
+#
+#    return tests
+
+### Main
+
+optparser = optparse.OptionParser(usage="%prog [options] <directorys>", version=Version)
+optparser.add_option("-U", "--update-baseline", action="store_const", dest="mode", const="UPDATE", default="TEST",
+                     help="create a new baseline from the tests' output")
+
+(Options, args) = optparser.parse_args()
+
+if len(args) < 1:
+    optparser.error("wrong number of arguments")
+    
+tests = findTests(args)
+
+TmpDir = os.path.abspath(TmpDir)
+BaselineDir = os.path.abspath(BaselineDir)
+BinDir = os.path.abspath(os.path.dirname(sys.argv[0]))
+
+mkdir(BaselineDir)
+mkdir(TmpDir)
+
+for test in tests:
+    test.run()
+    
+
+
+
+
