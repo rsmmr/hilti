@@ -7,7 +7,7 @@
 
 module Main
 
-import hilti.hlt
+import hilti
 
 void run() {
 
