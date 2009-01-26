@@ -41,12 +41,12 @@ class Type(object):
 ###
     
 class StorageType(Type):
-    def __init__(self, name,docname=None):
-        super(StorageType, self).__init__(name,docname=docname)
+    def __init__(self, name, docname=None):
+        super(StorageType, self).__init__(name, docname=docname)
         
 class AtomicType(StorageType):
     def __init__(self, name, docname=None):
-        super(AtomicType, self).__init__(name,docname=docname)
+        super(AtomicType, self).__init__(name, docname=docname)
 
 class CompositeType(StorageType):
     def __init__(self, name):
@@ -187,7 +187,8 @@ class AnyType(Type):
         
 class TupleType(Type):
     def __init__(self, types, generic=False):
-        super(TupleType, self).__init__("(%s)" % ", ".join([t.name() for t in types]))
+        docname = generic and "(tuple)" or None
+        super(TupleType, self).__init__("(%s)" % ", ".join([t.name() for t in types]), docname)
         self._types = types
         self._generic = generic
 

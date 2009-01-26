@@ -18,3 +18,19 @@ void run() {
     
     return.void
 }     
+
+@TEST-START-NEXT
+
+module Main
+
+import hilti
+
+void run() {
+
+    local int:32 sum
+    
+    sum = integer.add 12 12
+    call Hilti::print (sum)
+    
+    return.void
+}     
