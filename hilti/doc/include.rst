@@ -1,0 +1,4 @@
+.. $Id$
+
+.. |hilti| replace:: HILTI
+
