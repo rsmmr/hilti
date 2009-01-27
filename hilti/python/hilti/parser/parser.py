@@ -201,6 +201,11 @@ def p_operand_ident(p):
         ident = p.parser.current.module.lookupID(p[1])
         
         if not ident:
+            
+            if p[1].startswith("@"):
+                p[0] = instruction.IDOperand(id.ID(p[1], type.Label), local, location=loc(p, 1))
+                return
+                
             error(p, "unknown identifier %s" % p[1])
             raise ply.yacc.SyntaxError
     
@@ -210,6 +215,11 @@ def p_operand_number(p):
     """operand : NUMBER"""
     # FIXME: Which type for integer constants?
     const = constant.Constant(p[1], type.Int32, location=loc(p, 1))
+    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
+
+def p_operand_bool(p):
+    """operand : BOOL"""
+    const = constant.Constant(p[1], type.Bool, location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
 
 def p_operand_string(p):

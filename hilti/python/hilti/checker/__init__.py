@@ -1,8 +1,10 @@
 # $Id$
+
 import checker
 import flow
 import module
 import integer
+import bool
 
 def checkAST(ast):
     """

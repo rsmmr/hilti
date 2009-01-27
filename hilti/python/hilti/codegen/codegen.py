@@ -91,6 +91,7 @@ class CodeGen(visitor.Visitor):
         self._llvm.int_consts = []
         self._llvm.frameptr = None
         self._llvm.functions = {}
+        self._llvm.builders = []
         
         self._llvm.type_continuation = llvm.core.Type.struct([
         	self._llvm.type_generic_pointer, # Successor function
@@ -111,8 +112,14 @@ class CodeGen(visitor.Visitor):
         self.dispatch(ast)
         return self.llvmModule(verify)
             
+    def pushBuilder(self, builder):
+        self._llvm.builders += [builder]
+        
+    def popBuilder(self):
+        self._llvm.builders = self._llvm.builders[0:-1]
+    
     def builder(self):
-        return self._llvm.builder
+        return self._llvm.builders[-1]
 
     # Looks up the function belonging to the given name. Returns None if not found. 
     def lookupFunction(self, id):
@@ -156,6 +163,16 @@ class CodeGen(visitor.Visitor):
             name = name[2:]
     
         return "__%s_%s" % (funcname, name)
+
+    # Returns a new label guaranteed to be unique within the current function.
+    def nameNewLabel(self, postfix):
+        self.label_counter += 1
+        return "l%d-%s" % (self.label_counter, postfix)
+    
+    # Returns a new block with a label guaranteed to be unique within the
+    # current function.
+    def llvmNewBlock(self, postfix):
+        return self._llvm.func.append_basic_block(self.nameNewLabel(postfix))
 
     def nameFunctionFrame(self, function):
         return "__frame_%s" % self.nameFunction(function)
@@ -408,7 +425,8 @@ class CodeGen(visitor.Visitor):
         # Any subsequent code generated inside the same block will
         # be  unreachable. We create a dummy builder to absorb it; the code will
         # not appear anywhere in the output.
-        self._llvm.builder = _DummyBuilder()
+        self.popBuilder();
+        self.pushBuilder(_DummyBuilder())
         
 #    def _llvmGenerateTailCall(self, llvm_func, args):
 #        if function.type().resultType() == type.Void:

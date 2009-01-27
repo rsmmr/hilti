@@ -72,3 +72,11 @@ def _(self, i):
     current_block.addInstruction(i)
     _splitBlock(self)
     
+### IfElse
+    
+@canonifier.when(instructions.flow.IfElse)
+def _(self, i):
+    current_block = canonifier._transformed_blocks[-1]
+    current_block.addInstruction(i)
+    _splitBlock(self)
+    

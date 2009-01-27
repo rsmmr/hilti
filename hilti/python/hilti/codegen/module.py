@@ -55,13 +55,17 @@ def _(self, b):
     assert b.name()
 
     # Generate an LLVM function for this block.
-    llvm_func = self.llvmGetFunctionForBlock(b)
-    self._llvm.frameptr = llvm_func.args[0]
-    llvm_block = llvm_func.append_basic_block("")
-    print llvm_block
-    self._llvm.builder = llvm.core.Builder.new(llvm_block)
+    self._llvm.func = self.llvmGetFunctionForBlock(b)
+    self.label_counter = 0
+    self._llvm.frameptr = self._llvm.func.args[0]
+    self._llvm.block = self._llvm.func.append_basic_block("")
+    self.pushBuilder(llvm.core.Builder.new(self._llvm.block))
     
     llvm_name = self.nameFunctionForBlock(b)
-    self._llvm.functions[llvm_name] = llvm_func
-    
+    self._llvm.functions[llvm_name] = self._llvm.func
 
+@codegen.pre(block.Block)
+def _(self, b):
+    self._llvm.func = None
+    self._llvm.block = None
+    self.popBuilder()

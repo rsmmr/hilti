@@ -4,7 +4,7 @@
 
 BITCODE  = entry.bc 
 
-COBJS    = printf.o
+COBJS    = printf.o exceptions.o
 CMAINOBJ = main.o
 
 LIB_STATIC      = libhilti.a

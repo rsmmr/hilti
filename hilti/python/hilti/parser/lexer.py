@@ -32,6 +32,7 @@ tokens = (
    'MODULE',
    'NL',
    'NUMBER',
+   'BOOL',
    'STRING',
    'STRUCT',
    'TYPE',
@@ -54,6 +55,18 @@ def t_NUMBER(t):
         
     return t
 
+def t_TRUE(t):
+    r'True'
+    t.type = "BOOL"
+    t.value = True
+    return t
+
+def t_FALSE(t):
+    r'False'
+    t.type = "BOOL"
+    t.value = True
+    return t
+
 def t_STRING(t):
     r'"[^"]*"'
     t.value = t.value[1:-1]    
@@ -65,7 +78,7 @@ def t_LABEL(t):
     return t
 
 def t_IDENT(t):
-    r'[_a-zA-Z]([a-zA-Z0-9._]|::)*'
+    r'@?[_a-zA-Z]([a-zA-Z0-9._]|::)*'
 
     if t.value in instructions:
         t.type = "INSTRUCTION"

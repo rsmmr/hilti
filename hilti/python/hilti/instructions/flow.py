@@ -28,10 +28,10 @@ class ReturnResult(Instruction):
     """
     pass
 
-@instruction("if.else", op1=Bool, op2=TupleType((Label, Label)))
+@instruction("if.else", op1=Bool, op2=Label, op3=Label)
 class IfElse(Instruction):
     """
-    Jumps to label *op2[0]* if *op1* is true, otherwise to *op2[1]*.
+    Transfers control label *op2* if *op1* is true, and to *op3* otherwise. 
     """
     pass
 
@@ -54,7 +54,6 @@ class CallC(Instruction):
     match the function's signature.
     """
     pass
-
 
 @instruction("call.tail.void", op1=Function, op2=AnyTuple, op3=Label)
 class CallTailVoid(Instruction):

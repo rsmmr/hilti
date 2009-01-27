@@ -19,7 +19,8 @@ def _isTerminator(i):
            isinstance(i, instructions.flow.CallTailVoid) or \
            isinstance(i, instructions.flow.CallTailResult) or \
            isinstance(i, instructions.flow.ReturnVoid) or \
-           isinstance(i, instructions.flow.ReturnResult)
+           isinstance(i, instructions.flow.ReturnResult) or \
+           isinstance(i, instructions.flow.IfElse)
 
 # If the last instruction is not a terminator, add it. 
 def _unifyBlock(block):

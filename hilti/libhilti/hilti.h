@@ -13,6 +13,6 @@
 extern void hilti_run();
 
 // Library functions.
-extern void print(int32_t n);
+extern void hilti_print(int32_t n);
 
 #endif    

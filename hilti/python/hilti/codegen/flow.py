@@ -264,6 +264,14 @@ def _(self, i):
         self.llvmInit(val, addr)
     
     self.llvmGenerateTailCallToFunction(func, [callee_frame])
+
+@codegen.when(instructions.flow.CallC)
+def _(self, i):
+    func = self.lookupFunction(i.op1().value())
+    assert func
+    
+    args = [self.llvmOpToC(op, "arg") for op in i.op2().value()]
+    self.llvmGenerateCCall(func, args)
     
 @codegen.when(instructions.flow.ReturnVoid)
 def _(self, i):
@@ -289,10 +297,21 @@ def _(self, i):
     assert b
     self.llvmGenerateTailCallToBlock(b, [self._llvm.frameptr])
 
-@codegen.when(instructions.flow.CallC)
+@codegen.when(instructions.flow.IfElse)
 def _(self, i):
-    func = self.lookupFunction(i.op1().value())
-    assert func
+    op1 = self.llvmOp(i.op1(), "cond")
+    true = self._function.lookupBlock(i.op2().value())
+    false = self._function.lookupBlock(i.op3().value())
+
+    block_true = self.llvmNewBlock("true")
+    block_false = self.llvmNewBlock("false")
     
-    args = [self.llvmOpToC(op, "arg") for op in i.op2().value()]
-    self.llvmGenerateCCall(func, args)
+    self.pushBuilder(llvm.core.Builder.new(block_true))
+    self.llvmGenerateTailCallToBlock(true, [self._llvm.frameptr])
+    self.popBuilder()
+    
+    self.pushBuilder(llvm.core.Builder.new(block_false))
+    self.llvmGenerateTailCallToBlock(false, [self._llvm.frameptr])
+    self.popBuilder()
+    
+    self.builder().cbranch(op1, block_true, block_false)
