@@ -58,6 +58,7 @@ def _(self, b):
     llvm_func = self.llvmGetFunctionForBlock(b)
     self._llvm.frameptr = llvm_func.args[0]
     llvm_block = llvm_func.append_basic_block("")
+    print llvm_block
     self._llvm.builder = llvm.core.Builder.new(llvm_block)
     
     llvm_name = self.nameFunctionForBlock(b)

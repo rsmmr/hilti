@@ -49,6 +49,9 @@ Calling Conventions
   ''ref<__frame__Func> __frame''. Functions which work on the result
   of another function call (see below), take a second parameter
   ''<result-type> __return_value''.
+
+* An exception is just call of the current exception continuation (which must
+  be non-null at all times.)
   
 """
 
@@ -60,6 +63,13 @@ import llvm.core
 from hilti.core import *
 from hilti import instructions
 
+# Class which just absorbs any method calls.
+class _DummyBuilder(object):
+    def __getattribute__(*args):
+        class dummy:
+            pass
+        return lambda *args: dummy()
+    
 ### Codegen visitor.
 
 class CodeGen(visitor.Visitor):
@@ -86,13 +96,15 @@ class CodeGen(visitor.Visitor):
         	self._llvm.type_generic_pointer, # Successor function
             self._llvm.type_generic_pointer  # Frame pointer
             ])
-        
-        self._llvm.type_basic_frame = llvm.core.Type.struct([
-        	self._llvm.type_continuation,     # Default continuation 
-        	self._llvm.type_continuation,     # Exceptional continuation 
-		    llvm.core.Type.int(16),           # Current exception
-            self._llvm.type_generic_pointer,  # Current exception's data.
-            ])
+
+        self._bf_fields = [
+        	("cont_normal", self._llvm.type_continuation), 
+        	("cont_except", self._llvm.type_continuation),    
+		    ("exception", self._llvm.type_generic_pointer),
+            ("exception_data", self._llvm.type_generic_pointer)
+            ]
+
+        self._llvm.type_basic_frame = llvm.core.Type.struct([ t for (n, t) in self._bf_fields])
 
     def generateLLVM(self, ast, verify=True):
         self.reset()
@@ -154,7 +166,7 @@ class CodeGen(visitor.Visitor):
         if verify:
             try:
                 self._llvm.module.verify()
-            except llvm.LLVMException:
+            except llvm.LLVMException, e:
                 util.error("LLVM error: %s" % e, fatal=False)
                 return (False, None)
             
@@ -168,10 +180,10 @@ class CodeGen(visitor.Visitor):
             self._llvm.int_consts += [llvm.core.Constant.int(llvm.core.Type.int(), i) for i in range(len(self._llvm.int_consts), n + 1)]
             return self._llvm.int_consts[n]            
 
-    # Returnt he LLVM constant representing the given exception type (which is an int).
-    def llvmConstException(self, n):
-        return llvm.core.Constant.int(llvm.core.Type.int(16), n)
-        
+    # Returns the LLVM constant representing an unset exception.
+    def llvmConstNoException(self, n):
+        return llvm.core.Constant.null(self.llvmTypeGenericPointer())
+
     # Returns the type used to represent pointer of different type. 
     # (i.e., "void *")
     def llvmTypeGenericPointer(self):
@@ -208,9 +220,9 @@ class CodeGen(visitor.Visitor):
         except AttributeError:
             pass
         
-        fields = [("__bf", self.llvmTypeBasicFrame())]
+        fields = self._bf_fields
         ids = function.type().IDs() + function.scope().IDs().values()
-        fields += [(id.name(), self.llvmTypeConvert(id.type())) for id in ids]
+        fields = fields + [(id.name(), self.llvmTypeConvert(id.type())) for id in ids]
         
         # Build map of indices and store with function.
         function._frame_index = {}
@@ -227,9 +239,9 @@ class CodeGen(visitor.Visitor):
         
         if index2 >= 0:
             index2 = self.llvmConstInt(index2)
-            index = [zero, zero, index1, index2]
+            index = [zero, index1, index2]
         else:
-            index = [zero, zero, index1]
+            index = [zero, index1]
         
         if not cast_to:
             addr = self.builder().gep(frame, index, tag)
@@ -279,6 +291,20 @@ class CodeGen(visitor.Visitor):
         index = self.llvmConstInt(frame_idx[id.name()])
         return self.builder().gep(frameptr, [zero, index], tag)
 
+    # Loads the value of the given external global. 
+    def llvmGetExternalGlobal(self, type, name):
+        
+        try:
+            glob = self._llvm.module.get_global_variable_named(name)
+            # FIXME: Check that the type is the same.
+            return self.builder().load(glob, "exception")
+        except llvm.LLVMException:
+            pass
+        
+        glob = self._llvm.module.add_global_variable(type, name)
+        glob.linkage = llvm.core.LINKAGE_EXTERNAL 
+        return self.builder().load(glob, "exception")
+    
     # Returns LLVM function for the given block, creating one if it doesn't exist yet. 
     def llvmGetFunctionForBlock(self, block):
         name = self.nameFunctionForBlock(block) 
@@ -323,6 +349,32 @@ class CodeGen(visitor.Visitor):
             call = self.builder().call(llvm_func, args, "result")
         
         call.calling_convention = llvm.core.CC_C
+
+    # Raises the named exception. The is the corresponding C name from
+    # libhilti/execeptions.cc.
+    def llvmRaiseException(self, exception):
+        
+        # ptr = *__frame.bf.cont_exception.succesor
+        fpt = self.llvmTypeBasicFunctionPtr()
+        addr = self.llvmAddrExceptContSuccessor(self._llvm.frameptr, fpt)
+        ptr = self.builder().load(addr, "succ_ptr")
+    
+        # frame = *__frame.bf.cont_exception
+        bfptr = llvm.core.Type.pointer(self.llvmTypeBasicFrame())
+        addr = self.llvmAddrExceptContFrame(self._llvm.frameptr, llvm.core.Type.pointer(bfptr))
+        frame = self.builder().load(addr, "frame_ptr")
+    
+        # frame.exception = <exception>
+        addr = self.llvmAddrException(frame)
+        exc = self.llvmGetExternalGlobal(self.llvmTypeGenericPointer(), exception)
+        self.llvmInit(exc, addr)
+        
+        # frame.exception_data = null (for now)
+        addr = self.llvmAddrExceptionData(frame)
+        null = llvm.core.Constant.null(self.llvmTypeGenericPointer())
+        self.llvmInit(null, addr)
+    
+        self.llvmGenerateTailCallToFunctionPtr(ptr, [frame])
         
     # Returns the LLVM function for the given function if it was already created, and None otherwise.
     def llvmFunction(self, function):
@@ -347,12 +399,17 @@ class CodeGen(visitor.Visitor):
     #    }
     #
     # FIXME: How do we get the "tail" modifier in there?
-    
+
     def _llvmGenerateTailCall(self, llvm_func, args):
         result = self.builder().call(llvm_func, args)
         result.calling_convention = llvm.core.CC_FASTCALL
         self.builder().ret_void()
 
+        # Any subsequent code generated inside the same block will
+        # be  unreachable. We create a dummy builder to absorb it; the code will
+        # not appear anywhere in the output.
+        self._llvm.builder = _DummyBuilder()
+        
 #    def _llvmGenerateTailCall(self, llvm_func, args):
 #        if function.type().resultType() == type.Void:
 #            self.builder().call(llvm_func, args)

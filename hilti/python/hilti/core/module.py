@@ -42,7 +42,7 @@ class Module(object):
         i = name.find("::") 
         if i < 0:
             # Qualify if it isn't.
-            name = "%s::%s" (self._name(), name)
+            name = "%s::%s" % (self._name, name)
 
         name = self._canonalizeScope(name)
             
@@ -52,7 +52,7 @@ class Module(object):
         i = name.find("::") 
         if i < 0:
             # Qualify if it isn't.
-            name = "%s::%s" (self._name(), name)
+            name = "%s::%s" % (self._name, name)
         
         name = self._canonalizeScope(name)
         

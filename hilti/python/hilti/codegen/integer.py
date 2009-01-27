@@ -18,3 +18,7 @@ def _(self, i):
     op2 = self.llvmOp(i.op2(), "op2")
     result = self.builder().add(op1, op2, "tmp")
     self.llvmStoreInTarget(i.target(), result, "target")
+
+@codegen.when(instructions.integer.Div)
+def _(self, i):
+    self.llvmRaiseException("__hilti_exception_division_by_zero")

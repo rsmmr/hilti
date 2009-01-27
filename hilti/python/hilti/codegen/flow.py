@@ -244,7 +244,7 @@ def _(self, i):
     # Clear exception information.
     #   callee_frame.bf.exception = None
     addr = self.llvmAddrException(callee_frame)
-    zero = self.llvmConstException(0)
+    zero = self.llvmConstNoException()
     self.llvmInit(zero, addr)
     
     #   callee_frame.bf.exception_data = Null
