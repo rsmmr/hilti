@@ -18,8 +18,12 @@ class Function(object):
     def __init__(self, name, type, module, location = location.Location(), parentfunc = None):
 
         assert name.find("::") < 0 # must be non-qualified
-        
-        self._name = "%s::%s" % (module.name(), name)
+
+        if module:
+            self._name = "%s::%s" % (module.name(), name)
+        else:
+            self._name = "(private)::%s" % name 
+            
         self._type = type
         self._bodies = []
         self._location = location

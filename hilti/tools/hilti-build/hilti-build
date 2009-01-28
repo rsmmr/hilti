@@ -22,8 +22,9 @@ function usage {
    echo "Usage: hilti-build [-t] [-v] <input.hlt> [<output>]"
    echo 
    echo "Options:"
-   echo "  -t      Do not delete temporary files."
-   echo "  -v      Output command lines as they are executed."
+   echo "  -t           Do not delete temporary files."
+   echo "  -v           Output command lines as they are executed."
+   echo "  -O1/O2/O3    Apply optimizations (see 'man opt')"
    echo
    exit 1 
 }
@@ -49,6 +50,12 @@ while [ "$1" != "" ]; do
             keeptmp=1; shift;;
         -v)
             verbose=/dev/stdout; shift;;
+        -O1) 
+            opt=$1; shift;;
+        -O2) 
+            opt=$1; shift;;
+        -O3) 
+            opt=$1; shift;;
         -h) 
             usage;; 
         *)
@@ -81,12 +88,16 @@ ll=$base.ll
 asm=$base.S
 doto=$base.o
 
+if [ "$opt" != "" ]; then
+   opt="opt $opt |"
+fi   
+
 # Turns into human-readable LLVM code 
 # (We could skip this step but keep it for debugging.)
 execute "hiltic $HILTICFLAGS -l $input -o $ll" || exit 1
 
-# Turn it into bytecode and then native code. 
-execute "llvm-as $LLVMASFLAGS < $ll | llc >$asm" || exit 1
+# Turn it into bytecode, optionally optimize, and then turn into native code. 
+execute "llvm-as $LLVMASFLAGS < $ll | $opt llc >$asm" || exit 1
 
 # Assemble. 
 execute "as $ASFLAGS $asm -o $doto" || exit 1 

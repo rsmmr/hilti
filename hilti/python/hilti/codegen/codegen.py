@@ -81,6 +81,9 @@ class CodeGen(visitor.Visitor):
         # Dummy class to create a sub-namespace.
         class _llvm_data:
             pass
+
+        self.ret_func_counter = 0
+        self.label_counter = 0
         
         self._function = None
         self._llvm = _llvm_data()
@@ -112,7 +115,8 @@ class CodeGen(visitor.Visitor):
         self.dispatch(ast)
         return self.llvmModule(verify)
             
-    def pushBuilder(self, builder):
+    def pushBuilder(self, llvm_block, dummy=False):
+        builder = llvm.core.Builder.new(llvm_block) if not dummy else _DummyBuilder()
         self._llvm.builders += [builder]
         
     def popBuilder(self):
@@ -198,7 +202,7 @@ class CodeGen(visitor.Visitor):
             return self._llvm.int_consts[n]            
 
     # Returns the LLVM constant representing an unset exception.
-    def llvmConstNoException(self, n):
+    def llvmConstNoException(self):
         return llvm.core.Constant.null(self.llvmTypeGenericPointer())
 
     # Returns the type used to represent pointer of different type. 
@@ -208,15 +212,16 @@ class CodeGen(visitor.Visitor):
 
     # Returns a type representing a pointer to the given function. 
     def llvmTypeFunctionPtr(self, function):
-        rt = self.llvmTypeConvert(function.type().resultType())
-        ft = llvm.core.Type.function(rt, [llvm.core.Type.pointer(self.llvmTypeFunctionFrame(function))])
+        voidt = llvm.core.Type.void()
+        ft = llvm.core.Type.function(voidt, [llvm.core.Type.pointer(self.llvmTypeFunctionPtrFrame(function))])
         return llvm.core.Type.pointer(llvm.core.Type.pointer(ft))
 
-    # Returns a type representing a pointer to a function receiving only 
-    # __basic_frame as parameter (and returning void).
-    def llvmTypeBasicFunctionPtr(self):
+    # Returns a type representing a pointer to a function receiving 
+    # __basic_frame as parameter (and returning void). If additional args
+    # types are given, they are added to the function's signature.
+    def llvmTypeBasicFunctionPtr(self, args=[]):
         voidt = llvm.core.Type.void()
-        ft = llvm.core.Type.function(voidt, [llvm.core.Type.pointer(self.llvmTypeBasicFrame())])
+        ft = llvm.core.Type.function(voidt, [llvm.core.Type.pointer(self.llvmTypeBasicFrame())] + [self.llvmTypeConvert(t) for t in args])
         return llvm.core.Type.pointer(llvm.core.Type.pointer(ft))
     
     # Returns type of continuation structure.
@@ -248,6 +253,7 @@ class CodeGen(visitor.Visitor):
 
         frame = [f[1] for f in fields]
         function._llvm_frame = llvm.core.Type.struct(frame) # Cache it.
+        
         return function._llvm_frame
 
     def _llvmAddrInBasicFrame(self, frame, index1, index2, cast_to, tag):
@@ -293,16 +299,16 @@ class CodeGen(visitor.Visitor):
     
     # Returns the address of the local variable in the given frame.
     # V is given via it's string name. 
-    def llvmAddrLocalVar(self, frameptr, id, tag):
+    def llvmAddrLocalVar(self, function, frameptr, id, tag):
         # The Python interface (as well as LLVM's C interface, which is used
         # by the Python interface) does not have builder.extract_value() method,
         # so we simulate it with a gep/load combination.
         try:
-            frame_idx = self._function._frame_index
+            frame_idx = function._frame_index
         except AttributeError:
             # Not yet calculated.
-            llvmTypeFunctionFrame()
-            frame_idx = self._function._frame_index
+            self.llvmTypeFunctionFrame(function)
+            frame_idx = function._frame_index
             
         zero = self.llvmConstInt(0)
         index = self.llvmConstInt(frame_idx[id.name()])
@@ -321,6 +327,30 @@ class CodeGen(visitor.Visitor):
         glob = self._llvm.module.add_global_variable(type, name)
         glob.linkage = llvm.core.LINKAGE_EXTERNAL 
         return self.builder().load(glob, "exception")
+
+    # Creates a new function matching the block's frame/result. Additional
+    # arguments to the function can be specified by passing (name, type)
+    # tuples via addl_args.
+    def llvmCreateFunctionForBlock(self, name, block, addl_args = []):
+        
+        # Build function type.
+        args = [llvm.core.Type.pointer(self.llvmTypeFunctionFrame(block.function()))]
+        ft = llvm.core.Type.function(llvm.core.Type.void(), args + [t for (n, t) in addl_args]) 
+        
+        # Create function.
+        func = self._llvm.module.add_function(ft, name)
+        func.calling_convention = llvm.core.CC_FASTCALL
+        if name.startswith("__"):
+            func.linkage = llvm.core.LINKAGE_INTERNAL
+        
+        # Set parameter names. 
+        func.args[0].name = "__frame"
+        for i in range(len(addl_args)):
+            func.args[i+1].name = addl_args[i][0]
+        
+        self._llvm.block_funcs[name] = func
+
+        return func
     
     # Returns LLVM function for the given block, creating one if it doesn't exist yet. 
     def llvmGetFunctionForBlock(self, block):
@@ -329,14 +359,7 @@ class CodeGen(visitor.Visitor):
         try:
             return self._llvm.block_funcs[name]
         except KeyError:
-            rt = self.llvmTypeConvert(block.function().type().resultType())
-            args = [llvm.core.Type.pointer(self.llvmTypeFunctionFrame(block.function()))]
-            ft = llvm.core.Type.function(rt, args)
-            func = self._llvm.module.add_function(ft, self.nameFunctionForBlock(block))
-            func.calling_convention = llvm.core.CC_FASTCALL
-            func.args[0].name = "__frame"
-            self._llvm.block_funcs[name] = func
-            return func
+            return self.llvmCreateFunctionForBlock(name, block)
 
     # Returns LLVM for external C function.
     def llvmGetCFunction(self, function):
@@ -426,7 +449,7 @@ class CodeGen(visitor.Visitor):
         # be  unreachable. We create a dummy builder to absorb it; the code will
         # not appear anywhere in the output.
         self.popBuilder();
-        self.pushBuilder(_DummyBuilder())
+        self.pushBuilder(None, dummy=True)
         
 #    def _llvmGenerateTailCall(self, llvm_func, args):
 #        if function.type().resultType() == type.Void:
@@ -451,13 +474,14 @@ class CodeGen(visitor.Visitor):
         self._llvmGenerateTailCall(ptr, args)
         
     # Turns an operand into LLVM speak.
+    # Can only be called when working with a builder for the current function. 
     def llvmOp(self, op, tag):
         if isinstance(op, instruction.ConstOperand):
             return self.llvmConstOp(op)
 
         if isinstance(op, instruction.IDOperand):
             if op.isLocal():
-                addr = self.llvmAddrLocalVar(self._llvm.frameptr, op.id(), tag)
+                addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, op.id(), tag)
                 return self.builder().load(addr, tag)
             
         util.internal_error("opToLLVM: unknown op class: %s" % op)
@@ -501,11 +525,13 @@ class CodeGen(visitor.Visitor):
     def llvmMalloc(self, type, tag):
         return self.builder().malloc(type, tag)
         
-    # Stores value in target.
+    # Stores value in target. 
+    #
+    # Can only be used when working with a builder for the current function. 
     def llvmStoreInTarget(self, target, val, tag):
         if isinstance(target, instruction.IDOperand):
             if target.isLocal():
-                addr = self.llvmAddrLocalVar(self._llvm.frameptr, target.id(), tag)
+                addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, target.id(), tag)
                 self.llvmAssign(val, addr)
                 return 
                 

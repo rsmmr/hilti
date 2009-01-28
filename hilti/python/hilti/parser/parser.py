@@ -197,17 +197,18 @@ def p_operand_ident(p):
     local = True
     ident = p.parser.current.function.scope().lookup(p[1])
     if not ident:
-        local = False
-        ident = p.parser.current.module.lookupID(p[1])
-        
+        ident = p.parser.current.function.type().getID(p[1])
         if not ident:
-            
-            if p[1].startswith("@"):
-                p[0] = instruction.IDOperand(id.ID(p[1], type.Label), local, location=loc(p, 1))
-                return
+            local = False
+            ident = p.parser.current.module.lookupID(p[1])
+        
+            if not ident:
+                if p[1].startswith("@"):
+                    p[0] = instruction.IDOperand(id.ID(p[1], type.Label), local, location=loc(p, 1))
+                    return
                 
-            error(p, "unknown identifier %s" % p[1])
-            raise ply.yacc.SyntaxError
+                error(p, "unknown identifier %s" % p[1])
+                raise ply.yacc.SyntaxError
     
     p[0] = instruction.IDOperand(ident, local, location=loc(p, 1))
 
@@ -235,7 +236,11 @@ def p_operand_ununsed(p):
     """operand : """
     p[0] = None 
 
-def p_tuple(p):
+def p_tuple_empty(p):
+    """tuple : '(' ')'"""
+    p[0] = []
+
+def p_tuple_non_empty(p):
     """tuple : '(' operand_list ')'"""
     p[0] = p[2]
 

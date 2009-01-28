@@ -125,7 +125,7 @@ class StructDeclType(TypeDeclType):
 ###
         
 class FunctionType(Type):
-    def __init__(self, ids = None, result_type = None, generic=False):
+    def __init__(self, ids = [], result_type = None, generic=False):
         super(FunctionType, self).__init__("function")
         self._ids = ids
         self._result = result_type
@@ -133,6 +133,13 @@ class FunctionType(Type):
         
     def IDs(self):
         return self._ids
+    
+    def getID(self, name):
+        for id in self._ids:
+            if id.name() == name:
+                return id
+            
+        return None
     
     def resultType(self):
         return self._result
