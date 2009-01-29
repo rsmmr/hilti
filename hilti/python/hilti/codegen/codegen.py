@@ -115,8 +115,8 @@ class CodeGen(visitor.Visitor):
         self.dispatch(ast)
         return self.llvmModule(verify)
             
-    def pushBuilder(self, llvm_block, dummy=False):
-        builder = llvm.core.Builder.new(llvm_block) if not dummy else _DummyBuilder()
+    def pushBuilder(self, llvm_block):
+        builder = llvm.core.Builder.new(llvm_block) if llvm_block else _DummyBuilder()
         self._llvm.builders += [builder]
         
     def popBuilder(self):
@@ -194,12 +194,8 @@ class CodeGen(visitor.Visitor):
         return (True, self._llvm.module)
 
     # Return the LLVM constant representing the given integer.
-    def llvmConstInt(self, n):
-        try:
-            return self._llvm.int_consts[n]
-        except IndexError:
-            self._llvm.int_consts += [llvm.core.Constant.int(llvm.core.Type.int(), i) for i in range(len(self._llvm.int_consts), n + 1)]
-            return self._llvm.int_consts[n]            
+    def llvmConstInt(self, n, width = 32):
+        return llvm.core.Constant.int(llvm.core.Type.int(width), n)
 
     # Returns the LLVM constant representing an unset exception.
     def llvmConstNoException(self):
@@ -355,7 +351,6 @@ class CodeGen(visitor.Visitor):
     # Returns LLVM function for the given block, creating one if it doesn't exist yet. 
     def llvmGetFunctionForBlock(self, block):
         name = self.nameFunctionForBlock(block) 
-        
         try:
             return self._llvm.block_funcs[name]
         except KeyError:
@@ -415,14 +410,34 @@ class CodeGen(visitor.Visitor):
         self.llvmInit(null, addr)
     
         self.llvmGenerateTailCallToFunctionPtr(ptr, [frame])
+
+    # Creates a new LLVM function for the function. 
+    def llvmCreateFunctionForFunction(self, function):
+        name = self.nameFunction(function)
         
-    # Returns the LLVM function for the given function if it was already created, and None otherwise.
+        # Build function type.
+        args = [llvm.core.Type.pointer(self.llvmTypeFunctionFrame(function))]
+        ft = llvm.core.Type.function(llvm.core.Type.void(), args)
+        
+        # Create function.
+        func = self._llvm.module.add_function(ft, name)
+        func.calling_convention = llvm.core.CC_FASTCALL
+        if name.startswith("__"):
+            func.linkage = llvm.core.LINKAGE_INTERNAL
+        
+        # Set parameter names. 
+        func.args[0].name = "__frame"
+        self._llvm.functions[name] = func
+        return func
+        
+    # Returns the LLVM function for the given function if it was already
+    # created; creates it otherwise.
     def llvmFunction(self, function):
         try:
             name = self.nameFunction(function)
             return self._llvm.functions[name]
-        except KeyError:
-            return None
+        except KeyError:        
+            return self.llvmCreateFunctionForFunction(function)
         
     # Generates LLVM tail call code. From the LLVM 1.5 release notes:
     #
@@ -449,7 +464,7 @@ class CodeGen(visitor.Visitor):
         # be  unreachable. We create a dummy builder to absorb it; the code will
         # not appear anywhere in the output.
         self.popBuilder();
-        self.pushBuilder(None, dummy=True)
+        self.pushBuilder(None)
         
 #    def _llvmGenerateTailCall(self, llvm_func, args):
 #        if function.type().resultType() == type.Void:
@@ -475,10 +490,17 @@ class CodeGen(visitor.Visitor):
         
     # Turns an operand into LLVM speak.
     # Can only be called when working with a builder for the current function. 
-    def llvmOp(self, op, tag):
+    #
+    # We do only a very limited amount of casting here, currently only:
+    #    - Integer constants which don't have a width can be casted to one
+    #      with a width.
+    
+    def llvmOp(self, op, tag, cast_to_type=None):
         if isinstance(op, instruction.ConstOperand):
-            return self.llvmConstOp(op)
+            return self.llvmConstOp(op, cast_to_type=cast_to_type)
 
+        assert not cast_to_type or cast_to_type == op.type() # Cast not possible
+        
         if isinstance(op, instruction.IDOperand):
             if op.isLocal():
                 addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, op.id(), tag)
@@ -486,10 +508,21 @@ class CodeGen(visitor.Visitor):
             
         util.internal_error("opToLLVM: unknown op class: %s" % op)
 
-    def llvmConstOp(self, op):
+    def llvmConstOp(self, op, cast_to_type):
+
+        if cast_to_type and isinstance(cast_to_type, type.IntegerType) and \
+           isinstance(op.type(), type.IntegerType) and \
+           op.type().width() == 0 and cast_to_type.width() != 0:
+               return llvm.core.Constant.int(llvm.core.Type.int(cast_to_type.width()), op.value())
+
+        assert not cast_to_type or cast_to_type == op.type() # Cast not possible
+           
+        # By now, we can't have any more integers of unspecified size.
+        assert not isinstance(op.type(), type.IntegerType) or op.type().width() > 0
+
         if isinstance(op.type(), type.IntegerType):
-            return llvm.core.Constant.int(self.llvmTypeConvert(op.type()), op.value())
-            
+            return llvm.core.Constant.int(llvm.core.Type.int(op.type().width()), op.value())
+        
         if isinstance(op.type(), type.StringType):
             return llvm.core.Constant.string(op.value())
         
@@ -497,8 +530,8 @@ class CodeGen(visitor.Visitor):
 
     # Turns an operand into LLVM speak suitable for passing to a C function.
     # FIXME: We need to do the conversion.
-    def llvmOpToC(self, op, tag):
-        return self.llvmOp(op, tag)
+    def llvmOpToC(self, op, tag, cast_to_type=None):
+        return self.llvmOp(op, tag, cast_to_type)
         
     # Acts like a builder.store() yet signals that the assignment
     # initializes the address for the first time, there hasn't been anything else

@@ -7,8 +7,9 @@ class Checker(visitor.Visitor):
         self.reset()
 
     def reset(self):
-        self._infunction = False
+        self._in_function = False
         self._have_module = False
+        self._have_others = False
         self._errors = 0
 
     def checkAST(self, ast):
@@ -18,7 +19,7 @@ class Checker(visitor.Visitor):
         
     def error(self, obj, str):
         self._errors += 1
-        util.error(str, context=obj, fatal=False)        
+        util.error(str, context=obj.location(), fatal=False)        
 
 checker = Checker()
 

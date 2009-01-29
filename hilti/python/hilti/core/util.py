@@ -6,9 +6,9 @@ import sys
 
 def _print(prefix, msg, context):
     if context:
-        print >>sys.stderr, "%s - " % context,
+        print >>sys.stderr, "%s:" % context,
     
-    print >>sys.stderr, "%s: %s" % (prefix, msg)
+    print >>sys.stderr, "%s, %s" % (prefix, msg)
 
 def error(msg, context=None, fatal=True):
     _print("error", msg, context)

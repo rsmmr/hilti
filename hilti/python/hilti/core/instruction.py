@@ -21,7 +21,11 @@ class Instruction(object):
         self._op3 = op3
         self._target = target
         self._location = location
-
+        
+        cb = self.signature().callback()
+        if cb:
+            cb(self)
+        
     def name(self):
         return self.signature().name()
         
@@ -88,6 +92,10 @@ class ConstOperand(Operand):
         super(ConstOperand, self).__init__(constant.value(), constant.type(), location)
         self._constant = constant
 
+    def setType(self, type):
+        self._constant.setType(type)
+        self._type = type
+        
     def constant(self):
         return self._constant
 
@@ -117,12 +125,13 @@ class TupleOperand(Operand):
         return "(%s)" % ", ".join(["%s %s" % (op.type(), op.value()) for op in self._ops])
         
 class Signature:
-    def __init__(self, name, op1=None, op2=None, op3=None, target=None):
+    def __init__(self, name, op1=None, op2=None, op3=None, target=None, callback=None):
         self._name = name
         self._op1 = op1
         self._op2 = op2
         self._op3 = op3
         self._target = target
+        self._callback = callback
         
     def name(self):
         return self._name
@@ -138,6 +147,9 @@ class Signature:
 
     def target(self):
         return self._target
+    
+    def callback(self):
+        return self._callback
 
     # Turns the signature into a nicely formatted __doc__ string.
     def to_doc(self):
@@ -183,10 +195,10 @@ class Signature:
 
 
 # @signature decorator (not used anymore)
-def signature(name, op1=None, op2=None, op3=None, target=None):
+def signature(name, op1=None, op2=None, op3=None, target=None, callback=None):
     def register(ins):
         global _Instructions
-        ins._signature = Signature(name, op1, op2, op3, target)
+        ins._signature = Signature(name, op1, op2, op3, target, callback)
         _Instructions[name] = ins
         return ins
     
@@ -201,10 +213,10 @@ def make_ins_init(myclass):
     ins_init.myclass = myclass
     return ins_init
         
-def instruction(name, op1=None, op2=None, op3=None, target=None, location=None):
+def instruction(name, op1=None, op2=None, op3=None, target=None, callback=None, location=None):
     def register(ins):
         global _Instructions
-        ins._signature = Signature(name, op1, op2, op3, target)
+        ins._signature = Signature(name, op1, op2, op3, target, callback)
         d = dict(ins.__dict__)
         d["__init__"] = make_ins_init(ins)
         newclass = builtin_type(ins.__name__, (ins.__base__,), d)

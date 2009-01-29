@@ -16,6 +16,9 @@ class Constant(object):
     
     def type(self):
         return self._type
+
+    def setType(self, type):
+        self._type = type
     
     def location(self):
         return self._location

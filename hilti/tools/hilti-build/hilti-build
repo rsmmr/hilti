@@ -64,7 +64,7 @@ while [ "$1" != "" ]; do
 done    
 
 if [ "$TEST_DIAGNOSTICS" != "" ]; then
-   verbose=$TEST_DIAGNOSTICS
+#   verbose=$TEST_DIAGNOSTICS
    keeptmp=1
 fi   
 

@@ -55,8 +55,17 @@ def _(self, b):
     assert b.name()
 
     # Generate an LLVM function for this block.
+    #
+    # FIXME: We should use some function from codegen here. 
     self._block = b
-    self._llvm.func = self.llvmGetFunctionForBlock(b)
+    
+    llvm_name = self.nameFunctionForBlock(b)
+    if llvm_name in self._llvm.functions:
+        self._llvm.func = self._llvm.functions[llvm_name]
+        self._llvm.block_funcs[llvm_name] = self._llvm.func
+    else:
+        self._llvm.func = self.llvmGetFunctionForBlock(b)
+        
     self.label_counter = 0
     self.ret_func_counter = 0
     self._llvm.frameptr = self._llvm.func.args[0]

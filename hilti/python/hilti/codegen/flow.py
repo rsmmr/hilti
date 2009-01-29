@@ -250,10 +250,10 @@ def _makeCall(cg, func, args, llvm_succ):
     
     for i in range(0, len(args)):
 	    #   callee_frame.arg_<i> = args[i] 
-        val = cg.llvmOp(args[i], "arg%d" % i)
+        val = cg.llvmOp(args[i], "arg%d" % i, cast_to_type=ids[i].type())
         addr = cg.llvmAddrLocalVar(func, callee_frame, ids[i], "addr-arg%d" % i)
         cg.llvmInit(val, addr)
-    
+
     cg.llvmGenerateTailCallToFunction(func, [callee_frame])
     
 @codegen.when(instructions.flow.CallTailVoid)
@@ -305,7 +305,13 @@ def _(self, i):
     func = self.lookupFunction(i.op1().value())
     assert func
     
-    args = [self.llvmOpToC(op, "arg") for op in i.op2().value()]
+    ids = func.type().IDs()
+    tuple = i.op2().value()
+    
+    args = []
+    for i in range(len(tuple)):
+        args += [self.llvmOpToC(tuple[i], "arg", cast_to_type=ids[i].type())]
+    
     self.llvmGenerateCCall(func, args)
 
 def _makeReturn(cg, llvm_result=None, result_type=None):

@@ -18,7 +18,7 @@ class Scope(object):
         
     def insert(self, id):
         if id.name() in self._ids:
-            util.error("name %s already defined" % id.name())
+            util.error("name %s already defined" % id.name(), context=id.location())
         
         self._ids[id.name()] = id
         

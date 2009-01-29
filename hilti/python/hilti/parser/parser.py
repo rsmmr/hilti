@@ -106,7 +106,7 @@ def p_def_function_head(p):
     ftype = type.FunctionType(p[5], p[2])
     func = function.Function(p[3], ftype, p.parser.current.module, location=loc(p, 0))
     func.setCallingConvention(p[1])
-    p.parser.current.module.addGlobal(id.ID(func.name(), func.type()), func)
+    p.parser.current.module.addGlobal(id.ID(func.name(), func.type(), location=loc(p, 0)), func)
     p[0] = func
     
     p.parser.current.function = None
@@ -182,9 +182,8 @@ def p_instruction(p):
         op2 = p[3]
         op3 = p[4]
         target = None
-
         
-    ins = instruction.createInstruction(name, op1, op2, op3, target, location=loc(p, 1))
+    ins = instruction.createInstruction(name, op1, op2, op3, target, location=loc(p, 3))
     if not ins:
         error(p, "unknown instruction %s" % name)
         raise ply.yacc.SyntaxError
@@ -204,7 +203,8 @@ def p_operand_ident(p):
         
             if not ident:
                 if p[1].startswith("@"):
-                    p[0] = instruction.IDOperand(id.ID(p[1], type.Label), local, location=loc(p, 1))
+                    l = loc(p, 1)
+                    p[0] = instruction.IDOperand(id.ID(p[1], type.Label, location=l), local, location=l)
                     return
                 
                 error(p, "unknown identifier %s" % p[1])
@@ -214,8 +214,7 @@ def p_operand_ident(p):
 
 def p_operand_number(p):
     """operand : NUMBER"""
-    # FIXME: Which type for integer constants?
-    const = constant.Constant(p[1], type.Int32, location=loc(p, 1))
+    const = constant.Constant(p[1], type.Integer, location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
 
 def p_operand_bool(p):
@@ -300,13 +299,9 @@ def error(p, msg, lineno=0):
     if p and lineno < 0:
         lineno = p.lineno(1)
     
-    if lineno > 0:
-        context = "%s:%s" % (Parser.current.filename, lineno)
-    else:
-        context = Parser.current.filename
-
     Parser.current.errors += 1
-    util.error(msg, context=context, fatal=False)
+    loc = location.Location(Parser.current.filename, lineno)        
+    util.error(msg, context=loc, fatal=False)
 
 # Find file in dirs and returns full pathname or None if not found.
 def _findFile(filename, dirs):
@@ -350,7 +345,7 @@ def _importFile(filename, location):
             assert func and isinstance(func.type(), type.FunctionType)
             
             if func.linkage() == function.Function.LINK_EXPORTED:
-                Parser.current.module.addGlobal(id.ID(func.name(), func.type()), func)
+                Parser.current.module.addGlobal(id.ID(func.name(), func.type(), location=func.location()), func)
             
             continue
         

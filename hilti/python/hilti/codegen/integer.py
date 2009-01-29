@@ -26,30 +26,32 @@ def _(self, i):
     result = self.builder().sub(op1, op2, "tmp")
     self.llvmStoreInTarget(i.target(), result, "sub")
 
-@codegen.when(instructions.integer.Mult)
+@codegen.when(instructions.integer.Mul)
 def _(self, i):
     op1 = self.llvmOp(i.op1(), "op1")
     op2 = self.llvmOp(i.op2(), "op2")
-    result = self.builder().mult(op1, op2, "tmp")
-    self.llvmStoreInTarget(i.target(), result, "mult")
+    result = self.builder().mul(op1, op2, "tmp")
+    self.llvmStoreInTarget(i.target(), result, "mul")
 
 @codegen.when(instructions.integer.Div)
 def _(self, i):
     op1 = self.llvmOp(i.op1(), "op1")
     op2 = self.llvmOp(i.op2(), "op2")
-    
+
     block_ok = self.llvmNewBlock("ok")
     block_exc = self.llvmNewBlock("exc")
 
-    iszero = self.builder().icmp(llvm.core.IPRED_NE, op2, self.llvmConstInt(0), "tmp")
+    iszero = self.builder().icmp(llvm.core.IPRED_NE, op2, self.llvmConstInt(0, i.op2().type().width()), "tmp")
     self.builder().cbranch(iszero, block_ok, block_exc)
     
-    self.pushBuilder(llvm.core.Builder.new(block_exc))
+    self.pushBuilder(block_exc)
     self.llvmRaiseException("__hilti_exception_division_by_zero") 
     self.popBuilder()
     
-    self.pushBuilder(llvm.core.Builder.new(block_ok))
+    self.pushBuilder(block_ok)
     result = self.builder().sdiv(op1, op2, "tmp")
+    addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.target().id(), "X")
+    self.llvmAssign(result, addr)
     self.llvmStoreInTarget(i.target(), result, "div")
 
     # Leave ok-builder for subsequent code. 
@@ -70,19 +72,21 @@ def _(self, i):
 
 @codegen.when(instructions.integer.Ext)
 def _(self, i):
-    op1 = self.llvmOp(i.op1(), "op1")
-    width = i.op2()
-    assert width >= op1.type().width()
+    width = i.target().type().width()
+    assert width >= i.op1().type().width()
     
-    result = self.builder().sext(op1, self.llvmTypeConvert(type.Integer(width)), "ext")
+    op1 = self.llvmOp(i.op1(), "op1")
+    
+    result = self.builder().zext(op1, self.llvmTypeConvert(type.IntegerType(width)), "ext")
     self.llvmStoreInTarget(i.target(), result, "ext")
     
-@codegen.when(instructions.integer.Ext)
+@codegen.when(instructions.integer.Trunc)
 def _(self, i):
-    op1 = self.llvmOp(i.op1(), "op1")
-    width = i.op2()
-    assert width <= op1.type().width()
+    width = i.target().type().width()
+    assert width <= i.op1().type().width()
     
-    result = self.builder().strunc(op1, self.llvmTypeConvert(type.Integer(width)), "trunc")
+    op1 = self.llvmOp(i.op1(), "op1")
+    
+    result = self.builder().trunc(op1, self.llvmTypeConvert(type.IntegerType(width)), "trunc")
     self.llvmStoreInTarget(i.target(), result, "ext")
         
