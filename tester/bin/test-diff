@@ -19,13 +19,21 @@ fi
 
 result=2
 
+rm -f $TEST_DIAGNOSTICS
+echo "== File ===============================" >>$TEST_DIAGNOSTICS
+cat $input >>$TEST_DIAGNOSTICS
+
 if [ -e $TEST_BASELINE/$input ]; then
-   diff -u $@ $TEST_BASELINE/$input $input >$TEST_DIAGNOSTICS
+   echo "== Diff ===============================" >>$TEST_DIAGNOSTICS
+   diff -u $@ $TEST_BASELINE/$input $input >>$TEST_DIAGNOSTICS
    result=$?
 else
-   echo "test-dir: no baseline found." >$TEST_DIAGNOSTICS
+   echo "== Error===============================" >>$TEST_DIAGNOSTICS
+   echo "test-diff: no baseline found." >>$TEST_DIAGNOSTICS
    result=1
 fi
+
+echo "=======================================" >>$TEST_DIAGNOSTICS
 
 if [ "$TEST_MODE" == "TEST" ]; then
    exit $result

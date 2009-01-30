@@ -24,11 +24,11 @@ BinDir = None
 
 # Commands as tuple (tag, regexp, more-than-one-is-ok, optional, group-main, group-add)
 RE_EXEC = ("exec", re.compile("@TEST-EXEC(-FAIL)?: *(.*)"), True, False, 2, 1)
-RE_NAME = ("name", re.compile("@TEST-NAME: *(.*)"), False, False, 1, -1)
-RE_GROUP = ("group", re.compile("@TEST-GROUP: *(.*)"), False, False, 1, -1)
-RE_DIAG = ("diag-in", re.compile("@TEST-DIAG: *(.*)"), False, True, 1, -1)
+# RE_NAME = ("name", re.compile("@TEST-NAME: *(.*)"), False, False, 1, -1)
+# RE_GROUP = ("group", re.compile("@TEST-GROUP: *(.*)"), False, False, 1, -1)
+# RE_DIAG = ("diag-in", re.compile("@TEST-DIAG: *(.*)"), False, True, 1, -1)
 
-Commands = (RE_EXEC, RE_NAME, RE_GROUP, RE_DIAG)
+Commands = (RE_EXEC, )
 
 RE_INPUT = re.compile("%INPUT")
 
@@ -96,9 +96,20 @@ class Test(object):
             if not optional and not tag in cmds:
                 error("%s: mandatory %s command not found." % (self.file, tag))
 
-        self.name = cmds["name"]
-        self.group = cmds["group"]
-        self.diagin = cmds["diag-in"] if "diag-in" in cmds else None
+        # self.name = cmds["name"]
+        # self.group = cmds["group"]
+        # self.diagin = cmds["diag-in"] if "diag-in" in cmds else None
+
+        (name, ext) = os.path.splitext(self.file)
+        
+        self.name = name.replace("/", ".")
+        while self.name.startswith("."):
+            self.name = self.name[1:]
+        
+        self.group = os.path.dirname(self.file).replace("/", ".")
+        while self.group.startswith("."):
+            self.group = self.group[1:]
+        
         self.content = content
         self.cmdlines = [(cmd.strip(), success!="-FAIL") for (cmd, success) in cmds["exec"]]
         
@@ -107,10 +118,10 @@ class Test(object):
     def clone(self, content):
         clone = Test()
         clone.file = self.file
-        clone.name = self.name 
         clone.number = self.number + 1
+        clone.name = self.name 
         clone.group = self.group
-        clone.diagin = self.diagin
+#       clone.diagin = self.diagin
         clone.cmdlines = self.cmdlines
         
         clone.content = content
@@ -188,14 +199,14 @@ class Test(object):
         except subprocess.CalledProcessError, e:
             
             if expect_success:
-                self.diagmsgs += ["'%s' unexpectetly returned exit code %s" % (cmdline, e.returncode)]
+                self.diagmsgs += ["'%s' failed unexpectedly (exit code %s)" % (cmdline, e.returncode)]
                 return False
             
             else:
                 return True
 
         if not expect_success:
-            self.diagmsgs += ["'%s' unexpectetly returned exit code 0" % cmdline]
+            self.diagmsgs += ["'%s' succeeded unexpectedly (exit code 0)" % cmdline]
             return False
         
         return True
@@ -232,12 +243,12 @@ class Test(object):
         for line in self.diagmsgs:
             output("  % " + line)
 
-        for file in (self.diag, self.diagin, ".stderr"):
+        for file in (self.diag, ".stderr"):
             if not file:
                 continue
             
             if os.path.isfile(file):
-                output("  % cat " + file)
+                output("  % cat " + os.path.basename(file))
                 for line in open(file):
                     output("  " + line.strip())
                 output("")	
@@ -254,23 +265,21 @@ def findTests(paths):
     tests = []
     
     for path in paths:
-        
         if os.path.isfile(path):
-            tests += readTestFile(os.path.abspath(path))
-            continue
+            tests += readTestFile(path)
         
-        if os.path.isdir(path):
-            cwd = os.getcwd()
-            os.chdir(path)
-            
-            for fn in glob.glob(Glob):
-                if os.path.isdir(fn):
-                    tests += findTests([fn])
-                    
-                if os.path.isfile(fn):
-                    tests += readTestFile(os.path.abspath(fn))
-                    
-            os.chdir(cwd)
+        elif os.path.isdir(path):
+            for (dirpath, dirnames, filenames) in os.walk(path):
+                for file in filenames:
+                    tests += readTestFile(os.path.join(dirpath, file))
+
+                # Don't recurse into these. 
+                for skip in (".svn", "CVS", ".tmp", ".baseline"):
+                    if skip in dirnames:
+                        dirnames.remove(skip)
+                        
+        else:
+            error("cannot read %s" % path)
 
     return tests
 
@@ -348,6 +357,9 @@ if len(args) < 1:
     optparser.error("wrong number of arguments")
 
 tests = findTests(args)
+
+if not tests:
+    error("no tests")
 
 TmpDir = os.path.abspath(TmpDir)
 BaselineDir = os.path.abspath(BaselineDir)
