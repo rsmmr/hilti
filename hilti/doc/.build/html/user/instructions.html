@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Instruction Set &mdash; HILTI v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="HILTI v0.1 documentation" href="../index.html" />
+    <link rel="up" title="User Manual" href="user.html" />
+    <link rel="next" title="Library" href="library.html" />
+    <link rel="prev" title="Tools" href="tools.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="library.html" title="Library"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tools.html" title="Tools"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../hilti.html">HILTI v0.1 documentation</a> &raquo;</li>
+          <li><a href="user.html" accesskey="U">User Manual</a> &raquo;</li> 
+      </ul>
+    </div>  
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="instruction-set">
+<h1>Instruction Set<a class="headerlink" href="#instruction-set" title="Permalink to this headline">¶</a></h1>
+<p>In the follwing, we list the complete set of instructions that the
+HILTI language provides. For reference, we give them with both their
+textual mnemonic (as their are written in HITLI input files) and with
+their internal class names (as provided by the <a class="reference external" href="../internals/compiler.html#internals-python-module"><em>HILTI Python
+module</em></a>. We split group the list according
+to the intructions prefixes.</p>
+<div class="section" id="module-hilti.instructions.flow">
+<h2>Control Flow Operations<a class="headerlink" href="#module-hilti.instructions.flow" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="hilti.instructions.flow.Call">
+<!--[hilti.instructions.flow.Call]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">Call</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.Call" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;any&gt; = <strong>call</strong> &lt;function&gt; &lt;(tuple)&gt;
+</pre>
+<p>Calls <em>function</em> using the tuple in <em>op2</em> as 
+arguments. The argument types as well as the target&#8217;s type must 
+match the function&#8217;s signature.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.flow.CallC">
+<!--[hilti.instructions.flow.CallC]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">CallC</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.CallC" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;any&gt; = <strong>call.c</strong> &lt;function&gt; &lt;(tuple)&gt;
+</pre>
+<p>For internal use only.</p>
+<p>Calls the external C <em>function</em> using the tuple in <em>op2</em> as 
+arguments. The argument types as well as the target&#8217;s type must 
+match the function&#8217;s signature.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.flow.CallTailResult">
+<!--[hilti.instructions.flow.CallTailResult]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">CallTailResult</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>op3</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.CallTailResult" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;any&gt; = <strong>call.tail.result</strong> &lt;function&gt; &lt;(tuple)&gt; &lt;label&gt;
+</pre>
+<p>Like <em>Call()</em>, calls <em>function</em> using the tuple in <em>op2</em> as 
+arguments. The argument types must match the function&#8217;s
+signature. The function must return a result value and it&#8217;s type
+must likewise match the function&#8217;s signature. Different than
+<em>Call()</em>, <em>CallTailVoid</em> must be the <em>last instruction</em> of a
+<em>Block</em>.  After the called function returns, control is passed
+to block <em>op3</em>.</p>
+<p>This instruction is for internal use only. During the code
+generation, all <em>Call</em> instructions are converted into either
+<em>CallTailVoid</em> or <em>CallTailResult</em> instructions.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.flow.CallTailVoid">
+<!--[hilti.instructions.flow.CallTailVoid]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">CallTailVoid</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>op3</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.CallTailVoid" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+<strong>call.tail.void</strong> &lt;function&gt; &lt;(tuple)&gt; &lt;label&gt;
+</pre>
+<p>For internal use only.</p>
+<p>Calls <em>function</em> using the tuple in <em>op2</em> as arguments. The
+argument types must match the function&#8217;s signature, and the
+function must not return a value. Different than <em>Call()</em>,
+<em>CallTailVoid</em> must be the <em>last instruction</em> of a <em>Block</em>.
+After the called function returns, control is passed to 
+block <em>op3</em>.</p>
+<p>This instruction is for internal use only. During the code
+generation, all <em>Call</em> instructions are converted into either
+<em>CallTailVoid</em> or <em>CallTailResult</em> instructions.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.flow.IfElse">
+<!--[hilti.instructions.flow.IfElse]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">IfElse</tt><big>(</big><em>op1</em>, <em>op2</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.IfElse" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+<strong>if.else</strong> &lt;bool&gt; &lt;(label, label)&gt;
+</pre>
+<p>Jumps to label <em>op2[0]</em> if <em>op1</em> is true, otherwise to <em>op2[1]</em>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.flow.Jump">
+<!--[hilti.instructions.flow.Jump]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">Jump</tt><big>(</big><em>op1</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.Jump" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+<strong>jump</strong> &lt;label&gt;
+</pre>
+<p>Jumps unconditionally to label <em>op2</em>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.flow.ReturnResult">
+<!--[hilti.instructions.flow.ReturnResult]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">ReturnResult</tt><big>(</big><em>op1</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.ReturnResult" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+<strong>return.result</strong> &lt;<em>int:*</em> or <em>None</em>&gt;
+</pre>
+<p>Returns from the current function with the given value.
+The type of the value must match the function&#8217;s signature.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.flow.ReturnVoid">
+<!--[hilti.instructions.flow.ReturnVoid]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">ReturnVoid</tt><a class="headerlink" href="#hilti.instructions.flow.ReturnVoid" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+<strong>return.void</strong>
+</pre>
+<p>Returns from the current function without returning any value.
+The function&#8217;s signature must not specifiy a return value.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-hilti.instructions.integer">
+<h2>Integer Operations<a class="headerlink" href="#module-hilti.instructions.integer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="hilti.instructions.integer.Add">
+<!--[hilti.instructions.integer.Add]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Add</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Add" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;int&gt; = <strong>integer.add</strong> &lt;int&gt; &lt;int&gt;
+</pre>
+<p>Calculates sum of two operands. Operands and target must be of same width.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.integer.Div">
+<!--[hilti.instructions.integer.Div]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Div</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Div" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;int&gt; = <strong>integer.div</strong> &lt;int&gt; &lt;int&gt;
+</pre>
+<p>Divides <em>op1</em> by <em>op2</em>, flooring the result. Operands and target must be of same width.</p>
+<p>Throws <em>Exception.DivisionByZero</em> if <em>op2</em> is zero.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.integer.Mult">
+<!--[hilti.instructions.integer.Mult]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Mult</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Mult" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;int&gt; = <strong>integer.mult</strong> &lt;int&gt; &lt;int&gt;
+</pre>
+<p>Multiplies <em>op1</em> with <em>op2</em>. Operands and target must be of same width.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.integer.Sub">
+<!--[hilti.instructions.integer.Sub]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Sub</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Sub" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;int&gt; = <strong>integer.sub</strong> &lt;int&gt; &lt;int&gt;
+</pre>
+<p>Subtracts <em>op1</em> one from <em>op2</em>. Operands and target must be of same width.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../hilti.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="">Instruction Set</a><ul>
+<li><a class="reference external" href="#module-hilti.instructions.flow">Control Flow Operations</a></li>
+<li><a class="reference external" href="#module-hilti.instructions.integer">Integer Operations</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="tools.html"
+                                  title="previous chapter">Tools</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="library.html"
+                                  title="next chapter">Library</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/user/instructions.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+	  <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+	      <p style="font-size: 90%">Enter search terms or a module, class or function name.</p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="library.html" title="Library"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tools.html" title="Tools"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../hilti.html">HILTI v0.1 documentation</a> &raquo;</li>
+          <li><a href="user.html" accesskey="U">User Manual</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Robin Sommer.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+# Sphinx inventory version 1
+# Project: HILTI
+# Version: 0.1
+hilti.instructions.flow mod user/syntax.html
+hilti.instructions.integer mod user/syntax.html
+hilti.instructions.flow.CallTailResult class user/syntax.html
+hilti.instructions.flow.ReturnResult class user/syntax.html
+hilti.checker.checkAST function internals/compiler.html
+hilti.instructions.flow.ReturnVoid class user/syntax.html
+hilti.instructions.integer.Mult class user/syntax.html
+hilti.instructions.flow.IfElse class user/syntax.html
+hilti.instructions.flow.CallTailVoid class user/syntax.html
+hilti.instructions.flow.CallC class user/syntax.html
+hilti.instructions.integer.Div class user/syntax.html
+hilti.instructions.flow.Call class user/syntax.html
+hilti.instructions.flow.Jump class user/syntax.html
+hilti.instructions.integer.Sub class user/syntax.html
+hilti.instructions.integer.Add class user/syntax.html

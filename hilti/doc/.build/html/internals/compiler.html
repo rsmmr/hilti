@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Compiler &mdash; HILTI v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="HILTI v0.1 documentation" href="../index.html" />
+    <link rel="up" title="Internals" href="internals.html" />
+    <link rel="next" title="Runtime Environment" href="runtime.html" />
+    <link rel="prev" title="Internals" href="internals.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="runtime.html" title="Runtime Environment"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="internals.html" title="Internals"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../hilti.html">HILTI v0.1 documentation</a> &raquo;</li>
+          <li><a href="internals.html" accesskey="U">Internals</a> &raquo;</li> 
+      </ul>
+    </div>  
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="compiler">
+<h1>Compiler<a class="headerlink" href="#compiler" title="Permalink to this headline">¶</a></h1>
+<p id="internals-python-module">..todo: Describe the overall HILTI Python module layout/usage.</p>
+<div class="section" id="parser">
+<span id="internals-parser"></span><h2>Parser<a class="headerlink" href="#parser" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="core-classes">
+<h2>Core Classes<a class="headerlink" href="#core-classes" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="checker">
+<h2>Checker<a class="headerlink" href="#checker" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="hilti.checker.checkAST">
+<!--[hilti.checker.checkAST]--><tt class="descclassname">hilti.checker.</tt><tt class="descname">checkAST</tt><big>(</big><em>ast</em><big>)</big><a class="headerlink" href="#hilti.checker.checkAST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Verifies the correctness of the AST <em>ast</em>, as returned for
+example by <tt class="xref docutils literal"><span class="pre">hilti.parser.parse()</span></tt>, and returns the number of
+errors found. If any errors are detected, suitable error
+messages are written to standard error.</p>
+<p>This method is the primary way of ensuring that a HILTI AST is
+well-formed, and should be called whenever an AST could violate
+any semantic constraints being relied upon by the <a class="reference internal" href="#internals-codegen"><em>code
+generator</em></a>. In particular, ASTs should be
+checked after <a class="reference internal" href="#internals-parser"><em>parsing</em></a> and
+<a class="reference internal" href="#internals-canonifier"><em>canonification</em></a>.</p>
+</dd></dl>
+
+<p>The Checker performs the following checks:</p>
+<div class="admonition-todo admonition " id="todo-34">
+<p class="first admonition-title">Todo</p>
+<p class="last">Generate list of checks automatically.</p>
+</div>
+<div class="section" id="module-level-checks">
+<h3>Module-level Checks<a class="headerlink" href="#module-level-checks" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="flow-control-instructions">
+<h3>Flow-Control Instructions<a class="headerlink" href="#flow-control-instructions" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="type-integer-instructions">
+<h3>Type Integer Instructions<a class="headerlink" href="#type-integer-instructions" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="printer">
+<h2>Printer<a class="headerlink" href="#printer" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="canonifier">
+<span id="internals-canonifier"></span><h2>Canonifier<a class="headerlink" href="#canonifier" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="codegen">
+<span id="internals-codegen"></span><h2>Codegen<a class="headerlink" href="#codegen" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../hilti.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="">Compiler</a><ul>
+<li><a class="reference external" href="#parser">Parser</a></li>
+<li><a class="reference external" href="#core-classes">Core Classes</a></li>
+<li><a class="reference external" href="#checker">Checker</a><ul>
+<li><a class="reference external" href="#module-level-checks">Module-level Checks</a></li>
+<li><a class="reference external" href="#flow-control-instructions">Flow-Control Instructions</a></li>
+<li><a class="reference external" href="#type-integer-instructions">Type Integer Instructions</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#printer">Printer</a></li>
+<li><a class="reference external" href="#canonifier">Canonifier</a></li>
+<li><a class="reference external" href="#codegen">Codegen</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="internals.html"
+                                  title="previous chapter">Internals</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="runtime.html"
+                                  title="next chapter">Runtime Environment</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/internals/compiler.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+	  <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+	      <p style="font-size: 90%">Enter search terms or a module, class or function name.</p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="runtime.html" title="Runtime Environment"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="internals.html" title="Internals"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../hilti.html">HILTI v0.1 documentation</a> &raquo;</li>
+          <li><a href="internals.html" accesskey="U">Internals</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Robin Sommer.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.
+    </div>
+  </body>
+</html>
