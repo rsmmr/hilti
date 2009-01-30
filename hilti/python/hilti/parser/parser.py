@@ -176,14 +176,16 @@ def p_instruction(p):
         op2 = p[5]
         op3 = p[6]
         target = p[1]
+        location = loc(p, 3)
     else:
         name = p[1]
         op1 = p[2]
         op2 = p[3]
         op3 = p[4]
         target = None
+        location = loc(p, 1)
         
-    ins = instruction.createInstruction(name, op1, op2, op3, target, location=loc(p, 3))
+    ins = instruction.createInstruction(name, op1, op2, op3, target, location=location)
     if not ins:
         error(p, "unknown instruction %s" % name)
         raise ply.yacc.SyntaxError
@@ -290,7 +292,12 @@ def p_id_list(p):
         
 def p_error(p):    
     if p:
-        error(None, "unexpected %s '%s'" % (p.type.lower(), p.value), lineno=p.lineno)
+        type = p.type.lower()
+        value = p.value
+        if type == value:
+            error(None, "unexpected %s" % type, lineno=p.lineno)
+        else:
+            error(None, "unexpected %s '%s'" % (type, value), lineno=p.lineno)
     else:
         error(None, "unexpected end of file")
 
@@ -301,7 +308,7 @@ def error(p, msg, lineno=0):
     
     Parser.current.errors += 1
     loc = location.Location(Parser.current.filename, lineno)        
-    util.error(msg, context=loc, fatal=False)
+    util.error(msg, prefix="parser", context=loc, fatal=False)
 
 # Find file in dirs and returns full pathname or None if not found.
 def _findFile(filename, dirs):

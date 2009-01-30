@@ -1,0 +1,33 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+#
+# Division by zero is tested separately.
+
+module Main
+
+import hilti
+
+void run() {
+    local int:32 i
+    i = int.div 100 5 
+    call Hilti::print (i)
+}     
+
+### @TEST-START-NEXT
+
+# Signed
+
+module Main
+
+import hilti
+
+void run() {
+    local int:32 i
+    i = int.div -100 -5
+    call Hilti::print (i)
+}     
+
+

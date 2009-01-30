@@ -1,0 +1,3 @@
+wrong-op-types.hlt:5: error, type of target does not match signature (expected int:* but is bool) 
+
+1 error found

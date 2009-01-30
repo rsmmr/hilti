@@ -35,7 +35,7 @@ class IfElse(Instruction):
     """
     pass
 
-@instruction("call", op1=Function, op2=AnyTuple, target=Any)
+@instruction("call", op1=Function, op2=AnyTuple, target=Optional(Any))
 class Call(Instruction):
     """
     Calls *function* using the tuple in *op2* as 
@@ -44,7 +44,7 @@ class Call(Instruction):
     """
     pass
 
-@instruction("call.c", op1=Function, op2=AnyTuple, target=Any)
+@instruction("call.c", op1=Function, op2=AnyTuple, target=Optional(Any))
 class CallC(Instruction):
     """
     For internal use only.
@@ -73,7 +73,7 @@ class CallTailVoid(Instruction):
     """
     pass
 
-@instruction("call.tail.result", op1=Function, op2=AnyTuple, op3=Label, target=Any)
+@instruction("call.tail.result", op1=Function, op2=AnyTuple, op3=Label, target=Optional(Any))
 class CallTailResult(Instruction):
     """
     

@@ -56,6 +56,8 @@ def _(self, i):
 
     # Leave ok-builder for subsequent code. 
     
+import sys    
+    
 @codegen.when(instructions.integer.Eq)
 def _(self, i):
     op1 = self.llvmOp(i.op1(), "op1")

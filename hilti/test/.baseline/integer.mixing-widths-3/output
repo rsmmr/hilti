@@ -1,0 +1,3 @@
+mixing-widths.hlt:7: error, integer target must have same width as operands
+
+1 error found

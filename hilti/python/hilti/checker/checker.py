@@ -20,6 +20,7 @@ class Checker(visitor.Visitor):
     def error(self, obj, str):
         self._errors += 1
         util.error(str, context=obj.location(), fatal=False)        
+        self.skipOthers()
 
 checker = Checker()
 

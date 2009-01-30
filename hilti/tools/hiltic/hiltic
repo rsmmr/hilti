@@ -98,7 +98,7 @@ if not hilti.canonifier.canonifyAST(ast):
 errs = hilti.checker.checkAST(ast)
 
 if errs > 0:
-    print >>sys.stderr, "%d error(s) after canonicalization"
+    print >>sys.stderr, "%d error(s) after canonicalization" % errs
     sys.exit(1)
         
 if options.hilti_canon:

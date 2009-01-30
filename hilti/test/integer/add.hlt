@@ -1,0 +1,47 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import hilti
+
+void run() {
+    local int:32 i
+    i = int.add 3 7
+    call Hilti::print (i)
+}     
+
+### @TEST-START-NEXT
+
+# Signed
+
+module Main
+
+import hilti
+
+void run() {
+    local int:32 i
+    i = int.add 15 -5
+    call Hilti::print (i)
+}     
+
+### @TEST-START-NEXT
+
+# Overflow
+
+module Main
+
+import hilti
+
+void run() {
+    local int:8 i
+    local int:32 result
+    i = int.add 255 11
+    
+    result = int.ext i
+    call Hilti::print (result)
+}     
+

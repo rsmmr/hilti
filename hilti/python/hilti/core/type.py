@@ -286,5 +286,7 @@ def typenames():
     return _types.keys()
 
     
-    
+# Returns true if type is options.
+def isOptional(type):
+    return isinstance(type, OneOf) and type == None
     

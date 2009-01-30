@@ -45,10 +45,15 @@ class Visitor(object):
             self._posts += [(obj, arg, func)]
         return f    
 
+    def skipOthers(self):
+        self._skipothers = True
+    
     def _dovisit(self, obj, dict):
         
+        self._skipothers = False
+        
         candidate = None
-
+        
         for (type, arg, func) in dict:
             
             if isinstance(obj, type):
@@ -56,7 +61,7 @@ class Visitor(object):
                 
                 ## Run all 
                 
-                if self._all:
+                if self._all and not self._skipothers:
                     if argmatch:
                         func(self, obj)
                     continue

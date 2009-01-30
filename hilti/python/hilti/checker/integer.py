@@ -27,7 +27,7 @@ def _sameWidth(c, i, target):
                  _checkConst(i.op2().value(), i.target().type().width())
                  
             if not ok:
-                c.error("constant(s) too large for target type")
+                c.error(i, "constant(s) too large for target type")
                 
             return
                    
@@ -66,6 +66,9 @@ def _(self, i):
     _checkOp(self, i.op1())
     _checkOp(self, i.op2())
     _sameWidth(self, i, True)
+    
+    if isinstance(i.op2(), instruction.ConstOperand) and i.op2().value() == 0:
+        self.error(i, "division by zero")
 
 @checker.when(integer.Mul)
 def _(self, i):

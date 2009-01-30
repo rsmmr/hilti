@@ -1,0 +1,20 @@
+#! /usr/bin/env bash
+#
+# Runs the tester with the correct environment variables set.
+
+BASE_DIR=`cd ../.. && pwd -P`
+
+TESTER=$BASE_DIR/tester/bin/tester
+HILTI_BASE=$BASE_DIR/hilti 
+
+export PATH="$PATH:$HILTI_BASE/tools/hiltic:$HILTI_BASE/tools/hilti-build"
+export PYTHONPATH="$PYTHONPATH:$HILTI_BASE/python"
+
+export HILTICFLAGS="-I $HILTI_BASE/libhilti"
+export LLVMASFLAGS=""
+export LLCFLAGS=""
+export ASFLAGS=""
+export LDFLAGS="-L$HILTI_BASE/libhilti"
+
+$TESTER $@
+

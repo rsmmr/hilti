@@ -1,0 +1,3 @@
+module.hlt:2: parser error, unexpected ident 'Foo'
+
+1 error found

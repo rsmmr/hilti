@@ -237,11 +237,41 @@ _Instructions = {}
 def getInstructions():
     return _Instructions
 
+import sys
+
 def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=location.Location()):
     try:
-        return _Instructions[name](op1, op2, op3, target, location)
+        i = _Instructions[name](op1, op2, op3, target, location)
     except KeyError:
         return None
+    
+    # We assign widths to integer constants by taking the largest widths of all
+    # other integer operands/target.
+    #
+    # FIXME: This is really not a great place to do that. We should a generic
+    # capability for types to post-process arguments. 
+    
+    widths = [op.type().width() for op in (i.op1(), i.op2(), i.op3(), i.target()) if op and isinstance(op.type(), type.IntegerType)]
+    
+    maxwidth = max(widths) if widths else 0
+    
+    if not maxwidth:
+        # Either no integer operand at all, or none with a width. As the
+        # latter can only be constants, we pick a reasonable default.
+        maxwidth = 32
+        
+    if i.op1() and isinstance(i.op1(), ConstOperand) and isinstance(i.op1().type(), type.IntegerType):
+        i.op1().setType(type.IntegerType(maxwidth))
+        
+    if i.op2() and isinstance(i.op2(), ConstOperand) and isinstance(i.op2().type(), type.IntegerType):
+        i.op2().setType(type.IntegerType(maxwidth))
+
+    if i.op3() and isinstance(i.op3(), ConstOperand) and isinstance(i.op3().type(), type.IntegerType):
+        i.op3().setType(type.IntegerType(maxwidth))
+
+    return i
+
+    
 
 
     

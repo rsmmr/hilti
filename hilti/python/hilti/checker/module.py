@@ -43,7 +43,6 @@ def _(self, f):
         self.error(f, "input file must start with module declaration")
         
 ### Instructions.
-
 @checker.when(instruction.Instruction)
 def _(self, i):
     self._have_others = True
@@ -53,9 +52,18 @@ def _(self, i):
         self.error(i, "type of %s does not match signature (expected %s but is %s) " % (tag, str(expected), str(actual)))
         
     def checkOp(op, sig, tag):
+        if sig and not op and not type.isOptional(sig):
+            self.error(i, "%s missing" % tag)
+            return
+            
+        if op and not sig:
+            self.error(i, "superfluous %s" % tag)
+            return
+            
         if op and sig and not op.type() == sig:
             typeError(type.name(op.type()), type.name(sig), tag)
-            
+            return
+        
     checkOp(i.op1(), i.signature().op1(), "operand 1")
     checkOp(i.op2(), i.signature().op2(), "operand 2")
     checkOp(i.op3(), i.signature().op3(), "operand 3")

@@ -1,0 +1,40 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT a.out >output 2>&1 
+# @TEST-EXEC:      test-diff output
+#
+# Give instruction the wrong number of arguments. These are supposed to 
+# all fail.
+
+# Two modules.
+module Main
+
+void test() {
+    local int:32 sum
+    sum = int.add
+}
+
+# @TEST-START-NEXT
+module Main
+
+void test() {
+    local int:32 sum
+    sum = int.add 1
+}
+
+# @TEST-START-NEXT
+module Main
+
+void test() {
+    local int:32 sum
+    sum = int.add 1 2 3
+}
+
+# @TEST-START-NEXT
+module Main
+
+void test() {
+    int.add 1 2
+}
+
+

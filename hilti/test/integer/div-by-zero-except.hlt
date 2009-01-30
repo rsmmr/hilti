@@ -1,0 +1,20 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import hilti
+
+void run() {
+    local int:32 i
+    
+    # Fancy way to produce a zero. :-)
+    i = int.sub 100 100
+    i = int.div 32 i
+    call Hilti::print (i)
+}     
+
+

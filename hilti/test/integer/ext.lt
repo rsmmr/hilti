@@ -1,0 +1,21 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import hilti
+
+void run() {
+   local bool cond
+   local int:8 i
+   local int:32 j
+   
+   i = int.sub 100 50
+   
+   j = int.ext i 
+   call Hilti::print (j)
+}     
+
