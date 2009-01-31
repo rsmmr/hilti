@@ -6,12 +6,13 @@
 import location
 
 class Block(object):
-    def __init__(self, function, instructions = None, name = None, location = location.Location()):
+    def __init__(self, function, may_remove=False, instructions = None, name = None, location = location.Location()):
         self._function = function
         self._ins = instructions if instructions else []
         self._name = name
         self._location = location
         self._next = None
+        self._may_remove = True
 
     def function(self):
         return self._function
@@ -42,6 +43,12 @@ class Block(object):
     
     def location(self):
         return self._location
+
+    def setMayRemove(self, may):
+        self._may_remove = may
+        
+    def mayRemove(self):
+        return self._may_remove
     
     # Visitor support.
     def dispatch(self, visitor):

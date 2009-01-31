@@ -38,6 +38,8 @@ class Type(object):
         
         return self._name == other._name
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
 ###
     
 class StorageType(Type):

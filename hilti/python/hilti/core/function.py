@@ -8,14 +8,14 @@ import scope
 class Function(object):
 
     # Linkage.  
-    LINK_LOCAL = 1 
-    LINK_EXPORTED = 2
+    LINK_LOCAL = 1    # module-wide
+    LINK_EXPORTED = 2 # across compilation units
     
     # Calling conventions.
     CC_HILTI = 1
     CC_C = 2
     
-    def __init__(self, name, type, module, location = location.Location(), parentfunc = None):
+    def __init__(self, name, type, module, parentfunc = None, location = location.Location()):
 
         assert name.find("::") < 0 # must be non-qualified
 
@@ -97,7 +97,13 @@ class Function(object):
         return self._parent
         
     def location(self):
-        return self._location
+        if self._location:
+            return self._location
+        
+        if self._parentfunc:
+            return self._parentfunc.location()
+        
+        return None
 
     def __str__(self):
         return "function %s %s" % (self._type, self._name)

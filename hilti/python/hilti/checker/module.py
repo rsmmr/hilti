@@ -5,7 +5,7 @@
 from hilti.core import *
 from checker import checker
 
-@checker.when(module.Module)
+@checker.pre(module.Module)
 def _(self, m):
     if self._have_others:
         self.error(m, "*module* statement does not come first")
@@ -14,7 +14,12 @@ def _(self, m):
         self.error(m, "more than one *module* statement")
         
     self._have_module = True
+    self._module = m
 
+@checker.post(module.Module)
+def _(self, m):
+    self._module = None
+    
 ### Global ID definitions. 
 
 @checker.when(id.ID, type.StructDeclType)
@@ -34,10 +39,12 @@ def _(self, id):
 def _(self, f):
     self._have_others = True
     self._in_function = True
+    self._function = f
         
 @checker.post(function.Function)
 def _(self, f):
     self._in_function = False
+    self._function = None
     
     if not self._have_module:
         self.error(f, "input file must start with module declaration")

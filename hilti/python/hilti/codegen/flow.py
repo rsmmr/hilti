@@ -283,7 +283,7 @@ def _(self, i):
     arg_type = self.llvmTypeConvert(func.type().resultType())
     
     succ_ft = type.FunctionType(generic=True) # doesn't matter. 
-    succ = function.Function(succ_name, succ_ft, None)
+    succ = function.Function(succ_name, succ_ft, None, parentfunc=func)
     llvm_succ = self.llvmCreateFunctionForBlock(succ_name, self._block, [("result", arg_type)])
     llvm_succ_block = llvm_succ.append_basic_block(succ_name)
     

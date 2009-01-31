@@ -29,6 +29,8 @@ optparser.add_option("-p", "--hilti-plain", action="store_true", dest="hilti_pla
                      help="Output HILTI code as it is parsed (per default to stdout)")
 optparser.add_option("-c", "--hilti-canonfied", action="store_true", dest="hilti_canon", default=False,
                      help="Output HILTI code after canonification (per default to stdout)")
+optparser.add_option("-C", "--hilti-canonfied-no-verify", action="store_true", dest="hilti_canon_noverify", default=False,
+                     help="Output HILTI code after canonification but do not verify correctness (per default to stdout)")
 optparser.add_option("-o", "--output", action="store", type="string", dest="output", default=None,
                      help="Store output in file", metavar="FILE")
 optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
@@ -38,6 +40,9 @@ optparser.add_option("-I", "--import-path", action="callback", callback=import_p
 
 if options.ll_noverify:
     options.ll = True
+    
+if options.hilti_canon_noverify:
+    options.hilti_canon = True
 
 if not "import_paths" in options.__dict__:
     options.import_paths = []
@@ -95,7 +100,10 @@ if not hilti.canonifier.canonifyAST(ast):
     sys.exit(1)
 
 # Make sure it's still valid code.    
-errs = hilti.checker.checkAST(ast)
+if not options.hilti_canon_noverify:
+   errs = hilti.checker.checkAST(ast)  
+else:
+   errs = 0	
 
 if errs > 0:
     print >>sys.stderr, "%d error(s) after canonicalization" % errs

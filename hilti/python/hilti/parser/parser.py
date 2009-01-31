@@ -104,9 +104,9 @@ def p_def_declare(p):
 def p_def_function_head(p):
     """function_head : opt_cc type IDENT '(' param_list ')'"""
     ftype = type.FunctionType(p[5], p[2])
-    func = function.Function(p[3], ftype, p.parser.current.module, location=loc(p, 0))
+    func = function.Function(p[3], ftype, p.parser.current.module, location=loc(p, 3))
     func.setCallingConvention(p[1])
-    p.parser.current.module.addGlobal(id.ID(func.name(), func.type(), location=loc(p, 0)), func)
+    p.parser.current.module.addGlobal(id.ID(func.name(), func.type(), location=loc(p, 3)), func)
     p[0] = func
     
     p.parser.current.function = None
@@ -141,6 +141,7 @@ def p_instantiate_function(p):
     func.setImported(False) 
     p.parser.current.function = func
     p.parser.current.block = block.Block(func, location=loc(p, 0))
+    p.parser.current.block.setMayRemove(False)
     p.parser.current.function.addBlock(p.parser.current.block)
 
 def p_instruction_list(p):
@@ -274,11 +275,20 @@ def p_type(p):
             | TYPE ':' NUMBER"""
     if len(p) == 2:
         p[0] = p[1]
+        
+        if isinstance(p[1], type.IntegerType) and p[1].width() == 0:
+            error(p, "integer type requires width")
+            raise ply.yacc.SyntaxError
+        
     else:
         if p[1] != type.Integer:
             error(p, "only integer type allows width specifications, not %s" % p[1])
             raise ply.yacc.SyntaxError
 
+        if p[1] == type.Integer and p[3] == 0:
+            error(p, "integer type requires non-zero width")
+            raise ply.yacc.SyntaxError
+        
         p[0] = type.IntegerType(p[3])
     
 def p_id_list(p):
@@ -303,7 +313,7 @@ def p_error(p):
 
 def error(p, msg, lineno=0):
     global Parser
-    if p and lineno < 0:
+    if p and lineno <= 0:
         lineno = p.lineno(1)
     
     Parser.current.errors += 1

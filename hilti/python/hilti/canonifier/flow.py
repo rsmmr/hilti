@@ -21,6 +21,7 @@ def _splitBlock(canonifier, ins=None):
     canonifier._label_counter += 1
     new_block = block.Block(canonifier._current_function, instructions = [], name="@__l%d" % (canonifier._label_counter))
     canonifier._transformed_blocks.append(new_block)
+    return new_block
 
 ### Call    
     
@@ -42,11 +43,12 @@ def _(self, i):
     else:
         tc = instructions.flow.CallTailResult(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
         
-    _splitBlock(self, tc)
+    new_block = _splitBlock(self, tc)
     
-    i = id.ID(self._transformed_blocks[-1].name(), type.Label, location=i.location())
+    i = id.ID(new_block.name(), type.Label, location=i.location())
     label = instruction.IDOperand(i, False, location=i.location())
     tc.setOp3(label)
+    new_block.setMayRemove(False)
 
 ### Jump    
 

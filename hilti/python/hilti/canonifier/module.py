@@ -25,11 +25,21 @@ def _isTerminator(i):
 # If the last instruction is not a terminator, add it. 
 def _unifyBlock(block):
     instr = block.instructions()
-    if not len(instr) or not _isTerminator(instr[-1]):
+    loc = block.function().location() if block.function() else None
+    
+    add_terminator = False
+    
+    if not len(instr) and not block.mayRemove():
+        add_terminator = True
+        
+    if len(instr) and not _isTerminator(instr[-1]):
+        add_terminator = True
+        
+    if add_terminator:
         if block.next():
-            newins = instructions.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label), True))
+            newins = instructions.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label), True), location=loc)
         else:
-            newins = instructions.flow.ReturnVoid(None)
+            newins = instructions.flow.ReturnVoid(None, location=loc)
         block.addInstruction(newins)
 
 #### Module
@@ -68,11 +78,9 @@ def _(self, f):
     
     f.clearBlocks()
     for b in self._transformed_blocks:
+        _unifyBlock(b)
         if b.instructions():
             f.addBlock(b)
-
-    for b in f.blocks():
-        _unifyBlock(b)
 
 ### Block
 
@@ -86,7 +94,9 @@ def _(self, b):
         
     # While we proceed, we copy each instruction over to a new block, 
     # potentially after transforming it first.
-    self._transformed_blocks += [block.Block(self._current_function, instructions=[], name=name, location=b.location())]
+    new_block = block.Block(self._current_function, instructions=[], name=name, location=b.location())
+    new_block.setMayRemove(b.mayRemove())
+    self._transformed_blocks += [new_block]
 
 ### Generic instructions.
 
