@@ -1,0 +1,3 @@
+wrong-returns.hlt:5: error, return type does not match function definition
+
+1 error found

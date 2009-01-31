@@ -1,0 +1,2 @@
+wrong-returns.hlt:6: error, function does not return a value
+1 error(s) after canonicalization

@@ -1,0 +1,3 @@
+wrong-returns.hlt:5: error, void function returns a value
+
+1 error found

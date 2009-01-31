@@ -1,0 +1,20 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT a.out >output 2>&1 
+# @TEST-EXEC:      test-diff output
+#
+# Illegal integer widths. These are supposed to fail.
+
+module Main
+
+void run() {
+    local int foo
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int:0 foo
+}
