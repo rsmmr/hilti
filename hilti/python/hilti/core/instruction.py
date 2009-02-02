@@ -125,13 +125,14 @@ class TupleOperand(Operand):
         return "(%s)" % ", ".join(["%s %s" % (op.type(), op.value()) for op in self._ops])
         
 class Signature:
-    def __init__(self, name, op1=None, op2=None, op3=None, target=None, callback=None):
+    def __init__(self, name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False):
         self._name = name
         self._op1 = op1
         self._op2 = op2
         self._op3 = op3
         self._target = target
         self._callback = callback
+        self._terminator = terminator
         
     def name(self):
         return self._name
@@ -150,6 +151,9 @@ class Signature:
     
     def callback(self):
         return self._callback
+    
+    def terminator(self):
+        return self._terminator
 
     # Turns the signature into a nicely formatted __doc__ string.
     def to_doc(self):
@@ -195,10 +199,10 @@ class Signature:
 
 
 # @signature decorator (not used anymore)
-def signature(name, op1=None, op2=None, op3=None, target=None, callback=None):
+def signature(name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False):
     def register(ins):
         global _Instructions
-        ins._signature = Signature(name, op1, op2, op3, target, callback)
+        ins._signature = Signature(name, op1, op2, op3, target, callback, terminator)
         _Instructions[name] = ins
         return ins
     
@@ -213,10 +217,10 @@ def make_ins_init(myclass):
     ins_init.myclass = myclass
     return ins_init
         
-def instruction(name, op1=None, op2=None, op3=None, target=None, callback=None, location=None):
+def instruction(name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False, location=None):
     def register(ins):
         global _Instructions
-        ins._signature = Signature(name, op1, op2, op3, target, callback)
+        ins._signature = Signature(name, op1, op2, op3, target, callback, terminator)
         d = dict(ins.__dict__)
         d["__init__"] = make_ins_init(ins)
         newclass = builtin_type(ins.__name__, (ins.__base__,), d)

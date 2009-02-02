@@ -2,8 +2,8 @@
 
 .. include:: ../include.rst
 
-Internals
-=========
+Internals [Missing]
+===================
 
 .. toctree::
 

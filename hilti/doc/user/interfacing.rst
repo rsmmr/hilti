@@ -5,12 +5,9 @@
 Interfacing
 ===========
 
-Calling C Function From HILTI
------------------------------
+Calling C Function From HILTI [Missing]
+---------------------------------------
 
-.. todo:: Calling C Functions From HILTI
-   
-Calling HILTI Functions from C
-------------------------------
+Calling HILTI Functions from C [Missing]
+----------------------------------------
 
-.. todo:: Calling HILTI Functions from C

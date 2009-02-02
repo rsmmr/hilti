@@ -6,16 +6,16 @@ from hilti.instructions import integer
 from hilti.core import *
 from checker import checker
 
-def _checkOp(c, op):
+def _checkOp(checker, op):
     # Only constant operands may have an unspecified width. 
     if op.type().width() == 0:
         if not isinstance(op, instruction.ConstOperand):
-            c.error(i, "cannot use non-constant integer operand with unspecified width")
+            checker.error(i, "cannot use non-constant integer operand with unspecified width")
 
 def _checkConst(val, width):
     return val < 2**width
             
-def _sameWidth(c, i, target):
+def _sameWidth(checker, i, target):
     if isinstance(i.op1(), instruction.ConstOperand):
         if isinstance(i.op2(), instruction.ConstOperand):
             if not target:
@@ -27,27 +27,27 @@ def _sameWidth(c, i, target):
                  _checkConst(i.op2().value(), i.target().type().width())
                  
             if not ok:
-                c.error(i, "constant(s) too large for target type")
+                checker.error(i, "constant(s) too large for target type")
                 
             return
                    
         else:
             # Const must match other operand. 
             if not _checkConst(i.op1().value(), i.op2().type().width()):
-                c.error("constant too large for other operand")
+                checker.error("constant too large for other operand")
 
     else:
         if isinstance(i.op2(), instruction.ConstOperand):
             # Const must match other operand. 
             if not _checkConst(i.op2().value(), i.op1().type().width()):
-                c.error("constant too large for other operand")
+                checker.error("constant too large for other operand")
             return 
         
     if i.op1().type().width() != i.op2().type().width():
-        c.error(i, "integer operands must have same width")
+        checker.error(i, "integer operands must have same width")
 
     if target and i.op1().type().width() != i.target().type().width():
-        c.error(i, "integer target must have same width as operands")
+        checker.error(i, "integer target must have same width as operands")
         
 @checker.when(integer.Add)
 def _(self, i):

@@ -47,53 +47,79 @@
             
   <div class="section" id="hilti-a-high-level-intermediary-language-for-traffic-inspection">
 <h1>HILTI: A High-Level Intermediary Language for Traffic Inspection<a class="headerlink" href="#hilti-a-high-level-intermediary-language-for-traffic-inspection" title="Permalink to this headline">¶</a></h1>
-<p>Version 0.1, January 25, 2009</p>
+<p>Version 0.1, February 01, 2009</p>
 <p>Table of Contents:</p>
 <ul>
 <li class="toctree-l1"><a class="reference external" href="user/user.html">User Manual</a><ul>
-<li class="toctree-l2"><a class="reference external" href="user/overview.html">Overview</a></li>
-<li class="toctree-l2"><a class="reference external" href="user/tools.html">Tools</a></li>
+<li class="toctree-l2"><a class="reference external" href="user/overview.html">Overview [Missing]</a></li>
+<li class="toctree-l2"><a class="reference external" href="user/tools.html">Tools [Missing]</a></li>
 <li class="toctree-l2"><a class="reference external" href="user/syntax.html">Syntax and Semantics</a><ul>
-<li class="toctree-l3"><a class="reference external" href="user/syntax.html#overall-program-structure">Overall Program Structure</a><ul>
-<li class="toctree-l4"><a class="reference external" href="user/syntax.html#modules">Modules</a></li>
-<li class="toctree-l4"><a class="reference external" href="user/syntax.html#data-types">Data Types</a></li>
-<li class="toctree-l4"><a class="reference external" href="user/syntax.html#functions">Functions</a></li>
+<li class="toctree-l3"><a class="reference external" href="user/syntax.html#overall-program-structure-missing">Overall Program Structure [Missing]</a><ul>
+<li class="toctree-l4"><a class="reference external" href="user/syntax.html#modules-missing">Modules [Missing]</a></li>
+<li class="toctree-l4"><a class="reference external" href="user/syntax.html#data-types-missing">Data Types [Missing]</a></li>
+<li class="toctree-l4"><a class="reference external" href="user/syntax.html#functions-missing">Functions [Missing]</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference external" href="user/syntax.html#instruction-reference">Instruction Reference</a><ul>
-<li class="toctree-l4"><a class="reference external" href="user/syntax.html#module-hilti.instructions.flow">Control Flow Operations</a></li>
-<li class="toctree-l4"><a class="reference external" href="user/syntax.html#module-hilti.instructions.integer">Integer Operations</a></li>
+<li class="toctree-l4"><a class="reference external" href="user/syntax.html#module-hilti.instructions.flow">Control Flow</a></li>
+<li class="toctree-l4"><a class="reference external" href="user/syntax.html#module-hilti.instructions.integer">Type Integer</a></li>
+<li class="toctree-l4"><a class="reference external" href="user/syntax.html#module-hilti.instructions.bool">Type Boolean</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference external" href="user/library.html">Library</a></li>
+<li class="toctree-l2"><a class="reference external" href="user/library.html">Library [Missing]</a></li>
 <li class="toctree-l2"><a class="reference external" href="user/interfacing.html">Interfacing</a><ul>
-<li class="toctree-l3"><a class="reference external" href="user/interfacing.html#calling-c-function-from-hilti">Calling C Function From HILTI</a></li>
-<li class="toctree-l3"><a class="reference external" href="user/interfacing.html#calling-hilti-functions-from-c">Calling HILTI Functions from C</a></li>
+<li class="toctree-l3"><a class="reference external" href="user/interfacing.html#calling-c-function-from-hilti-missing">Calling C Function From HILTI [Missing]</a></li>
+<li class="toctree-l3"><a class="reference external" href="user/interfacing.html#calling-hilti-functions-from-c-missing">Calling HILTI Functions from C [Missing]</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference external" href="internals/internals.html">Internals</a><ul>
+<li class="toctree-l1"><a class="reference external" href="internals/internals.html">Internals [Missing]</a><ul>
 <li class="toctree-l2"><a class="reference external" href="internals/compiler.html">Compiler</a><ul>
-<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#parser">Parser</a></li>
-<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#core-classes">Core Classes</a></li>
-<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#checker">Checker</a><ul>
-<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-level-checks">Module-level Checks</a></li>
-<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#flow-control-instructions">Flow-Control Instructions</a></li>
-<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#type-integer-instructions">Type Integer Instructions</a></li>
+<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#core-classes">Core Classes</a><ul>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.block">core.block</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.constant">core.constant</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.function">core.function</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.id">core.id</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.instruction">core.instruction</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.location">core.location</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.module">core.module</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.scope">core.scope</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.type">core.type</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.util">core.util</a></li>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.core.visitor">core.visitor</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#printer">Printer</a></li>
-<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#canonifier">Canonifier</a></li>
-<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#codegen">Codegen</a></li>
+<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#module-hilti.parser">Parser</a></li>
+<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#module-hilti.checker">Checker</a><ul>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.checker.checker">Internals</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference external" href="internals/runtime.html">Runtime Environment</a></li>
-<li class="toctree-l2"><a class="reference external" href="internals/testing.html">Regression Testing</a></li>
-<li class="toctree-l2"><a class="reference external" href="internals/documentation.html">Documentation System</a></li>
-<li class="toctree-l2"><a class="reference external" href="internals/extending.html">Extending</a></li>
+<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#module-hilti.printer">Printer</a><ul>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.printer.printer">Internals</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#module-hilti.canonifier.flow">Canonifier</a><ul>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.canonifier.canonifier">Internals</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference external" href="internals/compiler.html#module-hilti.codegen">Codegen</a><ul>
+<li class="toctree-l4"><a class="reference external" href="internals/compiler.html#module-hilti.codegen.codegen">Internals</a><ul>
+<li class="toctree-l5"><a class="reference external" href="internals/compiler.html#general-conventions">General Conventions</a></li>
+<li class="toctree-l5"><a class="reference external" href="internals/compiler.html#data-structures">Data Structures</a></li>
+<li class="toctree-l5"><a class="reference external" href="internals/compiler.html#calling-conventions">Calling Conventions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference external" href="internals/runtime.html">Runtime Environment [Missing]</a></li>
+<li class="toctree-l2"><a class="reference external" href="internals/testing.html">Regression Testing [Missing]</a></li>
+<li class="toctree-l2"><a class="reference external" href="internals/documentation.html">Documentation System [Missing]</a></li>
+<li class="toctree-l2"><a class="reference external" href="internals/extending.html">Extending [Missing]</a></li>
 <li class="toctree-l2"><a class="reference external" href="internals/todo.html">To-Do List</a></li>
 </ul>
 </li>

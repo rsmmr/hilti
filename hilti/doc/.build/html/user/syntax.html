@@ -23,8 +23,8 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="top" title="HILTI v0.1 documentation" href="../index.html" />
     <link rel="up" title="User Manual" href="user.html" />
-    <link rel="next" title="Library" href="library.html" />
-    <link rel="prev" title="Tools" href="tools.html" /> 
+    <link rel="next" title="Library [Missing]" href="library.html" />
+    <link rel="prev" title="Tools [Missing]" href="tools.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,10 +37,10 @@
           <a href="../modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
         <li class="right" >
-          <a href="library.html" title="Library"
+          <a href="library.html" title="Library [Missing]"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tools.html" title="Tools"
+          <a href="tools.html" title="Tools [Missing]"
              accesskey="P">previous</a> |</li>
         <li><a href="../hilti.html">HILTI v0.1 documentation</a> &raquo;</li>
           <li><a href="user.html" accesskey="U">User Manual</a> &raquo;</li> 
@@ -53,32 +53,32 @@
             
   <div class="section" id="syntax-and-semantics">
 <h1>Syntax and Semantics<a class="headerlink" href="#syntax-and-semantics" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="overall-program-structure">
-<h2>Overall Program Structure<a class="headerlink" href="#overall-program-structure" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="modules">
-<h3>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="overall-program-structure-missing">
+<h2>Overall Program Structure [Missing]<a class="headerlink" href="#overall-program-structure-missing" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="modules-missing">
+<h3>Modules [Missing]<a class="headerlink" href="#modules-missing" title="Permalink to this headline">¶</a></h3>
 </div>
-<div class="section" id="data-types">
-<h3>Data Types<a class="headerlink" href="#data-types" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="data-types-missing">
+<h3>Data Types [Missing]<a class="headerlink" href="#data-types-missing" title="Permalink to this headline">¶</a></h3>
 </div>
-<div class="section" id="functions">
-<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="functions-missing">
+<h3>Functions [Missing]<a class="headerlink" href="#functions-missing" title="Permalink to this headline">¶</a></h3>
 </div>
 </div>
 <div class="section" id="instruction-reference">
 <h2>Instruction Reference<a class="headerlink" href="#instruction-reference" title="Permalink to this headline">¶</a></h2>
 <p>In the following, we list the complete set of instructions that the
 HILTI language provides. For reference, we give them with both their
-textual mnemonics (as one uses them writing a HILTI program in a
+textual mnemonics (as one uses when writing a HILTI program in a
 text editor), along with their Python class names as provided by the
 <a class="reference external" href="../internals/compiler.html#internals-python-module"><em>HILTI Python module</em></a>.</p>
 <div class="section" id="module-hilti.instructions.flow">
-<h3>Control Flow Operations<a class="headerlink" href="#module-hilti.instructions.flow" title="Permalink to this headline">¶</a></h3>
+<h3>Control Flow<a class="headerlink" href="#module-hilti.instructions.flow" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="hilti.instructions.flow.Call">
 <!--[hilti.instructions.flow.Call]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">Call</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.Call" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;any&gt; = <strong>call</strong> &lt;function&gt; &lt;(tuple)&gt;
+&lt;<em>any</em> or <em>None</em>&gt; = <strong>call</strong> &lt;function&gt; &lt;(tuple)&gt;
 </pre>
 <p>Calls <em>function</em> using the tuple in <em>op2</em> as 
 arguments. The argument types as well as the target&#8217;s type must 
@@ -89,7 +89,7 @@ match the function&#8217;s signature.</p>
 <dt id="hilti.instructions.flow.CallC">
 <!--[hilti.instructions.flow.CallC]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">CallC</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.CallC" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;any&gt; = <strong>call.c</strong> &lt;function&gt; &lt;(tuple)&gt;
+&lt;<em>any</em> or <em>None</em>&gt; = <strong>call.c</strong> &lt;function&gt; &lt;(tuple)&gt;
 </pre>
 <p>For internal use only.</p>
 <p>Calls the external C <em>function</em> using the tuple in <em>op2</em> as 
@@ -101,7 +101,7 @@ match the function&#8217;s signature.</p>
 <dt id="hilti.instructions.flow.CallTailResult">
 <!--[hilti.instructions.flow.CallTailResult]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">CallTailResult</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>op3</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.CallTailResult" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;any&gt; = <strong>call.tail.result</strong> &lt;function&gt; &lt;(tuple)&gt; &lt;label&gt;
+&lt;<em>any</em> or <em>None</em>&gt; = <strong>call.tail.result</strong> &lt;function&gt; &lt;(tuple)&gt; &lt;label&gt;
 </pre>
 <p>Like <em>Call()</em>, calls <em>function</em> using the tuple in <em>op2</em> as 
 arguments. The argument types must match the function&#8217;s
@@ -135,11 +135,11 @@ generation, all <em>Call</em> instructions are converted into either
 
 <dl class="class">
 <dt id="hilti.instructions.flow.IfElse">
-<!--[hilti.instructions.flow.IfElse]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">IfElse</tt><big>(</big><em>op1</em>, <em>op2</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.IfElse" title="Permalink to this definition">¶</a></dt>
+<!--[hilti.instructions.flow.IfElse]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">IfElse</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>op3</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.IfElse" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-<strong>if.else</strong> &lt;bool&gt; &lt;(label, label)&gt;
+<strong>if.else</strong> &lt;bool&gt; &lt;label&gt; &lt;label&gt;
 </pre>
-<p>Jumps to label <em>op2[0]</em> if <em>op1</em> is true, otherwise to <em>op2[1]</em>.</p>
+<p>Transfers control label <em>op2</em> if <em>op1</em> is true, and to <em>op3</em> otherwise.</p>
 </dd></dl>
 
 <dl class="class">
@@ -173,44 +173,93 @@ The function&#8217;s signature must not specifiy a return value.</p>
 
 </div>
 <div class="section" id="module-hilti.instructions.integer">
-<h3>Integer Operations<a class="headerlink" href="#module-hilti.instructions.integer" title="Permalink to this headline">¶</a></h3>
+<h3>Type Integer<a class="headerlink" href="#module-hilti.instructions.integer" title="Permalink to this headline">¶</a></h3>
+<p>The +integer+ data type represents signed integers of a fixed width. The width
+is specified as part of the type name as, e.g., in +int:16+ for a 16-bit
+integer.</p>
 <dl class="class">
 <dt id="hilti.instructions.integer.Add">
 <!--[hilti.instructions.integer.Add]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Add</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Add" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;int&gt; = <strong>integer.add</strong> &lt;int&gt; &lt;int&gt;
+&lt;int&gt; = <strong>int.add</strong> &lt;int&gt; &lt;int&gt;
 </pre>
-<p>Calculates sum of two operands. Operands and target must be of same width.</p>
+<p>Calculates the sum of the two operands. Operands and target must be of
+same width. The result is calculated modulo 2^{width}.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="hilti.instructions.integer.Div">
 <!--[hilti.instructions.integer.Div]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Div</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Div" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;int&gt; = <strong>integer.div</strong> &lt;int&gt; &lt;int&gt;
+&lt;int&gt; = <strong>int.div</strong> &lt;int&gt; &lt;int&gt;
 </pre>
-<p>Divides <em>op1</em> by <em>op2</em>, flooring the result. Operands and target must be of same width.</p>
-<p>Throws <em>Exception.DivisionByZero</em> if <em>op2</em> is zero.</p>
+<p>Divides <em>op1</em> by <em>op2</em>, flooring the result. Operands and target must be
+of same width.  If the product overflows the range of the integer type,
+the result in undefined.</p>
+<p>Throws <tt class="xref docutils literal"><span class="pre">DivisionByZero</span></tt> if <em>op2</em> is zero.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="hilti.instructions.integer.Mult">
-<!--[hilti.instructions.integer.Mult]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Mult</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Mult" title="Permalink to this definition">¶</a></dt>
+<dt id="hilti.instructions.integer.Eq">
+<!--[hilti.instructions.integer.Eq]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Eq</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Eq" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;int&gt; = <strong>integer.mult</strong> &lt;int&gt; &lt;int&gt;
+&lt;bool&gt; = <strong>int.eq</strong> &lt;int&gt; &lt;int&gt;
 </pre>
-<p>Multiplies <em>op1</em> with <em>op2</em>. Operands and target must be of same width.</p>
+<p>Returns true iff <em>op1</em> equals <em>op2</em>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.integer.Ext">
+<!--[hilti.instructions.integer.Ext]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Ext</tt><big>(</big><em>op1</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Ext" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;int&gt; = <strong>int.ext</strong> &lt;int&gt;
+</pre>
+<p>Zero-extends <em>op1</em> into an integer of the same width as the <em>target</em>. The
+width of <em>op1</em> must be smaller or equal that of the <em>target</em>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.integer.Lt">
+<!--[hilti.instructions.integer.Lt]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Lt</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Lt" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;bool&gt; = <strong>int.lt</strong> &lt;int&gt; &lt;int&gt;
+</pre>
+<p>Returns true iff <em>op1</em> is less than <em>op2</em>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.instructions.integer.Mul">
+<!--[hilti.instructions.integer.Mul]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Mul</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Mul" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;int&gt; = <strong>int.mul</strong> &lt;int&gt; &lt;int&gt;
+</pre>
+<p>Multiplies <em>op1</em> with <em>op2</em>. Operands and target must be of same width.
+The result is calculated modulo 2^{width}.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="hilti.instructions.integer.Sub">
 <!--[hilti.instructions.integer.Sub]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Sub</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Sub" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;int&gt; = <strong>integer.sub</strong> &lt;int&gt; &lt;int&gt;
+&lt;int&gt; = <strong>int.sub</strong> &lt;int&gt; &lt;int&gt;
 </pre>
-<p>Subtracts <em>op1</em> one from <em>op2</em>. Operands and target must be of same width.</p>
+<p>Subtracts <em>op1</em> one from <em>op2</em>. Operands and target must be of same width.
+The result is calculated modulo 2^{width}.</p>
 </dd></dl>
 
+<dl class="class">
+<dt id="hilti.instructions.integer.Trunc">
+<!--[hilti.instructions.integer.Trunc]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Trunc</tt><big>(</big><em>op1</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Trunc" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">
+&lt;int&gt; = <strong>int.trunc</strong> &lt;int&gt;
+</pre>
+<p>Bit-truncates <em>op1</em> into an integer of the same width as the <em>target</em>. The
+width of <em>op1</em> must be larger or equal that of the <em>target</em>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-hilti.instructions.bool">
+<h3>Type Boolean<a class="headerlink" href="#module-hilti.instructions.bool" title="Permalink to this headline">¶</a></h3>
 </div>
 </div>
 </div>
@@ -224,15 +273,16 @@ The function&#8217;s signature must not specifiy a return value.</p>
             <h3><a href="../hilti.html">Table Of Contents</a></h3>
             <ul>
 <li><a class="reference external" href="">Syntax and Semantics</a><ul>
-<li><a class="reference external" href="#overall-program-structure">Overall Program Structure</a><ul>
-<li><a class="reference external" href="#modules">Modules</a></li>
-<li><a class="reference external" href="#data-types">Data Types</a></li>
-<li><a class="reference external" href="#functions">Functions</a></li>
+<li><a class="reference external" href="#overall-program-structure-missing">Overall Program Structure [Missing]</a><ul>
+<li><a class="reference external" href="#modules-missing">Modules [Missing]</a></li>
+<li><a class="reference external" href="#data-types-missing">Data Types [Missing]</a></li>
+<li><a class="reference external" href="#functions-missing">Functions [Missing]</a></li>
 </ul>
 </li>
 <li><a class="reference external" href="#instruction-reference">Instruction Reference</a><ul>
-<li><a class="reference external" href="#module-hilti.instructions.flow">Control Flow Operations</a></li>
-<li><a class="reference external" href="#module-hilti.instructions.integer">Integer Operations</a></li>
+<li><a class="reference external" href="#module-hilti.instructions.flow">Control Flow</a></li>
+<li><a class="reference external" href="#module-hilti.instructions.integer">Type Integer</a></li>
+<li><a class="reference external" href="#module-hilti.instructions.bool">Type Boolean</a></li>
 </ul>
 </li>
 </ul>
@@ -241,10 +291,10 @@ The function&#8217;s signature must not specifiy a return value.</p>
 
             <h4>Previous topic</h4>
             <p class="topless"><a href="tools.html"
-                                  title="previous chapter">Tools</a></p>
+                                  title="previous chapter">Tools [Missing]</a></p>
             <h4>Next topic</h4>
             <p class="topless"><a href="library.html"
-                                  title="next chapter">Library</a></p>
+                                  title="next chapter">Library [Missing]</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
               <li><a href="../_sources/user/syntax.txt"
@@ -275,10 +325,10 @@ The function&#8217;s signature must not specifiy a return value.</p>
           <a href="../modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
         <li class="right" >
-          <a href="library.html" title="Library"
+          <a href="library.html" title="Library [Missing]"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tools.html" title="Tools"
+          <a href="tools.html" title="Tools [Missing]"
              accesskey="P">previous</a> |</li>
         <li><a href="../hilti.html">HILTI v0.1 documentation</a> &raquo;</li>
           <li><a href="user.html" accesskey="U">User Manual</a> &raquo;</li> 

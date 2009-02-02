@@ -1,24 +1,24 @@
 # $Id$
 #
-# Modulel-level checks as well some applying to all instructions. 
+# Modulel-level checks as well those applying to all instructions. 
 
 from hilti.core import *
 from checker import checker
 
 @checker.pre(module.Module)
 def _(self, m):
-    if self._have_others:
-        self.error(m, "*module* statement does not come first")
-    
-    if self._have_module:
+    if self.moduleSeen():
         self.error(m, "more than one *module* statement")
         
+    if self.declSeen():
+        self.error(m, "*module* statement does not come first")
+        
     self._have_module = True
-    self._module = m
+    self._current_module = m
 
 @checker.post(module.Module)
 def _(self, m):
-    self._module = None
+    self._current_module = None
     
 ### Global ID definitions. 
 
@@ -26,7 +26,7 @@ def _(self, m):
 def _(self, id):
     self._have_others = True
     
-    if self._in_function:
+    if self.currentFunction():
         self.error(id, "structs cannot be declared inside functions")
         
 @checker.when(id.ID, type.StorageType)
@@ -37,21 +37,22 @@ def _(self, id):
 
 @checker.pre(function.Function)
 def _(self, f):
+    if not self.moduleSeen():
+        self.error(f, "input file must start with module declaration")
+        
     self._have_others = True
-    self._in_function = True
-    self._function = f
+    self._current_function = f
         
 @checker.post(function.Function)
 def _(self, f):
-    self._in_function = False
-    self._function = None
-    
-    if not self._have_module:
-        self.error(f, "input file must start with module declaration")
+    self._current_function = None
         
 ### Instructions.
 @checker.when(instruction.Instruction)
 def _(self, i):
+    if not self.moduleSeen():
+        self.error(f, "input file must start with module declaration")
+        
     self._have_others = True
     
     # Check that signature maches the actual operands. 

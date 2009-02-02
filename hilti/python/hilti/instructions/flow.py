@@ -5,14 +5,14 @@
 from hilti.core.type import *
 from hilti.core.instruction import *
 
-@instruction("jump", op1=Label)
+@instruction("jump", op1=Label, terminator=True)
 class Jump(Instruction):
     """
     Jumps unconditionally to label *op2*.
     """
     pass
 
-@instruction("return.void")
+@instruction("return.void", terminator=True)
 class ReturnVoid(Instruction):
     """
     Returns from the current function without returning any value.
@@ -20,7 +20,7 @@ class ReturnVoid(Instruction):
     """
     pass
 
-@instruction("return.result", op1=Optional(Integer))
+@instruction("return.result", op1=Optional(Integer), terminator=True)
 class ReturnResult(Instruction):
     """
     Returns from the current function with the given value.
@@ -28,7 +28,7 @@ class ReturnResult(Instruction):
     """
     pass
 
-@instruction("if.else", op1=Bool, op2=Label, op3=Label)
+@instruction("if.else", op1=Bool, op2=Label, op3=Label, terminator=True)
 class IfElse(Instruction):
     """
     Transfers control label *op2* if *op1* is true, and to *op3* otherwise. 
@@ -55,7 +55,7 @@ class CallC(Instruction):
     """
     pass
 
-@instruction("call.tail.void", op1=Function, op2=AnyTuple, op3=Label)
+@instruction("call.tail.void", op1=Function, op2=AnyTuple, op3=Label, terminator=True)
 class CallTailVoid(Instruction):
     """
     For internal use only.
@@ -73,7 +73,7 @@ class CallTailVoid(Instruction):
     """
     pass
 
-@instruction("call.tail.result", op1=Function, op2=AnyTuple, op3=Label, target=Optional(Any))
+@instruction("call.tail.result", op1=Function, op2=AnyTuple, op3=Label, target=Optional(Any), terminator=True)
 class CallTailResult(Instruction):
     """
     

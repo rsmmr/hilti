@@ -3,38 +3,51 @@
 #    - No terminators at other locations, split blocks where necessary.
 #    - Turn call instructions into terminator call.tail.void or call.tail.result.  
 #    - Turn calls to function with C calling convention into call.c instructions.
+"""
+The following canonifications are perfomed on flow-control instructions:
+
+* All :class:`~hilti.instructions.Call` instructions are replaced with
+  either:
+    
+ 1. :class:`~hilti.instructions.flow.CallTailVoid` if the callee function is a
+    HILTI function without any return value; or
+    
+ 2. :class:`~hilti.instructions.flow.CallTailResult` if the callee function is
+    a HILTI function without any return value; or
+    
+ 3. :class:`~hilti.instructions.flow.CallC` if the callee function is a
+    function with C calling convention.
+
+* For all |terminator| instructions, the current
+  :class:`~hilti.core.block.Block` is closed at their location and a new
+  :class:`~hilti.core.block.Block` is opened.
+
+"""
 
 from hilti.core import *
 from hilti import instructions
 from canonifier import canonifier
 
-# Terminate the current block with the given instruction 
-# and starts a new one.
+# Terminates the current block with the given instruction and starts a new one.
 def _splitBlock(canonifier, ins=None):
-    assert canonifier._current_function
-    assert canonifier._transformed_blocks
-    
     if ins:
-        current_block = canonifier._transformed_blocks[-1]
+        current_block = canonifier.currentTransformedBlock()
         current_block.addInstruction(ins)
     
-    canonifier._label_counter += 1
-    new_block = block.Block(canonifier._current_function, instructions = [], name="@__l%d" % (canonifier._label_counter))
-    canonifier._transformed_blocks.append(new_block)
+    new_block = block.Block(canonifier.currentFunction(), instructions = [], name=canonifier.makeUniqueLabel())
+    canonifier.addTransformedBlock(new_block)
     return new_block
 
-### Call    
-    
 @canonifier.when(instructions.flow.Call)
 def _(self, i):
     
     name = i.op1().value().name()
-    func = self._current_module.lookupGlobal(name)
+    func = self.currentModule().lookupGlobal(name)
     assert func and isinstance(func.type(), type.FunctionType)
     
     if func.linkage() == function.Function.CC_C:
         callc = instructions.flow.CallC(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
-        current_block = canonifier._transformed_blocks[-1]
+        current_block = self.currentTransformedBlock()
         current_block.addInstruction(callc)
         return
     
@@ -50,35 +63,19 @@ def _(self, i):
     tc.setOp3(label)
     new_block.setMayRemove(False)
 
-### Jump    
-
 @canonifier.when(instructions.flow.Jump)
 def _(self, i):
-    current_block = canonifier._transformed_blocks[-1]
-    current_block.addInstruction(i)
-    _splitBlock(self)
+    _splitBlock(self, i)
 
-### ReturnVoid    
-    
 @canonifier.when(instructions.flow.ReturnVoid)
 def _(self, i):
-    current_block = canonifier._transformed_blocks[-1]
-    current_block.addInstruction(i)
-    _splitBlock(self)
+    _splitBlock(self, i)
 
-### ReturnResult
-    
 @canonifier.when(instructions.flow.ReturnResult)
 def _(self, i):
-    current_block = canonifier._transformed_blocks[-1]
-    current_block.addInstruction(i)
-    _splitBlock(self)
-    
-### IfElse
+    _splitBlock(self, i)
     
 @canonifier.when(instructions.flow.IfElse)
 def _(self, i):
-    current_block = canonifier._transformed_blocks[-1]
-    current_block.addInstruction(i)
-    _splitBlock(self)
+    _splitBlock(self, i)
     

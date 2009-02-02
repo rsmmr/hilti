@@ -1,26 +1,31 @@
 # $Id$
 #
 # Module-level structures as well as generic instruction canonification.
-#
-# We apply the following transformations:
-#    - Each blocks ends with a terminator. 
-#    - Each block get name unique within its function. 
+"""
+The following :class:`~hilti.core.block.Block` canonifications are performed:
+
+* Blocks that don't have successor yet are linked to the block following them
+  with the functions list of :meth:`~hilti.core.function.Function.blocks`, if
+  any.
+  
+* Each block ends with a |terminator|. If none is already in place, we either
+  add a :class:`~hilti.instructions.flow.Jump` pointing the succeeding block (as indicated
+  by :meth:`~hilti.core.block.Block.next`, or a :class:`~hilti.instructions.flow.ReturnVoid`
+  if there is no successor. In the later case, the function must of return
+  type *void*. 
+  
+* Each block is assigned a *name* which is unique at least witin the function
+  the block is part of.
+  
+* Empty blocks are removed if :meth:`~hilti.core.block.mayRemove` indicates
+  that it is permissible to do so.  
+"""
 
 from hilti.core import *
 from hilti import instructions
 from canonifier import canonifier
 
 ### Helpers
-
-# Returns true if instruction terminates a block in canonified form.
-def _isTerminator(i):
-    return isinstance(i, instructions.flow.Jump) or \
-           isinstance(i, instructions.flow.IfElse) or \
-           isinstance(i, instructions.flow.CallTailVoid) or \
-           isinstance(i, instructions.flow.CallTailResult) or \
-           isinstance(i, instructions.flow.ReturnVoid) or \
-           isinstance(i, instructions.flow.ReturnResult) or \
-           isinstance(i, instructions.flow.IfElse)
 
 # If the last instruction is not a terminator, add it. 
 def _unifyBlock(block):
@@ -32,7 +37,7 @@ def _unifyBlock(block):
     if not len(instr) and not block.mayRemove():
         add_terminator = True
         
-    if len(instr) and not _isTerminator(instr[-1]):
+    if len(instr) and not instr[-1].signature().terminator():
         add_terminator = True
         
     if add_terminator:
@@ -61,7 +66,7 @@ def _(self, f):
     
     self._current_function = f
     self._label_counter = 0
-    self._transformed_blocks = []
+    self._transformed = []
     
     # Chain blocks together where not done yet.
     prev = None
@@ -74,10 +79,11 @@ def _(self, f):
     if f.isImported():
         return
     
-    assert self._transformed_blocks
-    
+    self._current_function = None
+
+    # Copy the transformed blocks over to the function.
     f.clearBlocks()
-    for b in self._transformed_blocks:
+    for b in self.transformedBlocks():
         _unifyBlock(b)
         if b.instructions():
             f.addBlock(b)
@@ -89,22 +95,21 @@ def _(self, b):
     
     # If first block doesn't have a name, call it like the function.
     name = b.name()
-    if not self._transformed_blocks and not name:
+    if not self.transformedBlocks() and not name:
         name = "@__%s" % canonifier._current_function.name()
         
     # While we proceed, we copy each instruction over to a new block, 
     # potentially after transforming it first.
-    new_block = block.Block(self._current_function, instructions=[], name=name, location=b.location())
+    new_block = block.Block(self.currentFunction(), instructions=[], name=name, location=b.location())
     new_block.setMayRemove(b.mayRemove())
-    self._transformed_blocks += [new_block]
+    self.addTransformedBlock(new_block)
 
 ### Generic instructions.
 
 @canonifier.when(instruction.Instruction)
 def _(self, i):
-    assert self._transformed_blocks
-    
     # Default just leaves instruction untouched.
-    current_block = self._transformed_blocks[-1]
+    current_block = self.currentTransformedBlock()
+    assert current_block
     current_block.addInstruction(i)
 

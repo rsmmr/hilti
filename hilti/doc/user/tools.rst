@@ -2,8 +2,9 @@
 
 .. include:: ../include.rst
 
-Tools
-=====
+Tools [Missing]
+===============
 
-* hiltic
-* hilti-build
+.. todo:: Document ``hiltic``.
+
+.. todo:: Document ``hilti-build``.

@@ -45,13 +45,13 @@ def _(self, i):
 
 @checker.when(flow.ReturnVoid)
 def _(self, i):
-    rt = self._function.type().resultType()
+    rt = self.currentFunction().type().resultType()
     if rt != type.Void:
         self.error(i, "function does not return a value")
 
 @checker.when(flow.ReturnResult)
 def _(self, i):
-    rt = self._function.type().resultType()
+    rt = self.currentFunction().type().resultType()
     if rt == type.Void:
         self.error(i, "void function returns a value")
         return
@@ -66,7 +66,7 @@ def _(self, i):
 
 @checker.when(flow.Call)
 def _(self, i):
-    func = self._module.lookupGlobal(i.op1().id().name())
+    func = self.currentModule().lookupGlobal(i.op1().id().name())
     if not _checkFunc(self, i, func, None):
         return
 
@@ -82,7 +82,7 @@ def _(self, i):
 
 @checker.when(flow.CallC)
 def _(self, i):
-    func = self._module.lookupGlobal(i.op1().id().name())
+    func = self.currentModule().lookupGlobal(i.op1().id().name())
     if not _checkFunc(self, i, func, function.Function.CC_C):
         return
 
@@ -98,7 +98,7 @@ def _(self, i):
 
 @checker.when(flow.CallTailVoid)
 def _(self, i):
-    func = self._module.lookupGlobal(i.op1().id().name())
+    func = self.currentModule().lookupGlobal(i.op1().id().name())
     if not _checkFunc(self, i, func, function.Function.CC_HILTI):
         return
     
@@ -112,7 +112,7 @@ def _(self, i):
 
 @checker.when(flow.CallTailResult)
 def _(self, i):
-    func = self._module.lookupGlobal(i.op1().id().name())
+    func = self.currentModule().lookupGlobal(i.op1().id().name())
     if not _checkFunc(self, i, func, function.Function.CC_HILTI):
         return
     
