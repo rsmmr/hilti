@@ -5,12 +5,16 @@ INSTALL
 
 * Prerequisites:
 
-  - LLVM 1.4
-    
+  - Python 2.6 (!)
+  - LLVM 2.4
+  - LLVM-PY 0.5
   - For generating the documentation:
-  
-    * Sphinx 0.5 
-      hg clone http://bitbucket.org/birkenfeld/sphinx
-
-      (or to update: hg pull http://bitbucket.org/birkenfeld/sphinx)
+    
+    Sphinx 0.5, or current development:
+    
+      - To check out:
+        hg clone http://bitbucket.org/birkenfeld/sphinx
+        
+      - To update:
+        hg pull http://bitbucket.org/birkenfeld/sphinx
 
