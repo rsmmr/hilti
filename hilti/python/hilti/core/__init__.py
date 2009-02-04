@@ -8,7 +8,6 @@ __all__ = [
     "instruction",
     "location",
     "module",
-    "printer",
     "scope",
     "type",
     "util",

@@ -1,0 +1,72 @@
+
+
+INSTALL
+=======
+
+* Prerequisites:
+
+  - Python 2.6 
+  
+    Note that for now the Python binary is called as "python2.6"
+    because most distributions are still using a version < 2.6 as
+    default. Most Python 2.6 packages seem to install a binary under
+    this name though. If you don't have it after installing 2.6,
+    just put a link into your PATH pointing to the right binary. 
+    
+  - LLVM 2.4
+  
+    http://llvm.org/releases/
+  
+  - LLVM-PY 0.5
+  
+    http://code.google.com/p/llvm-py/downloads/list
+  
+  - For generating the documentation:
+    
+    Sphinx 0.5.1, or (perhaps) current development:
+    
+    http://sphinx.pocoo.org/
+    
+    To get the repository version:
+    
+      - Checking out:
+        hg clone http://bitbucket.org/birkenfeld/sphinx
+        
+      - Updating:
+        hg pull http://bitbucket.org/birkenfeld/sphinx
+
+
+* There's not much in terms of installing anything system-wide yet
+  but you should be able to get the test-suite to pass rather easily:
+  
+  1. First, you need to build libhilti:
+  
+     > cd libhilti && make
+     
+     There shouldn't be any errors messages.
+     
+  2. Then just run the Makefile in tests:
+  
+     > cd tests && make
+     
+     All tests are supposed to pass. If there's a problem with a test,
+     "./run-tester -d path/to/test" will give you debugging output. 
+
+* Starting points
+
+  - Documentation is located in doc/html but there's not much there
+    yet. Working on it ...
+  
+  - Look at the HILTI source files in the tests/* subdirectories to
+    see how HILTI programs look like.
+
+  - Tools:
+
+    * tools/hiltic is the HILTI->LLVM compiler
+  
+    * tools/hilti-build runs the whole chain
+    HILTI-to-native-executable. 
+
+  - Look at tests/run-tester to see what environment variables to
+    set for running the HILTI tools. 
+    
