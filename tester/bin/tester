@@ -19,7 +19,7 @@ Glob = "test-*"
 Version = 0.1
 
 TmpDir = ".tmp"
-BaselineDir = ".baseline"
+BaselineDir = "Baseline"
 BinDir = None
 
 # Commands as tuple (tag, regexp, more-than-one-is-ok, optional, group-main, group-add)
