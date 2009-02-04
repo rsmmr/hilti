@@ -1,0 +1,120 @@
+This is a directory for a quicky experiment on an alternate
+intermediate form, one significantly higher lever but not
+significantly harder to compile: a "Typed Scheme" variant.
+
+Its going to be used for a few days hacking to see if it works out
+easier to use but still easy to compile.
+
+Building requirements are going to be the same as HILTI, and I expect
+to borrow a fair amount of code to get things going.
+
+
+
+The basic concept:
+
+A scheme-ish language with the following variants of "conventional"
+scheme:
+
+a)  Static types with parameterization:
+
+    Types will initially need to be declared, but ?perhaps? will be
+    inferred.  Probably borrow considerably from ml here.
+
+b)  Dispatch based on argument type:
+
+    Thus, eg, (print {int}) and (print {float}) will select the
+    correct instance depending on the static type.  This makes things
+    far easier to program, but doesn't hurt efficiency because of
+    static typing.
+
+c)  Variable arguments by left association:
+
+    For a variable-argument function (format string values...), it becomes
+    ((format string value1) value2)...
+
+d)  Unrestricted Closures (lambdas) as first-class operations:
+
+    Closures can directly implement many critical language primitives,
+    including non-returning deferred execution, notification, objects,
+    and higher-order operations such as map.  When non-escaping or
+    when free variables are not mutated, these are highly efficient.
+    Even when escaping with free variables, they are still reasonably
+    efficient.
+
+e)  Restricted continuations:
+
+    Continuations that are one-shot, downward only, non-escaping (a'la
+    C setjump/longjump) can be used.  This still enables a normal call
+    stack, rather than heap-allocated stacks or heap-allocated frames,
+    but supports exception handling.
+
+
+
+Things that MAY make it
+
+a)  Proper tail recursion
+
+b)  Slightly less restricted continuations:
+
+    Continuations that are one-shop, downard only, but escaping.  This
+    additionally enables returning deferred execution and light-weight
+    context-switching
+
+
+Basic syntax (approximately):
+
+Program -> Expression *
+
+Expression -> Typespec Element
+	   |  Element
+
+Element -> '()               // NULL
+	|  id	             // Identifier
+	|  constant          // Constant
+	|  ( Expression + )  // Further expressions
+
+Typespec -> { TypeElement } 
+
+TypeElement -> id 	     // Type identifier 
+
+	    | ????           // Need spec for lambda types and compound types
+	    here;
+
+
+Semantics/special forms
+
+
+(def id expression)
+
+Top level only: Binds the results of evaluating expression to
+identifier ID.  ID's type is that of the expression
+
+(def (id arglist) expression-list)
+
+Top level only.  Syntactic sugar for 
+  (def id (lambda (arglist)
+       expression-list))
+
+
+(lambda (arglist) expression-list)
+
+Create a closure with the specified args, which executs the listed
+expressions
+
+
+
+(let ((id1 exp1)) expression-list)
+
+Evaluates exp1 and binds id1 to that in lexical scope before
+evaluating expression-ilst
+
+
+(let ((id1 exp1) (id2 exp2) (id3 exp3)) expression-list)
+
+Syntactic sugar for
+(let ((id1 exp1)) (let (id2 exp2) ...))
+
+
+   Evaluates exp and binds id1 to that in lexical scope, then 
+
+etc...
