@@ -20,6 +20,10 @@ INSTALL
   - LLVM-PY 0.5
   
     http://code.google.com/p/llvm-py/downloads/list
+
+  - PLY (pynthon lex/yacc)
+
+    http://www.dabeaz.com/ply/ply-2.5.tar.gz
   
   - For generating the documentation:
     
