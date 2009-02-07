@@ -135,11 +135,11 @@ class CodeGen(visitor.Visitor):
     def nameFunction(self, func):
         name = func.name().replace("::", "_")
         
-        if func.callingConvention() == function.Function.CC_C:
+        if func.callingConvention() == function.CallingConvention.C:
             # Don't mess with the names of C functions.
             return name
         
-        if func.callingConvention() == function.Function.CC_HILTI:
+        if func.callingConvention() == function.CallingConvention.HILTI:
             return "hlt_%s" % name
         
         # Cannot be reached
@@ -239,7 +239,7 @@ class CodeGen(visitor.Visitor):
             pass
         
         fields = self._bf_fields
-        ids = function.type().IDs() + function.scope().IDs().values()
+        ids = function.type().IDs() + function.IDs().values()
         fields = fields + [(id.name(), self.llvmTypeConvert(id.type())) for id in ids]
         
         # Build map of indices and store with function.
@@ -502,8 +502,10 @@ class CodeGen(visitor.Visitor):
         assert not cast_to_type or cast_to_type == op.type() # Cast not possible
         
         if isinstance(op, instruction.IDOperand):
-            if op.isLocal():
-                addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, op.id(), tag)
+            i = op.id()
+            if i.role() == id.Role.LOCAL or i.role() == id.Role.PARAM:
+                # A local variable.
+                addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i, tag)
                 return self.builder().load(addr, tag)
             
         util.internal_error("opToLLVM: unknown op class: %s" % op)
@@ -563,8 +565,10 @@ class CodeGen(visitor.Visitor):
     # Can only be used when working with a builder for the current function. 
     def llvmStoreInTarget(self, target, val, tag):
         if isinstance(target, instruction.IDOperand):
-            if target.isLocal():
-                addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, target.id(), tag)
+            i = target.id()
+            if i.role() == id.Role.LOCAL or i.role() == id.Role.PARAM:
+                # A local variable.
+                addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i, tag)
                 self.llvmAssign(val, addr)
                 return 
                 

@@ -73,11 +73,11 @@ def p_module_decl_error(p):
     pass
 
 def p_def_global(p):
-    """def_global : GLOBAL id NL"""
+    """def_global : GLOBAL global_id NL"""
     p.parser.current.module.addGlobal(id)
 
 def p_def_local(p):
-    """def_local : LOCAL id NL"""
+    """def_local : LOCAL local_id NL"""
     p.parser.current.function.addID(p[2])
     
 def p_def_type(p):
@@ -85,10 +85,10 @@ def p_def_type(p):
     pass
     
 def p_def_struct(p):
-    """def_struct : STRUCT _begin_nolines IDENT '{' id_list '}' _end_nolines"""
+    """def_struct : STRUCT _begin_nolines IDENT '{' local_id_list '}' _end_nolines"""
     stype = type.StructType(p[5])
     struct = type.StructDeclType(stype)
-    sid = id.ID(p[3], struct, location=loc(p, 1))
+    sid = id.ID(p[3], struct, id.Role.GLOBAL, location=loc(p, 1))
     p.parser.current.module.addGlobal(sid)
 
 def p_def_import(p):
@@ -98,15 +98,24 @@ def p_def_import(p):
 
 def p_def_declare(p):
     """def_declare : DECLARE function_head"""
-    p[2].setLinkage(function.Function.LINK_EXPORTED)
-    p[2].setImported(True) 
+    p[2].setLinkage(function.Linkage.EXPORTED)
 
 def p_def_function_head(p):
     """function_head : opt_cc type IDENT '(' param_list ')'"""
     ftype = type.FunctionType(p[5], p[2])
-    func = function.Function(p[3], ftype, p.parser.current.module, location=loc(p, 3))
-    func.setCallingConvention(p[1])
-    p.parser.current.module.addGlobal(id.ID(func.name(), func.type(), location=loc(p, 3)), func)
+    
+    if p[1] == function.CallingConvention.HILTI:
+        func = function.Function(p[3], ftype, p.parser.current.module, location=loc(p, 3))
+    elif p[1] == function.CallingConvention.C:
+        # FIXME: We need some way to declare C function which are not part of
+        # a module. In function.Function, we already allow module==None in the
+        # CC.C case but our syntax does not provide for that currently. 
+        func = function.Function(p[3], ftype, p.parser.current.module, cc=function.CallingConvention.C, location=loc(p, 3))
+    else:
+        # Unknown calling convention
+        assert False
+        
+    p.parser.current.module.addGlobal(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=loc(p, 3)), func)
     p[0] = func
     
     p.parser.current.function = None
@@ -117,15 +126,15 @@ def p_def_opt_cc(p):
               | """
 
     if len(p) == 1:
-        p[0] = function.Function.CC_HILTI
+        p[0] = function.CallingConvention.HILTI
         return 
     
     if p[1] == "HILTI":
-        p[0] =  function.Function.CC_HILTI
+        p[0] =  function.CallingConvention.HILTI
         return
     
     if p[1] == "C":
-        p[0] = function.Function.CC_C
+        p[0] = function.CallingConvention.C
         return
         
     error(p, "unknown calling convention \"%s\"" % p[1])
@@ -138,7 +147,6 @@ def p_def_function(p):
 def p_instantiate_function(p):
     """_instantiate_function :"""
     func = p[-3]
-    func.setImported(False) 
     p.parser.current.function = func
     p.parser.current.block = block.Block(func, location=loc(p, 0))
     p.parser.current.block.setMayRemove(False)
@@ -196,24 +204,22 @@ def p_instruction(p):
 def p_operand_ident(p):
     """operand : IDENT"""
     
-    local = True
-    ident = p.parser.current.function.scope().lookup(p[1])
+    ident = p.parser.current.function.lookupID(p[1])
     if not ident:
         ident = p.parser.current.function.type().getID(p[1])
         if not ident:
-            local = False
             ident = p.parser.current.module.lookupID(p[1])
         
             if not ident:
                 if p[1].startswith("@"):
                     l = loc(p, 1)
-                    p[0] = instruction.IDOperand(id.ID(p[1], type.Label, location=l), local, location=l)
+                    p[0] = instruction.IDOperand(id.ID(p[1], type.Label, id.Role.LOCAL, location=l), location=l)
                     return
                 
                 error(p, "unknown identifier %s" % p[1])
                 raise ply.yacc.SyntaxError
     
-    p[0] = instruction.IDOperand(ident, local, location=loc(p, 1))
+    p[0] = instruction.IDOperand(ident, location=loc(p, 1))
 
 def p_operand_number(p):
     """operand : NUMBER"""
@@ -255,8 +261,8 @@ def p_operand_list(p):
         p[0] = [p[1]]
 
 def p_param_list(p):
-    """param_list : id ',' param_list
-                  | id 
+    """param_list : param_id ',' param_list
+                  | param_id 
                   | """
                   
     if len(p) == 1:
@@ -266,9 +272,17 @@ def p_param_list(p):
     else:
         p[0] = [p[1]] + p[3]
     
-def p_id(p):
-    """id : type IDENT"""
-    p[0] = id.ID(p[2], p[1], location=loc(p, 1))
+def p_param_id(p):
+    """param_id : type IDENT"""
+    p[0] = id.ID(p[2], p[1], id.Role.PARAM, location=loc(p, 1))
+
+def p_local_id(p):
+    """local_id : type IDENT"""
+    p[0] = id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 1))
+
+def p_global_id(p):
+    """global_id : type IDENT"""
+    p[0] = id.ID(p[2], p[1], id.Role.GLOBAL, location=loc(p, 1))
 
 def p_type(p):
     """type : TYPE
@@ -291,10 +305,9 @@ def p_type(p):
         
         p[0] = type.IntegerType(p[3])
     
-def p_id_list(p):
-    """id_list : id "," id_list
-    
-               | id"""
+def p_local_id_list(p):
+    """local_id_list : local_id "," local_id_list
+               | local_id"""
     if len(p) == 2:
         p[0] = [p[1]]
     else:
@@ -361,8 +374,8 @@ def _importFile(filename, location):
             func = substate.module.lookupGlobal(i.name())
             assert func and isinstance(func.type(), type.FunctionType)
             
-            if func.linkage() == function.Function.LINK_EXPORTED:
-                Parser.current.module.addGlobal(id.ID(func.name(), func.type(), location=func.location()), func)
+            if func.linkage() == function.Linkage.EXPORTED:
+                Parser.current.module.addGlobal(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=func.location()), func)
             
             continue
         

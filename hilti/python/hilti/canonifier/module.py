@@ -42,7 +42,7 @@ def _unifyBlock(block):
         
     if add_terminator:
         if block.next():
-            newins = instructions.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label), True), location=loc)
+            newins = instructions.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label, id.Role.LOCAL, location=loc)), location=loc)
         else:
             newins = instructions.flow.ReturnVoid(None, location=loc)
         block.addInstruction(newins)
@@ -61,7 +61,7 @@ def _(self, m):
 
 @canonifier.pre(function.Function)
 def _(self, f):
-    if f.isImported():
+    if not f.blocks():
         return
     
     self._current_function = f
@@ -76,7 +76,7 @@ def _(self, f):
 
 @canonifier.post(function.Function)
 def _(self, f):
-    if f.isImported():
+    if not f.blocks():
         return
     
     self._current_function = None

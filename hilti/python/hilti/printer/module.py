@@ -58,17 +58,17 @@ def _(self, f):
     args = ", ".join(["%s %s" % (id.type().name(), id.name())for id in type.IDs()])
     linkage = ""
 
-    if f.linkage() == function.Function.LINK_EXPORTED:
+    if f.linkage() == function.Linkage.EXPORTED:
         
-        if f.isImported():
+        if not f.blocks():
             linkage = "declare "
         else:
             linkage = "extern "
         
-        if f.callingConvention() == function.Function.CC_HILTI:
+        if f.callingConvention() == function.CallingConvention.HILTI:
             pass
             
-        elif f.callingConvention() == function.Function.CC_C:
+        elif f.callingConvention() == function.CallingConvention.C:
             linkage += "\"C\" "
             
         else:
@@ -78,7 +78,7 @@ def _(self, f):
     self.output()
     self.output("%s%s %s(%s)" % (linkage, result, name, args), nl=False)
     
-    if not f.isImported():
+    if not f.blocks():
         self.output(" {")
     else:
         self.output("")

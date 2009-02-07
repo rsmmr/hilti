@@ -283,7 +283,7 @@ def _(self, i):
     arg_type = self.llvmTypeConvert(func.type().resultType())
     
     succ_ft = type.FunctionType(generic=True) # doesn't matter. 
-    succ = function.Function(succ_name, succ_ft, None, parentfunc=func)
+    succ = function.Function(succ_name, succ_ft, self._module)
     llvm_succ = self.llvmCreateFunctionForBlock(succ_name, self._block, [("result", arg_type)])
     llvm_succ_block = llvm_succ.append_basic_block(succ_name)
     
@@ -292,7 +292,7 @@ def _(self, i):
     # TODO: This is not so nice. The problem is that we are now in a new
     # function so we can't just call storeInTarget(). Find something more
     # elegant. 
-    addr = self.llvmAddrLocalVar(self._function, llvm_succ.args[0], id.ID(i.target().id().name(), None), "result_addr")
+    addr = self.llvmAddrLocalVar(self._function, llvm_succ.args[0], id.ID(i.target().id().name(), i.target().type(), id.Role.LOCAL), "result_addr")
     self.llvmAssign(llvm_succ.args[1], addr)
     
     self.llvmGenerateTailCallToBlock(block, [llvm_succ.args[0]])

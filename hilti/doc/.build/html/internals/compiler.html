@@ -6,7 +6,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
     <title>Compiler &mdash; HILTI v0.1 documentation</title>
-    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -53,73 +53,94 @@
             
   <div class="section" id="compiler">
 <h1>Compiler<a class="headerlink" href="#compiler" title="Permalink to this headline">¶</a></h1>
-<p id="internals-python-module">..todo: Describe the overall HILTI Python module layout/usage.</p>
+<p id="internals-python-module">..todo: Describe the overall HILTI Python module structure and  usage.</p>
 <div class="section" id="core-classes">
 <h2>Core Classes<a class="headerlink" href="#core-classes" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="module-hilti.core.block">
 <h3>core.block<a class="headerlink" href="#module-hilti.core.block" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="hilti.core.block.Block">
-<!--[hilti.core.block.Block]-->class <tt class="descclassname">hilti.core.block.</tt><tt class="descname">Block</tt><big>(</big><em>function</em>, <em>may_remove=False</em>, <em>instructions=None</em>, <em>name=None</em>, <em>location=&lt;hilti.core.location.Location object at 0x79caf0&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.block.Block" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<!--[hilti.core.block.Block]-->class <tt class="descclassname">hilti.core.block.</tt><tt class="descname">Block</tt><big>(</big><em>function</em>, <em>may_remove=True</em>, <em>instructions=None</em>, <em>name=None</em>, <em>location=None</em><big>)</big><a class="headerlink" href="#hilti.core.block.Block" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Block models a series of instructions that is executed in sequence.</p>
+<p>A <em>well-formed</em> Block is a Block with exactly one Terminator,
+and this terminator must be the very last instruction. A Block
+can be not well-formed during construction, and the
+<tt class="xref docutils literal"><span class="pre">canonifier</span></tt> will eventually turn it into a
+well-formed one.</p>
+<p>This class implements <a title="hilti.core.visitor.Visitor" class="reference internal" href="#hilti.core.visitor.Visitor"><tt class="xref docutils literal"><span class="pre">Visitor</span></tt></a> support
+without subtypes.</p>
+<dl class="method">
 <dt id="hilti.core.block.Block.addInstruction">
 <!--[hilti.core.block.Block.addInstruction]--><tt class="descname">addInstruction</tt><big>(</big><em>ins</em><big>)</big><a class="headerlink" href="#hilti.core.block.Block.addInstruction" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hilti.core.block.Block.dispatch">
-<!--[hilti.core.block.Block.dispatch]--><tt class="descname">dispatch</tt><big>(</big><em>visitor</em><big>)</big><a class="headerlink" href="#hilti.core.block.Block.dispatch" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Adds an <a title="hilti.core.instruction.Instruction" class="reference internal" href="#hilti.core.instruction.Instruction"><tt class="xref docutils literal"><span class="pre">Instruction</span></tt></a>
+<em>ins</em> to the end of the current list.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.function">
 <!--[hilti.core.block.Block.function]--><tt class="descname">function</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.block.Block.function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Return the parent <a title="hilti.core.function.Function" class="reference internal" href="#hilti.core.function.Function"><tt class="xref docutils literal"><span class="pre">Function</span></tt></a>
+of this Block.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.instructions">
 <!--[hilti.core.block.Block.instructions]--><tt class="descname">instructions</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.block.Block.instructions" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the list of
+<a title="hilti.core.instruction.Instruction" class="reference internal" href="#hilti.core.instruction.Instruction"><tt class="xref docutils literal"><span class="pre">Instruction</span></tt></a> objects forming
+this Block.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.location">
 <!--[hilti.core.block.Block.location]--><tt class="descname">location</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.block.Block.location" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> object for this
+Block.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.mayRemove">
 <!--[hilti.core.block.Block.mayRemove]--><tt class="descname">mayRemove</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.block.Block.mayRemove" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns a boolean indicating whether the <tt class="xref docutils literal"><span class="pre">canonifier</span></tt>
+is allowed to remove this Block in case it does not have any
+instructions.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.name">
 <!--[hilti.core.block.Block.name]--><tt class="descname">name</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.block.Block.name" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the name of this Block as a string.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.next">
 <!--[hilti.core.block.Block.next]--><tt class="descname">next</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.block.Block.next" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns this Block&#8217;s successor Block. The successor is the Block
+where control is transfered to after executing the last instruction
+(if the last instruction is a a flow-control instruction, that takes
+precedent).</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.replace">
 <!--[hilti.core.block.Block.replace]--><tt class="descname">replace</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#hilti.core.block.Block.replace" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Replaces the instruction sequence of this Block, as well as the
+name and the location information, with that of the given Block. This
+allows for an in-place substitution. Does not change the results of 
+<a title="hilti.core.block.Block.function" class="reference internal" href="#hilti.core.block.Block.function"><tt class="xref docutils literal"><span class="pre">function()</span></tt></a>, <a title="hilti.core.block.Block.next" class="reference internal" href="#hilti.core.block.Block.next"><tt class="xref docutils literal"><span class="pre">next()</span></tt></a>, and <a title="hilti.core.block.Block.mayRemove" class="reference internal" href="#hilti.core.block.Block.mayRemove"><tt class="xref docutils literal"><span class="pre">mayRemove()</span></tt></a>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.setMayRemove">
 <!--[hilti.core.block.Block.setMayRemove]--><tt class="descname">setMayRemove</tt><big>(</big><em>may</em><big>)</big><a class="headerlink" href="#hilti.core.block.Block.setMayRemove" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>If the boolean <em>may</em> is true, the <tt class="xref docutils literal"><span class="pre">canonifier</span></tt> is
+allowed to remove this Block in case it does not have any
+instructions. The default is True.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.setName">
 <!--[hilti.core.block.Block.setName]--><tt class="descname">setName</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#hilti.core.block.Block.setName" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Sets the name of this Block to the string <em>name</em>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.block.Block.setNext">
 <!--[hilti.core.block.Block.setNext]--><tt class="descname">setNext</tt><big>(</big><em>b</em><big>)</big><a class="headerlink" href="#hilti.core.block.Block.setNext" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Sets this Block&#8217;s successor Block to <em>b</em>. The successor is the
+Block where control is transfered to after executing the last
+instruction (if the last instruction is a a flow-control instruction,
+that takes precedent).</dd></dl>
 
 </dd></dl>
 
@@ -128,69 +149,121 @@
 <h3>core.constant<a class="headerlink" href="#module-hilti.core.constant" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="hilti.core.constant.Constant">
-<!--[hilti.core.constant.Constant]-->class <tt class="descclassname">hilti.core.constant.</tt><tt class="descname">Constant</tt><big>(</big><em>value</em>, <em>type</em>, <em>location=&lt;hilti.core.location.Location object at 0x7a2350&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.constant.Constant" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="hilti.core.constant.Constant.dispatch">
-<!--[hilti.core.constant.Constant.dispatch]--><tt class="descname">dispatch</tt><big>(</big><em>visitor</em><big>)</big><a class="headerlink" href="#hilti.core.constant.Constant.dispatch" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
+<!--[hilti.core.constant.Constant]-->class <tt class="descclassname">hilti.core.constant.</tt><tt class="descname">Constant</tt><big>(</big><em>value</em>, <em>type</em>, <em>location=None</em><big>)</big><a class="headerlink" href="#hilti.core.constant.Constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Constant represents a constant value with its
+<a title="hilti.core.type.Type" class="reference internal" href="#hilti.core.type.Type"><tt class="xref docutils literal"><span class="pre">Type</span></tt></a>.</p>
+<p>This class implements <a title="hilti.core.visitor.Visitor" class="reference internal" href="#hilti.core.visitor.Visitor"><tt class="xref docutils literal"><span class="pre">Visitor</span></tt></a> support and
+maps the subtype to <a title="hilti.core.constant.Constant.type" class="reference internal" href="#hilti.core.constant.Constant.type"><tt class="xref docutils literal"><span class="pre">type()</span></tt></a>.</p>
 <dl class="method">
 <dt id="hilti.core.constant.Constant.location">
 <!--[hilti.core.constant.Constant.location]--><tt class="descname">location</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.constant.Constant.location" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> associated with
+the Constant.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.constant.Constant.setType">
 <!--[hilti.core.constant.Constant.setType]--><tt class="descname">setType</tt><big>(</big><em>type</em><big>)</big><a class="headerlink" href="#hilti.core.constant.Constant.setType" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Sets the <a title="hilti.core.type.Type" class="reference internal" href="#hilti.core.type.Type"><tt class="xref docutils literal"><span class="pre">Type</span></tt></a> of the Constant to <em>type</em>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.constant.Constant.type">
 <!--[hilti.core.constant.Constant.type]--><tt class="descname">type</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.constant.Constant.type" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Return the <a title="hilti.core.type.Type" class="reference internal" href="#hilti.core.type.Type"><tt class="xref docutils literal"><span class="pre">Type</span></tt></a> of the Constant.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.constant.Constant.value">
 <!--[hilti.core.constant.Constant.value]--><tt class="descname">value</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.constant.Constant.value" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hilti.core.constant.Constant.visitorSubClass">
-<!--[hilti.core.constant.Constant.visitorSubClass]--><tt class="descname">visitorSubClass</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.constant.Constant.visitorSubClass" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Return the value of the Constant.</dd></dl>
 
 </dd></dl>
+
+<dl class="attribute">
+<dt id="hilti.core.constant.Void">
+<!--[hilti.core.constant.Void]--><tt class="descclassname">hilti.core.constant.</tt><tt class="descname">Void</tt><a class="headerlink" href="#hilti.core.constant.Void" title="Permalink to this definition">¶</a></dt>
+<dd>The special Constant representing a <em>Void</em> value.</dd></dl>
 
 </div>
 <div class="section" id="module-hilti.core.function">
 <h3>core.function<a class="headerlink" href="#module-hilti.core.function" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
+<dt id="hilti.core.function.CallingConvention">
+<!--[hilti.core.function.CallingConvention]-->class <tt class="descclassname">hilti.core.function.</tt><tt class="descname">CallingConvention</tt><a class="headerlink" href="#hilti.core.function.CallingConvention" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <em>calling convention</em> used by a
+<a title="hilti.core.function.Function" class="reference internal" href="#hilti.core.function.Function"><tt class="xref docutils literal"><span class="pre">Function</span></tt></a> specifies how calls to it are
+implemented.</p>
+<dl class="attribute">
+<dt id="hilti.core.function.CallingConvention.C">
+<!--[hilti.core.function.CallingConvention.C]--><tt class="descname">C</tt><a class="headerlink" href="#hilti.core.function.CallingConvention.C" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a title="hilti.core.function.Function" class="reference internal" href="#hilti.core.function.Function"><tt class="xref docutils literal"><span class="pre">Function</span></tt></a> using C calling convention
+implements standard C call semantics. It does however not support any
+HILTI-specific flow-control features, such as exceptions and
+continuations.</p>
+<p>Currently, functions with C calling convention cannot be <em>implemented</em> in
+HILTI but must be defined in an external, separately compiled object file.
+They can be <em>called</em> from HILTI programs however. In the future, it will also be
+possible to define functions with C calling convention in HILTI itself,
+which will then be callable <em>from</em> C programs.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hilti.core.function.CallingConvention.HILTI">
+<!--[hilti.core.function.CallingConvention.HILTI]--><tt class="descname">HILTI</tt><a class="headerlink" href="#hilti.core.function.CallingConvention.HILTI" title="Permalink to this definition">¶</a></dt>
+<dd>A <a title="hilti.core.function.Function" class="reference internal" href="#hilti.core.function.Function"><tt class="xref docutils literal"><span class="pre">Function</span></tt></a> using the proprietary HILTI
+calling convention supports all of HILTI&#8217;s flow-control features but
+cannot be called from other languages such as C. This is the default
+calling convention.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="hilti.core.function.Function">
-<!--[hilti.core.function.Function]-->class <tt class="descclassname">hilti.core.function.</tt><tt class="descname">Function</tt><big>(</big><em>name</em>, <em>type</em>, <em>module</em>, <em>parentfunc=None</em>, <em>location=&lt;hilti.core.location.Location object at 0x7ad870&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<!--[hilti.core.function.Function]-->class <tt class="descclassname">hilti.core.function.</tt><tt class="descname">Function</tt><big>(</big><em>name</em>, <em>ty</em>, <em>module</em>, <em>cc=1</em>, <em>location=None</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Function object represents all functions either declared or defined
+in a <a title="hilti.core.module.Module" class="reference internal" href="#hilti.core.module.Module"><tt class="xref docutils literal"><span class="pre">Module</span></tt></a>.</p>
+<p><em>name</em> is a string containing the name of the Function; the name must be
+<em>non-qualified</em>, i.e., not be prefixed with any module name.  <em>ty</em> is the
+<a title="hilti.core.type.FunctionType" class="reference internal" href="#hilti.core.type.FunctionType"><tt class="xref docutils literal"><span class="pre">FunctionType</span></tt></a> of this Function. <em>module</em> is the
+<a title="hilti.core.module.Module" class="reference internal" href="#hilti.core.module.Module"><tt class="xref docutils literal"><span class="pre">Module</span></tt></a> that provides the Function&#8217;s
+<em>implementation</em>.  For a Function with linkage <tt class="xref docutils literal"><span class="pre">Linkage.C</span></tt>,
+<em>module</em> may be <em>None</em>. <em>location</em> defines a
+<a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> to be associated with this
+Function.</p>
+<p>This class implements <a title="hilti.core.visitor.Visitor" class="reference internal" href="#hilti.core.visitor.Visitor"><tt class="xref docutils literal"><span class="pre">Visitor</span></tt></a> support
+without subtypes.</p>
+<dl class="method">
+<dt id="hilti.core.function.Function.IDs">
+<!--[hilti.core.function.Function.IDs]--><tt class="descname">IDs</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.IDs" title="Permalink to this definition">¶</a></dt>
+<dd>Returns a list of all <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a> objects defined in
+the Function&#8217;s scope.</dd></dl>
+
+<dl class="method">
 <dt id="hilti.core.function.Function.addBlock">
-<!--[hilti.core.function.Function.addBlock]--><tt class="descname">addBlock</tt><big>(</big><em>b</em>, <em>clear_next=True</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function.addBlock" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<!--[hilti.core.function.Function.addBlock]--><tt class="descname">addBlock</tt><big>(</big><em>b</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function.addBlock" title="Permalink to this definition">¶</a></dt>
+<dd>Appends a <a title="hilti.core.block.Block" class="reference internal" href="#hilti.core.block.Block"><tt class="xref docutils literal"><span class="pre">Block</span></tt></a> to the Function&#8217;s
+current list of blocks. The new Block is set to be the successor of
+the former tail Block, and its own successor field is cleared.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.addID">
 <!--[hilti.core.function.Function.addID]--><tt class="descname">addID</tt><big>(</big><em>id</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function.addID" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Inserts an <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a> into the function&#8217;s scope.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.blocks">
 <!--[hilti.core.function.Function.blocks]--><tt class="descname">blocks</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.blocks" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the list of <a title="hilti.core.block.Block" class="reference internal" href="#hilti.core.block.Block"><tt class="xref docutils literal"><span class="pre">Block</span></tt></a> objects
+defining the Function&#8217;s implementation. This list may be empty.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.callingConvention">
 <!--[hilti.core.function.Function.callingConvention]--><tt class="descname">callingConvention</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.callingConvention" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.function.CallingConvention" class="reference internal" href="#hilti.core.function.CallingConvention"><tt class="xref docutils literal"><span class="pre">CallingConvention</span></tt></a> of this Function.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.clearBlocks">
 <!--[hilti.core.function.Function.clearBlocks]--><tt class="descname">clearBlocks</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.clearBlocks" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Removes all <a title="hilti.core.block.Block" class="reference internal" href="#hilti.core.block.Block"><tt class="xref docutils literal"><span class="pre">Block</span></tt></a> object from this
+Function.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.dispatch">
@@ -198,64 +271,76 @@
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="hilti.core.function.Function.isImported">
-<!--[hilti.core.function.Function.isImported]--><tt class="descname">isImported</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.isImported" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
 <dt id="hilti.core.function.Function.linkage">
 <!--[hilti.core.function.Function.linkage]--><tt class="descname">linkage</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.linkage" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.function.Linkage" class="reference internal" href="#hilti.core.function.Linkage"><tt class="xref docutils literal"><span class="pre">Linkage</span></tt></a> of this Function.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.location">
 <!--[hilti.core.function.Function.location]--><tt class="descname">location</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.location" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> associated with
+this Function.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.lookupBlock">
 <!--[hilti.core.function.Function.lookupBlock]--><tt class="descname">lookupBlock</tt><big>(</big><em>id</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function.lookupBlock" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.block.Block" class="reference internal" href="#hilti.core.block.Block"><tt class="xref docutils literal"><span class="pre">Block</span></tt></a> with the same name as
+the <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a> <em>id</em>, or None if there is no such
+Block.</dd></dl>
+
+<dl class="method">
+<dt id="hilti.core.function.Function.lookupID">
+<!--[hilti.core.function.Function.lookupID]--><tt class="descname">lookupID</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function.lookupID" title="Permalink to this definition">¶</a></dt>
+<dd>Returns the <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a> having the given <em>name</em> if
+it is defined in the Function&#8217;s local scope, or None if not.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.module">
 <!--[hilti.core.function.Function.module]--><tt class="descname">module</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.module" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.module.Module" class="reference internal" href="#hilti.core.module.Module"><tt class="xref docutils literal"><span class="pre">Module</span></tt></a> that provides the
+<em>implementation</em> of the function. Returns <em>None</em> if the Function has
+<tt class="xref docutils literal"><span class="pre">Linkage.C</span></tt>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.name">
 <!--[hilti.core.function.Function.name]--><tt class="descname">name</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.name" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hilti.core.function.Function.parentFunc">
-<!--[hilti.core.function.Function.parentFunc]--><tt class="descname">parentFunc</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.parentFunc" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hilti.core.function.Function.scope">
-<!--[hilti.core.function.Function.scope]--><tt class="descname">scope</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.scope" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the fully qualified name of this Function as a string.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.setCallingConvention">
 <!--[hilti.core.function.Function.setCallingConvention]--><tt class="descname">setCallingConvention</tt><big>(</big><em>cc</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function.setCallingConvention" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hilti.core.function.Function.setImported">
-<!--[hilti.core.function.Function.setImported]--><tt class="descname">setImported</tt><big>(</big><em>is_imported</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function.setImported" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Sets the <a title="hilti.core.function.CallingConvention" class="reference internal" href="#hilti.core.function.CallingConvention"><tt class="xref docutils literal"><span class="pre">CallingConvention</span></tt></a> of this Function.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.setLinkage">
 <!--[hilti.core.function.Function.setLinkage]--><tt class="descname">setLinkage</tt><big>(</big><em>linkage</em><big>)</big><a class="headerlink" href="#hilti.core.function.Function.setLinkage" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Sets the <a title="hilti.core.function.Linkage" class="reference internal" href="#hilti.core.function.Linkage"><tt class="xref docutils literal"><span class="pre">Linkage</span></tt></a> of this Function.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.function.Function.type">
 <!--[hilti.core.function.Function.type]--><tt class="descname">type</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.function.Function.type" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.type.FunctionType" class="reference internal" href="#hilti.core.type.FunctionType"><tt class="xref docutils literal"><span class="pre">FunctionType</span></tt></a> of this
+function.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="hilti.core.function.Linkage">
+<!--[hilti.core.function.Linkage]-->class <tt class="descclassname">hilti.core.function.</tt><tt class="descname">Linkage</tt><a class="headerlink" href="#hilti.core.function.Linkage" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <em>linkage</em> of a <a title="hilti.core.function.Function" class="reference internal" href="#hilti.core.function.Function"><tt class="xref docutils literal"><span class="pre">Function</span></tt></a> specifies its
+link-time visibility.</p>
+<dl class="attribute">
+<dt id="hilti.core.function.Linkage.EXPORTED">
+<!--[hilti.core.function.Linkage.EXPORTED]--><tt class="descname">EXPORTED</tt><a class="headerlink" href="#hilti.core.function.Linkage.EXPORTED" title="Permalink to this definition">¶</a></dt>
+<dd>A <a title="hilti.core.function.Function" class="reference internal" href="#hilti.core.function.Function"><tt class="xref docutils literal"><span class="pre">Function</span></tt></a> with linkage <a title="hilti.core.function.Linkage.EXPORTED" class="reference internal" href="#hilti.core.function.Linkage.EXPORTED"><tt class="xref docutils literal"><span class="pre">EXPORTED</span></tt></a>
+is visible across all compilation units.</dd></dl>
+
+<dl class="attribute">
+<dt id="hilti.core.function.Linkage.LOCAL">
+<!--[hilti.core.function.Linkage.LOCAL]--><tt class="descname">LOCAL</tt><a class="headerlink" href="#hilti.core.function.Linkage.LOCAL" title="Permalink to this definition">¶</a></dt>
+<dd>A <a title="hilti.core.function.Function" class="reference internal" href="#hilti.core.function.Function"><tt class="xref docutils literal"><span class="pre">Function</span></tt></a> with linkage <a title="hilti.core.function.Linkage.LOCAL" class="reference internal" href="#hilti.core.function.Linkage.LOCAL"><tt class="xref docutils literal"><span class="pre">LOCAL</span></tt></a> is
+only visible inside the <a title="hilti.core.module.Module" class="reference internal" href="#hilti.core.module.Module"><tt class="xref docutils literal"><span class="pre">Module</span></tt></a> it is
+implemented in. This is the default linkage.</dd></dl>
 
 </dd></dl>
 
@@ -264,8 +349,15 @@
 <h3>core.id<a class="headerlink" href="#module-hilti.core.id" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="hilti.core.id.ID">
-<!--[hilti.core.id.ID]-->class <tt class="descclassname">hilti.core.id.</tt><tt class="descname">ID</tt><big>(</big><em>name</em>, <em>type</em>, <em>location=&lt;hilti.core.location.Location object at 0x7ad8d0&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.id.ID" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<!--[hilti.core.id.ID]-->class <tt class="descclassname">hilti.core.id.</tt><tt class="descname">ID</tt><big>(</big><em>name</em>, <em>type</em>, <em>role</em>, <em>location=None</em><big>)</big><a class="headerlink" href="#hilti.core.id.ID" title="Permalink to this definition">¶</a></dt>
+<dd><p>An ID binds a name to a type. <em>name</em> is a string, and <em>type</em> is an
+instance of <a title="hilti.core.type.Type" class="reference internal" href="#hilti.core.type.Type"><tt class="xref docutils literal"><span class="pre">Type</span></tt></a>. <em>role</em> is the IDs
+<a title="hilti.core.id.Role" class="reference internal" href="#hilti.core.id.Role"><tt class="xref docutils literal"><span class="pre">Role</span></tt></a>, and <em>location</em> gives a
+<a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> to be associated with this
+Function.</p>
+<p>This class implements <a title="hilti.core.visitor.Visitor" class="reference internal" href="#hilti.core.visitor.Visitor"><tt class="xref docutils literal"><span class="pre">Visitor</span></tt></a> support and
+maps the subtype to <a title="hilti.core.id.ID.type" class="reference internal" href="#hilti.core.id.ID.type"><tt class="xref docutils literal"><span class="pre">type()</span></tt></a>.</p>
+<dl class="method">
 <dt id="hilti.core.id.ID.dispatch">
 <!--[hilti.core.id.ID.dispatch]--><tt class="descname">dispatch</tt><big>(</big><em>visitor</em><big>)</big><a class="headerlink" href="#hilti.core.id.ID.dispatch" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -273,22 +365,28 @@
 <dl class="method">
 <dt id="hilti.core.id.ID.location">
 <!--[hilti.core.id.ID.location]--><tt class="descname">location</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.id.ID.location" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> associated with
+this ID.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.id.ID.name">
 <!--[hilti.core.id.ID.name]--><tt class="descname">name</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.id.ID.name" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns a string with the IDs name.</dd></dl>
+
+<dl class="method">
+<dt id="hilti.core.id.ID.role">
+<!--[hilti.core.id.ID.role]--><tt class="descname">role</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.id.ID.role" title="Permalink to this definition">¶</a></dt>
+<dd>Returns the <a title="hilti.core.id.Role" class="reference internal" href="#hilti.core.id.Role"><tt class="xref docutils literal"><span class="pre">Role</span></tt></a> of this ID.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.id.ID.setName">
 <!--[hilti.core.id.ID.setName]--><tt class="descname">setName</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#hilti.core.id.ID.setName" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Sets the IDs name to the string <em>name</em>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.id.ID.type">
 <!--[hilti.core.id.ID.type]--><tt class="descname">type</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.id.ID.type" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.type.Type" class="reference internal" href="#hilti.core.type.Type"><tt class="xref docutils literal"><span class="pre">Type</span></tt></a> of this ID.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.id.ID.visitorSubClass">
@@ -297,48 +395,87 @@
 
 </dd></dl>
 
+<dl class="class">
+<dt id="hilti.core.id.Role">
+<!--[hilti.core.id.Role]-->class <tt class="descclassname">hilti.core.id.</tt><tt class="descname">Role</tt><a class="headerlink" href="#hilti.core.id.Role" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <em>Role</em> of an <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a> separates IDs into several subgroups
+according to where they are defined.</p>
+<dl class="attribute">
+<dt id="hilti.core.id.Role.GLOBAL">
+<!--[hilti.core.id.Role.GLOBAL]--><tt class="descname">GLOBAL</tt><a class="headerlink" href="#hilti.core.id.Role.GLOBAL" title="Permalink to this definition">¶</a></dt>
+<dd>A <a title="hilti.core.id.Role.GLOBAL" class="reference internal" href="#hilti.core.id.Role.GLOBAL"><tt class="xref docutils literal"><span class="pre">GLOBAL</span></tt></a> <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a> is defined at module-level scope.</dd></dl>
+
+<dl class="attribute">
+<dt id="hilti.core.id.Role.LOCAL">
+<!--[hilti.core.id.Role.LOCAL]--><tt class="descname">LOCAL</tt><a class="headerlink" href="#hilti.core.id.Role.LOCAL" title="Permalink to this definition">¶</a></dt>
+<dd>A <a title="hilti.core.id.Role.LOCAL" class="reference internal" href="#hilti.core.id.Role.LOCAL"><tt class="xref docutils literal"><span class="pre">LOCAL</span></tt></a> <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a> is defined in a non-global scope.</dd></dl>
+
+<dl class="attribute">
+<dt id="hilti.core.id.Role.PARAM">
+<!--[hilti.core.id.Role.PARAM]--><tt class="descname">PARAM</tt><a class="headerlink" href="#hilti.core.id.Role.PARAM" title="Permalink to this definition">¶</a></dt>
+<dd>An <tt class="xref docutils literal"><span class="pre">ARGUMENT</span></tt> <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a> is defined as a
+<a title="hilti.core.function.Function" class="reference internal" href="#hilti.core.function.Function"><tt class="xref docutils literal"><span class="pre">Function</span></tt></a>  argument.</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="module-hilti.core.instruction">
 <h3>core.instruction<a class="headerlink" href="#module-hilti.core.instruction" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="hilti.core.instruction.ConstOperand">
-<!--[hilti.core.instruction.ConstOperand]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">ConstOperand</tt><big>(</big><em>constant</em>, <em>location=&lt;hilti.core.location.Location object at 0x7b5030&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.ConstOperand" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<!--[hilti.core.instruction.ConstOperand]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">ConstOperand</tt><big>(</big><em>constant</em>, <em>location=&lt;hilti.core.location.Location object at 0x11c3610&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.ConstOperand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Derived from <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a>, a ConstOperand represents a constant
+<a title="hilti.core.instruction.Instruction" class="reference internal" href="#hilti.core.instruction.Instruction"><tt class="xref docutils literal"><span class="pre">Instruction</span></tt></a> operand. <em>constant</em> is an instance of
+<a title="hilti.core.constant.Constant" class="reference internal" href="#hilti.core.constant.Constant"><tt class="xref docutils literal"><span class="pre">Constant</span></tt></a>, and <em>location</em> a
+<a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> to be associated with the operand.</p>
+<p>For a ConstOperand, <tt class="xref docutils literal"><span class="pre">value()</span></tt> returns the same value the
+<a title="hilti.core.constant.Constant" class="reference internal" href="#hilti.core.constant.Constant"><tt class="xref docutils literal"><span class="pre">Constant</span></tt></a>
+<a title="hilti.core.constant.Constant.value" class="reference internal" href="#hilti.core.constant.Constant.value"><tt class="xref docutils literal"><span class="pre">value()</span></tt></a> method.</p>
+<dl class="method">
 <dt id="hilti.core.instruction.ConstOperand.constant">
 <!--[hilti.core.instruction.ConstOperand.constant]--><tt class="descname">constant</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.ConstOperand.constant" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the operand&#8217;s <a title="hilti.core.constant.Constant" class="reference internal" href="#hilti.core.constant.Constant"><tt class="xref docutils literal"><span class="pre">Constant</span></tt></a></dd></dl>
 
 <dl class="method">
-<dt id="hilti.core.instruction.ConstOperand.setType">
-<!--[hilti.core.instruction.ConstOperand.setType]--><tt class="descname">setType</tt><big>(</big><em>type</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.ConstOperand.setType" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="hilti.core.instruction.ConstOperand.setConstant">
+<!--[hilti.core.instruction.ConstOperand.setConstant]--><tt class="descname">setConstant</tt><big>(</big><em>const</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.ConstOperand.setConstant" title="Permalink to this definition">¶</a></dt>
+<dd>Sets the operand&#8217;s <a title="hilti.core.constant.Constant" class="reference internal" href="#hilti.core.constant.Constant"><tt class="xref docutils literal"><span class="pre">Constant</span></tt></a> to <em>const</em></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="hilti.core.instruction.IDOperand">
-<!--[hilti.core.instruction.IDOperand]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">IDOperand</tt><big>(</big><em>id</em>, <em>local</em>, <em>location=&lt;hilti.core.location.Location object at 0x7b5090&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.IDOperand" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="hilti.core.instruction.IDOperand.constant">
-<!--[hilti.core.instruction.IDOperand.constant]--><tt class="descname">constant</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.IDOperand.constant" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
+<!--[hilti.core.instruction.IDOperand]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">IDOperand</tt><big>(</big><em>id</em>, <em>location=&lt;hilti.core.location.Location object at 0x11c36d0&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.IDOperand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Derived from <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a>, an IDOperand is an operand
+that references an <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a>. <em>id</em> is the
+reference <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a>, , and <em>location</em> a
+<a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> to be associated with the
+operand.</p>
+<p>For an IDOperand, <tt class="xref docutils literal"><span class="pre">value()</span></tt> returns the name of the 
+<a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a> as a string.</p>
 <dl class="method">
 <dt id="hilti.core.instruction.IDOperand.id">
 <!--[hilti.core.instruction.IDOperand.id]--><tt class="descname">id</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.IDOperand.id" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hilti.core.instruction.IDOperand.isLocal">
-<!--[hilti.core.instruction.IDOperand.isLocal]--><tt class="descname">isLocal</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.IDOperand.isLocal" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the operand&#8217;s <a title="hilti.core.id.ID" class="reference internal" href="#hilti.core.id.ID"><tt class="xref docutils literal"><span class="pre">ID</span></tt></a>.</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="hilti.core.instruction.Instruction">
-<!--[hilti.core.instruction.Instruction]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">Instruction</tt><big>(</big><em>op1=None</em>, <em>op2=None</em>, <em>op3=None</em>, <em>target=None</em>, <em>location=&lt;hilti.core.location.Location object at 0x7b0fb0&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<!--[hilti.core.instruction.Instruction]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">Instruction</tt><big>(</big><em>op1=None</em>, <em>op2=None</em>, <em>op3=None</em>, <em>target=None</em>, <em>location=None</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class is the base class for all instructions supported by the
+HILTI language. It is however not supposed to be derived directly from; to
+create a new instruction, use the <a title="hilti.core.instruction.instruction" class="reference internal" href="#hilti.core.instruction.instruction"><tt class="xref docutils literal"><span class="pre">instruction()</span></tt></a> decorator.</p>
+<p><em>op1</em>/<em>op2</em>/<em>op3</em> are the <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a> objects of the instruction.
+<em>target</em> specifies where the instructions result is stored and must be an
+<a title="hilti.core.instruction.IDOperand" class="reference internal" href="#hilti.core.instruction.IDOperand"><tt class="xref docutils literal"><span class="pre">IDOperand</span></tt></a>. The types of operands and targt must match with the
+Instruction&#8217;s <a title="hilti.core.instruction.Signature" class="reference internal" href="#hilti.core.instruction.Signature"><tt class="xref docutils literal"><span class="pre">Signature</span></tt></a> and may only be <em>None</em> if the signature
+allows for it (including for optional operands). <em>location</em> gives a
+<a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> to be associated with this
+Function.</p>
+<p>This class implements <a title="hilti.core.visitor.Visitor" class="reference internal" href="#hilti.core.visitor.Visitor"><tt class="xref docutils literal"><span class="pre">Visitor</span></tt></a> support without
+subtypes.</p>
+<dl class="method">
 <dt id="hilti.core.instruction.Instruction.dispatch">
 <!--[hilti.core.instruction.Instruction.dispatch]--><tt class="descname">dispatch</tt><big>(</big><em>visitor</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.dispatch" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -346,84 +483,122 @@
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.location">
 <!--[hilti.core.instruction.Instruction.location]--><tt class="descname">location</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.location" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> object
+associated with this Instruction</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.name">
 <!--[hilti.core.instruction.Instruction.name]--><tt class="descname">name</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.name" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns a string with the Instruction&#8217;s name, i.e., the mnemonic as
+used in a HILTI program.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.op1">
 <!--[hilti.core.instruction.Instruction.op1]--><tt class="descname">op1</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.op1" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the Instruction&#8217;s first <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a>, or <em>None</em> if it
+does not have any operands.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.op2">
 <!--[hilti.core.instruction.Instruction.op2]--><tt class="descname">op2</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.op2" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the Instruction&#8217;s second <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a>, or <em>None</em> if it
+has less than two operands.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.op3">
 <!--[hilti.core.instruction.Instruction.op3]--><tt class="descname">op3</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.op3" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the Instruction&#8217;s second <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a>, or <em>None</em> if it
+has less than three operands.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.setOp1">
-<!--[hilti.core.instruction.Instruction.setOp1]--><tt class="descname">setOp1</tt><big>(</big><em>val</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.setOp1" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<!--[hilti.core.instruction.Instruction.setOp1]--><tt class="descname">setOp1</tt><big>(</big><em>op</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.setOp1" title="Permalink to this definition">¶</a></dt>
+<dd>Sets the <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a> <em>op</em> to be the Instruction&#8217;s first
+operand. The type of <em>op</em> must match with the Instruction&#8217;s
+<a title="hilti.core.instruction.Signature" class="reference internal" href="#hilti.core.instruction.Signature"><tt class="xref docutils literal"><span class="pre">Signature</span></tt></a>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.setOp2">
-<!--[hilti.core.instruction.Instruction.setOp2]--><tt class="descname">setOp2</tt><big>(</big><em>val</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.setOp2" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<!--[hilti.core.instruction.Instruction.setOp2]--><tt class="descname">setOp2</tt><big>(</big><em>op</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.setOp2" title="Permalink to this definition">¶</a></dt>
+<dd>Sets the <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a> <em>op</em> to be the Instruction&#8217;s second
+operand. The type of <em>op</em> must match with the Instruction&#8217;s
+<a title="hilti.core.instruction.Signature" class="reference internal" href="#hilti.core.instruction.Signature"><tt class="xref docutils literal"><span class="pre">Signature</span></tt></a>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.setOp3">
-<!--[hilti.core.instruction.Instruction.setOp3]--><tt class="descname">setOp3</tt><big>(</big><em>val</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.setOp3" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<!--[hilti.core.instruction.Instruction.setOp3]--><tt class="descname">setOp3</tt><big>(</big><em>op</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.setOp3" title="Permalink to this definition">¶</a></dt>
+<dd>Sets the <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a> <em>op</em> to be the Instruction&#8217;s third
+operand. The type of <em>op</em> must match with the Instruction&#8217;s
+<a title="hilti.core.instruction.Signature" class="reference internal" href="#hilti.core.instruction.Signature"><tt class="xref docutils literal"><span class="pre">Signature</span></tt></a>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.setTarget">
-<!--[hilti.core.instruction.Instruction.setTarget]--><tt class="descname">setTarget</tt><big>(</big><em>val</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.setTarget" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<!--[hilti.core.instruction.Instruction.setTarget]--><tt class="descname">setTarget</tt><big>(</big><em>target</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.setTarget" title="Permalink to this definition">¶</a></dt>
+<dd>Sets the <a title="hilti.core.instruction.IDOperand" class="reference internal" href="#hilti.core.instruction.IDOperand"><tt class="xref docutils literal"><span class="pre">IDOperand</span></tt></a> <em>target</em> to be the Instruction&#8217;s target
+for results. The type of <em>target</em> must match the Instruction&#8217;s
+<a title="hilti.core.instruction.Signature" class="reference internal" href="#hilti.core.instruction.Signature"><tt class="xref docutils literal"><span class="pre">Signature</span></tt></a>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.signature">
 <!--[hilti.core.instruction.Instruction.signature]--><tt class="descname">signature</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.signature" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.instruction.Signature" class="reference internal" href="#hilti.core.instruction.Signature"><tt class="xref docutils literal"><span class="pre">Signature</span></tt></a> of this Instruction.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Instruction.target">
 <!--[hilti.core.instruction.Instruction.target]--><tt class="descname">target</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Instruction.target" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the Instruction&#8217;s target <a title="hilti.core.instruction.IDOperand" class="reference internal" href="#hilti.core.instruction.IDOperand"><tt class="xref docutils literal"><span class="pre">IDOperand</span></tt></a>, or <em>None</em> if
+it does not have target.</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="hilti.core.instruction.Operand">
 <!--[hilti.core.instruction.Operand]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">Operand</tt><big>(</big><em>value</em>, <em>type</em>, <em>location</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Operand" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>This is the base class for operands and targets of <a title="hilti.core.instruction.Instruction" class="reference internal" href="#hilti.core.instruction.Instruction"><tt class="xref docutils literal"><span class="pre">Instruction</span></tt></a>
+objects. It is not intended for direct use; instantiate one of its derived
+classes instead.</p>
+<p><em>value</em> is the Operand&#8217;s value, with a type determined by the derived
+class. <em>type</em> is the Operand <tt class="xref docutils literal"><span class="pre">Type</span></tt>, and <em>location</em> a
+<a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> to be associated with the operand.</p>
+<p>(Note that this class does <em>not</em> implement
+<a title="hilti.core.visitor.Visitor" class="reference internal" href="#hilti.core.visitor.Visitor"><tt class="xref docutils literal"><span class="pre">Visitor</span></tt></a> support.)</p>
+<dl class="method">
 <dt id="hilti.core.instruction.Operand.location">
 <!--[hilti.core.instruction.Operand.location]--><tt class="descname">location</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Operand.location" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the <a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> object
+associated with this Instruction</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Operand.type">
 <!--[hilti.core.instruction.Operand.type]--><tt class="descname">type</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Operand.type" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the Operand&#8217;s <tt class="xref docutils literal"><span class="pre">Type</span></tt>.</dd></dl>
 
 <dl class="method">
 <dt id="hilti.core.instruction.Operand.value">
 <!--[hilti.core.instruction.Operand.value]--><tt class="descname">value</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Operand.value" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd>Returns the value of the Operand. The value&#8217;s type depends on the
+derived class</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="hilti.core.instruction.Signature">
 <!--[hilti.core.instruction.Signature]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">Signature</tt><big>(</big><em>name</em>, <em>op1=None</em>, <em>op2=None</em>, <em>op3=None</em>, <em>target=None</em>, <em>callback=None</em>, <em>terminator=False</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.Signature" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>A Signature defines an <tt class="xref docutils literal"><span class="pre">Instruction</span></tt> &#8216;s name as well as
+the valid <a title="hilti.core.type.Type" class="reference internal" href="#hilti.core.type.Type"><tt class="xref docutils literal"><span class="pre">Type</span></tt></a> for operands and target. The
+class is not supposed to be instantiated directly; instances are
+implicitly created when using the <a title="hilti.core.instruction.instruction" class="reference internal" href="#hilti.core.instruction.instruction"><tt class="xref docutils literal"><span class="pre">instruction()</span></tt></a> decorator.</p>
+<p><em>name</em> is a string with the instruction&#8217;s HILTI mnemonic. 
+<em>op1</em>/<em>op2</em>/<em>op3</em> are types of instructions operands, and <em>target</em> is the
+type of the instruction&#8217;s result. If any of these is <em>None</em>, that
+indicates that the instruction does not use the corresponding operand or
+return any result, respectively. <em>callback</em> is function that is called
+each time an <a title="hilti.core.instruction.Instruction" class="reference internal" href="#hilti.core.instruction.Instruction"><tt class="xref docutils literal"><span class="pre">Instruction</span></tt></a> has been instantiated with this
+Signature; the callback gets the <a title="hilti.core.instruction.Instruction" class="reference internal" href="#hilti.core.instruction.Instruction"><tt class="xref docutils literal"><span class="pre">Instruction</span></tt></a> as its only
+parameter. <em>terminator</em> is a boolean indicating whether the Signature
+define&#8217;s an instruction that is considered a
+<a title="hilti.core.block.Block" class="reference internal" href="#hilti.core.block.Block"><tt class="xref docutils literal"><span class="pre">Block</span></tt></a> Terminator.</p>
+<dl class="method">
 <dt id="hilti.core.instruction.Signature.callback">
 <!--[hilti.core.instruction.Signature.callback]--><tt class="descname">callback</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.instruction.Signature.callback" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -467,17 +642,20 @@
 
 <dl class="class">
 <dt id="hilti.core.instruction.TupleOperand">
-<!--[hilti.core.instruction.TupleOperand]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">TupleOperand</tt><big>(</big><em>ops</em>, <em>location=&lt;hilti.core.location.Location object at 0x7b50f0&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.TupleOperand" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<!--[hilti.core.instruction.TupleOperand]-->class <tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">TupleOperand</tt><big>(</big><em>ops</em>, <em>location=&lt;hilti.core.location.Location object at 0x11c3790&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.TupleOperand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Derived from <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a>, a TupleOperand is an operand
+consisting of a tupel of individual operands. <em>ops</em> is a list of
+the tuple&#8217;s <a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a> objects, and <em>location</em> a
+<a title="hilti.core.location.Location" class="reference internal" href="#hilti.core.location.Location"><tt class="xref docutils literal"><span class="pre">Location</span></tt></a> to be associated with the
+operand.</p>
+<p>For a TupleOperand, <tt class="xref docutils literal"><span class="pre">value()</span></tt> returns the list of
+<a title="hilti.core.instruction.Operand" class="reference internal" href="#hilti.core.instruction.Operand"><tt class="xref docutils literal"><span class="pre">Operand</span></tt></a> objects, and <tt class="xref docutils literal"><span class="pre">value()</span></tt> returns a list of
+the individual operands&#8217; <a title="hilti.core.type.Type" class="reference internal" href="#hilti.core.type.Type"><tt class="xref docutils literal"><span class="pre">Type</span></tt></a>.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="hilti.core.instruction.createInstruction">
-<!--[hilti.core.instruction.createInstruction]--><tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">createInstruction</tt><big>(</big><em>name</em>, <em>op1=None</em>, <em>op2=None</em>, <em>op3=None</em>, <em>target=None</em>, <em>location=&lt;hilti.core.location.Location object at 0x7b5150&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.createInstruction" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="hilti.core.instruction.fmt_op">
-<!--[hilti.core.instruction.fmt_op]--><tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">fmt_op</tt><big>(</big><em>op</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.fmt_op" title="Permalink to this definition">¶</a></dt>
+<!--[hilti.core.instruction.createInstruction]--><tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">createInstruction</tt><big>(</big><em>name</em>, <em>op1=None</em>, <em>op2=None</em>, <em>op3=None</em>, <em>target=None</em>, <em>location=&lt;hilti.core.location.Location object at 0x11c6850&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.createInstruction" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
@@ -495,11 +673,6 @@
 <!--[hilti.core.instruction.make_ins_init]--><tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">make_ins_init</tt><big>(</big><em>myclass</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.make_ins_init" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="function">
-<dt id="hilti.core.instruction.signature">
-<!--[hilti.core.instruction.signature]--><tt class="descclassname">hilti.core.instruction.</tt><tt class="descname">signature</tt><big>(</big><em>name</em>, <em>op1=None</em>, <em>op2=None</em>, <em>op3=None</em>, <em>target=None</em>, <em>callback=None</em>, <em>terminator=False</em><big>)</big><a class="headerlink" href="#hilti.core.instruction.signature" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </div>
 <div class="section" id="module-hilti.core.location">
 <h3>core.location<a class="headerlink" href="#module-hilti.core.location" title="Permalink to this headline">¶</a></h3>
@@ -513,7 +686,7 @@
 <h3>core.module<a class="headerlink" href="#module-hilti.core.module" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="hilti.core.module.Module">
-<!--[hilti.core.module.Module]-->class <tt class="descclassname">hilti.core.module.</tt><tt class="descname">Module</tt><big>(</big><em>name</em>, <em>location=&lt;hilti.core.location.Location object at 0x7b5510&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.module.Module" title="Permalink to this definition">¶</a></dt>
+<!--[hilti.core.module.Module]-->class <tt class="descclassname">hilti.core.module.</tt><tt class="descname">Module</tt><big>(</big><em>name</em>, <em>location=&lt;hilti.core.location.Location object at 0x11c6c30&gt;</em><big>)</big><a class="headerlink" href="#hilti.core.module.Module" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="hilti.core.module.Module.IDs">
 <!--[hilti.core.module.Module.IDs]--><tt class="descname">IDs</tt><big>(</big><big>)</big><a class="headerlink" href="#hilti.core.module.Module.IDs" title="Permalink to this definition">¶</a></dt>
@@ -913,7 +1086,7 @@ with subsequent AST nodes.</p>
 <p>The main external function provided by the <tt class="xref docutils literal"><span class="pre">printer</span></tt> is:</p>
 <dl class="function">
 <dt id="hilti.printer.printAST">
-<!--[hilti.printer.printAST]--><tt class="descclassname">hilti.printer.</tt><tt class="descname">printAST</tt><big>(</big><em>ast</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x19070&gt;</em><big>)</big><a class="headerlink" href="#hilti.printer.printAST" title="Permalink to this definition">¶</a></dt>
+<!--[hilti.printer.printAST]--><tt class="descclassname">hilti.printer.</tt><tt class="descname">printAST</tt><big>(</big><em>ast</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x1a070&gt;</em><big>)</big><a class="headerlink" href="#hilti.printer.printAST" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <div class="section" id="module-hilti.printer.printer">
@@ -935,7 +1108,6 @@ sugar&#8221; of which the code generator will not need to be aware of.</p>
 <!--[hilti.canonifier.canonifyAST]--><tt class="descclassname">hilti.canonifier.</tt><tt class="descname">canonifyAST</tt><big>(</big><em>ast</em><big>)</big><a class="headerlink" href="#hilti.canonifier.canonifyAST" title="Permalink to this definition">¶</a></dt>
 <dd>Canonifies the AST <em>ast</em> in place.</dd></dl>
 
-<p>The <tt class="xref docutils literal"><span class="pre">canonifier</span></tt> performs the following canonifications:</p>
 <p>The following <a title="hilti.core.block.Block" class="reference internal" href="#hilti.core.block.Block"><tt class="xref docutils literal"><span class="pre">Block</span></tt></a> canonifications are performed:</p>
 <ul class="simple">
 <li>Blocks that don&#8217;t have successor yet are linked to the block following them

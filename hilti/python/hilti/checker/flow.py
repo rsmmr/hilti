@@ -83,7 +83,7 @@ def _(self, i):
 @checker.when(flow.CallC)
 def _(self, i):
     func = self.currentModule().lookupGlobal(i.op1().id().name())
-    if not _checkFunc(self, i, func, function.Function.CC_C):
+    if not _checkFunc(self, i, func, function.CallingConvention.C):
         return
 
     rt = func.type().resultType()
@@ -99,7 +99,7 @@ def _(self, i):
 @checker.when(flow.CallTailVoid)
 def _(self, i):
     func = self.currentModule().lookupGlobal(i.op1().id().name())
-    if not _checkFunc(self, i, func, function.Function.CC_HILTI):
+    if not _checkFunc(self, i, func, function.CallingConvention.HILTI):
         return
     
     rt = func.type().resultType()
@@ -113,7 +113,7 @@ def _(self, i):
 @checker.when(flow.CallTailResult)
 def _(self, i):
     func = self.currentModule().lookupGlobal(i.op1().id().name())
-    if not _checkFunc(self, i, func, function.Function.CC_HILTI):
+    if not _checkFunc(self, i, func, function.CallingConvention.HILTI):
         return
     
     rt = func.type().resultType()

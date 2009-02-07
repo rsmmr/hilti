@@ -6,7 +6,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
     <title>Index &mdash; HILTI v0.1 documentation</title>
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -76,9 +76,11 @@
 <table width="100%" class="indextable"><tr><td width="33%" valign="top">
 <dl>
 
+<dt><a href="internals/compiler.html#hilti.core.function.CallingConvention.C">C (hilti.core.function.CallingConvention attribute)</a></dt>
 <dt><a href="user/syntax.html#hilti.instructions.flow.Call">Call (class in hilti.instructions.flow)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.Signature.callback">callback() (hilti.core.instruction.Signature method)</a></dt>
 <dt><a href="user/syntax.html#hilti.instructions.flow.CallC">CallC (class in hilti.instructions.flow)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.function.CallingConvention">CallingConvention (class in hilti.core.function)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.function.Function.callingConvention">callingConvention() (hilti.core.function.Function method)</a></dt>
 <dt><a href="user/syntax.html#hilti.instructions.flow.CallTailResult">CallTailResult (class in hilti.instructions.flow)</a></dt>
 <dt><a href="user/syntax.html#hilti.instructions.flow.CallTailVoid">CallTailVoid (class in hilti.instructions.flow)</a></dt>
@@ -90,15 +92,12 @@
 <dt><a href="internals/compiler.html#hilti.checker.checker.Checker.checkAST">checkAST() (hilti.checker.checker.Checker method)</a></dt>
   <dd><dl>
     <dt><a href="internals/compiler.html#hilti.checker.checkAST">(in module hilti.checker)</a></dt>
-  </dl></dd>
+  </dl></dd></dl></td><td width="33%" valign="top"><dl>
 <dt><a href="internals/compiler.html#hilti.checker.checker.Checker">Checker (class in hilti.checker.checker)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.function.Function.clearBlocks">clearBlocks() (hilti.core.function.Function method)</a></dt></dl></td><td width="33%" valign="top"><dl>
+<dt><a href="internals/compiler.html#hilti.core.function.Function.clearBlocks">clearBlocks() (hilti.core.function.Function method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.type.CompositeType">CompositeType (class in hilti.core.type)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.constant.Constant">Constant (class in hilti.core.constant)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.ConstOperand.constant">constant() (hilti.core.instruction.ConstOperand method)</a></dt>
-  <dd><dl>
-    <dt><a href="internals/compiler.html#hilti.core.instruction.IDOperand.constant">(hilti.core.instruction.IDOperand method)</a></dt>
-  </dl></dd>
 <dt><a href="internals/compiler.html#hilti.core.instruction.ConstOperand">ConstOperand (class in hilti.core.instruction)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.createInstruction">createInstruction() (in module hilti.core.instruction)</a></dt>
 <dt><a href="internals/compiler.html#hilti.canonifier.canonifier.Canonifier.currentFunction">currentFunction() (hilti.canonifier.canonifier.Canonifier method)</a></dt>
@@ -118,10 +117,8 @@
 
 <dt><a href="internals/compiler.html#hilti.core.util.debug">debug() (in module hilti.core.util)</a></dt>
 <dt><a href="internals/compiler.html#hilti.checker.checker.Checker.declSeen">declSeen() (hilti.checker.checker.Checker method)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.block.Block.dispatch">dispatch() (hilti.core.block.Block method)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.function.Function.dispatch">dispatch() (hilti.core.function.Function method)</a></dt>
   <dd><dl>
-    <dt><a href="internals/compiler.html#hilti.core.constant.Constant.dispatch">(hilti.core.constant.Constant method)</a></dt>
-    <dt><a href="internals/compiler.html#hilti.core.function.Function.dispatch">(hilti.core.function.Function method)</a></dt>
     <dt><a href="internals/compiler.html#hilti.core.id.ID.dispatch">(hilti.core.id.ID method)</a></dt>
     <dt><a href="internals/compiler.html#hilti.core.instruction.Instruction.dispatch">(hilti.core.instruction.Instruction method)</a></dt>
     <dt><a href="internals/compiler.html#hilti.core.module.Module.dispatch">(hilti.core.module.Module method)</a></dt>
@@ -141,6 +138,7 @@
   <dd><dl>
     <dt><a href="internals/compiler.html#hilti.core.util.error">(in module hilti.core.util)</a></dt>
   </dl></dd></dl></td><td width="33%" valign="top"><dl>
+<dt><a href="internals/compiler.html#hilti.core.function.Linkage.EXPORTED">EXPORTED (hilti.core.function.Linkage attribute)</a></dt>
 <dt><a href="user/syntax.html#hilti.instructions.integer.Ext">Ext (class in hilti.instructions.integer)</a></dt>
 </dl></td></tr></table>
 
@@ -148,7 +146,6 @@
 <table width="100%" class="indextable"><tr><td width="33%" valign="top">
 <dl>
 
-<dt><a href="internals/compiler.html#hilti.core.instruction.fmt_op">fmt_op() (in module hilti.core.instruction)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.function.Function">Function (class in hilti.core.function)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.block.Block.function">function() (hilti.core.block.Block method)</a></dt></dl></td><td width="33%" valign="top"><dl>
 <dt><a href="internals/compiler.html#hilti.core.type.FunctionType">FunctionType (class in hilti.core.type)</a></dt>
@@ -159,14 +156,16 @@
 <dl>
 
 <dt><a href="internals/compiler.html#hilti.codegen.generateLLVM">generateLLVM() (in module hilti.codegen)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.type.FunctionType.getID">getID() (hilti.core.type.FunctionType method)</a></dt></dl></td><td width="33%" valign="top"><dl>
-<dt><a href="internals/compiler.html#hilti.core.instruction.getInstructions">getInstructions() (in module hilti.core.instruction)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.type.FunctionType.getID">getID() (hilti.core.type.FunctionType method)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.instruction.getInstructions">getInstructions() (in module hilti.core.instruction)</a></dt></dl></td><td width="33%" valign="top"><dl>
+<dt><a href="internals/compiler.html#hilti.core.id.Role.GLOBAL">GLOBAL (hilti.core.id.Role attribute)</a></dt>
 </dl></td></tr></table>
 
 <h2 id="H">H</h2>
 <table width="100%" class="indextable"><tr><td width="33%" valign="top">
 <dl>
 
+<dt><a href="internals/compiler.html#hilti.core.function.CallingConvention.HILTI">HILTI (hilti.core.function.CallingConvention attribute)</a></dt>
 <dt><a href="internals/compiler.html#module-hilti.canonifier">hilti.canonifier (module)</a></dt>
 <dt><a href="internals/compiler.html#module-hilti.canonifier.canonifier">hilti.canonifier.canonifier (module)</a></dt>
 <dt><a href="internals/compiler.html#module-hilti.canonifier.flow">hilti.canonifier.flow (module)</a></dt>
@@ -201,21 +200,20 @@
 <dt><a href="internals/compiler.html#hilti.core.id.ID">ID (class in hilti.core.id)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.IDOperand.id">id() (hilti.core.instruction.IDOperand method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.IDOperand">IDOperand (class in hilti.core.instruction)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.module.Module.IDs">IDs() (hilti.core.module.Module method)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.function.Function.IDs">IDs() (hilti.core.function.Function method)</a></dt>
   <dd><dl>
+    <dt><a href="internals/compiler.html#hilti.core.module.Module.IDs">(hilti.core.module.Module method)</a></dt>
     <dt><a href="internals/compiler.html#hilti.core.scope.Scope.IDs">(hilti.core.scope.Scope method)</a></dt>
     <dt><a href="internals/compiler.html#hilti.core.type.FunctionType.IDs">(hilti.core.type.FunctionType method)</a></dt>
     <dt><a href="internals/compiler.html#hilti.core.type.StructType.IDs">(hilti.core.type.StructType method)</a></dt>
   </dl></dd>
-<dt><a href="user/syntax.html#hilti.instructions.flow.IfElse">IfElse (class in hilti.instructions.flow)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.scope.Scope.insert">insert() (hilti.core.scope.Scope method)</a></dt></dl></td><td width="33%" valign="top"><dl>
+<dt><a href="user/syntax.html#hilti.instructions.flow.IfElse">IfElse (class in hilti.instructions.flow)</a></dt></dl></td><td width="33%" valign="top"><dl>
+<dt><a href="internals/compiler.html#hilti.core.scope.Scope.insert">insert() (hilti.core.scope.Scope method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.Instruction">Instruction (class in hilti.core.instruction)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.instruction">instruction() (in module hilti.core.instruction)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.block.Block.instructions">instructions() (hilti.core.block.Block method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.type.IntegerType">IntegerType (class in hilti.core.type)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.util.internal_error">internal_error() (in module hilti.core.util)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.function.Function.isImported">isImported() (hilti.core.function.Function method)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.instruction.IDOperand.isLocal">isLocal() (hilti.core.instruction.IDOperand method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.type.isOptional">isOptional() (in module hilti.core.type)</a></dt>
 </dl></td></tr></table>
 
@@ -231,7 +229,12 @@
 <dl>
 
 <dt><a href="internals/compiler.html#hilti.core.type.LabelType">LabelType (class in hilti.core.type)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.function.Linkage">Linkage (class in hilti.core.function)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.function.Function.linkage">linkage() (hilti.core.function.Function method)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.function.Linkage.LOCAL">LOCAL (hilti.core.function.Linkage attribute)</a></dt>
+  <dd><dl>
+    <dt><a href="internals/compiler.html#hilti.core.id.Role.LOCAL">(hilti.core.id.Role attribute)</a></dt>
+  </dl></dd>
 <dt><a href="internals/compiler.html#hilti.core.location.Location">Location (class in hilti.core.location)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.block.Block.location">location() (hilti.core.block.Block method)</a></dt>
   <dd><dl>
@@ -245,7 +248,10 @@
 <dt><a href="internals/compiler.html#hilti.core.scope.Scope.lookup">lookup() (hilti.core.scope.Scope method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.function.Function.lookupBlock">lookupBlock() (hilti.core.function.Function method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.module.Module.lookupGlobal">lookupGlobal() (hilti.core.module.Module method)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.module.Module.lookupID">lookupID() (hilti.core.module.Module method)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.function.Function.lookupID">lookupID() (hilti.core.function.Function method)</a></dt>
+  <dd><dl>
+    <dt><a href="internals/compiler.html#hilti.core.module.Module.lookupID">(hilti.core.module.Module method)</a></dt>
+  </dl></dd>
 <dt><a href="user/syntax.html#hilti.instructions.integer.Lt">Lt (class in hilti.instructions.integer)</a></dt>
 </dl></td></tr></table>
 
@@ -305,7 +311,7 @@
 <table width="100%" class="indextable"><tr><td width="33%" valign="top">
 <dl>
 
-<dt><a href="internals/compiler.html#hilti.core.function.Function.parentFunc">parentFunc() (hilti.core.function.Function method)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.id.Role.PARAM">PARAM (hilti.core.id.Role attribute)</a></dt>
 <dt><a href="internals/compiler.html#hilti.parser.parse">parse() (in module hilti.parser)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.visitor.Visitor.post">post() (hilti.core.visitor.Visitor method)</a></dt></dl></td><td width="33%" valign="top"><dl>
 <dt><a href="internals/compiler.html#hilti.core.visitor.Visitor.pre">pre() (hilti.core.visitor.Visitor method)</a></dt>
@@ -318,9 +324,11 @@
 
 <dt><a href="internals/compiler.html#hilti.core.scope.Scope.remove">remove() (hilti.core.scope.Scope method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.block.Block.replace">replace() (hilti.core.block.Block method)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.type.FunctionType.resultType">resultType() (hilti.core.type.FunctionType method)</a></dt></dl></td><td width="33%" valign="top"><dl>
-<dt><a href="user/syntax.html#hilti.instructions.flow.ReturnResult">ReturnResult (class in hilti.instructions.flow)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.type.FunctionType.resultType">resultType() (hilti.core.type.FunctionType method)</a></dt>
+<dt><a href="user/syntax.html#hilti.instructions.flow.ReturnResult">ReturnResult (class in hilti.instructions.flow)</a></dt></dl></td><td width="33%" valign="top"><dl>
 <dt><a href="user/syntax.html#hilti.instructions.flow.ReturnVoid">ReturnVoid (class in hilti.instructions.flow)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.id.Role">Role (class in hilti.core.id)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.id.ID.role">role() (hilti.core.id.ID method)</a></dt>
 </dl></td></tr></table>
 
 <h2 id="S">S</h2>
@@ -328,9 +336,8 @@
 <dl>
 
 <dt><a href="internals/compiler.html#hilti.core.scope.Scope">Scope (class in hilti.core.scope)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.function.Function.scope">scope() (hilti.core.function.Function method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.function.Function.setCallingConvention">setCallingConvention() (hilti.core.function.Function method)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.function.Function.setImported">setImported() (hilti.core.function.Function method)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.instruction.ConstOperand.setConstant">setConstant() (hilti.core.instruction.ConstOperand method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.function.Function.setLinkage">setLinkage() (hilti.core.function.Function method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.block.Block.setMayRemove">setMayRemove() (hilti.core.block.Block method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.block.Block.setName">setName() (hilti.core.block.Block method)</a></dt>
@@ -340,17 +347,11 @@
 <dt><a href="internals/compiler.html#hilti.core.block.Block.setNext">setNext() (hilti.core.block.Block method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.Instruction.setOp1">setOp1() (hilti.core.instruction.Instruction method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.Instruction.setOp2">setOp2() (hilti.core.instruction.Instruction method)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.instruction.Instruction.setOp3">setOp3() (hilti.core.instruction.Instruction method)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.instruction.Instruction.setTarget">setTarget() (hilti.core.instruction.Instruction method)</a></dt></dl></td><td width="33%" valign="top"><dl>
+<dt><a href="internals/compiler.html#hilti.core.instruction.Instruction.setOp3">setOp3() (hilti.core.instruction.Instruction method)</a></dt></dl></td><td width="33%" valign="top"><dl>
+<dt><a href="internals/compiler.html#hilti.core.instruction.Instruction.setTarget">setTarget() (hilti.core.instruction.Instruction method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.constant.Constant.setType">setType() (hilti.core.constant.Constant method)</a></dt>
-  <dd><dl>
-    <dt><a href="internals/compiler.html#hilti.core.instruction.ConstOperand.setType">(hilti.core.instruction.ConstOperand method)</a></dt>
-  </dl></dd>
 <dt><a href="internals/compiler.html#hilti.core.instruction.Signature">Signature (class in hilti.core.instruction)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.instruction.Instruction.signature">signature() (hilti.core.instruction.Instruction method)</a></dt>
-  <dd><dl>
-    <dt><a href="internals/compiler.html#hilti.core.instruction.signature">(in module hilti.core.instruction)</a></dt>
-  </dl></dd>
 <dt><a href="internals/compiler.html#hilti.core.visitor.Visitor.skipOthers">skipOthers() (hilti.core.visitor.Visitor method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.type.StorageType">StorageType (class in hilti.core.type)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.type.StringType">StringType (class in hilti.core.type)</a></dt>
@@ -398,10 +399,8 @@
 <dt><a href="internals/compiler.html#hilti.core.visitor.Visitor.visit_post">visit_post() (hilti.core.visitor.Visitor method)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.visitor.Visitor.visit_pre">visit_pre() (hilti.core.visitor.Visitor method)</a></dt></dl></td><td width="33%" valign="top"><dl>
 <dt><a href="internals/compiler.html#hilti.core.visitor.Visitor">Visitor (class in hilti.core.visitor)</a></dt>
-<dt><a href="internals/compiler.html#hilti.core.constant.Constant.visitorSubClass">visitorSubClass() (hilti.core.constant.Constant method)</a></dt>
-  <dd><dl>
-    <dt><a href="internals/compiler.html#hilti.core.id.ID.visitorSubClass">(hilti.core.id.ID method)</a></dt>
-  </dl></dd>
+<dt><a href="internals/compiler.html#hilti.core.id.ID.visitorSubClass">visitorSubClass() (hilti.core.id.ID method)</a></dt>
+<dt><a href="internals/compiler.html#hilti.core.constant.Void">Void (in module hilti.core.constant)</a></dt>
 <dt><a href="internals/compiler.html#hilti.core.type.VoidType">VoidType (class in hilti.core.type)</a></dt>
 </dl></td></tr></table>
 

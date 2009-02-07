@@ -7,7 +7,7 @@ Compiler
 
 .. _internals-python-module:
 
-..todo: Describe the overall HILTI Python module layout/usage. 
+..todo: Describe the overall HILTI Python module structure and  usage. 
 
 Core Classes
 ------------
@@ -17,15 +17,12 @@ core.block
 
 .. automodule:: hilti.core.block
    :members:
-   :undoc-members:
 
 core.constant
 ~~~~~~~~~~~~~
 
 .. automodule:: hilti.core.constant
    :members:
-   :undoc-members:
-
 
 core.function
 ~~~~~~~~~~~~~
@@ -138,8 +135,6 @@ Canonifier
 The main external function provided by the :mod:`~hilti.canonifier` is:
 
 .. autofunction:: hilti.canonifier.canonifyAST
-
-The :mod:`~hilti.canonifier` performs the following canonifications:
 
 .. automodule:: hilti.canonifier.module
 .. automodule:: hilti.canonifier.flow

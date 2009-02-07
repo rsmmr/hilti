@@ -17,15 +17,12 @@ core.block
 
 .. automodule:: hilti.core.block
    :members:
-   :undoc-members:
 
 core.constant
 ~~~~~~~~~~~~~
 
 .. automodule:: hilti.core.constant
    :members:
-   :undoc-members:
-
 
 core.function
 ~~~~~~~~~~~~~

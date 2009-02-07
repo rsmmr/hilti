@@ -45,7 +45,7 @@ def _(self, i):
     func = self.currentModule().lookupGlobal(name)
     assert func and isinstance(func.type(), type.FunctionType)
     
-    if func.linkage() == function.Function.CC_C:
+    if func.linkage() == function.CallingConvention.C:
         callc = instructions.flow.CallC(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
         current_block = self.currentTransformedBlock()
         current_block.addInstruction(callc)
@@ -58,8 +58,8 @@ def _(self, i):
         
     new_block = _splitBlock(self, tc)
     
-    i = id.ID(new_block.name(), type.Label, location=i.location())
-    label = instruction.IDOperand(i, False, location=i.location())
+    i = id.ID(new_block.name(), type.Label, id.Role.LOCAL, location=i.location())
+    label = instruction.IDOperand(i, location=i.location())
     tc.setOp3(label)
     new_block.setMayRemove(False)
 
