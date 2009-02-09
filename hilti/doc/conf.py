@@ -15,6 +15,7 @@ import sys, os
 
 sys.path += ["../python"]
 import hilti
+from hilti.core import *
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
@@ -196,8 +197,42 @@ todo_include_todos=True
 
 import copy
 
+# Turns a signature into a nicely formatted __doc__ string.
+def sigToRst(ins):
+    def fmt(t, tag):
+        if t:
+            return " <%s>" % (type.name(t, docstring=True))
+        else:
+            return ""
+        
+    op1 = fmt(ins._op1, "op1")
+    op2 = fmt(ins._op2, "op2")
+    op3 = fmt(ins._op3, "op3")
+    target = fmt(ins._target, "target") 
+    if target:
+        target += " = "
+        
+    doc = [".. parsed-literal::", "", "  %s**%s**%s%s%s" % (target, ins._name, op1, op2, op3), ""]
+    
+#        if ins._op1:
+#            doc += ["* Operand 1: %s" % type.name(ins._op1, docstring=True)]
+#        
+#        if ins._op2:
+#            doc += ["* Operand 2: %s" % type.name(ins._op2, docstring=True)]
+#
+#        if ins._op3:
+#            doc += ["* Operand 3: %s" % type.name(ins._op3, docstring=True)]
+#
+#        if target:
+#            doc += ["* Target type: %s" % type.name(ins._target, docstring=True)]
+#
+    if doc:
+        doc += [""]
+            
+    return doc
+
 # Reformat the instruction signatures.
-def reformat_signature(app, what, name, obj, options, signature, return_annotation):
+def reformatSignature(app, what, name, obj, options, signature, return_annotation):
     if what != "class" or not name.startswith("hilti.instructions.") or name.endswith("__init__"):
         return (signature, return_annotation)
     
@@ -219,7 +254,7 @@ def reformat_signature(app, what, name, obj, options, signature, return_annotati
     return ("(%s)" % str, return_annotation)
 
 # Reformat the __doc__ string to include signature. 
-def add_signature(app, what, name, obj, options, lines):
+def addSignature(app, what, name, obj, options, lines):
     
     if what != "class" or not name.startswith("hilti.instructions."):
         return 
@@ -227,9 +262,102 @@ def add_signature(app, what, name, obj, options, lines):
     # Prepend signature *in place*.
     tmp = copy.deepcopy(lines)
     del lines[:]
-    lines += obj._signature.to_doc() 
+    lines += sigToRst(obj._signature)
     lines += tmp
+
+import inspect    
+import re
+
+Substitutions = {}
+
+def addSubst(name, role, path, level):
+    if name in Substitutions:
+        (oname, orole, opath, olevel) = Substitutions[name]
+        if olevel <= level:
+            # Lowest level wins. 
+            return
+
+    Substitutions[name] = (name, role, path, level)
+
+def extractSubstitutions(obj, path, level, recurse):
+    global Substitutions
+
+    # Add this module and then just climb down.
+    name = obj.__name__.split(".")[-1]
+    addSubst(name, "mod", path, level)
+    
+    if "__all__" in obj.__dict__:
+        # Just climb down, 
+        for child in obj.__all__:
+            extractSubstitutions(obj.__dict__[child], "%s.%s" % (path, child), level + 1, True)
+        return 
+    
+    for (name, value) in inspect.getmembers(obj):
+
+        if name.startswith("_"):
+            continue
         
+        val_path = "%s.%s" % (path, name)
+        role = None
+
+        if inspect.isclass(value):
+            role = "class"
+                    
+        elif inspect.ismodule(value):
+            role = "mod"
+            
+        elif inspect.isfunction(value):
+            role = "func"
+            
+        elif isinstance(value, int) or isinstance(value, str):
+            role = "const"
+
+        if role:
+            addSubst(name, role, val_path, level + 1)
+            
+        if inspect.isclass(value):
+            extractSubstitutions(value, val_path, level + 1, False)
+            
+# Expand class references of the form ~foo.
+def expandReferences(app, what, name, obj, options, lines):
+
+    def replace(m):
+        tag = m.group(1)
+        addl = m.group(2)
+        
+        try:
+            (name, role, path, level) = Substitutions[tag]
+            
+            if addl:
+                role = "meth"
+            else:
+                addl = ""
+                
+            return ":%s:`~%s%s`" % (role, path, addl)
+                
+        except KeyError:
+            print >>sys.stderr, "warning: ~~%s not in substitution table" % tag
+            return m.group(0)
+            
+    regexp = re.compile(r"~~(\w+)((\.\w+)+)?\b")
+    
+    for i in range(len(lines)):
+        lines[i] = regexp.sub(replace, lines[i])
+    
+def processDocString(app, what, name, obj, options, lines):
+    expandReferences(app, what, name, obj, options, lines)
+    addSignature(app, what, name, obj, options, lines)
+    
+#    for line in lines:
+#        print >>sys.stderr, "|", line
+#    print >>sys.stderr, "//////////////////////"
+            
 def setup(app):
-    app.connect('autodoc-process-docstring', add_signature)
-    app.connect('autodoc-process-signature', reformat_signature)
+    
+    extractSubstitutions(hilti, "hilti", 1, True)
+
+#   for s in Substitutions.values():
+#       print >>sys.stderr, s
+    
+    app.connect('autodoc-process-docstring', processDocString)
+    app.connect('autodoc-process-signature', reformatSignature)
