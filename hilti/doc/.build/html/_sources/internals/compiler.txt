@@ -29,42 +29,30 @@ core.function
 
 .. automodule:: hilti.core.function
    :members:
-   :undoc-members:
 
 core.id
 ~~~~~~~
 
 .. automodule:: hilti.core.id
    :members:
-   :undoc-members:
 
 core.instruction
 ~~~~~~~~~~~~~~~~
 
 .. automodule:: hilti.core.instruction
    :members:
-   :undoc-members:
 
 core.location
 ~~~~~~~~~~~~~
 
 .. automodule:: hilti.core.location
    :members:
-   :undoc-members:
 
 core.module
 ~~~~~~~~~~~
 
 .. automodule:: hilti.core.module
    :members:
-   :undoc-members:
-
-core.scope
-~~~~~~~~~~
-
-.. automodule:: hilti.core.scope
-   :members:
-   :undoc-members:
 
 core.type
 ~~~~~~~~~
@@ -78,7 +66,6 @@ core.util
 
 .. automodule:: hilti.core.util
    :members:
-   :undoc-members:
 
 core.visitor
 ~~~~~~~~~~~~
