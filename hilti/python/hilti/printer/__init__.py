@@ -1,5 +1,7 @@
 # $Id$
 
+__all__ = []
+
 import sys
 
 import printer

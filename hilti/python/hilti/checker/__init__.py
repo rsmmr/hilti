@@ -12,6 +12,8 @@ otherwise just double-check any properties they require with
 assertions.  
 """
 
+__all__ = []
+
 import checker
 import flow
 import module

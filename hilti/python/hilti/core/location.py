@@ -1,12 +1,15 @@
 # $Id$
-#
-# Location information
 
 import os.path
 
 class Location(object):
-    def __init__(self, file = None, line = 0):
-        self._file = file
+    """A Location stores a filename *name* (string) and a line number *line*
+    (integer). If *line* is zero, the line number is assumed to be
+    unspecified. Locations are associated with other objects derived from
+    HILTI source files. If any input errors are found, the user can then be
+    pointed to the offending code segment."""
+    def __init__(self, name = None, line = 0):
+        self._file = name
         self._line = int(line)
         
     def __str__(self):

@@ -127,7 +127,7 @@ class CodeGen(visitor.Visitor):
 
     # Looks up the function belonging to the given name. Returns None if not found. 
     def lookupFunction(self, id):
-        func = self._module.lookupGlobal(id.name())
+        func = self._module.lookupID(id.name())
         assert (not func) or (isinstance(func.type(), type.FunctionType))
         return func
     
@@ -239,7 +239,7 @@ class CodeGen(visitor.Visitor):
             pass
         
         fields = self._bf_fields
-        ids = function.type().IDs() + function.IDs().values()
+        ids = function.type().IDs() + function.IDs()
         fields = fields + [(id.name(), self.llvmTypeConvert(id.type())) for id in ids]
         
         # Build map of indices and store with function.

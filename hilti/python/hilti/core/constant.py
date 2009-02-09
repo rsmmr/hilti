@@ -7,15 +7,15 @@ import type
 
 class Constant(object):
     """A Constant represents a constant value with its
-    :class:`~hilti.core.type.Type`.
+    ~~Type.
     
-    This class implements :class:`~hilti.core.visitor.Visitor` support and
+    This class implements ~~Visitor support and
     maps the subtype to :meth:`~type`.
     """
     def __init__(self, value, type, location = None):
         """Initializes the constant with *value*, which must match with the
-        :class:`~hilti.core.type.Type` *type*. *location* defines a
-        :class:`~hilti.core.location.Location` to be associated with this
+        ~~Type *type*. *location* defines a
+        ~~Location to be associated with this
         Constant."""
         self._value = value
         self._type = type
@@ -26,15 +26,15 @@ class Constant(object):
         return self._value
     
     def type(self):
-        """Return the :class:`~hilti.core.type.Type` of the Constant."""
+        """Return the ~~Type of the Constant."""
         return self._type
 
     def setType(self, type):
-        """Sets the :class:`~hilti.core.type.Type` of the Constant to *type*."""
+        """Sets the ~~Type of the Constant to *type*."""
         self._type = type
     
     def location(self):
-        """Returns the :class:`~hilti.core.location.Location` associated with
+        """Returns the ~~Location associated with
         the Constant."""
         return self._location
     

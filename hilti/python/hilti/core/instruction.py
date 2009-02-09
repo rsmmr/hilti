@@ -12,16 +12,14 @@ class Instruction(object):
     HILTI language. It is however not supposed to be derived directly from; to
     create a new instruction, use the :meth:`instruction` decorator.
     
-    *op1*/*op2*/*op3* are the :class:`Operand` objects of the instruction.
-    *target* specifies where the instructions result is stored and must be an
-    :class:`IDOperand`. The types of operands and targt must match with the
-    Instruction's :class:`Signature` and may only be *None* if the signature
-    allows for it (including for optional operands). *location* gives a
-    :class:`~hilti.core.location.Location` to be associated with this
-    Function.
+    *op1*/*op2*/*op3* are the ~~Operand objects of the instruction. *target*
+    specifies where the instructions result is stored and must be an
+    ~~IDOperand. The types of operands and targt must match with the
+    Instruction's ~~Signature and may only be *None* if the signature allows
+    for it (including for optional operands). *location* gives a ~~Location to
+    be associated with this Function.
     
-    This class implements :class:`~hilti.core.visitor.Visitor` support without
-    subtypes. 
+    This class implements ~~Visitor support without subtypes. 
     """
     
     _signature = None
@@ -40,7 +38,7 @@ class Instruction(object):
             cb(self)
 
     def signature(self):
-        """Returns the :class:`Signature` of this Instruction."""
+        """Returns the ~~Signature of this Instruction."""
         return self.__class__._signature
             
     def name(self):
@@ -49,53 +47,49 @@ class Instruction(object):
         return self.signature().name()
         
     def op1(self):
-        """Returns the Instruction's first :class:`Operand`, or *None* if it
-        does not have any operands."""
+        """Returns the Instruction's first ~~Operand, or *None* if it does not
+        have any operands."""
         return self._op1
     
     def op2(self):
-        """Returns the Instruction's second :class:`Operand`, or *None* if it
-        has less than two operands."""
+        """Returns the Instruction's second ~~Operand, or *None* if it has
+        less than two operands."""
         return self._op2
     
     def op3(self):
-        """Returns the Instruction's second :class:`Operand`, or *None* if it
-        has less than three operands."""
+        """Returns the Instruction's second ~~Operand, or *None* if it has
+        less than three operands."""
         return self._op3
 
     def target(self):
-        """Returns the Instruction's target :class:`IDOperand`, or *None* if
-        it does not have target."""
+        """Returns the Instruction's target ~~IDOperand, or *None* if it does
+        not have target."""
         return self._target
 
     def setOp1(self, op):
-        """Sets the :class:`Operand` *op* to be the Instruction's first
-        operand. The type of *op* must match with the Instruction's
-        :class:`Signature`."""
+        """Sets the ~~Operand *op* to be the Instruction's first operand. The
+        type of *op* must match with the Instruction's ~~Signature."""
         self._op1 = op
         
     def setOp2(self, op):
-        """Sets the :class:`Operand` *op* to be the Instruction's second
-        operand. The type of *op* must match with the Instruction's
-        :class:`Signature`."""
+        """Sets the ~~Operand *op* to be the Instruction's second operand. The
+        type of *op* must match with the Instruction's ~~Signature."""
         self._op2 = op
     
     def setOp3(self, op):
-        """Sets the :class:`Operand` *op* to be the Instruction's third
-        operand. The type of *op* must match with the Instruction's
-        :class:`Signature`."""
+        """Sets the ~~Operand *op* to be the Instruction's third operand. The
+        type of *op* must match with the Instruction's ~~Signature."""
         self._op3 = op
         
     def setTarget(self, target):
-        """Sets the :class:`IDOperand` *target* to be the Instruction's target
-        for results. The type of *target* must match the Instruction's
-        :class:`Signature`."""
+        """Sets the ~~IDOperand *target* to be the Instruction's target for
+        results. The type of *target* must match the Instruction's
+        ~~Signature."""
         assert not target or isinstance(target, IDOperand)
         self._target = target
         
     def location(self):
-        """Returns the :class:`~hilti.core.location.Location` object
-        associated with this Instruction"""
+        """Returns the ~~Location object associated with this Instruction"""
         return self._location
 
     # Visitor support.
@@ -110,16 +104,15 @@ class Instruction(object):
         return "%s%s%s%s%s" % (target, self.signature().name(), op1, op2, op3)
 
 class Operand(object):
-    """This is the base class for operands and targets of :class:`Instruction`
+    """This is the base class for operands and targets of ~~Instruction
     objects. It is not intended for direct use; instantiate one of its derived
     classes instead.
     
     *value* is the Operand's value, with a type determined by the derived
-    class. *type* is the Operand :class:`~hilti.type.Type`, and *location* a
-    :class:`~hilti.core.location.Location` to be associated with the operand.
+    class. *type* is the Operand ~~Type, and *location* a ~~Location to be
+    associated with the operand.
     
-    (Note that this class does *not* implement
-    :class:`~hilti.core.visitor.Visitor` support.)
+    (Note that this class does *not* implement ~~Visitor support.)
     """
     def __init__(self, value, type, location):
         self._value = value
@@ -132,12 +125,11 @@ class Operand(object):
         return self._value
     
     def type(self):
-        """Returns the Operand's :class:`~hilti.type.Type`."""
+        """Returns the Operand's ~~Type."""
         return self._type
 
     def location(self):
-        """Returns the :class:`~hilti.core.location.Location` object
-        associated with this Instruction"""
+        """Returns the ~~Location object associated with this Instruction"""
         return self._location
 
     def _setValue(self, value):
@@ -150,60 +142,54 @@ class Operand(object):
         return "%s %s" % (self._type, self._value)
 
 class ConstOperand(Operand):
-    """Derived from :class:`Operand`, a ConstOperand represents a constant
-    :class:`Instruction` operand. *constant* is an instance of
-    :class:`~hilti.core.constant.Constant`, and *location* a
-    :class:`~hilti.core.location.Location` to be associated with the operand.
+    """Derived from ~~Operand, a ConstOperand represents a constant
+    ~~Instruction operand. *constant* is an instance of ~~Constant, and
+    *location* a ~~Location to be associated with the operand.
     
-    For a ConstOperand, :meth:`value()` returns the same value the
-    :class:`~hilti.core.constant.Constant`
-    :meth:`~hilti.core.constant.Constant.value` method. 
+    For a ConstOperand, :meth:`value()` returns the same value as Constant's
+    ~~Constant.value.
     """
-    def __init__(self, constant, location=location.Location()):
+    def __init__(self, constant, location=None):
         super(ConstOperand, self).__init__(constant.value(), constant.type(), location)
         self._constant = constant
 
     def constant(self):
-        """Returns the operand's :class:`~hilti.core.constant.Constant`"""
+        """Returns the operand's ~~Constant"""
         return self._constant
     
     def setConstant(self, const):
-        """Sets the operand's :class:`~hilti.core.constant.Constant` to *const*"""
+        """Sets the operand's ~~Constant to *const*"""
         self._constant = const
         self._setValue(const.value())
         self._setType(const.type())
 
 class IDOperand(Operand):
-    """Derived from :class:`Operand`, an IDOperand is an operand
-    that references an :class:`~hilti.core.id.ID`. *id* is the
-    reference :class:`~hilti.core.id.ID`, , and *location* a
-    :class:`~hilti.core.location.Location` to be associated with the
-    operand.
+    """Derived from ~~Operand, an IDOperand is an operand that references an
+    ~~ID. *id* is the reference ~~ID, , and *location* a ~~Location to be
+    associated with the operand.
     
-    For an IDOperand, :meth:`value()` returns the name of the 
-    :class:`~hilti.core.id.ID` as a string.
+    For an IDOperand, :meth:`value()` returns the name of the ~~ID as a
+    string.
     """
     
-    def __init__(self, id, location=location.Location()):
+    def __init__(self, id, location=None):
         super(IDOperand, self).__init__(id, id.type(), location)
         self._id = id
 
     def id(self):
-        """Returns the operand's :class:`~hilti.core.id.ID`."""
+        """Returns the operand's ~~ID."""
         return self._id
     
 class TupleOperand(Operand):
-    """Derived from :class:`Operand`, a TupleOperand is an operand
-    consisting of a tupel of individual operands. *ops* is a list of
-    the tuple's :class:`Operand` objects, and *location* a
-    :class:`~hilti.core.location.Location` to be associated with the
-    operand.
+    """Derived from ~~Operand, a TupleOperand is an operand consisting of a
+    tupel of individual operands. *ops* is a list of the tuple's ~~Operand
+    objects, and *location* a ~~Location to be associated with the operand.
     
-    For a TupleOperand, :meth:`value()` returns the list of
-    :class:`Operand` objects, and :meth:`value()` returns a list of
-    the individual operands' :class:`~hilti.core.type.Type`.
+    For a TupleOperand, :meth:`value()` returns the list of ~~Operand`
+    objects, and :meth:`value() returns a list of the individual operands'
+    ~~Type.
     """
-    def __init__(self, ops, location=location.Location()):
+    def __init__(self, ops, location=None):
         vals = ops
         types = [op.type() for op in ops]
         super(TupleOperand, self).__init__(vals, type.TupleType(types), location)
@@ -213,21 +199,20 @@ class TupleOperand(Operand):
         return "(%s)" % ", ".join(["%s %s" % (op.type(), op.value()) for op in self._ops])
         
 class Signature:
-    """A Signature defines an :class:`~hilti.Instruction` 's name as well as
-    the valid :class:`~hilti.core.type.Type` for operands and target. The
-    class is not supposed to be instantiated directly; instances are
-    implicitly created when using the :meth:`instruction` decorator.
+    """A Signature defines an ~~Instruction 's name as well as the valid
+    ~~Type for operands and target. The class is not supposed to be
+    instantiated directly; instances are implicitly created when using the
+    :func:`instruction` decorator.
     
-    *name* is a string with the instruction's HILTI mnemonic. 
-    *op1*/*op2*/*op3* are types of instructions operands, and *target* is the
-    type of the instruction's result. If any of these is *None*, that
-    indicates that the instruction does not use the corresponding operand or
-    return any result, respectively. *callback* is function that is called
-    each time an :class:`Instruction` has been instantiated with this
-    Signature; the callback gets the :class:`Instruction` as its only
-    parameter. *terminator* is a boolean indicating whether the Signature
-    define's an instruction that is considered a
-    :class:`~hilti.core.block.Block` |terminator|.
+    *name* is a string giving the instruction's HILTI mnemonic. 
+    *op1*/*op2*/*op3* give the ~~Type of the instructions operands, and
+    *target* is the ~~Type of the instruction's result. If any of these is
+    *None*, it indicates that the instruction does not use the corresponding
+    operand or returns any result, respectively. *callback* is function that
+    is called each time an ~~Instruction has been instantiated with this
+    Signature; the callback gets the ~~Instruction as its only parameter.
+    *terminator* is a boolean indicating whether the Signature define's an
+    instruction that is considered a ~~Block |terminator|.
     """
     def __init__(self, name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False):
         self._name = name
@@ -239,60 +224,33 @@ class Signature:
         self._terminator = terminator
         
     def name(self):
+        """Returns the name (mnemonic) which the Signature for an
+        ~~Instruction."""
         return self._name
     
     def op1(self):
+        """Returns the ~~Type of the first ~~Operand"""
         return self._op1
     
     def op2(self):
+        """Returns the ~~Type of the second ~~Operand"""
         return self._op2
     
     def op3(self):
+        """Returns the ~~Type of the third ~~Operand"""
         return self._op3
 
     def target(self):
+        """Returns the ~~Type of the result."""
         return self._target
     
     def callback(self):
+        """Returns the Signature's callback function."""
         return self._callback
     
     def terminator(self):
+        """Returns true if the Signature defines a |terminator| instruction."""
         return self._terminator
-
-    # Turns the signature into a nicely formatted __doc__ string.
-    def to_doc(self):
-        
-        def fmt(t, tag):
-            if t:
-                return " <%s>" % (type.name(t, docstring=True))
-            else:
-                return ""
-        
-        op1 = fmt(self._op1, "op1")
-        op2 = fmt(self._op2, "op2")
-        op3 = fmt(self._op3, "op3")
-        target = fmt(self._target, "target") 
-        if target:
-            target += " = "
-        
-        doc = [".. parsed-literal::", "", "  %s**%s**%s%s%s" % (target, self._name, op1, op2, op3), ""]
-    
-#        if self._op1:
-#            doc += ["* Operand 1: %s" % type.name(self._op1, docstring=True)]
-#        
-#        if self._op2:
-#            doc += ["* Operand 2: %s" % type.name(self._op2, docstring=True)]
-#
-#        if self._op3:
-#            doc += ["* Operand 3: %s" % type.name(self._op3, docstring=True)]
-#
-#        if target:
-#            doc += ["* Target type: %s" % type.name(self._target, docstring=True)]
-#
-        if doc:
-            doc += [""]
-            
-        return doc
         
     def __str__(self):
         target = "[%s] = " % self._target if self._target else ""
@@ -301,8 +259,7 @@ class Signature:
         op3 = " [%s]" % self._op3 if self._op3 else ""
         return "%s%s%s%s%s" % (target, self._name, op1, op2, op3)
 
-
-def make_ins_init(myclass):
+def _make_ins_init(myclass):
     def ins_init(self, op1=None, op2=None, op3=None, target=None, location=None):
         super(self.__class__, self).__init__(op1, op2, op3, target, location)
         
@@ -310,11 +267,14 @@ def make_ins_init(myclass):
     return ins_init
         
 def instruction(name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False, location=None):
+    """This function is a *decorater* for classes derived from ~~Instruction;
+    it defines the new instruction's ~~Signature. The arguments are the same
+    as taken by ~~Signature constructor."""
     def register(ins):
         global _Instructions
         ins._signature = Signature(name, op1, op2, op3, target, callback, terminator)
         d = dict(ins.__dict__)
-        d["__init__"] = make_ins_init(ins)
+        d["__init__"] = _make_ins_init(ins)
         newclass = builtin_type(ins.__name__, (ins.__base__,), d)
         _Instructions[name] = newclass
         return newclass
@@ -324,9 +284,17 @@ def instruction(name, op1=None, op2=None, op3=None, target=None, callback=None, 
 _Instructions = {}    
 
 def getInstructions():
+    """Returns a list of all classes derived from ~~Instruction, i.e., a
+    complete list of all instructions provided by the HILTI language."""
     return _Instructions
 
-def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=location.Location()):
+def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=None):
+    """Instantiates a new instruction according to the instruction *name*. The
+    name must correspond to the mnemonic as defined by :meth:`signature
+    decorated sub-class of ~~Instruction. *createInstruction* instantiates a
+    object of this class and initializes *op1*/*op2*/*op3*, *target* and
+    *location* accordingly (see ~~Instruction)."""
+    
     try:
         i = _Instructions[name](op1, op2, op3, target, location)
     except KeyError:

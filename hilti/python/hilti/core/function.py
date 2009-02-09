@@ -1,38 +1,36 @@
 # $Id$
-#
-# A function. 
 
 import location
 import scope
 import type
 
 class Linkage:
-    """The *linkage* of a :class:`~hilti.core.function.Function` specifies its
+    """The *linkage* of a ~~Function specifies its
     link-time visibility."""
     
     LOCAL = 1    
-    """A :class:`~hilti.core.function.Function` with linkage :const:`LOCAL` is
-    only visible inside the :class:`~hilti.core.module.Module` it is
+    """A ~~Function with linkage :const:`LOCAL` is
+    only visible inside the ~~Module it is
     implemented in. This is the default linkage."""
 
     EXPORTED = 2
-    """A :class:`~hilti.core.function.Function` with linkage :const:`EXPORTED`
+    """A ~~Function with linkage :const:`EXPORTED`
     is visible across all compilation units."""
     
     
 class CallingConvention:
     """The *calling convention* used by a
-    :class:`~hilti.core.function.Function` specifies how calls to it are
+    ~~Function specifies how calls to it are
     implemented."""
     
     HILTI = 1
-    """A :class:`~hilti.core.function.Function` using the proprietary HILTI
+    """A ~~Function using the proprietary HILTI
     calling convention supports all of HILTI's flow-control features but
     cannot be called from other languages such as C. This is the default
     calling convention."""
     
     C = 2
-    """A :class:`~hilti.core.function.Function` using C calling convention
+    """A ~~Function using C calling convention
     implements standard C call semantics. It does however not support any
     HILTI-specific flow-control features, such as exceptions and
     continuations.
@@ -47,18 +45,18 @@ class CallingConvention:
         
 class Function(object):
     """A Function object represents all functions either declared or defined
-    in a :class:`~hilti.core.module.Module`. 
+    in a ~~Module. 
     
     *name* is a string containing the name of the Function; the name must be
     *non-qualified*, i.e., not be prefixed with any module name.  *ty* is the
-    :class:`~hilti.core.type.FunctionType` of this Function. *module* is the
-    :class:`~hilti.core.module.Module` that provides the Function's
+    ~~FunctionType of this Function. *module* is the
+    ~~Module that provides the Function's
     *implementation*.  For a Function with linkage :const:`Linkage.C`,
     *module* may be *None*. *location* defines a
-    :class:`~hilti.core.location.Location` to be associated with this
+    ~~Location to be associated with this
     Function.
     
-    This class implements :class:`~hilti.core.visitor.Visitor` support
+    This class implements ~~Visitor support
     without subtypes. 
     """
     
@@ -76,25 +74,25 @@ class Function(object):
         self._type = ty
         self._bodies = []
         self._location = location
-        self._scope = scope.Scope()
         self._linkage = Linkage.LOCAL
         self._cc = cc
         self._module = module
         
+        self._scope = {}
         for id in ty.IDs():
-            self._scope.insert(id)
+            self._scope[id.name()] = id 
 
     def name(self):
         """Returns the fully qualified name of this Function as a string."""
         return self._name
         
     def type(self):
-        """Returns the :class:`~hilti.core.type.FunctionType` of this
+        """Returns the ~~FunctionType of this
         function.""" 
         return self._type
 
     def module(self): 
-        """Returns the :class:`~hilti.core.module.Module` that provides the
+        """Returns the ~~Module that provides the
         *implementation* of the function. Returns *None* if the Function has
         :const:`Linkage.C`."""
         return self._module
@@ -122,27 +120,27 @@ class Function(object):
             # switching to CC HILTI. Don't seem to happen at the moment though. 
             assert self._module
     
-#    def scope(self):
-#        """Returns the local :class:`~hilti.core.scope.Scope` of this
-#        Function. The Scope contains Function parameters and local variables."""
-#        return self._scope
-    
     def addID(self, id):
-        """Inserts an :class:`~hilti.core.id.ID` into the function's scope."""
-        self._scope.insert(id)
+        """Inserts an ~~ID *id* into the function's scope. *id* must not be
+        qualified."""
+        assert not id.qualified()
+        self._scope[id.name()] = id 
         
     def lookupID(self, name):
-        """Returns the :class:`~hilti.core.id.ID` having the given *name* if
+        """Returns the ~~ID having the given *name* if
         it is defined in the Function's local scope, or None if not."""
-        return self._scope.lookup(name)
+        try:
+            return self._scope[name]
+        except KeyError:
+            return None
     
     def IDs(self):
-        """Returns a list of all :class:`~hilti.core.id.ID` objects defined in
+        """Returns a list of all ~~ID objects defined in
         the Function's scope."""
-        return self._scope.IDs()
+        return self._scope.values()
         
     def addBlock(self, b):
-        """Appends a :class:`~hilti.core.block.Block` to the Function's
+        """Appends a ~~Block to the Function's
         current list of blocks. The new Block is set to be the successor of
         the former tail Block, and its own successor field is cleared."""
         if self._bodies:
@@ -152,18 +150,18 @@ class Function(object):
         b.setNext(None)
     
     def blocks(self):
-        """Returns the list of :class:`~hilti.core.block.Block` objects
+        """Returns the list of ~~Block objects
         defining the Function's implementation. This list may be empty."""
         return self._bodies
 
     def clearBlocks(self):
-        """Removes all :class:`~hilti.core.block.Block` object from this
+        """Removes all ~~Block object from this
         Function."""
         self._bodies = []
 
     def lookupBlock(self, id):
-        """Returns the :class:`~hilti.core.block.Block` with the same name as
-        the :class:`~hilti.core.id.ID` *id*, or None if there is no such
+        """Returns the ~~Block with the same name as
+        the ~~ID *id*, or None if there is no such
         Block."""
         for b in self._bodies:
             if b.name() == id.name():
@@ -171,7 +169,7 @@ class Function(object):
         return None
     
     def location(self):
-        """Returns the :class:`~hilti.core.location.Location` associated with
+        """Returns the ~~Location associated with
         this Function."""
         return self._location
 
@@ -181,9 +179,13 @@ class Function(object):
     # Visitor support.
     def dispatch(self, visitor):
         visitor.visit_pre(self)
-        self._scope.dispatch(visitor)
+        
+        for id in self._scope.values():
+            id.dispatch(visitor)
+        
         for b in self._bodies:
             b.dispatch(visitor)
+            
         visitor.visit_post(self)
         
     

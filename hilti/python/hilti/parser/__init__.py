@@ -1,3 +1,6 @@
+# $Id$
+
+__all__ = []
 
 import parser
 import lexer

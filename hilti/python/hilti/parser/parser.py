@@ -74,7 +74,7 @@ def p_module_decl_error(p):
 
 def p_def_global(p):
     """def_global : GLOBAL global_id NL"""
-    p.parser.current.module.addGlobal(id)
+    p.parser.current.module.addID(id)
 
 def p_def_local(p):
     """def_local : LOCAL local_id NL"""
@@ -89,7 +89,7 @@ def p_def_struct(p):
     stype = type.StructType(p[5])
     struct = type.StructDeclType(stype)
     sid = id.ID(p[3], struct, id.Role.GLOBAL, location=loc(p, 1))
-    p.parser.current.module.addGlobal(sid)
+    p.parser.current.module.addID(sid)
 
 def p_def_import(p):
     """def_import : IMPORT IDENT"""
@@ -115,7 +115,7 @@ def p_def_function_head(p):
         # Unknown calling convention
         assert False
         
-    p.parser.current.module.addGlobal(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=loc(p, 3)), func)
+    p.parser.current.module.addID(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=loc(p, 3)), func)
     p[0] = func
     
     p.parser.current.function = None
@@ -367,15 +367,15 @@ def _importFile(filename, location):
     substate = Parser.current
     Parser = oldparser
 
-    for i in substate.module.IDs().values():
+    for i in substate.module.IDs():
         t = i.type()
         
         if isinstance(t, type.FunctionType):
-            func = substate.module.lookupGlobal(i.name())
+            func = substate.module.lookupID(i.name())
             assert func and isinstance(func.type(), type.FunctionType)
             
             if func.linkage() == function.Linkage.EXPORTED:
-                Parser.current.module.addGlobal(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=func.location()), func)
+                Parser.current.module.addID(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=func.location()), func)
             
             continue
         

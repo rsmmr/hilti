@@ -1,74 +1,85 @@
 # $Id$
-#
-# A module.
 
-import id
+import id as idmod
 import location
 import scope
+import type
 
 class Module(object):
-    def __init__(self, name, location = location.Location()):
+    """A Module represents a single HILTI link-time unit. Each Module has a
+    scope of identifier defining which ~~ID objects are visible inside the
+    ~~Module.
+    
+    *name* is string containing the globally visible name of the Module; names
+    are considered case-insensitive. *location* associates a ~~Location with
+    the Module. 
+    
+    This class implements ~~Visitor support without subtypes. The visitor
+    iterates over the *values* of all ID's in the Module's scope (see
+    :meth:`addID`).
+    """
+    
+    def __init__(self, name, location=None):
         self._name = name.lower()
         self._location = location
-        self._scope = scope.Scope()
-        self._globals = {}
+        self._scope = {}
 
     def name(self):
+        """Returns the globally visible name of the Module as a string."""
         return self._name
 
     def location(self):
+        """Returns the ~~Location object associated with the Module."""
         return self._location
     
     def IDs(self):
-        return self._scope.IDs()
+        """Returns a list of all ~~ID objects that are part of the Module's
+        scope."""
+        return [id for (id, value) in self._scope.values()]
 
-    def _canonalizeScope(self, name):
-        # Lower-case module name if it has one.
-        i = name.find("::") 
-        if i >= 0:
-            name = "%s::%s" % (name[0:i].lower(), name[i+2:])
-        return name
+    def _canonName(self, id):
+        (scope, name) = id.splitScope()
+        if not scope or scope == self._name.lower():
+            scope = "<local>"
+        
+        return "%s::%s" % (scope, name)
     
-    def addGlobal(self, id, value = True):
-        # must be qualified
-        name = id.name()
-        assert name.find("::") >= 0
-        name = self._canonalizeScope(name)
-        id.setName(name)
-        self._globals[name] = value
-        self._scope.insert(id)
+    def addID(self, id, value = True):
+        """Adds an ~~ID to the Module's scope and associates an arbitrary
+        *value* with it. If there's no specific value that needs to be stored
+        with the ID, use the default of *True*.
+        
+        An ~~ID defined elsewhere can be imported into a Module by adding it 
+        with a fully qualified name (i.e., +<ext-module>::<name>+). In this
+        case, subsequent lookups will only succeed if they are likewise fully
+        qualified. If *id* comes with a fully-qualified name that matches the
+        Modules'name (as returned by :meth:`~hilti.name`), subsequent lookups
+        will succeed no matter whether they are qualified or not. 
+        """
+        idx = self._canonName(id)
+        self._scope[idx] = (id, value)
 
     def lookupID(self, name):
-        i = name.find("::") 
-        if i < 0:
-            # Qualify if it isn't.
-            name = "%s::%s" % (self._name, name)
+        """Returns the value associated with the ~~ID of the given *name* if
+        it exists in the Module scope, and *None* otherwise."""
 
-        name = self._canonalizeScope(name)
-            
-        return self._scope.lookup(name)
-        
-    def lookupGlobal(self, name):
-        i = name.find("::") 
-        if i < 0:
-            # Qualify if it isn't.
-            name = "%s::%s" % (self._name, name)
-        
-        name = self._canonalizeScope(name)
+        # Need the tmp just for the name splitting. 
+        tmp = idmod.ID(name, type.Type, 0) 
+        idx = self._canonName(tmp)
         
         try:
-            return self._globals[name]
-        except LookupError:
-            return None
+            (id, value) = self._scope[idx]
+            return value
         
+        except KeyError:
+            return None
         
     # Visitor support.
     def dispatch(self, visitor):
         visitor.visit_pre(self)
         
-        self._scope.dispatch(visitor)
-        for func in self._globals.values():
-            visitor.dispatch(func)
+        for (id, value) in self._scope.values():
+            visitor.dispatch(value)
         
         visitor.visit_post(self)
         

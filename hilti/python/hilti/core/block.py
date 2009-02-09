@@ -8,11 +8,10 @@ class Block(object):
     A *well-formed* Block is a Block with exactly one |terminator|,
     and this terminator must be the very last instruction. A Block
     can be not well-formed during construction, and the
-    :mod:`~hilti.canonifier` will eventually turn it into a
+    ~~canonifier will eventually turn it into a
     well-formed one.
     
-    This class implements :class:`~hilti.core.visitor.Visitor` support
-    without subtypes. 
+    This class implements ~~Visitor support without subtypes. 
     """
     
     def __init__(self, function, may_remove=True, instructions =
@@ -20,13 +19,13 @@ class Block(object):
         """Initializes a Block. 
         
         The *function* is the parent
-        :class:`~hilti.core.function.Function` this Block is a part
+        ~~Function this Block is a part
         of. *may_remove* is a boolen indicating whether
-        :mod:`~hilti.canonifier` is allowed to remove this Block if
+        ~~canonifier is allowed to remove this Block if
         it's empty. *instructions* is the initial list of
-        :class:`~hilti.core.instruction.Instruction` objects. The
+        ~~Instruction objects. The
         Block is optionally given a string *name*, and a *location*
-        as a :class:`~hilti.core.location.Location`."""
+        as a ~~Location."""
         
         self._function = function
         self._ins = instructions if instructions else []
@@ -36,18 +35,20 @@ class Block(object):
         self._may_remove = may_remove
 
     def function(self):
-        """Return the parent :class:`~hilti.core.function.Function`
-        of this Block."""
+        """(A) Returns the parent ~~Function of this Block.
+        
+        (B) Returns the parent :class:`~hilti.core.function.Function` of this Block.
+        """
         return self._function
         
     def instructions(self):
         """Returns the list of
-        :class:`~hilti.core.instruction.Instruction` objects forming
+        ~~Instruction objects forming
         this Block."""
         return self._ins
 
     def addInstruction(self, ins):
-        """Adds an :class:`~hilti.core.instruction.Instruction`
+        """Adds an ~~Instruction
         *ins* to the end of the current list."""
         self._ins += [ins]
 
@@ -83,18 +84,18 @@ class Block(object):
         self._next = b
     
     def location(self):
-        """Returns the :class:`~hilti.core.location.Location` object for this
+        """Returns the ~~Location object for this
         Block."""
         return self._location
 
     def setMayRemove(self, may):
-        """If the boolean *may* is true, the :mod:`~hilti.canonifier` is
+        """If the boolean *may* is true, the ~~canonifier is
         allowed to remove this Block in case it does not have any
         instructions. The default is True."""
         self._may_remove = may
         
     def mayRemove(self):
-        """Returns a boolean indicating whether the :mod:`~hilti.canonifier`
+        """Returns a boolean indicating whether the ~~canonifier
         is allowed to remove this Block in case it does not have any
         instructions."""
         return self._may_remove

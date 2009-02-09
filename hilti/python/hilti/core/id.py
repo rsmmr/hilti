@@ -14,16 +14,16 @@ class Role:
     
     PARAM = 3
     """An :const:`ARGUMENT` :class:`ID` is defined as a
-    :class:`~hilti.core.function.Function`  argument."""
+    ~~Function  argument."""
     
 class ID(object):
-    """An ID binds a name to a type. *name* is a string, and *type* is an
-    instance of :class:`~hilti.core.type.Type`. *role* is the IDs
-    :class:`Role`, and *location* gives a
-    :class:`~hilti.core.location.Location` to be associated with this
+    """An ID binds a name to a type. *name* is a string. The name 
+    may be qualified with a scope as in +scope::name+. *type* is an
+    instance of ~~Type, and *role* is the IDs :class:`Role`.
+    *location* gives a ~~Location to be associated with this
     Function.
     
-    This class implements :class:`~hilti.core.visitor.Visitor` support and
+    This class implements ~~Visitor support and
     maps the subtype to :meth:`~type`.
     """
     
@@ -40,12 +40,13 @@ class ID(object):
         """Returns a string with the IDs name."""
         return self._name
 
-    def setName(self, name):
-        """Sets the IDs name to the string *name*."""
-        self._name = name
+    def setName(self, name): 
+        """Sets the IDs name to the string *name*. The name may be qualified
+        with a scope as in +scope::name+"""
+        self._name =name
     
     def type(self):
-        """Returns the :class:`~hilti.core.type.Type` of this ID."""
+        """Returns the ~~Type of this ID."""
         return self._type
 
     def role(self):
@@ -53,10 +54,28 @@ class ID(object):
         return self._role
     
     def location(self):
-        """Returns the :class:`~hilti.core.location.Location` associated with
+        """Returns the ~~Location associated with
         this ID."""
         return self._location
 
+    def qualified(self):
+        """Returns True if the name is qualified."""
+        return self._name.find("::") >= 0
+    
+    def splitScope(self): 
+        """Return a tupel *(scope, name)* where scope is the qualified scope
+        if there is any, and None otherwise; *name* the scope-less name. As
+        scopes are generally considered case-insenstive, the returned *scope*
+        is converted to lower-case.
+        """
+        i = self._name.find("::") 
+        if i < 0:
+            return (None, self._name)
+        
+        scope = self._name[0:i].lower()
+        name = self._name[i+2:]
+        return (scope, name)
+    
     # Visitor support.
     def dispatch(self, visitor):
         visitor.visit(self)

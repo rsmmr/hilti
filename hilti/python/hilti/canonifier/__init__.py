@@ -9,6 +9,8 @@ In the future, the Canonifier will also be used to implement some "syntactic
 sugar" of which the code generator will not need to be aware of. 
 """
 
+__all__ = []
+
 import canonifier
 import module
 import flow
