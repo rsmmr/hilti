@@ -2,12 +2,13 @@
 
 builtin_type = type
 
+import ast
 import location
 import type
 import util
 import constant
 
-class Instruction(object):
+class Instruction(ast.Node):
     """This class is the base class for all instructions supported by the
     HILTI language. It is however not supposed to be derived directly from; to
     create a new instruction, use the :meth:`instruction` decorator.
@@ -18,8 +19,6 @@ class Instruction(object):
     Instruction's ~~Signature and may only be *None* if the signature allows
     for it (including for optional operands). *location* gives a ~~Location to
     be associated with this Function.
-    
-    This class implements ~~Visitor support without subtypes. 
     """
     
     _signature = None
@@ -92,10 +91,6 @@ class Instruction(object):
         """Returns the ~~Location object associated with this Instruction"""
         return self._location
 
-    # Visitor support.
-    def dispatch(self, visitor):
-        visitor.visit(self)
-        
     def __str__(self):
         target = "(%s) = " % self._target if self._target else ""
         op1 = " (%s)" % self._op1 if self._op1 else ""
@@ -112,7 +107,8 @@ class Operand(object):
     class. *type* is the Operand ~~Type, and *location* a ~~Location to be
     associated with the operand.
     
-    (Note that this class does *not* implement ~~Visitor support.)
+    (Note that this class does *not* implement ~~Visitor support as an Operand
+    is not itself an ~~Node.)
     """
     def __init__(self, value, type, location):
         self._value = value
@@ -192,7 +188,7 @@ class TupleOperand(Operand):
     def __init__(self, ops, location=None):
         vals = ops
         types = [op.type() for op in ops]
-        super(TupleOperand, self).__init__(vals, type.TupleType(types), location)
+        super(TupleOperand, self).__init__(vals, type.Tuple(types), location)
         self._ops = ops
 
     def __str__(self):
@@ -206,10 +202,14 @@ class Signature:
     
     *name* is a string giving the instruction's HILTI mnemonic. 
     *op1*/*op2*/*op3* give the ~~Type of the instructions operands, and
-    *target* is the ~~Type of the instruction's result. If any of these is
+    *target* is the ~~Type of the instruction's result; these types must be
+    the corresponding *classes*, not instances thereof. If any of these is
     *None*, it indicates that the instruction does not use the corresponding
-    operand or returns any result, respectively. *callback* is function that
-    is called each time an ~~Instruction has been instantiated with this
+    operand or returns any result, respectively. If one of the types is a
+    tuple of types, that indicates that any of tuple's members is a valid type
+    for the operand/result. If *None* is a member of the tuple, that indicates
+    that the operand/result is optional. *callback* is function that is
+    called each time an ~~Instruction has been instantiated with this
     Signature; the callback gets the ~~Instruction as its only parameter.
     *terminator* is a boolean indicating whether the Signature define's an
     instruction that is considered a ~~Block |terminator|.
@@ -290,8 +290,8 @@ def getInstructions():
 
 def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=None):
     """Instantiates a new instruction according to the instruction *name*. The
-    name must correspond to the mnemonic as defined by :meth:`signature
-    decorated sub-class of ~~Instruction. *createInstruction* instantiates a
+    name must correspond to the mnemonic as defined by :meth:`instruction`
+    decorated subclass of ~~Instruction. *createInstruction* instantiates a
     object of this class and initializes *op1*/*op2*/*op3*, *target* and
     *location* accordingly (see ~~Instruction)."""
     
@@ -306,7 +306,7 @@ def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=
     # FIXME: This is really not a great place to do that. We should a generic
     # capability for types to post-process arguments. 
     
-    widths = [op.type().width() for op in (i.op1(), i.op2(), i.op3(), i.target()) if op and isinstance(op.type(), type.IntegerType)]
+    widths = [op.type().width() for op in (i.op1(), i.op2(), i.op3(), i.target()) if op and isinstance(op.type(), type.Integer)]
     
     maxwidth = max(widths) if widths else 0
     
@@ -316,9 +316,9 @@ def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=
         maxwidth = 32
 
     def adaptIntType(op):
-        if op and isinstance(op, ConstOperand) and isinstance(op.type(), type.IntegerType):
+        if op and isinstance(op, ConstOperand) and isinstance(op.type(), type.Integer):
             val = op.value()
-            const = constant.Constant(val, type.IntegerType(maxwidth))
+            const = constant.Constant(val, type.Integer(maxwidth))
             op.setConstant(ConstOperand(const))
         
     adaptIntType(i.op1())

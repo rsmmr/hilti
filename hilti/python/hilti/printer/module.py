@@ -17,15 +17,15 @@ def _(self, m):
 def _(self, id):
     assert False, "ID type not handled: " + str(id.type().__class__)
 
-@printer.when(id.ID, type.FunctionType)
+@printer.when(id.ID, type.Function)
 def _(self, f):
     # Nothing to do for function bindings, there are treated separately via the 
     # Function visitor below.
     pass
     
-@printer.when(id.ID, type.StructDeclType)
+@printer.when(id.ID, type.StructDecl)
 def _(self, id):
-    assert not self._infunction
+    assert not self._function
 
     name = id.name()
     type = id.type().type()
@@ -42,14 +42,14 @@ def _(self, id):
     
 @printer.when(id.ID, type.StorageType)
 def _(self, id):
-    visibility = "local" if self._infunction else "global"
+    visibility = "local" if self.currentFunction() else "global"
     self.output("%s %s %s" % (visibility, id.type().name(), id.name()))
 
 ### Function definitions.
 
 @printer.pre(function.Function)
 def _(self, f):
-    self._infunction = True
+    self._function = f
     
     type = f.type()
     
@@ -87,7 +87,7 @@ def _(self, f):
 
 @printer.post(function.Function)
 def _(self, f):
-    self._infunction = False
+    self._function = None
     
     if not f.isImported():
         self.output("}")

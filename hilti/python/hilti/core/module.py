@@ -1,11 +1,11 @@
 # $Id$
 
+import ast
 import id as idmod
 import location
-import scope
 import type
 
-class Module(object):
+class Module(ast.Node):
     """A Module represents a single HILTI link-time unit. Each Module has a
     scope of identifier defining which ~~ID objects are visible inside the
     ~~Module.
@@ -14,9 +14,8 @@ class Module(object):
     are considered case-insensitive. *location* associates a ~~Location with
     the Module. 
     
-    This class implements ~~Visitor support without subtypes. The visitor
-    iterates over the *values* of all ID's in the Module's scope (see
-    :meth:`addID`).
+    When using a ~~Visitor with a Module, it will traverse the *values* of all
+    IDs in the Module's scope (see :meth:`addID`).
     """
     
     def __init__(self, name, location=None):
@@ -74,17 +73,18 @@ class Module(object):
         except KeyError:
             return None
         
-    # Visitor support.
-    def dispatch(self, visitor):
-        visitor.visit_pre(self)
-        
-        for (id, value) in self._scope.values():
-            visitor.dispatch(value)
-        
-        visitor.visit_post(self)
-        
     def __str__(self):
         return "module %s" % self._name
+    
+    # Visitor support.
+    def visit(self, visitor):
+        visitor.visitPre(self)
+        
+        for (id, value) in self._scope.values():
+            visitor.visit(value)
+        
+        visitor.visitPost(self)
+        
     
         
     

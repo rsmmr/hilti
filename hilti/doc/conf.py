@@ -201,7 +201,7 @@ import copy
 def sigToRst(ins):
     def fmt(t, tag):
         if t:
-            return " <%s>" % (type.name(t, docstring=True))
+            return " <%s>" % (type.fmtTypeClass(t))
         else:
             return ""
         
@@ -343,21 +343,182 @@ def expandReferences(app, what, name, obj, options, lines):
     
     for i in range(len(lines)):
         lines[i] = regexp.sub(replace, lines[i])
+
+def expandMarkup(app, what, name, obj, options, lines):
+
+    re_arg = re.compile(r"^\s*([^:]+):\s*([^-]+)-\s*(.*)$")
+    re_returns = re.compile(r"^\s*Returns:\s*([^-]+)-\s*(.*)$")
+    re_raises = re.compile(r"^\s*Raises:\s*(\S+)$")
+    re_note = re.compile(r"^\s*Note:\s*(.*)$")
+    re_todo = re.compile(r"^\s*To-?[dD]o:\s*(.*)$")
     
+    # We keep a state machine
+    FIRST = 1
+    TEXT = 2
+    ARGS = 3
+    RET = 4
+    RAISES = 5
+    NOTE = 6
+    TODO = 7
+
+    state = FIRST
+    
+    first = []
+    text = []
+    args = []
+    ret = []
+    raises = []
+    note = []
+    todo = []
+
+    newlines = []
+    
+    for line in lines:
+        
+        if state == FIRST:
+            i = line.find(".")
+            if i < 0:
+                first += [line]
+            else:
+                first += [line[0:i+1] + "\n"]
+                text += [line[i+1:].strip()]
+                state = TEXT
+            continue
+
+        next_state = state
+        
+        m = None
+        for (regexp, nst) in [(re_returns, RET), (re_raises, RAISES), (re_arg, ARGS), (re_todo, TODO), (re_note, NOTE)]:
+            m = regexp.match(line)
+            if m:
+                next_state = nst
+                break
+            
+        if not m:
+            # Continue current section.
+            if state == TEXT:
+                text += [line]
+                
+            elif state == ARGS:
+                if line.strip():
+                    args[-1] += " " + line.strip()
+                
+            elif state == RET:
+                if line.strip():
+                    ret[-1] += " " + line.strip()
+                    
+            elif state == RAISES:
+                if line.strip():
+                    raises[-1] += " " + line.strip()
+                
+            elif state == NOTE:
+                note += [line]
+                
+            elif state == TODO:
+                todo += [line]
+                
+            else:
+                assert False
+
+        else:
+            # Start new section.
+            if next_state == ARGS:
+                (id, type, descr) = (m.group(1), m.group(2), m.group(3))
+                newlines = ["- %s **%s**: %s" % (type.strip(), id.strip(), descr.strip())]
+                args += newlines
+                
+            if next_state == RET:
+                (type, descr) = (m.group(1), m.group(2))
+                newlines = ["- %s: %s" % (type.strip(), descr.strip())]
+                ret += newlines
+                
+            if next_state == RAISES:
+                type = m.group(1)
+                newlines = ["- %s" % type.strip()]
+                raises += newlines
+                
+            if next_state == NOTE:
+                txt = m.group(1)
+                newline = txt + "\n"
+                note += [newline]
+                
+            if next_state == TODO:
+                txt = m.group(1)
+                newline = txt + "\n"
+                todo += [newline]
+            
+            state = next_state
+
+    # Copy back to lines in place.
+    del lines[:]
+
+    for line in first:
+        lines += [line]
+    
+    for line in text:
+        lines += [line]
+
+    if args:
+        lines += ["\n"]
+        lines += ["*Parameters*\n"]
+        lines += ["\n"]
+
+        for line in args:
+            lines += [line + "\n"]
+
+    if ret:
+        lines += ["\n"]
+        lines += ["*Return value*\n"]
+        lines += ["\n"]
+
+        for line in ret:
+            lines += [line + "\n"]
+
+    if raises:
+        lines += ["\n"]
+        lines += ["*Raises*\n"]
+        lines += ["\n"]
+
+        for line in raises:
+            lines += [line + "\n"]
+            
+    if note:
+        lines += ["\n"]
+        lines += [".. note::\n"]
+        lines += ["\n"]
+
+        for line in note:
+            lines += [line]
+        
+    if todo:
+        lines += ["\n"]
+        lines += [".. todo::\n"]
+        lines += ["\n"]
+
+        for line in todo:
+            lines += [line]
+            
 def processDocString(app, what, name, obj, options, lines):
+    expandMarkup(app, what, name, obj, options, lines)
     expandReferences(app, what, name, obj, options, lines)
     addSignature(app, what, name, obj, options, lines)
-    
+
+#    print >>sys.stderr, "<<<<<<<<<<<<<<<<<<<"
 #    for line in lines:
-#        print >>sys.stderr, "|", line
-#    print >>sys.stderr, "//////////////////////"
-            
+#        print >>sys.stderr, line,
+#    print >>sys.stderr, ">>>>>>>>>>>>>>>>>>>"
+    
 def setup(app):
     
     extractSubstitutions(hilti, "hilti", 1, True)
 
-#   for s in Substitutions.values():
-#       print >>sys.stderr, s
-    
     app.connect('autodoc-process-docstring', processDocString)
     app.connect('autodoc-process-signature', reformatSignature)
+    
+#    lines = []
+#    for line in open("test.txt"):
+#        lines += [line]
+#        
+#    expandMarkup(0, 0, 0, 0, 0, lines)
+#    sys.exit(1)
+        

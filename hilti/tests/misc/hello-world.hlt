@@ -10,7 +10,7 @@ import hilti
 
 void run() {
 
-    local int:32 sum
+    local int<32> sum
     
     sum = int.add 12 30
     call Hilti::print (sum)

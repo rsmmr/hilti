@@ -16,5 +16,5 @@ void run() {
 module Main
 
 void run() {
-    local int:0 foo
+    local int<0> foo
 }

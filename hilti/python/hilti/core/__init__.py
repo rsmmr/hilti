@@ -1,6 +1,7 @@
 # $Id$ 
 
 __all__ = [
+    "ast",
     "block",
     "constant",
     "function",

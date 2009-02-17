@@ -1,60 +1,6 @@
 #! /usr/bin/env
 #
 # LLVM code geneator.
-"""
-General Conventions
-~~~~~~~~~~~~~~~~~~~
-
-* Identifiers starting with ``__`` are reservered for internal
-  purposes.
-  
-Data Structures
-~~~~~~~~~~~~~~~
-
-* A ''__continuation'' is a snapshot of the current processing state,
-  consisting of (a) a function to be called to continue
-  processing, and (b) the frame to use when calling the function.::
-
-    struct Continuation {
-        ref<label>         func
-        ref<__basic_frame> frame
-    }
-
-* A ''__basic_frame'' is the common part of all function frame::
-
-    struct __basic_frame {
-        ref<__continuation> cont_normal 
-        ref<__continuation> cont_exception
-        int                 current_exception
-        ref<any>            current_exception_data
-    }
-    
-* Each function ''Foo'' has a function-specific frame containg all
-  parameters and local variables::
-
-    struct ''__frame_Foo'' {
-        __basic_frame  bf
-        <type_1>       arg_1
-        ...
-        <type_n>       arg_n
-        <type_n+1>     local_1
-        ...
-        <type_n+m>     local_m
-        
-
-Calling Conventions
-~~~~~~~~~~~~~~~~~~~
-
-* All functions take a mandatory first parameter
-  ''ref<__frame__Func> __frame''. Functions which work on the result
-  of another function call (see below), take a second parameter
-  ''<result-type> __return_value''.
-
-* An exception is just call of the current exception continuation (which must
-  be non-null at all times.)
-  
-"""
-
 import sys
 
 import llvm
@@ -78,61 +24,125 @@ class CodeGen(visitor.Visitor):
         self.reset()
         
     def reset(self):
+        """Resets internal state. After resetting, the object can be used to
+        turn another |ast| into LLVM code.
+        """
         # Dummy class to create a sub-namespace.
         class _llvm_data:
             pass
 
-        self.ret_func_counter = 0
-        self.label_counter = 0
+        # These state variables are cleared here. Read access must only be via
+        # methods of this class. However, some of them are *set* directly by the
+        # module/function/block visitors, which avoids adding a ton of setter
+        # methods just for these few cases. 
         
-        self._function = None
+        self._module = None        # Current module.
+        self._function = None      # Current function.
+        self._block = None         # Current block.
+        self._func_counter = 0     # Counter to generate unique function names.
+        self._label_counter = 0    # Counter to generate unique labels.
+        
         self._llvm = _llvm_data()
-        self._llvm.module = None
-        self._llvm.block_funcs = {}
-        self._llvm.c_funcs = {}
-        self._llvm.type_generic_pointer = llvm.core.Type.pointer(llvm.core.Type.int(8))
-        self._llvm.int_consts = []
-        self._llvm.frameptr = None
-        self._llvm.functions = {}
-        self._llvm.builders = []
-        
+        self._llvm.module = None   # Current LLVM module.
+        self._llvm.functions = {}  # All LLVM functions created so far, indexed by their name.
+        self._llvm.frameptr = None # Frame pointer for current LLVM function.
+        self._llvm.builders = []   # Stack of llvm.core.Builders
+
+        # Cache some LLVM types.
+         
+            # The type we use a generic pointer ("void *").
+        self._llvm.type_generic_pointer = llvm.core.Type.pointer(llvm.core.Type.int(8)) 
+
+            # A continuation struct.
         self._llvm.type_continuation = llvm.core.Type.struct([
         	self._llvm.type_generic_pointer, # Successor function
             self._llvm.type_generic_pointer  # Frame pointer
             ])
 
+            # Field names with types for the basic frame.
         self._bf_fields = [
         	("cont_normal", self._llvm.type_continuation), 
         	("cont_except", self._llvm.type_continuation),    
 		    ("exception", self._llvm.type_generic_pointer),
-            ("exception_data", self._llvm.type_generic_pointer)
             ]
 
+            # The basic frame struct. 
         self._llvm.type_basic_frame = llvm.core.Type.struct([ t for (n, t) in self._bf_fields])
 
     def generateLLVM(self, ast, verify=True):
+        """See ~~generateLLVM."""
         self.reset()
-        self.dispatch(ast)
+        self.visit(ast)
         return self.llvmModule(verify)
             
     def pushBuilder(self, llvm_block):
+        """Pushes a LLVM builder on the builder stack. The method creates a
+        new ``llvm.core.Builder`` with the given block (which will often be
+        just empty at this point), and pushes it on the stack. All ~~Codegen
+        methods creating LLVM instructions use the most recently pushed
+        builder.
+        
+        llvm_blockbuilder: llvm.core.Block - The block to create the builder
+        with.
+        """
         builder = llvm.core.Builder.new(llvm_block) if llvm_block else _DummyBuilder()
         self._llvm.builders += [builder]
         
     def popBuilder(self):
+        """Removes the top-most LLVM builder from the builder stack."""
         self._llvm.builders = self._llvm.builders[0:-1]
     
     def builder(self):
+        """Returns the top-most LLVM builder from the builder stack. Methods
+        creating LLVM instructions should usually use this builder.
+        
+        Returns: llvm.core.Builder: The most recently pushed builder.
+        """
         return self._llvm.builders[-1]
 
+    def currentModule(self):
+        """Returns the current module. 
+        
+        Returns: ~~Module - The current module.
+        """
+        return self._module
+    
+    def currentFunction(self):
+        """Returns the current function. 
+        
+        Returns: ~~Function - The current function.
+        """
+        return self._function
+    
+    def currentBlock(self):
+        """Returns the current block. 
+        
+        Returns: ~~Block - The current function.
+        """
+        return self._block
+    
     # Looks up the function belonging to the given name. Returns None if not found. 
-    def lookupFunction(self, id):
-        func = self._module.lookupID(id.name())
-        assert (not func) or (isinstance(func.type(), type.FunctionType))
+    def lookupFunction(self, name):
+        """Looks up the function with the given name in the current module.
+        This is a short-cut for ``currentModule()->LookupID()`` which in
+        addition checks (via asserts) that the returns object is indeed a
+        function.
+        
+        Returns: ~~Function - The function with the given name, or None if
+        there's no such identifier in the current module's scope.
+        """
+        func = self._module.lookupID(name)
+        assert (not func) or (isinstance(func.type(), type.Function))
         return func
     
-    # Returns the internal LLVM name for the given function.
     def nameFunction(self, func):
+        """Returns the internal LLVM name for the function. The method
+        processes the function's name according to HILTI's name mangling
+        scheme.
+        
+        Returns: string - The mangled name, to be used for the corresponding 
+        LLVM function.
+        """
         name = func.name().replace("::", "_")
         
         if func.callingConvention() == function.CallingConvention.C:
@@ -145,10 +155,15 @@ class CodeGen(visitor.Visitor):
         # Cannot be reached
         assert False
             
-    
-    # Returns the internal function name for the given block.
-    # FIXME: Integrate module name.
+
     def nameFunctionForBlock(self, block):
+    	"""Returns the internal LLVM name for the block's function. The
+        compiler turns all blocks into functions, and this method returns the
+        name which the LLVM function for the given block should have.
+        
+        Returns: string - The name of the block's function.
+        """
+        
         function = block.function()
         funcname = self.nameFunction(function)
         name = block.name()
@@ -168,22 +183,68 @@ class CodeGen(visitor.Visitor):
     
         return "__%s_%s" % (funcname, name)
 
-    # Returns a new label guaranteed to be unique within the current function.
-    def nameNewLabel(self, postfix):
-        self.label_counter += 1
-        return "l%d-%s" % (self.label_counter, postfix)
+    def nameNewLabel(self, postfix=None):
+        """Returns a unique label for LLVM blocks. The label is guaranteed to
+        unique within the :meth:`currentFunction``.
+        
+        postfix: string - If given, the postfix is appended to the generated label.
+        
+        Returns: string - The unique label.
+        """ 
+        self._label_counter += 1
+        
+        if postfix:
+            return "l%d-%s" % (self._label_counter, postfix)
+        else:
+            return "l%d" % self._label_counter
     
-    # Returns a new block with a label guaranteed to be unique within the
-    # current function.
+    def nameNewFunction(self, prefix):
+        """Returns a unique name for LLVM functions. The name is guaranteed to
+        unique within the :meth:`currentModuleFunction``.
+        
+        prefix: string - If given, the prefix is prepended before the generated name.
+        
+        Returns: string - The unique name.
+        """ 
+        self._func_counter += 1
+        
+        if prefix:
+            return "__%s_%s_f%s" % (self._module.name(), prefix, self._func_counter)
+        else:
+            return "__%s_f%s" % (self._module.name(), self._func_counter)
+    
     def llvmNewBlock(self, postfix):
+        """Creates a new LLVM block. The block gets a label that is guaranteed
+        to be unique within the :meth:`currentFunction``, and it is added to
+        the function's implementation.
+        
+        postfix: string - If given, the postfix is appended to the block's
+        label.
+        
+        Returns: llvm.core.Block - The new block.
+        """         
         return self._llvm.func.append_basic_block(self.nameNewLabel(postfix))
 
     def nameFunctionFrame(self, function):
+        """Returns the LLVM name for the struct representing the function's
+        frame.
+        
+        Returns: string - The name of the struct.
+        """
         return "__frame_%s" % self.nameFunction(function)
     
-    # Returns the final LLVM module once code-generation has finished.
     def llvmModule(self, verify=True):
+        """Returns the compiled LLVM module. Can only be called once code
+        generation has already finished.
         
+        *verify*: bool - If true, the correctness of the generated LLVM module
+        will be verified via LLVM's internal validator.
+        
+        Returns: tuple (bool, llvm.core.Module) - If the bool is True, code
+        generation (and if *verify* is True, also verification) was
+        successful. If so, the second element of the tuple is the resulting
+        LLVM module.
+        """
         if verify:
             try:
                 self._llvm.module.verify()
@@ -193,12 +254,43 @@ class CodeGen(visitor.Visitor):
             
         return (True, self._llvm.module)
 
+    def llvmCurrentModule(self):
+        """Returns the current LLVM module.
+        
+        Returns: llvm.core.Module - The LLVM module we're currently building.
+        """
+        return self._llvm.module
+    
+    def llvmCurrentFramePtr(self):
+        """Returns the frame pointer for the current LLVM function. The frame
+        pointer is the base pointer for all accesses to local variables,
+        including function arguments). The execution model always passes the
+        frame pointer into a function as its first parameter.
+        
+        Returns: llvm.core.Type.struct - The current frame pointer.
+        """
+        return self._llvm.frameptr
+    
     # Return the LLVM constant representing the given integer.
     def llvmConstInt(self, n, width = 32):
+        """Creates an LLVM integer constant.
+        
+        n: integer - The value of the constant.
+        width: interger - The bit-width of the constant.
+        
+        Returns: llvm.core.Constant.int - The constant.
+        """
         return llvm.core.Constant.int(llvm.core.Type.int(width), n)
 
     # Returns the LLVM constant representing an unset exception.
     def llvmConstNoException(self):
+        """Returns the LLVM constant representing an unset exception. This
+        constant is written into the basic-frame's exeception field to
+        indicate that no exeception has been raised.
+        
+        Returns: llvm.core.Constant - The constant matching the
+        basic-frame's exception field.
+        """
         return llvm.core.Constant.null(self.llvmTypeGenericPointer())
 
     # Returns the type used to represent pointer of different type. 
@@ -239,7 +331,7 @@ class CodeGen(visitor.Visitor):
             pass
         
         fields = self._bf_fields
-        ids = function.type().IDs() + function.IDs()
+        ids = function.type().Args() + function.IDs()
         fields = fields + [(id.name(), self.llvmTypeConvert(id.type())) for id in ids]
         
         # Build map of indices and store with function.
@@ -288,10 +380,6 @@ class CodeGen(visitor.Visitor):
     # Returns the address of the current exception field in the given frame.
     def llvmAddrException(self, frame):
         return self._llvmAddrInBasicFrame(frame, 2, -1, None, "excep_frame")
-    
-    # Returns the address of the current exception's data field in the given frame.
-    def llvmAddrExceptionData(self, frame, cast_to=None):
-        return self._llvmAddrInBasicFrame(frame, 3, -1, cast_to, "excep_data")
     
     # Returns the address of the local variable in the given frame.
     # V is given via it's string name. 
@@ -344,7 +432,7 @@ class CodeGen(visitor.Visitor):
         for i in range(len(addl_args)):
             func.args[i+1].name = addl_args[i][0]
         
-        self._llvm.block_funcs[name] = func
+        self._llvm.functions[name] = func
 
         return func
     
@@ -352,7 +440,7 @@ class CodeGen(visitor.Visitor):
     def llvmGetFunctionForBlock(self, block):
         name = self.nameFunctionForBlock(block) 
         try:
-            return self._llvm.block_funcs[name]
+            return self._llvm.functions[name]
         except KeyError:
             return self.llvmCreateFunctionForBlock(name, block)
 
@@ -361,13 +449,18 @@ class CodeGen(visitor.Visitor):
         name = function.name().replace("::", "_")
         
         try:
-            return self._llvm.c_funcs[name]
+            func = self._llvm.functions[name]
+            # Make sure it's a C function.
+            assert func.calling_convention == llvm.core.CC_C
+            return func
+        
         except KeyError:
             rt = self.llvmTypeConvert(function.type().resultType())
-            args = [self.llvmTypeConvertToC(id.type()) for id in function.type().IDs()]
+            args = [self.llvmTypeConvertToC(id.type()) for id in function.type().Args()]
             ft = llvm.core.Type.function(rt, args)
             func = self._llvm.module.add_function(ft, name)
-            self._llvm.c_funcs[name] = func
+            func.calling_convention = llvm.core.CC_C
+            self._llvm.functions[name] = func
             return func
 
     # Generates a call to a C function.
@@ -404,11 +497,6 @@ class CodeGen(visitor.Visitor):
         exc = self.llvmGetExternalGlobal(self.llvmTypeGenericPointer(), exception)
         self.llvmInit(exc, addr)
         
-        # frame.exception_data = null (for now)
-        addr = self.llvmAddrExceptionData(frame)
-        null = llvm.core.Constant.null(self.llvmTypeGenericPointer())
-        self.llvmInit(null, addr)
-    
         self.llvmGenerateTailCallToFunctionPtr(ptr, [frame])
 
     # Creates a new LLVM function for the function. 
@@ -512,20 +600,20 @@ class CodeGen(visitor.Visitor):
 
     def llvmConstOp(self, op, cast_to_type):
 
-        if cast_to_type and isinstance(cast_to_type, type.IntegerType) and \
-           isinstance(op.type(), type.IntegerType) and \
+        if cast_to_type and isinstance(cast_to_type, type.Integer) and \
+           isinstance(op.type(), type.Integer) and \
            op.type().width() == 0 and cast_to_type.width() != 0:
                return llvm.core.Constant.int(llvm.core.Type.int(cast_to_type.width()), op.value())
 
         assert not cast_to_type or cast_to_type == op.type() # Cast not possible
            
         # By now, we can't have any more integers of unspecified size.
-        assert not isinstance(op.type(), type.IntegerType) or op.type().width() > 0
+        assert not isinstance(op.type(), type.Integer) or op.type().width() > 0
 
-        if isinstance(op.type(), type.IntegerType):
+        if isinstance(op.type(), type.Integer):
             return llvm.core.Constant.int(llvm.core.Type.int(op.type().width()), op.value())
         
-        if isinstance(op.type(), type.StringType):
+        if isinstance(op.type(), type.String):
             return llvm.core.Constant.string(op.value())
         
         util.internal_error("constOpToLLVM: illegal type %s" % op.type())
@@ -621,7 +709,7 @@ class CodeGen(visitor.Visitor):
 codegen = CodeGen()
 
 # We do the void type conversion right here as there is no separate module for it.    
-@codegen.convertToLLVM(type.VoidType)
+@codegen.convertToLLVM(type.Void)
 def _(type):
     return llvm.core.Type.void()
 

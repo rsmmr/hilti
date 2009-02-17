@@ -10,7 +10,7 @@ module Main
 import hilti
 
 void run() {
-    local int:32 i
+    local int<32> i
     i = int.div 100 0
     call Hilti::print (i)
 }     

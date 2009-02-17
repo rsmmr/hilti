@@ -9,7 +9,7 @@ module Main
 import hilti
 
 void run() {
-    local int:32 i
+    local int<32> i
     i = int.mul 10 10
     call Hilti::print (i)
 }     
@@ -23,7 +23,7 @@ module Main
 import hilti
 
 void run() {
-    local int:32 i
+    local int<32> i
     i = int.mul -10 -10
     call Hilti::print (i)
 }     

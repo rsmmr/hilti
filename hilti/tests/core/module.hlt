@@ -14,11 +14,11 @@ module Main
 
 # @TEST-START-NEXT
 # Struct before module declaration.
-struct foo { uin:32 bar }
+struct foo { int<32> bar }
 
 # @TEST-START-NEXT
 # Global before module declaration.
-global uint:32 foo
+global int<32> foo
 
 # @TEST-START-NEXT
 # Function before module declaration.

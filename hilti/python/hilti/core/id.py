@@ -1,5 +1,6 @@
 # $Id$
 
+import ast
 import location
 
 class Role:
@@ -16,15 +17,14 @@ class Role:
     """An :const:`ARGUMENT` :class:`ID` is defined as a
     ~~Function  argument."""
     
-class ID(object):
+class ID(ast.Node):
     """An ID binds a name to a type. *name* is a string. The name 
     may be qualified with a scope as in +scope::name+. *type* is an
     instance of ~~Type, and *role* is the IDs :class:`Role`.
     *location* gives a ~~Location to be associated with this
     Function.
     
-    This class implements ~~Visitor support and
-    maps the subtype to :meth:`~type`.
+    The class maps the ~~Visitor subtype to :meth:`~type`.
     """
     
     def __init__(self, name, type, role, location = None):
@@ -76,13 +76,11 @@ class ID(object):
         name = self._name[i+2:]
         return (scope, name)
     
-    # Visitor support.
-    def dispatch(self, visitor):
-        visitor.visit(self)
-        
-    def visitorSubClass(self):
-        return self._type
-    
     def __str__(self):
         return "%s%s" % (self._name, self._type)
+    
+    # Visitor support.
+    def visitorSubType(self):
+        return self._type
+    
 

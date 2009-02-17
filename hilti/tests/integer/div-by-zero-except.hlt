@@ -9,7 +9,7 @@ module Main
 import hilti
 
 void run() {
-    local int:32 i
+    local int<32> i
     
     # Fancy way to produce a zero. :-)
     i = int.sub 100 100

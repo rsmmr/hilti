@@ -7,7 +7,7 @@
 
 module Main
 
-void foo(int:32 a) {}
+void foo(int<32> a) {}
 
 void run() {
     call foo (42)

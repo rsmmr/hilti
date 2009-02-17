@@ -2,15 +2,15 @@
 # 
 # A constant.
 
+import ast
 import location
 import type
 
-class Constant(object):
+class Constant(ast.Node):
     """A Constant represents a constant value with its
     ~~Type.
     
-    This class implements ~~Visitor support and
-    maps the subtype to :meth:`~type`.
+    The class maps the ~~Visitor subtype to :meth:`~type`.
     """
     def __init__(self, value, type, location = None):
         """Initializes the constant with *value*, which must match with the
@@ -37,16 +37,13 @@ class Constant(object):
         """Returns the ~~Location associated with
         the Constant."""
         return self._location
-    
-        # Visitor support.
-    def dispatch(self, visitor):
-        visitor.visit(self)
-        
-    def visitorSubClass(self):
-        return self._type
-    
+
     def __str__(self):
         return " %s %s" % (self._type, self._value)
+    
+    # Visitor support.
+    def visitorSubType(self):
+        return self._type
 
 Void = Constant("void", type.Void)
 """The special Constant representing a *Void* value."""

@@ -7,7 +7,7 @@
 
 module Main
 
-void foo(int:32 a) {}
+void foo(int<32> a) {}
 
 void run() {
     call foo 42
@@ -17,7 +17,7 @@ void run() {
 
 module Main
 
-void foo(int:16 a) {}
+void foo(int<16> a) {}
 
 void run() {
     call foo (42, 43)
@@ -27,10 +27,10 @@ void run() {
 
 module Main
 
-void foo(int:32 a, int:16 b) {}
+void foo(int<32> a, int<16> b) {}
 
 void run() {
-    local int:32 x
+    local int<32> x
     call foo (x, x)
 }
 
@@ -41,7 +41,7 @@ module Main
 void foo() {}
 
 void run() {
-    local int:32 x
+    local int<32> x
     x = call foo ()
 }
 
@@ -49,7 +49,7 @@ void run() {
 
 module Main
 
-int:32 foo() {
+int<32> foo() {
     return.result 42
 }
 

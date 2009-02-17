@@ -1,8 +1,9 @@
 # $Id$
 
+import ast
 import location
 
-class Block(object): 
+class Block(ast.Node): 
     """A Block models a series of instructions that is executed in sequence. 
     
     A *well-formed* Block is a Block with exactly one |terminator|,
@@ -10,8 +11,6 @@ class Block(object):
     can be not well-formed during construction, and the
     ~~canonifier will eventually turn it into a
     well-formed one.
-    
-    This class implements ~~Visitor support without subtypes. 
     """
     
     def __init__(self, function, may_remove=True, instructions =
@@ -99,17 +98,18 @@ class Block(object):
         is allowed to remove this Block in case it does not have any
         instructions."""
         return self._may_remove
-    
-    # Visitor support.
-    def dispatch(self, visitor):
-        visitor.visit_pre(self)
-        
-        for ins in self._ins:
-            ins.dispatch(visitor)
-            
-        visitor.visit_post(self)
-        
+
     def __str__(self):
         name = self._name if self._name else "<anonymous-block>"
         next = " (next: %s)" % self._next.name() if self._next else "(next not set)"
         return "block <%s>%s\n" % (name, next)
+    
+    # Visitor support.
+    def visit(self, visitor):
+        visitor.visitPre(self)
+        
+        for ins in self._ins:
+            ins.visit(visitor)
+            
+        visitor.visitPost(self)
+        

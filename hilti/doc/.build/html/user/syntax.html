@@ -78,10 +78,12 @@ text editor), along with their Python class names as provided by the
 <dt id="hilti.instructions.flow.Call">
 <!--[hilti.instructions.flow.Call]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">Call</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.Call" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;<em>any</em> or <em>None</em>&gt; = <strong>call</strong> &lt;function&gt; &lt;(tuple)&gt;
+&lt;none or any&gt; = <strong>call</strong> &lt;function&gt; &lt;tuple&gt;
 </pre>
 <p>Calls <em>function</em> using the tuple in <em>op2</em> as 
-arguments. The argument types as well as the target&#8217;s type must 
+arguments.
+
+The argument types as well as the target&#8217;s type must
 match the function&#8217;s signature.</p>
 </dd></dl>
 
@@ -89,7 +91,7 @@ match the function&#8217;s signature.</p>
 <dt id="hilti.instructions.flow.CallC">
 <!--[hilti.instructions.flow.CallC]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">CallC</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.CallC" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;<em>any</em> or <em>None</em>&gt; = <strong>call.c</strong> &lt;function&gt; &lt;(tuple)&gt;
+&lt;none or any&gt; = <strong>call.c</strong> &lt;function&gt; &lt;tuple&gt;
 </pre>
 <p>For internal use only.</p>
 <p>Calls the external C <em>function</em> using the tuple in <em>op2</em> as 
@@ -101,10 +103,12 @@ match the function&#8217;s signature.</p>
 <dt id="hilti.instructions.flow.CallTailResult">
 <!--[hilti.instructions.flow.CallTailResult]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">CallTailResult</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>op3</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.CallTailResult" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-&lt;<em>any</em> or <em>None</em>&gt; = <strong>call.tail.result</strong> &lt;function&gt; &lt;(tuple)&gt; &lt;label&gt;
+&lt;none or any&gt; = <strong>call.tail.result</strong> &lt;function&gt; &lt;tuple&gt; &lt;label&gt;
 </pre>
 <p>Like <em>Call()</em>, calls <em>function</em> using the tuple in <em>op2</em> as 
-arguments. The argument types must match the function&#8217;s
+arguments.
+
+The argument types must match the function&#8217;s
 signature. The function must return a result value and it&#8217;s type
 must likewise match the function&#8217;s signature. Different than
 <em>Call()</em>, <em>CallTailVoid</em> must be the <em>last instruction</em> of a
@@ -119,7 +123,7 @@ generation, all <em>Call</em> instructions are converted into either
 <dt id="hilti.instructions.flow.CallTailVoid">
 <!--[hilti.instructions.flow.CallTailVoid]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">CallTailVoid</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>op3</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.CallTailVoid" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-<strong>call.tail.void</strong> &lt;function&gt; &lt;(tuple)&gt; &lt;label&gt;
+<strong>call.tail.void</strong> &lt;function&gt; &lt;tuple&gt; &lt;label&gt;
 </pre>
 <p>For internal use only.</p>
 <p>Calls <em>function</em> using the tuple in <em>op2</em> as arguments. The
@@ -155,10 +159,10 @@ generation, all <em>Call</em> instructions are converted into either
 <dt id="hilti.instructions.flow.ReturnResult">
 <!--[hilti.instructions.flow.ReturnResult]-->class <tt class="descclassname">hilti.instructions.flow.</tt><tt class="descname">ReturnResult</tt><big>(</big><em>op1</em><big>)</big><a class="headerlink" href="#hilti.instructions.flow.ReturnResult" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
-<strong>return.result</strong> &lt;<em>int:*</em> or <em>None</em>&gt;
+<strong>return.result</strong> &lt;none or int&gt;
 </pre>
-<p>Returns from the current function with the given value.
-The type of the value must match the function&#8217;s signature.</p>
+<p>Returns from the current function with the given value.</p>
+<p>The type of the value must match the function&#8217;s signature.</p>
 </dd></dl>
 
 <dl class="class">
@@ -167,23 +171,29 @@ The type of the value must match the function&#8217;s signature.</p>
 <dd><pre class="literal-block">
 <strong>return.void</strong>
 </pre>
-<p>Returns from the current function without returning any value.
-The function&#8217;s signature must not specifiy a return value.</p>
+<p>Returns from the current function without returning any value.</p>
+<p>The function&#8217;s signature must not specifiy a return value.</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-hilti.instructions.integer">
 <h3>Type Integer<a class="headerlink" href="#module-hilti.instructions.integer" title="Permalink to this headline">¶</a></h3>
-<p>The +integer+ data type represents signed integers of a fixed width. The width
-is specified as part of the type name as, e.g., in +int:16+ for a 16-bit
-integer.</p>
+<p>The +integer+ data type represents signed integers of a fixed width.
+
+The width</p>
+<p><em>Parameters</em></p>
+<ul class="simple">
+<li>16+ for a 16 <strong>is specified as part of the type name as, e.g., in +int</strong>: bit integer.</li>
+</ul>
 <dl class="class">
 <dt id="hilti.instructions.integer.Add">
 <!--[hilti.instructions.integer.Add]-->class <tt class="descclassname">hilti.instructions.integer.</tt><tt class="descname">Add</tt><big>(</big><em>op1</em>, <em>op2</em>, <em>target</em><big>)</big><a class="headerlink" href="#hilti.instructions.integer.Add" title="Permalink to this definition">¶</a></dt>
 <dd><pre class="literal-block">
 &lt;int&gt; = <strong>int.add</strong> &lt;int&gt; &lt;int&gt;
 </pre>
-<p>Calculates the sum of the two operands. Operands and target must be of
+<p>Calculates the sum of the two operands.
+
+Operands and target must be of
 same width. The result is calculated modulo 2^{width}.</p>
 </dd></dl>
 
@@ -193,7 +203,9 @@ same width. The result is calculated modulo 2^{width}.</p>
 <dd><pre class="literal-block">
 &lt;int&gt; = <strong>int.div</strong> &lt;int&gt; &lt;int&gt;
 </pre>
-<p>Divides <em>op1</em> by <em>op2</em>, flooring the result. Operands and target must be
+<p>Divides <em>op1</em> by <em>op2</em>, flooring the result.
+
+Operands and target must be
 of same width.  If the product overflows the range of the integer type,
 the result in undefined.</p>
 <p>Throws <tt class="xref docutils literal"><span class="pre">DivisionByZero</span></tt> if <em>op2</em> is zero.</p>
@@ -214,7 +226,9 @@ the result in undefined.</p>
 <dd><pre class="literal-block">
 &lt;int&gt; = <strong>int.ext</strong> &lt;int&gt;
 </pre>
-<p>Zero-extends <em>op1</em> into an integer of the same width as the <em>target</em>. The
+<p>Zero-extends <em>op1</em> into an integer of the same width as the <em>target</em>.
+
+The
 width of <em>op1</em> must be smaller or equal that of the <em>target</em>.</p>
 </dd></dl>
 
@@ -233,7 +247,9 @@ width of <em>op1</em> must be smaller or equal that of the <em>target</em>.</p>
 <dd><pre class="literal-block">
 &lt;int&gt; = <strong>int.mul</strong> &lt;int&gt; &lt;int&gt;
 </pre>
-<p>Multiplies <em>op1</em> with <em>op2</em>. Operands and target must be of same width.
+<p>Multiplies <em>op1</em> with <em>op2</em>.
+
+Operands and target must be of same width.
 The result is calculated modulo 2^{width}.</p>
 </dd></dl>
 
@@ -243,7 +259,9 @@ The result is calculated modulo 2^{width}.</p>
 <dd><pre class="literal-block">
 &lt;int&gt; = <strong>int.sub</strong> &lt;int&gt; &lt;int&gt;
 </pre>
-<p>Subtracts <em>op1</em> one from <em>op2</em>. Operands and target must be of same width.
+<p>Subtracts <em>op1</em> one from <em>op2</em>.
+
+Operands and target must be of same width.
 The result is calculated modulo 2^{width}.</p>
 </dd></dl>
 
@@ -253,7 +271,9 @@ The result is calculated modulo 2^{width}.</p>
 <dd><pre class="literal-block">
 &lt;int&gt; = <strong>int.trunc</strong> &lt;int&gt;
 </pre>
-<p>Bit-truncates <em>op1</em> into an integer of the same width as the <em>target</em>. The
+<p>Bit-truncates <em>op1</em> into an integer of the same width as the <em>target</em>.
+
+The
 width of <em>op1</em> must be larger or equal that of the <em>target</em>.</p>
 </dd></dl>
 

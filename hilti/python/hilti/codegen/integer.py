@@ -8,7 +8,7 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-@codegen.convertToLLVM(type.IntegerType)
+@codegen.convertToLLVM(type.Integer)
 def _(type):
     return llvm.core.Type.int(type.width())
 
@@ -50,13 +50,11 @@ def _(self, i):
     
     self.pushBuilder(block_ok)
     result = self.builder().sdiv(op1, op2, "tmp")
-    addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.target().id(), "X")
+    addr = self.llvmAddrLocalVar(self.currentFunction(), self.llvmCurrentFramePtr(), i.target().id(), "X")
     self.llvmAssign(result, addr)
     self.llvmStoreInTarget(i.target(), result, "div")
 
     # Leave ok-builder for subsequent code. 
-    
-import sys    
     
 @codegen.when(instructions.integer.Eq)
 def _(self, i):
@@ -79,7 +77,7 @@ def _(self, i):
     
     op1 = self.llvmOp(i.op1(), "op1")
     
-    result = self.builder().zext(op1, self.llvmTypeConvert(type.IntegerType(width)), "ext")
+    result = self.builder().zext(op1, self.llvmTypeConvert(type.Integer(width)), "ext")
     self.llvmStoreInTarget(i.target(), result, "ext")
     
 @codegen.when(instructions.integer.Trunc)
@@ -89,6 +87,6 @@ def _(self, i):
     
     op1 = self.llvmOp(i.op1(), "op1")
     
-    result = self.builder().trunc(op1, self.llvmTypeConvert(type.IntegerType(width)), "trunc")
+    result = self.builder().trunc(op1, self.llvmTypeConvert(type.Integer(width)), "trunc")
     self.llvmStoreInTarget(i.target(), result, "ext")
         

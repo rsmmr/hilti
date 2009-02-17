@@ -58,7 +58,6 @@ Flow Instruction Conversion
   
       # Clear exception information.
   callee_frame.bf.exception = None
-  callee_frame.bf.exception_data = Null
       
       # Initialize function arguments.
   callee_frame.arg_<i> = args[i] 
@@ -97,7 +96,6 @@ Data Structures
         ref<__continuation> cont_normal 
         ref<__continuation> cont_exception
         int                 current_exception
-        ref<any>            current_exception_data
     }
     
 * Each function ''Foo'' has a function-specific frame containg all
@@ -173,7 +171,6 @@ Flow Instruction Conversion
   
       # Clear exception information.
   callee_frame.bf.exception = None
-  callee_frame.bf.exception_data = Null
       
       # Initialize function arguments.
   callee_frame.arg_<i> = args[i] 
@@ -202,7 +199,7 @@ def _(self, i):
     assert False
 
 def _makeCall(cg, func, args, llvm_succ):
-    frame = cg._llvm.frameptr
+    frame = cg.llvmCurrentFramePtr()
     builder = cg.builder()
     
     # Allocate new stack frame for called function.
@@ -214,8 +211,8 @@ def _makeCall(cg, func, args, llvm_succ):
     addr = cg.llvmAddrDefContSuccessor(callee_frame, llvm.core.Type.pointer(llvm_succ.type))
     cg.llvmInit(llvm_succ, addr)
     
-    #   callee_frame.bf.cont_normal.frame = __frame
-    frt = cg.llvmTypeFunctionFrame(cg._function)
+    # callee_frame.bf.cont_normal.frame = __frame
+    frt = cg.llvmTypeFunctionFrame(cg.currentFunction())
     frt = llvm.core.Type.pointer(llvm.core.Type.pointer(frt))
     addr = cg.llvmAddrDefContFrame(callee_frame, frt)
     cg.llvmInit(frame, addr)
@@ -239,13 +236,8 @@ def _makeCall(cg, func, args, llvm_succ):
     zero = cg.llvmConstNoException()
     cg.llvmInit(zero, addr)
     
-    #   callee_frame.bf.exception_data = Null
-    addr = cg.llvmAddrExceptionData(callee_frame)
-    null = llvm.core.Constant.null(cg.llvmTypeGenericPointer())
-    cg.llvmInit(null, addr)
-      
     # Initialize function arguments. 
-    ids = func.type().IDs()
+    ids = func.type().Args()
     assert len(args) == len(ids)
     
     for i in range(0, len(args)):
@@ -258,12 +250,12 @@ def _makeCall(cg, func, args, llvm_succ):
     
 @codegen.when(instructions.flow.CallTailVoid)
 def _(self, i):
-    func = self.lookupFunction(i.op1().value())
+    func = self.lookupFunction(i.op1().value().name())
     assert func
 
     args = i.op2().value()
     
-    block = self._function.lookupBlock(i.op3().value())
+    block = self.currentFunction().lookupBlock(i.op3().value().name())
     assert block
     
     llvm_succ = self.llvmGetFunctionForBlock(block)
@@ -271,20 +263,18 @@ def _(self, i):
 
 @codegen.when(instructions.flow.CallTailResult)
 def _(self, i):
-    func = self.lookupFunction(i.op1().value())
+    func = self.lookupFunction(i.op1().value().name())
     assert func
     args = i.op2().value()
-    block = self._function.lookupBlock(i.op3().value())
+    block = self.currentFunction().lookupBlock(i.op3().value().name())
     
     # Create a new function which gets the return value 
     # as additional parameter. 
-    self.ret_func_counter += 1
-    succ_name = "__%s_return_%d" % (self.nameFunctionForBlock(self._block), self.ret_func_counter)
+    
+    succ_name = self.nameNewFunction("%s_return" % self.nameFunctionForBlock(self.currentBlock()))
     arg_type = self.llvmTypeConvert(func.type().resultType())
     
-    succ_ft = type.FunctionType(generic=True) # doesn't matter. 
-    succ = function.Function(succ_name, succ_ft, self._module)
-    llvm_succ = self.llvmCreateFunctionForBlock(succ_name, self._block, [("result", arg_type)])
+    llvm_succ = self.llvmCreateFunctionForBlock(succ_name, self.currentBlock(), [("result", arg_type)])
     llvm_succ_block = llvm_succ.append_basic_block(succ_name)
     
     self.pushBuilder(llvm_succ_block)
@@ -292,7 +282,7 @@ def _(self, i):
     # TODO: This is not so nice. The problem is that we are now in a new
     # function so we can't just call storeInTarget(). Find something more
     # elegant. 
-    addr = self.llvmAddrLocalVar(self._function, llvm_succ.args[0], id.ID(i.target().id().name(), i.target().type(), id.Role.LOCAL), "result_addr")
+    addr = self.llvmAddrLocalVar(self.currentFunction(), llvm_succ.args[0], id.ID(i.target().id().name(), i.target().type(), id.Role.LOCAL), "result_addr")
     self.llvmAssign(llvm_succ.args[1], addr)
     
     self.llvmGenerateTailCallToBlock(block, [llvm_succ.args[0]])
@@ -302,10 +292,10 @@ def _(self, i):
     
 @codegen.when(instructions.flow.CallC)
 def _(self, i):
-    func = self.lookupFunction(i.op1().value())
+    func = self.lookupFunction(i.op1().value().name())
     assert func
     
-    ids = func.type().IDs()
+    ids = func.type().Args()
     tuple = i.op2().value()
     
     args = []
@@ -316,11 +306,11 @@ def _(self, i):
 
 def _makeReturn(cg, llvm_result=None, result_type=None):
     fpt = cg.llvmTypeBasicFunctionPtr([result_type] if result_type else [])
-    addr = cg.llvmAddrDefContSuccessor(cg._llvm.frameptr, fpt)
+    addr = cg.llvmAddrDefContSuccessor(cg.llvmCurrentFramePtr(), fpt)
     ptr = cg.builder().load(addr, "succ_ptr")
     
     bfptr = llvm.core.Type.pointer(cg.llvmTypeBasicFrame())
-    addr = cg.llvmAddrDefContFrame(cg._llvm.frameptr, llvm.core.Type.pointer(bfptr))
+    addr = cg.llvmAddrDefContFrame(cg.llvmCurrentFramePtr(), llvm.core.Type.pointer(bfptr))
     frame = cg.builder().load(addr, "frame_ptr")
     
     cg.llvmGenerateTailCallToFunctionPtr(ptr, [frame] + ([llvm_result] if llvm_result else []))
@@ -338,25 +328,25 @@ def _(self, i):
 
 @codegen.when(instructions.flow.Jump)
 def _(self, i):
-    b = self._function.lookupBlock(i.op1().value())
+    b = self.currentFunction().lookupBlock(i.op1().value().name())
     assert b
-    self.llvmGenerateTailCallToBlock(b, [self._llvm.frameptr])
+    self.llvmGenerateTailCallToBlock(b, [self.llvmCurrentFramePtr()])
 
 @codegen.when(instructions.flow.IfElse)
 def _(self, i):
     op1 = self.llvmOp(i.op1(), "cond")
-    true = self._function.lookupBlock(i.op2().value())
-    false = self._function.lookupBlock(i.op3().value())
+    true = self.currentFunction().lookupBlock(i.op2().value().name())
+    false = self.currentFunction().lookupBlock(i.op3().value().name())
 
     block_true = self.llvmNewBlock("true")
     block_false = self.llvmNewBlock("false")
     
     self.pushBuilder(block_true)
-    self.llvmGenerateTailCallToBlock(true, [self._llvm.frameptr])
+    self.llvmGenerateTailCallToBlock(true, [self.llvmCurrentFramePtr()])
     self.popBuilder()
     
     self.pushBuilder(block_false)
-    self.llvmGenerateTailCallToBlock(false, [self._llvm.frameptr])
+    self.llvmGenerateTailCallToBlock(false, [self.llvmCurrentFramePtr()])
     self.popBuilder()
     
     self.builder().cbranch(op1, block_true, block_false)

@@ -10,7 +10,7 @@
 module Main
 
 void test() {
-    local int:32 sum
+    local int<32> sum
     sum = int.add True 1     
 }
 
@@ -18,7 +18,7 @@ void test() {
 module Main
 
 void test() {
-    local int:32 sum
+    local int<32> sum
     sum = int.add 1 True
 }
 

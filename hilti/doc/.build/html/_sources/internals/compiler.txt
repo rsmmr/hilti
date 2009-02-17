@@ -9,9 +9,17 @@ Compiler
 
 ..todo: Describe the overall HILTI Python module structure and  usage. 
 
+packages; core vs. the others which have a clear entry function.
+
 Core Classes
 ------------
 
+core.ast
+~~~~~~~~~~
+
+.. automodule:: hilti.core.ast
+   :members:
+   
 core.block
 ~~~~~~~~~~
 
@@ -79,16 +87,26 @@ Parser
 
 .. automodule:: hilti.parser
 
-The main external function provided by the :class:`~hilti.parser` is:
+The main external function provided by the :mod:`~hilti.parser` is:
 
 .. autofunction:: hilti.parser.parse
+
+Internals
+~~~~~~~~~
+
+.. autoclass:: hilti.parser.parser.State
+.. autofunction:: hilti.parser.parser.loc
+.. autofunction:: hilti.parser.parser.parse
+.. autofunction:: hilti.parser.parser.error
+
+.. todo:: Describe lexer, in particular the two states.
 
 Checker
 -------
 
 .. automodule:: hilti.checker
 
-The main external function provided by the :class:`~hilti.checker` is:
+The main external function provided by the :mod:`~hilti.checker` is:
 
 .. autofunction:: hilti.checker.checkAST
 
@@ -103,7 +121,7 @@ Printer
 
 .. automodule:: hilti.printer
 
-The main external function provided by the :class:`~hilti.printer` is:
+The main external function provided by the :mod:`~hilti.printer` is:
 
 .. autofunction:: hilti.printer.printAST
 
@@ -112,7 +130,6 @@ Internals
 
 .. automodule:: hilti.printer.printer
    :members:
-
 
 Canonifier
 ----------
@@ -123,6 +140,7 @@ The main external function provided by the :mod:`~hilti.canonifier` is:
 
 .. autofunction:: hilti.canonifier.canonifyAST
 
+.. List the canonifications performed. 
 .. automodule:: hilti.canonifier.module
 .. automodule:: hilti.canonifier.flow
 
@@ -137,7 +155,7 @@ Codegen
 
 .. automodule:: hilti.codegen
 
-The main external function provided by the :class:`~hilti.codegen` is:
+The main external function provided by the :mod:`~hilti.codegen` is:
 
 .. autofunction:: hilti.codegen.generateLLVM
 

@@ -2,6 +2,10 @@
 #
 # Modulel-level checks as well those applying to all instructions. 
 
+builtin_type = type
+
+import types
+
 from hilti.core import *
 from checker import checker
 
@@ -14,15 +18,15 @@ def _(self, m):
         self.error(m, "*module* statement does not come first")
         
     self._have_module = True
-    self._current_module = m
+    self._module = m
 
 @checker.post(module.Module)
 def _(self, m):
-    self._current_module = None
+    self._module = None
     
 ### Global ID definitions. 
 
-@checker.when(id.ID, type.StructDeclType)
+@checker.when(id.ID, type.StructDecl)
 def _(self, id):
     self._have_others = True
     
@@ -41,11 +45,11 @@ def _(self, f):
         self.error(f, "input file must start with module declaration")
         
     self._have_others = True
-    self._current_function = f
+    self._function = f
         
 @checker.post(function.Function)
 def _(self, f):
-    self._current_function = None
+    self._function = None
         
 ### Instructions.
 @checker.when(instruction.Instruction)
@@ -57,20 +61,22 @@ def _(self, i):
     
     # Check that signature maches the actual operands. 
     def typeError(actual, expected, tag):
-        self.error(i, "type of %s does not match signature (expected %s but is %s) " % (tag, str(expected), str(actual)))
+        self.error(i, "type of %s does not match signature (expected %s, found %s) " % (tag, str(expected), str(actual)))
         
     def checkOp(op, sig, tag):
+        
         if sig and not op and not type.isOptional(sig):
             self.error(i, "%s missing" % tag)
             return
-            
+
         if op and not sig:
             self.error(i, "superfluous %s" % tag)
             return
-            
-        if op and sig and not op.type() == sig:
-            typeError(type.name(op.type()), type.name(sig), tag)
-            return
+
+        if op and sig:
+            if op.type() != sig:
+                typeError(type.fmtTypeClass(op.type().__class__), type.fmtTypeClass(sig), tag)
+                return 
         
     checkOp(i.op1(), i.signature().op1(), "operand 1")
     checkOp(i.op2(), i.signature().op2(), "operand 2")

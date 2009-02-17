@@ -6,21 +6,18 @@
 """
 The following canonifications are perfomed on flow-control instructions:
 
-* All :class:`~hilti.instructions.Call` instructions are replaced with
-  either:
+* All ~~Call instructions are replaced with either:
+  
+ 1. ~~CallTailVoid if the callee function is a HILTI function without any
+    return value; or
     
- 1. :class:`~hilti.instructions.flow.CallTailVoid` if the callee function is a
-    HILTI function without any return value; or
+ 2. ~~CallTailResult if the callee function is a HILTI function without any
+    return value; or
     
- 2. :class:`~hilti.instructions.flow.CallTailResult` if the callee function is
-    a HILTI function without any return value; or
+ 3. ~~CallC if the callee function is a function with C calling convention.
     
- 3. :class:`~hilti.instructions.flow.CallC` if the callee function is a
-    function with C calling convention.
-
-* For all |terminator| instructions, the current
-  :class:`~hilti.core.block.Block` is closed at their location and a new
-  :class:`~hilti.core.block.Block` is opened.
+* For all |terminator| instructions, the current ~~Block is closed at their
+  location and a new ~~Block is opened.
 
 """
 
@@ -43,7 +40,7 @@ def _(self, i):
     
     name = i.op1().value().name()
     func = self.currentModule().lookupID(name)
-    assert func and isinstance(func.type(), type.FunctionType)
+    assert func and isinstance(func.type(), type.Function)
     
     if func.linkage() == function.CallingConvention.C:
         callc = instructions.flow.CallC(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
@@ -58,7 +55,7 @@ def _(self, i):
         
     new_block = _splitBlock(self, tc)
     
-    i = id.ID(new_block.name(), type.Label, id.Role.LOCAL, location=i.location())
+    i = id.ID(new_block.name(), type.Label(), id.Role.LOCAL, location=i.location())
     label = instruction.IDOperand(i, location=i.location())
     tc.setOp3(label)
     new_block.setMayRemove(False)

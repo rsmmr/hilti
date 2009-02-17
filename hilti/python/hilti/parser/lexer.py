@@ -8,23 +8,27 @@ from hilti.core import *
 
 import parser
 
+# All the instructions we support.
 instructions = instruction.getInstructions().keys()
-types = type.typenames()
+
+# All the data types we support.
+types = type.getHiltiTypeNames()
+
+# Keywords in addition to instructions and types.
 keywords = {
-#	"export": "EXPORT",
 	"import": "IMPORT",
 	"declare": "DECLARE",
 	"local": "LOCAL", 
     "global" : "GLOBAL", 
     "module": "MODULE",
     "struct": "STRUCT", 
+    "void": "VOID", 
     }
 
 tokens = (
    'LOCAL',
    'GLOBAL',
    'DECLARE',
-#   'EXPORT',
    'IDENT', 
    'IMPORT', 
    'INSTRUCTION',
@@ -36,9 +40,10 @@ tokens = (
    'STRING',
    'STRUCT',
    'TYPE',
+   'VOID',
 ) 
 
-literals = ['(',')','{','}', '=', ',', ':' ]
+literals = ['(',')','{','}', '<', '>', '=', ',', ':' ]
 
 states = (
    # In nolines mode, newlines are ignored. Per default, they are passed on as token NL.
@@ -85,7 +90,6 @@ def t_IDENT(t):
         
     elif t.value in types:
         t.type = "TYPE"
-        t.value = type.type(t.value)
         
     elif t.value in keywords:
         t.type = keywords[t.value]

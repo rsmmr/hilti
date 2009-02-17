@@ -18,11 +18,24 @@ from lexer import tokens
 
 # Creates a Location object from the parser object for the given symbol.
 def loc(p, num):
+    """Creates a location object for a symbol.
+    
+    p: parser object - The parser object as handed to any of parsing functions.
+    num: int - The index of the symbol in *p* for from the location
+    information is to be extracted.
+    
+    Returns: ~~Location - The location for the symbol.
+    """
+    
     assert p.parser.current.filename
     return location.Location(p.parser.current.filename, p.lineno(num))
 
 # Tracks state during parsing. 
 class State:
+    """Keeps state during parsing.
+    
+    filename: string - The name of the file we are parsing.
+    """
     def __init__(self, filename):
         self.filename = filename
         self.errors = 0
@@ -101,8 +114,8 @@ def p_def_declare(p):
     p[2].setLinkage(function.Linkage.EXPORTED)
 
 def p_def_function_head(p):
-    """function_head : opt_cc type IDENT '(' param_list ')'"""
-    ftype = type.FunctionType(p[5], p[2])
+    """function_head : opt_cc type_with_void IDENT '(' param_list ')'"""
+    ftype = type.Function(p[5], p[2])
     
     if p[1] == function.CallingConvention.HILTI:
         func = function.Function(p[3], ftype, p.parser.current.module, location=loc(p, 3))
@@ -206,14 +219,14 @@ def p_operand_ident(p):
     
     ident = p.parser.current.function.lookupID(p[1])
     if not ident:
-        ident = p.parser.current.function.type().getID(p[1])
+        ident = p.parser.current.function.type().getArg(p[1])
         if not ident:
             ident = p.parser.current.module.lookupID(p[1])
         
             if not ident:
                 if p[1].startswith("@"):
                     l = loc(p, 1)
-                    p[0] = instruction.IDOperand(id.ID(p[1], type.Label, id.Role.LOCAL, location=l), location=l)
+                    p[0] = instruction.IDOperand(id.ID(p[1], type.Label(), id.Role.LOCAL, location=l), location=l)
                     return
                 
                 error(p, "unknown identifier %s" % p[1])
@@ -223,17 +236,17 @@ def p_operand_ident(p):
 
 def p_operand_number(p):
     """operand : NUMBER"""
-    const = constant.Constant(p[1], type.Integer, location=loc(p, 1))
+    const = constant.Constant(p[1], type.Integer(0), location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
 
 def p_operand_bool(p):
     """operand : BOOL"""
-    const = constant.Constant(p[1], type.Bool, location=loc(p, 1))
+    const = constant.Constant(p[1], type.Bool(), location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
 
 def p_operand_string(p):
     """operand : STRING"""
-    string = const.Constant(p[1], type.String, location=loc(p, 1))
+    string = const.Constant(p[1], type.String(), location=loc(p, 1))
     p[0] = instruction.ConstOperand(string, location=loc(p, 1))
 
 def p_operand_tuple(p):
@@ -286,25 +299,46 @@ def p_global_id(p):
 
 def p_type(p):
     """type : TYPE
-            | TYPE ':' NUMBER"""
+            | TYPE '<' type_param_list '>'"""
     if len(p) == 2:
-        p[0] = p[1]
-        
-        if isinstance(p[1], type.IntegerType) and p[1].width() == 0:
-            error(p, "integer type requires width")
-            raise ply.yacc.SyntaxError
+        (success, result) = type.getHiltiType(p[1], [])
         
     else:
-        if p[1] != type.Integer:
-            error(p, "only integer type allows width specifications, not %s" % p[1])
-            raise ply.yacc.SyntaxError
+        (success, result) = type.getHiltiType(p[1], p[3])
 
-        if p[1] == type.Integer and p[3] == 0:
-            error(p, "integer type requires non-zero width")
-            raise ply.yacc.SyntaxError
-        
-        p[0] = type.IntegerType(p[3])
+    if not success:
+        error(p, result)
+        raise ply.yacc.SyntaxError
+
+    # FIXME: This is not great location for this check ...
+    if isinstance(result, type.Integer) and result.width() == 0:
+        error(p, "integer type requires non-zero width")
+        raise ply.yacc.SyntaxError
     
+    p[0] = result
+
+def p_type_with_void(p):
+    """type_with_void : type
+                      | VOID"""
+                      
+    if p[1] == "void":
+        p[0] = type.Void()
+    else:
+        p[0] = p[1]
+        
+def p_type_param_list(p):
+    """type_param_list : type_param "," type_param_list
+                       | type_param"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
+
+def p_type_param(p):
+    """type_param : NUMBER 
+                  | IDENT"""
+    p[0] = p[1]
+        
 def p_local_id_list(p):
     """local_id_list : local_id "," local_id_list
                | local_id"""
@@ -325,13 +359,24 @@ def p_error(p):
         error(None, "unexpected end of file")
 
 def error(p, msg, lineno=0):
+    """Reports an parsing error.
+    
+    p: parser object - The parser object as handed to any of parsing
+    functions; can be None if not available.
+    
+    msg: string - The error message to output.
+    
+    lineno: int - The line number to report the error in. If zero and *p* is
+    given, the information is pulled from the first symbol in *p*.
+    """
+    
     global Parser
     if p and lineno <= 0:
         lineno = p.lineno(1)
     
     Parser.current.errors += 1
     loc = location.Location(Parser.current.filename, lineno)        
-    util.error(msg, prefix="parser", context=loc, fatal=False)
+    util.error(msg, component="parser", context=loc, fatal=False)
 
 # Find file in dirs and returns full pathname or None if not found.
 def _findFile(filename, dirs):
@@ -370,9 +415,9 @@ def _importFile(filename, location):
     for i in substate.module.IDs():
         t = i.type()
         
-        if isinstance(t, type.FunctionType):
+        if isinstance(t, type.Function):
             func = substate.module.lookupID(i.name())
-            assert func and isinstance(func.type(), type.FunctionType)
+            assert func and isinstance(func.type(), type.Function)
             
             if func.linkage() == function.Linkage.EXPORTED:
                 Parser.current.module.addID(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=func.location()), func)
@@ -383,8 +428,7 @@ def _importFile(filename, location):
         assert False
         
 def parse(filename, import_paths=["."]):
-    """Returns tuple (errs, ast) where *errs* is the number errors found and *ast* is the parsed input.""" 
-    
+    """See ~~parse."""
     global Parser
     Parser = ply.yacc.yacc(debug=0, write_tables=0)
     

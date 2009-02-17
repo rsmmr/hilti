@@ -3,9 +3,9 @@
 ; The C program calls hilti_run() which passes control on to
 ; the HILTI function Main::run(). 
 
-%__basic_frame = type { %__continuation, %__continuation, i8*, i8* }
+%__basic_frame = type { %__continuation, %__continuation, i8* }
 %__continuation = type { i8*, i8* }
-%__frame_hilti_main = type { %__continuation, %__continuation, i8*, i8* }
+%__frame_hilti_main = type { %__continuation, %__continuation, i8* }
         
 declare void @hlt_main_run(%__frame_hilti_main*)
 declare void @__hilti_exception_print_uncaught(i8* %exception)
@@ -30,8 +30,6 @@ define ccc void @hilti_run() {
 
     %exception = getelementptr %__frame_hilti_main* %__frame, i32 0, i32 2
     store i8* undef, i8** %exception
-    %exception_data = getelementptr %__frame_hilti_main* %__frame, i32 0, i32 3
-    store i8* undef, i8** %exception_data
     
     ; Allocate frame for HILTI function Main::run(). 
     
@@ -53,8 +51,6 @@ define ccc void @hilti_run() {
 
     %exception2 = getelementptr %__frame_hilti_main* %callee_frame, i32 0, i32 2
     store i8* null, i8** %exception2
-    %exception_data2 = getelementptr %__frame_hilti_main* %callee_frame, i32 0, i32 3
-    store i8* null, i8** %exception_data2
 
     ; Call Main::Run()
     tail call fastcc void @hlt_main_run(%__frame_hilti_main* %callee_frame)

@@ -1,27 +1,24 @@
 # $Id$
 
+import ast
 import location
-import scope
 import type
 
 class Linkage:
-    """The *linkage* of a ~~Function specifies its
-    link-time visibility."""
+    """The *linkage* of a ~~Function specifies its link-time
+    visibility."""
     
     LOCAL = 1    
-    """A ~~Function with linkage :const:`LOCAL` is
-    only visible inside the ~~Module it is
-    implemented in. This is the default linkage."""
+    """A ~~Function with linkage LOCAL is only visible inside the
+    ~~Module it is implemented in. This is the default linkage."""
 
     EXPORTED = 2
-    """A ~~Function with linkage :const:`EXPORTED`
-    is visible across all compilation units."""
-    
-    
+    """A ~~Function with linkage EXPORTED is visible across all
+    compilation units."""
+        
 class CallingConvention:
-    """The *calling convention* used by a
-    ~~Function specifies how calls to it are
-    implemented."""
+    """The *calling convention* used by a ~~Function specifies which
+    implementation calls to it use."""
     
     HILTI = 1
     """A ~~Function using the proprietary HILTI
@@ -35,36 +32,35 @@ class CallingConvention:
     HILTI-specific flow-control features, such as exceptions and
     continuations.
     
-    .. note:
-    Currently, functions with C calling convention cannot be *implemented* in
-    HILTI but must be defined in an external, separately compiled object file.
-    They can be *called* from HILTI programs however. In the future, it will also be
-    possible to define functions with C calling convention in HILTI itself,
+    Note: Currently, functions with C calling convention cannot be
+    *implemented* in HILTI but must be defined in an external,
+    separately compiled object file. They can be *called* from HILTI
+    programs however. In the future, it will also be possible to
+    define functions with C calling convention in HILTI itself,
     which will then be callable *from* C programs. 
     """
         
-class Function(object):
-    """A Function object represents all functions either declared or defined
-    in a ~~Module. 
+class Function(ast.Node):
+    """A HILTI function declared or defined inside a module.
     
-    *name* is a string containing the name of the Function; the name must be
-    *non-qualified*, i.e., not be prefixed with any module name.  *ty* is the
-    ~~FunctionType of this Function. *module* is the
-    ~~Module that provides the Function's
-    *implementation*.  For a Function with linkage :const:`Linkage.C`,
-    *module* may be *None*. *location* defines a
-    ~~Location to be associated with this
-    Function.
+    name: string - Name of the function. It must be *non-qualified*,
+    i.e., not be prefixed with any module name.
     
-    This class implements ~~Visitor support
-    without subtypes. 
+    ty: :class:`~hilti.core.type.Function` - Type of the function. 
+      
+    module: ~~Module - Module that provides the function's
+    *implementation*. For a Function with linkage ~~C, *module* can
+    be None.
+    
+    location: ~~Location - Location to be associated with the
+    function. 
     """
     
     def __init__(self, name, ty, module, cc=CallingConvention.HILTI, location=None):
         assert name
         assert name.find("::") < 0 # must be non-qualified
         assert module or cc == CallingConvention.HILTI
-        assert isinstance(ty, type.FunctionType)
+        assert isinstance(ty, type.Function)
         
         if module:
             self._name = "%s::%s" % (module.name(), name)
@@ -79,38 +75,57 @@ class Function(object):
         self._module = module
         
         self._scope = {}
-        for id in ty.IDs():
+        for id in ty.Args():
             self._scope[id.name()] = id 
 
     def name(self):
-        """Returns the fully qualified name of this Function as a string."""
+        """Returns the function's name.
+        
+        Returns: string - The fully-qualified name of the function.
+        """
         return self._name
         
     def type(self):
-        """Returns the ~~FunctionType of this
-        function.""" 
+        """Returns the type of the function. 
+        
+        Returns: :class:`~hilti.core.type.Function` - The type of the
+        function.
+        """
         return self._type
 
     def module(self): 
-        """Returns the ~~Module that provides the
-        *implementation* of the function. Returns *None* if the Function has
-        :const:`Linkage.C`."""
+        """Returns the function's module. 
+        
+        Returns: ~~Module - The module that provides the implementation of the
+        function. Returns None if the function has ~~Linkage ~~C. 
+        """
         return self._module
     
     def linkage(self):
-        """Returns the :class:`Linkage` of this Function."""
+        """Returns the linkage of the function.
+        
+        Returns: ~~Linkage - The linkage of the function."""
         return self._linkage
     
     def callingConvention(self):
-    	"""Returns the :class:`CallingConvention` of this Function."""
+        """Returns the calling convention used by the function.
+        
+        Returns: ~~CallingConvention - The calling convention used by the
+        function."""
         return self._cc
 
     def setLinkage(self, linkage):
-        """Sets the :class:`Linkage` of this Function."""
+        """Sets the function's linkage.
+        
+        linkage: ~~Linkage - The linkage to set.
+        """
         self._linkage = linkage
     
     def setCallingConvention(self, cc):
-    	"""Sets the :class:`CallingConvention` of this Function."""
+        """Sets the function's calling convention.
+        
+        cc: ~~CallingConvention - The calling convention to set.
+        """
         self._cc = cc
         
         if cc == CallingConvention.C:
@@ -121,28 +136,42 @@ class Function(object):
             assert self._module
     
     def addID(self, id):
-        """Inserts an ~~ID *id* into the function's scope. *id* must not be
-        qualified."""
+        """Inserts an ID into the function's scope. 
+        
+        id: ~~ID - The ID to insert; the ID must not be qualified.
+        """
         assert not id.qualified()
         self._scope[id.name()] = id 
         
     def lookupID(self, name):
-        """Returns the ~~ID having the given *name* if
-        it is defined in the Function's local scope, or None if not."""
+        """Looks up an ID name in the function's scope.
+        
+        name: string - The ID name to lookup.
+        
+        Returns: ~~ID - The ID having the given *name*, or None if no ID with
+        such a name is defined in the function's scope.
+        """
+        
         try:
             return self._scope[name]
         except KeyError:
             return None
     
     def IDs(self):
-        """Returns a list of all ~~ID objects defined in
-        the Function's scope."""
+        """Returns all IDs defined in the function's scope.
+        
+        Returns: list of ~ID - List of all defined IDs.
+        """
         return self._scope.values()
         
     def addBlock(self, b):
-        """Appends a ~~Block to the Function's
-        current list of blocks. The new Block is set to be the successor of
-        the former tail Block, and its own successor field is cleared."""
+        """Adds a block to the function's implementation. Appends the ~~Block
+        to the function's current list of blocks, and makes the new Block the
+        he successor of the former tail Block. The new blocks own own
+        successor field is cleared.
+        
+        b: ~~Block - The block to add.
+        """
         if self._bodies:
             self._bodies[-1].setNext(b)
             
@@ -150,43 +179,53 @@ class Function(object):
         b.setNext(None)
     
     def blocks(self):
-        """Returns the list of ~~Block objects
-        defining the Function's implementation. This list may be empty."""
+        """Returns all blocks making up the function's implementation.
+        
+        Returns: list of ~~Block - The function's current list of blocks;
+        may be empty.
+        """
         return self._bodies
 
     def clearBlocks(self):
-        """Removes all ~~Block object from this
-        Function."""
+        """Clears the function's implementation. All blocks that have been
+        added to function previously, are removed. 
+        """
         self._bodies = []
 
-    def lookupBlock(self, id):
-        """Returns the ~~Block with the same name as
-        the ~~ID *id*, or None if there is no such
-        Block."""
+    def lookupBlock(self, name):
+        """Lookups the block with the given name. 
+        
+        name: string - The name to lookup. 
+        
+        Returns: ~~Block - The block with the *id's* name, or None if no such
+        block exists.
+        """
         for b in self._bodies:
-            if b.name() == id.name():
+            if b.name() == name:
                 return b
         return None
     
     def location(self):
-        """Returns the ~~Location associated with
-        this Function."""
+        """Returns the location associated with the function.
+        
+        Returns: ~~Location - The location. 
+        """
         return self._location
 
     def __str__(self):
-        return "function %s %s" % (self._type, self._name)
+        return "%s" % self._name
     
     # Visitor support.
-    def dispatch(self, visitor):
-        visitor.visit_pre(self)
+    def visit(self, visitor):
+        visitor.visitPre(self)
         
         for id in self._scope.values():
-            id.dispatch(visitor)
+            id.visit(visitor)
         
         for b in self._bodies:
-            b.dispatch(visitor)
+            b.visit(visitor)
             
-        visitor.visit_post(self)
+        visitor.visitPost(self)
         
     
     

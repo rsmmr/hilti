@@ -8,9 +8,9 @@ module Main
 
 import hilti
 
-int:32 fibo(int:32 n) {
-	local int:32 f1
-    local int:32 f2
+int<32> fibo(int<32> n) {
+	local int<32> f1
+    local int<32> f2
     local bool cond
 
     cond = int.lt n 2
@@ -31,7 +31,7 @@ int:32 fibo(int:32 n) {
 }
 
 void run() {
-    local int:32 f
+    local int<32> f
     
     f = call fibo(10)
     

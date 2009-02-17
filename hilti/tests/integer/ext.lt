@@ -10,8 +10,8 @@ import hilti
 
 void run() {
    local bool cond
-   local int:8 i
-   local int:32 j
+   local int<8> i
+   local int<32> j
    
    i = int.sub 100 50
    

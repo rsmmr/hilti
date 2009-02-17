@@ -29,7 +29,7 @@ def _checkArgs(checker, i, func, op):
         return
 
     args = op.value()
-    ids = func.type().IDs()
+    ids = func.type().Args()
     
     if len(args) != len(ids):
         checker.error(i, "wrong number of arguments for function")

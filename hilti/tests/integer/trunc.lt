@@ -10,9 +10,9 @@ import hilti
 
 void run() {
    local bool cond
-   local int:8 i8
-   local int:16 i16
-   local int:32 i32
+   local int<8> i8
+   local int<16> i16
+   local int<32> i32
    
    i16 = int.add 255 2
    i8 = int.trunc i16

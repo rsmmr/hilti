@@ -4,21 +4,19 @@
 """
 The following :class:`~hilti.core.block.Block` canonifications are performed:
 
-* Blocks that don't have successor yet are linked to the block following them
-  with the functions list of :meth:`~hilti.core.function.Function.blocks`, if
-  any.
+* Blocks that don't have a successor are linked to the block following them
+  within their function's list of ~~Block objects, if any.
   
-* Each block ends with a |terminator|. If none is already in place, we either
-  add a :class:`~hilti.instructions.flow.Jump` pointing the succeeding block (as indicated
-  by :meth:`~hilti.core.block.Block.next`, or a :class:`~hilti.instructions.flow.ReturnVoid`
-  if there is no successor. In the later case, the function must of return
-  type *void*. 
+* All blocks will end with a |terminator|. If none is already in place, we
+  either add a ~~Jump pointing the succeeding block (as indicated by
+  :meth:`~hilti.core.block.Block.next`, or a ~~ReturnVoid if there is no
+  successor. In the latter case, the function must be of return type ~~Void. 
   
-* Each block is assigned a *name* which is unique at least witin the function
-  the block is part of.
+* Each so far name-less block gets a name which is unique at least within the
+  function the block is part of.
   
-* Empty blocks are removed if :meth:`~hilti.core.block.mayRemove` indicates
-  that it is permissible to do so.  
+* Empty blocks are removed if ~~mayRemove indicates that it is permissible to
+  do so.  
 """
 
 from hilti.core import *
@@ -42,7 +40,7 @@ def _unifyBlock(block):
         
     if add_terminator:
         if block.next():
-            newins = instructions.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label, id.Role.LOCAL, location=loc)), location=loc)
+            newins = instructions.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label(), id.Role.LOCAL, location=loc)), location=loc)
         else:
             newins = instructions.flow.ReturnVoid(None, location=loc)
         block.addInstruction(newins)
@@ -51,11 +49,11 @@ def _unifyBlock(block):
 
 @canonifier.pre(module.Module)
 def _(self, m):
-    self._current_module = m
+    self._module = m
     
 @canonifier.post(module.Module)
 def _(self, m):
-    self._current_module = None
+    self._module = None
 
 ### Function
 
@@ -64,7 +62,7 @@ def _(self, f):
     if not f.blocks():
         return
     
-    self._current_function = f
+    self._function = f
     self._label_counter = 0
     self._transformed = []
     
@@ -79,7 +77,7 @@ def _(self, f):
     if not f.blocks():
         return
     
-    self._current_function = None
+    self._function = None
 
     # Copy the transformed blocks over to the function.
     f.clearBlocks()
@@ -96,7 +94,7 @@ def _(self, b):
     # If first block doesn't have a name, call it like the function.
     name = b.name()
     if not self.transformedBlocks() and not name:
-        name = "@__%s" % canonifier._current_function.name()
+        name = "@__%s" % canonifier._function.name()
         
     # While we proceed, we copy each instruction over to a new block, 
     # potentially after transforming it first.
