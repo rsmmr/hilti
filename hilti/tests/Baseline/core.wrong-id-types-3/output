@@ -1,0 +1,3 @@
+wrong-id-types.hlt:9: error, type of operand 1 does not match signature (expected label, found struct declaration) 
+
+1 error found
