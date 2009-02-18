@@ -87,7 +87,7 @@ class Canonifier(visitor.Visitor):
         Returns: string - The generated label.
         """
         self._label_counter += 1
-        return "@__l%d" % self._label_counter
+        return "__l%d" % self._label_counter
     
 canonifier = Canonifier()
 

@@ -4,6 +4,7 @@ import ast
 import id as idmod
 import location
 import type
+import visitor
 
 class Module(ast.Node):
     """A Module represents a single HILTI link-time unit. Each Module has a
@@ -14,8 +15,8 @@ class Module(ast.Node):
     are considered case-insensitive. *location* associates a ~~Location with
     the Module. 
     
-    When using a ~~Visitor with a Module, it will traverse the *values* of all
-    IDs in the Module's scope (see :meth:`addID`).
+    When using a ~~Visitor with a Module, it will traverse all IDs,
+    and their *values*, in the Module's scope (see :meth:`addID`).
     """
     
     def __init__(self, name, location=None):
@@ -68,6 +69,21 @@ class Module(ast.Node):
         
         try:
             (id, value) = self._scope[idx]
+            return id
+        
+        except KeyError:
+            return None
+
+    def lookupIDVal(self, name):
+        """Returns the value associated with the ~~ID of the given *name* if
+        it exists in the Module scope, and *None* otherwise."""
+
+        # Need the tmp just for the name splitting. 
+        tmp = idmod.ID(name, type.Type, 0) 
+        idx = self._canonName(tmp)
+        
+        try:
+            (id, value) = self._scope[idx]
             return value
         
         except KeyError:
@@ -77,13 +93,15 @@ class Module(ast.Node):
         return "module %s" % self._name
     
     # Visitor support.
-    def visit(self, visitor):
-        visitor.visitPre(self)
+    def visit(self, v):
+        v.visitPre(self)
         
         for (id, value) in self._scope.values():
-            visitor.visit(value)
+            v.visit(id)
+            if isinstance(value, visitor.Visitable):
+                v.visit(value)
         
-        visitor.visitPost(self)
+        v.visitPost(self)
         
     
         

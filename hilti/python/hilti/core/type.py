@@ -247,9 +247,9 @@ class Struct(StorageType):
     def __init__(self, fields):
         name = "struct { %s }" % ", ".join(["%s %s" % (id.name(), id.type().name()) for id in fields])
         super(Struct, self).__init__([], name)
-        self._ids = ids
+        self._ids = fields
     
-    def IDs(self):
+    def Fields(self):
         """Returns the list of ~~ID objects defining the fields of the
         struct."""
         return self._ids
@@ -313,6 +313,14 @@ class Any(OperandType):
         super(Any, self).__init__("any")
 
     _name = "any"
+
+class Unknown(OperandType):
+    """A place-hilder type to indicate that we don't know the type yet. Used
+    during parsing"""
+    def __init__(self):
+        super(Unknown, self).__init__("unknown")
+
+    _name = "unknown"
     
 class Tuple(OperandType):
     """A type to represent a tuple of values. *types* is a list of ~~Type

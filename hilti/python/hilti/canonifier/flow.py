@@ -39,7 +39,7 @@ def _splitBlock(canonifier, ins=None):
 def _(self, i):
     
     name = i.op1().value().name()
-    func = self.currentModule().lookupID(name)
+    func = self.currentModule().lookupIDVal(name)
     assert func and isinstance(func.type(), type.Function)
     
     if func.linkage() == function.CallingConvention.C:

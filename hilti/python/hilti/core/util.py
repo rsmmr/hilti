@@ -59,5 +59,5 @@ def internal_error(msg, component=None, context=None):
     point suitable to report location information; most commonly, *context* is
     set to a relevant ~~Location object."""
     _print(component, "internal error", msg, context)
-    sys.exit(1)
+    assert False
     

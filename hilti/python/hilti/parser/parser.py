@@ -3,8 +3,8 @@
 # The parser.
 
 import os.path
-import sys
 import warnings
+import sys
 
 # ply.yacc triggers "DeprecationWarning: the md5 module is deprecated; use hashlib instead"
 with warnings.catch_warnings():
@@ -13,6 +13,7 @@ with warnings.catch_warnings():
 
 from hilti.core import *
 
+import resolver
 import lexer
 from lexer import tokens
 
@@ -99,8 +100,8 @@ def p_def_type(p):
     
 def p_def_struct(p):
     """def_struct : STRUCT _begin_nolines IDENT '{' local_id_list '}' _end_nolines"""
-    stype = type.StructType(p[5])
-    struct = type.StructDeclType(stype)
+    stype = type.Struct(p[5])
+    struct = type.StructDecl(stype)
     sid = id.ID(p[3], struct, id.Role.GLOBAL, location=loc(p, 1))
     p.parser.current.module.addID(sid)
 
@@ -217,21 +218,7 @@ def p_instruction(p):
 def p_operand_ident(p):
     """operand : IDENT"""
     
-    ident = p.parser.current.function.lookupID(p[1])
-    if not ident:
-        ident = p.parser.current.function.type().getArg(p[1])
-        if not ident:
-            ident = p.parser.current.module.lookupID(p[1])
-        
-            if not ident:
-                if p[1].startswith("@"):
-                    l = loc(p, 1)
-                    p[0] = instruction.IDOperand(id.ID(p[1], type.Label(), id.Role.LOCAL, location=l), location=l)
-                    return
-                
-                error(p, "unknown identifier %s" % p[1])
-                raise ply.yacc.SyntaxError
-    
+    ident = id.ID(p[1], type.Unknown(), id.Role.UNKNOWN)
     p[0] = instruction.IDOperand(ident, location=loc(p, 1))
 
 def p_operand_number(p):
@@ -416,7 +403,7 @@ def _importFile(filename, location):
         t = i.type()
         
         if isinstance(t, type.Function):
-            func = substate.module.lookupID(i.name())
+            func = substate.module.lookupIDVal(i.name())
             assert func and isinstance(func.type(), type.Function)
             
             if func.linkage() == function.Linkage.EXPORTED:
@@ -447,8 +434,17 @@ def parse(filename, import_paths=["."]):
     except ply.lex.LexError, e:
         # Already reported.
         ast = None
+
+    if Parser.current.errors > 0:
+        return (Parser.current.errors, None)
+        
+    resolver_errors = resolver.resolver.resolveOperands(ast)
     
-    return (Parser.current.errors, ast)
+    if resolver_errors > 0:
+        return (resolver_errors, None)
+    
+    return (0, ast)
+        
     
     
     

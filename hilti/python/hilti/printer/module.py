@@ -12,11 +12,6 @@ def _(self, m):
     
 ### ID definitions. 
 
-# Generic ID handler. Shouldn't be reached as we handle all cases specifically below.
-@printer.when(id.ID)
-def _(self, id):
-    assert False, "ID type not handled: " + str(id.type().__class__)
-
 @printer.when(id.ID, type.Function)
 def _(self, f):
     # Nothing to do for function bindings, there are treated separately via the 
@@ -55,7 +50,7 @@ def _(self, f):
     
     result = type.resultType().name()
     name = f.name()
-    args = ", ".join(["%s %s" % (id.type().name(), id.name())for id in type.IDs()])
+    args = ", ".join(["%s %s" % (id.type().name(), id.name())for id in type.Args()])
     linkage = ""
 
     if f.linkage() == function.Linkage.EXPORTED:
@@ -89,7 +84,7 @@ def _(self, f):
 def _(self, f):
     self._function = None
     
-    if not f.isImported():
+    if not f.blocks():
         self.output("}")
         
     self.pop()

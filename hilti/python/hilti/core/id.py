@@ -7,6 +7,10 @@ class Role:
     """The *Role* of an :class:`ID` separates IDs into several subgroups
     according to where they are defined."""
 
+    UNKNOWN = 0
+    """A :const:`UNKNOWN` role is a place-holder used during parsing when we
+    don't know the role yet."""
+    
     GLOBAL = 1
     """A :const:`GLOBAL` :class:`ID` is defined at module-level scope."""
     
@@ -77,7 +81,7 @@ class ID(ast.Node):
         return (scope, name)
     
     def __str__(self):
-        return "%s%s" % (self._name, self._type)
+        return "%s %s" % (self._type, self._name)
     
     # Visitor support.
     def visitorSubType(self):

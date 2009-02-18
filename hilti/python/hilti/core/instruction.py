@@ -135,7 +135,7 @@ class Operand(object):
         self._type = type
     
     def __str__(self):
-        return "%s %s" % (self._type, self._value)
+        return "%s" % self._value
 
 class ConstOperand(Operand):
     """Derived from ~~Operand, a ConstOperand represents a constant
@@ -158,7 +158,7 @@ class ConstOperand(Operand):
         self._constant = const
         self._setValue(const.value())
         self._setType(const.type())
-
+        
 class IDOperand(Operand):
     """Derived from ~~Operand, an IDOperand is an operand that references an
     ~~ID. *id* is the reference ~~ID, , and *location* a ~~Location to be
@@ -176,6 +176,15 @@ class IDOperand(Operand):
         """Returns the operand's ~~ID."""
         return self._id
     
+    def setID(self, id):
+        """Sets the ID.
+        
+        id: ~~ID - The ID to set for the operand."""
+        self._id = id
+        self._setValue(id)
+        self._setType(id.type())
+
+        
 class TupleOperand(Operand):
     """Derived from ~~Operand, a TupleOperand is an operand consisting of a
     tupel of individual operands. *ops* is a list of the tuple's ~~Operand
@@ -190,9 +199,9 @@ class TupleOperand(Operand):
         types = [op.type() for op in ops]
         super(TupleOperand, self).__init__(vals, type.Tuple(types), location)
         self._ops = ops
-
+    
     def __str__(self):
-        return "(%s)" % ", ".join(["%s %s" % (op.type(), op.value()) for op in self._ops])
+        return "(%s)" % ", ".join([str(op) for op in self._ops])
         
 class Signature:
     """A Signature defines an ~~Instruction 's name as well as the valid
@@ -299,31 +308,6 @@ def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=
         i = _Instructions[name](op1, op2, op3, target, location)
     except KeyError:
         return None
-    
-    # We assign widths to integer constants by taking the largest widths of all
-    # other integer operands/target.
-    #
-    # FIXME: This is really not a great place to do that. We should a generic
-    # capability for types to post-process arguments. 
-    
-    widths = [op.type().width() for op in (i.op1(), i.op2(), i.op3(), i.target()) if op and isinstance(op.type(), type.Integer)]
-    
-    maxwidth = max(widths) if widths else 0
-    
-    if not maxwidth:
-        # Either no integer operand at all, or none with a width. As the
-        # latter can only be constants, we pick a reasonable default.
-        maxwidth = 32
-
-    def adaptIntType(op):
-        if op and isinstance(op, ConstOperand) and isinstance(op.type(), type.Integer):
-            val = op.value()
-            const = constant.Constant(val, type.Integer(maxwidth))
-            op.setConstant(ConstOperand(const))
-        
-    adaptIntType(i.op1())
-    adaptIntType(i.op2())
-    adaptIntType(i.op3())
 
     return i
 

@@ -204,7 +204,7 @@ def _makeCall(cg, func, args, llvm_succ):
     
     # Allocate new stack frame for called function.
     #   callee_frame = new __frame_func
-    callee_frame = cg.llvmMalloc(cg.llvmTypeFunctionFrame(func), "callee_frame")
+    callee_frame = cg.llvmMalloc(cg.llvmTypeFunctionFrame(func))
 
     # After call, continue with next block.
     #   callee_frame.bf.cont_normal.label = <successor function>
@@ -242,8 +242,8 @@ def _makeCall(cg, func, args, llvm_succ):
     
     for i in range(0, len(args)):
 	    #   callee_frame.arg_<i> = args[i] 
-        val = cg.llvmOp(args[i], "arg%d" % i, cast_to_type=ids[i].type())
-        addr = cg.llvmAddrLocalVar(func, callee_frame, ids[i], "addr-arg%d" % i)
+        val = cg.llvmOp(args[i], cast_to_type=ids[i].type())
+        addr = cg.llvmAddrLocalVar(func, callee_frame, ids[i].name())
         cg.llvmInit(val, addr)
 
     cg.llvmGenerateTailCallToFunction(func, [callee_frame])
@@ -274,7 +274,7 @@ def _(self, i):
     succ_name = self.nameNewFunction("%s_return" % self.nameFunctionForBlock(self.currentBlock()))
     arg_type = self.llvmTypeConvert(func.type().resultType())
     
-    llvm_succ = self.llvmCreateFunctionForBlock(succ_name, self.currentBlock(), [("result", arg_type)])
+    llvm_succ = self.llvmCreateFunction(self.currentBlock().function(), succ_name, [("result", arg_type)])
     llvm_succ_block = llvm_succ.append_basic_block(succ_name)
     
     self.pushBuilder(llvm_succ_block)
@@ -282,7 +282,7 @@ def _(self, i):
     # TODO: This is not so nice. The problem is that we are now in a new
     # function so we can't just call storeInTarget(). Find something more
     # elegant. 
-    addr = self.llvmAddrLocalVar(self.currentFunction(), llvm_succ.args[0], id.ID(i.target().id().name(), i.target().type(), id.Role.LOCAL), "result_addr")
+    addr = self.llvmAddrLocalVar(self.currentFunction(), llvm_succ.args[0], i.target().id().name())
     self.llvmAssign(llvm_succ.args[1], addr)
     
     self.llvmGenerateTailCallToBlock(block, [llvm_succ.args[0]])
@@ -300,7 +300,7 @@ def _(self, i):
     
     args = []
     for i in range(len(tuple)):
-        args += [self.llvmOpToC(tuple[i], "arg", cast_to_type=ids[i].type())]
+        args += [self.llvmOpToC(tuple[i], cast_to_type=ids[i].type())]
     
     self.llvmGenerateCCall(func, args)
 
@@ -323,7 +323,7 @@ def _(self, i):
 @codegen.when(instructions.flow.ReturnResult)
 def _(self, i):
     # return (*__frame.bf.cont_normal.label) (*__frame.bf.cont_normal, result)
-    op1 = self.llvmOp(i.op1(), "op1")
+    op1 = self.llvmOp(i.op1())
     _makeReturn(self, op1, i.op1().type())
 
 @codegen.when(instructions.flow.Jump)
@@ -334,7 +334,7 @@ def _(self, i):
 
 @codegen.when(instructions.flow.IfElse)
 def _(self, i):
-    op1 = self.llvmOp(i.op1(), "cond")
+    op1 = self.llvmOp(i.op1())
     true = self.currentFunction().lookupBlock(i.op2().value().name())
     false = self.currentFunction().lookupBlock(i.op3().value().name())
 

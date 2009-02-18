@@ -24,7 +24,7 @@ class Printer(visitor.Visitor):
     def printAST(self, ast, output):
         """See ~~printAST."""
         self.reset()
-        self._output = file
+        self._output = output
         self.visit(ast)
         return True
 

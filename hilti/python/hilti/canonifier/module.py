@@ -94,7 +94,8 @@ def _(self, b):
     # If first block doesn't have a name, call it like the function.
     name = b.name()
     if not self.transformedBlocks() and not name:
-        name = "@__%s" % canonifier._function.name()
+        #        name = "@__%s" % canonifier._function.name()
+        name = "@entry"
         
     # While we proceed, we copy each instruction over to a new block, 
     # potentially after transforming it first.

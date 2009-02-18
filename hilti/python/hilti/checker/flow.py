@@ -37,7 +37,7 @@ def _checkArgs(checker, i, func, op):
     
     for j in range(len(args)):
         if args[j].type() != ids[j].type():
-            checker.error(i, "wrong type for argument %d in function call" % (j+1))
+            checker.error(i, "wrong type for function argument %d in call (is %s, expected %s)" % (j+1, args[j].type(), ids[j].type()))
 
 @checker.when(flow.Jump)
 def _(self, i):
@@ -66,7 +66,7 @@ def _(self, i):
 
 @checker.when(flow.Call)
 def _(self, i):
-    func = self.currentModule().lookupID(i.op1().id().name())
+    func = self.currentModule().lookupIDVal(i.op1().id().name())
     if not _checkFunc(self, i, func, None):
         return
 
@@ -82,7 +82,7 @@ def _(self, i):
 
 @checker.when(flow.CallC)
 def _(self, i):
-    func = self.currentModule().lookupID(i.op1().id().name())
+    func = self.currentModule().lookupIDVal(i.op1().id().name())
     if not _checkFunc(self, i, func, function.CallingConvention.C):
         return
 
@@ -98,7 +98,7 @@ def _(self, i):
 
 @checker.when(flow.CallTailVoid)
 def _(self, i):
-    func = self.currentModule().lookupID(i.op1().id().name())
+    func = self.currentModule().lookupIDVal(i.op1().id().name())
     if not _checkFunc(self, i, func, function.CallingConvention.HILTI):
         return
     
@@ -112,7 +112,7 @@ def _(self, i):
 
 @checker.when(flow.CallTailResult)
 def _(self, i):
-    func = self.currentModule().lookupID(i.op1().id().name())
+    func = self.currentModule().lookupIDVal(i.op1().id().name())
     if not _checkFunc(self, i, func, function.CallingConvention.HILTI):
         return
     

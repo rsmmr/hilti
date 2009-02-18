@@ -3,6 +3,7 @@
 import ast
 import location
 import type
+import id
 
 class Linkage:
     """The *linkage* of a ~~Function specifies its link-time
@@ -70,7 +71,8 @@ class Function(ast.Node):
         self._type = ty
         self._bodies = []
         self._location = location
-        self._linkage = Linkage.LOCAL
+        # Implictly export the main function.
+        self._linkage = Linkage.LOCAL if self._name.lower() != "main::run" else Linkage.EXPORTED
         self._cc = cc
         self._module = module
         
@@ -167,8 +169,9 @@ class Function(ast.Node):
     def addBlock(self, b):
         """Adds a block to the function's implementation. Appends the ~~Block
         to the function's current list of blocks, and makes the new Block the
-        he successor of the former tail Block. The new blocks own own
-        successor field is cleared.
+        he successor of the former tail Block. The new blocks own successor
+        field is cleared. If the block has a name, it's added to the
+        function's scope.
         
         b: ~~Block - The block to add.
         """
@@ -177,6 +180,9 @@ class Function(ast.Node):
             
         self._bodies += [b] 
         b.setNext(None)
+        
+        if b.name():
+            self.addID(id.ID(b.name(), type.Label(), id.Role.LOCAL))
     
     def blocks(self):
         """Returns all blocks making up the function's implementation.
@@ -190,6 +196,10 @@ class Function(ast.Node):
         """Clears the function's implementation. All blocks that have been
         added to function previously, are removed. 
         """
+        for b in self._bodies:
+            if b.name():
+                del self._scope[b.name()]
+        
         self._bodies = []
 
     def lookupBlock(self, name):
