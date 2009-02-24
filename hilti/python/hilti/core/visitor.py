@@ -3,10 +3,9 @@
 import util
 
 class Visitable(object):
-    """Visitable is the base class for classes that provide ~~Visitor support.
-    To enable a class to be visited by a ~~Visitor, derive the class from
-    Visitable. Override the methods :meth:`visit` and :meth:`visitorSubType`
-    as needed."""
+    """Base class for classes that provide visitor support. To enable a class
+    to be visited by a ~~Visitor, derive the class from Visitable. Override
+    the methods :meth:`visit` and :meth:`visitorSubType` as needed."""
     
     def visit(self, visitor):
         """Must be overridden if the derived class has any childs that need to
@@ -21,6 +20,7 @@ class Visitable(object):
         
         * finally call the ~~visitPost method of *visitor*.
         
+        visitor: ~~Visitor - The current visitor object.
         """
         visitor._visitSelf(self)
         
@@ -28,26 +28,30 @@ class Visitable(object):
         """Can be overriden to allow visitor functions to be more specific in
         their choice of which nodes to handle. The method can return any
         value, which is then matched against the *subtype* parameter of the
-        ~~Visitor object's ~when, ~~pre, and ~~post methods."""
+        ~~Visitor object's ~when, ~~pre, and ~~post methods.
+        
+        visitor: ~~Visitor - The current visitor object.
+        """
 
 class Visitor(object):
-    """The Visitor class allows the traversal of a tree structure formed by
-    node of ~~Visitable instances. It is the main tool to traverse an |ast|. 
+    """Implements the traversal of a tree structure. The classes traverses
+    nodes formed by instances of ~~Visitable. It is the primary mechanism to
+    traverse an |ast|. 
     
-    To traverse an such a tree, perform the following steps:
+    To traverse a tree of ~~Visitable objects, perform the following steps:
     
     1. Derive a class from Visitor, and instantiate an object of the new class.
     
-    2. Define a visitor functions for each subclass of ~~Visitable you are
-       interested in. Decorate all these functions with +@<obj>.<meth>+ where 
-       +<obj>+ is the object instantiated in (1), and +<meth>+ is one of
-       :meth:`when`, :meth:`pre`, or :class:`post`.
+    2. Define a visitor functions for each subclass of ~~Visitable that you
+       are interested in. Decorate all these functions with ``@<obj>.<meth>``
+       where ``<obj>`` is the object instantiated in (1), and ``<meth>`` is
+       one of :meth:`when`, :meth:`pre`, or :class:`post`.
     
     3. Call :meth:`visit` with the root node. 
     
-    When instantiating a Visitor, the boolean *all* indicates how to proceed
-    when multiple visitor function match a node: if *True*, all of them are
-    called; if *False*, only the one with the most specific type is called.
+    all: boolean - Indicates how to proceed when multiple visitor functions
+    match a node: if *True*, all of them are called; if *False*, only the one
+    with the most specific type is called.
     """    
     def __init__(self, all=False):
         self._all = all
@@ -56,62 +60,86 @@ class Visitor(object):
         self._visits = []
 
     def visit(self, node):
-        """Traverses the tree rooted at ~~Visitable *node*."""
+        """Traverses a tree. 
+        
+        node: ~~Visitable: The root node of the tree to traverse.
+        """
         node.visit(self)
         
     def visitPre(self, obj):
-        """Must be called by a derived class' :meth:`visit` method if it has
-        any child nodes to traverse. *obj* is the child itself."""
+        """Must be called by a ~~Visitable derived class' :meth:`visit` method
+        before it traverse any child nodes. 
+        
+        obj: ~~Visitable: The ~~Visitable calling the method.
+        """
         self._dovisit(obj, self._pres)
         self._visitSelf(obj)
     
     def visitPost(self, obj):
-        """Must be called by a derived class' :meth:`visit` method before it
-        traverses any child nodes. *obj* is the child itself."""
+        """Must be called by an ~~Visitable derived class' :meth:`visit`
+        method after it traverse any child nodes. 
+        
+        obj: ~~Visitable: The ~~Visitable calling the method.
+        """
         self._dovisit(obj, self._posts)
     
     def _visitSelf(self, obj):
-        """Must be called by a derived class' :meth:`visit` method after it
-        traverses any child nodes. *obj* is the child itself."""
+        """Must be called by an ~~Visitable derived class' :meth:`visit`
+        method if it has no childs to traverse.
+        
+        obj: ~~Visitable: The ~~Visitable calling the method.
+        """
         self._dovisit(obj, self._visits)
 
     # Decorators
     def when(self, t, subtype=None):
-        """Class-decorator for a function, indicating that the function
-        handles instances of the class *t* (which must be derived from
-        ~~Visitable). If *subtype* is given, its value is matched against the
-        one returned by the instance's ~~visitSubType; and the method is only
-        called if the two match."""
-    	def f(func):
+        """Class-decorator indicating which nodes a function will handle.
+        
+        t: ~~Visitable class - The node class the function will handle.
+        
+        subtype: any - If given, its value will be matched against the one
+        returned by an ~~Visitable's ~~visitSubType method; and the method is
+        only called if the two match.
+        """
+        def f(func):
             self._visits += [(t, subtype, func)]
         return f    
     
     def pre(self, t, subtype=None):
-        """Class-decorator for a function, indicating that the function
-        handles instances of the class *t* (which must be derived from
-        ~~Visitable). If the instance of *t* has any childs, the method will
-        be called *before* those are traversed. If *subtype* is given, its
-        value is matched against the one returned by the instance's
-        ~~visitSubType; and the method is only called if the two match."""
+        """Class-decorator indicating which nodes a function will handle. If
+        the handled node has any childs, the method will be called *before*
+        those are traversed.  
+        
+        t: ~~Visitable class - The node class the function will handle.
+        
+        subtype: any - If given, its value will be matched against the one
+        returned by an ~~Visitable's ~~visitSubType method; and the method is
+        only called if the two match.
+        """
     	def f(func):
             self._pres += [(t, subtype, func)]
         return f    
     
     def post(self, t, subtype=None):
-        """Class-decorator for a function, indicating that the function
-        handles instances of the class *t* (which must be derived from
-        ~~Visitable). If the instance of *t* has any childs, the method will
-        be called *after* those are traversed. If *subtype* is given, its
-        value is matched against the one returned by the instance's
-        ~~visitSubType; and the method is only called if the two match."""
-    	def f(func):
+        """Class-decorator indicating which nodes a function will handle. If
+        the handled node has any childs, the method will be called *after*
+        those are traversed.  
+        
+        t: ~~Visitable class - The node class the function will handle.
+        
+        subtype: any - If given, its value will be matched against the one
+        returned by an ~~Visitable's ~~visitSubType method; and the method is
+        only called if the two match.
+        """
+        def f(func):
             self._posts += [(t, subtype, func)]
-        return f    
+        return f	
 
     def skipOthers(self):
-        """Can be called from a visitor function to indicate that all
-        subsequent visitor functions matching the same object are not to be
-        executed any more."""
+        """Indicates that no further visitor functions should be called for
+        the current object. Can be called from a visitor function to skip
+        further handlers for the *same* object and proceed to the next node.
+        """
         self._skipothers = True
     
     def _dovisit(self, obj, dict):

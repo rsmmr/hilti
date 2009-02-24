@@ -3,12 +3,13 @@
 import os.path
 
 class Location(object):
-    """A Location stores a filename *name* (string) and a line number *line*
-    (integer). If *line* is zero, the line number is assumed to be
-    unspecified. Locations are associated with other objects derived from
-    HILTI source files. If any input errors are found, the user can then be
-    pointed to the offending code segment."""
-    def __init__(self, name = None, line = 0):
+    """Stores a file name and a line number.
+    
+    name: string - The file name. 
+    line: int - The line number. If zero, the line is assumed to be
+    not specified. 
+    """
+    def __init__(self, name, line = 0):
         self._file = name
         self._line = int(line)
         

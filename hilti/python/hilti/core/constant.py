@@ -6,38 +6,48 @@ import ast
 import location
 import type
 
-class Constant(ast.Node):
-    """A Constant represents a constant value with its
-    ~~Type.
+class Constant(object):
+    """Represents a constant value with its type.
     
-    The class maps the ~~Visitor subtype to :meth:`~type`.
+    value: any - The constant's value in accordance with *type*
+    type: ~~Type -- The constant's type.
+    location: ~~Location - A location to be associated with the constant. 
+    
+    Note: The class maps the ~~Visitor subtype to :meth:`~type`.
     """
-    def __init__(self, value, type, location = None):
-        """Initializes the constant with *value*, which must match with the
-        ~~Type *type*. *location* defines a
-        ~~Location to be associated with this
-        Constant."""
+    def __init__(self, value, type, location=None):
         self._value = value
         self._type = type
         self._location = location
         
     def value(self):
-        """Return the value of the Constant."""
+        """Returns the value of the constant.
+        
+        Returns: any - Value of the constant.
+        """
         return self._value
     
     def type(self):
-        """Return the ~~Type of the Constant."""
+        """Returns the type of the constant.
+        
+        Returns: ~~Type - Type of the constant.
+        """
         return self._type
 
     def setType(self, type):
-        """Sets the ~~Type of the Constant to *type*."""
+        """Sets the type of the constant.
+        
+        type: ~~Type - The type to set.
+        """
         self._type = type
-    
-    def location(self):
-        """Returns the ~~Location associated with
-        the Constant."""
-        return self._location
 
+    def location(self):
+        """Returns the location associated with the constant.
+        
+        Returns: ~~Location - The location. 
+        """
+        return self._location
+        
     def __str__(self):
         return " %s %s" % (self._type, self._value)
     
@@ -46,5 +56,5 @@ class Constant(ast.Node):
         return self._type
 
 Void = Constant("void", type.Void)
-"""The special Constant representing a *Void* value."""
+"""A predefined ~~Constant representing a *void* value."""
     

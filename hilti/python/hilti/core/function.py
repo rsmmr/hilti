@@ -1,7 +1,6 @@
 # $Id$
 
 import ast
-import location
 import type
 import id
 
@@ -53,8 +52,7 @@ class Function(ast.Node):
     *implementation*. For a Function with linkage ~~C, *module* can
     be None.
     
-    location: ~~Location - Location to be associated with the
-    function. 
+    location: ~~Location - A location to be associated with the function. 
     """
     
     def __init__(self, name, ty, module, cc=CallingConvention.HILTI, location=None):
@@ -63,6 +61,8 @@ class Function(ast.Node):
         assert module or cc == CallingConvention.HILTI
         assert isinstance(ty, type.Function)
         
+        super(Function, self).__init__(location)
+        
         if module:
             self._name = "%s::%s" % (module.name(), name)
         else:
@@ -70,7 +70,6 @@ class Function(ast.Node):
             
         self._type = ty
         self._bodies = []
-        self._location = location
         # Implictly export the main function.
         self._linkage = Linkage.LOCAL if self._name.lower() != "main::run" else Linkage.EXPORTED
         self._cc = cc
@@ -215,13 +214,6 @@ class Function(ast.Node):
                 return b
         return None
     
-    def location(self):
-        """Returns the location associated with the function.
-        
-        Returns: ~~Location - The location. 
-        """
-        return self._location
-
     def __str__(self):
         return "%s" % self._name
     

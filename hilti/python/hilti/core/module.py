@@ -7,34 +7,36 @@ import type
 import visitor
 
 class Module(ast.Node):
-    """A Module represents a single HILTI link-time unit. Each Module has a
-    scope of identifier defining which ~~ID objects are visible inside the
-    ~~Module.
+    """Represents a single HILTI link-time unit. A module has its
+    own identifier scope defining which ~~ID objects are visibile
+    inside its namespace.  
     
-    *name* is string containing the globally visible name of the Module; names
-    are considered case-insensitive. *location* associates a ~~Location with
-    the Module. 
+    name: string - The globally visible name of the module; modules
+    names are treated case-insensitive. 
     
-    When using a ~~Visitor with a Module, it will traverse all IDs,
-    and their *values*, in the Module's scope (see :meth:`addID`).
+    location: ~~Location - A location to be associated with the function. 
+
+    Note: When traversion a module with a ~~Visitor, it will visit all ~~ID
+    objects in its scope *and* all their values (see :meth:`addID`)
     """
-    
     def __init__(self, name, location=None):
+        super(Module, self).__init__(location)
         self._name = name.lower()
         self._location = location
         self._scope = {}
 
     def name(self):
-        """Returns the globally visible name of the Module as a string."""
+        """Returns the name of the module.
+        
+        Returns: string - The name.
+        """
         return self._name
 
-    def location(self):
-        """Returns the ~~Location object associated with the Module."""
-        return self._location
-    
     def IDs(self):
-        """Returns a list of all ~~ID objects that are part of the Module's
-        scope."""
+        """Returns all IDs in the module's scope. 
+        
+        Returns: list of ~~ID - The IDs. 
+        """
         return [id for (id, value) in self._scope.values()]
 
     def _canonName(self, id):
@@ -45,24 +47,31 @@ class Module(ast.Node):
         return "%s::%s" % (scope, name)
     
     def addID(self, id, value = True):
-        """Adds an ~~ID to the Module's scope and associates an arbitrary
-        *value* with it. If there's no specific value that needs to be stored
-        with the ID, use the default of *True*.
+        """Adds an ID to the module's scope. An arbitrary value can be
+        associated with each ~~ID. If there's no specific value that needs to
+        be stored, just use the default of *True*.
         
-        An ~~ID defined elsewhere can be imported into a Module by adding it 
-        with a fully qualified name (i.e., +<ext-module>::<name>+). In this
+        An ~~ID defined elsewhere can be imported into a module by adding it 
+        with a fully qualified name (i.e., ``<ext-module>::<name>``). In this
         case, subsequent lookups will only succeed if they are likewise fully
-        qualified. If *id* comes with a fully-qualified name that matches the
-        Modules'name (as returned by :meth:`~hilti.name`), subsequent lookups
-        will succeed no matter whether they are qualified or not. 
+        qualified. If ~~ID comes with a fully-qualified name that matches the
+        module's own name, subsequent lookups will succeed no matter whether
+        they are qualified or not. 
+        
+        id: ~~ID - The ID to add to the module's scope.
+        value: any - The value to associate with the ID.
         """
         idx = self._canonName(id)
         self._scope[idx] = (id, value)
 
     def lookupID(self, name):
-        """Returns the value associated with the ~~ID of the given *name* if
-        it exists in the Module scope, and *None* otherwise."""
-
+        """Looks up an ID in the module's scope. 
+        
+        name: string - The name of the ID to lookup (see :meth:`addID` for the
+        lookup rules used for qualified names).
+        
+        Returns: ~~ID - The ID, or None if the name is not found.
+        """
         # Need the tmp just for the name splitting. 
         tmp = idmod.ID(name, type.Type, 0) 
         idx = self._canonName(tmp)
@@ -75,9 +84,14 @@ class Module(ast.Node):
             return None
 
     def lookupIDVal(self, name):
-        """Returns the value associated with the ~~ID of the given *name* if
-        it exists in the Module scope, and *None* otherwise."""
-
+        """Looks up the value associated with an ID in the module's scope. 
+        
+        name: string - The name of the ID to lookup (see :meth:`addID` for the
+        lookup rules used for qualified names).
+        
+        Returns: any - The value associated with the ID, or None if the name
+        is not found.
+        """
         # Need the tmp just for the name splitting. 
         tmp = idmod.ID(name, type.Type, 0) 
         idx = self._canonName(tmp)

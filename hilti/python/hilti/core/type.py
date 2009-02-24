@@ -10,25 +10,30 @@ import util
 ### Base classes
 
 class Type(object):
-    """The base class for all data types provided by the HILTI language. 
-    *name* is a string with a name of the type in a readable form, used in
-    error messages and debugging output. *docname* is an optional string which
-    is used instead of *name* in the automatically generated instruction
-    documentation; it is not used anywhere else.
+    """Base class for all data types provided by the HILTI language.  
     
-    Throughout the HILTI compiler, type compatibility is checked with the +==+
-    operator of Type objects. A comparision of the form +t == other+, where
-    *t* is an instance of Type (including any derived class), is performed in
-    the following way:
+    name: string - The name of type in a readable form suited to present to
+    the user (e.g., in error messages and debugging output). 
+    
+    docname: streing - Optional string which, if given, will be used in the
+    automatically generated instruction documentation instead of *name*; it is
+    not used anywhere else than in the documentation.
+
+    Note:
+    
+    Throughout the HILTI compiler, type compatibility is checked by applying
+    Python's ``==`` operator to Type-derived objects. A comparision of the
+    form ``t == other``, with *t* being an instance of Type or any derived
+    class, is performed according to these rules:
     
     * If *other* is likewise an instance of Type, the two types match
-      according to the following rules:
+      according to the following conditions:
     
       1. If the two types are instances of the same class (exact match; *not*
-         including any common ancestors), the match succeeds if the
-         type-specific :meth:`cmpWithSameType` method returns *True*. The
-         default implementation of this method in Type compares the results of
-         two object's :class:`name` method. 
+         considering any common ancestors), the match succeeds if the
+         type-specific :meth:`cmpWithSameType` method returns True. The
+         default implementation of this method as defined in Type compares the
+         results of two objects :class:`name` method. 
          
       2. If either of the two types is an instance of ~Any, the match succeeds.
       
@@ -42,10 +47,10 @@ class Type(object):
       elements contained therein, and the match succeeds if at least one
       element matches with *t*. 
 
-    * In all other cases, the comparision yields *False*.
-    
+    * In all other cases, the comparision yields False.
+      
     Any class derived from Type must include a class-variable +_name+
-    containing a string that is suitable for using in error messages to
+    containing a string that is suitable for use in error messages to
     describes the HILTI type that the class is representing. 
     """
     def __init__(self, name, docname=None):
@@ -53,19 +58,29 @@ class Type(object):
         self._docname = docname if docname else name
     
     def name(self):
-        """Returns a string with the name of the type in a readable form."""
+        """Returns the name of the type.
+        
+        Returns: string - The name of the type.
+        """
         return self._name
     
     def docname(self):
-        """Returns a string with the name of the type suitable for use in the
-        automatically generated instruction documentation."""
+        """Returns the name of the type as used in the instruction
+        documentation.
+        
+        Returns: string - The documentation name of the type.
+        """
         return self._docname
 
     def cmpWithSameType(self, other):
-        """Compares object with another one of the *same* class. Returns True
-        if they are compatible. This method can be overriden by derived
-        classes; the default implementation compares the results of two
-        :meth:`name` methods.""" 
+        """Compares with another objects of the same class. The default
+        implementation compares the results of the two instances'
+        :meth:`name`` methods. Derived classes can override the method 
+        to implement their own type checking.
+        
+        Returns: bool - True if the two objects are compatible. 
+        """
+        assert self.__class__ == other.__class__
         return self.name() == other.name()
     
     def __str__(self):
@@ -112,13 +127,22 @@ class Type(object):
     _name = "type"
 
 class HiltiType(Type):
-    """Base class for all types which can be directly instantiated by the user
-    in a HILTI program, either in global/local variable or on the heap. 
-    *args* is list of type parameters; for non-parametrized types it will be
-    the empty list. *name* and *docname* are the same as for ~~Type.
+    """Base class for all HILTI types that can be directly instantiated
+    in a HILTI program. That includes use in global and local variables, as
+    well as allocation on the heap. 
     
-    If a derived class detects an error with any of the arguments, it must
-    raise an ~~ParameterMismatch exception."""
+    args: list of any - Type parameters, or the empty list for
+    non-parameterized types.  If a derived class detects an error with any of
+    the arguments, it must raise a ~~ParameterMismatch exception.
+    
+    name: string - Same as for :meth:`~hilti.core.type.type`.
+    docname: string - Same as for :meth:`~hilti.core.type.type`.
+    
+    Raises: ~~ParameterMismatch - Raised when there's a problem with one of
+    the type parameters. The error should not have been reported to the user
+    already; an error message will be constructed from the exeception's
+    information.
+    """
     def __init__(self, args, name, docname=None):
         if args:
             name = "%s<%s>" % (name, ",".join([str(arg) for arg in args]))
@@ -128,9 +152,11 @@ class HiltiType(Type):
     _name = "HILTI type"
         
     class ParameterMismatch(Exception):
-        """Exception class to indicate a problem with type parameter. *param*
-        is the parameter which caused the trouble, and *reason* is a string
-        that explains what's wrong with it."""
+        """Exception class to indicate a problem with a type parameter.
+        
+        param: any - The parameter which caused the trouble.
+        reason: string - A string explaining what went wrong.
+        """
         def __init__(param, reason):
             self._param = param
             self._reason = reason
@@ -140,11 +166,10 @@ class HiltiType(Type):
 
         
 class StorageType(HiltiType):
-    """Base class for all types that can be directly stored in a HILTI global
-    or local variable (as opposed types derived from ~~HeapType, which must be
-    allocated on the heap and can only be accessed via a ~~Reference). Types
-    derived from StorateType cannot be allocated on the heap. The arguments
-    are the same as for ~~HiltiType.
+    """Base class for all types that can be directly stored in a HILTI
+    variable. Types derived from StorateType cannot be allocated on the heap.
+    
+    The arguments are the same as for ~~HiltiType.
     """
     def __init__(self, args, name, docname=None):
         super(StorageType, self).__init__(args, name, docname=docname)
@@ -152,10 +177,11 @@ class StorageType(HiltiType):
     _name = "storage type"
         
 class HeapType(HiltiType):
-    """Base class for all types that must be allocated on the heap and can
-    only be accessed via a ~~Reference (as opposed to types derived from
-    ~~StorageType, which can be directly stored in a HILTI global or local
-    variable). The arguments are the same as for ~~HiltiType.
+    """Base class for all types that must be allocated on the heap. Types
+    derived from HeapType cannot be stored directly in variables and only
+    accessed via a ~~Reference. 
+    
+    The arguments are the same as for ~~HiltiType.
     """
     def __init__(self, args, name, docname=None):
         super(HeapType, self).__init__(args, name, docname=docname)
@@ -163,9 +189,10 @@ class HeapType(HiltiType):
     _name = "heap type"
     
 class OperandType(Type):
-    """Base class for all types that can only be as operands or function
-    arguments but not stored in a variable or on the heap. The arguments are
-    the same as for ~~Type.
+    """Base class for all types that can only be used as operands and function
+    arguments. These types cannot be stored in variables nor on the heap. 
+    
+    The arguments are the same as for ~~Type.
     """
     def __init__(self, name, docname=None):
         super(OperandType, self).__init__(name, docname=docname)
@@ -173,8 +200,11 @@ class OperandType(Type):
     _name = "operand type"
     
 class TypeDeclType(Type):
-    """Base class for types that represent a custom, user-declared HILTI type.
-    *t* is the declared type. *name* and *docname* are the same as for ~~Type.
+    """Base class for types that represent a custom user-declare HILTI type.
+    
+    t: ~~Type - The declared type.
+    name: string - Same as for :meth:`~hilti.core.type.type`.
+    docname: string - Same as for :meth:`~hilti.core.type.type`.
     """
     def __init__(self, t, name, docname=None):
         super(TypeDeclType, self).__init__(name, docname)
@@ -189,18 +219,20 @@ class TypeDeclType(Type):
 # Actual types.    
 
 class String(StorageType):
-    """A type for strings."""
+    """Type for strings."""
     def __init__(self):
         super(String, self).__init__([], String._name)
         
     _name = "string"
         
 class Integer(StorageType):
-    """A type for integers.  *args* must be a list containing a single
-    integer, specifying the bit-width of values represented by this type. The
-    width can be zero to match any other integer types independent of their
-    width. Note that the HILTI language does not allow to *use* integers of
-    width zero however."""
+    """Type for integers.  
+    
+    args: int, or a list containing a single int - The integer specifies
+    the bit-width of integers represented by this type. The width can be zero
+    to match any other integer type independent of its widget. Note however
+    that the HILTI language does not allow to use integers of width zero.
+    """
     def __init__(self, args):
         
         if type(args) == types.IntType:
@@ -216,14 +248,19 @@ class Integer(StorageType):
             raise ParameterMismatch(args[0], "cannot convert to integer")
             
     def width(self):
-        """Returns the bit-width of integers represented by this type. If the
-        returned width is zero, this type matches all other integer types
-        independent of their width."""
+        """Returns the bit-width of the type's integers.
+        
+        Returns: int - The number of bits available to represent integers of
+        this type. If the returned width is zero, the type matches all other
+        integer types. 
+        """
         return self._width
 
     def setWidth(self, width):
-        """Set the bit-width of integers represented by this type to the
-        integer *width*."""
+        """Sets the bit-width of the type's integers.
+        
+        width: int - The new bit-width. 
+        """
         self._width = width
     
     def cmpWithSameType(self, other):
@@ -235,38 +272,47 @@ class Integer(StorageType):
     _name = "int"
     
 class Bool(StorageType):
-    """A type for boolean values."""
+    """Type for booleans."""
     def __init__(self):
         super(Bool, self).__init__([], Bool._name)
         
     _name = "bool"
     
 class Struct(StorageType):
-    """The Type for structs. *fields* is list of ~~ID objects defining the fields of
-    the struct."""
+    """Type for structs. 
+    
+    fields: list of ~~ID - The IDs defined the fields of the struct.
+    """
     def __init__(self, fields):
         name = "struct { %s }" % ", ".join(["%s %s" % (id.name(), id.type().name()) for id in fields])
         super(Struct, self).__init__([], name)
         self._ids = fields
     
     def Fields(self):
-        """Returns the list of ~~ID objects defining the fields of the
-        struct."""
+        """Returns the struct's fields.
+        
+        Returns: list of ~~ID - The struct's fields.
+        """
         return self._ids
 
     _name = "struct"
     
 class StructDecl(TypeDeclType):
-    """The Type for the declration of custom struct types. *structt* is the
-    ~~Struct which is declared."""
+    """Type for struct declarations. 
+    
+    structt: ~~Struct - The struct type declared.
+    """
     def __init__(self, structt):
         super(StructDecl, self).__init__(structt, "<struct decl> %s" % structt.name())
         
     _name = "struct declaration"
     
 class Function(Type):
-    """A type for functions. *args* is a list of ~~ID objects representing the
-    function's arguments. *resultt* is the result ~~Type of the function.""" 
+    """Type for functions. 
+    
+    args: list of ~~ID - The function's arguments. 
+    resultt - ~~Type - The type of the function's return value (~~Void for none). 
+    """
     def __init__(self, args, resultt):
         name = "(function (%s) -> %s)" % (", ".join([str(id.type()) for id in args]), resultt)
         super(Function, self).__init__(name)
@@ -274,13 +320,18 @@ class Function(Type):
         self._result = resultt
         
     def Args(self):
-        """Returns the list of ~~ID objects representing the function's
-        arguments."""
+        """Returns the functions's arguments.
+        
+        Returns: list of ~~ID - The function's arguments. 
+        """
         return self._ids
     
     def getArg(self, name):
-        """Returns the ~~ID corresponding to the given argument *name*, or
-        *None* if there is no such argument."""
+        """Returns the named function argument. 
+        
+        Returns: ~~ID - The function's argument with the given name, or None
+        if there is no such arguments. 
+        """
         for id in self._ids:
             if id.name() == name:
                 return id
@@ -288,44 +339,48 @@ class Function(Type):
         return None
     
     def resultType(self):
-        """Returns the function's result ~~Type."""
+        """Returns the functions's result type.
+        
+        Returns: ~~Type - The function's result. 
+        """
         return self._result
 
     _name = "function"
 
 class Label(OperandType):
-    """A type for block labels."""
+    """Type for block labels."""
     def __init__(self):
         super(Label, self).__init__("label")
 
     _name = "label"
     
 class Void(OperandType):
-    """A type used to indicate that a ~~Function does not return any value."""
+    """Type representing a non-existing function result."""
     def __init__(self):
         super(Void, self).__init__("void")
         
     _name = "void"
     
 class Any(OperandType):
-    """A wildcard type that matches any other ~~Type."""
+    """Wildcard type that matches any other type."""
     def __init__(self, name):
         super(Any, self).__init__("any")
 
     _name = "any"
 
 class Unknown(OperandType):
-    """A place-hilder type to indicate that we don't know the type yet. Used
-    during parsing"""
+    """Place-holder type when the real type is unknown. This type is used
+    during parsing when the final types have not been determined yet."""
     def __init__(self):
         super(Unknown, self).__init__("unknown")
 
     _name = "unknown"
     
 class Tuple(OperandType):
-    """A type to represent a tuple of values. *types* is a list of ~~Type
-    objects indicated the types of the tuple members."""
+    """A type for tuples of values. type to represent a tuple of values.
     
+    types: list of ~~Type - The types of the individual tuple elements. 
+    """
     def __init__(self, types):
         super(Tuple, self).__init__("(%s)" % ", ".join([t.name() for t in types]))
         self._types = types
@@ -334,17 +389,24 @@ class Tuple(OperandType):
     _name = "tuple"
 
 def Optional(t):
-    """Returns an object that can be used as an ~~instruction's operand type
-    to indicate that the operand is optional. *t* is the ~~Type the operand
-    must have if it's there.
+    """Returns a type representing an optional operand. The returns
+    object can be used with an ~~Instruction operand to indicate
+    that it should be either of type *t* or not given at all.
     
-    Note: This is just a short-cut for the tuple +(None, t)+.
+    t: ~~Type *class* - The type the operand must have if it's specified.
+    
+    Note: This is just a short-cute for using +(None, t)+.
     """
     return (None, t)
 
 def isOptional(t):
-    """Returns *True* if the given ~~Type *type* represents an optional type as
-    returned by ~~Optional."""
+    """Checks whether an operand is optional. To be recognized as optional,
+    *t* must be of the form returned by ~~Optional.
+    
+    t: class derived from ~~Type - The type to be tested. 
+    
+    Returns: boolean - True if *t* is optional as returned by ~~Optional.
+    """
     if type(t) != types.TupleType and type(t) != types.ListType:
         return False
     
@@ -371,9 +433,18 @@ def _matchWithTypeClass(t, cls):
     return isinstance(t, cls)
 
 def fmtTypeClass(cls, doc=False):
-    """Returns a readable representation of the class *cls*; can be a tuple of
-    classes."""
-
+    """Returns a readable representation of a type class.
+    
+    cls: class derived from ~~Type, or a list/tuple of such classes - The type
+    to be converted into a string; if a list or tuple is given, all elements
+    are converted individually and merged in tuple-syntax.
+    
+    doc: boolean - If true, the string is formatted for inclusion into the
+    automatically generated documentation; the format then will be slightly
+    different.
+    
+    Returns: string - The readable representation.
+    """
     if cls == None:
         return "none"
     
@@ -403,12 +474,16 @@ _keywords = {
     }
 
 def getHiltiType(name, args):
-    """Instantiates a ~~HiltiType, based on the given name and type
-    parameters. Returns a tuple *(success, result)*. If *success* is *True*,
-    the type was successfully created and result will be the corresponding
-    ~~HiltiType. If *success* is *False*, there was an error and *result* will
-    contain a string with an error message."""
+    """Instantiates a ~~HiltiType from a type name. 
     
+    *name*: string - The name of type as used in HILTI programs. 
+    *args*: list of any - A list of type parameters if the type is
+    parametrized; the empty list for non-parameterized types.
+    
+    Returns: tuple (success, result) - If *success* is True, the type was
+    successfully instantiated and *result* will be the newly created type
+    object. If *success* is False, there was an error and *result* will be a
+    string containing an error message."""
     try:
         (cls, numargs, defs) = _keywords[name]
     except KeyError:
@@ -433,8 +508,12 @@ def getHiltiType(name, args):
         return (False, str(e))
 
 def getHiltiTypeNames():
-    """Returns a list of names of all ~HiltiType types that can directly be
-    instantiated in a HILTI program."""
+    """Returns a list of HILTI types. The list contains the names of all types
+    that correspond to a ~~HiltiType-derived class. The names can be used with
+    :meth:`getHiltiType` to instantiate a corresponding type object.
+    
+    Returns: list of strings - The names of the types.
+    """
     return _keywords.keys()
     
     

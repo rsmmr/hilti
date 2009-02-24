@@ -4,99 +4,109 @@ import ast
 import location
 
 class Block(ast.Node): 
-    """A Block models a series of instructions that is executed in sequence. 
+    """Groups a series of instructions that are to be executed in sequence.
+    Multiple blocks can be chained to indicate where control-flow is
+    transfered to when a block's last instruction has been executed (assuming
+    it did not explictly transfer control-flow otherwise).
+
+    function: ~~Function - The parent function the block is a part of. 
     
-    A *well-formed* Block is a Block with exactly one |terminator|,
-    and this terminator must be the very last instruction. A Block
-    can be not well-formed during construction, and the
-    ~~canonifier will eventually turn it into a
-    well-formed one.
+    may_remove: bool - If True, the ~~canonifier is allowed to
+    remove this block of it's empty.
+    
+    instructions: list of ~~Instruction - The initial list of
+    instructions.
+    
+    name: string - An optional name for the block, to be used in
+    ~~Labels. 
+
+    location: ~~Location - A location to be associated with the block. 
     """
     
-    def __init__(self, function, may_remove=True, instructions =
-        None, name = None, location = None):
-        """Initializes a Block. 
-        
-        The *function* is the parent
-        ~~Function this Block is a part
-        of. *may_remove* is a boolen indicating whether
-        ~~canonifier is allowed to remove this Block if
-        it's empty. *instructions* is the initial list of
-        ~~Instruction objects. The
-        Block is optionally given a string *name*, and a *location*
-        as a ~~Location."""
-        
+    def __init__(self, function, may_remove=True, instructions = None, name = None, location = None):
+        super(Block, self).__init__(location)
         self._function = function
         self._ins = instructions if instructions else []
         self._name = name
-        self._location = location
         self._next = None
         self._may_remove = may_remove
 
     def function(self):
-        """(A) Returns the parent ~~Function of this Block.
+        """Returns the block's parent function. 
         
-        (B) Returns the parent :class:`~hilti.core.function.Function` of this Block.
+        Returns: ~~Function - The parent.
         """
         return self._function
         
     def instructions(self):
-        """Returns the list of
-        ~~Instruction objects forming
-        this Block."""
+        """Returns the block's instructions.
+        
+        Returns: list of ~~Instruction - The instructions.
+        """
         return self._ins
 
     def addInstruction(self, ins):
-        """Adds an ~~Instruction
-        *ins* to the end of the current list."""
+        """Adds an instruction to the block. The instruction is appended to
+        the current list of instructions. 
+        
+        ins: ~~Instruction - The instruction to add.
+        """
         self._ins += [ins]
 
     def replace(self, other):
-        """Replaces the instruction sequence of this Block, as well as the
-        name and the location information, with that of the given Block. This
-        allows for an in-place substitution. Does not change the results of 
-        :meth:`function`, :meth:`next`, and :meth:`mayRemove`."""
+        """Replaces the block's content with that of another block. It
+        replaces the block's instructions, its name and its location
+        information, allowing for in-place modification. The method does not
+        change the results of :meth:`function`, :meth:`next`, and
+        :meth:`mayRemove`.
+        
+        other: The block to take the content from. The other block is left
+        untouched.
+        """
         self._ins = other._ins
         self._name = other._name
         self._location = other._location
     
     def name(self):
-        """Returns the name of this Block as a string."""
+        """Returns the name of the block 
+        
+        Returns: string - The name.
+        """
         return self._name
 
     def setName(self, name):
-        """Sets the name of this Block to the string *name*."""
+        """Sets the name of the block.
+        
+        name: string - The name of the block.
+        """
         self._name = name
     
     def next(self):
-        """Returns this Block's successor Block. The successor is the Block
-        where control is transfered to after executing the last instruction
-        (if the last instruction is a a flow-control instruction, that takes
-        precedent)."""
+        """Returns the block's successor. Blocks are linked        
+        
+        Returns: ~~Block - The block's successor.
+        """
         return self._next
     
-    def setNext(self, b):
-        """Sets this Block's successor Block to *b*. The successor is the
-        Block where control is transfered to after executing the last
-        instruction (if the last instruction is a a flow-control instruction,
-        that takes precedent)."""
-        self._next = b
+    def setNext(self, succ):
+        """Sets the Block's successor. 
+        
+        succ: ~~Block: The new successor.
+        """
+        self._next = succ
     
-    def location(self):
-        """Returns the ~~Location object for this
-        Block."""
-        return self._location
-
     def setMayRemove(self, may):
-        """If the boolean *may* is true, the ~~canonifier is
-        allowed to remove this Block in case it does not have any
-        instructions. The default is True."""
+        """Indicates whether the block can be removed from a function if empty. 
+        
+        may: bool: True if removal is permitted.
+        """
         self._may_remove = may
         
     def mayRemove(self):
-        """Returns a boolean indicating whether the ~~canonifier
-        is allowed to remove this Block in case it does not have any
-        instructions."""
+        """Queries whether whe block can be removed from a function if empty. 
+        
+        Returns: bool - If True, block may be removed.
+        """
         return self._may_remove
 
     def __str__(self):
