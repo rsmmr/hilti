@@ -78,3 +78,72 @@ def internal_error(msg, component=None, context=None):
     _print(component, "internal error", msg, context)
     assert False
     
+
+def expand_escapes(str):
+    """Expands escape sequences. The following escape sequences are supported:
+    
+    ---------  ------
+    Escape     Result
+    ---------  ------
+    \\         Backslash
+    \n         Line feed
+    \r         Carriage return
+    \t         Tabulator
+    \uxxxx     16-bit Unicode codepoint
+    \uxxxxxxxx 32-bit Unicode codepoint
+    
+    str: string - The string to expand. 
+    
+    Returns: unicode - A unicode string with escape sequences expanded.
+    
+    Raises: ValueError - Raised when an illegal sequence was found. 
+    """
+    
+    result = u""
+    i = 0
+    
+    while i < len(str):
+        
+        c = str[i]
+        i += 1
+        
+        try:
+            if c == "\\":
+                c = str[i]
+                i += 1
+                
+                if c == "\\":
+                    result += "\\"
+                elif c == "n":
+                    result += "\n"
+                elif c == "r":
+                    result += "\r"
+                elif c == "t":
+                    result += "\t"
+                elif c == "\"":
+                    result += "\""
+                elif c == "u":
+                    result += unichr(int(str[i:i+4], 16))
+                    i += 4
+                elif c == "U":
+                    result += unichr(int(str[i:i+8], 16))
+                    i += 8
+                else:
+                    raise ValueError
+                
+            else:
+                result += c
+                    
+        except IndexError:
+            raise ValueError
+            
+    return result
+                
+                
+                
+            
+            
+            
+                
+            
+    

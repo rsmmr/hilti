@@ -6,6 +6,8 @@ import sys
 import llvm
 import llvm.core 
 
+global_id = id
+
 from hilti.core import *
 from hilti import instructions
 
@@ -595,7 +597,23 @@ class CodeGen(visitor.Visitor):
 
         return func
 
-    # Returns LLVM function for the given block, creating one if it doesn't exist yet. 
+    def llvmGetFunction(self, func):
+        """Returns the LLVM function for the given function. If the LLVM
+        function doesn't exist yet, it will be created. This method can only be
+        used for functions with ~~Linkage ~~HILTI.
+        
+        func: ~~Function - The function. 
+        
+        Returns: llvm.core.Function - The LLVM function.
+        """
+        assert func.callingConvention() == function.CallingConvention.HILTI
+        
+        try:
+            name = self.nameFunction(func)
+            return self._llvm.functions[name]
+        except KeyError:        
+            return self.llvmCreateFunction(func)
+    
     def llvmGetFunctionForBlock(self, block):
         """Returns the LLVM function for a block. If the LLVM function doesn't
         exist yet, it will be created.
@@ -611,7 +629,6 @@ class CodeGen(visitor.Visitor):
         except KeyError:
             return self.llvmCreateFunction(block.function(), name)
 
-    # Returns LLVM for external C function.
     def llvmGetCFunction(self, func):
         """Returns the LLVM function for an external C function. If the LLVM
         function doesn't exist yet, it will be created.
@@ -641,11 +658,18 @@ class CodeGen(visitor.Visitor):
             self._llvm.functions[name] = llvmfunc
             return llvmfunc
 
-    # Generates a call to a C function.
-    # FIXME: If the LLVM type differs from the one supposed to be used
-    # for the C call, we don't convert yet and thus will likely get
-    # a "bad signature" assertion. See llvmOpToC.
     def llvmGenerateCCall(self, function, args):
+        """Generates a call to a C function. The method uses the current
+        :meth:`builder`.
+        
+        function: ~~Function - The function, which must have ~~C ~~Linkage.
+        args: list of llvm.core.Value - The arguments to pass to the function.
+        
+        Todo: If the LLVM type differs from the one supposed to be used for
+        the C call, we don't convert yet and thus will likely get a ``bad
+        signature`` assertion. See ~~llvmOpToC.
+        """
+        
         llvm_func = self.llvmGetCFunction(function)
         
         tag = None
@@ -656,9 +680,17 @@ class CodeGen(visitor.Visitor):
         
         call.calling_convention = llvm.core.CC_C
 
-    # Raises the named exception. The is the corresponding C name from
-    # libhilti/execeptions.cc.
     def llvmRaiseException(self, exception):
+        """Generates the raising of an exception. The method uses the current
+        :meth:`builder`.
+        
+	    exception: string - The name of the internal global variable
+        representing the exception to raise. These names are defined in 
+        :path:`libhilti/exceptions.cc`.
+        
+        Note: Exception support is preliminary and will very likely change at
+        some point in its specifics.
+        """
         
         # ptr = *__frame.bf.cont_exception.succesor
         fpt = self.llvmTypeBasicFunctionPtr()
@@ -676,15 +708,6 @@ class CodeGen(visitor.Visitor):
         self.llvmInit(exc, addr)
         
         self.llvmGenerateTailCallToFunctionPtr(ptr, [frame])
-
-    # Returns the LLVM function for the given function if it was already
-    # created; creates it otherwise.
-    def llvmFunction(self, function):
-        try:
-            name = self.nameFunction(function)
-            return self._llvm.functions[name]
-        except KeyError:        
-            return self.llvmCreateFunction(function)
         
     # Generates LLVM tail call code. From the LLVM 1.5 release notes:
     #
@@ -713,113 +736,88 @@ class CodeGen(visitor.Visitor):
         self.popBuilder();
         self.pushBuilder(None)
         
-#    def _llvmGenerateTailCall(self, llvm_func, args):
-#        if function.type().resultType() == type.Void:
-#            self.builder().call(llvm_func, args)
-#            self.builder().ret_void()
-#        else:
-#            result = self.builder().call(llvm_func, args, "result")
-#            result.calling_convention = llvm.core.CC_FASTCALL
-#            self.builder().ret(result)    
-            
-            
     def llvmGenerateTailCallToBlock(self, block, args):
+        """Generates a tail call to a block's function. We generate a separate
+        LLVM function for each ~~Block, which can then be called with via this
+        method. The method uses the current :meth:`builder`.
+        
+        block: ~~Block - The block to call the function for. 
+        args: list of llvm.core.Value - The arguments to pass to the function.
+        """
         llvm_func = self.llvmGetFunctionForBlock(block)
         self._llvmGenerateTailCall(llvm_func, args)
             
-    def llvmGenerateTailCallToFunction(self, function, args):
-        llvm_func = self.llvmFunction(function)
+    def llvmGenerateTailCallToFunction(self, func, args):
+        """Generates a tail call to a function. The function must have
+        ~~Linkage ~HILTI. The method uses the current :meth:`builder`. 
+        
+        function: ~~Function - The function, which must have ~~HILTI ~~Linkage.
+        args: list of llvm.core.Value - The arguments to pass to the function.
+        """
+        assert func.callingConvention() == function.CallingConvention.HILTI
+        llvm_func = self.llvmGetFunction(func)
         assert llvm_func
         self._llvmGenerateTailCall(llvm_func, args)
 
     def llvmGenerateTailCallToFunctionPtr(self, ptr, args):
+        """Generates a tail call to a function pointer. The function being
+        pointed to must have ~~Linkage ~HILTI. The method uses the current
+        :meth:`builder`. 
+        
+        function: ~~llvm.core.Pointer - The pointer to a function. 
+        args: list of llvm.core.Value - The arguments to pass to the function.
+        """
         self._llvmGenerateTailCall(ptr, args)
         
-    # Turns an operand into LLVM speak.
-    # Can only be called when working with a builder for the current function. 
-    #
-    # We do only a very limited amount of casting here, currently only:
-    #    - Integer constants which don't have a width can be casted to one
-    #      with a width.
-    
-    def llvmOp(self, op, cast_to_type=None):
-        """Converts an instruction operand into an LLVM value.
-        
-        op: ~~Operand - The operand to be converted.
-        
-        cast_to_type: ~~Type - A type to which the operand's value should be
-        converted first. Note that casting is extremely limited: the only
-        supported case is casting integer constants that don't have a width
-        specified to an integer that has. 
-        
-        Returns: llvm.core.Value - The LLVM value of the operand that can then
-        be used, e.g., in subsequent LLVM load and store instructions.
-        
-        Todo: We currently support only a subset of operand types: integer and
-        string constants, and IDOperands referencing local variables. Others
-        need to be added. Furthermore, it's not nice that the ConstOperand
-        types are hard-coded here. We should probably move to an
-        convertToLLVM-style per-type decorator.
-        """
-        
-        if isinstance(op, instruction.ConstOperand):
-            # Allow limit integer casting.
-            if cast_to_type and isinstance(cast_to_type, type.Integer) and \
-               isinstance(op.type(), type.Integer) and \
-               op.type().width() == 0 and cast_to_type.width() != 0:
-                return llvm.core.Constant.int(llvm.core.Type.int(cast_to_type.width()), op.value())
-            
-            if isinstance(op.type(), type.Integer):
-                return llvm.core.Constant.int(llvm.core.Type.int(op.type().width()), op.value())
-        
-            if isinstance(op.type(), type.String):
-                return llvm.core.Constant.string(op.value())
-        
-        # No casts allowed.
-        assert not cast_to_type or cast_to_type == op.type() 
-        
-        if isinstance(op, instruction.IDOperand):
-            i = op.id()
-            if i.role() == id.Role.LOCAL or i.role() == id.Role.PARAM:
-                # A local variable.
-                addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.name())
-                return self.builder().load(addr, "op")
-                        
-        util.internal_error("llvmOp: unsupported operand type %s" % op.type())
-
-    # Turns an operand into LLVM speak suitable for passing to a C function.
-    # FIXME: We need to do the conversion.
-    def llvmOpToC(self, op, cast_to_type=None):
-        return self.llvmOp(op, cast_to_type)
-        
-    # Acts like a builder.store() yet signals that the assignment
-    # initializes the address for the first time, there hasn't been anything else
-    # stored at addr previously.
-    # 
-    # Currently, this indeed just turns into a builder.store(), however if we eventually
-    # turn to reference counting, this will bne adapted accordingly. 
     def llvmInit(self, value, addr):
+        """Initializes a formerly unused address with a value. This
+        essentially acts like a ``builder().store(value, addr)``. However, it
+        must be used instead of that to indicate that a formerly
+        non-initialized variable is being written to the first time. 
+        
+        Note: Currently, this is in fact just a ``store()`` operation. In the
+        future however we might add more logic here, e.g., if using reference
+        counting.
+        
+        Todo: This is not called for function parameters/returns yet.
+        """
         self.builder().store(value, addr)
         
-    # Acts like a builder.store() yet signals that the assignment
-    # overrides an address that might have stored a value previously already. 
-    # 
-    # Currently, this indeed just turns into a builder.store(), however if we eventually
-    # turn to reference counting, this will bne adapted accordingly. 
-    #
-    # FIXME: Function call/returns don't call these yet. 
     def llvmAssign(self, value, addr):
+        """Assignes a value to an address that has already been initialized
+        earlier. This essentially acts like a ``builder().store(value,
+        addr)``. However, it must be used instead of that to indicate that a
+        formerly initialized variable is being changed. 
+        
+        Note: Currently, this is in fact just a ``store()`` operation. In the
+        future however we might add more logic here, e.g., if using reference
+        counting.
+        
+        Todo: This is not called for function parameters/returns yet.
+        """
         self.builder().store(value, addr)
             
-    # Acts like builder.malloc() but might in the future do more to 
-    # faciliate garbage collection.
     def llvmMalloc(self, type):
+        """Allocates memory for the given type. This essentially acts like a
+        ``builder().malloc(type)``. However, it must be used instead of
+        that in case further tasks are associated with such a malloc.
+
+        Note: Currently, this is in fact just a ``malloc()`` operation. In the
+        future however we might add more logic here, e.g., if using garbage
+        collection.
+        """
         return self.builder().malloc(type)
         
-    # Stores value in target. 
-    #
-    # Can only be used when working with a builder for the current function. 
     def llvmStoreInTarget(self, target, val):
+        """Stores a value in a target operand. The method uses the current
+        :meth:`builder`. 
+        
+        target: ~~IDOperand - The target operand. 
+        val: llvm.core.Value - The value to store.
+        
+        Todo: Currently, stores are only supported for local variables, not
+        globals.
+        """
         if isinstance(target, instruction.IDOperand):
             i = target.id()
             if i.role() == id.Role.LOCAL or i.role() == id.Role.PARAM:
@@ -830,56 +828,153 @@ class CodeGen(visitor.Visitor):
                 
         util.internal_error("targetToLLVM: unknown target class: %s" % target)
 
-    # Table of callbacks for type conversions. 
-    _CONV_TYPE_TO_LLVM = 1
-    _CONV_TYPE_TO_LLVM_C = 2
+    # Table of callbacks for conversions. 
+    _CONV_CONST_TO_LLVM = 1
+    _CONV_TYPE_TO_LLVM = 2
+    _CONV_TYPE_TO_LLVM_C = 3
     
-    _Conversions = { _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [] }
+    _Conversions = { _CONV_CONST_TO_LLVM: [], _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [] }
 
-    # Converts a StorageType into the corresponding type for LLVM variable declarations.
-    def llvmTypeConvert(self, type):
-        for (t, func) in CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM]:
+    def _callConvCallback(self, kind, type, args, must_find=True):
+        for (t, func) in CodeGen._Conversions[kind]:
             if isinstance(type, t):
-                return func(type)
+                return func(*args)
             
-        util.internal_error("llvmConvertType: cannot translate type %s" % type.name())
-
-    # Converts a StorageType into the corresponding type for passing to a C function. 
-    def llvmTypeConvertToC(self, type):
-        for (t, func) in CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM_C]:
-            if isinstance(type, t):
-                return func(type)
-
-        # Fall back as default.
-        return self.llvmTypeConvert(type)
-
-    ### Decorators.
+        if must_find:
+            util.internal_error("_callConvCallback: unsupported object %s for conversion type %d" % (repr(obj), kind))
+            
+        return None
     
-    # Decorator @convertToLLVM(type) to define a conversion from a StorageType
-    # to the corresponding LLVM type.
-    def convertToLLVM(self, type):
+    def llvmOp(self, op, cast_to=None):
+        """Converts an instruction operand into an LLVM value.
+        
+        op: ~~Operand - The operand to be converted.
+        
+        cast_to: ~~Type - A type to which the operand's value should be
+        converted to first. Note that supported casting depends on the type,
+        and is generally extremely limited and will fail except for a few very
+        specific cases.
+        
+        Returns: llvm.core.Value - The LLVM value of the operand that can then
+        be used, e.g., in subsequent LLVM load and store instructions.
+        
+        Todo: We currently support only operands type ~~IDOperand and
+        ~~ConstOperand, and for ~~IDOperand only those referencing local
+        variables.
+        """
+
+        type = op.type()
+        
+        if isinstance(op, instruction.ConstOperand):
+            return self._callConvCallback(CodeGen._CONV_CONST_TO_LLVM, type, [op, cast_to])
+
+        assert (not cast_to or cast_to == type)
+        
+        if isinstance(op, instruction.IDOperand):
+            i = op.id()
+            if i.role() == id.Role.LOCAL or i.role() == id.Role.PARAM:
+                # A local variable.
+                addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.name())
+                return self.builder().load(addr, "op")
+
+            util.internal_error("llvmOp: unsupported ID operand type %s" % type)
+            
+        util.internal_error("llvmOp: unsupported operand type %s" % type)
+
+    def llvmOpToC(self, op, cast_to=None):
+        """Converts an instruction operand into an LLVM value suitable to pass
+        to a C function. In general, a C function may expected a different
+        type for a parameter than a HILTI function would for the same
+        argument. 
+        
+        op: ~~Operand - The operand to be converted.
+        
+        cast_to: ~~Type - A type to which the operand's value should be
+        converted first. Note that casting is extremely limited: the only
+        supported case is casting integer constants that don't have a width
+        specified to an integer that has. 
+        
+        Returns: llvm.core.Value - The LLVM value of the operand that can then
+        be used, e.g., in subsequent LLVM load and store instructions.
+        
+        Todo: At the moment this is in fact just an alias for ~~llvmOp; for
+        our current types that's sufficient. However, we will likely need to
+        implement a separate type conversion at some point. 
+        """
+        return self.llvmOp(op, cast_to)
+
+    def llvmTypeConvert(self, type):
+        """Converts a StorageType into the LLVM type used for corresponding
+        variable declarations.
+        
+        type: ~~StorageType - The type to converts.
+        
+        Returns: llvm.core.Type - The corresponding LLVM type for variable declarations.
+        """ 
+        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM, type, [type])
+
+    def llvmTypeConvertToC(self, type):
+        """Converts a StorageType into the LLVM type used for passing to C
+        functions. 
+        
+        type: ~~StorageType - The type to converts.
+        
+        Returns: llvm.core.Type - The corresponding LLVM type for passing to C functions
+        """ 
+        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM, type, [type], must_find=False)
+        if ll:
+            return ll
+        
+        # Fall back.
+        return self.llvmTypeConvert(type)
+    
+    ### Decorators.
+
+    def convertConstToLLVM(self, type):
+        """Decorator to define a conversion from a ConstOperand to the
+        corresponding LLVM constant. The decorated function will receive two
+        parameters *op* and *cast_to*. The former is the instance of
+        ~~ConstOperand to be converted; the latter is a ~~Type to which the
+        operand's value should be converted to first. If a conversion function
+        receives a *cast_to* type it can't handle, it must abort via an
+        ``assert``. 
+        
+        type: ~~StorageType - The type for which the conversion is being defined.
+        """
+        def register(func):
+            CodeGen._Conversions[CodeGen._CONV_CONST_TO_LLVM] += [(type, func)]
+    
+        return register
+    
+    def convertTypeToLLVM(self, type):
+        """Decorator to define a conversion from a StorageType to the
+        corresponding type used in LLVM code. The decorated function will
+        receive a single parameter *type* being the instance of ~~Type to
+        convert.
+        
+        type: ~~StorageType - The type for which the conversion is being defined.
+        """
         def register(func):
             CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM] += [(type, func)]
     
         return register
     
-    # Decorator @convertToC(type) to define a conversion from a StorageType
-    # to the  LLVM type used for passing it to the C functions. The default,
-    # if nothing is defined for a type, is to fall back on @convertToLLVM.
-    def convertToC(self, type):
+    def convertTypeToC(self, type):
+        """Decorator to define a conversion from a StorageType to the
+        corresponding type used with C functions. The decorated function will
+        receive a single parameter *type* being the instance of ~~Type to
+        convert. If no such conversion is defined for a type, we fall back to
+        the ~~convertTypeToLLVM decorator.
+        
+        type: ~~StorageType - The type for which the conversion is being defined.
+        """
         def register(func):
             CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM_C] += [(type, func)]
     
         return register
     
-        
-        
 codegen = CodeGen()
 
-# We do the void type conversion right here as there is no separate module for it.    
-@codegen.convertToLLVM(type.Void)
-def _(type):
-    return llvm.core.Type.void()
 
 
 

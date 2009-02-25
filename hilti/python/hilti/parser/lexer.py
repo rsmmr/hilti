@@ -69,11 +69,11 @@ def t_TRUE(t):
 def t_FALSE(t):
     r'False'
     t.type = "BOOL"
-    t.value = True
+    t.value = False
     return t
 
 def t_STRING(t):
-    r'"[^"]*"'
+    '\"([^\n\"]|\\\")*\"'
     t.value = t.value[1:-1]    
     return t
 

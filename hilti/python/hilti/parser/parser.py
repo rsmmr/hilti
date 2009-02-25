@@ -233,8 +233,12 @@ def p_operand_bool(p):
 
 def p_operand_string(p):
     """operand : STRING"""
-    string = const.Constant(p[1], type.String(), location=loc(p, 1))
-    p[0] = instruction.ConstOperand(string, location=loc(p, 1))
+    try:
+        string = const.Constant(util.expand_escapes(p[1]), type.String(), location=loc(p, 1))
+        p[0] = instruction.ConstOperand(string, location=loc(p, 1))
+    except ValueError:
+        error(p, "error in escape sequence %s" % p[1])
+        raise ply.yacc.SyntaxError
 
 def p_operand_tuple(p):
     """operand : tuple"""

@@ -242,7 +242,7 @@ def _makeCall(cg, func, args, llvm_succ):
     
     for i in range(0, len(args)):
 	    #   callee_frame.arg_<i> = args[i] 
-        val = cg.llvmOp(args[i], cast_to_type=ids[i].type())
+        val = cg.llvmOp(args[i], cast_to=ids[i].type())
         addr = cg.llvmAddrLocalVar(func, callee_frame, ids[i].name())
         cg.llvmInit(val, addr)
 
@@ -300,7 +300,7 @@ def _(self, i):
     
     args = []
     for i in range(len(tuple)):
-        args += [self.llvmOpToC(tuple[i], cast_to_type=ids[i].type())]
+        args += [self.llvmOpToC(tuple[i], cast_to=ids[i].type())]
     
     self.llvmGenerateCCall(func, args)
 

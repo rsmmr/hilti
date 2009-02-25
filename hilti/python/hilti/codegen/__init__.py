@@ -8,6 +8,8 @@ import flow
 import integer
 import module
 import bool
+import void
+import string
 
 def generateLLVM(ast, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as
