@@ -43,6 +43,7 @@ class CodeGen(visitor.Visitor):
         self._block = None         # Current block.
         self._func_counter = 0     # Counter to generate unique function names.
         self._label_counter = 0    # Counter to generate unique labels.
+        self._const_counter = 0    # Counter to generate unique constant names.
         
         self._llvm = _llvm_data()
         self._llvm.module = None   # Current LLVM module.
@@ -182,7 +183,7 @@ class CodeGen(visitor.Visitor):
 
     def nameNewLabel(self, postfix=None):
         """Returns a unique label for LLVM blocks. The label is guaranteed to
-        unique within the :meth:`currentFunction``.
+        be unique within the :meth:`currentFunction``.
         
         postfix: string - If given, the postfix is appended to the generated label.
         
@@ -194,6 +195,21 @@ class CodeGen(visitor.Visitor):
             return "l%d-%s" % (self._label_counter, postfix)
         else:
             return "l%d" % self._label_counter
+        
+    def nameNewConstant(self, postfix=None):
+        """Returns a unique name for global constant. The name is guaranteed
+        to be unique within the :meth:`currentModule``.
+        
+        postfix: string - If given, the postfix is appended to the generated name.
+        
+        Returns: string - The unique name.
+        """ 
+        self._const_counter += 1
+        
+        if postfix:
+            return "c%d-%s" % (self._const_counter, postfix)
+        else:
+            return "c%d" % self._const_counter
     
     def nameNewFunction(self, prefix):
         """Returns a unique name for LLVM functions. The name is guaranteed to
@@ -846,7 +862,8 @@ class CodeGen(visitor.Visitor):
         return None
     
     def llvmOp(self, op, cast_to=None):
-        """Converts an instruction operand into an LLVM value.
+        """Converts an instruction operand into an LLVM value. The method
+        might use the current :meth:`builder`. 
         
         op: ~~Operand - The operand to be converted.
         
@@ -937,7 +954,9 @@ class CodeGen(visitor.Visitor):
         ~~ConstOperand to be converted; the latter is a ~~Type to which the
         operand's value should be converted to first. If a conversion function
         receives a *cast_to* type it can't handle, it must abort via an
-        ``assert``. 
+        ``assert``.  The conversion function must return an `llvm.core.Value``
+        and can use the current :meth:`builder` if it needs to perform any
+        transformations on the operand. 
         
         type: ~~StorageType - The type for which the conversion is being defined.
         """
@@ -950,7 +969,7 @@ class CodeGen(visitor.Visitor):
         """Decorator to define a conversion from a StorageType to the
         corresponding type used in LLVM code. The decorated function will
         receive a single parameter *type* being the instance of ~~Type to
-        convert.
+        convert, and must return an ``llvm.core.Type``..
         
         type: ~~StorageType - The type for which the conversion is being defined.
         """

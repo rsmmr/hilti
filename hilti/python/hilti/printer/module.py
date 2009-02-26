@@ -114,7 +114,7 @@ def _(self, i):
             return op.value().name()
 
         if isinstance(op, instruction.ConstOperand):
-            return str(op.value())
+            return op.value().encode("utf-8")
         
         if isinstance(op, instruction.TupleOperand):
             return "(%s)" % ", ".join([fmtOp(o) for o in op.value()])
