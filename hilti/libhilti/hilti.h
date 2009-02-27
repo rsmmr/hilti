@@ -1,6 +1,7 @@
 /* $Id$
  * 
- * Libhilti interface definitions.
+ * Public libhilti interface with functions that can be called directly
+ * either from the host application or from a user's HILTI program.
  * 
  */
 
@@ -8,6 +9,9 @@
 #define HILTI_H
 
 #include <stdint.h>
+
+// Intialize the HILTI run-time librart. 
+extern void hilti_init();
 
 // Entry point into HILTI processing. 
 extern void hilti_run();

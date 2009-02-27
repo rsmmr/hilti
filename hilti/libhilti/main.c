@@ -1,6 +1,7 @@
 /* $Id$
  * 
- * Implementation of main() which directly calls hilti_run().
+ * Implementation of main() which directly calls first hilti_init() and then
+ * hilti_run().
  * 
  */
 
@@ -8,6 +9,7 @@
 
 int main(int argc, char** argv)
 {
+    hilti_init();
     hilti_run();
     return 0;
 }

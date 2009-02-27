@@ -7,8 +7,8 @@
 %__continuation = type { i8*, i8* }
 %__frame_hilti_main = type { %__continuation, %__continuation, i8* }
         
-declare void @hlt_main_run(%__frame_hilti_main*)
-declare void @__hilti_exception_print_uncaught(i8* %exception)
+declare ccc void @hlt_main_run(%__frame_hilti_main*)
+declare ccc void @__hlt_exception_print_uncaught(i8* %exception)
 
 ; Entry point for C program.
 ; Uses C calling convention. 
@@ -76,7 +76,7 @@ define fastcc void @hilti_lib_exception(%__basic_frame* %__frame) {
 ;    call void @hilti_print(i32 1)       
     %except_addr = getelementptr %__basic_frame* %__frame, i32 0, i32 2
     %exception = load i8** %except_addr
-    call ccc void @__hilti_exception_print_uncaught(i8* %exception)
+    call ccc void @__hlt_exception_print_uncaught(i8* %exception)
     ret void
 }
 

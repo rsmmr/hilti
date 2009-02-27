@@ -4,7 +4,8 @@
 
 BITCODE  = entry.bc 
 
-COBJS    = printf.o exceptions.o
+CHEADERS = hilti.h hilti_intern.h
+COBJS    = printf.o exceptions.o utf8proc.o init.o memory.o str.o
 CMAINOBJ = main.o
 
 LIB_STATIC      = libhilti.a
@@ -13,7 +14,7 @@ LIB_STATIC_MAIN = libhiltimain.a
 TMP_BC_ASM = .libhilti.bc.S
 TMP_BC_OBJ = .libhilti.bc.o
 
-CFLAGS=-g 
+CFLAGS=-g -Wall
 LDFLAGS=
 
 LLVMAS_FLAGS=
@@ -24,7 +25,7 @@ all: $(LIB_STATIC) $(LIB_STATIC_MAIN)
 clean:
 	rm -f $(LIB_STATIC) $(LIB_STATIC_MAIN) $(TMP_BC_OBJ) $(TMP_BC_ASM) $(BITCODE) $(CMAINOBJ) $(COBJS)
 
-%.o : %.c 
+%.o : %.c $(CHEADERS)
 	gcc -c $(CFLAGS) $< -o $@
     
 %.bc : %.ll 
