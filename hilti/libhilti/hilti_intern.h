@@ -22,6 +22,7 @@ typedef const char* __hlt_exception_t;
 extern __hlt_exception_t __hlt_exception_unspecified;
 extern __hlt_exception_t __hlt_exception_division_by_zero;
 extern __hlt_exception_t __hlt_exception_value_error;
+extern __hlt_exception_t __hlt_exception_out_of_memory;
 
 // Reports an uncaugt exception.
 extern void __hlt_exception_print_uncaught(__hlt_exception_t exception);
@@ -72,15 +73,15 @@ extern void* __hlt_gc_realloc_non_atomic(void* ptr, size_t n);
 
 typedef int32_t __hlt_string_size_t;
 
-typedef struct  {
+struct __hlt_string {
     __hlt_string_size_t len;
     int8_t bytes[];
-} __attribute__((__packed__)) __hlt_string;
+} __attribute__((__packed__));
 
-extern __hlt_string_size_t __hlt_string_len(const __hlt_string* s);
-extern const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_string* s2);
-extern const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_size_t pos, __hlt_string_size_t len);
-extern __hlt_string_size_t __hlt_string_find(const __hlt_string* s, const __hlt_string* pattern);
-extern int __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2);
+extern __hlt_string_size_t __hlt_string_len(const struct __hlt_string* s, __hlt_exception_t* exception);
+extern const struct __hlt_string* __hlt_string_concat(const struct __hlt_string* s1, const struct __hlt_string* s2, __hlt_exception_t* exception);
+extern const struct __hlt_string* __hlt_string_substr(const struct __hlt_string* s1, __hlt_string_size_t pos, __hlt_string_size_t len, __hlt_exception_t* exception);
+extern __hlt_string_size_t __hlt_string_find(const struct __hlt_string* s, const struct __hlt_string* pattern, __hlt_exception_t* exception);
+extern int __hlt_string_cmp(const struct __hlt_string* s1, const struct __hlt_string* s2, __hlt_exception_t* exception);
 
 #endif    

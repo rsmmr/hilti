@@ -38,6 +38,7 @@ class CodeGen(visitor.Visitor):
         # module/function/block visitors, which avoids adding a ton of setter
         # methods just for these few cases. 
         
+        self._libpaths = []        # Search path for libhilti prototypes.
         self._module = None        # Current module.
         self._function = None      # Current function.
         self._block = None         # Current block.
@@ -72,9 +73,10 @@ class CodeGen(visitor.Visitor):
             # The basic frame struct. 
         self._llvm.type_basic_frame = llvm.core.Type.struct([ t for (n, t) in self._bf_fields])
 
-    def generateLLVM(self, ast, verify=True):
+    def generateLLVM(self, ast, libpaths, verify=True):
         """See ~~generateLLVM."""
         self.reset()
+        self._libpaths = libpaths
         self.visit(ast)
         return self.llvmModule(verify)
             
@@ -226,7 +228,7 @@ class CodeGen(visitor.Visitor):
             return "__%s_f%s" % (self._module.name(), self._func_counter)
     
     def llvmNewModule(self, name): 
-        """Creates a new LLVM module. The module is initialized suitable for
+        """Creates a new LLVM module. The module is initialized suitably to
         then be used for translating a HILTi program into.
         
         name: string - The name of the new module.
@@ -234,17 +236,19 @@ class CodeGen(visitor.Visitor):
         Returns: ~~llvm.core.Module - The new module.
         """
 
-        prototypes = "/Users/robin/work/binpacpp/hilti/libhilti/hilti_intern.ll"
+        prototypes = util.findFileInPaths("hilti_intern.ll", self._libpaths)
+        if not prototypes:
+            util.error("cannot find hilti_intern.ll")
         
         try:
             f = open(prototypes)
         except IOError, e:
-            util.error("cannot read libhilti prototypes %s: %s" % (prototypes, e))
-        
+            util.error("cannot read %s: %s" % (prototypes, e))
+            
         try:
             module = llvm.core.Module.from_assembly(f)
         except llvm.LLVMException, e:
-            util.error("cannot parse libhilti prototypes in %s: %s" % (prototypes, e))
+            util.error("cannot parse %s: %s" % (prototypes, e))
 
         module.name = name
         return module
@@ -718,7 +722,9 @@ class CodeGen(visitor.Visitor):
 
     def llvmGenerateLibHiltiCall(self, function, args):
         """Generates a call to a libhilti function. The method uses the
-        current :meth:`builder`.
+        current :meth:`builder`. The libhilti function will get one additional
+        parameter: a reference to an exception object which it can set if it
+        needs to raise an exception.
         
         function: string - The full, C-level name of the library function. 
         args: list of llvm.core.Value - The arguments to pass to the function.
@@ -728,17 +734,34 @@ class CodeGen(visitor.Visitor):
         if not llvm_func:
             util.internal_error("libhilti function %s has not been declared")
 
-        call = self.builder().call(llvm_func, args)
+        excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
+            
+        call = self.builder().call(llvm_func, args + [excpt_ptr])
         call.calling_convention = llvm.core.CC_C
+        
+        # Add code the check whether the call raised an exception.
+        
+        excpt = self.builder().load(excpt_ptr)
+        raised = self.builder().icmp(llvm.core.IPRED_NE, excpt, self.llvmConstNoException())
+
+    	block_excpt = self.llvmNewBlock("excpt")
+        block_noexcpt= self.llvmNewBlock("noexcpt")
+        self.builder().cbranch(raised, block_excpt, block_noexcpt)
+    
+        self.pushBuilder(block_excpt)
+        self.llvmRaiseException(excpt)
+        self.popBuilder()
+    
+        # We leave this builder for subseqent code.
+        self.pushBuilder(block_noexcpt)
+        
         return call
 
     def llvmRaiseException(self, exception):
-        """Generates the raising of an exception. The method uses the current
-        :meth:`builder`.
+        """Generates the raising of an exception. The method
+        uses the current :meth:`builder`.
         
-	    exception: string - The name of the internal global variable
-        representing the exception to raise. These names are defined in 
-        :path:`libhilti/exceptions.cc`.
+	    exception: llvm.core.Value - A value with the exception.
         
         Note: Exception support is preliminary and will very likely change at
         some point in its specifics.
@@ -756,10 +779,24 @@ class CodeGen(visitor.Visitor):
     
         # frame.exception = <exception>
         addr = self.llvmAddrException(frame)
-        exc = self.llvmGetGlobalVar(exception, self.llvmTypeGenericPointer())
-        self.llvmInit(exc, addr)
+        self.llvmInit(exception, addr)
         
         self.llvmGenerateTailCallToFunctionPtr(ptr, [frame])
+    
+    def llvmRaiseExceptionByName(self, exception):
+        """Generates the raising of an exception given by name. The method
+        uses the current :meth:`builder`.
+        
+	    exception: string - The name of the internal global variable
+        representing the exception to raise. These names are defined in 
+        :path:`libhilti/exceptions.cc`.
+        
+        Note: Exception support is preliminary and will very likely change at
+        some point in its specifics.
+        """
+        
+        excpt = self.llvmGetGlobalVar(exception, self.llvmTypeGenericPointer())
+        return llvmRaiseException(excpt)
         
     # Generates LLVM tail call code. From the LLVM 1.5 release notes:
     #

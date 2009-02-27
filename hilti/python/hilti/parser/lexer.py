@@ -73,7 +73,7 @@ def t_FALSE(t):
     return t
 
 def t_STRING(t):
-    '\"([^\n\"]|\\\")*\"'
+    '"([^\n"]|\\\\")*"'
     t.value = t.value[1:-1]    
     return t
 

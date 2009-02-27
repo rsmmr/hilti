@@ -42,11 +42,18 @@ def _(self, i):
     op1 = self.llvmOp(i.op1())
     self.llvmStoreInTarget(i.target(), op1)
     
-@codegen.when(instructions.string.Len)
+@codegen.when(instructions.string.Length)
 def _(self, i):
     op1 = self.llvmOp(i.op1())
     len = self.llvmGenerateLibHiltiCall("__hlt_string_len", [op1])
     self.llvmStoreInTarget(i.target(), len)
+
+@codegen.when(instructions.string.Concat)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    op2 = self.llvmOp(i.op2())
+    result = self.llvmGenerateLibHiltiCall("__hlt_string_concat", [op1, op2])
+    self.llvmStoreInTarget(i.target(), result)
 
     
 

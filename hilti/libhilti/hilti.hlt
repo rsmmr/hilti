@@ -2,3 +2,4 @@
 module Hilti
 
 declare "C" void print(int32 n)
+declare "C" void print_str(string s)

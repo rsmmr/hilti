@@ -1,6 +1,7 @@
 # $Id$
 """Provides a set of general utility functions used across the compiler."""
 
+import os
 import sys
 
 def _print(prefix1, prefix2, msg, context):
@@ -78,7 +79,6 @@ def internal_error(msg, component=None, context=None):
     _print(component, "internal error", msg, context)
     assert False
     
-
 def expand_escapes(str):
     """Expands escape sequences. The following escape sequences are supported:
     
@@ -139,7 +139,22 @@ def expand_escapes(str):
             
     return result
                 
-                
+def findFileInPaths(filename, dirs):
+    """Searches a file in a list of directories.
+    
+    filename: string - The name of the file to search.
+    dirs: list of strings - The directories to search in.
+    
+    Returns: string or None - The full path of the file if found, or None if
+    not.
+    """
+    
+    for dir in dirs:
+        fullpath = os.path.realpath(os.path.join(dir, filename))
+        if os.path.exists(fullpath) and os.path.isfile(fullpath):
+            return fullpath
+        
+    return None
                 
             
             

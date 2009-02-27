@@ -369,16 +369,6 @@ def error(p, msg, lineno=0):
     loc = location.Location(Parser.current.filename, lineno)        
     util.error(msg, component="parser", context=loc, fatal=False)
 
-# Find file in dirs and returns full pathname or None if not found.
-def _findFile(filename, dirs):
-    
-    for dir in dirs:
-        fullpath = os.path.realpath(os.path.join(dir, filename))
-        if os.path.exists(fullpath) and os.path.isfile(fullpath):
-            return fullpath
-        
-    return None
-    
 # Recursively imports another file and makes all declared/exported IDs available 
 # to the current module. 
 def _importFile(filename, location):
@@ -392,7 +382,7 @@ def _importFile(filename, location):
         
     filename = root + ext
     
-    fullpath = _findFile(filename, oldparser.current.import_paths)
+    fullpath = util.findFileInPaths(filename, oldparser.current.import_paths)
     if not fullpath:
         util.error("cannot find %s for import" % filename, context=location)
         

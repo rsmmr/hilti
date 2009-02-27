@@ -15,6 +15,7 @@
 __hlt_exception_t __hlt_exception_unspecified = "Unspecified";
 __hlt_exception_t __hlt_exception_division_by_zero = "DivisionByZero";
 __hlt_exception_t __hlt_exception_value_error = "ValueError";
+__hlt_exception_t __hlt_exception_out_of_memory = "OutOfMemory";
 
 void __hlt_exception_print_uncaught(__hlt_exception_t exception) {
     // This is quite a hack currently ...

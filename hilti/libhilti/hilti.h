@@ -19,4 +19,7 @@ extern void hilti_run();
 // Library functions.
 extern void hilti_print(int32_t n);
 
+struct __hlt_string;
+extern void hilti_print_str(const struct __hlt_string* str);
+
 #endif    

@@ -65,7 +65,7 @@ def _(self, i):
         
     def checkOp(op, sig, tag):
         
-        if sig and not op and not type.isOptional(sig):
+        if sig and op == None and not type.isOptional(sig):
             self.error(i, "%s missing" % tag)
             return
 

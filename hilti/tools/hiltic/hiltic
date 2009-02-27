@@ -115,7 +115,7 @@ if options.hilti_canon:
     sys.exit(0)
 
 # Generate code. 
-(success, llvm_module) = hilti.codegen.generateLLVM(ast, verify=(not options.ll_noverify))
+(success, llvm_module) = hilti.codegen.generateLLVM(ast, options.import_paths, verify=(not options.ll_noverify))
 
 if not success:
     print >>sys.stderr, "error during code generation"

@@ -22,13 +22,13 @@ class Assign(Instruction):
     """Assigns *op1* to the target."""
     pass
 
-@instruction("string.len", op1=String, target=Integer(32))
-class Len(Instruction):
+@instruction("string.length", op1=String, target=Integer(32))
+class Length(Instruction):
     """Returns the number of characters in the string *op1*."""
     pass
 
 @instruction("string.concat", op1=String, op2=String, target=String)
-class Add(Instruction):
+class Concat(Instruction):
     """Concatenates *op1* with *op2* and returns the result."""
     pass
 
