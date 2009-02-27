@@ -9,7 +9,7 @@ from hilti import instructions
 from codegen import codegen
 
 def _llvmStringType(len=0):
-    return llvm.core.Type.struct([llvm.core.Type.int(32), llvm.core.Type.array(llvm.core.Type.int(8), len)])
+    return llvm.core.Type.packed_struct([llvm.core.Type.int(32), llvm.core.Type.array(llvm.core.Type.int(8), len)])
 
 def _llvmStringTypePtr(len=0):
     return llvm.core.Type.pointer(_llvmStringType(len))
@@ -21,7 +21,7 @@ def _(op, cast_to):
     s = op.value().encode("utf-8")
     size = llvm.core.Constant.int(llvm.core.Type.int(32), len(s))
     bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in s]
-    struct = llvm.core.Constant.struct([size, llvm.core.Constant.array(llvm.core.Type.int(8), bytes)])
+    struct = llvm.core.Constant.packed_struct([size, llvm.core.Constant.array(llvm.core.Type.int(8), bytes)])
         
     name = codegen.nameNewConstant("string")
     glob = codegen.llvmCurrentModule().add_global_variable(_llvmStringType(len(s)), name)
@@ -41,6 +41,16 @@ def _(type):
 def _(self, i):
     op1 = self.llvmOp(i.op1())
     self.llvmStoreInTarget(i.target(), op1)
+    
+@codegen.when(instructions.string.Len)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    len = self.llvmGenerateLibHiltiCall("__hlt_string_len", [op1])
+    self.llvmStoreInTarget(i.target(), len)
+
+    
+
+    
 
 
 

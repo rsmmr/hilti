@@ -73,7 +73,7 @@ class Resolver(visitor.Visitor):
             if not ident:
                 ident = self._module.lookupID(name)
                 if not ident:
-                    self.error(i, "unknown identifier %s in %s" % (name, tag))
+                    self.error("unknown identifier %s in %s" % (name, tag), obj)
                     return None
                 
         return ident

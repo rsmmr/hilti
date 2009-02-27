@@ -22,6 +22,11 @@ class Assign(Instruction):
     """Assigns *op1* to the target."""
     pass
 
+@instruction("string.len", op1=String, target=Integer(32))
+class Len(Instruction):
+    """Returns the number of characters in the string *op1*."""
+    pass
+
 @instruction("string.concat", op1=String, op2=String, target=String)
 class Add(Instruction):
     """Concatenates *op1* with *op2* and returns the result."""
@@ -45,14 +50,14 @@ class Find(Instruction):
     Returns False otherwise."""
     pass
 
-@instruction("string.fmt", op1=String, op2=Tuple, target=String)
-class Fmt(Instruction):
-    """Constructs a new string according to the prIntegerf-style format string
-    *op1*, using *op2* to fill in format symbols.
-    
-    Todo: Explain format symbols.
-    """
-    pass
+#@instruction("string.fmt", op1=String, op2=Tuple, target=String)
+#class Fmt(Instruction):
+#    """Constructs a new string according to the printf-style format
+#    string *op1*, using *op2* to fill in format symbols.
+#    
+#    Todo: Explain format symbols.
+#    """
+#    pass
 
 
 

@@ -56,7 +56,7 @@ def _(self, i):
     self.builder().cbranch(iszero, block_ok, block_exc)
     
     self.pushBuilder(block_exc)
-    self.llvmRaiseException("__hilti_exception_division_by_zero") 
+    self.llvmRaiseException("__hlt_exception_division_by_zero") 
     self.popBuilder()
     
     self.pushBuilder(block_ok)

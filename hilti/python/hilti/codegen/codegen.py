@@ -158,7 +158,6 @@ class CodeGen(visitor.Visitor):
         # Cannot be reached
         assert False
             
-
     def nameFunctionForBlock(self, block):
     	"""Returns the internal LLVM name for the block's function. The
         compiler turns all blocks into functions, and this method returns the
@@ -226,6 +225,31 @@ class CodeGen(visitor.Visitor):
         else:
             return "__%s_f%s" % (self._module.name(), self._func_counter)
     
+    def llvmNewModule(self, name): 
+        """Creates a new LLVM module. The module is initialized suitable for
+        then be used for translating a HILTi program into.
+        
+        name: string - The name of the new module.
+        
+        Returns: ~~llvm.core.Module - The new module.
+        """
+
+        prototypes = "/Users/robin/work/binpacpp/hilti/libhilti/hilti_intern.ll"
+        
+        try:
+            f = open(prototypes)
+        except IOError, e:
+            util.error("cannot read libhilti prototypes %s: %s" % (prototypes, e))
+        
+        try:
+            module = llvm.core.Module.from_assembly(f)
+        except llvm.LLVMException, e:
+            util.error("cannot parse libhilti prototypes in %s: %s" % (prototypes, e))
+
+        module.name = name
+        return module
+
+        
     def llvmNewBlock(self, postfix):
         """Creates a new LLVM block. The block gets a label that is guaranteed
         to be unique within the :meth:`currentFunction``, and it is added to
@@ -680,10 +704,6 @@ class CodeGen(visitor.Visitor):
         
         function: ~~Function - The function, which must have ~~C ~~Linkage.
         args: list of llvm.core.Value - The arguments to pass to the function.
-        
-        Todo: If the LLVM type differs from the one supposed to be used for
-        the C call, we don't convert yet and thus will likely get a ``bad
-        signature`` assertion. See ~~llvmOpToC.
         """
         
         llvm_func = self.llvmGetCFunction(function)
@@ -695,6 +715,22 @@ class CodeGen(visitor.Visitor):
             call = self.builder().call(llvm_func, args, "result")
         
         call.calling_convention = llvm.core.CC_C
+
+    def llvmGenerateLibHiltiCall(self, function, args):
+        """Generates a call to a libhilti function. The method uses the
+        current :meth:`builder`.
+        
+        function: string - The full, C-level name of the library function. 
+        args: list of llvm.core.Value - The arguments to pass to the function.
+        """
+        
+        llvm_func = self.llvmCurrentModule().get_function_named(function)
+        if not llvm_func:
+            util.internal_error("libhilti function %s has not been declared")
+
+        call = self.builder().call(llvm_func, args)
+        call.calling_convention = llvm.core.CC_C
+        return call
 
     def llvmRaiseException(self, exception):
         """Generates the raising of an exception. The method uses the current

@@ -12,7 +12,7 @@ from codegen import codegen
 @codegen.when(module.Module)
 def _(self, m):
     self._module = m
-    self._llvm.module = llvm.core.Module.new(m.name())
+    self._llvm.module = codegen.llvmNewModule(m.name())
     self._llvm.module.add_type_name("__basic_frame", self.llvmTypeBasicFrame())
     self._llvm.module.add_type_name("__continuation", self.llvmTypeContinuation())
     
