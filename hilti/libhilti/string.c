@@ -12,8 +12,8 @@
 __hlt_string_size_t __hlt_string_len(const struct __hlt_string* s, __hlt_exception_t* exception)
 {
     int32_t dummy;
-    int8_t* p = s->bytes;
-    int8_t* e = p + s->len;
+    const int8_t* p = s->bytes;
+    const int8_t* e = p + s->len;
     __hlt_string_size_t len = 0; 
     
     while ( p < e ) {

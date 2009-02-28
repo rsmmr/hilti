@@ -17,8 +17,8 @@ void hilti_print(int32_t n)
 void hilti_print_str(const struct __hlt_string* s)
 {
     int32_t cp;
-    int8_t* p = s->bytes;
-    int8_t* e = p + s->len;
+    const int8_t* p = s->bytes;
+    const int8_t* e = p + s->len;
     
     while ( p < e ) {
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &cp);
