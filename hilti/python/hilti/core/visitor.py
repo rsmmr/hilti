@@ -34,7 +34,7 @@ class Visitable(object):
         """
 
 class Visitor(object):
-    """Implements the traversal of a tree structure. The classes traverses
+    """Implements the traversal of a tree structure. The class traverses
     nodes formed by instances of ~~Visitable. It is the primary mechanism to
     traverse an |ast|. 
     

@@ -167,7 +167,7 @@ class HiltiType(Type):
         
 class StorageType(HiltiType):
     """Base class for all types that can be directly stored in a HILTI
-    variable. Types derived from StorateType cannot be allocated on the heap.
+    variable. Types derived from StorageType cannot be allocated on the heap.
     
     The arguments are the same as for ~~HiltiType.
     """
