@@ -796,7 +796,7 @@ class CodeGen(visitor.Visitor):
         """
         
         excpt = self.llvmGetGlobalVar(exception, self.llvmTypeGenericPointer())
-        return llvmRaiseException(excpt)
+        return self.llvmRaiseException(excpt)
         
     # Generates LLVM tail call code. From the LLVM 1.5 release notes:
     #
