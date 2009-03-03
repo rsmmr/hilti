@@ -20,7 +20,48 @@ class _DummyBuilder(object):
     
 ### Codegen visitor.
 
+class TypeInfo(object):
+    """Represent's type's meta information. The meta information is used to
+    describe a type's properties, such as hooks and pre-defined operators. A
+    subset of information from the TypeInfo objects will be made available to
+    libhilti during run-time; see ``struct __hlt_type_information`` in
+    :file:`hilti_intern.h`. There must be one TypeInfo object for each
+    ~~HiltiType instance, and the usual place for creating it is in a type's
+    ~~makeTypeInfo.
+    
+    A TypeInfo object has the following fields, which can be get/set directly:
+
+    *type* (~~HiltiType):
+       The type this object describes.
+    
+    *name* (string)
+       A readable representation of the type's name.
+
+    *args* (list of objects)
+       The type's parameters. 
+       
+    *libhilti_fmt* (string)
+       The name of an internal libhilti function that converts a value of the
+       type into a readable string representation. See :file:`hilti_intern.h`
+       for the function's complete C signature. 
+              
+    t: ~~HiltiType - The type used to initialize the object. The fields
+    *type*, *name* and *args* will be derived from *t*, all others are
+    initialized with None. 
+    """
+    def __init__(self, t):
+        assert isinstance(t, type.HiltiType)
+        self.type = t
+        self.name = t.name()
+        self.args = t.args()
+        self.libhilti_fmt = None
+        
+    __slots__ = ["type", "name", "args", "libhilti_fmt"]
+
 class CodeGen(visitor.Visitor):
+    
+    TypeInfo = TypeInfo
+    
     def __init__(self):
         super(CodeGen, self).__init__()
         self.reset()
@@ -226,7 +267,109 @@ class CodeGen(visitor.Visitor):
             return "__%s_%s_f%s" % (self._module.name(), prefix, self._func_counter)
         else:
             return "__%s_f%s" % (self._module.name(), self._func_counter)
-    
+        
+    def nameTypeInfo(self, type):
+        """Returns a the name of the global holding the type's meta information.
+        
+        type: ~~HiltiType - The type. 
+        
+        Returns: string - The internal name of the global identifier.
+        
+        Note: It's crucial that this name is the same across all compilation
+        units.
+        """
+        
+        canonified = type.name().replace("<", "").replace(">", "").lower()
+        return "__hlt_type_info_%s" % canonified
+
+    def llvmTypeTypeInfo(self, t):
+        """Returns the LLVM type for representing a type's meta information.
+        The field's of the returned struct correspond to the subset of
+        ~~TypeInfo that is provided to the libhilti run-time.
+        
+        Returns: llvm.core.Type.struct - The type for the meta information.
+        
+        Note: The struct's layout must match with __hlt_type_info as defined #
+        in libhilti/hilti_intern.h.
+        """
+        return self._llvm.type_type_information 
+        
+    def llvmAddTypeInfos(self, module):
+        """Adds run-time type information to a module. The function creates on
+        type information object for each instantiated ~~HiltiType.
+        
+        module: ~~llvm.core.Module - The LLVM module to add the information to.
+        
+        Todo: Currently, we only support integer constants as type parameters. 
+        """
+        
+        def makeTypeInfo(ti):
+            # Creates the type information for a single HiltiType.
+            #
+            # We are cheating a bit and use "void *" for the functions so that
+            # we don't need to define an individual type for each hook.
+            
+            arg_types = []
+            arg_vals = []
+            
+            args = []
+            for arg in ti.args:
+                # FIXME: Currently, we support only integers constants. We need
+                # to make this more generic and also should not hard-code this
+                # stuff here. 
+                if isinstance(arg, int):
+                    at = llvm.core.Type.int(32)
+                    arg_types += [at]
+                    arg_vals += [llvm.core.Constant.int(at, arg)]
+                    
+                elif isinstance(arg, string):
+                    # TODO: Type names go here. 
+                    util.internal_errro("llvmAddTypeInfos: unsupported type parameter %s" % arg)
+                    
+                else:
+                    util.internal_errro("llvmAddTypeInfos: unsupported type parameter %s" % arg)
+                
+            null = llvm.core.Constant.null(self.llvmTypeGenericPointer())
+            
+            try:
+                libhilti_fmt = module.get_function_named(ti.libhilti_fmt) if ti.libhilti_fmt else null
+            except llvm.LLVMException, e:
+                util.internal_error("libhilti function has not been declared: %s" % e)
+
+            libhilti_func_vals = [libhilti_fmt]
+            libhilti_func_types = [libhilti_fmt.type]
+
+            ti_name = self.nameTypeInfo(ti.type)
+            name_name = "%s_name" % ti_name
+            
+            # Create a global with the type's name.
+            name_type = llvm.core.Type.array(llvm.core.Type.int(8), len(ti.name) + 1)
+            bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in ti.name + "\0"]
+            name_val = llvm.core.Constant.array(llvm.core.Type.int(8), bytes)
+            name_glob = module.add_global_variable(name_type, name_name)
+            name_glob.global_constant = True
+            name_glob.initializer = name_val
+            name_glob.linkage = llvm.core.LINKAGE_LINKONCE
+            
+            # Create the type info struct type.
+            st = llvm.core.Type.struct(
+                [llvm.core.Type.pointer(name_type)]   # name
+                + libhilti_func_types + arg_types)
+
+            # Create the type info struct constant.
+            sv = llvm.core.Constant.struct(
+                [name_glob]                           # name
+                + libhilti_func_vals + arg_vals)
+                
+            glob = module.add_global_variable(st, ti_name)
+            glob.global_constant = True
+            glob.initializer = sv
+            glob.linkage = llvm.core.LINKAGE_LINKONCE
+            
+        for t in type.getAllHiltiTypes():
+            ti = self._callConvCallback(CodeGen._CONV_TYPE_INFO, t, [t], must_find=True)
+            makeTypeInfo(ti)
+            
     def llvmNewModule(self, name): 
         """Creates a new LLVM module. The module is initialized suitably to
         then be used for translating a HILTi program into.
@@ -251,6 +394,7 @@ class CodeGen(visitor.Visitor):
             util.error("cannot parse %s: %s" % (prototypes, e))
 
         module.name = name
+        self.llvmAddTypeInfos(module)
         return module
 
         
@@ -918,11 +1062,12 @@ class CodeGen(visitor.Visitor):
         util.internal_error("targetToLLVM: unknown target class: %s" % target)
 
     # Table of callbacks for conversions. 
-    _CONV_CONST_TO_LLVM = 1
-    _CONV_TYPE_TO_LLVM = 2
-    _CONV_TYPE_TO_LLVM_C = 3
+    _CONV_TYPE_INFO = 1
+    _CONV_CONST_TO_LLVM = 2
+    _CONV_TYPE_TO_LLVM = 3
+    _CONV_TYPE_TO_LLVM_C = 4
     
-    _Conversions = { _CONV_CONST_TO_LLVM: [], _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [] }
+    _Conversions = { _CONV_TYPE_INFO: [], _CONV_CONST_TO_LLVM: [], _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [] }
 
     def _callConvCallback(self, kind, type, args, must_find=True):
         for (t, func) in CodeGen._Conversions[kind]:
@@ -930,7 +1075,7 @@ class CodeGen(visitor.Visitor):
                 return func(*args)
             
         if must_find:
-            util.internal_error("_callConvCallback: unsupported object %s for conversion type %d" % (repr(obj), kind))
+            util.internal_error("_callConvCallback: unsupported object %s for conversion type %d" % (repr(type), kind))
             
         return None
     
@@ -1011,7 +1156,7 @@ class CodeGen(visitor.Visitor):
         
         Returns: llvm.core.Type - The corresponding LLVM type for passing to C functions
         """ 
-        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM, type, [type], must_find=False)
+        ll = self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM_C, type, [type], must_find=False)
         if ll:
             return ll
         
@@ -1019,6 +1164,20 @@ class CodeGen(visitor.Visitor):
         return self.llvmTypeConvert(type)
     
     ### Decorators.
+    
+    def makeTypeInfo(self, t):
+        """Decorator to define a function creating a type's meta
+        information. The decorated function will receive a single parameter of
+        type ~~HiltiType and must return a suitable ~~TypeInfo object. 
+        
+        t: ~~HiltiType - The type for which the ~~TypeInfo is being
+        requested.
+        """
+        def register(func):
+            assert issubclass(t, type.HiltiType)
+            CodeGen._Conversions[CodeGen._CONV_TYPE_INFO] += [(t, func)]
+    
+        return register
 
     def convertConstToLLVM(self, type):
         """Decorator to define a conversion from a ConstOperand to the

@@ -8,6 +8,12 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+@codegen.makeTypeInfo(type.Bool)
+def _(type):
+    typeinfo = codegen.TypeInfo(type)
+    typeinfo.libhilti_fmt = "__hlt_bool_fmt";
+    return typeinfo
+
 @codegen.convertConstToLLVM(type.Bool)
 def _(op, cast_to):
     assert not cast_to_type or cast_to_type == op.type()

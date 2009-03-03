@@ -13,8 +13,8 @@ class Type(object):
     """Base class for all data types provided by the HILTI language.  
     
     name: string - The name of type in a readable form suited to present to
-    the user (e.g., in error messages and debugging output). 
-    
+    the user (e.g., in error messages and debugging output).
+        
     docname: streing - Optional string which, if given, will be used in the
     automatically generated instruction documentation instead of *name*; it is
     not used anywhere else than in the documentation.
@@ -127,30 +127,50 @@ class Type(object):
     _name = "type"
 
 class HiltiType(Type):
-    """Base class for all HILTI types that can be directly instantiated
-    in a HILTI program. That includes use in global and local variables, as
-    well as allocation on the heap. 
+    """Base class for all HILTI types that can be directly instantiated in a
+    HILTI program. That includes use in global and local variables, as well as
+    allocation on the heap. 
+    
+    During run-time, libhilti will provide a type-info objects for all
+    HiltiType instances.
     
     args: list of any - Type parameters, or the empty list for
     non-parameterized types.  If a derived class detects an error with any of
     the arguments, it must raise a ~~ParameterMismatch exception.
     
-    name: string - Same as for :meth:`~hilti.core.type.type`.
+    name: string - Same as for :meth:`~hilti.core.type.type`. 
     docname: string - Same as for :meth:`~hilti.core.type.type`.
     
     Raises: ~~ParameterMismatch - Raised when there's a problem with one of
     the type parameters. The error should not have been reported to the user
     already; an error message will be constructed from the exeception's
     information.
+    
+    Note: For HiltiTypes, it is important that the results of their ~~name
+    methods can be used to identify the types, including any potential
+    parameters. In particular, if two HiltiTypes share the same name, they are
+    considered equivalent, and likewise HiltiTypes with different names are
+    considered non-equivalent. This is achieved automatically though by
+    appending a readable representation of all parameters to the type's base
+    name passed to the ctor via *name*.
     """
     def __init__(self, args, name, docname=None):
         if args:
             name = "%s<%s>" % (name, ",".join([str(arg) for arg in args]))
         
         super(HiltiType, self).__init__(name, docname=docname)
+        self._args = args
 
     _name = "HILTI type"
+
+    def args(self):
+        """Returns the type's parameters.
         
+        args: list of any - The type parameters, or the empty list for
+        non-parameterized types.  
+        """
+        return self._args
+    
     class ParameterMismatch(Exception):
         """Exception class to indicate a problem with a type parameter.
         
@@ -246,7 +266,7 @@ class Integer(StorageType):
             self._width = int(args[0])
         except ValueError:
             raise ParameterMismatch(args[0], "cannot convert to integer")
-            
+        
     def width(self):
         """Returns the bit-width of the type's integers.
         
@@ -473,6 +493,8 @@ _keywords = {
     "bool": (Bool, 0, None),
     }
 
+_all_hilti_types = {}
+    
 def getHiltiType(name, args):
     """Instantiates a ~~HiltiType from a type name. 
     
@@ -500,9 +522,15 @@ def getHiltiType(name, args):
         
     try:
         if args:
-            return (True, cls(args))
+            t = cls(args)
         else:
-            return (True, cls())
+            t = cls()
+            
+        try:
+            return (True, _all_hilti_types[t.name()])
+        except KeyError:
+            _all_hilti_types[t.name()] = t
+            return (True, t)
         
     except HiltiType.ParameterMismatch, e:
         return (False, str(e))
@@ -516,4 +544,10 @@ def getHiltiTypeNames():
     """
     return _keywords.keys()
     
+def getAllHiltiTypes():
+    """Returns a list of all HILTI types. The list contains all instances of
+    ~~HiltiType that have been created so far.
     
+    Returns: list ~~HiltiType - The complete set of HILTI types.
+    """
+    return _all_hilti_types.values()

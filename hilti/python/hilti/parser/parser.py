@@ -301,7 +301,7 @@ def p_type(p):
         error(p, result)
         raise ply.yacc.SyntaxError
 
-    # FIXME: This is not great location for this check ...
+    # FIXME: This is not a great location for this check ...
     if isinstance(result, type.Integer) and result.width() == 0:
         error(p, "integer type requires non-zero width")
         raise ply.yacc.SyntaxError

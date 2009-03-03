@@ -8,6 +8,12 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+@codegen.makeTypeInfo(type.String)
+def _(type):
+    typeinfo = codegen.TypeInfo(type)
+    typeinfo.libhilti_fmt = "__hlt_string_fmt";
+    return typeinfo
+
 def _llvmStringType(len=0):
     return llvm.core.Type.packed_struct([llvm.core.Type.int(32), llvm.core.Type.array(llvm.core.Type.int(8), len)])
 

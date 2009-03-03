@@ -32,6 +32,9 @@ Adding a new HILTI data type
   generation. Add the module to
   :path:`python/hilti/codegen/__init__.py`. In the module:
   
+  * Decorate a function with ~~makeTypeInfo to initialize the types
+    ~~TypeInfo.
+    
   * Decorate a function with ~~convertConstToLLVM if you want to
     support constants for your type (see below).
     

@@ -9,6 +9,11 @@
 #include "hilti_intern.h"
 #include "utf8proc.h"
 
+const struct __hlt_string* __hlt_string_fmt(const struct __hlt_string* s, int32_t options, __hlt_exception_t* exception)
+{
+    return s;
+}
+
 __hlt_string_size_t __hlt_string_len(const struct __hlt_string* s, __hlt_exception_t* exception)
 {
     int32_t dummy;

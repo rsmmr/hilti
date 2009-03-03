@@ -31,6 +31,29 @@ extern void __hlt_exception_print_uncaught(__hlt_exception_t exception);
 extern void __hlt_exception_raise(__hlt_exception_t exception);
 
 ///////////////////////////////////////////////////////////////////////////////
+// Run-time information about HILTI types.
+///////////////////////////////////////////////////////////////////////////////
+
+struct __hlt_type_info {
+    
+    // A readable version of the type's name. 
+    const char* tag;
+    
+    // List of type operations defined in libhilti functions. Pointers may be
+    // zero to indicate that a type does not support an operation. 
+    
+    // Return a readable representation of a value. 'val' is actually the
+    // value to convert, with the C type as HILTI uses normally for values of
+    // that type. 'options' is currently unused and will be always zero. In
+    // the future, we might use it to pass in hints about the prefered
+    // format.
+    struct __hlt_string* (*libhilti_fmt)(void *val, int32_t options, __hlt_exception_t*);
+    
+    // Type-parameters start here. The format is type-specific.
+    char type_params[];
+};
+
+///////////////////////////////////////////////////////////////////////////////
 // Replacement functions for malloc/calloc/realloc that provide automatic
 // garbage collection.
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,6 +91,18 @@ extern void* __hlt_gc_realloc_atomic(void* ptr, size_t n);
 extern void* __hlt_gc_realloc_non_atomic(void* ptr, size_t n);
 
 ///////////////////////////////////////////////////////////////////////////////
+// Support functions for HILTI's integer data type.
+///////////////////////////////////////////////////////////////////////////////
+
+extern const struct __hlt_string* __hlt_int_fmt(int32_t n, int32_t options, __hlt_exception_t* exception);
+
+///////////////////////////////////////////////////////////////////////////////
+// Support functions for HILTI's boolean data type.
+///////////////////////////////////////////////////////////////////////////////
+
+extern const struct __hlt_string* __hlt_bool_fmt(int8_t b, int32_t options, __hlt_exception_t* exception);
+
+///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's string data type.
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -78,6 +113,7 @@ struct __hlt_string {
     int8_t bytes[];
 } __attribute__((__packed__));
 
+extern const struct __hlt_string* __hlt_string_fmt(const struct __hlt_string* s, int32_t options, __hlt_exception_t* exception);
 extern __hlt_string_size_t __hlt_string_len(const struct __hlt_string* s, __hlt_exception_t* exception);
 extern const struct __hlt_string* __hlt_string_concat(const struct __hlt_string* s1, const struct __hlt_string* s2, __hlt_exception_t* exception);
 extern const struct __hlt_string* __hlt_string_substr(const struct __hlt_string* s1, __hlt_string_size_t pos, __hlt_string_size_t len, __hlt_exception_t* exception);

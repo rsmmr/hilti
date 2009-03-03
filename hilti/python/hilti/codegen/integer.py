@@ -8,6 +8,12 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+@codegen.makeTypeInfo(type.Integer)
+def _(type):
+    typeinfo = codegen.TypeInfo(type)
+    typeinfo.libhilti_fmt = "__hlt_int_fmt";
+    return typeinfo
+
 @codegen.convertConstToLLVM(type.Integer)
 def _(op, cast_to):
     # Allow casting of a constant without width to one with it.
