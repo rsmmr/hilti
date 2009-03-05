@@ -23,6 +23,7 @@ keywords = {
     "module": "MODULE",
     "struct": "STRUCT", 
     "void": "VOID", 
+    "any": "ANY", 
     }
 
 tokens = (
@@ -41,6 +42,7 @@ tokens = (
    'STRUCT',
    'TYPE',
    'VOID',
+   'ANY',
 ) 
 
 literals = ['(',')','{','}', '<', '>', '=', ',', ':' ]

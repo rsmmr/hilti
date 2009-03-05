@@ -9,7 +9,7 @@
 static const struct __hlt_string True = { 4, "True" };
 static const struct __hlt_string False = { 4, "False" };
 
-const struct __hlt_string* __hlt_bool_fmt(int8_t val, int32_t options, __hlt_exception_t* exception)
+const struct __hlt_string* __hlt_bool_fmt(int8_t val, int32_t options, __hlt_exception* exception)
 {
     return val ? &True : &False;
 }

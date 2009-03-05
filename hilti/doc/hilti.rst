@@ -10,6 +10,7 @@ Version |release|, |today|
 Table of Contents:
 
 .. toctree::
+   :numbered:
 
    user/user
    internals/internals

@@ -21,23 +21,65 @@ class CallingConvention:
     implementation calls to it use."""
     
     HILTI = 1
-    """A ~~Function using the proprietary HILTI
-    calling convention supports all of HILTI's flow-control features but
-    cannot be called from other languages such as C. This is the default
-    calling convention."""
+    """A ~~Function using the proprietary HILTI calling convention.
+    This convetion supports all of HILTI's flow-control features but
+    cannot be called from other languages such as C. This is the
+    default calling convention."""
     
     C = 2
-    """A ~~Function using C calling convention
-    implements standard C call semantics. It does however not support any
-    HILTI-specific flow-control features, such as exceptions and
-    continuations.
+    """A ~~Function using standard C calling convention. The
+    conventions implements standard C calling semantics but does not
+    support any HILTI-specific flow-control features, such as
+    exceptions and continuations. Functions using this calling
+    convention get a set of parameters directly corresponding to the
+    call's tuple. The C calling convention can not be used with
+    varargs functions.
     
-    Note: Currently, functions with C calling convention cannot be
-    *implemented* in HILTI but must be defined in an external,
-    separately compiled object file. They can be *called* from HILTI
-    programs however. In the future, it will also be possible to
-    define functions with C calling convention in HILTI itself,
-    which will then be callable *from* C programs. 
+    Most HILTI types are converted into their "natural" C
+    equivalent, with types which are internally represented as
+    structs passed as pointers to these, per the declarations in
+    |hilti_intern.h|. The following additional rules
+    apply:
+    
+    * Tuples are converted into a struct of type ``__hlt_tuple`` and
+      the function gets passed a pointer to an instance of that. See
+      |hilti_intern.h| for the struct's definition.
+    
+    Note: Currently, functions with C and ~~C_HILTI calling
+    conventions cannot be *implemented* in HILTI but must be defined
+    in an external, separately compiled object file. They can be
+    *called* from HILTI programs however. In the future, it will
+    likely become possible to define such functions in HILTI itself
+    as well, which will then be callable also *from* C programs. 
+    
+    Todo: We should document the type conversion HILTI->C more
+    precisely.
+    """
+    
+    C_HILTI = 3
+    """A ~~Function using C calling convention but receiving
+    specially crafted parameters to support certain HILTI features.
+    C_HILTI works mostly as the ~C convention yet with the following
+    differences:
+
+    * Arguments can have type ~~Any. If so, each ``any`` parameter
+      will be turned into *two* parameters for the C function: the
+      first is a ``__hlt_type_info*`` and describes the type of the
+      parameter; the second is the parameter itself. 
+    
+    * The function will get an additional parameter of type
+      ``__hlt_exception*', which will be added to the end of the
+      parameter list. The function can raise an exception by
+      assigning to the __hlt_exception the pointer points to.
+      
+    See |hilti_intern.h| for the definitions of
+    the C types ``__hlt_type_info`` and ``__hlt_exception``. If the
+    C function detects a problem with the parameters it got, it
+    should raise a ``WrongArguments`` exception. 
+
+    Note: See note for ~~C.
+    
+    Todo: See todo for ~~C. 
     """
         
 class Function(ast.Node):
@@ -76,7 +118,7 @@ class Function(ast.Node):
         self._module = module
         
         self._scope = {}
-        for id in ty.Args():
+        for id in ty.args():
             self._scope[id.name()] = id 
 
     def name(self):

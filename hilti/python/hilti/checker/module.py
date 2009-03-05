@@ -46,7 +46,12 @@ def _(self, f):
         
     self._have_others = True
     self._function = f
-        
+
+    for a in f.type().args():
+        if isinstance(a.type(), type.Any) and f.callingConvention() != function.CallingConvention.C_HILTI:
+            self.error(f, "only functions using C-HILTI calling convention can take parameters of undefined type.")
+            break
+    
 @checker.post(function.Function)
 def _(self, f):
     self._function = None

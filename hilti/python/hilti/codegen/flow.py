@@ -237,12 +237,12 @@ def _makeCall(cg, func, args, llvm_succ):
     cg.llvmInit(zero, addr)
     
     # Initialize function arguments. 
-    ids = func.type().Args()
+    ids = func.type().args()
     assert len(args) == len(ids)
     
     for i in range(0, len(args)):
 	    #   callee_frame.arg_<i> = args[i] 
-        val = cg.llvmOp(args[i], cast_to=ids[i].type())
+        val = cg.llvmOp(args[i])
         addr = cg.llvmAddrLocalVar(func, callee_frame, ids[i].name())
         cg.llvmInit(val, addr)
 
@@ -290,19 +290,21 @@ def _(self, i):
     
     _makeCall(self, func, args, llvm_succ)
     
+import sys    
+    
 @codegen.when(instructions.flow.CallC)
 def _(self, i):
     func = self.lookupFunction(i.op1().value().name())
     assert func
     
-    ids = func.type().Args()
+    ids = func.type().args()
     tuple = i.op2().value()
     
     args = []
     for i in range(len(tuple)):
-        args += [self.llvmOpToC(tuple[i], cast_to=ids[i].type())]
+        args += [self.llvmOpToC(tuple[i])]
     
-    self.llvmGenerateCCall(func, args)
+    self.llvmGenerateCCall(func, args, [t.type() for t in tuple])
 
 def _makeReturn(cg, llvm_result=None, result_type=None):
     fpt = cg.llvmTypeBasicFunctionPtr([result_type] if result_type else [])

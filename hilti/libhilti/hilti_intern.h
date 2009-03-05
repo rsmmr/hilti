@@ -10,6 +10,7 @@
 #define HILTI_INTERN_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "hilti.h"
 
@@ -17,24 +18,33 @@
 // Predefined exceptions.
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef const char* __hlt_exception_t;
-
-extern __hlt_exception_t __hlt_exception_unspecified;
-extern __hlt_exception_t __hlt_exception_division_by_zero;
-extern __hlt_exception_t __hlt_exception_value_error;
-extern __hlt_exception_t __hlt_exception_out_of_memory;
+extern __hlt_exception __hlt_exception_unspecified;
+extern __hlt_exception __hlt_exception_division_by_zero;
+extern __hlt_exception __hlt_exception_value_error;
+extern __hlt_exception __hlt_exception_out_of_memory;
+extern __hlt_exception __hlt_exception_wrong_arguments;
 
 // Reports an uncaugt exception.
-extern void __hlt_exception_print_uncaught(__hlt_exception_t exception);
+extern void __hlt_exception_print_uncaught(__hlt_exception exception);
 
 // Raise an exception. 
-extern void __hlt_exception_raise(__hlt_exception_t exception);
+extern void __hlt_exception_raise(__hlt_exception exception);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Run-time information about HILTI types.
 ///////////////////////////////////////////////////////////////////////////////
 
-struct __hlt_type_info {
+// Unique id values to identify a type. These numbers must match the type's
+// _id class member in the Python module hilti.core.Type.
+#define __HLT_TYPE_ERROR   0 
+#define __HLT_TYPE_INTEGER 1 
+#define __HLT_TYPE_BOOL    2 
+#define __HLT_TYPE_STRING  3 
+
+typedef struct __hlt_type_info {
+
+    // The type's __HLT_TYPE_* id.
+    int16_t type; 
     
     // A readable version of the type's name. 
     const char* tag;
@@ -47,7 +57,7 @@ struct __hlt_type_info {
     // that type. 'options' is currently unused and will be always zero. In
     // the future, we might use it to pass in hints about the prefered
     // format.
-    struct __hlt_string* (*libhilti_fmt)(void *val, int32_t options, __hlt_exception_t*);
+    __hlt_string* (*libhilti_fmt)(void *val, int32_t options, __hlt_exception*);
     
     // Type-parameters start here. The format is type-specific.
     char type_params[];
@@ -94,30 +104,30 @@ extern void* __hlt_gc_realloc_non_atomic(void* ptr, size_t n);
 // Support functions for HILTI's integer data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const struct __hlt_string* __hlt_int_fmt(int32_t n, int32_t options, __hlt_exception_t* exception);
+extern const __hlt_string* __hlt_int_fmt(int64_t n, int32_t options, __hlt_exception* exception);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's boolean data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const struct __hlt_string* __hlt_bool_fmt(int8_t b, int32_t options, __hlt_exception_t* exception);
+extern const __hlt_string* __hlt_bool_fmt(int8_t b, int32_t options, __hlt_exception* exception);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's string data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef int32_t __hlt_string_size_t;
+typedef int32_t __hlt_string_size;
 
-struct __hlt_string {
-    __hlt_string_size_t len;
+typedef struct __hlt_string {
+    __hlt_string_size len;
     int8_t bytes[];
 } __attribute__((__packed__));
 
-extern const struct __hlt_string* __hlt_string_fmt(const struct __hlt_string* s, int32_t options, __hlt_exception_t* exception);
-extern __hlt_string_size_t __hlt_string_len(const struct __hlt_string* s, __hlt_exception_t* exception);
-extern const struct __hlt_string* __hlt_string_concat(const struct __hlt_string* s1, const struct __hlt_string* s2, __hlt_exception_t* exception);
-extern const struct __hlt_string* __hlt_string_substr(const struct __hlt_string* s1, __hlt_string_size_t pos, __hlt_string_size_t len, __hlt_exception_t* exception);
-extern __hlt_string_size_t __hlt_string_find(const struct __hlt_string* s, const struct __hlt_string* pattern, __hlt_exception_t* exception);
-extern int __hlt_string_cmp(const struct __hlt_string* s1, const struct __hlt_string* s2, __hlt_exception_t* exception);
+extern const __hlt_string* __hlt_string_fmt(const __hlt_string* s, int32_t options, __hlt_exception* exception);
+extern __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* exception);
+extern const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* exception);
+extern const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* exception);
+extern __hlt_string_size __hlt_string_find(const __hlt_string* s, const __hlt_string* pattern, __hlt_exception* exception);
+extern int __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* exception);
 
 #endif    

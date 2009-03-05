@@ -1,0 +1,22 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import hilti
+
+int8 foo(int16 x) {
+    call Hilti::print (x)
+    # Constant should promoted to int<8>.
+    return.result 5
+    }
+
+void run() {
+    local int8 a
+    # Constant should be promoted to int<16>.
+    a = call foo(42)
+}     
+

@@ -15,8 +15,7 @@ def _(type):
     return typeinfo
 
 @codegen.convertConstToLLVM(type.Bool)
-def _(op, cast_to):
-    assert not cast_to_type or cast_to_type == op.type()
+def _(op):
     return llvm.core.Constant.int(llvm.core.Type.int(1), 1 if op.value() else 0)
 
 @codegen.convertTypeToLLVM(type.Bool)

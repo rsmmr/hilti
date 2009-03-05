@@ -1,0 +1,22 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import hilti
+
+void run() {
+    call Hilti::print ("Foo!")
+    call Hilti::print ("B\u00e4r!")
+    call Hilti::print (True)
+    call Hilti::print (43)
+   
+    call Hilti::print ("A", False)
+    call Hilti::print ("B", False)
+    call Hilti::print ("C", False)
+    call Hilti::print ("")
+}     
+

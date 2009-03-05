@@ -13,7 +13,7 @@ void run() {
     local int<32> sum
     
     sum = int.add 12 30
-    call Hilti::print (sum)
+    call Hilti::print (sum, True)
     
     return.void
 }     

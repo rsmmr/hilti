@@ -235,6 +235,17 @@ class TupleOperand(Operand):
         super(TupleOperand, self).__init__(vals, type.Tuple(types), location)
         self._ops = ops
     
+
+    def setTuple(self, ops):
+        """Set the operand's tuple.
+        
+        ops: tuple of ~~Operand - The new tuple of operands.
+        """
+        types = [op.type() for op in ops]
+        self._setValue(ops)
+        self._setType(type.Tuple(types))
+        self._ops = ops
+        
     def __str__(self):
         return "(%s)" % ", ".join([str(op) for op in self._ops])
         

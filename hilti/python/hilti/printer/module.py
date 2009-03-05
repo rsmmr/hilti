@@ -50,7 +50,7 @@ def _(self, f):
     
     result = type.resultType().name()
     name = f.name()
-    args = ", ".join(["%s %s" % (id.type().name(), id.name())for id in type.Args()])
+    args = ", ".join(["%s %s" % (id.type().name(), id.name())for id in type.args()])
     linkage = ""
 
     if f.linkage() == function.Linkage.EXPORTED:
@@ -114,7 +114,7 @@ def _(self, i):
             return op.value().name()
 
         if isinstance(op, instruction.ConstOperand):
-            return op.value().encode("utf-8")
+            return str(op.value()).encode("utf-8")
         
         if isinstance(op, instruction.TupleOperand):
             return "(%s)" % ", ".join([fmtOp(o) for o in op.value()])

@@ -29,7 +29,7 @@ import Hilti
 void run() {
     local string s1
     s1 = string.concat "" "B\u00e4r!"
-    call Hilti::print_str (s1)
+    call Hilti::print (s1)
 }
 
 # @TEST-START-NEXT
@@ -41,7 +41,7 @@ import Hilti
 void run() {
     local string s1
     s1 = string.concat "Foo!" ""
-    call Hilti::print_str (s1)
+    call Hilti::print (s1)
 }
 
 

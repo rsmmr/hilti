@@ -21,9 +21,7 @@ def _llvmStringTypePtr(len=0):
     return llvm.core.Type.pointer(_llvmStringType(len))
 
 @codegen.convertConstToLLVM(type.String)
-def _(op, cast_to):
-    assert not cast_to or cast_to == op.type()
-
+def _(op):
     s = op.value().encode("utf-8")
     size = llvm.core.Constant.int(llvm.core.Type.int(32), len(s))
     bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in s]

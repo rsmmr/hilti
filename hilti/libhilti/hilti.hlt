@@ -1,5 +1,5 @@
 
 module Hilti
 
-declare "C" void print(int32 n)
+declare "C-HILTI" void print(any obj, bool newline = True)
 declare "C" void print_str(string s)

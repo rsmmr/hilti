@@ -12,12 +12,13 @@
 
 #include "hilti_intern.h"
 
-__hlt_exception_t __hlt_exception_unspecified = "Unspecified";
-__hlt_exception_t __hlt_exception_division_by_zero = "DivisionByZero";
-__hlt_exception_t __hlt_exception_value_error = "ValueError";
-__hlt_exception_t __hlt_exception_out_of_memory = "OutOfMemory";
+__hlt_exception __hlt_exception_unspecified = "Unspecified";
+__hlt_exception __hlt_exception_division_by_zero = "DivisionByZero";
+__hlt_exception __hlt_exception_value_error = "ValueError";
+__hlt_exception __hlt_exception_out_of_memory = "OutOfMemory";
+__hlt_exception __hlt_exception_wrong_arguments = "WrongArguments";
 
-void __hlt_exception_print_uncaught(__hlt_exception_t exception) {
+void __hlt_exception_print_uncaught(__hlt_exception exception) {
     // This is quite a hack currently ...
     const char* name = (const char*)exception; 
 
@@ -26,7 +27,7 @@ void __hlt_exception_print_uncaught(__hlt_exception_t exception) {
     write(2, "\n", 1);
 }
 
-void __hlt_exception_raise(__hlt_exception_t exception)
+void __hlt_exception_raise(__hlt_exception exception)
 {
     // Todo: Implement somehow ... This is just temporary.
     const char* name = (const char*)exception; 

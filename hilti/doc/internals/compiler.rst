@@ -98,6 +98,7 @@ Internals
 .. autofunction:: hilti.parser.parser.loc
 .. autofunction:: hilti.parser.parser.parse
 .. autofunction:: hilti.parser.parser.error
+.. autoclass:: hilti.parser.parser.Resolver
 
 .. todo:: Describe lexer, in particular the two states.
 

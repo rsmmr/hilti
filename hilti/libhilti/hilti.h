@@ -10,16 +10,19 @@
 
 #include <stdint.h>
 
-// Intialize the HILTI run-time librart. 
+typedef struct __hlt_type_info __hlt_type_info;
+typedef const char* __hlt_exception;
+
+// Initialize the HILTI run-time library. 
 extern void hilti_init();
 
 // Entry point into HILTI processing. 
 extern void hilti_run();
 
 // Library functions.
-extern void hilti_print(int32_t n);
+void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_exception* excpt);
 
-struct __hlt_string;
-extern void hilti_print_str(const struct __hlt_string* str);
+typedef struct __hlt_string __hlt_string;
+extern void hilti_print_str(const __hlt_string* str);
 
 #endif    

@@ -15,7 +15,7 @@ def _checkFunc(checker, i, func, cc):
         checker.error(i, "unknown function")
         return False
 
-    if cc and func.callingConvention() != cc:
+    if cc and not func.callingConvention() in cc:
         checker.error(i, "call to function with incompatible calling convention")
     
     return True
@@ -29,7 +29,7 @@ def _checkArgs(checker, i, func, op):
         return
 
     args = op.value()
-    ids = func.type().Args()
+    ids = func.type().args()
     
     if len(args) != len(ids):
         checker.error(i, "wrong number of arguments for function")
@@ -83,7 +83,7 @@ def _(self, i):
 @checker.when(flow.CallC)
 def _(self, i):
     func = self.currentModule().lookupIDVal(i.op1().id().name())
-    if not _checkFunc(self, i, func, function.CallingConvention.C):
+    if not _checkFunc(self, i, func, [function.CallingConvention.C, function.CallingConvention.C_HILTI]):
         return
 
     rt = func.type().resultType()
@@ -99,7 +99,7 @@ def _(self, i):
 @checker.when(flow.CallTailVoid)
 def _(self, i):
     func = self.currentModule().lookupIDVal(i.op1().id().name())
-    if not _checkFunc(self, i, func, function.CallingConvention.HILTI):
+    if not _checkFunc(self, i, func, [function.CallingConvention.HILTI]):
         return
     
     rt = func.type().resultType()
@@ -113,7 +113,7 @@ def _(self, i):
 @checker.when(flow.CallTailResult)
 def _(self, i):
     func = self.currentModule().lookupIDVal(i.op1().id().name())
-    if not _checkFunc(self, i, func, function.CallingConvention.HILTI):
+    if not _checkFunc(self, i, func, [function.CallingConvention.HILTI]):
         return
     
     rt = func.type().resultType()

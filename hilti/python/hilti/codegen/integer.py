@@ -15,14 +15,7 @@ def _(type):
     return typeinfo
 
 @codegen.convertConstToLLVM(type.Integer)
-def _(op, cast_to):
-    # Allow casting of a constant without width to one with it.
-    if cast_to and isinstance(cast_to, type.Integer) and \
-    	op.type().width() == 0 and cast_to.width() != 0:
-        return llvm.core.Constant.int(llvm.core.Type.int(cast_to.width()), op.value())
-    
-    assert not cast_to
-    
+def _(op):
     return llvm.core.Constant.int(llvm.core.Type.int(op.type().width()), op.value())
 
 @codegen.convertTypeToLLVM(type.Integer)

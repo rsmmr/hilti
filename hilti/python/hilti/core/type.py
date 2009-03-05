@@ -51,7 +51,15 @@ class Type(object):
       
     Any class derived from Type must include a class-variable +_name+
     containing a string that is suitable for use in error messages to
-    describes the HILTI type that the class is representing. 
+    describes the HILTI type that the class is representing. In addition, all
+    Type-derived classes that can be instantiated directly (vs. base classes)
+    must have another class-variable *+_id+ with an integer that is unique
+    across all of them; the integer must have a matching constant 
+    ``__HLT_TYPE_*`` defined in :download:`/libhilti/hilti_intern.h`. 
+    
+    Todo: Perhaps we should autogenerate the *_id* constants in some way and
+    also automatically synchronize them with ``hilti_intern.h``. I'm however
+    not quite sure what's an elegant way to do that. 
     """
     def __init__(self, name, docname=None):
         self._name = name
@@ -125,6 +133,8 @@ class Type(object):
         return not eq if eq != NotImplemented else NotImplemented
     
     _name = "type"
+    _id = 0 # Zero is used as an error indicator.
+
 
 class HiltiType(Type):
     """Base class for all HILTI types that can be directly instantiated in a
@@ -244,6 +254,7 @@ class String(StorageType):
         super(String, self).__init__([], String._name)
         
     _name = "string"
+    _id = 3
         
 class Integer(StorageType):
     """Type for integers.  
@@ -290,6 +301,7 @@ class Integer(StorageType):
         return self._width == other._width
     
     _name = "int"
+    _id = 1
     
 class Bool(StorageType):
     """Type for booleans."""
@@ -297,6 +309,7 @@ class Bool(StorageType):
         super(Bool, self).__init__([], Bool._name)
         
     _name = "bool"
+    _id = 2
     
 class Struct(StorageType):
     """Type for structs. 
@@ -330,24 +343,37 @@ class StructDecl(TypeDeclType):
 class Function(Type):
     """Type for functions. 
     
-    args: list of ~~ID - The function's arguments. 
+    args: list of (~~ID, default) tuples - The function's arguments, with
+    *default* being optional default values. Set *default* to *None* if no
+    default.
+    
     resultt - ~~Type - The type of the function's return value (~~Void for none). 
     """
     def __init__(self, args, resultt):
-        name = "(function (%s) -> %s)" % (", ".join([str(id.type()) for id in args]), resultt)
+        name = "(function (%s) -> %s)" % (", ".join([str(id.type()) for (id, default) in args]), resultt)
         super(Function, self).__init__(name)
-        self._ids = args
+        self._ids = [id for (id, default) in args]
+        self._defaults = [default for (id, default) in args]
         self._result = resultt
         
-    def Args(self):
+    def args(self):
         """Returns the functions's arguments.
         
         Returns: list of ~~ID - The function's arguments. 
         """
         return self._ids
+
+    def argsWithDefaults(self):
+        """Returns the functions's arguments with any default values.
+        
+        Returns: list of (~~ID, default) - The function's arguments with their
+        default values. If there's no default for an arguments, *default*
+        will be None.
+        """
+        return zip(self._ids, self._defaults)
     
     def getArg(self, name):
-        """Returns the named function argument. 
+        """Returns the named function argument.
         
         Returns: ~~ID - The function's argument with the given name, or None
         if there is no such arguments. 
@@ -383,7 +409,7 @@ class Void(OperandType):
     
 class Any(OperandType):
     """Wildcard type that matches any other type."""
-    def __init__(self, name):
+    def __init__(self):
         super(Any, self).__init__("any")
 
     _name = "any"
@@ -495,7 +521,7 @@ _keywords = {
 
 _all_hilti_types = {}
     
-def getHiltiType(name, args):
+def getHiltiType(name, args = []):
     """Instantiates a ~~HiltiType from a type name. 
     
     *name*: string - The name of type as used in HILTI programs. 

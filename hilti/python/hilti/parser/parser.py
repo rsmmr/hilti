@@ -120,11 +120,11 @@ def p_def_function_head(p):
     
     if p[1] == function.CallingConvention.HILTI:
         func = function.Function(p[3], ftype, p.parser.current.module, location=loc(p, 3))
-    elif p[1] == function.CallingConvention.C:
+    elif p[1] in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
         # FIXME: We need some way to declare C function which are not part of
         # a module. In function.Function, we already allow module==None in the
         # CC.C case but our syntax does not provide for that currently. 
-        func = function.Function(p[3], ftype, p.parser.current.module, cc=function.CallingConvention.C, location=loc(p, 3))
+        func = function.Function(p[3], ftype, p.parser.current.module, cc=p[1], location=loc(p, 3))
     else:
         # Unknown calling convention
         assert False
@@ -134,7 +134,7 @@ def p_def_function_head(p):
     
     p.parser.current.function = None
     p.parser.current.block = None
-     
+
 def p_def_opt_cc(p):
     """opt_cc : STRING
               | """
@@ -149,6 +149,10 @@ def p_def_opt_cc(p):
     
     if p[1] == "C":
         p[0] = function.CallingConvention.C
+        return
+    
+    if p[1] == "C-HILTI":
+        p[0] = function.CallingConvention.C_HILTI
         return
         
     error(p, "unknown calling convention \"%s\"" % p[1])
@@ -265,19 +269,19 @@ def p_operand_list(p):
         p[0] = [p[1]]
 
 def p_param_list(p):
-    """param_list : param_id ',' param_list
-                  | param_id 
+    """param_list : param_id opt_default_val ',' param_list
+                  | param_id opt_default_val
                   | """
                   
     if len(p) == 1:
         p[0] = []
-    elif len(p) == 2:
-        p[0] = [p[1]]
+    elif len(p) == 3:
+        p[0] = [(p[1], p[2])]
     else:
-        p[0] = [p[1]] + p[3]
+        p[0] = [(p[1], p[2])] + p[4]
     
 def p_param_id(p):
-    """param_id : type IDENT"""
+    """param_id : type_with_any IDENT"""
     p[0] = id.ID(p[2], p[1], id.Role.PARAM, location=loc(p, 1))
 
 def p_local_id(p):
@@ -288,6 +292,14 @@ def p_global_id(p):
     """global_id : type IDENT"""
     p[0] = id.ID(p[2], p[1], id.Role.GLOBAL, location=loc(p, 1))
 
+def p_def_opt_default_val(p):
+    """opt_default_val : '=' operand
+                    | """
+    if len(p) == 3:
+        p[0] = p[2]
+    else:
+        p[0] = None
+    
 def p_type(p):
     """type : TYPE
             | TYPE '<' type_param_list '>'"""
@@ -314,6 +326,15 @@ def p_type_with_void(p):
                       
     if p[1] == "void":
         p[0] = type.Void()
+    else:
+        p[0] = p[1]
+
+def p_type_with_any(p):
+    """type_with_any : type
+                      | ANY"""
+                      
+    if p[1] == "any":
+        p[0] = type.Any()
     else:
         p[0] = p[1]
         
