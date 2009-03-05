@@ -135,7 +135,7 @@ class Instruction(ast.Node):
 class Operand(ast.Node):
     """Base class for operands and targets of HILTI instructions. 
     
-    value: any - The operand's value; must match with the *type.
+    value: any - The operand's value; must match with the *type*.
     type: ~~Type - The operand's type.
     location: ~~Location - A location to be associated with the operand. 
     """

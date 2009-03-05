@@ -35,7 +35,7 @@ class Type(object):
          default implementation of this method as defined in Type compares the
          results of two objects :class:`name` method. 
          
-      2. If either of the two types is an instance of ~Any, the match succeeds.
+      2. If either of the two types is an instance of ~~Any, the match succeeds.
       
       3. If neither (1) or (2) is the case, the match fails. 
       
@@ -49,11 +49,11 @@ class Type(object):
 
     * In all other cases, the comparision yields False.
       
-    Any class derived from Type must include a class-variable +_name+
+    Any class derived from Type must include a class-variable ``_name``
     containing a string that is suitable for use in error messages to
     describes the HILTI type that the class is representing. In addition, all
     Type-derived classes that can be instantiated directly (vs. base classes)
-    must have another class-variable *+_id+ with an integer that is unique
+    must have another class-variable *_id* with an integer that is unique
     across all of them; the integer must have a matching constant 
     ``__HLT_TYPE_*`` defined in :download:`/libhilti/hilti_intern.h`. 
     

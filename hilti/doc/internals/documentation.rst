@@ -12,18 +12,18 @@ Python API
 ^^^^^^^^^^
 
 Generally, all parts of the Python API should be thoroughly
-documented via
-`<http://docs.python.org/tutorial/controlflow.html#documentation-strings>
-documentation strings`_. The rule of thumb is that all public
-identifiers (i.e., those starting without an underscore) should be
-augmented with a doc-string. This includes classes, constants, and
-methods, as well as those modules which are supposed to be used from
-external parties. For internal sub-modules that are part of another
-package we sometimes use the module's doc-string for documentating
-concepts and implementation, as specified below. When writing
-doc-strings, follow the convections in :ref:`_doc-strings`.
+documented via  `documentation strings <http://docs.python.org/tutorial/controlflow.html#documentation-strings>`_.
+The rule of thumb is that all public identifiers (i.e., those
+starting without an underscore) should be augmented with a
+doc-string. This includes classes, constants, and methods, as well
+as those modules which are supposed to be used from external
+parties. For internal sub-modules that are part of another package
+we sometimes use the module's doc-string for documentating concepts
+and implementation, as specified below. When writing doc-strings,
+follow the convections in :ref:`doc-strings`.
 
-.. _doc-strings.
+.. _doc-strings:
+
 Doc String Conventions
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -39,7 +39,7 @@ When writing doc-strings for these, follow these conventions:
 * After the first sentence, describe the documented item in depth.
   For functions/methods, you can reference arguments where
   necessary, but you don't need to. If you reference any arguments,
-  use the markup +*foo*+. In any case, make sure that the text
+  use the markup ``*foo*``. In any case, make sure that the text
   contains enough context for the following arguments summary to be
   comprehensible.
   
@@ -76,7 +76,7 @@ When writing doc-strings for these, follow these conventions:
       
 * Whenever you mention any other HILTI class or other identifier,
   add a cross-reference. In most cases, it will work to just write,
-  e.g., +~~Foo+ to reference identifier Foo.
+  e.g., ``~~Foo`` to reference identifier Foo.
   
 * If you want to point the reader to a particular observation (like
   an implementation detail, or a current deficiency), write a
@@ -102,14 +102,14 @@ corresponding ``automodule`` directive. If the package's primary
 public interface is a function right in ``init.py`` (as it's the case
 for most of HILTI's packages except ~~core), also include an
 ``autofunction`` directive for it. You can optionally provide some
-more context around the +auto*+ directives. 
+more context around the ``auto*`` directives. 
 
 Internals
 ^^^^^^^^^
 
 For all elements internal to a package, add a subsubsection to the
 package's description in ``internals/compiler.rst`` and call it
-"Internals". Then include +auto*+ directives as appropiate.
+"Internals". Then include ``auto*`` directives as appropiate.
 
 Documenting Functionality in Specific Packages
 ----------------------------------------------
@@ -148,7 +148,7 @@ In :mod:`~hilti.parser.parser` we document all public
 classes/functions which are *not* grammar rules. As the grammar
 rules come in doc-strings however, we can't just pull all
 identifiers into the documentation but must list those we want to
-appear separately with *auto*+ statements in the parser's
+appear separately with *auto* statements in the parser's
 "Internals" section.
 
 

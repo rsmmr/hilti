@@ -237,7 +237,7 @@ def reformatSignature(app, what, name, obj, options, signature, return_annotatio
         return (signature, return_annotation)
     
     str = ""
-    sig = obj.myclass._signature
+    sig = obj._signature
     
     if sig.op1():
         str += "op1, "
@@ -374,13 +374,16 @@ def expandMarkup(app, what, name, obj, options, lines):
     newlines = []
     
     for line in lines:
-        
+
         if state == FIRST:
             i = line.find(".")
             if i < 0:
+                i = line.find(":")
+            
+            if i < 0:
                 first += [line]
             else:
-                first += [line[0:i+1] + "\n"]
+                first += [line[0:i+1]]
                 text += [line[i+1:].strip()]
                 state = TEXT
             continue
@@ -388,7 +391,7 @@ def expandMarkup(app, what, name, obj, options, lines):
         next_state = state
         
         m = None
-        for (regexp, nst) in [(re_returns, RET), (re_raises, RAISES), (re_arg, ARGS), (re_todo, TODO), (re_note, NOTE)]:
+        for (regexp, nst) in [(re_returns, RET), (re_raises, RAISES), (re_todo, TODO), (re_note, NOTE), (re_arg, ARGS)]:
             m = regexp.match(line)
             if m:
                 next_state = nst
@@ -424,12 +427,12 @@ def expandMarkup(app, what, name, obj, options, lines):
             # Start new section.
             if next_state == ARGS:
                 (id, type, descr) = (m.group(1), m.group(2), m.group(3))
-                newlines = ["- %s **%s**: %s" % (type.strip(), id.strip(), descr.strip())]
+                newlines = ["- **%s** (%s) - %s" % (id.strip(), type.strip(), descr.strip())]
                 args += newlines
                 
             if next_state == RET:
                 (type, descr) = (m.group(1), m.group(2))
-                newlines = ["- %s: %s" % (type.strip(), descr.strip())]
+                newlines = ["- %s - %s" % (type.strip(), descr.strip())]
                 ret += newlines
                 
             if next_state == RAISES:
@@ -439,12 +442,12 @@ def expandMarkup(app, what, name, obj, options, lines):
                 
             if next_state == NOTE:
                 txt = m.group(1)
-                newline = txt + "\n"
+                newline = txt
                 note += [newline]
                 
             if next_state == TODO:
                 txt = m.group(1)
-                newline = txt + "\n"
+                newline = txt
                 todo += [newline]
             
             state = next_state
@@ -459,50 +462,62 @@ def expandMarkup(app, what, name, obj, options, lines):
         lines += [line]
 
     if args:
-        lines += ["\n"]
-        lines += ["*Parameters*\n"]
-        lines += ["\n"]
+        lines += [""]
+        lines += ["*Parameters*"]
+        lines += [""]
 
         for line in args:
-            lines += [line + "\n"]
+            lines += [line]
+        lines += [""]
 
     if ret:
-        lines += ["\n"]
-        lines += ["*Return value*\n"]
-        lines += ["\n"]
+        lines += [""]
+        lines += ["*Return value*"]
+        lines += [""]
 
         for line in ret:
-            lines += [line + "\n"]
+            lines += [line + ""]
+        lines += [""]
 
     if raises:
-        lines += ["\n"]
-        lines += ["*Raises*\n"]
-        lines += ["\n"]
+        lines += [""]
+        lines += ["*Raises*"]
+        lines += [""]
 
         for line in raises:
-            lines += [line + "\n"]
+            lines += [line + ""]
+        lines += [""]
             
     if note:
-        lines += ["\n"]
-        lines += [".. note::\n"]
-        lines += ["\n"]
+        lines += [""]
+        lines += [".. note::"]
+        lines += [""]
 
         for line in note:
-            lines += [line]
+            lines += ["   " + line]
         
     if todo:
-        lines += ["\n"]
-        lines += [".. todo::\n"]
-        lines += ["\n"]
+        lines += [""]
+        lines += [".. todo::"]
+        lines += [""]
 
         for line in todo:
-            lines += [line]
+            lines += ["   " + line]
             
+#    for l in lines:
+#        print l
+#    print "============================="
+
 def processDocString(app, what, name, obj, options, lines):
+
     expandMarkup(app, what, name, obj, options, lines)
     expandReferences(app, what, name, obj, options, lines)
     addSignature(app, what, name, obj, options, lines)
 
+#    for l in lines:
+#        print l
+#    print "============================="    
+    
 #    print >>sys.stderr, "<<<<<<<<<<<<<<<<<<<"
 #    for line in lines:
 #        print >>sys.stderr, line,

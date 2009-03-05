@@ -2,9 +2,10 @@
 #
 # Instruction for the integer data type.
 """
-The +integer+ data type represents signed integers of a fixed width. The width
-is specified as part of the type name as, e.g., in +int:16+ for a 16-bit
-integer. 
+The *integer* data type represents signed integers of a fixed width. The width
+is specified as part of the type name as, e.g., in ``int<16>`` for a 16-bit
+integer. There are predefined shortcuts ``int8``, ``int16``, ``int32`` and
+``int64``.
 """
 
 from hilti.core.type import *

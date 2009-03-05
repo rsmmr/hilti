@@ -17,20 +17,20 @@ Adding a new HILTI data type
   Usually, that will be either `.type.StorageType` or
   `.type.HeapType`.
   
-- Create a module in :path:`instructions/` with the new
+- Create a module in :file:`instructions/` with the new
   type's instructions. The module's doc string should contain a
   high-level description of the type suitable for inclusion into the
   user manual. Include a description of the type's syntax for
   constants there if appropiate. Add the module to
-  :path:`python/hilti/instructions/__init__.py`.
+  :file:`instructions/__init__.py`.
 
-- Create a module in :path:`checker/` with the new
+- Create a module in :file:`checker/` with the new
   type's correctness checks. Add the module to
-  :path:`python/hilti/checker/__init__.py`.
+  :file:`checker/__init__.py`.
 
-- Create a module in :path:`codegen/` with the new type's code
+- Create a module in :file:`codegen/` with the new type's code
   generation. Add the module to
-  :path:`python/hilti/codegen/__init__.py`. In the module:
+  :file:`codegen/__init__.py`. In the module:
   
   * Decorate a function with ~~makeTypeInfo to initialize the types
     ~~TypeInfo.
@@ -58,10 +58,10 @@ need to extend the parser:
    - Add an ``p_operand_<type>`` rule in :file:`parser/parser.py`
 
 
-Adding a ``StorageType``
-~~~~~~~~~~~~~~~~~~~~~~~~
+Adding a StorageType
+~~~~~~~~~~~~~~~~~~~~
 
 
-Adding a ``HeapType``
-~~~~~~~~~~~~~~~~~~~~~~~~
+Adding a HeapType
+~~~~~~~~~~~~~~~~~
 

@@ -18,7 +18,8 @@ class Linkage:
         
 class CallingConvention:
     """The *calling convention* used by a ~~Function specifies which
-    implementation calls to it use."""
+    implementation calls to it use.
+    """
     
     HILTI = 1
     """A ~~Function using the proprietary HILTI calling convention.
@@ -52,7 +53,7 @@ class CallingConvention:
     likely become possible to define such functions in HILTI itself
     as well, which will then be callable also *from* C programs. 
     
-    Todo: We should document the type conversion HILTI->C more
+    Todo: We should document the type conversion HILTI-to-C more
     precisely.
     """
     
@@ -68,7 +69,7 @@ class CallingConvention:
       parameter; the second is the parameter itself. 
     
     * The function will get an additional parameter of type
-      ``__hlt_exception*', which will be added to the end of the
+      ``__hlt_exception*``, which will be added to the end of the
       parameter list. The function can raise an exception by
       assigning to the __hlt_exception the pointer points to.
       

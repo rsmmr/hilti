@@ -80,17 +80,19 @@ def internal_error(msg, component=None, context=None):
     assert False
     
 def expand_escapes(str):
-    """Expands escape sequences. The following escape sequences are supported:
+    r"""Expands escape sequences. The following escape sequences are supported:
     
-    ---------  ------
-    Escape     Result
-    ---------  ------
-    \\         Backslash
-    \n         Line feed
-    \r         Carriage return
-    \t         Tabulator
-    \uxxxx     16-bit Unicode codepoint
-    \uxxxxxxxx 32-bit Unicode codepoint
+    ============   ========================
+    Escape         Result
+    ============   ========================
+    \\ \\            Backslash
+    \\n             Line feed
+    \\r             Carriage return
+    \\t             Tabulator
+    \\uxxxx         16-bit Unicode codepoint
+    \\uxxxxxxxx     32-bit Unicode codepoint
+    ============   ========================
+    
     
     str: string - The string to expand. 
     
