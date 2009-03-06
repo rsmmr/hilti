@@ -301,11 +301,9 @@ class CodeGen(visitor.Visitor):
         """
         return self._llvm.type_type_information 
         
-    def llvmAddTypeInfos(self, module):
-        """Adds run-time type information to a module. The function creates on
-        type information object for each instantiated ~~HiltiType.
-        
-        module: ~~llvm.core.Module - The LLVM module to add the information to.
+    def llvmAddTypeInfos(self):
+        """Adds run-time type information to the current LLVM module. The function
+        creates on type information object for each instantiated ~~HiltiType.
         
         Todo: Currently, we only support integer constants as type parameters. 
         """
@@ -321,23 +319,24 @@ class CodeGen(visitor.Visitor):
                 # to make this more generic and also should not hard-code this
                 # stuff here. 
                 if isinstance(arg, int):
-                    at = llvm.core.Type.int(32)
+                    at = llvm.core.Type.int(64)
                     arg_types += [at]
                     arg_vals += [llvm.core.Constant.int(at, arg)]
                     
                 elif isinstance(arg, string):
                     # TODO: Type names go here. 
-                    util.internal_errro("llvmAddTypeInfos: unsupported type parameter %s" % arg)
+                    util.internal_errror("llvmAddTypeInfos: unsupported type parameter %s" % arg)
                     
                 else:
-                    util.internal_errro("llvmAddTypeInfos: unsupported type parameter %s" % arg)
+                    util.internal_errror("llvmAddTypeInfos: unsupported type parameter %s" % arg)
                 
-            null = llvm.core.Constant.null(self.llvmTypeGenericPointer())
-            
-            try:
-                libhilti_fmt = module.get_function_named(ti.libhilti_fmt) if ti.libhilti_fmt else null
-            except llvm.LLVMException, e:
-                util.internal_error("libhilti function has not been declared: %s" % e)
+            if ti.libhilti_fmt:
+                func = self.currentModule().lookupIDVal(ti.libhilti_fmt)
+                if not func or not isinstance(func, function.Function):
+                    util.internal_error("llvmAddTypeInfos: %s is not a known function" % ti.libhilti_fmt)
+                libhilti_fmt = self.llvmGetCFunction(func)
+            else:
+                libhilti_fmt = llvm.core.Constant.null(self.llvmTypeGenericPointer())
 
             libhilti_func_vals = [libhilti_fmt]
             libhilti_func_types = [libhilti_fmt.type]
@@ -349,28 +348,28 @@ class CodeGen(visitor.Visitor):
             name_type = llvm.core.Type.array(llvm.core.Type.int(8), len(ti.name) + 1)
             bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in ti.name + "\0"]
             name_val = llvm.core.Constant.array(llvm.core.Type.int(8), bytes)
-            name_glob = module.add_global_variable(name_type, name_name)
+            name_glob = self.llvmCurrentModule().add_global_variable(name_type, name_name)
             name_glob.global_constant = True
             name_glob.initializer = name_val
             name_glob.linkage = llvm.core.LINKAGE_LINKONCE
-            
+        
             # Create the type info struct type. Note when changing this we
             # also need to adapt the type in self._llvm.type_type_information
             st = llvm.core.Type.struct(
-                [llvm.core.Type.int(16),            # type
-                 llvm.core.Type.pointer(name_type)] # name
+            [llvm.core.Type.int(16),            # type
+                llvm.core.Type.pointer(name_type)] # name
                 + libhilti_func_types + arg_types)
-
+            
             if ti.type._id == 0:
                 util.internal_error("type %s does not have an _id" % ti.type)
-                
+            
             # Create the type info struct constant.
             sv = llvm.core.Constant.struct(
-                [llvm.core.Constant.int(llvm.core.Type.int(16), ti.type._id), # type
-                 name_glob]                                                   # name
-                + libhilti_func_vals + arg_vals)
+            [llvm.core.Constant.int(llvm.core.Type.int(16), ti.type._id), # type
+                name_glob]                                                   # name
+            + libhilti_func_vals + arg_vals)
                 
-            glob = module.add_global_variable(st, ti_name)
+            glob = self.llvmCurrentModule().add_global_variable(st, ti_name)
             glob.global_constant = True
             glob.initializer = sv
             glob.linkage = llvm.core.LINKAGE_LINKONCE
@@ -400,25 +399,7 @@ class CodeGen(visitor.Visitor):
         
         Returns: ~~llvm.core.Module - The new module.
         """
-
-        prototypes = util.findFileInPaths("hilti_intern.ll", self._libpaths)
-        if not prototypes:
-            util.error("cannot find hilti_intern.ll")
-        
-        try:
-            f = open(prototypes)
-        except IOError, e:
-            util.error("cannot read %s: %s" % (prototypes, e))
-            
-        try:
-            module = llvm.core.Module.from_assembly(f)
-        except llvm.LLVMException, e:
-            util.error("cannot parse %s: %s" % (prototypes, e))
-
-        module.name = name
-        self.llvmAddTypeInfos(module)
-        return module
-
+        return  llvm.core.Module.new(name)
         
     def llvmNewBlock(self, postfix):
         """Creates a new LLVM block. The block gets a label that is guaranteed
@@ -839,27 +820,48 @@ class CodeGen(visitor.Visitor):
         except KeyError:
             return self.llvmCreateFunction(block.function(), name)
 
-    def _llvmMakeArgTypesForCHiltiCall(self, func, argtypes):
-        # Turn the arguments into the format used by CC C_HILTI (see there). 
-        new_argtypes = []
-        for (argty, prototype) in zip(argtypes, func.type().args()):
+    def _llvmMakeArgTypesForCHiltiCall(self, func, arg_types):
+        # Turn the argument types into the format used by CC C_HILTI (see there). 
+        new_arg_types = []
+        for (argty, prototype) in zip(arg_types, func.type().args()):
             if isinstance(prototype.type(), type.Any):
                 # Add a type information parameter.
-                new_argtypes += [llvm.core.Type.pointer(self.llvmTypeTypeInfo())]
-                
-            new_argtypes += [argty]
+                new_arg_types += [llvm.core.Type.pointer(self.llvmTypeTypeInfo())]
+                # Turn argument into a pointer. 
+                new_arg_types += [self.llvmTypeGenericPointer()]
+            else:
+                new_arg_types += [argty]
+            
+        # Add exception argument.
+        new_arg_types += [llvm.core.Type.pointer(self.llvmTypeGenericPointer())]
+        return new_arg_types
+    
+    def _llvmMakeArgsForCHiltiCall(self, func, args, arg_types):
+        # Turns the arguments into the format used by CC C_HILTI (see there). 
+        new_args = []
+        for (arg, argty, prototype) in zip(args, arg_types, func.type().args()):
+            if isinstance(prototype.type(), type.Any):
+                # Add a type information parameter.
+                new_args += [self.builder().bitcast(self.llvmTypeInfoPtr(argty), llvm.core.Type.pointer(self.llvmTypeTypeInfo()))]
+                # Turn argument into a pointer.
+                ptr = self.builder().alloca(arg.type)
+                self.builder().store(arg, ptr)
+                ptr = self.builder().bitcast(ptr, self.llvmTypeGenericPointer())
+                new_args += [ptr]
+            else:
+                new_args += [arg]
             
         # Add exception argument.
         excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
-        new_argtypes += [llvm.core.Type.pointer(self.llvmTypeGenericPointer())]
-        return new_argtypes
+        new_args += [excpt_ptr]
+        return new_args
         
     def llvmGetCFunction(self, func):
         """Returns the LLVM function for an external C function. If the LLVM
-        function doesn't exist yet, it will be created.
+        function doesn't exist yet, it is be created.
         
         func: ~~Function - The function which must be of ~~CallingConvention
-        ~~C or ~~C_HILTI..
+        ~~C or ~~C_HILTI.
         
         Returns: llvm.core.Function - The LLVM function for the external C
         function.
@@ -888,33 +890,9 @@ class CodeGen(visitor.Visitor):
             self._llvm.functions[name] = llvmfunc
             return llvmfunc
 
-    def _llvmMakeArgsForCHiltiCall(self, func, args, argtypes):
-        # Turns the arguments into the format used by CC C_HILTI (see there). 
-        
-        new_args = []
-        for (arg, argty, prototype) in zip(args, argtypes, func.type().args()):
-            if isinstance(prototype.type(), type.Any):
-                # Add a type information parameter.
-                ti = self.builder().bitcast(self.llvmTypeInfoPtr(argty), llvm.core.Type.pointer(self.llvmTypeTypeInfo()))
-                
-                # This is soo ugly. But how else do we pass arbitrary values?
-                if isinstance(arg.type, llvm.core.PointerType):
-                    val = self.builder().bitcast(arg, self.llvmTypeGenericPointer())
-                else:
-                    val = self.builder().inttoptr(arg, self.llvmTypeGenericPointer())
-                    
-                new_args += [ti, val]
-                continue
-                
-            new_args += [arg]
-            
-        # Add exception argument.
-        excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
-        new_args += [excpt_ptr]
-        return new_args
-
     def _llvmGenerateExceptionTest(self, excpt_ptr):
-        # FIXME: Unifu the libhilti calling 
+        # Generates code to check whether a called C-HILTI function has raised
+        # an exception.
         excpt = self.builder().load(excpt_ptr)
         raised = self.builder().icmp(llvm.core.IPRED_NE, excpt, self.llvmConstNoException())
 
@@ -929,21 +907,28 @@ class CodeGen(visitor.Visitor):
         # We leave this builder for subseqent code.
         self.pushBuilder(block_noexcpt)
     
-    def llvmGenerateCCall(self, func, args, argtypes):
+    def llvmGenerateCCall(self, func, args, arg_types):
         """Generates a call to a C function. The method uses the current
         :meth:`builder`.
         
         func: ~~Function - The function, which must have ~~Linkage ~~C or
-        ~~C_HILTI.
+        ~~C_HILTI. 
+        
         args: list of llvm.core.Value - The arguments to pass to the function.
-        argtypes: list ~~Type - The actual types of the arguments.
+        
+        arg_types: list ~~Type - The types of the actual arguments.
+        While these will often be the same as specified in the
+        function's signature, they can differ in some cases, e.g.,
+        if the function accepts an argument of type ~~Any.
+        
+        Returns: llvm.core.Value - A value representing the function's return
+        value. 
         """
-        
         llvm_func = self.llvmGetCFunction(func)
-        
+    
         if func.callingConvention() == function.CallingConvention.C_HILTI:
-            args = self._llvmMakeArgsForCHiltiCall(func, args, argtypes)
-        
+            args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types)
+
         tag = None
         if func.type().resultType() == type.Void:
             call = self.builder().call(llvm_func, args)
@@ -955,30 +940,36 @@ class CodeGen(visitor.Visitor):
         if func.callingConvention() == function.CallingConvention.C_HILTI:
             excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
             self._llvmGenerateExceptionTest(excpt_ptr)
+
+    def llvmGenerateCCallByName(self, name, args, arg_types):
+        """Generates a call to a C function given by it's name. The method
+        uses the current :meth:`builder`.
         
-    def llvmGenerateLibHiltiCall(self, function, args):
-        """Generates a call to a libhilti function. The method uses the
-        current :meth:`builder`. The libhilti function will get one additional
-        parameter: a reference to an exception object which it can set if it
-        needs to raise an exception.
+        name: string - The HILTI-level name of the C function, including the
+        function's module namespace (e.g., ``Hilti::print`` or
+        ``__Hlt::string_len``). A function with this name must have been
+        declared inside the current module already; the method will report an
+        internal error if it hasn't.
         
-        function: string - The full, C-level name of the library function. 
         args: list of llvm.core.Value - The arguments to pass to the function.
+        
+        arg_types: list ~~Type - The types of the actual arguments.
+        While these will often be the same as specified in the
+        function's signature, they can differ in some cases, e.g.,
+        if the function accepts an argument of type ~~Any.
+        
+        Returns: llvm.core.Value - A value representing the function's return
+        value. 
+        
+        Note: This method is just a short-cut for calling ~~llvmGenerateCCall
+        with the right ~~Function object. 
         """
-        
-        llvm_func = self.llvmCurrentModule().get_function_named(function)
-        if not llvm_func:
-            util.internal_error("libhilti function %s has not been declared")
-
-        excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
+        func = self.currentModule().lookupIDVal(name)
+        if not func or not isinstance(func, func.Function):
+            util.internal_error("llvmGenerateCCallByName: %s is not a known function" % name)
             
-        call = self.builder().call(llvm_func, args + [excpt_ptr])
-        call.calling_convention = llvm.core.CC_C
+        return self.llvmGenerateCCall(func, args, arg_types)
         
-        # Add code the check whether the call raised an exception.
-        self._llvmGenerateExceptionTest(excpt_ptr)
-        return call
-
     def llvmRaiseException(self, exception):
         """Generates the raising of an exception. The method
         uses the current :meth:`builder`.

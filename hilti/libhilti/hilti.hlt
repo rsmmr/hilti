@@ -1,3 +1,6 @@
+# $Id$
+#
+# User-visible libhilti functions.
 
 module Hilti
 

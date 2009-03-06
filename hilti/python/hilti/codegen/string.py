@@ -11,7 +11,7 @@ from codegen import codegen
 @codegen.makeTypeInfo(type.String)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.libhilti_fmt = "__hlt_string_fmt";
+    typeinfo.libhilti_fmt = "__Hlt::string_fmt";
     return typeinfo
 
 def _llvmStringType(len=0):

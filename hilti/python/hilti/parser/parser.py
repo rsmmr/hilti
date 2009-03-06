@@ -66,6 +66,10 @@ def p_instantiate_module(p):
     """_instantiate_module :"""
     p.parser.current.module = module.Module(p[-1], location=loc(p, -1))
     
+    # Implicitly import the internal libhilti functions.
+    if p.parser.current.module.name() != "__hlt":
+        _importFile("hilti_intern.hlt", loc(p, -1))
+    
 def p_module_decl_list(p):
     """module_decl_list :   module_decl module_decl_list
                         |   empty_line module_decl_list

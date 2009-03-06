@@ -1,0 +1,3 @@
+wrong-width.hlt:5: parser error, error in type parameter: integer width must be <= 64 bits (128)
+
+1 error found

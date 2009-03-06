@@ -187,7 +187,7 @@ class HiltiType(Type):
         param: any - The parameter which caused the trouble.
         reason: string - A string explaining what went wrong.
         """
-        def __init__(param, reason):
+        def __init__(self, param, reason):
             self._param = param
             self._reason = reason
             
@@ -276,7 +276,10 @@ class Integer(StorageType):
         try:
             self._width = int(args[0])
         except ValueError:
-            raise ParameterMismatch(args[0], "cannot convert to integer")
+            raise HiltiType.ParameterMismatch(args[0], "cannot convert to integer")
+
+        if self._width > 64:
+            raise HiltiType.ParameterMismatch(args[0], "integer width must be <= 64 bits")
         
     def width(self):
         """Returns the bit-width of the type's integers.

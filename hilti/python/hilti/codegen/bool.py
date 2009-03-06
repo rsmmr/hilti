@@ -11,7 +11,7 @@ from codegen import codegen
 @codegen.makeTypeInfo(type.Bool)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.libhilti_fmt = "__hlt_bool_fmt";
+    typeinfo.libhilti_fmt = "__Hlt::bool_fmt";
     return typeinfo
 
 @codegen.convertConstToLLVM(type.Bool)

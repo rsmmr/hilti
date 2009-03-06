@@ -15,6 +15,7 @@ def _(self, m):
     self._llvm.module = codegen.llvmNewModule(m.name())
     self._llvm.module.add_type_name("__basic_frame", self.llvmTypeBasicFrame())
     self._llvm.module.add_type_name("__continuation", self.llvmTypeContinuation())
+    self.llvmAddTypeInfos()
     
 ### Global ID definitions. 
 

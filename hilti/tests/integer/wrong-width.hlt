@@ -18,3 +18,11 @@ module Main
 void run() {
     local int<0> foo
 }
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<128> foo
+}
