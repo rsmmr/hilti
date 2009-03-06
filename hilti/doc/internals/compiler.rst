@@ -165,7 +165,3 @@ Internals
 
 .. automodule:: hilti.codegen.codegen
    :members:
-
-
-
-

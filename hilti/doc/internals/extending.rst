@@ -9,53 +9,75 @@ Extending [Mostly missing]
 Adding a new HILTI instruction
 ------------------------------
 
-
 Adding a new HILTI data type
 ----------------------------
 
-- Derive a new class for the appropiate sub-class of `.type.Type`.
-  Usually, that will be either `.type.StorageType` or
-  `.type.HeapType`.
-  
-- Create a module in :file:`instructions/` with the new
-  type's instructions. The module's doc string should contain a
-  high-level description of the type suitable for inclusion into the
-  user manual. Include a description of the type's syntax for
-  constants there if appropiate. Add the module to
-  :file:`instructions/__init__.py`.
+Adding a new data type involves modifying and extended different HILTI
+components. 
 
-- Create a module in :file:`checker/` with the new
-  type's correctness checks. Add the module to
-  :file:`checker/__init__.py`.
-
-- Create a module in :file:`codegen/` with the new type's code
-  generation. Add the module to
-  :file:`codegen/__init__.py`. In the module:
+- Derive a new class for the appropiate sub-class of `.type.Type`.  Usually,
+  that will be either `.type.StorageType` or `.type.HeapType` in
+  :file:`python/hilti/core/type.py`. Add the parser keyword to the ``_keywords``
+  list.
   
-  * Decorate a function with ~~makeTypeInfo to initialize the types
-    ~~TypeInfo.
+- Create a :mod:`~hilti.checker` module  with the new type's correctness checks.
+  Add the module to :file:`python/hilti/checker/__init__.py`.
+
+- Create an :mod:`~hilti.instruction` module with the new type's instructions.
+  The module's doc string should contain a high-level description of the type
+  suitable for inclusion into the user manual. Include a description of the
+  type's syntax for constants there if appropiate. Add the module to
+  :file:`python/hilti/instructions/__init__.py`.
+
+- Create a :mod:`~hilti.codegen` module with the new type's code generation. Add
+  the module to :file:`python/hilti/codegen/__init__.py`. In the module:
+  
+  * Decorate a function with ~~makeTypeInfo to initialize the types ~~TypeInfo.
     
-  * Decorate a function with ~~convertConstToLLVM if you want to
-    support constants for your type (see below).
+  * Decorate a function with ~~convertConstToLLVM if you want to support
+    constants for your type (see below).
     
-  * Decorate a function with ~~convertTypeToLLVM if it's a
-    ~~StorageType. 
+  * Decorate a function with ~~convertTypeToLLVM if it's a ~~StorageType. 
     
-  * Decorate a function with ~~convertTypeToC if it's a
-    ~~StorageType and needs a separate type conversion when used as
-    parameter for a C function call. 
+  * Decorate a function with ~~convertTypeToC if it's a ~~StorageType and needs
+    a separate type conversion when used as parameter for a C function call. 
   
   * Create a visitor for each of the new type's instructions
+
+- Add run-time type information (RTTI) in :file:`libhilti`:
+
+  * Create a new file ``my_type.c`` that defines a function returning a
+    string-representation of the type:
+
+    .. code-block:: c
+
+        const struct __hlt_string* __hlt_my_type_fmt(double val, int32_t options, __hlt_exception* exception)
+        {
+            // Create a string representation of val.
+        }
+
+  * Add an external function declaration of ``__hlt_my_type_fmt`` to :file:`libhilti/hilti_intern.h`.
+
+  * Add the corresponding LLVM function declaration to :file:`libhilti/hilti_intern.ll`:
+
+    .. code-block:: llvm
+
+        ; My_type functions.
+        declare ccc %__hlt_string* @__hlt_my_type_fmt(LLVM_TYPE, i32, %__hlt_exception*)
+
+  * Add your new type to the ``COBJS`` variable in :file:`libhilti/Makefile`.
+
+- Create a suite of tests for the new type in :file:`tests/my_type/`.
 
 Constants
 ~~~~~~~~~
 
-If you want to support constants for your new type in HILTI, you
-need to extend the parser:
+If you want to support constants for your new type in HILTI, you need to extend
+the :mod:`~hilti.parser`:
 
-   - Add syntax for your constants to :file:`parser/lexer.py`.
-   
-   - Add an ``p_operand_<type>`` rule in :file:`parser/parser.py`
+- Add syntax for your constants to :file:`parser/lexer.py`.
+
+- Add an ``p_operand_<type>`` rule in :file:`parser/parser.py`
 
 
 Adding a StorageType
