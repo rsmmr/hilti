@@ -35,7 +35,7 @@ def _(type):
     33..64  int64_t
     ======  =======
     """
-    return codegen.convertTypeToLLVM(type)
+    return codegen.llvmTypeConvert(type)
 
 @codegen.when(instructions.integer.Add)
 def _(self, i):

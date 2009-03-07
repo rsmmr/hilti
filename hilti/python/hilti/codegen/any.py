@@ -14,4 +14,4 @@ def _(type):
 
 @codegen.convertTypeToC(type.Any)
 def _(type):
-    return codegen.convertTypeToLLVM(type)
+    return codegen.llvmTypeConvert(type)

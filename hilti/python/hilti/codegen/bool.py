@@ -26,7 +26,7 @@ def _(type):
 def _(type):
     """A ``bool`` is mapped to an ``int8_t``, with ``True`` corresponding to
     the value ``1`` and ``False`` to value ``0``."""
-    return codegen.convertTypeToLLVM(type)
+    return codegen.llvmTypeConvert(type)
 
 
 

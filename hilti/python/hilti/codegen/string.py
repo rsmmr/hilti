@@ -51,7 +51,7 @@ def _(type):
        :end-before:  %doc-hlt_string-end
        
     """
-    return codegen.convertTypeToLLVM(type)
+    return codegen.llvmTypeConvert(type)
 
 @codegen.when(instructions.string.Assign)
 def _(self, i):
