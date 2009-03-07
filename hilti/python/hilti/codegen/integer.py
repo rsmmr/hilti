@@ -22,7 +22,7 @@ def _(op):
 def _(type):
     return llvm.core.Type.int(type.width())
 
-@codegen.convertTypeToC(type.String)
+@codegen.convertTypeToC(type.Integer)
 def _(type):
     """An ``int<n>`` is mapped to C integers depending on its width *n*: 
     

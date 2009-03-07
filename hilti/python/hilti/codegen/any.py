@@ -11,3 +11,7 @@ from codegen import codegen
 @codegen.convertTypeToLLVM(type.Any)
 def _(type):
     return llvm.core.Type.pointer(llvm.core.Type.int(8))
+
+@codegen.convertTypeToC(type.Any)
+def _(type):
+    return codegen.convertTypeToLLVM(type)

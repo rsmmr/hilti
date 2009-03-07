@@ -1287,20 +1287,25 @@ class CodeGen(visitor.Visitor):
             
             doc = ""
             nr = 1
-            for line in func.__doc__.split("\n"):
-                if nr == 1:
-                    doc += "* " + line + "\n"
-                elif nr == 2:
-                    indent = 0
-                    while indent < len(line) and line[indent] in " ":
-                        indent += 1;
-                    line = line.strip()
-                    doc += "  " + line + "\n"
-                else:
-                    line = line[indent:] 
-                    doc += "  " + line + "\n"
-                    
-                nr += 1
+            
+            try:
+                for line in func.__doc__.split("\n"):
+                    if nr == 1:
+                        doc += "* " + line + "\n"
+                    elif nr == 2:
+                        indent = 0
+                        while indent < len(line) and line[indent] in " ":
+                            indent += 1;
+                        line = line.strip()
+                        doc += "  " + line + "\n"
+                    else:
+                        line = line[indent:] 
+                        doc += "  " + line + "\n"
+                        
+                    nr += 1
+            except AttributeError:
+                # No doc string.
+                pass
                     
             CodeGen._Docs[CodeGen._CONV_TYPE_TO_LLVM_C] += doc + "\n"
             
