@@ -1,9 +1,11 @@
 .. $Id$
 
-.. include:: ../include.rst
+.. _runtime-library:
 
-Runtime Environment [Missing]
-=============================
+Runtime Environment [Mostly Missing]
+====================================
 
 * GarbageCollection
 * ExceptionHandling
+
+

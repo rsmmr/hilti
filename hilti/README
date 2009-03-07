@@ -24,20 +24,23 @@ README
 
     http://www.dabeaz.com/ply/
 
-  - For generating the documentation:
+  - For generating the documentation (optional)
     
-    Sphinx 0.5.1, or (perhaps) current development:
+    * Sphinx 0.6, or (perhaps) current development:
     
-    http://sphinx.pocoo.org/
+      http://sphinx.pocoo.org/
     
-    To get the repository version:
+      To get the repository version:
     
-      - Checking out:
-        hg clone http://bitbucket.org/birkenfeld/sphinx
+        - Checking out:
+          hg clone http://bitbucket.org/birkenfeld/sphinx
         
-      - Updating:
-        hg pull http://bitbucket.org/birkenfeld/sphinx
-
+        - Updating:
+          hg pull http://bitbucket.org/birkenfeld/sphinx
+          
+    * Graphviz in some reasonable recent version.
+    
+      http://www.graphviz.org/
 
 * There's not much in terms of installing anything system-wide yet
   but you should be able to get the test-suite to pass rather easily:
@@ -57,8 +60,9 @@ README
 
 * Starting points
 
-  - Documentation is located in doc/html but there's not much there
-    yet. Working on it ...
+  - Documentation is located in doc/html. It's a work in progress,
+    with more and more pieces appearing there over time. To build,
+    just type make.
   
   - Look at the HILTI source files in the tests/* subdirectories to
     see how HILTI programs look like.
@@ -67,8 +71,7 @@ README
 
     * tools/hiltic is the HILTI->LLVM compiler
   
-    * tools/hilti-build runs the whole chain
-    HILTI-to-native-executable. 
+    * tools/hilti-build runs the whole chain HILTI-to-native-executable. 
 
   - Look at tests/run-tester to see what environment variables to
     set for running the HILTI tools. 

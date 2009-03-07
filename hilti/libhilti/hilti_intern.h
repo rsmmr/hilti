@@ -14,33 +14,45 @@
 
 #include "hilti.h"
 
+
 ///////////////////////////////////////////////////////////////////////////////
 // Predefined exceptions.
 ///////////////////////////////////////////////////////////////////////////////
 
-extern __hlt_exception __hlt_exception_unspecified;
+    // %doc-std-exceptions-start
+// A division by zero has occured.
 extern __hlt_exception __hlt_exception_division_by_zero;
+
+// A value looks different than expected. 
 extern __hlt_exception __hlt_exception_value_error;
-extern __hlt_exception __hlt_exception_out_of_memory;
+
+// A function received different arguments than it expected. 
 extern __hlt_exception __hlt_exception_wrong_arguments;
 
-// Reports an uncaugt exception.
-extern void __hlt_exception_print_uncaught(__hlt_exception exception);
+// An memory allocation has failed due to resource exhaustion.
+extern __hlt_exception __hlt_exception_out_of_memory;
 
-// Raise an exception. 
-extern void __hlt_exception_raise(__hlt_exception exception);
+// Fall-back exception if nothing else is specified.
+extern __hlt_exception __hlt_exception_unspecified;
+    // %doc-std-exceptions-end
+
+// Internal function to report an uncaugt exception.
+extern void __hlt_exception_print_uncaught(__hlt_exception exception);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Run-time information about HILTI types.
 ///////////////////////////////////////////////////////////////////////////////
 
+   // %doc-__HLT_TYPE-start
 // Unique id values to identify a type. These numbers must match the type's
 // _id class member in the Python module hilti.core.Type.
 #define __HLT_TYPE_ERROR   0 
 #define __HLT_TYPE_INTEGER 1 
 #define __HLT_TYPE_BOOL    2 
 #define __HLT_TYPE_STRING  3 
+   // %doc-__HLT_TYPE-end
 
+   // %doc-hlt_type_info-start
 typedef struct __hlt_type_info {
 
     // The type's __HLT_TYPE_* id.
@@ -52,17 +64,18 @@ typedef struct __hlt_type_info {
     // List of type operations defined in libhilti functions. Pointers may be
     // zero to indicate that a type does not support an operation. 
     
-    // Return a readable representation of a value. 'type' is the type
+    // Returns a readable representation of a value. 'type' is the type
     // information for the type being converted. 'obj' is a pointer to the
     // value stored with the C type as HILTI uses normally for values of that
     // type. 'options' is currently unused and will be always zero for now.
-    // In the future, we might use it to pass in hints about the prefered
-    // format. 'expt' can be set to raise an exception.
+    // In the future, we might use 'options' to pass in hints about the
+    // prefered format. 'expt' can be set to raise an exception.
     __hlt_string* (*libhilti_fmt)(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* expt);
     
     // Type-parameters start here. The format is type-specific.
     char type_params[];
 };
+   // %doc-hlt_type_info-end
 
 ///////////////////////////////////////////////////////////////////////////////
 // Replacement functions for malloc/calloc/realloc that provide automatic
@@ -117,12 +130,14 @@ extern const __hlt_string* __hlt_bool_fmt(const __hlt_type_info* type, void* obj
 // Support functions for HILTI's string data type.
 ///////////////////////////////////////////////////////////////////////////////
 
+    // %doc-hlt_string-start
 typedef int32_t __hlt_string_size;
 
 typedef struct __hlt_string {
     __hlt_string_size len;
     int8_t bytes[];
 } __attribute__((__packed__));
+    // %doc-hlt_string-end
 
 extern const __hlt_string* __hlt_string_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception);
 extern __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* exception);

@@ -1,7 +1,5 @@
 .. $Id$
 
-.. include:: ../include.rst
-
 User Manual
 ===========
 
@@ -11,4 +9,3 @@ User Manual
    tools
    syntax
    library
-   interfacing

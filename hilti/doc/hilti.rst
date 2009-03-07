@@ -1,7 +1,5 @@
 .. $Id$
 
-.. include:: include.rst
-
 HILTI: A High-Level Intermediary Language for Traffic Inspection
 ================================================================
 

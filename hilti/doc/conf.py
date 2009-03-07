@@ -27,13 +27,23 @@ from hilti.core import *
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.graphviz', 'sphinx.ext.inheritance_diagram']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
+
+rst_epilog = """
+.. |hilti| replace:: HILTI
+.. |ast| replace:: AST
+.. |terminator| replace:: Terminator
+.. |hilti_intern.h| replace:: :download:`/libhilti/hilti_intern.h`
+.. |hilti.h| replace:: :download:`/libhilti/hilti.h`
+.. |hilti.hlt| replace:: :download:`/libhilti/hilti.hlt`
+.. |hilti_intern.hlt| replace:: :download:`/libhilti/hilti_intern.hlt`
+"""
 
 # The encoding of source files.
 #source_encoding = 'utf-8'
@@ -69,7 +79,7 @@ release = hilti.release
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = ['.build']
+exclude_trees = ['.build', "auto"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -96,7 +106,8 @@ pygments_style = 'sphinx'
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
 #html_style = 'default.css'
-html_style = 'sphinxdoc.css'
+# html_style = 'sphinxdoc.css'
+html_theme = "sphinxdoc"
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -511,7 +522,7 @@ def expandMarkup(app, what, name, obj, options, lines):
 def processDocString(app, what, name, obj, options, lines):
 
     expandMarkup(app, what, name, obj, options, lines)
-    expandReferences(app, what, name, obj, options, lines)
+#    expandReferences(app, what, name, obj, options, lines)
     addSignature(app, what, name, obj, options, lines)
 
 #    for l in lines:

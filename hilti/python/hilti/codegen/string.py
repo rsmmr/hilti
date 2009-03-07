@@ -41,6 +41,18 @@ def _(op):
 def _(type):
     return _llvmStringTypePtr()
 
+@codegen.convertTypeToC(type.String)
+def _(type):
+    """A ``string`` is mapped to a ``__hlt_string *``. The type is defined in
+    |hilti_intern.h|:
+    
+    .. literalinclude:: /libhilti/hilti_intern.h
+       :start-after: %doc-hlt_string-start
+       :end-before:  %doc-hlt_string-end
+       
+    """
+    return codegen.convertTypeToLLVM(type)
+
 @codegen.when(instructions.string.Assign)
 def _(self, i):
     op1 = self.llvmOp(i.op1())

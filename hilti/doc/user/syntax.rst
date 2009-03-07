@@ -1,7 +1,5 @@
 .. $Id$
 
-.. include:: ../include.rst
-
 Syntax and Semantics
 ====================
 

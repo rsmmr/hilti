@@ -22,5 +22,12 @@ def _(op):
 def _(type):
     return llvm.core.Type.int(1)
 
+@codegen.convertTypeToC(type.Bool)
+def _(type):
+    """A ``bool`` is mapped to an ``int8_t``, with ``True`` corresponding to
+    the value ``1`` and ``False`` to value ``0``."""
+    return codegen.convertTypeToLLVM(type)
+
+
 
 

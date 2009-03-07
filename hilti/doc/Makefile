@@ -26,10 +26,13 @@ help:
 	@echo "  linkcheck to check all external links for integrity"
 
 clean:
-	-rm -rf .build/*
+	-rm -rf .build/* auto
 
 html:
-	mkdir -p .build/html .build/doctrees
+	mkdir -p auto .build/html .build/doctrees
+    # Work around some bug in the Sphinx graphviz extension.
+	-mkdir -p .build/html/_images && ln -s `pwd`/.build/html/_images/ .build/_images 2>/dev/null
+	PYTHONPATH=$(PYTHONPATH):../python ./scripts/gen-docs auto
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) .build/html
 	@echo
 	@echo "Build finished. The HTML pages are in .build/html."

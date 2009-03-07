@@ -1,7 +1,5 @@
 .. $Id$
 
-.. include:: ../include.rst
-
 Extending [Mostly missing]
 ==========================
 
@@ -39,9 +37,11 @@ components.
     
   * Decorate a function with ~~convertTypeToLLVM if it's a ~~StorageType. 
     
-  * Decorate a function with ~~convertTypeToC if it's a ~~StorageType and needs
-    a separate type conversion when used as parameter for a C function call. 
-  
+  * Decorate a function with ~~convertTypeToC if it's a
+    ~~StorageType. Add a docstring to the decorated function which
+    explains how the the type is mapped to C; the docstring will
+    show up in the documentation automatically.
+    
   * Create a visitor for each of the new type's instructions
 
 - Add run-time type information (RTTI) in :file:`libhilti`:
@@ -51,19 +51,18 @@ components.
 
     .. code-block:: c
 
-        const struct __hlt_string* __hlt_my_type_fmt(double val, int32_t options, __hlt_exception* exception)
+        const __hlt_string* __hlt_my_type_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception)
         {
             // Create a string representation of val.
         }
 
   * Add an external function declaration of ``__hlt_my_type_fmt`` to :file:`libhilti/hilti_intern.h`.
 
-  * Add the corresponding LLVM function declaration to :file:`libhilti/hilti_intern.ll`:
+  * Add a corresponding HILTI declaration to :file:`libhilti/hilti_intern.hlt`:
 
-    .. code-block:: llvm
+    .. code-block:: c
 
-        ; My_type functions.
-        declare ccc %__hlt_string* @__hlt_my_type_fmt(LLVM_TYPE, i32, %__hlt_exception*)
+        declare "C-HILTI" string my_type_fmt(<llvm_type> n, int32 options)
 
   * Add your new type to the ``COBJS`` variable in :file:`libhilti/Makefile`.
 

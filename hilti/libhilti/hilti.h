@@ -12,7 +12,10 @@
 
 typedef struct __hlt_type_info __hlt_type_info;
 typedef struct __hlt_string __hlt_string;
+
+    // %doc-hlt_exception-start
 typedef const char* __hlt_exception;
+    // %doc-hlt_exception-end
 
 // Initialize the HILTI run-time library. 
 extern void hilti_init();

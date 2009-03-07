@@ -1,7 +1,5 @@
 .. $Id$
 
-.. include:: ../include.rst
-
 Internals [Missing]
 ===================
 
@@ -9,6 +7,7 @@ Internals [Missing]
 
    compiler
    runtime
+   interfacing
    testing
    documentation
    extending

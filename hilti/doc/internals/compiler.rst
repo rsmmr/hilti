@@ -1,7 +1,5 @@
 .. $Id$
 
-.. include:: ../include.rst
-
 Compiler
 ========
 
@@ -64,6 +62,8 @@ core.module
 
 core.type
 ~~~~~~~~~
+
+.. inheritance-diagram:: hilti.core.type
 
 .. automodule:: hilti.core.type
    :members:

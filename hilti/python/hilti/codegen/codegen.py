@@ -1137,6 +1137,7 @@ class CodeGen(visitor.Visitor):
     _CONV_TYPE_TO_LLVM_C = 4
     
     _Conversions = { _CONV_TYPE_INFO: [], _CONV_CONST_TO_LLVM: [], _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [] }
+    _Docs = { _CONV_TYPE_TO_LLVM_C: "" }
 
     def _callConvCallback(self, kind, type, args, must_find=True):
         for (t, func) in CodeGen._Conversions[kind]:
@@ -1213,12 +1214,17 @@ class CodeGen(visitor.Visitor):
         
         Returns: llvm.core.Type - The corresponding LLVM type for passing to C functions
         """ 
-        ll = self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM_C, type, [type], must_find=False)
-        if ll:
-            return ll
+        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM_C, type, [type])
+
+    def documentCMapping(self):
+        """Returns a string documenting the mapping of HILTI types to C types.
+        The text is pieced together from the docstrings of the individual
+        ``convertTypeToC`` decorated functions and will be included in the
+        compiler documentation.
         
-        # Fall back.
-        return self.llvmTypeConvert(type)
+        Returns: string - Documentation in ReST format. 
+        """
+        return CodeGen._Docs[CodeGen._CONV_TYPE_TO_LLVM_C]
     
     ### Decorators.
     
@@ -1268,14 +1274,36 @@ class CodeGen(visitor.Visitor):
         """Decorator to define a conversion from a StorageType to the
         corresponding type used with C functions. The decorated function will
         receive a single parameter *type* being the instance of ~~Type to
-        convert. If no such conversion is defined for a type, we fall back to
-        the ~~convertTypeToLLVM decorator.
+        convert. 
         
         type: ~~StorageType - The type for which the conversion is being defined.
+        
+        Note: The decorated function should have a docstring describing the
+        mapping between the data type and C in a form suitable for including
+        in the compiler documentation (where it will show up automatically).
         """
         def register(func):
             CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM_C] += [(type, func)]
-    
+            
+            doc = ""
+            nr = 1
+            for line in func.__doc__.split("\n"):
+                if nr == 1:
+                    doc += "* " + line + "\n"
+                elif nr == 2:
+                    indent = 0
+                    while indent < len(line) and line[indent] in " ":
+                        indent += 1;
+                    line = line.strip()
+                    doc += "  " + line + "\n"
+                else:
+                    line = line[indent:] 
+                    doc += "  " + line + "\n"
+                    
+                nr += 1
+                    
+            CodeGen._Docs[CodeGen._CONV_TYPE_TO_LLVM_C] += doc + "\n"
+            
         return register
     
 codegen = CodeGen()

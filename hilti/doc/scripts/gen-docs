@@ -1,0 +1,24 @@
+#! /usr/bin/env python2.6
+#
+# Generates some docs automatically from the source of the Python
+# compiler to be then included into the documentation.
+
+import os
+import sys
+
+from hilti import *
+
+if len(sys.argv) != 2:
+    print >>sys.stderr, "usage: gen-docs <dest-dir>"
+    sys.exit(1)
+    
+dst = sys.argv[1]    
+    
+# Generate docs for the mapping of LLVM types to C types.
+cmapping = codegen.codegen.codegen.documentCMapping()
+output = open(os.path.join(dst, "cmapping.rst"), "w")
+print >>output, ".. Automatically generated. Do not edit."
+print >>output, ""
+print >>output, cmapping
+output.close()
+

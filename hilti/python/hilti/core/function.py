@@ -31,30 +31,9 @@ class CallingConvention:
     """A ~~Function using standard C calling convention. The
     conventions implements standard C calling semantics but does not
     support any HILTI-specific flow-control features, such as
-    exceptions and continuations. Functions using this calling
-    convention get a set of parameters directly corresponding to the
-    call's tuple. The C calling convention can not be used with
-    varargs functions.
+    exceptions and continuations.
     
-    Most HILTI types are converted into their "natural" C
-    equivalent, with types which are internally represented as
-    structs passed as pointers to these, per the declarations in
-    |hilti_intern.h|. The following additional rules
-    apply:
-    
-    * Tuples are converted into a struct of type ``__hlt_tuple`` and
-      the function gets passed a pointer to an instance of that. See
-      |hilti_intern.h| for the struct's definition.
-    
-    Note: Currently, functions with C and ~~C_HILTI calling
-    conventions cannot be *implemented* in HILTI but must be defined
-    in an external, separately compiled object file. They can be
-    *called* from HILTI programs however. In the future, it will
-    likely become possible to define such functions in HILTI itself
-    as well, which will then be callable also *from* C programs. 
-    
-    Todo: We should document the type conversion HILTI-to-C more
-    precisely.
+    Note: See :ref:`interfacing-with-C` for more information.
     """
     
     C_HILTI = 3
@@ -63,24 +42,11 @@ class CallingConvention:
     C_HILTI works mostly as the ~C convention yet with the following
     differences:
 
-    * Arguments can have type ~~Any. If so, each ``any`` parameter
-      will be turned into *two* parameters for the C function: the
-      first is a ``__hlt_type_info*`` and describes the type of the
-      parameter; the second is the parameter itself. 
+    * Arguments can have type ~~Any. 
     
-    * The function will get an additional parameter of type
-      ``__hlt_exception*``, which will be added to the end of the
-      parameter list. The function can raise an exception by
-      assigning to the __hlt_exception the pointer points to.
-      
-    See |hilti_intern.h| for the definitions of
-    the C types ``__hlt_type_info`` and ``__hlt_exception``. If the
-    C function detects a problem with the parameters it got, it
-    should raise a ``WrongArguments`` exception. 
+    * The called function can raise an exception. 
 
-    Note: See note for ~~C.
-    
-    Todo: See todo for ~~C. 
+    Note: See :ref:`interfacing-with-C` for more information.
     """
         
 class Function(ast.Node):
