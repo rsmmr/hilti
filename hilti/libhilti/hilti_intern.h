@@ -53,7 +53,7 @@ extern void __hlt_exception_print_uncaught(__hlt_exception exception);
    // %doc-__HLT_TYPE-end
 
    // %doc-hlt_type_info-start
-typedef struct __hlt_type_info {
+struct __hlt_type_info {
 
     // The type's __HLT_TYPE_* id.
     int16_t type; 
@@ -133,7 +133,7 @@ extern const __hlt_string* __hlt_bool_fmt(const __hlt_type_info* type, void* obj
     // %doc-hlt_string-start
 typedef int32_t __hlt_string_size;
 
-typedef struct __hlt_string {
+struct __hlt_string {
     __hlt_string_size len;
     int8_t bytes[];
 } __attribute__((__packed__));
