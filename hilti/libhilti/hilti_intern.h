@@ -48,9 +48,10 @@ extern void __hlt_exception_print_uncaught(__hlt_exception exception);
 // _id class member in the Python module hilti.core.Type.
 #define __HLT_TYPE_ERROR   0 
 #define __HLT_TYPE_INTEGER 1 
-#define __HLT_TYPE_BOOL    2 
-#define __HLT_TYPE_STRING  3 
-#define __HLT_TYPE_TUPLE   4
+#define __HLT_TYPE_DOUBLE  2 
+#define __HLT_TYPE_BOOL    3 
+#define __HLT_TYPE_STRING  4 
+#define __HLT_TYPE_TUPLE   5
    // %doc-__HLT_TYPE-end
 
    // %doc-hlt_type_info-start
@@ -123,6 +124,12 @@ extern void* __hlt_gc_realloc_non_atomic(void* ptr, size_t n);
 ///////////////////////////////////////////////////////////////////////////////
 
 extern const __hlt_string* __hlt_int_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
+
+///////////////////////////////////////////////////////////////////////////////
+// Support functions for HILTI's double data type.
+///////////////////////////////////////////////////////////////////////////////
+
+extern const __hlt_string* __hlt_double_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's boolean data type.

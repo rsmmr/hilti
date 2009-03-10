@@ -16,7 +16,7 @@ def _(type):
 
 @codegen.convertConstToLLVM(type.Integer)
 def _(op):
-    return llvm.core.Constant.int(llvm.core.Type.int(op.type().width()), op.value())
+    return codegen.llvmConstInt(op.value(), op.type().width())
 
 @codegen.convertTypeToLLVM(type.Integer)
 def _(type):

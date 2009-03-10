@@ -67,6 +67,3 @@ class Trunc(Instruction):
     Bit-truncates *op1* into an integer of the same width as the *target*. The
     width of *op1* must be larger or equal that of the *target*. 
     """
-
-
-        

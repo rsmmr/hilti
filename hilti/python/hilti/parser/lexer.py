@@ -36,7 +36,8 @@ tokens = (
    'LABEL',
    'MODULE',
    'NL',
-   'NUMBER',
+   'INTEGER',
+   'DOUBLE',
    'BOOL',
    'STRING',
    'STRUCT',
@@ -52,12 +53,22 @@ states = (
    ('nolines', 'inclusive'),
 )
 
-def t_NUMBER(t):
+def t_DOUBLE(t):
+    r'-?\d+\.\d+'
+    try:
+        t.value = float(t.value)    
+    except ValueError:
+        error(t, "cannot parse double %s" % t.value)
+        t.value = 0
+        
+    return t
+
+def t_INTEGER(t):
     r'-?\d+'
     try:
         t.value = int(t.value)    
     except ValueError:
-        error(t, "cannot parse number %s" % t.value)
+        error(t, "cannot parse integer %s" % t.value)
         t.value = 0
         
     return t

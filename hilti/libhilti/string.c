@@ -53,7 +53,7 @@ const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_stri
     if ( ! len2 )
         return s1;
     
-    struct __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(struct __hlt_string) + len1 + len2);
+    __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len1 + len2);
     
     if ( ! dst ) {
         *excpt = __hlt_exception_value_error;
@@ -103,7 +103,7 @@ const __hlt_string* __hlt_string_sprintf(const __hlt_string* fmt, const __hlt_ty
 const __hlt_string* __hlt_string_from_asciiz(const char* s)
 {
     int len = strlen(s);
-    __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(struct __hlt_string) + len);
+    __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
     dst->len = len;
     memcpy(dst->bytes, s, len);
     return dst;

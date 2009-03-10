@@ -104,11 +104,3 @@ execute "as $ASFLAGS $asm -o $doto" || exit 1
 
 # Link. 
 execute "gcc $LDFLAGS $doto $LIBS -o $output" || exit 1
-
-
-
-
-
-
-
-

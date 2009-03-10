@@ -8,9 +8,9 @@
 
 #include "hilti_intern.h"
 
-static const struct __hlt_string prefix = { 1, "(" };
-static const struct __hlt_string postfix = { 1, ")" };
-static const struct __hlt_string separator = { 1, "," };
+static const __hlt_string prefix = { 1, "(" };
+static const __hlt_string postfix = { 1, ")" };
+static const __hlt_string separator = { 1, "," };
 
 const __hlt_string* __hlt_tuple_fmt(const __hlt_type_info* type, void* (*obj[]), int32_t options, __hlt_exception* excpt)
 {

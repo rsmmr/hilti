@@ -99,9 +99,3 @@ def _(self, i):
     _checkOp(self, i.op1())
     if i.op1().type().width() > i.target().type().width():
         self.error(i, "width of integer operand too large")
-
-    
-    
-    
-
-

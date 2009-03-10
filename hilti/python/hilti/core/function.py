@@ -237,6 +237,3 @@ class Function(ast.Node):
             b.visit(visitor)
             
         visitor.visitPost(self)
-        
-    
-    

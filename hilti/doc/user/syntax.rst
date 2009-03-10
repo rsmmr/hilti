@@ -38,6 +38,13 @@ Type Integer
    :members:
    :undoc-members:
 
+Type Double
+~~~~~~~~~~~~
+
+.. automodule:: hilti.instructions.double
+   :members:
+   :undoc-members:
+
 Type Boolean
 ~~~~~~~~~~~~~~~~~~
 

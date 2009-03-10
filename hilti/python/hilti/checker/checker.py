@@ -79,5 +79,3 @@ class Checker(visitor.Visitor):
         self.skipOthers()
 
 checker = Checker()
-
-        

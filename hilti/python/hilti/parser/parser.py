@@ -229,9 +229,14 @@ def p_operand_ident(p):
     ident = id.ID(p[1], type.Unknown(), id.Role.UNKNOWN)
     p[0] = instruction.IDOperand(ident, location=loc(p, 1))
 
-def p_operand_number(p):
-    """operand : NUMBER"""
+def p_operand_integer(p):
+    """operand : INTEGER"""
     const = constant.Constant(p[1], type.Integer(["*"]), location=loc(p, 1))
+    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
+
+def p_operand_double(p):
+    """operand : DOUBLE"""
+    const = constant.Constant(p[1], type.Double(), location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
 
 def p_operand_bool(p):
@@ -366,7 +371,8 @@ def p_type_param_list(p):
         p[0] = [p[1]] + p[3]
 
 def p_type_param(p):
-    """type_param : NUMBER 
+    """type_param : INTEGER
+                  | DOUBLE 
                   | type
                   | '*'
     """

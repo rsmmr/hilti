@@ -58,11 +58,3 @@ class Sprintf(Instruction):
     Todo: Explain format symbols.
     """
     pass
-
-
-
-
-
-
-
-        

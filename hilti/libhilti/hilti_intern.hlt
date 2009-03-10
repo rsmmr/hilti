@@ -5,6 +5,7 @@
 module __Hlt
 
 declare "C-HILTI" string int_fmt(any n, int32 options)
+declare "C-HILTI" string double_fmt(double d, int32 options)
 declare "C-HILTI" string bool_fmt(string s, int32 options)
 declare "C-HILTI" string tuple_fmt(tuple<*> t, int32 options)
 

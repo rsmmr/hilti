@@ -14,6 +14,7 @@ import checker
 import flow
 import module
 import integer
+import double
 import bool
 
 def checkAST(ast):

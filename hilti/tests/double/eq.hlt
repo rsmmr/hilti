@@ -1,0 +1,45 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import hilti
+
+void run() {
+   local bool cond
+   cond = double.eq 42.0 84.0
+   if.else cond @yes @no
+   
+@yes:
+   call Hilti::print (1)
+   return.void
+
+@no:
+   call Hilti::print (0)
+   return.void
+}     
+
+### @TEST-START-NEXT
+
+module Main
+
+import hilti
+
+void run() {
+   local bool cond
+   cond = double.eq 42.3 42.3
+   if.else cond @yes @no
+   
+@yes:
+   call Hilti::print (1)
+   return.void
+
+@no:
+   call Hilti::print (0)
+   return.void
+}     
+
+

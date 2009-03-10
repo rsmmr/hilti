@@ -1,0 +1,29 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import hilti
+
+void run() {
+    local double d
+    d = double.sub 15.0 5.0
+    call Hilti::print (d)
+}     
+
+### @TEST-START-NEXT
+
+# Signed
+
+module Main
+
+import hilti
+
+void run() {
+    local double d
+    d = double.sub 3.0 -7.0
+    call Hilti::print (d)
+}     

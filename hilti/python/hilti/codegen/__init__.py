@@ -6,6 +6,7 @@ __all__ = []
 import codegen
 import flow
 import integer
+import double
 import module
 import bool
 import void

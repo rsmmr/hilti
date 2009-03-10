@@ -483,6 +483,16 @@ class CodeGen(visitor.Visitor):
         """
         return llvm.core.Constant.int(llvm.core.Type.int(width), n)
 
+    # Return the LLVM constant representing the given double.
+    def llvmConstDouble(self, d):
+        """Creates an LLVM double constant.
+        
+        d: double - The value of the constant.
+        
+        Returns: llvm.core.Constant.int - The constant.
+        """
+        return llvm.core.Constant.real(llvm.core.Type.double(), d)
+
     # Returns the LLVM constant representing an unset exception.
     def llvmConstNoException(self):
         """Returns the LLVM constant representing an unset exception. This

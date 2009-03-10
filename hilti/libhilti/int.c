@@ -31,7 +31,7 @@ static int64_t _makeInt64(const __hlt_type_info* type, void *obj)
     return val;
 }
 
-const struct __hlt_string* __hlt_int_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception)
+const __hlt_string* __hlt_int_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception)
 {
     int64_t val = _makeInt64(type, obj);
     
@@ -39,7 +39,7 @@ const struct __hlt_string* __hlt_int_fmt(const __hlt_type_info* type, void* obj,
     // we should code our own itoa().
     char buffer[128];
     int len = snprintf(buffer, 128, "%lld", val);
-    struct __hlt_string *s = __hlt_gc_malloc_atomic(sizeof(struct __hlt_string) + len);
+    __hlt_string *s = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
     memcpy(s->bytes, buffer, len);
     s->len = len;
     return s;

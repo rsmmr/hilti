@@ -406,7 +406,3 @@ def _(self, i):
     
     if self.Debug:
         util.debug("---------------------")
-
-    
-    
-    

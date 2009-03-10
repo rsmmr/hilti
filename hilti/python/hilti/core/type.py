@@ -328,13 +328,21 @@ class Integer(StorageType):
     _name = "int"
     _id = 1
     
+class Double(StorageType):
+    """Type for doubles."""
+    def __init__(self):
+        super(Double, self).__init__([], Double._name)
+        
+    _name = "double"
+    _id = 2
+
 class Bool(StorageType):
     """Type for booleans."""
     def __init__(self):
         super(Bool, self).__init__([], Bool._name)
         
     _name = "bool"
-    _id = 2
+    _id = 3
 
 class Tuple(StorageType):
     """A type for tuples of values. 
@@ -569,6 +577,7 @@ _keywords = {
 	"int16": (Integer, 1, [16]),
 	"int32": (Integer, 1, [32]),
 	"int64": (Integer, 1, [64]),
+	"double": (Double, 0, None),
     "string": (String, 0, None),
     "bool": (Bool, 0, None),
     "tuple": (Tuple, -1, None),
