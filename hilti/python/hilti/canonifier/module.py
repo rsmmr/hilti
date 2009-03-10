@@ -2,6 +2,13 @@
 #
 # Module-level structures as well as generic instruction canonification.
 """
+The following :class:`~hilti.core.block.Module` canonifications are performed:
+
+* If we are the ``Main`` module, we're inserting a ``Main::__run_1st()``
+  function, taking no parameters and returning nothing. This function will be
+  called from the libhilti run-time to pass control from external to a HILTI
+  program and in turn just calls the user-written ``Main::run()``.
+
 The following :class:`~hilti.core.block.Block` canonifications are performed:
 
 * Blocks that don't have a successor are linked to the block following them
@@ -50,6 +57,18 @@ def _unifyBlock(block):
 @canonifier.pre(module.Module)
 def _(self, m):
     self._module = m
+    
+    if m.name() == "main":
+        # Add run_1st() function.
+        func_type = type.Function([], type.Void())
+        func_val = function.Function("__run_1st", func_type, m)
+        func_val.setLinkage(function.Linkage.EXPORTED)
+        run_func = m.lookupID("run")
+        if run_func:
+            call = instructions.flow.Call(op1=instruction.IDOperand(run_func), op2=instruction.TupleOperand([]))
+            bl = block.Block(func_val, instructions=[call])
+            func_val.addBlock(bl)
+            m.addID(id.ID("run_1st", func_type, id.Role.GLOBAL), func_val)
     
 @canonifier.post(module.Module)
 def _(self, m):

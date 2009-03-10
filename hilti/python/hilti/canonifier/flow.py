@@ -42,7 +42,7 @@ def _(self, i):
     func = self.currentModule().lookupIDVal(name)
     assert func and isinstance(func.type(), type.Function)
     
-    if func.linkage() == function.CallingConvention.C:
+    if func.callingConvention() in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
         callc = instructions.flow.CallC(op1=i.op1(), op2=i.op2(), op3=None, target=i.target(), location=i.location())
         current_block = self.currentTransformedBlock()
         current_block.addInstruction(callc)

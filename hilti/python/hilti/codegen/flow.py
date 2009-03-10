@@ -225,8 +225,8 @@ def _makeCall(cg, func, args, llvm_succ):
     cg.llvmInit(current, dst_succ)
     
     #   callee_frame.bf.cont_exception.frame = __frame.bf.cont_exception.frame
-    src_frame = cg.llvmAddrExceptContSuccessor(frame)
-    dst_frame = cg.llvmAddrExceptContSuccessor(callee_frame)
+    src_frame = cg.llvmAddrExceptContFrame(frame)
+    dst_frame = cg.llvmAddrExceptContFrame(callee_frame)
     current = builder.load(src_frame, "current")
     cg.llvmInit(current, dst_frame)
     

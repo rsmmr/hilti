@@ -26,7 +26,9 @@ class Module(ast.Node):
         self._scope = {}
 
     def name(self):
-        """Returns the name of the module.
+        """Returns the name of the module. The module's name will have been
+        converted to all lower-case in accordance with the policy to treat is
+        case-independent.
         
         Returns: string - The name.
         """

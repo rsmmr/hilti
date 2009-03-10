@@ -141,20 +141,24 @@ def expand_escapes(str):
             
     return result
                 
-def findFileInPaths(filename, dirs):
+def findFileInPaths(filename, dirs, lower_case_ok=False):
     """Searches a file in a list of directories.
     
     filename: string - The name of the file to search.
     dirs: list of strings - The directories to search in.
+    lower_case_ok: bool - If true, finding a lower-case version of the file
+    name is ok too. 
     
     Returns: string or None - The full path of the file if found, or None if
     not.
     """
     
     for dir in dirs:
-        fullpath = os.path.realpath(os.path.join(dir, filename))
-        if os.path.exists(fullpath) and os.path.isfile(fullpath):
-            return fullpath
+        
+        for name in (filename, filename.lower()):
+            fullpath = os.path.realpath(os.path.join(dir, name))
+            if os.path.exists(fullpath) and os.path.isfile(fullpath):
+                return fullpath
         
     return None
                 

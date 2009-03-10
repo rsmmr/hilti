@@ -424,7 +424,7 @@ def _importFile(filename, location):
         
     filename = root + ext
     
-    fullpath = util.findFileInPaths(filename, oldparser.current.import_paths)
+    fullpath = util.findFileInPaths(filename, oldparser.current.import_paths, lower_case_ok=True)
     if not fullpath:
         util.error("cannot find %s for import" % filename, context=location)
         
