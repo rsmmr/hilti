@@ -134,8 +134,9 @@ class Test(object):
     def run(self):
         if self.number > 1:
             self.name = "%s-%d" % (self.name, self.number)
-            
-        output("%s ..." % self.name, nl=Options.verbose)
+
+        if Options.verbose or not Options.brief:
+            output("%s ..." % self.name, nl=Options.verbose)
             
         self.tmpdir = os.path.abspath(os.path.join(TmpDir, self.name))
         self.diag = os.path.join(self.tmpdir, ".diag")
@@ -167,6 +168,9 @@ class Test(object):
                 if Options.verbose:
                     output("... %s failed" % self.name)
                 else:
+                    if Options.brief:
+                        output("%s ..." % self.name, nl=False)
+                        
                     output("failed")
                     
                 if Options.diag or Options.diagall:
@@ -176,7 +180,8 @@ class Test(object):
             if Options.verbose:
                     output("... %s ok" % self.name)
             else:
-                output("ok")
+                if not Options.brief:
+                    output("ok")
                 
             if Options.diagall:
                 self.showDiag()
@@ -358,6 +363,8 @@ optparser.add_option("-v", "--verbose", action="store_true", dest="verbose", def
                      help="show commands as they are executed")
 optparser.add_option("-w", "--wait", action="store_true", dest="wait", default=False,
                      help="wait for <enter> after each failed (with -d) or all (with -D) tests")
+optparser.add_option("-b", "--brief", action="store_true", dest="brief", default=False,
+                     help="outputs only failed tests")
 
 (Options, args) = optparser.parse_args()
 
