@@ -33,10 +33,10 @@ class Type(object):
          considering any common ancestors), the match succeeds if the
          type-specific :meth:`cmpWithSameType` method returns True. The
          default implementation of this method as defined in Type compares the
-         results of two objects :class:`name` method. 
+         results of two objects :class:`name` methods. 
          
       2. If either of the two types is an instance of ~~Any, the match succeeds.
-      
+
       3. If neither (1) or (2) is the case, the match fails. 
       
     * If *other* is a *class* that is derived from Type, then the match
@@ -148,6 +148,9 @@ class HiltiType(Type):
     non-parameterized types.  If a derived class detects an error with any of
     the arguments, it must raise a ~~ParameterMismatch exception.
     
+    wildcard: bool - True if the type's parameters contain a wildcard so that
+    it can match multiple other types.
+    
     name: string - Same as for :meth:`~hilti.core.type.type`. 
     docname: string - Same as for :meth:`~hilti.core.type.type`.
     
@@ -164,12 +167,13 @@ class HiltiType(Type):
     appending a readable representation of all parameters to the type's base
     name passed to the ctor via *name*.
     """
-    def __init__(self, args, name, docname=None):
+    def __init__(self, args, name, wildcard=False, docname=None):
         if args:
             name = "%s<%s>" % (name, ",".join([str(arg) for arg in args]))
         
         super(HiltiType, self).__init__(name, docname=docname)
         self._args = args
+        self._wildcard = wildcard
 
     _name = "HILTI type"
 
@@ -180,7 +184,16 @@ class HiltiType(Type):
         non-parameterized types.  
         """
         return self._args
-    
+
+    def wildcardType(self):
+        """Returns whether this type can match multiple other types.
+        That is considered to be the case when any of the arguments
+        is ``*``.
+        
+        Returns: bool - True if a wildcard type.
+        """
+        return self._wildcard
+
     class ParameterMismatch(Exception):
         """Exception class to indicate a problem with a type parameter.
         
@@ -201,8 +214,8 @@ class StorageType(HiltiType):
     
     The arguments are the same as for ~~HiltiType.
     """
-    def __init__(self, args, name, docname=None):
-        super(StorageType, self).__init__(args, name, docname=docname)
+    def __init__(self, args, name, wildcard=False, docname=None):
+        super(StorageType, self).__init__(args, name, wildcard=wildcard, docname=docname)
 
     _name = "storage type"
         
@@ -213,8 +226,8 @@ class HeapType(HiltiType):
     
     The arguments are the same as for ~~HiltiType.
     """
-    def __init__(self, args, name, docname=None):
-        super(HeapType, self).__init__(args, name, docname=docname)
+    def __init__(self, args, name, wildcard=False, docname=None):
+        super(HeapType, self).__init__(args, name, wildcard=wildcard, docname=docname)
 
     _name = "heap type"
     
@@ -259,28 +272,37 @@ class String(StorageType):
 class Integer(StorageType):
     """Type for integers.  
     
-    args: int, or a list containing a single int - The integer specifies
-    the bit-width of integers represented by this type. The width can be zero
-    to match any other integer type independent of its widget. Note however
-    that the HILTI language does not allow to use integers of width zero.
+    args: int, or a list containing a single int or a "*" - The
+    integer specifies the bit-width of integers represented by this
+    type. The width can be "*" to match any other integer type
+    independent of its widget. Note however that the HILTI language
+    does not allow to create instances of integers with no specified
+    width.
     """
     def __init__(self, args):
         
-        if type(args) == types.IntType:
+        if type(args) == types.IntType or type(args) == types.StringType:
             args = [args]
-        
-        super(Integer, self).__init__(args, Integer._name)
-        
+
         assert len(args) == 1
         
-        try:
-            self._width = int(args[0])
-        except ValueError:
-            raise HiltiType.ParameterMismatch(args[0], "cannot convert to integer")
+        if args[0] == "*":
+            self._width = 0
+            wildcard = True
+            args = [0]
+        else:
+            try:
+                self._width = int(args[0])
+            except ValueError:
+                raise HiltiType.ParameterMismatch(args[0], "cannot convert to integer")
+            
+            if self._width <= 0 or self._width > 64:
+                raise HiltiType.ParameterMismatch(args[0], "integer width must be between 1 and 64 bits")
+            
+            wildcard = False
+            
+        super(Integer, self).__init__(args, Integer._name, wildcard=wildcard)
 
-        if self._width > 64:
-            raise HiltiType.ParameterMismatch(args[0], "integer width must be <= 64 bits")
-        
     def width(self):
         """Returns the bit-width of the type's integers.
         
@@ -313,8 +335,48 @@ class Bool(StorageType):
         
     _name = "bool"
     _id = 2
+
+class Tuple(StorageType):
+    """A type for tuples of values. 
     
-class Struct(StorageType):
+    types: list of ~~Type, or a list ["*"] - The types of the
+    individual tuple elements. A list of just "*" is treated as
+    wildcard type matching any other tuple. Note however that the
+    HILTI language does not allow to create instances of such
+    wildcard tuples.
+    """
+    def __init__(self, types):
+        if "*" in types:
+            if len(types) != 1:
+                raise HiltiType.ParameterMismatch(args[1], "cannot mix types with '*'")
+            
+            self._types = []
+            self._any = True
+            
+        else:
+            self._types = types
+            self._any = False
+
+        super(Tuple, self).__init__(self._types, Tuple._name, wildcard=self._any)
+            
+    def types(self):
+        """Returns the types of the typle elements.
+        
+        Returns: list of ~~StorageType - The types. The list will be empty for
+        ``tuple<*>``.
+        """
+        return self._types
+        
+    def cmpWithSameType(self, other):
+        if self._any or other._any:
+            return True
+        
+        return self.types() == other.types()
+        
+    _name = "tuple"
+    _id = 4
+
+class Struct(HeapType):
     """Type for structs. 
     
     fields: list of ~~ID - The IDs defined the fields of the struct.
@@ -339,7 +401,7 @@ class StructDecl(TypeDeclType):
     structt: ~~Struct - The struct type declared.
     """
     def __init__(self, structt):
-        super(StructDecl, self).__init__(structt, "<struct decl> %s" % structt.name())
+        super(StructDecl, self).__init__(structt, "%s" % structt.name())
         
     _name = "struct declaration"
     
@@ -353,7 +415,7 @@ class Function(Type):
     resultt - ~~Type - The type of the function's return value (~~Void for none). 
     """
     def __init__(self, args, resultt):
-        name = "(function (%s) -> %s)" % (", ".join([str(id.type()) for (id, default) in args]), resultt)
+        name = "function (%s) -> %s" % (", ".join([str(id.type()) for (id, default) in args]), resultt)
         super(Function, self).__init__(name)
         self._ids = [id for (id, default) in args]
         self._defaults = [default for (id, default) in args]
@@ -425,18 +487,6 @@ class Unknown(OperandType):
 
     _name = "unknown"
     
-class Tuple(OperandType):
-    """A type for tuples of values. type to represent a tuple of values.
-    
-    types: list of ~~Type - The types of the individual tuple elements. 
-    """
-    def __init__(self, types):
-        super(Tuple, self).__init__("(%s)" % ", ".join([t.name() for t in types]))
-        self._types = types
-        self._matches_any = False
-
-    _name = "tuple"
-
 def Optional(t):
     """Returns a type representing an optional operand. The returns
     object can be used with an ~~Instruction operand to indicate
@@ -506,11 +556,12 @@ def fmtTypeClass(cls, doc=False):
     return cls._name
     
 # List of keywords that the parser will understand to instantiate types.  Each
-# keyword is mapped to a tuple (class, args, defaults) where "class" is the name
-# of the class to instantiate for this keyword; num_args is the number of type
-# parameters this type expects; and default is an optional list with predefined
-# parameters to be used *instead* of user-supplied params (optional). All
-# classes given here must be derived from HiltiType.
+# keyword is mapped to a tuple (class, args, defaults) where "class" is the
+# name of the class to instantiate for this keyword; num_args is the number
+# of type parameters this type expects (-1 for variable but one minimum); and
+# default is an optional list with predefined parameters to be used *instead* of
+# user-supplied params (optional). All classes given here must be derived from
+# HiltiType.
 
 _keywords = {
 	"int": (Integer, 1, None),
@@ -520,6 +571,7 @@ _keywords = {
 	"int64": (Integer, 1, [64]),
     "string": (String, 0, None),
     "bool": (Bool, 0, None),
+    "tuple": (Tuple, -1, None),
     }
 
 _all_hilti_types = {}
@@ -536,15 +588,26 @@ def getHiltiType(name, args = []):
     object. If *success* is False, there was an error and *result* will be a
     string containing an error message."""
     try:
-        (cls, numargs, defs) = _keywords[name]
+        (cls, num_args, defs) = _keywords[name]
     except KeyError:
         return (False, "no such type, %s" % name)
     
-    if args and (numargs == 0 or defs != None):
+    if args and (num_args == 0 or defs != None):
         return (False, "type %s does not accept type paramters" % name)
     
-    if (args and len(args) != numargs) or (not args and not defs and numargs > 0):
-        return (False, "wrong number of parameters for type %s (expected %d, have %d)" % (name, numargs, len(args)))
+    wrong_args = False
+    
+    if args and num_args >= 0 and len(args) != num_args:
+        wrong_args = True
+    
+    if num_args == -1 and not args:
+        wrong_args = True
+        
+    if  not args and not defs and num_args > 0:
+        wrong_args = True
+
+    if wrong_args:
+        return (False, "wrong number of parameters for type %s (expected %d, have %d)" % (name, num_args, len(args)))
     
     if defs:
         args = defs

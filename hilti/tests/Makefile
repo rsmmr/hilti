@@ -3,7 +3,7 @@
 # Run HILTI tests. 
 #
 
-DIRS = misc core integer 
+DIRS = misc core integer string tuple
 
 all: test
 

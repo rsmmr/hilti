@@ -57,8 +57,7 @@ def _(self, i):
         return
         
     if rt != i.op1().type():
-        self.error(i, "return type does not match function definition")
-        
+        self.error(i, "return type does not match function definition (is %s, expected %s)" % (i.op1().type(), rt))        
 @checker.when(flow.IfElse)
 def _(self, i):
     _checkLabel(self, i, i.op2())

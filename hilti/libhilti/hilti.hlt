@@ -5,4 +5,3 @@
 module Hilti
 
 declare "C-HILTI" void print(any obj, bool newline = True)
-declare "C" void print_str(string s)

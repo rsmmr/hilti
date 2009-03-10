@@ -31,9 +31,10 @@ class Resolver(visitor.Visitor):
      
       * If an instruction has multiple integer operands, all integer
         constants are set to the largest widths across them.
-     
-      If none of these apply, integer constants are set to type
-      ``int64``.
+        
+      These rules are recursively applied to integers in tuples, as
+      appropiate.  If none of them applies, integer constants are
+      set to type ``int64``.
       
     Note: Methods in this class need to be careful with their input as it will
     not have been validated by the ~~Checker when they are called; that's
@@ -42,7 +43,12 @@ class Resolver(visitor.Visitor):
     make sure that that is indeed the case).
     
     Todo: This class now does more than just resolving. Should rename it. 
+    Furthermore, we should add more sophisticated derivation of int widhts
+    inside tuples; currently they are always set to 64bit.
     """
+    
+    Debug = False
+    
     def __init__(self):
         super(Resolver, self).__init__()
         self.reset()
@@ -140,6 +146,10 @@ class Resolver(visitor.Visitor):
             return
 
     def _setIntWidth(self, op, width):
+        if op.type().width() > 0:
+            # Already set, don't change.
+            return 
+
         (succ, t) = type.getHiltiType("int", [width])
         assert(succ)
         const = constant.Constant(op.value(), t)
@@ -152,31 +162,45 @@ class Resolver(visitor.Visitor):
         function: ~~Function - The function being called.
         tuple: ~~TupleOperand - The call's argument operand.
         """
+
+        def _adaptSingle(tuple, args, types):
+            try:
+                for i in range(len(args)):
+                    arg = args[i]
+
+                    if isinstance(arg, instruction.TupleOperand):
+                        # Recurse
+                        _adaptSingle(arg, arg.value(), types[i].types())
+                        tuple.setTuple(tuple.value()) # update types
+                        return
+                    
+                    if not isinstance(arg, instruction.ConstOperand):
+                        continue
+                    
+                    if not isinstance(arg.type(), type.Integer):
+                        continue
+                    
+                    if arg.type().width() != 0:
+                        continue
+    
+                    if isinstance(types[i], type.Integer):
+                        self._setIntWidth(arg, types[i].width())
+                        
+                    if isinstance(types[i], type.Any):
+                        self._setIntWidth(arg, 64)
+                        
+                    tuple.setTuple(tuple.value()) # update types
+                        
+            except (IndexError, TypeError, AttributeError):
+                # Can happen if the call gives the wrong number of arguments. That
+                # hasn't been checked yet but will be reported later. 
+                return
+
+        args = tuple.value()
+        types = [id.type() for id in function.type().args()]
+        _adaptSingle(tuple, args, types)
         
-        if not isinstance(tuple, instruction.TupleOperand):
-            return
-
-        try:
-            args = tuple.value()
-            types = [id.type() for id in function.type().args()]
-            
-            for i in range(len(args)):
-                arg = args[i]
-                
-                if not isinstance(arg.type(), type.Integer) or arg.type().width() != 0:
-                    continue
-                
-                if isinstance(types[i], type.Integer):
-                    self._setIntWidth(arg, types[i].width())
-                    
-                if isinstance(types[i], type.Any):
-                    self._setIntWidth(arg, 64)
-                    
-        except (IndexError, TypeError, AttributeError):
-            # Can happen if the call gives the wrong number of arguments. That
-            # hasn't been checked yet but will be reported later. 
-            return
-
+        
     def adaptIntReturn(self, function, op):
         """Derives a width for integer constants in return statements. The
         function modifies the given operand in place. 
@@ -184,17 +208,51 @@ class Resolver(visitor.Visitor):
         function: ~~Function - The function being returned from. 
         tuple: ~~ConstOperand - The return's operand.
         """
-        
-        if not isinstance(op, instruction.ConstOperand):
-            return
-        
-        if not isinstance(op.type(), type.Integer) or op.type().width() > 0:
-            return
-        
-        if not isinstance(function.type().resultType(), type.Integer):
-            return 
 
-        self._setIntWidth(op, function.type().resultType().width())
+        def adaptSingle(op, rt):
+            
+            if isinstance(op, instruction.TupleOperand):
+                for i in range(len(op.value())):
+                    adaptSingle(op.value()[i], rt.types()[i])
+            
+            if not isinstance(op, instruction.ConstOperand):
+                return
+        
+            if not isinstance(op.type(), type.Integer) or op.type().width() > 0:
+                return
+        
+            if not isinstance(rt, type.Integer):
+                return 
+
+            self._setIntWidth(op, rt.width())
+
+        adaptSingle(op, function.type().resultType())
+            
+    def _adaptIntValues(self, ops):
+        # Adapts the list *ops* of integer operands so that all constants
+        # without a width get the width of the widest other integer operands. 
+        # The list can contain *None*, which are ignored.
+
+        def adaptIntType(op, ty, sig, width):
+            if not op or not isinstance(op, instruction.ConstOperand) or not isinstance(ty, type.Integer):
+                return
+
+            # Instruction's signature has preference.
+            if sig and isinstance(sig, type.Integer) and sig.width() > 0:
+                width = sig.width()
+            
+            self._setIntWidth(op, width)
+
+        widths = [ty.width() for (op, ty, sig) in ops if ty and isinstance(ty, type.Integer)]
+        maxwidth = max(widths) if widths else 0
+        
+        if not maxwidth:
+            # Either no integer operand at all, or none with a width. As the
+            # latter can only be constants, we pick a default.
+            maxwidth = 64
+            
+        for (op, ty, sig) in ops:
+            adaptIntType(op, ty, sig, maxwidth)
 
     def adaptIntConsts(self, i):
         """Derives a width for integer constants based on further integer
@@ -203,29 +261,58 @@ class Resolver(visitor.Visitor):
         
         i: ~~Instruction - The instruction to operate on.
         """
-        def adaptIntType(op, width):
+
+        all_ops = []
+        
+        if i.op1():
+            all_ops += [(i.op1(), i.op1().type(), i.signature().op1())]
+            
+        if i.op2():
+            all_ops += [(i.op2(), i.op2().type(), i.signature().op2())]
+            
+        if i.op3():
+            all_ops += [(i.op3(), i.op3().type(), i.signature().op3())]
+            
+        if i.target():
+            all_ops += [(i.target(), i.target().type(), i.signature().target())]
+        
+        # First do all direct integer constants. 
+        self._adaptIntValues(all_ops)
+        
+        # Then do all integer constants inside tuples.
+
+        ops = []
+        
+        for (op, ty, sig) in all_ops:
             
             if not op:
-                return
+                continue
             
-            if not isinstance(op, instruction.ConstOperand) or not isinstance(op.type(), type.Integer):
-                return
-            
-            self._setIntWidth(op, width)
+            if isinstance(op, instruction.TupleOperand):
+                types = ty.types()
+                vals = op.value()
+                sigs = sig.types() if sig and isinstance(sig, type.Type) else [None] * len(types)
+                
+            elif isinstance(op, instruction.IDOperand) and isinstance(ty, type.Tuple):
+                types = ty.types()
+                vals = [None] * len(types)
+                sigs = sig.types() if sig and isinstance(sig, type.Type) else [None] * len(types)
+                
+            else:
+                continue
 
-        # Determine largest width across all int operands.
-        widths = [op.type().width() for op in (i.op1(), i.op2(), i.op3(), i.target()) if op and isinstance(op.type(), type.Integer)]
-        maxwidth = max(widths) if widths else 0
-    
-        if not maxwidth:
-            # Either no integer operand at all, or none with a width. As the
-            # latter can only be constants, we pick a default.
-            maxwidth = 64
+            ops += [zip(vals, types, sigs)]
+
+        tuples = zip(*ops)
             
-        adaptIntType(i.op1(), maxwidth)
-        adaptIntType(i.op2(), maxwidth)
-        adaptIntType(i.op3(), maxwidth)
-        
+        for t in tuples:
+            self._adaptIntValues(t)
+
+        # Update types
+        for (op, ty, sig) in all_ops:
+            if op and isinstance(op, instruction.TupleOperand):
+                op.setTuple(op.value())
+            
     def resolveInstrOperands(self, i):
         """Attempts to resolve all IDs in an instruction. ID's which cannot be
         resolved are left with type ~~Unknown. The given instruction is
@@ -260,7 +347,21 @@ class Resolver(visitor.Visitor):
         resolveOp(i.op2(), "operand 2")
         resolveOp(i.op3(), "operand 3")
         resolveOp(i.target(), "target")
-    
+
+    def _debugInstruction(self, i, tag):
+
+        if not self.Debug:
+            return
+        
+        def fmtOpTypes(ops):
+            return " | ".join(["%s=%s" % (tag, (op.type() if op else "-")) for (tag, op) in ops])
+        
+        types = fmtOpTypes([("target", i.target()), ("op1", i.op1()), ("op2", i.op2()), ("op3", i.op3())])
+        util.debug("resolver after %s: %s" % (tag, str(i)))
+        util.debug("")
+        util.debug("    %s" % types)
+        util.debug("")
+        
 resolver = Resolver()
 
 ##################################################################################
@@ -283,18 +384,28 @@ def _(self, f):
 
 @resolver.when(instruction.Instruction)
 def _(self, i):
+    
+    self._debugInstruction(i, "starting on instruction")
     self.resolveInstrOperands(i) # need to do this first
+    self._debugInstruction(i, "resolveInstrOperands()")
 
     if isinstance(i, instructions.flow.Call):
         func = self._module.lookupIDVal(i.op1().value().name())
         if func:
             self.applyDefaultParams(func, i.op2())
+            self._debugInstruction(i, "applyDefaultParams()")
             self.adaptIntParams(func, i.op2())
+            self._debugInstruction(i, "applyIntParams()")
 
     if isinstance(i, instructions.flow.ReturnResult):
         self.adaptIntReturn(self._function, i.op1())
+        self._debugInstruction(i, "applyIntReturn()")
         
     self.adaptIntConsts(i)
+    self._debugInstruction(i, "adaptIntConsts()")
+    
+    if self.Debug:
+        util.debug("---------------------")
 
     
     

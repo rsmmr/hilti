@@ -45,7 +45,7 @@ tokens = (
    'ANY',
 ) 
 
-literals = ['(',')','{','}', '<', '>', '=', ',', ':' ]
+literals = ['(',')','{','}', '<', '>', '=', ',', ':', '*' ]
 
 states = (
    # In nolines mode, newlines are ignored. Per default, they are passed on as token NL.

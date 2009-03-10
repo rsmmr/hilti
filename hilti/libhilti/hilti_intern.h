@@ -50,6 +50,7 @@ extern void __hlt_exception_print_uncaught(__hlt_exception exception);
 #define __HLT_TYPE_INTEGER 1 
 #define __HLT_TYPE_BOOL    2 
 #define __HLT_TYPE_STRING  3 
+#define __HLT_TYPE_TUPLE   4
    // %doc-__HLT_TYPE-end
 
    // %doc-hlt_type_info-start
@@ -60,6 +61,9 @@ struct __hlt_type_info {
     
     // A readable version of the type's name. 
     const char* tag;
+
+    // Number of type parameters.
+    int16_t num_params;
     
     // List of type operations defined in libhilti functions. Pointers may be
     // zero to indicate that a type does not support an operation. 
@@ -118,13 +122,13 @@ extern void* __hlt_gc_realloc_non_atomic(void* ptr, size_t n);
 // Support functions for HILTI's integer data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const __hlt_string* __hlt_int_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception);
+extern const __hlt_string* __hlt_int_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's boolean data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const __hlt_string* __hlt_bool_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception);
+extern const __hlt_string* __hlt_bool_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's string data type.
@@ -139,11 +143,18 @@ struct __hlt_string {
 } __attribute__((__packed__));
     // %doc-hlt_string-end
 
-extern const __hlt_string* __hlt_string_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception);
-extern __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* exception);
-extern const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* exception);
-extern const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* exception);
-extern __hlt_string_size __hlt_string_find(const __hlt_string* s, const __hlt_string* pattern, __hlt_exception* exception);
-extern int __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* exception);
+extern const __hlt_string* __hlt_string_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
+extern __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* excpt);
+extern const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt);
+extern const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* excpt);
+extern __hlt_string_size __hlt_string_find(const __hlt_string* s, const __hlt_string* pattern, __hlt_exception* excpt);
+extern int __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt);
+extern const __hlt_string* __hlt_string_sprintf(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), __hlt_exception* excpt);
+
+extern const __hlt_string* __hlt_string_from_asciiz(const char* s);
+
+///////////////////////////////////////////////////////////////////////////////
+// Support functions for HILTI's tuple data type.
+///////////////////////////////////////////////////////////////////////////////
 
 #endif    

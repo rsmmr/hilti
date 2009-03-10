@@ -20,7 +20,7 @@ class ReturnVoid(Instruction):
     """
     pass
 
-@instruction("return.result", op1=Optional(Integer), terminator=True)
+@instruction("return.result", op1=Optional(Any), terminator=True)
 class ReturnResult(Instruction):
     """
     Returns from the current function with the given value.

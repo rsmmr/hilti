@@ -231,7 +231,7 @@ def p_operand_ident(p):
 
 def p_operand_number(p):
     """operand : NUMBER"""
-    const = constant.Constant(p[1], type.Integer(0), location=loc(p, 1))
+    const = constant.Constant(p[1], type.Integer(["*"]), location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
 
 def p_operand_bool(p):
@@ -304,12 +304,11 @@ def p_def_opt_default_val(p):
     else:
         p[0] = None
     
-def p_type(p):
+def p_type_generic(p):
     """type : TYPE
             | TYPE '<' type_param_list '>'"""
     if len(p) == 2:
         (success, result) = type.getHiltiType(p[1], [])
-        
     else:
         (success, result) = type.getHiltiType(p[1], p[3])
 
@@ -324,6 +323,22 @@ def p_type(p):
     
     p[0] = result
 
+def p_type_tuple(p):
+    """type : '(' type_list ')'
+            | '(' '*' ')'"""
+    if p[2] != "*":
+        p[0] = type.Tuple(p[2])
+    else:
+        p[0] = type.Tuple(["*"])
+    
+def p_type_list(p):    
+    """type_list : type "," type
+                 | type """
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
+    
 def p_type_with_void(p):
     """type_with_void : type
                       | VOID"""
@@ -352,7 +367,9 @@ def p_type_param_list(p):
 
 def p_type_param(p):
     """type_param : NUMBER 
-                  | IDENT"""
+                  | type
+                  | '*'
+    """
     p[0] = p[1]
         
 def p_local_id_list(p):

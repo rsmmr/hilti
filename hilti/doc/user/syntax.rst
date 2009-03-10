@@ -45,4 +45,18 @@ Type Boolean
    :members:
    :undoc-members:
 
+Type String
+~~~~~~~~~~~~
+
+.. automodule:: hilti.instructions.string
+   :members:
+   :undoc-members:
+
+Type Tuple
+~~~~~~~~~~
+
+.. automodule:: hilti.instructions.tuple
+   :members:
+   :undoc-members:
+
 

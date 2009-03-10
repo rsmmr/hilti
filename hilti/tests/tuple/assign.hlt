@@ -1,0 +1,95 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local tuple<int64,string,bool> t
+    t = tuple.assign (42, "foo", True)
+    call Hilti::print(t)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+    local tuple<int16,string,bool> t
+    t = tuple.assign (42, "foo", True)
+    call Hilti::print(t)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void pt(tuple<int32,string,bool> t) {
+    call Hilti::print(t)
+}
+
+void run() {
+    local tuple<int32,string,bool> t
+    t = tuple.assign (42, "foo", True)
+    call pt(t)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void pt(tuple<int16,string,bool> t) {
+    call Hilti::print(t)
+
+}
+
+void run() {
+    call pt( (42, "foo", True) )
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+tuple<int16,string,bool> pt(tuple<int16,string,bool> t1) {
+    local tuple<int16,string,bool> t2
+    t2 = tuple.assign t1
+    return.result t2
+}
+
+void run() {
+    local tuple<int16,string,bool> t
+    t = call pt( (42, "foo", True) )
+    call Hilti::print(t)
+}
+
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+tuple<int16,string,bool> pt() {
+    return.result (42, "foo", True)
+}
+
+void run() {
+    local tuple<int16,string,bool> t
+    t = call pt()
+    call Hilti::print(t)
+}
+
+

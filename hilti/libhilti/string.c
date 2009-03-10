@@ -9,12 +9,12 @@
 #include "hilti_intern.h"
 #include "utf8proc.h"
 
-const __hlt_string* __hlt_string_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception)
+const __hlt_string* __hlt_string_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt)
 {
     return *((__hlt_string**)obj);
 }
 
-__hlt_string_size __hlt_string_len(const struct __hlt_string* s, __hlt_exception* exception)
+__hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* excpt)
 {
     int32_t dummy;
     const int8_t* p = s->bytes;
@@ -24,7 +24,7 @@ __hlt_string_size __hlt_string_len(const struct __hlt_string* s, __hlt_exception
     while ( p < e ) {
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &dummy);
         if ( n < 0 ) {
-        *exception = __hlt_exception_value_error;
+        *excpt = __hlt_exception_value_error;
             return 0;
         }
         
@@ -33,7 +33,7 @@ __hlt_string_size __hlt_string_len(const struct __hlt_string* s, __hlt_exception
     }
     
     if ( p != e ) {
-        *exception = __hlt_exception_value_error;
+        *excpt = __hlt_exception_value_error;
         return 0;
     }
     
@@ -42,7 +42,7 @@ __hlt_string_size __hlt_string_len(const struct __hlt_string* s, __hlt_exception
 
 #include <stdio.h>
 
-const struct __hlt_string* __hlt_string_concat(const struct __hlt_string* s1, const struct __hlt_string* s2, __hlt_exception* exception)
+const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt)
 {
     __hlt_string_size len1 = s1->len; 
     __hlt_string_size len2 = s2->len; 
@@ -56,7 +56,7 @@ const struct __hlt_string* __hlt_string_concat(const struct __hlt_string* s1, co
     struct __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(struct __hlt_string) + len1 + len2);
     
     if ( ! dst ) {
-        *exception = __hlt_exception_value_error;
+        *excpt = __hlt_exception_value_error;
         return 0;
     }
     
@@ -67,17 +67,44 @@ const struct __hlt_string* __hlt_string_concat(const struct __hlt_string* s1, co
     return dst;
 }
 
-const struct __hlt_string* __hlt_string_substr(const struct __hlt_string* s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* exception)
+const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* excpt)
 {
     return 0;
 }
 
-__hlt_string_size __hlt_string_find(const struct __hlt_string* s, const struct __hlt_string* pattern, __hlt_exception* exception)
+__hlt_string_size __hlt_string_find(const __hlt_string* s, const __hlt_string* pattern, __hlt_exception* excpt)
 {
     return 0;
 }
 
-int __hlt_string_cmp(const struct __hlt_string* s1, const struct __hlt_string* s2, __hlt_exception* exception)
+int __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt)
 {
     return 0;
+}
+
+const __hlt_string* __hlt_string_sprintf(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), __hlt_exception* excpt)
+{
+     // Broken currently.
+     return 0;
+#if 0    
+    int i = 0;
+    for ( i = 0; i < type->num_params; i++ ) {
+        __hlt_type_info** types = (__hlt_type_info**) &type->type_params;
+        fprintf(stderr, "type %s\n", types[i]->tag);
+    }
+    
+    for ( i = 0; i < type->num_params; i++ ) {
+        __hlt_type_info** types = (__hlt_type_info**) &type->type_params;
+        hilti_print(types[i], (*tuple)[i], 0, excpt);
+    }
+#endif
+}
+
+const __hlt_string* __hlt_string_from_asciiz(const char* s)
+{
+    int len = strlen(s);
+    __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(struct __hlt_string) + len);
+    dst->len = len;
+    memcpy(dst->bytes, s, len);
+    return dst;
 }

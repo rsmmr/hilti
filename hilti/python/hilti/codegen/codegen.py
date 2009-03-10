@@ -118,7 +118,8 @@ class CodeGen(visitor.Visitor):
             # The basic type information.
         self._llvm.type_type_information = llvm.core.Type.struct(
                 [llvm.core.Type.int(16),            # type
-                 llvm.core.Type.pointer(llvm.core.Type.array(llvm.core.Type.int(8), 0))] # name
+                 llvm.core.Type.pointer(llvm.core.Type.array(llvm.core.Type.int(8), 0)), # name
+                 llvm.core.Type.int(16)]            # num_params
                 + [self._llvm.type_generic_pointer] * 1) # functions (cheating a bit with the signature).
         
     def generateLLVM(self, ast, libpaths, verify=True):
@@ -285,8 +286,7 @@ class CodeGen(visitor.Visitor):
         Note: It's crucial that this name is the same across all compilation
         units.
         """
-        
-        canonified = type.name().replace("<", "").replace(">", "").lower()
+        canonified = type.name().replace("<", "_").replace(">", "").replace(",", "_").lower()
         return "__hlt_type_info_%s" % canonified
 
     def llvmTypeTypeInfo(self):
@@ -303,33 +303,41 @@ class CodeGen(visitor.Visitor):
         
     def llvmAddTypeInfos(self):
         """Adds run-time type information to the current LLVM module. The function
-        creates on type information object for each instantiated ~~HiltiType.
+        creates one type information object for each instantiated ~~HiltiType.
         
-        Todo: Currently, we only support integer constants as type parameters. 
+        Note: Currently, we support only integer constants and other
+        ~~HiltiType objects as type parameters. 
         """
+
+        def createTypeInfo(ti):
+            th = llvm.core.TypeHandle.new(llvm.core.Type.opaque())
+            ti_name = self.nameTypeInfo(ti.type)
+            glob = self.llvmCurrentModule().add_global_variable(llvm.core.Type.pointer(th.type), ti_name)
+            glob.global_constant = True
+            glob.linkage = llvm.core.LINKAGE_LINKONCE
         
-        def makeTypeInfo(ti):
+        def initTypeInfo(ti):
             # Creates the type information for a single HiltiType.
             arg_types = []
             arg_vals = []
             
             args = []
             for arg in ti.args:
-                # FIXME: Currently, we support only integers constants. We need
-                # to make this more generic and also should not hard-code this
-                # stuff here. 
+                # FIXME: We should not hardcode the types here. 
                 if isinstance(arg, int):
                     at = llvm.core.Type.int(64)
                     arg_types += [at]
                     arg_vals += [llvm.core.Constant.int(at, arg)]
-                    
-                elif isinstance(arg, string):
-                    # TODO: Type names go here. 
-                    util.internal_errror("llvmAddTypeInfos: unsupported type parameter %s" % arg)
+                   
+                elif isinstance(arg, type.StorageType):
+                    other_name = self.nameTypeInfo(arg)
+                    other_ti = self.llvmCurrentModule().get_global_variable_named(other_name)
+                    arg_types += [other_ti.type]
+                    arg_vals += [other_ti]
                     
                 else:
-                    util.internal_errror("llvmAddTypeInfos: unsupported type parameter %s" % arg)
-                
+                    util.internal_error("llvmAddTypeInfos: unsupported type parameter %s" % arg)
+               
             if ti.libhilti_fmt:
                 func = self.currentModule().lookupIDVal(ti.libhilti_fmt)
                 if not func or not isinstance(func, function.Function):
@@ -356,28 +364,33 @@ class CodeGen(visitor.Visitor):
             # Create the type info struct type. Note when changing this we
             # also need to adapt the type in self._llvm.type_type_information
             st = llvm.core.Type.struct(
-            [llvm.core.Type.int(16),            # type
-                llvm.core.Type.pointer(name_type)] # name
+                [llvm.core.Type.int(16),            # type
+                 llvm.core.Type.pointer(name_type), # name
+                 llvm.core.Type.int(16)]            # num_params
                 + libhilti_func_types + arg_types)
-            
+
             if ti.type._id == 0:
                 util.internal_error("type %s does not have an _id" % ti.type)
             
             # Create the type info struct constant.
             sv = llvm.core.Constant.struct(
-            [llvm.core.Constant.int(llvm.core.Type.int(16), ti.type._id), # type
-                name_glob]                                                   # name
-            + libhilti_func_vals + arg_vals)
-                
-            glob = self.llvmCurrentModule().add_global_variable(st, ti_name)
-            glob.global_constant = True
+                [llvm.core.Constant.int(llvm.core.Type.int(16), ti.type._id),  # type
+                 name_glob,                                                    # name
+                 llvm.core.Constant.int(llvm.core.Type.int(16), len(ti.args))] # num_params
+                + libhilti_func_vals + arg_vals)
+
+            glob = self.llvmCurrentModule().get_global_variable_named(ti_name)
+            glob.type.refine(llvm.core.Type.pointer(st))
             glob.initializer = sv
-            glob.linkage = llvm.core.LINKAGE_LINKONCE
             
-        for t in type.getAllHiltiTypes():
-            ti = self._callConvCallback(CodeGen._CONV_TYPE_INFO, t, [t], must_find=True)
-            makeTypeInfo(ti)
+        tis = [self._callConvCallback(CodeGen._CONV_TYPE_INFO, t, [t], must_find=True) for t in type.getAllHiltiTypes()]
         
+        for ti in tis:
+            createTypeInfo(ti)
+            
+        for ti in tis:
+            initTypeInfo(ti)
+
     def llvmTypeInfoPtr(self, type):
         """Returns an LLVM pointer to the type information for a type. 
         
@@ -824,7 +837,9 @@ class CodeGen(visitor.Visitor):
         # Turn the argument types into the format used by CC C_HILTI (see there). 
         new_arg_types = []
         for (argty, prototype) in zip(arg_types, func.type().args()):
-            if isinstance(prototype.type(), type.Any):
+            p = prototype.type()
+            if isinstance(p, type.Any) or \
+               (isinstance(p, type.HiltiType) and p.wildcardType()):
                 # Add a type information parameter.
                 new_arg_types += [llvm.core.Type.pointer(self.llvmTypeTypeInfo())]
                 # Turn argument into a pointer. 
@@ -840,7 +855,9 @@ class CodeGen(visitor.Visitor):
         # Turns the arguments into the format used by CC C_HILTI (see there). 
         new_args = []
         for (arg, argty, prototype) in zip(args, arg_types, func.type().args()):
-            if isinstance(prototype.type(), type.Any):
+            p = prototype.type()
+            if isinstance(p, type.Any) or \
+               (isinstance(p, type.HiltiType) and p.wildcardType()):
                 # Add a type information parameter.
                 new_args += [self.builder().bitcast(self.llvmTypeInfoPtr(argty), llvm.core.Type.pointer(self.llvmTypeTypeInfo()))]
                 # Turn argument into a pointer.
@@ -928,7 +945,7 @@ class CodeGen(visitor.Visitor):
     
         if func.callingConvention() == function.CallingConvention.C_HILTI:
             args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types)
-
+            
         tag = None
         if func.type().resultType() == type.Void:
             call = self.builder().call(llvm_func, args)
@@ -940,6 +957,8 @@ class CodeGen(visitor.Visitor):
         if func.callingConvention() == function.CallingConvention.C_HILTI:
             excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
             self._llvmGenerateExceptionTest(excpt_ptr)
+            
+        return call
 
     def llvmGenerateCCallByName(self, name, args, arg_types):
         """Generates a call to a C function given by it's name. The method
@@ -965,7 +984,7 @@ class CodeGen(visitor.Visitor):
         with the right ~~Function object. 
         """
         func = self.currentModule().lookupIDVal(name)
-        if not func or not isinstance(func, func.Function):
+        if not func or not isinstance(func, function.Function):
             util.internal_error("llvmGenerateCCallByName: %s is not a known function" % name)
             
         return self.llvmGenerateCCall(func, args, arg_types)
@@ -1135,8 +1154,9 @@ class CodeGen(visitor.Visitor):
     _CONV_CONST_TO_LLVM = 2
     _CONV_TYPE_TO_LLVM = 3
     _CONV_TYPE_TO_LLVM_C = 4
+    _CONV_VAL_TO_LLVM_C = 5
     
-    _Conversions = { _CONV_TYPE_INFO: [], _CONV_CONST_TO_LLVM: [], _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [] }
+    _Conversions = { _CONV_TYPE_INFO: [], _CONV_CONST_TO_LLVM: [], _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [], _CONV_VAL_TO_LLVM_C: [] }
     _Docs = { _CONV_TYPE_TO_LLVM_C: "" }
 
     def _callConvCallback(self, kind, type, args, must_find=True):
@@ -1158,14 +1178,17 @@ class CodeGen(visitor.Visitor):
         Returns: llvm.core.Value - The LLVM value of the operand that can then
         be used, e.g., in subsequent LLVM load and store instructions.
         
-        Todo: We currently support only operands type ~~IDOperand and
-        ~~ConstOperand, and for ~~IDOperand only those referencing local
-        variables.
+        Todo: We currently support only operands type ~~IDOperand,
+        ~~ConstOperand, and ~~TupleOperand; and for ~~IDOperand only those
+        referencing local variables.
         """
 
         type = op.type()
         
         if isinstance(op, instruction.ConstOperand):
+            return self._callConvCallback(CodeGen._CONV_CONST_TO_LLVM, type, [op])
+        
+        if isinstance(op, instruction.TupleOperand):
             return self._callConvCallback(CodeGen._CONV_CONST_TO_LLVM, type, [op])
 
         if isinstance(op, instruction.IDOperand):
@@ -1189,12 +1212,8 @@ class CodeGen(visitor.Visitor):
         
         Returns: llvm.core.Value - The LLVM value of the operand that can then
         be used, e.g., in subsequent LLVM load and store instructions.
-        
-        Todo: At the moment this is in fact just an alias for ~~llvmOp; for
-        our current types that's sufficient. However, we will likely need to
-        implement a separate type conversion at some point. 
         """
-        return self.llvmOp(op)
+        return self.llvmValueConvertToC(self.llvmOp(op), op.type())
 
     def llvmTypeConvert(self, type):
         """Converts a StorageType into the LLVM type used for corresponding
@@ -1210,11 +1229,23 @@ class CodeGen(visitor.Visitor):
         """Converts a StorageType into the LLVM type used for passing to C
         functions. 
         
-        type: ~~StorageType - The type to converts.
+        type: ~~StorageType - The type to convert.
         
         Returns: llvm.core.Type - The corresponding LLVM type for passing to C functions
         """ 
         return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM_C, type, [type])
+    
+    def llvmValueConvertToC(self, llvm, type):
+        """Converts an LLVM value to the value used for passing to C
+        functions. 
+        
+        llvm: llvm.core.Value - The value to convert.
+        type: ~~StorageType - The original type of *llvm*.
+        
+        Returns: llvm.core.Value - The converted value.
+        """ 
+        new = self._callConvCallback(CodeGen._CONV_VAL_TO_LLVM_C, type, [llvm, type], must_find=False)
+        return new if new else llvm
 
     def documentCMapping(self):
         """Returns a string documenting the mapping of HILTI types to C types.
@@ -1310,6 +1341,24 @@ class CodeGen(visitor.Visitor):
             CodeGen._Docs[CodeGen._CONV_TYPE_TO_LLVM_C] += doc + "\n"
             
         return register
+    
+    def convertValueToC(self, type):
+        """Decorator to define a conversion from an LLVM value to the
+        corresponding value used with C functions. The decorated function will
+        receive a two parameters: (1) *llvm*, the value to convert; and (2)
+        *type*, the ~~Type of the value being converted. The function can use
+        the current ~~builder() to build the value.
+        
+        Use of this decorator is optional. If not defined, the LLVM value is
+        passed to C unmodified.
+        
+        type: ~~StorageType - The type for which the conversion is being defined.
+        """
+        def register(func):
+            CodeGen._Conversions[CodeGen._CONV_VAL_TO_LLVM_C] += [(type, func)]
+    
+        return register
+    
     
 codegen = CodeGen()
 

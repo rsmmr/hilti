@@ -50,14 +50,14 @@ class Find(Instruction):
     Returns False otherwise."""
     pass
 
-#@instruction("string.fmt", op1=String, op2=Tuple, target=String)
-#class Fmt(Instruction):
-#    """Constructs a new string according to the printf-style format
-#    string *op1*, using *op2* to fill in format symbols.
-#    
-#    Todo: Explain format symbols.
-#    """
-#    pass
+@instruction("string.sprintf", op1=String, op2=Tuple, target=String)
+class Sprintf(Instruction):
+    """Constructs a new string according to the printf-style format
+    string *op1*, using *op2* to fill in format symbols.
+    
+    Todo: Explain format symbols.
+    """
+    pass
 
 
 

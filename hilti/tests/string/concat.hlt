@@ -17,7 +17,7 @@ void run() {
     s2 = string.assign "B\u00e4r!"
     
     s3 = string.concat s1 s2
-    call Hilti::print_str (s3)
+    call Hilti::print (s3)
 }
 
 # @TEST-START-NEXT

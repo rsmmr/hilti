@@ -80,7 +80,7 @@ def _(self, i):
 
         if op and sig:
             if op.type() != sig:
-                typeError(type.fmtTypeClass(op.type().__class__), type.fmtTypeClass(sig), tag)
+                typeError(op.type(), type.fmtTypeClass(sig), tag)
                 return 
         
     checkOp(i.op1(), i.signature().op1(), "operand 1")

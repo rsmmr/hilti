@@ -235,7 +235,6 @@ class TupleOperand(Operand):
         super(TupleOperand, self).__init__(vals, type.Tuple(types), location)
         self._ops = ops
     
-
     def setTuple(self, ops):
         """Set the operand's tuple.
         

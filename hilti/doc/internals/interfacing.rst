@@ -101,7 +101,8 @@ Specifically, ~~C_HILTI differs from ~~C in the following aspects:
           
           - Parameters of type ``any`` (~~Any).
           
-          - Tuple parameters (~~Tuple).
+          - Parameters of a wild-carded, parameterized type (e.g.,
+            "tuple<*>").
           
       Each function parameter that is passed with type information
       is turned into *two* parameters received by the callee: the

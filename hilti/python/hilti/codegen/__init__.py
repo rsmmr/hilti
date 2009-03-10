@@ -11,6 +11,7 @@ import bool
 import void
 import string
 import any
+import tuple
 
 def generateLLVM(ast, libpaths, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as

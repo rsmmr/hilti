@@ -66,6 +66,9 @@ def _(self, f):
         elif f.callingConvention() == function.CallingConvention.C:
             linkage += "\"C\" "
             
+        elif f.callingConvention() == function.CallingConvention.C_HILTI:
+            linkage += "\"C_HILTI\" "
+            
         else:
             # Cannot be reached
             assert False

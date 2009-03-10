@@ -20,3 +20,15 @@ void run() {
     call Hilti::print ("")
 }     
 
+# @TEST-START-NEXT
+
+module Main
+
+import hilti
+
+void run() {
+    local string s 
+    s = string.assign "Foo!"
+    call Hilti::print(s)
+}     
+
