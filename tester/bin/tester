@@ -13,6 +13,7 @@ import tempfile
 import subprocess
 import copy
 import glob
+import fnmatch
 
 Name ="tester"
 Glob = "test-*"
@@ -21,6 +22,9 @@ Version = 0.1
 TmpDir = ".tmp"
 BaselineDir = "Baseline"
 BinDir = None
+
+IgnoreDirs = (".svn", "CVS", ".tmp", ".baseline")
+IgnoreFiles = ("*.tmp", "*.swp", "#*")
 
 # Commands as tuple (tag, regexp, more-than-one-is-ok, optional, group-main, group-add)
 RE_EXEC = ("exec", re.compile("@TEST-EXEC(-FAIL)?: *(.*)"), True, False, 2, 1)
@@ -271,10 +275,14 @@ def findTests(paths):
         elif os.path.isdir(path):
             for (dirpath, dirnames, filenames) in os.walk(path):
                 for file in filenames:
-                    tests += readTestFile(os.path.join(dirpath, file))
+                    for glob in IgnoreFiles:
+                        if fnmatch.fnmatch(file, glob):
+                            break
+                    else:
+                        tests += readTestFile(os.path.join(dirpath, file))
 
                 # Don't recurse into these. 
-                for skip in (".svn", "CVS", ".tmp", ".baseline"):
+                for skip in IgnoreDirs:
                     if skip in dirnames:
                         dirnames.remove(skip)
                         
