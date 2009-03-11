@@ -10,5 +10,8 @@ all: test
 test:
 	./run-tester $(DIRS)
 
+brief:
+	./run-tester -b $(DIRS)
+
 update-baseline:
 	./run-tester -U $(DIRS)

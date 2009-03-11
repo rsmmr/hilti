@@ -165,6 +165,9 @@ class Test(object):
                 output("  > %s" % cmd[0])
             
             if not self.execute(cmd):
+                global Failed
+                Failed += 1
+                
                 if Options.verbose:
                     output("... %s failed" % self.name)
                 else:
@@ -193,6 +196,10 @@ class Test(object):
             os.rmdir(self.baseline)
         except OSError, e:
             pass
+        
+        self.log.close()
+        self.stdout.close()
+        self.stderr.close()
         
     def execute(self, cmd):
         (cmdline, expect_success) = cmd
@@ -330,6 +337,8 @@ def readTestFile(filename):
         content = []
 
     tests += [newTest(content, previous)]
+
+    file.close()
     
     return tests
     
@@ -383,10 +392,11 @@ BinDir = os.path.abspath(os.path.dirname(sys.argv[0]))
 mkdir(BaselineDir)
 mkdir(TmpDir)
 
+Failed = 0
+
 for test in tests:
     test.run()
-    
 
-
-
-
+if Failed > 0:
+    output("%d test%s failed" % (Failed, "s" if Failed > 1 else ""))
+   
