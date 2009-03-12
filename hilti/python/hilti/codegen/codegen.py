@@ -941,7 +941,7 @@ class CodeGen(visitor.Visitor):
         func: ~~Function - The function, which must have ~~Linkage ~~C or
         ~~C_HILTI. 
         
-        args: list of llvm.core.Value - The arguments to pass to the function.
+        args: list of ~~Operand - The arguments to pass to the function.
         
         arg_types: list ~~Type - The types of the actual arguments.
         While these will often be the same as specified in the
@@ -952,7 +952,9 @@ class CodeGen(visitor.Visitor):
         value. 
         """
         llvm_func = self.llvmGetCFunction(func)
-    
+
+        args = [self.llvmOpToC(op) for op in args]
+        
         if func.callingConvention() == function.CallingConvention.C_HILTI:
             args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types)
             
@@ -980,7 +982,7 @@ class CodeGen(visitor.Visitor):
         declared inside the current module already; the method will report an
         internal error if it hasn't.
         
-        args: list of llvm.core.Value - The arguments to pass to the function.
+        args: list of ~~Operand - The arguments to pass to the function.
         
         arg_types: list ~~Type - The types of the actual arguments.
         While these will often be the same as specified in the

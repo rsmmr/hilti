@@ -15,7 +15,7 @@ static const __hlt_string separator = { 1, "," };
 const __hlt_string* __hlt_tuple_fmt(const __hlt_type_info* type, void* (*obj[]), int32_t options, __hlt_exception* excpt)
 {
     int i;
-    const __hlt_string *s = __hlt_string_from_asciiz("");
+    const __hlt_string *s = __hlt_string_from_asciiz("", excpt);
     
     s = __hlt_string_concat(s, &prefix, excpt);
     if ( *excpt )
@@ -32,7 +32,7 @@ const __hlt_string* __hlt_tuple_fmt(const __hlt_type_info* type, void* (*obj[]),
         }
         else
             // No format function.
-            t = __hlt_string_from_asciiz(types[i]->tag);
+            t = __hlt_string_from_asciiz(types[i]->tag, excpt);
         
         s = __hlt_string_concat(s, t, excpt);
         if ( *excpt )

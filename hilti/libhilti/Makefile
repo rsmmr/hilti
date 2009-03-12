@@ -14,7 +14,7 @@ LIB_STATIC_MAIN = libhiltimain.a
 TMP_BC_ASM = .libhilti.bc.S
 TMP_BC_OBJ = .libhilti.bc.o
 
-CFLAGS=-g -Wall -O2
+CFLAGS=-g -Wall 
 LDFLAGS=
 
 LLVMAS_FLAGS=

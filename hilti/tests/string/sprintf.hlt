@@ -12,6 +12,13 @@ void run() {
     local string str
     local tuple<int64, string, bool> t
     t = tuple.assign (1, "Foo", True)
+    
+    str = string.sprintf "Test1" ()
+    call Hilti::print (str)
+    
+    str = string.sprintf "Test2 %%" ()
+    call Hilti::print (str)
+    
     str = string.sprintf "Test %s|%s|%s" (1, "Foo", True)
     call Hilti::print (str)
 }

@@ -158,7 +158,8 @@ extern __hlt_string_size __hlt_string_find(const __hlt_string* s, const __hlt_st
 extern int __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt);
 extern const __hlt_string* __hlt_string_sprintf(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), __hlt_exception* excpt);
 
-extern const __hlt_string* __hlt_string_from_asciiz(const char* s);
+extern const __hlt_string* __hlt_string_from_asciiz(const char* asciiz, __hlt_exception* excpt);
+extern const __hlt_string* __hlt_string_from_data(const int8_t* data, __hlt_string_size len, __hlt_exception* excpt);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's tuple data type.

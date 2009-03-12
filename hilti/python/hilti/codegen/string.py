@@ -60,24 +60,19 @@ def _(self, i):
     
 @codegen.when(instructions.string.Length)
 def _(self, i):
-    op1 = self.llvmOp(i.op1())
-    result = self.llvmGenerateCCallByName("__Hlt::string_len", [op1], [i.op1().type()])
+    result = self.llvmGenerateCCallByName("__Hlt::string_len", [i.op1()], [i.op1().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 import sys
     
 @codegen.when(instructions.string.Concat)
 def _(self, i):
-    op1 = self.llvmOp(i.op1())
-    op2 = self.llvmOp(i.op2())
-    result = self.llvmGenerateCCallByName("__Hlt::string_concat", [op1, op2], [i.op1().type(), i.op2().type()])
+    result = self.llvmGenerateCCallByName("__Hlt::string_concat", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.string.Sprintf)
 def _(self, i):
-    op1 = self.llvmOp(i.op1())
-    op2 = self.llvmOp(i.op2())
-    result = self.llvmGenerateCCallByName("__Hlt::string_sprintf", [op1, op2], [i.op1().type(), i.op2().type()])
+    result = self.llvmGenerateCCallByName("__Hlt::string_sprintf", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
     
 

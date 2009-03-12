@@ -300,11 +300,7 @@ def _(self, i):
     ids = func.type().args()
     tuple = i.op2().value()
     
-    args = []
-    for i in range(len(tuple)):
-        args += [self.llvmOpToC(tuple[i])]
-    
-    self.llvmGenerateCCall(func, args, [t.type() for t in tuple])
+    self.llvmGenerateCCall(func, tuple, [t.type() for t in tuple])
 
 def _makeReturn(cg, llvm_result=None, result_type=None):
     fpt = cg.llvmTypeBasicFunctionPtr([result_type] if result_type else [])
