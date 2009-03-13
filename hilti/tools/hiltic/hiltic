@@ -22,9 +22,9 @@ optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=
 optparser.add_option("-b", "--bitcode", action="store_true", dest="bitcode", default=False,
                      help="Output LLVM bitcode")
 optparser.add_option("-l", "--ll", action="store_true", dest="ll", default=False,
-                     help="Output human-readable LLVM .ll code")
+                     help="Output human-readable LLVM .ll code (per default to stdout)")
 optparser.add_option("-L", "--ll-no-verify", action="store_true", dest="ll_noverify", default=False,
-                     help="Output human-readable LLVM .ll code but do  not verify correctness")
+                     help="Output human-readable LLVM .ll code but do not verify correctness (per default to stdout)")
 optparser.add_option("-p", "--hilti-plain", action="store_true", dest="hilti_plain", default=False,
                      help="Output HILTI code as it is parsed (per default to stdout)")
 optparser.add_option("-c", "--hilti-canonfied", action="store_true", dest="hilti_canon", default=False,
@@ -70,7 +70,7 @@ if not dest:
     if options.ll:
         dest = root + ".ll"
         
-    if options.hilti_plain or options.hilti_canon:
+    if options.ll or options.ll_noverify or options.hilti_plain or options.hilti_canon:
         dest = "/dev/stdout"
 
 try:

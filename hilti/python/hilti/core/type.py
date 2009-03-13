@@ -251,9 +251,9 @@ class TypeDeclType(Type):
     """
     def __init__(self, t, name, docname=None):
         super(TypeDeclType, self).__init__(name, docname)
-        self._type = type
+        self._type = t
     
-    def type(self):
+    def declType(self):
         """Return the user-declared type."""
         return self._type
 
@@ -384,20 +384,62 @@ class Tuple(StorageType):
     _name = "tuple"
     _id = 5
 
+class Reference(StorageType):
+    """Type for reference to heap objects.  
+
+    t: list of single ~~HeapType - The type of the object referenced. The type can be "*" to
+    match other references to any type. Note however that the HILTI language
+    does not allow to create instances of such wildcard references. 
+    """
+    def __init__(self, args):
+        t = args[0]
+
+        if t == "*":
+            self._type = None
+            wildcard = True
+        else:
+            if not isinstance(t, HeapType):
+                raise HiltiType.ParameterMismatch(t, "reference type must be a heap type")
+
+            self._type = t
+            wildcard = False
+            
+        super(Reference, self).__init__(args, Reference._name, wildcard=wildcard)
+
+    def refType(self):
+        """Returns the type referenced.
+        
+        Returns: ~~HeapType - The type referenced if any, or None if it's a
+        wildcard type.
+        """
+        return self._type
+        
+    def cmpWithSameType(self, other):
+        if self._type == None or other._type == None:
+            return True
+        
+        return self._type == other._type
+    
+    _name = "ref"
+    _id = 6
+    
 class Struct(HeapType):
     """Type for structs. 
     
-    fields: list of ~~ID - The IDs defined the fields of the struct.
+    fields: list of (~~ID, ~~Operand) - The fields of the struct, given as
+    tuples of an ID and an optional default value; if a field does not have a
+    default value, use None as the operand.
     """
     def __init__(self, fields):
-        name = "struct { %s }" % ", ".join(["%s %s" % (id.name(), id.type().name()) for id in fields])
+        name = "struct { %s }" % ", ".join(["%s %s" % (id.name(), id.type().name()) for (id, op) in fields])
         super(Struct, self).__init__([], name)
         self._ids = fields
     
     def Fields(self):
         """Returns the struct's fields.
         
-        Returns: list of ~~ID - The struct's fields.
+        Returns: list of (~~ID, ~~Operand) - The struct's fields, given as
+        tuples of an ID and an optional default value.
         """
         return self._ids
 
@@ -410,7 +452,7 @@ class StructDecl(TypeDeclType):
     """
     def __init__(self, structt):
         super(StructDecl, self).__init__(structt, "%s" % structt.name())
-        
+
     _name = "struct declaration"
     
 class Function(Type):
@@ -581,6 +623,7 @@ _keywords = {
     "string": (String, 0, None),
     "bool": (Bool, 0, None),
     "tuple": (Tuple, -1, None),
+    "ref": (Reference, 1, None),
     }
 
 _all_hilti_types = {}

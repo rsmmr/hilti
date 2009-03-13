@@ -2,6 +2,9 @@
  * 
  * Printf-style fmt() function.
  * 
+ * Todo: We currently understand only the %s format and not formatting
+ * options. 
+ * 
  */
 
 #include "hilti_intern.h"

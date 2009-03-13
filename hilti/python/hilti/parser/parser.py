@@ -99,11 +99,11 @@ def p_def_local(p):
     p.parser.current.function.addID(p[2])
     
 def p_def_type(p):
-    """def_type : def_struct"""
+    """def_type : def_struct_decl"""
     pass
     
 def p_def_struct(p):
-    """def_struct : STRUCT _begin_nolines IDENT '{' local_id_list '}' _end_nolines"""
+    """def_struct_decl : STRUCT _begin_nolines IDENT '{' struct_id_list '}' _end_nolines"""
     stype = type.Struct(p[5])
     struct = type.StructDecl(stype)
     sid = id.ID(p[3], struct, id.Role.GLOBAL, location=loc(p, 1))
@@ -257,6 +257,10 @@ def p_operand_tuple(p):
     """operand : tuple"""
     p[0] = instruction.TupleOperand(p[1], location=loc(p, 1))
 
+def p_operand_type(p):
+    """operand : type"""
+    p[0] = instruction.TypeOperand(p[1], location=loc(p, 1))
+
 def p_operand_ununsed(p):
     """operand : """
     p[0] = None 
@@ -297,6 +301,15 @@ def p_local_id(p):
     """local_id : type IDENT"""
     p[0] = id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 1))
 
+def p_struct_id(p): 
+    """struct_id : type IDENT
+                 | type IDENT ATTR_DEFAULT '=' operand"""
+                
+    if len(p) == 3:
+        p[0] = (id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 1)), None)
+    else:
+        p[0] = (id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 1)), p[5])
+    
 def p_global_id(p):
     """global_id : type IDENT"""
     p[0] = id.ID(p[2], p[1], id.Role.GLOBAL, location=loc(p, 1))
@@ -377,14 +390,30 @@ def p_type_param(p):
                   | '*'
     """
     p[0] = p[1]
+    
+def p_type_param_type_name(p):
+    """type_param : IDENT
+    """
+    # Must be a type name.
+    id = p.parser.current.module.lookupID(p[1])
+    if not id:
+        error(p, "unknown identifier %s" % p[1])
+        raise ply.yacc.SyntaxError
+    
+    if not isinstance(id.type(), type.TypeDeclType):
+        error(p, "%s is not a type name" % p[1])
+        raise ply.yacc.SyntaxError
+    
+    p[0] = id.type().declType()
         
-def p_local_id_list(p):
-    """local_id_list : local_id "," local_id_list
-               | local_id"""
+def p_struct_id_list(p):
+    """struct_id_list : struct_id "," struct_id_list
+                      | struct_id"""
     if len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = [p[1]] + p[3]
+        
         
 def p_error(p):    
     if p:

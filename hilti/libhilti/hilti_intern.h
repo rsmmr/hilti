@@ -53,6 +53,7 @@ extern void __hlt_exception_print_uncaught(__hlt_exception exception);
 #define __HLT_TYPE_BOOL    3 
 #define __HLT_TYPE_STRING  4 
 #define __HLT_TYPE_TUPLE   5
+#define __HLT_TYPE_REF     6
    // %doc-__HLT_TYPE-end
 
    // %doc-hlt_type_info-start

@@ -32,7 +32,7 @@ components.
   
   * Decorate a function with ~~makeTypeInfo to initialize the types ~~TypeInfo.
     
-  * Decorate a function with ~~convertConstToLLVM if you want to support
+  * Decorate a function with ~~convertCtorValToLLVM if you want to support
     constants for your type (see below).
     
   * Decorate a function with ~~convertTypeToLLVM if it's a ~~StorageType. 
@@ -65,6 +65,8 @@ components.
         declare "C-HILTI" string my_type_fmt(<llvm_type> n, int32 options)
 
   * Add your new type to the ``COBJS`` variable in :file:`libhilti/Makefile`.
+
+.. todo:: Update the previous paragraph for the changes in interface.
 
 - Create a suite of tests for the new type in :file:`tests/my_type/`.
 

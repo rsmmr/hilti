@@ -24,6 +24,8 @@ keywords = {
     "struct": "STRUCT", 
     "void": "VOID", 
     "any": "ANY", 
+    
+    "default": "ATTR_DEFAULT"
     }
 
 tokens = (
@@ -44,6 +46,8 @@ tokens = (
    'TYPE',
    'VOID',
    'ANY',
+   
+   'ATTR_DEFAULT'
 ) 
 
 literals = ['(',')','{','}', '<', '>', '=', ',', ':', '*' ]

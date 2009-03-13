@@ -9,6 +9,8 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+import sys
+
 @codegen.when(module.Module)
 def _(self, m):
     self._module = m
@@ -21,8 +23,8 @@ def _(self, m):
 
 @codegen.when(id.ID, type.StructDecl)
 def _(self, id):
-    type = id.type().type()
-    fields = [self.llvmTypeConvert(id.type()) for id in type.IDs()]
+    type = id.type().declType()
+    fields = [self.llvmTypeConvert(i.type()) for (i, o) in type.Fields()]
     struct = llvm.core.Type.struct(fields)
 
     self.llvmCurrentModule().add_type_name(id.name(), struct)
