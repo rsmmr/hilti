@@ -16,6 +16,7 @@ import module
 import integer
 import double
 import bool
+import tuple
 
 def checkAST(ast):
     """Verifies the semantic correctness of the |ast| *ast*. If any

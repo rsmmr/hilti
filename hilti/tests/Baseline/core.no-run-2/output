@@ -1,0 +1,3 @@
+no-run.hlt: error, in module Main, ID 'run' must be a function
+
+1 error found

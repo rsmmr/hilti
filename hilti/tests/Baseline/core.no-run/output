@@ -1,0 +1,3 @@
+no-run.hlt: error, module Main must define a run() function
+
+1 error found

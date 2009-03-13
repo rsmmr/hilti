@@ -1,0 +1,3 @@
+wrong-decls.hlt: error, global variable cannot have a wildcard type
+
+1 error found

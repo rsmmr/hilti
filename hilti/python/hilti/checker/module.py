@@ -20,6 +20,27 @@ def _(self, m):
     self._have_module = True
     self._module = m
 
+    if m.name() == "main":
+        run = m.lookupID("run")
+        if not run:
+            self.error(m, "module Main must define a run() function")
+            
+        elif not isinstance(run.type(), type.Function):
+            self.error(run, "in module Main, ID 'run' must be a function")
+    
+    for i in m.IDs():
+        if i.role() == id.Role.GLOBAL:
+            
+            if not isinstance(i.type(), type.StorageType) and \
+               not isinstance(i.type(), type.Function) and \
+               not isinstance(i.type(), type.TypeDeclType):
+                self.error(i, "illegal type for global identifier")
+                break
+            
+            if isinstance(i.type(), type.StorageType) and i.type().wildcardType():
+                self.error(i, "global variable cannot have a wildcard type")
+                break
+    
 @checker.post(module.Module)
 def _(self, m):
     self._module = None
@@ -49,8 +70,23 @@ def _(self, f):
 
     for a in f.type().args():
         if isinstance(a.type(), type.Any) and f.callingConvention() != function.CallingConvention.C_HILTI:
-            self.error(f, "only functions using C-HILTI calling convention can take parameters of undefined type.")
+            self.error(f, "only functions using C-HILTI calling convention can take parameters of undefined type")
             break
+        
+        if isinstance(a.type(), type.StorageType) and a.type().wildcardType() and f.callingConvention() != function.CallingConvention.C_HILTI:
+            self.error(f, "only functions using C-HILTI calling convention can take wildcard parameters")
+            break
+        
+    for i in f.IDs():
+        if i.role() == id.Role.LOCAL:
+            if not isinstance(i.type(), type.StorageType) and not isinstance(i.type(), type.Label):
+                self.error(i, "local variable %s must be of storage type" % i.name())
+                break
+            
+            if isinstance(i.type(), type.StorageType) and i.type().wildcardType():
+                self.error(i, "local variable cannot have a wildcard type")
+                break
+        
     
 @checker.post(function.Function)
 def _(self, f):

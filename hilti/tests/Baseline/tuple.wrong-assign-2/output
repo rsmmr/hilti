@@ -1,0 +1,3 @@
+wrong-assign.hlt:8: error, types of target and operand 1 do not match
+
+1 error found

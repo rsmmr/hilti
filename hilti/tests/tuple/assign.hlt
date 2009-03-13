@@ -92,4 +92,14 @@ void run() {
     call Hilti::print(t)
 }
 
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+    call Hilti::print( () )
+}
+
 

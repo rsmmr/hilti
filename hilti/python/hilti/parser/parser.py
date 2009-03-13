@@ -92,7 +92,7 @@ def p_module_decl_error(p):
 
 def p_def_global(p):
     """def_global : GLOBAL global_id NL"""
-    p.parser.current.module.addID(id)
+    p.parser.current.module.addID(p[2])
 
 def p_def_local(p):
     """def_local : LOCAL local_id NL"""

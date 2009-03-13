@@ -1,0 +1,3 @@
+wrong-assign.hlt:13: error, type of operand 1 does not match signature (expected tuple, found int<64>) 
+
+1 error found

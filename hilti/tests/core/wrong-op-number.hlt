@@ -9,7 +9,7 @@
 # Two modules.
 module Main
 
-void test() {
+void run() {
     local int<32> sum
     sum = int.add
 }
@@ -17,7 +17,7 @@ void test() {
 # @TEST-START-NEXT
 module Main
 
-void test() {
+void run() {
     local int<32> sum
     sum = int.add 1
 }
@@ -25,7 +25,7 @@ void test() {
 # @TEST-START-NEXT
 module Main
 
-void test() {
+void run() {
     local int<32> sum
     sum = int.add 1 2 3
 }
@@ -33,7 +33,7 @@ void test() {
 # @TEST-START-NEXT
 module Main
 
-void test() {
+void run() {
     int.add 1 2
 }
 

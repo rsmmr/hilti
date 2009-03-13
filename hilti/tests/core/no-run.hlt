@@ -1,0 +1,15 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT a.out >output 2>&1 
+# @TEST-EXEC:      test-diff output
+#
+# A Main module without a Main::run function.
+
+module Main
+
+# @TEST-START-NEXT
+
+module Main
+
+global int64 run
+

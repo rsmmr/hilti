@@ -57,4 +57,26 @@ void run() {
     call foo ()
 }
 
+# @TEST-START-NEXT
+
+module Main
+
+void foo(tuple<*> t) {
+}
+
+void run() {
+    call foo ((1,2))
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+"C" void foo(tuple<*> t) {
+}
+
+void run() {
+    call foo ((1,2))
+}
+
 

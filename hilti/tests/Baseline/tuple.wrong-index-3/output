@@ -1,0 +1,3 @@
+wrong-index.hlt:7: error, target's type does not match tuple index 1
+
+1 error found
