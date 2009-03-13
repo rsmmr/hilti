@@ -15,7 +15,7 @@ def _(type):
     typeinfo.to_int64 = "__Hlt::int_to_int64";
     return typeinfo
 
-@codegen.convertConstToLLVM(type.Integer)
+@codegen.convertCtorExprToLLVM(type.Integer)
 def _(op):
     return codegen.llvmConstInt(op.value(), op.type().width())
 

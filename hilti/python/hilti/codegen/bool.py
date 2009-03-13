@@ -15,7 +15,7 @@ def _(type):
     typeinfo.to_int64 = "__Hlt::bool_to_int64";
     return typeinfo
 
-@codegen.convertConstToLLVM(type.Bool)
+@codegen.convertCtorExprToLLVM(type.Bool)
 def _(op):
     return llvm.core.Constant.int(llvm.core.Type.int(1), 1 if op.value() else 0)
 

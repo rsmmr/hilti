@@ -15,7 +15,7 @@ def _(type):
     typeinfo.to_double = "__Hlt::double_to_double";
     return typeinfo
 
-@codegen.convertConstToLLVM(type.Double)
+@codegen.convertCtorExprToLLVM(type.Double)
 def _(op):
     return codegen.llvmConstDouble(op.value())
 

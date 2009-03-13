@@ -20,7 +20,7 @@ def _llvmStringType(len=0):
 def _llvmStringTypePtr(len=0):
     return llvm.core.Type.pointer(_llvmStringType(len))
 
-@codegen.convertConstToLLVM(type.String)
+@codegen.convertCtorExprToLLVM(type.String)
 def _(op):
     s = op.value().encode("utf-8")
     size = llvm.core.Constant.int(llvm.core.Type.int(32), len(s))

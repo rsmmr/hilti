@@ -20,8 +20,7 @@ def _tupleType(type):
     llvm_types = [codegen.llvmTypeConvert(t) for t in type.types()]
     return llvm.core.Type.struct(llvm_types)
 
-# FIXME: rename to ValToLLVM
-@codegen.convertConstToLLVM(type.Tuple)
+@codegen.convertCtorExprToLLVM(type.Tuple)
 def _(op):
     t = _tupleType(op.type())
     struct = codegen.builder().alloca(t)

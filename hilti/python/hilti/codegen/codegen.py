@@ -1179,12 +1179,12 @@ class CodeGen(visitor.Visitor):
 
     # Table of callbacks for conversions. 
     _CONV_TYPE_INFO = 1
-    _CONV_CONST_TO_LLVM = 2
+    _CONV_CTOR_EXPR_TO_LLVM = 2
     _CONV_TYPE_TO_LLVM = 3
     _CONV_TYPE_TO_LLVM_C = 4
     _CONV_VAL_TO_LLVM_C = 5
     
-    _Conversions = { _CONV_TYPE_INFO: [], _CONV_CONST_TO_LLVM: [], _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [], _CONV_VAL_TO_LLVM_C: [] }
+    _Conversions = { _CONV_TYPE_INFO: [], _CONV_CTOR_EXPR_TO_LLVM: [], _CONV_TYPE_TO_LLVM: [], _CONV_TYPE_TO_LLVM_C: [], _CONV_VAL_TO_LLVM_C: [] }
     _Docs = { _CONV_TYPE_TO_LLVM_C: "" }
 
     def _callConvCallback(self, kind, type, args, must_find=True):
@@ -1214,10 +1214,10 @@ class CodeGen(visitor.Visitor):
         type = op.type()
         
         if isinstance(op, instruction.ConstOperand):
-            return self._callConvCallback(CodeGen._CONV_CONST_TO_LLVM, type, [op])
+            return self._callConvCallback(CodeGen._CONV_CTOR_EXPR_TO_LLVM, type, [op])
         
         if isinstance(op, instruction.TupleOperand):
-            return self._callConvCallback(CodeGen._CONV_CONST_TO_LLVM, type, [op])
+            return self._callConvCallback(CodeGen._CONV_CTOR_EXPR_TO_LLVM, type, [op])
 
         if isinstance(op, instruction.IDOperand):
             i = op.id()
@@ -1301,18 +1301,26 @@ class CodeGen(visitor.Visitor):
     
         return register
 
-    def convertConstToLLVM(self, type):
-        """Decorator to define a conversion from a ConstOperand to
-        the corresponding LLVM constant. The decorated function will
-        receive one parameter *op* which is the instance of
-        ~~ConstOperand to be converted. The conversion function must return an
-        `llvm.core.Value`` and can use the current :meth:`builder`
-        if it needs to perform any transformations on the operand. 
+    def convertCtorExprToLLVM(self, type):
+        """Decorator to define a conversion from a value as created by a
+        type's constructor expression to the corresponding LLVM value. 
+        Constructor expressions are defined in the ~~Parser, and the type of
+        the single parameter to the decorated function depends on what the
+        parser instantiates. Many types will only have constructor expressions
+        for their constants (e.g., numbers for the integer data type, which
+        will be passed in as Python ints; character sequences enclosed in
+        quotation marks for strings, which will be passed in as Python
+        strings). An example of non-constant constructor expressions are
+        tuples: ``(x,y,z)`` will be passed in a list of ~~Operand objectives.
+        
+        The conversion function must return an `llvm.core.Value`` and can use
+        the current :meth:`builder` if it needs to perform any transformations
+        on the operand. 
         
         type: ~~StorageType - The type for which the conversion is being defined.
         """
         def register(func):
-            CodeGen._Conversions[CodeGen._CONV_CONST_TO_LLVM] += [(type, func)]
+            CodeGen._Conversions[CodeGen._CONV_CTOR_EXPR_TO_LLVM] += [(type, func)]
     
         return register
     
