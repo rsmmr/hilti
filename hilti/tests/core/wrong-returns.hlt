@@ -7,7 +7,7 @@
 
 module Main
 
-int<32> test() {
+int<32> run() {
    return.void
 }
 
@@ -15,7 +15,7 @@ int<32> test() {
 
 module Main
 
-void test() {
+void run() {
    return.result 42
 }
 
@@ -23,7 +23,7 @@ void test() {
 
 module Main
 
-int<32> test() {
+int<32> run() {
    return.result True
 }
 
@@ -33,6 +33,6 @@ module Main
 
 void foo1() {}
 
-int<32> test() {
+int<32> run() {
     call foo1()
 }
