@@ -60,8 +60,8 @@ static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
  */
 void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_exception* excpt)
 {
-    if ( type->libhilti_fmt ) {
-        __hlt_string *s = (*type->libhilti_fmt)(type, obj, 0, excpt);
+    if ( type->to_string ) {
+        __hlt_string *s = (*type->to_string)(type, obj, 0, excpt);
         if ( *excpt )
             return;
         

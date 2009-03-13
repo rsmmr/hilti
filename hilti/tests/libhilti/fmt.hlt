@@ -13,13 +13,13 @@ void run() {
     local tuple<int64, string, bool> t
     t = tuple.assign (1, "Foo", True)
     
-    str = string.sprintf "Test1" ()
+    str = call Hilti::fmt ("Test1", ())
     call Hilti::print (str)
     
-    str = string.sprintf "Test2 %%" ()
+    str = call Hilti::fmt ("Test2 %%", ())
     call Hilti::print (str)
     
-    str = string.sprintf "Test %s|%s|%s" (1, "Foo", True)
+    str = call Hilti::fmt ("Test %s|%s|%s", (1, "Foo", True))
     call Hilti::print (str)
 }
 

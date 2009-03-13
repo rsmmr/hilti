@@ -183,10 +183,13 @@ class Resolver(visitor.Visitor):
                     if arg.type().width() != 0:
                         continue
     
-                    if isinstance(types[i], type.Integer):
+                    if types and isinstance(types[i], type.Integer):
                         self._setIntWidth(arg, types[i].width())
                         
-                    if isinstance(types[i], type.Any):
+                    if types and isinstance(types[i], type.Any):
+                        self._setIntWidth(arg, 64)
+                        
+                    if arg.type().width() == 0:
                         self._setIntWidth(arg, 64)
                         
                     tuple.setTuple(tuple.value()) # update types
@@ -194,7 +197,7 @@ class Resolver(visitor.Visitor):
             except (IndexError, TypeError, AttributeError):
                 # Can happen if the call gives the wrong number of arguments. That
                 # hasn't been checked yet but will be reported later. 
-                return
+                pass
 
         args = tuple.value()
         types = [id.type() for id in function.type().args()]

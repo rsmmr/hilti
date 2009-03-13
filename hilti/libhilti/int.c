@@ -31,8 +31,10 @@ static int64_t _makeInt64(const __hlt_type_info* type, void *obj)
     return val;
 }
 
-const __hlt_string* __hlt_int_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception)
+const __hlt_string* __hlt_int_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception)
 {
+    assert(type->type == __HLT_TYPE_INTEGER);
+    
     int64_t val = _makeInt64(type, obj);
     
     // FIXME: This is just a hack for now. Rather than depending on snprintf,
@@ -43,5 +45,11 @@ const __hlt_string* __hlt_int_fmt(const __hlt_type_info* type, void* obj, int32_
     memcpy(s->bytes, buffer, len);
     s->len = len;
     return s;
+}
+
+int64_t __hlt_int_to_int64(const __hlt_type_info* type, void* obj, __hlt_exception* expt)
+{
+    assert(type->type == __HLT_TYPE_INTEGER);
+    return _makeInt64(type, obj);
 }
 

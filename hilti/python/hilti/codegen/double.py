@@ -11,7 +11,8 @@ from codegen import codegen
 @codegen.makeTypeInfo(type.Double)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.libhilti_fmt = "__Hlt::double_fmt";
+    typeinfo.to_string = "__Hlt::double_to_string";
+    typeinfo.to_double = "__Hlt::double_to_double";
     return typeinfo
 
 @codegen.convertConstToLLVM(type.Double)

@@ -11,7 +11,7 @@ from codegen import codegen
 @codegen.makeTypeInfo(type.String)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.libhilti_fmt = "__Hlt::string_fmt";
+    typeinfo.to_string = "__Hlt::string_to_string";
     return typeinfo
 
 def _llvmStringType(len=0):
@@ -68,11 +68,6 @@ import sys
 @codegen.when(instructions.string.Concat)
 def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::string_concat", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
-    self.llvmStoreInTarget(i.target(), result)
-
-@codegen.when(instructions.string.Sprintf)
-def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::string_sprintf", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
     
 

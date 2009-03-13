@@ -300,7 +300,9 @@ def _(self, i):
     ids = func.type().args()
     tuple = i.op2().value()
     
-    self.llvmGenerateCCall(func, tuple, [t.type() for t in tuple])
+    result = self.llvmGenerateCCall(func, tuple, [t.type() for t in tuple])
+    if i.target():
+        self.llvmStoreInTarget(i.target(), result)
 
 def _makeReturn(cg, llvm_result=None, result_type=None):
     fpt = cg.llvmTypeBasicFunctionPtr([result_type] if result_type else [])

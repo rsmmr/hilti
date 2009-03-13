@@ -1,7 +1,12 @@
 # $Id$
 #
 # User-visible libhilti functions.
+#
+#
+# Todo: We need to document these but first need to figure out how to 
+# generaly deal with C functions in the Sphinx-built docs. 
 
 module Hilti
 
 declare "C-HILTI" void print(any obj, bool newline = True)
+declare "C-HILTI" string fmt(string fmt, tuple<*> vals)

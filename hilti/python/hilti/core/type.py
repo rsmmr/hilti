@@ -382,7 +382,7 @@ class Tuple(StorageType):
         return self.types() == other.types()
         
     _name = "tuple"
-    _id = 4
+    _id = 5
 
 class Struct(HeapType):
     """Type for structs. 

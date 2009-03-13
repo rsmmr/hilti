@@ -11,7 +11,8 @@ from codegen import codegen
 @codegen.makeTypeInfo(type.Integer)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.libhilti_fmt = "__Hlt::int_fmt";
+    typeinfo.to_string = "__Hlt::int_to_string";
+    typeinfo.to_int64 = "__Hlt::int_to_int64";
     return typeinfo
 
 @codegen.convertConstToLLVM(type.Integer)

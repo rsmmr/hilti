@@ -24,6 +24,7 @@ extern void hilti_init();
 extern void hilti_run();
 
 // Library functions.
-void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_exception* excpt);
+extern void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_exception* excpt);
+extern const __hlt_string* hilti_fmt(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), __hlt_exception* excpt);
 
 #endif    

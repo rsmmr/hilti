@@ -41,9 +41,19 @@ class TypeInfo(object):
     *args* (list of objects)
        The type's parameters. 
        
-    *libhilti_fmt* (string)
+    *to_string* (string)
        The name of an internal libhilti function that converts a value of the
        type into a readable string representation. See :download:`/libhilti/hilti_intern.h`
+       for the function's complete C signature. 
+       
+    *to_int64* (string) 
+       The name of an internal libhilti function that converts a value of the
+       type into an int64. See :download:`/libhilti/hilti_intern.h` for the
+       function's complete C signature. 
+       
+    *to_double* (string)
+       The name of an internal libhilti function that converts a value of the
+       type into a double. See :download:`/libhilti/hilti_intern.h`
        for the function's complete C signature. 
               
     t: ~~HiltiType - The type used to initialize the object. The fields
@@ -55,9 +65,9 @@ class TypeInfo(object):
         self.type = t
         self.name = t.name()
         self.args = t.args()
-        self.libhilti_fmt = None
-        
-    __slots__ = ["type", "name", "args", "libhilti_fmt"]
+        self.to_string = None
+        self.to_int64 = None
+        self.to_double = None
 
 class CodeGen(visitor.Visitor):
     
@@ -120,7 +130,7 @@ class CodeGen(visitor.Visitor):
                 [llvm.core.Type.int(16),            # type
                  llvm.core.Type.pointer(llvm.core.Type.array(llvm.core.Type.int(8), 0)), # name
                  llvm.core.Type.int(16)]            # num_params
-                + [self._llvm.type_generic_pointer] * 1) # functions (cheating a bit with the signature).
+                + [self._llvm.type_generic_pointer] * 3) # functions (cheating a bit with the signature).
         
     def generateLLVM(self, ast, libpaths, verify=True):
         """See ~~generateLLVM."""
@@ -337,17 +347,23 @@ class CodeGen(visitor.Visitor):
                     
                 else:
                     util.internal_error("llvmAddTypeInfos: unsupported type parameter %s" % arg)
-               
-            if ti.libhilti_fmt:
-                func = self.currentModule().lookupIDVal(ti.libhilti_fmt)
-                if not func or not isinstance(func, function.Function):
-                    util.internal_error("llvmAddTypeInfos: %s is not a known function" % ti.libhilti_fmt)
-                libhilti_fmt = self.llvmGetCFunction(func)
-            else:
-                libhilti_fmt = llvm.core.Constant.null(self.llvmTypeGenericPointer())
 
-            libhilti_func_vals = [libhilti_fmt]
-            libhilti_func_types = [libhilti_fmt.type]
+            libhilti_func_vals = []
+            libhilti_func_types = []
+            
+            for conversion in ("to_string", "to_int64", "to_double"):
+                if ti.__dict__[conversion]:
+                    name = ti.__dict__[conversion]
+                    func = self.currentModule().lookupIDVal(name)
+                    if not func or not isinstance(func, function.Function):
+                        util.internal_error("llvmAddTypeInfos: %s is not a known function" % name)
+                        
+                    func_val = self.llvmGetCFunction(func)
+                else:
+                    func_val = llvm.core.Constant.null(self.llvmTypeGenericPointer())
+                    
+                libhilti_func_vals += [func_val]
+                libhilti_func_types += [func_val.type]
 
             ti_name = self.nameTypeInfo(ti.type)
             name_name = "%s_name" % ti_name

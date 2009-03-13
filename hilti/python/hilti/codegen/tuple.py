@@ -13,7 +13,7 @@ import sys
 @codegen.makeTypeInfo(type.Tuple)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.libhilti_fmt = "__Hlt::tuple_fmt";
+    typeinfo.to_string = "__Hlt::tuple_to_string";
     return typeinfo
 
 def _tupleType(type):
