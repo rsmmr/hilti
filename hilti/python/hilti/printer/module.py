@@ -35,7 +35,7 @@ def _(self, id):
     self.pop()
     self.output()
     
-@printer.when(id.ID, type.StorageType)
+@printer.when(id.ID, type.ValueType)
 def _(self, id):
     visibility = "local" if self.currentFunction() else "global"
     self.output("%s %s %s" % (visibility, id.type().name(), id.name()))

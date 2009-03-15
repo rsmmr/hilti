@@ -14,7 +14,7 @@ Adding a new data type involves modifying and extended different HILTI
 components. 
 
 - Derive a new class for the appropiate sub-class of `.type.Type`.  Usually,
-  that will be either `.type.StorageType` or `.type.HeapType` in
+  that will be either `.type.ValueType` or `.type.HeapType` in
   :file:`python/hilti/core/type.py`. Add the parser keyword to the ``_keywords``
   list.
   
@@ -35,10 +35,10 @@ components.
   * Decorate a function with ~~convertCtorValToLLVM if you want to support
     constants for your type (see below).
     
-  * Decorate a function with ~~convertTypeToLLVM if it's a ~~StorageType. 
+  * Decorate a function with ~~convertTypeToLLVM if it's a ~~ValueType. 
     
   * Decorate a function with ~~convertTypeToC if it's a
-    ~~StorageType. Add a docstring to the decorated function which
+    ~~ValueType. Add a docstring to the decorated function which
     explains how the the type is mapped to C; the docstring will
     show up in the documentation automatically.
     
@@ -81,7 +81,7 @@ the :mod:`~hilti.parser`:
 - Add an ``p_operand_<type>`` rule in :file:`parser/parser.py`
 
 
-Adding a StorageType
+Adding a ValueType
 ~~~~~~~~~~~~~~~~~~~~
 
 

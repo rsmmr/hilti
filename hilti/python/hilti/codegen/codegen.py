@@ -339,7 +339,7 @@ class CodeGen(visitor.Visitor):
                     arg_types += [at]
                     arg_vals += [llvm.core.Constant.int(at, arg)]
                    
-                elif isinstance(arg, type.StorageType):
+                elif isinstance(arg, type.ValueType):
                     other_name = self.nameTypeInfo(arg)
                     other_ti = self.llvmCurrentModule().get_global_variable_named(other_name)
                     arg_types += [other_ti.type]
@@ -586,7 +586,7 @@ class CodeGen(visitor.Visitor):
         except AttributeError:
             pass
         
-        locals = [i for i in function.IDs() if isinstance(i.type(), type.StorageType)]
+        locals = [i for i in function.IDs() if isinstance(i.type(), type.ValueType)]
         fields = self._bf_fields + [(i.name(), self.llvmTypeConvert(i.type())) for i in locals]
 
         # Build map of indices and store with function.
@@ -1244,20 +1244,20 @@ class CodeGen(visitor.Visitor):
         return self.llvmValueConvertToC(self.llvmOp(op), op.type())
 
     def llvmTypeConvert(self, type):
-        """Converts a StorageType into the LLVM type used for corresponding
+        """Converts a ValueType into the LLVM type used for corresponding
         variable declarations.
         
-        type: ~~StorageType - The type to converts.
+        type: ~~ValueType - The type to converts.
         
         Returns: llvm.core.Type - The corresponding LLVM type for variable declarations.
         """ 
         return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM, type, [type])
 
     def llvmTypeConvertToC(self, type):
-        """Converts a StorageType into the LLVM type used for passing to C
+        """Converts a ValueType into the LLVM type used for passing to C
         functions. 
         
-        type: ~~StorageType - The type to convert.
+        type: ~~ValueType - The type to convert.
         
         Returns: llvm.core.Type - The corresponding LLVM type for passing to C functions
         """ 
@@ -1268,7 +1268,7 @@ class CodeGen(visitor.Visitor):
         functions. 
         
         llvm: llvm.core.Value - The value to convert.
-        type: ~~StorageType - The original type of *llvm*.
+        type: ~~ValueType - The original type of *llvm*.
         
         Returns: llvm.core.Value - The converted value.
         """ 
@@ -1317,7 +1317,7 @@ class CodeGen(visitor.Visitor):
         the current :meth:`builder` if it needs to perform any transformations
         on the operand. 
         
-        type: ~~StorageType - The type for which the conversion is being defined.
+        type: ~~ValueType - The type for which the conversion is being defined.
         """
         def register(func):
             CodeGen._Conversions[CodeGen._CONV_CTOR_EXPR_TO_LLVM] += [(type, func)]
@@ -1325,12 +1325,12 @@ class CodeGen(visitor.Visitor):
         return register
     
     def convertTypeToLLVM(self, type):
-        """Decorator to define a conversion from a StorageType to the
+        """Decorator to define a conversion from a ValueType to the
         corresponding type used in LLVM code. The decorated function will
         receive a single parameter *type* being the instance of ~~Type to
         convert, and must return an ``llvm.core.Type``..
         
-        type: ~~StorageType - The type for which the conversion is being defined.
+        type: ~~ValueType - The type for which the conversion is being defined.
         """
         def register(func):
             CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM] += [(type, func)]
@@ -1338,12 +1338,12 @@ class CodeGen(visitor.Visitor):
         return register
     
     def convertTypeToC(self, type):
-        """Decorator to define a conversion from a StorageType to the
+        """Decorator to define a conversion from a ValueType to the
         corresponding type used with C functions. The decorated function will
         receive a single parameter *type* being the instance of ~~Type to
         convert. 
         
-        type: ~~StorageType - The type for which the conversion is being defined.
+        type: ~~ValueType - The type for which the conversion is being defined.
         
         Note: The decorated function should have a docstring describing the
         mapping between the data type and C in a form suitable for including
@@ -1388,7 +1388,7 @@ class CodeGen(visitor.Visitor):
         Use of this decorator is optional. If not defined, the LLVM value is
         passed to C unmodified.
         
-        type: ~~StorageType - The type for which the conversion is being defined.
+        type: ~~ValueType - The type for which the conversion is being defined.
         """
         def register(func):
             CodeGen._Conversions[CodeGen._CONV_VAL_TO_LLVM_C] += [(type, func)]

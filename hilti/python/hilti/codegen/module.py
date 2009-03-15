@@ -29,7 +29,7 @@ def _(self, id):
 
     self.llvmCurrentModule().add_type_name(id.name(), struct)
     
-@codegen.when(id.ID, type.StorageType)
+@codegen.when(id.ID, type.ValueType)
 def _(self, id):
     if self.currentFunction():
         # Ignore locals, we do them when we're generating the function's code. 

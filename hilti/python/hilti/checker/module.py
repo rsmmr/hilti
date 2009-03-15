@@ -31,13 +31,13 @@ def _(self, m):
     for i in m.IDs():
         if i.role() == id.Role.GLOBAL:
             
-            if not isinstance(i.type(), type.StorageType) and \
+            if not isinstance(i.type(), type.ValueType) and \
                not isinstance(i.type(), type.Function) and \
                not isinstance(i.type(), type.TypeDeclType):
                 self.error(i, "illegal type for global identifier")
                 break
             
-            if isinstance(i.type(), type.StorageType) and i.type().wildcardType():
+            if isinstance(i.type(), type.ValueType) and i.type().wildcardType():
                 self.error(i, "global variable cannot have a wildcard type")
                 break
     
@@ -54,7 +54,7 @@ def _(self, id):
     if self.currentFunction():
         self.error(id, "structs cannot be declared inside functions")
         
-@checker.when(id.ID, type.StorageType)
+@checker.when(id.ID, type.ValueType)
 def _(self, id):
     self._have_others = True
 
@@ -73,17 +73,17 @@ def _(self, f):
             self.error(f, "only functions using C-HILTI calling convention can take parameters of undefined type")
             break
         
-        if isinstance(a.type(), type.StorageType) and a.type().wildcardType() and f.callingConvention() != function.CallingConvention.C_HILTI:
+        if isinstance(a.type(), type.ValueType) and a.type().wildcardType() and f.callingConvention() != function.CallingConvention.C_HILTI:
             self.error(f, "only functions using C-HILTI calling convention can take wildcard parameters")
             break
         
     for i in f.IDs():
         if i.role() == id.Role.LOCAL:
-            if not isinstance(i.type(), type.StorageType) and not isinstance(i.type(), type.Label):
+            if not isinstance(i.type(), type.ValueType) and not isinstance(i.type(), type.Label):
                 self.error(i, "local variable %s must be of storage type" % i.name())
                 break
             
-            if isinstance(i.type(), type.StorageType) and i.type().wildcardType():
+            if isinstance(i.type(), type.ValueType) and i.type().wildcardType():
                 self.error(i, "local variable cannot have a wildcard type")
                 break
         

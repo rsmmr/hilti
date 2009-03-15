@@ -208,14 +208,14 @@ class HiltiType(Type):
             return "error in type parameter: %s (%s)" % (self._reason, self._param)
 
         
-class StorageType(HiltiType):
+class ValueType(HiltiType):
     """Base class for all types that can be directly stored in a HILTI
-    variable. Types derived from StorageType cannot be allocated on the heap.
+    variable. Types derived from ValueType cannot be allocated on the heap.
     
     The arguments are the same as for ~~HiltiType.
     """
     def __init__(self, args, name, wildcard=False, docname=None):
-        super(StorageType, self).__init__(args, name, wildcard=wildcard, docname=docname)
+        super(ValueType, self).__init__(args, name, wildcard=wildcard, docname=docname)
 
     _name = "storage type"
         
@@ -261,7 +261,7 @@ class TypeDeclType(Type):
 
 # Actual types.    
 
-class String(StorageType):
+class String(ValueType):
     """Type for strings."""
     def __init__(self):
         super(String, self).__init__([], String._name)
@@ -269,7 +269,7 @@ class String(StorageType):
     _name = "string"
     _id = 3
         
-class Integer(StorageType):
+class Integer(ValueType):
     """Type for integers.  
     
     args: int, or a list containing a single int or a "*" - The
@@ -328,7 +328,7 @@ class Integer(StorageType):
     _name = "int"
     _id = 1
     
-class Double(StorageType):
+class Double(ValueType):
     """Type for doubles."""
     def __init__(self):
         super(Double, self).__init__([], Double._name)
@@ -336,7 +336,7 @@ class Double(StorageType):
     _name = "double"
     _id = 2
 
-class Bool(StorageType):
+class Bool(ValueType):
     """Type for booleans."""
     def __init__(self):
         super(Bool, self).__init__([], Bool._name)
@@ -344,7 +344,7 @@ class Bool(StorageType):
     _name = "bool"
     _id = 3
 
-class Tuple(StorageType):
+class Tuple(ValueType):
     """A type for tuples of values. 
     
     types: list of ~~Type, or a list ["*"] - The types of the
@@ -370,7 +370,7 @@ class Tuple(StorageType):
     def types(self):
         """Returns the types of the typle elements.
         
-        Returns: list of ~~StorageType - The types. The list will be empty for
+        Returns: list of ~~ValueType - The types. The list will be empty for
         ``tuple<*>``.
         """
         return self._types
@@ -384,7 +384,7 @@ class Tuple(StorageType):
     _name = "tuple"
     _id = 5
 
-class Reference(StorageType):
+class Reference(ValueType):
     """Type for reference to heap objects.  
 
     t: list of single ~~HeapType - The type of the object referenced. The type can be "*" to
