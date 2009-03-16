@@ -21,7 +21,7 @@ def _llvmStringTypePtr(len=0):
     return llvm.core.Type.pointer(_llvmStringType(len))
 
 @codegen.convertCtorExprToLLVM(type.String)
-def _(op):
+def _(op, refine_to):
     s = op.value().encode("utf-8")
     size = llvm.core.Constant.int(llvm.core.Type.int(32), len(s))
     bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in s]
@@ -38,11 +38,11 @@ def _(op):
     return codegen.builder().bitcast(glob, _llvmStringTypePtr(), name)
 
 @codegen.convertTypeToLLVM(type.String)
-def _(type):
+def _(type, refine_to):
     return _llvmStringTypePtr()
 
 @codegen.convertTypeToC(type.String)
-def _(type):
+def _(type, refine_to):
     """A ``string`` is mapped to a ``__hlt_string *``. The type is defined in
     |hilti_intern.h|:
     
@@ -51,7 +51,7 @@ def _(type):
        :end-before:  %doc-hlt_string-end
        
     """
-    return codegen.llvmTypeConvert(type)
+    return codegen.llvmTypeConvert(type, refine_to)
 
 @codegen.when(instructions.string.Assign)
 def _(self, i):

@@ -24,6 +24,7 @@ keywords = {
     "struct": "STRUCT", 
     "void": "VOID", 
     "any": "ANY", 
+    "Null": "NULL",
     
     "default": "ATTR_DEFAULT"
     }
@@ -46,6 +47,7 @@ tokens = (
    'TYPE',
    'VOID',
    'ANY',
+   'NULL', 
    
    'ATTR_DEFAULT'
 ) 

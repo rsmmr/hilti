@@ -13,6 +13,8 @@ import void
 import string
 import any
 import tuple
+import ref
+import struct
 
 def generateLLVM(ast, libpaths, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as

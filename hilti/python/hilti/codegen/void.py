@@ -9,9 +9,9 @@ from hilti import instructions
 from codegen import codegen
 
 @codegen.convertTypeToLLVM(type.Void)
-def _(type):
+def _(type, refine_to):
     return llvm.core.Type.void()
 
 @codegen.convertTypeToC(type.Void)
-def _(type):
-    return codegen.llvmTypeConvert(type)
+def _(type, refine_to):
+    return codegen.llvmTypeConvert(type, refine_to)

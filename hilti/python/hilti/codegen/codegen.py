@@ -402,10 +402,12 @@ class CodeGen(visitor.Visitor):
         tis = [self._callConvCallback(CodeGen._CONV_TYPE_INFO, t, [t], must_find=True) for t in type.getAllHiltiTypes()]
         
         for ti in tis:
-            createTypeInfo(ti)
+            if ti:
+                createTypeInfo(ti)
             
         for ti in tis:
-            initTypeInfo(ti)
+            if ti: 
+                initTypeInfo(ti)
 
     def llvmTypeInfoPtr(self, type):
         """Returns an LLVM pointer to the type information for a type. 
@@ -1219,11 +1221,19 @@ class CodeGen(visitor.Visitor):
             
         return None
     
-    def llvmOp(self, op):
+    def llvmOp(self, op, refine_to = None):
         """Converts an instruction operand into an LLVM value. The method
         might use the current :meth:`builder`. 
         
         op: ~~Operand - The operand to be converted.
+        
+        refine_to: ~~Type - An optional refined type to convert the operand to
+        first. If given, the code converter can use it to produce a more
+        specific type than the operand yields by itself. The typical use case
+        is that *op* comes with a wilcard type (i.e., ``ref<*>``) that it
+        supposed to be used with a specific instantiation (i.e., ``ref<T>``)
+        and thus needs to be adapted first. *refine_to* must match with *op's*
+        type (i.e., ``refine_type == op.type()`` must evaluate to true).
         
         Returns: llvm.core.Value - The LLVM value of the operand that can then
         be used, e.g., in subsequent LLVM load and store instructions.
@@ -1233,13 +1243,15 @@ class CodeGen(visitor.Visitor):
         referencing local variables.
         """
 
+        assert (not refine_to) or (refine_to == op.type())
+        
         type = op.type()
         
         if isinstance(op, instruction.ConstOperand):
-            return self._callConvCallback(CodeGen._CONV_CTOR_EXPR_TO_LLVM, type, [op])
+            return self._callConvCallback(CodeGen._CONV_CTOR_EXPR_TO_LLVM, type, [op, refine_to])
         
         if isinstance(op, instruction.TupleOperand):
-            return self._callConvCallback(CodeGen._CONV_CTOR_EXPR_TO_LLVM, type, [op])
+            return self._callConvCallback(CodeGen._CONV_CTOR_EXPR_TO_LLVM, type, [op, refine_to])
 
         if isinstance(op, instruction.IDOperand):
             i = op.id()
@@ -1252,49 +1264,65 @@ class CodeGen(visitor.Visitor):
             
         util.internal_error("llvmOp: unsupported operand type %s" % type)
 
-    def llvmOpToC(self, op):
+    def llvmOpToC(self, op, refine_to = None):
         """Converts an instruction operand into an LLVM value suitable to pass
         to a C function. In general, a C function may expected a different
         type for a parameter than a HILTI function would for the same
         argument. 
+
+        refine_to: ~~Type - An optional refined type to convert the operand to
+        first. See ~~llvmOp for more information.
         
         op: ~~Operand - The operand to be converted.
         
         Returns: llvm.core.Value - The LLVM value of the operand that can then
         be used, e.g., in subsequent LLVM load and store instructions.
         """
-        return self.llvmValueConvertToC(self.llvmOp(op), op.type())
+        assert (not refine_to) or (refine_to == op.type())
+        return self.llvmValueConvertToC(self.llvmOp(op), op.type(), refine_to)
 
-    def llvmTypeConvert(self, type):
+    def llvmTypeConvert(self, type, refine_to = None):
         """Converts a ValueType into the LLVM type used for corresponding
         variable declarations.
         
         type: ~~ValueType - The type to converts.
         
+        refine_to: ~~Type - An optional refined type to convert the operand to
+        first. See ~~llvmOp for more information.
+        
         Returns: llvm.core.Type - The corresponding LLVM type for variable declarations.
         """ 
-        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM, type, [type])
+        assert (not refine_to) or (refine_to == op.type())
+        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM, type, [type, refine_to])
 
-    def llvmTypeConvertToC(self, type):
+    def llvmTypeConvertToC(self, type, refine_to = None):
         """Converts a ValueType into the LLVM type used for passing to C
         functions. 
         
         type: ~~ValueType - The type to convert.
+
+        refine_to: ~~Type - An optional refined type to convert the operand to
+        first. See ~~llvmOp for more information.
         
         Returns: llvm.core.Type - The corresponding LLVM type for passing to C functions
         """ 
-        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM_C, type, [type])
+        assert (not refine_to) or (refine_to == op.type())
+        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM_C, type, [type, refine_to])
     
-    def llvmValueConvertToC(self, llvm, type):
+    def llvmValueConvertToC(self, llvm, type, refine_to = None):
         """Converts an LLVM value to the value used for passing to C
         functions. 
         
         llvm: llvm.core.Value - The value to convert.
         type: ~~ValueType - The original type of *llvm*.
+
+        refine_to: ~~Type - An optional refined type to convert the operand to
+        first. See ~~llvmOp for more information.
         
         Returns: llvm.core.Value - The converted value.
         """ 
-        new = self._callConvCallback(CodeGen._CONV_VAL_TO_LLVM_C, type, [llvm, type], must_find=False)
+        assert (not refine_to) or (refine_to == op.type())
+        new = self._callConvCallback(CodeGen._CONV_VAL_TO_LLVM_C, type, [llvm, type, refine_to], must_find=False)
         return new if new else llvm
 
     def documentCMapping(self):
@@ -1312,7 +1340,8 @@ class CodeGen(visitor.Visitor):
     def makeTypeInfo(self, t):
         """Decorator to define a function creating a type's meta
         information. The decorated function will receive a single parameter of
-        type ~~HiltiType and must return a suitable ~~TypeInfo object. 
+        type ~~HiltiType and must return a suitable ~~TypeInfo object or None
+        if it does not want type information to be created for that type.
         
         t: ~~HiltiType - The type for which the ~~TypeInfo is being
         requested.
@@ -1326,14 +1355,18 @@ class CodeGen(visitor.Visitor):
     def convertCtorExprToLLVM(self, type):
         """Decorator to define a conversion from a value as created by a
         type's constructor expression to the corresponding LLVM value. 
-        Constructor expressions are defined in the ~~Parser, and the type of
-        the single parameter to the decorated function depends on what the
-        parser instantiates. Many types will only have constructor expressions
-        for their constants (e.g., numbers for the integer data type, which
-        will be passed in as Python ints; character sequences enclosed in
-        quotation marks for strings, which will be passed in as Python
-        strings). An example of non-constant constructor expressions are
-        tuples: ``(x,y,z)`` will be passed in a list of ~~Operand objectives.
+        Constructor expressions are defined in the ~~Parser.  The decorated
+        function receives two parameters, *type* and *refine_to*.  The
+        former's type on depends on what the parser instantiates; the latter
+        specifies a more specific type to covert *type* to first and may be
+        None (see ~~llvomOp for more details about *refine_to*).
+        
+        Many types will only have constructor expressions for their constants
+        (e.g., numbers for the integer data type, which will be passed in as
+        Python ints; character sequences enclosed in quotation marks for
+        strings, which will be passed in as Python strings). An example of
+        non-constant constructor expressions are tuples: ``(x,y,z)`` will be
+        passed in a list of ~~Operand objectives.
         
         The conversion function must return an `llvm.core.Value`` and can use
         the current :meth:`builder` if it needs to perform any transformations
@@ -1348,9 +1381,12 @@ class CodeGen(visitor.Visitor):
     
     def convertTypeToLLVM(self, type):
         """Decorator to define a conversion from a ValueType to the
-        corresponding type used in LLVM code. The decorated function will
-        receive a single parameter *type* being the instance of ~~Type to
-        convert, and must return an ``llvm.core.Type``..
+        corresponding type used in LLVM code.  The decorated function receives
+        two parameters, *type* and *refine_to*.  The former is an instance of
+        ~~Type to convert; the latter specifies a more specific type to covert
+        *type* to first and may be None (see ~~llvomOp for more details about
+        *refine_to*). The decorated function must return an
+        ``llvm.core.Type``..
         
         type: ~~ValueType - The type for which the conversion is being defined.
         """
@@ -1361,9 +1397,12 @@ class CodeGen(visitor.Visitor):
     
     def convertTypeToC(self, type):
         """Decorator to define a conversion from a ValueType to the
-        corresponding type used with C functions. The decorated function will
-        receive a single parameter *type* being the instance of ~~Type to
-        convert. 
+        corresponding type used with C functions.  The decorated function
+        receives two parameters, *type* and *refine_to*.  The former is an
+        instance of ~~Type to convert; the latter specifies a more specific
+        type to covert *type* to first and may be None (see ~~llvomOp for more
+        details about *refine_to*). The decorated function must return an
+        ``llvm.core.Type``..
         
         type: ~~ValueType - The type for which the conversion is being defined.
         
@@ -1403,12 +1442,15 @@ class CodeGen(visitor.Visitor):
     def convertValueToC(self, type):
         """Decorator to define a conversion from an LLVM value to the
         corresponding value used with C functions. The decorated function will
-        receive a two parameters: (1) *llvm*, the value to convert; and (2)
-        *type*, the ~~Type of the value being converted. The function can use
-        the current ~~builder() to build the value.
+        receive a three parameters: (1) *llvm*, the value to convert; (2)
+        *type*, the ~~Type of the value being converted; and (3) *refine_to*,
+        a more specific type to covert *type* to first, which may be None (see
+        ~~llvomOp for more details about *refine_to*). The decorated function
+        must return an ``llvm.core.Type``.. The function can use the current
+        ~~builder() to build the value.
         
         Use of this decorator is optional. If not defined, the LLVM value is
-        passed to C unmodified.
+        used instead.
         
         type: ~~ValueType - The type for which the conversion is being defined.
         """

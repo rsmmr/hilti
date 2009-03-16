@@ -16,15 +16,15 @@ def _(type):
     return typeinfo
 
 @codegen.convertCtorExprToLLVM(type.Integer)
-def _(op):
+def _(op, refine_to):
     return codegen.llvmConstInt(op.value(), width=op.type().width())
 
 @codegen.convertTypeToLLVM(type.Integer)
-def _(type):
+def _(type, refine_to):
     return llvm.core.Type.int(type.width())
 
 @codegen.convertTypeToC(type.Integer)
-def _(type):
+def _(type, refine_to):
     """An ``int<n>`` is mapped to C integers depending on its width *n*: 
     
     ======  =======
@@ -36,7 +36,7 @@ def _(type):
     33..64  int64_t
     ======  =======
     """
-    return codegen.llvmTypeConvert(type)
+    return codegen.llvmTypeConvert(type, refine_to)
 
 @codegen.when(instructions.integer.Add)
 def _(self, i):

@@ -243,18 +243,27 @@ class OperandType(Type):
     _name = "operand type"
     
 class TypeDeclType(Type):
-    """Base class for types that represent a custom user-declare HILTI type.
+    """Base class for types that represent an otherwise declared HILTI type.
     
     t: ~~Type - The declared type.
-    name: string - Same as for :meth:`~hilti.core.type.type`.
     docname: string - Same as for :meth:`~hilti.core.type.type`.
     """
-    def __init__(self, t, name, docname=None):
-        super(TypeDeclType, self).__init__(name, docname)
+    def __init__(self, t, docname=None):
+        super(TypeDeclType, self).__init__(t.name(), docname)
         self._type = t
-    
+
+    def type(self):
+        """Returns the declared type..
+        
+        Returns: ~~Type - The declared type.
+        """
+        return self._type
+        
     def declType(self):
-        """Return the user-declared type."""
+        """Returns the declared type. This is an alias for ~~type.
+        
+        Returns: ~~Type - The declared type.
+        """
         return self._type
 
     _name = "type-declaration type"

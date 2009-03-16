@@ -243,6 +243,11 @@ def p_operand_bool(p):
     """operand : BOOL"""
     const = constant.Constant(p[1], type.Bool(), location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
+    
+def p_operand_null(p):
+    """operand : NULL"""
+    const = constant.Constant(None, type.Reference(["*"]), location=loc(p, 1))
+    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
 
 def p_operand_string(p):
     """operand : STRING"""

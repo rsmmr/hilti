@@ -249,17 +249,18 @@ class TupleOperand(Operand):
         return "(%s)" % ", ".join([str(op) for op in self._ops])
 
 class TypeOperand(Operand):
-    """Represents a type as an operand. For a TypeOperand, both and
-    :meth:`type() and :meth:`value()` return the ~~Type it refers to.
-    
+    """Represents a type as an operand. For a TypeOperand, :meth:`value()`
+    returns the ~~Type the operand refers to, and :meth:`type() returns 
+    a corresponding ~~TypleDeclType.
+     
     t: ~~Type - The type the operand refers to. 
     location: ~~Location - A location to be associated with the operand. 
     """
     def __init__(self, t, location=None):
-        super(TupleOperand, self).__init__(t, t, location)
+        super(TypeOperand, self).__init__(t, type.TypeDeclType(t), location)
     
     def __str__(self):
-        return self.type()
+        return str(self.value())
     
 class Signature:
     """Defines an instruction's signature. The signature includes the

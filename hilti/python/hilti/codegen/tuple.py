@@ -16,13 +16,13 @@ def _(type):
     typeinfo.to_string = "__Hlt::tuple_to_string";
     return typeinfo
 
-def _tupleType(type):
+def _tupleType(type, refine_to):
     llvm_types = [codegen.llvmTypeConvert(t) for t in type.types()]
     return llvm.core.Type.struct(llvm_types)
 
 @codegen.convertCtorExprToLLVM(type.Tuple)
-def _(op):
-    t = _tupleType(op.type())
+def _(op, refine_to):
+    t = _tupleType(op.type(), refine_to)
     struct = codegen.builder().alloca(t)
     
     length = len(op.type().types())
@@ -35,18 +35,18 @@ def _(op):
     return codegen.builder().load(struct)
     
 @codegen.convertTypeToLLVM(type.Tuple)
-def _(type):
-    return _tupleType(type)
+def _(type, refine_to):
+    return _tupleType(type, refine_to)
 
 @codegen.convertTypeToC(type.Tuple)
-def _(type):
+def _(type, refine_to):
     """A ``tuple<type1,type2,...>`` is mapped to C by passing a pointer to an
     *array of pointers* to the individual elements. 
     """
     return llvm.core.Type.pointer(llvm.core.Type.array(codegen.llvmTypeGenericPointer(), 0))
 
 @codegen.convertValueToC(type.Tuple)
-def _(ll, type):
+def _(ll, type, refine_to):
     
     length = len(type.types())
     

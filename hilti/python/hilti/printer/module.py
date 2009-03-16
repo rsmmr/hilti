@@ -28,7 +28,7 @@ def _(self, id):
     self.output("struct %s {" % name)
     self.push()
     
-    for id in type.IDs():
+    for id in type.Fields():
         self.output("%s %s, " % (id.type().name(), id.name()))
         
     self.output("}")

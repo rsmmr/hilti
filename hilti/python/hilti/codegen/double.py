@@ -16,17 +16,17 @@ def _(type):
     return typeinfo
 
 @codegen.convertCtorExprToLLVM(type.Double)
-def _(op):
+def _(op, refine_to):
     return codegen.llvmConstDouble(op.value())
 
 @codegen.convertTypeToLLVM(type.Double)
-def _(type):
+def _(type, refine_to):
     return llvm.core.Type.double()
 
 @codegen.convertTypeToC(type.Double)
-def _(type):
+def _(type, refine_to):
     """A ``double`` is mapped transparently to a C double."""
-    return codegen.llvmTypeConvert(type)
+    return codegen.llvmTypeConvert(type, refine_to)
 
 @codegen.when(instructions.double.Add)
 def _(self, i):

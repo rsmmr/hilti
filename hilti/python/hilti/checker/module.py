@@ -91,7 +91,7 @@ def _(self, f):
 @checker.post(function.Function)
 def _(self, f):
     self._function = None
-        
+
 ### Instructions.
 @checker.when(instruction.Instruction)
 def _(self, i):
@@ -105,7 +105,6 @@ def _(self, i):
         self.error(i, "type of %s does not match signature (expected %s, found %s) " % (tag, str(expected), str(actual)))
         
     def checkOp(op, sig, tag):
-        
         if sig and op == None and not type.isOptional(sig):
             self.error(i, "%s missing" % tag)
             return
@@ -115,7 +114,16 @@ def _(self, i):
             return
 
         if op and sig:
-            if op.type() != sig:
+            
+            error = False
+            if isinstance(op, instruction.TypeOperand):
+                if op.value() != sig:
+                    error = True
+            
+            elif op.type() != sig:
+                error = True
+                
+            if error:
                 typeError(op.type(), type.fmtTypeClass(sig), tag)
                 return 
         

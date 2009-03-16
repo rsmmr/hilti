@@ -10,15 +10,15 @@ is returned for reads when it is unset.
 from hilti.core.type import *
 from hilti.core.instruction import *
 
-@instruction("struct.create", op1=Struct, target=Reference)
-class StructGet(Instruction):
+@instruction("struct.new", op1=Struct, target=Reference)
+class New(Instruction):
     """Instantiates a new struct oject of the type *op1* and returns a
     reference to it. Initially, all fields are either set to their default
     value, or unset if none has been defined. 
     """
 
 @instruction("struct.get", op1=Reference, op2=String, target=Any)
-class StructGet(Instruction):
+class Get(Instruction):
     """Returns the field named *op2* in the struct referenced by *op1*. The
     field name must be a constant, and the type of the target must match the
     field's type. If a field is requested that has not been set, its default
@@ -27,14 +27,14 @@ class StructGet(Instruction):
     """
 
 @instruction("struct.set", op1=Reference, op2=String, op3=Any)
-class StructGet(Instruction):
+class Set(Instruction):
     """
     Sets the field named *op2* in the struct referenced by *op1* to the value
     *op3*. The type of the *op3* must match the type of the field.
     """
     
 @instruction("struct.unset", op1=Reference, op2=String)
-class StructGet(Instruction):
+class Unset(Instruction):
     """Unsets the field named *op2* in the struct referenced by *op1*. An
     unset field appears just as if it had never been assigned an value; in
     particular, it will be reset to its default value if has been one assigned. 

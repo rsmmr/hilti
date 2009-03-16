@@ -16,15 +16,15 @@ def _(type):
     return typeinfo
 
 @codegen.convertCtorExprToLLVM(type.Bool)
-def _(op):
+def _(op, refine_to):
     return llvm.core.Constant.int(llvm.core.Type.int(1), 1 if op.value() else 0)
 
 @codegen.convertTypeToLLVM(type.Bool)
-def _(type):
+def _(type, refine_to):
     return llvm.core.Type.int(1)
 
 @codegen.convertTypeToC(type.Bool)
-def _(type):
+def _(type, refine_to):
     """A ``bool`` is mapped to an ``int8_t``, with ``True`` corresponding to
     the value ``1`` and ``False`` to value ``0``."""
-    return codegen.llvmTypeConvert(type)
+    return codegen.llvmTypeConvert(type, refine_to)

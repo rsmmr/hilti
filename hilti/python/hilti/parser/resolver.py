@@ -12,7 +12,9 @@ class Resolver(visitor.Visitor):
     
     - It resolves all ~~IDOperands. The parser initially sets all
       ~~IDOperands to type ~~Unknown, and the resolver goes through
-      the |ast| and tries to resolve them to their actual type.
+      the |ast| and tries to resolve them to their actual type. If an
+      ~~IDOperand turns out to refer to a ~~TypeDecl, it's turned into a
+      ~~TypeOperand.
 
     - If a function ~~Call is lacking arguments but the called
       function's type provides defaults, we add corresponding
@@ -325,31 +327,47 @@ class Resolver(visitor.Visitor):
         """
         def resolveOp(op, tag):
             if not op:
-                return
+                return (False, None)
 
             if isinstance(op, instruction.TupleOperand):
                 # Look up all operands inside the tuple recursively.
                 for o in op.value():
                     resolveOp(o, tag)
-                return
+                return (False, None)
         
             if not isinstance(op, instruction.IDOperand):
-                return
+                return (False, None)
         
             if not isinstance(op.type(), type.Unknown):
-                return
+                return (False, None)
 
             ident = self.resolveID(op.value().name(), tag, i)
             if not ident:
-                return 
-        
+                return (False, None)
+
             assert not isinstance(ident.type(), type.Unknown)
-            op.setID(ident)
             
-        resolveOp(i.op1(), "operand 1")
-        resolveOp(i.op2(), "operand 2")
-        resolveOp(i.op3(), "operand 3")
-        resolveOp(i.target(), "target")
+            if isinstance(ident.type(), type.TypeDeclType):
+                return (True, instruction.TypeOperand(ident.type().declType()))
+                
+            op.setID(ident)
+            return (False, None)
+            
+        (replace, op) = resolveOp(i.op1(), "operand 1")
+        if replace:
+            i.setOp1(op)
+        
+        (replace, op) = resolveOp(i.op2(), "operand 2")
+        if replace:
+            i.setOp2(op)
+            
+        (replace, op) = resolveOp(i.op3(), "operand 3")
+        if replace:
+            i.setOp3(op)
+
+        (replace, op) = resolveOp(i.target(), "target")
+        if replace:
+            i.setTarget(op)
 
     def _debugInstruction(self, i, tag):
 
