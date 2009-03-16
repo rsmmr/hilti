@@ -29,7 +29,7 @@ def _(op):
     vals = op.value()
     
     for i in range(length):
-        dst = codegen.builder().gep(struct, [codegen.llvmConstInt(0), codegen.llvmConstInt(i)])
+        dst = codegen.builder().gep(struct, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)])
         codegen.builder().store(codegen.llvmOp(vals[i]), dst)
 
     return codegen.builder().load(struct)
@@ -55,13 +55,13 @@ def _(ll, type):
     addr = codegen.builder().alloca(ll.type)
     codegen.builder().store(ll, addr)
     
-    ptrs = [codegen.builder().gep(addr, [codegen.llvmConstInt(0), codegen.llvmConstInt(i)]) for i in range(length)]
+    ptrs = [codegen.builder().gep(addr, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)]) for i in range(length)]
     ptrs = [codegen.builder().bitcast(ptr, codegen.llvmTypeGenericPointer()) for ptr in ptrs]
     
     arrayt = llvm.core.Type.array(codegen.llvmTypeGenericPointer(), length)
     array = codegen.builder().alloca(arrayt)
     for i in range(length):
-        dst = codegen.builder().gep(array, [codegen.llvmConstInt(0), codegen.llvmConstInt(i)])
+        dst = codegen.builder().gep(array, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)])
         codegen.builder().store(ptrs[i], dst)
 
     return array
@@ -80,7 +80,7 @@ def _(self, i):
     # value?
     addr = codegen.builder().alloca(op1.type)
     codegen.builder().store(op1, addr)
-    ptr = self.builder().gep(addr, [codegen.llvmConstInt(0), op2], "XXX")
+    ptr = self.builder().gep(addr, [codegen.llvmGEPIdx(0), op2], "XXX")
     result = self.builder().load(ptr)
     self.llvmStoreInTarget(i.target(), result)
 

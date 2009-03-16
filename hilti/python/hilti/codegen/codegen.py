@@ -488,16 +488,38 @@ class CodeGen(visitor.Visitor):
         """
         return self._llvm.frameptr
     
-    # Return the LLVM constant representing the given integer.
-    def llvmConstInt(self, n, width = 32):
-        """Creates an LLVM integer constant.
+    def llvmConstInt(self, n, width):
+        """Creates a LLVM integer constant. The constant is signed. 
         
-        n: integer - The value of the constant.
+        n: integer - The value of the constant; it's considered 
         width: interger - The bit-width of the constant.
         
-        Returns: llvm.core.Constant.int - The constant.
+        Returns: llvm.core.Constant.int - The constant, which will be signed.
         """
-        return llvm.core.Constant.int(llvm.core.Type.int(width), n)
+
+        # This is a bit odd. Apparently, negative constants aren't probably
+        # sign-extended when creating a constant with a width >32 directly. Not
+        # sure whether that's like it's supposed to be, or a problem of either
+        # LLVM or LLVM-PY. In any case, we work around the issue with a manual
+        # sign-extension. As I'm not sure whether widths < 32 work correctly,
+        # I'm adding the corresponding work-around for that case as well to be
+        # on the safe side. 
+        const = llvm.core.Constant.int_signextend(llvm.core.Type.int(32), n)
+        if width > 32: 
+            return const.sext(llvm.core.Type.int(width))
+        if width < 32:
+            return const.trunc(llvm.core.Type.int(width))
+        
+        return const
+    
+    def llvmGEPIdx(self, n):
+        """Creates an LLVM integer constant suitable for use as a GEP index.
+        
+        n: integer - The value of the constant.
+        
+        Returns: llvm.core.Constant.int - The constant, which will be unsigned.
+        """
+        return llvm.core.Constant.int(llvm.core.Type.int(32), n)    
 
     # Return the LLVM constant representing the given double.
     def llvmConstDouble(self, d):
@@ -601,11 +623,11 @@ class CodeGen(visitor.Visitor):
 
     # Helpers to get a field in a basic frame struct.
     def _llvmAddrInBasicFrame(self, frame, index1, index2, cast_to, tag):
-        zero = self.llvmConstInt(0)
-        index1 = self.llvmConstInt(index1)
+        zero = self.llvmGEPIdx(0)
+        index1 = self.llvmGEPIdx(index1)
         
         if index2 >= 0:
-            index2 = self.llvmConstInt(index2)
+            index2 = self.llvmGEPIdx(index2)
             index = [zero, index1, index2]
         else:
             index = [zero, index1]
@@ -757,8 +779,8 @@ class CodeGen(visitor.Visitor):
         # The Python interface (as well as LLVM's C interface, which is used
         # by the Python interface) does not have builder.extract_value() method,
         # so we simulate it with a gep/load combination.
-        zero = self.llvmConstInt(0)
-        index = self.llvmConstInt(frame_idx[name])
+        zero = self.llvmGEPIdx(0)
+        index = self.llvmGEPIdx(frame_idx[name])
         return self.builder().gep(frameptr, [zero, index], name)
 
     def llvmGetGlobalVar(self, name, type):
