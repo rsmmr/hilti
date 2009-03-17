@@ -1,0 +1,3 @@
+wrong-args.hlt:19: error, type of operand 3 does not match type of struct field b
+
+1 error found

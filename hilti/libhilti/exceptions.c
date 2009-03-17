@@ -16,6 +16,7 @@ __hlt_exception __hlt_exception_division_by_zero = "DivisionByZero";
 __hlt_exception __hlt_exception_value_error = "ValueError";
 __hlt_exception __hlt_exception_out_of_memory = "OutOfMemory";
 __hlt_exception __hlt_exception_wrong_arguments = "WrongArguments";
+__hlt_exception __hlt_exception_undefined_value = "UndefinedValue";
 __hlt_exception __hlt_exception_unspecified = "Unspecified";
 
 void __hlt_exception_print_uncaught(__hlt_exception exception) {

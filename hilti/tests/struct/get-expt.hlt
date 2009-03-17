@@ -1,0 +1,53 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+struct A {
+    int64 i default=100,
+    bool b,
+    string test,
+    double d
+    }
+
+void run() {
+    local int64 i 
+    local string s
+    local double d
+    local ref<A> a
+    local bool b
+
+    a = struct.new A
+    s = struct.get a "test" 
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+struct A {
+    int64 i default=100,
+    bool b,
+    string test,
+    double d
+    }
+
+void run() {
+    local int64 i 
+    local string s
+    local double d
+    local ref<A> a
+    local bool b
+
+    a = struct.new A
+    struct.unset a "i"
+    i = struct.get a "i" 
+}
+

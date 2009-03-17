@@ -11,7 +11,7 @@ can used as place-holder for invalid references.
 from hilti.core.type import *
 from hilti.core.instruction import *
 
-@instruction("ref.cast.bool", op1=Reference)
+@instruction("ref.cast.bool", op1=Reference, target=Bool)
 class CastBool(Instruction):
     """
     Converts *op1* into a boolean. The boolean's value will be True if *op1*

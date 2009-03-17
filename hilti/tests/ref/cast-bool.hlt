@@ -1,0 +1,28 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+struct A { bool a }
+struct B { bool b }
+
+void run() {
+    local ref<A> a
+    local ref<B> b
+    local bool is
+
+    a = struct.new A
+    b = ref.assign Null
+    
+    is = ref.cast.bool a
+    call Hilti::print(is)
+    
+    is = ref.cast.bool b
+    call Hilti::print(is)
+}
+

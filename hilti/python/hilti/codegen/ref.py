@@ -42,9 +42,10 @@ def _(type, refine_to):
 @codegen.when(instructions.ref.CastBool)
 def _(self, i):
     op1 = self.llvmOp(i.op1())
-    voidp = codegen.builder().bitcast(op1, llvmTypeGenericPointer())
-    null = llvm.core.Constant.pointer(codegen.llvmTypeGenericPointer(), 0)
-    return codegen.builder().icmp(IPRED_EQ, voidp, null)
+    voidp = codegen.builder().bitcast(op1, codegen.llvmTypeGenericPointer())
+    null = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
+    result = codegen.builder().icmp(llvm.core.IPRED_EQ, voidp, null)
+    codegen.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.ref.Assign)
 def _(self, i):

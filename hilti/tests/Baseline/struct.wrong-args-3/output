@@ -1,0 +1,3 @@
+wrong-args.hlt:19: error, target's type does not match type of struct field b
+
+1 error found

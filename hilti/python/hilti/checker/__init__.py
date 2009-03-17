@@ -17,6 +17,8 @@ import integer
 import double
 import bool
 import tuple
+import struct
+import ref
 
 def checkAST(ast):
     """Verifies the semantic correctness of the |ast| *ast*. If any

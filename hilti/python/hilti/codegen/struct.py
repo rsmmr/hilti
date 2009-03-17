@@ -67,8 +67,6 @@ def _(self, i):
 
     codegen.llvmStoreInTarget(i.target(), s)
     
-import sys
-
 def _getIndex(instr):
     
     fields = instr.op1().type().refType().Fields()

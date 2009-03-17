@@ -1,0 +1,3 @@
+wrong-args.hlt:24: error, type of target does not match signature (expected ref, found int<64>) 
+
+1 error found

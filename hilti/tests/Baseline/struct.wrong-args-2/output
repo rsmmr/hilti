@@ -1,0 +1,3 @@
+wrong-args.hlt:18: error, type of operand 1 does not match signature (expected struct, found string) 
+
+1 error found

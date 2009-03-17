@@ -33,8 +33,12 @@ extern __hlt_exception __hlt_exception_wrong_arguments;
 // An memory allocation has failed due to resource exhaustion.
 extern __hlt_exception __hlt_exception_out_of_memory;
 
+// An undefined value has been attempted to use. 
+extern __hlt_exception __hlt_exception_undefined_value;
+
 // Fall-back exception if nothing else is specified.
 extern __hlt_exception __hlt_exception_unspecified;
+
     // %doc-std-exceptions-end
 
 // Internal function to report an uncaugt exception.
@@ -54,6 +58,7 @@ extern void __hlt_exception_print_uncaught(__hlt_exception exception);
 #define __HLT_TYPE_STRING  4 
 #define __HLT_TYPE_TUPLE   5
 #define __HLT_TYPE_REF     6
+#define __HLT_TYPE_STRUCT  7
    // %doc-__HLT_TYPE-end
 
    // %doc-hlt_type_info-start
