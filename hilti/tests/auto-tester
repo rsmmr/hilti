@@ -1,0 +1,126 @@
+#! /usr/bin/env bash
+#
+# Script to run automatically after commits to ensure tests are
+# running through. It 
+#
+#     * updates the SVN working copy
+#     * recompiles libhilti
+#     * runs the test-suite
+#     * mails out any failed tests.
+#
+
+SSH_IDENTITY_FILE=~/.ssh/hilti-auto-tester
+MAIL_TO=hilti@icsi.berkeley.edu
+
+if [ $# != 1 ]; then
+   echo "usage: $0 <hilti-base-dir>"
+   exit 1
+fi
+
+BASE=$1
+RCPT=$2
+STATE=$1/.auto-tester.dat
+TMP1=/tmp/`basename $0`.$$.1.tmp
+TMP2=/tmp/`basename $0`.$$.2.tmp
+MAIL=/tmp/`basename $0`.$$.3.tmp
+
+LOCK=/tmp/`basename $0`.lock
+
+lockfile $LOCK
+
+export SVN_SSH="ssh -x -a -o IdentityFile=$SSH_IDENTITY_FILE"
+
+if [ "$AT_SENDMAIL" = "" ]; then
+   AT_SENDMAIL="sendmail"
+fi   
+
+unset HILTI_BASE
+unset HILTICFLAGS
+
+function cleanup
+{
+    rm -f $TMP1
+    rm -f $TMP2
+    rm -f $MAIL
+    rm -f $LOCK
+
+}
+
+trap cleanup EXIT
+
+function error {        
+    echo $@
+    exit 1
+}
+
+rm -rf $TMP1 $TMP2 $MAIL
+
+cd $BASE
+
+# Update working copy.
+svn update </dev/null >>$TMP1 2>&1 || error "cannot update svn working copy"
+
+# Check whether repository has changed.
+if [ -e $STATE ]; then
+   last=`cat $STATE`
+fi
+
+current=`svnversion`
+
+if [ "$current" = "$last" ]; then
+   # No change.
+   exit 0
+fi
+
+# Do check.
+
+echo Base directory >>$TMP1
+pwd >>$TMP1
+echo >>$TMP1
+
+# Make 
+cd $BASE/hilti/libhilti
+make clean >>$TMP1 2>&1
+make >>$TMP1 2>&1
+
+# Run tests
+cd $BASE/hilti/tests
+make brief 2>&1 | grep -v run-tester >$TMP2 
+
+# If the "make brief" produced any output, some test failed.
+if [ -s $TMP2 ]; then
+   number=`cat $TMP2 | grep "tests\? failed" | awk '{printf $0}'`
+
+   echo From: Auto-Tester >$MAIL
+   echo Subject: "[Tests] $number on `hostname -s` (`uname -s`)" >>$MAIL
+   echo To: $MAIL_TO >>$MAIL
+   echo User-Agent: auto-tester >>$MAIL
+   echo >>$MAIL
+
+   cat $TMP2 >>$MAIL
+   echo >>$MAIL
+   echo At revision $current. >>$MAIL
+   hostname >>$MAIL
+   uname -a >>$MAIL
+   echo >>$MAIL
+   echo "--- Log -------------------------------" >>$MAIL
+   echo >>$MAIL
+   cat $TMP1 >>$MAIL
+   
+   $AT_SENDMAIL -t -oi <$MAIL 
+fi
+
+echo $current >$STATE
+   
+   
+   
+   
+   
+   
+
+
+   
+
+
+
+
