@@ -296,7 +296,17 @@ class CodeGen(visitor.Visitor):
         Note: It's crucial that this name is the same across all compilation
         units.
         """
-        canonified = type.name().replace("<", "_").replace(">", "").replace(",", "_").lower()
+        
+        canonified = type.name()
+        for c in ["<", ">", ",", "{", "}", " "]:
+            canonified = canonified.replace(c, "_")
+            
+        while canonified.find("__") >= 0:
+            canonified = canonified.replace("__", "_")
+            
+        if canonified.endswith("_"):
+            canonified = canonified[:-1]
+            
         return "__hlt_type_info_%s" % canonified
 
     def llvmTypeTypeInfo(self):
@@ -339,14 +349,14 @@ class CodeGen(visitor.Visitor):
                     arg_types += [at]
                     arg_vals += [llvm.core.Constant.int(at, arg)]
                    
-                elif isinstance(arg, type.ValueType):
+                elif isinstance(arg, type.HiltiType):
                     other_name = self.nameTypeInfo(arg)
                     other_ti = self.llvmCurrentModule().get_global_variable_named(other_name)
                     arg_types += [other_ti.type]
                     arg_vals += [other_ti]
-                    
+
                 else:
-                    util.internal_error("llvmAddTypeInfos: unsupported type parameter %s" % arg)
+                    util.internal_error("llvmAddTypeInfos: unsupported type parameter %s" % repr(arg))
 
             libhilti_func_vals = []
             libhilti_func_types = []
@@ -409,16 +419,21 @@ class CodeGen(visitor.Visitor):
             if ti: 
                 initTypeInfo(ti)
 
-    def llvmTypeInfoPtr(self, type):
+    def llvmTypeInfoPtr(self, t):
         """Returns an LLVM pointer to the type information for a type. 
         
-        type: ~~Type - The type to return the information for.
+        t: ~~Type - The type to return the information for.
         
         Returns: llvm.core.Constant.pointer - The pointer to the type
         information.
         """
         
-        ti = self.llvmCurrentModule().get_global_variable_named(self.nameTypeInfo(type))
+        # We special case ref's here, for which we pass the type info of
+        # whatever they are pointing at.
+        if isinstance(t, type.Reference):
+            t = t.refType()
+        
+        ti = self.llvmCurrentModule().get_global_variable_named(self.nameTypeInfo(t))
         assert(ti)
         return ti 
             
@@ -1261,8 +1276,8 @@ class CodeGen(visitor.Visitor):
                 return self.builder().load(addr, "op")
 
             util.internal_error("llvmOp: unsupported ID operand type %s" % type)
-            
-        util.internal_error("llvmOp: unsupported operand type %s" % type)
+
+        util.internal_error("llvmOp: unsupported operand type %s" % op)
 
     def llvmOpToC(self, op, refine_to = None):
         """Converts an instruction operand into an LLVM value suitable to pass

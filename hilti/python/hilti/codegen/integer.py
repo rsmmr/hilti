@@ -17,8 +17,12 @@ def _(type):
 
 @codegen.convertCtorExprToLLVM(type.Integer)
 def _(op, refine_to):
-    return codegen.llvmConstInt(op.value(), width=op.type().width())
-
+    width = op.type().width()
+    if not width and refine_to and refine_to.width():
+        width = refine_to.width()
+        
+    return codegen.llvmConstInt(op.value(), width)
+    
 @codegen.convertTypeToLLVM(type.Integer)
 def _(type, refine_to):
     return llvm.core.Type.int(type.width())

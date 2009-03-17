@@ -453,6 +453,7 @@ class Struct(HeapType):
         return self._ids
 
     _name = "struct"
+    _id = 7
     
 class StructDecl(TypeDeclType):
     """Type for struct declarations. 
@@ -688,6 +689,11 @@ def getHiltiType(name, args = []):
     except HiltiType.ParameterMismatch, e:
         return (False, str(e))
 
+def registerHiltiType(t):
+    """Registers an already instantiated ~~HiltiType with the compiler. This
+    must be called once for all user-defined types such as structs."""
+    _all_hilti_types[t.name()] = t
+    
 def getHiltiTypeNames():
     """Returns a list of HILTI types. The list contains the names of all types
     that correspond to a ~~HiltiType-derived class. The names can be used with

@@ -18,3 +18,7 @@ class CastBool(Instruction):
     references a valid object, and False otherwise. 
     """
 
+@instruction("ref.assign", op1=Reference, target=Reference)
+class Assign(Instruction):
+    """Assigns *op1* to the target."""
+

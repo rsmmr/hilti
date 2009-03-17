@@ -108,6 +108,7 @@ def p_def_struct(p):
     struct = type.StructDecl(stype)
     sid = id.ID(p[3], struct, id.Role.GLOBAL, location=loc(p, 1))
     p.parser.current.module.addID(sid)
+    type.registerHiltiType(stype)
 
 def p_def_import(p):
     """def_import : IMPORT IDENT"""

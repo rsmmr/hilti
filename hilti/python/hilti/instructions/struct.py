@@ -12,7 +12,7 @@ from hilti.core.instruction import *
 
 @instruction("struct.new", op1=Struct, target=Reference)
 class New(Instruction):
-    """Instantiates a new struct oject of the type *op1* and returns a
+    """Instantiates a new struct object of the type *op1* and returns a
     reference to it. Initially, all fields are either set to their default
     value, or unset if none has been defined. 
     """
@@ -23,7 +23,7 @@ class Get(Instruction):
     field name must be a constant, and the type of the target must match the
     field's type. If a field is requested that has not been set, its default
     value is returned if it has any defined. If it has not, an
-    ~~ValueUndefined exception is raised. 
+    ~~UndefinedValue exception is raised. 
     """
 
 @instruction("struct.set", op1=Reference, op2=String, op3=Any)
@@ -38,6 +38,13 @@ class Unset(Instruction):
     """Unsets the field named *op2* in the struct referenced by *op1*. An
     unset field appears just as if it had never been assigned an value; in
     particular, it will be reset to its default value if has been one assigned. 
+    """
+
+@instruction("struct.is_set", op1=Reference, op2=String, target=Bool)
+class IsSet(Instruction):
+    """Returns *True* if the field named *op2* has been set to a value, and
+    *False otherwise. If the instruction returns *True*, a subsequent call to
+    ~~Get will not raise an exception. 
     """
     
 
