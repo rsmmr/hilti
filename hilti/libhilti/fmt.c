@@ -7,6 +7,8 @@
  * 
  */
 
+#include <stdio.h> 
+ 
 #include "hilti_intern.h"
 
 static const int BufferSize = 128;
@@ -52,8 +54,11 @@ static void _add_asciiz(const char* asciiz, int8_t* buffer, __hlt_string_size* b
     }
 }
 
-static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), int *type_param, __hlt_string_size* i, int8_t* buffer, __hlt_string_size* bpos, const __hlt_string** dst, __hlt_exception* excpt) {
-
+static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), int *type_param, __hlt_string_size* i, int8_t* buffer, __hlt_string_size* bpos, const __hlt_string** dst, __hlt_exception* excpt) 
+{
+    static const int tmp_size = 32;
+    char tmp[tmp_size];
+    
     const int8_t* p = fmt->bytes;
     
     __hlt_type_info** types = (__hlt_type_info**) &type->type_params;
@@ -61,6 +66,44 @@ static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, void* 
     void *fmt_arg = (*tuple)[(*type_param)++];
     
     switch ( p[(*i)++] ) {
+        
+      case 'd': 
+        if ( fmt_type->to_int64 ) {
+            int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, excpt);
+            if ( *excpt )
+                return;
+            
+            snprintf(tmp, tmp_size, "%lld", i);
+            _add_asciiz(tmp, buffer, bpos, dst, excpt);
+        }
+        else {
+            *excpt = __hlt_exception_value_error;
+            return;
+        }
+        
+        break;
+    
+      case 'f': 
+        if ( fmt_type->to_double ) {
+            double d = (*fmt_type->to_double)(fmt_type, fmt_arg, excpt);
+            if ( *excpt )
+                return;
+            
+            snprintf(tmp, tmp_size, "%f", d);
+            _add_asciiz(tmp, buffer, bpos, dst, excpt);
+        }
+        else {
+            *excpt = __hlt_exception_value_error;
+            return;
+        }
+        
+        break;
+    
+      case 'p': 
+          snprintf(tmp, tmp_size, "%p", * (void **)fmt_arg);
+          _add_asciiz(tmp, buffer, bpos, dst, excpt);
+          break;
+        
       case 's': 
         if ( fmt_type->to_string ) {
             const __hlt_string* str = (*fmt_type->to_string)(fmt_type, fmt_arg, 0, excpt);

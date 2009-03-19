@@ -13,6 +13,10 @@ def _(type):
     # No type information.
     return None
 
+@codegen.defaultInitValue(type.Reference)
+def _(type):
+    return llvm.core.Constant.null(codegen.llvmTypeConvert(type.refType()))
+
 @codegen.convertCtorExprToLLVM(type.Reference)
 def _(op, refine_to):
     # This can only be "None".

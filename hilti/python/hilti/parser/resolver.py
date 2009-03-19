@@ -333,6 +333,7 @@ class Resolver(visitor.Visitor):
                 # Look up all operands inside the tuple recursively.
                 for o in op.value():
                     resolveOp(o, tag)
+                op.setTuple(op.value()) # Update type
                 return (False, None)
         
             if not isinstance(op, instruction.IDOperand):

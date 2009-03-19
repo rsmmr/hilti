@@ -18,6 +18,7 @@ void run() {
     call Hilti::print ("B", False)
     call Hilti::print ("C", False)
     call Hilti::print ("")
+    call Hilti::print (("XXX", True))
 }     
 
 # @TEST-START-NEXT

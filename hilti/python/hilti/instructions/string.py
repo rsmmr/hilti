@@ -9,6 +9,8 @@ Strings constants are written in the usual form ``"Foo"``. They are assumed to
 be in 7-bit ASCII encoding; usage of 8-bit characters is undefined at the
 moment.
 
+If not explictly initialized, strings are set to empty initially.
+
 Todo: 
 * Explain control sequences in string constants. 
 * Add some way to define the encoding for constants.

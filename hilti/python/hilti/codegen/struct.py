@@ -26,7 +26,7 @@ def _(op, refine_to):
 @codegen.convertTypeToLLVM(type.Struct)
 def _(type, refine_to):
     return llvm.core.Type.pointer(_llvmStructType(type))
-        
+       
 @codegen.convertTypeToC(type.Struct)
 def _(type, refine_to):
     """
@@ -34,7 +34,7 @@ def _(type, refine_to):
     types are converted recursively per the same rules. 
     """
     structt = [llvm.core.Type.int(32)] + [codegen.llvmTypeConvertToC(id.type()) for (id, default) in type.Fields()]
-    return llvm.core.Type.pointer(structt)
+    return llvm.core.Type.pointer(llvm.core.Type.struct(structt))
 
 @codegen.when(instructions.struct.New)
 def _(self, i):

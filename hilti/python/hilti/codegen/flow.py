@@ -204,7 +204,7 @@ def _makeCall(cg, func, args, llvm_succ):
     
     # Allocate new stack frame for called function.
     #   callee_frame = new __frame_func
-    callee_frame = cg.llvmMalloc(cg.llvmTypeFunctionFrame(func))
+    callee_frame = cg.llvmAllocFunctionFrame(func)
 
     # After call, continue with next block.
     #   callee_frame.bf.cont_normal.label = <successor function>

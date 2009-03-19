@@ -7,6 +7,8 @@ individual types to be specified as type parameters, e.g.,
 ``tuple<int32,string,bool>`` to represent a 3-tuple of ``int32``, ``string``,
 and ``bool``. Tuple values are enclosed in parentheses with the individual
 components separated by commas, e.g., ``(42, "foo", True)``. 
+If not explictly initialized, tuples are set to their components' default
+values initially.
 """
 
 from hilti.core.type import *

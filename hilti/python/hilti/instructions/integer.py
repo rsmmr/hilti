@@ -5,7 +5,7 @@
 The *integer* data type represents signed integers of a fixed width. The width
 is specified as part of the type name as, e.g., in ``int<16>`` for a 16-bit
 integer. There are predefined shortcuts ``int8``, ``int16``, ``int32`` and
-``int64``.
+``int64``. If not explictly initialized, integers are set to zero initially.
 """
 
 from hilti.core.type import *

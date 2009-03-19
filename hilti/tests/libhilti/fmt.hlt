@@ -11,6 +11,7 @@ import Hilti
 void run() {
     local string str
     local tuple<int64, string, bool> t
+    
     t = tuple.assign (1, "Foo", True)
     
     str = call Hilti::fmt ("Test1", ())
@@ -20,6 +21,18 @@ void run() {
     call Hilti::print (str)
     
     str = call Hilti::fmt ("Test %s|%s|%s", (1, "Foo", True))
+    call Hilti::print (str)
+    
+    str = call Hilti::fmt ("|%d|%d|", (42, False))
+    call Hilti::print (str)
+    
+    str = call Hilti::fmt ("|%d|%d|", (-42, True))
+    call Hilti::print (str)
+    
+    str = call Hilti::fmt ("|%f|", (-3.14))
+    call Hilti::print (str)
+    
+    str = call Hilti::fmt ("|%p|", ("Test"))
     call Hilti::print (str)
 }
 

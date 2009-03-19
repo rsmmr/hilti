@@ -15,6 +15,10 @@ def _(type):
     typeinfo.to_int64 = "__Hlt::int_to_int64";
     return typeinfo
 
+@codegen.defaultInitValue(type.Integer)
+def _(type):
+    return codegen.llvmConstInt(0, type.width())
+
 @codegen.convertCtorExprToLLVM(type.Integer)
 def _(op, refine_to):
     width = op.type().width()

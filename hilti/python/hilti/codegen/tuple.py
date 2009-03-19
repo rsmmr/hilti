@@ -20,6 +20,14 @@ def _tupleType(type, refine_to):
     llvm_types = [codegen.llvmTypeConvert(t) for t in type.types()]
     return llvm.core.Type.struct(llvm_types)
 
+@codegen.defaultInitValue(type.Tuple)
+def _(type):
+    t = _tupleType(type, None)
+    struct = codegen.builder().alloca(t)
+
+    consts = [codegen.llvmDefaultValue(t) for t in type.types()]
+    return llvm.core.Constant.struct(consts)
+
 @codegen.convertCtorExprToLLVM(type.Tuple)
 def _(op, refine_to):
     t = _tupleType(op.type(), refine_to)
@@ -47,24 +55,39 @@ def _(type, refine_to):
 
 @codegen.convertValueToC(type.Tuple)
 def _(ll, type, refine_to):
-    
     length = len(type.types())
     
     # Need to turn struct value into addr. Hope this can be optimized away
     # usually. FIXME: I'm sure there's a better way to do this ...
-    addr = codegen.builder().alloca(ll.type)
-    codegen.builder().store(ll, addr)
+
+    c_types = []
+    c_vals = []
+    for i in range(length):
+        c_types += [codegen.llvmTypeConvertToC(type.types()[i])]
+
+    structt = llvm.core.Type.struct(c_types)
+    addr = codegen.builder().alloca(structt)
+
+    s = codegen.builder().alloca(ll.type)
+    codegen.builder().store(ll, s)
     
+    for i in range(length):
+        src = codegen.builder().gep(s, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)])
+        llvm_val = codegen.builder().load(src)
+        c_val = codegen.llvmValueConvertToC(llvm_val, type.types()[i])
+        dst = codegen.builder().gep(addr, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)])
+        codegen.builder().store(c_val, dst)
+
     ptrs = [codegen.builder().gep(addr, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)]) for i in range(length)]
     ptrs = [codegen.builder().bitcast(ptr, codegen.llvmTypeGenericPointer()) for ptr in ptrs]
-    
+
     arrayt = llvm.core.Type.array(codegen.llvmTypeGenericPointer(), length)
     array = codegen.builder().alloca(arrayt)
     for i in range(length):
         dst = codegen.builder().gep(array, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)])
         codegen.builder().store(ptrs[i], dst)
 
-    return array
+    return codegen.builder().bitcast(array, llvm.core.Type.pointer(llvm.core.Type.array(codegen.llvmTypeGenericPointer(), 0)))
 
 @codegen.when(instructions.tuple.Assign)
 def _(self, i):

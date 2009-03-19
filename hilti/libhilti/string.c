@@ -2,6 +2,8 @@
  * 
  * Support functions HILTI's string data type.
  * 
+ * Note that we treat a null pointer as a legal representation of the empty
+ * string. That simplifies its handling as a constant. 
  */
 
 #include <string.h>
@@ -9,9 +11,12 @@
 #include "hilti_intern.h"
 #include "utf8proc.h"
 
+static const __hlt_string EmptyString = { 0, "" };
+
 const __hlt_string* __hlt_string_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt)
 {
-    return *((__hlt_string**)obj);
+    __hlt_string* s = *((__hlt_string**)obj);
+    return s ? s : &EmptyString;
 }
 
 __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* excpt)
@@ -20,6 +25,9 @@ __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* excpt
     const int8_t* p = s->bytes;
     const int8_t* e = p + s->len;
     __hlt_string_size len = 0; 
+
+    if ( ! s )
+        return 0;
     
     while ( p < e ) {
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &dummy);
@@ -44,9 +52,18 @@ __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* excpt
 
 const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt)
 {
-    __hlt_string_size len1 = s1->len; 
-    __hlt_string_size len2 = s2->len; 
+    __hlt_string_size len1;
+    __hlt_string_size len2;; 
 
+    if ( ! s1 )
+        s1 = &EmptyString;
+        
+    if ( ! s2 )
+        s2 = &EmptyString;
+
+    len1 = s1->len; 
+    len2 = s2->len; 
+        
     if ( ! len1 )
         return s2;
     
@@ -69,16 +86,31 @@ const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_stri
 
 const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* excpt)
 {
+    if ( ! s1 )
+        s1 = &EmptyString;
+        
     return 0;
 }
 
 __hlt_string_size __hlt_string_find(const __hlt_string* s, const __hlt_string* pattern, __hlt_exception* excpt)
 {
+    if ( ! s )
+        s = &EmptyString;
+        
+    if ( ! pattern )
+        pattern = &EmptyString;
+
     return 0;
 }
 
 int __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt)
 {
+    if ( ! s1 )
+        s1 = &EmptyString;
+        
+    if ( ! s2 )
+        s2 = &EmptyString;
+        
     return 0;
 }
 
