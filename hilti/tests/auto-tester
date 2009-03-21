@@ -10,6 +10,7 @@
 #
 
 SSH_IDENTITY_FILE=~/.ssh/hilti-auto-tester
+USER=hilti-auto-tester
 MAIL_TO=hilti@icsi.berkeley.edu
 
 if [ $# != 1 ]; then
@@ -28,7 +29,7 @@ LOCK=/tmp/`basename $0`.lock
 
 lockfile $LOCK
 
-export SVN_SSH="ssh -x -a -o IdentityFile=$SSH_IDENTITY_FILE"
+export SVN_SSH="ssh -x -a -l $USER -o IdentityFile=$SSH_IDENTITY_FILE"
 
 if [ "$AT_SENDMAIL" = "" ]; then
    AT_SENDMAIL="sendmail"
@@ -49,7 +50,12 @@ function cleanup
 trap cleanup EXIT
 
 function error {        
+    log=$1
+    shift
     echo $@
+    echo
+    echo
+    cat $log
     exit 1
 }
 
@@ -58,7 +64,7 @@ rm -rf $TMP1 $TMP2 $MAIL
 cd $BASE
 
 # Update working copy.
-svn update </dev/null >>$TMP1 2>&1 || error "cannot update svn working copy"
+svn update </dev/null >>$TMP1 2>&1 || ( error $TMP1 "cannot update svn working copy"; )
 
 # Check whether repository has changed.
 if [ -e $STATE ]; then
