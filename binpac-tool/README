@@ -1,0 +1,38 @@
+
+BPTool - A command-line tool to run BinPAC analyzers stand-alone.
+=================================================================
+
+bptool is a little hack to run BinPAC generated analyzers on data
+stored in files, usually just printing out the results. 
+
+Installation
+============
+
+- First, you need to configure & compile BinPAC separately:
+
+  * cd binpac 
+  * ./configure && make
+  
+- Then running "make" in bptool/ should compile the bptool binary. 
+
+Notes
+=====
+
+- To test the basic "test" analyzer, try:
+
+    echo "Foo Bar" | ./bptool -a test -r /dev/stdin
+
+- The BinPAC analyzers are in pac/*.pac. See pac/test.pac for a
+  trivial example. All analyzers are statically compiled into
+  bptool, so whenever you change any of the BinPAC grammars, you
+  need to rerun make in the top-level directory. 
+  
+- The main use-case for bptool is to parse a data stream and then
+  just print out the protocol fields. The analyzer in pac/test.pac
+  follows this model and comes with some boiler-plate code that can
+  simply be copied&pasted to start with new analyzer; just replace
+  all the Test_* prefixes inside the boiler-plate. For a simple
+  request/reply protocol, it should otherwise be sufficient to
+  change the non-boiler-plate code from the example. 
+  
+  
