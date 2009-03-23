@@ -23,7 +23,7 @@ code.
     will likely need some modifications. 
 
 Type Conversions
-----------------
+~~~~~~~~~~~~~~~~
 
 When a HILTI value is passed to a C function, the type conversion is
 pretty straight-forward for most of the primitive types. More
@@ -32,10 +32,10 @@ some sort and are mapped to corresponding pointers. The following
 list summarizes how HILTI types are mapped to function parameters
 and return values. 
 
-.. include:: ../auto/cmapping.rst
+.. include:: ../.auto/cmapping.rst
     
 Calling Conventions
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 The HILTI compiler supports two calling conventions (i.e., specifications
 describing how parameters and results are passed between caller and callee):

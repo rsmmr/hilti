@@ -27,7 +27,7 @@ from hilti.core import *
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.graphviz', 'sphinx.ext.inheritance_diagram']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.graphviz', 'sphinx.ext.inheritance_diagram', 'sphinx.ext.autosummary']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -79,7 +79,7 @@ release = hilti.release
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = ['.build', "auto"]
+exclude_trees = ['.build', ".auto"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -298,6 +298,12 @@ def extractSubstitutions(obj, path, level, recurse):
     addSubst(name, "mod", path, level)
     
     if "__all__" in obj.__dict__:
+        # Add functions and otherwise just climb down.
+        for (name, value) in inspect.getmembers(obj):
+            if inspect.isfunction(value):
+                val_path = "%s.%s" % (path, name)
+                addSubst(name, "func", val_path, level + 1)
+        
         # Just climb down, 
         for child in obj.__all__:
             extractSubstitutions(obj.__dict__[child], "%s.%s" % (path, child), level + 1, True)
@@ -320,6 +326,9 @@ def extractSubstitutions(obj, path, level, recurse):
         elif inspect.isfunction(value):
             role = "func"
             
+        elif inspect.ismethod(value):
+            role = "meth"
+            
         elif isinstance(value, int) or isinstance(value, str):
             role = "const"
 
@@ -332,9 +341,10 @@ def extractSubstitutions(obj, path, level, recurse):
 # Expand class references of the form ~foo.
 def expandReferences(app, what, name, obj, options, lines):
 
-    def replace(m):
-        tag = m.group(1)
-        addl = m.group(2)
+    def replace(m, tag=None, addl=None, plural=False):
+        if not tag:
+            tag = m.group(1)
+            addl = m.group(2)
         
         try:
             (name, role, path, level) = Substitutions[tag]
@@ -343,12 +353,24 @@ def expandReferences(app, what, name, obj, options, lines):
                 role = "meth"
             else:
                 addl = ""
-                
-            return ":%s:`~%s%s`" % (role, path, addl)
+            
+            if not plural:
+                return ":%s:`~%s%s`" % (role, path, addl)
+            else:
+                return ":%s:`%ss <%s%s>`" % (role, tag, path, addl)
                 
         except KeyError:
-            print >>sys.stderr, "warning: ~~%s not in substitution table" % tag
-            return m.group(0)
+            if not plural and tag.endswith("s"):
+                # Lets see if we find the singular ...
+                repl = replace(None, tag[:-1], addl, True)
+                if repl:
+                    return repl
+                    
+            if not plural:
+                print >>sys.stderr, "warning: ~~%s not in substitution table (%s)" % (tag, obj)
+                return m.group(0)
+            else:
+                return None
             
     regexp = re.compile(r"~~(\w+)((\.\w+)+)?\b")
     
@@ -438,7 +460,7 @@ def expandMarkup(app, what, name, obj, options, lines):
             # Start new section.
             if next_state == ARGS:
                 (id, type, descr) = (m.group(1), m.group(2), m.group(3))
-                newlines = ["- **%s** (%s) - %s" % (id.strip(), type.strip(), descr.strip())]
+                newlines = ["- %s **%s** - %s" % (type.strip(), id.strip(), descr.strip())]
                 args += newlines
                 
             if next_state == RET:
@@ -522,7 +544,7 @@ def expandMarkup(app, what, name, obj, options, lines):
 def processDocString(app, what, name, obj, options, lines):
 
     expandMarkup(app, what, name, obj, options, lines)
-#    expandReferences(app, what, name, obj, options, lines)
+    expandReferences(app, what, name, obj, options, lines)
     addSignature(app, what, name, obj, options, lines)
 
 #    for l in lines:

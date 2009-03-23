@@ -98,7 +98,7 @@ class Visitor(object):
         t: ~~Visitable class - The node class the function will handle.
         
         subtype: any - If given, its value will be matched against the one
-        returned by an ~~Visitable's ~~visitSubType method; and the method is
+        returned by an ~~Visitable's ~~visitorSubType method; and the method is
         only called if the two match.
         """
         def f(func):
@@ -113,7 +113,7 @@ class Visitor(object):
         t: ~~Visitable class - The node class the function will handle.
         
         subtype: any - If given, its value will be matched against the one
-        returned by an ~~Visitable's ~~visitSubType method; and the method is
+        returned by an ~~Visitable's ~~visitorSubType method; and the method is
         only called if the two match.
         """
     	def f(func):
@@ -128,7 +128,7 @@ class Visitor(object):
         t: ~~Visitable class - The node class the function will handle.
         
         subtype: any - If given, its value will be matched against the one
-        returned by an ~~Visitable's ~~visitSubType method; and the method is
+        returned by an ~~Visitable's ~~visitorSubType method; and the method is
         only called if the two match.
         """
         def f(func):

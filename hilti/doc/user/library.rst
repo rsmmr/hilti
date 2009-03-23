@@ -1,5 +1,7 @@
 .. $Id$
 
+.. _runtime-library:
+
 Library [Missing]
 =================
 

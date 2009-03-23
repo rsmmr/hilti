@@ -29,7 +29,7 @@ def checkAST(ast):
     upon by other components. In particular, an |ast| should be
     checked when returned from ~~parse and ~~canonifyAST.
     
-    ast: ~~ASTNode - The root of the |ast| to be verified. 
+    ast: ~~Node - The root of the |ast| to be verified. 
     
     Returns: int - The number of errors detected; zero means
     everything is fine. 

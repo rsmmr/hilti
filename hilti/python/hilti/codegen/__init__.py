@@ -1,7 +1,7 @@
 # $Id$
 """Compiles an |ast| into a LLVM module."""
 
-__all__ = []
+__all__ = ["codegen"]
 
 import codegen
 import flow
@@ -18,7 +18,7 @@ import struct
 
 def generateLLVM(ast, libpaths, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as
-    verified by ~~checkAST, and it must have been canonified by ~~canonifuAST.
+    verified by ~~checkAST, and it must have been canonified by ~~canonifyAST.
     
     ast: ~~Node - The root of the |ast| to turn into LLVM.
     libpaths: list of strings - List of paths to be searched for libhilti prototypes.

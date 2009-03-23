@@ -8,6 +8,7 @@ Version |release|, |today|
 Table of Contents:
 
 .. toctree::
+   :maxdepth: 2
    :numbered:
 
    user/user

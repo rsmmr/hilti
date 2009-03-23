@@ -17,8 +17,8 @@ class Block(ast.Node):
     instructions: list of ~~Instruction - The initial list of
     instructions.
     
-    name: string - An optional name for the block, to be used in
-    ~~Labels. 
+    name: string - An optional name for the block, to be used in a 
+    ~~Label. 
 
     location: ~~Location - A location to be associated with the block. 
     """

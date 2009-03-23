@@ -13,7 +13,7 @@ class Resolver(visitor.Visitor):
     - It resolves all ~~IDOperands. The parser initially sets all
       ~~IDOperands to type ~~Unknown, and the resolver goes through
       the |ast| and tries to resolve them to their actual type. If an
-      ~~IDOperand turns out to refer to a ~~TypeDecl, it's turned into a
+      ~~IDOperand turns out to refer to a ~~TypeDeclType, it's turned into a
       ~~TypeOperand.
 
     - If a function ~~Call is lacking arguments but the called
@@ -39,7 +39,7 @@ class Resolver(visitor.Visitor):
       set to type ``int64``.
       
     Note: Methods in this class need to be careful with their input as it will
-    not have been validated by the ~~Checker when they are called; that's
+    not have been validated by the ~~checker when they are called; that's
     going to happen later. However, any errors the methods detect, they can
     silently ignore as it's the checker duty to report them (though one should
     make sure that that is indeed the case).

@@ -2,189 +2,113 @@
 #
 # Code generator for flow control instructions.
 """
-Flow Control
-------------
-
-
-* Before code generation, all blocks are preprocessed according to
-  the following constraints:
-
-  - Each instruction block ends with a *terminator* instruction,
-    which is one of ''jump'', ''return'', ''if.else'', or
-    ''call.tail.void`, or ''call.tail.result`.
-  
-  - A terminator instruction must not occur inside a block (i.e.,
-    somewhere else than as the last instruction of a block).
-  
-  - There must not be any ''call'' instruction. 
-  
-  - Each block has name unique within the function it belongs to.  
-
-* We turn each block into a separate function, called
-  ''<Func>__<name>'' , where ''Func'' is the name of the function
-  the block belongs, and the ''name'' is the name of the block. Each
-  such block function gets only single parameter of type
-  ''__frame_Func''.
-
-Flow Instruction Conversion
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
-* We convert terminator instructions as per the following pseudo-code:
-
-''jump label''
-  ::
-  return label(__frame)
-  
-''if.else cond (label_true, label_false)''
-  ::
-  TODO
-  return cond ? lable_true(__frame) : lable_false(__frame)
-
-''x = call.tail.result func args'' (function call /with/ return value)
-  ::
-  TODO
-
-''call.tail.void func args'' (function call /without/ return value)
-  ::
-      # Allocate new stack frame for called function.
-  callee_frame = new __frame_func
-      # After call, continue with next block.
-  callee_frame.bf.cont_normal.label = <sucessor block>
-  callee_frame.bf.cont_normal.frame = __frame
-  
-      # Keep current exception handler.
-  callee_frame.bf.cont_exception.label = __frame.bf.cont_exception.label
-  callee_frame.bf.cont_exception.frame = __frame.bf.cont_exception.frame
-  
-      # Clear exception information.
-  callee_frame.bf.exception = None
-      
-      # Initialize function arguments.
-  callee_frame.arg_<i> = args[i] 
-
-      # Call function.
-  return func(callee_frame)
-  
-''return.void'' (return /without/ return value)
-  ::
-  return (*__frame.bf.cont_normal.label) (*__frame.bf.cont_normal)
-
-''return.result result'' (return /with/ return value)
-  ::
-  TODO
-"""
-
-"""
-Flow Control
-------------
-
-Data Structures
-~~~~~~~~~~~~~~~
-
-* A ''__continuation'' is a snapshot of the current processing state,
-  consisting of (a) a function to be called to continue
-  processing, and (b) the frame to use when calling the function.::
-
-    struct Continuation {
-        ref<label>         func
-        ref<__basic_frame> frame
-    }
-
-* A ''__basic_frame'' is the common part of all function frame::
-
-    struct __basic_frame {
-        ref<__continuation> cont_normal 
-        ref<__continuation> cont_exception
-        int                 current_exception
-    }
-    
-* Each function ''Foo'' has a function-specific frame containg all
-  parameters and local variables::
-
-    struct ''__frame_Foo'' {
-        __basic_frame  bf
-        <type_1>       arg_1
-        ...
-        <type_n>       arg_n
-        <type_n+1>     local_1
-        ...
-        <type_n+m>     local_m
-        
-
-Calling Conventions
+Function Signatures
 ~~~~~~~~~~~~~~~~~~~
 
-* All functions take a mandatory first parameter
-  ''ref<__frame__Func> __frame''. Functions which work on the result
-  of another function call (see below), take a second parameter
-  ''<result-type> __return_value''.
+All functions receive their call frame as a their first parameter. For a
+function called ``Foo``, the type of is defined as::
 
-* Before code generation, all blocks are preprocessed according to
-  the following constraints:
+    struct __frame_Foo {
+        __basic_frame bf
+        <type_1>      arg_1
+        ...
+        <type_n>      arg_n
+        <type_n+1>    local_1
+        ...
+        <type_n+m>    local_m
+        }
 
-  - Each instruction block ends with a *terminator* instruction,
-    which is one of ''jump'', ''return'', ''if.else'', or
-    ''call.tail.void`, or ''call.tail.result`.
-  
-  - A terminator instruction must not occur inside a block (i.e.,
-    somewhere else than as the last instruction of a block).
-  
-  - There must not be any ''call'' instruction. 
-  
-  - Each block has name unique within the function it belongs to.  
+``arg_x`` are the arguments passed to the function, and ``local_x`` are the
+function's local variables. The ``__basic_frame`` is a common header shared by
+all function frames::
 
-* We turn each block into a separate function, called
-  ''<Func>__<name>'' , where ''Func'' is the name of the function
-  the block belongs, and the ''name'' is the name of the block. Each
-  such block function gets only single parameter of type
-  ''__frame_Func''.
+    struct __basic_frame {
+        Continuation  cont_normal 
+        Continuation  cont_exception
+        Exception*    exception
+    }
 
-Flow Instruction Conversion
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
-* We convert terminator instructions as per the following pseudo-code:
+A ``Continuation`` is a snapshot of the current processing state, consisting
+of (1) a function to be called to continue processing, and (2) the function
+frame to use when calling the function::
 
-''jump label''
+    struct Continuation {
+        function      *func
+        __basic_frame *frame
+    }
+
+The ``cont_normal`` specifies where to transfer control if the function
+finished normally, and ``cont_exception`` where to go to when an exception is
+raised. 
+
+A raised exception is signaled by setting the ``exception`` field to an
+``Exception`` object. Before control is transfered to ``cont_exception``, the
+``exception`` is copied over to ``cont_exception.frame->exception``.
+
+Except as indicated below, the frame is the only parameter a function receives.
+
+CPS Conversion
+~~~~~~~~~~~~~~
+
+Before code generation, all blocks are preprocessed by the ~~canonifier; see
+there for a list of transformations. We then turn each block into a separate
+function, called ``Func_name`` , where ``Func`` is the name of the function
+the block belongs to, and the ``name`` is the name of the block. Each such
+block function gets only single parameter ``__frame`` of type
+``__frame_<Func>``.
+
+Assuming we're inside a function called ``Foo``, we then convert |terminator|
+instructions per the following pseudo-code:
+
+``jump label``
   ::
-  return label(__frame)
+   
+    return Foo_label(__frame)
   
-''if.else cond (label_true, label_false)''
+``if.else cond (label_true, label_false)``
   ::
-  TODO
-  return cond ? lable_true(__frame) : lable_false(__frame)
-
-''x = call.tail.result func args'' (function call /with/ return value)
-  ::
-  TODO
-
-''call.tail.void func args'' (function call /without/ return value)
-  ::
-      # Allocate new stack frame for called function.
-  callee_frame = new __frame_func
-      # After call, continue with next block.
-  callee_frame.bf.cont_normal.label = <sucessor block>
-  callee_frame.bf.cont_normal.frame = __frame
   
-      # Keep current exception handler.
-  callee_frame.bf.cont_exception.label = __frame.bf.cont_exception.label
-  callee_frame.bf.cont_exception.frame = __frame.bf.cont_exception.frame
-  
-      # Clear exception information.
-  callee_frame.bf.exception = None
-      
-      # Initialize function arguments.
-  callee_frame.arg_<i> = args[i] 
+    return cond ? Func_label_true(__frame) : Func_label_false(__frame)
 
-      # Call function.
-  return func(callee_frame)
+``call.tail.void Callee Args`` (function call *without* return value)
+  ::
   
-''return.void'' (return /without/ return value)
-  ::
-  return (*__frame.bf.cont_normal.label) (*__frame.bf.cont_normal)
+        # Allocate new stack frame for called function.
+    callee_frame = new __frame_Callee
+        # After call, continue with next block.
+    callee_frame.bf.cont_normal.func = <sucessor block>
+    callee_frame.bf.cont_normal.frame = __frame
+    
+        # Keep current exception handler.
+    callee_frame.bf.cont_exception.func = __frame.bf.cont_exception.func
+    callee_frame.bf.cont_exception.frame = __frame.bf.cont_exception.frame
+    
+        # Clear exception information.
+    callee_frame.bf.exception = None
+        
+        # Initialize function arguments.
+    callee_frame.arg_<i> = Args[i] 
+  
+        # Initialize function' locals.
+    callee_frame.local_<i> = <default-value>
+  
+        # Call function.
+    return func(callee_frame)
 
-''return.result result'' (return /with/ return value)
+``return.void`` (return *without* return value)
   ::
-  TODO
+  
+    return (*__frame.bf.cont_normal.func) (*__frame.bf.cont_normal)
+
+``x = call.tail.result Callee Args`` (function call *with* return value)
+  ::
+  
+    TODO
+
+``return.result result`` (return *with* return value)
+  ::
+  
+    TODO
 """
 
 import llvm

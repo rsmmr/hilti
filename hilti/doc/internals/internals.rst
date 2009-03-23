@@ -1,11 +1,13 @@
 .. $Id$
 
-Internals [Missing]
-===================
+Internals
+=========
 
 .. toctree::
-
-   compiler
+   :maxdepth: 2
+   
+   compiler-api
+   compiler-internals
    runtime
    interfacing
    testing

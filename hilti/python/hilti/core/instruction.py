@@ -251,7 +251,7 @@ class TupleOperand(Operand):
 class TypeOperand(Operand):
     """Represents a type as an operand. For a TypeOperand, :meth:`value()`
     returns the ~~Type the operand refers to, and :meth:`type() returns 
-    a corresponding ~~TypleDeclType.
+    a corresponding ~~TypeDeclType.
      
     t: ~~Type - The type the operand refers to. 
     location: ~~Location - A location to be associated with the operand. 

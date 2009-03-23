@@ -149,6 +149,11 @@ identifiers into the documentation but must list those we want to
 appear separately with *auto* statements in the parser's
 "Internals" section.
 
+Codegen
+~~~~~~~
+
+In :mod:`~hilti.codegen.flow` we document implementation details of the
+flow-control model.
 
 
 
