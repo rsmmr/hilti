@@ -5,7 +5,7 @@
 BITCODE  = entry.bc 
 
 CHEADERS = hilti.h hilti_intern.h
-COBJS    = print.o exceptions.o utf8proc.o init.o memory.o string.o int.o double.o bool.o tuple.o fmt.o
+COBJS    = print.o exceptions.o utf8proc.o init.o memory.o string.o int.o double.o bool.o tuple.o fmt.o channel.o
 CMAINOBJ = main.o
 
 LIB_STATIC      = libhilti.a

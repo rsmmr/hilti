@@ -9,6 +9,7 @@
 #ifndef HILTI_INTERN_H
 #define HILTI_INTERN_H
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
@@ -59,6 +60,7 @@ extern void __hlt_exception_print_uncaught(__hlt_exception exception);
 #define __HLT_TYPE_TUPLE   5
 #define __HLT_TYPE_REF     6
 #define __HLT_TYPE_STRUCT  7
+#define __HLT_TYPE_CHANNEL 8
    // %doc-__HLT_TYPE-end
 
    // %doc-hlt_type_info-start
@@ -178,5 +180,34 @@ extern const __hlt_string* __hlt_string_from_data(const int8_t* data, __hlt_stri
 ///////////////////////////////////////////////////////////////////////////////
 
 extern const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, void* (*obj[]), int32_t options, __hlt_exception* excpt);
+
+///////////////////////////////////////////////////////////////////////////////
+// Support functions for HILTI's channel data type.
+///////////////////////////////////////////////////////////////////////////////
+
+struct __hlt_channel {
+    size_t node_size;           /* The (fixed) size of channel nodes. */
+    size_t channel_size;        /* The max. number of nodes. */
+
+    void *buffer;               /* Beginning of the channel buffer. */
+    int head;                   /* The first channel node. */
+    int tail;                   /* The last channel node. */
+
+    volatile size_t node_count; /* Number of nodes in the channel. */
+
+    pthread_mutex_t mutex;      /* Synchronizes access to the channel. */
+    pthread_cond_t empty_cv;    /* Condition variable for an empty channel. */
+    pthread_cond_t full_cv;     /* Condition variable for a full channel. */
+};
+
+extern const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* (*obj[]), int32_t options, __hlt_exception* excpt);
+
+extern __hlt_channel* __hlt_channel_new(size_t node_size, __hlt_exception* excpt);
+
+extern void __hlt_channel_destroy(__hlt_channel* ch, __hlt_exception* excpt);
+
+extern void __hlt_channel_write(__hlt_channel* ch, void* data, __hlt_exception* excpt);
+
+extern void* __hlt_channel_read(__hlt_channel* ch, __hlt_exception* excpt);
 
 #endif    
