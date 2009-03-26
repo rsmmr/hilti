@@ -1,0 +1,118 @@
+This is my thoughts on requirements on the intermediate form.
+
+
+The basic debate: User programmability:
+
+    I believe HILTI should not just be a compiler target, but should
+    be a language that is reasonable to directly program in (akin to
+    the policy script language).  Why?
+
+    1) The current HILTI is almost "too low level": it really starts
+    to be very close to LLVM with a library set.  Thus targeting HILTI
+    is not that much more adventageous over targeting LLVM directly.
+    In particular, I think it should be a reasonably small amount of
+    work to de-parse policy scripts into HILTI, since the threading/GC
+    model is necessary for the multicore work.
+
+    2) We are going to want to write a large amount of infrastructure.
+    It could be written in C and compiled to LLVM, but if possible, I
+    think it would be better written in the HILTI form if possible.
+    There are always "impedence mismatches" when writing in two
+    different languages, especially between a strongly typed HILTI and
+    a weakly-typed C.  Given both are going through LLVM, there
+    shouldn't be significant performance issues with this.
+
+    3) BinPac++ is likely to require a turing complete escape language
+    to bind with parse actions, akin to how Lex/YACC and BinPAC
+    operate as well.  Is there a reason it should not be the HILTI
+    target form, if the HILTI target is also designed for reasonable
+    human programmability.
+
+    
+    In terms of syntax, people like C-ish syntax better.  It won in
+    the marketplace, so it shal be.  I just need to accept it.  To be
+    honest, it doesn't really matter, I care about language features
+    (continuations, closures, parameterized typing, type-based
+    polymorphism) more than general syntax.
+
+
+Some general thoughts on what I believe is must-have features in the
+language.
+
+a)  Static types with parameterization:
+
+    Static typing gives safety, but parameterization allows items to
+    be generic.  EG, in a static type system without parameterization,
+    you can't express something like map(list, fn) and get it to work.
+    But with parameterization, the type signatures work out: map's
+    signature is (list{A}, fn({A}->{B})->list{B}
+
+    Yet as actual invocations become purely static, there is no
+    run-time typing overhead modulo what is required for the garbage
+    collection system.
+
+    This also provides for convenient programmability, and convenient
+    implementation of generic library functions.
+
+b)  Static dispatch based on argument type:
+
+    Multiple instances of the same function name can exist, but with
+    different type signatures.  EG, print({int}) and print({float}).
+
+    Such a dispatch rule means that the correct print function is
+    executed for the given type, yet its all static so efficiency is
+    still good.
+
+c)  Variable arguments by left association:
+
+    Variable argument functions are not directly supported, but
+    syntactic sugar can generate them for some case by conversion to
+    left associative execution.  eg format(string, value1, value2), it
+    is syntactic sugar for format(format(string, value1), value2)
+
+    This will allow varargs and the like to work within a static type
+    system, albeit with some annoyance.
+
+d)  Unrestricted Closures (lambdas) as first-class operations:
+
+    Closures can directly implement many critical language primitives,
+    including non-returning deferred execution, notification, objects,
+    and higher-order operations such as map.  When non-escaping or
+    when free variables are not mutated, these are highly efficient.
+    Even when escaping with free variables, they are still reasonably
+    efficient.
+
+    Why I believe closures need to be general:  
+
+    There are several language features in the policy language,
+    including deferred execution and binding actions to events, that
+    are really first-class functions.  
+
+    In particular, deferred execution requires full closures if you
+    don't want to copy everything you need into a specific subscope.
+    Thus I don't believe restricted closures (eg, downward only) are a
+    benefit.
+
+
+e)  Restricted continuations:
+
+    Continuations that are one-shot, downward only, non-escaping (a'la
+    C setjump/longjump) can be used.  This still enables a normal call
+    stack, rather than heap-allocated stacks or heap-allocated frames,
+    but supports exception handling.
+
+    The only major feature i can think of that such restricted
+    continuations do not allow is deferred execution which returns and
+    lightweight thread-switching.
+
+
+Things that MAY make it
+
+a)  Slightly less restricted continuations:
+
+    Continuations that are one-shop, downard only, but escaping.  This
+    additionally enables returning deferred execution and light-weight
+    context-switching.  However, this requires heap-allocated call
+    stacks or call frames, which is a significant efficiency hit.
+
+
