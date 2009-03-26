@@ -40,7 +40,7 @@ described in :ref:`python-api`.
 .. automodule:: hilti.canonifier.canonifier
    :members:
 
-``hilti.canonifier``
+``hilti.codegen``
 --------------------
 
 .. automodule:: hilti.codegen.codegen

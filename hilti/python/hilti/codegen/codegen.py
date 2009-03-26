@@ -71,7 +71,7 @@ class TypeInfo(object):
         self.to_double = None
 
 class CodeGen(visitor.Visitor):
-    
+    """Implements the generation of LLVM code from an HILTI |ast|."""
     TypeInfo = TypeInfo
     
     def __init__(self):
@@ -143,7 +143,7 @@ class CodeGen(visitor.Visitor):
     def pushBuilder(self, llvm_block):
         """Pushes a LLVM builder on the builder stack. The method creates a
         new ``llvm.core.Builder`` with the given block (which will often be
-        just empty at this point), and pushes it on the stack. All ~~Codegen
+        just empty at this point), and pushes it on the stack. All ~~codegen
         methods creating LLVM instructions use the most recently pushed
         builder.
         
@@ -1441,11 +1441,11 @@ class CodeGen(visitor.Visitor):
     def convertCtorExprToLLVM(self, type):
         """Decorator to define a conversion from a value as created by a
         type's constructor expression to the corresponding LLVM value. 
-        Constructor expressions are defined in the ~~Parser.  The decorated
+        Constructor expressions are defined in the ~~parser.  The decorated
         function receives two parameters, *type* and *refine_to*.  The
         former's type on depends on what the parser instantiates; the latter
         specifies a more specific type to covert *type* to first and may be
-        None (see ~~llvomOp for more details about *refine_to*).
+        None (see ~~llvmOp for more details about *refine_to*).
         
         Many types will only have constructor expressions for their constants
         (e.g., numbers for the integer data type, which will be passed in as
@@ -1470,7 +1470,7 @@ class CodeGen(visitor.Visitor):
         corresponding type used in LLVM code.  The decorated function receives
         two parameters, *type* and *refine_to*.  The former is an instance of
         ~~Type to convert; the latter specifies a more specific type to covert
-        *type* to first and may be None (see ~~llvomOp for more details about
+        *type* to first and may be None (see ~~llvmOp for more details about
         *refine_to*). The decorated function must return an
         ``llvm.core.Type``..
         
@@ -1486,7 +1486,7 @@ class CodeGen(visitor.Visitor):
         corresponding type used with C functions.  The decorated function
         receives two parameters, *type* and *refine_to*.  The former is an
         instance of ~~Type to convert; the latter specifies a more specific
-        type to covert *type* to first and may be None (see ~~llvomOp for more
+        type to covert *type* to first and may be None (see ~~llvmOp for more
         details about *refine_to*). The decorated function must return an
         ``llvm.core.Type``..
         
@@ -1531,7 +1531,7 @@ class CodeGen(visitor.Visitor):
         receive a three parameters: (1) *llvm*, the value to convert; (2)
         *type*, the ~~Type of the value being converted; and (3) *refine_to*,
         a more specific type to covert *type* to first, which may be None (see
-        ~~llvomOp for more details about *refine_to*). The decorated function
+        ~~llvmOp for more details about *refine_to*). The decorated function
         must return an ``llvm.core.Type``.. The function can use the current
         ~~builder() to build the value.
         
