@@ -1,0 +1,47 @@
+
+Instructions
+============
+
+- Single return statement independent of whether we're returning a
+value or not. 
+  
+- new T
+
+Data Types
+==========
+
+- addresses and subnets
+- string type is still missing instructions
+- bytes 
+- list
+
+Infracstructure
+===============
+
+- Add garbage collector
+- Complete exception support
+
+Cleanup
+=======
+
+- Implement "export" linkage: 
+  * only exported functions get external LLVM linkage
+  * otherwise, export implies everything "declare" does
+
+- Mark internal libhilti functions with special linkage rather than
+relying on "__"
+
+- Remove labels' @-prefix
+
+- Replace resolver's int-width derivation with usage of codegen's
+ refine_to.
+
+Documentation
+=============
+
+- More of the docstring derived text should be automatically
+included without the need for manual auto* directives.
+
+- We need to figure out a way to document the libhilti and generally
+C-level stuff.
+ 
