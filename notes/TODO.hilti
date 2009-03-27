@@ -21,6 +21,14 @@ Infracstructure
 - Add garbage collector
 - Complete exception support
 
+- Returning values from C functions need to be reconsidered:
+
+  (a) how to return *any* values? do we want to return type
+      information as well?
+      
+  (b) looks like we need another decorator convertValueFromC() in
+  addition to convertValueToC()
+
 Cleanup
 =======
 
