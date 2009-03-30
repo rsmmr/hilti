@@ -35,6 +35,7 @@ RE_EXEC = ("exec", re.compile("@TEST-EXEC(-FAIL)?: *(.*)"), True, False, 2, 1)
 Commands = (RE_EXEC, )
 
 RE_INPUT = re.compile("%INPUT")
+RE_DIR  = re.compile("%DIR")
 
 RE_START_NEXT_TEST = re.compile("@TEST-START-NEXT")
 
@@ -60,8 +61,9 @@ def mkdir(dir):
             error("path %s exists but is not a directory" % dir)
     
 class Test(object):
-    def __init__(self, file = None):
+    def __init__(self, file):
         self.file = file
+        self.dir = os.path.abspath(os.path.dirname(file))
         self.name = None
         self.number = 1
         self.group = None
@@ -74,6 +76,11 @@ class Test(object):
     def parse(self, content):
         cmds = {}
         for line in content:
+            
+            if line.find("@TEST-IGNORE") >= 0:
+                # Ignore this file.
+                return False
+            
             for (tag, regexp, multiple, optional, group1, group2) in Commands:
                 m = regexp.search(line)
             
@@ -116,11 +123,12 @@ class Test(object):
         
         self.content = content
         self.cmdlines = [(cmd.strip(), success!="-FAIL") for (cmd, success) in cmds["exec"]]
+        return True
         
     # Copies all control information over t a new Test but replaces test content
     # with a new one.
     def clone(self, content):
-        clone = Test()
+        clone = Test("")
         clone.file = self.file
         clone.number = self.number + 1
         clone.name = self.name 
@@ -206,6 +214,7 @@ class Test(object):
         
         # Replace special names. 
         cmdline = RE_INPUT.sub(self.localfile, cmdline)
+        cmdline = RE_DIR.sub(self.dir, cmdline)
         print >>self.log, cmdline, "(expect %s)" % ("success" if expect_success else "failure")
         
         env = self.prepareEnv()
@@ -309,8 +318,10 @@ def readTestFile(filename):
     def newTest(content, previous):
         if not previous:
             t = Test(filename)
-            t.parse(content)
-            return t
+            if t.parse(content):
+                return t
+            else:
+                return None
         else:
             return previous.clone(content)
     
@@ -331,6 +342,9 @@ def readTestFile(filename):
             continue
 
         t = newTest(content, previous)
+        if not t:
+            return []
+        
         tests += [t]
         
         previous = t
@@ -341,23 +355,6 @@ def readTestFile(filename):
     file.close()
     
     return tests
-    
-#    tests = []
-#
-#    for dir in dirs:
-#        if not os.path.isdir(dir):
-#            error("%s is not a directory" % dir)
-#            
-#        try:
-#            def addNames(tests, dir, names):
-#                tests += [Test(os.path.abspath(fn)) for fn in fnmatch.filter(names, Glob)]
-#            
-#            os.path.walk(dir, addNames, tests)
-#        
-#        except IOError, e:
-#            error("cannot traverse directory %s" % dir)
-#
-#    return tests
 
 ### Main
 
@@ -395,7 +392,8 @@ mkdir(TmpDir)
 Failed = 0
 
 for test in tests:
-    test.run()
+    if test:
+        test.run()
 
 if Failed > 0:
     output("%d test%s failed" % (Failed, "s" if Failed > 1 else ""))
