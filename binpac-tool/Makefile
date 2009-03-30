@@ -8,11 +8,17 @@ all: pac bptool
 
 clean:
 	$(MAKE) -C pac clean
-	rm bptool        
+	rm -f bptool        
 
 .PHONY: pac
 pac:
 	$(MAKE) -C pac
     
 bptool: bptool.cc pac/libanalyzers.a
-	g++ bptool.cc $(LDFLAGS) $(CXXFLAGS) -o bptool 
+	g++ -g bptool.cc $(LDFLAGS) $(CXXFLAGS) -o bptool 
+    
+tar: clean 
+	$(MAKE) -C binpac clean
+	( cd .. && tar czvf binpac-tool.tgz binpac-tool )
+    
+    

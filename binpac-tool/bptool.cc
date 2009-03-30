@@ -7,13 +7,14 @@
 #include <binpac.h>
 
 #include "pac/test_pac.h"
+#include "pac/megad_pac.h"
 
 void usage()
 {
     fprintf(stderr, "bptool -a <analyzer> [options]\n\n");
     fprintf(stderr, "  -o <file>     Feed <file> to originator side\n");
     fprintf(stderr, "  -r <file>     Feed <file> to responder side\n");
-    fprintf(stderr, "\n  available analyzers: test\n");
+    fprintf(stderr, "\n  available analyzers: test,megad\n");
     fprintf(stderr, "\n");
     exit(1);
 }
@@ -79,6 +80,9 @@ int main(int argc, char** argv)
     
     if ( strcmp(analyzer, "test") == 0 )
         conn = new binpac::Test::Test_Conn;
+    
+    if ( strcmp(analyzer, "megad") == 0 )
+        conn = new binpac::MegaD::MegaD_Conn;
     
     if ( ! conn ) {
         fprintf(stderr, "unknown analyzer '%s'\n", analyzer);

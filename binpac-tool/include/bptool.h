@@ -1,5 +1,6 @@
 
 #ifndef BPTOOL_H
+#define BPTOOL_H
 
 #include <iostream>
 #include <iomanip>

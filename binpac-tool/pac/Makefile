@@ -7,7 +7,7 @@ CXXFLAGS=-I../binpac/lib -I../include
 PAC=$(wildcard *.pac)
 CCSRCS=$(patsubst %.pac,%_pac.cc,$(PAC))
 HDRS=$(patsubst %.cc,%.h,$(CCSRCS))
-OBJS=$(patsubst %.cc,%.o,$(CCSRCS))
+OBJS=$(patsubst %.cc,%.o,$(CCSRCS)) megad_obfuscation_function.o
 TARGET=libanalyzers.a
 
 all: $(TARGET)
@@ -17,7 +17,7 @@ clean:
 
 %_pac.o : %.pac
 	$(BINPAC) $<
-	g++ -c $(CXXFLAGS) `echo $< | sed 's/\.pac/_pac.cc/g'`
+	g++ -g -c $(CXXFLAGS) `echo $< | sed 's/\.pac/_pac.cc/g'`
 	
 $(TARGET) : $(OBJS)
 	ar rcs $(TARGET) $(OBJS)
