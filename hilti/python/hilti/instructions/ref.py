@@ -1,11 +1,12 @@
 # $Id$
-#
-# Instructions for the ref data type.
-#
-""" 
-The ``ref<T>`` data type encapsulates references to dynamically allocated,
-garbage-collected objects of type *T*. The special reference constant ``Null``
-can used as place-holder for invalid references.  
+"""
+References
+~~~~~~~~~~
+"""
+
+_doc_type_description = """The ``ref<T>`` data type encapsulates references
+to dynamically allocated, garbage-collected objects of type *T*. The special
+reference constant ``Null`` can used as place-holder for invalid references.  
 
 If not explictly initialized, references are set to ``Null`` initially.
 """

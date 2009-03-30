@@ -8,6 +8,15 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+_doc_c_conversion = """
+A ``string`` is mapped to a ``__hlt_string *``. The type is defined in
+|hilti_intern.h|:
+    
+.. literalinclude:: /libhilti/hilti_intern.h
+   :start-after: %doc-hlt_string-start
+   :end-before:  %doc-hlt_string-end
+"""
+
 def _llvmStringType(len=0):
     return llvm.core.Type.packed_struct([llvm.core.Type.int(32), llvm.core.Type.array(llvm.core.Type.int(8), len)])
 
@@ -30,36 +39,25 @@ def _makeLLVMString(s):
     # actual string type, which has unspecified array length. 
     return codegen.builder().bitcast(glob, _llvmStringTypePtr(), name)
 
-@codegen.makeTypeInfo(type.String)
+@codegen.typeInfo(type.String)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.to_string = "__Hlt::string_to_string";
+    typeinfo.c_prototype = "const __hlt_string *"
+    typeinfo.to_string = "__Hlt::string_to_string"
     return typeinfo
 
-@codegen.defaultInitValue(type.String)
+@codegen.llvmDefaultValue(type.String)
 def _(type):
     # A null pointer is treated as the empty string by the C functions.
     return llvm.core.Constant.null(_llvmStringTypePtr(0))
     
-@codegen.convertCtorExprToLLVM(type.String)
+@codegen.llvmCtorExpr(type.String)
 def _(op, refine_to):
     return _makeLLVMString(op.value())
     
-@codegen.convertTypeToLLVM(type.String)
+@codegen.llvmType(type.String)
 def _(type, refine_to):
     return _llvmStringTypePtr()
-
-@codegen.convertTypeToC(type.String)
-def _(type, refine_to):
-    """A ``string`` is mapped to a ``__hlt_string *``. The type is defined in
-    |hilti_intern.h|:
-    
-    .. literalinclude:: /libhilti/hilti_intern.h
-       :start-after: %doc-hlt_string-start
-       :end-before:  %doc-hlt_string-end
-       
-    """
-    return codegen.llvmTypeConvert(type, refine_to)
 
 @codegen.when(instructions.string.Assign)
 def _(self, i):

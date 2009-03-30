@@ -112,6 +112,31 @@ package's description in ``internals/compiler.rst`` and call it
 Documenting Functionality in Specific Packages
 ----------------------------------------------
 
+Instructions
+^^^^^^^^^^^^
+
+Each submodules in ``instructions`` should have a module doc-string
+containing just a section heading, e.g.::
+
+   """
+   Flow Control
+   ~~~~~~~~~~~~
+   """
+  
+This heading will start the module's section in the
+:ref:`instructions`.
+  
+In addition, those submodules representing a type should also
+provide a module-level string variable ``_doc_type_description``
+containing a string describing the type and its usage suitable for
+inclusion into the user manual's :ref:`types`. For example::
+
+   _doc_type_description = """The *bool* data type represents
+   boolean values. The two boolean constants are ``True`` and
+   ``False``. If not explictly initialized, booleans are set to
+   ``False`` initially.
+   """
+
 Canonifier
 ^^^^^^^^^^
 
@@ -151,6 +176,17 @@ appear separately with *auto* statements in the parser's
 
 Codegen
 ~~~~~~~
+
+Each subpackage representing a specifc type should provide provide a
+module-level string variable ``_doc_c_conversion`` containing a
+string describing how the type will be converted to C for use with
+external C functions. This string will be included in the section
+:ref:`type-conversions`. An example is::
+
+   _doc_c_conversion = """ A ``bool`` is mapped to an ``int8_t``,
+   with ``True`` corresponding to the value ``1`` and ``False`` to
+   value ``0``.
+   """
 
 In :mod:`~hilti.codegen.flow` we document implementation details of the
 flow-control model.

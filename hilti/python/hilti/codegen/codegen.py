@@ -6,6 +6,7 @@ import sys
 
 import llvm
 import llvm.core 
+import typeinfo
 
 global_id = id
 
@@ -19,60 +20,9 @@ class _DummyBuilder(object):
             pass
         return lambda *args: dummy()
     
-### Codegen visitor.
-
-class TypeInfo(object):
-    """Represent's type's meta information. The meta information is
-    used to describe a type's properties, such as hooks and
-    pre-defined operators. A subset of information from the TypeInfo
-    objects will be made available to libhilti during run-time; see
-    ``struct __hlt_type_information`` in
-    :download:`/libhilti/hilti_intern.h`. There must be one TypeInfo
-    object for each ~~HiltiType instance, and the usual place for
-    creating it is in a type's ~~makeTypeInfo.
-    
-    A TypeInfo object has the following fields, which can be get/set directly:
-
-    *type* (~~HiltiType):
-       The type this object describes.
-    
-    *name* (string)
-       A readable representation of the type's name.
-
-    *args* (list of objects)
-       The type's parameters. 
-       
-    *to_string* (string)
-       The name of an internal libhilti function that converts a value of the
-       type into a readable string representation. See :download:`/libhilti/hilti_intern.h`
-       for the function's complete C signature. 
-       
-    *to_int64* (string) 
-       The name of an internal libhilti function that converts a value of the
-       type into an int64. See :download:`/libhilti/hilti_intern.h` for the
-       function's complete C signature. 
-       
-    *to_double* (string)
-       The name of an internal libhilti function that converts a value of the
-       type into a double. See :download:`/libhilti/hilti_intern.h`
-       for the function's complete C signature. 
-              
-    t: ~~HiltiType - The type used to initialize the object. The fields
-    *type*, *name* and *args* will be derived from *t*, all others are
-    initialized with None. 
-    """
-    def __init__(self, t):
-        assert isinstance(t, type.HiltiType)
-        self.type = t
-        self.name = t.name()
-        self.args = t.args()
-        self.to_string = None
-        self.to_int64 = None
-        self.to_double = None
-
 class CodeGen(visitor.Visitor):
     """Implements the generation of LLVM code from an HILTI |ast|."""
-    TypeInfo = TypeInfo
+    TypeInfo = typeinfo.TypeInfo
     
     def __init__(self):
         super(CodeGen, self).__init__()
@@ -132,6 +82,9 @@ class CodeGen(visitor.Visitor):
                  llvm.core.Type.pointer(llvm.core.Type.array(llvm.core.Type.int(8), 0)), # name
                  llvm.core.Type.int(16)]            # num_params
                 + [self._llvm.type_generic_pointer] * 3) # functions (cheating a bit with the signature).
+                
+            # The external function called to report an uncaugt exception. 
+        ft = type.Function([], type.Void())
         
     def generateLLVM(self, ast, libpaths, verify=True):
         """See ~~generateLLVM."""
@@ -200,10 +153,14 @@ class CodeGen(visitor.Visitor):
         assert (not func) or (isinstance(func.type(), type.Function))
         return func
     
-    def nameFunction(self, func):
+    def nameFunction(self, func, prefix=True):
         """Returns the internal LLVM name for the function. The method
         processes the function's name according to HILTI's name mangling
         scheme.
+        
+        func: ~~Function - The function to generate the name for.
+        
+        prefix: bool - If false, the internal ``hlt_`` prefix is not prepended.
         
         Returns: string - The mangled name, to be used for the corresponding 
         LLVM function.
@@ -215,8 +172,8 @@ class CodeGen(visitor.Visitor):
             return name
         
         if func.callingConvention() == function.CallingConvention.HILTI:
-            return "hlt_%s" % name
-        
+            return "hlt_%s" % name if prefix else name
+            
         # Cannot be reached
         assert False
             
@@ -322,6 +279,15 @@ class CodeGen(visitor.Visitor):
         """
         return self._llvm.type_type_information 
 
+    def getTypeInfo(self, t):
+        """Returns the type information for a type.
+        
+        t: ~~Type - The type to return information for.
+        
+        Returns: ~~TypeInfo - The type information.
+        """
+        return self._callCallback(CodeGen._CB_TYPE_INFO, t, [t], must_find=True)
+    
     def _createTypeInfo(self, ti):
         th = llvm.core.TypeHandle.new(llvm.core.Type.opaque())
         ti_name = self.nameTypeInfo(ti.type)
@@ -384,18 +350,22 @@ class CodeGen(visitor.Visitor):
         st = llvm.core.Type.struct(
             [llvm.core.Type.int(16),            # type
              llvm.core.Type.pointer(name_type), # name
-             llvm.core.Type.int(16)]            # num_params
+             llvm.core.Type.int(16),            # num_params
+             self.llvmTypeGenericPointer()]     # aux
             + libhilti_func_types + arg_types)
 
         if ti.type._id == 0:
             util.internal_error("type %s does not have an _id" % ti.type)
+        
+        aux = ti.aux if ti.aux else llvm.core.Constant.null(self.llvmTypeGenericPointer())
+        aux = aux.bitcast(self.llvmTypeGenericPointer())
         
         # Create the type info struct constant.
         sv = llvm.core.Constant.struct(
             [llvm.core.Constant.int(llvm.core.Type.int(16), ti.type._id),  # type
              name_glob,                                                    # name
              llvm.core.Constant.int(llvm.core.Type.int(16), len(ti.args))] # num_params
-            + libhilti_func_vals + arg_vals)
+            + [aux] + libhilti_func_vals + arg_vals)
 
         glob = self.llvmCurrentModule().get_global_variable_named(ti_name)
         glob.type.refine(llvm.core.Type.pointer(st))
@@ -409,7 +379,7 @@ class CodeGen(visitor.Visitor):
         ~~HiltiType objects as type parameters. 
         """
             
-        tis = [self._callConvCallback(CodeGen._CONV_TYPE_INFO, t, [t], must_find=True) for t in type.getAllHiltiTypes()]
+        tis = [self._callCallback(CodeGen._CB_TYPE_INFO, t, [t], must_find=True) for t in type.getAllHiltiTypes()]
         
         for ti in tis:
             if ti:
@@ -423,9 +393,11 @@ class CodeGen(visitor.Visitor):
         """Adds run-time type information to the current LLVM module. The function
         creates one type information object for each instantiated ~~HiltiType.
         
-        t: ~~Type : The type to add type information for.
+        t: ~~HiltiType : The type to add type information for.
         """
-        ti = self._callConvCallback(CodeGen._CONV_TYPE_INFO, t, [t], must_find=True)
+        assert isinstance(t, type.HiltiType)
+        
+        ti = self._callCallback(CodeGen._CB_TYPE_INFO, t, [t], must_find=True)
         self._createTypeInfo(ti)
         self._initTypeInfo(ti)
                 
@@ -451,7 +423,7 @@ class CodeGen(visitor.Visitor):
             
         assert(ti)
         return ti 
-            
+    
     def llvmNewModule(self, name): 
         """Creates a new LLVM module. The module is initialized suitably to
         then be used for translating a HILTi program into.
@@ -553,7 +525,6 @@ class CodeGen(visitor.Visitor):
         """
         return llvm.core.Constant.int(llvm.core.Type.int(32), n)    
 
-    # Return the LLVM constant representing the given double.
     def llvmConstDouble(self, d):
         """Creates an LLVM double constant.
         
@@ -563,7 +534,6 @@ class CodeGen(visitor.Visitor):
         """
         return llvm.core.Constant.real(llvm.core.Type.double(), d)
 
-    # Returns the LLVM constant representing an unset exception.
     def llvmConstNoException(self):
         """Returns the LLVM constant representing an unset exception. This
         constant is written into the basic-frame's exeception field to
@@ -574,8 +544,15 @@ class CodeGen(visitor.Visitor):
         """
         return llvm.core.Constant.null(self.llvmTypeGenericPointer())
 
-    # Returns the type used to represent pointer of different type. 
-    # (i.e., "void *")
+    def llvmTypeException(self):
+        """Returns the LLVM type representing an exception.
+        
+        Returns: llvm.core.Type - The type of an exception.
+        
+        Note: The type returned is likely to be changed. 
+        """
+        return self.llvmTypeGenericPointer()
+    
     def llvmTypeGenericPointer(self):
         """Returns the LLVM type that we use for representing a generic
         pointer. (\"``void *``\").
@@ -584,7 +561,6 @@ class CodeGen(visitor.Visitor):
         """
         return self._llvm.type_generic_pointer
 
-    # Returns a type representing a pointer to the given function. 
     def llvmTypeFunctionPtr(self, function):
         """Returns the LLVM type for representing a pointer to the function.
         The type is built according to the function's signature and the
@@ -1000,7 +976,7 @@ class CodeGen(visitor.Visitor):
         
         except KeyError:
             rt = self.llvmTypeConvert(func.type().resultType())
-            args = [self.llvmTypeConvertToC(id.type()) for id in func.type().args()]
+            args = [self.llvmTypeConvert(id.type()) for id in func.type().args()]
             
             if func.callingConvention() == function.CallingConvention.C_HILTI:
                 args = self._llvmMakeArgTypesForCHiltiCall(func, args)
@@ -1047,7 +1023,7 @@ class CodeGen(visitor.Visitor):
         """
         llvm_func = self.llvmGetCFunction(func)
 
-        args = [self.llvmOpToC(op) for op in args]
+        args = [self.llvmOp(op) for op in args]
         
         if func.callingConvention() == function.CallingConvention.C_HILTI:
             args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types)
@@ -1095,6 +1071,146 @@ class CodeGen(visitor.Visitor):
             
         return self.llvmGenerateCCall(func, args, arg_types)
         
+    def llvmGenerateCStub(self, func):
+        """Generates a C stub for a function. The stub function will be an
+        externally visible function using standard C calling conventions, and
+        expecting parameters corresponding to the function's HILTI parameters,
+        per the usual C<->HILTI translation. It gets one additional paramert
+        of type ``__hlt_exception *``, which the callee can set to an
+        exception object to signal that an exception was thrown. 
+        
+        All the stub does when called is in turn calling the HILTI function,
+        adapting the calling conventions. The function must have ~~HILTI
+        calling convention.
+        
+        func: ~~Function - The function to generate a stub for
+        
+        Note: ``hiltic`` can generate the right prototypes for such stub
+        functions.
+        """
+
+        assert func.callingConvention() == function.CallingConvention.HILTI
+
+        is_void = (func.type().resultType() == type.Void)
+        name = self.nameFunction(func, prefix=False)
+        
+        # Create the stub function.
+        if not is_void:
+            result_type = self.llvmTypeConvert(func.type().resultType())
+            addl_arg = [result_type]
+        else:
+            result_type = llvm.core.Type.void()
+            addl_arg = []
+        
+        rt = result_type
+        args = [self.llvmTypeConvert(id.type()) for id in func.type().args()]
+        args += [llvm.core.Type.pointer(self.llvmTypeException())]
+        ft = llvm.core.Type.function(rt, args)
+        llvm_func = self._llvm.module.add_function(ft, name)
+        llvm_func.calling_convention = llvm.core.CC_C
+        self._llvm.functions[name] = llvm_func
+        block = llvm_func.append_basic_block("")
+        self.pushBuilder(block)
+
+        # Create a frame for us. We add one variable to store the return
+        # value if we have one.
+        if not is_void:
+            fields = self._bf_fields + [("result", self.llvmTypeConvert(func.type().resultType()))]
+            frame_type = llvm.core.Type.struct([f[1] for f in fields])
+            stub_frame = self.llvmMalloc(frame_type)
+        else:
+            stub_frame = self.llvmMalloc(self.llvmTypeBasicFrame())
+        
+        # Create the return function.
+        return_name = name + "_return"
+        args = [stub_frame.type] + addl_arg
+        rt = llvm.core.Type.void()
+    	ft = llvm.core.Type.function(rt, args)  
+        return_func = self._llvm.module.add_function(ft, return_name)
+        return_func.calling_convention = llvm.core.CC_FASTCALL
+        return_func.linkage = llvm.core.LINKAGE_INTERNAL
+        return_func.args[0].name = "__frame"
+        if addl_arg:
+	        return_func.args[1].name = "result"
+            
+        return_block = return_func.append_basic_block("")
+        self.pushBuilder(return_block)
+        
+        if not is_void:
+            # Store it in frame. 
+            zero = self.llvmGEPIdx(0)
+            index = self.llvmGEPIdx(len(self._bf_fields))
+            addr = self.builder().gep(return_func.args[0], [zero, index])
+            self.builder().store(return_func.args[1], addr)
+            
+        self.builder().ret_void()
+        self.popBuilder()
+
+        # Create the exception handler.
+        excpt_name = name + "_excpt"
+    	ft = llvm.core.Type.function(llvm.core.Type.void(), [stub_frame.type])  
+        excpt_func = self._llvm.module.add_function(ft, excpt_name)
+        excpt_func.calling_convention = llvm.core.CC_FASTCALL
+        excpt_func.linkage = llvm.core.LINKAGE_INTERNAL
+        excpt_func.args[0].name = "__frame"
+        excpt_block = excpt_func.append_basic_block("")
+        self.pushBuilder(excpt_block)
+            # Nothing to do in the handler.
+        self.builder().ret_void()
+        self.popBuilder()
+        
+        # Create the call.
+        
+            # Allocate new stack frame for called function.
+        callee_frame = self.llvmAllocFunctionFrame(func)
+   
+            # After call, continue with our return function and give it our
+            # frame.
+        addr = self.llvmAddrDefContSuccessor(callee_frame, llvm.core.Type.pointer(return_func.type))
+        self.llvmInit(return_func, addr)
+        addr = self.llvmAddrDefContFrame(callee_frame, llvm.core.Type.pointer(stub_frame.type))
+        self.llvmInit(stub_frame, addr)
+
+            # Set the exception handler and also give it our frame.
+        addr = self.llvmAddrExceptContSuccessor(callee_frame, llvm.core.Type.pointer(excpt_func.type))
+        self.llvmInit(excpt_func, addr)
+        addr = self.llvmAddrExceptContFrame(callee_frame, llvm.core.Type.pointer(stub_frame.type))
+        self.llvmInit(stub_frame, addr)
+        
+            # Clear exception information.
+        addr = self.llvmAddrException(callee_frame)
+        zero = self.llvmConstNoException()
+        self.llvmInit(zero, addr)
+        
+            # Initialize function arguments. 
+        ids = func.type().args()
+        for i in range(0, len(ids)):
+            addr = self.llvmAddrLocalVar(func, callee_frame, ids[i].name())
+            self.llvmInit(llvm_func.args[i], addr)
+            
+            # Make call.
+        callee_func = self.llvmGetFunction(func)
+        result = self.builder().call(callee_func, [callee_frame])
+        result.calling_convention = llvm.core.CC_FASTCALL
+
+            # Set exception parameter.
+        addr = self.llvmAddrException(stub_frame)
+        excpt = self.builder().load(addr)
+        self.builder().store(excpt, llvm_func.args[-1])
+        
+            # Load return value.
+        if not is_void:
+            zero = self.llvmGEPIdx(0)
+            index = self.llvmGEPIdx(len(self._bf_fields))
+            addr = self.builder().gep(stub_frame, [zero, index])
+            val = self.builder().load(addr)
+            self.builder().ret(val)
+            
+        else:
+            self.builder().ret_void()
+
+        self.popBuilder()
+
     def llvmRaiseException(self, exception):
         """Generates the raising of an exception. The method
         uses the current :meth:`builder`.
@@ -1127,7 +1243,7 @@ class CodeGen(visitor.Visitor):
         
 	    exception: string - The name of the internal global variable
         representing the exception to raise. These names are defined in 
-        :path:`libhilti/exceptions.cc`.
+        |hilti.h|.
         
         Note: Exception support is preliminary and will very likely change at
         some point in its specifics.
@@ -1152,10 +1268,15 @@ class CodeGen(visitor.Visitor):
     #
     # FIXME: How do we get the "tail" modifier in there?
 
-    def _llvmGenerateTailCall(self, llvm_func, args):
+    def _llvmGenerateTailCall(self, llvm_func, args, llvm_result=None):
         result = self.builder().call(llvm_func, args)
         result.calling_convention = llvm.core.CC_FASTCALL
-        self.builder().ret_void()
+        
+        if not llvm_result:
+            self.builder().ret_void()
+        else:
+            val = self.builder().load(llvm_result)
+            self.builder().ret(val)
 
         # Any subsequent code generated inside the same block will
         # be  unreachable. We create a dummy builder to absorb it; the code will
@@ -1174,7 +1295,7 @@ class CodeGen(visitor.Visitor):
         llvm_func = self.llvmGetFunctionForBlock(block)
         self._llvmGenerateTailCall(llvm_func, args)
             
-    def llvmGenerateTailCallToFunction(self, func, args):
+    def llvmGenerateTailCallToFunction(self, func, args, llvm_result=None):
         """Generates a tail call to a function. The function must have
         ~~Linkage ~HILTI. The method uses the current :meth:`builder`. 
         
@@ -1184,7 +1305,7 @@ class CodeGen(visitor.Visitor):
         assert func.callingConvention() == function.CallingConvention.HILTI
         llvm_func = self.llvmGetFunction(func)
         assert llvm_func
-        self._llvmGenerateTailCall(llvm_func, args)
+        self._llvmGenerateTailCall(llvm_func, args, llvm_result=llvm_result)
 
     def llvmGenerateTailCallToFunctionPtr(self, ptr, args):
         """Generates a tail call to a function pointer. The function being
@@ -1196,15 +1317,15 @@ class CodeGen(visitor.Visitor):
         """
         self._llvmGenerateTailCall(ptr, args)
 
-    def llvmDefaultValue(self, type):
+    def llvmConstDefaultValue(self, type):
         """Returns a type's default value for uninitialized values. The type
-        must be a ~~ValueType.
+        must be a constant ~~ValueType.
         
         type: ValueType - The type to determine the default value for.
         
         Returns: llvm.core.Constant - The default value.
         """
-        default = self._callConvCallback(CodeGen._CONV_DEFAULT_VAL, type, [type])
+        default = self._callCallback(CodeGen._CB_DEFAULT_VAL, type, [type])
         assert default
         llvm.core.check_is_constant(default)
         return default
@@ -1230,7 +1351,7 @@ class CodeGen(visitor.Visitor):
         type: ValueType - The type determining the default value. 
         addr: llvm.core.Value - The address to initialize. 
         """
-        self.llvmInit(self.llvmDefaultValue(type), addr)
+        self.llvmInit(self.llvmConstDefaultValue(type), addr)
         
     def llvmAssign(self, value, addr):
         """Assignes a value to an address that has already been initialized
@@ -1277,33 +1398,26 @@ class CodeGen(visitor.Visitor):
                 
         util.internal_error("targetToLLVM: unknown target class: %s" % target)
 
-    # Table of callbacks for conversions. 
-    _CONV_TYPE_INFO = 1
-    _CONV_CTOR_EXPR_TO_LLVM = 2
-    _CONV_TYPE_TO_LLVM = 3
-    _CONV_TYPE_TO_LLVM_C = 4
-    _CONV_VAL_TO_LLVM_C = 5
-    _CONV_VAL_TO_LLVM_C = 6
-    _CONV_DEFAULT_VAL = 7
+    # Table of callbacks. 
+    _CB_TYPE_INFO = 1
+    _CB_CTOR_EXPR = 2
+    _CB_LLVM_TYPE = 3
+    _CB_DEFAULT_VAL = 4
     
-    _Conversions = { 
-    	_CONV_TYPE_INFO: [], 
-        _CONV_CTOR_EXPR_TO_LLVM: [], 
-        _CONV_TYPE_TO_LLVM: [], 
-        _CONV_TYPE_TO_LLVM_C: [], 
-        _CONV_VAL_TO_LLVM_C: [],
-        _CONV_DEFAULT_VAL: []
+    _Callbacks = { 
+    	_CB_TYPE_INFO: [], 
+        _CB_CTOR_EXPR: [], 
+        _CB_LLVM_TYPE: [], 
+        _CB_DEFAULT_VAL: []
         }
         
-    _Docs = { _CONV_TYPE_TO_LLVM_C: "" }
-
-    def _callConvCallback(self, kind, type, args, must_find=True):
-        for (t, func) in CodeGen._Conversions[kind]:
+    def _callCallback(self, kind, type, args, must_find=True):
+        for (t, func) in CodeGen._Callbacks[kind]:
             if isinstance(type, t):
                 return func(*args)
             
         if must_find:
-            util.internal_error("_callConvCallback: unsupported object %s for conversion type %d" % (repr(type), kind))
+            util.internal_error("_callCallback: unsupported object %s for callback type %d" % (repr(type), kind))
             
         return None
     
@@ -1334,10 +1448,10 @@ class CodeGen(visitor.Visitor):
         type = op.type()
         
         if isinstance(op, instruction.ConstOperand):
-            return self._callConvCallback(CodeGen._CONV_CTOR_EXPR_TO_LLVM, type, [op, refine_to])
+            return self._callCallback(CodeGen._CB_CTOR_EXPR, type, [op, refine_to])
         
         if isinstance(op, instruction.TupleOperand):
-            return self._callConvCallback(CodeGen._CONV_CTOR_EXPR_TO_LLVM, type, [op, refine_to])
+            return self._callCallback(CodeGen._CB_CTOR_EXPR, type, [op, refine_to])
 
         if isinstance(op, instruction.IDOperand):
             i = op.id()
@@ -1349,23 +1463,6 @@ class CodeGen(visitor.Visitor):
             util.internal_error("llvmOp: unsupported ID operand type %s" % type)
 
         util.internal_error("llvmOp: unsupported operand type %s" % op)
-
-    def llvmOpToC(self, op, refine_to = None):
-        """Converts an instruction operand into an LLVM value suitable to pass
-        to a C function. In general, a C function may expected a different
-        type for a parameter than a HILTI function would for the same
-        argument. 
-
-        refine_to: ~~Type - An optional refined type to convert the operand to
-        first. See ~~llvmOp for more information.
-        
-        op: ~~Operand - The operand to be converted.
-        
-        Returns: llvm.core.Value - The LLVM value of the operand that can then
-        be used, e.g., in subsequent LLVM load and store instructions.
-        """
-        assert (not refine_to) or (refine_to == op.type())
-        return self.llvmValueConvertToC(self.llvmOp(op), op.type(), refine_to)
 
     def llvmTypeConvert(self, type, refine_to = None):
         """Converts a ValueType into the LLVM type used for corresponding
@@ -1379,51 +1476,11 @@ class CodeGen(visitor.Visitor):
         Returns: llvm.core.Type - The corresponding LLVM type for variable declarations.
         """ 
         assert (not refine_to) or (refine_to == op.type())
-        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM, type, [type, refine_to])
+        return self._callCallback(CodeGen._CB_LLVM_TYPE, type, [type, refine_to])
 
-    def llvmTypeConvertToC(self, type, refine_to = None):
-        """Converts a ValueType into the LLVM type used for passing to C
-        functions. 
-        
-        type: ~~ValueType - The type to convert.
-
-        refine_to: ~~Type - An optional refined type to convert the operand to
-        first. See ~~llvmOp for more information.
-        
-        Returns: llvm.core.Type - The corresponding LLVM type for passing to C functions
-        """ 
-        assert (not refine_to) or (refine_to == op.type())
-        return self._callConvCallback(CodeGen._CONV_TYPE_TO_LLVM_C, type, [type, refine_to])
-    
-    def llvmValueConvertToC(self, llvm, type, refine_to = None):
-        """Converts an LLVM value to the value used for passing to C
-        functions. 
-        
-        llvm: llvm.core.Value - The value to convert.
-        type: ~~ValueType - The original type of *llvm*.
-
-        refine_to: ~~Type - An optional refined type to convert the operand to
-        first. See ~~llvmOp for more information.
-        
-        Returns: llvm.core.Value - The converted value.
-        """ 
-        assert (not refine_to) or (refine_to == op.type())
-        new = self._callConvCallback(CodeGen._CONV_VAL_TO_LLVM_C, type, [llvm, type, refine_to], must_find=False)
-        return new if new else llvm
-
-    def documentCMapping(self):
-        """Returns a string documenting the mapping of HILTI types to C types.
-        The text is pieced together from the docstrings of the individual
-        ``convertTypeToC`` decorated functions and will be included in the
-        compiler documentation.
-        
-        Returns: string - Documentation in ReST format. 
-        """
-        return CodeGen._Docs[CodeGen._CONV_TYPE_TO_LLVM_C]
-    
     ### Decorators.
     
-    def makeTypeInfo(self, t):
+    def typeInfo(self, t):
         """Decorator to define a function creating a type's meta
         information. The decorated function will receive a single parameter of
         type ~~HiltiType and must return a suitable ~~TypeInfo object or None
@@ -1434,11 +1491,11 @@ class CodeGen(visitor.Visitor):
         """
         def register(func):
             assert issubclass(t, type.HiltiType)
-            CodeGen._Conversions[CodeGen._CONV_TYPE_INFO] += [(t, func)]
+            CodeGen._Callbacks[CodeGen._CB_TYPE_INFO] += [(t, func)]
     
         return register
 
-    def convertCtorExprToLLVM(self, type):
+    def llvmCtorExpr(self, type):
         """Decorator to define a conversion from a value as created by a
         type's constructor expression to the corresponding LLVM value. 
         Constructor expressions are defined in the ~~parser.  The decorated
@@ -1461,11 +1518,11 @@ class CodeGen(visitor.Visitor):
         type: ~~ValueType - The type for which the conversion is being defined.
         """
         def register(func):
-            CodeGen._Conversions[CodeGen._CONV_CTOR_EXPR_TO_LLVM] += [(type, func)]
+            CodeGen._Callbacks[CodeGen._CB_CTOR_EXPR] += [(type, func)]
     
         return register
     
-    def convertTypeToLLVM(self, type):
+    def llvmType(self, type):
         """Decorator to define a conversion from a ValueType to the
         corresponding type used in LLVM code.  The decorated function receives
         two parameters, *type* and *refine_to*.  The former is an instance of
@@ -1475,79 +1532,17 @@ class CodeGen(visitor.Visitor):
         ``llvm.core.Type``..
         
         type: ~~ValueType - The type for which the conversion is being defined.
+        
+        Note: The type defined here will also be the only passed to C functions.
         """
         def register(func):
-            CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM] += [(type, func)]
+            CodeGen._Callbacks[CodeGen._CB_LLVM_TYPE] += [(type, func)]
     
         return register
-    
-    def convertTypeToC(self, type):
-        """Decorator to define a conversion from a ValueType to the
-        corresponding type used with C functions.  The decorated function
-        receives two parameters, *type* and *refine_to*.  The former is an
-        instance of ~~Type to convert; the latter specifies a more specific
-        type to covert *type* to first and may be None (see ~~llvmOp for more
-        details about *refine_to*). The decorated function must return an
-        ``llvm.core.Type``..
-        
-        type: ~~ValueType - The type for which the conversion is being defined.
-        
-        Note: The decorated function should have a docstring describing the
-        mapping between the data type and C in a form suitable for including
-        in the compiler documentation (where it will show up automatically).
-        """
-        def register(func):
-            CodeGen._Conversions[CodeGen._CONV_TYPE_TO_LLVM_C] += [(type, func)]
             
-            doc = ""
-            nr = 1
-            
-            try:
-                for line in func.__doc__.split("\n"):
-                    if nr == 1:
-                        doc += "* " + line + "\n"
-                    elif nr == 2:
-                        indent = 0
-                        while indent < len(line) and line[indent] in " ":
-                            indent += 1;
-                        line = line.strip()
-                        doc += "  " + line + "\n"
-                    else:
-                        line = line[indent:] 
-                        doc += "  " + line + "\n"
-                        
-                    nr += 1
-            except AttributeError:
-                # No doc string.
-                pass
-                    
-            CodeGen._Docs[CodeGen._CONV_TYPE_TO_LLVM_C] += doc + "\n"
-            
-        return register
-    
-    def convertValueToC(self, type):
-        """Decorator to define a conversion from an LLVM value to the
-        corresponding value used with C functions. The decorated function will
-        receive a three parameters: (1) *llvm*, the value to convert; (2)
-        *type*, the ~~Type of the value being converted; and (3) *refine_to*,
-        a more specific type to covert *type* to first, which may be None (see
-        ~~llvmOp for more details about *refine_to*). The decorated function
-        must return an ``llvm.core.Type``.. The function can use the current
-        ~~builder() to build the value.
-        
-        Use of this decorator is optional. If not defined, the LLVM value is
-        used instead.
-        
-        type: ~~ValueType - The type for which the conversion is being defined.
-        """
-        def register(func):
-            CodeGen._Conversions[CodeGen._CONV_VAL_TO_LLVM_C] += [(type, func)]
-    
-        return register
-    
-    def defaultInitValue(self, type):
+    def llvmDefaultValue(self, type):
         """Decorator to generate a default value for uninitialized values. 
-        All ~~ValueType class must define such a default value. The decorated
+        All ~~ValueTypes must define such a default value. The decorated
         function receives one parameter, the ~~Type of the value to
         initialize; and it must return an ``llvm.core.Value`` representing the
         type's default value, which must be a constant. 
@@ -1555,7 +1550,7 @@ class CodeGen(visitor.Visitor):
         type: ~~ValueType - The type for which the conversion is being defined.
         """
         def register(func):
-            CodeGen._Conversions[CodeGen._CONV_DEFAULT_VAL] += [(type, func)]
+            CodeGen._Callbacks[CodeGen._CB_DEFAULT_VAL] += [(type, func)]
     
         return register    
     

@@ -12,9 +12,11 @@ static const __hlt_string prefix = { 1, "(" };
 static const __hlt_string postfix = { 1, ")" };
 static const __hlt_string separator = { 1, "," };
 
-const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, void* (*obj[]), int32_t options, __hlt_exception* excpt)
+const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, const char* obj, int32_t options, __hlt_exception* excpt)
 {
     assert(type->type == __HLT_TYPE_TUPLE);
+    
+    int16_t* offsets = (int16_t *)type->aux;
     
     int i;
     const __hlt_string *s = __hlt_string_from_asciiz("", excpt);
@@ -28,7 +30,7 @@ const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, void* (*o
         __hlt_type_info** types = (__hlt_type_info**) &type->type_params;
 
         if ( types[i]->to_string ) {
-            t = (types[i]->to_string)(types[i], (*obj)[i], 0, excpt);
+            t = (types[i]->to_string)(types[i], obj + offsets[i] , 0, excpt);
             if ( *excpt )
                 return 0;
         }

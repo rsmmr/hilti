@@ -11,7 +11,7 @@
 #include "hilti_intern.h"
 
 // Converts the integer into a int64_t correctly considering its width.
-static int64_t _makeInt64(const __hlt_type_info* type, void *obj)
+static int64_t _makeInt64(const __hlt_type_info* type, const void *obj)
 {
     // The first (and only) type parameter is an int64_t with the wdith.
     int64_t *width = (int64_t*) &(type->type_params);
@@ -31,7 +31,7 @@ static int64_t _makeInt64(const __hlt_type_info* type, void *obj)
     return val;
 }
 
-const __hlt_string* __hlt_int_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception)
+const __hlt_string* __hlt_int_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
 {
     assert(type->type == __HLT_TYPE_INTEGER);
     
@@ -47,7 +47,7 @@ const __hlt_string* __hlt_int_to_string(const __hlt_type_info* type, void* obj, 
     return s;
 }
 
-int64_t __hlt_int_to_int64(const __hlt_type_info* type, void* obj, __hlt_exception* expt)
+int64_t __hlt_int_to_int64(const __hlt_type_info* type, const void* obj, __hlt_exception* expt)
 {
     assert(type->type == __HLT_TYPE_INTEGER);
     return _makeInt64(type, obj);

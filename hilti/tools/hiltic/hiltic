@@ -35,6 +35,8 @@ optparser.add_option("-o", "--output", action="store", type="string", dest="outp
                      help="Store output in file", metavar="FILE")
 optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
                      help="Add DIR to search path for imports", metavar="DIR")
+optparser.add_option("-P", "--prototypes", action="store_true", dest="protos", default=False,
+                     help="Generate C prototypes")
 
 (options, args) = optparser.parse_args()
 
@@ -56,14 +58,16 @@ if len(args) < 1:
 if len(args) > 1:
     optparser.error("more than one input file specified")
     
-if not (options.bitcode or options.ll or options.hilti_plain or options.hilti_canon):
+if not (options.bitcode or options.ll or options.hilti_plain or options.hilti_canon or options.protos):
     optparser.error("no output type specified")
     
 input = args[0]    
 dest = options.output    
-    
+prototypes = None
+
+(root, ext) = os.path.splitext(input)
+
 if not dest:
-    (root, ext) = os.path.splitext(input)
     if options.bitcode:
         dest = root + ".bc"
 
@@ -73,10 +77,14 @@ if not dest:
     if options.ll or options.ll_noverify or options.hilti_plain or options.hilti_canon:
         dest = "/dev/stdout"
 
-try:
-    output = open(dest, "w")        
-except IOError, e:
-    print >>sys.stderr, "cannot open %s: %s" % (dest, e)
+if options.protos:
+    prototypes = root + ".h"
+
+if dest:
+    try:
+        output = open(dest, "w")        
+    except IOError, e:
+        print >>sys.stderr, "cannot open %s: %s" % (dest, e)
         
 # Parse input.    
 (errors, ast) = hilti.parser.parse(input, options.import_paths)
@@ -121,6 +129,10 @@ if not success:
     print >>sys.stderr, "error during code generation"
     sys.exit(1)
 
+# Generate C prototypes.
+if prototypes:
+    hilti.codegen.generateCPrototypes(ast, prototypes)
+    
 if options.ll:
     # Output human-readable code.
     print >>output, llvm_module
@@ -130,9 +142,6 @@ if options.bitcode:
     # Output bitcode. 
     llvm_module.to_bitcode(output)
     sys.exit(0)
-    
-# Cannot be reached.     
-assert False    
     
     
     

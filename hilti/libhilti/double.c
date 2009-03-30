@@ -9,7 +9,7 @@
 
 #include "hilti_intern.h"
 
-const __hlt_string* __hlt_double_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception)
+const __hlt_string* __hlt_double_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
 {
     assert(type->type == __HLT_TYPE_DOUBLE);
     
@@ -25,7 +25,7 @@ const __hlt_string* __hlt_double_to_string(const __hlt_type_info* type, void* ob
     return s;
 }
 
-double __hlt_double_to_double(const __hlt_type_info* type, void* obj, __hlt_exception* expt)
+double __hlt_double_to_double(const __hlt_type_info* type, const void* obj, __hlt_exception* expt)
 {
     assert(type->type == __HLT_TYPE_DOUBLE);
     double val = *((double *)obj);

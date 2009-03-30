@@ -4,6 +4,8 @@
 __all__ = ["codegen"]
 
 import codegen
+import protogen
+import typeinfo
 import flow
 import integer
 import double
@@ -30,5 +32,20 @@ def generateLLVM(ast, libpaths, verify=True):
     element of the tuple is the resulting LLVM module.
     """
     return codegen.codegen.generateLLVM(ast, libpaths, verify)
+
+def generateCPrototypes(ast, fname):
+    """Generates C interface prototypes for the functions in an |ast|.
+    The |ast| must be well-formed as verified by ~~checkAST, and it
+    must have been canonified by ~~canonifyAST. The output is a C
+    include file with function prototypes for all exported HILTI
+    functions.
+
+    ast: ~~Node - The root of the |ast| to turn into LLVM.
+    
+    fname: string - The name of the output file to write the prototypes into.
+    """
+    return protogen.protogen.generateCPrototypes(ast, fname)
+    
+    
 
 

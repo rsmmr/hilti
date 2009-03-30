@@ -54,16 +54,18 @@ static void _add_asciiz(const char* asciiz, int8_t* buffer, __hlt_string_size* b
     }
 }
 
-static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), int *type_param, __hlt_string_size* i, int8_t* buffer, __hlt_string_size* bpos, const __hlt_string** dst, __hlt_exception* excpt) 
+static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const char* tuple, int *type_param, __hlt_string_size* i, int8_t* buffer, __hlt_string_size* bpos, const __hlt_string** dst, __hlt_exception* excpt) 
 {
     static const int tmp_size = 32;
     char tmp[tmp_size];
     
     const int8_t* p = fmt->bytes;
     
+    int16_t* offsets = (int16_t *)type->aux;
+
     __hlt_type_info** types = (__hlt_type_info**) &type->type_params;
     __hlt_type_info* fmt_type = types[*type_param];
-    void *fmt_arg = (*tuple)[(*type_param)++];
+    const void *fmt_arg = tuple + offsets[(*type_param)++];
     
     switch ( p[(*i)++] ) {
         
@@ -125,7 +127,7 @@ static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, void* 
     
 }
 
-const __hlt_string* hilti_fmt(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), __hlt_exception* excpt)
+const __hlt_string* hilti_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const char* tuple, __hlt_exception* excpt)
 {
     assert(type->type == __HLT_TYPE_TUPLE);
 

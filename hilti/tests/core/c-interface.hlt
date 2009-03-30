@@ -1,0 +1,32 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build -P %INPUT
+# @TEST-EXEC:  ls
+# @TEST-EXEC:  gcc $CFLAGS -I . -c %DIR/c-interface-host.c -o c-interface-host.o
+# @TEST-EXEC:  hilti-build -l c-interface-host.o %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+#
+# Testing calls from C. 
+
+module Foo
+
+import hilti
+
+export void foo1(int<32> a, bool b) {
+    call Hilti::print(a)
+    call Hilti::print(b)
+}
+
+export int<32> foo2(int<32> a) {
+    a = int.add a a
+    return.result a
+}
+
+export string foo3(string a) {
+    a = string.concat a a
+    return.result a
+}
+
+
+

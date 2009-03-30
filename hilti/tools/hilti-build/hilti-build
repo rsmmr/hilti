@@ -16,15 +16,16 @@
 # If TEST_DIAGNOSTICS is set, it's content is supposed to be a filename 
 # receiving the -v outut. TEST_DIAGNOSTICS also implies -t. 
 
-LIBS="-lhiltimain -lc"
-
 function usage {
-   echo "Usage: hilti-build [-t] [-v] <input.hlt> [<output>]"
+   echo "Usage: hilti-build [-m] [-t] [-v] [-l <obj.o>] <input.hlt> [<output>]"
    echo 
    echo "Options:"
+   echo "  -m           Link with libhilti instead of libhiltimain."
    echo "  -t           Do not delete temporary files."
    echo "  -v           Output command lines as they are executed."
    echo "  -O1/O2/O3    Apply optimizations (see 'man opt')"
+   echo "  -l obj.o     Additional object file to link in."
+   echo "  -P           Generate C prototypes only."
    echo
    exit 1 
 }
@@ -44,8 +45,14 @@ function delete_tmps {
      fi
 }
 
+lib="hiltimain"
+objs=""
+protos=""
+
 while [ "$1" != "" ]; do
     case $1 in 
+        -m)
+            lib="hilti"; shift;;
         -t)
             keeptmp=1; shift;;
         -v)
@@ -56,6 +63,12 @@ while [ "$1" != "" ]; do
             opt=$1; shift;;
         -O3) 
             opt=$1; shift;;
+        -l) 
+            shift
+            objs="$1"
+            shift;;
+        -P)
+            protos="1"; shift;;
         -h) 
             usage;; 
         *)
@@ -72,6 +85,8 @@ if [ "$#" -lt "1" -o "$#" -gt "2" ]; then
    usage
 fi   
 
+LIBS="-l$lib -lc"
+
 trap delete_tmps 0
 
 input=$1
@@ -87,14 +102,21 @@ fi
 ll=$base.ll
 asm=$base.S
 doto=$base.o
+doth=$base.h
 
 if [ "$opt" != "" ]; then
    opt="opt $opt |"
 fi   
 
+if [ "$protos" == "1" ]; then
+   # Just run hiltic to generate the C prototypes.
+   execute "hiltic $HILTICFLAGS -P $input -o $doth" || exit 1
+   exit 0
+fi
+
 # Turns into human-readable LLVM code 
 # (We could skip this step but keep it for debugging.)
-execute "hiltic $HILTICFLAGS -l $input -o $ll" || exit 1
+execute "hiltic $HILTICFLAGS $protos -l $input -o $ll" || exit 1
 
 # Turn it into bytecode, optionally optimize, and then turn into native code. 
 execute "llvm-as $LLVMASFLAGS < $ll | $opt llc >$asm" || exit 1
@@ -103,4 +125,4 @@ execute "llvm-as $LLVMASFLAGS < $ll | $opt llc >$asm" || exit 1
 execute "as $ASFLAGS $asm -o $doto" || exit 1 
 
 # Link. 
-execute "gcc $LDFLAGS $doto $LIBS -o $output" || exit 1
+execute "gcc $LDFLAGS $doto $objs $LIBS -o $output" || exit 1

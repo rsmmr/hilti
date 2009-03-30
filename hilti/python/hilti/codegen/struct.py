@@ -8,34 +8,30 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+_doc_c_conversion = """ 
+A ``struct` is passed as a pointer to an eqivalent C struct; the fields' types
+are converted recursively per the same rules. 
+"""
+
 def _llvmStructType(struct):
     # Currently, we support only up to 32 fields.
     assert len(struct.Fields()) <= 32
     fields = [llvm.core.Type.int(32)] + [codegen.llvmTypeConvert(id.type()) for (id, default) in struct.Fields()]
     return llvm.core.Type.struct(fields)
 
-@codegen.makeTypeInfo(type.Struct)
+@codegen.typeInfo(type.Struct)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
     return typeinfo
 
-@codegen.convertCtorExprToLLVM(type.Struct)
+@codegen.llvmCtorExpr(type.Struct)
 def _(op, refine_to):
     assert False
 
-@codegen.convertTypeToLLVM(type.Struct)
+@codegen.llvmType(type.Struct)
 def _(type, refine_to):
     return llvm.core.Type.pointer(_llvmStructType(type))
        
-@codegen.convertTypeToC(type.Struct)
-def _(type, refine_to):
-    """
-    A ``struct` is passed as a pointer to an eqivalent C struct; the fields'
-    types are converted recursively per the same rules. 
-    """
-    structt = [llvm.core.Type.int(32)] + [codegen.llvmTypeConvertToC(id.type()) for (id, default) in type.Fields()]
-    return llvm.core.Type.pointer(llvm.core.Type.struct(structt))
-
 @codegen.when(instructions.struct.New)
 def _(self, i):
     # Allocate memory for struct. 

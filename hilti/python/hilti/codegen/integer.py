@@ -8,32 +8,9 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-@codegen.makeTypeInfo(type.Integer)
-def _(type):
-    typeinfo = codegen.TypeInfo(type)
-    typeinfo.to_string = "__Hlt::int_to_string";
-    typeinfo.to_int64 = "__Hlt::int_to_int64";
-    return typeinfo
-
-@codegen.defaultInitValue(type.Integer)
-def _(type):
-    return codegen.llvmConstInt(0, type.width())
-
-@codegen.convertCtorExprToLLVM(type.Integer)
-def _(op, refine_to):
-    width = op.type().width()
-    if not width and refine_to and refine_to.width():
-        width = refine_to.width()
-        
-    return codegen.llvmConstInt(op.value(), width)
-    
-@codegen.convertTypeToLLVM(type.Integer)
-def _(type, refine_to):
-    return llvm.core.Type.int(type.width())
-
-@codegen.convertTypeToC(type.Integer)
-def _(type, refine_to):
-    """An ``int<n>`` is mapped to C integers depending on its width *n*: 
+_doc_c_conversion = """
+An ``int<n>`` is mapped to C integers depending on its width *n*, per the
+following table: 
     
     ======  =======
     Width   C type
@@ -43,8 +20,38 @@ def _(type, refine_to):
     17..32  int32_t
     33..64  int64_t
     ======  =======
-    """
-    return codegen.llvmTypeConvert(type, refine_to)
+"""
+
+@codegen.typeInfo(type.Integer)
+def _(type):
+    typeinfo = codegen.TypeInfo(type)
+    typeinfo.to_string = "__Hlt::int_to_string";
+    typeinfo.to_int64 = "__Hlt::int_to_int64";
+    
+    for (w, p) in [(8, "int8_t"), (16, "int16_t"), (32, "int32_t"), (64, "int64_t")]:
+        if type.width() <= w:
+            typeinfo.c_prototype = p
+            break
+    else:
+        assert False
+    
+    return typeinfo
+
+@codegen.llvmDefaultValue(type.Integer)
+def _(type):
+    return codegen.llvmConstInt(0, type.width())
+
+@codegen.llvmCtorExpr(type.Integer)
+def _(op, refine_to):
+    width = op.type().width()
+    if not width and refine_to and refine_to.width():
+        width = refine_to.width()
+        
+    return codegen.llvmConstInt(op.value(), width)
+    
+@codegen.llvmType(type.Integer)
+def _(type, refine_to):
+    return llvm.core.Type.int(type.width())
 
 @codegen.when(instructions.integer.Add)
 def _(self, i):

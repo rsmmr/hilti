@@ -1,9 +1,14 @@
 # $Id$
-"""Strings are sequences of characters and are intended to be primarily used
-for text that at some point might be presented to a human in one way or the
-other. They are inmutable, copied by value on assignment, and internally
-stored in UTF-8 encoding. Don't use it for larger amounts of binary data,
-performance won't be good.
+"""
+Strings
+~~~~~~~
+"""
+
+_doc_type_description = """Strings are sequences of characters and are
+intended to be primarily used for text that at some point might be presented
+to a human in one way or the other. They are inmutable, copied by value on
+assignment, and internally stored in UTF-8 encoding. Don't use it for larger
+amounts of binary data, performance won't be good.
 
 Strings constants are written in the usual form ``"Foo"``. They are assumed to
 be in 7-bit ASCII encoding; usage of 8-bit characters is undefined at the

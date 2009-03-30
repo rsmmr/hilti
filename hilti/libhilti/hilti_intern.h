@@ -16,7 +16,6 @@
 
 #include "hilti.h"
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Predefined exceptions.
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,7 +41,6 @@ extern __hlt_exception __hlt_exception_unspecified;
 
     // %doc-std-exceptions-end
 
-// Internal function to report an uncaugt exception.
 extern void __hlt_exception_print_uncaught(__hlt_exception exception);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,6 +72,9 @@ struct __hlt_type_info {
 
     // Number of type parameters.
     int16_t num_params;
+
+    // Type-specific information; null if not used.
+    void* aux;
     
     // List of type operations defined in libhilti functions. Pointers may be
     // zero to indicate that a type does not support an operation. 
@@ -84,10 +85,10 @@ struct __hlt_type_info {
     // type. 'options' is currently unused and will be always zero for now.
     // In the future, we might use 'options' to pass in hints about the
     // prefered format. 'expt' can be set to raise an exception.
-    __hlt_string* (*to_string)(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* expt);
-    int64_t (*to_int64)(const __hlt_type_info* type, void* obj, __hlt_exception* expt);
-    double (*to_double)(const __hlt_type_info* type, void* obj, __hlt_exception* expt);
-    
+    __hlt_string* (*to_string)(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* expt);
+    int64_t (*to_int64)(const __hlt_type_info* type, const void* obj, __hlt_exception* expt);
+    double (*to_double)(const __hlt_type_info* type, const void* obj, __hlt_exception* expt);
+
     // Type-parameters start here. The format is type-specific.
     char type_params[];
 };
@@ -134,22 +135,22 @@ extern void* __hlt_gc_realloc_non_atomic(void* ptr, size_t n);
 // Support functions for HILTI's integer data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const __hlt_string* __hlt_int_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
-extern int64_t __hlt_int_to_int64(const __hlt_type_info* type, void* obj, __hlt_exception* expt);
+extern const __hlt_string* __hlt_int_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
+extern int64_t __hlt_int_to_int64(const __hlt_type_info* type, const void* obj, __hlt_exception* expt);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's double data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const __hlt_string* __hlt_double_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
-extern double __hlt_double_to_double(const __hlt_type_info* type, void* obj, __hlt_exception* expt);
+extern const __hlt_string* __hlt_double_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
+extern double __hlt_double_to_double(const __hlt_type_info* type, const void* obj, __hlt_exception* expt);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's boolean data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const __hlt_string* __hlt_bool_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
-extern int64_t __hlt_bool_to_int64(const __hlt_type_info* type, void* obj, __hlt_exception* expt);
+extern const __hlt_string* __hlt_bool_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
+extern int64_t __hlt_bool_to_int64(const __hlt_type_info* type, const void* obj, __hlt_exception* expt);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's string data type.
@@ -164,7 +165,7 @@ struct __hlt_string {
 } __attribute__((__packed__));
     // %doc-hlt_string-end
 
-extern const __hlt_string* __hlt_string_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
+extern const __hlt_string* __hlt_string_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
 extern __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* excpt);
 extern const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt);
 extern const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* excpt);
@@ -179,7 +180,7 @@ extern const __hlt_string* __hlt_string_from_data(const int8_t* data, __hlt_stri
 // Support functions for HILTI's tuple data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-extern const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, void* (*obj[]), int32_t options, __hlt_exception* excpt);
+extern const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, const char*, int32_t options, __hlt_exception* excpt);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's channel data type.

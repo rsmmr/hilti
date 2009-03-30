@@ -18,6 +18,7 @@ types = type.getHiltiTypeNames()
 keywords = {
 	"import": "IMPORT",
 	"declare": "DECLARE",
+	"export": "EXPORT",
 	"local": "LOCAL", 
     "global" : "GLOBAL", 
     "module": "MODULE",
@@ -33,6 +34,7 @@ tokens = (
    'LOCAL',
    'GLOBAL',
    'DECLARE',
+   'EXPORT', 
    'IDENT', 
    'IMPORT', 
    'INSTRUCTION',

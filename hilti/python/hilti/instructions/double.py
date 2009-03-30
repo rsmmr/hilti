@@ -1,7 +1,10 @@
 # $Id$
-#
-# Instruction for the double data type.
 """
+Doubles
+~~~~~~~
+"""
+
+_doc_type_description = """
 The +double+ data type represents a 64-bit floating-point numbers.
 If not explictly initialized, doubles are set to zero initially.
 """

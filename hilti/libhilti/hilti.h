@@ -22,11 +22,8 @@ typedef const char* __hlt_exception;
 // Initialize the HILTI run-time library. 
 extern void hilti_init();
 
-// Entry point into HILTI processing. 
-extern void hilti_run();
-
 // Library functions.
 extern void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_exception* excpt);
-extern const __hlt_string* hilti_fmt(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), __hlt_exception* excpt);
+extern const __hlt_string* hilti_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const char* tuple, __hlt_exception* excpt);
 
 #endif    

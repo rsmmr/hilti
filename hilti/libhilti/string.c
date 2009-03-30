@@ -13,7 +13,7 @@
 
 static const __hlt_string EmptyString = { 0, "" };
 
-const __hlt_string* __hlt_string_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt)
+const __hlt_string* __hlt_string_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
 {
     __hlt_string* s = *((__hlt_string**)obj);
     return s ? s : &EmptyString;

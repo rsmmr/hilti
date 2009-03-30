@@ -9,11 +9,17 @@ Overall Program Structure [Missing]
 Modules [Missing]
 ~~~~~~~~~~~~~~~~~
 
-Data Types [Missing]
-~~~~~~~~~~~~~~~~~~~~
+.. _types:
+
+Types Reference
+~~~~~~~~~~~~~~~
+
+.. include:: ../.auto/types.rst
 
 Functions [Missing]
 ~~~~~~~~~~~~~~~~~~~
+
+.. _instructions:
 
 Instruction Reference
 ---------------------
@@ -24,46 +30,4 @@ textual mnemonics (as one uses when writing a HILTI program in a
 text editor), along with their Python class names as provided by the
 :ref:`HILTI Python module <python-api>`. 
 
-Control Flow
-~~~~~~~~~~~~
-
-.. automodule:: hilti.instructions.flow
-   :members:
-   :undoc-members:
-
-Type Integer
-~~~~~~~~~~~~
-
-.. automodule:: hilti.instructions.integer
-   :members:
-   :undoc-members:
-
-Type Double
-~~~~~~~~~~~~
-
-.. automodule:: hilti.instructions.double
-   :members:
-   :undoc-members:
-
-Type Boolean
-~~~~~~~~~~~~~~~~~~
-
-.. automodule:: hilti.instructions.bool
-   :members:
-   :undoc-members:
-
-Type String
-~~~~~~~~~~~~
-
-.. automodule:: hilti.instructions.string
-   :members:
-   :undoc-members:
-
-Type Tuple
-~~~~~~~~~~
-
-.. automodule:: hilti.instructions.tuple
-   :members:
-   :undoc-members:
-
-
+.. include:: ../.auto/instruction-reference.rst

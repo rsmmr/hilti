@@ -404,8 +404,10 @@ class Reference(ValueType):
         t = args[0]
 
         if t == "*":
-            self._type = None
+            self._type = Integer(8) # We use this as dummy type for the Null reference.
+            args = ["int<8>"]
             wildcard = True
+            
         else:
             if not isinstance(t, HeapType):
                 raise HiltiType.ParameterMismatch(t, "reference type must be a heap type")
@@ -454,7 +456,7 @@ class Struct(HeapType):
 
     _name = "struct"
     _id = 7
-    
+
 class StructDecl(TypeDeclType):
     """Type for struct declarations. 
     

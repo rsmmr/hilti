@@ -19,8 +19,9 @@ __hlt_exception __hlt_exception_wrong_arguments = "WrongArguments";
 __hlt_exception __hlt_exception_undefined_value = "UndefinedValue";
 __hlt_exception __hlt_exception_unspecified = "Unspecified";
 
-void __hlt_exception_print_uncaught(__hlt_exception exception) {
-    // This is quite a hack currently ...
+// Reports an uncaught exception.
+void __hlt_exception_print_uncaught(__hlt_exception exception) 
+{
     const char* name = (const char*)exception; 
 
     write(2, "hilti: uncaught exception, ", 28);

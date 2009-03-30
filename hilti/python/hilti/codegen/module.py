@@ -9,8 +9,6 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-import sys
-
 @codegen.when(module.Module)
 def _(self, m):
     self._module = m
@@ -44,6 +42,9 @@ def _(self, f):
     self._function = f
     self._label_counter = 0
     self.llvmCurrentModule().add_type_name(self.nameFunctionFrame(f), self.llvmTypeFunctionFrame(f))
+    
+    if f.linkage() == function.Linkage.EXPORTED and f.callingConvention() == function.CallingConvention.HILTI:
+        codegen.llvmGenerateCStub(f)
 
 @codegen.post(function.Function)
 def _(self, f):

@@ -8,27 +8,61 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-import sys
+_doc_c_conversion = """
+A ``tuple<type1,type2,...>`` is mapped to a C struct that consists of fields of the
+corresponding type. For example, a ``tuple<int32, string>`` is mapped to a
+``struct { int32_t f1, __hlt_string* f2 }``.
 
-@codegen.makeTypeInfo(type.Tuple)
-def _(type):
-    typeinfo = codegen.TypeInfo(type)
-    typeinfo.to_string = "__Hlt::tuple_to_string";
-    return typeinfo
+A tuple's type-information keeps additional layout information in the ``aux``
+field: ``aux`` points to an array of ``int16_t``, one for each field. Each
+array entry gives the offset of the corresponding field from the start of the
+struct. This is useful for C functions that work with tuples of arbitrary
+types as they otherwise would not have any portable way of addressing the
+individual fields. 
+"""
+
+import sys
 
 def _tupleType(type, refine_to):
     llvm_types = [codegen.llvmTypeConvert(t) for t in type.types()]
     return llvm.core.Type.struct(llvm_types)
 
-@codegen.defaultInitValue(type.Tuple)
+@codegen.typeInfo(type.Tuple)
+def _(type):
+    typeinfo = codegen.TypeInfo(type)
+    typeinfo.to_string = "__Hlt::tuple_to_string";
+    
+    # Calculate the offset array. 
+    zero = codegen.llvmGEPIdx(0)
+    null = llvm.core.Constant.null(llvm.core.Type.pointer(_tupleType(type, None)))
+    
+    offsets = []
+    for i in range(len(type.types())):
+        idx = codegen.llvmGEPIdx(i)
+        # This is a pretty awful hack but I can't find a nicer way to
+        # calculate the offsets as *constants*, and this hack is actually also
+        # used by LLVM internaly to do sizeof() for constants so it can't be
+        # totally disgusting. :-)
+        offset = null.gep([zero, idx]).ptrtoint(llvm.core.Type.int(16))
+        offsets += [offset]
+
+    name = codegen.nameTypeInfo(type) + "_offsets"
+    const = llvm.core.Constant.array(llvm.core.Type.int(16), offsets)
+    glob = codegen.llvmCurrentModule().add_global_variable(const.type, name)
+    glob.global_constant = True    
+    glob.initializer = const
+
+    typeinfo.aux = glob
+    
+    return typeinfo
+
+@codegen.llvmDefaultValue(type.Tuple)
 def _(type):
     t = _tupleType(type, None)
-    struct = codegen.builder().alloca(t)
-
-    consts = [codegen.llvmDefaultValue(t) for t in type.types()]
+    consts = [codegen.llvmConstDefaultValue(t) for t in type.types()]
     return llvm.core.Constant.struct(consts)
 
-@codegen.convertCtorExprToLLVM(type.Tuple)
+@codegen.llvmCtorExpr(type.Tuple)
 def _(op, refine_to):
     t = _tupleType(op.type(), refine_to)
     struct = codegen.builder().alloca(t)
@@ -42,52 +76,9 @@ def _(op, refine_to):
 
     return codegen.builder().load(struct)
     
-@codegen.convertTypeToLLVM(type.Tuple)
+@codegen.llvmType(type.Tuple)
 def _(type, refine_to):
     return _tupleType(type, refine_to)
-
-@codegen.convertTypeToC(type.Tuple)
-def _(type, refine_to):
-    """A ``tuple<type1,type2,...>`` is mapped to C by passing a pointer to an
-    *array of pointers* to the individual elements. 
-    """
-    return llvm.core.Type.pointer(llvm.core.Type.array(codegen.llvmTypeGenericPointer(), 0))
-
-@codegen.convertValueToC(type.Tuple)
-def _(ll, type, refine_to):
-    length = len(type.types())
-    
-    # Need to turn struct value into addr. Hope this can be optimized away
-    # usually. FIXME: I'm sure there's a better way to do this ...
-
-    c_types = []
-    c_vals = []
-    for i in range(length):
-        c_types += [codegen.llvmTypeConvertToC(type.types()[i])]
-
-    structt = llvm.core.Type.struct(c_types)
-    addr = codegen.builder().alloca(structt)
-
-    s = codegen.builder().alloca(ll.type)
-    codegen.builder().store(ll, s)
-    
-    for i in range(length):
-        src = codegen.builder().gep(s, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)])
-        llvm_val = codegen.builder().load(src)
-        c_val = codegen.llvmValueConvertToC(llvm_val, type.types()[i])
-        dst = codegen.builder().gep(addr, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)])
-        codegen.builder().store(c_val, dst)
-
-    ptrs = [codegen.builder().gep(addr, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)]) for i in range(length)]
-    ptrs = [codegen.builder().bitcast(ptr, codegen.llvmTypeGenericPointer()) for ptr in ptrs]
-
-    arrayt = llvm.core.Type.array(codegen.llvmTypeGenericPointer(), length)
-    array = codegen.builder().alloca(arrayt)
-    for i in range(length):
-        dst = codegen.builder().gep(array, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(i)])
-        codegen.builder().store(ptrs[i], dst)
-
-    return codegen.builder().bitcast(array, llvm.core.Type.pointer(llvm.core.Type.array(codegen.llvmTypeGenericPointer(), 0)))
 
 @codegen.when(instructions.tuple.Assign)
 def _(self, i):

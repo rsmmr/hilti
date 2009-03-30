@@ -4,10 +4,7 @@
 """
 The following :class:`~hilti.core.block.Module` canonifications are performed:
 
-* If we are the ``Main`` module, we're inserting a ``Main::__run_1st()``
-  function, taking no parameters and returning nothing. This function will be
-  called from the libhilti run-time to pass control from external to a HILTI
-  program and in turn just calls the user-written ``Main::run()``.
+* If we find a ``Main::run`` function, we implicitly export it.
 
 The following :class:`~hilti.core.block.Block` canonifications are performed:
 
@@ -58,18 +55,6 @@ def _unifyBlock(block):
 def _(self, m):
     self._module = m
     
-    if m.name() == "main":
-        # Add run_1st() function.
-        func_type = type.Function([], type.Void())
-        func_val = function.Function("__run_1st", func_type, m)
-        func_val.setLinkage(function.Linkage.EXPORTED)
-        run_func = m.lookupID("run")
-        if run_func:
-            call = instructions.flow.Call(op1=instruction.IDOperand(run_func), op2=instruction.TupleOperand([]))
-            bl = block.Block(func_val, instructions=[call])
-            func_val.addBlock(bl)
-            m.addID(id.ID("run_1st", func_type, id.Role.GLOBAL), func_val)
-    
 @canonifier.post(module.Module)
 def _(self, m):
     self._module = None
@@ -84,6 +69,9 @@ def _(self, f):
     self._function = f
     self._label_counter = 0
     self._transformed = []
+    
+    if f.name() == "main::run":
+        f.setLinkage(function.Linkage.EXPORTED)
     
     # Chain blocks together where not done yet.
     prev = None

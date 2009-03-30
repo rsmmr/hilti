@@ -8,29 +8,29 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-@codegen.makeTypeInfo(type.Double)
+_doc_c_conversion = """
+A ``double`` is mapped transparently to a C double.
+"""
+
+@codegen.typeInfo(type.Double)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
+    typeinfo.c_prototype = "double"
     typeinfo.to_string = "__Hlt::double_to_string";
     typeinfo.to_double = "__Hlt::double_to_double";
     return typeinfo
 
-@codegen.defaultInitValue(type.Double)
-def _(type):
-    return codegen.llvmConstDouble(0)
-
-@codegen.convertCtorExprToLLVM(type.Double)
-def _(op, refine_to):
-    return codegen.llvmConstDouble(op.value())
-
-@codegen.convertTypeToLLVM(type.Double)
+@codegen.llvmType(type.Double)
 def _(type, refine_to):
     return llvm.core.Type.double()
 
-@codegen.convertTypeToC(type.Double)
-def _(type, refine_to):
-    """A ``double`` is mapped transparently to a C double."""
-    return codegen.llvmTypeConvert(type, refine_to)
+@codegen.llvmDefaultValue(type.Double)
+def _(type):
+    return codegen.llvmConstDouble(0)
+
+@codegen.llvmCtorExpr(type.Double)
+def _(op, refine_to):
+    return codegen.llvmConstDouble(op.value())
 
 @codegen.when(instructions.double.Add)
 def _(self, i):

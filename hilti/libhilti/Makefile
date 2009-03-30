@@ -2,27 +2,31 @@
 #
 # Build libhilti
 
-BITCODE  = entry.bc 
+BITCODE  = 
 
 CHEADERS = hilti.h hilti_intern.h
 COBJS    = print.o exceptions.o utf8proc.o init.o memory.o string.o int.o double.o bool.o tuple.o fmt.o channel.o
 CMAINOBJ = main.o
 
+GC_LIB     = gc/gc.a 
+GC_INCLUDE = gc/include
+
 LIB_STATIC      = libhilti.a
 LIB_STATIC_MAIN = libhiltimain.a
 
-TMP_BC_ASM = .libhilti.bc.S
-TMP_BC_OBJ = .libhilti.bc.o
+# TMP_BC_ASM = .libhilti.bc.S
+# TMP_BC_OBJ = .libhilti.bc.o
 
-CFLAGS=-g -Wall 
+CFLAGS=-g -Wall -I $(GC_INCLUDE)
 LDFLAGS=
 
 LLVMAS_FLAGS=
 LLC_FLAGS=
 
-all: $(LIB_STATIC) $(LIB_STATIC_MAIN)
+all: gc $(LIB_STATIC) $(LIB_STATIC_MAIN)
 
 clean:
+	make -C gc clean
 	rm -f $(LIB_STATIC) $(LIB_STATIC_MAIN) $(TMP_BC_OBJ) $(TMP_BC_ASM) $(BITCODE) $(CMAINOBJ) $(COBJS)
 
 %.o : %.c $(CHEADERS)
@@ -30,15 +34,19 @@ clean:
     
 %.bc : %.ll 
 	llvm-as -f $(LLVMAS_FLAGS) $< -o $@
+
+.PHONY: gc
+gc : 
+	make -C gc 
     
 $(TMP_BC_OBJ) : $(BITCODE)
 	llvm-link $(BITCODE) | llc $(LLCFLAGS) >$(TMP_BC_ASM)
 	gcc -c $(TMP_BC_ASM) -o $(TMP_BC_OBJ) 
     
 $(LIB_STATIC): $(TMP_BC_OBJ) $(COBJS)
-	ar rcs $(LIB_STATIC) $(TMP_BC_OBJ) $(COBJS)
+	ar rcs $(LIB_STATIC) $(TMP_BC_OBJ) $(COBJS) $(GC_LIB)
     
 $(LIB_STATIC_MAIN): $(TMP_BC_OBJ) $(COBJS) $(CMAINOBJ)
-	ar rcs $(LIB_STATIC_MAIN) $(TMP_BC_OBJ) $(COBJS) $(CMAINOBJ)
+	ar rcs $(LIB_STATIC_MAIN) $(TMP_BC_OBJ) $(COBJS) $(CMAINOBJ) $(GC_LIB)
     
     

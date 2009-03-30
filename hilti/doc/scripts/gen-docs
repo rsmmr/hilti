@@ -5,20 +5,95 @@
 
 import os
 import sys
+import types as builtin_types
 
 from hilti import *
+
+def openFile(name):
+    output = open(os.path.join(dst, name), "w")
+    print >>output, ".. Automatically generated. Do not edit."
+    print >>output, ""
+    return output
+
+def allModules(mod):
+    
+    all = []
+    
+    for name in sorted(mod.__dict__.keys()):
+        mod = codegen.__dict__[name]
+        
+        if type(mod) == builtin_types.ModuleType:
+            all += [mod]
+            
+    return all
+
+def itemize(doc):
+    nr = 1
+    output = ""
+    doc = doc.strip()
+    
+    for line in doc.split("\n"):
+        if nr == 1:
+            output += "* " + line + "\n"
+        elif nr == 2:
+            indent = 0
+            while indent < len(line) and line[indent] in " ":
+                indent += 1;
+            line = line.strip()
+            output += "  " + line + "\n"
+        else:
+            line = line[indent:] 
+            output += "  " + line + "\n"
+            
+        nr += 1
+        
+    return output + "\n"
 
 if len(sys.argv) != 2:
     print >>sys.stderr, "usage: gen-docs <dest-dir>"
     sys.exit(1)
     
 dst = sys.argv[1]    
+
+### Generate instruction reference and type documentation.
+reference = ""
+types = ""
+
+for name in sorted(instructions.__all__):
     
-# Generate docs for the mapping of LLVM types to C types.
-cmapping = codegen.codegen.codegen.documentCMapping()
-output = open(os.path.join(dst, "cmapping.rst"), "w")
-print >>output, ".. Automatically generated. Do not edit."
-print >>output, ""
+    mod = instructions.__dict__[name]
+    
+    try:
+        doc = mod._doc_type_description + "\n\n"
+        types += mod.__doc__ + "\n\n"
+        types += doc
+    except AttributeError:
+        pass
+    
+    reference += """
+.. automodule:: hilti.instructions.%s
+   :members:
+   :undoc-members:
+   
+""" % name
+   
+output = openFile("instruction-reference.rst")
+print >>output, reference
+
+output = openFile("types.rst")
+print >>output, types
+
+### Generate docs for the mapping of LLVM types to C types.
+
+cmapping = ""
+
+for mod in allModules(codegen):
+    
+    try:
+        cmapping += itemize(mod._doc_c_conversion)
+    except AttributeError:
+        pass
+
+output = openFile("cmapping.rst")
 print >>output, cmapping
-output.close()
 

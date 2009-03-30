@@ -67,7 +67,7 @@ class Function(ast.Node):
     def __init__(self, name, ty, module, cc=CallingConvention.HILTI, location=None):
         assert name
         assert name.find("::") < 0 # must be non-qualified
-        assert module or cc == CallingConvention.HILTI
+        assert module or cc == CallingConvention.C
         assert isinstance(ty, type.Function)
         
         super(Function, self).__init__(location)
@@ -144,7 +144,7 @@ class Function(ast.Node):
             # Technically, I guess we should have a way to set a module when
             # switching to CC HILTI. Don't seem to happen at the moment though. 
             assert self._module
-    
+
     def addID(self, id):
         """Inserts an ID into the function's scope. 
         

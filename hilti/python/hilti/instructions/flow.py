@@ -1,6 +1,8 @@
 # $Id$
-#
-# Control flow operations. 
+"""
+Flow Control
+~~~~~~~~~~~~
+"""
 
 from hilti.core.type import *
 from hilti.core.instruction import *

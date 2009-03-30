@@ -1,8 +1,11 @@
 # $Id$
-#
-# Instructions for the struct data type.
-#
-""" The ``struct`` data type groups a set of heterogenous, named fields. When
+"""
+Structures
+~~~~~~~~~~
+"""
+
+_doc_type_description = """
+The ``struct`` data type groups a set of heterogenous, named fields. When
 initially created, all fields are unset. A field may have a default value, which
 is returned for reads when it is unset. 
 """
@@ -23,7 +26,7 @@ class Get(Instruction):
     field name must be a constant, and the type of the target must match the
     field's type. If a field is requested that has not been set, its default
     value is returned if it has any defined. If it has not, an
-    ~~UndefinedValue exception is raised. 
+    ``UndefinedValue`` exception is raised. 
     """
 
 @instruction("struct.set", op1=Reference, op2=String, op3=Any)

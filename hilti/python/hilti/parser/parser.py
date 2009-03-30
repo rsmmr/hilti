@@ -120,21 +120,23 @@ def p_def_declare(p):
     p[2].setLinkage(function.Linkage.EXPORTED)
 
 def p_def_function_head(p):
-    """function_head : opt_cc type_with_void IDENT '(' param_list ')'"""
-    ftype = type.Function(p[5], p[2])
+    """function_head : opt_linkage opt_cc type_with_void IDENT '(' param_list ')'"""
+    ftype = type.Function(p[6], p[3])
     
-    if p[1] == function.CallingConvention.HILTI:
-        func = function.Function(p[3], ftype, p.parser.current.module, location=loc(p, 3))
-    elif p[1] in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
+    if p[2] == function.CallingConvention.HILTI:
+        func = function.Function(p[4], ftype, p.parser.current.module, location=loc(p, 4))
+    elif p[2] in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
         # FIXME: We need some way to declare C function which are not part of
         # a module. In function.Function, we already allow module==None in the
         # CC.C case but our syntax does not provide for that currently. 
-        func = function.Function(p[3], ftype, p.parser.current.module, cc=p[1], location=loc(p, 3))
+        func = function.Function(p[4], ftype, p.parser.current.module, cc=p[2], location=loc(p, 4))
     else:
         # Unknown calling convention
         assert False
+
+    func.setLinkage(p[1])
         
-    p.parser.current.module.addID(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=loc(p, 3)), func)
+    p.parser.current.module.addID(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=loc(p, 4)), func)
     p[0] = func
     
     p.parser.current.function = None
@@ -163,7 +165,15 @@ def p_def_opt_cc(p):
     error(p, "unknown calling convention \"%s\"" % p[1])
     raise ply.yacc.SyntaxError
                    
-    
+def p_def_opt_linkage(p):
+    """opt_linkage : EXPORT
+                   | """
+
+    if len(p) == 1:
+        p[0] = function.Linkage.LOCAL
+    else:
+        p[0] = function.Linkage.EXPORTED
+
 def p_def_function(p):
     """def_function : function_head _begin_nolines '{' _instantiate_function  _end_nolines instruction_list _begin_nolines '}' _end_nolines """
     

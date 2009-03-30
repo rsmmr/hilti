@@ -3,6 +3,10 @@
 Extending [Mostly missing]
 ==========================
 
+.. todo: 
+
+This is for the most part a brief list of keywords for now; once
+things have stabilized we should turn it into some real text. 
 
 Adding a new HILTI instruction
 ------------------------------
@@ -21,28 +25,34 @@ components.
 - Create a :mod:`~hilti.checker` module  with the new type's correctness checks.
   Add the module to :file:`python/hilti/checker/__init__.py`.
 
-- Create an :mod:`~hilti.instruction` module with the new type's instructions.
-  The module's doc string should contain a high-level description of the type
-  suitable for inclusion into the user manual. Include a description of the
-  type's syntax for constants there if appropiate. Add the module to
-  :file:`python/hilti/instructions/__init__.py`.
-
+- Create an :mod:`~hilti.instruction` module with the new type's
+  instructions, and add the module to
+  :file:`python/hilti/instructions/__init__.py`. In the module:
+  
+  * Set the module's doc-string to just a section-heading with the
+    type's name. 
+  
+  * Define a module-level variable ``_doc_type_description``
+    containing a string describing the type in a way suitable for
+    the user's manual type reference; include a description of the
+    type's syntax for constants there if appropiate. 
+  
 - Create a :mod:`~hilti.codegen` module with the new type's code generation. Add
   the module to :file:`python/hilti/codegen/__init__.py`. In the module:
-  
-  * Decorate a function with ~~makeTypeInfo to initialize the types ~~TypeInfo.
+
+  * Decorate a function with ~~typeInfo to initialize the type's ~~TypeInfo.
     
-  * Decorate a function with ~~convertCtorValToLLVM if you want to support
-    constants for your type (see below).
+  * Decorate a function with ~~llvmCtorExpr if you want the parser
+    to support constructor expressions (this is most commonly used
+    for constants; see below).
     
-  * Decorate a function with ~~convertTypeToLLVM if it's a ~~ValueType. 
-    
-  * Decorate a function with ~~convertTypeToC if it's a
-    ~~ValueType. Add a docstring to the decorated function which
-    explains how the the type is mapped to C; the docstring will
-    show up in the documentation automatically.
+  * Decorate a function with ~~llvmType.
     
   * Create a visitor for each of the new type's instructions
+
+  * Define a module-level variable ``_doc_c_conversion`` containing
+    a string that describes how the type will be converted to a C
+    value for function call to/from C. 
 
 - Add run-time type information (RTTI) in :file:`libhilti`:
 
@@ -51,22 +61,22 @@ components.
 
     .. code-block:: c
 
-        const __hlt_string* __hlt_my_type_fmt(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* exception)
+        const __hlt_string* __hlt_my_type_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
         {
             // Create a string representation of val.
         }
 
-  * Add an external function declaration of ``__hlt_my_type_fmt`` to :file:`libhilti/hilti_intern.h`.
+  * Optionally, define other type conversions in a similar way.
+
+  * Add an external function declaration of ``__hlt_my_type_to_string`` to :file:`libhilti/hilti_intern.h`.
 
   * Add a corresponding HILTI declaration to :file:`libhilti/hilti_intern.hlt`:
 
     .. code-block:: c
 
-        declare "C-HILTI" string my_type_fmt(<llvm_type> n, int32 options)
+        declare "C-HILTI" string my_type_to_string(<llvm_type> n, int32 options)
 
   * Add your new type to the ``COBJS`` variable in :file:`libhilti/Makefile`.
-
-.. todo:: Update the previous paragraph for the changes in interface.
 
 - Create a suite of tests for the new type in :file:`tests/my_type/`.
 
@@ -84,6 +94,12 @@ the :mod:`~hilti.parser`:
 Adding a ValueType
 ~~~~~~~~~~~~~~~~~~~~
 
+* ~~ValueTypes will be copied by value. Make sure that that works
+  for your type. (In rare cases, a ValueType can internally be
+  allocated on the heap and be represented by a pointer; that's for
+  example the case for strings because they are of variable length.
+  Even in this case, they should however have copy-by-value
+  semantics and be non-mutable.)
 
 Adding a HeapType
 ~~~~~~~~~~~~~~~~~

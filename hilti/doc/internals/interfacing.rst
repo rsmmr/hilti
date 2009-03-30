@@ -22,6 +22,8 @@ code.
     will be able to also call HILTI functions, and then this text
     will likely need some modifications. 
 
+.. _type-conversions:
+
 Type Conversions
 ~~~~~~~~~~~~~~~~
 
