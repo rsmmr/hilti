@@ -396,8 +396,8 @@ class Tuple(ValueType):
 class Reference(ValueType):
     """Type for reference to heap objects.  
 
-    t: list of single ~~HeapType - The type of the object referenced. The type can be "*" to
-    match other references to any type. Note however that the HILTI language
+    args: list of single ~~HeapType - The type of the object referenced. The type can 
+    be "*" to match other references to any type. Note however that the HILTI language
     does not allow to create instances of such wildcard references. 
     """
     def __init__(self, args):
@@ -466,6 +466,38 @@ class StructDecl(TypeDeclType):
         super(StructDecl, self).__init__(structt, "%s" % structt.name())
 
     _name = "struct declaration"
+    
+class Channel(HeapType):
+    """Type for channels. 
+
+    args: list of single ~~ValueType - The type of the channel elements. The type can 
+    be "*" to match other channels of any type.
+    """
+    def __init__(self, args):
+        t = args[0]
+
+        if t == "*":
+            self._type = None
+            wildcard = True
+        else:
+            if not isinstance(t, ValueType):
+                raise HiltiType.ParameterMismatch(t, "channel type must be a value type")
+
+            self._type = t
+            wildcard = False
+            
+        super(Channel, self).__init__(args, Channel._name, wildcard=wildcard)
+
+
+    def channelType(self):
+        """Returns the type of the channel elements.
+        
+        Returns: ~~ValueType - The type of the channel elements.
+        """
+        return self._type
+
+    _name = "channel"
+    _id = 8
     
 class Function(Type):
     """Type for functions. 
@@ -636,6 +668,7 @@ _keywords = {
     "bool": (Bool, 0, None),
     "tuple": (Tuple, -1, None),
     "ref": (Reference, 1, None),
+    "channel": (Channel, 1, None),
     }
 
 _all_hilti_types = {}
@@ -685,7 +718,8 @@ def getHiltiType(name, args = []):
         try:
             return (True, _all_hilti_types[t.name()])
         except KeyError:
-            _all_hilti_types[t.name()] = t
+            if not t.wildcardType():
+                _all_hilti_types[t.name()] = t
             return (True, t)
         
     except HiltiType.ParameterMismatch, e:

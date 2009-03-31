@@ -375,10 +375,13 @@ def p_type_list(p):
     
 def p_type_with_void(p):
     """type_with_void : type
-                      | VOID"""
+                      | VOID
+                      | ANY"""
                       
     if p[1] == "void":
         p[0] = type.Void()
+    elif p[1] == "any":
+        p[0] = type.Any()
     else:
         p[0] = p[1]
 

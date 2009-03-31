@@ -931,6 +931,11 @@ class CodeGen(visitor.Visitor):
         new_arg_types += [llvm.core.Type.pointer(self.llvmTypeGenericPointer())]
         return new_arg_types
     
+    def _llvmMakeRetTypeForCHiltiCall(self, func, rt):
+        # Turn the return type into the format used by CC C_HILTI. If the return
+        # type equals to ``any`` it is simply converted to a void* pointer.
+        return llvm.core.Type.pointer(llvm.core.Type.int(8)) if isinstance(rt, type.Any) else rt
+        
     def _llvmMakeArgsForCHiltiCall(self, func, args, arg_types):
         # Turns the arguments into the format used by CC C_HILTI (see there). 
         new_args = []
@@ -975,7 +980,10 @@ class CodeGen(visitor.Visitor):
             return func
         
         except KeyError:
-            rt = self.llvmTypeConvert(func.type().resultType())
+            rt = self.llvmTypeConvertToC(func.type().resultType())
+            if func.callingConvention() == function.CallingConvention.C_HILTI:
+                rt = self._llvmMakeRetTypeForCHiltiCall(func, rt)
+
             args = [self.llvmTypeConvert(id.type()) for id in func.type().args()]
             
             if func.callingConvention() == function.CallingConvention.C_HILTI:
@@ -1556,10 +1564,3 @@ class CodeGen(visitor.Visitor):
     
     
 codegen = CodeGen()
-
-
-
-
-
-
-

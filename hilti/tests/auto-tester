@@ -44,7 +44,6 @@ function cleanup
     rm -f $TMP2
     rm -f $MAIL
     rm -f $LOCK
-
 }
 
 trap cleanup EXIT
@@ -117,16 +116,3 @@ if [ -s $TMP2 ]; then
 fi
 
 echo $current >$STATE
-   
-   
-   
-   
-   
-   
-
-
-   
-
-
-
-

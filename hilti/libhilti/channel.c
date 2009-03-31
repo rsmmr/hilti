@@ -41,29 +41,25 @@ const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* (
     return __hlt_string_concat(s, &postfix, excpt);
 }
 
-__hlt_channel* __hlt_channel_new(size_t node_size, __hlt_exception* excpt)
+__hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* excpt)
 {
-    if ( ! node_size ) {
-        *excpt = __hlt_exception_value_error;
-        return 0;
-    }
-
     __hlt_channel *ch = __hlt_gc_malloc_atomic(sizeof(__hlt_channel));
     if ( ! ch ) {
         *excpt = __hlt_exception_out_of_memory;
         return 0;
     }
 
-    ch->buffer = malloc(ch->channel_size * ch->node_size);
+    ch->type = type;
+    ch->size = 1<<12 / type->size;    /* FIXME: Make configurable. */
+
+    ch->buffer = malloc(ch->size * type->size);
     if ( ! ch->buffer ) {
         *excpt = __hlt_exception_out_of_memory;
         return 0;
     }
 
-    ch->node_size = node_size;
-    ch->channel_size = 1<<12 / node_size;    /* FIXME: Make configurable. */
     ch->head = 0;
-    ch->tail = ch->channel_size - 1;
+    ch->tail = ch->size - 1;
     ch->node_count = 0;
 
     pthread_mutex_init(&ch->mutex, NULL);
@@ -86,11 +82,11 @@ void __hlt_channel_write(__hlt_channel* ch, void* data, __hlt_exception* excpt)
 { 
     pthread_mutex_lock(&ch->mutex);
 
-    while (ch->node_count == ch->channel_size)
+    while (ch->node_count == ch->size)
         pthread_cond_wait(&ch->full_cv, &ch->mutex);
 
-    ch->tail = (ch->tail + 1) % ch->channel_size;
-    memcpy(ch->buffer + ch->tail * ch->node_size, data, ch->node_size);    
+    ch->tail = (ch->tail + 1) % ch->size;
+    memcpy(ch->buffer + ch->tail * ch->type->size, data, ch->type->size);
     ++ch->node_count;
 
     pthread_mutex_unlock(&ch->mutex);
@@ -105,9 +101,9 @@ void* __hlt_channel_read(__hlt_channel* ch, __hlt_exception* excpt)
     while ( ch->node_count == 0 )
         pthread_cond_wait(&ch->empty_cv, &ch->mutex);
 
-    void *node = __hlt_gc_malloc_atomic(ch->node_size);
-    memcpy(node, ch->buffer + ch->head * ch->node_size, ch->node_size);
-    ch->head = (ch->head + 1) % ch->channel_size;
+    void *node = __hlt_gc_malloc_atomic(ch->type->size);
+    memcpy(node, ch->buffer + ch->head * ch->type->size, ch->type->size);
+    ch->head = (ch->head + 1) % ch->size;
     --ch->node_count;
     
     pthread_mutex_unlock(&ch->mutex);
