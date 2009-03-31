@@ -75,3 +75,9 @@ import sys
 def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::string_concat", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
+    
+
+    
+
+
+

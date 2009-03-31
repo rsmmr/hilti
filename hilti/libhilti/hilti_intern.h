@@ -67,9 +67,6 @@ struct __hlt_type_info {
     // The type's __HLT_TYPE_* id.
     int16_t type; 
     
-    // The type's size in bytes
-    size_t size;
-
     // A readable version of the type's name. 
     const char* tag;
 
@@ -189,25 +186,24 @@ extern const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, co
 // Support functions for HILTI's channel data type.
 ///////////////////////////////////////////////////////////////////////////////
 
-    // %doc-hlt_channel-start
 struct __hlt_channel {
-    const __hlt_type_info* type;    /* Type information of the channel's data type. */
-    size_t size;                    /* The max. number of channel nodes. */
+    size_t node_size;           /* The (fixed) size of channel nodes. */
+    size_t channel_size;        /* The max. number of nodes. */
 
-    void *buffer;                   /* Beginning of the channel buffer. */
-    int head;                       /* The first channel node. */
-    int tail;                       /* The last channel node. */
-    volatile size_t node_count;     /* Number of nodes in the channel. */
+    void *buffer;               /* Beginning of the channel buffer. */
+    int head;                   /* The first channel node. */
+    int tail;                   /* The last channel node. */
 
-    pthread_mutex_t mutex;          /* Synchronizes access to the channel. */
-    pthread_cond_t empty_cv;        /* Condition variable for an empty channel. */
-    pthread_cond_t full_cv;         /* Condition variable for a full channel. */
+    volatile size_t node_count; /* Number of nodes in the channel. */
+
+    pthread_mutex_t mutex;      /* Synchronizes access to the channel. */
+    pthread_cond_t empty_cv;    /* Condition variable for an empty channel. */
+    pthread_cond_t full_cv;     /* Condition variable for a full channel. */
 };
-    // %doc-hlt_channel-end
 
 extern const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* (*obj[]), int32_t options, __hlt_exception* excpt);
 
-extern __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* excpt);
+extern __hlt_channel* __hlt_channel_new(size_t node_size, __hlt_exception* excpt);
 
 extern void __hlt_channel_destroy(__hlt_channel* ch, __hlt_exception* excpt);
 

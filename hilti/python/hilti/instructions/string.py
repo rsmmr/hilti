@@ -56,3 +56,4 @@ class Find(Instruction):
     """Compares *op1* with *op2* and returns True if their characters match.
     Returns False otherwise."""
     pass
+

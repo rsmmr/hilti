@@ -30,3 +30,7 @@ def _(self, i):
     
     if ftype != i.op3().type():
         self.error(i, "type of operand 3 does not match type of struct field %s" % i.op2().value())
+
+    
+
+

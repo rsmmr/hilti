@@ -73,7 +73,7 @@ const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_stri
     __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len1 + len2);
     
     if ( ! dst ) {
-        *excpt = __hlt_exception_out_of_memory;
+        *excpt = __hlt_exception_value_error;
         return 0;
     }
     
