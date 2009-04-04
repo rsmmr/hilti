@@ -3,7 +3,7 @@
 # Run HILTI tests. 
 #
 
-DIRS = misc core integer double string tuple libhilti
+DIRS = misc core integer double string tuple channel libhilti
 
 all: test
 

@@ -79,6 +79,7 @@ class CodeGen(visitor.Visitor):
             # The basic type information.
         self._llvm.type_type_information = llvm.core.Type.struct(
                 [llvm.core.Type.int(16),            # type
+                 llvm.core.Type.int(16),            # sizeof(type)
                  llvm.core.Type.pointer(llvm.core.Type.array(llvm.core.Type.int(8), 0)), # name
                  llvm.core.Type.int(16)]            # num_params
                 + [self._llvm.type_generic_pointer] * 3) # functions (cheating a bit with the signature).
@@ -349,6 +350,7 @@ class CodeGen(visitor.Visitor):
         # also need to adapt the type in self._llvm.type_type_information
         st = llvm.core.Type.struct(
             [llvm.core.Type.int(16),            # type
+             llvm.core.Type.int(16),            # sizeof(type)
              llvm.core.Type.pointer(name_type), # name
              llvm.core.Type.int(16),            # num_params
              self.llvmTypeGenericPointer()]     # aux
@@ -363,6 +365,9 @@ class CodeGen(visitor.Visitor):
         # Create the type info struct constant.
         sv = llvm.core.Constant.struct(
             [llvm.core.Constant.int(llvm.core.Type.int(16), ti.type._id),  # type
+             # Although Constant.sizeof returns an i64, we cast it to an i16
+             # because some targets cannot handle 64-bit constant exprs.
+             llvm.core.Constant.sizeof(self.llvmTypeConvert(ti.type)).trunc(llvm.core.Type.int(16)),     # sizeof(type)
              name_glob,                                                    # name
              llvm.core.Constant.int(llvm.core.Type.int(16), len(ti.args))] # num_params
             + [aux] + libhilti_func_vals + arg_vals)
@@ -931,6 +936,14 @@ class CodeGen(visitor.Visitor):
         new_arg_types += [llvm.core.Type.pointer(self.llvmTypeGenericPointer())]
         return new_arg_types
     
+    def _llvmMakeRetTypeForCHiltiCall(self, func, rt):
+        # Turn the return type into the format used by CC C_HILTI. If the return
+        # type equals to ``any`` it is simply converted to a void* pointer.
+        if isinstance(func.type().resultType(), type.Any):
+            return llvm.core.Type.pointer(llvm.core.Type.int(8)) 
+        
+        return rt
+        
     def _llvmMakeArgsForCHiltiCall(self, func, args, arg_types):
         # Turns the arguments into the format used by CC C_HILTI (see there). 
         new_args = []
@@ -945,6 +958,8 @@ class CodeGen(visitor.Visitor):
                 self.builder().store(arg, ptr)
                 ptr = self.builder().bitcast(ptr, self.llvmTypeGenericPointer())
                 new_args += [ptr]
+            elif isinstance(p, type.MetaType):
+                new_args += [self.builder().bitcast(self.llvmTypeInfoPtr(argty), llvm.core.Type.pointer(self.llvmTypeTypeInfo()))]
             else:
                 new_args += [arg]
             
@@ -976,6 +991,9 @@ class CodeGen(visitor.Visitor):
         
         except KeyError:
             rt = self.llvmTypeConvert(func.type().resultType())
+            if func.callingConvention() == function.CallingConvention.C_HILTI:
+                rt = self._llvmMakeRetTypeForCHiltiCall(func, rt)
+
             args = [self.llvmTypeConvert(id.type()) for id in func.type().args()]
             
             if func.callingConvention() == function.CallingConvention.C_HILTI:
@@ -1460,9 +1478,12 @@ class CodeGen(visitor.Visitor):
                 addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.name())
                 return self.builder().load(addr, "op")
 
+        if isinstance(op, instruction.TypeOperand):
+            return self.llvmTypeInfoPtr(op.value())
+
             util.internal_error("llvmOp: unsupported ID operand type %s" % type)
 
-        util.internal_error("llvmOp: unsupported operand type %s" % op)
+        util.internal_error("llvmOp: unsupported operand type %s" % repr(op))
 
     def llvmTypeConvert(self, type, refine_to = None):
         """Converts a ValueType into the LLVM type used for corresponding
@@ -1556,10 +1577,3 @@ class CodeGen(visitor.Visitor):
     
     
 codegen = CodeGen()
-
-
-
-
-
-
-

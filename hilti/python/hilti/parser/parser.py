@@ -120,7 +120,7 @@ def p_def_declare(p):
     p[2].setLinkage(function.Linkage.EXPORTED)
 
 def p_def_function_head(p):
-    """function_head : opt_linkage opt_cc type_with_void IDENT '(' param_list ')'"""
+    """function_head : opt_linkage opt_cc result_type IDENT '(' param_list ')'"""
     ftype = type.Function(p[6], p[3])
     
     if p[2] == function.CallingConvention.HILTI:
@@ -310,11 +310,12 @@ def p_param_list(p):
         p[0] = [(p[1], p[2])] + p[4]
     
 def p_param_id(p):
-    """param_id : type_with_any IDENT"""
+    """param_id : param_type IDENT"""
     p[0] = id.ID(p[2], p[1], id.Role.PARAM, location=loc(p, 1))
 
 def p_local_id(p):
-    """local_id : type IDENT"""
+    """local_id : type IDENT
+                | ANY IDENT"""
     p[0] = id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 1))
 
 def p_struct_id(p): 
@@ -327,7 +328,8 @@ def p_struct_id(p):
         p[0] = (id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 1)), p[5])
     
 def p_global_id(p):
-    """global_id : type IDENT"""
+    """global_id : type IDENT
+                 | ANY IDENT"""
     p[0] = id.ID(p[2], p[1], id.Role.GLOBAL, location=loc(p, 1))
 
 def p_def_opt_default_val(p):
@@ -373,21 +375,27 @@ def p_type_list(p):
     else:
         p[0] = [p[1]] + p[3]
     
-def p_type_with_void(p):
-    """type_with_void : type
-                      | VOID"""
+def p_result_type(p):
+    """result_type : type
+                   | VOID
+                   | ANY"""
                       
     if p[1] == "void":
         p[0] = type.Void()
+    elif p[1] == "any":
+        p[0] = type.Any()
     else:
         p[0] = p[1]
 
-def p_type_with_any(p):
-    """type_with_any : type
-                      | ANY"""
+def p_param_type(p):
+    """param_type : type
+                  | METATYPE
+                  | ANY"""
                       
     if p[1] == "any":
         p[0] = type.Any()
+    elif p[1] == "type":
+        p[0] = type.MetaType()
     else:
         p[0] = p[1]
         
