@@ -45,3 +45,12 @@ global tuple<*> t
 int<32> run() {
 }
 
+# @TEST-START-NEXT
+
+module Main
+
+global any a
+
+int<32> run() {
+}
+
