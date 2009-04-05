@@ -208,7 +208,7 @@ struct __hlt_channel {
     __hlt_channel_chunk* rc;        /* Pointer to the reader chunk. */
     __hlt_channel_chunk* wc;        /* Pointer to the writer chunk. */
     void* head;                     /* Pointer to the next item to read. */
-    void* tail;                     /* Pointer to the first empty slot to write into. */
+    void* tail;                     /* Pointer to the first empty slot for writing. */
 
     pthread_mutex_t mutex;          /* Synchronizes access to the channel. */
     pthread_cond_t empty_cv;        /* Condition variable for an empty channel. */
@@ -217,17 +217,13 @@ struct __hlt_channel {
     // %doc-hlt_channel-end
 
 // Returns a readable representation of a channel.
-extern const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* (*obj[]), int32_t options, __hlt_exception* excpt);
+extern const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
 
 // Creates a new channel.
 extern __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, int64_t capacity, __hlt_exception* excpt);
 
 // Deletes a channel.
 extern void __hlt_channel_destroy(__hlt_channel* ch, __hlt_exception* excpt);
-
-//
-// Support functions for un-bounded channels.
-// 
 
 // Write an item into a channel. If the channel is full, the function blocks
 // until an item is read from the channel.
