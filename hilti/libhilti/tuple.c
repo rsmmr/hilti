@@ -25,9 +25,9 @@ const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, const cha
     if ( *excpt )
         return 0;
     
+    __hlt_type_info** types = (__hlt_type_info**) &type->type_params;
     for ( i = 0; i < type->num_params; i++ ) {
         const __hlt_string *t;
-        __hlt_type_info** types = (__hlt_type_info**) &type->type_params;
 
         if ( types[i]->to_string ) {
             t = (types[i]->to_string)(types[i], obj + offsets[i] , 0, excpt);
@@ -52,4 +52,3 @@ const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, const cha
     
     return __hlt_string_concat(s, &postfix, excpt);
 }
-

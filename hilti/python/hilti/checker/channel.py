@@ -8,10 +8,10 @@ from checker import checker
 
 @checker.when(channel.Write)
 def _(self, i):
-    if i.op2().type() != i.op1().type().refType().channelType():
+    if i.op2().type() != i.op1().type().refType().itemType():
         self.error(i, "type mismatch in second operand")
 
 @checker.when(channel.Read)
 def _(self, i):
-    if i.target().type() != i.op1().type().refType().channelType():
+    if i.target().type() != i.op1().type().refType().itemType():
         self.error(i, "type mismatch in target operand")

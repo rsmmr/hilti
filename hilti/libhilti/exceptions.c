@@ -17,6 +17,8 @@ __hlt_exception __hlt_exception_value_error = "ValueError";
 __hlt_exception __hlt_exception_out_of_memory = "OutOfMemory";
 __hlt_exception __hlt_exception_wrong_arguments = "WrongArguments";
 __hlt_exception __hlt_exception_undefined_value = "UndefinedValue";
+__hlt_exception __hlt_channel_full = "ChannelFull";
+__hlt_exception __hlt_channel_empty = "ChannelEmpty";
 __hlt_exception __hlt_exception_unspecified = "Unspecified";
 
 // Reports an uncaught exception.
@@ -28,4 +30,3 @@ void __hlt_exception_print_uncaught(__hlt_exception exception)
     write(2, name, strlen(name));
     write(2, "\n", 1);
 }
-

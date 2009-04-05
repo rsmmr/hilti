@@ -1,0 +1,40 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<channel<int64,0>> ch
+    ch = channel.new int64 0
+
+    local int64 x
+    x = channel.read ch
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<channel<int64,2>> ch
+    ch = channel.new int64 2
+
+    local int64 a
+    local int64 b
+    local int64 c
+
+    a = int.mul 7 6
+    b = int.add 9 6
+    c = int.sub 50 8
+
+    channel.write ch a
+    channel.write ch b
+    channel.write ch c
+}

@@ -38,16 +38,16 @@ def _(type, refine_to):
        
 @codegen.when(instructions.channel.New)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::channel_new", [i.op1()], [i.op1().type()])
+    result = self.llvmGenerateCCallByName("__Hlt::channel_new", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.channel.Write)
 def _(self, i):
-    self.llvmGenerateCCallByName("__Hlt::channel_write", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    self.llvmGenerateCCallByName("__Hlt::channel_try_write", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
 
 @codegen.when(instructions.channel.Read)
 def _(self, i):
-    voidp = self.llvmGenerateCCallByName("__Hlt::channel_read", [i.op1()], [i.op1().type()])
-    ch_type = i.op1().type().refType().channelType()
-    nodep = self.builder().bitcast(voidp, llvm.core.Type.pointer(self.llvmTypeConvert(ch_type)))
+    voidp = self.llvmGenerateCCallByName("__Hlt::channel_try_read", [i.op1()], [i.op1().type()])
+    item_type = i.op1().type().refType().itemType()
+    nodep = self.builder().bitcast(voidp, llvm.core.Type.pointer(self.llvmTypeConvert(item_type)))
     self.llvmStoreInTarget(i.target(), self.builder().load(nodep))

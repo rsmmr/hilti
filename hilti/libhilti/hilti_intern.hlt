@@ -27,7 +27,9 @@ declare "C-HILTI" string string_concat(string s1, string s2)
 
 ###
 
-declare "C-HILTI" ref<channel<*>> channel_new(type t)
-declare "C-HILTI" void channel_write(ref<channel<*>> ch, any data)
-declare "C-HILTI" any channel_read(ref<channel<*>> ch)
+declare "C-HILTI" ref<channel<*,*>> channel_new(type t, int64 cap)
+declare "C-HILTI" void channel_write(ref<channel<*,*>> ch, any data)
+declare "C-HILTI" void channel_try_write(ref<channel<*,*>> ch, any data)
+declare "C-HILTI" any channel_read(ref<channel<*,*>> ch)
+declare "C-HILTI" any channel_try_read(ref<channel<*,*>> ch)
 

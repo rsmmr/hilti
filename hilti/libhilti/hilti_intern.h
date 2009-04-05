@@ -36,6 +36,12 @@ extern __hlt_exception __hlt_exception_out_of_memory;
 // An undefined value has been attempted to use. 
 extern __hlt_exception __hlt_exception_undefined_value;
 
+// A write operation on a full channel has been attempted.
+extern __hlt_exception __hlt_channel_full;
+
+// A read operation on an empty channel has been attempted.
+extern __hlt_exception __hlt_channel_empty;
+
 // Fall-back exception if nothing else is specified.
 extern __hlt_exception __hlt_exception_unspecified;
 
@@ -189,15 +195,20 @@ extern const __hlt_string* __hlt_tuple_to_string(const __hlt_type_info* type, co
 // Support functions for HILTI's channel data type.
 ///////////////////////////////////////////////////////////////////////////////
 
+// A gc'ed chunk of memory used by the channel.
+typedef struct __hlt_channel_chunk __hlt_channel_chunk;
+
     // %doc-hlt_channel-start
 struct __hlt_channel {
     const __hlt_type_info* type;    /* Type information of the channel's data type. */
-    size_t size;                    /* The max. number of channel nodes. */
+    int64_t capacity;               /* Maximum number of channel items. */
+    volatile int64_t size;          /* Current number of channel items. */
 
-    void *buffer;                   /* Beginning of the channel buffer. */
-    int head;                       /* The first channel node. */
-    int tail;                       /* The last channel node. */
-    volatile size_t node_count;     /* Number of nodes in the channel. */
+    size_t chunk_cap;               /* Chunk capacity of the next chunk. */
+    __hlt_channel_chunk* rc;        /* Pointer to the reader chunk. */
+    __hlt_channel_chunk* wc;        /* Pointer to the writer chunk. */
+    void* head;                     /* Pointer to the next item to read. */
+    void* tail;                     /* Pointer to the first empty slot to write into. */
 
     pthread_mutex_t mutex;          /* Synchronizes access to the channel. */
     pthread_cond_t empty_cv;        /* Condition variable for an empty channel. */
@@ -205,14 +216,33 @@ struct __hlt_channel {
 };
     // %doc-hlt_channel-end
 
+// Returns a readable representation of a channel.
 extern const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* (*obj[]), int32_t options, __hlt_exception* excpt);
 
-extern __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* excpt);
+// Creates a new channel.
+extern __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, int64_t capacity, __hlt_exception* excpt);
 
+// Deletes a channel.
 extern void __hlt_channel_destroy(__hlt_channel* ch, __hlt_exception* excpt);
 
+//
+// Support functions for un-bounded channels.
+// 
+
+// Write an item into a channel. If the channel is full, the function blocks
+// until an item is read from the channel.
 extern void __hlt_channel_write(__hlt_channel* ch, const __hlt_type_info* type, void* data, __hlt_exception* excpt);
 
+// Try to write an item into a channel. If the channel is full, an exception is
+// thrown indicating that the channel was full.
+extern void __hlt_channel_try_write(__hlt_channel* ch, const __hlt_type_info* type, void* data, __hlt_exception* excpt);
+
+// Read an item from a channel. If the channel is empty, the function blocks
+// until an item is written to the channel.
 extern void* __hlt_channel_read(__hlt_channel* ch, __hlt_exception* excpt);
+
+// Try to read an element from the channel. If the channel is empty, an
+// exception is thrown indicating that the channel was empty. 
+extern void* __hlt_channel_try_read(__hlt_channel* ch, __hlt_exception* excpt);
 
 #endif    

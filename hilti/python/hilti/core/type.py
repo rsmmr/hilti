@@ -476,11 +476,17 @@ class StructDecl(TypeDeclType):
 class Channel(HeapType):
     """Type for channels. 
 
-    args: list of single ~~ValueType - The type of the channel elements. The type can 
-    be "*" to match other channels of any type.
+    args: list of ~~ValueType - The first argument is the type of the channel
+    items. The type can be "*" to match other channels of any type. The second
+    argument represents the channel capacity, i.e., the maximum number of items
+    per channel. If the capacity equals to 0, it is assumed that the channel is
+    unbounded.
     """
     def __init__(self, args):
+        assert len(args) == 2
+
         t = args[0]
+        wildcard = False
 
         if t == "*":
             self._type = None
@@ -490,17 +496,42 @@ class Channel(HeapType):
                 raise HiltiType.ParameterMismatch(t, "channel type must be a value type")
 
             self._type = t
-            wildcard = False
-            
+
+        c = args[1]
+
+        if c == "*":
+            self._capacity = None
+            wildcard = True
+        else:
+            if args[1] == "_":
+                self._capacity = 0 
+            else:
+                try:
+                    self._capacity = int(c)
+                except ValueError:
+                    raise HiltiType.ParameterMismatch(args[0], "cannot convert to integer")
+
+                if self._capacity < 0:
+                    raise HiltiType.ParameterMismatch(c, "channel capacity cannot be negative")
+
         super(Channel, self).__init__(args, Channel._name, wildcard=wildcard)
 
 
-    def channelType(self):
-        """Returns the type of the channel elements.
+    def itemType(self):
+        """Returns the type of the channel items.
         
-        Returns: ~~ValueType - The type of the channel elements.
+        Returns: ~~ValueType - The type of the channel items.
         """
         return self._type
+
+    def capacity(self):
+        """Returns channel capacity, i.e., the maximum number of items that the
+        channel can hold.
+        
+        Returns: ~~ValueType - The channel capacity. A capacity of 0 denotes an
+        unbounded channel.
+        """
+        return self._capacity
 
     _name = "channel"
     _id = 8
@@ -674,7 +705,7 @@ _keywords = {
     "bool": (Bool, 0, None),
     "tuple": (Tuple, -1, None),
     "ref": (Reference, 1, None),
-    "channel": (Channel, 1, None),
+    "channel": (Channel, 2, None),
     }
 
 _all_hilti_types = {}
