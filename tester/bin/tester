@@ -35,7 +35,8 @@ RE_EXEC = ("exec", re.compile("@TEST-EXEC(-FAIL)?: *(.*)"), True, False, 2, 1)
 Commands = (RE_EXEC, )
 
 RE_INPUT = re.compile("%INPUT")
-RE_DIR  = re.compile("%DIR")
+RE_DIR = re.compile("%DIR")
+RE_ENV = re.compile("\$\{(\w+)\}")
 
 RE_START_NEXT_TEST = re.compile("@TEST-START-NEXT")
 
@@ -215,6 +216,16 @@ class Test(object):
         # Replace special names. 
         cmdline = RE_INPUT.sub(self.localfile, cmdline)
         cmdline = RE_DIR.sub(self.dir, cmdline)
+        
+        # Replace environment variables.
+        def replace_with_env(m):
+            try:
+                return os.environ[m.group(1)]
+            except KeyError:
+                return ""
+        
+        cmdline = RE_ENV.sub(replace_with_env, cmdline)
+        
         print >>self.log, cmdline, "(expect %s)" % ("success" if expect_success else "failure")
         
         env = self.prepareEnv()
