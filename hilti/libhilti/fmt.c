@@ -102,9 +102,16 @@ static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const 
         break;
     
       case 'p': 
-          snprintf(tmp, tmp_size, "%p", * (void **)fmt_arg);
-          _add_asciiz(tmp, buffer, bpos, dst, excpt);
-          break;
+        if ( * (void **)fmt_arg ) {
+            snprintf(tmp, tmp_size, "%p", * (void **)fmt_arg);
+            _add_asciiz(tmp, buffer, bpos, dst, excpt);
+        }
+        else 
+            // Printing null pointers yield different output with differenet
+            // libs.  Canonicalize the output.
+            _add_asciiz("0x0", buffer, bpos, dst, excpt);
+        
+        break;
         
       case 's': 
         if ( fmt_type->to_string ) {
