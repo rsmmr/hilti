@@ -44,10 +44,12 @@ $(TMP_BC_OBJ) : $(BITCODE)
 	gcc -c $(TMP_BC_ASM) -o $(TMP_BC_OBJ) 
     
 $(LIB_STATIC): $(TMP_BC_OBJ) $(COBJS)
-	libtool -o $(LIB_STATIC) $(TMP_BC_OBJ) $(COBJS) $(GC_LIB)
+	cp $(GC_LIB) $(LIB_STATIC)
+	ar rcs $(LIB_STATIC) $(TMP_BC_OBJ) $(COBJS)
     
 $(LIB_STATIC_MAIN): $(TMP_BC_OBJ) $(COBJS) $(CMAINOBJ)
-	libtool -o $(LIB_STATIC_MAIN) $(TMP_BC_OBJ) $(COBJS) $(CMAINOBJ) $(GC_LIB)
+	cp $(GC_LIB) $(LIB_STATIC_MAIN)
+	ar rcs $(LIB_STATIC_MAIN) $(TMP_BC_OBJ) $(COBJS) $(CMAINOBJ) $(GC_LIB)
 
     
     
