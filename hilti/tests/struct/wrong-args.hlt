@@ -21,7 +21,7 @@ void run() {
     local string s
     local ref<A> a
 
-    i = struct.new A
+    i = new A
 }
 
 # @TEST-START-NEXT
@@ -42,7 +42,7 @@ void run() {
     local string s
     local ref<A> a
 
-    a = struct.new string
+    a = new string
 }
 
 # @TEST-START-NEXT
@@ -63,7 +63,7 @@ void run() {
     local string s
     local ref<A> a
 
-    a = struct.new A
+    a = new A
     i = struct.get a "b"
 }
 
@@ -85,7 +85,7 @@ void run() {
     local string s
     local ref<A> a
 
-    a = struct.new A
+    a = new A
     struct.set a "b" 42
 }
 

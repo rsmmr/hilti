@@ -11,6 +11,10 @@ things have stabilized we should turn it into some real text.
 Adding a new HILTI instruction
 ------------------------------
 
+TODO
+
+- Implementing an existing operator.
+
 Adding a new HILTI data type
 ----------------------------
 
@@ -104,3 +108,9 @@ Adding a ValueType
 Adding a HeapType
 ~~~~~~~~~~~~~~~~~
 
+TODO.
+
+Adding an Operator
+~~~~~~~~~~~~~~~~~~
+
+TODO.

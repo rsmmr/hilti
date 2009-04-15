@@ -313,7 +313,7 @@ class CodeGen(visitor.Visitor):
                 other_ti = self.llvmTypeInfoPtr(arg)
                 arg_types += [other_ti.type]
                 arg_vals += [other_ti]
-
+                
             else:
                 util.internal_error("llvmAddTypeInfos: unsupported type parameter %s" % repr(arg))
 
@@ -1421,15 +1421,20 @@ class CodeGen(visitor.Visitor):
     _CB_CTOR_EXPR = 2
     _CB_LLVM_TYPE = 3
     _CB_DEFAULT_VAL = 4
+    _CB_OPERATOR = 5
     
     _Callbacks = { 
     	_CB_TYPE_INFO: [], 
         _CB_CTOR_EXPR: [], 
         _CB_LLVM_TYPE: [], 
-        _CB_DEFAULT_VAL: []
+        _CB_DEFAULT_VAL: [],
+        _CB_OPERATOR: []
         }
         
     def _callCallback(self, kind, type, args, must_find=True):
+        
+        assert kind != CodeGen._CB_OPERATOR # Use llvmExecuteOperator() instead.
+        
         for (t, func) in CodeGen._Callbacks[kind]:
             if isinstance(type, t):
                 return func(*args)
@@ -1438,6 +1443,38 @@ class CodeGen(visitor.Visitor):
             util.internal_error("_callCallback: unsupported object %s for callback type %d" % (repr(type), kind))
             
         return None
+    
+    def llvmExecuteOperator(self, op):
+        """Generates code for a type-specific operator. 
+        
+        op: ~~Operator - The operator to generate code for.
+        """
+        
+        type = op.operatorType()
+        
+        for (t, o, func) in CodeGen._Callbacks[CodeGen._CB_OPERATOR]:
+            if isinstance(type, t) and isinstance(op, o):
+                func(self, op)
+                return True
+
+        return False
+    
+    def implementsOperator(self, type, op):
+        """Checks whether a type implements a specific operator.
+        
+        type: ~~Type - The type to check.
+        op: ~~Operator - The operator to check for. 
+        
+        Returns: Boolean - True if the type implements the operator.
+        """
+        
+        type = op.operatorType()
+        
+        for (t, o, func) in CodeGen._Callbacks[CodeGen._CB_OPERATOR]:
+            if isinstance(type, t) and isinstance(op, o):
+                return True
+
+        return False
     
     def llvmOp(self, op, refine_to = None):
         """Converts an instruction operand into an LLVM value. The method
@@ -1575,5 +1612,22 @@ class CodeGen(visitor.Visitor):
     
         return register    
     
+    def operator(self, type, op):
+        """Decorator to define the type-specific implementation of an
+        operator. The decorated function receives two paramemter: the first is
+        the ~~CodeGen, and the second an ~~Operator; for the operator,
+        ~~operatorType() is guarenteed to match *type*. The decorated function
+        must generate LLVM code corresponding to *type*'s implementation of
+        the operator. 
+        
+        type: ~~HiltiType - The type for which to define an operator
+        implementation.
+        
+        op: ~~Operator - The operator to define an implementation for.
+        """
+        def register(func):
+            CodeGen._Callbacks[CodeGen._CB_OPERATOR] += [(type, op, func)]
+    
+        return register    
     
 codegen = CodeGen()

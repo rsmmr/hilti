@@ -58,7 +58,7 @@ __hlt_channel_chunk* __hlt_chunk_create(size_t capacity, int16_t item_size, __hl
 }
 
 // Internal helper function performing a read operation.
-inline void* __hlt_channel_read_item(__hlt_channel* ch)
+static inline void* __hlt_channel_read_item(__hlt_channel* ch)
 {
     void* item = ch->head;
 
@@ -75,7 +75,7 @@ inline void* __hlt_channel_read_item(__hlt_channel* ch)
 }
 
 // Internal helper function performing a write operation.
-inline int __hlt_channel_write_item(__hlt_channel* ch, void* data, __hlt_exception* excpt)
+static inline int __hlt_channel_write_item(__hlt_channel* ch, void* data, __hlt_exception* excpt)
 {
     if ( ch->wc->size == ch->wc->capacity ) {
         if ( ch->capacity )

@@ -22,7 +22,7 @@ void run() {
     local ref<A> a
     local bool b
 
-    a = struct.new A
+    a = new A
     
     i = struct.get a "i"
     call Hilti::print(i)

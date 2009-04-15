@@ -22,7 +22,7 @@ void run() {
     local ref<A> a
     local bool b
 
-    a = struct.new A
+    a = new A
     s = struct.get a "test" 
 }
 
@@ -46,7 +46,7 @@ void run() {
     local ref<A> a
     local bool b
 
-    a = struct.new A
+    a = new A
     struct.unset a "i"
     i = struct.get a "i" 
 }

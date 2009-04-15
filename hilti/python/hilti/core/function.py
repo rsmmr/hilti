@@ -72,6 +72,8 @@ class Function(ast.Node):
         
         super(Function, self).__init__(location)
         
+        self._nq_name = name
+        
         if module:
             self._name = "%s::%s" % (module.name(), name)
         else:
@@ -93,7 +95,7 @@ class Function(ast.Node):
         
         Returns: string - The fully-qualified name of the function.
         """
-        return self._name
+        return self._name if self._cc != CallingConvention.C else self._nq_name
         
     def type(self):
         """Returns the type of the function. 

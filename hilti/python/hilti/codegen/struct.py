@@ -8,6 +8,8 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+import sys
+
 _doc_c_conversion = """ 
 A ``struct` is passed as a pointer to an eqivalent C struct; the fields' types
 are converted recursively per the same rules. 
@@ -31,11 +33,11 @@ def _(op, refine_to):
 @codegen.llvmType(type.Struct)
 def _(type, refine_to):
     return llvm.core.Type.pointer(_llvmStructType(type))
-       
-@codegen.when(instructions.struct.New)
-def _(self, i):
+
+@codegen.operator(type.Struct, instructions.operators.New)
+def _(self, op):
     # Allocate memory for struct. 
-    structt = i.op1().value()
+    structt = op.op1().value()
     llvm_type = _llvmStructType(structt)
     s = codegen.llvmMalloc(llvm_type)
     
@@ -61,7 +63,7 @@ def _(self, i):
     addr = codegen.builder().gep(s, [zero, zero])
     codegen.llvmInit(codegen.llvmConstInt(mask, 32), addr)
 
-    codegen.llvmStoreInTarget(i.target(), s)
+    codegen.llvmStoreInTarget(op.target(), s)
     
 def _getIndex(instr):
     

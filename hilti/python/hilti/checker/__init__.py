@@ -10,8 +10,10 @@ any |ast| properties they require with assertions.
 
 __all__ = []
 
-import checker
 import flow
+import operators
+
+import checker
 import module
 import integer
 import double

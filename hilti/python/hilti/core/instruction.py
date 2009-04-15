@@ -131,7 +131,37 @@ class Instruction(ast.Node):
             self._target.visit(visitor)
 
         visitor.visitPost(self)
+
+class Operator(Instruction):
+    """Class for instructions that are overloaded by type. While most
+    HILTI instructions are clearly tied to a particular type, *operators* are
+    generic instructions that can operator on different types.
     
+    To create a new operator do *not* derive directly from Operator but use
+    the :meth:`operator` decorator.
+    
+    op1: ~~Operand - The operator's first operand, or None if unused.
+    op2: ~~Operand - The operator's second operand, or None if unused.
+    op3: ~~Operand - The operator's third operand, or None if unused.
+    target: ~~IDOperand - The operator's target, or None if unused.
+    location: ~~Location - A location to be associated with the operator. 
+    
+    Todo: For now, operators are always overloaded based on the type of their
+    first operand. We should probably make that more flexibel sometime.
+    """
+    def __init__(self, op1=None, op2=None, op3=None, target=None, location=None):
+        super(Operator, self).__init__(op1, op2, op3, target, location)
+       
+    """Returns the type on which the operator should be overloaded.
+    
+    Returns: ~~HiltiType - The type."""
+    def operatorType(self):
+        t = self.op1().type()
+        if isinstance(t, type.TypeDeclType):
+            return t.type()
+        else:
+            return t 
+        
 class Operand(ast.Node):
     """Base class for operands and targets of HILTI instructions. 
     
@@ -378,6 +408,12 @@ def instruction(name, op1=None, op2=None, op3=None, target=None, callback=None, 
     
     return register
 
+# Currently, "operator" is just an alias for "instruction".
+operator = instruction
+"""A *decorater* for classes derived from ~~Operator. The decorator
+defines the new operators's ~~Signature. The arguments correpond to
+those of the ~~Signature constructor."""
+    
 _Instructions = {}    
 
 def getInstructions():

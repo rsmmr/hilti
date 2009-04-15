@@ -24,7 +24,7 @@ class TypeInfo(object):
     *c_prototype* (string) 
        A string specifying how the type should be represented in C function
        prototypes.
-
+       
     *args* (list of objects)
        The type's parameters. 
        

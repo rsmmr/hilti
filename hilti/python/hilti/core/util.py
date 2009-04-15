@@ -138,7 +138,7 @@ def expand_escapes(str):
                     
         except IndexError:
             raise ValueError
-            
+
     return result
                 
 def findFileInPaths(filename, dirs, lower_case_ok=False):

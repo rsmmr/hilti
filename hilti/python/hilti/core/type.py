@@ -159,6 +159,8 @@ class HiltiType(Type):
     
     name: string - Same as for :meth:`~hilti.core.type.type`. 
     docname: string - Same as for :meth:`~hilti.core.type.type`.
+    itertype: ~~Iterator - If class is iterable, the type of the iterator;
+    otherwise None. 
     
     Raises: ~~ParameterMismatch - Raised when there's a problem with one of
     the type parameters. The error should not have been reported to the user
@@ -173,13 +175,14 @@ class HiltiType(Type):
     appending a readable representation of all parameters to the type's base
     name passed to the ctor via *name*.
     """
-    def __init__(self, args, name, wildcard=False, docname=None):
+    def __init__(self, args, name, wildcard=False, itertype=None, docname=None):
         if args:
             name = "%s<%s>" % (name, ",".join([str(arg) for arg in args]))
         
         super(HiltiType, self).__init__(name, docname=docname)
         self._args = args
         self._wildcard = wildcard
+        self._itertype = itertype
 
     _name = "HILTI type"
 
@@ -199,6 +202,14 @@ class HiltiType(Type):
         Returns: bool - True if a wildcard type.
         """
         return self._wildcard
+    
+    def iteratorType(self):
+        """Returns the type of iterators. Returns None if the type is not
+        iterable.
+        
+        Returns: ~~Iterator - The iterator type or None if not iterable. 
+        """
+        return self._itertype
 
     class ParameterMismatch(Exception):
         """Exception class to indicate a problem with a type parameter.
@@ -220,8 +231,8 @@ class ValueType(HiltiType):
     
     The arguments are the same as for ~~HiltiType.
     """
-    def __init__(self, args, name, wildcard=False, docname=None):
-        super(ValueType, self).__init__(args, name, wildcard=wildcard, docname=docname)
+    def __init__(self, args, name, wildcard=False, itertype=None, docname=None):
+        super(ValueType, self).__init__(args, name, wildcard=wildcard, itertype=itertype, docname=docname)
 
     _name = "storage type"
         
@@ -232,8 +243,8 @@ class HeapType(HiltiType):
     
     The arguments are the same as for ~~HiltiType.
     """
-    def __init__(self, args, name, wildcard=False, docname=None):
-        super(HeapType, self).__init__(args, name, wildcard=wildcard, docname=docname)
+    def __init__(self, args, name, wildcard=False, itertype=None, docname=None):
+        super(HeapType, self).__init__(args, name, wildcard=wildcard, itertype=itertype, docname=docname)
 
     _name = "heap type"
     
@@ -274,6 +285,27 @@ class TypeDeclType(Type):
 
     _name = "type-declaration type"
 
+class Iterator(ValueType):
+    """Type for iterating over a container. 
+    
+    args: list of a single ~~HeapType - The container type to iterate over. 
+    """
+    def __init__(self, args):
+        super(Iterator, self).__init__(args, Iterator._name)
+
+        self._type = args[0]
+        if not issubclass(self._type, HiltiType):
+            raise HiltiType.ParameterMismatch(self._type, "iterator takes a type as parameter")
+
+    def containerType(self):
+        """Returns the container type.
+        
+        Returns: ~~HeapType - The container type the iterator can iterator over.
+        """
+        return self._type
+        
+    _name = "iterator"
+    
 # Actual types.    
 
 class String(ValueType):
@@ -439,7 +471,7 @@ class Reference(ValueType):
     
     _name = "ref"
     _id = 6
-    
+
 class Struct(HeapType):
     """Type for structs. 
     
@@ -462,6 +494,23 @@ class Struct(HeapType):
 
     _name = "struct"
     _id = 7
+
+class Bytes(HeapType):
+    """Type for ``bytes``. 
+    """
+    def __init__(self):
+        super(Bytes, self).__init__([], Bytes._name, itertype=IteratorBytes())
+
+    _name = "bytes"
+    _id = 9
+    
+class IteratorBytes(Iterator):
+    """Type for iterating over ``bytes``. 
+    """
+    def __init__(self):
+        super(IteratorBytes, self).__init__([Bytes])
+
+    _id = 100
 
 class StructDecl(TypeDeclType):
     """Type for struct declarations. 
@@ -694,6 +743,9 @@ def fmtTypeClass(cls, doc=False):
 # user-supplied params (optional). All classes given here must be derived from
 # HiltiType.
 
+import struct
+import sys
+
 _keywords = {
 	"int": (Integer, 1, None),
 	"int8": (Integer, 1, [8]),
@@ -706,6 +758,8 @@ _keywords = {
     "tuple": (Tuple, -1, None),
     "ref": (Reference, 1, None),
     "channel": (Channel, 2, None),
+    "bytes": (Bytes, 0, None),
+    "iterator": (Iterator, 1, None),
     }
 
 _all_hilti_types = {}
@@ -745,6 +799,19 @@ def getHiltiType(name, args = []):
     
     if defs:
         args = defs
+        
+    # Special-case iterators here: we need to create instances of the right
+    # sub-class here. 
+    if cls == Iterator:
+        container = args[0]
+        
+        if not isinstance(container, HiltiType):
+            return (False, "%s is not a type" % container)
+        
+        if not container.iteratorType():
+            return (False, "%s is not iterable" % container)
+        
+        return (True, container.iteratorType())
         
     try:
         if args:

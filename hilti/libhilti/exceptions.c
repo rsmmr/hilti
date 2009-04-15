@@ -20,6 +20,8 @@ __hlt_exception __hlt_exception_undefined_value = "UndefinedValue";
 __hlt_exception __hlt_channel_full = "ChannelFull";
 __hlt_exception __hlt_channel_empty = "ChannelEmpty";
 __hlt_exception __hlt_exception_unspecified = "Unspecified";
+__hlt_exception __hlt_exception_decoding_error = "DecodingError";
+__hlt_exception __hlt_exception_internal_error = "InternalError";
 
 // Reports an uncaught exception.
 void __hlt_exception_print_uncaught(__hlt_exception exception) 

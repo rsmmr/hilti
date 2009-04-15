@@ -22,7 +22,7 @@ void run() {
     local ref<A> a
     local bool b
 
-    a = struct.new A
+    a = new A
     struct.set a "test" "Abrakadraba"
     
     b = struct.is_set a "i"

@@ -1,0 +1,13 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT a.out >output 2>&1 
+# @TEST-EXEC:      test-diff output
+#
+# Wrong uses of operators
+
+module Main
+
+void run() {
+    local int32 a
+    a = new int32
+}

@@ -15,6 +15,7 @@
 #include <assert.h>
 
 #include "hilti.h"
+#include "bytes.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Predefined exceptions.
@@ -36,6 +37,9 @@ extern __hlt_exception __hlt_exception_out_of_memory;
 // An undefined value has been attempted to use. 
 extern __hlt_exception __hlt_exception_undefined_value;
 
+// An internal error that indicates a bug in HILTI.
+extern __hlt_exception __hlt_exception_internal_error;
+
 // A write operation on a full channel has been attempted.
 extern __hlt_exception __hlt_channel_full;
 
@@ -56,15 +60,18 @@ extern void __hlt_exception_print_uncaught(__hlt_exception exception);
    // %doc-__HLT_TYPE-start
 // Unique id values to identify a type. These numbers must match the type's
 // _id class member in the Python module hilti.core.Type.
-#define __HLT_TYPE_ERROR   0 
-#define __HLT_TYPE_INTEGER 1 
-#define __HLT_TYPE_DOUBLE  2 
-#define __HLT_TYPE_BOOL    3 
-#define __HLT_TYPE_STRING  4 
-#define __HLT_TYPE_TUPLE   5
-#define __HLT_TYPE_REF     6
-#define __HLT_TYPE_STRUCT  7
-#define __HLT_TYPE_CHANNEL 8
+#define __HLT_TYPE_ERROR     0 
+#define __HLT_TYPE_INTEGER   1 
+#define __HLT_TYPE_DOUBLE    2 
+#define __HLT_TYPE_BOOL      3 
+#define __HLT_TYPE_STRING    4 
+#define __HLT_TYPE_TUPLE     5
+#define __HLT_TYPE_REF       6
+#define __HLT_TYPE_STRUCT    7
+#define __HLT_TYPE_CHANNEL   8
+#define __HLT_TYPE_BYTES     9
+
+#define __HLT_TYPE_ITERATOR_BYTES 100
    // %doc-__HLT_TYPE-end
 
    // %doc-hlt_type_info-start
@@ -179,8 +186,10 @@ extern __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception
 extern const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt);
 extern const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* excpt);
 extern __hlt_string_size __hlt_string_find(const __hlt_string* s, const __hlt_string* pattern, __hlt_exception* excpt);
-extern int __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt);
+extern int8_t __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt);
 extern const __hlt_string* __hlt_string_sprintf(const __hlt_string* fmt, const __hlt_type_info* type, void* (*tuple[]), __hlt_exception* excpt);
+extern __hlt_bytes* __hlt_string_encode(const __hlt_string* s, const __hlt_string* charset, __hlt_exception* excpt);
+extern const __hlt_string* __hlt_string_decode(__hlt_bytes*, const __hlt_string* charset, __hlt_exception* excpt);
 
 extern const __hlt_string* __hlt_string_from_asciiz(const char* asciiz, __hlt_exception* excpt);
 extern const __hlt_string* __hlt_string_from_data(const int8_t* data, __hlt_string_size len, __hlt_exception* excpt);

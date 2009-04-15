@@ -13,13 +13,6 @@ is returned for reads when it is unset.
 from hilti.core.type import *
 from hilti.core.instruction import *
 
-@instruction("struct.new", op1=Struct, target=Reference)
-class New(Instruction):
-    """Instantiates a new struct object of the type *op1* and returns a
-    reference to it. Initially, all fields are either set to their default
-    value, or unset if none has been defined. 
-    """
-
 @instruction("struct.get", op1=Reference, op2=String, target=Any)
 class Get(Instruction):
     """Returns the field named *op2* in the struct referenced by *op1*. The

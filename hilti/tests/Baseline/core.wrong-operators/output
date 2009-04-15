@@ -1,0 +1,3 @@
+wrong-operators.hlt:12: error, type int<32> does not implement operator new
+
+1 error found

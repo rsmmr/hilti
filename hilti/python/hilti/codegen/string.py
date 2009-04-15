@@ -69,9 +69,29 @@ def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::string_len", [i.op1()], [i.op1().type()])
     self.llvmStoreInTarget(i.target(), result)
 
-import sys
-    
 @codegen.when(instructions.string.Concat)
 def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::string_concat", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    self.llvmStoreInTarget(i.target(), result)
+
+@codegen.when(instructions.string.Cmp)
+def _(self, i):
+    result = self.llvmGenerateCCallByName("__Hlt::string_cmp", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    boolean = self.builder().icmp(llvm.core.IPRED_EQ, result, self.llvmConstInt(0, 8))
+    self.llvmStoreInTarget(i.target(), boolean)
+
+@codegen.when(instructions.string.Lt)
+def _(self, i):
+    result = self.llvmGenerateCCallByName("__Hlt::string_cmp", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    boolean = self.builder().icmp(llvm.core.IPRED_SLT, result, self.llvmConstInt(0, 8))
+    self.llvmStoreInTarget(i.target(), boolean)
+    
+@codegen.when(instructions.string.Encode)
+def _(self, i):
+    result = self.llvmGenerateCCallByName("__Hlt::string_encode", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    self.llvmStoreInTarget(i.target(), result)
+
+@codegen.when(instructions.string.Decode)
+def _(self, i):
+    result = self.llvmGenerateCCallByName("__Hlt::string_decode", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)

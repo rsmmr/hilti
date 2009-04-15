@@ -52,7 +52,41 @@ class Find(Instruction):
     pass
 
 @instruction("string.cmp", op1=String, op2=String, target=Bool)
-class Find(Instruction):
+class Cmp(Instruction):
     """Compares *op1* with *op2* and returns True if their characters match.
     Returns False otherwise."""
+    pass
+
+@instruction("string.lt", op1=String, op2=String, target=Bool)
+class Lt(Instruction):
+    """Compares *op1* with *op2* and returns True if *op1* is
+    lexicographically smaller than *op2*. Returns False otherwise."""
+    pass
+
+@instruction("string.decode", op1=Reference, op2=String, target=String)
+class Decode(Instruction):
+    """ 
+    Converts *bytes op1* into a string, assuming characters are encoded in
+    character set *op2*. Supported character sets are currently: ``ascii``,
+    ``utf8``. 
+    
+    If the string cannot be decoded with the given character set, the
+    instruction throws an ~~DecodingError exception. If the character set
+    given is not known, the instruction throws a ~~ValueError exception. 
+    
+    Todo: We need to figure out how to support more character sets.
+    """
+    pass
+
+@instruction("string.encode", op1=String, op2=String, target=Reference)
+class Encode(Instruction):
+    """Converts *op1* into bytes, encoding characters using the character set
+    *op2*. Supported character sets are currently: ``ascii``, ``utf8``. 
+    
+    If the any characters cannot be encoded with the given character set, they
+    will be replaced with place-holders. If the character set given is not
+    known, the instruction throws a ~~ValueError exception. 
+    
+    Todo: We need to figure out how to support more character sets.
+    """
     pass

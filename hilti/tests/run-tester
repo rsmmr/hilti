@@ -11,11 +11,13 @@ export PATH="$PATH:$HILTI_BASE/tools/hiltic:$HILTI_BASE/tools/hilti-build"
 export PYTHONPATH="$PYTHONPATH:$HILTI_BASE/python"
 
 export HILTICFLAGS="-I $HILTI_BASE/libhilti"
-export CFLAGS="-I $HILTI_BASE/libhilti"
+export CFLAGS="-g -I $HILTI_BASE/libhilti"
 export LLVMASFLAGS=""
 export LLCFLAGS=""
 export ASFLAGS=""
 export LDFLAGS="-L$HILTI_BASE/libhilti"
+
+export CC="gcc $CFLAGS $LDFLAGS"
 
 $TESTER $@
 

@@ -19,6 +19,8 @@ import tuple
 import ref
 import struct
 import channel
+import bytes
+import operators
 
 def generateLLVM(ast, libpaths, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as
