@@ -180,7 +180,7 @@ int main()
         __hlt_bytes_append_raw(b, large + i, 1, &e);
 
     p = __hlt_bytes_begin(b, &e);
-    for ( ; ! __hlt_bytes_pos_eq(p, __hlt_bytes_end(b, &e), &e); __hlt_bytes_pos_incr(p, &e) ) {
+    for ( ; ! __hlt_bytes_pos_eq(p, __hlt_bytes_end(b, &e), &e); p = __hlt_bytes_pos_incr(p, &e) ) {
         int8_t u = __hlt_bytes_pos_deref(p, &e);
         sum2 += u;
     }
@@ -201,7 +201,7 @@ int main()
         __hlt_bytes_append_raw(b, large, LEN, &e);
 
     p = __hlt_bytes_begin(b, &e);
-    for ( ; ! __hlt_bytes_pos_eq(p, __hlt_bytes_end(b, &e), &e); __hlt_bytes_pos_incr(p, &e) ) {
+    for ( ; ! __hlt_bytes_pos_eq(p, __hlt_bytes_end(b, &e), &e); p = __hlt_bytes_pos_incr(p, &e) ) {
         int8_t u = __hlt_bytes_pos_deref(p, &e);
         sum2 += u;
     }
@@ -217,7 +217,7 @@ int main()
     p = __hlt_bytes_begin(b, &e);
     printf("eq = %d (1) %s\n", __hlt_bytes_pos_eq(p, __hlt_bytes_begin(b, &e), &e), exp(e));
     printf("eq = %d (0) %s\n", __hlt_bytes_pos_eq(p, __hlt_bytes_end(b, &e), &e), exp(e));
-    __hlt_bytes_pos_incr(p, &e);
+    p = __hlt_bytes_pos_incr(p, &e);
     printf("eq = %d (0) %s\n", __hlt_bytes_pos_eq(p, __hlt_bytes_begin(b, &e), &e), exp(e));
     
     p2 = __hlt_bytes_end(b, &e);
@@ -228,7 +228,7 @@ int main()
     printf("eq = %d (1) %s\n", __hlt_bytes_pos_eq(p, __hlt_bytes_begin(b, &e), &e), exp(e));
 
     p = __hlt_bytes_offset(b, -1, &e);
-    __hlt_bytes_pos_incr(p, &e);
+    p = __hlt_bytes_pos_incr(p, &e);
     printf("eq = %d (1) %s\n", __hlt_bytes_pos_eq(p, __hlt_bytes_end(b, &e), &e), exp(e));
 
     return 0;

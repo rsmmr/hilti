@@ -286,7 +286,7 @@ const __hlt_string* __hlt_string_decode(__hlt_bytes* b, const __hlt_string* char
         while ( ! __hlt_bytes_pos_eq(i, __hlt_bytes_end(b, excpt), excpt) ) {
             char c = __hlt_bytes_pos_deref(i, excpt);
             *p++ = (c & 0x7f) == c ? c : '?';
-            __hlt_bytes_pos_incr(i, excpt);
+            i = __hlt_bytes_pos_incr(i, excpt);
         }
         
         return dst;

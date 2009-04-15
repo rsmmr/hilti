@@ -21,6 +21,28 @@ class New(Operator):
     """
     pass
 
+@overload(Incr, op1=IteratorBytes, target=IteratorBytes)
+class Incr(Operator):
+    """
+    Advances the iterator to the next element, or the end position
+    if already at the last.
+    """
+    pass
+
+@overload(Deref, op1=IteratorBytes, target=Integer(8))
+class Deref(Operator):
+    """
+    Returns the element the iterator is pointing at. 
+    """
+    pass
+
+@overload(Equal, op1=IteratorBytes, op2=IteratorBytes, target=Bool)
+class Equal(Operator):
+    """
+    Returns true if *op1* and *op2* specify the same position.
+    """
+    pass
+
 @instruction("bytes.assign", op1=Reference, target=Reference)
 class Assign(Instruction):
     """Assigns *op1* to the target."""

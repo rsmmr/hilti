@@ -40,6 +40,21 @@ def _(type):
 def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::bytes_new", [], [])
     self.llvmStoreInTarget(i.target(), result)
+    
+@codegen.operator(type.IteratorBytes, instructions.operators.Incr)
+def _(self, i):
+    result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_incr", [i.op1()], [i.op1().type()])
+    self.llvmStoreInTarget(i.target(), result)
+
+@codegen.operator(type.IteratorBytes, instructions.operators.Deref)
+def _(self, i):
+    result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_deref", [i.op1()], [i.op1().type()])
+    self.llvmStoreInTarget(i.target(), result)
+    
+@codegen.operator(type.IteratorBytes, instructions.operators.Equal)
+def _(self, i):
+    result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_eq", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.bytes.Assign)
 def _(self, i):
@@ -58,7 +73,7 @@ def _(self, i):
 
 @codegen.when(instructions.bytes.Append)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_append", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    self.llvmGenerateCCallByName("__Hlt::bytes_append", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
 
 @codegen.when(instructions.bytes.Sub)
 def _(self, i):

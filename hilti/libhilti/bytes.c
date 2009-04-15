@@ -361,16 +361,21 @@ int8_t __hlt_bytes_pos_deref(__hlt_bytes_pos* pos, __hlt_exception* excpt)
     return *pos->cur;
 }
 
-void __hlt_bytes_pos_incr(__hlt_bytes_pos* pos, __hlt_exception* excpt)
+__hlt_bytes_pos* __hlt_bytes_pos_incr(const __hlt_bytes_pos* old, __hlt_exception* excpt)
 {
-    if ( is_end(pos) )
+    if ( is_end(old) )
         // Fail silently. 
-        return;
+        return old;
 
+    __hlt_bytes_pos* pos = __hlt_gc_malloc_non_atomic(sizeof(__hlt_bytes_pos));
+    pos->chunk = old->chunk;
+    pos->cur = old->cur;
+    pos->end = old->end;
+    
     // Can we stay inside the same chunk?
     if ( pos->cur < pos->end - 1 ) {
         ++pos->cur;
-        return;
+        return pos;
     }
 
     // Need to switch chunk.
@@ -378,12 +383,12 @@ void __hlt_bytes_pos_incr(__hlt_bytes_pos* pos, __hlt_exception* excpt)
     if ( ! pos->chunk ) {
         // End reached.
         *pos = PosEnd;
-        return;
+        return pos;
     }
     
     pos->cur = pos->chunk->start;
     pos->end = pos->chunk->end;
-    return;
+    return pos;
 }
 
 #if 0

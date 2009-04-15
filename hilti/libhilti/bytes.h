@@ -119,7 +119,7 @@ extern int8_t __hlt_bytes_pos_deref(__hlt_bytes_pos* pos, __hlt_exception* excpt
 // further increase such a position, it will be left untouched.
 // 
 // pos: The position to increase.
-extern void __hlt_bytes_pos_incr(__hlt_bytes_pos* pos, __hlt_exception* excpt);
+extern __hlt_bytes_pos* __hlt_bytes_pos_incr(const __hlt_bytes_pos* pos, __hlt_exception* excpt);
 
 // Compares two positions whether they refer to the same offset within a Bytes object. 
 // 

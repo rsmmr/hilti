@@ -27,6 +27,8 @@ from hilti.core import *
 from hilti import instructions
 from canonifier import canonifier
 
+import sys
+
 ### Helpers
 
 # If the last instruction is not a terminator, add it. 
@@ -36,7 +38,7 @@ def _unifyBlock(block):
     
     add_terminator = False
     
-    if not len(instr) and not block.mayRemove():
+    if not len(instr):
         add_terminator = True
         
     if len(instr) and not instr[-1].signature().terminator():
@@ -47,6 +49,7 @@ def _unifyBlock(block):
             newins = instructions.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label(), id.Role.LOCAL, location=loc)), location=loc)
         else:
             newins = instructions.flow.ReturnVoid(None, location=loc)
+
         block.addInstruction(newins)
 
 #### Module
@@ -89,10 +92,13 @@ def _(self, f):
     # Copy the transformed blocks over to the function.
     f.clearBlocks()
     for b in self.transformedBlocks():
-        _unifyBlock(b)
-        if b.instructions():
+        if b.instructions() or not b.mayRemove():
             f.addBlock(b)
 
+    for b in f.blocks():
+        _unifyBlock(b)
+            
+            
 ### Block
 
 @canonifier.pre(block.Block)
