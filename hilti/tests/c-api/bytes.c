@@ -1,6 +1,6 @@
 /* $Id$
 
-@TEST-EXEC:  ${CC} -lhilti %INPUT -o a.out 
+@TEST-EXEC:  ${CC} %INPUT -lhilti -o a.out 
 @TEST-EXEC:  ./a.out >output 2>&1
 @TEST-EXEC:  test-diff output
 
