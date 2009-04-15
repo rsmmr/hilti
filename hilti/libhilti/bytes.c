@@ -139,6 +139,7 @@ void __hlt_bytes_append_raw(__hlt_bytes* b, const int8_t* raw, __hlt_bytes_size 
     if ( b->tail && b->tail->owner && b->tail->free >= len ) {
         memcpy((int8_t*)b->tail->end, raw, len); // const cast is safe because we allocated the block.
         b->tail->end += len;
+        b->tail->free -= len;
         return;
     }
 
