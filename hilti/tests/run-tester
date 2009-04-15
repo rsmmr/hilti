@@ -7,6 +7,10 @@ BASE_DIR=`cd ../.. && pwd -P`
 TESTER=$BASE_DIR/tester/bin/tester
 HILTI_BASE=$BASE_DIR/hilti 
 
+# Set a well-defined locale.
+export LANG=C
+export LC_ALL=C
+
 export PATH="$PATH:$HILTI_BASE/tools/hiltic:$HILTI_BASE/tools/hilti-build"
 export PYTHONPATH="$PYTHONPATH:$HILTI_BASE/python"
 
