@@ -732,7 +732,7 @@ def fmtTypeClass(cls, doc=False):
             return " or ".join([fmtTypeClass(t) for t in cls])
         else:
             return "|".join([fmtTypeClass(t) for t in cls])
-    
+
     return cls._name
     
 # List of keywords that the parser will understand to instantiate types.  Each

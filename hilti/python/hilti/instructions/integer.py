@@ -13,6 +13,22 @@ integer. There are predefined shortcuts ``int8``, ``int16``, ``int32`` and
 
 from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.instructions.operators import *
+
+@overload(Incr, op1=Integer, target=Integer)
+class Incr(Operator):
+    """
+    Returns the result of ``op1 + 1``. The result is undefined if an
+    overflow occurs.
+    """
+    pass
+
+@overload(Equal, op1=Integer, op2=Integer, target=Bool)
+class Equals(Operator):
+    """
+    Returns True if *op1* equals *op2*.
+    """
+    pass
 
 @instruction("int.add", op1=Integer, op2=Integer, target=Integer)
 class Add(Instruction):

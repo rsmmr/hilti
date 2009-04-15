@@ -53,6 +53,20 @@ def _(op, refine_to):
 def _(type, refine_to):
     return llvm.core.Type.int(type.width())
 
+@codegen.operator(type.Integer, instructions.operators.Incr)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    op2 = self.llvmConstInt(1, i.op1().type().width())
+    result = self.builder().add(op1, op2)
+    self.llvmStoreInTarget(i.target(), result)
+
+@codegen.operator(type.Integer, instructions.operators.Equal)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    op2 = self.llvmOp(i.op1())
+    result = self.builder().icmp(llvm.core.IPRED_EQ, op1, op2)
+    self.llvmStoreInTarget(i.target(), result)
+    
 @codegen.when(instructions.integer.Add)
 def _(self, i):
     op1 = self.llvmOp(i.op1())

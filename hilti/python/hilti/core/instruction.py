@@ -161,7 +161,32 @@ class Operator(Instruction):
             return t.type()
         else:
             return t 
+
+class OverloadedOperator(Instruction):
+    """Class for overloading an Operator on a type-specific basis. For each
+    ~~Operator a type wants to provide an overloaded implementation, it must
+    be define an OverloadedOperator. However, to do so do *not* derive
+    directly from this class but use the :meth:`overload` decorator.
+
+    operator: ~~Operator class - The operator to be overloaded. 
+    op1: ~~Operand - The operator's first operand.
+    op2: ~~Operand - The operator's second operand, or None if unused.
+    op3: ~~Operand - The operator's third operand, or None if unused.
+    target: ~~IDOperand - The operator's target, or None if unused.
+    location: ~~Location - A location to be associated with the operator. 
+    """
         
+    def __init__(self, operator, op1, op2=None, op3=None, target=None, location=None):
+        super(Operator, self).__init__(op1, op2, op3, target, location)
+        self._operator = operator
+        
+    def operator():
+        """Returns the operator which is overloaded.
+        
+        Returns: ~~Operator class - The overload operator.
+        """
+        return self._operator
+    
 class Operand(ast.Node):
     """Base class for operands and targets of HILTI instructions. 
     
@@ -413,13 +438,40 @@ operator = instruction
 """A *decorater* for classes derived from ~~Operator. The decorator
 defines the new operators's ~~Signature. The arguments correpond to
 those of the ~~Signature constructor."""
+
+def overload(operator, op1, op2=None, op3=None, target=None):
+    """A *decorater* for classes that provide type-specific overloading of an
+    operator. The decorator defines the overloaded operator's ~~Signature. The
+    arguments correpond to those of the ~~Signature constructor except for
+    *operator* which must be a subclass of ~~Operator."""
+    def register(ins):
+        global _OverloadedOperators
+        assert issubclass(operator, Operator)
+
+        global _Instructions
+        ins._signature = Signature(operator().name(), op1, op2, op3, target)
+        d = dict(ins.__dict__)
+        d["__init__"] = _make_ins_init(ins)
+        newclass = builtin_type(ins.__name__, (ins.__base__,), d)
+        
+        idx = operator.__name__
+        try:
+            _OverloadedOperators[idx] += [ins._signature]
+        except:
+            _OverloadedOperators[idx] = [ins._signature]
+            
+        return newclass
     
+    return register
+
 _Instructions = {}    
+_OverloadedOperators = {}
 
 def getInstructions():
-    """Returns a list of all classes derived from ~~Instruction. This list is
-    a complete enumeration of all instructions provided by the HILTI
-    language.
+    """Returns a list of instructions. More precisely, the function returns a
+    list of all classes decorated with either ~~Instruction or ~~operator;
+    these classes will be all be derived from ~~Instruction and represent a
+    complete enumeration of all instructions provided by the HILTI language.
     
     Returns: list of ~~Instruction-derived classes - The list of all
     instructions.
@@ -444,3 +496,78 @@ def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=
         return None
 
     return i
+
+import sys    
+
+def matchInstructionWithSignature(i, sig):
+    """Checks whether an instruction matches a signature. 
+    
+    i: ~~Instruction - The instruction to check.
+    sig: ~~Signature - The signature to check with. 
+    
+    Returns: (match, errormsg) - *match* is True if the instruction matches
+    the signature, and False otherwise. If *match* is false, *errormsg*
+    contains a string describing the mismatch in a way suitable to present to
+    the user in an error message."""
+
+    def checkOp(op, sig, tag):
+        if sig and op == None and not type.isOptional(sig):
+            return "%s missing" % tag
+
+        if op and not sig:
+            return "superfluous %s" % tag
+
+        if op and sig:
+            error = False
+            if isinstance(op, TypeOperand):
+                if op.value() != sig:
+                    error = True
+            
+            elif op.type() != sig:
+                error = True
+                
+            if error:
+                return "type of %s does not match signature (expected %s, found %s) " % \
+                    (tag, str(type.fmtTypeClass(sig)), str(op.type()))
+            
+        return None
+        
+    msg = checkOp(i.op1(), sig.op1(), "operand 1")
+    if not msg:
+        msg = checkOp(i.op2(), sig.op2(), "operand 2")
+    if not msg:
+        msg = checkOp(i.op3(), sig.op3(), "operand 3")
+    if not msg:
+        msg = checkOp(i.target(), sig.target(),"target")
+        
+    if not msg:
+        return (True, "success")
+    else:
+        return (False, msg)
+
+def findOverloadedOperator(op):
+    """Returns the type-specific version of an overloaded operator. Based on
+    an instance of ~~Operator, it will search all type-specific
+    implementations (i.e., all ~~OverloadedOperators) and return the matching
+    ones. 
+    
+    op: ~~Operator - The operator for which to return the type-specific version.
+    
+    Returns: (num, ~~OverloadedOperator) - *num* is the number of matches, and
+    the second element of the tuple is first match or None if *num* is zero.
+    """
+    
+    matches = []
+    
+    try:
+        for sig in _OverloadedOperators[op.__class__.__name__]:
+            (success, errormsg) = matchInstructionWithSignature(op, sig)
+            if success:
+                matches += [sig]
+    except KeyError:
+        pass
+
+    if not matches:
+        return (0, None)
+
+    return (len(matches), matches[0])    

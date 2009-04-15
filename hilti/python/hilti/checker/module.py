@@ -99,38 +99,11 @@ def _(self, i):
         self.error(f, "input file must start with module declaration")
         
     self._have_others = True
-    
-    # Check that signature maches the actual operands. 
-    def typeError(actual, expected, tag):
-        self.error(i, "type of %s does not match signature (expected %s, found %s) " % (tag, str(expected), str(actual)))
-        
-    def checkOp(op, sig, tag):
-        if sig and op == None and not type.isOptional(sig):
-            self.error(i, "%s missing" % tag)
-            return
 
-        if op and not sig:
-            self.error(i, "superfluous %s" % tag)
-            return
-
-        if op and sig:
-            
-            error = False
-            if isinstance(op, instruction.TypeOperand):
-                if op.value() != sig:
-                    error = True
-            
-            elif op.type() != sig:
-                error = True
-                
-            if error:
-                typeError(op.type(), type.fmtTypeClass(sig), tag)
-                return 
-        
-    checkOp(i.op1(), i.signature().op1(), "operand 1")
-    checkOp(i.op2(), i.signature().op2(), "operand 2")
-    checkOp(i.op3(), i.signature().op3(), "operand 3")
-    checkOp(i.target(), i.signature().target(),"target")
+    (success, errormsg) = instruction.matchInstructionWithSignature(i, i.signature())
+    if not success:
+        self.error(i, errormsg)
+        return
 
     if i.target() and not isinstance(i.target(), instruction.IDOperand):
         self.error(i, "target must be an identifier")

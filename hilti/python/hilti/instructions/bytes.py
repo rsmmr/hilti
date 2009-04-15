@@ -12,6 +12,14 @@ append operations. Bytes are forward-iterable.
 
 from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.instructions.operators import *
+
+@overload(New, op1=Bytes, target=Reference)
+class New(Operator):
+    """
+    Allocates a new *bytes* instancem, which will be initially empty.
+    """
+    pass
 
 @instruction("bytes.assign", op1=Reference, target=Reference)
 class Assign(Instruction):

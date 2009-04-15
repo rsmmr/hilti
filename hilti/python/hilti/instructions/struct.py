@@ -12,6 +12,14 @@ is returned for reads when it is unset.
 
 from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.instructions.operators import *
+
+@overload(New, op1=Struct, target=Reference)
+class New(Operator):
+    """Allocates a new instance of the structure given as *op1*. All fields
+    will initially be unset. 
+    """
+    pass
 
 @instruction("struct.get", op1=Reference, op2=String, target=Any)
 class Get(Instruction):

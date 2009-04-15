@@ -5,15 +5,20 @@
 from hilti.instructions import flow
 from hilti.core import *
 from checker import checker
-from hilti import codegen
 
 @checker.when(instruction.Operator)
 def _(self, i):
     # Relying on the code generator here is not great but that's the only
     # place where the information is available.
+
+    (num, ovop) = instruction.findOverloadedOperator(i)
     
-    t = i.operatorType()
+    if num == 0:
+        checker.error(i, "no matching implementation of overloaded operator found")
+        return;
     
-    if not codegen.codegen.codegen.implementsOperator(t, i):
-        checker.error(i, "type %s does not implement operator %s" % (t, i.name()))
+    if num > 1:
+        checker.error(i, "use of overloaded operator is ambigious, multiple matching implementations found")
+        return
+        
 

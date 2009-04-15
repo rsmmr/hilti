@@ -1459,23 +1459,6 @@ class CodeGen(visitor.Visitor):
 
         return False
     
-    def implementsOperator(self, type, op):
-        """Checks whether a type implements a specific operator.
-        
-        type: ~~Type - The type to check.
-        op: ~~Operator - The operator to check for. 
-        
-        Returns: Boolean - True if the type implements the operator.
-        """
-        
-        type = op.operatorType()
-        
-        for (t, o, func) in CodeGen._Callbacks[CodeGen._CB_OPERATOR]:
-            if isinstance(type, t) and isinstance(op, o):
-                return True
-
-        return False
-    
     def llvmOp(self, op, refine_to = None):
         """Converts an instruction operand into an LLVM value. The method
         might use the current :meth:`builder`. 
