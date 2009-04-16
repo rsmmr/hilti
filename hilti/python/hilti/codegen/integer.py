@@ -63,7 +63,7 @@ def _(self, i):
 @codegen.operator(type.Integer, instructions.operators.Equal)
 def _(self, i):
     op1 = self.llvmOp(i.op1())
-    op2 = self.llvmOp(i.op1())
+    op2 = self.llvmOp(i.op2())
     result = self.builder().icmp(llvm.core.IPRED_EQ, op1, op2)
     self.llvmStoreInTarget(i.target(), result)
     

@@ -26,6 +26,7 @@ keywords = {
     "void": "VOID", 
     "any": "ANY", 
     "type": "METATYPE", 
+    "enum": "ENUM",
     "Null": "NULL",
     
     "default": "ATTR_DEFAULT"
@@ -52,6 +53,7 @@ tokens = (
    'ANY',
    'METATYPE',
    'NULL', 
+   'ENUM',
    
    'ATTR_DEFAULT'
 ) 

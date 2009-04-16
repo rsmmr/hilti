@@ -99,7 +99,8 @@ def p_def_local(p):
     p.parser.current.function.addID(p[2])
     
 def p_def_type(p):
-    """def_type : def_struct_decl"""
+    """def_type : def_struct_decl
+                | def_enum_decl"""
     pass
     
 def p_def_struct(p):
@@ -109,6 +110,21 @@ def p_def_struct(p):
     sid = id.ID(p[3], struct, id.Role.GLOBAL, location=loc(p, 1))
     p.parser.current.module.addID(sid)
     type.registerHiltiType(stype)
+    
+def p_def_enum(p):
+    """def_enum_decl : ENUM _begin_nolines IDENT '{' id_list '}' _end_nolines"""
+    etype = type.Enum(p[5])
+    enum = type.EnumDecl(etype)
+    
+    # Register the type.
+    eid = id.ID(p[3], enum, id.Role.GLOBAL, location=loc(p, 1))
+    p.parser.current.module.addID(eid)
+    type.registerHiltiType(etype)
+        
+    # Register the individual labels.
+    for (label, value) in etype.labels().items():
+        eid = id.ID(p[3] + "::" + label, etype, id.Role.CONST, location=loc(p, 1))
+        p.parser.current.module.addID(eid, value, local=True)
 
 def p_def_import(p):
     """def_import : IMPORT IDENT"""
@@ -236,7 +252,6 @@ def p_instruction(p):
 
 def p_operand_ident(p):
     """operand : IDENT"""
-    
     ident = id.ID(p[1], type.Unknown(), id.Role.UNKNOWN)
     p[0] = instruction.IDOperand(ident, location=loc(p, 1))
 
@@ -366,6 +381,20 @@ def p_type_tuple(p):
         p[0] = type.Tuple(p[2])
     else:
         p[0] = type.Tuple(["*"])
+
+def p_type_ident(p):
+    """type : IDENT"""
+    # Must be a type name.
+    id = p.parser.current.module.lookupID(p[1])
+    if not id:
+        error(p, "unknown identifier %s" % p[1])
+        raise ply.yacc.SyntaxError
+    
+    if not isinstance(id.type(), type.TypeDeclType):
+        error(p, "%s is not a type name" % p[1])
+        raise ply.yacc.SyntaxError
+    
+    p[0] = id.type().declType()
     
 def p_type_list(p):    
     """type_list : type "," type
@@ -437,7 +466,14 @@ def p_struct_id_list(p):
         p[0] = [p[1]]
     else:
         p[0] = [p[1]] + p[3]
-        
+
+def p_id_list(p):
+    """id_list : IDENT "," id_list
+                | IDENT"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
         
 def p_error(p):    
     if p:

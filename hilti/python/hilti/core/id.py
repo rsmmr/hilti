@@ -14,10 +14,14 @@ class Role:
     GLOBAL = 1
     """A ~~GLOBAL ~~ID is defined at module-level scope."""
     
-    LOCAL = 2
+    CONST = 2
+    """A ~~CONST ~~ID is defined at module-level scope and represents a
+    constant value."""
+    
+    LOCAL = 3
     """A ~~LOCAL ~~ID is defined inside another entity such as a function."""
     
-    PARAM = 3
+    PARAM = 4
     """An ~~PARAM :class:`ID` is defined as a function argument."""
     
 class ID(ast.Node):
@@ -81,7 +85,9 @@ class ID(ast.Node):
         return self._name.find("::") >= 0
     
     def splitScope(self): 
-        """Splits the ID's name into scope and local part. 
+        """Splits the ID's name into scope and local part. Only the first
+        scope is used for the splitting; potentially further scopes are left
+        untouched (e.g., ``a::b::c`` is split into ``a`` and ``b::c``.).
         
         Returns: tuple (scope, local) - If ID's name if qualified, *scope* is
         the ID's scope, and *local* the ID's local part; as in HILTI scopes

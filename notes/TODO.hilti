@@ -4,8 +4,6 @@ Instructions
 
 - Single return statement independent of whether we're returning a
 value or not. 
-  
-- new T
 
 Data Types
 ==========
@@ -19,6 +17,7 @@ Infracstructure
 ===============
 
 - Add garbage collector
+
 - Complete exception support
 
 Cleanup
@@ -46,7 +45,11 @@ included without the need for manual auto* directives.
 
 - We need to figure out a way to document the libhilti and generally
 C-level stuff.
- 
+
+- The type-specific implementation of operators should be documented
+separately from the type's standard instruction; perhaps in a 
+subsection or so.
+
 Misc
 ====
 

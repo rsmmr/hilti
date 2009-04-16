@@ -70,6 +70,8 @@ extern void __hlt_exception_print_uncaught(__hlt_exception exception);
 #define __HLT_TYPE_STRUCT    7
 #define __HLT_TYPE_CHANNEL   8
 #define __HLT_TYPE_BYTES     9
+#define __HLT_TYPE_ENUM     10
+#define __HLT_TYPE_ENUM_LABEL 11
 
 #define __HLT_TYPE_ITERATOR_BYTES 100
    // %doc-__HLT_TYPE-end
@@ -167,6 +169,13 @@ extern double __hlt_double_to_double(const __hlt_type_info* type, const void* ob
 
 extern const __hlt_string* __hlt_bool_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
 extern int64_t __hlt_bool_to_int64(const __hlt_type_info* type, const void* obj, __hlt_exception* expt);
+
+///////////////////////////////////////////////////////////////////////////////
+// Support functions for HILTI's enum data type.
+///////////////////////////////////////////////////////////////////////////////
+
+extern const __hlt_string* __hlt_enum_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
+extern int64_t __hlt_enum_to_int64(const __hlt_type_info* type, const void* obj, __hlt_exception* expt);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Support functions for HILTI's string data type.

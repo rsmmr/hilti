@@ -26,14 +26,15 @@ def _(self, id):
     struct = llvm.core.Type.struct(fields)
 
     self.llvmCurrentModule().add_type_name(id.name(), struct)
-    
+
 @codegen.when(id.ID, type.ValueType)
-def _(self, id):
+def _(self, i):
     if self.currentFunction():
         # Ignore locals, we do them when we're generating the function's code. 
         return
-    
-    self.llvmCurrentModule().add_global_variable(self.llvmTypeConvert(id.type()), id.name())
+
+    if i.role() == id.Role.GLOBAL:
+        self.llvmCurrentModule().add_global_variable(self.llvmTypeConvert(i.type()), i.name())
 
 ### Function definitions.
 

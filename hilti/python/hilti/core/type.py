@@ -374,6 +374,34 @@ class Integer(ValueType):
     
     _name = "int"
     _id = 1
+
+class Enum(ValueType):
+    """Type for enumerations. Each label of the enumerations is mapped to a
+    unique integer. In addition to the user-defined labels, there is always an
+    implicitly defined value ``Undef``. 
+    
+    labels: list of string - The lables that make up the possible values of
+    the enumeration. 
+    """
+    def __init__(self, labels):
+        name = "enum { %s }" % ", ".join(labels)
+        super(Enum, self).__init__([], name)
+        
+        i = 0
+        self._labels = {}
+        for t in ["Undef"] + labels:
+            self._labels[t] = i
+            i += 1
+            
+    def labels(self):
+        """Returns the enums labels with their corresponding integer values.
+        
+        Returns: dictonary string -> int - The labels mappend to their values.
+        """
+        return self._labels
+
+    _name = "enum"
+    _id = 10
     
 class Double(ValueType):
     """Type for doubles."""
@@ -464,7 +492,7 @@ class Reference(ValueType):
         return self._type
         
     def cmpWithSameType(self, other):
-        if self._type == None or other._type == None:
+        if self.wildcardType() or other.wildcardType():
             return True
         
         return self._type == other._type
@@ -521,6 +549,16 @@ class StructDecl(TypeDeclType):
         super(StructDecl, self).__init__(structt, "%s" % structt.name())
 
     _name = "struct declaration"
+    
+class EnumDecl(TypeDeclType):
+    """Type for enum declarations. 
+    
+    enumt: ~~Enum - The enum type declared.
+    """
+    def __init__(self, enumt):
+        super(EnumDecl, self).__init__(enumt, "%s" % enumt.name())
+
+    _name = "enum declaration"
     
 class Channel(HeapType):
     """Type for channels. 

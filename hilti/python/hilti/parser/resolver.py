@@ -14,7 +14,8 @@ class Resolver(visitor.Visitor):
       ~~IDOperands to type ~~Unknown, and the resolver goes through
       the |ast| and tries to resolve them to their actual type. If an
       ~~IDOperand turns out to refer to a ~~TypeDeclType, it's turned into a
-      ~~TypeOperand.
+      ~~TypeOperand. If an ~~IDOperand refers to an ~~Enum label, it's turned
+      into a ConstOperand.
 
     - If a function ~~Call is lacking arguments but the called
       function's type provides defaults, we add corresponding
@@ -331,9 +332,12 @@ class Resolver(visitor.Visitor):
 
             if isinstance(op, instruction.TupleOperand):
                 # Look up all operands inside the tuple recursively.
+                new_ops = []
                 for o in op.value():
-                    resolveOp(o, tag)
-                op.setTuple(op.value()) # Update type
+                    (replace, on) = resolveOp(o, tag)
+                    new_ops += [on if replace else o]
+                    
+                op.setTuple(new_ops) # Update type
                 return (False, None)
         
             if not isinstance(op, instruction.IDOperand):
@@ -350,6 +354,12 @@ class Resolver(visitor.Visitor):
             
             if isinstance(ident.type(), type.TypeDeclType):
                 return (True, instruction.TypeOperand(ident.type().declType()))
+
+            if isinstance(ident.type(), type.Enum) and ident.role() == id.Role.CONST:
+                (scope, name) = ident.splitScope();
+                value = ident.type().labels()[name]
+                const = constant.Constant(value, ident.type())
+                return (True, instruction.ConstOperand(const))
                 
             op.setID(ident)
             return (False, None)
@@ -369,7 +379,7 @@ class Resolver(visitor.Visitor):
         (replace, op) = resolveOp(i.target(), "target")
         if replace:
             i.setTarget(op)
-
+            
     def _debugInstruction(self, i, tag):
 
         if not self.Debug:

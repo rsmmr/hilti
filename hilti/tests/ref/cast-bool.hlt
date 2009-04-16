@@ -16,7 +16,7 @@ void run() {
     local ref<B> b
     local bool is
 
-    a = struct.new A
+    a = new A
     b = ref.assign Null
     
     is = ref.cast.bool a
