@@ -25,6 +25,7 @@ class ProtoGen(visitor.Visitor):
     def generateCPrototypes(self, ast, fname):
         """See ~~generateCPrototypes."""
         self._output = open(fname, "w")
+        self._moduel = None
 
         ifdefname = "HILTI_" + os.path.basename(fname).upper().replace("-", "_").replace(".", "_")
         
@@ -45,7 +46,9 @@ class ProtoGen(visitor.Visitor):
         
 protogen = ProtoGen()
 
-import sys
+@protogen.when(module.Module)
+def _(self, m):
+    self._module = m
 
 @protogen.pre(function.Function)
 def _(self, f):
@@ -72,7 +75,12 @@ def _(self, f):
                 
         print >>self._output, "%s %s(%s, const __hlt_exception *);" % (result, cg.nameFunction(f, prefix=False), ", ".join(args))
         
-        
+@protogen.when(id.ID, type.ValueType)
+def _(self, i):
+   if i.role() == id.Role.CONST:
+       
+       value = self._module.lookupIDVal(i.name())
+       print >>self._output, "static const int8_t %s = %s;" % (i.name().replace("::", "_"), value)
     
     
 
