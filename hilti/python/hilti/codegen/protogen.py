@@ -25,7 +25,7 @@ class ProtoGen(visitor.Visitor):
     def generateCPrototypes(self, ast, fname):
         """See ~~generateCPrototypes."""
         self._output = open(fname, "w")
-        self._moduel = None
+        self._module = None
 
         ifdefname = "HILTI_" + os.path.basename(fname).upper().replace("-", "_").replace(".", "_")
         
