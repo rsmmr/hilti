@@ -20,7 +20,7 @@ from hilti.core.instruction import *
 from hilti.instructions.operators import *
 
 @overload(Equal, op1=Enum, op2=Enum, target=Bool)
-class Equals(Operator):
+class Equal(Operator):
     """
     Returns True if *op1* equals *op2*.
     """

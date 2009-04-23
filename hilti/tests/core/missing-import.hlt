@@ -1,0 +1,18 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT a.out >output 2>&1 
+# @TEST-EXEC:      test-diff output
+#
+# Make sure we need the "import Hilti". This is expected to fail.
+# However, if the importing works incorrectly, Hilti::print might
+# actually be known even without an import because internally we
+# import hilti_intern.hlt, which in turn imports hilti.hlt. If the IDs
+# from there get erroneously transfered to Main, then Hilti::print
+# will be resolvable.
+
+module Main
+
+void run() {
+    call Hilti::print(42)
+}
+

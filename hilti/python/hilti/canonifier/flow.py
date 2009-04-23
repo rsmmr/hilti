@@ -37,9 +37,7 @@ def _splitBlock(canonifier, ins=None):
 
 @canonifier.when(instructions.flow.Call)
 def _(self, i):
-    
-    name = i.op1().value().name()
-    func = self.currentModule().lookupIDVal(name)
+    func = self.currentModule().lookupIDVal(i.op1().value())
     assert func and isinstance(func.type(), type.Function)
     
     if func.callingConvention() in (function.CallingConvention.C, function.CallingConvention.C_HILTI):

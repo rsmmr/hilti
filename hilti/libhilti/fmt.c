@@ -84,7 +84,23 @@ static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const 
         }
         
         break;
-    
+
+      case 'x': 
+        if ( fmt_type->to_int64 ) {
+            int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, excpt);
+            if ( *excpt )
+                return;
+            
+            snprintf(tmp, tmp_size, "%llx", i);
+            _add_asciiz(tmp, buffer, bpos, dst, excpt);
+        }
+        else {
+            *excpt = __hlt_exception_value_error;
+            return;
+        }
+        
+        break;
+        
       case 'f': 
         if ( fmt_type->to_double ) {
             double d = (*fmt_type->to_double)(fmt_type, fmt_arg, excpt);

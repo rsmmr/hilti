@@ -15,6 +15,29 @@ from hilti.core.type import *
 from hilti.core.instruction import *
 from hilti.instructions.operators import *
 
+@overload(Unpack, op1=IteratorBytes, op2=IteratorBytes, op3=Enum, target=Tuple)
+class Unpack(Operator):
+    """Unpacks a string from a sequence of raw bytes; see the ~~Unpack
+    operator for information about *op1*, and *op2* and *target*.
+    
+    *op3* specifies the layout of the bytes and can have one of the following
+    values of enum type ``Hilti::Packed``:
+    
+    .. literalinclude:: /libhilti/hilti.hlt
+       :start-after: %doc-packed-int-start
+       :end-before:  %doc-packed-int-start
+
+    For the signed variants, the bit-width of the target integer must match
+    the width of the unpacket integer. However, because we don't have 
+    *unsigned* integers in HILTI, for the ``Packet::UInt*`` versions, the
+    width of the target integer must be *larger* than that of the unpacked
+    value: for ``Packed::Uint8`` is must be ``int16`, for ``Packed::UInt8`` is
+    must be ``int32`, etc.
+    
+    Todo: Fix the text: we differentiate between constants and non-constant
+    as *op3*.
+    """
+    
 @overload(Incr, op1=Integer, target=Integer)
 class Incr(Operator):
     """

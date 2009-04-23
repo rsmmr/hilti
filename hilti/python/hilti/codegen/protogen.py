@@ -74,13 +74,21 @@ def _(self, f):
                 args += [ti.c_prototype]
                 
         print >>self._output, "%s %s(%s, const __hlt_exception *);" % (result, cg.nameFunction(f, prefix=False), ", ".join(args))
-        
+
 @protogen.when(id.ID, type.ValueType)
 def _(self, i):
    if i.role() == id.Role.CONST:
+
+       # Don't generate constants for recusively imported IDs.
+       if i.scope() != self._module.name():
+           return
        
-       value = self._module.lookupIDVal(i.name())
-       print >>self._output, "static const int8_t %s = %s;" % (i.name().replace("::", "_"), value)
+       value = self._module.lookupIDVal(i)
+
+       scope = i.scope()
+       scope = scope[0].upper() + scope[1:]
+       
+       print >>self._output, "static const int8_t %s_%s = %s;" % (scope, i.name().replace("::", "_"), value)
     
     
 

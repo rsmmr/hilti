@@ -159,7 +159,7 @@ class HiltiType(Type):
     
     name: string - Same as for :meth:`~hilti.core.type.type`. 
     docname: string - Same as for :meth:`~hilti.core.type.type`.
-    itertype: ~~Iterator - If class is iterable, the type of the iterator;
+    itertype: ~~Iterator-derived *class* - If type is iterable, the type of the iterator;
     otherwise None. 
     
     Raises: ~~ParameterMismatch - Raised when there's a problem with one of
@@ -209,7 +209,7 @@ class HiltiType(Type):
         
         Returns: ~~Iterator - The iterator type or None if not iterable. 
         """
-        return self._itertype
+        return self._itertype()
 
     class ParameterMismatch(Exception):
         """Exception class to indicate a problem with a type parameter.
@@ -294,7 +294,7 @@ class Iterator(ValueType):
         super(Iterator, self).__init__(args, Iterator._name)
 
         self._type = args[0]
-        if not issubclass(self._type, HiltiType):
+        if not isinstance(self._type, HiltiType):
             raise HiltiType.ParameterMismatch(self._type, "iterator takes a type as parameter")
 
     def containerType(self):
@@ -527,7 +527,7 @@ class Bytes(HeapType):
     """Type for ``bytes``. 
     """
     def __init__(self):
-        super(Bytes, self).__init__([], Bytes._name, itertype=IteratorBytes())
+        super(Bytes, self).__init__([], Bytes._name, itertype=IteratorBytes)
 
     _name = "bytes"
     _id = 9
@@ -536,7 +536,7 @@ class IteratorBytes(Iterator):
     """Type for iterating over ``bytes``. 
     """
     def __init__(self):
-        super(IteratorBytes, self).__init__([Bytes])
+        super(IteratorBytes, self).__init__([Bytes()])
 
     _id = 100
 

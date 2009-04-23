@@ -33,7 +33,7 @@
 
 #include "hilti_intern.h"
 
-typedef struct __hlt_bytes_chunk {
+struct __hlt_bytes_chunk {
     const int8_t* start;            // Pointer to first data byte.
     const int8_t* end;              // Pointer one beyond the last data byte.
     struct __hlt_bytes_chunk* next; // Successor in bytes object.
@@ -41,12 +41,6 @@ typedef struct __hlt_bytes_chunk {
     
     int8_t owner;           // True if we "own" the data, i.e., allocated it.
     int16_t free;           // Bytes still available in allocated block. Only valid if owner. 
-} __hlt_bytes_chunk;
-
-struct __hlt_bytes_pos {
-    __hlt_bytes_chunk *chunk; // Current chunk.
-    const int8_t* cur;        // Current position in chunk.
-    const int8_t* end;       // Last byte in our chunk. 
 };
 
 struct __hlt_bytes {
@@ -83,6 +77,17 @@ static void add_chunk(__hlt_bytes* b, __hlt_bytes_chunk* c)
 __hlt_bytes* __hlt_bytes_new(__hlt_exception* excpt)
 { 
     return __hlt_gc_calloc_non_atomic(1, sizeof(__hlt_bytes));
+}
+
+__hlt_bytes* __hlt_bytes_new_from_data(const int8_t* data, int32_t len, __hlt_exception* excpt)
+{ 
+    __hlt_bytes* b = __hlt_gc_calloc_non_atomic(1, sizeof(__hlt_bytes));
+    __hlt_bytes_chunk* dst = __hlt_gc_malloc_non_atomic(sizeof(__hlt_bytes_chunk));
+    dst->start = data;
+    dst->end = data + len;
+    dst->owner = 0;
+    add_chunk(b, dst);
+    return b;
 }
 
 // Returns the number of bytes stored.
@@ -166,35 +171,31 @@ void __hlt_bytes_append_raw(__hlt_bytes* b, const int8_t* raw, __hlt_bytes_size 
     add_chunk(b, dst);
 }
 
-static __hlt_bytes_pos PosEnd = { 0, 0, 0 };
+static __hlt_bytes_pos PosEnd = { 0, 0 };
 
-static inline int8_t is_end(const __hlt_bytes_pos* pos) 
+static inline int8_t is_end(__hlt_bytes_pos pos)
 {
-    return pos->chunk == 0;
+    return pos.chunk == 0;
 }
 
-__hlt_bytes* __hlt_bytes_sub(const __hlt_bytes_pos* start, const __hlt_bytes_pos* end, __hlt_exception* excpt)
+__hlt_bytes* __hlt_bytes_sub(__hlt_bytes_pos start, __hlt_bytes_pos end, __hlt_exception* excpt)
 {
-    if ( __hlt_bytes_pos_eq(start, end, excpt) ) {
-        *excpt = __hlt_exception_value_error;
-        return 0;
-    }
+    if ( __hlt_bytes_pos_eq(start, end, excpt) )
+        // Return an empty bytes object.
+        return __hlt_bytes_new(excpt);
     
     if ( is_end(start) ) {
         *excpt = __hlt_exception_value_error;
         return 0;
     }
-        
-    __hlt_bytes* b = __hlt_gc_calloc_non_atomic(1, sizeof(__hlt_bytes));
     
+    __hlt_bytes* b = __hlt_bytes_new(excpt);
+
     // Special case: if both positions are inside the same chunk, it's easy.
-    // Note that we can't optimize here if end is the __hlt_bytes_end()
-    // because then we can't easily find out whether start is pointing to the
-    // last chunk if the list.
-    if ( start->chunk == end->chunk ) {
+    if ( start.chunk == end.chunk || (is_end(end) && start.chunk->next == 0) ) {
         __hlt_bytes_chunk* c = __hlt_gc_malloc_non_atomic(sizeof(__hlt_bytes_chunk));
-        c->start = start->cur;
-        c->end = end->cur;
+        c->start = start.cur;
+        c->end = end.cur ? end.cur : start.chunk->end;
         c->owner = 0;
         add_chunk(b, c);
         return b;
@@ -202,13 +203,13 @@ __hlt_bytes* __hlt_bytes_sub(const __hlt_bytes_pos* start, const __hlt_bytes_pos
     
     // Create the first chunk of the sub-bytes. 
     __hlt_bytes_chunk* first = __hlt_gc_malloc_non_atomic(sizeof(__hlt_bytes_chunk));
-    first->start = start->cur;
-    first->end = start->end;
+    first->start = start.cur;
+    first->end = start.chunk->end;
     first->owner = 0;
     add_chunk(b, first);
     
     // Copy the chunks in between.
-    for ( const __hlt_bytes_chunk* c = start->chunk->next; is_end(end) || c != end->chunk; c = c->next ) {
+    for ( const __hlt_bytes_chunk* c = start.chunk->next; is_end(end) || c != end.chunk; c = c->next ) {
         
         if ( ! c ) {
             if ( is_end(end) )
@@ -229,8 +230,8 @@ __hlt_bytes* __hlt_bytes_sub(const __hlt_bytes_pos* start, const __hlt_bytes_pos
     if ( ! is_end(end) ) {
         // Create the last chunk of the sub-bytes.
         __hlt_bytes_chunk* last = __hlt_gc_malloc_non_atomic(sizeof(__hlt_bytes_chunk));
-        last->start = end->chunk->start;
-        last->end = end->cur;
+        last->start = end.chunk->start;
+        last->end = end.cur;
         last->owner = 0;
         add_chunk(b, last);
     }
@@ -238,26 +239,12 @@ __hlt_bytes* __hlt_bytes_sub(const __hlt_bytes_pos* start, const __hlt_bytes_pos
     return b;
 }
 
-const int8_t* __hlt_bytes_sub_raw(const __hlt_bytes_pos* start, const __hlt_bytes_pos* end, __hlt_exception* excpt)
-{
-    if ( __hlt_bytes_pos_eq(start, end, excpt) ) {
-        *excpt = __hlt_exception_value_error;
-        return 0;
-    }
-    
-    if ( is_end(start) ) {
-        *excpt = __hlt_exception_value_error;
-        return 0;
-    }
-    
-    // The easy case: start and end are within the same chunk.
-    if ( start->chunk == end->chunk )
-        return start->cur;
-    
+static const int8_t* __hlt_bytes_sub_raw_internal(__hlt_bytes_pos start, __hlt_bytes_pos end, __hlt_exception* excpt)
+{    
     __hlt_bytes_size len = __hlt_bytes_pos_diff(start, end, excpt);
 
     if ( len == 0 ) {
-        // Can't happen ...
+        // Can't happen because we should have be in the easy case. 
         *excpt = __hlt_exception_internal_error;
         return 0;
         }
@@ -274,12 +261,12 @@ const int8_t* __hlt_bytes_sub_raw(const __hlt_bytes_pos* start, const __hlt_byte
     int8_t* p = mem;
     
     // Copy the first chunk.
-    __hlt_bytes_size n = start->end - start->cur;
-    memcpy(p, start->cur, n);
+    __hlt_bytes_size n = start.chunk->end - start.cur;
+    memcpy(p, start.cur, n);
     p += n;
     
     // Copy the chunks in between.
-    for ( const __hlt_bytes_chunk* c = start->chunk->next; is_end(end) || c != end->chunk; c = c->next ) {
+    for ( const __hlt_bytes_chunk* c = start.chunk->next; is_end(end) || c != end.chunk; c = c->next ) {
         
         if ( ! c ) {
             
@@ -298,8 +285,8 @@ const int8_t* __hlt_bytes_sub_raw(const __hlt_bytes_pos* start, const __hlt_byte
     
     if ( ! is_end(end) ) {
         // Copy the last chunk.
-        n = end->cur - end->chunk->start;
-        memcpy(p, end->chunk->start, n);
+        n = end.cur - end.chunk->start;
+        memcpy(p, end.chunk->start, n);
         p += n;
         assert(p - mem == len);
     }
@@ -307,7 +294,48 @@ const int8_t* __hlt_bytes_sub_raw(const __hlt_bytes_pos* start, const __hlt_byte
     return mem;
 }
 
-__hlt_bytes_pos* __hlt_bytes_offset(const __hlt_bytes* b, __hlt_bytes_size pos, __hlt_exception* excpt)
+
+const int8_t* __hlt_bytes_sub_raw(__hlt_bytes_pos start, __hlt_bytes_pos end, __hlt_exception* excpt)
+{
+    // The easy case: start and end are within the same chunk.
+    if ( start.chunk == end.chunk )
+        return start.cur;
+    
+    // We split the rest into its own function to make it easier for the
+    // compiler to inline the fast case.
+    return __hlt_bytes_sub_raw_internal(start, end, excpt);
+}
+
+int8_t __hlt_bytes_extract_one(__hlt_bytes_pos* pos, const __hlt_bytes_pos end, __hlt_exception* excpt)
+{
+    if ( is_end(*pos) || __hlt_bytes_pos_eq(*pos, end, excpt) ) {
+        *excpt = __hlt_exception_value_error;
+        return 0;
+    }
+
+    // Extract byte.
+    int8_t b = *(pos->cur);
+
+    // Increate iterator. 
+    
+    if ( pos->cur < pos->chunk->end - 1 ) 
+        // We stay inside chunk.
+        ++pos->cur;
+        
+    else {
+        // Switch to next chunk.
+        pos->chunk = pos->chunk->next;
+        if ( pos->chunk )
+            pos->cur = pos->chunk->start;
+        else   
+            // End reached.
+            *pos = PosEnd;
+    }
+    
+    return b;
+}
+
+__hlt_bytes_pos __hlt_bytes_offset(const __hlt_bytes* b, __hlt_bytes_size pos, __hlt_exception* excpt)
 {
     if ( pos < 0 )
         pos += __hlt_bytes_len(b, excpt);
@@ -318,39 +346,36 @@ __hlt_bytes_pos* __hlt_bytes_offset(const __hlt_bytes* b, __hlt_bytes_size pos, 
         if ( ! c ) {
             // Position is out range.
             *excpt = __hlt_exception_value_error;
-            return 0;
+            return PosEnd;
         }
         
         pos -= (c->end - c->start);
         
     }
         
-    __hlt_bytes_pos* p = __hlt_gc_malloc_non_atomic(sizeof(__hlt_bytes_pos));
-    p->chunk = c;
-    p->cur = c->start + pos;
-    p->end = c->end;
+    __hlt_bytes_pos p;
+    p.chunk = c;
+    p.cur = c->start + pos;
     return p;
 }
 
-__hlt_bytes_pos* __hlt_bytes_begin(const __hlt_bytes* b, __hlt_exception* excpt)
+__hlt_bytes_pos __hlt_bytes_begin(const __hlt_bytes* b, __hlt_exception* excpt)
 {
-    __hlt_bytes_pos* p = __hlt_gc_malloc_non_atomic(sizeof(__hlt_bytes_pos));
+    if ( ! b->head )
+        return PosEnd;
     
-    // Note that for the empty Bytes object, this will return a position that
-    // matches with PosEnd. We can't return PosEnd directly because we need
-    // to return a non-const position.
-    p->chunk = b->head;
-    p->cur = b->head ? b->head->start : 0;
-    p->end = b->head ? b->head->end : 0;
+    __hlt_bytes_pos p;
+    p.chunk = b->head;
+    p.cur = b->head ? b->head->start : 0;
     return p;
 }
 
-const __hlt_bytes_pos* __hlt_bytes_end(const __hlt_bytes* b, __hlt_exception* excpt)
+__hlt_bytes_pos __hlt_bytes_end(const __hlt_bytes* b, __hlt_exception* excpt)
 {
-    return &PosEnd;
+    return PosEnd;
 }
 
-int8_t __hlt_bytes_pos_deref(__hlt_bytes_pos* pos, __hlt_exception* excpt)
+int8_t __hlt_bytes_pos_deref(__hlt_bytes_pos pos, __hlt_exception* excpt)
 {
     if ( is_end(pos) ) {
         // Position is out range.
@@ -358,36 +383,31 @@ int8_t __hlt_bytes_pos_deref(__hlt_bytes_pos* pos, __hlt_exception* excpt)
         return 0;
     }
     
-    return *pos->cur;
+    return *pos.cur;
 }
 
-__hlt_bytes_pos* __hlt_bytes_pos_incr(const __hlt_bytes_pos* old, __hlt_exception* excpt)
+__hlt_bytes_pos __hlt_bytes_pos_incr(__hlt_bytes_pos old, __hlt_exception* excpt)
 {
     if ( is_end(old) )
         // Fail silently. 
         return old;
 
-    __hlt_bytes_pos* pos = __hlt_gc_malloc_non_atomic(sizeof(__hlt_bytes_pos));
-    pos->chunk = old->chunk;
-    pos->cur = old->cur;
-    pos->end = old->end;
+    __hlt_bytes_pos pos = old;
     
     // Can we stay inside the same chunk?
-    if ( pos->cur < pos->end - 1 ) {
-        ++pos->cur;
+    if ( pos.cur < pos.chunk->end - 1 ) {
+        ++pos.cur;
         return pos;
     }
 
     // Need to switch chunk.
-    pos->chunk = pos->chunk->next;
-    if ( ! pos->chunk ) {
+    pos.chunk = pos.chunk->next;
+    if ( ! pos.chunk ) {
         // End reached.
-        *pos = PosEnd;
-        return pos;
+        return PosEnd;
     }
     
-    pos->cur = pos->chunk->start;
-    pos->end = pos->chunk->end;
+    pos.cur = pos.chunk->start;
     return pos;
 }
 
@@ -421,36 +441,39 @@ void __hlt_bytes_pos_decr(__hlt_bytes_pos* pos, __hlt_exception* excpt)
 }
 #endif
 
-int8_t __hlt_bytes_pos_eq(const __hlt_bytes_pos* pos1, const __hlt_bytes_pos* pos2, __hlt_exception* excpt)
+int8_t __hlt_bytes_pos_eq(__hlt_bytes_pos pos1, __hlt_bytes_pos pos2, __hlt_exception* excpt)
 {
-    return pos1->cur == pos2->cur && pos1->chunk == pos2->chunk;
+    return pos1.cur == pos2.cur && pos1.chunk == pos2.chunk;
 }
 
 // Returns the number of bytes from pos1 to pos2 (not counting pos2).
-__hlt_bytes_size __hlt_bytes_pos_diff(const __hlt_bytes_pos* pos1, const __hlt_bytes_pos* pos2, __hlt_exception* excpt)
+__hlt_bytes_size __hlt_bytes_pos_diff(__hlt_bytes_pos pos1, __hlt_bytes_pos pos2, __hlt_exception* excpt)
 {
+    if ( __hlt_bytes_pos_eq(pos1, pos2, excpt) )
+        return 0;
+    
     if ( is_end(pos1) ) {
         // Invalid starting position.
         *excpt = __hlt_exception_value_error;
         return 0;
     }
-      
-    if ( __hlt_bytes_pos_eq(pos1, pos2, excpt) ) {
-        // Must not be the same.
-        *excpt = __hlt_exception_value_error;
-        return 0;
-    }
     
-    // Special case: both in same chunk.
-    if ( pos1->chunk == pos2->chunk )
-        return pos2->cur - pos1->cur;
+    // Special case: both inside same chunk.
+    if ( pos1.chunk == pos2.chunk ) {
+        if ( pos1.cur > pos2.cur ) {
+            // Invalid starting position.
+            *excpt = __hlt_exception_value_error;
+            return 0;
+        }
+        return pos2.cur - pos1.cur;
+    }
 
     // Count first chunk.
-    __hlt_bytes_size n = pos1->end - pos1->cur;
+    __hlt_bytes_size n = pos1.chunk->end - pos1.cur;
 
     // Count intermediary chunks.
     const __hlt_bytes_chunk* c;
-    for ( c = pos1->chunk->next; is_end(pos2) || c != pos2->chunk; c = c->next ) {
+    for ( c = pos1.chunk->next; is_end(pos2) || c != pos2.chunk; c = c->next ) {
         if ( ! c ) {
             if ( is_end(pos2) )
                 break;
@@ -465,7 +488,7 @@ __hlt_bytes_size __hlt_bytes_pos_diff(const __hlt_bytes_pos* pos1, const __hlt_b
         
     if ( c )
         // Count last chunk.
-        n += pos2->cur - pos2->chunk->start;
+        n += pos2.cur - pos2.chunk->start;
     
     return n;
 }

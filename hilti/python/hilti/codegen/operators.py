@@ -8,8 +8,7 @@ from codegen import codegen
 
 @codegen.when(instruction.Operator)
 def _(self, i):
-    success = self.llvmExecuteOperator(i)
-    assert success
+    self.llvmExecuteOperator(i)
         
 
 

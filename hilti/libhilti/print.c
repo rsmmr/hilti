@@ -16,6 +16,10 @@
  * convert to the locale encoding yet. We just print them in \u syntax. */
 static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
 {
+    if ( ! s )
+        // Empty string.
+        return;
+    
     char c;
     int32_t cp;
     const int8_t* p = s->bytes;

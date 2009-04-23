@@ -33,12 +33,17 @@ def _(type):
 @codegen.llvmCtorExpr(type.Reference)
 def _(op, refine_to):
     # This can only be "None".
-    assert op.value() == None
-    
-    if refine_to and op.type().wildcardType():
-        return llvm.core.Constant.null(codegen.llvmTypeConvert(refine_to))
+    if op.value() == None:
+        if refine_to and op.type().wildcardType():
+            return llvm.core.Constant.null(codegen.llvmTypeConvert(refine_to))
         
-    return llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
+        return llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
+        
+    else:
+        # Pass on to ctor of referenced type.
+        #
+        # FIXME: Write a function for doing the callback.
+        return codegen._callCallback(codegen._CB_CTOR_EXPR, op.type().refType(), [op, refine_to])
 
 @codegen.llvmType(type.Reference)
 def _(type, refine_to):

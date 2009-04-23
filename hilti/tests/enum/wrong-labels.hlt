@@ -26,3 +26,15 @@ enum Foo { A, BC, DEF }
 void run() {
      call Hilti::print(Undef)
 }     
+
+# @TEST-START-NEXT
+
+module Main
+
+import hilti
+
+enum Foo { A, BC, DEF }
+
+void run() {
+     call Hilti::print(Packed::ASCIIZ)
+}     

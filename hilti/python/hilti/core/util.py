@@ -79,29 +79,35 @@ def internal_error(msg, component=None, context=None):
     _print(component, "internal error", msg, context)
     assert False
     
-def expand_escapes(str):
+def expand_escapes(str, unicode=True):
     r"""Expands escape sequences. The following escape sequences are supported:
     
-    ============   ========================
+    ============   ============================
     Escape         Result
-    ============   ========================
-    \\ \\            Backslash
-    \\n             Line feed
-    \\r             Carriage return
-    \\t             Tabulator
-    \\uxxxx         16-bit Unicode codepoint
-    \\uxxxxxxxx     32-bit Unicode codepoint
-    ============   ========================
+    ============   ============================
+    \\ \\          Backslash
+    \\n            Line feed
+    \\r            Carriage return
+    \\t            Tabulator
+    \\uXXXX        16-bit Unicode codepoint (u)
+    \\UXXXXXXXX    32-bit Unicode codepoint (u)
+    \\xXX          8-bit hex value          (r)
+    ============   =============================
     
-    
-    str: string - The string to expand. 
+    str: string - The string to expand.  unicode: bool - If true, a
+    Unicode string is returned and the escape sequences marked as
+    ``(u)`` are supported. If false, a raw byte string is returned
+    and the escape sequences marked as ``(r)`` are supported.
     
     Returns: unicode - A unicode string with escape sequences expanded.
     
     Raises: ValueError - Raised when an illegal sequence was found. 
     """
     
-    result = u""
+    if unicode:
+        result = u""
+    else:
+        result = ""
     i = 0
     
     while i < len(str):
@@ -124,12 +130,15 @@ def expand_escapes(str):
                     result += "\t"
                 elif c == "\"":
                     result += "\""
-                elif c == "u":
+                elif c == "u" and unicode:
                     result += unichr(int(str[i:i+4], 16))
                     i += 4
-                elif c == "U":
+                elif c == "U" and unicode:
                     result += unichr(int(str[i:i+8], 16))
                     i += 8
+                elif c == "x" and not unicode:
+                    result += chr(int(str[i:i+2], 16))
+                    i += 2
                 else:
                     raise ValueError
                 

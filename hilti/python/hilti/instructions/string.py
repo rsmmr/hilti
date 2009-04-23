@@ -23,6 +23,26 @@ Todo:
 """
 from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.instructions.operators import *
+
+@overload(Unpack, op1=IteratorBytes, op2=IteratorBytes, op3=Tuple, target=Tuple)
+class Unpack(Operator):
+    """
+    Unpacks a string from a sequence of raw bytes; see the ~~Unpack operator
+    for information about *op1*, and *op2* and *target*.
+    
+    *op3* is a tuple of type ``tuple<Charset, Packed, Any>. The first component of
+    the tuple specifies the character set used to decode the bytes; the
+    second component defines how the length of the string is determined. It
+    can either be ``Packed::ASCIIZ`` or any of the ``Packed::*`` values
+    supported by the integer type's ~~integer.Unpack operator. In the former case
+    (``Packed::ASCIIZ``), the string will ends with the first null byte found
+    (or *op2*, whatever comes first). In the latter case, the raw bytes are
+    assumed to start with a length field indicating the number of bytes that
+    are part of the string, and the length field is unpacked according to
+    ``Packed::*`` type. 
+    """
+    pass
 
 @instruction("string.assign", op1=String, target=String)
 class Assign(Instruction):

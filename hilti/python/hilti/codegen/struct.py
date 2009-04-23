@@ -34,7 +34,7 @@ def _(op, refine_to):
 def _(type, refine_to):
     return llvm.core.Type.pointer(_llvmStructType(type))
 
-@codegen.operator(type.Struct, instructions.operators.New)
+@codegen.operator(instructions.struct.New)
 def _(self, op):
     # Allocate memory for struct. 
     structt = op.op1().value()

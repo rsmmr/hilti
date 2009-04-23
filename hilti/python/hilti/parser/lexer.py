@@ -47,6 +47,7 @@ tokens = (
    'DOUBLE',
    'BOOL',
    'STRING',
+   'BYTES',
    'STRUCT',
    'TYPE',
    'VOID',
@@ -100,6 +101,11 @@ def t_FALSE(t):
 def t_STRING(t):
     '"([^\n"]|\\\\")*"'
     t.value = t.value[1:-1]    
+    return t
+
+def t_BYTES(t):
+    'b"([^\n"]|\\\\")*"'
+    t.value = t.value[2:-1]    
     return t
 
 def t_LABEL(t):

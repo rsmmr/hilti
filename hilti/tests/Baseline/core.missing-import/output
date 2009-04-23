@@ -1,0 +1,3 @@
+missing-import.hlt:16: error, unknown identifier Hilti::print in operand 1
+
+1 error found

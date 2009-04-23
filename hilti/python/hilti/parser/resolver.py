@@ -347,6 +347,7 @@ class Resolver(visitor.Visitor):
                 return (False, None)
 
             ident = self.resolveID(op.value().name(), tag, i)
+            
             if not ident:
                 return (False, None)
 
@@ -356,9 +357,10 @@ class Resolver(visitor.Visitor):
                 return (True, instruction.TypeOperand(ident.type().declType()))
 
             if isinstance(ident.type(), type.Enum) and ident.role() == id.Role.CONST:
-                (scope, name) = ident.splitScope();
-                value = ident.type().labels()[name]
-                const = constant.Constant(value, ident.type())
+                label = ident.name() 
+                j = label.find("::")
+                assert j > 0
+                const = constant.Constant(label[j+2:], ident.type())
                 return (True, instruction.ConstOperand(const))
                 
             op.setID(ident)
@@ -422,7 +424,7 @@ def _(self, i):
     self._debugInstruction(i, "resolveInstrOperands()")
 
     if isinstance(i, instructions.flow.Call):
-        func = self._module.lookupIDVal(i.op1().value().name())
+        func = self._module.lookupIDVal(i.op1().value())
         if func:
             self.applyDefaultParams(func, i.op2())
             self._debugInstruction(i, "applyDefaultParams()")

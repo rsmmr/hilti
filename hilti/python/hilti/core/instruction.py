@@ -145,22 +145,9 @@ class Operator(Instruction):
     op3: ~~Operand - The operator's third operand, or None if unused.
     target: ~~IDOperand - The operator's target, or None if unused.
     location: ~~Location - A location to be associated with the operator. 
-    
-    Todo: For now, operators are always overloaded based on the type of their
-    first operand. We should probably make that more flexibel sometime.
     """
     def __init__(self, op1=None, op2=None, op3=None, target=None, location=None):
         super(Operator, self).__init__(op1, op2, op3, target, location)
-       
-    """Returns the type on which the operator should be overloaded.
-    
-    Returns: ~~HiltiType - The type."""
-    def operatorType(self):
-        t = self.op1().type()
-        if isinstance(t, type.TypeDeclType):
-            return t.type()
-        else:
-            return t 
 
 class OverloadedOperator(Instruction):
     """Class for overloading an Operator on a type-specific basis. For each
@@ -456,9 +443,9 @@ def overload(operator, op1, op2=None, op3=None, target=None):
         
         idx = operator.__name__
         try:
-            _OverloadedOperators[idx] += [ins._signature]
+            _OverloadedOperators[idx] += [ins]
         except:
-            _OverloadedOperators[idx] = [ins._signature]
+            _OverloadedOperators[idx] = [ins]
             
         return newclass
     
@@ -560,10 +547,10 @@ def findOverloadedOperator(op):
     matches = []
     
     try:
-        for sig in _OverloadedOperators[op.__class__.__name__]:
-            (success, errormsg) = matchInstructionWithSignature(op, sig)
+        for o in _OverloadedOperators[op.__class__.__name__]:
+            (success, errormsg) = matchInstructionWithSignature(op, o._signature)
             if success:
-                matches += [sig]
+                matches += [o]
     except KeyError:
         pass
 

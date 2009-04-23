@@ -8,9 +8,6 @@ from checker import checker
 
 @checker.when(instruction.Operator)
 def _(self, i):
-    # Relying on the code generator here is not great but that's the only
-    # place where the information is available.
-
     (num, ovop) = instruction.findOverloadedOperator(i)
     
     if num == 0:

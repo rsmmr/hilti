@@ -44,6 +44,8 @@ class State:
         self.function = None
         self.block = None
         self.import_paths = []
+        self.imported_files = []
+        self.no_hilti_intern = False
 
 def p_module(p):
     """module : _eat_newlines MODULE IDENT _instantiate_module NL module_decl_list"""
@@ -67,8 +69,8 @@ def p_instantiate_module(p):
     p.parser.current.module = module.Module(p[-1], location=loc(p, -1))
     
     # Implicitly import the internal libhilti functions.
-    if p.parser.current.module.name() != "__hlt":
-        _importFile("hilti_intern.hlt", loc(p, -1))
+    if p.parser.current.module.name() != "__hlt" and not p.parser.current.no_hilti_intern:
+        _importFile("hilti_intern.hlt", loc(p, -1), no_hilti_intern=True)
     
 def p_module_decl_list(p):
     """module_decl_list :   module_decl module_decl_list
@@ -124,7 +126,7 @@ def p_def_enum(p):
     # Register the individual labels.
     for (label, value) in etype.labels().items():
         eid = id.ID(p[3] + "::" + label, etype, id.Role.CONST, location=loc(p, 1))
-        p.parser.current.module.addID(eid, value, local=True)
+        p.parser.current.module.addID(eid, value)
 
 def p_def_import(p):
     """def_import : IMPORT IDENT"""
@@ -140,19 +142,22 @@ def p_def_function_head(p):
     ftype = type.Function(p[6], p[3])
     
     if p[2] == function.CallingConvention.HILTI:
-        func = function.Function(p[4], ftype, p.parser.current.module, location=loc(p, 4))
+        func = function.Function(ftype, None, location=loc(p, 4))
     elif p[2] in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
         # FIXME: We need some way to declare C function which are not part of
         # a module. In function.Function, we already allow module==None in the
         # CC.C case but our syntax does not provide for that currently. 
-        func = function.Function(p[4], ftype, p.parser.current.module, cc=p[2], location=loc(p, 4))
+        func = function.Function(ftype, None, cc=p[2], location=loc(p, 4))
     else:
         # Unknown calling convention
         assert False
 
+    i = id.ID(p[4], func.type(), id.Role.GLOBAL, location=loc(p, 4))
+    p.parser.current.module.addID(i, func)
+    
+    func.setID(i)
     func.setLinkage(p[1])
-        
-    p.parser.current.module.addID(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=loc(p, 4)), func)
+
     p[0] = func
     
     p.parser.current.function = None
@@ -278,7 +283,16 @@ def p_operand_null(p):
 def p_operand_string(p):
     """operand : STRING"""
     try:
-        string = constant.Constant(util.expand_escapes(p[1]), type.String(), location=loc(p, 1))
+        string = constant.Constant(util.expand_escapes(p[1], unicode=True), type.String(), location=loc(p, 1))
+        p[0] = instruction.ConstOperand(string, location=loc(p, 1))
+    except ValueError:
+        error(p, "error in escape sequence %s" % p[1])
+        raise ply.yacc.SyntaxError
+    
+def p_operand_bytes(p):
+    """operand : BYTES"""
+    try:
+        string = constant.Constant(util.expand_escapes(p[1], unicode=False), type.Reference([type.Bytes()]), location=loc(p, 1))
         p[0] = instruction.ConstOperand(string, location=loc(p, 1))
     except ValueError:
         error(p, "error in escape sequence %s" % p[1])
@@ -508,8 +522,8 @@ def error(p, msg, lineno=0):
 
 # Recursively imports another file and makes all declared/exported IDs available 
 # to the current module. 
-def _importFile(filename, location):
-
+def _importFile(filename, location, no_hilti_intern=False):
+    
     global Parser
     oldparser = Parser
 
@@ -522,36 +536,61 @@ def _importFile(filename, location):
     fullpath = util.findFileInPaths(filename, oldparser.current.import_paths, lower_case_ok=True)
     if not fullpath:
         util.error("cannot find %s for import" % filename, context=location)
-        
-    (errors, ast) = parse(fullpath, oldparser.current.import_paths)
+
+    if fullpath in Parser.current.imported_files:
+        # Already imported.
+        return
+
+    Parser.current.imported_files += [fullpath]
+    
+    nhi = no_hilti_intern or Parser.current.no_hilti_intern
+    
+    (errors, ast) = parse(fullpath, oldparser.current.import_paths, no_hilti_intern=nhi)
     if errors > 0:
         return (errors, None)
-    
+
     substate = Parser.current
     Parser = oldparser
 
     for i in substate.module.IDs():
-        t = i.type()
         
+        if i.imported():
+            # Don't import IDs recursively.
+            continue
+        
+        t = i.type()
+
+        # FIXME: Can we unify functions and other types here? Probably once we
+        # have a linkage for all IDs, see below.
         if isinstance(t, type.Function):
-            func = substate.module.lookupIDVal(i.name())
+            func = substate.module.lookupIDVal(i)
             assert func and isinstance(func.type(), type.Function)
             
             if func.linkage() == function.Linkage.EXPORTED:
-                Parser.current.module.addID(id.ID(func.name(), func.type(), id.Role.GLOBAL, location=func.location()), func)
-            
+                newid = id.ID(i.name(), i.type(), i.role(), scope=i.scope(), imported=True, location=func.location())
+                Parser.current.module.addID(newid, func)
+                
+            continue
+
+        # FIXME: We should introduce linkage for all IDs so that we can copy
+        # only "exported" ones over.
+        if isinstance(t, type.TypeDeclType) or i.role() == id.Role.CONST:
+            val = substate.module.lookupIDVal(i)
+            newid = id.ID(i.name(), i.type(), i.role(), scope=i.scope(), imported=True, location=i.location())
+            Parser.current.module.addID(newid, val)
             continue
         
-        # Cannot export types other than functions at the moment. 
-        assert False
+        # Cannot export types other than those above at the moment. 
+        util.internal_error("can't handle IDs of type %s (role %d) in import" % (repr(t), i.role()))
         
-def parse(filename, import_paths=["."]):
+def parse(filename, import_paths=["."], no_hilti_intern=False):
     """See ~~parse."""
     global Parser
     Parser = ply.yacc.yacc(debug=0, write_tables=0)
     
     Parser.current = State(filename)
     Parser.current.import_paths = import_paths
+    Parser.current.no_hilti_intern = no_hilti_intern
 
     filename = os.path.expanduser(filename)
     

@@ -51,9 +51,10 @@ def _(type, refine_to):
 
 @codegen.llvmCtorExpr(type.Enum)
 def _(op, refine_to):
-    return codegen.llvmConstInt(op.value(), 8)
+    value = op.type().labels()[op.value()]
+    return codegen.llvmConstInt(value, 8)
 
-@codegen.operator(type.Enum, instructions.operators.Equal)
+@codegen.operator(instructions.enum.Equal)
 def _(self, i):
     op1 = self.llvmOp(i.op1())
     op2 = self.llvmOp(i.op2())

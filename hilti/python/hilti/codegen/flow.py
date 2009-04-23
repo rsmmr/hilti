@@ -174,7 +174,7 @@ def _makeCall(cg, func, args, llvm_succ):
     
 @codegen.when(instructions.flow.CallTailVoid)
 def _(self, i):
-    func = self.lookupFunction(i.op1().value().name())
+    func = self.lookupFunction(i.op1().value())
     assert func
 
     args = i.op2().value()
@@ -187,7 +187,7 @@ def _(self, i):
 
 @codegen.when(instructions.flow.CallTailResult)
 def _(self, i):
-    func = self.lookupFunction(i.op1().value().name())
+    func = self.lookupFunction(i.op1().value())
     assert func
     args = i.op2().value()
     block = self.currentFunction().lookupBlock(i.op3().value().name())
@@ -218,7 +218,7 @@ import sys
     
 @codegen.when(instructions.flow.CallC)
 def _(self, i):
-    func = self.lookupFunction(i.op1().value().name())
+    func = self.lookupFunction(i.op1().value())
     assert func
     
     ids = func.type().args()

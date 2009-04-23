@@ -48,55 +48,45 @@ class CallingConvention:
 
     Note: See :ref:`interfacing-with-C` for more information.
     """
-        
+
 class Function(ast.Node):
     """A HILTI function declared or defined inside a module.
     
     name: string - Name of the function. It must be *non-qualified*,
     i.e., not be prefixed with any module name.
     
-    ty: :class:`~hilti.core.type.Function` - Type of the function. 
-      
-    module: ~~Module - Module that provides the function's
-    *implementation*. For a Function with linkage ~~C, *module* can
-    be None.
+    ty: ~~Function - The type of the function.
+    
+    ident: ~~ID - The ID to which the function is bound. *id* can be initially
+    None, but must be set via ~~setID before any other methods are used.
     
     location: ~~Location - A location to be associated with the function. 
     """
     
-    def __init__(self, name, ty, module, cc=CallingConvention.HILTI, location=None):
-        assert name
-        assert name.find("::") < 0 # must be non-qualified
-        assert module or cc == CallingConvention.C
+    def __init__(self, ty, ident, cc=CallingConvention.HILTI, location=None):
         assert isinstance(ty, type.Function)
         
         super(Function, self).__init__(location)
         
-        self._nq_name = name
-        
-        if module:
-            self._name = "%s::%s" % (module.name(), name)
-        else:
-            self._name = name 
-            
-        self._type = ty
         self._bodies = []
-        # Implictly export the main function.
-        self._linkage = Linkage.LOCAL if self._name.lower() != "main::run" else Linkage.EXPORTED
         self._cc = cc
-        self._module = module
+        self._type = ty
+        self._id = ident
+        
+        # Implictly export the main function.
+        self._linkage = Linkage.LOCAL
         
         self._scope = {}
-        for id in ty.args():
-            self._scope[id.name()] = id 
-
+        for i in ty.args():
+            self._scope[i.name()] = i
+            
     def name(self):
         """Returns the function's name.
         
-        Returns: string - The fully-qualified name of the function.
+        Returns: string - The name of the function.
         """
-        return self._name if self._cc != CallingConvention.C else self._nq_name
-        
+        return self._id.name()
+
     def type(self):
         """Returns the type of the function. 
         
@@ -105,18 +95,30 @@ class Function(ast.Node):
         """
         return self._type
 
-    def module(self): 
-        """Returns the function's module. 
+    def ID(self): 
+        """Returns the function's ID. 
         
-        Returns: ~~Module - The module that provides the implementation of the
-        function. Returns None if the function has ~~Linkage ~~C. 
+        Returns: ~~ID - The ID to which the function is bound. 
         """
-        return self._module
+        return self._id
+    
+    def setID(self, id): 
+        """Sets the ID to which the function is bound.
+        
+        id: ~~ID - The ID.
+        """
+        self._id = id
     
     def linkage(self):
         """Returns the linkage of the function.
         
-        Returns: ~~Linkage - The linkage of the function."""
+        Returns: ~~Linkage - The linkage of the function.
+        """
+        
+        # Always export Main::Run()
+        if self._id.scope() == "main" and self._id.name() == "run":
+            return Linkage.EXPORTED
+        
         return self._linkage
     
     def callingConvention(self):
@@ -150,9 +152,9 @@ class Function(ast.Node):
     def addID(self, id):
         """Inserts an ID into the function's scope. 
         
-        id: ~~ID - The ID to insert; the ID must not be qualified.
+        id: ~~ID - The ID to insert; the ID must not have a scope.
         """
-        assert not id.qualified()
+        assert not id.scope()
         self._scope[id.name()] = id 
         
     def lookupID(self, name):

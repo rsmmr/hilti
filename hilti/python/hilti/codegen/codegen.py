@@ -54,6 +54,7 @@ class CodeGen(visitor.Visitor):
         self._llvm.functions = {}  # All LLVM functions created so far, indexed by their name.
         self._llvm.frameptr = None # Frame pointer for current LLVM function.
         self._llvm.builders = []   # Stack of llvm.core.Builders
+        self._llvm.global_ctors = [] # List of registered ctors to run a startup.
 
         # Cache some LLVM types.
          
@@ -92,6 +93,10 @@ class CodeGen(visitor.Visitor):
         self.reset()
         self._libpaths = libpaths
         self.visit(ast)
+        
+        # Generate ctors at the very end. 
+        self._llvmGenerateCtors()
+        
         return self.llvmModule(verify)
             
     def pushBuilder(self, llvm_block):
@@ -140,17 +145,19 @@ class CodeGen(visitor.Visitor):
         """
         return self._block
     
-    # Looks up the function belonging to the given name. Returns None if not found. 
-    def lookupFunction(self, name):
-        """Looks up the function with the given name in the current module.
+    def lookupFunction(self, id):
+        """Looks up the function for the given ID in the current module.
         This is a short-cut for ``currentModule()->LookupIDVal()`` which in
         addition checks (via asserts) that the returns object is indeed a
         function.
         
+        id: string or ~~ID - Either the name of the ID to lookup (see ~~addID
+        for the lookup rules used for qualified names), or the ~~ID itself.
+        
         Returns: ~~Function - The function with the given name, or None if
         there's no such identifier in the current module's scope.
         """
-        func = self._module.lookupIDVal(name)
+        func = self._module.lookupIDVal(id)
         assert (not func) or (isinstance(func.type(), type.Function))
         return func
     
@@ -166,10 +173,14 @@ class CodeGen(visitor.Visitor):
         Returns: string - The mangled name, to be used for the corresponding 
         LLVM function.
         """
+
         name = func.name().replace("::", "_")
         
+        if func.ID().scope():
+            name = func.ID().scope() + "_" + name
+        
         if func.callingConvention() in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
-            # Don't mess with the names of C functions.
+            # Don't mess further with the names of C functions.
             return name
         
         if func.callingConvention() == function.CallingConvention.HILTI:
@@ -437,7 +448,22 @@ class CodeGen(visitor.Visitor):
         
         Returns: ~~llvm.core.Module - The new module.
         """
-        return  llvm.core.Module.new(name)
+        prototypes = util.findFileInPaths("hilti_intern.ll", self._libpaths)
+        if not prototypes:
+            util.error("cannot find hilti_intern.ll")
+        
+        try:
+            f = open(prototypes)
+        except IOError, e:
+            util.error("cannot read %s: %s" % (prototypes, e))
+            
+        try:
+            module = llvm.core.Module.from_assembly(f)
+        except llvm.LLVMException, e:
+            util.error("cannot parse %s: %s" % (prototypes, e))
+        
+        module.name = name
+        return module
         
     def llvmNewBlock(self, postfix):
         """Creates a new LLVM block. The block gets a label that is guaranteed
@@ -981,7 +1007,7 @@ class CodeGen(visitor.Visitor):
                 
         assert func.callingConvention() in (function.CallingConvention.C, function.CallingConvention.C_HILTI)
         
-        name = func.name().replace("::", "_")
+        name = self.nameFunction(func)
         
         try:
             func = self._llvm.functions[name]
@@ -1414,8 +1440,100 @@ class CodeGen(visitor.Visitor):
                 self.llvmAssign(val, addr)
                 return 
                 
-        util.internal_error("targetToLLVM: unknown target class: %s" % target)
+        util.internal_error("llvmStoreInTarget: unknown target class: %s" % target)
+        
+    def llvmStoreTupleInTarget(self, target, vals):
+        """Stores a tuple value in a target operand. The method uses the current
+        :meth:`builder`. 
+        
+        target: ~~IDOperand - The target operand. 
+        vals: list of llvm.core.Value - The elements of the tuple to store.
+        
+        Todo: Currently, stores are only supported for local variables, not
+        globals.
+        """
 
+        if isinstance(target, instruction.IDOperand):
+            i = target.id()
+            if i.role() == id.Role.LOCAL or i.role() == id.Role.PARAM:
+                # A local variable.
+                addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.name())
+                
+                for i in range(len(vals)):
+                    field = self.builder().gep(addr, [self.llvmGEPIdx(0), self.llvmGEPIdx(i)])
+                    self.llvmAssign(vals[i], field)
+                    
+                return 
+        
+        util.internal_error("llvmStoreTupleInTarget: unknown target class: %s" % target)
+
+    def llvmAddGlobalConst(self, value, tag):
+        """Adds a global constant to the current module. The constant is
+        initialized with the given value, and will have only internal linkage.
+        
+        value: llvm.core.Value - The value to initialize the constant with.
+        tag: string - A tag which will be added the constant's name for easier
+        identification in the generated bitcode.
+        
+        Return: llvm.core.Value - A value representing the new constant.
+        """
+        name = self.nameNewConstant(tag)
+        glob = codegen.llvmCurrentModule().add_global_variable(value.type, name)
+        glob.global_constant = True
+        glob.initializer = value
+        glob.linkage = llvm.core.LINKAGE_INTERNAL
+        return glob
+
+    def _llvmGenerateCtors(self):
+        # Generate the global ctor table. Must be called only once per module
+        # (and obviously after all ctors have been registered.)
+        #
+        # Note: The way this works in LLVM doesn't appear to be documented.
+        # But here's how I understand it: One defines a global array called
+        # ``llvm.global_ctors`` of type ``[ <n> x { i32, void ()* }]``. The
+        # first element of each tuple is a priority defining the order in which
+        # multiple ctors are run; however LLVM backends seem to ignore this at
+        # the moment and it is suggested to simply set it to 65536. The second
+        # element of each tuple is a pointer to a function ``void f()`` which
+        # will be called on startup. This array must have linkage ``appending``
+        # so that multiple of them (potentially in different compilation units)
+        # will be combined into one.
+
+        array = [llvm.core.Constant.struct([self.llvmConstInt(65536, 32), func]) for func in self._llvm.global_ctors]
+        
+        if not array:
+            return
+
+        funct = llvm.core.Type.function(llvm.core.Type.void(), [])
+        structt = llvm.core.Type.struct([llvm.core.Type.int(32), llvm.core.Type.pointer(funct)])
+        array = llvm.core.Constant.array(structt, array)
+        
+        glob = codegen.llvmCurrentModule().add_global_variable(array.type, "llvm.global_ctors")
+        glob.global_constant = True
+        glob.initializer = array
+        glob.linkage = llvm.core.LINKAGE_APPENDING
+        
+    def llvmAddGlobalCtor(self, callback):
+        """Registers code to be executed at program startup. This is primarily
+        intended for registering constructors for global variables, which will
+        then be run before any other code is executed. 
+        
+        The code itself needs to be generated by the *callback*, which should
+        use the current ~~builder.
+        
+        callback: Function - Function receiving no parameters.
+        """
+
+        funct = llvm.core.Type.function(llvm.core.Type.void(), [])
+        function = llvm.core.Function.new(self.llvmCurrentModule(), funct, self.nameNewFunction("ctor"))
+        block = function.append_basic_block("")
+        self.pushBuilder(block)
+        callback()
+        self.builder().ret_void()
+        self.popBuilder()
+        
+        self._llvm.global_ctors += [function]
+        
     # Table of callbacks. 
     _CB_TYPE_INFO = 1
     _CB_CTOR_EXPR = 2
@@ -1449,15 +1567,16 @@ class CodeGen(visitor.Visitor):
         
         op: ~~Operator - The operator to generate code for.
         """
-        
-        type = op.operatorType()
-        
-        for (t, o, func) in CodeGen._Callbacks[CodeGen._CB_OPERATOR]:
-            if isinstance(type, t) and isinstance(op, o):
+
+        (num, ovop) = instruction.findOverloadedOperator(op)
+        assert num == 1
+
+        for (o, func) in CodeGen._Callbacks[CodeGen._CB_OPERATOR]:
+            if repr(o) == repr(ovop):
                 func(self, op)
                 return True
-
-        return False
+        
+        util.internal_error("llvmExecuteOperator: no implementation found for %s" % op)
     
     def llvmOp(self, op, refine_to = None):
         """Converts an instruction operand into an LLVM value. The method
@@ -1595,7 +1714,7 @@ class CodeGen(visitor.Visitor):
     
         return register    
     
-    def operator(self, type, op):
+    def operator(self, op):
         """Decorator to define the type-specific implementation of an
         operator. The decorated function receives two paramemter: the first is
         the ~~CodeGen, and the second an ~~Operator; for the operator,
@@ -1603,13 +1722,10 @@ class CodeGen(visitor.Visitor):
         must generate LLVM code corresponding to *type*'s implementation of
         the operator. 
         
-        type: ~~HiltiType - The type for which to define an operator
-        implementation.
-        
-        op: ~~Operator - The operator to define an implementation for.
+        op: ~~Operator class - The operator to define an implementation for.
         """
         def register(func):
-            CodeGen._Callbacks[CodeGen._CB_OPERATOR] += [(type, op, func)]
+            CodeGen._Callbacks[CodeGen._CB_OPERATOR] += [(op, func)]
     
         return register    
     

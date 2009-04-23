@@ -44,4 +44,23 @@ class Equal(Operator):
     """
     pass
 
+@operator("unpack", op1=IteratorBytes, op2=IteratorBytes, op3=Any, target=Tuple)
+class Unpack(Operator):
+    """Unpacks an instance of a particular type (as determined by *target*;
+    see below) from the the binary data identified by the range from *op1* to
+    *op2*. *op3* may provide type-specific hints about the layout of the raw
+    bytes. The operator returns a ``tuple<T, iterator<bytes>>``, in the first
+    component is the newly unpacked instance and the second component is
+    locates the first bytes that has *not* been consumed anymore. 
+    
+    Raises ~~UnpackError if the raw bytes are not as expected (and
+    that fact can be verified); this includes the case that the
+    provided range does not contain sufficient bytes for unpacking
+    one instance.
+    
+    Note: All implementations of this operator must be able to deal with bytes
+    located at arbitrary, not necessarily aligned positions.
+    """
+    pass
+
 

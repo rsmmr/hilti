@@ -23,6 +23,8 @@ def _checkFunc(checker, i, func, cc):
 def _checkLabel(checker, i, op):
     pass
 
+import sys
+
 def _checkArgs(checker, i, func, op):
     if not isinstance(op, instruction.TupleOperand):
         checker.error(i, "function arguments must be a tuple")
@@ -65,7 +67,7 @@ def _(self, i):
 
 @checker.when(flow.Call)
 def _(self, i):
-    func = self.currentModule().lookupIDVal(i.op1().id().name())
+    func = self.currentModule().lookupIDVal(i.op1().id())
     if not _checkFunc(self, i, func, None):
         return
 
@@ -81,7 +83,7 @@ def _(self, i):
 
 @checker.when(flow.CallC)
 def _(self, i):
-    func = self.currentModule().lookupIDVal(i.op1().id().name())
+    func = self.currentModule().lookupIDVal(i.op1().id())
     if not _checkFunc(self, i, func, [function.CallingConvention.C, function.CallingConvention.C_HILTI]):
         return
 
@@ -97,7 +99,7 @@ def _(self, i):
 
 @checker.when(flow.CallTailVoid)
 def _(self, i):
-    func = self.currentModule().lookupIDVal(i.op1().id().name())
+    func = self.currentModule().lookupIDVal(i.op1().id())
     if not _checkFunc(self, i, func, [function.CallingConvention.HILTI]):
         return
     
@@ -111,7 +113,7 @@ def _(self, i):
 
 @checker.when(flow.CallTailResult)
 def _(self, i):
-    func = self.currentModule().lookupIDVal(i.op1().id().name())
+    func = self.currentModule().lookupIDVal(i.op1().id())
     if not _checkFunc(self, i, func, [function.CallingConvention.HILTI]):
         return
     

@@ -33,19 +33,28 @@ class ID(ast.Node):
     
     role: ~~Role - The role of the ID.
     
+    imported: bool - True to indicate that this ID was imported from another
+    module. This does not change the semantics of the ID in any way but can be
+    used to avoid importing it recursively at some later time.
+    
+    scope: string - An optional scope of the ID, i.e., the name of the module
+    in which it is defined. 
+    
     location: ~~Location - A location to be associated with the ID. 
     
     Note: The class maps the ~~Visitor subtype to :meth:`~type`.
     """
     
-    def __init__(self, name, type, role, location = None):
+    def __init__(self, name, type, role, scope=None, location = None, imported=False):
         assert name
         assert type
         
         super(ID, self).__init__(location)
         self._name = name
+        self._scope = scope.lower() if scope else None
         self._type = type
         self._role = role
+        self._imported = imported
         self._location = location
 
     def name(self):
@@ -55,9 +64,23 @@ class ID(ast.Node):
         """
         return self._name
 
+    def scope(self):
+        """Returns the ID's scope.
+        
+        Returns: string - The ID's scope, or None if it does not have one. The
+        scope will be lower-case.
+        """
+        return self._scope
+    
+    def setScope(self, scope):
+        """Sets the ID's scope.
+        
+        scope: string - The new scope.
+        """
+        self._scope = scope.lower() if scope else None
+        
     def setName(self, name): 
-        """Sets the ID's name. The name may be qualified with a scope (as in
-        ``scope::name``).
+        """Sets the ID's name.
         
         name: string - The new name.
         """
@@ -76,35 +99,19 @@ class ID(ast.Node):
         Returns: ~~Role - The ID's role.
         """
         return self._role
-    
-    def qualified(self):
-        """Returns whether the ID's name is qualified.
+
+    def imported(self):
+        """Returns whether the ID was imported from another module.
         
-        Returns: bool - True if name is qualified.
+        Returns: bool - True if the ID was imported.
         """
-        return self._name.find("::") >= 0
-    
-    def splitScope(self): 
-        """Splits the ID's name into scope and local part. Only the first
-        scope is used for the splitting; potentially further scopes are left
-        untouched (e.g., ``a::b::c`` is split into ``a`` and ``b::c``.).
-        
-        Returns: tuple (scope, local) - If ID's name if qualified, *scope* is
-        the ID's scope, and *local* the ID's local part; as in HILTI scopes
-        are generally matched case-insensitive, *scope* will be lower-cased. 
-        If the ID's name is not qualified, *scope* will be None and *local*
-        the name.
-        """
-        i = self._name.find("::") 
-        if i < 0:
-            return (None, self._name)
-        
-        scope = self._name[0:i].lower()
-        name = self._name[i+2:]
-        return (scope, name)
+        return self._imported
     
     def __str__(self):
-        return "%s %s" % (self._type, self._name)
+        if self._scope:
+            return "%s %s::%s" % (self._type, self._scope, self._name)
+        else:
+            return "%s %s" % (self._type, self._name)
     
     # Visitor support.
     def visitorSubType(self):

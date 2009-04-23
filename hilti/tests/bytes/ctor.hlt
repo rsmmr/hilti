@@ -1,0 +1,15 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    b = bytes.assign b"Hey\x20you!"
+    call Hilti::print(b)
+}

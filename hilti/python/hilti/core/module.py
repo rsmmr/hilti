@@ -43,63 +43,67 @@ class Module(ast.Node):
         """
         return [id for (id, value) in self._scope.values()]
 
-    def _canonName(self, id, local=False):
-        if not local:
-            (scope, name) = id.splitScope()
-            if not scope or scope == self._name.lower():
-                scope = self._name
-        else:
+    def _canonName(self, scope, name):
+        if not scope:
             scope = self._name
-            name = id.name()
-        
-        return "%s::%s" % (scope, name)
+            
+        return "%s~%s" % (scope, name)
     
-    def addID(self, id, value = True, local=False):
+    def addID(self, id, value = True):
         """Adds an ID to the module's scope. An arbitrary value can be
         associated with each ~~ID. If there's no specific value that needs to
         be stored, just use the default of *True*.
         
-        An ~~ID defined elsewhere can be imported into a module by adding it 
-        with a fully qualified name (i.e., ``<ext-module>::<name>``). In this
-        case, subsequent lookups will only succeed if they are likewise fully
-        qualified. If ~~ID comes with a fully-qualified name that matches the
-        module's own name, subsequent lookups will succeed no matter whether
-        they are qualified or not. 
+        An ~~ID defined elsewhere can be imported into a module by adding it
+        with a scope of that other module. In this case, subsequent lookups
+        will only succeed if they are accordingly qualified
+        (``<ext-module>::<name>``). If the ID comes either without a scope,
+        or with a scope that matches the module's own name, subsequent lookups
+        will succeed no matter whether they are qualified or not. 
         
-        If an ~~ID is nested inside a further namespace that is likewise
-        separated by ``::`` (e.g., ``MyEnum::MyBlue``), it must either be
-        added with it's fully qualified name (i.e., including the module name;
-        ``MyModule::MyEnum::MyBlue``), or *local* must be set to True to
-        indicate that the scope separator does not define a module namespace. 
+        If the ID does not have a scope, we set it's scope to the name of the
+        module.
         
         id: ~~ID - The ID to add to the module's scope.
         value: any - The value to associate with the ID.
-        local: bool - If true, it is assumed that the ID's name does not come
         with a module namespace even if there's a scope separator in there. 
         """
-        idx = self._canonName(id, local)
+        
+        idx = self._canonName(id.scope(), id.name())
         self._scope[idx] = (id, value)
+        
+        if not id.scope():
+            id.setScope(self._name)
 
-    def _lookupID(self, name, return_val):
-        # First try to look up the name as an unqualified name in the local
-        # module.
-        
-        tmp = idmod.ID(name, type.Type, 0) 
-        
-        # If the name is qualified, first try to look it up in the module
-        # namespace; it might just be local name with a further nested
-        # namespace. 
-        if tmp.qualified():
-            idx = self._canonName(tmp, local=True)
+    def _lookupID(self, id, return_val):
+
+        if isinstance(id, str):
+            # We first look it up as a module-local variable, assuming there's no
+            # scope in the name. 
             try:
+                idx = self._canonName(None, id)
                 (id, value) = self._scope[idx]
                 return value if return_val else id
-        
             except KeyError:
                 pass
+        
+            # Now see if there's a scope given.
+            i = id.find("::")
+            if i < 0:
+                # No scope.
+                return None
 
-        # The "normal" lookup.
-        idx = self._canonName(tmp)
+            # Look up with the scope.
+            scope = id[0:i].lower()
+            name = id[i+2:]
+            
+        else:
+            assert isinstance(id, idmod.ID)
+            scope = id.scope()
+            name = id.name()
+            
+        idx = self._canonName(scope, name)
+        
         try:
             (id, value) = self._scope[idx]
             return value if return_val else id
@@ -107,28 +111,30 @@ class Module(ast.Node):
         except KeyError:
             return None        
         
-    def lookupID(self, name):
+    def lookupID(self, id):
         """Looks up an ID in the module's scope. 
         
-        name: string - The name of the ID to lookup (see :meth:`addID` for the
-        lookup rules used for qualified names).
+        id: string or ~~ID - Either the name of the ID to lookup (see
+        :meth:`addID` for the lookup rules used for qualified names), or the
+        ~~ID itself. The latter is useful to check whether the ID is part of
+        the module's scope.
         
         Returns: ~~ID - The ID, or None if the name is not found.
         """
-        return self._lookupID(name, False)
+        return self._lookupID(id, False)
 
-    def lookupIDVal(self, name):
+    def lookupIDVal(self, id):
         """Looks up the value associated with an ID in the module's scope. 
         
-        name: string - The name of the ID to lookup (see :meth:`addID` for the
-        lookup rules used for qualified names).
+        id: string or ~~ID - Either the name of the ID to lookup (see
+        :meth:`addID` for the lookup rules used for qualified names), or the
+        ~~ID itself.
         
         Returns: any - The value associated with the ID, or None if the name
         is not found.
         """
-        return self._lookupID(name, True)
+        return self._lookupID(id, True)
 
-            
     def __str__(self):
         return "module %s" % self._name
     
@@ -136,7 +142,7 @@ class Module(ast.Node):
     def visit(self, v):
         v.visitPre(self)
         
-        for (id, value) in self._scope.values():
+        for (id, value) in sorted(self._scope.values()):
             v.visit(id)
             if isinstance(value, visitor.Visitable):
                 v.visit(value)

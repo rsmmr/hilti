@@ -16,6 +16,7 @@ void run() {
     local iterator<bytes> i1
     local iterator<bytes> i2
     local string s
+    local int32 i
 
     b1 = string.encode "01234567890" "ascii"
     call Hilti::print (b1)

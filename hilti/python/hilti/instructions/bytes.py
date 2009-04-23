@@ -8,6 +8,10 @@ _doc_type_description = """``Bytes`` is a data type for storing sequences of raw
 bytes. It is optimized for storing and operating on large amounts of
 unstructured data. In particular, it provides efficient subsequence and
 append operations. Bytes are forward-iterable. 
+
+There is a constructor for ``bytes`` resembling string syntax: ``b"abcdef"``
+creates a new ``bytes`` object and initialized it with six bytes. Note that
+such ``bytes`` instances are *not* constants but can be modified later on.
 """
 
 from hilti.core.type import *
@@ -22,7 +26,7 @@ class New(Operator):
     pass
 
 @overload(Incr, op1=IteratorBytes, target=IteratorBytes)
-class Incr(Operator):
+class IterIncr(Operator):
     """
     Advances the iterator to the next element, or the end position
     if already at the last.
@@ -30,14 +34,14 @@ class Incr(Operator):
     pass
 
 @overload(Deref, op1=IteratorBytes, target=Integer(8))
-class Deref(Operator):
+class IterDeref(Operator):
     """
     Returns the element the iterator is pointing at. 
     """
     pass
 
 @overload(Equal, op1=IteratorBytes, op2=IteratorBytes, target=Bool)
-class Equal(Operator):
+class IterEqual(Operator):
     """
     Returns true if *op1* and *op2* specify the same position.
     """
@@ -84,6 +88,11 @@ class Begin(Instruction):
 @instruction("bytes.end", op1=Reference, target=IteratorBytes)
 class End(Instruction):
     """Returns an iterator representing the position one after the last element of *op1*."""
+    pass
+
+@instruction("bytes.diff", op1=IteratorBytes, op2=IteratorBytes, target=Integer(32))
+class Diff(Instruction):
+    """Returns an number of bytes between *op1* and *op2*."""
     pass
 
 #@instruction("bytes.find", op1=Reference, op2=Reference, target=Integer)
