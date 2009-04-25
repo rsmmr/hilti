@@ -6,6 +6,8 @@ __all__ = ["codegen"]
 import codegen
 import protogen
 import typeinfo
+import system
+
 import flow
 import integer
 import double

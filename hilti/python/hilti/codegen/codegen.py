@@ -7,6 +7,7 @@ import sys
 import llvm
 import llvm.core 
 import typeinfo
+import system
 
 global_id = id
 
@@ -1024,10 +1025,23 @@ class CodeGen(visitor.Visitor):
             
             if func.callingConvention() == function.CallingConvention.C_HILTI:
                 args = self._llvmMakeArgTypesForCHiltiCall(func, args)
-            
+
+            # Depending on the plaform ABI, structs may or may not be returned
+            # per value. values. If not, there's a hidden first parameter
+            # passing a pointer into the function to store the value in, instead
+            # of the actual return value.
+            if isinstance(rt, llvm.core.StructType) and not system.returnStructByValue(rt):
+                hidden_return_arg = rt
+                args = [llvm.core.Type.pointer(rt)] + args
+                rt = llvm.core.Type.void()
+            else:
+                hidden_return_arg = None
+                
             ft = llvm.core.Type.function(rt, args)
             llvmfunc = self._llvm.module.add_function(ft, name)
-            llvm.calling_convention = llvm.core.CC_C
+            llvmfunc.calling_convention = llvm.core.CC_C
+            llvmfunc.hidden_return_arg = hidden_return_arg
+            
             self._llvm.functions[name] = llvmfunc
             return llvmfunc
 
@@ -1072,9 +1086,18 @@ class CodeGen(visitor.Visitor):
         if func.callingConvention() == function.CallingConvention.C_HILTI:
             args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types)
             
-        tag = None
-        if func.type().resultType() == type.Void:
+        if llvm_func.hidden_return_arg:
+            hidden_return_arg = self.builder().alloca(llvm_func.hidden_return_arg, "agg.tmp")
+            args = [hidden_return_arg] + args            
             call = self.builder().call(llvm_func, args)
+            call.add_parameter_attribute(1, llvm.core.ATTR_NO_ALIAS)
+            call.add_parameter_attribute(1, llvm.core.ATTR_STRUCT_RET)
+            # call.add_parameter_attribute(0, llvm.core.ATTR_NO_CAPTURE) # FIXME: llvm-py doesn't have this.
+            call = self.builder().load(hidden_return_arg)
+                
+        elif func.type().resultType() == type.Void:
+            call = self.builder().call(llvm_func, args)
+            
         else:
             call = self.builder().call(llvm_func, args, "result")
         
@@ -1132,7 +1155,6 @@ class CodeGen(visitor.Visitor):
         Note: ``hiltic`` can generate the right prototypes for such stub
         functions.
         """
-
         assert func.callingConvention() == function.CallingConvention.HILTI
 
         is_void = (func.type().resultType() == type.Void)

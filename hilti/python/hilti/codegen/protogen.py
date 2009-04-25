@@ -21,11 +21,15 @@ class ProtoGen(visitor.Visitor):
     
     def __init__(self):
         super(ProtoGen, self).__init__()
+
+    def addOutput(self, line):
+        self._lines += [line]        
         
     def generateCPrototypes(self, ast, fname):
         """See ~~generateCPrototypes."""
         self._output = open(fname, "w")
         self._module = None
+        self._lines = []
 
         ifdefname = "HILTI_" + os.path.basename(fname).upper().replace("-", "_").replace(".", "_")
         
@@ -39,6 +43,9 @@ class ProtoGen(visitor.Visitor):
 """ % (ifdefname, ifdefname)
         
         self.visit(ast)
+
+        for line in sorted(self._lines):
+            print >>self._output, line
         
         print >>self._output, """
 #endif
@@ -72,8 +79,8 @@ def _(self, f):
                 ti = cg.getTypeInfo(a.type())
                 assert ti.c_prototype
                 args += [ti.c_prototype]
-                
-        print >>self._output, "%s %s(%s, const __hlt_exception *);" % (result, cg.nameFunction(f, prefix=False), ", ".join(args))
+
+        self.addOutput("%s %s(%s, const __hlt_exception *);" % (result, cg.nameFunction(f, prefix=False), ", ".join(args)))
 
 @protogen.when(id.ID, type.ValueType)
 def _(self, i):
@@ -88,7 +95,7 @@ def _(self, i):
        scope = i.scope()
        scope = scope[0].upper() + scope[1:]
        
-       print >>self._output, "static const int8_t %s_%s = %s;" % (scope, i.name().replace("::", "_"), value)
+       self.addOutput("static const int8_t %s_%s = %s;" % (scope, i.name().replace("::", "_"), value))
     
     
 
