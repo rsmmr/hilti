@@ -90,7 +90,7 @@ if [ "$#" -lt "1" -o "$#" -gt "2" ]; then
    usage
 fi   
 
-LIBS="-l$lib$libsuffix -lc"
+LIBS="-l$lib$libsuffix -lc -lpthread"
 
 trap delete_tmps 0
 
