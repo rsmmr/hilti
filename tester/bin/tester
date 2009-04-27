@@ -40,11 +40,14 @@ RE_ENV = re.compile("\$\{(\w+)\}")
 
 RE_START_NEXT_TEST = re.compile("@TEST-START-NEXT")
 
-def output(msg, nl=True):
+def output(msg, nl=True, file=None):
+    if not file:
+        file = sys.stderr
+        
     if nl:
-        print >>sys.stderr, msg
+        print >>file, msg
     else:
-        print >>sys.stderr, msg,
+        print >>file, msg,
 
 def error(msg):
     print >>sys.stderr, msg
@@ -187,6 +190,11 @@ class Test(object):
                     
                 if Options.diag or Options.diagall:
                     self.showDiag()
+                
+                if Options.diagfile:
+                    print >>Options.diagfile, "%s ... failed" % self.name
+                    self.showDiag(Options.diagfile)
+                    
                 break
         else:
             if Options.verbose:
@@ -275,21 +283,21 @@ class Test(object):
         
         return env
     
-    def showDiag(self):
+    def showDiag(self, file=None):
         for line in self.diagmsgs:
-            output("  % " + line)
+            output("  % " + line, file=file)
 
-        for file in (self.diag, ".stderr"):
-            if not file:
+        for f in (self.diag, ".stderr"):
+            if not f:
                 continue
             
-            if os.path.isfile(file):
-                output("  % cat " + os.path.basename(file))
-                for line in open(file):
-                    output("  " + line.strip())
-                output("")	
+            if os.path.isfile(f):
+                output("  % cat " + os.path.basename(f), file=file)
+                for line in open(f):
+                    output("  " + line.strip(), file=file)
+                output("", file=file)	
         
-        if Options.wait:
+        if Options.wait and not file:
             output("<Enter> ...")
             try:
                 sys.stdin.readline()
@@ -376,6 +384,8 @@ optparser.add_option("-d", "--diagnostics", action="store_true", dest="diag", de
                      help="show diagnostic output for failed tests")
 optparser.add_option("-D", "--diagnostics-all", action="store_true", dest="diagall", default=False,
                      help="show diagnostic output for ALL tests")
+optparser.add_option("-f", "--file-diagnostics", action="store", type="string", dest="diagfile", default="",
+                     help="write diagnostic output for failed tests into file; if files exists, output is appended")
 optparser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
                      help="show commands as they are executed")
 optparser.add_option("-w", "--wait", action="store_true", dest="wait", default=False,
@@ -388,6 +398,12 @@ optparser.add_option("-b", "--brief", action="store_true", dest="brief", default
 if len(args) < 1:
     optparser.error("wrong number of arguments")
 
+if Options.diagfile:
+    try:
+        Options.diagfile = open(Options.diagfile, "a")
+    except IOError, e:
+        print >>sys.stderr, "cannot open %s: %s" (Options.diagfile, e)
+    
 tests = findTests(args)
 
 if not tests:
