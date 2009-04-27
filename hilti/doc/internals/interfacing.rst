@@ -43,17 +43,16 @@ The HILTI compiler supports two calling conventions (i.e., specifications
 describing how parameters and results are passed between caller and callee):
 ~~C and ~~C_HILTI.
 
-The ~~C convention performs a standard C call according to the
-target system's ABI, and the parameters given by the caller
-correspond directly to those received by the callee (only subject to
-the type mappings described above). The ~~C calling convention
-therefore allows to call arbitrary C functions from external
-libraries or other object files. It is also the more efficient
-calling convention of the two assuming it provides the functionality
-required. However, the ~~C convention does not support any
-HILTI-specific features that don't a direct equivalent in C. In
-particular, ~~C functions cannot raise exceptions, receive
-parameters of type ~~Any, or receive tuple parameters. 
+The ~~C convention performs a standard C call according to the target system's
+ABI; the parameters given by the caller correspond directly to those received
+by the callee (only subject to the type mappings described above); and the
+name of the function is left unmodified. The ~~C calling convention therefore
+allows to call arbitrary C functions from external libraries or other object
+files. It is also the more efficient calling convention of the two assuming it
+provides the functionality required. However, the ~~C convention does not
+support any HILTI-specific features that don't a direct equivalent in C. In
+particular, ~~C functions cannot raise exceptions, receive parameters of type
+~~Any, or receive tuple parameters. 
 
 The ~~C_HILTI calling conventions also use the target's ABI to
 *implement* the function call, it however modifies the parameters
@@ -125,6 +124,9 @@ Specifically, ~~C_HILTI differs from ~~C in the following aspects:
          :end-before:  %doc-__HLT_TYPE-end
          
       .. todo:: Explain how type parameters are encoded in __hlt_type_info.
+      
+   * If declared inside a ``module`` scope, the name of the function is
+   prefixed with ``<module-name>_``.
           
           
           
