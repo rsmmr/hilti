@@ -56,17 +56,22 @@ def isLittleEndian():
     if machine == "x86_64":
         return True
 
+    util.error("isLittleEndian() does not support architecture %s" % arch, component="system.py")
+
 _structSizeCache = {}    
     
 def returnStructByValue(type):
-    """Checks whether the host platform's ABI return a struct type by value.
+    """Checks whether the host platform's ABI returns a struct type by value.
     If not, we assume that the struct must be passed via a pointer given as
     the (hidden) *first* parameter to a function. 
     
     *type*: llvm.core.Type.struct - The struct for which one wants to know
     whether it is returned by value. 
     
-    Returns: bool - True if *type* is returned by value.
+    Returns: llvm.core.Type.int or None - If an integer type, the struct is
+    returned by value and the integer type specifies the type of the return
+    value that the ABI uses for returning such structs. If None, the struct is
+    not returned by value. 
     """
 
     try:
@@ -90,18 +95,31 @@ def returnStructByValue(type):
         _structSizeCache[str(type)] = sizeof
         
     if arch == "i386-darwin":
-        # Up to 8 bytes are ok.
-        return sizeof <= 8
+        if sizeof in (1, 2, 4, 8):
+            return llvm.core.Type.int(sizeof * 8)
+        return None
     
     if arch == "i386-linux":
         # Can't find documentation but looking at clang-cc, it seems to always
         # pass struct via temporary memory objects. 
-        return False
+        return None
 
     if arch == "x86_64-linux":
-        # FIXME: Not tested ...
-        return sizeof <= 16
+        if sizeof == 1:
+            return llvm.core.Type.int(8)
+
+        if sizeof == 2:
+            return llvm.core.Type.int(16)
+
+        if sizeof <= 4:
+            return llvm.core.Type.int(32)
+
+        if sizeof <= 8:
+            return llvm.core.Type.int(64)
+
+        if sizeof <= 16:
+            return llvm.core.Type.int(128)
+
+        return None
     
     util.error("returnsStructByValue() does not support architecture %s" % arch, component="system.py")
-    
-

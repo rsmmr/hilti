@@ -8,6 +8,8 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+import system
+
 _doc_c_conversion = """
 An ``int<n>`` is mapped to C integers depending on its width *n*, per the
 following table: 
@@ -170,8 +172,7 @@ _Unpacks = {
 #   "UInt64Big": (15, 64, 128, [7, 6, 5, 4, 3, 2, 1]),
 }
 
-host_is_little = True
-suffix = "Little" if host_is_little else "Big"
+suffix = "Little" if system.isLittleEndian() else "Big"
 
 # Add aliases for host byte order. 
 for (key, val) in _Unpacks.items():

@@ -175,13 +175,16 @@ class CodeGen(visitor.Visitor):
         LLVM function.
         """
 
-        name = func.name().replace("::", "_")
+        name = func.name()
+        
+        if func.callingConvention() == function.CallingConvention.C:
+            # Don't mess with the names of C functions.
+            return name
         
         if func.ID().scope():
             name = func.ID().scope() + "_" + name
         
-        if func.callingConvention() in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
-            # Don't mess further with the names of C functions.
+        if func.callingConvention() == function.CallingConvention.C_HILTI:
             return name
         
         if func.callingConvention() == function.CallingConvention.HILTI:
@@ -1030,17 +1033,25 @@ class CodeGen(visitor.Visitor):
             # per value. values. If not, there's a hidden first parameter
             # passing a pointer into the function to store the value in, instead
             # of the actual return value.
-            if isinstance(rt, llvm.core.StructType) and not system.returnStructByValue(rt):
-                hidden_return_arg = rt
-                args = [llvm.core.Type.pointer(rt)] + args
-                rt = llvm.core.Type.void()
-            else:
-                hidden_return_arg = None
+            hidden_return_arg = None
+            cast_return = None
+            
+            if isinstance(rt, llvm.core.StructType):
+                orig_rt = rt
+                rt = system.returnStructByValue(rt)
+                if not rt:
+                    hidden_return_arg = orig_rt
+                    args = [llvm.core.Type.pointer(orig_rt)] + args
+                    rt = llvm.core.Type.void()
+                else:
+                    hidden_return_arg = None
+                    cast_return = orig_rt
                 
             ft = llvm.core.Type.function(rt, args)
             llvmfunc = self._llvm.module.add_function(ft, name)
             llvmfunc.calling_convention = llvm.core.CC_C
             llvmfunc.hidden_return_arg = hidden_return_arg
+            llvmfunc.cast_return = cast_return
             
             self._llvm.functions[name] = llvmfunc
             return llvmfunc
@@ -1094,20 +1105,34 @@ class CodeGen(visitor.Visitor):
             call.add_parameter_attribute(1, llvm.core.ATTR_STRUCT_RET)
             # call.add_parameter_attribute(0, llvm.core.ATTR_NO_CAPTURE) # FIXME: llvm-py doesn't have this.
             call = self.builder().load(hidden_return_arg)
-                
+            result = call
+            
         elif func.type().resultType() == type.Void:
             call = self.builder().call(llvm_func, args)
+            result = call
             
         else:
             call = self.builder().call(llvm_func, args, "result")
-        
+            result = call            
+            
+            if llvm_func.cast_return:
+                # We can't cast an integer into a struct. Let's hope the
+                # optimizer is able to remove this tmp.
+                #
+                # FIXME: Turns out, currently it is not. What can we do about
+                # that?
+                tmp = self.builder().alloca(llvm_func.cast_return)
+                tmp_casted = self.builder().bitcast(tmp, llvm.core.Type.pointer(call.type))
+                self.builder().store(call, tmp_casted)
+                result = self.builder().load(tmp)
+                
         call.calling_convention = llvm.core.CC_C
         
         if func.callingConvention() == function.CallingConvention.C_HILTI:
             excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
             self._llvmGenerateExceptionTest(excpt_ptr)
             
-        return call
+        return result
 
     def llvmGenerateCCallByName(self, name, args, arg_types):
         """Generates a call to a C function given by it's name. The method
