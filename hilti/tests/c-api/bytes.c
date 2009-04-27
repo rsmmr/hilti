@@ -60,7 +60,7 @@ int main()
     __hlt_bytes* b2 = __hlt_bytes_new(&e);
  
     printf("len = %d (0) %s\n", __hlt_bytes_len(b, &e), myexp(e));
-    printf("empty = %d (1) %s\n", __hlt_bytes_empty(b, &e)), e;
+    printf("empty = %d (1) %s\n", __hlt_bytes_empty(b, &e), myexp(e));
 
     __hlt_bytes_append_raw(b, (int8_t*)"12345", 5, &e);
     printf("len = %d (5) %s\n", __hlt_bytes_len(b, &e), myexp(e));

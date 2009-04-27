@@ -11,8 +11,8 @@ HILTI_BASE=$BASE_DIR/hilti
 export LANG=C
 export LC_ALL=C
 
-export PATH="$PATH:$HILTI_BASE/tools/hiltic:$HILTI_BASE/tools/hilti-build"
-export PYTHONPATH="$PYTHONPATH:$HILTI_BASE/python"
+export PATH="$HILTI_BASE/tools/hiltic:$HILTI_BASE/tools/hilti-build:$PATH"
+export PYTHONPATH="$HILTI_BASE/python:$PYTHONPATH"
 
 export HILTICFLAGS="-I $HILTI_BASE/libhilti"
 export CFLAGS="-g -I $HILTI_BASE/libhilti"

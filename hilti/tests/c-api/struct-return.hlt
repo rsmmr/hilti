@@ -1,0 +1,65 @@
+# $Id$
+# 
+# @TEST-EXEC:  hilti-build -P %INPUT
+# @TEST-EXEC:  gcc $CFLAGS -I . -c %DIR/struct-return-c.c -o struct-return-c.o
+# @TEST-EXEC:  hilti-build -l struct-return-c.o %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+#
+# Tests a number of variants for returning structs by value from C to HILTI. 
+
+module Main
+
+declare "C" tuple<int8> fa()
+declare "C" tuple<int16> fb()
+declare "C" tuple<int32> fc()
+declare "C" tuple<int64> fd()
+declare "C" tuple<int8,int8> fe()
+declare "C" tuple<int16,int16> ff()
+declare "C" tuple<int32,int32> fg()
+declare "C" tuple<int64,int64> fh()
+declare "C" tuple<int8,int8,int8> fi()
+declare "C" tuple<int32,int32,int32> fj()
+
+import hilti
+
+void run() {
+    local tuple<int8> t8
+    local tuple<int16> t16
+    local tuple<int32> t32
+    local tuple<int64> t64
+    local tuple<int8,int8> t88
+    local tuple<int16,int16> t1616
+    local tuple<int32,int32> t3232
+    local tuple<int64,int64> t6464
+    local tuple<int8,int8,int8> t888
+    local tuple<int32,int32,int32> t323232
+    
+    t8 = call fa()
+    call Hilti::print(t8)
+    
+    t16 = call fb()
+    call Hilti::print(t16)
+    t32 = call fc()
+    call Hilti::print(t32)
+    t64 = call fd()
+    call Hilti::print(t64)
+    
+    t88 = call fe()
+    call Hilti::print(t88)
+
+    t1616 = call ff()
+    call Hilti::print(t1616)
+    t3232 = call fg()
+    call Hilti::print(t3232)
+    t6464 = call fh()
+    call Hilti::print(t6464)
+    
+    t888 = call fi()
+    call Hilti::print(t888)
+    t323232 = call fj()
+    call Hilti::print(t323232)
+
+}
+
+

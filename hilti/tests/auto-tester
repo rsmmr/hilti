@@ -21,6 +21,7 @@ fi
 BASE=$1
 RCPT=$2
 STATE=$1/.auto-tester.dat
+FAILED=$1/.auto-tester.failed.dat
 TMP1=/tmp/`basename $0`.$$.1.tmp
 TMP2=/tmp/`basename $0`.$$.2.tmp
 MAIL=/tmp/`basename $0`.$$.3.tmp
@@ -107,12 +108,32 @@ if [ -s $TMP2 ]; then
    echo At revision $current. >>$MAIL
    hostname >>$MAIL
    uname -a >>$MAIL
+   gcc --version | head -1 >>$MAIL
+   (echo -n "LLVM "; llvm-config --version) >>$MAIL
    echo >>$MAIL
    echo "--- Log -------------------------------" >>$MAIL
    echo >>$MAIL
    cat $TMP1 >>$MAIL
    
    $AT_SENDMAIL -t -oi <$MAIL 
+   
+   touch $FAILED
+   
+else
+
+   if [ -e $FAILED ]; then
+       # Last run failed. Report the passing now.
+       echo From: Auto-Tester >$MAIL
+       echo Subject: "[Tests] all tests now pass on `hostname -s` (`uname -s`)" >>$MAIL
+       echo To: $MAIL_TO >>$MAIL
+       echo User-Agent: auto-tester >>$MAIL
+       echo >>$MAIL
+       
+       $AT_SENDMAIL -t -oi <$MAIL 
+       
+       rm -f $FAILED
+   fi
+   
 fi
 
 echo $current >$STATE
