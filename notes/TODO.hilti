@@ -13,14 +13,32 @@ Data Types
 - bytes 
 - list
 
-Infracstructure
+Bug fixes
+=========
+
+- Bytes objects are initialized to null pointers, which causes
+crashes.
+
+Infrastructure
 ===============
 
 - Add garbage collector
 
-- Complete exception support
+- Complete exception support, includin systematicallizin the use of exception
+  (what exception is thrown there). We should probably add:
+        
+        * an out-of-range exception, and use that when iterators are out of
+        range. 
 
-Cleanup
+Optimizations
+=============
+
+- In CodeGen.llvmGenerateCCall, when returning structs, 
+we have to create a temporary on the stack just because we can't cast an
+integer into a struct. I'd think the tmp could be optimized away but it
+currently isn't. 
+
+Cleanup 
 =======
 
 - Implement "export" linkage: 
@@ -36,6 +54,12 @@ relying on "__"
 
 - Replace resolver's int-width derivation with usage of codegen's
  refine_to.
+
+- Linkage should apply to all globals, not just functions.
+
+- We now have codegen.llvmAddGlobalConst but there are still a few locations
+  which duplicate the code to install global const. Move them over to using the
+  new function.
 
 Documentation
 =============
