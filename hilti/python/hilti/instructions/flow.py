@@ -93,3 +93,19 @@ class CallTailResult(Instruction):
     *CallTailVoid* or *CallTailResult* instructions. 
     """
     pass
+
+@instruction("thread.yield", terminator=True)
+class ThreadYield(Instruction):
+    """
+    Schedules the next block on the same worker thread and
+    returns to the scheduler to allow another virtual thread
+    to run.
+    """
+    pass
+
+@instruction("thread.schedule", op1=Integer, op2=Function, op3=Optional(Tuple), terminator=False)
+class ThreadSchedule(Instruction):
+    """
+    Schedules a function call onto a virtual thread.
+    """
+    pass

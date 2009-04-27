@@ -73,4 +73,7 @@ def _(self, i):
 @canonifier.when(instructions.flow.IfElse)
 def _(self, i):
     _splitBlock(self, i)
-    
+
+@canonifier.when(instructions.flow.ThreadYield)
+def _(self, i):
+    _splitBlock(self, i)

@@ -125,5 +125,17 @@ def _(self, i):
     _checkArgs(self, i, func, i.op2())
     _checkLabel(self, i, i.op3())
 
+@checker.when(flow.ThreadSchedule)
+def _(self, i):
+    func = self.currentModule().lookupIDVal(i.op2().id().name())
+    if not _checkFunc(self, i, func, [function.CallingConvention.HILTI]):
+        return
 
+    rt = func.type().resultType()
     
+    if rt != type.Void:
+        self.error(i, "thread.schedule used to call a function that returns a value")
+    
+   # _checkArgs(self, i, func, i.op3())
+
+   
