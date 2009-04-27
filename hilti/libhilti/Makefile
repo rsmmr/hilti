@@ -2,10 +2,10 @@
 #
 # Build libhilti
 
-BITCODE  = 
+BITCODE  = callhilti.bc 
 
 CHEADERS = hilti.h hilti_intern.h
-COBJS    = print.o exceptions.o utf8proc.o init.o memory.o string.o int.o double.o bool.o tuple.o fmt.o channel.o bytes.o enum.o
+COBJS    = print.o exceptions.o utf8proc.o init.o memory.o string.o int.o double.o bool.o tuple.o fmt.o channel.o bytes.o enum.o config.o schedulers.o thread_context.o run.o
 CMAINOBJ = main.o
 
 GC_LIB     = gc/gc.a 
@@ -14,8 +14,8 @@ GC_INCLUDE = gc/include
 LIB_STATIC      = libhilti.a
 LIB_STATIC_MAIN = libhiltimain.a
 
-# TMP_BC_ASM = .libhilti.bc.S
-# TMP_BC_OBJ = .libhilti.bc.o
+TMP_BC_ASM = .libhilti.bc.S
+TMP_BC_OBJ = .libhilti.bc.o
 
 CFLAGS=-g -Wall -I $(GC_INCLUDE) -std=c99 
 LDFLAGS=

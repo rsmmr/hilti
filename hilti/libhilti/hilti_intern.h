@@ -16,6 +16,8 @@
 
 #include "hilti.h"
 #include "bytes.h"
+#include "config.h"
+#include "thread_context.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Predefined exceptions.
