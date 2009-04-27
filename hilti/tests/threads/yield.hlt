@@ -1,0 +1,24 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import hilti
+
+void printhello() {
+
+    call Hilti::print ("Before yield.", True)
+    
+    thread.yield
+
+    call Hilti::print ("After yield.", True)
+
+    return.void
+}
+
+void run() {
+    thread.schedule 1 printhello
+}
