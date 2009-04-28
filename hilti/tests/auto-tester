@@ -102,7 +102,7 @@ if [ -s $TMP2 ]; then
    number=`cat $TMP2 | grep "tests\? failed" | awk '{printf $0}'`
 
    echo From: Auto-Tester >$MAIL
-   echo Subject: "[Tests] $number on `hostname -s` (`uname -s`)" >>$MAIL
+   echo Subject: "[Tests] $number on `hostname -s` (`uname -s` `uname -m`)" >>$MAIL
    echo To: $MAIL_TO >>$MAIL
    echo User-Agent: auto-tester >>$MAIL
    echo >>$MAIL
