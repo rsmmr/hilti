@@ -1,8 +1,21 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT a.out 
+# @TEST-EXEC:  hilti-build %INPUT a.out
+# @TEST-EXEC:  bash -c "echo RUN\ 1 > output"
 # @TEST-EXEC:  ./a.out >output.tmp 2>&1
-# @TEST-EXEC:  sort output.tmp > output
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 2 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 3 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 4 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 5 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
 # @TEST-EXEC:  test-diff output
 
 module Main
