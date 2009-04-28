@@ -3,25 +3,20 @@
 # Runs the tester with the correct environment variables set.
 
 BASE_DIR=`cd ../.. && pwd -P`
-
 TESTER=$BASE_DIR/tester/bin/tester
-HILTI_BASE=$BASE_DIR/hilti 
+HILTI_BASE=$BASE_DIR/hilti
+
+export HILTI_CONFIG=$BASE_DIR/hilti/tools/hilti-config/hilti-config
+
+CFLAGS=`$HILTI_CONFIG --cflags`
+PYPATH=`$HILTI_CONFIG --pythonpath`
+
+export PATH="$HILTI_BASE/tools/hiltic:$HILTI_BASE/tools/hilti-build:$PATH"
+export CC="llvm-gcc -emit-llvm -g $CFLAGS"
 
 # Set a well-defined locale.
 export LANG=C
 export LC_ALL=C
-
-export PATH="$HILTI_BASE/tools/hiltic:$HILTI_BASE/tools/hilti-build:$PATH"
-export PYTHONPATH="$HILTI_BASE/python:$PYTHONPATH"
-
-export HILTICFLAGS="-I $HILTI_BASE/libhilti"
-export CFLAGS="-g -I $HILTI_BASE/libhilti"
-export LLVMASFLAGS=""
-export LLCFLAGS=""
-export ASFLAGS=""
-export LDFLAGS="-L$HILTI_BASE/libhilti"
-
-export CC="gcc $CFLAGS $LDFLAGS"
 
 $TESTER $@
 

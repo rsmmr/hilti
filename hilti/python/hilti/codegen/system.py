@@ -56,8 +56,8 @@ def isLittleEndian():
     if machine == "x86_64":
         return True
 
-    util.error("isLittleEndian() does not support architecture %s" % arch, component="system.py")
-
+    util.error("isLittleEndian() does not support architecture %s" % arch, component="system.py")    
+    
 _structSizeCache = {}    
     
 def returnStructByValue(type):

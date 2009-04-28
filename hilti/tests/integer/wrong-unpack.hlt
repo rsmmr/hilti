@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL: hilti-build %INPUT a.out 
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out 
 # @TEST-EXEC:      test-diff output
 #
 # Using an invalid unpack format.

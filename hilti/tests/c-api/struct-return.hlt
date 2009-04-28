@@ -1,8 +1,8 @@
 # $Id$
 # 
 # @TEST-EXEC:  hilti-build -P %INPUT
-# @TEST-EXEC:  gcc $CFLAGS -I . -c %DIR/struct-return-c.c -o struct-return-c.o
-# @TEST-EXEC:  hilti-build -l struct-return-c.o %INPUT a.out 
+# @TEST-EXEC:  ${CC} -I . -c %DIR/struct-return-c.c -o struct-return-c.bc
+# @TEST-EXEC:  hilti-build struct-return-c.bc %INPUT -o a.out 
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  test-diff output
 #

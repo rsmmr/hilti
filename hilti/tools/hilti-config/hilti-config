@@ -1,0 +1,95 @@
+#! /usr/bin/env bash
+#
+# This is preliminary. Eventually, configure will insert the right
+# paths here.
+
+function usage {
+   cat <<EOF
+Usage: hilti-config <options>
+
+    --cflags       Print flags for llvm-gcc.
+    --distbase     Print path of the HILTI source distribution.
+    --hilticflags  Print flags for hiltic.
+    --ldflags      Print flags for llvm-ld.
+    --libs         Print libaries for llvm-ld.
+    --libs-main    Print libaries for llvm-ld, including a main() routine.
+    --pythonpath   Print PYTHONPATH for HILTI module.
+    --version      Print HILTI version.
+
+EOF
+   exit 1
+}
+
+### Determine distbase. 
+
+base=$HILTI_BASE
+
+if [ "$base" == "" ]; then
+   # Try to find the HILTI distribution based on our path. 
+   
+   # If we are called via a symbolic link, dereference it.
+   link=`readlink $0`
+   if [ "$link" != "" ]; then
+       dir=`dirname $link`
+   else
+       dir=`dirname $0`
+   fi   
+   
+   base=`cd $dir/../../ && pwd -P`
+fi
+
+if [ ! -d "$base/libhilti" ]; then 
+    echo "cannot determine HILTI directory; please set HILTI_BASE correctly"
+    exit 1
+fi
+
+### Parse command line.
+
+if [ "$#" == "0" ]; then 
+   usage
+fi
+
+while [ "$1" != "" ]; do
+    case $1 in 
+        --version)
+            echo "HILTI 0.0"
+            shift;;
+            
+        --distbase)
+            echo $base
+            shift;;
+            
+        --ldflags)
+            echo "-L$base/libhilti"
+            shift;;
+            
+        --libs)
+            echo "-lhilti -lc -lpthread"
+            shift;;
+            
+        --libs-main)
+            echo "-lhiltimain -lc -lpthread"
+            shift;;
+            
+        --hilticflags)
+            echo "-I$base/libhilti"
+            shift;;
+            
+        --cflags)
+            echo "-I$base/libhilti"
+            shift;;
+            
+        --pythonpath)
+            echo "$base/python"
+            shift;;
+            
+        -h) 
+            usage;; 
+        *)
+            usage;;
+    esac
+done    
+
+
+
+

@@ -3,30 +3,30 @@
 # Turns a HILTI source into an executable by compiling, assembling, 
 # and linking with libhiltimain. 
 #
-# Honors the following environment variables to pass flags on to the 
-# corresponding tools:
+# Honors the following environment variables to pass additional flags 
+# on to the corresponding tools:
 #
 #     HILTICFLAGS
 #     LLVMASFLAGS
-#     LLCFLAGS
-#     ASFLAGS
-#     LDFLAGS
-#
-#
-# If TEST_DIAGNOSTICS is set, it's content is supposed to be a filename 
-# receiving the -v outut. TEST_DIAGNOSTICS also implies -t. 
+#     LLVMLDFLAGS
+#     CFLAGS
 
 function usage {
-   echo "Usage: hilti-build [-m] [-t] [-v] [-l <obj.o>] <input.hlt> [<output>]"
+   echo "Usage: hilti-build [-m] [-t] [-v] -o <output> <input-files>"
    echo 
+   echo "Input files may be end in one of the following extensions:"
+   echo "    *.hlt     - HILTI files"
+   echo "    *.ll      - LLVM assember file"
+   echo "    *.bc      - LLVM bitcode files"
+   echo
    echo "Options:"
-   echo "  -m           Link with libhilti instead of libhiltimain."
-   echo "  -t           Do not delete temporary files."
-   echo "  -v           Output command lines as they are executed."
-   echo "  -O1/O2/O3    Apply optimizations (see 'man opt')"
-   echo "  -l obj.o     Additional object file to link in."
-   echo "  -P           Generate C prototypes only."
-   echo "  -L           Use llvm-gcc-based toolchain."
+   echo "    -o         Name of output file; mandatory."
+   echo "    -m         Link with libhilti instead of libhiltimain."
+   echo "    -t         Do not delete temporary files."
+   echo "    -v         Output command lines as they are executed."
+   echo "    -O1/O2/O3  Apply optimizations (see 'man opt'); also enables LTO."
+   echo "    -l obj.bc  Additional object file to link in."
+   echo "    -P         Generate only C prototypes for *.hlt files; does nothing else."
    echo
    exit 1 
 }
@@ -42,105 +42,170 @@ function execute {
 function delete_tmps {
      # Delete at exit.
      if [ "$keeptmp" != "1" ]; then
-         rm -f $ll $asm $doto $linked $optimized
+         rm -f $tmpfiles
      fi
 }
 
-lib="hiltimain"
-objs=""
+# Turns *.hlt into *.ll
+function compile_hlt {
+    input=$1
+    dir=`dirname $input`
+    base=`basename $input .hlt`
+    
+    if [ "$protos" == "1" ]; then
+        # Just run hiltic to generate the C prototypes.
+        doth=$base.h
+        execute "hiltic -P $hilticflags $input -o $doth" || exit 1
+        result=$doth;
+    else
+        # Compile *.hlt into *.ll
+        ll=$base.ll
+        tmpfiles="$tmpfiles $ll"
+        execute "hiltic -l $hilticflags -o $ll $input" || exit 1
+        result=$ll
+    fi
+}
+
+# Turns *.ll into *.bc
+function compile_ll {
+    input=$1
+    dir=`dirname $input`
+    base=`basename $input .ll`
+
+    if [ "$opt" != "" ]; then
+        opt="| opt $opt"
+    fi
+
+    bc=$base.bc
+    tmpfiles="$tmpfiles $bc"
+    execute "llvm-as $llvmasflags < $input $opt >$bc"
+    result=$bc
+}
+
+# Turns *.c into *.bc
+function compile_c {
+    input=$1
+    dir=`dirname $input`
+    base=`basename $input .ll`
+
+    bc=$base.bc
+    tmpfiles="$tmpfiles $bc"
+    execute "llvm-gcc -c -emit-llvm $opt $cflags -o $bc $input"
+    result=$bc
+}
+
+# Links all *.bc together into the final output file.
+function link_all {
+    bc=$@
+    
+    if [ "$opt" != "" ]; then
+        lto=""
+    else
+        lto="-disable-opt"
+    fi   
+
+    execute "llvm-ld -native $lto $llvmldflags $bc $libs -o $output" || exit 1 
+}
+
+tmpfiles=""
+inputs=""
 protos=""
+libsflag="--libs-main"
 
 while [ "$1" != "" ]; do
     case $1 in 
         -m)
-            lib="hilti"; shift;;
+            libsflag="--libs" ; shift;;
         -t)
             keeptmp=1; shift;;
         -v)
-            verbose=/dev/stdout; shift;;
+            verbose=/dev/stderr; shift;;
         -O1) 
             opt=$1; shift;;
         -O2) 
             opt=$1; shift;;
         -O3) 
             opt=$1; shift;;
-        -l) 
-            shift
-            objs="$1"
-            shift;;
         -P)
             protos="1"; shift;;
-        -L)
-            llvmgcc="1"; 
-            libsuffix="-bc";
-            shift;;
+        -o)
+            output=$2; shift; shift;; 
         -h) 
             usage;; 
+        -*)
+            usage;;
         *)
-            break;;
+            inputs="$inputs $1"; shift;;
     esac
 done    
 
-if [ "$TEST_DIAGNOSTICS" != "" ]; then
-#   verbose=$TEST_DIAGNOSTICS
-   keeptmp=1
-fi   
-
-if [ "$#" -lt "1" -o "$#" -gt "2" ]; then
+if [ "$inputs" == "" ]; then
    usage
 fi   
 
-LIBS="-l$lib$libsuffix -lc -lpthread"
+if [ "$output" == "" -a "$protos" != "1" ]; then
+   echo "name of output file must be given with -o." >&2
+   exit 1
+fi   
+
+if [ "$TEST_DIAGNOSTICS" != "" ]; then
+   keeptmp=1
+fi   
 
 trap delete_tmps 0
 
-input=$1
-output=$2
+if [ "$HILTI_CONFIG" != "" ]; then
+    hilticonfig=$HILTI_CONFIG
+else
+    hilticonfig=`which hilti-config 2>/dev/null`
+fi    
 
-dir=`dirname $input`
-base=`basename $input .hlt`
-
-if [ "$2" == "" ]; then
-   output=$base
+if [ ! -x "$hilticonfig" ]; then
+   echo "cannot find hilti-config; try setting HILTI_CONFIG." >&2
+   exit 1
 fi
 
-ll=$base.ll
-asm=$base.S
-bc=$base.bc
-doto=$base.o
-doth=$base.h
+llvmasflags="$LLVMASFLAGS"
+hilticflags="`$hilticonfig --hilticflags` $HILTICFLAGS"
+llvmldflags="`$hilticonfig --ldflags` $LLVMLDFLAGS"
+cflags="`$hilticonfig --cflags` $CFLAGS"
+libs=`$hilticonfig $libsflag`
 
-if [ "$opt" != "" ]; then
-   optcmd="opt $opt |"
-fi   
+export PYTHONPATH=`$hilticonfig --pythonpath`:$PYTHONPATH
+
+input=$@
+objs=""
+
+for file in $inputs; do
+    
+    if echo $file | grep -q '\.hlt$'; then
+       compile_hlt $file
+       if [ "$protos" != "1" ]; then
+           compile_ll $result
+       fi
+       objs="$objs $result"
+       
+    elif echo $file | grep -q '\.ll$'; then
+       compile_ll $file
+       objs="$objs $result"
+       
+    elif echo $file | grep -q '\.c$'; then
+       compile_c $file
+       objs="$objs $result"
+       
+    elif echo $file | grep -q '\.bc$' ; then
+       objs="$objs $file"
+       
+    else
+       echo "unknown input type $file"
+       exit 1
+    fi
+    
+done
 
 if [ "$protos" == "1" ]; then
-   # Just run hiltic to generate the C prototypes.
-   execute "hiltic $HILTICFLAGS -P $input -o $doth" || exit 1
-   exit 0
+   # Nothing else to do.
+   exit 0;
 fi
 
-# Turns into human-readable LLVM code 
-# (We could skip this step but keep it for debugging.)
-execute "hiltic $HILTICFLAGS $protos -l $input -o $ll" || exit 1
-
-if [ "$llvmgcc" != "1" ]; then 
-    # Use standard gcc toolchain.
-
-    # Turn it into bytecode, optionally optimize, and then turn into native code. 
-    execute "llvm-as $LLVMASFLAGS < $ll | $optcmd llc >$asm" || exit 1
-
-    # Assemble. 
-    execute "as $ASFLAGS $asm -o $doto" || exit 1 
-
-    # Link. 
-    execute "gcc $LDFLAGS $doto $objs $LIBS -o $output" || exit 1
-else
-    # Use llvm-gcc toolchain.
-    # Turn it into bytecode, optionally optimize, and then turn into native code. 
-    execute "llvm-as $LLVMASFLAGS < $ll | $optcmd cat >$bc" || exit 1
-
-    # Link.
-    execute "llvm-ld -native -v -strip-debug $LDFLAGS $bc $LIBS  -o $output" || exit 1
-    
-fi
+link_all $objs

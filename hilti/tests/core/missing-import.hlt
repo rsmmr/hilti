@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL: hilti-build %INPUT a.out >output 2>&1 
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
 # @TEST-EXEC:      test-diff output
 #
 # Make sure we need the "import Hilti". This is expected to fail.

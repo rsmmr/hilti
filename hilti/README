@@ -15,7 +15,40 @@ README
   - LLVM 2.4
   
     http://llvm.org/releases/
-  
+    
+    Note that you need *llvm-gcc* as well. llvm-gcc comes in its own
+    package with each LLVM release, and you need to install that
+    separately:
+    
+      * If there's a binary llvm-gcc release for your platform, it's
+        really easy: just download, extract somewhere and link
+        bin/llvm-gcc to a place in your path. 
+        
+      * If there's no binary release, download the source and follow
+        the instructions in README.LLVM. The following is a short
+        summary which may or may not work for you:
+       
+        - Create a directory llvm-gcc and untar the source
+        distrubtion *in that directory*. 
+        
+        - mkdir llvm-gcc/obj llvm-gcc/install
+        
+        - cd llvm-gcc/obj
+        
+        - ../<llvm-gcc-source/configure --prefix=`pwd`/../install \
+             --program-prefix=llvm- --enable-llvm=<path-to-llvm-distribution> \
+             --enable-languages=c,c++
+             
+        - make && make install
+        
+        - llvm-gcc should now be in llvm-gcc/install/bin. Link it
+        into your path.
+        
+    FIXME: I have actually not been able to get llvm-gcc to compile
+    of one of the ICSI x86_64 machines. It always aborted at one
+    stage or the other with obscure errors. Not sure what's going
+    on. 
+
   - LLVM-PY 0.5
   
     http://code.google.com/p/llvm-py/downloads/list

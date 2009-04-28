@@ -112,8 +112,8 @@ if [ -s $TMP2 ]; then
    echo At revision $current. >>$MAIL
    hostname >>$MAIL
    uname -a >>$MAIL
-   gcc --version | head -1 >>$MAIL
    (echo -n "LLVM "; llvm-config --version) >>$MAIL
+   llvm-gcc --version | head -1 >>$MAIL
    echo >>$MAIL
    
    echo "--- Diagnostics (500 lines max) -------" >>$MAIL

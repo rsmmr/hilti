@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -P %INPUT a.out 
+# @TEST-EXEC:  hilti-build -P %INPUT -o a.out 
 # @TEST-EXEC:  test-diff prototypes.h
 
 module Main

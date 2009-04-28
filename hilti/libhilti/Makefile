@@ -2,22 +2,26 @@
 #
 # Build libhilti
 
-BITCODE  = callhilti.bc 
+BC_FROM_LL = callhilti.bc
 
-CHEADERS = hilti.h hilti_intern.h
-COBJS    = print.o exceptions.o utf8proc.o init.o memory.o string.o int.o double.o bool.o tuple.o fmt.o channel.o bytes.o enum.o config.o schedulers.o thread_context.o run.o
-CMAINOBJ = main.o
+BC_FROM_C  = print.bc exceptions.bc utf8proc.bc init.bc memory.bc string.bc \
+             int.bc double.bc bool.bc tuple.bc fmt.bc channel.bc enum.bc \
+             bytes.bc config.bc schedulers.bc thread_context.bc run.bc
+
+BC = $(BC_FROM_LL) $(BC_FROM_C) 
+
+HEADERS  = hilti.h hilti_intern.h
+MAIN     = main.bc
 
 GC_LIB     = gc/gc.a 
 GC_INCLUDE = gc/include
 
-LIB_STATIC      = libhilti.a
-LIB_STATIC_MAIN = libhiltimain.a
+# NOTE that llvm-ld looks for *.bca with -l, which isn't
+# documented in its man page.
+LIB_STATIC      = libhilti.bca
+LIB_STATIC_MAIN = libhiltimain.bca
 
-TMP_BC_ASM = .libhilti.bc.S
-TMP_BC_OBJ = .libhilti.bc.o
-
-CFLAGS=-g -Wall -I $(GC_INCLUDE) -std=c99 
+CFLAGS=-emit-llvm -g -Wall -I $(GC_INCLUDE) -std=c99 
 LDFLAGS=
 
 LLVMAS_FLAGS=
@@ -27,29 +31,25 @@ all: gc $(LIB_STATIC) $(LIB_STATIC_MAIN)
 
 clean:
 	make -C gc clean
-	rm -f $(LIB_STATIC) $(LIB_STATIC_MAIN) $(TMP_BC_OBJ) $(TMP_BC_ASM) $(BITCODE) $(CMAINOBJ) $(COBJS)
+	rm -f $(LIB_STATIC) $(LIB_STATIC_MAIN) $(BC) $(MAIN)
 
-%.o : %.c $(CHEADERS)
-	gcc -c $(CFLAGS) $< -o $@
+%.bc : %.c $(HEADERS)
+	llvm-gcc -c $(CFLAGS) $< -o $@
     
 %.bc : %.ll 
 	llvm-as -f $(LLVMAS_FLAGS) $< -o $@
 
-.PHONY: gc
-gc : 
-	make -C gc
+# Temporarily disabled
+# 
+#.PHONY: gc
+#gc : 
+#	make -C gc
     
-$(TMP_BC_OBJ) : $(BITCODE)
-	llvm-link $(BITCODE) | llc $(LLCFLAGS) >$(TMP_BC_ASM)
-	gcc -c $(TMP_BC_ASM) -o $(TMP_BC_OBJ) 
+$(LIB_STATIC): $(BC)
+	llvm-ar rcs $(LIB_STATIC) $(BC)
     
-$(LIB_STATIC): $(TMP_BC_OBJ) $(COBJS)
-	cp $(GC_LIB) $(LIB_STATIC)
-	ar rcs $(LIB_STATIC) $(TMP_BC_OBJ) $(COBJS)
-    
-$(LIB_STATIC_MAIN): $(TMP_BC_OBJ) $(COBJS) $(CMAINOBJ)
-	cp $(GC_LIB) $(LIB_STATIC_MAIN)
-	ar rcs $(LIB_STATIC_MAIN) $(TMP_BC_OBJ) $(COBJS) $(CMAINOBJ) $(GC_LIB)
+$(LIB_STATIC_MAIN): $(BC) $(MAIN)
+	llvm-ar rcs $(LIB_STATIC_MAIN) $(BC) $(MAIN)
 
     
     
