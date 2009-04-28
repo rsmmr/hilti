@@ -4,6 +4,9 @@
  * 
  */
 
+#define _POSIX_SOURCE
+#define _POSIX_C_SOURCE 199309
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -64,14 +67,24 @@ static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
  */
 void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_exception* excpt)
 {
+    // To prevent race conditions with multiple threads, we have to lock stdout here and then
+    // unlock it at each possible exit to this function.
+    flockfile(stdout);
+
     if ( type->to_string ) {
         __hlt_string *s = (*type->to_string)(type, obj, 0, excpt);
         if ( *excpt )
+        {
+            funlockfile(stdout);
             return;
-        
+        }
+
         _print_str(s, excpt);
         if ( *excpt )
+        {
+            funlockfile(stdout);
             return;
+        }
     }
     
     else {
@@ -83,5 +96,7 @@ void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_e
     
     if ( newline )
         write(1, "\n", 1);
+
+    funlockfile(stdout);
 }
 

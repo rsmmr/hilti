@@ -13,6 +13,9 @@
 
 // FIXME: Should a thread context start in the RUN state? Should we be able to reuse a thread context?
 
+// FIXME: Might be nice to provide a function to delete the thread specific data keys and reset the once variable.
+// Only the calling code could know when it's safe to do that, since theoretically multiple thread contexts may exist.
+
 // Forward declarations.
 static __hlt_job_node* __hlt_new_job_node(__hlt_hilti_function function, __hlt_hilti_continuation continuation);
 static void __hlt_delete_job_node(__hlt_job_node* job);
@@ -157,6 +160,8 @@ static void* __hlt_watchdog(void* context_ptr)
     // threads may legitimately no longer exist.
     for (uint32_t i = 0 ; i < context->num_worker_threads ; i++)
         pthread_cancel(context->worker_threads[i].thread_handle);
+
+    fputs("libhilti: warning: watchdog had to kill threads.\n", stderr);
 
     return NULL;
 }
@@ -361,9 +366,28 @@ static void* __hlt_worker_scheduler(void* worker_thread_ptr)
         while (this_thread->job_queue_head == NULL)
         {
             if (this_thread->context->state == __HLT_STOP)
-                return NULL;
+            {
+                // Prevent a race condition.
+
+                // We acquire the lock here to make sure that any jobs that may be in the process
+                // of being added complete that process. We only need to worry about jobs which
+                // began the process of being added before the thread context state changed to
+                // __HLT_STOP. After acquiring and releasing this lock, any further attempts to
+                // add jobs will definitely see that the current state is __HLT_STOP and fail.
+                pthread_mutex_lock(&this_thread->mutex);
+                pthread_mutex_unlock(&this_thread->mutex);
+
+                // If the job queue is empty at this point, we should return. Other, we need to
+                // process the remaining jobs in the queue.
+                if (this_thread->job_queue_head == NULL)
+                    return NULL;
+                else
+                    break;
+            }
             else
+            {
                 nanosleep(&sleep_time, NULL);
+            }
         }
 
         // Remove a single item from the job queue.
