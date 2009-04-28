@@ -11,7 +11,7 @@ test:
 	./run-tester $(DIRS)
 
 brief:
-	./run-tester -b $(DIRS)
+	./run-tester $(TESTER_OPT) -b $(DIRS)
 
 update-baseline:
 	./run-tester -U $(DIRS)

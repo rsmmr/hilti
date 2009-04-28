@@ -24,7 +24,8 @@ STATE=$1/.auto-tester.dat
 FAILED=$1/.auto-tester.failed.dat
 TMP1=/tmp/`basename $0`.$$.1.tmp
 TMP2=/tmp/`basename $0`.$$.2.tmp
-MAIL=/tmp/`basename $0`.$$.3.tmp
+DIAG=/tmp/`basename $0`.$$.3.tmp
+MAIL=/tmp/`basename $0`.$$.4.tmp
 
 LOCK=/tmp/`basename $0`.lock
 
@@ -45,6 +46,7 @@ function cleanup
     rm -f $TMP2
     rm -f $MAIL
     rm -f $LOCK
+    rm -f $DIAG
 }
 
 trap cleanup EXIT
@@ -59,7 +61,7 @@ function error {
     exit 1
 }
 
-rm -rf $TMP1 $TMP2 $MAIL
+rm -rf $TMP1 $TMP2 $MAIL $DIAG
 
 cd $BASE
 
@@ -91,6 +93,8 @@ make >>$TMP1 2>&1
 
 # Run tests
 cd $BASE/hilti/tests
+
+export TESTER_OPT="-f $DIAG"
 make brief 2>&1 | grep -v run-tester >$TMP2 
 
 # If the "make brief" produced any output, some test failed.
@@ -111,6 +115,10 @@ if [ -s $TMP2 ]; then
    gcc --version | head -1 >>$MAIL
    (echo -n "LLVM "; llvm-config --version) >>$MAIL
    echo >>$MAIL
+   
+   echo "--- Diagnostics (500 lines max) -------" >>$MAIL
+   echo >>$MAIL
+   cat $DIAG | head -500 >>$MAIL
    echo "--- Log -------------------------------" >>$MAIL
    echo >>$MAIL
    cat $TMP1 >>$MAIL
