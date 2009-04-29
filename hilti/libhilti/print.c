@@ -38,7 +38,7 @@ static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
         
         if ( cp < 128 ) {
             c = (char)cp;
-            write(1, &c, 1);
+            fprintf(stdout, "%c", c);
         }
         else {
             char buffer[10];
@@ -49,7 +49,7 @@ static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
             else
                 len = snprintf(buffer, 10, "\\U%08x", cp);
             
-            write(1, buffer, len);
+            fprintf(stdout, "%.*s", len, buffer);
         }
         
         p += n;
@@ -89,13 +89,13 @@ void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_e
     
     else {
         /* No fmt function, just print the tag. */
-        write(1, "<", 1);
-        write(1, type->tag, strlen(type->tag));
-        write(1, ">", 1);
+        fprintf(stdout, "<%s>", type->tag);
     }
     
     if ( newline )
-        write(1, "\n", 1);
+        fprintf(stdout, "\n");
+
+    fflush(stdout);
 
     funlockfile(stdout);
 }
