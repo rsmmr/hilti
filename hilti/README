@@ -22,32 +22,36 @@ README
     
       * If there's a binary llvm-gcc release for your platform, it's
         really easy: just download, extract somewhere and link
-        bin/llvm-gcc to a place in your path. 
+        bin/llvm-gcc to a place in your PATH. 
         
       * If there's no binary release, download the source and follow
         the instructions in README.LLVM. The following is a short
-        summary which may or may not work for you:
+        summary which may or may not work for you (see below if
+        you're on Linux x86_64). 
        
-        - Create a directory llvm-gcc and untar the source
-        distrubtion *in that directory*. 
+        - Create a directory "llvm-gcc" and untar the source
+        distribution *inside that directory*.
         
-        - mkdir llvm-gcc/obj llvm-gcc/install
+        - mkdir llvm-gcc/obj; cd llvm-gcc/obj
         
-        - cd llvm-gcc/obj
-        
-        - ../<llvm-gcc-source/configure --prefix=`pwd`/../install \
-             --program-prefix=llvm- --enable-llvm=<path-to-llvm-distribution> \
-             --enable-languages=c,c++
-             
+        - ../<llvm-gcc-source>/configure --prefix=<install-prefix> \
+             --enable-llvm=<path-to-llvm-distribution> \
+             --program-prefix=llvm- --enable-languages=c,c++
+
         - make && make install
         
-        - llvm-gcc should now be in llvm-gcc/install/bin. Link it
-        into your path.
-        
-    FIXME: I have actually not been able to get llvm-gcc to compile
-    of one of the ICSI x86_64 machines. It always aborted at one
-    stage or the other with obscure errors. Not sure what's going
-    on. 
+        - llvm-ggc should now be in <install-prefix>/bin. Make sure
+        that's in your PATH. 
+
+     * Special notes for Linux x86_64:
+     
+        - I was able to compile llvm-gcc on Ubuntu 8.10 by giving
+        configure an additional paramemter "--disable-multilib".
+
+        - I was not able to compile llvm-gcc on a Red Hat 
+        Red Hat Enterprise 4. (That's was the ICSI machines are). I
+        got a ton of different errors, but did not find a working
+        config. Any help appreciated.
 
   - LLVM-PY 0.5
   
