@@ -10,7 +10,7 @@ import Hilti
 
 void run() {
     local ref<channel<int64,0>> ch
-    ch = channel.new int64 0
+    ch = new channel<int64,0>
 
     local int64 x
     x = channel.read ch
@@ -24,7 +24,7 @@ import Hilti
 
 void run() {
     local ref<channel<int64,2>> ch
-    ch = channel.new int64 2
+    ch = new channel<int64,2>
 
     local int64 a
     local int64 b

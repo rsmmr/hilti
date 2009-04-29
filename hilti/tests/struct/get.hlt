@@ -30,4 +30,3 @@ void run() {
     s = struct.get a "test"
     call Hilti::print(s)
 }
-

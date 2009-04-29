@@ -970,7 +970,7 @@ class CodeGen(visitor.Visitor):
         # Turn the return type into the format used by CC C_HILTI. If the return
         # type equals to ``any`` it is simply converted to a void* pointer.
         if isinstance(func.type().resultType(), type.Any):
-            return llvm.core.Type.pointer(llvm.core.Type.int(8)) 
+            return self.llvmTypeGenericPointer()
         
         return rt
         
@@ -1707,7 +1707,7 @@ class CodeGen(visitor.Visitor):
         type's constructor expression to the corresponding LLVM value. 
         Constructor expressions are defined in the ~~parser.  The decorated
         function receives two parameters, *type* and *refine_to*.  The
-        former's type on depends on what the parser instantiates; the latter
+        former's type depends on what the parser instantiates; the latter
         specifies a more specific type to covert *type* to first and may be
         None (see ~~llvmOp for more details about *refine_to*).
         
@@ -1772,6 +1772,7 @@ class CodeGen(visitor.Visitor):
         op: ~~Operator class - The operator to define an implementation for.
         """
         def register(func):
+            #assert isinstance(op, instruction.OverloadedOperator)
             CodeGen._Callbacks[CodeGen._CB_OPERATOR] += [(op, func)]
     
         return register    

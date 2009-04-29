@@ -24,19 +24,14 @@ along the following dimensions:
 
 from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.instructions.operators import *
 
-# FIXME: Technically the new instruction does not need any parameters add all
-# because it should infer them from the channel type information. However, 
-# we have to duplicate the type information in the form of instruction operands
-# because the instruction signature is transparently mapped to a libhilti C
-# function. Ideally, a generic new instruction passes the channel type
-# information as __hlt_type_info* pointer as parameter which would obviate the
-# need for this duplication.
-@instruction("channel.new", op1=Type, op2=ValueType, target=Reference)
-class New(Instruction):
-    """Instantiates a new channel object of the type *op1* with capacity *op2*
-    and returns a reference to it.
+@overload(New, op1=Channel, target=Reference)
+class New(Operator):
+    """Allocates a new instance of a channel with the same type as the target
+    Reference.
     """
+    pass
 
 @instruction("channel.write", op1=Reference, op2=ValueType)
 class Write(Instruction):

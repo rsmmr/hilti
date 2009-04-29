@@ -240,7 +240,7 @@ struct __hlt_channel {
 extern const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
 
 // Creates a new channel.
-extern __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, int64_t capacity, __hlt_exception* excpt);
+extern __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* excpt);
 
 // Deletes a channel.
 extern void __hlt_channel_destroy(__hlt_channel* ch, __hlt_exception* excpt);

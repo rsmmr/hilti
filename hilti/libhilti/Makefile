@@ -46,9 +46,11 @@ clean:
 #	make -C gc
     
 $(LIB_STATIC): $(BC)
+	rm $(LIB_STATIC)
 	llvm-ar rcs $(LIB_STATIC) $(BC)
     
 $(LIB_STATIC_MAIN): $(BC) $(MAIN)
+	rm $(LIB_STATIC_MAIN)
 	llvm-ar rcs $(LIB_STATIC_MAIN) $(BC) $(MAIN)
 
     

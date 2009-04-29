@@ -36,7 +36,7 @@ declare "C-HILTI" tuple<string,iterator<bytes>> string_unpack(iterator<bytes> be
 
 ###
 
-declare "C-HILTI" ref<channel<*,*>> channel_new(type t, int64 cap)
+declare "C-HILTI" ref<channel<*,*>> channel_new(type channel_type)
 declare "C-HILTI" void channel_write(ref<channel<*,*>> ch, any data)
 declare "C-HILTI" void channel_try_write(ref<channel<*,*>> ch, any data)
 declare "C-HILTI" any channel_read(ref<channel<*,*>> ch)

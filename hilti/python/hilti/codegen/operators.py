@@ -9,7 +9,3 @@ from codegen import codegen
 @codegen.when(instruction.Operator)
 def _(self, i):
     self.llvmExecuteOperator(i)
-        
-
-
-

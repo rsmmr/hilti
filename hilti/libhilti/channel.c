@@ -141,16 +141,29 @@ const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* o
     return __hlt_string_concat(s, &postfix, excpt);
 }
 
-__hlt_channel* __hlt_channel_new(const __hlt_type_info* type, int64_t capacity, __hlt_exception* excpt)
+/* TODO: This struct represents the type parameters that are currently only
+ * available at the HILTI layer. The compiler should eventually autogenerate
+ * such structs.
+ */
+typedef struct channel_type_parameters
 {
+    __hlt_type_info* item_type;
+    uint64_t capacity;
+} channel_type_params;
+
+__hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* excpt)
+{
+    assert(type->num_params == 2);
+    channel_type_params* params = (channel_type_params*) &type->type_params;
+
     __hlt_channel *ch = __hlt_gc_malloc_non_atomic(sizeof(__hlt_channel));
     if ( ! ch ) {
         *excpt = __hlt_exception_out_of_memory;
         return 0;
     }
 
-    ch->type = type;
-    ch->capacity = capacity;
+    ch->type = params->item_type;
+    ch->capacity = params->capacity;
     ch->size = 0;
 
     ch->chunk_cap = INITIAL_CHUNK_SIZE;

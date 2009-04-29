@@ -18,13 +18,10 @@ A ``channel`` is mapped to a ``__hlt_channel *``. The type is defined in
    
 """
 
-def _llvmChannelType():
-    return llvm.core.Type.pointer(llvm.core.Type.int(8))
-
 @codegen.typeInfo(type.Channel)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.c_prototype = "const __hlt_channel *"
+    typeinfo.c_prototype = "__Hlt::channel *"
     typeinfo.to_string = "__Hlt::channel_to_string";
     return typeinfo
 
@@ -34,11 +31,12 @@ def _(op, refine_to):
 
 @codegen.llvmType(type.Channel)
 def _(type, refine_to):
-    return _llvmChannelType()
+    return codegen.llvmTypeGenericPointer()
        
-@codegen.when(instructions.channel.New)
+@codegen.operator(instructions.channel.New)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::channel_new", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    top = instruction.TypeOperand(i.op1().value())
+    result = self.llvmGenerateCCallByName("__Hlt::channel_new", [top], [top.type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.channel.Write)

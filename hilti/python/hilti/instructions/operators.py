@@ -62,5 +62,3 @@ class Unpack(Operator):
     located at arbitrary, not necessarily aligned positions.
     """
     pass
-
-

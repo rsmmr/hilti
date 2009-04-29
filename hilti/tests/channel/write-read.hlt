@@ -10,7 +10,7 @@ import Hilti
 
 void run() {
     local ref<channel<int32,0>> ch
-    ch = channel.new int32 0
+    ch = new channel<int32,0>
     local int32 a
     local int32 b
     local int32 c
