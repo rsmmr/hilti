@@ -23,7 +23,6 @@ static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
         // Empty string.
         return;
     
-    char c;
     int32_t cp;
     const int8_t* p = s->bytes;
     const int8_t* e = p + s->len;
@@ -36,20 +35,14 @@ static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
             return;
         }
         
-        if ( cp < 128 ) {
-            c = (char)cp;
-            fprintf(stdout, "%c", c);
-        }
+        if ( cp < 128 )
+            fputc(cp, stdout);
         else {
-            char buffer[10];
-            int len;
-            // FIXME: We shouldn't rely on snprintf here but bring our own itoa().
+            // FIXME: We should bring our own itoa().
             if ( cp < (1 << 16) )
-                len = snprintf(buffer, 10, "\\u%04x", cp);
+                fprintf(stdout, "\\u%04x", cp);
             else
-                len = snprintf(buffer, 10, "\\U%08x", cp);
-            
-            fprintf(stdout, "%.*s", len, buffer);
+                fprintf(stdout, "\\U%08x", cp);
         }
         
         p += n;
@@ -93,7 +86,7 @@ void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_e
     }
     
     if ( newline )
-        fprintf(stdout, "\n");
+        fputc('\n', stdout);
 
     fflush(stdout);
 
