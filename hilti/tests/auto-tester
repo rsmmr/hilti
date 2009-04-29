@@ -132,7 +132,7 @@ else
    if [ -e $FAILED ]; then
        # Last run failed. Report the passing now.
        echo From: Auto-Tester >$MAIL
-       echo Subject: "[Tests] all tests now pass on `hostname -s` (`uname -s`)" >>$MAIL
+       echo Subject: "[Tests] all tests now pass on `hostname -s` (`uname -s` `uname -m`)" >>$MAIL
        echo To: $MAIL_TO >>$MAIL
        echo User-Agent: auto-tester >>$MAIL
        echo >>$MAIL
