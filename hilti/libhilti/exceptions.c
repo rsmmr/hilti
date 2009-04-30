@@ -9,6 +9,7 @@
 
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "hilti_intern.h"
 
@@ -28,7 +29,5 @@ void __hlt_exception_print_uncaught(__hlt_exception exception)
 {
     const char* name = (const char*)exception; 
 
-    write(2, "hilti: uncaught exception, ", 27);
-    write(2, name, strlen(name));
-    write(2, "\n", 1);
+    fprintf(stderr, "hilti: uncaught exception, %s\n", name);
 }

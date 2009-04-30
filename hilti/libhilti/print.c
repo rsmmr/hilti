@@ -16,10 +16,6 @@
 #include "hilti_intern.h"
 #include "utf8proc.h"
 
-// Pthreads structures used for locking.
-static pthread_mutex_t __hlt_print_lock = PTHREAD_MUTEX_INITIALIZER;
-
-
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't 
  * convert to the locale encoding yet. We just print them in \u syntax. */
 static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
@@ -65,8 +61,6 @@ static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
  */
 void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_exception* excpt)
 {
-    pthread_mutex_lock(&__hlt_print_lock);
-
     // To prevent race conditions with multiple threads, we have to lock stdout here and then
     // unlock it at each possible exit to this function.
     flockfile(stdout);
@@ -98,7 +92,5 @@ void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_e
     fflush(stdout);
 
     funlockfile(stdout);
-
-    pthread_mutex_unlock(&__hlt_print_lock);
 }
 

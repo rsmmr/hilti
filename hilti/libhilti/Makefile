@@ -21,7 +21,7 @@ GC_INCLUDE = gc/include
 LIB_STATIC      = libhilti.bca
 LIB_STATIC_MAIN = libhiltimain.bca
 
-CFLAGS=-emit-llvm -g -Wall -I $(GC_INCLUDE) -std=c99 -D_REENTRANT
+CFLAGS=-emit-llvm -g -Wall -I $(GC_INCLUDE) -std=c99 -pthread
 LDFLAGS=
 
 LLVMAS_FLAGS=
