@@ -430,8 +430,8 @@ def _(self, i):
     llvmFunc = self.llvmGetFunction(func)
 
     # Get a pointer to the function.
-    #funcPtrType = llvm.core.Type.pointer(func.type())
     funcPtrType = _llvmFuncPtrType(self)
+    castedFunc = self.builder().bitcast(llvmFunc, funcPtrType)
 
     # Get the function arguments.
     # TODO: Not yet implemented. Only schedule functions that take no arguments for now.
@@ -444,11 +444,11 @@ def _(self, i):
     voidPtrType = llvm.core.Type.pointer(llvm.core.Type.int(8))
 
     # Get an LLVM handle for the global scheduler function.
-    schedFunc = _getScheduler(self, '__hlt_global_schedule_job', [llvm.core.Type.int(32), _llvmFuncPtrType(self), self.llvmTypeGenericPointer()])
+    schedFunc = _getScheduler(self, '__hlt_global_schedule_job', [llvm.core.Type.int(32), funcPtrType, self.llvmTypeGenericPointer()])
 
     # Cast the frame to 'void *'.
     castedFrame = self.builder().bitcast(frame, voidPtrType, 'castedFrame')
 
     # Generate call to the global scheduler.
-    call = self.builder().call(schedFunc, [vthread, llvmFunc, castedFrame])
+    call = self.builder().call(schedFunc, [vthread, castedFunc, castedFrame])
     call.calling_convention = llvm.core.CC_C
