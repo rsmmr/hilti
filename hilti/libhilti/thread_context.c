@@ -80,7 +80,7 @@ __hlt_thread_context* __hlt_new_thread_context(const hilti_config* config)
         context->worker_threads[i].thread_id = i;
         context->worker_threads[i].job_queue_head = NULL;
         context->worker_threads[i].job_queue_tail = NULL;
-        context->worker_threads[i].except = 0;
+        context->worker_threads[i].except = NULL;
 
         pthread_mutex_init(&context->worker_threads[i].mutex, NULL);
        
@@ -258,6 +258,37 @@ __hlt_thread_context_state __hlt_get_thread_context_state(const __hlt_thread_con
 }
 
 
+__hlt_exception __hlt_get_next_exception(__hlt_thread_context* context)
+{
+    // Calling this function is an error if threads in this context are still running.
+    if (context->state != __HLT_DEAD)
+    {
+        fputs("libhilti: the thread context being checked for exceptions still has running threads.\n", stderr);
+        exit(1);
+    }
+
+    if (context->main_thread != NULL)
+    {
+        fputs("libhilti: cannot check a thread context for exceptions when a main thread is still running.\n", stderr);
+        exit(1);
+    }
+
+    // Locate the first exception that hasn't been reported already, remove it,
+    // and return it to the user.
+    for (uint32_t i = 0 ; i < context->num_worker_threads ; i++)
+    {
+        if (context->worker_threads[i].except != NULL)
+        {
+            __hlt_exception except = context->worker_threads[i].except;
+            context->worker_threads[i].except = NULL;
+            return except;
+        }
+    }
+
+    // There are no exceptions that haven't already been reported, so return NULL.
+    return NULL;
+}
+
 void __hlt_run_main_thread(__hlt_thread_context* context, __hlt_main_function function, __hlt_exception* except)
 {
     if (context->state != __HLT_RUN)
@@ -280,7 +311,7 @@ void __hlt_run_main_thread(__hlt_thread_context* context, __hlt_main_function fu
     context->main_thread->context = context;
     context->main_thread->job_queue_head = NULL;
     context->main_thread->job_queue_tail = NULL;
-    context->main_thread->except = 0;
+    context->main_thread->except = NULL;
 
     // Store the main function in the thread context so that the main scheduler can access it.
     context->main_function = function;
@@ -300,13 +331,18 @@ void __hlt_run_main_thread(__hlt_thread_context* context, __hlt_main_function fu
         exit(1);
     }
 
+    // Make a copy of the main thread pointer to use with free().
+    __hlt_worker_thread* husk = context->main_thread;
+
     // Transmit any exception to the user.
     *except = context->main_thread->except;
 
-    // Free the thread data structure, which we're done with.
-    free(context->main_thread);
+    // Indicate that the main thread doesn't exist anymore.
     context->main_thread = NULL;
     context->main_function = NULL;
+    
+    // Free the thread data structure, which we're done with.
+    free(husk);
 }
 
 static __hlt_job_node* __hlt_new_job_node(__hlt_hilti_function function, __hlt_hilti_continuation continuation)
@@ -401,13 +437,46 @@ static void* __hlt_worker_scheduler(void* worker_thread_ptr)
             // If this was the only job in the queue (the head and tail
             // were the same) then the head is now NULL; we need to make
             // the tail NULL too.
-            if (this_thread->job_queue_tail == job)
+            if (this_thread->job_queue_head == NULL)
                 this_thread->job_queue_tail = NULL;
         }
         pthread_mutex_unlock(&this_thread->mutex);
 
         // Execute the job.
         __hlt_call_hilti(job->function, job->continuation);
+
+        // Check for an exception.
+        // FIXME: This is a slow way to do things. It would be better to have the code
+        // on the HILTI end call a function that notifies this thread that an exception
+        // has occurred before transferring control back from __hlt_call_hilti(). That
+        // way we could only incur the cost of an if statement in the common case,
+        // instead of having to call __hlt_get_hilti_exception() every time.
+        __hlt_exception except = __hlt_get_hilti_exception(job->continuation);
+
+        if (except != NULL)
+        {
+            // Make the exceptions available to the user.
+            this_thread->except = except;
+
+            if (this_thread->context->main_thread != NULL)
+            {
+                // If a main thread is running, (it will  be unless execution has already
+                // completed successfully) cancel the thread and set its exception property
+                // to this exception. After the main thread has been canceled, __hlt_run_main_thread()
+                // will return to the user and they can take the action they deem appropriate.
+                // (Almost certainly, that means setting the thread context state to KILL.)
+                this_thread->context->main_thread->except = except;
+
+                if (pthread_cancel(this_thread->context->main_thread->thread_handle))
+                {
+                    fputs("libhilti: error cancelling main thread after exception.\n", stderr);
+                    exit(1);
+                }
+            }
+
+            // We keep running until the user kills us. This is simpler and provides uniform
+            // semantics no matter which thread experiences an exception.
+        }
 
         // Free the memory associated with the job.
         __hlt_delete_job_node(job);

@@ -328,48 +328,11 @@ def _constructFrame(cg, func, args, contNormFunc, contNormFrame, contExceptFunc,
     return callee_frame
 
 def _getContinuation(cg):
-    if hasattr(_getContinuation, "result"):
-        return _getContinuation.result
-
-    # Create a variety of HILTI things we don't really need, but that are necessary
-    # to use codegen functions.
-    # TODO: This isn't robust to multiple modules right now... gotta fix that.
-    # FIXME: Actually I believe this whole thing is unnecessary now that Robin has introduced
-    # a way to automatically import certain C prototypes into every HILTI module. Should
-    # migrate this code to that.
-
-    #hiltiMod = module.Module('__hlt_sched_module')
-    hiltiMod = cg.currentModule()
-    hiltiFuncType = type.Function([], type.Void)
-    hiltiNormFunc = function.Function(hiltiFuncType, '__cont_normal', hiltiMod)
-    hiltiExceptFunc = function.Function(hiltiFuncType, '__cont_except', hiltiMod)
-
-    # Create the LLVM functions.
-    #llvmModule = llvm.core.Module.new('__hlt_sched_module')
-    llvmModule = cg.llvmCurrentModule()
-    frameType = cg.llvmTypeFunctionFrame(hiltiNormFunc)
-    fpType = llvm.core.Type.function(llvm.core.Type.void(), [llvm.core.Type.pointer(frameType)])
-    normFunc = llvmModule.add_function(fpType, '__cont_normal')
-    exceptFunc = llvmModule.add_function(fpType, '__cont_except')
-
-    # Create the code for the normal continuation.
-    block = normFunc.append_basic_block('entry')
-    builder = llvm.core.Builder.new(block)
-    builder.ret_void()
-
-    # Create the code for the exception continuation.
-    # TODO: Do something with the exception.
-    block = exceptFunc.append_basic_block('entry')
-    builder = llvm.core.Builder.new(block)
-    builder.ret_void()
-
-    # Create the frames.
-    normFrame = cg.llvmAllocFunctionFrame(hiltiNormFunc)
-    exceptFrame = cg.llvmAllocFunctionFrame(hiltiExceptFunc)
-
-    # Store and return the continuation info.
-    _getContinuation.result = (normFunc, normFrame, exceptFunc, exceptFrame)
-    return _getContinuation.result
+    cont_normal = cg.llvmCurrentModule().get_function_named("__hlt_standard_cont_normal")
+    cont_normal_frame = cg.llvmCurrentModule().get_global_variable_named("__hlt_standard_frame")
+    cont_except = cg.llvmCurrentModule().get_function_named("__hlt_standard_cont_except")
+    cont_except_frame = cg.llvmCurrentModule().get_global_variable_named("__hlt_standard_frame")
+    return (cont_normal, cont_normal_frame, cont_except, cont_except_frame)
 
 def _getScheduler(cg, name, args):
     # This uses some private vars of CoreGen so I should move this.

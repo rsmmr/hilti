@@ -96,6 +96,7 @@ extern void __hlt_delete_thread_context(__hlt_thread_context* context);
 extern void __hlt_set_thread_context_state(__hlt_thread_context* context, const __hlt_thread_context_state new_state);
 extern __hlt_thread_context_state __hlt_get_thread_context_state(const __hlt_thread_context* context);
 extern void __hlt_run_main_thread(__hlt_thread_context* context, __hlt_main_function function, __hlt_exception* except);
+extern __hlt_exception __hlt_get_next_exception(__hlt_thread_context* context);
 
 ///////////////////////////////////////////////////////////////////////////
 // Internal scheduling functions.
@@ -114,5 +115,6 @@ extern void __hlt_schedule_job(__hlt_thread_context* context, uint32_t thread_id
 // External interfaces between C and HILTI.
 ///////////////////////////////////////////////////////////////////////////
 extern void __hlt_call_hilti(__hlt_hilti_function function, __hlt_hilti_continuation continuation);
+extern __hlt_exception __hlt_get_hilti_exception(__hlt_hilti_continuation continuation);
 
 #endif

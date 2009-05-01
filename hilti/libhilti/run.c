@@ -17,7 +17,7 @@ void hilti_multithreaded_run(__hlt_exception* hilti_except)
     hilti_config config = hilti_config_get();
 
     // Initialize the exception variable.
-    *hilti_except = 0;
+    *hilti_except = NULL;
 
     // If the user requested fewer than 2 threads, they must have written a program that does not
     // require a scheduler. We just run main_run() directly, without creating a thread context.
@@ -51,8 +51,11 @@ void hilti_multithreaded_run(__hlt_exception* hilti_except)
         // prevent any new jobs from being scheduled. __hlt_set_run_state is synchronous
         // and will not return until all threads have terminated.
         __hlt_set_thread_context_state(context, __HLT_STOP);
-    }
 
+        // Make sure we catch any exceptions that worker threads may have caused.
+        *hilti_except = __hlt_get_next_exception(context);
+    }
+ 
     // Now that all threads have terminated, destroy the thread context and return.
     __hlt_delete_thread_context(context);
 }
