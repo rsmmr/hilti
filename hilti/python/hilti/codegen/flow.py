@@ -422,7 +422,11 @@ def _(self, i):
     (contNormFunc, contNormFrame, contExceptFunc, contExceptFrame) = _getContinuation(self)
 
     # Get the virtual thread number.
-    vthread = self.llvmConstInt(i.op1().value(), 32)
+    if i.op1().value().__class__.__name__ == 'ID':
+        assert i.op1().type().width() == 32
+        vthread = self.llvmOp(i.op1())
+    else:
+        vthread = self.llvmConstInt(i.op1().value(), 32)
 
     # Get the function to schedule.
     func = self.lookupFunction(i.op2().value().name())
@@ -435,7 +439,8 @@ def _(self, i):
 
     # Get the function arguments.
     # TODO: Not yet implemented. Only schedule functions that take no arguments for now.
-    args = []
+    #args = []
+    args = i.op3().value()
 
     # Generate the frame for the function.
     frame = _constructFrame(self, func, args, contNormFunc, contNormFrame, contExceptFunc, contExceptFrame)

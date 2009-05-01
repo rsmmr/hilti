@@ -48,9 +48,45 @@ void print5() {
 }
 
 void run() {
-    thread.schedule 1 print1
-    thread.schedule 2 print2
-    thread.schedule 3 print3
-    thread.schedule 4 print4
-    thread.schedule 5 print5
+    thread.schedule 1 print1()
+    thread.schedule 2 print2()
+    thread.schedule 3 print3()
+    thread.schedule 4 print4()
+    thread.schedule 5 print5()
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import hilti
+
+void print_num(int<32> num) {
+    call Hilti::print (num, True)
+    return.void
+}
+
+int<32> make_const(int<32> num) {
+    return.result num
+}
+
+void run() {
+    local int<32> count
+    local int<32> limit
+    local bool eq
+
+    count = call make_const(1)
+    limit = call make_const(6)
+
+@loop:
+    eq = int.eq count limit
+    if.else eq @exit @cont
+
+@cont:
+    thread.schedule count print_num(count)
+    count = incr count
+    jump @loop
+
+@exit:
+    return.void
 }

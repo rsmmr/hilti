@@ -17,6 +17,6 @@ void func_with_locals() {
 }
 
 void run() {
-    thread.schedule 1 func_with_locals 
+    thread.schedule 1 func_with_locals() 
 }
 

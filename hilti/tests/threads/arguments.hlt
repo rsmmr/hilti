@@ -17,17 +17,16 @@ module Main
 
 import hilti
 
-void printhello() {
-
-    call Hilti::print ("Before yield.", True)
+void printstring(string str) {
+    call Hilti::print (str, True)
     
-    thread.yield
-
-    call Hilti::print ("After yield.", True)
-
     return.void
 }
 
 void run() {
-    thread.schedule 1 printhello()
+    local string hello
+
+    hello = string.assign "Hello!"
+
+    thread.schedule 1 printstring(hello)
 }

@@ -103,7 +103,7 @@ class ThreadYield(Instruction):
     """
     pass
 
-@instruction("thread.schedule", op1=Integer, op2=Function, op3=Optional(Tuple), terminator=False)
+@instruction("thread.schedule", op1=Integer, op2=Function, op3=Tuple, terminator=False)
 class ThreadSchedule(Instruction):
     """
     Schedules a function call onto a virtual thread.

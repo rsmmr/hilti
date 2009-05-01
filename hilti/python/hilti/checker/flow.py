@@ -136,6 +136,6 @@ def _(self, i):
     if rt != type.Void:
         self.error(i, "thread.schedule used to call a function that returns a value")
     
-   # _checkArgs(self, i, func, i.op3())
+    _checkArgs(self, i, func, i.op3())
 
    
