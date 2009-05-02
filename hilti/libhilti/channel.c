@@ -8,9 +8,9 @@
  * - Implement a fine-grained locking strategy. If reading and writing is
  *   performed on different chunks, there is no need to lock the entire channel
  *   for read and write operations.
- * - Substitute the Monitor design (locks and condititions) of the channel with
- *   a wait-free implementation based on atomics. Another neat effect of this
- *   improvement is that it obviates the need for a channel destructor.
+ * - Substitute the Monitor design (locks and condititions) with a wait-free
+ *   implementation based on atomics. This would also obviate the need for a
+ *   channel destructor if we can get rid of the pthread code.
  */
 
 #include <string.h>
@@ -33,6 +33,17 @@ struct __hlt_channel_chunk
     void* data;                     /* Chunk data. */
     __hlt_channel_chunk* next;      /* Pointer to the next chunk. */
 };
+
+/* FIXME: This struct represents the type parameters that are currently only
+ * available at the HILTI layer. The compiler should eventually autogenerate
+ * such structs.
+ */
+typedef struct __hlt_channel_type_parameters
+{
+    __hlt_type_info* item_type;
+    uint64_t capacity;
+} __hlt_channel_params;
+
 
 // Creates a new gc'ed channel chunk.
 __hlt_channel_chunk* __hlt_chunk_create(size_t capacity, int16_t item_size, __hlt_exception* excpt)
@@ -141,20 +152,13 @@ const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* o
     return __hlt_string_concat(s, &postfix, excpt);
 }
 
-/* TODO: This struct represents the type parameters that are currently only
- * available at the HILTI layer. The compiler should eventually autogenerate
- * such structs.
- */
-typedef struct channel_type_parameters
-{
-    __hlt_type_info* item_type;
-    uint64_t capacity;
-} channel_type_params;
 
 __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* excpt)
 {
+    assert(type->type == __HLT_TYPE_CHANNEL);
     assert(type->num_params == 2);
-    channel_type_params* params = (channel_type_params*) &type->type_params;
+
+    __hlt_channel_params* params = (__hlt_channel_params*) &type->type_params;
 
     __hlt_channel *ch = __hlt_gc_malloc_non_atomic(sizeof(__hlt_channel));
     if ( ! ch ) {
@@ -255,4 +259,9 @@ void* __hlt_channel_try_read(__hlt_channel* ch, __hlt_exception* excpt)
 unlock_exit:
     pthread_mutex_unlock(&ch->mutex);
     return item;
+}
+
+__hlt_channel_size __hlt_channel_get_size(__hlt_channel* ch, __hlt_exception* excpt)
+{
+    return ch->size;
 }

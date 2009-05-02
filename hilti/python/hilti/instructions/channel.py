@@ -44,3 +44,8 @@ class Read(Instruction):
     """Returns the next channel item from the channel referenced by *op1*. If
     the channel is empty, the caller blocks.
     """
+
+@instruction("channel.size", op1=Reference, target=Integer(64))
+class Size(Instruction):
+    """Returns the current number of items in the channel referenced by *op1*.
+    """

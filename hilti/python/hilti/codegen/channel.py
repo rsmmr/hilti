@@ -49,3 +49,8 @@ def _(self, i):
     item_type = i.op1().type().refType().itemType()
     nodep = self.builder().bitcast(voidp, llvm.core.Type.pointer(self.llvmTypeConvert(item_type)))
     self.llvmStoreInTarget(i.target(), self.builder().load(nodep))
+
+@codegen.when(instructions.channel.Size)
+def _(self, i):
+    result = self.llvmGenerateCCallByName("__Hlt::channel_get_size", [i.op1()], [i.op1().type()])
+    self.llvmStoreInTarget(i.target(), result)

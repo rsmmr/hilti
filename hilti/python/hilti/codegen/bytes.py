@@ -137,8 +137,3 @@ def _(self, i):
 def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_diff", [i.op1(), i.op2()], [i.op2().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
-    
-    
-
-
-

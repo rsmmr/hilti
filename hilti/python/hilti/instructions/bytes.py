@@ -106,4 +106,3 @@ class Diff(Instruction):
 #    """Compares *op1* with *op2* and returns *True* if their contents match.
 #    Returns *False* otherwise."""
 #    pass
-

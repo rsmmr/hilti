@@ -41,6 +41,7 @@ declare "C-HILTI" void channel_write(ref<channel<*,*>> ch, any data)
 declare "C-HILTI" void channel_try_write(ref<channel<*,*>> ch, any data)
 declare "C-HILTI" any channel_read(ref<channel<*,*>> ch)
 declare "C-HILTI" any channel_try_read(ref<channel<*,*>> ch)
+declare "C-HILTI" int64 channel_get_size(ref<channel<*,*>> ch)
 
 ###
 
