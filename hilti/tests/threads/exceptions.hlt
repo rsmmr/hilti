@@ -58,63 +58,66 @@ void run() {
     return.void
 }
 
-# module Main
-# 
-# import hilti
-# 
-# void print_num(int<32> num) {
-#     call Hilti::print (num, True)
-#     return.void
-# }
-# 
-# void bad_print_num(int<64> num) {
-#     local int<32> zero
-# 
-#     zero = int.add -5 5
-#     zero = int.div 12 zero
-# 
-#     call Hilti::print (num, True)
-#     return.void
-# }
-# 
-# int<32> make_const(int<32> num) {
-#     return.result num
-# }
-# 
-# void run() {
-#     local int<32> count
-#     local int<32> limit
-#     local bool eq
-# 
-#     call Hilti::print ("Exception in worker thread:", True)
-# 
-#     count = call make_const(1)
-#     limit = call make_const(6)
-# 
-#     thread.schedule 3 bad_print_num(3)
-# 
-# @loop:
-#     eq = int.eq count limit
-#     if.else eq @exit @cont
-# 
-# @cont:
-#     thread.schedule count print_num(count)
-#     count = incr count
-#     jump @loop
-# 
-# @exit:
-#     call Hilti::print("Done", True) 
-# #@loop:
-# #    eq = int.eq count limit
-# #    if.else eq @exit @cont
-# #
-# #@cont:
-# #    thread.schedule count print_num(count)
-# #    count = incr count
-# #    jump @loop
-# #
-# #@exit:
-#     return.void
-# }
+# @TEST-START-NEXT
+
+module Main
+
+import hilti
+
+void print_num(int<32> num) {
+    call Hilti::print (num, True)
+    return.void
+}
+
+void bad_print_num(int<32> num) {
+    local int<32> zero
+
+    zero = int.add -5 5
+    zero = int.div 12 zero
+
+    call Hilti::print (num, True)
+    return.void
+}
+
+int<32> make_const(int<32> num) {
+    return.result num
+}
+
+void run() {
+    local int<32> count
+    local int<32> limit
+    local int<32> bad_num
+    local bool eq
+
+    call Hilti::print ("Exception in worker thread:", True)
+
+    count = call make_const(1)
+    limit = call make_const(6)
+    bad_num = call make_const(3)
+
+#    thread.schedule 3 bad_print_num(3)
+
+@loop:
+    eq = int.eq count limit
+    if.else eq @exit @cont
+
+@cont:
+    eq = int.eq count bad_num
+    if.else eq @bad_print @good_print
+
+@bad_print:
+    thread.schedule count bad_print_num(count)
+    count = incr count
+    jump @loop
+
+@good_print:
+    thread.schedule count print_num(count)
+    count = incr count
+    jump @loop
+
+@exit:
+    call Hilti::print("Done", True) 
+    return.void
+}
 
 

@@ -2,7 +2,7 @@
 #
 # Build libhilti
 
-BC_FROM_LL = callhilti.bc
+BC_FROM_LL = call_hilti.bc
 
 BC_FROM_C  = print.bc exceptions.bc utf8proc.bc init.bc memory.bc string.bc \
              int.bc double.bc bool.bc tuple.bc fmt.bc channel.bc enum.bc \
@@ -10,7 +10,7 @@ BC_FROM_C  = print.bc exceptions.bc utf8proc.bc init.bc memory.bc string.bc \
 
 BC = $(BC_FROM_LL) $(BC_FROM_C) 
 
-HEADERS  = hilti.h hilti_intern.h
+HEADERS  = hilti.h hilti_intern.h bytes.h config.h thread_context.h exceptions.h
 MAIN     = main.bc
 
 GC_LIB     = gc/gc.a 

@@ -9,15 +9,13 @@
 #include "hilti_intern.h"
 #include "thread_context.h"
 
-// FIXME: Right now there's no handling of HILTI exceptions except for the main function.
-
 // FIXME: Should a thread context start in the RUN state? Should we be able to reuse a thread context?
 
 // FIXME: Might be nice to provide a function to delete the thread specific data keys and reset the once variable.
 // Only the calling code could know when it's safe to do that, since theoretically multiple thread contexts may exist.
 
 // Forward declarations.
-static __hlt_job_node* __hlt_new_job_node(__hlt_hilti_function function, __hlt_hilti_continuation continuation);
+static __hlt_job_node* __hlt_new_job_node(__hlt_hilti_function function, __hlt_hilti_frame frame);
 static void __hlt_delete_job_node(__hlt_job_node* job);
 static void* __hlt_main_scheduler(void* main_thread_ptr);
 static void* __hlt_worker_scheduler(void* worker_thread_ptr);
@@ -81,6 +79,7 @@ __hlt_thread_context* __hlt_new_thread_context(const hilti_config* config)
         context->worker_threads[i].job_queue_head = NULL;
         context->worker_threads[i].job_queue_tail = NULL;
         context->worker_threads[i].except = NULL;
+        context->worker_threads[i].except_state = __HLT_HANDLED;
 
         pthread_mutex_init(&context->worker_threads[i].mutex, NULL);
        
@@ -91,8 +90,18 @@ __hlt_thread_context* __hlt_new_thread_context(const hilti_config* config)
         }
     }
 
-    // Initially, there is no main thread.
-    context->main_thread = NULL;
+    // Create the 'main thread' struct. The main thread is actually a fake thread that just redirects all
+    // scheduling to the first worker thread. It only exists to allow HILTI main functions to exist
+    // within a thread context and do things like yield and schedule other threads.
+    context->main_thread = malloc(sizeof(__hlt_worker_thread));
+    context->main_thread->thread_id = 0;
+    context->main_thread->context = context;
+    context->main_thread->job_queue_head = NULL;
+    context->main_thread->job_queue_tail = NULL;
+    context->main_thread->except = NULL;
+    context->main_thread->except_state = __HLT_HANDLED;
+
+    // Initially there is no main function running.
     context->main_function = NULL;
 
     return context;
@@ -107,7 +116,7 @@ void __hlt_delete_thread_context(__hlt_thread_context* context)
         exit(1);
     }
 
-    if (context->main_thread != NULL)
+    if (context->main_function != NULL)
     {
         fputs("libhilti: cannot delete a thread context that has a main thread running.\n", stderr);
         exit(1);
@@ -134,6 +143,9 @@ void __hlt_delete_thread_context(__hlt_thread_context* context)
 
     // Free the worker thread structures.
     free(context->worker_threads);
+
+    // Free the main thread structures.
+    free(context->main_thread);
 
     // Free the context.
     free(context);
@@ -267,7 +279,7 @@ __hlt_exception __hlt_get_next_exception(__hlt_thread_context* context)
         exit(1);
     }
 
-    if (context->main_thread != NULL)
+    if (context->main_function != NULL)
     {
         fputs("libhilti: cannot check a thread context for exceptions when a main thread is still running.\n", stderr);
         exit(1);
@@ -297,21 +309,11 @@ void __hlt_run_main_thread(__hlt_thread_context* context, __hlt_main_function fu
         exit(1);
     }
 
-    if (context->main_thread != NULL)
+    if (context->main_function != NULL)
     {
         fputs("libhilti: cannot run main thread on a thread context that already has a main thread running.\n", stderr);
         exit(1);
     }
-
-    // Create the 'main thread' struct. The main thread is actually a fake thread that just redirects all
-    // scheduling to the first worker thread. It only exists to allow HILTI main functions to exist
-    // within a thread context and do things like yield and schedule other threads.
-    context->main_thread = malloc(sizeof(__hlt_worker_thread));
-    context->main_thread->thread_id = 0;
-    context->main_thread->context = context;
-    context->main_thread->job_queue_head = NULL;
-    context->main_thread->job_queue_tail = NULL;
-    context->main_thread->except = NULL;
 
     // Store the main function in the thread context so that the main scheduler can access it.
     context->main_function = function;
@@ -327,30 +329,23 @@ void __hlt_run_main_thread(__hlt_thread_context* context, __hlt_main_function fu
     // Wait for the main thread to complete. This provides the synchronous behavior the user expects.
     if (pthread_join(context->main_thread->thread_handle, NULL))
     {
-        fputs("libhilti: error joining main thread threads.\n", stderr);
+        fputs("libhilti: error joining main thread.\n", stderr);
         exit(1);
     }
-
-    // Make a copy of the main thread pointer to use with free().
-    __hlt_worker_thread* husk = context->main_thread;
 
     // Transmit any exception to the user.
     *except = context->main_thread->except;
 
-    // Indicate that the main thread doesn't exist anymore.
-    context->main_thread = NULL;
+    // Indicate that the main thread isn't running anymore.
     context->main_function = NULL;
-    
-    // Free the thread data structure, which we're done with.
-    free(husk);
 }
 
-static __hlt_job_node* __hlt_new_job_node(__hlt_hilti_function function, __hlt_hilti_continuation continuation)
+static __hlt_job_node* __hlt_new_job_node(__hlt_hilti_function function, __hlt_hilti_frame frame)
 {
     __hlt_job_node* new_node = malloc(sizeof(__hlt_job_node));
 
     new_node->function = function;
-    new_node->continuation = continuation;
+    new_node->frame = frame;
     new_node->next = NULL;
 
     return new_node;
@@ -398,6 +393,8 @@ static void* __hlt_worker_scheduler(void* worker_thread_ptr)
 
     while (1)
     {
+        pthread_testcancel();
+
         // Sleep if we have nothing to do. (Terminating if asked to.)
         while (this_thread->job_queue_head == NULL)
         {
@@ -424,6 +421,8 @@ static void* __hlt_worker_scheduler(void* worker_thread_ptr)
             {
                 nanosleep(&sleep_time, NULL);
             }
+
+            pthread_testcancel();
         }
 
         // Remove a single item from the job queue.
@@ -443,29 +442,20 @@ static void* __hlt_worker_scheduler(void* worker_thread_ptr)
         pthread_mutex_unlock(&this_thread->mutex);
 
         // Execute the job.
-        __hlt_call_hilti(job->function, job->continuation);
+        __hlt_call_hilti(job->function, job->frame);
 
-        // Check for an exception.
-        // FIXME: This is a slow way to do things. It would be better to have the code
-        // on the HILTI end call a function that notifies this thread that an exception
-        // has occurred before transferring control back from __hlt_call_hilti(). That
-        // way we could only incur the cost of an if statement in the common case,
-        // instead of having to call __hlt_get_hilti_exception() every time.
-        __hlt_exception except = __hlt_get_hilti_exception(job->continuation);
-
-        if (except != NULL)
+        // Check for an unhandled exception.
+        if (this_thread->except_state == __HLT_UNHANDLED)
         {
-            // Make the exceptions available to the user.
-            this_thread->except = except;
-
-            if (this_thread->context->main_thread != NULL)
+            if (this_thread->context->main_function != NULL)
             {
                 // If a main thread is running, (it will  be unless execution has already
                 // completed successfully) cancel the thread and set its exception property
-                // to this exception. After the main thread has been canceled, __hlt_run_main_thread()
-                // will return to the user and they can take the action they deem appropriate.
-                // (Almost certainly, that means setting the thread context state to KILL.)
-                this_thread->context->main_thread->except = except;
+                // to the predefined WorkerThreadThrew exception.  After the main thread has
+                // been canceled, __hlt_run_main_thread() will return to the user and they
+                // can take the action they deem appropriate. (Almost certainly, that means
+                // setting the thread context state to KILL.)
+                this_thread->context->main_thread->except = __hlt_exception_worker_thread_threw_exception;
 
                 if (pthread_cancel(this_thread->context->main_thread->thread_handle))
                 {
@@ -473,6 +463,9 @@ static void* __hlt_worker_scheduler(void* worker_thread_ptr)
                     exit(1);
                 }
             }
+
+            // We've now handled this exception.
+            this_thread->except_state = __HLT_HANDLED;
 
             // We keep running until the user kills us. This is simpler and provides uniform
             // semantics no matter which thread experiences an exception.
@@ -489,36 +482,12 @@ __hlt_thread_context* __hlt_get_current_thread_context()
 {
      __hlt_thread_context* context = (__hlt_thread_context*) pthread_getspecific(__hlt_thread_context_key);
 
-     while (context == NULL)
-     {
-        // pthread_setspecific hasn't been called yet. We've just got to wait it out.
-        struct timespec sleep_time;
-        sleep_time.tv_sec = 0;
-        sleep_time.tv_nsec = __HLT_WAIT_FOR_SETSPECIFIC_NS;
-
-        nanosleep(&sleep_time, NULL);
-        
-        context = (__hlt_thread_context*) pthread_getspecific(__hlt_thread_context_key);
-     }
-
      return context;
 }
 
 uint32_t __hlt_get_current_thread_id()
 {
     uint32_t* thread_id = (uint32_t*) pthread_getspecific(__hlt_thread_id_key);
-
-    while (thread_id == NULL)
-    {
-        // pthread_setspecific hasn't been called yet. We've just got to wait it out.
-        struct timespec sleep_time;
-        sleep_time.tv_sec = 0;
-        sleep_time.tv_nsec = __HLT_WAIT_FOR_SETSPECIFIC_NS;
-
-        nanosleep(&sleep_time, NULL);
-
-        thread_id = (uint32_t*) pthread_getspecific(__hlt_thread_id_key);
-    }
 
     return *thread_id;
 }
@@ -528,7 +497,7 @@ uint32_t __hlt_get_thread_count(__hlt_thread_context* context)
     return context->num_worker_threads;
 }
 
-void __hlt_schedule_job(__hlt_thread_context* context, uint32_t thread_id, __hlt_hilti_function function, __hlt_hilti_continuation continuation)
+void __hlt_schedule_job(__hlt_thread_context* context, uint32_t thread_id, __hlt_hilti_function function, __hlt_hilti_frame frame)
 {
     __hlt_worker_thread* target_thread = &context->worker_threads[thread_id];
 
@@ -537,7 +506,7 @@ void __hlt_schedule_job(__hlt_thread_context* context, uint32_t thread_id, __hlt
         // Only schedule a job if we're in the RUN state.
         if (context->state == __HLT_RUN)
         {
-            __hlt_job_node* job = __hlt_new_job_node(function, continuation);
+            __hlt_job_node* job = __hlt_new_job_node(function, frame);
 
             if (target_thread->job_queue_tail == NULL)
             {
@@ -554,4 +523,15 @@ void __hlt_schedule_job(__hlt_thread_context* context, uint32_t thread_id, __hlt
         }
     }
     pthread_mutex_unlock(&target_thread->mutex);
+}
+
+void __hlt_report_local_exception(__hlt_exception except)
+{
+    __hlt_thread_context* context = __hlt_get_current_thread_context();
+    uint32_t thread_id = __hlt_get_current_thread_id();
+    __hlt_worker_thread* target_thread = &context->worker_threads[thread_id];
+
+    // Notify the worker thread that an exception has occurred.
+    target_thread->except = except;
+    target_thread->except_state = __HLT_UNHANDLED;
 }

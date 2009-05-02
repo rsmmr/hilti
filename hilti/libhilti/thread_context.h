@@ -11,7 +11,7 @@
 
 // Typedefs used for interactions between C and HILTI.
 typedef void (*__hlt_hilti_function)(void*);
-typedef void* __hlt_hilti_continuation;
+typedef void* __hlt_hilti_frame;
 typedef void (*__hlt_main_function)(__hlt_exception*);
 
 // This enumeration lists the possible states for a thread context.
@@ -45,6 +45,14 @@ typedef enum
     __HLT_DEAD
 } __hlt_thread_context_state;
 
+// An enumeration used to distinguish between exceptions which have already been handled
+// and exceptions which still need to be handled.
+typedef enum
+{
+    __HLT_UNHANDLED,
+    __HLT_HANDLED
+} __hlt_exception_state;
+
 struct __hlt_worker_thread_t;
 
 // This struct encapsulates global state that all threads share.
@@ -63,7 +71,7 @@ typedef struct
 typedef struct __hlt_job_node_t
 {
     __hlt_hilti_function function;
-    __hlt_hilti_continuation continuation;
+    __hlt_hilti_frame frame;
     struct __hlt_job_node_t* next;
 } __hlt_job_node;
 
@@ -77,6 +85,7 @@ typedef struct __hlt_worker_thread_t
     __hlt_job_node* job_queue_head;
     __hlt_job_node* job_queue_tail;
     __hlt_exception except;
+    __hlt_exception_state except_state;
 } __hlt_worker_thread;
 
 ///////////////////////////////////////////////////////////////////////////
@@ -109,12 +118,11 @@ extern __hlt_exception __hlt_get_next_exception(__hlt_thread_context* context);
 extern __hlt_thread_context* __hlt_get_current_thread_context();
 extern uint32_t __hlt_get_current_thread_id();
 extern uint32_t __hlt_get_thread_count(__hlt_thread_context* context);
-extern void __hlt_schedule_job(__hlt_thread_context* context, uint32_t thread_id, __hlt_hilti_function function, __hlt_hilti_continuation continuation);
+extern void __hlt_schedule_job(__hlt_thread_context* context, uint32_t thread_id, __hlt_hilti_function function, __hlt_hilti_frame frame);
 
 ///////////////////////////////////////////////////////////////////////////
 // External interfaces between C and HILTI.
 ///////////////////////////////////////////////////////////////////////////
-extern void __hlt_call_hilti(__hlt_hilti_function function, __hlt_hilti_continuation continuation);
-extern __hlt_exception __hlt_get_hilti_exception(__hlt_hilti_continuation continuation);
+extern void __hlt_call_hilti(__hlt_hilti_function function, __hlt_hilti_frame frame);
 
 #endif

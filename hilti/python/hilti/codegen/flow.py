@@ -229,7 +229,7 @@ def _(self, i):
         self.llvmStoreInTarget(i.target(), result)
 
 def _makeReturn(cg, llvm_result=None, result_type=None):
-    fpt = cg.llvmTypeBasicFunctionPtr([result_type] if result_type else [])
+    fpt = llvm.core.Type.pointer(cg.llvmTypeBasicFunctionPtr([result_type] if result_type else []))
     addr = cg.llvmAddrDefContSuccessor(cg.llvmCurrentFramePtr(), fpt)
     ptr = cg.builder().load(addr, "succ_ptr")
     
@@ -277,15 +277,8 @@ def _(self, i):
 
 import sys
 
-# FIXME: In general, the private functions below are duplicate code from existing functions that almost met my
-# needs, but not quite. This is bad; the duplicate code needs to be unified.
-
-def _llvmFuncPtrType(cg, args=[]):
-    voidt = llvm.core.Type.void()
-    args = [cg.llvmTypeConvert(t) for t in args]
-    bf = [llvm.core.Type.pointer(cg.llvmTypeBasicFrame())]
-    ft = llvm.core.Type.function(voidt, bf + args)
-    return llvm.core.Type.pointer(ft)
+# FIXME: _constructFrame is based on _makeCall(), and currently there's a certain amount of code
+# duplication going on here. Can _makeCall() be made to utilize _constructFrame()?
 
 def _constructFrame(cg, func, args, contNormFunc, contNormFrame, contExceptFunc, contExceptFrame):
     frame = cg.llvmCurrentFramePtr()
@@ -327,30 +320,18 @@ def _constructFrame(cg, func, args, contNormFunc, contNormFrame, contExceptFunc,
     
     return callee_frame
 
-def _getContinuation(cg):
+def _getStandardFrame(cg):
+    # Get the reusable global portions of the standard frame.
     cont_normal = cg.llvmCurrentModule().get_function_named("__hlt_standard_cont_normal")
     cont_normal_frame = cg.llvmCurrentModule().get_global_variable_named("__hlt_standard_frame")
     cont_except = cg.llvmCurrentModule().get_function_named("__hlt_standard_cont_except")
-    cont_except_frame = cg.llvmCurrentModule().get_global_variable_named("__hlt_standard_frame")
+
+    # Construct the frame for the exception continuation. (This can't be reused.)
+    cont_except_frame = cg.llvmMalloc(cg.llvmTypeBasicFrame())
+    exception_addr = cg.llvmAddrException(cont_except_frame)
+    cg.llvmInit(cg.llvmConstNoException(), exception_addr)
+
     return (cont_normal, cont_normal_frame, cont_except, cont_except_frame)
-
-def _getScheduler(cg, name, args):
-    # This uses some private vars of CoreGen so I should move this.
-    # I only don't use llvmGetCFunction because it (like so many things) insists on HILTI types.
-    # There should be a better solution than this code duplication.
-
-    #name = '__hlt_global_schedule'
-
-    try:
-        llvmfunc = cg._llvm.functions[name]
-    except KeyError:
-        #args = [llvm.core.Type.int(32), _llvmFuncPtrType(cg), cg.llvmTypeGenericPointer()]
-        ft = llvm.core.Type.function(llvm.core.Type.void(), args)
-        llvmfunc = cg._llvm.module.add_function(ft, name)
-        llvmfunc.calling_convention = llvm.core.CC_C    # I changed this from llvm.calling_convention; llvmGetCFunction may be wrong?
-        cg._llvm.functions[name] = llvmfunc
-
-    return llvmfunc
 
 @codegen.when(instructions.flow.ThreadYield)
 def _(self, i):
@@ -363,11 +344,10 @@ def _(self, i):
     frame = self.llvmCurrentFramePtr()
 
     # Create a 'void *' type. (in LLVM it's pointer to i8)
-    voidPtrType = llvm.core.Type.pointer(llvm.core.Type.int(8))
+    voidPtrType = self.llvmTypeGenericPointer()
 
     # Get an LLVM handle for the worker scheduler function.
-    #schedFunc = _getWorkerScheduler(self)
-    schedFunc = _getScheduler(self, '__hlt_local_schedule_job', [_llvmFuncPtrType(self), self.llvmTypeGenericPointer()])
+    schedFunc = self.llvmCurrentModule().get_function_named('__hlt_local_schedule_job')
 
     # Cast the frame to 'void *'.
     castedFrame = self.builder().bitcast(frame, voidPtrType, 'castedFrame')
@@ -382,7 +362,7 @@ def _(self, i):
 @codegen.when(instructions.flow.ThreadSchedule)
 def _(self, i):
     # Get standard information for frame.
-    (contNormFunc, contNormFrame, contExceptFunc, contExceptFrame) = _getContinuation(self)
+    (contNormFunc, contNormFrame, contExceptFunc, contExceptFrame) = _getStandardFrame(self)
 
     # Get the virtual thread number.
     if i.op1().value().__class__.__name__ == 'ID':
@@ -397,22 +377,20 @@ def _(self, i):
     llvmFunc = self.llvmGetFunction(func)
 
     # Get a pointer to the function.
-    funcPtrType = _llvmFuncPtrType(self)
+    funcPtrType = self.llvmTypeBasicFunctionPtr()
     castedFunc = self.builder().bitcast(llvmFunc, funcPtrType)
 
     # Get the function arguments.
-    # TODO: Not yet implemented. Only schedule functions that take no arguments for now.
-    #args = []
     args = i.op3().value()
 
     # Generate the frame for the function.
     frame = _constructFrame(self, func, args, contNormFunc, contNormFrame, contExceptFunc, contExceptFrame)
 
     # Create a 'void *' type. (in LLVM it's pointer to i8)
-    voidPtrType = llvm.core.Type.pointer(llvm.core.Type.int(8))
+    voidPtrType = self.llvmTypeGenericPointer()
 
     # Get an LLVM handle for the global scheduler function.
-    schedFunc = _getScheduler(self, '__hlt_global_schedule_job', [llvm.core.Type.int(32), funcPtrType, self.llvmTypeGenericPointer()])
+    schedFunc = self.llvmCurrentModule().get_function_named('__hlt_global_schedule_job')
 
     # Cast the frame to 'void *'.
     castedFrame = self.builder().bitcast(frame, voidPtrType, 'castedFrame')

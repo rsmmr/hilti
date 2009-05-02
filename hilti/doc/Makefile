@@ -31,7 +31,7 @@ clean:
 html:
 	mkdir -p .auto .build/html .build/doctrees
     # Work around some bug in the Sphinx graphviz extension.
-	-mkdir -p .build/html/_images && ln -s `pwd`/.build/html/_images/ .build/_images 2>/dev/null
+	-mkdir -p .build/html/_images && ln -s -t .build/ `pwd`/.build/html/_images/ 2>/dev/null
 	PYTHONPATH=$(PYTHONPATH):../python ./scripts/gen-docs .auto
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) .build/html
 	@echo

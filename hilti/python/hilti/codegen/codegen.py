@@ -604,8 +604,8 @@ class CodeGen(visitor.Visitor):
         Returns: llvm.core.Type.pointer - The function pointer type.
         """
         voidt = llvm.core.Type.void()
-        ft = llvm.core.Type.function(voidt, [llvm.core.Type.pointer(self.llvmTypeFunctionPtrFrame(function))])
-        return llvm.core.Type.pointer(llvm.core.Type.pointer(ft))
+        ft = llvm.core.Type.function(voidt, [llvm.core.Type.pointer(self.llvmTypeFunctionFrame(function))])
+        return llvm.core.Type.pointer(ft)
 
     def llvmTypeBasicFunctionPtr(self, args=[]):
         """Returns the LLVM type for representing a pointer to an LLVM
@@ -622,7 +622,7 @@ class CodeGen(visitor.Visitor):
         args = [self.llvmTypeConvert(t) for t in args]
         bf = [llvm.core.Type.pointer(self.llvmTypeBasicFrame())]
         ft = llvm.core.Type.function(voidt, bf + args)
-        return llvm.core.Type.pointer(llvm.core.Type.pointer(ft))
+        return llvm.core.Type.pointer(ft)
     
     def llvmTypeContinuation(self):
         """Returns the LLVM type used for representing continuations.
@@ -1313,7 +1313,7 @@ class CodeGen(visitor.Visitor):
         """
         
         # ptr = *__frame.bf.cont_exception.succesor
-        fpt = self.llvmTypeBasicFunctionPtr()
+        fpt = llvm.core.Type.pointer(self.llvmTypeBasicFunctionPtr())
         addr = self.llvmAddrExceptContSuccessor(self._llvm.frameptr, fpt)
         ptr = self.builder().load(addr, "succ_ptr")
     

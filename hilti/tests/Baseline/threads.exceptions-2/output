@@ -1,0 +1,10 @@
+RUN 1
+hilti: uncaught exception, DivisionByZero
+RUN 2
+hilti: uncaught exception, DivisionByZero
+RUN 3
+hilti: uncaught exception, DivisionByZero
+RUN 4
+hilti: uncaught exception, DivisionByZero
+RUN 5
+hilti: uncaught exception, DivisionByZero

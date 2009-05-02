@@ -43,7 +43,7 @@ static uint32_t __hlt_thread_from_vthread(const uint32_t vthread, const uint32_t
     return hash;
 }
 
-void __hlt_global_schedule_job(uint32_t vthread, __hlt_hilti_function function, __hlt_hilti_continuation continuation)
+void __hlt_global_schedule_job(uint32_t vthread, __hlt_hilti_function function, __hlt_hilti_frame frame)
 {
     // Get information about the current thread context.
     __hlt_thread_context* context = __hlt_get_current_thread_context();
@@ -53,15 +53,15 @@ void __hlt_global_schedule_job(uint32_t vthread, __hlt_hilti_function function, 
     uint32_t thread_id = __hlt_thread_from_vthread(vthread, num_threads);
 
     // Schedule the job.
-    __hlt_schedule_job(context, thread_id, function, continuation);
+    __hlt_schedule_job(context, thread_id, function, frame);
 }
 
-void __hlt_local_schedule_job(__hlt_hilti_function function, __hlt_hilti_continuation continuation)
+void __hlt_local_schedule_job(__hlt_hilti_function function, __hlt_hilti_frame frame)
 {
     // Get information about the current thread context.
     __hlt_thread_context* context = __hlt_get_current_thread_context();
     uint32_t thread_id = __hlt_get_current_thread_id();
 
     // Schedule the job to the current thread.
-    __hlt_schedule_job(context, thread_id, function, continuation);
+    __hlt_schedule_job(context, thread_id, function, frame);
 }
