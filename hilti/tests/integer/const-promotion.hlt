@@ -6,7 +6,7 @@
 
 module Main
 
-import hilti
+import Hilti
 
 int8 foo(int16 x) {
     call Hilti::print (x)

@@ -21,7 +21,7 @@ declare "C" tuple<int64,int64> fh()
 declare "C" tuple<int8,int8,int8> fi()
 declare "C" tuple<int32,int32,int32> fj()
 
-import hilti
+import Hilti
 
 void run() {
     local tuple<int8> t8

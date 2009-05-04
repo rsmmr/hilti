@@ -6,7 +6,7 @@
 
 module Main
 
-import hilti
+import Hilti
 
 void run() {
    local bool cond
@@ -26,7 +26,7 @@ void run() {
 
 module Main
 
-import hilti
+import Hilti
 
 void run() {
    local bool cond
@@ -46,7 +46,7 @@ void run() {
 
 module Main
 
-import hilti
+import Hilti
 
 void run() {
    local bool cond

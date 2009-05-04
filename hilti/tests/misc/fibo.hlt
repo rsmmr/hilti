@@ -6,7 +6,7 @@
 
 module Main
 
-import hilti
+import Hilti
 
 int<32> fibo(int<32> n) {
 	local int<32> f1

@@ -9,7 +9,7 @@
 
 module Main
 
-import hilti
+import Hilti
 
 void myunpack(ref<bytes> b, Hilti::Packed fmt) {
     local iterator<bytes> p1

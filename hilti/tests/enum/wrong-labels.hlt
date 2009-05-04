@@ -7,7 +7,7 @@
 
 module Main
 
-import hilti
+import Hilti
 
 enum Foo { A, BC, DEF }
 
@@ -19,7 +19,7 @@ void run() {
 
 module Main
 
-import hilti
+import Hilti
 
 enum Foo { A, BC, DEF }
 
@@ -31,7 +31,7 @@ void run() {
 
 module Main
 
-import hilti
+import Hilti
 
 enum Foo { A, BC, DEF }
 

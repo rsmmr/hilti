@@ -6,7 +6,7 @@
 
 module Main
 
-import hilti
+import Hilti
 
 void run() {
     local int<32> i
@@ -20,7 +20,7 @@ void run() {
 
 module Main
 
-import hilti
+import Hilti
 
 void run() {
     local int<32> i
@@ -34,7 +34,7 @@ void run() {
 
 module Main
 
-import hilti
+import Hilti
 
 void run() {
     local int<8> i

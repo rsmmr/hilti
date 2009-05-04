@@ -15,7 +15,7 @@
 
 module Main
 
-import hilti
+import Hilti
 
 void run() {
     local iterator<bytes> p1

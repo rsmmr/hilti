@@ -20,7 +20,7 @@
 
 module Main
 
-import hilti
+import Hilti
 
 void print_num(int<32> num) {
     call Hilti::print (num, True)
@@ -62,7 +62,7 @@ void run() {
 
 module Main
 
-import hilti
+import Hilti
 
 void print_num(int<32> num) {
     call Hilti::print (num, True)

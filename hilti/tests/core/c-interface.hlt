@@ -10,7 +10,7 @@
 
 module Foo
 
-import hilti
+import Hilti
 
 export void foo1(int<32> a, bool b) {
     call Hilti::print(a)

@@ -8,7 +8,7 @@
 
 module Main
 
-import hilti
+import Hilti
 
 void print_bool(bool b) {
      if.else b @one @zero
