@@ -29,7 +29,8 @@ static const __hlt_string separator = { 1, "," };
 struct __hlt_channel_chunk
 {
     size_t capacity;                /* Maximum number of items. */
-    size_t size;                    /* Current number of items. */
+    size_t wcnt;                    /* Number of items written. */
+    size_t rcnt;                    /* Number of items read. */
     void* data;                     /* Chunk data. */
     __hlt_channel_chunk* next;      /* Pointer to the next chunk. */
 };
@@ -46,7 +47,7 @@ typedef struct __hlt_channel_type_parameters
 
 
 // Creates a new gc'ed channel chunk.
-__hlt_channel_chunk* __hlt_chunk_create(size_t capacity, int16_t item_size, __hlt_exception* excpt)
+static __hlt_channel_chunk* __hlt_chunk_create(size_t capacity, int16_t item_size, __hlt_exception* excpt)
 {
     __hlt_channel_chunk *chunk = __hlt_gc_malloc_non_atomic(sizeof(__hlt_channel_chunk));
     if ( ! chunk ) {
@@ -55,7 +56,7 @@ __hlt_channel_chunk* __hlt_chunk_create(size_t capacity, int16_t item_size, __hl
     }
 
     chunk->capacity = capacity;
-    chunk->size = 0;
+    chunk->wcnt = chunk->rcnt = 0;
 
     chunk->data = __hlt_gc_malloc_atomic(capacity * item_size);
     if ( ! chunk->data ) {
@@ -71,15 +72,17 @@ __hlt_channel_chunk* __hlt_chunk_create(size_t capacity, int16_t item_size, __hl
 // Internal helper function performing a read operation.
 static inline void* __hlt_channel_read_item(__hlt_channel* ch)
 {
-    void* item = ch->head;
+    if ( ch->rc->rcnt == ch->rc->capacity ) {
+        assert(ch->rc->next);
 
-    if ( ch->rc->size == ch->rc->capacity ) {
         ch->rc = ch->rc->next;
         ch->head = ch->rc->data;
     }
-    else
-        ch->head += ch->type->size;
 
+    void* item = ch->head;
+    ++ch->rc->rcnt;
+
+    ch->head += ch->type->size;
     --ch->size;
 
     return item;
@@ -88,7 +91,7 @@ static inline void* __hlt_channel_read_item(__hlt_channel* ch)
 // Internal helper function performing a write operation.
 static inline int __hlt_channel_write_item(__hlt_channel* ch, void* data, __hlt_exception* excpt)
 {
-    if ( ch->wc->size == ch->wc->capacity ) {
+    if ( ch->wc->wcnt == ch->wc->capacity ) {
         if ( ch->capacity )
             while ( ch->chunk_cap > ch->capacity - ch->size )
                 ch->chunk_cap /= 2;
@@ -106,7 +109,7 @@ static inline int __hlt_channel_write_item(__hlt_channel* ch, void* data, __hlt_
     }
 
     memcpy(ch->tail, data, ch->type->size);
-    ++ch->wc->size;
+    ++ch->wc->wcnt;
 
     ch->tail += ch->type->size;
     ++ch->size;
