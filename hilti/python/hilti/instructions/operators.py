@@ -13,38 +13,47 @@ Todo: We don't do (almost) any type checking for the operands as we don't have
 the infrastructure to check them on a type-specific basis. Need to add that.
 """
 
-from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.core.constraints import *
 
-@operator("new", op1=HeapType, target=Reference)
+@operator("new", op1=isType(heapType), target=referenceOfOp(1))
 class New(Operator):
     """
     Allocates a new instance of type *op1*.
     """
     pass
 
-@operator("incr", op1=HiltiType, target=HiltiType)
+@operator("incr", op1=hiltiType, target=sameTypeAsOp(1))
 class Incr(Operator):
     """
     Increments *op1* by one and returns the result. *op1* is not modified.
     """
     pass
 
-@operator("deref", op1=HiltiType, target=HiltiType)
+@operator("deref", op1=hiltiType, target=hiltiType)
 class Deref(Operator):
     """
     Dereferences *op1* and returns the result.
     """
     pass
 
-@operator("equal", op1=HiltiType, op2=HiltiType, target=Bool)
+@operator("equal", op1=hiltiType, op2=sameTypeAsOp(1), target=bool)
 class Equal(Operator):
     """
     Returns True if *op1* equals *op2*
     """
     pass
 
-@operator("unpack", op1=IteratorBytes, op2=IteratorBytes, op3=Any, target=Tuple)
+# FIXME: For op3, what we really want is "is of type enum Hilti::Packed". But
+# how can we express that?
+def unpackTarget(constraint):
+    """A constraint function that ensures that the operand is of the
+    tuple type expected for the ~~Unpack operator's target. *t* is an
+    additional constraint function for the tuple's first element.
+    """ 
+    return isTuple([constraint, iteratorBytes])
+
+@operator("unpack", op1=iteratorBytes, op2=iteratorBytes, op3=enum, target=unpackTarget(any))
 class Unpack(Operator):
     """Unpacks an instance of a particular type (as determined by *target*;
     see below) from the the binary data identified by the range from *op1* to

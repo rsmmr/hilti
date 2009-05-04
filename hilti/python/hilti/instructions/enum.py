@@ -15,18 +15,18 @@ called ''Undef''. If not explictly initialized, enums are set to ``Undef``
 initially.
 """
 
-from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.core.constraints import *
 from hilti.instructions.operators import *
 
-@overload(Equal, op1=Enum, op2=Enum, target=Bool)
+@overload(Equal, op1=enum, op2=sameTypeAsOp(1), target=bool)
 class Equal(Operator):
     """
     Returns True if *op1* equals *op2*.
     """
     pass
 
-@instruction("enum.assign", op1=Enum, target=Enum)
+@instruction("enum.assign", op1=enum, target=sameTypeAsOp(1))
 class Assign(Instruction):
     """
     Assign *op1* to the target. 

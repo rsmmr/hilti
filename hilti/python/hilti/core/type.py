@@ -705,30 +705,6 @@ class Unknown(OperandType):
 
     _name = "unknown"
     
-def Optional(t):
-    """Returns a type representing an optional operand. The returns
-    object can be used with an ~~Instruction operand to indicate
-    that it should be either of type *t* or not given at all.
-    
-    t: ~~Type *class* - The type the operand must have if it's specified.
-    
-    Note: This is just a short-cute for using +(None, t)+.
-    """
-    return (None, t)
-
-def isOptional(t):
-    """Checks whether an operand is optional. To be recognized as optional,
-    *t* must be of the form returned by ~~Optional.
-    
-    t: class derived from ~~Type - The type to be tested. 
-    
-    Returns: boolean - True if *t* is optional as returned by ~~Optional.
-    """
-    if type(t) != types.TupleType and type(t) != types.ListType:
-        return False
-    
-    return None in t
-
 def _matchWithTypeClass(t, cls):
     """Checks whether a type instance matches with a type class; cls can be a tuple
     of classes as well."""

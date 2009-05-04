@@ -64,7 +64,7 @@ class Checker(visitor.Visitor):
         self.visit(ast)
         return self._errors
         
-    def error(self, obj, message):
+    def error(self, obj, message, indent=False):
         """Reports an error message to the user. Once this method has been
         called, no further handlers will be executed for the object currently
         being visited. However, visiting will proceed with subsequent |ast|
@@ -73,9 +73,12 @@ class Checker(visitor.Visitor):
         obj: object - Provides the location information to include in the
         message. *obj* must have a method *location()* returning a ~~Location
         object. Usually, *obj* is just the object currently being visited.
+        
+        indent: bool - If true, the text is assumed to contain more details
+        about the previous error and will be printed indented.
         """
         self._errors += 1
-        util.error(message, context=obj.location(), fatal=False)        
+        util.error(message, context=obj.location(), fatal=False, indent=indent)        
         self.skipOthers()
 
 checker = Checker()

@@ -100,7 +100,7 @@ def _(self, i):
         
     self._have_others = True
 
-    (success, errormsg) = instruction.matchInstructionWithSignature(i, i.signature())
+    (success, errormsg) = i.signature().matchWithInstruction(i)
     if not success:
         self.error(i, errormsg)
         return

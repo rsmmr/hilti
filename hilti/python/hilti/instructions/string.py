@@ -21,11 +21,13 @@ Todo:
 * Add some way to define the encoding for constants.
 
 """
-from hilti.core.type import *
+
 from hilti.core.instruction import *
+from hilti.core.constraints import *
 from hilti.instructions.operators import *
 
-@overload(Unpack, op1=IteratorBytes, op2=IteratorBytes, op3=Tuple, target=Tuple)
+# FIXME: Not implemented yet and op3 spec if wrong.
+@overload(Unpack, op1=iteratorBytes, op2=iteratorBytes, op3=any, target=unpackTarget(string))
 class Unpack(Operator):
     """
     Unpacks a string from a sequence of raw bytes; see the ~~Unpack operator
@@ -44,46 +46,46 @@ class Unpack(Operator):
     """
     pass
 
-@instruction("string.assign", op1=String, target=String)
+@instruction("string.assign", op1=string, target=string)
 class Assign(Instruction):
     """Assigns *op1* to the target."""
     pass
 
-@instruction("string.length", op1=String, target=Integer(32))
+@instruction("string.length", op1=string, target=integerOfWidth(32))
 class Length(Instruction):
     """Returns the number of characters in the string *op1*."""
     pass
 
-@instruction("string.concat", op1=String, op2=String, target=String)
+@instruction("string.concat", op1=string, op2=string, target=string)
 class Concat(Instruction):
     """Concatenates *op1* with *op2* and returns the result."""
     pass
 
-@instruction("string.substr", op1=String, op2=Integer, op3=Integer, target=String)
+@instruction("string.substr", op1=string, op2=integerOfWidth(32), op3=integerOfWidth(32), target=string)
 class Substr(Instruction):
     """Extracts the substring of length *op3* from *op1* that starts at
     position *op2*."""
     pass
 
-@instruction("string.find", op1=String, op2=String, target=Integer)
+@instruction("string.find", op1=string, op2=string, target=integerOfWidth(32))
 class Find(Instruction):
     """Searches *op2* in *op1*, returning the start index if it find it.
     Returns -1 if it does not find *op2* in *op1*."""
     pass
 
-@instruction("string.cmp", op1=String, op2=String, target=Bool)
+@instruction("string.cmp", op1=string, op2=string, target=bool)
 class Cmp(Instruction):
     """Compares *op1* with *op2* and returns True if their characters match.
     Returns False otherwise."""
     pass
 
-@instruction("string.lt", op1=String, op2=String, target=Bool)
+@instruction("string.lt", op1=string, op2=string, target=bool)
 class Lt(Instruction):
     """Compares *op1* with *op2* and returns True if *op1* is
     lexicographically smaller than *op2*. Returns False otherwise."""
     pass
 
-@instruction("string.decode", op1=Reference, op2=String, target=String)
+@instruction("string.decode", op1=referenceOf(bytes), op2=string, target=string)
 class Decode(Instruction):
     """ 
     Converts *bytes op1* into a string, assuming characters are encoded in
@@ -98,7 +100,7 @@ class Decode(Instruction):
     """
     pass
 
-@instruction("string.encode", op1=String, op2=String, target=Reference)
+@instruction("string.encode", op1=string, op2=string, target=referenceOf(bytes))
 class Encode(Instruction):
     """Converts *op1* into bytes, encoding characters using the character set
     *op2*. Supported character sets are currently: ``ascii``, ``utf8``. 

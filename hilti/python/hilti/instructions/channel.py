@@ -22,30 +22,30 @@ along the following dimensions:
   non-blocking for both writes and reads.
 """
 
-from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.core.constraints import *
 from hilti.instructions.operators import *
 
-@overload(New, op1=Channel, target=Reference)
+@overload(New, op1=isType(channel), target=referenceOfOp(1))
 class New(Operator):
     """Allocates a new instance of a channel with the same type as the target
     Reference.
     """
     pass
 
-@instruction("channel.write", op1=Reference, op2=ValueType)
+@instruction("channel.write", op1=referenceOf(channel), op2=itemTypeOfOp(1))
 class Write(Instruction):
     """Writes an item into the channel referenced by *op1*. If the channel is
     full, the caller blocks.
     """
 
-@instruction("channel.read", op1=Reference, target=ValueType)
+@instruction("channel.read", op1=referenceOf(channel), target=itemTypeOfOp(1))
 class Read(Instruction):
     """Returns the next channel item from the channel referenced by *op1*. If
     the channel is empty, the caller blocks.
     """
 
-@instruction("channel.size", op1=Reference, target=Integer(64))
+@instruction("channel.size", op1=referenceOf(channel), target=integerOfWidth(64))
 class Size(Instruction):
     """Returns the current number of items in the channel referenced by *op1*.
     """

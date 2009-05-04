@@ -209,33 +209,33 @@ todo_include_todos=True
 import copy
 
 # Turns a signature into a nicely formatted __doc__ string.
-def sigToRst(ins):
-    def fmt(t, tag):
-        if t:
-            return " <%s>" % (type.fmtTypeClass(t))
+def sigToRst(sig):
+    def fmt(op, tag):
+        if op:
+            return " %s" % sig.getOpDoc(op) 
         else:
             return ""
         
-    op1 = fmt(ins._op1, "op1")
-    op2 = fmt(ins._op2, "op2")
-    op3 = fmt(ins._op3, "op3")
-    target = fmt(ins._target, "target") 
+    op1 = fmt(sig._op1, "op1")
+    op2 = fmt(sig._op2, "op2")
+    op3 = fmt(sig._op3, "op3")
+    target = fmt(sig._target, "target") 
     if target:
         target += " = "
         
-    doc = [".. parsed-literal::", "", "  %s**%s**%s%s%s" % (target, ins._name, op1, op2, op3), ""]
+    doc = [".. parsed-literal::", "", "  %s**%s**%s%s%s" % (target, sig._name, op1, op2, op3), ""]
     
-#        if ins._op1:
-#            doc += ["* Operand 1: %s" % type.name(ins._op1, docstring=True)]
+#        if sig._op1:
+#            doc += ["* Operand 1: %s" % type.name(sig._op1, docstring=True)]
 #        
-#        if ins._op2:
-#            doc += ["* Operand 2: %s" % type.name(ins._op2, docstring=True)]
+#        if sig._op2:
+#            doc += ["* Operand 2: %s" % type.name(sig._op2, docstring=True)]
 #
-#        if ins._op3:
-#            doc += ["* Operand 3: %s" % type.name(ins._op3, docstring=True)]
+#        if sig._op3:
+#            doc += ["* Operand 3: %s" % type.name(sig._op3, docstring=True)]
 #
 #        if target:
-#            doc += ["* Target type: %s" % type.name(ins._target, docstring=True)]
+#            doc += ["* Target type: %s" % type.name(sig._target, docstring=True)]
 #
     if doc:
         doc += [""]
@@ -379,7 +379,7 @@ def expandReferences(app, what, name, obj, options, lines):
 
 def expandMarkup(app, what, name, obj, options, lines):
 
-    re_arg = re.compile(r"^\s*([^:]+):\s*([^-]+)-\s*(.*)$")
+    re_arg = re.compile(r"^\s*([^:]+):\s+([^-]+)-\s+(.*)$")
     re_returns = re.compile(r"^\s*Returns:\s*([^-]+)-\s*(.*)$")
     re_raises = re.compile(r"^\s*Raises:\s*(\S+)$")
     re_note = re.compile(r"^\s*Note:\s*(.*)$")

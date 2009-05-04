@@ -365,11 +365,7 @@ def _(self, i):
     (contNormFunc, contNormFrame, contExceptFunc, contExceptFrame) = _getStandardFrame(self)
 
     # Get the virtual thread number.
-    if i.op1().value().__class__.__name__ == 'ID':
-        assert i.op1().type().width() == 32
-        vthread = self.llvmOp(i.op1())
-    else:
-        vthread = self.llvmConstInt(i.op1().value(), 32)
+    vthread = self.llvmOp(i.op1())
 
     # Get the function to schedule.
     func = self.lookupFunction(i.op2().value().name())

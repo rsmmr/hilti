@@ -14,14 +14,38 @@ not explictly initialized, tuples are set to their components' default values
 initially.
 """
 
-from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.core.constraints import *
 
-@instruction("tuple.assign", op1=Tuple, target=Tuple)
+@constraint("any")
+@refineType(refineIntegerConstant(32))
+def _isElementIndex(ty, op, i):
+    if not op or not isinstance(op, ConstOperand):
+        return (False, "must be a constant")
+
+    if not isinstance(ty, type.Integer) or ty.width() != 32:
+        return (False, "must be of type int<32> but is %s" % ty)
+    
+    idx = op.value()
+    if idx >= 0 and idx < len(i.op1().type().types()):
+        return (True, "")
+    
+    return (False, "is out of range")
+
+@constraint("any")
+def _hasElementType(ty, op, i):
+    t = i.op1().type().types()[i.op2().value()]
+    
+    if t == ty:
+        return (True, "")
+    
+    return (False, "type must be %s but is %s" % (t, ty))
+
+@instruction("tuple.assign", op1=tuple, target=sameTypeAsOp(1))
 class Assign(Instruction):
     """Assigns *op1* to the target."""
 
-@instruction("tuple.index", op1=Tuple, op2=Integer(32), target=Any)
+@instruction("tuple.index", op1=tuple, op2=_isElementIndex, target=_hasElementType)
 class Index(Instruction):
     """ Returns the tuple's value with index *op2*. The index is zero-based.
     *op2* must be an integer *constant*.

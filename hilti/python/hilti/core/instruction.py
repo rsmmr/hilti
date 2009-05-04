@@ -186,6 +186,8 @@ class Operand(ast.Node):
         self._value = value
         self._type = type
         self._location = location
+        
+        self._refined = False # For internal use in signature.matchWithInstruction()
 
     def value(self):
         """Return's the operand's value. 
@@ -303,101 +305,9 @@ class TypeOperand(Operand):
     
     def __str__(self):
         return str(self.value())
-    
-class Signature:
-    """Defines an instruction's signature. The signature includes the
-    instruction's name as well as number and types of operands and target. The
-    class is not supposed to be instantiated directly; instead, instances are
-    implicitly created when using the :func:`instruction` decorator.
-    
-    name: string - The name of the instruction, i.e., the HILTI mnemonic.
-    
-    op1: ~~Type - The type of the instruction's first operand, or None if unused.
-    op2: ~~Type - The type of the instruction's second operand, or None if unused.
-    op3: ~~Type - The type of the instruction's third operand, or None if unused.
-    target: ~~Type - The type of the instruction;s result, or None if unused.
-    
-    callback: function - The function will be called each time an
-    ~~Instruction has been instantiated with this signature. The callback will
-    receive the ~~Instruction as its only parameter and can modify it as needed.
-    
-    terminator: bool - True if the instruction is considered a block
-    |terminator|.
 
-    Note: The types for operands and target must be given as the corresponding
-    ~~Type *classes*, not instances of thereof. If any of the types is a tuple
-    of ~~Type classes, that indicates that any of the tuple's member is a
-    valid type for the operand/target.
-    """
-    def __init__(self, name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False):
-        self._name = name
-        self._op1 = op1
-        self._op2 = op2
-        self._op3 = op3
-        self._target = target
-        self._callback = callback
-        self._terminator = terminator
-        
-    def name(self):
-        """Returns the name of the instruction defined by the signature.
-        
-        Returns: string - The instruction name.
-        """
-        return self._name
+from signature import *
     
-    def op1(self):
-        """Returns the type of the instruction's first operand.
-        
-        Returns: ~~Type - The type of the operand, or None if unused.
-        The type is a *class*, not an instance of thereof.
-        """        
-        return self._op1
-    
-    def op2(self):
-        """Returns the type of the instruction's second operand.
-        
-        Returns: ~~Type - The type of the operand, or None if unused.
-        The type is a *class*, not an instance of thereof.
-        """        
-        return self._op2
-    
-    def op3(self):
-        """Returns the type of the instruction's third operand.
-        
-        Returns: ~~Type - The type of the operand, or None if unused.
-        The type is a *class*, not an instance of thereof.
-        """        
-        return self._op3
-
-    def target(self):
-        """Returns the type of the instruction's result.
-        
-        Returns: ~~Type - The type of the result, or None if unused.
-        The type is a *class*, not an instance of thereof.
-        """        
-        return self._target
-    
-    def callback(self):
-        """Returns the signature's callback function.
-        
-        Returns: function - The callback function.
-        """
-        return self._callback
-    
-    def terminator(self):
-        """Returns whether the signature's instruction is a |terminator|.
-        
-        Returns: bool - True if it is terminator instruction.
-        """
-        return self._terminator
-        
-    def __str__(self):
-        target = "[%s] = " % self._target if self._target else ""
-        op1 = " [%s]" % self._op1 if self._op1 else ""
-        op2 = " [%s]" % self._op2 if self._op2 else ""
-        op3 = " [%s]" % self._op3 if self._op3 else ""
-        return "%s%s%s%s%s" % (target, self._name, op1, op2, op3)
-
 def _make_ins_init(myclass):
     def ins_init(self, op1=None, op2=None, op3=None, target=None, location=None):
         super(self.__class__, self).__init__(op1, op2, op3, target, location)
@@ -484,77 +394,26 @@ def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=
 
     return i
 
-import sys    
-
-def matchInstructionWithSignature(i, sig):
-    """Checks whether an instruction matches a signature. 
-    
-    i: ~~Instruction - The instruction to check.
-    sig: ~~Signature - The signature to check with. 
-    
-    Returns: (match, errormsg) - *match* is True if the instruction matches
-    the signature, and False otherwise. If *match* is false, *errormsg*
-    contains a string describing the mismatch in a way suitable to present to
-    the user in an error message."""
-
-    def checkOp(op, sig, tag):
-        if sig and op == None and not type.isOptional(sig):
-            return "%s missing" % tag
-
-        if op and not sig:
-            return "superfluous %s" % tag
-
-        if op and sig:
-            error = False
-            if isinstance(op, TypeOperand):
-                if op.value() != sig:
-                    error = True
-            
-            elif op.type() != sig:
-                error = True
-                
-            if error:
-                return "type of %s does not match signature (expected %s, found %s) " % \
-                    (tag, str(type.fmtTypeClass(sig)), str(op.type()))
-            
-        return None
-        
-    msg = checkOp(i.op1(), sig.op1(), "operand 1")
-    if not msg:
-        msg = checkOp(i.op2(), sig.op2(), "operand 2")
-    if not msg:
-        msg = checkOp(i.op3(), sig.op3(), "operand 3")
-    if not msg:
-        msg = checkOp(i.target(), sig.target(),"target")
-        
-    if not msg:
-        return (True, "success")
-    else:
-        return (False, msg)
-
 def findOverloadedOperator(op):
-    """Returns the type-specific version of an overloaded operator. Based on
+    """Returns the type-specific version(s) of an overloaded operator. Based on
     an instance of ~~Operator, it will search all type-specific
     implementations (i.e., all ~~OverloadedOperators) and return the matching
     ones. 
     
     op: ~~Operator - The operator for which to return the type-specific version.
     
-    Returns: (num, ~~OverloadedOperator) - *num* is the number of matches, and
-    the second element of the tuple is first match or None if *num* is zero.
+    Returns: list of ~~OverloadedOperator - The list of matching operater
+    implementations.
     """
     
     matches = []
     
     try:
         for o in _OverloadedOperators[op.__class__.__name__]:
-            (success, errormsg) = matchInstructionWithSignature(op, o._signature)
+            (success, errormsg) = o._signature.matchWithInstruction(op)
             if success:
                 matches += [o]
     except KeyError:
         pass
 
-    if not matches:
-        return (0, None)
-
-    return (len(matches), matches[0])    
+    return matches

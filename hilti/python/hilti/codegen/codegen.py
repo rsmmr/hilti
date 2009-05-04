@@ -1615,8 +1615,9 @@ class CodeGen(visitor.Visitor):
         op: ~~Operator - The operator to generate code for.
         """
 
-        (num, ovop) = instruction.findOverloadedOperator(op)
-        assert num == 1
+        ovops = instruction.findOverloadedOperator(op)
+        assert len(ovops) == 1
+        ovop = ovops[0]
 
         for (o, func) in CodeGen._Callbacks[CodeGen._CB_OPERATOR]:
             if repr(o) == repr(ovop):

@@ -1,3 +1,3 @@
-mixing-widths.hlt:14: error, integer operands must have same width
+mixing-widths.hlt:14: error, operand 2 must be of same integer type as operand 1, which is int<8>
 
 1 error found

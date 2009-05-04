@@ -63,6 +63,12 @@ we list individually in the following.
 .. automodule:: hilti.core.constant
    :members:
 
+``constraints``
+~~~~~~~~~~~~~~~
+
+.. automodule:: hilti.core.constraints
+   :members:
+
 ``function``
 ~~~~~~~~~~~~
 
@@ -91,6 +97,12 @@ we list individually in the following.
 ~~~~~~~~~~
 
 .. automodule:: hilti.core.module
+   :members:
+
+``signature``
+~~~~~~~~~~~~~
+
+.. automodule:: hilti.core.signature
    :members:
 
 ``type``

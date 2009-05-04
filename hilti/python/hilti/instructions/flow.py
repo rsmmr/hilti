@@ -4,10 +4,10 @@ Flow Control
 ~~~~~~~~~~~~
 """
 
-from hilti.core.type import *
 from hilti.core.instruction import *
+from hilti.core.constraints import *
 
-@instruction("jump", op1=Label, terminator=True)
+@instruction("jump", op1=label, terminator=True)
 class Jump(Instruction):
     """
     Jumps unconditionally to label *op2*.
@@ -22,7 +22,7 @@ class ReturnVoid(Instruction):
     """
     pass
 
-@instruction("return.result", op1=Optional(Any), terminator=True)
+@instruction("return.result", op1=optional(any), terminator=True)
 class ReturnResult(Instruction):
     """
     Returns from the current function with the given value.
@@ -30,14 +30,14 @@ class ReturnResult(Instruction):
     """
     pass
 
-@instruction("if.else", op1=Bool, op2=Label, op3=Label, terminator=True)
+@instruction("if.else", op1=bool, op2=label, op3=label, terminator=True)
 class IfElse(Instruction):
     """
     Transfers control label *op2* if *op1* is true, and to *op3* otherwise. 
     """
     pass
 
-@instruction("call", op1=Function, op2=Tuple, target=Optional(Any))
+@instruction("call", op1=function, op2=tuple, target=optional(any))
 class Call(Instruction):
     """
     Calls *function* using the tuple in *op2* as 
@@ -46,7 +46,7 @@ class Call(Instruction):
     """
     pass
 
-@instruction("call.c", op1=Function, op2=Tuple, target=Optional(Any))
+@instruction("call.c", op1=function, op2=tuple, target=optional(any))
 class CallC(Instruction):
     """
     For internal use only.
@@ -57,7 +57,7 @@ class CallC(Instruction):
     """
     pass
 
-@instruction("call.tail.void", op1=Function, op2=Tuple, op3=Label, terminator=True)
+@instruction("call.tail.void", op1=function, op2=tuple, op3=label, terminator=True)
 class CallTailVoid(Instruction):
     """
     For internal use only.
@@ -75,7 +75,7 @@ class CallTailVoid(Instruction):
     """
     pass
 
-@instruction("call.tail.result", op1=Function, op2=Tuple, op3=Label, target=Optional(Any), terminator=True)
+@instruction("call.tail.result", op1=function, op2=tuple, op3=label, target=optional(any), terminator=True)
 class CallTailResult(Instruction):
     """
     
@@ -103,7 +103,7 @@ class ThreadYield(Instruction):
     """
     pass
 
-@instruction("thread.schedule", op1=Integer, op2=Function, op3=Tuple, terminator=False)
+@instruction("thread.schedule", op1=integerOfWidth(32), op2=function, op3=tuple, terminator=False)
 class ThreadSchedule(Instruction):
     """
     Schedules a function call onto a virtual thread.

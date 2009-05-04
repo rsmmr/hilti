@@ -14,10 +14,15 @@ def _print(prefix1, prefix2, msg, context):
     
     if context:
         print >>sys.stderr, "%s:" % context,
-    
-    print >>sys.stderr, "%s, %s" % (prefix, msg)
 
-def error(msg, component=None, context=None, fatal=True): 
+    if len(prefix.strip()) > 0:
+        print >>sys.stderr, "%s," % prefix,
+    else:
+        print >>sys.stderr, "%s" % prefix,
+        
+    print >>sys.stderr, "%s" % msg
+
+def error(msg, component=None, context=None, fatal=True, indent=False): 
     """Reports an error message to the user. 
     
     msg: string - The message to report. 
@@ -30,10 +35,18 @@ def error(msg, component=None, context=None, fatal=True):
     commonly *context* will be the relevant ~~Location object (which
     converts into a string).
 
-    *fatal*: bool - If True, the execution of the process is
+    fatal: bool - If True, the execution of the process is
     terminated after the error message has been printed.
+    
+    indent: bool - If true, the text is assumed to contain more details
+    about the previous error and will be printed indented.
+    
     """
-    _print(component, "error", msg, context) 
+    if not indent:
+        _print(component, "error", msg, context) 
+    else:
+        _print(component, "    ", msg, context) 
+        
     if fatal: 
         sys.exit(1)
     
@@ -92,7 +105,7 @@ def expand_escapes(str, unicode=True):
     \\uXXXX        16-bit Unicode codepoint (u)
     \\UXXXXXXXX    32-bit Unicode codepoint (u)
     \\xXX          8-bit hex value          (r)
-    ============   =============================
+    ============   ============================
     
     str: string - The string to expand.  unicode: bool - If true, a
     Unicode string is returned and the escape sequences marked as
