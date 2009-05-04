@@ -16,6 +16,7 @@ void __hlt_config_init()
    current_config.num_threads = 2;
    current_config.sleep_ns = 10000000;
    current_config.watchdog_s = 1;
+   current_config.stack_size = 268435456; 
 }
 
 hilti_config hilti_config_get()

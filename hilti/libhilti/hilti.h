@@ -9,6 +9,7 @@
 #define HILTI_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct __hlt_type_info __hlt_type_info;
 typedef struct __hlt_string __hlt_string;
@@ -30,6 +31,7 @@ typedef struct
     unsigned num_threads;
     long sleep_ns;
     unsigned watchdog_s;
+    size_t stack_size;
 } hilti_config;
 
 extern hilti_config hilti_config_get();

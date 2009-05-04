@@ -57,6 +57,7 @@ __hlt_thread_context* __hlt_new_thread_context(const hilti_config* config)
 
     context->sleep_ns = config->sleep_ns;
     context->watchdog_s = config->watchdog_s;
+    context->stack_size = config->stack_size;
 
     if (config->num_threads == 0)
         context->num_worker_threads = 1;
@@ -71,6 +72,10 @@ __hlt_thread_context* __hlt_new_thread_context(const hilti_config* config)
         exit(1);
     }
 
+    // Set up the thread attributes.
+    pthread_attr_init(&context->thread_attributes);
+    pthread_attr_setstacksize(&context->thread_attributes, context->stack_size);
+
     // Initialize the worker threads it contains.
     for (uint32_t i = 0 ; i < context->num_worker_threads ; i++)
     {
@@ -83,7 +88,7 @@ __hlt_thread_context* __hlt_new_thread_context(const hilti_config* config)
 
         pthread_mutex_init(&context->worker_threads[i].mutex, NULL);
        
-        if (pthread_create(&context->worker_threads[i].thread_handle, NULL, __hlt_worker_scheduler, (void*) &context->worker_threads[i]))
+        if (pthread_create(&context->worker_threads[i].thread_handle, &context->thread_attributes, __hlt_worker_scheduler, (void*) &context->worker_threads[i]))
         {
             fputs("libhilti: cannot create worker threads.\n", stderr);
             exit(1);
@@ -121,6 +126,9 @@ void __hlt_delete_thread_context(__hlt_thread_context* context)
         fputs("libhilti: cannot delete a thread context that has a main thread running.\n", stderr);
         exit(1);
     }
+
+    // Destroy the thread attributes object.
+    pthread_attr_destroy(&context->thread_attributes);
 
     // Free the memory associated with the job queue and destroy other internal thread structures.
     for (uint32_t i = 0 ; i < context->num_worker_threads ; i++)
@@ -320,7 +328,7 @@ void __hlt_run_main_thread(__hlt_thread_context* context, __hlt_main_function fu
 
     // Create the actual thread. Its scheduler does only one thing: run the function it has been
     // passed, and store any exceptions that result.
-    if (pthread_create(&context->main_thread->thread_handle, NULL, __hlt_main_scheduler, (void*) context->main_thread))
+    if (pthread_create(&context->main_thread->thread_handle, &context->thread_attributes, __hlt_main_scheduler, (void*) context->main_thread))
     {
         fputs("libhilti: cannot create main thread.\n", stderr);
         exit(1);

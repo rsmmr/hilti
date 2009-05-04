@@ -61,6 +61,8 @@ typedef struct
     __hlt_thread_context_state state;
     long sleep_ns;
     unsigned watchdog_s;
+    size_t stack_size;
+    pthread_attr_t thread_attributes;
     uint32_t num_worker_threads;
     struct __hlt_worker_thread_t* worker_threads;
     struct __hlt_worker_thread_t* main_thread;
