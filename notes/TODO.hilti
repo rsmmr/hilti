@@ -61,6 +61,18 @@ relying on "__"
   which duplicate the code to install global const. Move them over to using the
   new function.
 
+- Do we still need:
+
+  * type.fmtClassName()?
+  * the whole type comparision logic now that we have constraint functions?
+  * wildcard types? 
+  * the Any type?
+  * refine_to in codegen.llvmOp()
+  * all or parts of the int-width logic in resolver?
+  
+- If we still need wildcard types, cleanup how they are instantiated (empty
+list vs. "*" vs. ["*"])
+
 Documentation
 =============
 
@@ -73,6 +85,9 @@ C-level stuff.
 - The type-specific implementation of operators should be documented
 separately from the type's standard instruction; perhaps in a 
 subsection or so.
+
+- The auto-generated strings for instruction parameters aren't
+always quite right yet. 
 
 Misc
 ====
