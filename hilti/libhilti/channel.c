@@ -179,7 +179,7 @@ __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* e
     return ch;
 }
 
-void __hlt_channel_destroy(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt)
+void __hlt_channel_destroy(__hlt_channel* ch, __hlt_exception* excpt)
 {
     pthread_mutex_destroy(&ch->mutex);
     pthread_cond_destroy(&ch->empty_cv);
@@ -219,7 +219,7 @@ unlock_exit:
     return;
 }
 
-void* __hlt_channel_read(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt)
+void* __hlt_channel_read(__hlt_channel* ch, __hlt_exception* excpt)
 {
     pthread_mutex_lock(&ch->mutex);
 
@@ -234,7 +234,7 @@ void* __hlt_channel_read(__hlt_channel* ch, const __hlt_type_info* type, __hlt_e
     return item;
 }
 
-void* __hlt_channel_try_read(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt)
+void* __hlt_channel_try_read(__hlt_channel* ch, __hlt_exception* excpt)
 {
     pthread_mutex_lock(&ch->mutex);
 
@@ -254,7 +254,7 @@ unlock_exit:
     return item;
 }
 
-__hlt_channel_size __hlt_channel_get_size(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt)
+__hlt_channel_size __hlt_channel_get_size(__hlt_channel* ch, __hlt_exception* excpt)
 {
     return ch->size;
 }

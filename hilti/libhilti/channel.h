@@ -51,7 +51,7 @@ extern const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, 
 extern __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* excpt);
 
 // Deletes a channel.
-extern void __hlt_channel_destroy(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt);
+extern void __hlt_channel_destroy(__hlt_channel* ch, __hlt_exception* excpt);
 
 // Write an item into a channel. If the channel is full, the function blocks
 // until an item is read from the channel.
@@ -63,13 +63,13 @@ extern void __hlt_channel_try_write(__hlt_channel* ch, const __hlt_type_info* ty
 
 // Read an item from a channel. If the channel is empty, the function blocks
 // until an item is written to the channel.
-extern void* __hlt_channel_read(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt);
+extern void* __hlt_channel_read(__hlt_channel* ch, __hlt_exception* excpt);
 
 // Try to read an element from the channel. If the channel is empty, an
 // exception is thrown indicating that the channel was empty. 
-extern void* __hlt_channel_try_read(__hlt_channel* ch, const __hlt_type_info*, __hlt_exception* excpt);
+extern void* __hlt_channel_try_read(__hlt_channel* ch, __hlt_exception* excpt);
 
 // Returns the current channel size, i.e., the number of items in the channel.
-extern __hlt_channel_size __hlt_channel_get_size(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt);
+extern __hlt_channel_size __hlt_channel_get_size(__hlt_channel* ch, __hlt_exception* excpt);
 
 #endif
