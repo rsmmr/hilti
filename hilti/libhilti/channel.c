@@ -35,16 +35,6 @@ struct __hlt_channel_chunk
     __hlt_channel_chunk* next;      /* Pointer to the next chunk. */
 };
 
-/* FIXME: This struct represents the type parameters that are currently only
- * available at the HILTI layer. The compiler should eventually autogenerate
- * such structs.
- */
-typedef struct __hlt_channel_type_parameters
-{
-    __hlt_type_info* item_type;
-    uint64_t capacity;
-} __hlt_channel_params;
-
 
 // Creates a new gc'ed channel chunk.
 static __hlt_channel_chunk* __hlt_chunk_create(size_t capacity, int16_t item_size, __hlt_exception* excpt)
@@ -189,7 +179,7 @@ __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* e
     return ch;
 }
 
-void __hlt_channel_destroy(__hlt_channel* ch, __hlt_exception* excpt)
+void __hlt_channel_destroy(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt)
 {
     pthread_mutex_destroy(&ch->mutex);
     pthread_cond_destroy(&ch->empty_cv);
@@ -229,7 +219,7 @@ unlock_exit:
     return;
 }
 
-void* __hlt_channel_read(__hlt_channel* ch, __hlt_exception* excpt)
+void* __hlt_channel_read(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt)
 {
     pthread_mutex_lock(&ch->mutex);
 
@@ -244,7 +234,7 @@ void* __hlt_channel_read(__hlt_channel* ch, __hlt_exception* excpt)
     return item;
 }
 
-void* __hlt_channel_try_read(__hlt_channel* ch, __hlt_exception* excpt)
+void* __hlt_channel_try_read(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt)
 {
     pthread_mutex_lock(&ch->mutex);
 
@@ -264,7 +254,7 @@ unlock_exit:
     return item;
 }
 
-__hlt_channel_size __hlt_channel_get_size(__hlt_channel* ch, __hlt_exception* excpt)
+__hlt_channel_size __hlt_channel_get_size(__hlt_channel* ch, const __hlt_type_info* type, __hlt_exception* excpt)
 {
     return ch->size;
 }
