@@ -28,7 +28,7 @@ void run() {
     local int32 diff
     local string out
     
-    b = bytes.assign b\"%s\"
+    b = b\"%s\"
     p1 = bytes.begin b
     p2 = bytes.end b
     t32 = unpack p1 p2 Hilti::Packed::Int32

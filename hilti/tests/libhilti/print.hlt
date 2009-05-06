@@ -29,7 +29,7 @@ import Hilti
 
 void run() {
     local string s 
-    s = string.assign "Foo!"
+    s = "Foo!"
     call Hilti::print(s)
 }     
 

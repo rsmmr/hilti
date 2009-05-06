@@ -47,11 +47,6 @@ class IterEqual(Operator):
     """
     pass
 
-@instruction("bytes.assign", op1=referenceOf(bytes), target=referenceOf(bytes))
-class Assign(Instruction):
-    """Assigns *op1* to the target."""
-    pass
-
 @instruction("bytes.length", op1=referenceOf(bytes), target=integerOfWidth(32))
 class Length(Instruction):
     """Returns the number of bytes stored in *op1*."""

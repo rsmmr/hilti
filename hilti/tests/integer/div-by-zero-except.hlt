@@ -11,8 +11,7 @@ import Hilti
 void run() {
     local int<32> i
     
-    # Fancy way to produce a zero. :-)
-    i = int.sub 100 100
+    i = 0
     i = int.div 32 i
     call Hilti::print (i)
 }     

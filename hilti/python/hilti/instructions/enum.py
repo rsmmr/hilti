@@ -26,12 +26,6 @@ class Equal(Operator):
     """
     pass
 
-@instruction("enum.assign", op1=enum, target=sameTypeAsOp(1))
-class Assign(Instruction):
-    """
-    Assign *op1* to the target. 
-    """
-
 
 
 

@@ -13,8 +13,8 @@ void run() {
     local string s2
     local string s3
 
-    s1 = string.assign "Foo!"
-    s2 = string.assign "B\u00e4r!"
+    s1 = "Foo!"
+    s2 = "B\u00e4r!"
     
     s3 = string.concat s1 s2
     call Hilti::print (s3)

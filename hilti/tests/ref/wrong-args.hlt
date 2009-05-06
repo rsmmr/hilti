@@ -19,6 +19,6 @@ void run() {
     a = new A
     b = new B
     
-    b = ref.assign a
+    b = a
 }
 

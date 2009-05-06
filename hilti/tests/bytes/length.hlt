@@ -20,8 +20,8 @@ void run() {
     local int32 len
     local bool b
 
-    s1 = string.assign "Hallo"
-    s2 = string.assign "T\u00e4\u00e4\u00e4!"
+    s1 = "Hallo"
+    s2 = "T\u00e4\u00e4\u00e4!"
 
     b0 = new bytes 
     len = bytes.length b0

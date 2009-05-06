@@ -38,10 +38,10 @@ void run() {
     local ref<bytes> b2
     local int32 i
 
-    b = bytes.assign b"\x11\x22\x33\x44\x55\x66\x77\x88\x99"
+    b = b"\x11\x22\x33\x44\x55\x66\x77\x88\x99"
     
     # This is -42 in little endian (for all bit-sizes).
-    b2 = bytes.assign b"\xd6\xff\xff\xff\xff\xff\xff\xff"   
+    b2 = b"\xd6\xff\xff\xff\xff\xff\xff\xff"   
     
     call myunpack(b, Hilti::Packed::Int8Little)
     call myunpack(b, Hilti::Packed::Int8Big)

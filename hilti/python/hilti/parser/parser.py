@@ -231,7 +231,8 @@ def p_set_block_name(p):
 
 def p_instruction(p):
     """instruction : operand '=' INSTRUCTION operand operand operand NL
-                   |             INSTRUCTION operand operand operand NL"""
+                   |             INSTRUCTION operand operand operand NL
+    """
     
     if p[2] == "=":
         name = p[3]
@@ -255,6 +256,13 @@ def p_instruction(p):
     
     p.parser.current.block.addInstruction(ins)
 
+def p_assignment(p):
+    # Syntactic sugar for the assignment operator. 
+    """instruction : operand '=' operand"""
+    ins = instruction.createInstruction("assign", p[3], None, None, p[1], location=loc(p, 1))
+    assert ins
+    p.parser.current.block.addInstruction(ins)
+    
 def p_operand_ident(p):
     """operand : IDENT"""
     ident = id.ID(p[1], type.Unknown(), id.Role.UNKNOWN)

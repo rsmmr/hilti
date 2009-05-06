@@ -71,3 +71,23 @@ class Unpack(Operator):
     located at arbitrary, not necessarily aligned positions.
     """
     pass
+
+@operator("assign", op1=valueType, target=sameTypeAsOp(1))
+class Assign(Operator):
+    """Assigns *op1* to the target.
+    
+    There is a short-cut syntax: instead of using the standard form ``t = assign op``, one
+    can just write ``t = op``.
+    
+    Note: The ``assign`` operator uses a generic implementation able to handle all data
+    types. Different from most other operators, it's implementation is not
+    overloaded on a per-type based. 
+    """
+    
+@overload(Assign, op1=valueType, target=sameTypeAsOp(1))
+class GenericAssign(Operator):
+    """The generic implementation of the ``assign operator``. This operator is
+    not overloaded on a per-type basis."""
+    pass
+
+

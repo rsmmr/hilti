@@ -21,7 +21,7 @@ void run() {
      b = equal f1 Foo::Undef
      call Hilti::print(b)
 
-     f1 = enum.assign Foo::BC
+     f1 = Foo::BC
      
      b = equal f1 f2
      call Hilti::print(b)
@@ -29,7 +29,7 @@ void run() {
      b = equal f1 Foo::BC
      call Hilti::print(b)
 
-     f2 = enum.assign Foo::BC
+     f2 = Foo::BC
 
      b = equal f1 f2
      call Hilti::print(b)

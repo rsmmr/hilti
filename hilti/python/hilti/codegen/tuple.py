@@ -80,11 +80,6 @@ def _(op, refine_to):
 def _(type, refine_to):
     return _tupleType(type, refine_to)
 
-@codegen.when(instructions.tuple.Assign)
-def _(self, i):
-    op1 = self.llvmOp(i.op1())
-    self.llvmStoreInTarget(i.target(), op1)
-
 @codegen.when(instructions.tuple.Index)
 def _(self, i):
     op1 = self.llvmOp(i.op1())

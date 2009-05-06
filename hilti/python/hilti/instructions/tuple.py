@@ -41,10 +41,6 @@ def _hasElementType(ty, op, i):
     
     return (False, "type must be %s but is %s" % (t, ty))
 
-@instruction("tuple.assign", op1=tuple, target=sameTypeAsOp(1))
-class Assign(Instruction):
-    """Assigns *op1* to the target."""
-
 @instruction("tuple.index", op1=tuple, op2=_isElementIndex, target=_hasElementType)
 class Index(Instruction):
     """ Returns the tuple's value with index *op2*. The index is zero-based.

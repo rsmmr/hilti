@@ -10,7 +10,7 @@ import Hilti
 
 void run() {
     local tuple<int64,string,bool> t
-    t = tuple.assign (42, "foo", True)
+    t = (42, "foo", True)
     call Hilti::print(t)
 }
 
@@ -22,7 +22,7 @@ import Hilti
 
 void run() {
     local tuple<int16,string,bool> t
-    t = tuple.assign (42, "foo", True)
+    t = (42, "foo", True)
     call Hilti::print(t)
 }
 
@@ -38,7 +38,7 @@ void pt(tuple<int32,string,bool> t) {
 
 void run() {
     local tuple<int32,string,bool> t
-    t = tuple.assign (42, "foo", True)
+    t = (42, "foo", True)
     call pt(t)
 }
 
@@ -65,7 +65,7 @@ import Hilti
 
 tuple<int16,string,bool> pt(tuple<int16,string,bool> t1) {
     local tuple<int16,string,bool> t2
-    t2 = tuple.assign t1
+    t2 = t1
     return.result t2
 }
 

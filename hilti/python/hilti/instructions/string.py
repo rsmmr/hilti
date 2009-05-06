@@ -56,11 +56,6 @@ class Unpack(Operator):
     """
     pass
 
-@instruction("string.assign", op1=string, target=string)
-class Assign(Instruction):
-    """Assigns *op1* to the target."""
-    pass
-
 @instruction("string.length", op1=string, target=integerOfWidth(32))
 class Length(Instruction):
     """Returns the number of characters in the string *op1*."""

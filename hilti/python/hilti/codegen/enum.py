@@ -60,10 +60,4 @@ def _(self, i):
     op2 = self.llvmOp(i.op2())
     result = self.builder().icmp(llvm.core.IPRED_EQ, op1, op2)
     self.llvmStoreInTarget(i.target(), result)
-
-@codegen.when(instructions.enum.Assign)
-def _(self, i):
-    op1 = self.llvmOp(i.op1())
-    self.llvmStoreInTarget(i.target(), op1)
-
     

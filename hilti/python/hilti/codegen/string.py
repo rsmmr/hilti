@@ -64,11 +64,6 @@ def _(self, i):
 def _(type, refine_to):
     return _llvmStringTypePtr()
 
-@codegen.when(instructions.string.Assign)
-def _(self, i):
-    op1 = self.llvmOp(i.op1())
-    self.llvmStoreInTarget(i.target(), op1)
-    
 @codegen.when(instructions.string.Length)
 def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::string_len", [i.op1()], [i.op1().type()])

@@ -10,7 +10,7 @@ module Main
 void run() {
     local tuple<int64, bool> a
     
-    a = tuple.assign 42
+    a = 42
 }
 
 # @TEST-START-NEXT
@@ -21,7 +21,7 @@ void run() {
     local tuple<int64, bool> a
     local tuple<int64, string> b
     
-    a = tuple.assign b
+    a = b
 }
 
 # @TEST-START-NEXT
@@ -32,5 +32,5 @@ void run() {
     local tuple<int64, bool> a
     local tuple<int64, string> b
     
-    a = tuple.assign (1,2)
+    a = (1,2)
 }

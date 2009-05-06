@@ -64,10 +64,4 @@ def _(self, i):
     result = codegen.builder().icmp(llvm.core.IPRED_EQ, voidp, null)
     codegen.llvmStoreInTarget(i.target(), result)
 
-@codegen.when(instructions.ref.Assign)
-def _(self, i):
-    op1 = self.llvmOp(i.op1(), i.target().type())
-    codegen.llvmStoreInTarget(i.target(), op1)
-
-
 

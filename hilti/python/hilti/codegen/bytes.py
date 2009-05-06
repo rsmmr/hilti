@@ -94,11 +94,6 @@ def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_eq", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
 
-@codegen.when(instructions.bytes.Assign)
-def _(self, i):
-    op1 = self.llvmOp(i.op1())
-    self.llvmStoreInTarget(i.target(), op1)
-    
 @codegen.when(instructions.bytes.Length)
 def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::bytes_len", [i.op1()], [i.op1().type()])

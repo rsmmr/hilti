@@ -17,7 +17,7 @@ void run() {
     local bool is
 
     a = new A
-    b = ref.assign Null
+    b = Null
     
     is = ref.cast.bool a
     call Hilti::print(is)

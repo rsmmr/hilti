@@ -17,7 +17,7 @@ void run() {
     local tuple<int32, iterator<bytes>> t32
     local Hilti::Packed e
     
-    b = bytes.assign b""
+    b = b""
     
     p1 = bytes.begin b
     p2 = bytes.end b

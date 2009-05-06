@@ -26,7 +26,7 @@ void printstring(string str) {
 void run() {
     local string hello
 
-    hello = string.assign "Hello!"
+    hello = "Hello!"
 
     thread.schedule 1 printstring(hello)
 }

@@ -13,7 +13,7 @@ enum Foo { A, BC, DEF }
 void run() {
      local Foo f
      local string s
-     f = enum.assign Foo::BC
+     f = Foo::BC
      call Hilti::print(f)
      s = call Hilti::fmt("As string: %s", (f))
      call Hilti::print(s)

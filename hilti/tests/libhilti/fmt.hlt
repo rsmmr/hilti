@@ -12,7 +12,7 @@ void run() {
     local string str
     local tuple<int64, string, bool> t
     
-    t = tuple.assign (1, "Foo", True)
+    t = (1, "Foo", True)
     
     str = call Hilti::fmt ("Test1", ())
     call Hilti::print (str)
