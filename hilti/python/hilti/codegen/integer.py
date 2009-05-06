@@ -87,6 +87,7 @@ def _(self, i):
 def _(self, i):
     op1 = self.llvmOp(i.op1())
     op2 = self.llvmOp(i.op2())
+    
     result = self.builder().mul(op1, op2)
     self.llvmStoreInTarget(i.target(), result)
 

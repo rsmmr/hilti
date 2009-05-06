@@ -42,7 +42,9 @@ def _(self, i):
 def _(self, f):
     self._function = f
     self._label_counter = 0
-    self.llvmCurrentModule().add_type_name(self.nameFunctionFrame(f), self.llvmTypeFunctionFrame(f))
+    
+    if f.callingConvention() == function.CallingConvention.HILTI:
+        self.llvmCurrentModule().add_type_name(self.nameFunctionFrame(f), self.llvmTypeFunctionFrame(f))
     
     if f.linkage() == function.Linkage.EXPORTED and f.callingConvention() == function.CallingConvention.HILTI:
         codegen.llvmGenerateCStub(f)

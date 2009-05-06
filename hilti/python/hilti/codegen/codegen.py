@@ -535,21 +535,7 @@ class CodeGen(visitor.Visitor):
         
         Returns: llvm.core.Constant.int - The constant, which will be signed.
         """
-
-        # This is a bit odd. Apparently, negative constants aren't probably
-        # sign-extended when creating a constant with a width >32 directly. Not
-        # sure whether that's like it's supposed to be, or a problem of either
-        # LLVM or LLVM-PY. In any case, we work around the issue with a manual
-        # sign-extension. As I'm not sure whether widths < 32 work correctly,
-        # I'm adding the corresponding work-around for that case as well to be
-        # on the safe side. 
-        const = llvm.core.Constant.int_signextend(llvm.core.Type.int(32), n)
-        if width > 32: 
-            return const.sext(llvm.core.Type.int(width))
-        if width < 32:
-            return const.trunc(llvm.core.Type.int(width))
-        
-        return const
+        return llvm.core.Constant.int(llvm.core.Type.int(width), long(n))
     
     def llvmGEPIdx(self, n):
         """Creates an LLVM integer constant suitable for use as a GEP index.
