@@ -26,6 +26,16 @@ from hilti.core.instruction import *
 from hilti.core.constraints import *
 from hilti.instructions.operators import *
 
+@constraint('"ascii"|"utf8"')
+def _encoding(ty, op, i):
+    if not isinstance(ty, type.String):
+        return (False, "encoding must be a string")
+    
+    if op and isinstance(op, ConstOperand):
+        return (op.value() in ("ascii", "utf8"), "unknown charset %s" % op.value())
+    
+    return (True, "")
+
 # FIXME: Not implemented yet and op3 spec if wrong.
 @overload(Unpack, op1=iteratorBytes, op2=iteratorBytes, op3=any, target=unpackTarget(string))
 class Unpack(Operator):
@@ -85,7 +95,7 @@ class Lt(Instruction):
     lexicographically smaller than *op2*. Returns False otherwise."""
     pass
 
-@instruction("string.decode", op1=referenceOf(bytes), op2=string, target=string)
+@instruction("string.decode", op1=referenceOf(bytes), op2=_encoding, target=string)
 class Decode(Instruction):
     """ 
     Converts *bytes op1* into a string, assuming characters are encoded in
@@ -100,7 +110,7 @@ class Decode(Instruction):
     """
     pass
 
-@instruction("string.encode", op1=string, op2=string, target=referenceOf(bytes))
+@instruction("string.encode", op1=string, op2=_encoding, target=referenceOf(bytes))
 class Encode(Instruction):
     """Converts *op1* into bytes, encoding characters using the character set
     *op2*. Supported character sets are currently: ``ascii``, ``utf8``. 

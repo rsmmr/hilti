@@ -1,4 +1,0 @@
-# $Id$
-#
-# Boolean checks. 
-

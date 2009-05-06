@@ -1,3 +1,3 @@
-div-by-zero-const.hlt:14: error, division by zero
+div-by-zero-const.hlt:14: error, operand 2 must not be zero
 
 1 error found

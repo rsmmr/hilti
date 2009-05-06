@@ -33,7 +33,7 @@ class Mul(Instruction):
     double type, the result in undefined. 
     """
 
-@instruction("double.div", op1=double, op2=double, target=double)
+@instruction("double.div", op1=double, op2=nonZero(double), target=double)
 class Div(Instruction):
     """
     Divides *op1* by *op2*, flooring the result.     

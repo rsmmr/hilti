@@ -143,7 +143,26 @@ def integerOfWidthAsOp(n):
                "must be of same integer type as %s, which is int<%d>" % (_getOpName(n), w))
         
     return _isIntOfSameWidthAs
+
+def nonZero(constr):
+    """A constraint function that ensures that a constant operand conforms
+    with *constr* and is not zero. For non-constant operands,
+    only *constr* is checked, the value is ignored."""
     
+    @constraint(lambda sig: sig.getOpDoc(constr))
+    def _nonZero(ty, op, i):
+        (success, msg) = constr(ty, op, i)
+        
+        if not success:
+            return (False, msg)
+        
+        if op and isinstance(op, ConstOperand):
+            return (op.value() != 0, "must not be zero")
+        else:
+            return (True, "")
+    
+    return _nonZero
+
 def referenceOf(constr):    
     """Returns a constraint function that ensures that the operand is of type
     ~~Reference and its ~~refType() conforms with *constraint*. 

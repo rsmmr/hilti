@@ -12,16 +12,9 @@ __all__ = []
 
 import flow
 import operators
-
 import checker
 import module
 import integer
-import double
-import bool
-import tuple
-import struct
-import ref
-import channel
 
 def checkAST(ast):
     """Verifies the semantic correctness of the |ast| *ast*. If any

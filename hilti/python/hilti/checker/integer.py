@@ -1,6 +1,9 @@
 # $Id$
 #
 # Integer checks.
+#
+# FIXME: Which of these checks are unnecessary now that we have constraint
+# functions?
 
 from hilti.instructions import integer
 from hilti.core import *
@@ -67,9 +70,6 @@ def _(self, i):
     _checkOp(self, i.op2())
     _sameWidth(self, i, True)
     
-    if isinstance(i.op2(), instruction.ConstOperand) and i.op2().value() == 0:
-        self.error(i, "division by zero")
-
 @checker.when(integer.Mul)
 def _(self, i):
     _checkOp(self, i.op1())

@@ -81,7 +81,7 @@ class Mul(Instruction):
     The result is calculated modulo 2^{width}.
     """
 
-@instruction("int.div", op1=integer, op2=integerOfWidthAsOp(1), target=integerOfWidthAsOp(1))
+@instruction("int.div", op1=integer, op2=nonZero(integerOfWidthAsOp(1)), target=integerOfWidthAsOp(1))
 class Div(Instruction):
     """
     Divides *op1* by *op2*, flooring the result. Operands and target must be
