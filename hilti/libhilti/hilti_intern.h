@@ -20,6 +20,7 @@
 #include "config.h"
 #include "thread_context.h"
 #include "exceptions.h"
+#include "addr.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Run-time information about HILTI types.
@@ -40,6 +41,7 @@
 #define __HLT_TYPE_BYTES     9
 #define __HLT_TYPE_ENUM     10
 #define __HLT_TYPE_ENUM_LABEL 11
+#define __HLT_TYPE_ADDR     12
 
 #define __HLT_TYPE_ITERATOR_BYTES 100
    // %doc-__HLT_TYPE-end

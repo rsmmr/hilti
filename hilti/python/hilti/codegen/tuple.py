@@ -84,13 +84,8 @@ def _(type, refine_to):
 def _(self, i):
     op1 = self.llvmOp(i.op1())
     op2 = self.llvmOp(i.op2())
- 
-    # This is way ugly. Is there something better to get an addr for gep from a
-    # value?
-    addr = codegen.builder().alloca(op1.type)
-    codegen.builder().store(op1, addr)
-    ptr = self.builder().gep(addr, [codegen.llvmGEPIdx(0), op2], "XXX")
-    result = self.builder().load(ptr)
+
+    result = self.llvmExtractValue(op1, op2)
     self.llvmStoreInTarget(i.target(), result)
 
 

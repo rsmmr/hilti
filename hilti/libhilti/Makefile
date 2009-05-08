@@ -6,7 +6,8 @@ BC_FROM_LL = call_hilti.bc
 
 BC_FROM_C  = print.bc exceptions.bc utf8proc.bc init.bc memory.bc string.bc \
              int.bc double.bc bool.bc tuple.bc fmt.bc channel.bc enum.bc \
-             bytes.bc config.bc schedulers.bc thread_context.bc run.bc
+             bytes.bc config.bc schedulers.bc thread_context.bc run.bc \
+             addr.bc
 
 BC = $(BC_FROM_LL) $(BC_FROM_C) 
 

@@ -68,7 +68,7 @@ class Unpack(Operator):
     one instance.
     
     Note: All implementations of this operator must be able to deal with bytes
-    located at arbitrary, not necessarily aligned positions.
+    located at arbitrary and not necessarily aligned positions.
     """
     pass
 

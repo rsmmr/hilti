@@ -24,6 +24,7 @@ import channel
 import bytes
 import operators
 import enum
+import addr
 
 def generateLLVM(ast, libpaths, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as

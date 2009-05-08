@@ -38,6 +38,18 @@ enum Packed {
     UInt32Big,      # 32-bit unsigned integer in big-endian byte order.
     UInt8Little,    #  8-bit unsigned integer in little-endian byte order.
     UInt16Little,   # 16-bit unsigned integer in little-endian byte order.
-    UInt32Little    # 32-bit unsigned integer in little-endian byte order.
+    UInt32Little,   # 32-bit unsigned integer in little-endian byte order.
     # %doc-packed-int-end 
+
+    # Addr
+    # %doc-packed-addr-start
+    IPv4,           # 32-bit IPv4 address stored in host byte order.
+    IPv6,           # 128-bit IPv6 address stored in host byte order.
+    IPv4Network,    # 32-bit IPv4 address stored in network byte order.
+    IPv6Network     # 128-bit IPv6 address stored in network byte order.
+    # %doc-packed-addr-end
+
 }    
+
+enum AddrFamily { IPv4, IPv6 }
+    

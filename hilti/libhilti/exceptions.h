@@ -33,6 +33,9 @@ extern __hlt_exception __hlt_channel_empty;
 // A worker thread threw an exception.
 extern __hlt_exception __hlt_exception_worker_thread_threw_exception;
 
+// A system or libc function returned an unexpected error.
+extern __hlt_exception __hlt_exception_os_error;
+
 // Fall-back exception if nothing else is specified.
 extern __hlt_exception __hlt_exception_unspecified;
 

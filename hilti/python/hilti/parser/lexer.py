@@ -2,6 +2,9 @@
 #
 # The lexer. 
 
+import socket
+import struct
+
 import ply.lex
 
 from hilti.core import *
@@ -55,6 +58,7 @@ tokens = (
    'METATYPE',
    'NULL', 
    'ENUM',
+   'ADDR',
    
    'ATTR_DEFAULT'
 ) 
@@ -65,6 +69,31 @@ states = (
    # In nolines mode, newlines are ignored. Per default, they are passed on as token NL.
    ('nolines', 'inclusive'),
 )
+
+def t_ADDR4(t): # must come before DOUBLE.
+    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
+    
+    addr = struct.unpack("!1L", socket.inet_pton(socket.AF_INET, t.value))
+    t.type = "ADDR"
+    t.value = (0, long(addr[0]))
+    return t
+
+def t_ADDR6(t): # must come before DOUBLE.
+    # FIXME: This is quick first shot at a regexp. Seems a correct one isn't
+    # easy to build and v6b addresses might actually look like enum constants as
+    # well ...
+    r'([.:0-9a-z]+::?[.0-9a-z]+)|:[.:0-9a-z]+'
+    
+    try:
+        addr = struct.unpack("!2Q", socket.inet_pton(socket.AF_INET6, t.value))
+    except socket.error:
+        parser.error(t, "cannot parse IPv6 address %s" % t.value, lineno=t.lexer.lineno)
+        return None
+        
+    t.type = "ADDR"
+    
+    t.value = (addr[0], addr[1])
+    return t
 
 def t_DOUBLE(t):
     r'-?\d+\.\d+'
@@ -132,7 +161,7 @@ def t_IDENT(t):
             # error(t, "Identifiers starting with '__' are reserved for internal use")
         
     return t
-
+        
 # Track line numbers.
 def t_nolines_newline(t):
     r'\n+'

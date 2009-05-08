@@ -24,6 +24,7 @@ __hlt_exception __hlt_exception_unspecified = "Unspecified";
 __hlt_exception __hlt_exception_decoding_error = "DecodingError";
 __hlt_exception __hlt_exception_worker_thread_threw_exception = "WorkerThreadThrewException";
 __hlt_exception __hlt_exception_internal_error = "InternalError";
+__hlt_exception __hlt_exception_os_error = "OSError";
 
 // Reports an uncaught exception.
 void __hlt_exception_print_uncaught(__hlt_exception exception) 

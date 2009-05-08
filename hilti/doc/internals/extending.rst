@@ -8,6 +8,8 @@ Extending [Mostly missing]
 This is for the most part a brief list of keywords for now; once
 things have stabilized we should turn it into some real text. 
 
+.. _adding-instructions:
+
 Adding a new HILTI instruction
 ------------------------------
 
@@ -118,45 +120,94 @@ return.
 Adding a new HILTI data type
 ----------------------------
 
-Adding a new data type involves modifying and extended different HILTI
-components. 
+Adding a new data type involves modifying and extending a few places
+but usually the necessary changes are pretty much isolated from any
+existing functionality. Generally, you should follow the following
+steps. Feel free to copy, paste, & adapt code from already existing
+data types where appropiate. 
 
-- Derive a new class for the appropiate sub-class of `.type.Type`.  Usually,
-  that will be either `.type.ValueType` or `.type.HeapType` in
-  :file:`python/hilti/core/type.py`. Add the parser keyword to the ``_keywords``
-  list.
-  
-- Create a :mod:`~hilti.checker` module  with the new type's correctness checks.
-  Add the module to :file:`python/hilti/checker/__init__.py`.
+1. In ``hilti/core/type.py``, derive a new type class from the appropiate
+   base class of `.type.Type`. Usually, that the base class will be
+   either `.type.ValueType` or `.type.HeapType`. The new class must
+   have class-variables ``_name`` and ``_id`. The former is a string
+   describing the type in way suitable for use in error messages;
+   usually ``_name`` corresponds to the type's name in HILTI
+   programs. ``_id`` is an integer unique across all types. To this
+   end, add a new ``__HLT_TYPE_*`` constant to |hilti_intern.h|,
+   picking the next available number and use the same value with
+   ``_id``.
+   
+2. Add the type's HILTI name to ``_keywords`` in ``core/type.py``.
+   The name given there will become a new keyword of the HILTI
+   language, and should usually match with the type class' ``_name``
+   attribute. 
 
-- Create an :mod:`~hilti.instruction` module with the new type's
-  instructions, and add the module to
-  :file:`python/hilti/instructions/__init__.py`. In the module:
-  
-  * Set the module's doc-string to just a section-heading with the
-    type's name. 
-  
-  * Define a module-level variable ``_doc_type_description``
-    containing a string describing the type in a way suitable for
-    the user's manual type reference; include a description of the
-    type's syntax for constants there if appropiate. 
-  
-- Create a :mod:`~hilti.codegen` module with the new type's code generation. Add
-  the module to :file:`python/hilti/codegen/__init__.py`. In the module:
+3. Add a constraint function for the new type add the end of
+   ``hilti/core/constraints.py``. Just follow the scheme of other
+   type's there. 
 
-  * Decorate a function with ~~typeInfo to initialize the type's ~~TypeInfo.
-    
-  * Decorate a function with ~~llvmCtorExpr if you want the parser
-    to support constructor expressions (this is most commonly used
-    for constants; see below).
-    
-  * Decorate a function with ~~llvmType.
-    
-  * Create a visitor for each of the new type's instructions
+4. Create a new sub-module in ``hilti/instructions``, defining the
+   instructions and operators the type provides. The module must be
+   added to ``hilti/instructions/__init__.py``. Set the module's
+   doc-string to just a section heading with the type's name; this
+   heading will start the type's section in the instruction
+   reference. Furthermore, define a module-level variable
+   ``_doc_type_description`` and set it to a string describing the
+   type in a way suitable for the user-manual's *type* reference;
+   include a specification of how values of your type are
+   default-initialized if they are not specifically set otherwise
+   (see the implementation of default value below). If a HILTI
+   programmer can create constants of your new type in its program
+   (see discussion of constants below), include a description of the
+   constants' syntax in the description as well. 
+   
+5. Add instructions and operators to your new sub-module; see
+   :ref:`adding-instructions` for more information.
+   
+6. Optionally, if you need particular correctness checks that aren't
+   straight-forward to do with :ref:`signature-constraints`, then
+   create a sub-module in ``hili/checker`` and add them there. Add
+   the new module to ``hilti/checker/__init__.py``.
 
-  * Define a module-level variable ``_doc_c_conversion`` containing
-    a string that describes how the type will be converted to a C
-    value for function call to/from C. 
+7. ctor rexpressions, parser
+
+8. Create a new sub-module in ``hilti/codegen``, implementing the
+   code-generation for your new instructions and operators. Add the
+   new module to :file:`python/hilti/codegen/__init__.py`. 
+
+   Follow these steps for your code-generator:
+
+   - Define a module-level variable ``_doc_c_conversion`` and assign
+     it a string that describes how your new type will be
+     represented at the C level (i.e., in function call arguments
+     and return values). 
+   
+   - Define a function to return type information for your type in
+     the form a suitably initialized ~~TypeInfo object.  The
+     function must be decorated with ~~typeInfo. 
+     
+   - Define a function that returns the LLVM type that should be
+     used internally to represent an instance of the new type. If
+     your type is a ~~HeapType, this must be a pointer type. The
+     function must be decorated with ~~llvmType.
+     
+   - If your type is a ~~ValueType, you must define a function that
+     returns an LLVM value suitable for initializing instances with
+     a default value. (Obviouslu, this value should obviously with
+     what you specificy in ``_doc_type_description``, see above).
+     The function must be decorated with ~~llvmDefaultValue.
+     
+   - If you extended the HILTI syntax with type-specific
+     constructor-expressions (see above), you must define a function
+     that turns a corresponding ~~Operand into an LLVM value. The
+     function must be decorated with ~~llvmCtorExpr.
+     
+   - Finally, create a visitor function for each new
+     instruction/operand; see :ref:`adding-instructions` for more
+     information.
+   
+   
+XXX TODO: make a pass over the rest here
 
 - Add run-time type information (RTTI) in :file:`libhilti`:
 

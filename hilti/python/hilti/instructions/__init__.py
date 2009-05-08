@@ -1,6 +1,6 @@
 # $Id$
 
-__all__ = ["flow", "integer", "double", "string", "bool", "tuple", "ref", "struct", "channel", "bytes", "operators", "enum"]
+__all__ = ["flow", "integer", "double", "string", "bool", "tuple", "ref", "struct", "channel", "bytes", "operators", "enum", "addr"]
 
 import flow
 import operators
@@ -16,3 +16,4 @@ import struct
 import bytes
 import channel
 import enum
+import addr

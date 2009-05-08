@@ -1,0 +1,30 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+     local addr a
+     local Hilti::AddrFamily f
+
+     a = 192.168.1.1
+     f = addr.family a
+     call Hilti::print (a)
+     call Hilti::print (f)
+     
+     a = 2001:0db8::1428:57ab
+     f = addr.family a
+     call Hilti::print (a)
+     call Hilti::print (f)
+     
+     a = ::192.168.1.1
+     f = addr.family a
+     call Hilti::print (a)
+     call Hilti::print (f)
+}
+

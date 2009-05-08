@@ -261,6 +261,8 @@ def _hasType(cls, name=None):
     
     return __hasType
 
+# Add one constaint per type here. 
+
 string = _hasType(type.String)
 integer = _hasType(type.Integer)
 bytes = _hasType(type.Bytes)
@@ -273,6 +275,8 @@ enum = _hasType(type.Enum)
 reference = _hasType(type.Reference)
 struct = _hasType(type.Struct)
 tuple = _hasType(type.Tuple)
+addr =  _hasType(type.Addr)
+
 function = _hasType(type.Function)
 label = _hasType(type.Label)
 hiltiType = _hasType(type.HiltiType)

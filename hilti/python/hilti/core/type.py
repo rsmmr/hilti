@@ -380,7 +380,7 @@ class Enum(ValueType):
     unique integer. In addition to the user-defined labels, there is always an
     implicitly defined value ``Undef``. 
     
-    labels: list of string - The lables that make up the possible values of
+    labels: list of string - The labels that make up the possible values of
     the enumeration. 
     """
     def __init__(self, labels):
@@ -500,6 +500,14 @@ class Reference(ValueType):
     _name = "ref"
     _id = 6
 
+class Addr(ValueType):
+    """Type for IP addresses."""
+    def __init__(self):
+        super(Addr, self).__init__([], Addr._name)
+        
+    _name = "addr"
+    _id = 12
+    
 class Struct(HeapType):
     """Type for structs. 
     
@@ -757,9 +765,6 @@ def fmtTypeClass(cls, doc=False):
 # user-supplied params (optional). All classes given here must be derived from
 # HiltiType.
 
-import struct
-import sys
-
 _keywords = {
 	"int": (Integer, 1, None),
 	"int8": (Integer, 1, [8]),
@@ -774,6 +779,7 @@ _keywords = {
     "channel": (Channel, 2, None),
     "bytes": (Bytes, 0, None),
     "iterator": (Iterator, 1, None),
+    "addr": (Addr, 0, None),
     }
 
 _all_hilti_types = {}

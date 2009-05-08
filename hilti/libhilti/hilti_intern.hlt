@@ -18,6 +18,7 @@ declare "C-HILTI" string string_to_string(any s, int32 options)
 declare "C-HILTI" string tuple_to_string(any t, int32 options)
 declare "C-HILTI" string channel_to_string(any c, int32 options)
 declare "C-HILTI" string bytes_to_string(any b, int32 options)
+declare "C-HILTI" string addr_to_string(any b, int32 options)
 
 declare "C-HILTI" string int_to_int64(any n)
 declare "C-HILTI" string bool_to_int64(any b)

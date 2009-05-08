@@ -13,6 +13,7 @@
 
 typedef struct __hlt_type_info __hlt_type_info;
 typedef struct __hlt_string __hlt_string;
+typedef struct __hlt_addr __hlt_addr;
 
     // %doc-hlt_exception-start
 typedef const char* __hlt_exception;

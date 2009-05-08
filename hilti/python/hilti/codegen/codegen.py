@@ -1672,6 +1672,49 @@ class CodeGen(visitor.Visitor):
         assert (not refine_to) or (refine_to == op.type())
         return self._callCallback(CodeGen._CB_LLVM_TYPE, type, [type, refine_to])
 
+    def llvmEnumLabel(self, label):
+        """Looks up the internal value of an enum label.
+        
+        label: string - The name of the label in qualified form, i.e., ``a::b``.
+        
+        Returns: llvm.core.Constant - The LLVM value corresponding to *label*.
+    
+        Note: The functions will abort execution if *label* is not known.
+        """
+        v = self._module.lookupID(label)
+        
+        if not v or not isinstance(v.type(), type.Enum):
+            util.internal_error("%s is not a valid enum label" % label)
+            
+        return self.llvmConstInt(self._module.lookupIDVal(label), 8)
+    
+    def llvmExtractValue(self, struct, idx):
+        """Extract a specific index from an LLVM struct. This function
+        works-around the fact that llvm-py at the moment does not support
+        LLVM's ``extractvalue``. Once it does, we should change the
+        implementation accordingly.
+        
+        struct: llvm.core.Value - An LLVM value of type
+        ``llvm.core.Type.struct`` (not a pointer; use GEP for pointers).
+        
+        idx: integer or llvm.core.Value - The zero-based index to extract,
+        either as a constant integer, or as LLVM value of integer type.
+        
+        Returns: llvm.core.Value - The value of the indexed field.
+        
+        Todo: The current implementation is awful. Really need the
+        ``extractvalue`` instruction.
+        """
+        
+        addr = codegen.builder().alloca(struct.type)
+        codegen.builder().store(struct, addr)
+        
+        if isinstance(idx, int):
+            idx = codegen.llvmGEPIdx(idx)
+        
+        ptr = self.builder().gep(addr, [self.llvmGEPIdx(0), idx])
+        return self.builder().load(ptr)
+        
     ### Decorators.
     
     def typeInfo(self, t):

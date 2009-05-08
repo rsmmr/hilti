@@ -310,6 +310,11 @@ def p_operand_tuple(p):
     """operand : tuple"""
     p[0] = instruction.TupleOperand(p[1], location=loc(p, 1))
 
+def p_operand_addr(p):
+    """operand : ADDR"""
+    const = constant.Constant(p[1], type.Addr(), location=loc(p, 1))
+    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
+    
 def p_operand_type(p):
     """operand : type"""
     p[0] = instruction.TypeOperand(p[1], location=loc(p, 1))
@@ -431,10 +436,11 @@ def p_result_type(p):
                    | VOID
                    | ANY"""
                       
-    if p[1] == "void":
-        p[0] = type.Void()
-    elif p[1] == "any":
-        p[0] = type.Any()
+    if isinstance(p[1], str):
+        if p[1] == "void":
+            p[0] = type.Void()
+        elif p[1] == "any":
+            p[0] = type.Any()
     else:
         p[0] = p[1]
 
@@ -443,10 +449,11 @@ def p_param_type(p):
                   | METATYPE
                   | ANY"""
                       
-    if p[1] == "any":
-        p[0] = type.Any()
-    elif p[1] == "type":
-        p[0] = type.MetaType()
+    if isinstance(p[1], str):
+        if p[1] == "any":
+            p[0] = type.Any()
+        elif p[1] == "type":
+            p[0] = type.MetaType()
     else:
         p[0] = p[1]
         
