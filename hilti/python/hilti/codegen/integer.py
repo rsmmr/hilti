@@ -113,6 +113,29 @@ def _(self, i):
     self.llvmStoreInTarget(i.target(), result)
 
     # Leave ok-builder for subsequent code. 
+
+@codegen.when(instructions.integer.Mod)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    op2 = self.llvmOp(i.op2())
+
+    block_ok = self.llvmNewBlock("ok")
+    block_exc = self.llvmNewBlock("exc")
+
+    iszero = self.builder().icmp(llvm.core.IPRED_NE, op2, self.llvmConstInt(0, i.op2().type().width()))
+    self.builder().cbranch(iszero, block_ok, block_exc)
+    
+    self.pushBuilder(block_exc)
+    self.llvmRaiseExceptionByName("__hlt_exception_division_by_zero") 
+    self.popBuilder()
+    
+    self.pushBuilder(block_ok)
+    result = self.builder().srem(op1, op2)
+    addr = self.llvmAddrLocalVar(self.currentFunction(), self.llvmCurrentFramePtr(), i.target().id().name())
+    self.llvmAssign(result, addr)
+    self.llvmStoreInTarget(i.target(), result)
+
+    # Leave ok-builder for subsequent code. 
     
 @codegen.when(instructions.integer.Eq)
 def _(self, i):

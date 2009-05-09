@@ -69,6 +69,12 @@ def _(self, i):
     _checkOp(self, i.op1())
     _checkOp(self, i.op2())
     _sameWidth(self, i, True)
+ 
+@checker.when(integer.Mod)
+def _(self, i):
+    _checkOp(self, i.op1())
+    _checkOp(self, i.op2())
+    _sameWidth(self, i, True)
     
 @checker.when(integer.Mul)
 def _(self, i):

@@ -70,7 +70,7 @@ class Add(Instruction):
 @instruction("int.sub", op1=integer, op2=integerOfWidthAsOp(1), target=integerOfWidthAsOp(1))
 class Sub(Instruction):
     """
-    Subtracts *op1* one from *op2*. Operands and target must be of same width.
+    Subtracts *op2* from *op1*. Operands and target must be of same width.
     The result is calculated modulo 2^{width}.
     """
     
@@ -91,6 +91,15 @@ class Div(Instruction):
     Throws :exc:`DivisionByZero` if *op2* is zero.
     """
     
+@instruction("int.mod", op1=integer, op2=nonZero(integerOfWidthAsOp(1)), target=integerOfWidthAsOp(1))
+class Mod(Instruction):
+    """
+    Calculates the remainder of dividing *op1* by *op2*. Operands and target must
+    be of same width.
+
+    Throws :exc:`DivisionByZero` if *op2* is zero.
+    """
+
 @instruction("int.eq", op1=integer, op2=integerOfWidthAsOp(1), target=bool)
 class Eq(Instruction):
     """
