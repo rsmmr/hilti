@@ -1348,6 +1348,7 @@ class CodeGen(visitor.Visitor):
     def _llvmGenerateTailCall(self, llvm_func, args, llvm_result=None):
         result = self.builder().call(llvm_func, args)
         result.calling_convention = llvm.core.CC_FASTCALL
+        result.tail_call = True
         
         if not llvm_result:
             self.builder().ret_void()
