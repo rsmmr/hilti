@@ -26,20 +26,6 @@ class Equal(Operator):
     """
     pass
 
-@overload(Unpack, op1=iteratorBytes, op2=iteratorBytes, op3=enum, target=unpackTarget(addr))
-class Unpack(Operator):
-    """Unpacks an address from a sequence of raw bytes; see the ~~Unpack
-    operator for information about *op1*, *op2* and *target*.
-    
-    *op3* specifies the layout of the bytes and can have one of the following
-    values of enum type ``Hilti::Packed``:
-    
-    .. literalinclude:: /libhilti/hilti.hlt
-       :start-after: %doc-packed-addr-start
-       :end-before:  %doc-packed-addr-start
-    """
-    pass
-
 @instruction("addr.family", op1=addr, target=enum)
 class Family(Instruction):
     """

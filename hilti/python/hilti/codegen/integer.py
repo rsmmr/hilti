@@ -171,154 +171,101 @@ def _(self, i):
     result = self.builder().trunc(op1, self.llvmTypeConvert(type.Integer(width)))
     self.llvmStoreInTarget(i.target(), result)
         
-
-### Unpack operator. This is a bit cumbersome due to the many options.
-
 _Unpacks = {   
-    "Int8Little":  (0,  8, 0, [0]),
-    "Int16Little": (1, 16, 0, [0, 1]),
-    "Int32Little": (2, 32, 0, [0, 1, 2, 3]),
-    "Int64Little": (3, 64, 0, [0, 1, 2, 3, 4, 5, 6, 7]),
+    "Hilti::Packed::Int8Little": (0,  8, 0, [0]),
+    "Hilti::Packed::Int16Little": (1, 16, 0, [0, 1]),
+    "Hilti::Packed::Int32Little": (2, 32, 0, [0, 1, 2, 3]),
+    "Hilti::Packed::Int64Little": (3, 64, 0, [0, 1, 2, 3, 4, 5, 6, 7]),
     
-    "Int8Big":  (4,  8, 0, [0]),
-    "Int16Big": (5, 16, 0, [1, 0]),
-    "Int32Big": (6, 32, 0, [3, 2, 1, 0]),
-    "Int64Big": (7, 64, 0, [7, 6, 5, 4, 3, 2, 1, 0]),
+    "Hilti::Packed::Int8Big":  (4,  8, 0, [0]),
+    "Hilti::Packed::Int16Big": (5, 16, 0, [1, 0]),
+    "Hilti::Packed::Int32Big": (6, 32, 0, [3, 2, 1, 0]),
+    "Hilti::Packed::Int64Big": (7, 64, 0, [7, 6, 5, 4, 3, 2, 1, 0]),
     
-    "UInt8Little":  (8,  8, 16, [0]),
-    "UInt16Little": (9, 16, 32, [0, 1]),
-    "UInt32Little": (10, 32, 64, [0, 1, 2, 3]),
-#   "UInt64Little": (11, 64, 128, [0, 1, 2, 3, 4, 5, 6, 7]),
+    "Hilti::Packed::UInt8Little":  (8,  8, 16, [0]),
+    "Hilti::Packed::UInt16Little": (9, 16, 32, [0, 1]),
+    "Hilti::Packed::UInt32Little": (10, 32, 64, [0, 1, 2, 3]),
+#   "Hilti::Packed::UInt64Little": (11, 64, 128, [0, 1, 2, 3, 4, 5, 6, 7]),
     
-    "UInt8Big":  (12,  8, 16, [0]),
-    "UInt16Big": (13, 16, 32, [1, 0]),
-    "UInt32Big": (14, 32, 64, [3, 2, 1, 0]),
-#   "UInt64Big": (15, 64, 128, [7, 6, 5, 4, 3, 2, 1]),
+    "Hilti::Packed::UInt8Big":  (12,  8, 16, [0]),
+    "Hilti::Packed::UInt16Big": (13, 16, 32, [1, 0]),
+    "Hilti::Packed::UInt32Big": (14, 32, 64, [3, 2, 1, 0]),
+#   "Hilti::Packed::UInt64Big": (15, 64, 128, [7, 6, 5, 4, 3, 2, 1]),
 }
 
-suffix = "Little" if system.isLittleEndian() else "Big"
+_localSuffix = "Little" if system.isLittleEndian() else "Big"
 
-# Add aliases for host byte order. 
-for (key, val) in _Unpacks.items():
-    if key.endswith(suffix):
-        # Strip suffix.
-        _Unpacks[key[0:-len(suffix)]] = key
-
-# Generate the unpack code for a single case.        
-def _makeUnpack(cg, label, value, op, end, target, force_width = 0):
+@codegen.unpack(type.Integer)
+def _(t, begin, end, fmt):
+    """Integer unpacking supports the following formats:
     
-    start = cg.llvmOp(op)
-    end = cg.llvmOp(end)
+    .. literalinclude:: /libhilti/hilti.hlt
+       :start-after: %doc-packed-int-start
+       :end-before:  %doc-packed-int-end
+
+    Integer unpacking behaves slightly different depenidng whether the
+    ``Hilti::Packed`` format is given as a constant or not. If it's not a
+    constant, the unpacked integer will always have a width of 64 bits,
+    independent of what kind of integer is stored in the binary data. If it is
+    a constant, then for the signed variants (i.e., ``Hilti::Packed::Int*``),
+    the width of the target integer corresponds to the width of the unpacked
+    integer. For the unsigned variants (i.e.,``Hilti::Packet::UInt*``), the
+    width of the target integer must be "one step" *larger* than that of the
+    unpacked value: for ``Packed::Uint8`` is must be ``int16`, for
+    ``Packed::UInt8`` is must be ``int32`, etc. This is because we don't have
+    *unsigned* integers in HILTI.
+    """
     
-    # FIXME: We don't check the end position yet.
-    (id, width, extend, bytes) = value
-    last = bytes[-1]
+    val = codegen.builder().alloca(codegen.llvmTypeConvert(t))
+    iter = codegen.builder().alloca(codegen.llvmTypeConvert(type.IteratorBytes()))
 
-    itype = llvm.core.Type.int(width)
-    result = llvm.core.Constant.null(itype)
-    builder = cg.builder()
-
-    # Copy the iterator.
-    iter = builder.alloca(start.type)
-    builder.store(start, iter)
-    iterdst = builder.bitcast(iter, cg.llvmTypeGenericPointer())
-    
-    # Function is defined in hilti_intern.ll
-    extract_one = cg.llvmCurrentModule().get_function_named("__hlt_bytes_extract_one")
-    exception = cg.llvmAddrException(cg.llvmCurrentFramePtr())
-
-    for i in range(len(bytes)):
-        byte = builder.call(extract_one, [iterdst, end, exception])
-        byte.calling_convention = llvm.core.CC_C
-        byte = builder.sext(byte, itype)
-        if bytes[i]:
-            byte = builder.shl(byte, cg.llvmConstInt(bytes[i] * 8, width))
-        result = builder.or_(result, byte)
-
-    if extend:
-        result = builder.zext(result, llvm.core.Type.int(extend))
-
-    if force_width: 
-        result = builder.sext(result, llvm.core.Type.int(force_width))
-        
-    # It's fine to check for an exception at the end rather than after each call.
-    cg._llvmGenerateExceptionTest(exception)
-    
-    iter = cg.builder().load(iter) # Update builder.
-    
-    cg.llvmStoreTupleInTarget(target, (result, iter))
-
-@codegen.operator(instructions.integer.Unpack)
-def _(self, i):
-    builder = self.builder()
-    
-    # We differentiate two cases: constant vs. variable format specifiier.
-    if isinstance(i.op3(), instruction.ConstOperand):
-        # Constant version.
-        try:
-            label = i.op3().value()
-            value = _Unpacks[i.op3().value()]
+    # Generate the unpack code for a single case.        
+    def unpackOne(spec):
+        def _unpackOne(case):
+            # FIXME: We don't check the end position yet.
+            (id, width, extend, bytes) = spec
             
-            if isinstance(value, str):
-                # Dereference the alias.
-                label = value
-                value = _Unpacks[value]
-                
-            (id, width, extend, bytes) = value
+            builder = codegen.builder()
             itype = llvm.core.Type.int(width)
-            _makeUnpack(self, label, value, i.op1(), i.op2(), i.target())
+            result = llvm.core.Constant.null(itype)
+        
+            # Copy the iterator.
+            builder.store(begin, iter)
+            iter_casted = builder.bitcast(iter, codegen.llvmTypeGenericPointer())
             
-        except KeyError:
-            util.internal_error("instructions.integer.Unpack: unknown format %s" % i.op3().value())
-
-    else:
-        # Non-constant version.
-        #
-        # Note that because we don't track constants across HILTI programs, we
-        # may arrive here even if working on a constant. In that case, the
-        # optimizer will hopefully remove all but one case. 
+            # Function is defined in hilti_intern.ll
+            extract_one = codegen.llvmCurrentModule().get_function_named("__hlt_bytes_extract_one")
+            exception = codegen.llvmAddrException(codegen.llvmCurrentFramePtr())
         
-        default = self.llvmNewBlock("switch-default")
-        self.pushBuilder(default) 
-        self.llvmRaiseExceptionByName("__hlt_exception_value_error")
-        self.popBuilder() 
+            for i in range(len(bytes)):
+                byte = builder.call(extract_one, [iter_casted, end, exception])
+                byte.calling_convention = llvm.core.CC_C
+                byte = builder.zext(byte, itype)
+                if bytes[i]:
+                    byte = builder.shl(byte, codegen.llvmConstInt(bytes[i] * 8, width))
+                result = builder.or_(result, byte)
         
-        packed = self.currentModule().lookupID("Hilti::Packed")
-        assert packed
+            if extend:
+                result = builder.zext(result, llvm.core.Type.int(extend))
+                width = extend
         
-        builder = self.builder()
-        
-        labels = packed.type().declType().labels()
-        cont = self.llvmNewBlock("after-switch")
-        blocks = {}
-        cases = []
-    
-        switch = builder.switch(self.llvmOp(i.op3()), default)
-        
-        for (label, value) in _Unpacks.items():
-            
-            # Get the integer corresponding to the label.
-            idx = labels[label]
-            assert idx
-            
-            if isinstance(value, str):
-                # Dereference the alias.
-                label = value
-                value = _Unpacks[value]
-
-            (id, width, extend, bytes) = value
-            if id in blocks:
-                block = blocks[id]
-            else:
-                block = self.llvmNewBlock(label)
-                self.pushBuilder(block)
-                _makeUnpack(self, label, value, i.op1(), i.op2(), i.target(), force_width=64)
-                self.builder().branch(cont)
-                self.popBuilder()
+            if t.width() > width: 
+                result = builder.sext(result, llvm.core.Type.int(t.width()))
                 
-                blocks[id] = block
+            # It's fine to check for an exception at the end rather than after each call.
+            codegen._llvmGenerateExceptionTest(exception)
             
-            switch.add_case(llvm.core.Constant.int(llvm.core.Type.int(8), idx), block)
-            
-        self.pushBuilder(cont) # Leave on stack.
-            
+            codegen.llvmInit(result, val)
+        
+        return _unpackOne
+
+    def makeIdx(key):
+        if not key.endswith(_localSuffix):
+            return key
+        
+        return [key, key[0:-len(_localSuffix)]]
+    
+    cases = [(makeIdx(key), unpackOne(spec)) for (key, spec) in _Unpacks.items()]
+    codegen.llvmSwitch(fmt, cases)
+    return (codegen.builder().load(val), codegen.builder().load(iter))
+

@@ -1,0 +1,76 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void p(ref<bytes> b, Hilti::Packed fmt) {
+    local iterator<bytes> begin
+    local iterator<bytes> end
+    local iterator<bytes> nbegin
+    local int32 diff
+    local string out
+
+    local tuple<addr, iterator<bytes>> t
+    local addr a
+    
+    begin = bytes.begin b
+    end = bytes.end b
+
+    t = unpack begin end fmt
+    
+    a = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    
+    out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
+    call Hilti::print(out)
+}
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> begin
+    local iterator<bytes> end
+    local iterator<bytes> nbegin
+    local int32 diff
+    local string out
+
+    local tuple<addr, iterator<bytes>> t
+    local addr a
+    
+    b = b"\xc0\xa8\x01\x01"
+    begin = bytes.begin b
+    end = bytes.end b
+
+    t = unpack begin end Hilti::Packed::IPv4Network
+    
+    a = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    
+    out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
+    call Hilti::print(out)
+    
+    b = b" \x01\x0d\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x14(W\xab"
+    begin = bytes.begin b
+    end = bytes.end b
+
+    t = unpack begin end Hilti::Packed::IPv6Network
+    
+    a = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    
+    out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
+    call Hilti::print(out)
+    
+    b = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+    call p(b, Hilti::Packed::IPv4Network)
+    call p(b, Hilti::Packed::IPv4)
+    call p(b, Hilti::Packed::IPv6Network)
+    call p(b, Hilti::Packed::IPv6)
+    }

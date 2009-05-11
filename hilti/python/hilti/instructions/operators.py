@@ -66,12 +66,21 @@ class Unpack(Operator):
     that fact can be verified); this includes the case that the
     provided range does not contain sufficient bytes for unpacking
     one instance.
-    
-    Note: All implementations of this operator must be able to deal with bytes
-    located at arbitrary and not necessarily aligned positions.
+
+    Note: The ``unpack`` operator uses a generic implementation able to handle all data
+    types. Different from most other operators, it's implementation is not
+    overloaded on a per-type based. However, each type must come with an
+    ~~unpack decorated function, which the generic operator implementatin
+    relies on for doing the unpacking.
     """
     pass
 
+@overload(Unpack, op1=iteratorBytes, op2=iteratorBytes, op3=enum, target=unpackTarget(any))
+class GenericUnpack(Operator):
+    """The generic implementation of the ``unpack operator``. This operator is
+    not overloaded on a per-type basis."""
+    pass
+    
 @operator("assign", op1=valueType, target=sameTypeAsOp(1))
 class Assign(Operator):
     """Assigns *op1* to the target.

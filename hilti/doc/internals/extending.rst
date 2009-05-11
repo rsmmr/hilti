@@ -209,6 +209,8 @@ data types where appropiate.
    
 XXX TODO: make a pass over the rest here
 
+- Add @unpack. docstring should documents the ``Hilti::Packed`` values. 
+
 - Add run-time type information (RTTI) in :file:`libhilti`:
 
   * Create a new file ``my_type.c`` that defines a function returning a

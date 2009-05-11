@@ -8,6 +8,7 @@ import llvm
 import llvm.core 
 import typeinfo
 import system
+import inspect
 
 global_id = id
 
@@ -1574,13 +1575,15 @@ class CodeGen(visitor.Visitor):
     _CB_LLVM_TYPE = 3
     _CB_DEFAULT_VAL = 4
     _CB_OPERATOR = 5
+    _CB_UNPACK = 6
     
     _Callbacks = { 
     	_CB_TYPE_INFO: [], 
         _CB_CTOR_EXPR: [], 
         _CB_LLVM_TYPE: [], 
         _CB_DEFAULT_VAL: [],
-        _CB_OPERATOR: []
+        _CB_OPERATOR: [],
+        _CB_UNPACK: []
         }
         
     def _callCallback(self, kind, type, args, must_find=True):
@@ -1612,7 +1615,60 @@ class CodeGen(visitor.Visitor):
                 return True
         
         util.internal_error("llvmExecuteOperator: no implementation found for %s" % op)
-    
+
+    def llvmUnpack(self, t, begin, end, fmt):
+        """
+        Unpacks an instance of a type from binary data. 
+        
+        t: ~~HiltiType - The type of the object to be unpacked from the input. 
+        
+        begin: llvm.core.value - The byte iterator marking the first input
+        byte.
+        
+        end: llvm.core.value - The byte iterator marking the position one
+        beyond the last consumable input byte.
+        
+        fmt: ~~Operand - Specifies the binary format of the input bytes. It
+        can be either an ~~Operand of ~~EnumType ``Hilti::Packed``, a string
+        specifying the name of a ``Hilti::Packed`` label, or an integer with
+        the internal value of the desired label. 
+        
+        Returns: tuple (val, iter) - A Python tuple in which *val* is the
+        unpacked value of type ``llvm.core.value`` and ``iter`` is an
+        ``llvm.core.value`` corresponding to a byte iterator pointing one
+        beyond the last consumed input byte (which can't be further than
+        *end*). 
+        """
+        
+        assert not inspect.isclass(t)
+        
+        packed = self._module.lookupID("Hilti::Packed")
+        assert packed and isinstance(packed.type(), type.TypeDeclType)
+        
+        packed_t = packed.type().declType()
+        assert isinstance(packed_t, type.Enum)
+        
+        val = -1
+        if isinstance(fmt, str):
+            id = self._module.lookupID(fmt)
+            if not id:
+                util.internal_error("llvmUnpack: %s is not a known ID" % fmt)
+            
+            if not id.type() is packed_t:
+                util.internal_error("llvmUnpack: %s is not a label of Hilti::Packed" % fmt)
+                
+            val = self._module.lookupIDVal(fmt)
+            assert val
+
+        if isinstance(fmt, int):
+            val = fmt
+            
+        if val >= 0:
+            fmt = instruction.ConstOperand(constant.Constant(val, packed_t))
+            
+        assert isinstance(fmt, instruction.Operand) and fmt.type() is packed_t
+        return self._callCallback(CodeGen._CB_UNPACK, t, [t, begin, end, fmt])
+        
     def llvmOp(self, op, refine_to = None):
         """Converts an instruction operand into an LLVM value. The method
         might use the current :meth:`builder`. 
@@ -1715,7 +1771,84 @@ class CodeGen(visitor.Visitor):
         
         ptr = self.builder().gep(addr, [self.llvmGEPIdx(0), idx])
         return self.builder().load(ptr)
+
+    def llvmSwitch(self, op, cases):
+        """Helper to build an LLVM switch statement for integer and enum
+        operands. For each case, the caller provides a function that will be
+        called to build the case's body. The helper will build the necessary
+        code around the switch, generate an exception if the switch operand
+        comes with an unknown case, and push a builder on the stack for code
+        following the switch statement. If the switch operand is a constant,
+        only the relevant case body will be emitted. 
         
+        *op*: ~~Operand - The operand to switch on; *op* must be either of
+        type ~~Integer or of type ~~Enum.
+        
+        *cases: list of tuples (constant, function) - Each constant specifies
+        a case's value for *op* and must be either a Python integer or a
+        string with the fully qualified name of an enum label; the
+        corresponding *function* will be called be the code generator to emit
+        the LLVM code for that case. The function will be called with one
+        parameter, the *constant*; and it should use the current ~~builder to
+        emit IR. Optionally, *constant* can also be a list of such constants,
+        and the corresponding block will then be executed for all of the cases
+        they specify; in this case, *function* will only be called for the
+        first entry of the list. 
+        """
+        assert isinstance(op.type(), type.Integer) or isinstance(op.type(), type.Enum)
+        
+        if isinstance(op, instruction.ConstOperand):
+            # Version for a const operand. 
+            for (vals, function) in cases:
+                if not isinstance(vals, list):
+                    vals = [vals]
+                    
+                for val in vals:
+                    if isinstance(val, str):
+                        val = self._module.lookupIDVal(val)
+                        if not val:
+                            util.internal_error("llvmSwitch: %s is not a know enum value" % val)
+                            
+                    if val == op.value():
+                        function(val)
+                        return
+                    
+            util.internal_error("codegen.llvmSwitch: constant %s does not specify a known case" % op.value())
+        
+        else:
+            # Version for a non-const operand. 
+            default = self.llvmNewBlock("switch-default")
+            self.pushBuilder(default) 
+            self.llvmRaiseExceptionByName("__hlt_exception_value_error")
+            self.popBuilder() 
+        
+            builder = self.builder()
+            cont = self.llvmNewBlock("after-switch")
+        
+            llvmop = self.llvmOp(op)
+            switch = builder.switch(llvmop, default)
+        
+            for (vals, function) in cases:
+                if not isinstance(vals, list):
+                    vals = [vals]
+                    
+                block = self.llvmNewBlock("switch-%s" % str(vals[0]))
+                self.pushBuilder(block)
+                function(vals[0])
+                self.builder().branch(cont)
+                self.popBuilder()
+                
+                for val in vals:
+                    
+                    if isinstance(val, str):
+                        val = self._module.lookupIDVal(val)
+                        if not val:
+                            util.internal_error("llvmSwitch: %s is not a know enum value" % val)
+                    
+                    switch.add_case(llvm.core.Constant.int(llvmop.type, val), block)
+        
+            self.pushBuilder(cont) # Leave on stack.
+    
     ### Decorators.
     
     def typeInfo(self, t):
@@ -1807,5 +1940,48 @@ class CodeGen(visitor.Visitor):
             CodeGen._Callbacks[CodeGen._CB_OPERATOR] += [(op, func)]
     
         return register    
+    
+    def unpack(self, t):
+        """Decorator to define the implementation of the ~~Unpack
+        operator for a specific type. The decorated function must
+        emit LLVM code instantiating an object of type *t* from
+        binary data stored in a ~~Bytes object. The function will
+        receive four parameters: the type *t* it is supposed to
+        unpack; two ``llvm.core.value`` objects containing byte
+        iterators *begin* and *end, respectively, defining the range
+        of bytes to use for unpacking; and an ~~Operand *op* of
+        ~~EnumType ``Hilti::Packed`` specifying the format of the
+        input bytes. The function does not need to consume all bytes
+        starting at *start* but it must not consume any beyond
+        *end*. The function must return a Python tuple ``(val,
+        iter)`` in which *val* is the unpacked value of type
+        ``llvm.core.value`` and ``iter`` is an ``llvm.core.value``
+        corresponding to a byte iterator pointing one beyond the
+        last consumed input byte (which can't be further than
+        *end*). If the function does not support the provided *fmt*,
+        it should raise an ~~WrongArguments exception.
+        
+        The decorated function should have a doc string documenting
+        the specifics of the unpacking, in partciular including
+        which ``Hilti::Packed`` constants are supported.
+        
+        t: ~~Type - The type for which unpacking is implemented by the
+        decorator function. 
+        
+        Note: Different from most other operators, unpacking comes with its
+        own decorator because it is also used internally, not only via the
+        corresponding HILTI instruction. This decorator allows to use a single
+        implementation for all use-cases. 
+        
+        Also note that all unpacking functions must be able to deal with bytes
+        located at arbitrary and not necessarily aligned positions.
+        
+        Todo: The doc-strings of the decorated functions should be
+        inserted into the documentation automatically.
+        """
+        def _unpack(func):
+            CodeGen._Callbacks[CodeGen._CB_UNPACK] += [(t, func)]
+    
+        return _unpack
     
 codegen = CodeGen()

@@ -360,7 +360,8 @@ class Resolver(visitor.Visitor):
                 label = ident.name() 
                 j = label.find("::")
                 assert j > 0
-                const = constant.Constant(label[j+2:], ident.type())
+                label = label[j+2:]
+                const = constant.Constant(ident.type().labels()[label], ident.type())
                 return (True, instruction.ConstOperand(const))
                 
             op.setID(ident)

@@ -48,10 +48,10 @@ def _(type):
 def _(op, refine_to):
     return _makeLLVMString(op.value())
 
-@codegen.operator(instructions.string.Unpack)
-def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::string_unpack", [i.op1(), i.op2(), i.op3()], [i.op1().type(), i.op1().type(), i.op2().type(), i.op3().type()])
-    self.llvmStoreInTarget(i.target(), result)
+#@codegen.operator(instructions.string.Unpack)
+#def _(self, i):
+#    result = self.llvmGenerateCCallByName("__Hlt::string_unpack", [i.op1(), i.op2(), i.op3()], [i.op1().type(), i.op1().type(), i.op2().type(), i.op3().type()])
+#    self.llvmStoreInTarget(i.target(), result)
 
 @codegen.llvmType(type.String)
 def _(type, refine_to):
