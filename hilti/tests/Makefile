@@ -3,7 +3,7 @@
 # Run HILTI tests. 
 #
 
-DIRS = misc core integer double string tuple channel libhilti c-api bytes ref struct enum threads
+DIRS = misc core integer double string tuple channel libhilti c-api bytes ref struct enum threads addr
 
 all: test
 
