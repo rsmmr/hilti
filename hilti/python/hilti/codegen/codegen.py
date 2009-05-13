@@ -273,7 +273,7 @@ class CodeGen(visitor.Visitor):
         """
         
         canonified = type.name()
-        for c in ["<", ">", ",", "{", "}", " "]:
+        for c in ["<", ">", ",", "{", "}", " ", "*"]:
             canonified = canonified.replace(c, "_")
             
         while canonified.find("__") >= 0:

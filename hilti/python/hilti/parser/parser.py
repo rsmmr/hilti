@@ -270,7 +270,7 @@ def p_operand_ident(p):
 
 def p_operand_integer(p):
     """operand : INTEGER"""
-    const = constant.Constant(p[1], type.Integer(["*"]), location=loc(p, 1))
+    const = constant.Constant(p[1], type.Integer(0), location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
 
 def p_operand_double(p):
@@ -285,7 +285,7 @@ def p_operand_bool(p):
     
 def p_operand_null(p):
     """operand : NULL"""
-    const = constant.Constant(None, type.Reference(["*"]), location=loc(p, 1))
+    const = constant.Constant(None, type.Reference(type.Wildcard), location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
 
 def p_operand_string(p):
@@ -353,26 +353,26 @@ def p_param_list(p):
     
 def p_param_id(p):
     """param_id : param_type IDENT"""
-    p[0] = id.ID(p[2], p[1], id.Role.PARAM, location=loc(p, 1))
+    p[0] = id.ID(p[2], p[1], id.Role.PARAM, location=loc(p, 2))
 
 def p_local_id(p):
     """local_id : type IDENT
                 | ANY IDENT"""
-    p[0] = id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 1))
+    p[0] = id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 2))
 
 def p_struct_id(p): 
     """struct_id : type IDENT
                  | type IDENT ATTR_DEFAULT '=' operand"""
                 
     if len(p) == 3:
-        p[0] = (id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 1)), None)
+        p[0] = (id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 2)), None)
     else:
-        p[0] = (id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 1)), p[5])
+        p[0] = (id.ID(p[2], p[1], id.Role.LOCAL, location=loc(p, 2)), p[5])
     
 def p_global_id(p):
     """global_id : type IDENT
                  | ANY IDENT"""
-    p[0] = id.ID(p[2], p[1], id.Role.GLOBAL, location=loc(p, 1))
+    p[0] = id.ID(p[2], p[1], id.Role.GLOBAL, location=loc(p, 2))
 
 def p_def_opt_default_val(p):
     """opt_default_val : '=' operand
@@ -393,11 +393,6 @@ def p_type_generic(p):
     if not success:
         error(p, result)
         raise ply.yacc.SyntaxError
-
-    # FIXME: This is not a great location for this check ...
-    if isinstance(result, type.Integer) and result.width() == 0:
-        error(p, "integer type requires non-zero width")
-        raise ply.yacc.SyntaxError
     
     p[0] = result
 
@@ -407,7 +402,7 @@ def p_type_tuple(p):
     if p[2] != "*":
         p[0] = type.Tuple(p[2])
     else:
-        p[0] = type.Tuple(["*"])
+        p[0] = type.Tuple(type.Wildcard)
 
 def p_type_ident(p):
     """type : IDENT"""
@@ -471,7 +466,10 @@ def p_type_param(p):
                   | type
                   | '*'
     """
-    p[0] = p[1]
+    if p[1] == "*":
+        p[0] = type.Wildcard
+    else:
+        p[0] = p[1]
     
 def p_type_param_type_name(p):
     """type_param : IDENT

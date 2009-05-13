@@ -86,7 +86,10 @@ def _(self, f):
             if isinstance(i.type(), type.ValueType) and i.type().wildcardType():
                 self.error(i, "local variable cannot have a wildcard type")
                 break
-        
+            
+            if isinstance(i.type(), type.Integer) and i.type().width() == 0:
+                self.error(i, "local variable cannot have zero width")
+                break
     
 @checker.post(function.Function)
 def _(self, f):

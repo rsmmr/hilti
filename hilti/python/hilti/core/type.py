@@ -117,8 +117,11 @@ class Type(object):
             return True
 
         # If we're the same kind of thing, ask the derived class whether we
-        # match. 
+        # match; except for the wildcard types which we handle directly.
         if builtin_type(self) == builtin_type(other):
+            if self.wildcardType() or other.wildcardType():
+                return True
+            
             return self.cmpWithSameType(other)
         
         # Comparision with any other type has failed now.
@@ -142,6 +145,11 @@ class MetaType(Type):
 
     _name = "meta type"
 
+import sys    
+    
+Wildcard = "<wildcard>"    
+"""Global used by the parser for a type parameter to indicate a wildcard."""
+
 class HiltiType(Type):
     """Base class for all HILTI types that can be directly instantiated in a
     HILTI program. That includes use in global and local variables, as well as
@@ -154,8 +162,9 @@ class HiltiType(Type):
     non-parameterized types.  If a derived class detects an error with any of
     the arguments, it must raise a ~~ParameterMismatch exception.
     
-    wildcard: bool - True if the type's parameters contain a wildcard so that
-    it can match multiple other types.
+    wildcard: bool - True if the type allows a wildcard type to be specified
+    as ``name<*>``. Such a wildcard type will always match all other instances
+    of the same type.
     
     name: string - Same as for :meth:`~hilti.core.type.type`. 
     docname: string - Same as for :meth:`~hilti.core.type.type`.
@@ -176,12 +185,32 @@ class HiltiType(Type):
     name passed to the ctor via *name*.
     """
     def __init__(self, args, name, wildcard=False, itertype=None, docname=None):
-        if args:
-            name = "%s<%s>" % (name, ",".join([str(arg) for arg in args]))
-        
         super(HiltiType, self).__init__(name, docname=docname)
+
+        if not isinstance(args, list) and not isinstance(args, tuple):
+            args = [args]
+            
+        self._itertype = itertype
+
+        if len(args) == 1 and args[0] is Wildcard:
+            
+            if not wildcard:
+                raise HiltiType.ParameterMismatch(self._type, "type does not accept wildcards")
+            
+            self._name = "%s<*>" % name
+            self._args = []
+            self._wildcard = True
+            return
+        
+        if args:
+            self._name = "%s<%s>" % (name, ",".join([str(arg) for arg in args]))
+            
+            for a in args:
+                if a is Wildcard:
+                    raise HiltiType.ParameterMismatch(self, "type arguments cannot be a wildcard here")
+        
+        self._wildcard = False
         self._args = args
-        self._wildcard = wildcard
         self._itertype = itertype
 
     _name = "HILTI type"
@@ -190,14 +219,12 @@ class HiltiType(Type):
         """Returns the type's parameters.
         
         args: list of any - The type parameters, or the empty list for
-        non-parameterized types.  
+        non-parameterized types and wildcard types.  
         """
         return self._args
 
     def wildcardType(self):
-        """Returns whether this type can match multiple other types.
-        That is considered to be the case when any of the arguments
-        is ``*``.
+        """Returns whether this type matches any instanced of the same type.
         
         Returns: bool - True if a wildcard type.
         """
@@ -231,8 +258,8 @@ class ValueType(HiltiType):
     
     The arguments are the same as for ~~HiltiType.
     """
-    def __init__(self, args, name, wildcard=False, itertype=None, docname=None):
-        super(ValueType, self).__init__(args, name, wildcard=wildcard, itertype=itertype, docname=docname)
+    def __init__(self, args, name, **kwargs):
+        super(ValueType, self).__init__(args, name, **kwargs)
 
     _name = "storage type"
         
@@ -243,8 +270,8 @@ class HeapType(HiltiType):
     
     The arguments are the same as for ~~HiltiType.
     """
-    def __init__(self, args, name, wildcard=False, itertype=None, docname=None):
-        super(HeapType, self).__init__(args, name, wildcard=wildcard, itertype=itertype, docname=docname)
+    def __init__(self, args, name, **kwargs):
+        super(HeapType, self).__init__(args, name, **kwargs)
 
     _name = "heap type"
     
@@ -254,8 +281,8 @@ class OperandType(Type):
     
     The arguments are the same as for ~~Type.
     """
-    def __init__(self, name, docname=None):
-        super(OperandType, self).__init__(name, docname=docname)
+    def __init__(self, name, **kwargs):
+        super(OperandType, self).__init__(name, **kwargs)
         
     _name = "operand type"
     
@@ -319,36 +346,27 @@ class String(ValueType):
 class Integer(ValueType):
     """Type for integers.  
     
-    args: int, or a list containing a single int or a "*" - The
-    integer specifies the bit-width of integers represented by this
-    type. The width can be "*" to match any other integer type
-    independent of its widget. Note however that the HILTI language
-    does not allow to create instances of integers with no specified
-    width.
-    """
+    args: int, or a list containing a single int. - The integer specifies the
+    bit-width of integers represented by this type."""
     def __init__(self, args):
+        super(Integer, self).__init__(args, Integer._name, wildcard=True)
+
+        if self.wildcardType():
+            self._width = 0
+            return 
         
         if type(args) == types.IntType or type(args) == types.StringType:
             args = [args]
 
         assert len(args) == 1
         
-        if args[0] == "*":
-            self._width = 0
-            wildcard = True
-            args = [0]
-        else:
-            try:
-                self._width = int(args[0])
-            except ValueError:
-                raise HiltiType.ParameterMismatch(args[0], "cannot convert to integer")
-            
-            if self._width <= 0 or self._width > 64:
-                raise HiltiType.ParameterMismatch(args[0], "integer width must be between 1 and 64 bits")
-            
-            wildcard = False
-            
-        super(Integer, self).__init__(args, Integer._name, wildcard=wildcard)
+        try:
+            self._width = int(args[0])
+        except ValueError:
+            raise HiltiType.ParameterMismatch(args[0], "cannot convert to integer")
+        
+        if self._width < 0 or self._width > 64:
+            raise HiltiType.ParameterMismatch(args[0], "integer width must be between 1 and 64 bits")
 
     def width(self):
         """Returns the bit-width of the type's integers.
@@ -422,38 +440,28 @@ class Bool(ValueType):
 class Tuple(ValueType):
     """A type for tuples of values. 
     
-    types: list of ~~Type, or a list ["*"] - The types of the
-    individual tuple elements. A list of just "*" is treated as
-    wildcard type matching any other tuple. Note however that the
-    HILTI language does not allow to create instances of such
-    wildcard tuples.
-    """
-    def __init__(self, types):
-        if "*" in types:
-            if len(types) != 1:
-                raise HiltiType.ParameterMismatch(args[1], "cannot mix types with '*'")
-            
+    types: list of ~~Type - The types of the individual tuple elements."""
+    def __init__(self, args):
+        super(Tuple, self).__init__(args, Tuple._name, wildcard=True)
+
+        if self.wildcardType():
             self._types = []
             self._any = True
-            
-        else:
-            self._types = types
-            self._any = False
-
-        super(Tuple, self).__init__(self._types, Tuple._name, wildcard=self._any)
+            return
+        
+        assert types
+        
+        self._types = args
+        self._any = False
             
     def types(self):
         """Returns the types of the typle elements.
         
-        Returns: list of ~~ValueType - The types. The list will be empty for
-        ``tuple<*>``.
+        Returns: list of ~~ValueType - The types.
         """
         return self._types
         
     def cmpWithSameType(self, other):
-        if self._any or other._any:
-            return True
-        
         return self.types() == other.types()
         
     _name = "tuple"
@@ -462,26 +470,21 @@ class Tuple(ValueType):
 class Reference(ValueType):
     """Type for reference to heap objects.  
 
-    args: list of single ~~HeapType - The type of the object referenced. The type can 
-    be "*" to match other references to any type. Note however that the HILTI language
-    does not allow to create instances of such wildcard references. 
+    args: list of single ~~HeapType - The type of the object referenced.
     """
     def __init__(self, args):
-        t = args[0]
-
-        if t == "*":
+        super(Reference, self).__init__(args, Reference._name, wildcard=True)
+        
+        if self.wildcardType():
             self._type = Integer(8) # We use this as dummy type for the Null reference.
-            args = ["int<8>"]
-            wildcard = True
-            
-        else:
-            if not isinstance(t, HeapType):
-                raise HiltiType.ParameterMismatch(t, "reference type must be a heap type")
+            return
 
-            self._type = t
-            wildcard = False
-            
-        super(Reference, self).__init__(args, Reference._name, wildcard=wildcard)
+        assert len(args) == 1
+        
+        if not isinstance(args[0], HeapType):
+            raise HiltiType.ParameterMismatch(t, "reference type must be a heap type")
+        
+        self._type = args[0]
 
     def refType(self):
         """Returns the type referenced.
@@ -492,9 +495,6 @@ class Reference(ValueType):
         return self._type
         
     def cmpWithSameType(self, other):
-        if self.wildcardType() or other.wildcardType():
-            return True
-        
         return self._type == other._type
     
     _name = "ref"
@@ -572,46 +572,38 @@ class Channel(HeapType):
     """Type for channels. 
 
     args: list of ~~ValueType - The first argument is the type of the channel
-    items. The type can be "*" to match other channels of any type. The second
-    argument represents the channel capacity, i.e., the maximum number of items
-    per channel. If the capacity equals to 0, it is assumed that the channel is
-    unbounded.
+    items. The second argument represents the channel capacity, i.e., the
+    maximum number of items per channel. If the capacity equals to 0, it is
+    assumed that the channel is unbounded.
     """
     def __init__(self, args):
+        super(Channel, self).__init__(args, Channel._name, wildcard=True)
+
+        if self.wildcardType():
+            self._type = None
+            self._capacity = 0
+            return
+        
         assert len(args) == 2
 
         t = args[0]
-        wildcard = False
 
-        if t == "*":
-            self._type = None
-            wildcard = True
+        if not isinstance(t, ValueType):
+            raise HiltiType.ParameterMismatch(t, "channel type must be a value type")
+        
+        self._type = t
+
+        if args[1] == "_":
+            self._capacity = 0 
         else:
-            if not isinstance(t, ValueType):
-                raise HiltiType.ParameterMismatch(t, "channel type must be a value type")
-
-            self._type = t
-
-        c = args[1]
-
-        if c == "*":
-            self._capacity = None
-            wildcard = True
-        else:
-            if args[1] == "_":
-                self._capacity = 0 
-            else:
-                try:
-                    self._capacity = int(c)
-                except ValueError:
-                    raise HiltiType.ParameterMismatch(args[0], "cannot convert to integer")
-
-                if self._capacity < 0:
-                    raise HiltiType.ParameterMismatch(c, "channel capacity cannot be negative")
-
-        super(Channel, self).__init__(args, Channel._name, wildcard=wildcard)
-
-
+            try:
+                self._capacity = int(args[1])
+            except ValueError:
+                raise HiltiType.ParameterMismatch(args[1], "cannot convert to integer")
+            
+            if self._capacity < 0:
+                raise HiltiType.ParameterMismatch(args[1], "channel capacity cannot be negative")
+            
     def itemType(self):
         """Returns the type of the channel items.
         
@@ -805,7 +797,7 @@ def getHiltiType(name, args = []):
     
     wrong_args = False
     
-    if args and num_args >= 0 and len(args) != num_args:
+    if args and num_args >= 0 and len(args) != num_args and not (args == Wildcard or args == [Wildcard]):
         wrong_args = True
     
     if num_args == -1 and not args:
