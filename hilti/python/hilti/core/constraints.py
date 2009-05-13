@@ -276,6 +276,7 @@ reference = _hasType(type.Reference)
 struct = _hasType(type.Struct)
 tuple = _hasType(type.Tuple)
 addr =  _hasType(type.Addr)
+port =  _hasType(type.Port)
 
 function = _hasType(type.Function)
 label = _hasType(type.Label)

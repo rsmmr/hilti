@@ -507,6 +507,14 @@ class Addr(ValueType):
         
     _name = "addr"
     _id = 12
+
+class Port(ValueType):
+    """Type for TCP and UDP ports."""
+    def __init__(self):
+        super(Port, self).__init__([], Port._name)
+        
+    _name = "port"
+    _id = 13
     
 class Struct(HeapType):
     """Type for structs. 
@@ -772,6 +780,7 @@ _keywords = {
     "bytes": (Bytes, 0, None),
     "iterator": (Iterator, 1, None),
     "addr": (Addr, 0, None),
+    "port": (Port, 0, None),
     }
 
 _all_hilti_types = {}

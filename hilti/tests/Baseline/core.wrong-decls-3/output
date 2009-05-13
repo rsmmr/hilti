@@ -1,3 +1,3 @@
-wrong-decls.hlt: error, local variable cannot have a wildcard type
+wrong-decls.hlt:5: error, local variable cannot have a wildcard type
 
 1 error found

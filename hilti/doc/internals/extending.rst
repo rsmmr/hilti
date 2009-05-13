@@ -169,7 +169,13 @@ data types where appropiate.
    create a sub-module in ``hili/checker`` and add them there. Add
    the new module to ``hilti/checker/__init__.py``.
 
-7. ctor rexpressions, parser
+7. If you want to support HILTI constants, or other more generally
+   constructors, for your new type, you need to extend the
+   :mod:`~hilti.parser`:
+
+   - Add syntax for your constants/ctors to :file:`parser/lexer.py`.
+
+   - Add an ``p_operand_<type>`` rule in :file:`parser/parser.py`
 
 8. Create a new sub-module in ``hilti/codegen``, implementing the
    code-generation for your new instructions and operators. Add the
@@ -193,7 +199,7 @@ data types where appropiate.
      
    - If your type is a ~~ValueType, you must define a function that
      returns an LLVM value suitable for initializing instances with
-     a default value. (Obviouslu, this value should obviously with
+     a default value. (Obviously, this value should obviously with
      what you specificy in ``_doc_type_description``, see above).
      The function must be decorated with ~~llvmDefaultValue.
      
@@ -236,16 +242,6 @@ XXX TODO: make a pass over the rest here
   * Add your new type to the ``COBJS`` variable in :file:`libhilti/Makefile`.
 
 - Create a suite of tests for the new type in :file:`tests/my_type/`.
-
-Constants
-~~~~~~~~~
-
-If you want to support constants for your new type in HILTI, you need to extend
-the :mod:`~hilti.parser`:
-
-- Add syntax for your constants to :file:`parser/lexer.py`.
-
-- Add an ``p_operand_<type>`` rule in :file:`parser/parser.py`
 
 
 Adding a ValueType

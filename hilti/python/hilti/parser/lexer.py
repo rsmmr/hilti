@@ -59,6 +59,7 @@ tokens = (
    'NULL', 
    'ENUM',
    'ADDR',
+   'PORT',
    
    'ATTR_DEFAULT'
 ) 
@@ -93,6 +94,10 @@ def t_ADDR6(t): # must come before DOUBLE.
     t.type = "ADDR"
     
     t.value = (addr[0], addr[1])
+    return t
+
+def t_PORT(t):
+    r'\d+/(tcp|udp)'
     return t
 
 def t_DOUBLE(t):

@@ -314,6 +314,11 @@ def p_operand_addr(p):
     """operand : ADDR"""
     const = constant.Constant(p[1], type.Addr(), location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
+
+def p_operand_port(p):
+    """operand : PORT"""
+    const = constant.Constant(p[1], type.Port(), location=loc(p, 1))
+    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
     
 def p_operand_type(p):
     """operand : type"""
