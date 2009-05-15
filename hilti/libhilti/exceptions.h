@@ -36,6 +36,9 @@ extern __hlt_exception __hlt_exception_worker_thread_threw_exception;
 // A system or libc function returned an unexpected error.
 extern __hlt_exception __hlt_exception_os_error;
 
+// An overlay instruction has been used on a not yet attached overlay.
+extern __hlt_exception __hlt_overlay_not_attached;
+
 // Fall-back exception if nothing else is specified.
 extern __hlt_exception __hlt_exception_unspecified;
 

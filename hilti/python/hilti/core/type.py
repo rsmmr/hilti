@@ -515,6 +515,139 @@ class Port(ValueType):
         
     _name = "port"
     _id = 13
+
+class Overlay(ValueType):
+    """Type for Overlays."""
+    
+    class Field:
+        def __init__(self, name, start, type, fmt, arg = None):
+            """
+            Defines one field of the overlay.
+            
+            name: string - The name of the field.
+            
+            start: integer or string - If an integer, the field is assumed to
+            be the offset in bytes from the start of the overlay where the
+            field's data starts. If it's a string, the string must be the name
+            of an another field and the added field is then assumed to start
+            right after that one. 
+            
+            type: ~~Type - The type of the field. 
+            
+            fmt: integer or ~~ID - If an integer, the value must correspond to
+            the internal enum value of ``Hilti::Packed`` label defining the
+            format used for unpacked the field. If an ID, then the ID's name
+            must be ``Hilti::Packed`` label. The ~~Resolver will turn such IDs
+            into the corresponding integer. 
+            
+            Note: Instances of this class will have attributes named after the
+            ctor's arguments, which can be directly accessed.
+            """
+            self.name = name
+            self.start = start
+            self.type = type
+            self.fmt = fmt
+            self.arg = arg
+            
+            self._deps = []
+            self._offset = -1
+            self._idx = -1
+            
+        def offset(self):
+            """Returns the constant offset for the field. 
+        
+            Returns: integer - The offset in bytes from the start of the overlay.
+            If the name defines a field with a non-constant offset, -1 returned.
+            """
+            return self._offset
+        
+        def dependants(self):
+            """Returns all other fields the field depends on for its
+            starting position.
+    
+            Returns: list of string - The names of other fields which are
+            required to calculate the starting offset for this field. The
+            list will be sorted in the order the fields were added to the
+            overlay by ~~addField. If the named field starts at a constant
+            offset and does not depend on any other fields, an empty list
+            is returned.
+            """
+            return self._deps
+        
+        def depIndex(self):
+            """Returns an index unique across all fields that are directly
+            determining the starting position of another field with a
+            non-constant offset.  All of these fields are sequentially
+            numbered, starting with one.
+            
+            Returns: integer - The index of this field, or -1 if the field
+            does not determine another's offset directly. 
+            """
+            return self._idx
+        
+    def __init__(self):
+        super(Overlay, self).__init__([], Overlay._name)
+        
+        self._fields = {}
+        self._deps = {}
+        self._idxcnt = 0
+        
+    def addField(self, field):
+        """Adds a field to an overlay. If the *field*'s *start* attribute
+        specifies another field's name, that one must already have been added
+        earlier.
+        
+        field: ~~Field - The field to be added.         
+        """
+
+        if field.name in self._fields:
+            raise HiltiType.ParameterMismatch(args[0], "field %s already defined" % field.name)
+        
+        if isinstance(field.start, str):
+            # Field depends on another one. 
+            if not field.start in self._fields:
+                raise HiltiType.ParameterMismatch(args[0], "field %s not yet defined" % field.start)
+
+            field._deps = self._fields[field.start]._deps + [field.start]
+            
+            start = self._fields[field.start]
+            if start._idx == -1:
+                self._idxcnt += 1
+                start._idx = self._idxcnt
+            
+        else:
+            # Field has a constant offset.
+            field._offset = field.start
+        
+        self._fields[field.name] = field 
+
+    def fields(self):
+        """Returns a list of all defined fields.
+        
+        Returns: list of ~~Field - The fields.
+        """
+        return self._fields.values()
+        
+    def field(self, name):
+        """Returns the named field.
+        
+        name: string - Name of the field requested.
+        
+        Returns: ~~Field - The field, or None if there's no such field.
+        """
+        return self._fields.get(name, None)
+
+    def numDependencies(self):
+        """Returns the number of fields that other fields directly depend on
+        for their starting position. This number is guaranteed to be not
+        higher than the largest ~depIndex in this overlay.
+        
+        Returns: integer - The number of fields. 
+        """
+        return self._idxcnt
+        
+    _name = "overlay"
+    _id = 14
     
 class Struct(HeapType):
     """Type for structs. 
@@ -556,26 +689,6 @@ class IteratorBytes(Iterator):
 
     _id = 100
 
-class StructDecl(TypeDeclType):
-    """Type for struct declarations. 
-    
-    structt: ~~Struct - The struct type declared.
-    """
-    def __init__(self, structt):
-        super(StructDecl, self).__init__(structt, "%s" % structt.name())
-
-    _name = "struct declaration"
-    
-class EnumDecl(TypeDeclType):
-    """Type for enum declarations. 
-    
-    enumt: ~~Enum - The enum type declared.
-    """
-    def __init__(self, enumt):
-        super(EnumDecl, self).__init__(enumt, "%s" % enumt.name())
-
-    _name = "enum declaration"
-    
 class Channel(HeapType):
     """Type for channels. 
 

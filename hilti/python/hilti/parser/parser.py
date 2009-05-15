@@ -102,32 +102,62 @@ def p_def_local(p):
     
 def p_def_type(p):
     """def_type : def_struct_decl
-                | def_enum_decl"""
+                | def_enum_decl
+                | def_overlay_decl
+                """
     pass
+
+def _addTypeDecl(p, name, t, location):
+    decl = type.TypeDeclType(t)
+    i = id.ID(name, decl, id.Role.GLOBAL, location=location)
+    p.parser.current.module.addID(i)
+    type.registerHiltiType(t)
     
 def p_def_struct(p):
     """def_struct_decl : STRUCT _begin_nolines IDENT '{' struct_id_list '}' _end_nolines"""
-    stype = type.Struct(p[5])
-    struct = type.StructDecl(stype)
-    sid = id.ID(p[3], struct, id.Role.GLOBAL, location=loc(p, 1))
-    p.parser.current.module.addID(sid)
-    type.registerHiltiType(stype)
+    _addTypeDecl(p, p[3], type.Struct(p[5]), location=loc(p, 1))
     
 def p_def_enum(p):
     """def_enum_decl : ENUM _begin_nolines IDENT '{' id_list '}' _end_nolines"""
-    etype = type.Enum(p[5])
-    enum = type.EnumDecl(etype)
-    
-    # Register the type.
-    eid = id.ID(p[3], enum, id.Role.GLOBAL, location=loc(p, 1))
-    p.parser.current.module.addID(eid)
-    type.registerHiltiType(etype)
+    t = type.Enum(p[5])
+    _addTypeDecl(p, p[3], t, location=loc(p, 1))
         
     # Register the individual labels.
-    for (label, value) in etype.labels().items():
-        eid = id.ID(p[3] + "::" + label, etype, id.Role.CONST, location=loc(p, 1))
+    for (label, value) in t.labels().items():
+        eid = id.ID(p[3] + "::" + label, t, id.Role.CONST, location=loc(p, 1))
         p.parser.current.module.addID(eid, value)
 
+def p_def_overlay(p):
+    """def_overlay_decl : OVERLAY _begin_nolines IDENT '{' overlay_field_list '}' _end_nolines"""
+    t = type.Overlay()
+    for f in p[5]:
+        t.addField(f)
+        
+    _addTypeDecl(p, p[3], t, location=loc(p, 1))
+
+def p_def_overlay_field_list(p):    
+    """overlay_field_list : overlay_field ',' overlay_field_list
+                          | overlay_field"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
+
+def p_def_overlay_field(p):    
+    """overlay_field : IDENT ':' type AT INTEGER INSTRUCTION WITH IDENT operand
+                     | IDENT ':' type AFTER IDENT INSTRUCTION WITH IDENT operand
+    """
+    name = p[1]
+    t = p[3]
+    start = p[5]
+    fmt = p[8]
+    arg = p[9]
+        
+    if p[6] != 'unpack':
+        raise ply.yacc.SyntaxError
+
+    p[0] = type.Overlay.Field(name, start, t, fmt, arg)
+    
 def p_def_import(p):
     """def_import : IMPORT IDENT"""
     if not _importFile(p[2], loc(p, 1)):

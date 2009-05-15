@@ -44,6 +44,7 @@
 #define __HLT_TYPE_ENUM_LABEL 11
 #define __HLT_TYPE_ADDR     12
 #define __HLT_TYPE_PORT     13
+#define __HLT_TYPE_OVERLAY  14
 
 #define __HLT_TYPE_ITERATOR_BYTES 100
    // %doc-__HLT_TYPE-end

@@ -173,6 +173,14 @@ extern int8_t __hlt_bytes_pos_deref(__hlt_bytes_pos pos, __hlt_exception* excpt)
 // pos: The position to increase.
 extern __hlt_bytes_pos __hlt_bytes_pos_incr(__hlt_bytes_pos pos, __hlt_exception* excpt);
 
+// Increases a position by a given number of positions. If this exceeds the
+// number of available bytes, the return position will return True if
+// compared with ~~__hlt_bytes_pos_end() via ~~__hlt_bytes_pos_eq().
+// 
+// pos: The position to increase.
+// n: The number of bytes to skip.
+extern __hlt_bytes_pos __hlt_bytes_pos_incr_by(__hlt_bytes_pos pos, int32_t n, __hlt_exception* excpt);
+
 // Compares two positions whether they refer to the same offset within a Bytes object. 
 // 
 // Returns: True if the position refer to the same location. Returns false in

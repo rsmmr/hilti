@@ -39,9 +39,18 @@ def _(type, refine_to):
 def _(type, refine_to):
     return _llvmIteratorType(codegen)
 
+def llvmEnd():
+    """Returns an ``llvm.core.Value`` that marks the end of a (any) bytes
+    object.
+    
+    Note: The value returned must correspond to what ``bytes.c`` expects as
+    the end-of-bytes marker, obviously."""
+    
+    return llvm.core.Constant.struct([llvm.core.Constant.null(codegen.llvmTypeGenericPointer())] * 2)
+
 @codegen.llvmDefaultValue(type.IteratorBytes)
 def _(type):
-    return llvm.core.Constant.struct([llvm.core.Constant.null(codegen.llvmTypeGenericPointer())] * 2)
+    return llvmEnd()
 
 @codegen.llvmCtorExpr(type.Bytes)
 def _(op, refine_to):

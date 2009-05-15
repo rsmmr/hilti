@@ -411,6 +411,36 @@ __hlt_bytes_pos __hlt_bytes_pos_incr(__hlt_bytes_pos old, __hlt_exception* excpt
     return pos;
 }
 
+__hlt_bytes_pos __hlt_bytes_pos_incr_by(__hlt_bytes_pos old, int32_t n, __hlt_exception* excpt)
+{
+    if ( is_end(old) )
+        // Fail silently. 
+        return old;
+
+    __hlt_bytes_pos pos = old;
+
+    while ( 1 ) {
+        // Can we stay inside the same chunk?
+        if ( pos.cur + n < pos.chunk->end ) {
+            pos.cur += n;
+            return pos;
+        }
+        
+        // Need to switch chunk.
+        n -= pos.chunk->end - pos.cur;
+        pos.chunk = pos.chunk->next;
+        pos.cur = pos.chunk->start;
+        
+        if ( ! pos.chunk ) {
+            // End reached.
+            return PosEnd;
+        }
+    }
+    
+    return pos;
+}
+
+
 #if 0
 // This is a bit tricky because pos_end() doesn't return anything suitable
 // for iteration.  Let's leave this out for now until we know whether we

@@ -6,6 +6,7 @@ import sys
 
 import llvm
 import llvm.core 
+
 import typeinfo
 import system
 import inspect
@@ -1060,26 +1061,32 @@ class CodeGen(visitor.Visitor):
         # We leave this builder for subseqent code.
         self.pushBuilder(block_noexcpt)
     
-    def llvmGenerateCCall(self, func, args, arg_types):
+    def llvmGenerateCCall(self, func, args, arg_types, llvm_args=False):
         """Generates a call to a C function. The method uses the current
         :meth:`builder`.
         
         func: ~~Function - The function, which must have ~~Linkage ~~C or
         ~~C_HILTI. 
         
-        args: list of ~~Operand - The arguments to pass to the function.
+        args: list of ~~Operand, or list of llvm.core.Value - The arguments to
+        pass to the function. If they are already converted to LLVM, then
+        *llvm_args* must be True.
         
         arg_types: list ~~Type - The types of the actual arguments.
         While these will often be the same as specified in the
         function's signature, they can differ in some cases, e.g.,
         if the function accepts an argument of type ~~Any.
         
+        llvm_args: boolean - If true, *args* are expected to be of type
+        ``llvm.core.Value``.
+        
         Returns: llvm.core.Value - A value representing the function's return
         value. 
         """
         llvm_func = self.llvmGetCFunction(func)
 
-        args = [self.llvmOp(op) for op in args]
+        if not llvm_args:
+            args = [self.llvmOp(op) for op in args]
         
         if func.callingConvention() == function.CallingConvention.C_HILTI:
             args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types)
@@ -1121,7 +1128,7 @@ class CodeGen(visitor.Visitor):
             
         return result
 
-    def llvmGenerateCCallByName(self, name, args, arg_types):
+    def llvmGenerateCCallByName(self, name, args, arg_types, llvm_args=False):
         """Generates a call to a C function given by it's name. The method
         uses the current :meth:`builder`.
         
@@ -1131,12 +1138,17 @@ class CodeGen(visitor.Visitor):
         declared inside the current module already; the method will report an
         internal error if it hasn't.
         
-        args: list of ~~Operand - The arguments to pass to the function.
+        args: list of ~~Operand, or list of llvm.core.Value - The arguments to
+        pass to the function. If they are already converted to LLVM, then
+        *llvm_args* must be True.
         
         arg_types: list ~~Type - The types of the actual arguments.
         While these will often be the same as specified in the
         function's signature, they can differ in some cases, e.g.,
         if the function accepts an argument of type ~~Any.
+
+        llvm_args: boolean - If true, *args* are expected to be of type
+        ``llvm.core.Value``.
         
         Returns: llvm.core.Value - A value representing the function's return
         value. 
@@ -1148,7 +1160,7 @@ class CodeGen(visitor.Visitor):
         if not func or not isinstance(func, function.Function):
             util.internal_error("llvmGenerateCCallByName: %s is not a known function" % name)
             
-        return self.llvmGenerateCCall(func, args, arg_types)
+        return self.llvmGenerateCCall(func, args, arg_types, llvm_args)
         
     def llvmGenerateCStub(self, func):
         """Generates a C stub for a function. The stub function will be an
@@ -1626,7 +1638,8 @@ class CodeGen(visitor.Visitor):
         byte.
         
         end: llvm.core.value - The byte iterator marking the position one
-        beyond the last consumable input byte.
+        beyond the last consumable input byte. *end* may be None to indicate
+        unpacking until the end of the bytes object is encounted.
         
         fmt: ~~Operand - Specifies the binary format of the input bytes. It
         can be either an ~~Operand of ~~EnumType ``Hilti::Packed``, a string
@@ -1665,6 +1678,10 @@ class CodeGen(visitor.Visitor):
             
         if val >= 0:
             fmt = instruction.ConstOperand(constant.Constant(val, packed_t))
+
+        if not end:
+            import bytes
+            end = bytes.llvmEnd()
             
         assert isinstance(fmt, instruction.Operand) and fmt.type() is packed_t
         return self._callCallback(CodeGen._CB_UNPACK, t, [t, begin, end, fmt])
@@ -1771,6 +1788,37 @@ class CodeGen(visitor.Visitor):
         
         ptr = self.builder().gep(addr, [self.llvmGEPIdx(0), idx])
         return self.builder().load(ptr)
+    
+    def llvmInsertValue(self, obj, idx, val):
+        """Inserts a value at a specific index in an LLVM struct or array.
+        This function works-around the fact that llvm-py at the moment does
+        not support LLVM's ``insertvalue``. Once it does, we should change
+        the implementation accordingly.
+        
+        obj llvm.core.Value - An LLVM value of type ``llvm.core.Type.struct``
+        or ``llvm.core.Type.array`` (not a pointer; use GEP for pointers).
+        
+        idx: integer or llvm.core.Value - The zero-based index to extract,
+        either as a constant integer, or as LLVM value of integer type.
+        
+        val: llvm.core.Value - The new value for the field.
+        
+        Returns: llvm.core.Value - A value of the same type as *obj* with the
+        specified field replaced. 
+        
+        Todo: The current implementation is awful. Really need the
+        ``insertvalue`` instruction.
+        """
+        
+        addr = codegen.builder().alloca(obj.type)
+        codegen.builder().store(obj, addr)
+        
+        if isinstance(idx, int):
+            idx = codegen.llvmGEPIdx(idx)
+        
+        ptr = self.builder().gep(addr, [self.llvmGEPIdx(0), idx])
+        self.builder().store(val, ptr)
+        return self.builder().load(addr)
 
     def llvmSwitch(self, op, cases):
         """Helper to build an LLVM switch statement for integer and enum

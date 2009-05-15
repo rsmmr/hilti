@@ -38,6 +38,10 @@ class Resolver(visitor.Visitor):
       These rules are recursively applied to integers in tuples, as
       appropiate.  If none of them applies, integer constants are
       set to type ``int64``.
+
+    - Resolves the *fmt* attribute of ~~Overlay fields (which is initially a
+      string) to the numerical value corresponding to the ``Hilti::Packed``
+      value. 
       
     Note: Methods in this class need to be careful with their input as it will
     not have been validated by the ~~checker when they are called; that's
@@ -397,6 +401,24 @@ class Resolver(visitor.Visitor):
         util.debug("    %s" % types)
         util.debug("")
         
+    def resolveOverlayFields(self, t, ident):
+        for f in t.fields():
+            if isinstance(f.fmt, str):
+                label = f.fmt
+                v = self._module.lookupID(label)
+        
+                if not v or not isinstance(v.type(), type.Enum):
+                    self.error("%s is not a valid enum label" % label, ident)
+                    continue
+        
+                hp = self._module.lookupID("Hilti::Packed")
+                    
+                if not hp or not v.type() is hp.type().declType():
+                    self.error("%s is not a label of type Hilti::Packed" % label, t)
+                    continue
+                    
+                f.fmt = self._module.lookupIDVal(label)
+        
 resolver = Resolver()
 
 ##################################################################################
@@ -417,6 +439,12 @@ def _(self, f):
 def _(self, f):
     self._function = None
 
+@resolver.when(id.ID, type.TypeDeclType)
+def _(self, id):
+    t = id.type().declType()
+    if isinstance(t, type.Overlay):
+        self.resolveOverlayFields(t, id)
+    
 @resolver.when(instruction.Instruction)
 def _(self, i):
     

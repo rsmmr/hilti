@@ -277,6 +277,7 @@ struct = _hasType(type.Struct)
 tuple = _hasType(type.Tuple)
 addr =  _hasType(type.Addr)
 port =  _hasType(type.Port)
+overlay =  _hasType(type.Overlay)
 
 function = _hasType(type.Function)
 label = _hasType(type.Label)

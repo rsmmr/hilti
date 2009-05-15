@@ -15,6 +15,7 @@ __all__ = [
     "enum", 
     "addr",
     "port",
+    "overlay",
     ]
 
 import flow
@@ -33,3 +34,4 @@ import channel
 import enum
 import addr
 import port
+import overlay

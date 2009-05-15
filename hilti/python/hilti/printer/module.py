@@ -18,7 +18,7 @@ def _(self, f):
     # Function visitor below.
     pass
     
-@printer.when(id.ID, type.StructDecl)
+@printer.when(id.ID, type.TypeDeclType)
 def _(self, id):
     assert not self._function
 

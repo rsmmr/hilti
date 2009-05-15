@@ -61,6 +61,7 @@ declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> end)
 
 declare "C-HILTI" int8 bytes_pos_deref(iterator<bytes> pos)
 declare "C-HILTI" iterator<bytes> bytes_pos_incr(iterator<bytes> pos)
+declare "C-HILTI" iterator<bytes> bytes_pos_incr_by(iterator<bytes> pos, int<32> n)
 declare "C-HILTI" bool bytes_pos_eq(iterator<bytes> pos1, iterator<bytes> pos2)
 declare "C-HILTI" int32 bytes_pos_diff(iterator<bytes> pos1, iterator<bytes> pos2)
 

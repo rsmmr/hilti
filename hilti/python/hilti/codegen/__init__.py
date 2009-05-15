@@ -26,6 +26,7 @@ import operators
 import enum
 import addr
 import port
+import overlay
 
 def generateLLVM(ast, libpaths, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as

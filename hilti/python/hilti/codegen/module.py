@@ -19,14 +19,6 @@ def _(self, m):
     
 ### Global ID definitions. 
 
-@codegen.when(id.ID, type.StructDecl)
-def _(self, id):
-    type = id.type().declType()
-    fields = [self.llvmTypeConvert(i.type()) for (i, o) in type.Fields()]
-    struct = llvm.core.Type.struct(fields)
-
-    self.llvmCurrentModule().add_type_name(id.name(), struct)
-
 @codegen.when(id.ID, type.ValueType)
 def _(self, i):
     if self.currentFunction():

@@ -47,12 +47,12 @@ def _(self, m):
     
 ### Global ID definitions. 
 
-@checker.when(id.ID, type.StructDecl)
+@checker.when(id.ID, type.TypeDeclType)
 def _(self, id):
     self._have_others = True
     
     if self.currentFunction():
-        self.error(id, "structs cannot be declared inside functions")
+        self.error(id, "types cannot be declared inside functions")
         
 @checker.when(id.ID, type.ValueType)
 def _(self, id):

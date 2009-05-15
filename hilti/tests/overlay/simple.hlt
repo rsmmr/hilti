@@ -1,0 +1,46 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+overlay MyOverlay {
+    f1: int<32> at 0 unpack with Hilti::Packed::Int32Big,
+    f2: int<32> at 4 unpack with Hilti::Packed::Int32Big,
+    f3: int<32> after f2 unpack with Hilti::Packed::Int32Big,
+    f4: int<32> after f3 unpack with Hilti::Packed::Int32Big
+    }
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> i
+    local MyOverlay o
+    local int<32> i32
+    local string s
+
+    b = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+    
+    i = bytes.begin b
+    overlay.attach o i
+
+    i32 = overlay.get o "f1"
+    s = call Hilti::fmt("%x", (i32))
+    call Hilti::print(s)
+    
+    i32 = overlay.get o "f2"
+    s = call Hilti::fmt("%x", (i32))
+    call Hilti::print(s)
+    
+    i32 = overlay.get o "f3"
+    s = call Hilti::fmt("%x", (i32))
+    call Hilti::print(s)
+
+    i32 = overlay.get o "f4"
+    s = call Hilti::fmt("%x", (i32))
+    call Hilti::print(s)
+    
+    }
