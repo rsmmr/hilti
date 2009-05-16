@@ -10,6 +10,8 @@ from codegen import codegen
 
 import system
 
+import sys
+
 _doc_c_conversion = """
 An ``int<n>`` is mapped to C integers depending on its width *n*, per the
 following table: 
@@ -214,6 +216,13 @@ def _(t, begin, end, fmt, arg):
     unpacked value: for ``Packed::Uint8`` is must be ``int16`, for
     ``Packed::UInt8`` is must be ``int32`, etc. This is because we don't have
     *unsigned* integers in HILTI.
+
+    Optionally, an additional arguments may be given, which then must be a
+    ``tuple<int<8>,int<8>``. If given, the tuple specifies a bit range too
+    extract from the unpacked value. For example, ``(6,9)`` extracts the
+    bits 6-9. The extraced bits are shifted to the right so that they align at
+    bit 0 and the result is returned (with the same width as it would have had
+    without extracting any subset of bits).
     """
     
     val = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
@@ -254,7 +263,42 @@ def _(t, begin, end, fmt, arg):
                 
             # It's fine to check for an exception at the end rather than after each call.
             codegen._llvmGenerateExceptionTest(exception)
-            
+
+            if arg:
+                builder = codegen.builder()
+                
+                # Extract bits. Fortunately, LLVM has an intrinsic for that. 
+                low = codegen.llvmExtractValue(arg, 0)
+                high = codegen.llvmExtractValue(arg, 1)
+                
+                def normalize(i):
+                    # FIXME: Ideally, these int should come in here in a
+                    # well-defined width. Currently, they don't ...
+                    if i.type.width < width:
+                        i = codegen.builder().zext(low, llvm.core.Type.int(width))
+                    if i.type.width > width:
+                        i = codegen.builder().trunc(high, llvm.core.Type.int(width))
+                    return i
+
+                low = normalize(low)    
+                high = normalize(high)    
+                
+                # Well, it has not:
+                #
+                # Assertion failed: (0 && "part_select intrinsic not
+                # implemented"), function visitIntrinsicCall, file
+                # SelectionDAGBuild.cpp, line 3787.
+                #
+                # result = codegen.llvmCallIntrinsic(llvm.core.INTR_PART_SELECT, [result.type], [result, low, high])
+                #
+                # FIXME: So we build it ourselves until LLVM provides it.
+                result = builder.lshr(result, low)
+                bits = builder.sub(codegen.llvmConstInt(width, width), high)
+                bits = builder.add(bits, low)
+                bits = builder.sub(bits, codegen.llvmConstInt(1, width))
+                mask = builder.lshr(codegen.llvmConstInt(-1, width), bits)
+                result = builder.and_(result, mask)
+                
             codegen.llvmInit(result, val)
         
         return _unpackOne

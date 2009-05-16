@@ -694,7 +694,8 @@ class CodeGen(visitor.Visitor):
         if b.instructions:
             # FIXME: This crashes when the block is empty. Is there a more
             # efficeint way to detection whether it's empty than getting all
-            # instruction? Or better, can we fix llvm-py?
+            # instruction? Or better, can we fix llvm-py? Update: this is fixed
+            # in llvm-py SVN. Change this once we update.
             builder.position_at_beginning(b)
             
         return self.builder().alloca(type)
@@ -1922,7 +1923,25 @@ class CodeGen(visitor.Visitor):
                     switch.add_case(llvm.core.Constant.int(llvmop.type, val), block)
         
             self.pushBuilder(cont) # Leave on stack.
-    
+
+    def llvmCallIntrinsic(self, intr, types, args):
+        """Calls an LLVM intrinsic. 
+        
+        intr: integer - The intrinsic's ``INTR_*`` constant as defined in
+        ``llvm.core``.
+        
+        types - list of llvm.core.Type - The types by which the intrinsic is
+        overloaded. 
+        
+        args - list of llvm.core.Value - The arguments to call the intrinsic
+        with.
+        
+        Returns: llvm.core.Value - Whatever the intrinsic returns.
+        """
+           
+        i = llvm.core.Function.intrinsic(self._llvm.module, intr, types)
+        return self.builder().call(i, args)
+        
     ### Decorators.
     
     def typeInfo(self, t):

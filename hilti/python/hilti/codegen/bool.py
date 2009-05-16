@@ -33,3 +33,32 @@ def _(op, refine_to):
 def _(type, refine_to):
     return llvm.core.Type.int(1)
 
+@codegen.unpack(type.Bool)
+def _(t, begin, end, fmt, arg):
+    """Bool unpacking uses the format ``Hilti::Packed::Bool``. It reads a
+    single byte and, per default, returns ``True` if that byte is non-zero and
+    ``False`` otherwise. Optionally, one can specify a particular bit (0-7) as
+    additional ``unpack`` arguments and the result will then reflect the value
+    of that bit. 
+    """
+
+    # FIXME: Add error checking. We don't check the format at the moment nor
+    # the range of the bit number. 
+    
+    addr = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+
+    (val, i) = codegen.llvmUnpack(type.Integer(8), begin, end, "Hilti::Packed::Int8")
+
+    builder = codegen.builder()
+    
+    if arg:
+        if arg.type.width > 8:
+            arg = builder.trunc(arg, llvm.core.Type.int(8))
+        
+        mask = builder.shl(codegen.llvmConstInt(1, 8), arg)
+        val = builder.and_(val, mask)
+        
+    result = builder.icmp(llvm.core.IPRED_NE, codegen.llvmConstInt(0, 8), val)
+        
+    return (result, i)

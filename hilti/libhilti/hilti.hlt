@@ -54,8 +54,11 @@ enum Packed {
     PortTCP,           # A 16-bit TCP port value stored in host byte order.
     PortUDP,           # A 16-bit UDP port value stored in network byte order.
     PortTCPNetwork,    # A 16-bit TCP port value stored in host byte order.
-    PortUDPNetwork     # A 16-bit UDP port value stored in network byte order.
+    PortUDPNetwork,    # A 16-bit UDP port value stored in network byte order.
     # %doc-packed-port-end
+    
+    # Bool
+    Bool               # A single byte.
 
 }    
 

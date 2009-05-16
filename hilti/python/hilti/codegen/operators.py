@@ -20,7 +20,7 @@ def _(self, i):
    op1 = self.llvmOp(i.op1()) 
    
    if i.op3():
-       op3 = self.llvmOp(i.op2())
+       op3 = self.llvmOp(i.op3())
    else:
        op3 = None
     

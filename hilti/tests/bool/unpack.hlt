@@ -1,0 +1,46 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local iterator<bytes> p1
+    local iterator<bytes> p2
+    local ref<bytes> b
+    
+    local tuple<bool, iterator<bytes>> t
+    local bool boo
+    
+    b = b"\x02"
+    p1 = bytes.begin b
+    p2 = bytes.end b
+
+    t = unpack (p1,p2) Hilti::Packed::Bool
+    boo = tuple.index t 0
+    call Hilti::print (boo)
+
+    b = b"\x00"
+    p1 = bytes.begin b
+    p2 = bytes.end b
+
+    t = unpack (p1,p2) Hilti::Packed::Bool
+    boo = tuple.index t 0
+    call Hilti::print (boo)
+
+    b = b"\x04"
+    p1 = bytes.begin b
+    p2 = bytes.end b
+
+    t = unpack (p1,p2) Hilti::Packed::Bool 1
+    boo = tuple.index t 0
+    call Hilti::print (boo)
+
+    t = unpack (p1,p2) Hilti::Packed::Bool 2
+    boo = tuple.index t 0
+    call Hilti::print (boo)
+}

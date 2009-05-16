@@ -1,0 +1,34 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local iterator<bytes> p1
+    local iterator<bytes> p2
+    local iterator<bytes> p3
+    local string out
+    local ref<bytes> b
+    
+    local tuple<int32, iterator<bytes>> t32
+    local int32 i32
+    
+    b = b"\x0f\x0f\xf0\x00"
+    p1 = bytes.begin b
+    p2 = bytes.end b
+
+    t32 = unpack (p1,p2) Hilti::Packed::Int32Big (12, 19)
+    i32 = tuple.index t32 0
+    out = call Hilti::fmt ("hex=0x%x dec=%d", (i32, i32))
+    call Hilti::print(out)
+    
+    t32 = unpack (p1,p2) Hilti::Packed::Int32Big (12, 12)
+    i32 = tuple.index t32 0
+    out = call Hilti::fmt ("hex=0x%x dec=%d", (i32, i32))
+    call Hilti::print(out)
+}
