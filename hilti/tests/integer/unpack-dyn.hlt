@@ -23,7 +23,7 @@ void myunpack(ref<bytes> b, Hilti::Packed fmt) {
     p1 = bytes.begin b
     p2 = bytes.end b
     
-    t64 = unpack p1 p2 fmt
+    t64 = unpack (p1,p2) fmt
     
     i64 = tuple.index t64 0 
     p3 = tuple.index t64 1

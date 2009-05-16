@@ -44,16 +44,16 @@ def _(type, refine_to):
     return _llvmPortType()
 
 @codegen.unpack(type.Port)
-def _(t, begin, end, fmt):
+def _(t, begin, end, fmt, arg):
     """Port unpacking supports the following formats:
     
     .. literalinclude:: /libhilti/hilti.hlt
        :start-after: %doc-packed-port-start
        :end-before:  %doc-packed-port-end
     """
-
-    port = codegen.builder().alloca(codegen.llvmTypeConvert(t))
-    iter = codegen.builder().alloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+    
+    port = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
 
     def unpackPort(nbo, protocol):
         def _unpackPort(case):

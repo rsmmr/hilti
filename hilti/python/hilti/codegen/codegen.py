@@ -675,7 +675,30 @@ class CodeGen(visitor.Visitor):
             self.llvmInitWithDefault(i.type(), addr)
         
         return frame
+
+    def llvmAlloca(self, type, tag=""):
+        """Allocates an LLVM variable on the stack. The variable can be used
+        only inside the current LLVM function. That function must already have
+        at least one block.
+        
+        type: llvm.core.Type - The tye of the variable to allocate.
+        
+        Note: This works exactly like LLVM's ``alloca`` instruction
+        yet it makes sure that the allocs are located in the current
+        function entry block. That is a requirement for LLVM's
+        ``mem2reg`` optimization pass to find them."""
+        
+        b = self._llvm.func.get_entry_basic_block()
+        builder = llvm.core.Builder.new(b)
+        
+        if b.instructions:
+            # FIXME: This crashes when the block is empty. Is there a more
+            # efficeint way to detection whether it's empty than getting all
+            # instruction? Or better, can we fix llvm-py?
+            builder.position_at_beginning(b)
             
+        return self.builder().alloca(type)
+     
     # Helpers to get a field in a basic frame struct.
     def _llvmAddrInBasicFrame(self, frame, index1, index2, cast_to, tag):
         zero = self.llvmGEPIdx(0)
@@ -972,7 +995,7 @@ class CodeGen(visitor.Visitor):
                 # Add a type information parameter.
                 new_args += [self.builder().bitcast(self.llvmTypeInfoPtr(argty), llvm.core.Type.pointer(self.llvmTypeTypeInfo()))]
                 # Turn argument into a pointer.
-                ptr = self.builder().alloca(arg.type)
+                ptr = self.llvmAlloca(arg.type)
                 self.builder().store(arg, ptr)
                 ptr = self.builder().bitcast(ptr, self.llvmTypeGenericPointer())
                 new_args += [ptr]
@@ -1092,7 +1115,7 @@ class CodeGen(visitor.Visitor):
             args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types)
             
         if llvm_func.hidden_return_arg:
-            hidden_return_arg = self.builder().alloca(llvm_func.hidden_return_arg, "agg.tmp")
+            hidden_return_arg = self.llvmAlloca(llvm_func.hidden_return_arg, "agg.tmp")
             args = [hidden_return_arg] + args            
             call = self.builder().call(llvm_func, args)
             call.add_parameter_attribute(1, llvm.core.ATTR_NO_ALIAS)
@@ -1115,7 +1138,7 @@ class CodeGen(visitor.Visitor):
                 #
                 # FIXME: Turns out, currently it is not. What can we do about
                 # that?
-                tmp = self.builder().alloca(llvm_func.cast_return)
+                tmp = self.llvmAlloca(llvm_func.cast_return)
                 tmp_casted = self.builder().bitcast(tmp, llvm.core.Type.pointer(call.type))
                 self.builder().store(call, tmp_casted)
                 result = self.builder().load(tmp)
@@ -1628,7 +1651,7 @@ class CodeGen(visitor.Visitor):
         
         util.internal_error("llvmExecuteOperator: no implementation found for %s" % op)
 
-    def llvmUnpack(self, t, begin, end, fmt):
+    def llvmUnpack(self, t, begin, end, fmt, arg=None):
         """
         Unpacks an instance of a type from binary data. 
         
@@ -1645,6 +1668,9 @@ class CodeGen(visitor.Visitor):
         can be either an ~~Operand of ~~EnumType ``Hilti::Packed``, a string
         specifying the name of a ``Hilti::Packed`` label, or an integer with
         the internal value of the desired label. 
+        
+        arg: optional llvm.core.Value - Additional format-specific parameter,
+        required by some formats. 
         
         Returns: tuple (val, iter) - A Python tuple in which *val* is the
         unpacked value of type ``llvm.core.value`` and ``iter`` is an
@@ -1684,7 +1710,7 @@ class CodeGen(visitor.Visitor):
             end = bytes.llvmEnd()
             
         assert isinstance(fmt, instruction.Operand) and fmt.type() is packed_t
-        return self._callCallback(CodeGen._CB_UNPACK, t, [t, begin, end, fmt])
+        return self._callCallback(CodeGen._CB_UNPACK, t, [t, begin, end, fmt, arg])
         
     def llvmOp(self, op, refine_to = None):
         """Converts an instruction operand into an LLVM value. The method
@@ -1780,7 +1806,7 @@ class CodeGen(visitor.Visitor):
         ``extractvalue`` instruction.
         """
         
-        addr = codegen.builder().alloca(struct.type)
+        addr = codegen.llvmAlloca(struct.type)
         codegen.builder().store(struct, addr)
         
         if isinstance(idx, int):
@@ -1810,7 +1836,7 @@ class CodeGen(visitor.Visitor):
         ``insertvalue`` instruction.
         """
         
-        addr = codegen.builder().alloca(obj.type)
+        addr = codegen.llvmAlloca(obj.type)
         codegen.builder().store(obj, addr)
         
         if isinstance(idx, int):

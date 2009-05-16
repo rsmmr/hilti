@@ -42,5 +42,4 @@ void run() {
     i32 = overlay.get o "f4"
     s = call Hilti::fmt("%x", (i32))
     call Hilti::print(s)
-    
     }

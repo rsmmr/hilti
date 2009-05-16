@@ -23,5 +23,5 @@ void run() {
     
     e = Hilti::Packed::Undef
     
-    t64 = unpack p1 p2 e
+    t64 = unpack (p1,p2) e
     }

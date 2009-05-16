@@ -34,7 +34,7 @@ def _(type, refine_to):
     return _llvmAddrType()
 
 @codegen.unpack(type.Addr)
-def _(t, begin, end, fmt):
+def _(t, begin, end, fmt, arg):
     """Address unpacking supports the following formats:
     
     .. literalinclude:: /libhilti/hilti.hlt
@@ -42,8 +42,8 @@ def _(t, begin, end, fmt):
        :end-before:  %doc-packed-addr-end
     """
     
-    addr = codegen.builder().alloca(codegen.llvmTypeConvert(t))
-    iter = codegen.builder().alloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+    addr = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
     
     def emitV4(nbo):
         def _emitV4(case):

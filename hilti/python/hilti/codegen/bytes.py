@@ -71,8 +71,8 @@ def _(op, refine_to):
     def callback():
         builder = codegen.builder()
         bytes_new_from_data = codegen.llvmCurrentModule().get_function_named("__hlt_bytes_new_from_data")
-        exception = builder.alloca(codegen.llvmTypeException())
-        exception = builder.bitcast(exception, llvm.core.Type.pointer(codegen.llvmTypeGenericPointer()))
+        exception = codegen.llvmAlloca(codegen.llvmTypeException())
+        exception = codegen.builder().bitcast(exception, llvm.core.Type.pointer(codegen.llvmTypeGenericPointer()))
         datac = builder.bitcast(data, codegen.llvmTypeGenericPointer())
         newobj = builder.call(bytes_new_from_data, [datac, codegen.llvmConstInt(size, 32), exception])
         # FIXME: What do we do if this guy raises an exception?

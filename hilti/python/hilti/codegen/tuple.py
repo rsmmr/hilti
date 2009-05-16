@@ -65,7 +65,7 @@ def _(type):
 @codegen.llvmCtorExpr(type.Tuple)
 def _(op, refine_to):
     t = _tupleType(op.type(), refine_to)
-    struct = codegen.builder().alloca(t)
+    struct = codegen.llvmAlloca(t)
     
     length = len(op.type().types())
     vals = op.value()

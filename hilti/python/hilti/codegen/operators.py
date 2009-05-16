@@ -18,7 +18,15 @@ def _(self, i):
 @codegen.operator(instructions.operators.GenericUnpack)
 def _(self, i):
    op1 = self.llvmOp(i.op1()) 
-   op2 = self.llvmOp(i.op2()) 
+   
+   if i.op3():
+       op3 = self.llvmOp(i.op2())
+   else:
+       op3 = None
+    
+   begin = self.llvmExtractValue(op1, 0)
+   end = self.llvmExtractValue(op1, 1)
+   
    t = i.target().type().types()[0]
-   (val, iter) = self.llvmUnpack(t, op1, op2, i.op3())
+   (val, iter) = self.llvmUnpack(t, begin, end, i.op2(), op3)
    self.llvmStoreTupleInTarget(i.target(), (val, iter))

@@ -21,7 +21,7 @@ void p(ref<bytes> b, Hilti::Packed fmt) {
     begin = bytes.begin b
     end = bytes.end b
 
-    t = unpack begin end fmt
+    t = unpack (begin,end) fmt
     
     p = tuple.index t 0
     nbegin = tuple.index t 1

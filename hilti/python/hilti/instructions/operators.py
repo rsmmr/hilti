@@ -44,7 +44,7 @@ class Equal(Operator):
     """
     pass
 
-# FIXME: For op3, what we really want is "is of type enum Hilti::Packed". But
+# FIXME: For op2, what we really want is "is of type enum Hilti::Packed". But
 # how can we express that?
 def unpackTarget(constraint):
     """A constraint function that ensures that the operand is of the
@@ -53,14 +53,17 @@ def unpackTarget(constraint):
     """ 
     return isTuple([constraint, iteratorBytes])
 
-@operator("unpack", op1=iteratorBytes, op2=iteratorBytes, op3=enum, target=unpackTarget(any))
+# FIXME: How can we check op3 in a reasonably generic way?
+@operator("unpack", op1=isTuple([iteratorBytes,iteratorBytes]), op2=enum, op3=optional(any), target=unpackTarget(any))
 class Unpack(Operator):
     """Unpacks an instance of a particular type (as determined by *target*;
-    see below) from the the binary data identified by the range from *op1* to
-    *op2*. *op3* may provide type-specific hints about the layout of the raw
-    bytes. The operator returns a ``tuple<T, iterator<bytes>>``, in the first
-    component is the newly unpacked instance and the second component is
-    locates the first bytes that has *not* been consumed anymore. 
+    see below) from the binary data enclosed by the iterator tuple *op1*. *op2*
+    defines the binary layout as an enum of type ``Hilti::Packed``. Depending
+    on *op2*, *op3* is may be an additional, format-specific parameter with
+    further information about the binary layout. The operator returns a
+    ``tuple<T, iterator<bytes>>``, in the first component is the newly
+    unpacked instance and the second component is locates the first bytes that
+    has *not* been consumed anymore. 
     
     Raises ~~UnpackError if the raw bytes are not as expected (and
     that fact can be verified); this includes the case that the
@@ -75,7 +78,7 @@ class Unpack(Operator):
     """
     pass
 
-@overload(Unpack, op1=iteratorBytes, op2=iteratorBytes, op3=enum, target=unpackTarget(any))
+@overload(Unpack, op1=isTuple([iteratorBytes,iteratorBytes]), op2=enum, op3=optional(any), target=unpackTarget(any))
 class GenericUnpack(Operator):
     """The generic implementation of the ``unpack operator``. This operator is
     not overloaded on a per-type basis."""

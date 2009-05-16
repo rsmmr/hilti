@@ -196,7 +196,7 @@ _Unpacks = {
 _localSuffix = "Little" if system.isLittleEndian() else "Big"
 
 @codegen.unpack(type.Integer)
-def _(t, begin, end, fmt):
+def _(t, begin, end, fmt, arg):
     """Integer unpacking supports the following formats:
     
     .. literalinclude:: /libhilti/hilti.hlt
@@ -216,8 +216,8 @@ def _(t, begin, end, fmt):
     *unsigned* integers in HILTI.
     """
     
-    val = codegen.builder().alloca(codegen.llvmTypeConvert(t))
-    iter = codegen.builder().alloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+    val = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
 
     # Generate the unpack code for a single case.        
     def unpackOne(spec):

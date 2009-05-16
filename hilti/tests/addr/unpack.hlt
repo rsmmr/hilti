@@ -21,7 +21,7 @@ void p(ref<bytes> b, Hilti::Packed fmt) {
     begin = bytes.begin b
     end = bytes.end b
 
-    t = unpack begin end fmt
+    t = unpack (begin,end) fmt
     
     a = tuple.index t 0
     nbegin = tuple.index t 1
@@ -46,7 +46,7 @@ void run() {
     begin = bytes.begin b
     end = bytes.end b
 
-    t = unpack begin end Hilti::Packed::IPv4Network
+    t = unpack (begin,end) Hilti::Packed::IPv4Network
     
     a = tuple.index t 0
     nbegin = tuple.index t 1
@@ -59,7 +59,7 @@ void run() {
     begin = bytes.begin b
     end = bytes.end b
 
-    t = unpack begin end Hilti::Packed::IPv6Network
+    t = unpack (begin,end) Hilti::Packed::IPv6Network
     
     a = tuple.index t 0
     nbegin = tuple.index t 1
