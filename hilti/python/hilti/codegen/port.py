@@ -54,7 +54,7 @@ def _(t, begin, end, fmt, arg):
     
     port = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
     iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
-
+    
     def unpackPort(nbo, protocol):
         def _unpackPort(case):
             fmt = "Hilti::Packed::Int16Big" if nbo else "Hilti::Packed::Int16"

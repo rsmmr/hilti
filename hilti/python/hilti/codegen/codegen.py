@@ -111,9 +111,12 @@ class CodeGen(visitor.Visitor):
         
         llvm_blockbuilder: llvm.core.Block - The block to create the builder
         with.
+        
+        Returns: llvm.core.Builder - The new builder.
         """
         builder = llvm.core.Builder.new(llvm_block) if llvm_block else _DummyBuilder()
         self._llvm.builders += [builder]
+        return builder
         
     def popBuilder(self):
         """Removes the top-most LLVM builder from the builder stack."""
@@ -1665,10 +1668,12 @@ class CodeGen(visitor.Visitor):
         beyond the last consumable input byte. *end* may be None to indicate
         unpacking until the end of the bytes object is encounted.
         
-        fmt: ~~Operand - Specifies the binary format of the input bytes. It
+        fmt: ~~Operand or other - Specifies the binary format of the input bytes. It
         can be either an ~~Operand of ~~EnumType ``Hilti::Packed``, a string
         specifying the name of a ``Hilti::Packed`` label, or an integer with
-        the internal value of the desired label. 
+        the internal value of the desired label. Finally, it can be an
+        ``llvm.core.Constant`` if that constant has been instantiated by 
+        ~~llvmOp (and only then!).
         
         arg: optional llvm.core.Value - Additional format-specific parameter,
         required by some formats. 
@@ -1679,7 +1684,7 @@ class CodeGen(visitor.Visitor):
         beyond the last consumed input byte (which can't be further than
         *end*). 
         """
-        
+
         assert not inspect.isclass(t)
         
         packed = self._module.lookupID("Hilti::Packed")
@@ -1689,6 +1694,16 @@ class CodeGen(visitor.Visitor):
         assert isinstance(packed_t, type.Enum)
         
         val = -1
+        
+        if isinstance(fmt, llvm.core.Constant):
+            try:
+                fmt = fmt._value
+            except AttributeError:
+                util.internal_error("llvmUnpack: LLVM constant not instantiated by llvmOp")
+                
+        elif isinstance(fmt, llvm.core.Value):
+            util.internal_error("llvmUnpack: LLVM value must be constant")
+        
         if isinstance(fmt, str):
             id = self._module.lookupID(fmt)
             if not id:
@@ -1711,6 +1726,12 @@ class CodeGen(visitor.Visitor):
             end = bytes.llvmEnd()
             
         assert isinstance(fmt, instruction.Operand) and fmt.type() is packed_t
+        
+        if isinstance(t, type.Reference):
+            # When unpacking a reference, we actually unpack an object of the
+            # typed begin referenced.
+            t = t.refType()
+        
         return self._callCallback(CodeGen._CB_UNPACK, t, [t, begin, end, fmt, arg])
         
     def llvmOp(self, op, refine_to = None):
@@ -1740,7 +1761,9 @@ class CodeGen(visitor.Visitor):
         type = op.type()
         
         if isinstance(op, instruction.ConstOperand):
-            return self._callCallback(CodeGen._CB_CTOR_EXPR, type, [op, refine_to])
+            val = self._callCallback(CodeGen._CB_CTOR_EXPR, type, [op, refine_to])
+            val._value = op.value()  # Used in llvmUnpack()
+            return val
         
         if isinstance(op, instruction.TupleOperand):
             return self._callCallback(CodeGen._CB_CTOR_EXPR, type, [op, refine_to])

@@ -1,0 +1,87 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local ref<bytes> sub
+    local tuple<ref<bytes>,iterator<bytes>> t
+    local iterator<bytes> begin
+    local iterator<bytes> end
+    local iterator<bytes> nbegin
+    local int32 diff
+    local string out
+
+    local addr a
+    
+    b = b"\x00\x05\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+    begin = bytes.begin b
+    end = bytes.end b
+
+    t = unpack (begin,end) Hilti::Packed::BytesFixed 5
+    sub = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+
+    ####
+
+    t = unpack (begin,end) Hilti::Packed::BytesFixed 0
+    sub = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+    
+    ####
+    
+    t = unpack (begin,end) Hilti::Packed::BytesRunLength Hilti::Packed::UInt16Big
+    sub = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+    
+    ####
+    
+    t = unpack (begin,end) Hilti::Packed::BytesRunLength Hilti::Packed::UInt8Big
+    sub = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+    
+    ####
+
+    t = unpack (begin,end) Hilti::Packed::BytesDelim b"\x04"
+    sub = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+
+    ####
+
+    t = unpack (begin,end) Hilti::Packed::BytesDelim b"\xff"
+    sub = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    
+    out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
+    call Hilti::print(out)
+
+    ## Note multi-byte delimiters not supported yet. 
+
+    }

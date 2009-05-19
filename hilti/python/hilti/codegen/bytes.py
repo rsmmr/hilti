@@ -8,6 +8,8 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+import integer
+
 _doc_c_conversion = """A ``bytes`` object is mapped to ``__Hlt::bytes *``. The
 type is defined in |hilti_intern.h|."""
 
@@ -141,3 +143,165 @@ def _(self, i):
 def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_diff", [i.op1(), i.op2()], [i.op2().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
+
+import sys    
+    
+@codegen.unpack(type.Bytes)
+def _(t, begin, end, fmt, arg):
+    """Bytes unpacking extract a subrange from a bytes object per the
+    following formats:
+    
+    .. literalinclude:: /libhilti/hilti.hlt
+       :start-after: %doc-packed-bytes-start
+       :end-before:  %doc-packed-bytes-end
+       
+    The ``SKIP_*`` variants do always return an empty bytes object but advance
+    the unpacking iterator in the same way as the non-skip version. This can
+    be used if the data itself is not uninteresting but it's end position is
+    needed to then unpack any subsequent data. 
+    """
+    
+    bytes = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+    exception = codegen.llvmAddrException(codegen.llvmCurrentFramePtr())
+    
+    extract_one = codegen.llvmCurrentModule().get_function_named("__hlt_bytes_extract_one")
+
+    def unpackFixed(n, skip, begin):
+        def _unpackFixed(case):
+            # We build a loop here even in the constant case, hoping that LLVM
+            # is able to do some smart loop unrolling ...
+            # FIXME: Check that that is indeed the case ...
+            block_head = codegen.llvmNewBlock("loop-head")
+            block_body = codegen.llvmNewBlock("loop-body")
+            block_exit = codegen.llvmNewBlock("loop-exit")
+
+            width = n.type.width
+            zero = codegen.llvmConstInt(0, width)
+            one = codegen.llvmConstInt(1, width)
+
+            # Copy the start iterator.
+            codegen.builder().store(begin, iter)
+            iter_casted = codegen.builder().bitcast(iter, codegen.llvmTypeGenericPointer())
+            
+            # Make sure it's not already zero. 
+            builder = codegen.builder()
+            done = builder.icmp(llvm.core.IPRED_ULE, n, zero)
+            builder.cbranch(done, block_exit, block_head)
+
+            codegen.pushBuilder(block_head)
+            j = codegen.llvmAlloca(n.type)
+            codegen.llvmInit(n, j)
+            codegen.builder().branch(block_body)
+            codegen.popBuilder()
+            
+            # Loop body.
+            builder = codegen.pushBuilder(block_body)
+            
+            byte = builder.call(extract_one, [iter_casted, end, exception])
+            cur = builder.sub(builder.load(j), one)
+            builder.store(cur, j)
+            done = builder.icmp(llvm.core.IPRED_ULE, cur, zero)
+            builder.cbranch(done, block_exit, block_body)
+            codegen.popBuilder()
+            
+            # Loop exit.
+            builder = codegen.pushBuilder(block_exit)
+            
+            if not skip:
+                val = codegen.llvmGenerateCCallByName("__Hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes()] * 2, llvm_args=True)
+            else:
+                val = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
+                
+            codegen.llvmInit(val, bytes)
+                
+            # Leave builder on stack.
+            
+        return _unpackFixed
+
+    def unpackRunLength(arg, skip):
+        def _unpackRunLength(case):
+            # Note: this works only with constant arguments.  I think that's ok
+            # but: (FIXME) We should document that somewhere. 
+            (n, iter) = codegen.llvmUnpack(type.Integer(32), begin, end, arg)
+            return unpackFixed(n, skip, iter)(case)
+        
+        return _unpackRunLength
+    
+    def unpackDelim(width, skip):
+        def _unpackDelim(case):
+            delim = ""
+            try:
+                # FIXME: This is set in llvmOp(). We should come up with a
+                # better interface for getting the original value. 
+                delim = arg._value
+            except AttributeError:
+                pass
+            
+            if delim and len(delim) == 1:
+                # We optimize for the case of a single, constant byte.
+                
+                delim = codegen.llvmConstInt(ord(delim), 8)
+                block_body = codegen.llvmNewBlock("loop-body-start")
+                block_cmp = codegen.llvmNewBlock("loop-body-cmp")
+                block_exit = codegen.llvmNewBlock("loop-exit")
+    
+                # Copy the start iterator.
+                builder = codegen.builder()
+                builder.store(begin, iter)
+                iter_casted = builder.bitcast(iter, codegen.llvmTypeGenericPointer())
+                
+                # Enter loop.
+                builder.branch(block_body)
+                
+                # Loop body.
+                
+                    # Check whether end reached.
+                builder = codegen.pushBuilder(block_body)
+                done = codegen.llvmGenerateCCallByName("__Hlt::bytes_pos_eq", [builder.load(iter), end], [type.IteratorBytes()] * 2, llvm_args=True)
+                builder = codegen.builder()
+                builder.cbranch(done, block_exit, block_cmp)
+                codegen.popBuilder()
+
+                    # Check whether we found the delimiter
+                builder = codegen.pushBuilder(block_cmp)
+                byte = builder.call(extract_one, [iter_casted, end, exception])
+                done = builder.icmp(llvm.core.IPRED_EQ, byte, delim)
+                builder.cbranch(done, block_exit, block_body)
+                codegen.popBuilder()
+
+                # Loop exit.
+                builder = codegen.pushBuilder(block_exit)
+                
+                if not skip:
+                    val = codegen.llvmGenerateCCallByName("__Hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes()] * 2, llvm_args=True)
+                else:
+                    val = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
+                    
+                codegen.llvmInit(val, bytes)
+                    
+            # Leave builder on stack.
+                
+            else:
+                # Everything else we outsource to C.
+                # FIXME: Well, not yet ...
+                util.internal_error("byte unpacking with delimiters only supported for a single constant byte yet")
+            
+        return _unpackDelim
+
+    cases = [
+        ("Hilti::Packed::BytesRunLength", unpackRunLength(arg, False)),
+        ("Hilti::Packed::BytesFixed", unpackFixed(arg, False, begin)),
+        ("Hilti::Packed::BytesDelim", unpackDelim(arg, False)),
+        
+        ("Hilti::Packed::SkipBytesRunLength", unpackRunLength(arg, False)),
+        ("Hilti::Packed::SkipBytesFixed", unpackFixed(begin, arg, True)),
+        ("Hilti::Packed::SkipBytesDelim", unpackDelim(arg, True)),
+        ]
+
+    codegen.llvmSwitch(fmt, cases)
+    
+    # It's fine to check for an exception at the end.
+    codegen._llvmGenerateExceptionTest(exception)
+    
+    return (codegen.builder().load(bytes), codegen.builder().load(iter))    

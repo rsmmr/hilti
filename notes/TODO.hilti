@@ -30,6 +30,8 @@ Infrastructure
         * an out-of-range exception, and use that when iterators are out of
         range. 
 
+- We can't type-check the additional (optional) argument of the @unpack yet. 
+
 Optimizations
 =============
 
@@ -37,6 +39,10 @@ Optimizations
 we have to create a temporary on the stack just because we can't cast an
 integer into a struct. I'd think the tmp could be optimized away but it
 currently isn't. 
+
+- The byte-order specific unpack's could use the bswap intrinsic.
+
+- The addr's check for an IPv4 address could use the ctlz intrinsic.
 
 Cleanup 
 =======
@@ -72,6 +78,12 @@ relying on "__"
   
 - If we still need wildcard types, cleanup how they are instantiated (empty
 list vs. "*" vs. ["*"])
+
+- In codege/*.py, Remove the explicit cg/self arguments to pass
+around the code generator object. Use global singleton directly
+instread.
+
+- Rename TypeDeclType to TypeDecl
 
 Documentation
 =============

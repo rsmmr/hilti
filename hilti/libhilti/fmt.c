@@ -135,7 +135,8 @@ static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const 
             if ( *excpt )
                 return;
             
-            _add_chars(str->bytes, str->len, buffer, bpos, dst, excpt);
+            if ( str )
+                _add_chars(str->bytes, str->len, buffer, bpos, dst, excpt);
         }
         
         else 
