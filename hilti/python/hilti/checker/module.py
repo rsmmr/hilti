@@ -67,7 +67,7 @@ def _(self, f):
         
     self._have_others = True
     self._function = f
-
+    
     for a in f.type().args():
         if isinstance(a.type(), type.Any) and f.callingConvention() != function.CallingConvention.C_HILTI:
             self.error(f, "only functions using C-HILTI calling convention can take parameters of undefined type")
@@ -77,10 +77,14 @@ def _(self, f):
             self.error(f, "only functions using C-HILTI calling convention can take wildcard parameters")
             break
         
+        if isinstance(a.type(), type.HeapType):
+            self.error(f, "cannot pass heap types in function calls, use a reference instead for %s " % a.type())
+            break
+        
     for i in f.IDs():
         if i.role() == id.Role.LOCAL:
             if not isinstance(i.type(), type.ValueType) and not isinstance(i.type(), type.Label):
-                self.error(i, "local variable %s must be of storage type" % i.name())
+                self.error(i, "local variable %s must be of heap type" % i.name())
                 break
             
             if isinstance(i.type(), type.ValueType) and i.type().wildcardType():

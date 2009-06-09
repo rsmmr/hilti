@@ -37,7 +37,7 @@ class Deref(Operator):
     """
     pass
 
-@operator("equal", op1=hiltiType, op2=sameTypeAsOp(1), target=bool)
+@operator("equal", op1=hiltiType, op2=hiltiType, target=bool)
 class Equal(Operator):
     """
     Returns True if *op1* equals *op2*

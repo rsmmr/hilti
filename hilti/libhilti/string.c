@@ -269,7 +269,7 @@ const __hlt_string* __hlt_string_decode(__hlt_bytes* b, const __hlt_string* char
     if ( ch == UTF8 ) {
         // Data is already in UTF-8, just need to copy it into a string.
         __hlt_bytes_pos begin = __hlt_bytes_begin(b, excpt);
-        const __hlt_bytes_pos end = __hlt_bytes_end(b, excpt);
+        const __hlt_bytes_pos end = __hlt_bytes_end(excpt);
         const int8_t* raw = __hlt_bytes_sub_raw(begin, end, excpt);
         const __hlt_string *dst = __hlt_string_from_data(raw, __hlt_bytes_len(b, excpt), excpt);
         return dst;
@@ -283,7 +283,7 @@ const __hlt_string* __hlt_string_decode(__hlt_bytes* b, const __hlt_string* char
         int8_t* p = dst->bytes;
         
         __hlt_bytes_pos i = __hlt_bytes_begin(b, excpt);
-        while ( ! __hlt_bytes_pos_eq(i, __hlt_bytes_end(b, excpt), excpt) ) {
+        while ( ! __hlt_bytes_pos_eq(i, __hlt_bytes_end(excpt), excpt) ) {
             char c = __hlt_bytes_pos_deref(i, excpt);
             *p++ = (c & 0x7f) == c ? c : '?';
             i = __hlt_bytes_pos_incr(i, excpt);

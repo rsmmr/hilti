@@ -226,7 +226,7 @@ def _(t, begin, end, fmt, arg):
     """
     
     val = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
-    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes(type.Bytes())))
 
     # Generate the unpack code for a single case.        
     def unpackOne(spec):

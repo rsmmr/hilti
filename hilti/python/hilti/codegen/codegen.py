@@ -1088,7 +1088,7 @@ class CodeGen(visitor.Visitor):
         # We leave this builder for subseqent code.
         self.pushBuilder(block_noexcpt)
     
-    def llvmGenerateCCall(self, func, args, arg_types, llvm_args=False):
+    def llvmGenerateCCall(self, func, args, arg_types=None, llvm_args=False):
         """Generates a call to a C function. The method uses the current
         :meth:`builder`.
         
@@ -1102,7 +1102,8 @@ class CodeGen(visitor.Visitor):
         arg_types: list ~~Type - The types of the actual arguments.
         While these will often be the same as specified in the
         function's signature, they can differ in some cases, e.g.,
-        if the function accepts an argument of type ~~Any.
+        if the function accepts an argument of type ~~Any. If missing, the
+        types are derived from *args* (which then must be ~~Operand).
         
         llvm_args: boolean - If true, *args* are expected to be of type
         ``llvm.core.Value``.
@@ -1113,7 +1114,12 @@ class CodeGen(visitor.Visitor):
         llvm_func = self.llvmGetCFunction(func)
 
         if not llvm_args:
+            if not arg_types:
+                arg_types = [op.type() for op in args]
+            
             args = [self.llvmOp(op) for op in args]
+        else:
+            assert arg_types
         
         if func.callingConvention() == function.CallingConvention.C_HILTI:
             args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types)
@@ -1155,7 +1161,7 @@ class CodeGen(visitor.Visitor):
             
         return result
 
-    def llvmGenerateCCallByName(self, name, args, arg_types, llvm_args=False):
+    def llvmGenerateCCallByName(self, name, args, arg_types = None, llvm_args=False):
         """Generates a call to a C function given by it's name. The method
         uses the current :meth:`builder`.
         
@@ -1172,7 +1178,8 @@ class CodeGen(visitor.Visitor):
         arg_types: list ~~Type - The types of the actual arguments.
         While these will often be the same as specified in the
         function's signature, they can differ in some cases, e.g.,
-        if the function accepts an argument of type ~~Any.
+        if the function accepts an argument of type ~~Any. If missing, the
+        types are derived from *args* (which then must be ~~Operand).
 
         llvm_args: boolean - If true, *args* are expected to be of type
         ``llvm.core.Value``.
@@ -1964,7 +1971,7 @@ class CodeGen(visitor.Visitor):
            
         i = llvm.core.Function.intrinsic(self._llvm.module, intr, types)
         return self.builder().call(i, args)
-        
+
     ### Decorators.
     
     def typeInfo(self, t):

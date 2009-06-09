@@ -14,8 +14,12 @@ __all__ = [
     "operators", 
     "enum", 
     "addr",
+    "net",
     "port",
     "overlay",
+    "vector",
+    "list",
+    "regexp",
     ]
 
 import flow
@@ -33,5 +37,9 @@ import bytes
 import channel
 import enum
 import addr
+import net
 import port
 import overlay
+import vector
+import list
+import regexp

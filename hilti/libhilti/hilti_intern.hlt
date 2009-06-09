@@ -19,7 +19,10 @@ declare "C-HILTI" string tuple_to_string(any t, int32 options)
 declare "C-HILTI" string channel_to_string(any c, int32 options)
 declare "C-HILTI" string bytes_to_string(any b, int32 options)
 declare "C-HILTI" string addr_to_string(any b, int32 options)
+declare "C-HILTI" string net_to_string(any b, int32 options)
 declare "C-HILTI" string port_to_string(any b, int32 options)
+declare "C-HILTI" string list_to_string(any l, int32 options)
+declare "C-HILTI" string regexp_to_string(any l, int32 options)
 
 declare "C-HILTI" string int_to_int64(any n)
 declare "C-HILTI" string bool_to_int64(any b)
@@ -34,7 +37,7 @@ declare "C-HILTI" int32 string_len(string s)
 declare "C-HILTI" string string_concat(string s1, string s2)
 declare "C-HILTI" int8 string_cmp(string s1, string s2)
 declare "C-HILTI" bytes string_encode(string s, string charset)
-declare "C-HILTI" string string_decode(bytes b, string charset)
+declare "C-HILTI" string string_decode(ref<bytes> b, string charset)
 declare "C-HILTI" tuple<string,iterator<bytes>> string_unpack(iterator<bytes> begin, iterator<bytes> end, Hilti::Packed fmt)
 
 ###
@@ -49,13 +52,13 @@ declare "C-HILTI" int64 channel_get_size(ref<channel<*>> ch)
 ###
 
 declare "C-HILTI" bytes bytes_new()
-declare "C-HILTI" int32 bytes_len(bytes b)
-declare "C-HILTI" bool bytes_empty(bytes b)
-declare "C-HILTI" void  bytes_append(bytes b, bytes other)
+declare "C-HILTI" int32 bytes_len(ref<bytes> b)
+declare "C-HILTI" bool bytes_empty(ref<bytes> b)
+declare "C-HILTI" void  bytes_append(ref<bytes> b, ref<bytes> other)
 declare "C-HILTI" bytes bytes_sub(iterator<bytes> start, iterator<bytes> end)
-declare "C-HILTI" iterator<bytes> bytes_offset(bytes b, int32 offset)
-declare "C-HILTI" iterator<bytes> bytes_begin(bytes b)
-declare "C-HILTI" iterator<bytes> bytes_end(bytes b)
+declare "C-HILTI" iterator<bytes> bytes_offset(ref<bytes> b, int32 offset)
+declare "C-HILTI" iterator<bytes> bytes_begin(ref<bytes> b)
+declare "C-HILTI" iterator<bytes> bytes_end()
 
 declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> end)
 
@@ -65,4 +68,46 @@ declare "C-HILTI" iterator<bytes> bytes_pos_incr_by(iterator<bytes> pos, int<32>
 declare "C-HILTI" bool bytes_pos_eq(iterator<bytes> pos1, iterator<bytes> pos2)
 declare "C-HILTI" int32 bytes_pos_diff(iterator<bytes> pos1, iterator<bytes> pos2)
 
-    
+###
+
+declare "C-HILTI" ref<vector<*>> vector_new(any def)
+declare "C-HILTI" any vector_get(ref<vector<*>> v, int64 idx)
+declare "C-HILTI" void vector_set(ref<vector<*>> v, int64 idx, any value)
+declare "C-HILTI" int64 vector_size(ref<vector<*>> v)
+declare "C-HILTI" void vector_reserve(ref<vector<*>> v, int64 n)
+declare "C-HILTI" iterator<vector<*>> vector_begin(ref<vector<*>> v)
+declare "C-HILTI" iterator<vector<*>> vector_end(ref<vector<*>> v)
+
+declare "C-HILTI" iterator<vector<*>> vector_iter_incr(iterator<vector<*>> i)
+declare "C-HILTI" any vector_iter_deref(iterator<vector<*>> i)
+declare "C-HILTI" bool vector_iter_eq(iterator<vector<*>> i1, iterator<vector<*>> i2)
+
+##
+
+declare "C-HILTI" ref<list<*>> list_new(type list_type)
+declare "C-HILTI" void list_push_front(ref<list<*>> l, any val)
+declare "C-HILTI" void list_push_back(ref<list<*>> l, any val)
+declare "C-HILTI" any list_pop_front(ref<list<*>> l)
+declare "C-HILTI" any list_pop_back(ref<list<*>> l)
+declare "C-HILTI" any list_front(ref<list<*>> l)
+declare "C-HILTI" any list_back(ref<list<*>> l)
+declare "C-HILTI" int64 list_size(ref<list<*>> l)
+declare "C-HILTI" void list_erase(iterator<list<*>> i)
+declare "C-HILTI" void list_insert(any val, iterator<list<*>> i)
+declare "C-HILTI" iterator<list<*>> list_begin(ref<list<*>> l)
+declare "C-HILTI" iterator<list<*>> list_end(ref<list<*>> l)
+declare "C-HILTI" iterator<list<*>> list_iter_incr(iterator<list<*>> i)
+declare "C-HILTI" any list_iter_deref(iterator<list<*>> i)
+declare "C-HILTI" bool list_iter_eq(iterator<list<*>> i1, iterator<list<*>> i2)
+
+##
+
+declare "C-HILTI" ref<regexp> regexp_new()
+declare "C-HILTI" void regexp_compile(ref<regexp> re, string pattern)
+declare "C-HILTI" bool regexp_string_find(ref<regexp> re, string s)
+declare "C-HILTI" bool regexp_bytes_find(ref<regexp> re, iterator<bytes> begin, iterator<bytes> end)
+declare "C-HILTI" tuple<iterator<bytes>,iterator<bytes>> regexp_string_span(ref<regexp> re, string s)
+declare "C-HILTI" tuple<iterator<bytes>,iterator<bytes>> regexp_bytes_span(ref<regexp> re, iterator<bytes> begin, iterator<bytes> end)
+declare "C-HILTI" vector<tuple<iterator<bytes>,iterator<bytes>>> regexp_string_groups(ref<regexp> re, string s)
+declare "C-HILTI" vector<tuple<iterator<bytes>,iterator<bytes>>> regexp_bytes_groups(ref<regexp> re, iterator<bytes> begin, iterator<bytes> end)
+

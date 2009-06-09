@@ -43,7 +43,7 @@ def _(t, begin, end, fmt, arg):
     """
     
     addr = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
-    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes(type.Bytes())))
     
     def emitV4(nbo):
         def _emitV4(case):

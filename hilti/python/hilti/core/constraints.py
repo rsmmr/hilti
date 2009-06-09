@@ -116,6 +116,51 @@ def refineIntegerConstantWithOp(n):
             
     return _refineIntegerConstant
 
+def refineIntegerConstantWithOpItemType(n):
+    """Returns a type refinement function that sets a constant integer to the
+    same width as operand *n*'s item-type; the operand must be a reference to
+    a container."""
+    def _refineIntegerConstant(op, i):
+        if not isinstance(op, ConstOperand) or not isinstance(op.type(), type.Integer):
+            return
+        
+        t = _getOp(i, n).type().refType()
+        if not isinstance(t, type.Container):
+            return
+
+        t = t.itemType()
+        
+        if not isinstance(t, type.Integer):
+            return
+   
+        w = t.width()
+        
+        if abs(op.value()) < 2**(w-1):
+            # Const is in the right range, reset the type.
+            op.setConstant(Constant(op.value(), type.Integer(w)))
+            
+    return _refineIntegerConstant
+
+def refineIntegerConstantWithOpDerefType(n):
+    """Returns a type refinement function that sets a constant integer to the
+    same width as operand *n*'s dereference; the operand must be an interator.
+    """
+    def _refineIntegerConstant(op, i):
+        if not isinstance(op, ConstOperand) or not isinstance(op.type(), type.Integer):
+            return
+        
+        t = _getOp(i, n).type().containerType().itemType()
+        
+        if not isinstance(t, type.Integer):
+            return
+   
+        w = t.width()
+        
+        if abs(op.value()) < 2**(w-1):
+            # Const is in the right range, reset the type.
+            op.setConstant(Constant(op.value(), type.Integer(w)))
+            
+    return _refineIntegerConstant
 
 def integerOfWidth(n):
     """Returns a constraint function that checks whether an operand is of an
@@ -176,20 +221,52 @@ def referenceOf(constr):
     
     return _referenceOf
 
+def container(containert, itemt):    
+    """Returns a constraint function that ensures that the operand is of
+    container type *containert* and its ~~itemType() conforms with *itemt*. 
+    """ 
+    assert_constraint(containert)
+    assert_constraint(itemt)
+    @constraint(lambda sig: "%s<%s>" % (sig.getOpDoc(containert), sig.getOpDoc(itemt)))
+    def _container(ty, op, i):
+        
+        (success, msg) = containert(ty, op, i)
+        if not success:
+            return (False, msg)
+        
+        (success, msg) = itemt(ty.itemType(), None, i)
+        if not success:
+            return (False, "wrong container item type, " + msg)
+        
+        return (True, "")
+    
+    return _container
+
 def itemTypeOfOp(n):
     """Returns a constraint function that ensures that the operand is of a
     container's ~~itemType. The container is expected to be found in in
     operand *n*, which must be of type Reference. If *n* is zero, the
-    functions examines the target operand. 
-    
-    Todo: Currently, we only have one Container, ~~Channel, which happens to
-    have the itemType() method. Once we get more containers, we should
-    abstract that method (and likely more) into a new base class
-    ContainerType.
+    functions examines the target operand. The constraint function will also
+    have a ~~refineIntegerConstantWithOpItemType refinement associated with it.
     """
     @constraint("*item-type*")
+    @refineType(refineIntegerConstantWithOpItemType(n))
     def _itemTypeOf(ty, op, i):
         it = _getOp(i, n).type().refType().itemType()
+        return (it == ty, "must be of type %s but is %s" % (it, ty))
+    
+    return _itemTypeOf
+
+def derefTypeOfOp(n):
+    """Returns a constraint function that ensures that the operand is of a
+    type matching what an iterator in operand *n* yields.  The constraint
+    function will also have a ~~refineIntegerConstantWithOpDerefType
+    refinement associated with it.
+    """
+    @constraint("*item-type*")
+    @refineType(refineIntegerConstantWithOpDerefType(n))
+    def _itemTypeOf(ty, op, i):
+        it = _getOp(i, n).type().containerType().itemType()
         return (it == ty, "must be of type %s but is %s" % (it, ty))
     
     return _itemTypeOf
@@ -276,8 +353,14 @@ reference = _hasType(type.Reference)
 struct = _hasType(type.Struct)
 tuple = _hasType(type.Tuple)
 addr =  _hasType(type.Addr)
+net =  _hasType(type.Net)
 port =  _hasType(type.Port)
 overlay =  _hasType(type.Overlay)
+vector =  _hasType(type.Vector)
+iteratorVector =  _hasType(type.IteratorVector)
+list =  _hasType(type.List)
+iteratorList =  _hasType(type.IteratorList)
+regexp =  _hasType(type.RegExp)
 
 function = _hasType(type.Function)
 label = _hasType(type.Label)

@@ -27,6 +27,10 @@ import enum
 import addr
 import port
 import overlay
+import vector
+import list
+import net
+import regexp
 
 def generateLLVM(ast, libpaths, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as

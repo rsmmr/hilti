@@ -37,7 +37,19 @@ extern __hlt_exception __hlt_exception_worker_thread_threw_exception;
 extern __hlt_exception __hlt_exception_os_error;
 
 // An overlay instruction has been used on a not yet attached overlay.
-extern __hlt_exception __hlt_overlay_not_attached;
+extern __hlt_exception __hlt_exception_overlay_not_attached;
+
+// An invalid container index.
+extern __hlt_exception __hlt_exception_index_error;
+
+// A container item was attempted to read which isn't there. 
+extern __hlt_exception __hlt_exception_underflow;
+
+// An interator is used which is not valid for the operation.
+extern __hlt_exception __hlt_exception_invalid_iterator;
+
+// An error in a regular expression.
+extern __hlt_exception __hlt_exception_pattern_error;
 
 // Fall-back exception if nothing else is specified.
 extern __hlt_exception __hlt_exception_unspecified;

@@ -1,0 +1,109 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int32 val
+    local int64 s
+    local ref<list<int32>> l
+    local iterator<list<int32>> c
+    local iterator<list<int32>> c2
+    
+    l = new list<int32>
+
+    list.push_back l 100
+    list.push_back l 200
+    list.push_back l 300
+    list.push_back l 400
+    list.push_back l 500
+    list.push_back l 600
+    list.push_back l 700
+    list.push_back l 800
+    list.push_back l 900
+    list.push_back l 1000
+    call Hilti::print(l)
+
+    c = list.begin l
+    list.insert 50 c
+    call Hilti::print(l)
+
+    c = incr c
+    c = incr c
+    c = incr c
+    list.insert 350 c
+    list.insert 375 c
+    call Hilti::print(l)
+
+    c = incr c
+    c = incr c
+    c = incr c
+    c = incr c
+    c = incr c
+    c = incr c
+    list.insert 950 c
+    call Hilti::print(l)
+    
+    c = incr c
+    list.insert 1050 c
+    call Hilti::print(l)
+    
+    list.insert 1075 c
+    call Hilti::print(l)
+
+    s = list.size l
+    call Hilti::print(s)
+
+
+    call Hilti::print("")
+
+    c = list.begin l
+    c2 = incr c
+    list.erase c
+    call Hilti::print(l)
+    c = c2
+
+    c = incr c
+    c = incr c
+    c = incr c
+    c2 = incr c
+    list.erase c
+    call Hilti::print(l)
+    c = c2
+    
+    c2 = incr c
+    list.erase c
+    call Hilti::print(l)
+    c = c2
+    
+    c = incr c
+    c = incr c
+    c = incr c
+    c = incr c
+    c = incr c
+    c = incr c
+
+    c2 = incr c
+    list.erase c
+    call Hilti::print(l)
+    c = c2
+
+    c = incr c
+    c2 = incr c
+    list.erase c
+    call Hilti::print(l)
+    c = c2
+
+    c2 = incr c
+    list.erase c
+    call Hilti::print(l)
+    c = c2
+
+    s = list.size l
+    call Hilti::print(s)
+}

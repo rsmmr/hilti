@@ -53,7 +53,7 @@ def _(t, begin, end, fmt, arg):
     """
     
     port = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
-    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes(type.Bytes())))
     
     def unpackPort(nbo, protocol):
         def _unpackPort(case):

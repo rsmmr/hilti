@@ -4,7 +4,8 @@
 #
 
 DIRS = misc core integer double string tuple channel libhilti c-api \
-       bytes ref struct enum threads addr port overlay bool
+       bytes ref struct enum threads addr port overlay bool net \
+       regexp vector list
 
 all: test
 

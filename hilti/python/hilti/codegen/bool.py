@@ -46,7 +46,7 @@ def _(t, begin, end, fmt, arg):
     # the range of the bit number. 
     
     addr = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
-    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes(type.Bytes())))
 
     (val, i) = codegen.llvmUnpack(type.Integer(8), begin, end, "Hilti::Packed::Int8")
 

@@ -26,6 +26,10 @@ __hlt_exception __hlt_exception_worker_thread_threw_exception = "WorkerThreadThr
 __hlt_exception __hlt_exception_internal_error = "InternalError";
 __hlt_exception __hlt_exception_os_error = "OSError";
 __hlt_exception __hlt_exception_overlay_not_attached = "OverlayNotAttached";
+__hlt_exception __hlt_exception_index_error = "IndexError";
+__hlt_exception __hlt_exception_underflow = "Underflow";
+__hlt_exception __hlt_exception_invalid_iterator = "InvalidIterator";
+__hlt_exception __hlt_exception_pattern_error = "PatternError";
 
 // Reports an uncaught exception.
 void __hlt_exception_print_uncaught(__hlt_exception exception) 

@@ -14,6 +14,7 @@
 typedef struct __hlt_type_info __hlt_type_info;
 typedef struct __hlt_string __hlt_string;
 typedef struct __hlt_addr __hlt_addr;
+typedef struct __hlt_net __hlt_net;
 typedef struct __hlt_port __hlt_port;
 typedef struct __hlt_overlay __hlt_overlay;
 

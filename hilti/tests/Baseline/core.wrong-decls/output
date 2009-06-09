@@ -1,3 +1,3 @@
-wrong-decls.hlt:11: error, local variable foo must be of storage type
+wrong-decls.hlt:11: error, local variable foo must be of heap type
 
 1 error found

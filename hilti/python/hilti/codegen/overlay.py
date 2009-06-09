@@ -23,7 +23,7 @@ import sys
 _doc_c_conversion = _doc_c_conversion = """An ``overlay`` is mapped to a ``__hlt_overlay``."""
 
 def _iterType():
-    return codegen.llvmTypeConvert(type.IteratorBytes())
+    return codegen.llvmTypeConvert(type.IteratorBytes(type.Bytes()))
 
 def _arraySize(overlay):
     return 1 + overlay.numDependencies()
@@ -32,7 +32,7 @@ def _llvmOverlayType(overlay):
     return llvm.core.Type.array(_iterType(), _arraySize(overlay))
 
 def _unsetIter():
-    return codegen.llvmConstDefaultValue(type.IteratorBytes())
+    return codegen.llvmConstDefaultValue(type.IteratorBytes(type.Bytes()))
 
 @codegen.typeInfo(type.Overlay)
 def _(t):
@@ -91,7 +91,7 @@ def _(self, i):
         elif offset > 0:
             # Static offset. We can calculate the starting position directly.
             begin = self.llvmGenerateCCallByName("__Hlt::bytes_pos_incr_by", 
-            [offset0, codegen.llvmConstInt(offset, 32)], [type.IteratorBytes(), type.Integer(32)], llvm_args=True)
+            [offset0, codegen.llvmConstInt(offset, 32)], [type.IteratorBytes(type.Bytes()), type.Integer(32)], llvm_args=True)
             
         else:
             # Offset is not static but our immediate dependency must have

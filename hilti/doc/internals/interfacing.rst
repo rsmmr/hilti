@@ -109,7 +109,7 @@ Specifically, ~~C_HILTI differs from ~~C in the following aspects:
       is turned into *two* parameters received by the callee: the
       type information and a *pointer* to the actual parameter. The
       latter is of the type as described above. The type information
-      is of type ``hlt_type_info-start *``, with the struct defined
+      is of type ``hlt_type_info *``, with the struct defined
       in |hilti_intern.h|:
           
       .. literalinclude:: /libhilti/hilti_intern.h

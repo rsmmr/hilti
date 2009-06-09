@@ -21,7 +21,11 @@
 #include "thread_context.h"
 #include "exceptions.h"
 #include "addr.h"
+#include "net.h"
 #include "port.h"
+#include "vector.h"
+#include "list.h"
+#include "regexp.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Run-time information about HILTI types.
@@ -45,8 +49,14 @@
 #define __HLT_TYPE_ADDR     12
 #define __HLT_TYPE_PORT     13
 #define __HLT_TYPE_OVERLAY  14
+#define __HLT_TYPE_VECTOR   15
+#define __HLT_TYPE_LIST     16
+#define __HLT_TYPE_NET      17
+#define __HLT_TYPE_REGEXP   18
 
-#define __HLT_TYPE_ITERATOR_BYTES 100
+#define __HLT_TYPE_ITERATOR_BYTES  100
+#define __HLT_TYPE_ITERATOR_VECTOR 101
+#define __HLT_TYPE_ITERATOR_LIST   102
    // %doc-__HLT_TYPE-end
 
    // %doc-hlt_type_info-start

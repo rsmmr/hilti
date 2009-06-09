@@ -1,0 +1,41 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> i1
+    local iterator<bytes> i2
+    local ref<regexp> re
+    local bool found
+    
+    re = new regexp
+    call Hilti::print(re)
+    
+    regexp.compile re "Foo|Bar"
+    call Hilti::print(re)
+    
+    b = b"Hello Foo!"
+    i1 = bytes.begin b
+    i2 = bytes.end b
+    found = regexp.find re i1 i2
+    call Hilti::print(found)
+    
+    b = b"Hello Bar!"
+    i1 = bytes.begin b
+    i2 = bytes.end b
+    found = regexp.find re i1 i2
+    call Hilti::print(found)
+    
+    b = b"Hello Nobody!"
+    i1 = bytes.begin b
+    i2 = bytes.end b
+    found = regexp.find re i1 i2
+    call Hilti::print(found)
+}

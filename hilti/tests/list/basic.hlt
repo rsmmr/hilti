@@ -1,0 +1,104 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int32 i
+    local int64 s
+    local ref<list<int32>> l
+    
+    l = new list<int32>
+
+    list.push_back l 100
+    list.push_back l 200
+    list.push_back l 300
+    list.push_back l 400
+    list.push_back l 500
+    list.push_back l 600
+    list.push_back l 700
+    list.push_back l 800
+    list.push_back l 900
+    list.push_back l 1000
+    call Hilti::print(l)
+
+    i = list.front l
+    call Hilti::print(i)
+    i = list.back l
+    call Hilti::print(i)
+
+    s = list.size l 
+    call Hilti::print(s)
+    
+    i = list.pop_front l
+    call Hilti::print(i)
+    
+    i = list.pop_front l
+    call Hilti::print(i)
+    
+    i = list.pop_front l
+    call Hilti::print(i)
+
+    i = list.pop_front l
+    i = list.pop_front l
+    i = list.pop_front l
+    i = list.pop_front l
+    i = list.pop_front l
+    i = list.pop_front l
+    i = list.pop_front l
+
+    call Hilti::print(l)
+    
+    s = list.size l
+    call Hilti::print(s)
+    
+    call Hilti::print("")
+    
+    list.push_front l 100
+    list.push_front l 200
+    list.push_front l 300
+    list.push_front l 400
+    list.push_front l 500
+    list.push_front l 600
+    list.push_front l 700
+    list.push_front l 800
+    list.push_front l 900
+    list.push_front l 1000
+    call Hilti::print(l)
+
+    i = list.front l
+    call Hilti::print(i)
+    i = list.back l
+    call Hilti::print(i)
+
+    s = list.size l 
+    call Hilti::print(s)
+    
+    i = list.pop_back l
+    call Hilti::print(i)
+    
+    i = list.pop_back l
+    call Hilti::print(i)
+    
+    i = list.pop_back l
+    call Hilti::print(i)
+    
+    i = list.pop_back l
+    i = list.pop_back l
+    i = list.pop_back l
+    i = list.pop_back l
+    i = list.pop_back l
+    i = list.pop_back l
+    i = list.pop_back l
+
+    call Hilti::print(l)
+    
+    s = list.size l
+    call Hilti::print(s)
+
+}

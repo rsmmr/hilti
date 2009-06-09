@@ -306,6 +306,13 @@ const int8_t* __hlt_bytes_sub_raw(__hlt_bytes_pos start, __hlt_bytes_pos end, __
     return __hlt_bytes_sub_raw_internal(start, end, excpt);
 }
 
+const int8_t* __hlt_bytes_to_raw(const __hlt_bytes* b, __hlt_exception* excpt)
+{
+    __hlt_bytes_pos begin = __hlt_bytes_begin(b, excpt);
+    __hlt_bytes_pos end = __hlt_bytes_end(excpt);
+    return __hlt_bytes_sub_raw(begin, end, excpt);
+}
+
 int8_t __hlt_bytes_extract_one(__hlt_bytes_pos* pos, const __hlt_bytes_pos end, __hlt_exception* excpt)
 {
     if ( is_end(*pos) || __hlt_bytes_pos_eq(*pos, end, excpt) ) {
@@ -370,7 +377,7 @@ __hlt_bytes_pos __hlt_bytes_begin(const __hlt_bytes* b, __hlt_exception* excpt)
     return p;
 }
 
-__hlt_bytes_pos __hlt_bytes_end(const __hlt_bytes* b, __hlt_exception* excpt)
+__hlt_bytes_pos __hlt_bytes_end(__hlt_exception* excpt)
 {
     return PosEnd;
 }

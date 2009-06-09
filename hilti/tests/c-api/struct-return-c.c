@@ -53,6 +53,11 @@ struct J {
     int32_t z;
 };
 
+struct K { 
+    int32_t x;
+    int64_t y;
+};
+
 struct A fa() {
     struct A q;
     q.x = 1;
@@ -121,6 +126,12 @@ struct J fj() {
     return q; 
 }
 
+struct K fk() {
+    struct K k;
+    k.x = 1;
+    k.y = 2;
+    return k; 
+}
 
 
 

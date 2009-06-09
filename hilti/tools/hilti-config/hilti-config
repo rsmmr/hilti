@@ -60,15 +60,15 @@ while [ "$1" != "" ]; do
             shift;;
             
         --ldflags)
-            echo "-L$base/libhilti"
+            echo "-L$base/libhilti -L$base/libhilti/tre/lib/.libs"
             shift;;
             
         --libs)
-            echo "-lhilti -lc -lpthread"
+            echo "-lhilti -lc -lpthread -ltre"
             shift;;
             
         --libs-main)
-            echo "-lhiltimain -lc -lpthread"
+            echo "-lhiltimain -lc -lpthread -ltre"
             shift;;
             
         --hilticflags)

@@ -1,0 +1,37 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+     local net x
+     local net y
+     local net z
+     local bool b
+
+     x = 192.168.1.1/24
+     y = 2001:0db8::1428:57ab/48
+     z = ::192.168.1.1/120
+
+     b = equal x x
+     call Hilti::print (b)
+     
+     b = equal y y
+     call Hilti::print (b)
+     
+     b = equal x y
+     call Hilti::print (b)
+     
+     b = equal x z
+     call Hilti::print (b)
+     
+     b = equal y z
+     call Hilti::print (b)
+
+}
+

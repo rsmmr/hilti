@@ -67,6 +67,7 @@ tokens = (
    'NULL', 
    'ENUM',
    'ADDR',
+   'NET',
    'PORT',
    
    'ATTR_DEFAULT'
@@ -80,28 +81,54 @@ states = (
 )
 
 def t_ADDR4(t): # must come before DOUBLE.
-    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
+    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(/\d{1,2})?'
+
+    try:
+        (mask, len) = t.value.split("/")
+    except ValueError:
+        mask = t.value
+        len = 0
     
-    addr = struct.unpack("!1L", socket.inet_pton(socket.AF_INET, t.value))
-    t.type = "ADDR"
-    t.value = (0, long(addr[0]))
+    addr = struct.unpack("!1L", socket.inet_pton(socket.AF_INET, mask))
+    
+    if not len:
+        t.type = "ADDR"
+        t.value = (0, long(addr[0]))
+    else:
+        t.type = "NET"
+        t.value = (0, long(addr[0]), 96 + int(len))
+        
     return t
 
 def t_ADDR6(t): # must come before DOUBLE.
     # FIXME: This is quick first shot at a regexp. Seems a correct one isn't
     # easy to build and v6b addresses might actually look like enum constants as
     # well ...
-    r'([.:0-9a-z]+::?[.0-9a-z]+)|:[.:0-9a-z]+'
+    r'(([.:0-9a-z]+::?[.0-9a-z]+)|:[.:0-9a-z]+)(/\d{1,3})?'
+
+    try:
+        (mask, len) = t.value.split("/")
+    except ValueError:
+        mask = t.value
+        len = None
     
     try:
-        addr = struct.unpack("!2Q", socket.inet_pton(socket.AF_INET6, t.value))
+        addr = struct.unpack("!2Q", socket.inet_pton(socket.AF_INET6, mask))
     except socket.error:
-        parser.error(t, "cannot parse IPv6 address %s" % t.value, lineno=t.lexer.lineno)
+        parser.error(t, "cannot parse IPv6 address %s" % mask, lineno=t.lexer.lineno)
         return None
+
+    if not len:
+        t.type = "ADDR"
+        t.value = (addr[0], addr[1])
+    else:
+        len = int(len)
+        if len < 0 or len > 128:
+            parser.error(t, "prefix length is out of range", lineno=t.lexer.lineno)
         
-    t.type = "ADDR"
-    
-    t.value = (addr[0], addr[1])
+        t.type = "NET"
+        t.value = (addr[0], addr[1], len)
+        
     return t
 
 def t_PORT(t):

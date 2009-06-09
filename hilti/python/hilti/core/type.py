@@ -236,7 +236,7 @@ class HiltiType(Type):
         
         Returns: ~~Iterator - The iterator type or None if not iterable. 
         """
-        return self._itertype()
+        return self._itertype
 
     class ParameterMismatch(Exception):
         """Exception class to indicate a problem with a type parameter.
@@ -274,6 +274,37 @@ class HeapType(HiltiType):
         super(HeapType, self).__init__(args, name, **kwargs)
 
     _name = "heap type"
+
+class Container(HeapType):
+    """Base class for all container types. A container is iterable and stores
+    elements of a certain *item type*. 
+    
+    The arguments are the same as for ~~HiltiType. If it's not a wildcard
+    type, the first argument must be the item type, a ~~ValueType. 
+    """
+    def __init__(self, args, name, **kwargs):
+        super(HeapType, self).__init__(args, name, **kwargs)
+        
+        if self.wildcardType():
+            self._type = None
+            return
+
+        assert len(args) >= 1
+        t = args[0]
+        
+        if not isinstance(t, ValueType):
+            raise HiltiType.ParameterMismatch(t, "vector type must be a value type")
+        
+        self._type = t
+        
+    def itemType(self):
+        """Returns the type of the container items.
+        
+        Returns: ~~ValueType - The type of the channel items.
+        """
+        return self._type
+        
+    _name = "container type"
     
 class OperandType(Type):
     """Base class for all types that can only be used as operands and function
@@ -315,13 +346,13 @@ class TypeDeclType(Type):
 class Iterator(ValueType):
     """Type for iterating over a container. 
     
-    args: list of a single ~~HeapType - The container type to iterate over. 
+    t: ~~HeapType - The container type to iterate over. 
     """
-    def __init__(self, args):
-        super(Iterator, self).__init__(args, Iterator._name)
+    def __init__(self, t):
+        super(Iterator, self).__init__([t], Iterator._name)
 
-        self._type = args[0]
-        if not isinstance(self._type, HiltiType):
+        self._elem_type = t
+        if not isinstance(t, HiltiType):
             raise HiltiType.ParameterMismatch(self._type, "iterator takes a type as parameter")
 
     def containerType(self):
@@ -329,7 +360,7 @@ class Iterator(ValueType):
         
         Returns: ~~HeapType - The container type the iterator can iterator over.
         """
-        return self._type
+        return self._elem_type
         
     _name = "iterator"
     
@@ -508,6 +539,14 @@ class Addr(ValueType):
     _name = "addr"
     _id = 12
 
+class Net(ValueType):
+    """Type for network prefixes."""
+    def __init__(self):
+        super(Net, self).__init__([], Net._name)
+        
+    _name = "net"
+    _id = 17
+    
 class Port(ValueType):
     """Type for TCP and UDP ports."""
     def __init__(self):
@@ -676,7 +715,7 @@ class Bytes(HeapType):
     """Type for ``bytes``. 
     """
     def __init__(self):
-        super(Bytes, self).__init__([], Bytes._name, itertype=IteratorBytes)
+        super(Bytes, self).__init__([], Bytes._name, itertype=IteratorBytes(self))
 
     _name = "bytes"
     _id = 9
@@ -684,12 +723,12 @@ class Bytes(HeapType):
 class IteratorBytes(Iterator):
     """Type for iterating over ``bytes``. 
     """
-    def __init__(self):
-        super(IteratorBytes, self).__init__([Bytes()])
+    def __init__(self, t):
+        super(IteratorBytes, self).__init__(t)
 
     _id = 100
 
-class Channel(HeapType):
+class Channel(Container):
     """Type for channels. 
 
     args: list of ~~ValueType - The first argument is the type of the channel
@@ -701,19 +740,12 @@ class Channel(HeapType):
         super(Channel, self).__init__(args, Channel._name, wildcard=True)
 
         if self.wildcardType():
-            self._type = None
             self._capacity = 0
             return
-        
+
         assert len(args) == 2
-
-        t = args[0]
-
-        if not isinstance(t, ValueType):
-            raise HiltiType.ParameterMismatch(t, "channel type must be a value type")
+        t = args[0]        
         
-        self._type = t
-
         if args[1] == "_":
             self._capacity = 0 
         else:
@@ -725,13 +757,6 @@ class Channel(HeapType):
             if self._capacity < 0:
                 raise HiltiType.ParameterMismatch(args[1], "channel capacity cannot be negative")
             
-    def itemType(self):
-        """Returns the type of the channel items.
-        
-        Returns: ~~ValueType - The type of the channel items.
-        """
-        return self._type
-
     def capacity(self):
         """Returns channel capacity, i.e., the maximum number of items that the
         channel can hold.
@@ -743,6 +768,63 @@ class Channel(HeapType):
 
     _name = "channel"
     _id = 8
+
+class Vector(Container):
+    """Type for ``vector``. 
+    
+    args: list of ~~ValueType - The list must have exactly one element: the
+    type of the vector's elements. 
+    
+    """
+    def __init__(self, args):
+        super(Vector, self).__init__(args, Vector._name, wildcard=True, itertype=IteratorVector(self))
+
+        if not self.wildcardType():
+            assert len(args) == 1
+        
+    _name = "vector"
+    _id = 15
+    
+class IteratorVector(Iterator):
+    """Type for iterating over ``vector``. 
+    """
+    def __init__(self, t):
+        super(IteratorVector, self).__init__(t)
+        
+    _id = 101
+    
+class List(Container):
+    """Type for ``list``. 
+    
+    args: list of ~~ValueType - The list must have exactly one element: the
+    type of the list's elements. 
+    
+    """
+    def __init__(self, args):
+        super(List, self).__init__(args, List._name, wildcard=True, itertype=IteratorList(self))
+        
+        if not self.wildcardType():
+            assert len(args) == 1
+
+    _name = "list"
+    _id = 15
+    
+class IteratorList(Iterator):
+    """Type for iterating over ``list``. 
+    """
+    def __init__(self, t):
+        super(IteratorList, self).__init__(t)
+        
+    _id = 102
+
+class RegExp(HeapType):
+    """Type for ``regexp``. 
+    """
+    def __init__(self):
+        super(RegExp, self).__init__([], RegExp._name)
+
+    _name = "regexp"
+    _id = 18
     
 class Function(Type):
     """Type for functions. 
@@ -893,7 +975,11 @@ _keywords = {
     "bytes": (Bytes, 0, None),
     "iterator": (Iterator, 1, None),
     "addr": (Addr, 0, None),
+    "net": (Net, 0, None),
     "port": (Port, 0, None),
+    "vector": (Vector, 1, None),
+    "list": (List, 1, None),
+    "regexp": (RegExp, 0, None),
     }
 
 _all_hilti_types = {}

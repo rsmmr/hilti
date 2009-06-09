@@ -1,0 +1,41 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int32 i
+    local int64 s
+    local ref<list<int32>> l
+
+    local bool eq
+    local iterator<list<int32>> cur
+    local iterator<list<int32>> end
+
+    l = new list<int32>
+    list.push_back l 10
+    list.push_back l 20
+    list.push_back l 30
+    list.push_back l 40
+    list.push_back l 50
+
+    cur = list.begin l
+    end = list.end l
+
+@loop:
+    eq = equal cur end
+    if.else eq @exit @cont
+    
+@cont:
+    i = deref cur
+    call Hilti::print (i)
+    cur = incr cur
+    jump @loop
+    
+@exit: return.void
+    }

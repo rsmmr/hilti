@@ -107,13 +107,26 @@ extern __hlt_bytes* __hlt_bytes_sub(__hlt_bytes_pos start, __hlt_bytes_pos end, 
 // in continous memory), or expensive (if it's not, as then it needs to be copied). 
 extern const int8_t* __hlt_bytes_sub_raw(__hlt_bytes_pos start, __hlt_bytes_pos end, __hlt_exception* excpt);
 
+// Converts a Bytes object into a raw C array. 
+// 
+// b: The object to convert. 
+// 
+// Returns: A pointer to continuous memory containing the bytes. The memory
+// must not be altered nor freed. Only ``__hlt_bytes_len(b)`` number of bytes
+// are valid. 
+// 
+// Note: This function can either be very efficient (if the data is already
+// located in continous memory), or expensive (if it's not, as then it needs
+// to be copied). 
+extern const int8_t* __hlt_bytes_to_raw(const __hlt_bytes* b, __hlt_exception* excpt);
+
 // Returns one byte from a Bytes object.
 //
 // *pos*: The position from where to extract the byte. After reading the
-// byte, the iterator is increment to the next position, or __hlt_bytes_end()
-// if the end has been reached. If *pos* is already the *end* position (or
-// the end of the bytes object), it is left unchanged and a ~~ValueError
-// exception is raised.
+// byte, the iterator is incremented to the next position, or
+// __hlt_bytes_end() if the end has been reached. If *pos* is already the
+// *end* position (or the end of the bytes object), it is left unchanged and
+// a ~~ValueError exception is raised.
 // 
 // *end*: End position. 
 // 
@@ -149,12 +162,12 @@ extern __hlt_bytes_pos __hlt_bytes_offset(const __hlt_bytes* b, __hlt_bytes_size
 // Returns: The position.
 extern __hlt_bytes_pos __hlt_bytes_begin(const __hlt_bytes* b, __hlt_exception* excpt);
 
-// Returns a position representing the one beyond the last element of a Bytes object.
+// Returns a position representing the end of any Bytes object.
 // 
 // b: The Bytes object to return the end of.
 //
 // Returns: The position.
-extern __hlt_bytes_pos __hlt_bytes_end(const __hlt_bytes* b, __hlt_exception* excpt);
+extern __hlt_bytes_pos __hlt_bytes_end(__hlt_exception* excpt);
 
 // Extracts the element at a position.  
 // 

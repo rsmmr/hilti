@@ -7,11 +7,13 @@ BC_FROM_LL = call_hilti.bc
 BC_FROM_C  = print.bc exceptions.bc utf8proc.bc init.bc memory.bc string.bc \
              int.bc double.bc bool.bc tuple.bc fmt.bc channel.bc enum.bc \
              bytes.bc config.bc schedulers.bc thread_context.bc run.bc \
-             addr.bc port.bc
+             addr.bc port.bc vector.bc list.bc net.bc regexp.bc
 
 BC = $(BC_FROM_LL) $(BC_FROM_C) 
 
-HEADERS  = hilti.h hilti_intern.h bytes.h config.h thread_context.h exceptions.h
+HEADERS  = hilti.h hilti_intern.h bytes.h config.h thread_context.h \
+           exceptions.h vector.h list.h net.h regexp.h
+           
 MAIN     = main.bc
 
 GC_LIB     = gc/gc.a 
@@ -28,9 +30,9 @@ LDFLAGS=
 LLVMAS_FLAGS=
 LLC_FLAGS=
 
-all: gc $(LIB_STATIC) $(LIB_STATIC_MAIN)
+all: tre $(LIB_STATIC) $(LIB_STATIC_MAIN)
 
-clean:
+clean: tre-clean
 	make -C gc clean
 	rm -f $(LIB_STATIC) $(LIB_STATIC_MAIN) $(BC) $(MAIN)
 
@@ -40,6 +42,15 @@ clean:
 %.bc : %.ll 
 	llvm-as -f $(LLVMAS_FLAGS) $< -o $@
 
+.PHONY: tre
+tre:
+	if [ ! -e tre/lib/.libs/libtre.a ]; then \
+		( cd tre && CC=llvm-gcc CFLAGS= ./configure --disable-approx --disable-agrep --disable-rpath --enable-static --disable-shared && make ) \
+	fi
+
+tre-clean:
+	-( cd tre && make distclean )
+	
 # Temporarily disabled
 # 
 #.PHONY: gc

@@ -136,7 +136,7 @@ def _(self, i):
 
 @codegen.when(instructions.bytes.End)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_end", [i.op1()], [i.op1().type()])
+    result = self.llvmGenerateCCallByName("__Hlt::bytes_end", [])
     self.llvmStoreInTarget(i.target(), result)
     
 @codegen.when(instructions.bytes.Diff)
@@ -144,8 +144,6 @@ def _(self, i):
     result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_diff", [i.op1(), i.op2()], [i.op2().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
 
-import sys    
-    
 @codegen.unpack(type.Bytes)
 def _(t, begin, end, fmt, arg):
     """Bytes unpacking extract a subrange from a bytes object per the
@@ -162,7 +160,7 @@ def _(t, begin, end, fmt, arg):
     """
     
     bytes = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
-    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes()))
+    iter = codegen.llvmAlloca(codegen.llvmTypeConvert(type.IteratorBytes(type.Bytes())))
     exception = codegen.llvmAddrException(codegen.llvmCurrentFramePtr())
     
     extract_one = codegen.llvmCurrentModule().get_function_named("__hlt_bytes_extract_one")
@@ -209,7 +207,7 @@ def _(t, begin, end, fmt, arg):
             builder = codegen.pushBuilder(block_exit)
             
             if not skip:
-                val = codegen.llvmGenerateCCallByName("__Hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes()] * 2, llvm_args=True)
+                val = codegen.llvmGenerateCCallByName("__Hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes(type.Bytes())] * 2, llvm_args=True)
             else:
                 val = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
                 
@@ -258,7 +256,7 @@ def _(t, begin, end, fmt, arg):
                 
                     # Check whether end reached.
                 builder = codegen.pushBuilder(block_body)
-                done = codegen.llvmGenerateCCallByName("__Hlt::bytes_pos_eq", [builder.load(iter), end], [type.IteratorBytes()] * 2, llvm_args=True)
+                done = codegen.llvmGenerateCCallByName("__Hlt::bytes_pos_eq", [builder.load(iter), end], [type.IteratorBytes(type.Bytes())] * 2, llvm_args=True)
                 builder = codegen.builder()
                 builder.cbranch(done, block_exit, block_cmp)
                 codegen.popBuilder()
@@ -274,7 +272,7 @@ def _(t, begin, end, fmt, arg):
                 builder = codegen.pushBuilder(block_exit)
                 
                 if not skip:
-                    val = codegen.llvmGenerateCCallByName("__Hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes()] * 2, llvm_args=True)
+                    val = codegen.llvmGenerateCCallByName("__Hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes(type.Bytes())] * 2, llvm_args=True)
                 else:
                     val = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
                     
