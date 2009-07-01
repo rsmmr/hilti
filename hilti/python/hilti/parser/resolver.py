@@ -41,7 +41,7 @@ class Resolver(visitor.Visitor):
 
     - Resolves the *fmt* attribute of ~~Overlay fields (which is initially a
       string) to the numerical value corresponding to the ``Hilti::Packed``
-      value. 
+      value; and assign a width to all potential integer field arguments.
       
     Note: Methods in this class need to be careful with their input as it will
     not have been validated by the ~~checker when they are called; that's
@@ -418,7 +418,14 @@ class Resolver(visitor.Visitor):
                     continue
                     
                 f.fmt = self._module.lookupIDVal(label)
-        
+                
+            if f.arg:
+                # Adapt integer constants' width in tuples. FIXME: We need one
+                # generic, recursive adapt-all-ints-operand function. 
+                if isinstance(f.arg.type(), type.Tuple):
+                    self._adaptIntValues([(op, op.type(), None) for op in f.arg.value()])
+                    f.arg.setTuple(f.arg.value()) # update types
+       
 resolver = Resolver()
 
 ##################################################################################

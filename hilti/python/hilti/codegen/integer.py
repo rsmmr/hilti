@@ -174,25 +174,25 @@ def _(self, i):
     self.llvmStoreInTarget(i.target(), result)
         
 _Unpacks = {   
-    "Hilti::Packed::Int8Little": (0,  8, 0, [0]),
-    "Hilti::Packed::Int16Little": (1, 16, 0, [0, 1]),
-    "Hilti::Packed::Int32Little": (2, 32, 0, [0, 1, 2, 3]),
-    "Hilti::Packed::Int64Little": (3, 64, 0, [0, 1, 2, 3, 4, 5, 6, 7]),
+    "Hilti::Packed::Int8Little": (0,  8, 0, True, [0]),
+    "Hilti::Packed::Int16Little": (1, 16, 0, True, [0, 1]),
+    "Hilti::Packed::Int32Little": (2, 32, 0, True, [0, 1, 2, 3]),
+    "Hilti::Packed::Int64Little": (3, 64, 0, True, [0, 1, 2, 3, 4, 5, 6, 7]),
     
-    "Hilti::Packed::Int8Big":  (4,  8, 0, [0]),
-    "Hilti::Packed::Int16Big": (5, 16, 0, [1, 0]),
-    "Hilti::Packed::Int32Big": (6, 32, 0, [3, 2, 1, 0]),
-    "Hilti::Packed::Int64Big": (7, 64, 0, [7, 6, 5, 4, 3, 2, 1, 0]),
+    "Hilti::Packed::Int8Big":  (4,  8, 0, False, [0]),
+    "Hilti::Packed::Int16Big": (5, 16, 0, False, [1, 0]),
+    "Hilti::Packed::Int32Big": (6, 32, 0, False, [3, 2, 1, 0]),
+    "Hilti::Packed::Int64Big": (7, 64, 0, False, [7, 6, 5, 4, 3, 2, 1, 0]),
     
-    "Hilti::Packed::UInt8Little":  (8,  8, 16, [0]),
-    "Hilti::Packed::UInt16Little": (9, 16, 32, [0, 1]),
-    "Hilti::Packed::UInt32Little": (10, 32, 64, [0, 1, 2, 3]),
-#   "Hilti::Packed::UInt64Little": (11, 64, 128, [0, 1, 2, 3, 4, 5, 6, 7]),
+    "Hilti::Packed::UInt8Little":  (8,  8, 16, True, [0]),
+    "Hilti::Packed::UInt16Little": (9, 16, 32, True, [0, 1]),
+    "Hilti::Packed::UInt32Little": (10, 32, 64, True, [0, 1, 2, 3]),
+#   "Hilti::Packed::UInt64Little": (11, 64, 128, True, [0, 1, 2, 3, 4, 5, 6, 7]),
     
-    "Hilti::Packed::UInt8Big":  (12,  8, 16, [0]),
-    "Hilti::Packed::UInt16Big": (13, 16, 32, [1, 0]),
-    "Hilti::Packed::UInt32Big": (14, 32, 64, [3, 2, 1, 0]),
-#   "Hilti::Packed::UInt64Big": (15, 64, 128, [7, 6, 5, 4, 3, 2, 1]),
+    "Hilti::Packed::UInt8Big":  (12,  8, 16, False, [0]),
+    "Hilti::Packed::UInt16Big": (13, 16, 32, False, [1, 0]),
+    "Hilti::Packed::UInt32Big": (14, 32, 64, False, [3, 2, 1, 0]),
+#   "Hilti::Packed::UInt64Big": (15, 64, 128, False, [7, 6, 5, 4, 3, 2, 1]),
 }
 
 _localSuffix = "Little" if system.isLittleEndian() else "Big"
@@ -219,10 +219,12 @@ def _(t, begin, end, fmt, arg):
 
     Optionally, an additional arguments may be given, which then must be a
     ``tuple<int<8>,int<8>``. If given, the tuple specifies a bit range too
-    extract from the unpacked value. For example, ``(6,9)`` extracts the
-    bits 6-9. The extraced bits are shifted to the right so that they align at
-    bit 0 and the result is returned (with the same width as it would have had
-    without extracting any subset of bits).
+    extract from the unpacked value. For example, ``(6,9)`` extracts the bits
+    6-9. The extraced bits are shifted to the right so that they align at bit
+    0 and the result is returned (with the same width as it would have had
+    without extracting any subset of bits). Note that the order in which bits
+    are counted is determined by the endianess (e.g., in big-endian, we count
+    from left to right).
     """
     
     val = codegen.llvmAlloca(codegen.llvmTypeConvert(t))
@@ -232,11 +234,12 @@ def _(t, begin, end, fmt, arg):
     def unpackOne(spec):
         def _unpackOne(case):
             # FIXME: We don't check the end position yet.
-            (id, width, extend, bytes) = spec
+            (id, width, extend, little, bytes) = spec
             
             builder = codegen.builder()
             itype = llvm.core.Type.int(width)
             result = llvm.core.Constant.null(itype)
+            adjust_bits = 0
         
             # Copy the iterator.
             builder.store(begin, iter)
@@ -256,6 +259,7 @@ def _(t, begin, end, fmt, arg):
         
             if extend:
                 result = builder.zext(result, llvm.core.Type.int(extend))
+                adjust_bits = extend - width
                 width = extend
         
             if t.width() > width: 
@@ -267,7 +271,8 @@ def _(t, begin, end, fmt, arg):
             if arg:
                 builder = codegen.builder()
                 
-                # Extract bits. Fortunately, LLVM has an intrinsic for that. 
+                # Extract bits. Fortunately, LLVM has an intrinsic for that. See
+                # below, though.
                 low = codegen.llvmExtractValue(arg, 0)
                 high = codegen.llvmExtractValue(arg, 1)
                 
@@ -275,13 +280,25 @@ def _(t, begin, end, fmt, arg):
                     # FIXME: Ideally, these int should come in here in a
                     # well-defined width. Currently, they don't ...
                     if i.type.width < width:
-                        i = codegen.builder().zext(low, llvm.core.Type.int(width))
+                        i = codegen.builder().sext(i, llvm.core.Type.int(width))
                     if i.type.width > width:
-                        i = codegen.builder().trunc(high, llvm.core.Type.int(width))
+                        i = codegen.builder().trunc(i, llvm.core.Type.int(width))
+                        
                     return i
 
                 low = normalize(low)    
                 high = normalize(high)    
+
+                if not little:
+                    # Switch order of bits, in big-endian we're counting from
+                    # the left. 
+                    low = codegen.builder().add(codegen.llvmConstInt(adjust_bits, width), low)
+                    low = codegen.builder().sub(codegen.llvmConstInt(width - 1, width), low)
+                    high = codegen.builder().add(codegen.llvmConstInt(adjust_bits, width), high)
+                    high = codegen.builder().sub(codegen.llvmConstInt(width - 1, width), high)
+                    tmp = high
+                    high = low
+                    low = tmp
                 
                 # Well, it has not:
                 #
