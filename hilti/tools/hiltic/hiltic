@@ -5,13 +5,22 @@
 
 Version = 0.1
 
-import hilti
-
 import sys
 import os.path
 import optparse
+import subprocess
 
-# Collection -I arguments. 
+try:
+    # Get hilti-config information.
+    p = subprocess.Popen(["hilti-config", "--pythonpath"], stdout=subprocess.PIPE).communicate()[0].strip()
+    sys.path = p.split(":") + sys.path
+    addl_flags = subprocess.Popen(["hilti-config", "--hilticflags"], stdout=subprocess.PIPE).communicate()[0].strip()
+except:
+    addl_flags = ""
+
+import hilti
+
+# Collect -I arguments. 
 def import_path_callback(option, opt, value, parser):
     try:
         parser.values.import_paths += [value]
@@ -38,8 +47,13 @@ optparser.add_option("-I", "--import-path", action="callback", callback=import_p
 optparser.add_option("-P", "--prototypes", action="store_true", dest="protos", default=False,
                      help="Generate C prototypes")
 
-(options, args) = optparser.parse_args()
+options = None                     
+                     
+if addl_flags:
+    (options, args) = optparser.parse_args(args=addl_flags.split())
 
+(options, args) = optparser.parse_args(values=options)
+    
 if options.ll_noverify:
     options.ll = True
     
