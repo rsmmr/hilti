@@ -8,6 +8,7 @@ function usage {
 Usage: hilti-config <options>
 
     --cflags       Print flags for llvm-gcc.
+    --cxxflags     Print flags for llvm-g++.
     --distbase     Print path of the HILTI source distribution.
     --hilticflags  Print flags for hiltic.
     --ldflags      Print flags for llvm-ld.
@@ -76,6 +77,10 @@ while [ "$1" != "" ]; do
             shift;;
             
         --cflags)
+            echo "-I$base/libhilti"
+            shift;;
+            
+        --cxxflags)
             echo "-I$base/libhilti"
             shift;;
             
