@@ -27,6 +27,8 @@ function usage {
    echo "    -O1/O2/O3  Apply optimizations (see 'man opt'); also enables LTO."
    echo "    -l obj.bc  Additional object file to link in."
    echo "    -P         Generate only C prototypes for *.hlt files; does nothing else."
+   echo "    -c         Produce a native, linkable object file, not an executable."
+   echo "    -b         Produce a bitcode file for JITing."
    echo
    exit 1 
 }
@@ -94,6 +96,18 @@ function compile_c {
     result=$bc
 }
 
+# Turns *.cc into *.bc
+function compile_cc {
+    input=$1
+    dir=`dirname $input`
+    base=`basename $input .ll`
+
+    bc=$base.bc
+    tmpfiles="$tmpfiles $bc"
+    execute "llvm-g++ -c -emit-llvm $opt $cxxflags -o $bc $input"
+    result=$bc
+}
+
 # Links all *.bc together into the final output file.
 function link_all {
     bc=$@
@@ -104,12 +118,33 @@ function link_all {
         lto="-disable-opt"
     fi   
 
-    execute "llvm-ld -native $lto $llvmldflags $bc $libs -o $output" || exit 1 
+    if [ "$bitcode" != "" ]; then
+        kind=""
+    else
+        kind="-native"
+        
+        if [ "$noexec" != "" ]; then
+            exec="-Xlinker=-r"
+        else
+            exec=""
+        fi   
+    fi
+
+    execute "llvm-ld $kind $exec $lto $llvmldflags $bc $libs -o $output" || exit 1 
+    
+    if [ "$bitcode" != "" ]; then
+        # llvm-ld will have produces two outputs: (1) a shell script to start
+        # lli; and (2) a *.bc file. We only need the latter.
+        mv $output.bc $output
+    fi
+    
 }
 
 tmpfiles=""
 inputs=""
 protos=""
+noexec=""
+bitcode=""
 libsflag="--libs-main"
 
 while [ "$1" != "" ]; do
@@ -130,6 +165,10 @@ while [ "$1" != "" ]; do
             protos="1"; shift;;
         -o)
             output=$2; shift; shift;; 
+        -c)
+            noexec="1"; shift;; 
+        -b)
+            bitcode="1"; shift;; 
         -h) 
             usage;; 
         -*)
@@ -169,6 +208,7 @@ llvmasflags="$LLVMASFLAGS"
 hilticflags="`$hilticonfig --hilticflags` $HILTICFLAGS"
 llvmldflags="`$hilticonfig --ldflags` $LLVMLDFLAGS"
 cflags="`$hilticonfig --cflags` $CFLAGS"
+cxxflags="`$hilticonfig --cxxflags` $CFLAGS"
 libs=`$hilticonfig $libsflag`
 
 export PYTHONPATH=`$hilticonfig --pythonpath`:$PYTHONPATH
@@ -191,6 +231,10 @@ for file in $inputs; do
        
     elif echo $file | grep -q '\.c$'; then
        compile_c $file
+       objs="$objs $result"
+       
+    elif echo $file | grep -q '\.cc$'; then
+       compile_cc $file
        objs="$objs $result"
        
     elif echo $file | grep -q '\.bc$' ; then
