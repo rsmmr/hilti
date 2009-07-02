@@ -1,0 +1,51 @@
+
+This is a proof-of-concept compiler for turning BPF expressions into
+HILTO code, also demonstrating how use LLVM's JIT compiler from C++
+to call HILTI-generated code. 
+
+bpf2hlt
+=======
+
+This is the actual expression compiler. It's all just a quick hack!
+Note that currently it only understands "[src|dst] host <ip>"
+expressions (but it does the logical operators as well as (...)
+grouping".
+
+Here's how to compile a BPF expression into bitcode:
+
+# ./bpf2hlt host 1.2.3.4 or host 2.3.4.5 >filter.hlt
+# hilti-build -b filter.hlt -o filter.bc
+
+pktcnt
+======
+
+This is simple host-application, loading a compiled filter from a
+bitcode files, JITin it, and then applying it to packets read from a
+trace. All the program does is counting how many packets pass the
+filter. 
+
+Example usage:
+
+# ./pktcnt -r mytrace.pcap -b filter.bc
+Number of packets: 2795
+
+For comparision, you can also give pktcnt a filter directly and it
+will let libpcap do the filtering:
+
+# ./pktcnt -r ~/data/traces/surfing.ip -f "host 1.2.3.4 or host 2.3.4.5"
+Number of packets: 2795
+
+FIXME: There seem to be come corner-case differences between the
+       HILTI-compiled code and the BPF interpreter; sometimes
+       numbers slightly differ. Haven't investigated that yet.
+
+
+LLVM Note:
+==========
+
+LLVM 2.4 needs a patch to correct its "llvm-config --libs output"
+
+     http://llvm.org/viewvc/llvm-project?view=rev&revision=62687
+
+Note: after applying the patch, one needs to make clean, just
+recompiling doesn't catch the modified dependencies. 
