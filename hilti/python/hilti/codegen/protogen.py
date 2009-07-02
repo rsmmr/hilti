@@ -76,8 +76,11 @@ def _(self, f):
             if a.type() == type.Void:
                 args += ["void"]
             else:
-                ti = cg.getTypeInfo(a.type())
-                assert ti.c_prototype
+                if isinstance(a.type(), type.Reference):
+                    ti = cg.getTypeInfo(a.type().refType())
+                else:
+                    ti = cg.getTypeInfo(a.type())
+                assert ti and ti.c_prototype
                 args += [ti.c_prototype]
 
         self.addOutput("%s %s(%s, const __hlt_exception *);" % (result, cg.nameFunction(f, prefix=False), ", ".join(args)))
