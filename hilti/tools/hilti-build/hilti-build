@@ -61,7 +61,7 @@ function compile_hlt {
         result=$doth;
     else
         # Compile *.hlt into *.ll
-        ll=$base.ll
+        ll=$base.tmp.ll
         tmpfiles="$tmpfiles $ll"
         execute "hiltic -l $hilticflags -o $ll $input" || exit 1
         result=$ll
@@ -78,7 +78,7 @@ function compile_ll {
         opt="| opt $opt"
     fi
 
-    bc=$base.bc
+    bc=$base.tmp.bc
     tmpfiles="$tmpfiles $bc"
     execute "llvm-as $llvmasflags < $input $opt >$bc"
     result=$bc
@@ -90,7 +90,7 @@ function compile_c {
     dir=`dirname $input`
     base=`basename $input .ll`
 
-    bc=$base.bc
+    bc=$base.tmp.bc
     tmpfiles="$tmpfiles $bc"
     execute "llvm-gcc -c -emit-llvm $opt $cflags -o $bc $input"
     result=$bc
@@ -102,7 +102,7 @@ function compile_cc {
     dir=`dirname $input`
     base=`basename $input .ll`
 
-    bc=$base.bc
+    bc=$base.tmp.bc
     tmpfiles="$tmpfiles $bc"
     execute "llvm-g++ -c -emit-llvm $opt $cxxflags -o $bc $input"
     result=$bc
