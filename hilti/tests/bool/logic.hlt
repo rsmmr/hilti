@@ -1,0 +1,52 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local bool b1
+    local bool b2
+    local bool b3
+    local bool b4
+    local bool x
+    
+    b1 = True
+    b2 = True
+    b3 = False
+    b4 = False
+    
+    x = bool.and b1 b2
+    call Hilti::print (x)
+    
+    x = bool.and b1 b3
+    call Hilti::print (x)
+    
+    x = bool.and b3 b4
+    call Hilti::print (x)
+
+    call Hilti::print ("")
+
+    x = bool.or b1 b2
+    call Hilti::print (x)
+    
+    x = bool.or b1 b3
+    call Hilti::print (x)
+    
+    x = bool.or b3 b4
+    call Hilti::print (x)
+
+    call Hilti::print ("")
+
+    x = bool.not b1
+    call Hilti::print (x)
+    
+    x = bool.not b3
+    call Hilti::print (x)
+    
+}     
+

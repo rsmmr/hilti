@@ -62,3 +62,24 @@ def _(t, begin, end, fmt, arg):
     result = builder.icmp(llvm.core.IPRED_NE, codegen.llvmConstInt(0, 8), val)
         
     return (result, i)
+
+@codegen.when(instructions.bool.And)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    op2 = self.llvmOp(i.op2())
+    result = self.builder().and_(op1, op2)
+    self.llvmStoreInTarget(i.target(), result)
+    
+@codegen.when(instructions.bool.Or)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    op2 = self.llvmOp(i.op2())
+    result = self.builder().or_(op1, op2)
+    self.llvmStoreInTarget(i.target(), result)
+    
+@codegen.when(instructions.bool.Not)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    result = self.builder().xor(op1, codegen.llvmConstInt(1, 1))
+    self.llvmStoreInTarget(i.target(), result)
+    
