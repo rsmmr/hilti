@@ -7,7 +7,7 @@ BC_FROM_LL = call_hilti.bc
 BC_FROM_C  = print.bc exceptions.bc utf8proc.bc init.bc memory.bc string.bc \
              int.bc double.bc bool.bc tuple.bc fmt.bc channel.bc enum.bc \
              bytes.bc config.bc schedulers.bc thread_context.bc run.bc \
-             addr.bc port.bc vector.bc list.bc net.bc regexp.bc
+             addr.bc port.bc vector.bc list.bc net.bc regexp.bc debug.bc
 
 BC = $(BC_FROM_LL) $(BC_FROM_C) type-info.bc
 
@@ -70,11 +70,11 @@ $(LIB_STATIC_MAIN): $(BC) $(MAIN)
 	rm -f $(LIB_STATIC_MAIN)
 	llvm-ar rcs $(LIB_STATIC_MAIN) $(BC) $(MAIN)
 
+# FIXME: run.c call main_run(), which a  C program using
+# libhilti might not provide. Not sure how to deal with this at
+# the moment.
 $(LIB_STATIC_C): $(BC)
 	rm -f $(LIB_STATIC)
-	# FIXME: run.c call main_run(), which a  C program using
-	# libhilti might not provide. Not sure how to deal with this at
-	# the moment.
 	llvm-link `echo $(BC) | sed 's/run.bc//g'` | llc -f -o $(LIB_STATIC_C).S
 	gcc -c $(LIB_STATIC_C).S -o $(LIB_STATIC_C).o
 	ar rcs $(LIB_STATIC_C) $(LIB_STATIC_C).o

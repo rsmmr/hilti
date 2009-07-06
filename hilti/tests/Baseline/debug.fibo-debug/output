@@ -1,0 +1,1949 @@
+[hilti-flow] entering main::run()
+[hilti-trace] fibo-debug.hlt:36 call fibo (10)
+[hilti-flow] entering main::fibo(10)
+[hilti-trace] fibo-debug.hlt:16 int.lt 10 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 10 1
+[hilti-trace] fibo-debug.hlt:20 -> 9
+[hilti-trace] fibo-debug.hlt:21 call fibo (9)
+[hilti-flow] entering main::fibo(9)
+[hilti-trace] fibo-debug.hlt:16 int.lt 9 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 9 1
+[hilti-trace] fibo-debug.hlt:20 -> 8
+[hilti-trace] fibo-debug.hlt:21 call fibo (8)
+[hilti-flow] entering main::fibo(8)
+[hilti-trace] fibo-debug.hlt:16 int.lt 8 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 8 1
+[hilti-trace] fibo-debug.hlt:20 -> 7
+[hilti-trace] fibo-debug.hlt:21 call fibo (7)
+[hilti-flow] entering main::fibo(7)
+[hilti-trace] fibo-debug.hlt:16 int.lt 7 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 7 1
+[hilti-trace] fibo-debug.hlt:20 -> 6
+[hilti-trace] fibo-debug.hlt:21 call fibo (6)
+[hilti-flow] entering main::fibo(6)
+[hilti-trace] fibo-debug.hlt:16 int.lt 6 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 6 1
+[hilti-trace] fibo-debug.hlt:20 -> 5
+[hilti-trace] fibo-debug.hlt:21 call fibo (5)
+[hilti-flow] entering main::fibo(5)
+[hilti-trace] fibo-debug.hlt:16 int.lt 5 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:20 -> 4
+[hilti-trace] fibo-debug.hlt:21 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 3
+[hilti-trace] fibo-debug.hlt:23 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:23 -> 3
+[hilti-trace] fibo-debug.hlt:24 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 2
+[hilti-trace] fibo-debug.hlt:26 int.add 3 2
+[hilti-trace] fibo-debug.hlt:26 -> 5
+[hilti-trace] fibo-debug.hlt:27 return.result 5
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 5
+[hilti-trace] fibo-debug.hlt:23 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:23 -> 4
+[hilti-trace] fibo-debug.hlt:24 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 3
+[hilti-trace] fibo-debug.hlt:26 int.add 5 3
+[hilti-trace] fibo-debug.hlt:26 -> 8
+[hilti-trace] fibo-debug.hlt:27 return.result 8
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 8
+[hilti-trace] fibo-debug.hlt:23 int.sub 6 1
+[hilti-trace] fibo-debug.hlt:23 -> 5
+[hilti-trace] fibo-debug.hlt:24 call fibo (5)
+[hilti-flow] entering main::fibo(5)
+[hilti-trace] fibo-debug.hlt:16 int.lt 5 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:20 -> 4
+[hilti-trace] fibo-debug.hlt:21 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 3
+[hilti-trace] fibo-debug.hlt:23 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:23 -> 3
+[hilti-trace] fibo-debug.hlt:24 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 2
+[hilti-trace] fibo-debug.hlt:26 int.add 3 2
+[hilti-trace] fibo-debug.hlt:26 -> 5
+[hilti-trace] fibo-debug.hlt:27 return.result 5
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 5
+[hilti-trace] fibo-debug.hlt:26 int.add 8 5
+[hilti-trace] fibo-debug.hlt:26 -> 13
+[hilti-trace] fibo-debug.hlt:27 return.result 13
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 13
+[hilti-trace] fibo-debug.hlt:23 int.sub 7 1
+[hilti-trace] fibo-debug.hlt:23 -> 6
+[hilti-trace] fibo-debug.hlt:24 call fibo (6)
+[hilti-flow] entering main::fibo(6)
+[hilti-trace] fibo-debug.hlt:16 int.lt 6 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 6 1
+[hilti-trace] fibo-debug.hlt:20 -> 5
+[hilti-trace] fibo-debug.hlt:21 call fibo (5)
+[hilti-flow] entering main::fibo(5)
+[hilti-trace] fibo-debug.hlt:16 int.lt 5 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:20 -> 4
+[hilti-trace] fibo-debug.hlt:21 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 3
+[hilti-trace] fibo-debug.hlt:23 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:23 -> 3
+[hilti-trace] fibo-debug.hlt:24 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 2
+[hilti-trace] fibo-debug.hlt:26 int.add 3 2
+[hilti-trace] fibo-debug.hlt:26 -> 5
+[hilti-trace] fibo-debug.hlt:27 return.result 5
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 5
+[hilti-trace] fibo-debug.hlt:23 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:23 -> 4
+[hilti-trace] fibo-debug.hlt:24 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 3
+[hilti-trace] fibo-debug.hlt:26 int.add 5 3
+[hilti-trace] fibo-debug.hlt:26 -> 8
+[hilti-trace] fibo-debug.hlt:27 return.result 8
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 8
+[hilti-trace] fibo-debug.hlt:26 int.add 13 8
+[hilti-trace] fibo-debug.hlt:26 -> 21
+[hilti-trace] fibo-debug.hlt:27 return.result 21
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 21
+[hilti-trace] fibo-debug.hlt:23 int.sub 8 1
+[hilti-trace] fibo-debug.hlt:23 -> 7
+[hilti-trace] fibo-debug.hlt:24 call fibo (7)
+[hilti-flow] entering main::fibo(7)
+[hilti-trace] fibo-debug.hlt:16 int.lt 7 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 7 1
+[hilti-trace] fibo-debug.hlt:20 -> 6
+[hilti-trace] fibo-debug.hlt:21 call fibo (6)
+[hilti-flow] entering main::fibo(6)
+[hilti-trace] fibo-debug.hlt:16 int.lt 6 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 6 1
+[hilti-trace] fibo-debug.hlt:20 -> 5
+[hilti-trace] fibo-debug.hlt:21 call fibo (5)
+[hilti-flow] entering main::fibo(5)
+[hilti-trace] fibo-debug.hlt:16 int.lt 5 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:20 -> 4
+[hilti-trace] fibo-debug.hlt:21 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 3
+[hilti-trace] fibo-debug.hlt:23 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:23 -> 3
+[hilti-trace] fibo-debug.hlt:24 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 2
+[hilti-trace] fibo-debug.hlt:26 int.add 3 2
+[hilti-trace] fibo-debug.hlt:26 -> 5
+[hilti-trace] fibo-debug.hlt:27 return.result 5
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 5
+[hilti-trace] fibo-debug.hlt:23 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:23 -> 4
+[hilti-trace] fibo-debug.hlt:24 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 3
+[hilti-trace] fibo-debug.hlt:26 int.add 5 3
+[hilti-trace] fibo-debug.hlt:26 -> 8
+[hilti-trace] fibo-debug.hlt:27 return.result 8
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 8
+[hilti-trace] fibo-debug.hlt:23 int.sub 6 1
+[hilti-trace] fibo-debug.hlt:23 -> 5
+[hilti-trace] fibo-debug.hlt:24 call fibo (5)
+[hilti-flow] entering main::fibo(5)
+[hilti-trace] fibo-debug.hlt:16 int.lt 5 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:20 -> 4
+[hilti-trace] fibo-debug.hlt:21 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 3
+[hilti-trace] fibo-debug.hlt:23 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:23 -> 3
+[hilti-trace] fibo-debug.hlt:24 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 2
+[hilti-trace] fibo-debug.hlt:26 int.add 3 2
+[hilti-trace] fibo-debug.hlt:26 -> 5
+[hilti-trace] fibo-debug.hlt:27 return.result 5
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 5
+[hilti-trace] fibo-debug.hlt:26 int.add 8 5
+[hilti-trace] fibo-debug.hlt:26 -> 13
+[hilti-trace] fibo-debug.hlt:27 return.result 13
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 13
+[hilti-trace] fibo-debug.hlt:26 int.add 21 13
+[hilti-trace] fibo-debug.hlt:26 -> 34
+[hilti-trace] fibo-debug.hlt:27 return.result 34
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 34
+[hilti-trace] fibo-debug.hlt:23 int.sub 9 1
+[hilti-trace] fibo-debug.hlt:23 -> 8
+[hilti-trace] fibo-debug.hlt:24 call fibo (8)
+[hilti-flow] entering main::fibo(8)
+[hilti-trace] fibo-debug.hlt:16 int.lt 8 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 8 1
+[hilti-trace] fibo-debug.hlt:20 -> 7
+[hilti-trace] fibo-debug.hlt:21 call fibo (7)
+[hilti-flow] entering main::fibo(7)
+[hilti-trace] fibo-debug.hlt:16 int.lt 7 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 7 1
+[hilti-trace] fibo-debug.hlt:20 -> 6
+[hilti-trace] fibo-debug.hlt:21 call fibo (6)
+[hilti-flow] entering main::fibo(6)
+[hilti-trace] fibo-debug.hlt:16 int.lt 6 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 6 1
+[hilti-trace] fibo-debug.hlt:20 -> 5
+[hilti-trace] fibo-debug.hlt:21 call fibo (5)
+[hilti-flow] entering main::fibo(5)
+[hilti-trace] fibo-debug.hlt:16 int.lt 5 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:20 -> 4
+[hilti-trace] fibo-debug.hlt:21 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 3
+[hilti-trace] fibo-debug.hlt:23 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:23 -> 3
+[hilti-trace] fibo-debug.hlt:24 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 2
+[hilti-trace] fibo-debug.hlt:26 int.add 3 2
+[hilti-trace] fibo-debug.hlt:26 -> 5
+[hilti-trace] fibo-debug.hlt:27 return.result 5
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 5
+[hilti-trace] fibo-debug.hlt:23 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:23 -> 4
+[hilti-trace] fibo-debug.hlt:24 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 3
+[hilti-trace] fibo-debug.hlt:26 int.add 5 3
+[hilti-trace] fibo-debug.hlt:26 -> 8
+[hilti-trace] fibo-debug.hlt:27 return.result 8
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 8
+[hilti-trace] fibo-debug.hlt:23 int.sub 6 1
+[hilti-trace] fibo-debug.hlt:23 -> 5
+[hilti-trace] fibo-debug.hlt:24 call fibo (5)
+[hilti-flow] entering main::fibo(5)
+[hilti-trace] fibo-debug.hlt:16 int.lt 5 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:20 -> 4
+[hilti-trace] fibo-debug.hlt:21 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 3
+[hilti-trace] fibo-debug.hlt:23 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:23 -> 3
+[hilti-trace] fibo-debug.hlt:24 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 2
+[hilti-trace] fibo-debug.hlt:26 int.add 3 2
+[hilti-trace] fibo-debug.hlt:26 -> 5
+[hilti-trace] fibo-debug.hlt:27 return.result 5
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 5
+[hilti-trace] fibo-debug.hlt:26 int.add 8 5
+[hilti-trace] fibo-debug.hlt:26 -> 13
+[hilti-trace] fibo-debug.hlt:27 return.result 13
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 13
+[hilti-trace] fibo-debug.hlt:23 int.sub 7 1
+[hilti-trace] fibo-debug.hlt:23 -> 6
+[hilti-trace] fibo-debug.hlt:24 call fibo (6)
+[hilti-flow] entering main::fibo(6)
+[hilti-trace] fibo-debug.hlt:16 int.lt 6 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 6 1
+[hilti-trace] fibo-debug.hlt:20 -> 5
+[hilti-trace] fibo-debug.hlt:21 call fibo (5)
+[hilti-flow] entering main::fibo(5)
+[hilti-trace] fibo-debug.hlt:16 int.lt 5 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:20 -> 4
+[hilti-trace] fibo-debug.hlt:21 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 3
+[hilti-trace] fibo-debug.hlt:23 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:23 -> 3
+[hilti-trace] fibo-debug.hlt:24 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 2
+[hilti-trace] fibo-debug.hlt:26 int.add 3 2
+[hilti-trace] fibo-debug.hlt:26 -> 5
+[hilti-trace] fibo-debug.hlt:27 return.result 5
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 5
+[hilti-trace] fibo-debug.hlt:23 int.sub 5 1
+[hilti-trace] fibo-debug.hlt:23 -> 4
+[hilti-trace] fibo-debug.hlt:24 call fibo (4)
+[hilti-flow] entering main::fibo(4)
+[hilti-trace] fibo-debug.hlt:16 int.lt 4 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 4 1
+[hilti-trace] fibo-debug.hlt:20 -> 3
+[hilti-trace] fibo-debug.hlt:21 call fibo (3)
+[hilti-flow] entering main::fibo(3)
+[hilti-trace] fibo-debug.hlt:16 int.lt 3 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:20 -> 2
+[hilti-trace] fibo-debug.hlt:21 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:23 -> 1
+[hilti-trace] fibo-debug.hlt:24 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 1 1
+[hilti-trace] fibo-debug.hlt:26 -> 2
+[hilti-trace] fibo-debug.hlt:27 return.result 2
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 2
+[hilti-trace] fibo-debug.hlt:23 int.sub 3 1
+[hilti-trace] fibo-debug.hlt:23 -> 2
+[hilti-trace] fibo-debug.hlt:24 call fibo (2)
+[hilti-flow] entering main::fibo(2)
+[hilti-trace] fibo-debug.hlt:16 int.lt 2 2
+[hilti-trace] fibo-debug.hlt:16 -> False
+[hilti-trace] fibo-debug.hlt:17 if.else False @done @recurse
+[hilti-trace] fibo-debug.hlt:20 int.sub 2 1
+[hilti-trace] fibo-debug.hlt:20 -> 1
+[hilti-trace] fibo-debug.hlt:21 call fibo (1)
+[hilti-flow] entering main::fibo(1)
+[hilti-trace] fibo-debug.hlt:16 int.lt 1 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:21 -> 1
+[hilti-trace] fibo-debug.hlt:23 int.sub 1 1
+[hilti-trace] fibo-debug.hlt:23 -> 0
+[hilti-trace] fibo-debug.hlt:24 call fibo (0)
+[hilti-flow] entering main::fibo(0)
+[hilti-trace] fibo-debug.hlt:16 int.lt 0 2
+[hilti-trace] fibo-debug.hlt:16 -> True
+[hilti-trace] fibo-debug.hlt:17 if.else True @done @recurse
+[hilti-trace] fibo-debug.hlt:30 return.result 0
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 0
+[hilti-trace] fibo-debug.hlt:26 int.add 1 0
+[hilti-trace] fibo-debug.hlt:26 -> 1
+[hilti-trace] fibo-debug.hlt:27 return.result 1
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 1
+[hilti-trace] fibo-debug.hlt:26 int.add 2 1
+[hilti-trace] fibo-debug.hlt:26 -> 3
+[hilti-trace] fibo-debug.hlt:27 return.result 3
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 3
+[hilti-trace] fibo-debug.hlt:26 int.add 5 3
+[hilti-trace] fibo-debug.hlt:26 -> 8
+[hilti-trace] fibo-debug.hlt:27 return.result 8
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 8
+[hilti-trace] fibo-debug.hlt:26 int.add 13 8
+[hilti-trace] fibo-debug.hlt:26 -> 21
+[hilti-trace] fibo-debug.hlt:27 return.result 21
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:24 -> 21
+[hilti-trace] fibo-debug.hlt:26 int.add 34 21
+[hilti-trace] fibo-debug.hlt:26 -> 55
+[hilti-trace] fibo-debug.hlt:27 return.result 55
+[hilti-flow] leaving main::fibo
+[hilti-trace] fibo-debug.hlt:36 -> 55
+[hilti-trace] fibo-debug.hlt:38 call print (55,True)
+55
+[hilti-trace] fibo-debug.hlt:40 return.void 
+[hilti-flow] leaving main::run

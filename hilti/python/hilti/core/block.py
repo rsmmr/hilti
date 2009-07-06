@@ -52,6 +52,14 @@ class Block(ast.Node):
         ins: ~~Instruction - The instruction to add.
         """
         self._ins += [ins]
+        
+    def addInstructionAtFront(self, ins):
+        """Adds an instruction to the block. The instruction is appended to
+        the current list of instructions. 
+        
+        ins: ~~Instruction - The instruction to add.
+        """
+        self._ins = [ins] + self._ins
 
     def replace(self, other):
         """Replaces the block's content with that of another block. It

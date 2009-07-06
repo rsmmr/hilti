@@ -17,12 +17,14 @@ import canonifier
 import module
 import flow
 
-def canonifyAST(ast):
+def canonifyAST(ast, debug=False):
     """Canonifies an |ast| in place. The |ast| must be well-formed as verified
     by ~~checkAST.
     
     ast: ~~Node - The root of |ast|. It will be changed in place.
+    debug: bool - If debug is true, the canonifier may insert
+    additional code for helping with debugging. 
     """
-    return canonifier.canonifier.canonifyAST(ast)
+    return canonifier.canonifier.canonifyAST(ast, debug)
 
 

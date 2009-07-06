@@ -29,6 +29,7 @@ function usage {
    echo "    -P         Generate only C prototypes for *.hlt files; does nothing else."
    echo "    -c         Produce a native, linkable object file, not an executable."
    echo "    -b         Produce a bitcode file for JITing."
+   echo "    -d         Compile HILTI files with debugging support."
    echo
    exit 1 
 }
@@ -145,6 +146,7 @@ inputs=""
 protos=""
 noexec=""
 bitcode=""
+debug=""
 libsflag="--libs-main"
 
 while [ "$1" != "" ]; do
@@ -169,6 +171,8 @@ while [ "$1" != "" ]; do
             noexec="1"; shift;; 
         -b)
             bitcode="1"; shift;; 
+        -d)
+            debug="--debug"; shift;; 
         -h) 
             usage;; 
         -*)
@@ -205,10 +209,10 @@ if [ ! -x "$hilticonfig" ]; then
 fi
 
 llvmasflags="$LLVMASFLAGS"
-hilticflags="`$hilticonfig --hilticflags` $HILTICFLAGS"
-llvmldflags="`$hilticonfig --ldflags` $LLVMLDFLAGS"
-cflags="`$hilticonfig --cflags` $CFLAGS"
-cxxflags="`$hilticonfig --cxxflags` $CFLAGS"
+hilticflags="`$hilticonfig $debug --hilticflags` $HILTICFLAGS"
+llvmldflags="`$hilticonfig $debug --ldflags` $LLVMLDFLAGS"
+cflags="`$hilticonfig $debug --cflags` $CFLAGS"
+cxxflags="`$hilticonfig $debug --cxxflags` $CFLAGS"
 libs=`$hilticonfig $libsflag`
 
 export PYTHONPATH=`$hilticonfig --pythonpath`:$PYTHONPATH

@@ -9,7 +9,7 @@
 
 #include "hilti_intern.h"
 
-const __hlt_string* __hlt_double_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
+__hlt_string __hlt_double_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
 {
     assert(type->type == __HLT_TYPE_DOUBLE);
     
@@ -19,7 +19,7 @@ const __hlt_string* __hlt_double_to_string(const __hlt_type_info* type, const vo
     // we should code our own itoa().
     char buffer[128];
     int len = snprintf(buffer, 128, "%.2f", val);
-    __hlt_string *s = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
+    __hlt_string s = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
     memcpy(s->bytes, buffer, len);
     s->len = len;
     return s;

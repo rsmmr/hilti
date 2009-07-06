@@ -31,7 +31,7 @@ static int64_t _makeInt64(const __hlt_type_info* type, const void *obj)
     return val;
 }
 
-const __hlt_string* __hlt_int_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
+__hlt_string __hlt_int_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
 {
     assert(type->type == __HLT_TYPE_INTEGER);
     
@@ -41,7 +41,7 @@ const __hlt_string* __hlt_int_to_string(const __hlt_type_info* type, const void*
     // we should code our own itoa().
     char buffer[128];
     int len = snprintf(buffer, 128, "%lld", val);
-    __hlt_string *s = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
+    __hlt_string s = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
     memcpy(s->bytes, buffer, len);
     s->len = len;
     return s;

@@ -92,7 +92,7 @@ class Visitor(object):
         self._dovisit(obj, self._visits)
 
     # Decorators
-    def when(self, t, subtype=None):
+    def when(self, t, subtype=None, always=False):
         """Class-decorator indicating which nodes a function will handle.
         
         t: ~~Visitable class - The node class the function will handle.
@@ -100,12 +100,15 @@ class Visitor(object):
         subtype: any - If given, its value will be matched against the one
         returned by an ~~Visitable's ~~visitorSubType method; and the method is
         only called if the two match.
+        
+        always: bool - If true, run this function whenever it matches, but
+        don't consider it otherwise for the search of a most-specific match.
         """
         def f(func):
-            self._visits += [(t, subtype, func)]
+            self._visits += [(t, subtype, func, always)]
         return f    
     
-    def pre(self, t, subtype=None):
+    def pre(self, t, subtype=None, always=False):
         """Class-decorator indicating which nodes a function will handle. If
         the handled node has any childs, the method will be called *before*
         those are traversed.  
@@ -115,12 +118,15 @@ class Visitor(object):
         subtype: any - If given, its value will be matched against the one
         returned by an ~~Visitable's ~~visitorSubType method; and the method is
         only called if the two match.
+        
+        always: bool - If true, run this function whenever it matches, but
+        don't consider it otherwise for the search of a most-specific match.
         """
     	def f(func):
-            self._pres += [(t, subtype, func)]
+            self._pres += [(t, subtype, func, always)]
         return f    
     
-    def post(self, t, subtype=None):
+    def post(self, t, subtype=None, always=False):
         """Class-decorator indicating which nodes a function will handle. If
         the handled node has any childs, the method will be called *after*
         those are traversed.  
@@ -130,9 +136,12 @@ class Visitor(object):
         subtype: any - If given, its value will be matched against the one
         returned by an ~~Visitable's ~~visitorSubType method; and the method is
         only called if the two match.
+        
+        always: bool - If true, run this function whenever it matches, but
+        don't consider it otherwise for the search of a most-specific match.
         """
         def f(func):
-            self._posts += [(t, subtype, func)]
+            self._posts += [(t, subtype, func, always)]
         return f	
 
     def skipOthers(self):
@@ -148,7 +157,7 @@ class Visitor(object):
         
         candidate = None
         
-        for (type, arg, func) in dict:
+        for (type, arg, func, always) in dict:
             
             if isinstance(obj, type):
                 argmatch = (not arg or isinstance(obj.visitorSubType(), arg))
@@ -156,6 +165,11 @@ class Visitor(object):
                 ## Run all 
                 
                 if self._all and not self._skipothers:
+                    if argmatch:
+                        func(self, obj)
+                    continue
+                
+                if always:
                     if argmatch:
                         func(self, obj)
                     continue

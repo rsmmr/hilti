@@ -25,15 +25,17 @@ def _(self, id):
     name = id.name()
     type = id.type().type()
     
-    self.output("struct %s {" % name)
-    self.push()
+    self.output("<<<@printer.when(id.ID, type.TypeDeclType) is broken>>>")
     
-    for id in type.Fields():
-        self.output("%s %s, " % (id.type().name(), id.name()))
-        
-    self.output("}")
-    self.pop()
-    self.output()
+#    self.output("struct %s {" % name)
+#    self.push()
+#    
+#    for id in type.labels():
+#        self.output("%s %s, " % (id, id.name()))
+#        
+#    self.output("}")
+#    self.pop()
+#    self.output()
     
 @printer.when(id.ID, type.ValueType)
 def _(self, id):

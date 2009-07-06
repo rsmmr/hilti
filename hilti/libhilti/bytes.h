@@ -215,6 +215,6 @@ extern __hlt_bytes_size __hlt_bytes_pos_diff(__hlt_bytes_pos pos1, __hlt_bytes_p
 // standard signature for string conversions.
 // 
 // Note: The conversion can be expensive. 
-const __hlt_string* __hlt_bytes_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
+__hlt_string __hlt_bytes_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
 
 #endif

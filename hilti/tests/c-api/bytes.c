@@ -13,7 +13,7 @@
 void printb(const __hlt_bytes* b)
 {
     __hlt_exception e = 0;
-    const __hlt_string* s = __hlt_bytes_to_string(0, &b, 0, &e);
+    __hlt_string s = __hlt_bytes_to_string(0, &b, 0, &e);
     int i;
     for ( i = 0; i < s->len; i++ )
         printf("%c", s->bytes[i]);

@@ -31,8 +31,9 @@ import vector
 import list
 import net
 import regexp
+import debug
 
-def generateLLVM(ast, libpaths, verify=True):
+def generateLLVM(ast, libpaths, debug=False, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as
     verified by ~~checkAST, and it must have been canonified by ~~canonifyAST.
     
@@ -40,6 +41,7 @@ def generateLLVM(ast, libpaths, verify=True):
     libpaths: list of strings - List of paths to be searched for libhilti prototypes.
     verify: bool - If true, the correctness of the generated LLVM code will
     be verified via LLVM's internal validator.
+    debug: bool - If true, debugging support is compiled in.
     
     Returns: tuple (bool, llvm.core.Module) - If the bool is True, code generation (and
     if *verify* is True, also verification) was successful. If so, the second

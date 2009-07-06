@@ -8,7 +8,7 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-_doc_c_conversion = """A ``string`` is mapped to a ``__hlt_string *``."""
+_doc_c_conversion = """A ``string`` is mapped to a ``__hlt_string``."""
 
 def _llvmStringType(len=0):
     return llvm.core.Type.packed_struct([llvm.core.Type.int(32), llvm.core.Type.array(llvm.core.Type.int(8), len)])

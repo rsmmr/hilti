@@ -31,10 +31,16 @@ __hlt_exception __hlt_exception_underflow = "Underflow";
 __hlt_exception __hlt_exception_invalid_iterator = "InvalidIterator";
 __hlt_exception __hlt_exception_pattern_error = "PatternError";
 
+// Reports a caught exception.
+void __hlt_exception_print(__hlt_exception exception) 
+{
+    const char* name = (const char*)exception; 
+    fprintf(stderr, "hilti exception: %s\n", name);
+}
+
 // Reports an uncaught exception.
 void __hlt_exception_print_uncaught(__hlt_exception exception) 
 {
     const char* name = (const char*)exception; 
-
     fprintf(stderr, "hilti: uncaught exception, %s\n", name);
 }

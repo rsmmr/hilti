@@ -41,7 +41,7 @@ def _(type):
 
 @codegen.operator(instructions.list.New)
 def _(self, i):
-    t = instruction.TypeOperand(i.op1().value())
+    t = instruction.TypeOperand(i.op1().value().itemType())
     result = self.llvmGenerateCCallByName("__Hlt::list_new", [t])
     self.llvmStoreInTarget(i.target(), result)
 

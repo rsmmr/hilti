@@ -26,17 +26,26 @@ class Canonifier(visitor.Visitor):
         """Resets internal state. After resetting, the object can be used to
         canonify another |ast|.
         """
+        self._debug = False
         self._transformed = None
         self._module = None
         self._function = None
         self._label_counter = 0
 
-    def canonifyAST(self, ast):
+    def canonifyAST(self, ast, debug=False):
         """See ~~canonifyAST."""
         self._reset()
+        self._debug = debug
         self.visit(ast)
         return True
 
+    def debugMode(self):
+        """Returns whether we are compiling in debugging support. 
+        
+        Returns: bool - True if compiling with debugging support.
+        """
+        return self._debug
+    
     def currentModule(self):
         """Returns the current module. Only valid while canonification is in
         progress.
@@ -52,7 +61,18 @@ class Canonifier(visitor.Visitor):
         Returns: ~~Function - The current function.
         """
         return self._function
-
+    
+    def currentFunctionName(self):
+        """Returns the fully-qualified name of the current function. Only
+        valid while canonification is in progress.
+        
+        Returns: string - The current function's name.
+        """
+        
+        mod = self._module.name() if self._module else "<no-module>"
+        func = self._function.name() if self._function else "<no-func>"
+        return "%s::%s" % (mod, func)
+    
     def addTransformedBlock(self, b): 
         """Adds a block to the list of transformed blocks.
         

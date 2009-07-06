@@ -111,3 +111,6 @@ declare "C-HILTI" tuple<iterator<bytes>,iterator<bytes>> regexp_bytes_span(ref<r
 declare "C-HILTI" vector<tuple<iterator<bytes>,iterator<bytes>>> regexp_string_groups(ref<regexp> re, string s)
 declare "C-HILTI" vector<tuple<iterator<bytes>,iterator<bytes>>> regexp_bytes_groups(ref<regexp> re, iterator<bytes> begin, iterator<bytes> end)
 
+##
+
+declare "C-HILTI" void debug_printf(string stream, string fmt, any args)

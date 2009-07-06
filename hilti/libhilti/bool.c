@@ -6,10 +6,10 @@
 
 #include "hilti_intern.h"
 
-static const __hlt_string True = { 4, "True" };
-static const __hlt_string False = { 5, "False" };
+static __hlt_string_constant True = { 4, "True" };
+static __hlt_string_constant False = { 5, "False" };
 
-const __hlt_string* __hlt_bool_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
+__hlt_string __hlt_bool_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
 {
     assert(type->type == __HLT_TYPE_BOOL);
     return *((int8_t*)obj) ? &True : &False;

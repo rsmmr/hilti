@@ -46,6 +46,8 @@ optparser.add_option("-I", "--import-path", action="callback", callback=import_p
                      help="Add DIR to search path for imports", metavar="DIR")
 optparser.add_option("-P", "--prototypes", action="store_true", dest="protos", default=False,
                      help="Generate C prototypes")
+optparser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
+                     help="Compile with debugging support")
 
 options = None                     
                      
@@ -117,7 +119,7 @@ if options.hilti_plain:
     sys.exit(0)
 
 # Canonify the code.     
-if not hilti.canonifier.canonifyAST(ast):
+if not hilti.canonifier.canonifyAST(ast, debug=options.debug):
     print >>sys.stderr, "error during canonicalization"
     sys.exit(1)
 
@@ -137,7 +139,7 @@ if options.hilti_canon:
     sys.exit(0)
 
 # Generate code. 
-(success, llvm_module) = hilti.codegen.generateLLVM(ast, options.import_paths, verify=(not options.ll_noverify))
+(success, llvm_module) = hilti.codegen.generateLLVM(ast, options.import_paths, debug=options.debug, verify=(not options.ll_noverify))
 
 if not success:
     print >>sys.stderr, "error during code generation"

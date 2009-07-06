@@ -104,7 +104,7 @@ static __hlt_list_node* _make_node(__hlt_list* l, void *val)
     return n;
 }
 
-__hlt_list* __hlt_list_new(const __hlt_type_info* type, __hlt_exception* excpt)
+__hlt_list* __hlt_list_new(const __hlt_type_info* elemtype, __hlt_exception* excpt)
 {
     __hlt_list* l = __hlt_gc_malloc_non_atomic(sizeof(__hlt_list));
     if ( ! l ) {
@@ -112,7 +112,7 @@ __hlt_list* __hlt_list_new(const __hlt_type_info* type, __hlt_exception* excpt)
         return 0;
     }
     
-    l->free = __hlt_gc_calloc_non_atomic(InitialCapacity, sizeof(__hlt_list_node) + type->size);
+    l->free = __hlt_gc_calloc_non_atomic(InitialCapacity, sizeof(__hlt_list_node) + elemtype->size);
     if ( ! l->free ) {
         *excpt = __hlt_exception_out_of_memory;
         return 0;
@@ -121,7 +121,7 @@ __hlt_list* __hlt_list_new(const __hlt_type_info* type, __hlt_exception* excpt)
     l->head = l->tail = 0;
     l->available = InitialCapacity;
     l->size = 0;
-    l->type = *((__hlt_type_info**) &type->type_params);
+    l->type = elemtype;
     return l;
 }
 
@@ -282,18 +282,18 @@ int8_t __hlt_list_iter_eq(const __hlt_list_iter i1, const __hlt_list_iter i2, __
     return i1.list == i2.list && i1.node == i2.node;
 }
 
-static const __hlt_string prefix = { 1, "[" };
-static const __hlt_string postfix = { 1, "]" };
-static const __hlt_string separator = { 1, "," };
+static __hlt_string_constant prefix = { 1, "[" };
+static __hlt_string_constant postfix = { 1, "]" };
+static __hlt_string_constant separator = { 1, "," };
 
-const __hlt_string* __hlt_list_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
+__hlt_string __hlt_list_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
 {
     const __hlt_list* l = *((const __hlt_list**)obj);
-    const __hlt_string* s = &prefix; 
+    __hlt_string s = &prefix; 
     
     for ( __hlt_list_node* n = l->head; n; n = n->next ) {
         
-        const __hlt_string *t;
+        __hlt_string t;
 
         if ( l->type->to_string ) 
             t = (l->type->to_string)(l->type, &n->data, options, excpt);

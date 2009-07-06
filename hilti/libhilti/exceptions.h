@@ -58,6 +58,7 @@ extern __hlt_exception __hlt_exception_unspecified;
 // Exception-related functions.
 ///////////////////////////////////////////////////////////////////////////////
 
+extern void __hlt_exception_print(__hlt_exception exception); 
 extern void __hlt_exception_print_uncaught(__hlt_exception exception); 
 
 #endif

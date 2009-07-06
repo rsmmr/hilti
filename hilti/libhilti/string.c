@@ -11,15 +11,15 @@
 #include "hilti_intern.h"
 #include "utf8proc.h"
 
-static const __hlt_string EmptyString = { 0, "" };
+static __hlt_string_constant EmptyString = { 0, "" };
 
-const __hlt_string* __hlt_string_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
+__hlt_string __hlt_string_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
 {
-    __hlt_string* s = *((__hlt_string**)obj);
+    __hlt_string s = *((__hlt_string*)obj);
     return s ? s : &EmptyString;
 }
 
-__hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* excpt)
+__hlt_string_size __hlt_string_len(__hlt_string s, __hlt_exception* excpt)
 {
     int32_t dummy;
     const int8_t* p;
@@ -57,7 +57,7 @@ __hlt_string_size __hlt_string_len(const __hlt_string* s, __hlt_exception* excpt
 
 #include <stdio.h>
 
-const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt)
+__hlt_string __hlt_string_concat(__hlt_string s1, __hlt_string s2, __hlt_exception* excpt)
 {
     __hlt_string_size len1;
     __hlt_string_size len2;; 
@@ -77,7 +77,7 @@ const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_stri
     if ( ! len2 )
         return s1;
     
-    __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len1 + len2);
+    __hlt_string dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len1 + len2);
     
     if ( ! dst ) {
         *excpt = __hlt_exception_out_of_memory;
@@ -91,7 +91,7 @@ const __hlt_string* __hlt_string_concat(const __hlt_string* s1, const __hlt_stri
     return dst;
 }
 
-const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* excpt)
+__hlt_string __hlt_string_substr(__hlt_string s1, __hlt_string_size pos, __hlt_string_size len, __hlt_exception* excpt)
 {
     if ( ! s1 )
         s1 = &EmptyString;
@@ -99,7 +99,7 @@ const __hlt_string* __hlt_string_substr(const __hlt_string* s1, __hlt_string_siz
     return 0;
 }
 
-__hlt_string_size __hlt_string_find(const __hlt_string* s, const __hlt_string* pattern, __hlt_exception* excpt)
+__hlt_string_size __hlt_string_find(__hlt_string s, __hlt_string pattern, __hlt_exception* excpt)
 {
     if ( ! s )
         s = &EmptyString;
@@ -110,7 +110,7 @@ __hlt_string_size __hlt_string_find(const __hlt_string* s, const __hlt_string* p
     return 0;
 }
 
-int8_t __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_exception* excpt)
+int8_t __hlt_string_cmp(__hlt_string s1, __hlt_string s2, __hlt_exception* excpt)
 {
     const int8_t* p1;
     const int8_t* p2;
@@ -174,28 +174,28 @@ int8_t __hlt_string_cmp(const __hlt_string* s1, const __hlt_string* s2, __hlt_ex
     return 0;
 }
 
-const __hlt_string* __hlt_string_from_asciiz(const char* asciiz, __hlt_exception* excpt)
+__hlt_string __hlt_string_from_asciiz(const char* asciiz, __hlt_exception* excpt)
 {
     __hlt_string_size len = strlen(asciiz);
-    __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
+    __hlt_string dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
     dst->len = len;
     memcpy(dst->bytes, asciiz, len);
     return dst;
 }
 
-const __hlt_string* __hlt_string_from_data(const int8_t* data, __hlt_string_size len, __hlt_exception* excpt)
+__hlt_string __hlt_string_from_data(const int8_t* data, __hlt_string_size len, __hlt_exception* excpt)
 {
-    __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
+    __hlt_string dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
     dst->len = len;
     memcpy(dst->bytes, data, len);
     return dst;
 }
 
-static const __hlt_string UTF8_STRING = { 4, "utf8" };
-static const __hlt_string ASCII_STRING = { 5, "ascii" };
+static __hlt_string_constant UTF8_STRING = { 4, "utf8" };
+static __hlt_string_constant ASCII_STRING = { 5, "ascii" };
 enum Charset { ERROR, UTF8, ASCII };
 
-static enum Charset get_charset(const __hlt_string* charset, __hlt_exception* excpt)
+static enum Charset get_charset(__hlt_string charset, __hlt_exception* excpt)
 {
     if ( __hlt_string_cmp(charset, &UTF8_STRING, excpt) == 0 )
         return UTF8;
@@ -207,7 +207,7 @@ static enum Charset get_charset(const __hlt_string* charset, __hlt_exception* ex
     return ERROR;
 }
 
-__hlt_bytes* __hlt_string_encode(const __hlt_string* s, const __hlt_string* charset, __hlt_exception* excpt)
+__hlt_bytes* __hlt_string_encode(__hlt_string s, __hlt_string charset, __hlt_exception* excpt)
 {
     const int8_t* p;
     const int8_t* e;
@@ -257,7 +257,7 @@ __hlt_bytes* __hlt_string_encode(const __hlt_string* s, const __hlt_string* char
     return dst;
 }
 
-const __hlt_string* __hlt_string_decode(__hlt_bytes* b, const __hlt_string* charset, __hlt_exception* excpt)
+__hlt_string __hlt_string_decode(__hlt_bytes* b, __hlt_string charset, __hlt_exception* excpt)
 {
     enum Charset ch = get_charset(charset, excpt);
     if ( ch == ERROR )
@@ -271,14 +271,14 @@ const __hlt_string* __hlt_string_decode(__hlt_bytes* b, const __hlt_string* char
         __hlt_bytes_pos begin = __hlt_bytes_begin(b, excpt);
         const __hlt_bytes_pos end = __hlt_bytes_end(excpt);
         const int8_t* raw = __hlt_bytes_sub_raw(begin, end, excpt);
-        const __hlt_string *dst = __hlt_string_from_data(raw, __hlt_bytes_len(b, excpt), excpt);
+        const __hlt_string dst = __hlt_string_from_data(raw, __hlt_bytes_len(b, excpt), excpt);
         return dst;
     }
     
     if ( ch == ASCII ) {
         // Convert all bytes to 7-bit codepoints.
         __hlt_bytes_size len = __hlt_bytes_len(b, excpt);
-        __hlt_string *dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + __hlt_bytes_len(b, excpt));
+        __hlt_string dst = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + __hlt_bytes_len(b, excpt));
         dst->len = len;
         int8_t* p = dst->bytes;
         

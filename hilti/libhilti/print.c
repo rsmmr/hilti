@@ -18,7 +18,7 @@
 
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't 
  * convert to the locale encoding yet. We just print them in \u syntax. */
-static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
+void __hlt_print_str(FILE* file, __hlt_string s, int8_t newline, __hlt_exception* excpt)
 {
     if ( ! s )
         // Empty string.
@@ -37,17 +37,21 @@ static void _print_str(const __hlt_string* s, __hlt_exception* excpt)
         }
         
         if ( cp < 128 )
-            fputc(cp, stdout);
+            fputc(cp, file);
         else {
             // FIXME: We should bring our own itoa().
             if ( cp < (1 << 16) )
-                fprintf(stdout, "\\u%04x", cp);
+                fprintf(file, "\\u%04x", cp);
             else
-                fprintf(stdout, "\\U%08x", cp);
+                fprintf(file, "\\U%08x", cp);
         }
         
         p += n;
     }
+    
+    if ( newline )
+        fputc('\n', file);
+        
 }
 
 /*
@@ -66,14 +70,14 @@ void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_e
     flockfile(stdout);
 
     if ( type->to_string ) {
-        __hlt_string *s = (*type->to_string)(type, obj, 0, excpt);
+        __hlt_string s = (*type->to_string)(type, obj, 0, excpt);
         if ( *excpt )
         {
             funlockfile(stdout);
             return;
         }
 
-        _print_str(s, excpt);
+        __hlt_print_str(stdout, s, 0, excpt);
         if ( *excpt )
         {
             funlockfile(stdout);

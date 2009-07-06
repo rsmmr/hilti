@@ -26,9 +26,14 @@ from hilti import instructions
 from canonifier import canonifier
 
 # Terminates the current block with the given instruction and starts a new one.
-def _splitBlock(canonifier, ins=None):
+def _splitBlock(canonifier, ins=None, add_flow_dbg=False):
     if ins:
         current_block = canonifier.currentTransformedBlock()
+        
+        if add_flow_dbg and canonifier.debugMode():
+            dbg = instructions.debug.message("hilti-flow", "leaving %s" % canonifier.currentFunctionName())
+            current_block.addInstruction(dbg)
+        
         current_block.addInstruction(ins)
     
     new_block = block.Block(canonifier.currentFunction(), instructions = [], name=canonifier.makeUniqueLabel())
@@ -64,11 +69,11 @@ def _(self, i):
 
 @canonifier.when(instructions.flow.ReturnVoid)
 def _(self, i):
-    _splitBlock(self, i)
+    _splitBlock(self, i, add_flow_dbg=True)
 
 @canonifier.when(instructions.flow.ReturnResult)
 def _(self, i):
-    _splitBlock(self, i)
+    _splitBlock(self, i, add_flow_dbg=True)
     
 @canonifier.when(instructions.flow.IfElse)
 def _(self, i):
@@ -76,4 +81,4 @@ def _(self, i):
 
 @canonifier.when(instructions.flow.ThreadYield)
 def _(self, i):
-    _splitBlock(self, i)
+    _splitBlock(self, i, add_flow_dbg=True)

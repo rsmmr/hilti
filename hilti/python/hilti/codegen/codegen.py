@@ -45,6 +45,7 @@ class CodeGen(visitor.Visitor):
         # methods just for these few cases. 
         
         self._libpaths = []        # Search path for libhilti prototypes.
+        self._debug = False
         self._module = None        # Current module.
         self._function = None      # Current function.
         self._block = None         # Current block.
@@ -91,17 +92,25 @@ class CodeGen(visitor.Visitor):
             # The external function called to report an uncaugt exception. 
         ft = type.Function([], type.Void())
         
-    def generateLLVM(self, ast, libpaths, verify=True):
+    def generateLLVM(self, ast, libpaths, debug=False, verify=True):
         """See ~~generateLLVM."""
         self.reset()
         self._libpaths = libpaths
+        self._debug = debug
         self.visit(ast)
         
         # Generate ctors at the very end. 
         self._llvmGenerateCtors()
         
         return self.llvmModule(verify)
-            
+
+    def debugMode(self):
+        """Returns whether we are compiling in debugging support. 
+        
+        Returns: bool - True if compiling with debugging support.
+        """
+        return self._debug
+    
     def pushBuilder(self, llvm_block):
         """Pushes a LLVM builder on the builder stack. The method creates a
         new ``llvm.core.Builder`` with the given block (which will often be

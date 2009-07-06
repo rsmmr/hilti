@@ -24,7 +24,7 @@ static inline int is_v4(const __hlt_addr addr)
     (((x) & 0x000000000000ff00LL) << 40) | \
     (((x) & 0x00000000000000ffLL) << 56))
 
-const __hlt_string* __hlt_addr_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
+__hlt_string __hlt_addr_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
 {
     assert(type->type == __HLT_TYPE_ADDR);
     

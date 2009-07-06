@@ -26,7 +26,7 @@ static inline int is_v4(const __hlt_net net)
     (((x) & 0x000000000000ff00LL) << 40) | \
     (((x) & 0x00000000000000ffLL) << 56))
 
-const __hlt_string* __hlt_net_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
+__hlt_string __hlt_net_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
 {
     assert(type->type == __HLT_TYPE_NET);
     
@@ -67,8 +67,8 @@ const __hlt_string* __hlt_net_to_string(const __hlt_type_info* type, const void*
     char buffer2[6];
     snprintf(buffer2, sizeof(buffer2), "/%d", len);
     
-    const __hlt_string* s1 = __hlt_string_from_asciiz(buffer, excpt);
-    const __hlt_string* s2 = __hlt_string_from_asciiz(buffer2, excpt);
+    const __hlt_string s1 = __hlt_string_from_asciiz(buffer, excpt);
+    const __hlt_string s2 = __hlt_string_from_asciiz(buffer2, excpt);
     
     return __hlt_string_concat(s1, s2, excpt);
 }

@@ -21,9 +21,9 @@
 #define MAX_CHUNK_SIZE (1<<14)
 
 static const char* channel_name = "channel";
-static const __hlt_string prefix = { 1, "<" };
-static const __hlt_string postfix = { 1, ">" };
-static const __hlt_string separator = { 1, "," };
+static __hlt_string_constant prefix = { 1, "<" };
+static __hlt_string_constant postfix = { 1, ">" };
+static __hlt_string_constant separator = { 1, "," };
 
 // A gc'ed chunk of memory used by the channel.
 struct __hlt_channel_chunk
@@ -107,12 +107,12 @@ static inline int __hlt_channel_write_item(__hlt_channel* ch, void* data, __hlt_
     return 0;
 }
 
-const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt)
+__hlt_string __hlt_channel_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt)
 {
     assert(type->type == __HLT_TYPE_CHANNEL);
     assert(type->num_params == 2);
 
-    const __hlt_string *s = __hlt_string_from_asciiz(channel_name, excpt);
+    __hlt_string s = __hlt_string_from_asciiz(channel_name, excpt);
     s = __hlt_string_concat(s, &prefix, excpt);
     if ( *excpt )
         return 0;
@@ -120,7 +120,7 @@ const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* o
     __hlt_type_info** types = (__hlt_type_info**) &type->type_params;
     int i;
     for ( i = 0; i < type->num_params; i++ ) {
-        const __hlt_string *t;
+        __hlt_string t;
 
         if ( types[i]->to_string ) {
             t = (types[i]->to_string)(types[i], obj, 0, excpt);

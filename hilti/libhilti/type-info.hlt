@@ -1,0 +1,11 @@
+# A minimal HILTI program used to generate type information for 
+# objects used in libhilti.
+
+module Mini
+
+# FIXME: Dummy function to instantiate the type information for tuple<string>.
+# Need to add a "declare type" or so.
+declare "C-HILTI" void declare_tuple_string(tuple<string> dummy)
+
+import Hilti
+

@@ -20,6 +20,7 @@ __all__ = [
     "vector",
     "list",
     "regexp",
+    "debug",
     ]
 
 import flow
@@ -43,3 +44,4 @@ import overlay
 import vector
 import list
 import regexp
+import debug

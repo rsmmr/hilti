@@ -530,9 +530,9 @@ __hlt_bytes_size __hlt_bytes_pos_diff(__hlt_bytes_pos pos1, __hlt_bytes_pos pos2
     return n;
 }
 
-const __hlt_string* __hlt_bytes_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
+__hlt_string __hlt_bytes_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
 {
-    const __hlt_string* dst = 0; 
+    __hlt_string dst = 0; 
     
     char buf[] = "                ";
     

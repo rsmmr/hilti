@@ -14,14 +14,14 @@
 void hilti_multithreaded_run(__hlt_exception* hilti_except)
 {
     // Read configuration.
-    hilti_config config = hilti_config_get();
+    const hilti_config *config = hilti_config_get();
 
     // Initialize the exception variable.
     *hilti_except = NULL;
 
     // If the user requested fewer than 2 threads, they must have written a program that does not
     // require a scheduler. We just run main_run() directly, without creating a thread context.
-    if (config.num_threads < 2)
+    if (config->num_threads < 2)
     {
         main_run(hilti_except);
         return;
@@ -30,7 +30,7 @@ void hilti_multithreaded_run(__hlt_exception* hilti_except)
     // If we've reached this point, we need to create a HILTI thread context.
     // The thread context will create the threads specified in the configuration and
     // start them running automatically.
-    __hlt_thread_context* context = __hlt_new_thread_context(&config);
+    __hlt_thread_context* context = __hlt_new_thread_context(config);
 
     // Execute the HILTI main function. When it terminates, we return control to the caller.
     //main_run(hilti_except);

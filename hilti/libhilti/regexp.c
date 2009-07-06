@@ -5,12 +5,12 @@
 #include "hilti_intern.h"
 
 struct __hlt_regexp {
-    const __hlt_string* pattern;
+    __hlt_string pattern;
     regex_t re;
 };
 
-static const __hlt_string ASCII = { 5, "ascii" };
-static const __hlt_string EMPTY = { 12, "<no-pattern>" };
+static __hlt_string_constant ASCII = { 5, "ascii" };
+static __hlt_string_constant EMPTY = { 12, "<no-pattern>" };
 
 __hlt_regexp* __hlt_regexp_new(__hlt_exception* excpt)
 {
@@ -19,7 +19,7 @@ __hlt_regexp* __hlt_regexp_new(__hlt_exception* excpt)
     return re;
 }
 
-void __hlt_regexp_compile(__hlt_regexp* re, const __hlt_string* pattern, __hlt_exception* excpt)
+void __hlt_regexp_compile(__hlt_regexp* re, const __hlt_string pattern, __hlt_exception* excpt)
 {
     if ( re->pattern ) {
         regfree(&re->re);
@@ -50,7 +50,7 @@ void __hlt_regexp_compile(__hlt_regexp* re, const __hlt_string* pattern, __hlt_e
     re->pattern = pattern;
 }
 
-const __hlt_string* __hlt_regexp_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
+__hlt_string __hlt_regexp_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
 {
     const __hlt_regexp* re = *((const __hlt_regexp**)obj);
     return re->pattern ? re->pattern : &EMPTY;
@@ -58,18 +58,18 @@ const __hlt_string* __hlt_regexp_to_string(const __hlt_type_info* type, const vo
 
 // String versions.
 
-int8_t __hlt_regexp_string_find(__hlt_regexp* re, const __hlt_string* s, __hlt_exception* excpt)
+int8_t __hlt_regexp_string_find(__hlt_regexp* re, const __hlt_string s, __hlt_exception* excpt)
 {
     return 0;
 }
 
-__hlt_regexp_range __hlt_regexp_string_span(__hlt_regexp* re, const __hlt_string* s, __hlt_exception* excpt)
+__hlt_regexp_range __hlt_regexp_string_span(__hlt_regexp* re, const __hlt_string s, __hlt_exception* excpt)
 {
     __hlt_regexp_range span;
     return span;
 }
 
-__hlt_vector *__hlt_regexp_string_groups(__hlt_regexp* re, const __hlt_string* s, __hlt_exception* excpt)
+__hlt_vector *__hlt_regexp_string_groups(__hlt_regexp* re, const __hlt_string s, __hlt_exception* excpt)
 {
     return 0;
 }

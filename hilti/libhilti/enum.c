@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-const __hlt_string* __hlt_enum_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
+__hlt_string __hlt_enum_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
 {
     assert(type->type == __HLT_TYPE_ENUM);
     int i = *((int8_t*)obj);

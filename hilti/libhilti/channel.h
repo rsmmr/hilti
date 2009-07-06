@@ -45,7 +45,7 @@ typedef struct __hlt_channel_type_parameters
 
 
 // Returns a readable representation of a channel.
-extern const __hlt_string* __hlt_channel_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
+extern __hlt_string __hlt_channel_to_string(const __hlt_type_info* type, void* obj, int32_t options, __hlt_exception* excpt);
 
 // Creates a new channel.
 extern __hlt_channel* __hlt_channel_new(const __hlt_type_info* type, __hlt_exception* excpt);

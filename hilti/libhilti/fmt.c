@@ -13,7 +13,7 @@
 
 static const int BufferSize = 128;
 
-static void _add_char(int8_t c, int8_t* buffer, __hlt_string_size* bpos, const __hlt_string** dst, __hlt_exception* excpt)
+static void _add_char(int8_t c, int8_t* buffer, __hlt_string_size* bpos, __hlt_string* dst, __hlt_exception* excpt)
 { 
     // Adds one character 'c' to the string we're building. If there's space
     // in the buffer, it's added there and 'dst' is returned unmodified. If
@@ -25,7 +25,7 @@ static void _add_char(int8_t c, int8_t* buffer, __hlt_string_size* bpos, const _
     
     else {
         // Copy buffer to destination string and start over.
-        const __hlt_string* new_dst = __hlt_string_from_data(buffer, *bpos, excpt);
+        __hlt_string new_dst = __hlt_string_from_data(buffer, *bpos, excpt);
         if ( *excpt )
             return;
             
@@ -36,7 +36,7 @@ static void _add_char(int8_t c, int8_t* buffer, __hlt_string_size* bpos, const _
     }
 }
 
-static void _add_chars(const int8_t* data, __hlt_string_size len, int8_t* buffer, __hlt_string_size* bpos, const __hlt_string** dst, __hlt_exception* excpt)
+static void _add_chars(const int8_t* data, __hlt_string_size len, int8_t* buffer, __hlt_string_size* bpos, __hlt_string* dst, __hlt_exception* excpt)
 {
     while ( len-- ) {
         _add_char(*data++, buffer, bpos, dst, excpt);
@@ -45,7 +45,7 @@ static void _add_chars(const int8_t* data, __hlt_string_size len, int8_t* buffer
     }
 }
 
-static void _add_asciiz(const char* asciiz, int8_t* buffer, __hlt_string_size* bpos, const __hlt_string** dst, __hlt_exception* excpt)
+static void _add_asciiz(const char* asciiz, int8_t* buffer, __hlt_string_size* bpos, __hlt_string* dst, __hlt_exception* excpt)
 {
     while ( *asciiz ) {
         _add_char(*asciiz++, buffer, bpos, dst, excpt);
@@ -54,7 +54,7 @@ static void _add_asciiz(const char* asciiz, int8_t* buffer, __hlt_string_size* b
     }
 }
 
-static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const char* tuple, int *type_param, __hlt_string_size* i, int8_t* buffer, __hlt_string_size* bpos, const __hlt_string** dst, __hlt_exception* excpt) 
+static void _do_fmt(__hlt_string fmt, const __hlt_type_info* type, const void* tuple, int *type_param, __hlt_string_size* i, int8_t* buffer, __hlt_string_size* bpos, __hlt_string* dst, __hlt_exception* excpt) 
 {
     static const int tmp_size = 32;
     char tmp[tmp_size];
@@ -131,7 +131,7 @@ static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const 
         
       case 's': 
         if ( fmt_type->to_string ) {
-            const __hlt_string* str = (*fmt_type->to_string)(fmt_type, fmt_arg, 0, excpt);
+            __hlt_string str = (*fmt_type->to_string)(fmt_type, fmt_arg, 0, excpt);
             if ( *excpt )
                 return;
             
@@ -151,14 +151,14 @@ static void _do_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const 
     
 }
 
-const __hlt_string* hilti_fmt(const __hlt_string* fmt, const __hlt_type_info* type, const char* tuple, __hlt_exception* excpt)
+__hlt_string hilti_fmt(__hlt_string fmt, const __hlt_type_info* type, const void* tuple, __hlt_exception* excpt)
 {
     assert(type->type == __HLT_TYPE_TUPLE);
 
     int8_t buffer[BufferSize];
-    const __hlt_string* result;
+    __hlt_string result;
     const int8_t* p = fmt->bytes;
-    const __hlt_string* dst = 0;
+    __hlt_string dst = 0;
     int bpos = 0;
     int type_param = 0;
     __hlt_string_size i = 0;

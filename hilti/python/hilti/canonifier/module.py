@@ -48,6 +48,10 @@ def _unifyBlock(block):
         if block.next():
             newins = instructions.flow.Jump(instruction.IDOperand(id.ID(block.next().name(), type.Label(), id.Role.LOCAL, location=loc)), location=loc)
         else:
+            if canonifier.debugMode():
+                dbg = instructions.debug.message("hilti-flow", "leaving %s" % canonifier.currentFunctionName())
+                block.addInstruction(dbg)
+
             newins = instructions.flow.ReturnVoid(None, location=loc)
 
         block.addInstruction(newins)
@@ -68,13 +72,16 @@ def _(self, m):
 def _(self, f):
     if not f.blocks():
         return
-    
+
     self._function = f
     self._label_counter = 0
     self._transformed = []
-    
-    if f.name() == "main::run":
-        f.setLinkage(function.Linkage.EXPORTED)
+
+    if self.debugMode():
+        args = [instruction.IDOperand(id) for id in canonifier.currentFunction().type().args()]
+        fmt = ["%s"] * len(args)
+        dbg = instructions.debug.message("hilti-flow", "entering %s(%s)" % (canonifier.currentFunctionName(), ", ".join(fmt)), args)
+        f.blocks()[0].addInstructionAtFront(dbg)
     
     # Chain blocks together where not done yet.
     prev = None
@@ -87,8 +94,6 @@ def _(self, f):
     if not f.blocks():
         return
     
-    self._function = None
-
     # Copy the transformed blocks over to the function.
     f.clearBlocks()
     for b in self.transformedBlocks():
@@ -97,7 +102,8 @@ def _(self, f):
 
     for b in f.blocks():
         _unifyBlock(b)
-            
+
+    self._function = None
             
 ### Block
 
@@ -125,3 +131,33 @@ def _(self, i):
     assert current_block
     current_block.addInstruction(i)
 
+# Add debugging information.    
+    
+@canonifier.pre(instruction.Instruction, always=True)
+def _(self, i):
+    if self.debugMode() and not isinstance(i, instructions.debug.Msg):
+        def replace(op):
+            if isinstance(op.type(), type.Function):
+                return instruction.ConstOperand(constant.Constant(op.value().name(), type.String()))
+            
+            if isinstance(op.type(), type.Label):
+                return instruction.ConstOperand(constant.Constant(op.value().name(), type.String()))
+
+            if not isinstance(op.type(), type.HiltiType):
+                return instruction.ConstOperand(constant.Constant("<%s>" % op.type().name(), type.String()))
+            
+            return op
+        
+        args = [replace(op) for op in (i.op1(), i.op2(), i.op3()) if op]
+        fmt = ["%s"] * len(args)
+        dbg = instructions.debug.message("hilti-trace", "%s %s %s" % (i.location(), i.name(), " ".join(fmt)), args)
+        current_block = self.currentTransformedBlock()
+        current_block.addInstruction(dbg)
+
+
+@canonifier.post(instruction.Instruction, always=True)
+def _(self, i):
+    if self.debugMode() and i.target() and not isinstance(i, instructions.debug.Msg):
+        dbg = instructions.debug.message("hilti-trace", "%s -> %%s" % i.location(), [i.target()])
+        current_block = self.currentTransformedBlock()
+        current_block.addInstruction(dbg)

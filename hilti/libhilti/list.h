@@ -5,7 +5,6 @@
 
 #include "hilti_intern.h"
 
-typedef struct __hlt_list __hlt_list;
 typedef struct __hlt_list_node __hlt_list_node; // private
 typedef struct __hlt_list_iter __hlt_list_iter; // private
 
@@ -60,6 +59,6 @@ extern void* __hlt_list_iter_deref(const __hlt_list_iter i, __hlt_exception* exc
 extern int8_t __hlt_list_iter_eq(const __hlt_list_iter i1, const __hlt_list_iter i2, __hlt_exception* excpt);
 
 // Converts a list into a string.
-extern const __hlt_string* __hlt_list_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
+extern __hlt_string __hlt_list_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
 
 #endif
