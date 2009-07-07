@@ -17,8 +17,8 @@ value ``1`` and ``False`` to value ``0``.
 def _(type):
     typeinfo = codegen.TypeInfo(type)
     typeinfo.c_prototype = "int8_t"
-    typeinfo.to_string = "__Hlt::bool_to_string";
-    typeinfo.to_int64 = "__Hlt::bool_to_int64";
+    typeinfo.to_string = "hlt::bool_to_string";
+    typeinfo.to_int64 = "hlt::bool_to_int64";
     return typeinfo
 
 @codegen.llvmDefaultValue(type.Bool)

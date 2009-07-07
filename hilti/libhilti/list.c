@@ -8,7 +8,7 @@
 
 #include <string.h>
 
-#include "hilti_intern.h"
+#include "hilti.h"
 
 // Initial allocation size for the free list. 
 static const uint32_t InitialCapacity = 2;
@@ -30,12 +30,12 @@ struct __hlt_list {
     __hlt_list_node* free;       // First node is free array.
     uint16_t available;          // Number of nodes still available in free array.
     int64_t size;                // Current list size.
-    const __hlt_type_info* type; // Element type.
+    const hlt_type_info* type; // Element type.
 };
 
 // Inserts n after node pos. If pos is null, inserts at front. n must be all
 // zero-initialized. 
-static void _link(__hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos)
+static void _link(hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos)
 {
     if ( pos ) {
         if ( pos->next )
@@ -63,7 +63,7 @@ static void _link(__hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos)
 
 // Unlinks the node from the list and invalidates it. Returns the same node
 // n.
-static __hlt_list_node* _unlink(__hlt_list* l, __hlt_list_node* n)
+static __hlt_list_node* _unlink(hlt_list* l, __hlt_list_node* n)
 {
     if ( n->next )
         n->next->prev = n->prev;
@@ -81,13 +81,13 @@ static __hlt_list_node* _unlink(__hlt_list* l, __hlt_list_node* n)
     return n;
 }
 
-static __hlt_list_node* _make_node(__hlt_list* l, void *val)
+static __hlt_list_node* _make_node(hlt_list* l, void *val)
 {
     if ( ! l->available ) {
         // Need to allocate more nodes. 
         int64_t c = (l->size+1) * GrowthFactor; 
             
-        l->free = __hlt_gc_calloc_non_atomic(c, sizeof(__hlt_list_node) + l->type->size);
+        l->free = hlt_gc_calloc_non_atomic(c, sizeof(__hlt_list_node) + l->type->size);
         if ( ! l->free )
             return 0;
         
@@ -104,17 +104,17 @@ static __hlt_list_node* _make_node(__hlt_list* l, void *val)
     return n;
 }
 
-__hlt_list* __hlt_list_new(const __hlt_type_info* elemtype, __hlt_exception* excpt)
+hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_exception* excpt)
 {
-    __hlt_list* l = __hlt_gc_malloc_non_atomic(sizeof(__hlt_list));
+    hlt_list* l = hlt_gc_malloc_non_atomic(sizeof(hlt_list));
     if ( ! l ) {
-        *excpt = __hlt_exception_out_of_memory;
+        *excpt = hlt_exception_out_of_memory;
         return 0;
     }
     
-    l->free = __hlt_gc_calloc_non_atomic(InitialCapacity, sizeof(__hlt_list_node) + elemtype->size);
+    l->free = hlt_gc_calloc_non_atomic(InitialCapacity, sizeof(__hlt_list_node) + elemtype->size);
     if ( ! l->free ) {
-        *excpt = __hlt_exception_out_of_memory;
+        *excpt = hlt_exception_out_of_memory;
         return 0;
     }
 
@@ -125,96 +125,96 @@ __hlt_list* __hlt_list_new(const __hlt_type_info* elemtype, __hlt_exception* exc
     return l;
 }
 
-void __hlt_list_push_front(__hlt_list* l, const __hlt_type_info* type, void* val, __hlt_exception* excpt)
+void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception* excpt)
 {
     assert(type == l->type);
     
     __hlt_list_node* n = _make_node(l, val);
     if ( ! n ) {
-        *excpt = __hlt_exception_out_of_memory;
+        *excpt = hlt_exception_out_of_memory;
         return;
     }
     
     _link(l, n, 0);
 }
 
-void __hlt_list_push_back(__hlt_list* l, const __hlt_type_info* type, void* val, __hlt_exception* excpt)
+void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception* excpt)
 {
     assert(type == l->type);
     
     __hlt_list_node* n = _make_node(l, val);
     if ( ! n ) {
-        *excpt = __hlt_exception_out_of_memory;
+        *excpt = hlt_exception_out_of_memory;
         return;
     }
     
     _link(l, n, l->tail);
 }
 
-void* __hlt_list_pop_front(__hlt_list* l, __hlt_exception* excpt)
+void* hlt_list_pop_front(hlt_list* l, hlt_exception* excpt)
 {
     if ( ! l->head ) {
-        *excpt = __hlt_exception_underflow;
+        *excpt = hlt_exception_underflow;
         return 0;
     }
     
     return &(_unlink(l, l->head)->data);
 }
 
-void* __hlt_list_pop_back(__hlt_list* l, __hlt_exception* excpt)
+void* hlt_list_pop_back(hlt_list* l, hlt_exception* excpt)
 {
     if ( ! l->tail ) {
-        *excpt = __hlt_exception_underflow;
+        *excpt = hlt_exception_underflow;
         return 0;
     }
     
     return &(_unlink(l, l->tail)->data);
 }
 
-void* __hlt_list_front(__hlt_list* l, __hlt_exception* excpt)
+void* hlt_list_front(hlt_list* l, hlt_exception* excpt)
 {
     if ( ! l->head ) {
-        *excpt = __hlt_exception_underflow;
+        *excpt = hlt_exception_underflow;
         return 0;
     }
     
     return &l->head->data;
 }
 
-void* __hlt_list_back(__hlt_list* l, __hlt_exception* excpt)
+void* hlt_list_back(hlt_list* l, hlt_exception* excpt)
 {
     if ( ! l->tail ) {
-        *excpt = __hlt_exception_underflow;
+        *excpt = hlt_exception_underflow;
         return 0;
     }
     
     return &l->tail->data;
 }
 
-int64_t __hlt_list_size(__hlt_list* l, __hlt_exception* excpt)
+int64_t hlt_list_size(hlt_list* l, hlt_exception* excpt)
 {
     return l->size;
 }
 
-void __hlt_list_erase(__hlt_list_iter i, __hlt_exception* excpt)
+void hlt_list_erase(hlt_list_iter i, hlt_exception* excpt)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {
-        *excpt = __hlt_exception_invalid_iterator;
+        *excpt = hlt_exception_invalid_iterator;
         return;
     }
     
     if ( ! i.node ) {
-        *excpt = __hlt_exception_invalid_iterator;
+        *excpt = hlt_exception_invalid_iterator;
         return;
     }
 
     _unlink(i.list, i.node);
 }
 
-void __hlt_list_insert(const __hlt_type_info* type, void* val, __hlt_list_iter i, __hlt_exception* excpt)
+void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iter i, hlt_exception* excpt)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {
-        *excpt = __hlt_exception_invalid_iterator;
+        *excpt = hlt_exception_invalid_iterator;
         return;
     }
     
@@ -222,7 +222,7 @@ void __hlt_list_insert(const __hlt_type_info* type, void* val, __hlt_list_iter i
     
     __hlt_list_node* n = _make_node(i.list, val);
     if ( ! n ) {
-        *excpt = __hlt_exception_out_of_memory;
+        *excpt = hlt_exception_out_of_memory;
         return;
     }
 
@@ -233,26 +233,26 @@ void __hlt_list_insert(const __hlt_type_info* type, void* val, __hlt_list_iter i
         _link(i.list, n, i.node->prev); 
 }
 
-__hlt_list_iter __hlt_list_begin(__hlt_list* l, __hlt_exception* excpt)
+hlt_list_iter hlt_list_begin(hlt_list* l, hlt_exception* excpt)
 {
-    __hlt_list_iter i; 
+    hlt_list_iter i; 
     i.list = l;
     i.node = l->head;
     return i;
 }
 
-__hlt_list_iter __hlt_list_end(__hlt_list* l, __hlt_exception* excpt)
+hlt_list_iter hlt_list_end(hlt_list* l, hlt_exception* excpt)
 {
-    __hlt_list_iter i; 
+    hlt_list_iter i; 
     i.list = l;
     i.node = 0;
     return i;
 }
 
-__hlt_list_iter __hlt_list_iter_incr(__hlt_list_iter i, __hlt_exception* excpt)
+hlt_list_iter hlt_list_iter_incr(hlt_list_iter i, hlt_exception* excpt)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {
-        *excpt = __hlt_exception_invalid_iterator;
+        *excpt = hlt_exception_invalid_iterator;
         return i;
     }
     
@@ -260,61 +260,61 @@ __hlt_list_iter __hlt_list_iter_incr(__hlt_list_iter i, __hlt_exception* excpt)
         // End of list.
         return i;
     
-    __hlt_list_iter j; 
+    hlt_list_iter j; 
     j.list = i.list;
     j.node = i.node->next;
     
     return j;
 }
 
-void* __hlt_list_iter_deref(const __hlt_list_iter i, __hlt_exception* excpt)
+void* hlt_list_iter_deref(const hlt_list_iter i, hlt_exception* excpt)
 {
     if ( ! i.list || ! i.node || i.node->invalid ) {
-        *excpt = __hlt_exception_invalid_iterator;
+        *excpt = hlt_exception_invalid_iterator;
         return 0;
     }
     
     return &i.node->data;
 }
 
-int8_t __hlt_list_iter_eq(const __hlt_list_iter i1, const __hlt_list_iter i2, __hlt_exception* excpt)
+int8_t hlt_list_iter_eq(const hlt_list_iter i1, const hlt_list_iter i2, hlt_exception* excpt)
 {
     return i1.list == i2.list && i1.node == i2.node;
 }
 
-static __hlt_string_constant prefix = { 1, "[" };
-static __hlt_string_constant postfix = { 1, "]" };
-static __hlt_string_constant separator = { 1, "," };
+static hlt_string_constant prefix = { 1, "[" };
+static hlt_string_constant postfix = { 1, "]" };
+static hlt_string_constant separator = { 1, "," };
 
-__hlt_string __hlt_list_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt)
+hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt)
 {
-    const __hlt_list* l = *((const __hlt_list**)obj);
-    __hlt_string s = &prefix; 
+    const hlt_list* l = *((const hlt_list**)obj);
+    hlt_string s = &prefix; 
     
     for ( __hlt_list_node* n = l->head; n; n = n->next ) {
         
-        __hlt_string t;
+        hlt_string t;
 
         if ( l->type->to_string ) 
             t = (l->type->to_string)(l->type, &n->data, options, excpt);
         else
             // No format function.
-            t = __hlt_string_from_asciiz(l->type->tag, excpt);
+            t = hlt_string_from_asciiz(l->type->tag, excpt);
 
         if ( *excpt )
             return 0;
             
-        s = __hlt_string_concat(s, t, excpt);
+        s = hlt_string_concat(s, t, excpt);
         if ( *excpt )
             return 0;
         
         if ( n->next ) {
-            s = __hlt_string_concat(s, &separator, excpt);
+            s = hlt_string_concat(s, &separator, excpt);
             if ( *excpt )
                 return 0;
         }
     }
 
-    return __hlt_string_concat(s, &postfix, excpt);
+    return hlt_string_concat(s, &postfix, excpt);
     
 }

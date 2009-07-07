@@ -8,7 +8,7 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-_doc_c_conversion = _doc_c_conversion = """A ``port`` is mapped to a ``__hlt_port``."""
+_doc_c_conversion = _doc_c_conversion = """A ``port`` is mapped to a ``hlt_port``."""
 
 # These values must match with those in libhilti/port.h
 _protos = { "tcp": 1, "udp": 2 }
@@ -19,9 +19,9 @@ def _llvmPortType():
 @codegen.typeInfo(type.Port)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.c_prototype = "__hlt_port";
-    typeinfo.to_string = "__Hlt::port_to_string";
-    typeinfo.to_int64 = "__Hlt::port_to_int64";
+    typeinfo.c_prototype = "hlt_port";
+    typeinfo.to_string = "hlt::port_to_string";
+    typeinfo.to_int64 = "hlt::port_to_int64";
     return typeinfo
 
 @codegen.llvmDefaultValue(type.Port)

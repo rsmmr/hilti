@@ -6,15 +6,19 @@ PATH := ../tools/hilti-config:../tools/hiltic:../tools/hilti-build:$(PATH)
 
 BC_FROM_LL = call_hilti.bc 
 
-BC_FROM_C  = print.bc exceptions.bc utf8proc.bc init.bc memory.bc string.bc \
-             int.bc double.bc bool.bc tuple.bc fmt.bc channel.bc enum.bc \
+BC_FROM_C  = exceptions.bc utf8proc.bc init.bc memory.bc string.bc \
+             int.bc double.bc bool.bc tuple.bc channel.bc enum.bc \
              bytes.bc config.bc schedulers.bc thread_context.bc run.bc \
              addr.bc port.bc vector.bc list.bc net.bc regexp.bc debug.bc
+             
+BC_FROM_CLIB = module/print.bc module/fmt.bc
 
-BC = $(BC_FROM_LL) $(BC_FROM_C) type-info.bc
+BC = $(BC_FROM_LL) $(BC_FROM_C) $(BC_FROM_CLIB) type-info.bc
 
-HEADERS  = hilti.h hilti_intern.h bytes.h config.h thread_context.h \
-           exceptions.h vector.h list.h net.h regexp.h
+HEADERS  = addr.h bool.h bytes.h channel.h config.h debug.h double.h \
+           enum.h exceptions.h hilti.h init.h int.h list.h memory.h \
+           net.h overlay.h port.h regexp.h rtti.h run.h string.h \
+           thread_context.h tuple.h utf8proc.h vector.h
            
 MAIN     = main.bc
 

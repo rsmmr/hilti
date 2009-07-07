@@ -83,7 +83,8 @@ def _(self, f):
                 assert ti and ti.c_prototype
                 args += [ti.c_prototype]
 
-        self.addOutput("%s %s(%s, const __hlt_exception *);" % (result, cg.nameFunction(f, prefix=False), ", ".join(args)))
+        args = "".join(["%s, " % a for a in args])
+        self.addOutput("%s %s(%sconst hlt_exception *);" % (result, cg.nameFunction(f, prefix=False), args))
 
 @protogen.when(id.ID, type.ValueType)
 def _(self, i):

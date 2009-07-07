@@ -5,11 +5,11 @@
  * 
  */
 
-#include "hilti_intern.h"
+#include "hilti.h"
 
 int main(int argc, char** argv)
 {
-    __hlt_exception excpt = 0;
+    hlt_exception excpt = 0;
     
     hilti_init();
 
@@ -17,9 +17,9 @@ int main(int argc, char** argv)
     const char* dbg = getenv("HILTI_DEBUG");
     if ( dbg ) {
         hilti_config cfg = *hilti_config_get();
-        cfg.debug_streams = __hlt_debug_parse_streams(dbg, &excpt);
+        cfg.debug_streams = hlt_debug_parse_streams(dbg, &excpt);
         if ( excpt ) {
-            __hlt_exception_print(excpt);
+            hlt_exception_print(excpt);
             fprintf(stderr, "cannot parse HILTI_DEBUG environment variable");
             return 1;
         }
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     hilti_multithreaded_run(&excpt);
 
     if ( excpt )
-        __hlt_exception_print_uncaught(excpt);
+        hlt_exception_print_uncaught(excpt);
     
     return 0;
 }

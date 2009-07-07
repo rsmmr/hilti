@@ -50,8 +50,8 @@
  */
 
 
-#ifndef UTF8PROC_H
-#define UTF8PROC_H
+#ifndef HILTI_UTF8PROC_H
+#define HILTI_UTF8PROC_H
 
 
 #include <stdlib.h>

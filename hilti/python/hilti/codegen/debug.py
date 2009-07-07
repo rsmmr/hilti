@@ -11,5 +11,5 @@ from codegen import codegen
 @codegen.when(instructions.debug.Msg)
 def _(self, i):
     if codegen.debugMode():
-        self.llvmGenerateCCallByName("__Hlt::debug_printf", [i.op1(), i.op2(), i.op3()])
+        self.llvmGenerateCCallByName("hlt::debug_printf", [i.op1(), i.op2(), i.op3()])
     

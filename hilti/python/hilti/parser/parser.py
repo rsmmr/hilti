@@ -69,8 +69,8 @@ def p_instantiate_module(p):
     p.parser.current.module = module.Module(p[-1], location=loc(p, -1))
     
     # Implicitly import the internal libhilti functions.
-    if p.parser.current.module.name() != "__hlt" and not p.parser.current.no_hilti_intern:
-        _importFile("hilti_intern.hlt", loc(p, -1), no_hilti_intern=True)
+    if p.parser.current.module.name() != "libhilti" and not p.parser.current.no_hilti_intern:
+        _importFile("libhilti.hlt", loc(p, -1), no_hilti_intern=True)
     
 def p_module_decl_list(p):
     """module_decl_list :   module_decl module_decl_list

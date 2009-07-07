@@ -10,11 +10,11 @@ from codegen import codegen
 
 import integer
 
-_doc_c_conversion = """A ``bytes`` object is mapped to ``__Hlt::bytes *``. The
+_doc_c_conversion = """A ``bytes`` object is mapped to ``hlt::bytes *``. The
 type is defined in |hilti_intern.h|."""
 
 def _llvmIteratorType(cg):
-    # struct __hlt_bytes_pos
+    # struct hlt_bytes_pos
     return llvm.core.Type.struct([cg.llvmTypeGenericPointer()] * 2)
 
 def _llvmBytesType():
@@ -23,14 +23,14 @@ def _llvmBytesType():
 @codegen.typeInfo(type.Bytes)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.c_prototype = "__Hlt::bytes *"
-    typeinfo.to_string = "__Hlt::bytes_to_string"
+    typeinfo.c_prototype = "hlt::bytes *"
+    typeinfo.to_string = "hlt::bytes_to_string"
     return typeinfo
 
 @codegen.typeInfo(type.IteratorBytes)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.c_prototype = "__Hlt::bytes_pos"
+    typeinfo.c_prototype = "hlt::bytes_pos"
     return typeinfo
 
 @codegen.llvmType(type.Bytes)
@@ -87,61 +87,61 @@ def _(op, refine_to):
     
 @codegen.operator(instructions.bytes.New)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_new", [], [])
+    result = self.llvmGenerateCCallByName("hlt::bytes_new", [], [])
     self.llvmStoreInTarget(i.target(), result)
     
 @codegen.operator(instructions.bytes.IterIncr)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_incr", [i.op1()], [i.op1().type()])
+    result = self.llvmGenerateCCallByName("hlt::bytes_pos_incr", [i.op1()], [i.op1().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.operator(instructions.bytes.IterDeref)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_deref", [i.op1()], [i.op1().type()])
+    result = self.llvmGenerateCCallByName("hlt::bytes_pos_deref", [i.op1()], [i.op1().type()])
     self.llvmStoreInTarget(i.target(), result)
     
 @codegen.operator(instructions.bytes.IterEqual)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_eq", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    result = self.llvmGenerateCCallByName("hlt::bytes_pos_eq", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.bytes.Length)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_len", [i.op1()], [i.op1().type()])
+    result = self.llvmGenerateCCallByName("hlt::bytes_len", [i.op1()], [i.op1().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.bytes.Empty)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_empty", [i.op1()], [i.op1().type()])
+    result = self.llvmGenerateCCallByName("hlt::bytes_empty", [i.op1()], [i.op1().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.bytes.Append)
 def _(self, i):
-    self.llvmGenerateCCallByName("__Hlt::bytes_append", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    self.llvmGenerateCCallByName("hlt::bytes_append", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
 
 @codegen.when(instructions.bytes.Sub)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_sub", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    result = self.llvmGenerateCCallByName("hlt::bytes_sub", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.bytes.Offset)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_offset", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    result = self.llvmGenerateCCallByName("hlt::bytes_offset", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.bytes.Begin)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_begin", [i.op1()], [i.op1().type()])
+    result = self.llvmGenerateCCallByName("hlt::bytes_begin", [i.op1()], [i.op1().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.bytes.End)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_end", [])
+    result = self.llvmGenerateCCallByName("hlt::bytes_end", [])
     self.llvmStoreInTarget(i.target(), result)
     
 @codegen.when(instructions.bytes.Diff)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::bytes_pos_diff", [i.op1(), i.op2()], [i.op2().type(), i.op2().type()])
+    result = self.llvmGenerateCCallByName("hlt::bytes_pos_diff", [i.op1(), i.op2()], [i.op2().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.unpack(type.Bytes)
@@ -207,7 +207,7 @@ def _(t, begin, end, fmt, arg):
             builder = codegen.pushBuilder(block_exit)
             
             if not skip:
-                val = codegen.llvmGenerateCCallByName("__Hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes(type.Bytes())] * 2, llvm_args=True)
+                val = codegen.llvmGenerateCCallByName("hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes(type.Bytes())] * 2, llvm_args=True)
             else:
                 val = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
                 
@@ -256,7 +256,7 @@ def _(t, begin, end, fmt, arg):
                 
                     # Check whether end reached.
                 builder = codegen.pushBuilder(block_body)
-                done = codegen.llvmGenerateCCallByName("__Hlt::bytes_pos_eq", [builder.load(iter), end], [type.IteratorBytes(type.Bytes())] * 2, llvm_args=True)
+                done = codegen.llvmGenerateCCallByName("hlt::bytes_pos_eq", [builder.load(iter), end], [type.IteratorBytes(type.Bytes())] * 2, llvm_args=True)
                 builder = codegen.builder()
                 builder.cbranch(done, block_exit, block_cmp)
                 codegen.popBuilder()
@@ -272,7 +272,7 @@ def _(t, begin, end, fmt, arg):
                 builder = codegen.pushBuilder(block_exit)
                 
                 if not skip:
-                    val = codegen.llvmGenerateCCallByName("__Hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes(type.Bytes())] * 2, llvm_args=True)
+                    val = codegen.llvmGenerateCCallByName("hlt::bytes_sub", [begin, builder.load(iter)], [type.IteratorBytes(type.Bytes())] * 2, llvm_args=True)
                 else:
                     val = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
                     

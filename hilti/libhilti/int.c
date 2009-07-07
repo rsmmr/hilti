@@ -8,10 +8,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include "hilti_intern.h"
+#include "hilti.h"
 
 // Converts the integer into a int64_t correctly considering its width.
-static int64_t _makeInt64(const __hlt_type_info* type, const void *obj)
+static int64_t _makeInt64(const hlt_type_info* type, const void *obj)
 {
     // The first (and only) type parameter is an int64_t with the wdith.
     int64_t *width = (int64_t*) &(type->type_params);
@@ -31,9 +31,9 @@ static int64_t _makeInt64(const __hlt_type_info* type, const void *obj)
     return val;
 }
 
-__hlt_string __hlt_int_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
+hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* exception)
 {
-    assert(type->type == __HLT_TYPE_INTEGER);
+    assert(type->type == HLT_TYPE_INTEGER);
     
     int64_t val = _makeInt64(type, obj);
     
@@ -41,15 +41,15 @@ __hlt_string __hlt_int_to_string(const __hlt_type_info* type, const void* obj, i
     // we should code our own itoa().
     char buffer[128];
     int len = snprintf(buffer, 128, "%lld", val);
-    __hlt_string s = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
+    hlt_string s = hlt_gc_malloc_atomic(sizeof(hlt_string) + len);
     memcpy(s->bytes, buffer, len);
     s->len = len;
     return s;
 }
 
-int64_t __hlt_int_to_int64(const __hlt_type_info* type, const void* obj, __hlt_exception* expt)
+int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, hlt_exception* expt)
 {
-    assert(type->type == __HLT_TYPE_INTEGER);
+    assert(type->type == HLT_TYPE_INTEGER);
     return _makeInt64(type, obj);
 }
 

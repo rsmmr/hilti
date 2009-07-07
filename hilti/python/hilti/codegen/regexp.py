@@ -8,13 +8,13 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-_doc_c_conversion = """A ``regexp`` object is mapped to ``__hlt_regexp *``."""
+_doc_c_conversion = """A ``regexp`` object is mapped to ``hlt_regexp *``."""
 
 @codegen.typeInfo(type.RegExp)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.c_prototype = "__hlt_regexp *"
-    typeinfo.to_string = "__Hlt::regexp_to_string"
+    typeinfo.c_prototype = "hlt_regexp *"
+    typeinfo.to_string = "hlt::regexp_to_string"
     return typeinfo
 
 @codegen.llvmType(type.RegExp)
@@ -23,21 +23,21 @@ def _(type, refine_to):
 
 @codegen.operator(instructions.regexp.New)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("__Hlt::regexp_new", [])
+    result = self.llvmGenerateCCallByName("hlt::regexp_new", [])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.regexp.Compile)
 def _(self, i):
-    self.llvmGenerateCCallByName("__Hlt::regexp_compile", [i.op1(), i.op2()])
+    self.llvmGenerateCCallByName("hlt::regexp_compile", [i.op1(), i.op2()])
     
 @codegen.when(instructions.regexp.Find)
 def _(self, i):
     if isinstance(i.op2().type(), type.String):
         # String version.
-        result = self.llvmGenerateCCallByName("__Hlt::regexp_string_find", [i.op1(), i.op2()])
+        result = self.llvmGenerateCCallByName("hlt::regexp_string_find", [i.op1(), i.op2()])
     else:
         # Bytes version.
-        result = self.llvmGenerateCCallByName("__Hlt::regexp_bytes_find", [i.op1(), i.op2(), i.op3()])
+        result = self.llvmGenerateCCallByName("hlt::regexp_bytes_find", [i.op1(), i.op2(), i.op3()])
     
     self.llvmStoreInTarget(i.target(), result)
     
@@ -45,10 +45,10 @@ def _(self, i):
 def _(self, i):
     if isinstance(i.op2().type(), type.String):
         # String version.
-        result = self.llvmGenerateCCallByName("__Hlt::regexp_string_span", [i.op1(), i.op2()])
+        result = self.llvmGenerateCCallByName("hlt::regexp_string_span", [i.op1(), i.op2()])
     else:
         # Bytes version.
-        result = self.llvmGenerateCCallByName("__Hlt::regexp_bytes_span", [i.op1(), i.op2(), i.op3()])
+        result = self.llvmGenerateCCallByName("hlt::regexp_bytes_span", [i.op1(), i.op2(), i.op3()])
     
     self.llvmStoreInTarget(i.target(), result)
 
@@ -56,9 +56,9 @@ def _(self, i):
 def _(self, i):
     if isinstance(i.op2().type(), type.String):
         # String version.
-        result = self.llvmGenerateCCallByName("__Hlt::regexp_string_groups", [i.op1(), i.op2()])
+        result = self.llvmGenerateCCallByName("hlt::regexp_string_groups", [i.op1(), i.op2()])
     else:
         # Bytes version.
-        result = self.llvmGenerateCCallByName("__Hlt::regexp_bytes_groups", [i.op1(), i.op2(), i.op3()])
+        result = self.llvmGenerateCCallByName("hlt::regexp_bytes_groups", [i.op1(), i.op2(), i.op3()])
     
     self.llvmStoreInTarget(i.target(), result)

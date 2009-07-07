@@ -81,9 +81,9 @@ while [ "$1" != "" ]; do
             
         --hilticflags)
             if [ "$debug" == "" ]; then
-                echo "-I$base/libhilti"    
+                echo "-I$base/libhilti -I$base/libhilti/module"    
             else
-                echo "-I$base/libhilti -d"    
+                echo "-I$base/libhilti -I$base/libhilti/module -d"    
             fi
             shift;;
             

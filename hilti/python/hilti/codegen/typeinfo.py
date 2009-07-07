@@ -8,7 +8,7 @@ class TypeInfo(object):
     used to describe a type's properties, such as hooks and
     pre-defined operators. A subset of information from the TypeInfo
     objects will be made available to libhilti during run-time; see
-    ``struct __hlt_type_information`` in
+    ``struct hlt_type_information`` in
     :download:`/libhilti/hilti_intern.h`. There must be one TypeInfo
     object for each ~~HiltiType instance, and the usual place for
     creating it is in a type's ~~typeInfo.

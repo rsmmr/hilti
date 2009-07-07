@@ -8,7 +8,7 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-_doc_c_conversion = _doc_c_conversion = """An ``addr`` is mapped to a ``__hlt_addr``."""
+_doc_c_conversion = _doc_c_conversion = """An ``addr`` is mapped to a ``hlt_addr``."""
 
 def _llvmAddrType():
     return llvm.core.Type.struct([llvm.core.Type.int(64)] * 2)
@@ -16,8 +16,8 @@ def _llvmAddrType():
 @codegen.typeInfo(type.Addr)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.c_prototype = "__hlt_addr";
-    typeinfo.to_string = "__Hlt::addr_to_string";
+    typeinfo.c_prototype = "hlt_addr";
+    typeinfo.to_string = "hlt::addr_to_string";
     return typeinfo
 
 @codegen.llvmDefaultValue(type.Addr)

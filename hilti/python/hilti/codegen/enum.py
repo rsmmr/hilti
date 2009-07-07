@@ -22,8 +22,8 @@ their corresponding integer values.
 def _(type):
     typeinfo = codegen.TypeInfo(type)
     typeinfo.c_prototype = "int8_t"
-    typeinfo.to_string = "__Hlt::enum_to_string";
-    typeinfo.to_int64 = "__Hlt::enum_to_int64";
+    typeinfo.to_string = "hlt::enum_to_string";
+    typeinfo.to_int64 = "hlt::enum_to_int64";
     
     # Build the ASCIIZ strings.
     aux = []

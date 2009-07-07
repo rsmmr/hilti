@@ -29,8 +29,8 @@ following table:
 @codegen.typeInfo(type.Integer)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.to_string = "__Hlt::int_to_string";
-    typeinfo.to_int64 = "__Hlt::int_to_int64";
+    typeinfo.to_string = "hlt::int_to_string";
+    typeinfo.to_int64 = "hlt::int_to_int64";
     
     for (w, p) in [(8, "int8_t"), (16, "int16_t"), (32, "int32_t"), (64, "int64_t")]:
         if type.width() <= w:
@@ -105,7 +105,7 @@ def _(self, i):
     self.builder().cbranch(iszero, block_ok, block_exc)
     
     self.pushBuilder(block_exc)
-    self.llvmRaiseExceptionByName("__hlt_exception_division_by_zero") 
+    self.llvmRaiseExceptionByName("hlt_exception_division_by_zero") 
     self.popBuilder()
     
     self.pushBuilder(block_ok)
@@ -128,7 +128,7 @@ def _(self, i):
     self.builder().cbranch(iszero, block_ok, block_exc)
     
     self.pushBuilder(block_exc)
-    self.llvmRaiseExceptionByName("__hlt_exception_division_by_zero") 
+    self.llvmRaiseExceptionByName("hlt_exception_division_by_zero") 
     self.popBuilder()
     
     self.pushBuilder(block_ok)

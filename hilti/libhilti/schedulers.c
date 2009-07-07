@@ -8,15 +8,15 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "hilti_intern.h"
+#include "hilti.h"
 
 // Maps a vthread onto an actual worker thread. An FNV-1a hash is used to distribute the
 // vthreads as evenly as possible between the worker threads. This algorithm should be
-// fairly fast, but if profiling reveals __hlt_thread_from_vthread to be a bottleneck, it
+// fairly fast, but if profiling reveals hlt_thread_from_vthread to be a bottleneck, it
 // can always be replaced with a simple mod function. The desire to perform this mapping
 // quickly should be balanced with the desire to distribute the vthreads equitably, however,
 // as an uneven distribution could result in serious performance issues for some applications.
-static uint32_t __hlt_thread_from_vthread(const uint32_t vthread, const uint32_t num_threads)
+static uint32_t hlt_thread_from_vthread(const uint32_t vthread, const uint32_t num_threads)
 {
     // Some constants for the 32-bit FNV-1 hash algorithm.
     const uint32_t FNV_32_OFFSET_BASIS = 2166136261;
@@ -43,23 +43,23 @@ static uint32_t __hlt_thread_from_vthread(const uint32_t vthread, const uint32_t
     return hash;
 }
 
-void __hlt_global_schedule_job(uint32_t vthread, __hlt_hilti_function function, __hlt_hilti_frame frame)
+void __hlt_global_schedule_job(uint32_t vthread, hlt_hilti_function function, hlt_hilti_frame frame)
 {
     // Get information about the current thread context.
-    __hlt_thread_context* context = __hlt_get_current_thread_context();
+    hlt_thread_context* context = __hlt_get_current_thread_context();
     uint32_t num_threads = __hlt_get_thread_count(context);
 
     // Map the vthread to a worker thread.
-    uint32_t thread_id = __hlt_thread_from_vthread(vthread, num_threads);
+    uint32_t thread_id = hlt_thread_from_vthread(vthread, num_threads);
 
     // Schedule the job.
     __hlt_schedule_job(context, thread_id, function, frame);
 }
 
-void __hlt_local_schedule_job(__hlt_hilti_function function, __hlt_hilti_frame frame)
+void __hlt_local_schedule_job(hlt_hilti_function function, hlt_hilti_frame frame)
 {
     // Get information about the current thread context.
-    __hlt_thread_context* context = __hlt_get_current_thread_context();
+    hlt_thread_context* context = __hlt_get_current_thread_context();
     uint32_t thread_id = __hlt_get_current_thread_id();
 
     // Schedule the job to the current thread.

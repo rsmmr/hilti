@@ -1,31 +1,32 @@
 // $Id$
 
-#ifndef REGEXP_H
-#define REGEXP_H
+#ifndef HILTI_REGEXP_H
+#define HILTI_REGEXP_H
 
-#include "hilti_intern.h"
+#include "exceptions.h"
+#include "bytes.h"
+#include "vector.h"
 
-typedef struct __hlt_regexp __hlt_regexp;
+typedef struct hlt_regexp hlt_regexp;
+typedef struct hlt_regexp_range hlt_regexp_range;
 
-struct __hlt_regexp_range {
-    __hlt_bytes_pos begin;
-    __hlt_bytes_pos end;
+struct hlt_regexp_range {
+    hlt_bytes_pos begin;
+    hlt_bytes_pos end;
 };
 
-typedef struct __hlt_regexp_range __hlt_regexp_range;
+extern hlt_regexp* hlt_regexp_new(hlt_exception* excpt);
+extern void hlt_regexp_compile(hlt_regexp* re, hlt_string pattern, hlt_exception* excpt);
 
-extern __hlt_regexp* __hlt_regexp_new(__hlt_exception* excpt);
-extern void __hlt_regexp_compile(__hlt_regexp* re, __hlt_string pattern, __hlt_exception* excpt);
+extern int8_t hlt_regexp_string_find(hlt_regexp* re, hlt_string s, hlt_exception* excpt);
+extern int8_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception* excpt);
 
-extern int8_t __hlt_regexp_string_find(__hlt_regexp* re, __hlt_string s, __hlt_exception* excpt);
-extern int8_t __hlt_regexp_bytes_find(__hlt_regexp* re, const __hlt_bytes_pos begin, const __hlt_bytes_pos end, __hlt_exception* excpt);
+extern hlt_regexp_range hlt_regexp_string_span(hlt_regexp* re, hlt_string s, hlt_exception* excpt);
+extern hlt_regexp_range hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception* excpt);
 
-extern __hlt_regexp_range __hlt_regexp_string_span(__hlt_regexp* re, __hlt_string s, __hlt_exception* excpt);
-extern __hlt_regexp_range __hlt_regexp_bytes_span(__hlt_regexp* re, const __hlt_bytes_pos begin, const __hlt_bytes_pos end, __hlt_exception* excpt);
+extern hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, hlt_string s, hlt_exception* excpt);
+extern hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception* excpt);
 
-extern __hlt_vector *__hlt_regexp_string_groups(__hlt_regexp* re, __hlt_string s, __hlt_exception* excpt);
-extern __hlt_vector *__hlt_regexp_bytes_groups(__hlt_regexp* re, const __hlt_bytes_pos begin, const __hlt_bytes_pos end, __hlt_exception* excpt);
-
-__hlt_string __hlt_regexp_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
+hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt);
 
 #endif

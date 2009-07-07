@@ -99,7 +99,7 @@ def _(self, i):
     self.builder().cbranch(notzero, block_ok, block_exc)
     
     self.pushBuilder(block_exc)
-    self.llvmRaiseExceptionByName("__hlt_exception_undefined_value")
+    self.llvmRaiseExceptionByName("hlt_exception_undefined_value")
     self.popBuilder()
     
     self.pushBuilder(block_ok)

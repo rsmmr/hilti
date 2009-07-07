@@ -16,8 +16,8 @@ A ``double`` is mapped transparently to a C double.
 def _(type):
     typeinfo = codegen.TypeInfo(type)
     typeinfo.c_prototype = "double"
-    typeinfo.to_string = "__Hlt::double_to_string";
-    typeinfo.to_double = "__Hlt::double_to_double";
+    typeinfo.to_string = "hlt::double_to_string";
+    typeinfo.to_double = "hlt::double_to_double";
     return typeinfo
 
 @codegen.llvmType(type.Double)
@@ -65,7 +65,7 @@ def _(self, i):
     self.builder().cbranch(iszero, block_ok, block_exc)
     
     self.pushBuilder(block_exc)
-    self.llvmRaiseExceptionByName("__hlt_exception_division_by_zero") 
+    self.llvmRaiseExceptionByName("hlt_exception_division_by_zero") 
     self.popBuilder()
     
     self.pushBuilder(block_ok)

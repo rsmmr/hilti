@@ -11,7 +11,7 @@ from codegen import codegen
 _doc_c_conversion = """
 A ``tuple<type1,type2,...>`` is mapped to a C struct that consists of fields of the
 corresponding type. For example, a ``tuple<int32, string>`` is mapped to a
-``struct { int32_t f1, __hlt_string* f2 }``.
+``struct { int32_t f1, hlt_string* f2 }``.
 
 A tuple's type-information keeps additional layout information in the ``aux``
 field: ``aux`` points to an array of ``int16_t``, one for each field. Each
@@ -30,7 +30,7 @@ def _tupleType(type, refine_to):
 @codegen.typeInfo(type.Tuple)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.to_string = "__Hlt::tuple_to_string";
+    typeinfo.to_string = "hlt::tuple_to_string";
     
     # Calculate the offset array. 
     zero = codegen.llvmGEPIdx(0)

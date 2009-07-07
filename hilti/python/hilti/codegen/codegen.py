@@ -295,7 +295,7 @@ class CodeGen(visitor.Visitor):
         if canonified.endswith("_"):
             canonified = canonified[:-1]
             
-        return "__hlt_type_info_%s" % canonified
+        return "hlt_type_info_%s" % canonified
 
     def llvmTypeTypeInfo(self):
         """Returns the LLVM type for representing a type's meta information.
@@ -304,7 +304,7 @@ class CodeGen(visitor.Visitor):
         
         Returns: llvm.core.Type.struct - The type for the meta information.
         
-        Note: The struct's layout must match with __hlt_type_info as defined #
+        Note: The struct's layout must match with hlt_type_info as defined #
         in :download:`/libhilti/hilti_intern.h`.
         """
         return self._llvm.type_type_information 
@@ -346,8 +346,8 @@ class CodeGen(visitor.Visitor):
             else:
                 util.internal_error("llvmAddTypeInfos: unsupported type parameter %s" % repr(arg))
 
-        libhilti_func_vals = []
-        libhilti_func_types = []
+        hlt_func_vals = []
+        hlt_func_types = []
         
         for conversion in ("to_string", "to_int64", "to_double"):
             if ti.__dict__[conversion]:
@@ -360,8 +360,8 @@ class CodeGen(visitor.Visitor):
             else:
                 func_val = llvm.core.Constant.null(self.llvmTypeGenericPointer())
                 
-            libhilti_func_vals += [func_val]
-            libhilti_func_types += [func_val.type]
+            hlt_func_vals += [func_val]
+            hlt_func_types += [func_val.type]
 
         ti_name = self.nameTypeInfo(ti.type)
         name_name = "%s_name" % ti_name
@@ -383,7 +383,7 @@ class CodeGen(visitor.Visitor):
              llvm.core.Type.pointer(name_type), # name
              llvm.core.Type.int(16),            # num_params
              self.llvmTypeGenericPointer()]     # aux
-            + libhilti_func_types + arg_types)
+            + hlt_func_types + arg_types)
 
         if ti.type._id == 0:
             util.internal_error("type %s does not have an _id" % ti.type)
@@ -399,7 +399,7 @@ class CodeGen(visitor.Visitor):
              llvm.core.Constant.sizeof(self.llvmTypeConvert(ti.type)).trunc(llvm.core.Type.int(16)),     # sizeof(type)
              name_glob,                                                    # name
              llvm.core.Constant.int(llvm.core.Type.int(16), len(ti.args))] # num_params
-            + [aux] + libhilti_func_vals + arg_vals)
+            + [aux] + hlt_func_vals + arg_vals)
 
         glob = self.llvmCurrentModule().get_global_variable_named(ti_name)
         glob.type.refine(llvm.core.Type.pointer(st))
@@ -466,9 +466,9 @@ class CodeGen(visitor.Visitor):
         
         Returns: ~~llvm.core.Module - The new module.
         """
-        prototypes = util.findFileInPaths("hilti_intern.ll", self._libpaths)
+        prototypes = util.findFileInPaths("libhilti.ll", self._libpaths)
         if not prototypes:
-            util.error("cannot find hilti_intern.ll")
+            util.error("cannot find libhilti.ll")
         
         try:
             f = open(prototypes)
@@ -1176,7 +1176,7 @@ class CodeGen(visitor.Visitor):
         
         name: string - The HILTI-level name of the C function, including the
         function's module namespace (e.g., ``Hilti::print`` or
-        ``__Hlt::string_len``). A function with this name must have been
+        ``hlt::string_len``). A function with this name must have been
         declared inside the current module already; the method will report an
         internal error if it hasn't.
         
@@ -1210,7 +1210,7 @@ class CodeGen(visitor.Visitor):
         externally visible function using standard C calling conventions, and
         expecting parameters corresponding to the function's HILTI parameters,
         per the usual C<->HILTI translation. It gets one additional paramert
-        of type ``__hlt_exception *``, which the callee can set to an
+        of type ``hlt_exception *``, which the callee can set to an
         exception object to signal that an exception was thrown. 
         
         All the stub does when called is in turn calling the HILTI function,
@@ -1933,7 +1933,7 @@ class CodeGen(visitor.Visitor):
             # Version for a non-const operand. 
             default = self.llvmNewBlock("switch-default")
             self.pushBuilder(default) 
-            self.llvmRaiseExceptionByName("__hlt_exception_value_error")
+            self.llvmRaiseExceptionByName("hlt_exception_value_error")
             self.popBuilder() 
         
             builder = self.builder()

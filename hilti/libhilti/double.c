@@ -7,11 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hilti_intern.h"
+#include "hilti.h"
 
-__hlt_string __hlt_double_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* exception)
+hlt_string hlt_double_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* exception)
 {
-    assert(type->type == __HLT_TYPE_DOUBLE);
+    assert(type->type == HLT_TYPE_DOUBLE);
     
     double val = *((double *)obj);
 
@@ -19,15 +19,15 @@ __hlt_string __hlt_double_to_string(const __hlt_type_info* type, const void* obj
     // we should code our own itoa().
     char buffer[128];
     int len = snprintf(buffer, 128, "%.2f", val);
-    __hlt_string s = __hlt_gc_malloc_atomic(sizeof(__hlt_string) + len);
+    hlt_string s = hlt_gc_malloc_atomic(sizeof(hlt_string) + len);
     memcpy(s->bytes, buffer, len);
     s->len = len;
     return s;
 }
 
-double __hlt_double_to_double(const __hlt_type_info* type, const void* obj, __hlt_exception* expt)
+double hlt_double_to_double(const hlt_type_info* type, const void* obj, hlt_exception* expt)
 {
-    assert(type->type == __HLT_TYPE_DOUBLE);
+    assert(type->type == HLT_TYPE_DOUBLE);
     double val = *((double *)obj);
     return val;
 }

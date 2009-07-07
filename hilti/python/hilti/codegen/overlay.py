@@ -20,7 +20,7 @@ from codegen import codegen
 
 import sys
 
-_doc_c_conversion = _doc_c_conversion = """An ``overlay`` is mapped to a ``__hlt_overlay``."""
+_doc_c_conversion = _doc_c_conversion = """An ``overlay`` is mapped to a ``hlt_overlay``."""
 
 def _iterType():
     return codegen.llvmTypeConvert(type.IteratorBytes(type.Bytes()))
@@ -37,7 +37,7 @@ def _unsetIter():
 @codegen.typeInfo(type.Overlay)
 def _(t):
     typeinfo = codegen.TypeInfo(t)
-    typeinfo.c_prototype = "__hlt_overlay";
+    typeinfo.c_prototype = "hlt_overlay";
     return typeinfo
 
 @codegen.llvmDefaultValue(type.Overlay)
@@ -90,7 +90,7 @@ def _(self, i):
             
         elif offset > 0:
             # Static offset. We can calculate the starting position directly.
-            begin = self.llvmGenerateCCallByName("__Hlt::bytes_pos_incr_by", 
+            begin = self.llvmGenerateCCallByName("hlt::bytes_pos_incr_by", 
             [offset0, codegen.llvmConstInt(offset, 32)], [type.IteratorBytes(type.Bytes()), type.Integer(32)], llvm_args=True)
             
         else:
@@ -149,7 +149,7 @@ def _(self, i):
     block_notattached = self.llvmNewBlock("not-attached")
     
     self.pushBuilder(block_notattached)
-    self.llvmRaiseExceptionByName("__hlt_exception_overlay_not_attached")
+    self.llvmRaiseExceptionByName("hlt_exception_overlay_not_attached")
     self.popBuilder()
 
     _isNull(ov, 0, block_notattached, block_attached)

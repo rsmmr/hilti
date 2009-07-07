@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "hilti_intern.h"
+#include "hilti.h"
 
 void hilti_init()
 {

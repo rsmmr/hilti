@@ -1,8 +1,8 @@
 # $Id$
 #
-# Internal libhilti functions.
+# libhilti functions called used by the code generator.
 
-module __Hlt
+module hlt
 
 import Hilti
 

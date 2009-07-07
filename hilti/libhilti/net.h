@@ -1,7 +1,11 @@
 // $Id$
 
-#ifndef NET_H
-#define NET_H
+#ifndef HILTI_NET_H
+#define HILTI_NET_H
+
+#include "exceptions.h"
+
+typedef struct __hlt_net hlt_net;
 
 struct __hlt_net {
     uint64_t a1; // The 8 more siginficant bytes of the mask
@@ -9,7 +13,7 @@ struct __hlt_net {
     uint8_t len; // The length of the mask. 
 };
 
-extern __hlt_string __hlt_net_to_string(const __hlt_type_info* type, const void* obj, int32_t options, __hlt_exception* excpt);
+extern hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt);
 
 #endif
     

@@ -9,9 +9,9 @@
 #include <signal.h>
 #include <pthread.h>
 
-#include "hilti_intern.h"
+#include "hilti.h"
 
-void hilti_multithreaded_run(__hlt_exception* hilti_except)
+void hilti_multithreaded_run(hlt_exception* hilti_except)
 {
     // Read configuration.
     const hilti_config *config = hilti_config_get();
@@ -30,17 +30,17 @@ void hilti_multithreaded_run(__hlt_exception* hilti_except)
     // If we've reached this point, we need to create a HILTI thread context.
     // The thread context will create the threads specified in the configuration and
     // start them running automatically.
-    __hlt_thread_context* context = __hlt_new_thread_context(config);
+    hlt_thread_context* context = hlt_new_thread_context(config);
 
     // Execute the HILTI main function. When it terminates, we return control to the caller.
     //main_run(hilti_except);
-    __hlt_run_main_thread(context, main_run, hilti_except);
+    hlt_run_main_thread(context, main_run, hilti_except);
 
     // Did an exception occur?
     if (*hilti_except)
     {
         // When an exception occurs, we bring down all threads in the context immediately.
-        __hlt_set_thread_context_state(context, __HLT_KILL);
+        hlt_set_thread_context_state(context, HLT_KILL);
 
         // Now we simply return as usual and give the caller a chance to handle the exception
         // as they see fit.
@@ -48,14 +48,14 @@ void hilti_multithreaded_run(__hlt_exception* hilti_except)
     else
     {
         // Set the context's run state to STOP, which will allow existing jobs to finish but
-        // prevent any new jobs from being scheduled. __hlt_set_run_state is synchronous
+        // prevent any new jobs from being scheduled. hlt_set_run_state is synchronous
         // and will not return until all threads have terminated.
-        __hlt_set_thread_context_state(context, __HLT_STOP);
+        hlt_set_thread_context_state(context, HLT_STOP);
 
         // Make sure we catch any exceptions that worker threads may have caused.
-        *hilti_except = __hlt_get_next_exception(context);
+        *hilti_except = hlt_get_next_exception(context);
     }
  
     // Now that all threads have terminated, destroy the thread context and return.
-    __hlt_delete_thread_context(context);
+    hlt_delete_thread_context(context);
 }

@@ -13,7 +13,7 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
-_doc_c_conversion = _doc_c_conversion = """An ``net`` is mapped to a ``__hlt_net``."""
+_doc_c_conversion = _doc_c_conversion = """An ``net`` is mapped to a ``hlt_net``."""
 
 def _llvmNetType():
     return llvm.core.Type.struct([llvm.core.Type.int(64)] * 2 + [llvm.core.Type.int(8)])
@@ -21,8 +21,8 @@ def _llvmNetType():
 @codegen.typeInfo(type.Net)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
-    typeinfo.c_prototype = "__hlt_net";
-    typeinfo.to_string = "__Hlt::net_to_string";
+    typeinfo.c_prototype = "hlt_net";
+    typeinfo.to_string = "hlt::net_to_string";
     return typeinfo
 
 @codegen.llvmDefaultValue(type.Net)
