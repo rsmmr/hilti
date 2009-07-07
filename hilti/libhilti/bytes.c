@@ -489,7 +489,7 @@ __hlt_bytes_size __hlt_bytes_pos_diff(__hlt_bytes_pos pos1, __hlt_bytes_pos pos2
     if ( __hlt_bytes_pos_eq(pos1, pos2, excpt) )
         return 0;
     
-    if ( is_end(pos1) ) {
+    if ( is_end(pos1) && ! is_end(pos2) ) {
         // Invalid starting position.
         *excpt = __hlt_exception_value_error;
         return 0;

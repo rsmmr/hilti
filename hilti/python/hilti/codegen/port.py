@@ -64,6 +64,7 @@ def _(t, begin, end, fmt, arg):
             codegen.llvmInit(val, p)
             proto = builder.gep(port, [codegen.llvmGEPIdx(0), codegen.llvmGEPIdx(1)])
             codegen.llvmInit(codegen.llvmConstInt(_protos[protocol], 8), proto)
+            codegen.llvmInit(i, iter)
             
         return _unpackPort
         

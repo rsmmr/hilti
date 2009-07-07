@@ -2,6 +2,8 @@
 #
 # Build libhilti
 
+PATH := ../tools/hilti-config:../tools/hiltic:../tools/hilti-build:$(PATH)
+
 BC_FROM_LL = call_hilti.bc 
 
 BC_FROM_C  = print.bc exceptions.bc utf8proc.bc init.bc memory.bc string.bc \
@@ -30,12 +32,14 @@ LDFLAGS=
 
 LLVMAS_FLAGS=
 LLC_FLAGS=
+HILTICFLAGS=
+HILTI_BASE=
 
 all: tre $(LIB_STATIC) $(LIB_STATIC_MAIN) $(LIB_STATIC_C)
 
 clean: tre-clean
 	make -C gc clean
-	rm -f $(LIB_STATIC) $(LIB_STATIC_MAIN) $(BC) $(MAIN)
+	rm -f $(LIB_STATIC) $(LIB_STATIC_MAIN) $(LIB_STATIC_C) $(BC) $(MAIN)
 
 %.bc : %.c $(HEADERS)
 	llvm-gcc -c $(CFLAGS) $< -o $@

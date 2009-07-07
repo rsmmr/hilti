@@ -6,6 +6,11 @@ BASE_DIR=`cd ../.. && pwd -P`
 TESTER=$BASE_DIR/tester/bin/tester
 HILTI_BASE=$BASE_DIR/hilti
 
+unset HILTICFLAGS
+unset LLVMASFLAGS
+unset LLVMLDFLAGS
+unset CFLAGS
+
 export HILTI_CONFIG=$BASE_DIR/hilti/tools/hilti-config/hilti-config
 
 CFLAGS=`$HILTI_CONFIG --cflags`
