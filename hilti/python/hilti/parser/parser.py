@@ -17,6 +17,10 @@ import resolver
 import lexer
 from lexer import tokens
 
+# The current parser. Not nice that we need this, but in some case the error
+# handler doesn't seem to have access to the parser otherwise. 
+_Parser = None
+
 # Creates a Location object from the parser object for the given symbol.
 def loc(p, num):
     """Creates a location object for a symbol.
@@ -28,8 +32,8 @@ def loc(p, num):
     Returns: ~~Location - The location for the symbol.
     """
     
-    assert p.parser.current.filename
-    return location.Location(p.parser.current.filename, p.lineno(num))
+    assert p.parser.state.filename
+    return location.Location(p.parser.state.filename, p.lineno(num))
 
 # Tracks state during parsing. 
 class State:
@@ -49,7 +53,7 @@ class State:
 
 def p_module(p):
     """module : _eat_newlines MODULE IDENT _instantiate_module NL module_decl_list"""
-    p[0] = p.parser.current.module
+    p[0] = p.parser.state.module
 
 def p_eat_newlines(p):
     """_eat_newlines : NL _eat_newlines
@@ -66,11 +70,12 @@ def p_end_nolines(p):
     
 def p_instantiate_module(p):
     """_instantiate_module :"""
-    p.parser.current.module = module.Module(p[-1], location=loc(p, -1))
+    p.parser.state.module = module.Module(p[-1], location=loc(p, -1))
     
     # Implicitly import the internal libhilti functions.
-    if p.parser.current.module.name() != "libhilti" and not p.parser.current.no_hilti_intern:
-        _importFile("libhilti.hlt", loc(p, -1), no_hilti_intern=True)
+    if p.parser.state.module.name() != "libhilti" and not p.parser.state.no_hilti_intern:
+        if not _importFile(p.parser, "libhilti.hlt", loc(p, -1), no_hilti_intern=True):
+            raise SyntaxError
     
 def p_module_decl_list(p):
     """module_decl_list :   module_decl module_decl_list
@@ -94,11 +99,11 @@ def p_module_decl_error(p):
 
 def p_def_global(p):
     """def_global : GLOBAL global_id NL"""
-    p.parser.current.module.addID(p[2])
+    p.parser.state.module.addID(p[2])
 
 def p_def_local(p):
     """def_local : LOCAL local_id NL"""
-    p.parser.current.function.addID(p[2])
+    p.parser.state.function.addID(p[2])
     
 def p_def_type(p):
     """def_type : def_struct_decl
@@ -110,7 +115,7 @@ def p_def_type(p):
 def _addTypeDecl(p, name, t, location):
     decl = type.TypeDeclType(t)
     i = id.ID(name, decl, id.Role.GLOBAL, location=location)
-    p.parser.current.module.addID(i)
+    p.parser.state.module.addID(i)
     type.registerHiltiType(t)
     
 def p_def_struct(p):
@@ -125,7 +130,7 @@ def p_def_enum(p):
     # Register the individual labels.
     for (label, value) in t.labels().items():
         eid = id.ID(p[3] + "::" + label, t, id.Role.CONST, location=loc(p, 1))
-        p.parser.current.module.addID(eid, value)
+        p.parser.state.module.addID(eid, value)
 
 def p_def_overlay(p):
     """def_overlay_decl : OVERLAY _begin_nolines IDENT '{' overlay_field_list '}' _end_nolines"""
@@ -154,14 +159,14 @@ def p_def_overlay_field(p):
     arg = p[9]
         
     if p[6] != 'unpack':
-        raise ply.yacc.SyntaxError
+        raise SyntaxError
 
     p[0] = type.Overlay.Field(name, start, t, fmt, arg)
     
 def p_def_import(p):
     """def_import : IMPORT IDENT"""
-    if not _importFile(p[2], loc(p, 1)):
-        raise ply.yacc.SyntaxError
+    if not _importFile(p.parser, p[2], loc(p, 1)):
+        raise SyntaxError
 
 def p_def_declare(p):
     """def_declare : DECLARE function_head"""
@@ -183,15 +188,15 @@ def p_def_function_head(p):
         assert False
 
     i = id.ID(p[4], func.type(), id.Role.GLOBAL, location=loc(p, 4))
-    p.parser.current.module.addID(i, func)
+    p.parser.state.module.addID(i, func)
     
     func.setID(i)
     func.setLinkage(p[1])
 
     p[0] = func
     
-    p.parser.current.function = None
-    p.parser.current.block = None
+    p.parser.state.function = None
+    p.parser.state.block = None
 
 def p_def_opt_cc(p):
     """opt_cc : STRING
@@ -214,7 +219,7 @@ def p_def_opt_cc(p):
         return
         
     error(p, "unknown calling convention \"%s\"" % p[1])
-    raise ply.yacc.SyntaxError
+    raise SyntaxError
                    
 def p_def_opt_linkage(p):
     """opt_linkage : EXPORT
@@ -231,10 +236,10 @@ def p_def_function(p):
 def p_instantiate_function(p):
     """_instantiate_function :"""
     func = p[-3]
-    p.parser.current.function = func
-    p.parser.current.block = block.Block(func, location=loc(p, 0))
-    p.parser.current.block.setMayRemove(False)
-    p.parser.current.function.addBlock(p.parser.current.block)
+    p.parser.state.function = func
+    p.parser.state.block = block.Block(func, location=loc(p, 0))
+    p.parser.state.block.setMayRemove(False)
+    p.parser.state.function.addBlock(p.parser.state.block)
 
 def p_instruction_list(p):
     """instruction_list : def_local instruction_list
@@ -251,13 +256,13 @@ def p_empty_line(p):
 def p_set_block_name(p):
     """_set_block_name : """
     
-    if len(p.parser.current.block.instructions()):
+    if len(p.parser.state.block.instructions()):
         # Start a new block.
-        p.parser.current.block = block.Block(p.parser.current.function, name=p[-1], location=loc(p, 0))
-        p.parser.current.function.addBlock(p.parser.current.block)
+        p.parser.state.block = block.Block(p.parser.state.function, name=p[-1], location=loc(p, 0))
+        p.parser.state.function.addBlock(p.parser.state.block)
     else:
         # Current block still empty so just set its name.
-        p.parser.current.block.setName(p[-1])
+        p.parser.state.block.setName(p[-1])
 
 def p_instruction(p):
     """instruction : operand '=' INSTRUCTION operand operand operand NL
@@ -282,16 +287,16 @@ def p_instruction(p):
     ins = instruction.createInstruction(name, op1, op2, op3, target, location=location)
     if not ins:
         error(p, "unknown instruction %s" % name)
-        raise ply.yacc.SyntaxError
+        raise SyntaxError
     
-    p.parser.current.block.addInstruction(ins)
+    p.parser.state.block.addInstruction(ins)
 
 def p_assignment(p):
     # Syntactic sugar for the assignment operator. 
     """instruction : operand '=' operand"""
     ins = instruction.createInstruction("assign", p[3], None, None, p[1], location=loc(p, 1))
     assert ins
-    p.parser.current.block.addInstruction(ins)
+    p.parser.state.block.addInstruction(ins)
     
 def p_operand_ident(p):
     """operand : IDENT"""
@@ -325,7 +330,7 @@ def p_operand_string(p):
         p[0] = instruction.ConstOperand(string, location=loc(p, 1))
     except ValueError:
         error(p, "error in escape sequence %s" % p[1])
-        raise ply.yacc.SyntaxError
+        raise SyntaxError
     
 def p_operand_bytes(p):
     """operand : BYTES"""
@@ -334,7 +339,7 @@ def p_operand_bytes(p):
         p[0] = instruction.ConstOperand(string, location=loc(p, 1))
     except ValueError:
         error(p, "error in escape sequence %s" % p[1])
-        raise ply.yacc.SyntaxError
+        raise SyntaxError
 
 def p_operand_tuple(p):
     """operand : tuple"""
@@ -432,7 +437,7 @@ def p_type_generic(p):
 
     if not success:
         error(p, result)
-        raise ply.yacc.SyntaxError
+        raise SyntaxError
     
     p[0] = result
 
@@ -447,14 +452,14 @@ def p_type_tuple(p):
 def p_type_ident(p):
     """type : IDENT"""
     # Must be a type name.
-    id = p.parser.current.module.lookupID(p[1])
+    id = p.parser.state.module.lookupID(p[1])
     if not id:
         error(p, "unknown identifier %s" % p[1])
-        raise ply.yacc.SyntaxError
+        raise SyntaxError
     
     if not isinstance(id.type(), type.TypeDeclType):
         error(p, "%s is not a type name" % p[1])
-        raise ply.yacc.SyntaxError
+        raise SyntaxError
     
     p[0] = id.type().declType()
     
@@ -515,14 +520,14 @@ def p_type_param_type_name(p):
     """type_param : IDENT
     """
     # Must be a type name.
-    id = p.parser.current.module.lookupID(p[1])
+    id = p.parser.state.module.lookupID(p[1])
     if not id:
         error(p, "unknown identifier %s" % p[1])
-        raise ply.yacc.SyntaxError
+        raise SyntaxError
     
     if not isinstance(id.type(), type.TypeDeclType):
         error(p, "%s is not a type name" % p[1])
-        raise ply.yacc.SyntaxError
+        raise SyntaxError
     
     p[0] = id.type().declType()
         
@@ -565,45 +570,45 @@ def error(p, msg, lineno=0):
     given, the information is pulled from the first symbol in *p*.
     """
     
-    global Parser
     if p and lineno <= 0:
         lineno = p.lineno(1)
-    
-    Parser.current.errors += 1
-    loc = location.Location(Parser.current.filename, lineno)        
+
+    if p:
+        parser = p.parser
+    else:
+        global _Parser
+        parser = _Parser
+        
+    parser.state.errors += 1
+    loc = location.Location(parser.state.filename, lineno)        
     util.error(msg, component="parser", context=loc, fatal=False)
 
 # Recursively imports another file and makes all declared/exported IDs available 
 # to the current module. 
-def _importFile(filename, location, no_hilti_intern=False):
-    
-    global Parser
-    oldparser = Parser
-
+def _importFile(parser, filename, location, no_hilti_intern=False):
     (root, ext) = os.path.splitext(filename)
     if not ext:
         ext = ".hlt"
         
     filename = root + ext
     
-    fullpath = util.findFileInPaths(filename, oldparser.current.import_paths, lower_case_ok=True)
+    fullpath = util.findFileInPaths(filename, parser.state.import_paths, lower_case_ok=True)
     if not fullpath:
         util.error("cannot find %s for import" % filename, context=location)
 
-    if fullpath in Parser.current.imported_files:
+    if fullpath in parser.state.imported_files:
         # Already imported.
-        return
+        return True
 
-    Parser.current.imported_files += [fullpath]
+    parser.state.imported_files += [fullpath]
     
-    nhi = no_hilti_intern or Parser.current.no_hilti_intern
+    nhi = no_hilti_intern or parser.state.no_hilti_intern
     
-    (errors, ast) = parse(fullpath, oldparser.current.import_paths, no_hilti_intern=nhi)
+    (errors, ast, subparser) = _parse(fullpath, parser.state.import_paths, no_hilti_intern=nhi)
     if errors > 0:
-        return (errors, None)
+        return False
 
-    substate = Parser.current
-    Parser = oldparser
+    substate = subparser.state
 
     for i in substate.module.IDs():
         
@@ -621,7 +626,7 @@ def _importFile(filename, location, no_hilti_intern=False):
             
             if func.linkage() == function.Linkage.EXPORTED:
                 newid = id.ID(i.name(), i.type(), i.role(), scope=i.scope(), imported=True, location=func.location())
-                Parser.current.module.addID(newid, func)
+                parser.state.module.addID(newid, func)
                 
             continue
 
@@ -630,20 +635,24 @@ def _importFile(filename, location, no_hilti_intern=False):
         if isinstance(t, type.TypeDeclType) or i.role() == id.Role.CONST:
             val = substate.module.lookupIDVal(i)
             newid = id.ID(i.name(), i.type(), i.role(), scope=i.scope(), imported=True, location=i.location())
-            Parser.current.module.addID(newid, val)
+            parser.state.module.addID(newid, val)
             continue
         
         # Cannot export types other than those above at the moment. 
         util.internal_error("can't handle IDs of type %s (role %d) in import" % (repr(t), i.role()))
+
+    return True
         
 def parse(filename, import_paths=["."], no_hilti_intern=False):
     """See ~~parse."""
-    global Parser
-    Parser = ply.yacc.yacc(debug=0, write_tables=0)
-    
-    Parser.current = State(filename)
-    Parser.current.import_paths = import_paths
-    Parser.current.no_hilti_intern = no_hilti_intern
+    (errors, ast, parser) = _parse(filename, import_paths, no_hilti_intern)
+    return (errors, ast)
+        
+def _parse(filename, import_paths=["."], no_hilti_intern=False):
+    parser = ply.yacc.yacc(debug=0, write_tables=0)
+    parser.state = State(filename)
+    parser.state.import_paths = import_paths
+    parser.state.no_hilti_intern = no_hilti_intern
 
     filename = os.path.expanduser(filename)
     
@@ -652,32 +661,24 @@ def parse(filename, import_paths=["."], no_hilti_intern=False):
     except IOError, e:
         util.error("cannot open file %s: %s" % (filename, e))
 
+    global _Parser
+    oldparser = _Parser
+    _Parser = parser
+        
     try:
-        ast = Parser.parse(lines, lexer=lexer.buildLexer(), debug=0)
+        ast = parser.parse(lines, lexer=lexer.buildLexer(), debug=0)
     except ply.lex.LexError, e:
         # Already reported.
         ast = None
 
-    if Parser.current.errors > 0:
-        return (Parser.current.errors, None)
+    _Parser = oldparser
+        
+    if parser.state.errors > 0:
+        return (parser.state.errors, None, parser)
         
     resolver_errors = resolver.resolver.resolveOperands(ast)
     
     if resolver_errors > 0:
-        return (resolver_errors, None)
+        return (resolver_errors, None, parser)
     
-    return (0, ast)
-        
-    
-    
-    
-        
-
-    
-    
-
-    
-
-    
-    
-    
+    return (0, ast, parser)    
