@@ -1,0 +1,81 @@
+#! /usr/bin/env python2.6
+#
+# Command-line compiler for BinPAC++ programs. 
+
+Version = 0.1
+
+import sys
+import os.path
+import optparse
+import subprocess
+
+import parser
+
+try:
+    # Get HILTI import path. 
+    p = subprocess.Popen(["hilti-config", "--pythonpath"], stdout=subprocess.PIPE).communicate()[0].strip()
+    sys.path = p.split(":") + sys.path
+except:
+    pass
+
+import hilti
+
+# Collect -I arguments. 
+def import_path_callback(option, opt, value, parser):
+    try:
+        parser.values.import_paths += [value]
+    except AttributeError:
+        parser.values.import_paths = [value]
+    
+optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=Version)
+optparser.add_option("-n", "--hilti-no-verify", action="store_true", dest="hlt_noverify", default=False,
+                     help="Do not verify correctness of generated HILTI code")
+optparser.add_option("-o", "--output", action="store", type="string", dest="output", default=None,
+                     help="Store output in file", metavar="FILE")
+optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
+                     help="Add DIR to search path for imports", metavar="DIR")
+optparser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
+                     help="Compile with debugging support")
+
+(options, args) = optparser.parse_args()
+    
+if options.hlt_noverify:
+    options.hlt = True
+    
+if not "import_paths" in options.__dict__:
+    options.import_paths = []
+
+# Always search in current directory.    
+options.import_paths += ["."]    
+    
+if len(args) < 1:
+    optparser.error("no input file specified")
+
+if len(args) > 1:
+    optparser.error("more than one input file specified")
+    
+input = args[0]    
+dest = options.output    
+prototypes = None
+
+(root, ext) = os.path.splitext(input)
+
+if not dest:
+    dest = root + ".hlt"
+
+try:
+    output = open(dest, "w")        
+except IOError, e:
+    print >>sys.stderr, "cannot open %s for output: %s" % (dest, e)
+    sys.exit(1)
+        
+# Parse input.    
+(errors, ast) = parser.parse(input, options.import_paths)
+
+if errors == 0:
+    print ast 
+
+#if errors == 0:
+#    # Verify semantic correctness.
+#    errors = hilti.checker.checkAST(ast)
+
