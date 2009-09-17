@@ -1,0 +1,89 @@
+// $Id$
+
+#include "dfa-min-interpreter.h"
+#include "jlocale.h"
+#include "nfa.h"
+
+static int _ccl_match_assertions(jrx_char cp, jrx_char *previous, jrx_assertion have, jrx_assertion want)
+{
+    if ( want & JRX_ASSERTION_WORD_BOUNDARY )
+        have |= local_word_boundary(previous, cp) ? JRX_ASSERTION_WORD_BOUNDARY : 0;
+    
+    if ( want & JRX_ASSERTION_NOT_WORD_BOUNDARY )
+        have |= local_word_boundary(previous, cp) ? 0 : JRX_ASSERTION_NOT_WORD_BOUNDARY;
+
+    return (want & have) == want;
+}
+
+static int _ccl_match(jrx_ccl* ccl, jrx_char cp, jrx_char *previous, jrx_assertion assertions)
+{
+    if ( ! ccl->ranges )
+        return 0;
+    
+    if ( ! _ccl_match_assertions(cp, previous, assertions, ccl->assertions) )
+        return 1;
+    
+    // Look at ranges.
+    set_for_each(char_range, ccl->ranges, r) {
+        if ( cp >= r.begin && cp < r.end ) 
+            return 1;
+    }
+        
+    return 0;
+}
+
+int jrx_min_match_state_advance(jrx_min_match_state* ms, jrx_char cp, jrx_assertion assertions)
+{
+    jrx_dfa_state* state = vec_dfa_state_get(ms->dfa->states, ms->state);
+    
+    if ( ! state )
+        return 0;
+    
+    if ( ms->dfa->options & JRX_OPTION_DEBUG )
+        fprintf(stderr, "> in state #%d with input symbol %d and assertions %d ", ms->state, cp, assertions);
+
+    vec_for_each(dfa_transition, state->trans, trans) {
+        jrx_ccl* ccl = vec_ccl_get(ms->dfa->ccls->ccls, trans.ccl);
+        
+        if ( ! _ccl_match(ccl, cp, ms->first ? &ms->previous : 0, assertions) )
+            // Doesn't match.
+            continue;
+
+        // Found transition.
+        jrx_dfa_state_id succ_id = trans.succ;
+        jrx_dfa_state* succ_state = vec_dfa_state_get(ms->dfa->states, succ_id);
+        
+        ms->state = succ_id;
+        ms->previous = cp;
+        if ( ms->first )
+            ms->first = 0;
+
+        if ( ms->dfa->options & JRX_OPTION_DEBUG )
+            fprintf(stderr, "-> found transition, new state is #%d", succ_id);
+        
+        if ( succ_state->accepts ) {
+            jrx_accept_id aid = vec_dfa_accept_get(succ_state->accepts, 0).aid;
+        
+            if ( ms->dfa->options & JRX_OPTION_DEBUG )
+                fprintf(stderr, " (accepting with ID %d)\n", aid);
+        
+            // Accepting.
+            return aid;
+        }
+        
+        else {
+            if ( ms->dfa->options & JRX_OPTION_DEBUG )
+                fputs("\n", stderr);
+            
+            // Partial match.
+            return -1;
+        }
+    }
+
+    if ( ms->dfa->options & JRX_OPTION_DEBUG ) 
+        fputs("-> no transition possible", stderr);
+
+    // Matching failed.
+    return 0;
+}
+
