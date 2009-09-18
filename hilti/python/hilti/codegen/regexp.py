@@ -28,7 +28,10 @@ def _(self, i):
 
 @codegen.when(instructions.regexp.Compile)
 def _(self, i):
-    self.llvmGenerateCCallByName("hlt::regexp_compile", [i.op1(), i.op2()])
+    if isinstance(i.op2().type(), type.String):
+        self.llvmGenerateCCallByName("hlt::regexp_compile", [i.op1(), i.op2()])
+    else:
+        self.llvmGenerateCCallByName("hlt::regexp_compile_set", [i.op1(), i.op2()])
     
 @codegen.when(instructions.regexp.Find)
 def _(self, i):

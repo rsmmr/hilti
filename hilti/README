@@ -60,6 +60,10 @@ README
   - PLY 3.2 (Python Lex/Yacc)
 
     http://www.dabeaz.com/ply/
+    
+  - CMake 2.6.3
+  
+  http://www.cmake.org/
 
   - For generating the documentation (optional)
     

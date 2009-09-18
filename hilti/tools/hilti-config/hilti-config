@@ -60,7 +60,7 @@ debug=""
 while [ "$1" != "" ]; do
     case $1 in 
         --version)
-            echo "HILTI 0.0"
+            echo "HILTI 0.1"
             shift;;
             
         --distbase)
@@ -68,15 +68,15 @@ while [ "$1" != "" ]; do
             shift;;
             
         --ldflags)
-            echo "-L$base/libhilti -L$base/libhilti/tre/lib/.libs"
+            echo "-L$base/libhilti/build-llvm -L$base/libhilti/build-llvm/justrx/src"
             shift;;
             
         --libs)
-            echo "-lhilti -lc -lpthread -ltre"
+            echo "-lhilti -lc -lpthread -ljrx"
             shift;;
             
         --libs-main)
-            echo "-lhiltimain -lc -lpthread -ltre"
+            echo "-lhiltimain -lc -lpthread -ljrx"
             shift;;
             
         --hilticflags)

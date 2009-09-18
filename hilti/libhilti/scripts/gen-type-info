@@ -1,0 +1,3 @@
+#! /usr/bin/env bash
+
+hiltic $1 -l | llvm-as >$2

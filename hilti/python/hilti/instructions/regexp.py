@@ -29,6 +29,18 @@ def _none_or_iter(ty, op, i):
     
     return (isinstance(ty, type.IteratorBytes), "must be of type iterator<bytes>")
 
+@constraint("string | ref<list<string>>")
+def _string_or_list(ty, op, i):
+    if isinstance(ty, type.String):
+        return (True, "")
+    
+    if isinstance(ty, type.Reference) and \
+       isinstance(ty.refType(), type.List) and \
+       isinstance(ty.refType().itemType(), type.String):
+        return (True, "")
+    
+    return (False, "must be string or list<string>")
+       
 @overload(New, op1=isType(regexp), target=referenceOf(regexp))
 class New(Operator):
     """
@@ -37,11 +49,15 @@ class New(Operator):
     """
     pass
 
-@instruction("regexp.compile", op1=referenceOf(regexp), op2=string)
+@instruction("regexp.compile", op1=referenceOf(regexp), op2=_string_or_list)
 class Compile(Instruction):
-    """Compiles the pattern in *op2* for subsequent matching. The string in
-    *op2* must only contain ASCII characters and must not contain any
-    back-references. 
+    """Compiles the pattern(s) in *op2* for subsequent matching.
+    *op2* can be either a string with a single pattern, or a list of
+    strings with a set of patterns. All patterns must only contain
+    ASCII characters and must not contain any back-references. 
+    
+    Each pattern instance can be compiled only once. Throws ~~ValueError if a
+    second compilation attempt is performed. 
     
     Todo: We should support other than ASCII characters too but need the
     notion of a local character set first. We should also support
@@ -50,28 +66,32 @@ class Compile(Instruction):
     """
     pass
 
-@instruction("regexp.find", op1=referenceOf(regexp), op2=_string_or_iter, op3=_none_or_iter, target=bool)
+@instruction("regexp.find", op1=referenceOf(regexp), op2=_string_or_iter, op3=_none_or_iter, target=integerOfWidth(32))
 class Find(Instruction):
-    """
-    Scans either the string in *op1* or the byte iterator range between *op2*
-    and *op3* for the regular expression op1*. Returns True if found,
-    otherwise False.
-    
-    Throws ~~PatternError if not pattern has been compiled yet. 
+    """Scans either the string in *op1* or the byte iterator range between
+    *op2* and *op3* for the regular expression *op1*. Returns a positive
+    integer if a match found found; if a set of patterns has been compiled,
+    the integer then indicates which pattern has matched. If multiple
+    patterns from the set match, the left-most one is taken. If multiple
+    patterns match at the left-most position, it is undefined which of them is
+    returned. The instruction returns 0 if no match was found but adding more
+    input bytes could change that (i.e., a partial match). Returns -1 if no
+    match was found and adding more input would not change that. 
     
     Todo: The string variant is not yet implemented.
     """
     
-_span = isTuple([iteratorBytes] * 2)
+_range = isTuple([iteratorBytes] * 2)
+_span = isTuple([integerOfWidth(32), _range])
     
 @instruction("regexp.span", op1=referenceOf(regexp), op2=_string_or_iter, op3=_none_or_iter, target=_span)
 class Span(Instruction):
-    """Scans either the string in *op1* or the byte iterator range
-    between *op2* and *op3* for the regular expression *op1*. If the
-    regular expression is found, returns either a string with the
-    match or a tuple of iterators locating the bytes which match,
-    respectively. If the regular is not found, returns either an
-    empty string or a tuple with two ``bytes.end`` iterators,
+    """Scans either the string in *op1* or the byte iterator range between
+    *op2* and *op3* for the regular expression *op1*. Returns a 2-tuple with
+    (1) a integer match-indicator corresponding to the one returned by ~~Find;
+    and (2) the matching substring or a tuple of iterators locating the bytes
+    which match, respectively; if there's no match, the second element is
+    either an empty string or a tuple with two ``bytes.end`` iterators,
     respectively.
     
     Throws PatternError if no pattern has been compiled yet. 
@@ -79,7 +99,7 @@ class Span(Instruction):
     Todo: The string variant is not yet implemented.
     """
     
-@instruction("regexp.groups", op1=referenceOf(regexp), op2=_string_or_iter, op3=_none_or_iter, target=referenceOf(container(vector, _span)))
+@instruction("regexp.groups", op1=referenceOf(regexp), op2=_string_or_iter, op3=_none_or_iter, target=referenceOf(container(vector, _range)))
 class Groups(Instruction):
     """Scans either the string in *op1* or the byte iterator range
     between *op2* and *op3* for the regular expression op1*. If the
@@ -91,7 +111,9 @@ class Groups(Instruction):
     expression. Returns an empty vector if the expression is not
     found.
     
-    Throws PatternError if not pattern has been compiled yet. 
+    This method is not compatible with sets of multiple patterns;
+    throws PatternError if used with a set, or when no pattern has
+    been compiled yet. 
     
     Todo: The string variant is not yet implemented.
     """

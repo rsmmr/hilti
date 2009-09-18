@@ -14,28 +14,22 @@ void run() {
     local iterator<bytes> i2
     local ref<regexp> re
     local int32 found
+    local ref<list<string>> patterns
+    local ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> v
     
     re = new regexp
     call Hilti::print(re)
-    
-    regexp.compile re "Foo|Bar"
+
+    patterns = new list<string>
+    list.push_back patterns "Foo"
+    list.push_back patterns "Bar"
+    list.push_back patterns "Hurz"
+
+    regexp.compile re patterns
     call Hilti::print(re)
     
     b = b"Hello Foo!"
     i1 = bytes.begin b
     i2 = bytes.end b
-    found = regexp.find re i1 i2
-    call Hilti::print(found)
-    
-    b = b"Hello Bar!"
-    i1 = bytes.begin b
-    i2 = bytes.end b
-    found = regexp.find re i1 i2
-    call Hilti::print(found)
-    
-    b = b"Hello Nobody!"
-    i1 = bytes.begin b
-    i2 = bytes.end b
-    found = regexp.find re i1 i2
-    call Hilti::print(found)
+    v = regexp.groups re i1 i2
 }

@@ -5,13 +5,12 @@ Instructions
 - Single return statement independent of whether we're returning a
 value or not. 
 
+- the string variants of regexp.* aren't implemented yet.
+
 Data Types
 ==========
 
-- addresses and subnets
 - string type is still missing instructions
-- bytes 
-- list
 
 Bug fixes
 =========
@@ -75,7 +74,7 @@ relying on "__"
   * the Any type?
   * refine_to in codegen.llvmOp()
   * all or parts of the int-width logic in resolver?
-  
+
 - If we still need wildcard types, cleanup how they are instantiated (empty
 list vs. "*" vs. ["*"])
 
@@ -84,6 +83,11 @@ around the code generator object. Use global singleton directly
 instread.
 
 - Rename TypeDeclType to TypeDecl
+
+- Do we need the IteratorX types, or is a single Iterator type sufficient?
+
+- libhilti's TRE is currently not linked statically into libhilti.
+Need to figure out how to compile it with llvm-gcc.
 
 Documentation
 =============

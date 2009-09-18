@@ -16,7 +16,7 @@ keywords = ("attribute", "if", "module", "type")
 types = ("bytes", "string", "unit")
 
 # Literals.
-literals = ['(',')','{','}', '<', '>', '=', ',', ':', '*', ';', '+', '-', '*', '/' ]
+literals = ['(',')','{','}', '<', '>', '=', ',', ':', '*', ';', '+', '-', '*', '/', '|' ]
 
 def _loc(t):
     return location.Location(t.lexer.parser.state._filename, t.lexer.lineno)

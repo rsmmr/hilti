@@ -64,7 +64,7 @@ def p_type_unit(p):
     
 def p_instantiate_unit(p):
     """_instantiate_unit :"""
-    prod = grammar.Sequence("start", [], location=_loc(p, -1))
+    prod = grammar.Sequence([], location=_loc(p, -1))
     p.parser.state.unit = type.Unit(prod, location=_loc(p, -1))
 
 def p_unit_item_list(p):
@@ -77,30 +77,46 @@ def p_unit_item_var(p):
     p.parser.state.unit.addAttribute(id.ID(p[2], p[4], id.Role.LOCAL, location=_loc(p, 1)))
     
 def p_unit_item_production(p):
-    """unit_item : '>' unit_production unit_production_cond_opt ';'"""
-    if p[3]:
-        p[2].setPredicate(p[3])
-        
+    """unit_item : '>' production ';'"""
     p.parser.state.unit.startProduction().addProduction(p[2])
 
-def p_unit_item_cond_opt(p):
-    """unit_production_cond_opt : IF expr
-                                | """
-    p[0] = p[2] if len(p) != 1 else None
+def p_production(p):
+    """production : production_name_opt production_body production_cond_opt"""
+    if p[1]:
+        p[2].setName(p[1])
     
-def p_unit_production_type(p):
-    """unit_production : unit_production_name_opt type"""
-    p[0] = grammar.Variable(p[2], name=p[1], location=_loc(p, 1))
-    
-def p_unit_production_literal(p):
-    """unit_production : unit_production_name_opt CONSTANT"""
-    p[0] = grammar.Literal(p[2], name=p[1], location=_loc(p, 1))
+    if p[3]:
+        p[2].setPredicate(p[3])
 
-def p_unit_production_name_opt(p):
-    """unit_production_name_opt : IDENT ':'
+    p[0] = p[2]
+        
+def p_production_cond_opt(p):
+    """production_cond_opt : IF expr
+                           | """
+    p[0] = p[2] if len(p) != 1 else None
+
+def p_production_name_opt(p):
+    """production_name_opt : IDENT ':'
                           | """
     p[0] = p[1] if len(p) != 1 else ""
+    
+def p_production_body_type(p):
+    """production_body : type"""
+    p[0] = grammar.Variable(p[1], location=_loc(p, 1))
+    
+def p_production_body_literal(p):
+    """production_body : CONSTANT"""
+    p[0] = grammar.Literal(p[1], location=_loc(p, 1))
 
+def p_production_body_alternative(p):
+    """production_body : '(' production_alternative_list ')'"""
+    p[0] = grammar.Alternative(p[2], location=_loc(p, 1))
+
+def p_production_alternative_list(p):
+    """production_alternative_list : production '|' production_alternative_list
+                                   | production """
+    p[0] = [p[1]] + p[3] if len(p) != 2 else [p[1]]
+    
 # Support rules for types.
 
 #def p_type_list(p):    

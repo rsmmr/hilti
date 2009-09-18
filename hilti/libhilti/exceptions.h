@@ -55,6 +55,9 @@ extern hlt_exception hlt_exception_invalid_iterator;
 // An error in a regular expression.
 extern hlt_exception hlt_exception_pattern_error;
 
+// Functionality not yet implemented.
+extern hlt_exception hlt_exception_not_implemented;
+
 // Fall-back exception if nothing else is specified.
 extern hlt_exception hlt_exception_unspecified;
 

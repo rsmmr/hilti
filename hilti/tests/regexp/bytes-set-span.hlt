@@ -17,13 +17,20 @@ void run() {
     local ref<regexp> re
     local tuple<int32, tuple<iterator<bytes>,iterator<bytes>>> span
     local tuple<iterator<bytes>,iterator<bytes>> range
+
+    local ref<list<string>> patterns
     
     re = new regexp
     call Hilti::print(re)
-    
-    regexp.compile re "A.*B"
+
+    patterns = new list<string>
+    list.push_back patterns "Foo"
+    list.push_back patterns "5.7"
+    list.push_back patterns "A.*B"
+
+    regexp.compile re patterns
     call Hilti::print(re)
-    
+
     b = b"1234AxyxyxyB5678"
     call Hilti::print(b)
     

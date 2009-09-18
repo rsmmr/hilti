@@ -29,6 +29,7 @@ hlt_exception hlt_exception_overlay_not_attached = "OverlayNotAttached";
 hlt_exception hlt_exception_index_error = "IndexError";
 hlt_exception hlt_exception_underflow = "Underflow";
 hlt_exception hlt_exception_invalid_iterator = "InvalidIterator";
+hlt_exception hlt_exception_not_implemented = "NotImplemented";
 hlt_exception hlt_exception_pattern_error = "PatternError";
 
 // Reports a caught exception.

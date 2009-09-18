@@ -13,12 +13,12 @@
 #include <string.h>
 #include <pthread.h>
 
-#include "hilti_intern.h"
+#include "hilti.h"
 #include "utf8proc.h"
 
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't 
  * convert to the locale encoding yet. We just print them in \u syntax. */
-void __hlt_print_str(FILE* file, __hlt_string s, int8_t newline, __hlt_exception* excpt)
+void __hlt_print_str(FILE* file, hlt_string s, int8_t newline, hlt_exception* excpt)
 {
     if ( ! s )
         // Empty string.
@@ -32,7 +32,7 @@ void __hlt_print_str(FILE* file, __hlt_string s, int8_t newline, __hlt_exception
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &cp);
         
         if ( n < 0 ) {
-            *excpt = __hlt_exception_value_error;
+            *excpt = hlt_exception_value_error;
             return;
         }
         
@@ -53,48 +53,3 @@ void __hlt_print_str(FILE* file, __hlt_string s, int8_t newline, __hlt_exception
         fputc('\n', file);
         
 }
-
-/*
- * Hilti::print(obj, newline = True)
- * 
- * Prints a textual representation of an object to stdout.
- * 
- * obj: instance of any HILTI type - The object to print. 
- * newline: bool - If true, a newline is added automatically.
- * 
- */
-void hilti_print(const __hlt_type_info* type, void* obj, int8_t newline, __hlt_exception* excpt)
-{
-    // To prevent race conditions with multiple threads, we have to lock stdout here and then
-    // unlock it at each possible exit to this function.
-    flockfile(stdout);
-
-    if ( type->to_string ) {
-        __hlt_string s = (*type->to_string)(type, obj, 0, excpt);
-        if ( *excpt )
-        {
-            funlockfile(stdout);
-            return;
-        }
-
-        __hlt_print_str(stdout, s, 0, excpt);
-        if ( *excpt )
-        {
-            funlockfile(stdout);
-            return;
-        }
-    }
-    
-    else {
-        /* No fmt function, just print the tag. */
-        fprintf(stdout, "<%s>", type->tag);
-    }
-    
-    if ( newline )
-        fputc('\n', stdout);
-
-    fflush(stdout);
-
-    funlockfile(stdout);
-}
-

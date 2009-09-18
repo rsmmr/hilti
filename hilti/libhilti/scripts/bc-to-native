@@ -1,0 +1,3 @@
+#! /usr/bin/env bash
+
+llvm-link $1 | llc -f -o $1.S && gcc -c $1.S -o $2 && rm -f $1.S

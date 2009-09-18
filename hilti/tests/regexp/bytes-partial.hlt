@@ -18,24 +18,25 @@ void run() {
     re = new regexp
     call Hilti::print(re)
     
-    regexp.compile re "Foo|Bar"
+    regexp.compile re "Foo|Bar!!!"
     call Hilti::print(re)
     
-    b = b"Hello Foo!"
+    b = b"Bar"
     i1 = bytes.begin b
     i2 = bytes.end b
     found = regexp.find re i1 i2
     call Hilti::print(found)
     
-    b = b"Hello Bar!"
+    b = b"Fo"
     i1 = bytes.begin b
     i2 = bytes.end b
     found = regexp.find re i1 i2
     call Hilti::print(found)
     
-    b = b"Hello Nobody!"
+    b = b"Bar!!!"
     i1 = bytes.begin b
     i2 = bytes.end b
     found = regexp.find re i1 i2
     call Hilti::print(found)
+    
 }

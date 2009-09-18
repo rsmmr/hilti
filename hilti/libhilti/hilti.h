@@ -34,7 +34,7 @@ typedef struct __hlt_string* hlt_string;
 #include "port.h"
 #include "regexp.h"
 #include "run.h"
-#include "string.h"
+#include "str.h"
 #include "thread_context.h"
 #include "tuple.h"
 #include "utf8proc.h"

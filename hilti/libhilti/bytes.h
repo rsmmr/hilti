@@ -139,7 +139,7 @@ extern const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception* excpt);
 //
 // Todo: Once we start compiling libhilti with llvm-gcc, calls to this function
 // should be optimized away. Check that. 
-extern int8_t hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_exception* excpt);
+extern int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_exception* excpt);
 
 // Creates a new position object representing a specific offset.
 // 
