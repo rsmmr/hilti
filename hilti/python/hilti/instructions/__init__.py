@@ -21,6 +21,7 @@ __all__ = [
     "list",
     "regexp",
     "debug",
+    "bitset",
     ]
 
 import flow
@@ -45,3 +46,4 @@ import vector
 import list
 import regexp
 import debug
+import bitset

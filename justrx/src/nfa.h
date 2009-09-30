@@ -83,7 +83,7 @@ typedef struct jrx_nfa_state {
 } jrx_nfa_state;
 
 /// An NFA. Each NFA is associated with an ~~jrx_nfa_context. 
-typedef struct {
+typedef struct jrx_nfa {
     jrx_nfa_context* ctx;     // The context the NFA is part of.
     set_tag* initial_tags;    // The "incoming" tags.
     jrx_nfa_state* initial;   // The initial state.

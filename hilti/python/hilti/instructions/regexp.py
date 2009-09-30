@@ -74,8 +74,8 @@ class Find(Instruction):
     the integer then indicates which pattern has matched. If multiple
     patterns from the set match, the left-most one is taken. If multiple
     patterns match at the left-most position, it is undefined which of them is
-    returned. The instruction returns 0 if no match was found but adding more
-    input bytes could change that (i.e., a partial match). Returns -1 if no
+    returned. The instruction returns -1 if no match was found but adding more
+    input bytes could change that (i.e., a partial match). Returns 0 if no
     match was found and adding more input would not change that. 
     
     Todo: The string variant is not yet implemented.

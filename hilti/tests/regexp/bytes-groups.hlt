@@ -26,7 +26,7 @@ void run() {
     regexp.compile re "A(.*)X(.*)Y(.*)B"
     call Hilti::print(re)
     
-    b = b"xxA123X456Y789Bxx"
+    b = b"xxA1234X5678Y9012Bxx"
     call Hilti::print(b)
     
     i1 = bytes.begin b

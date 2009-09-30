@@ -1,8 +1,17 @@
 # $Id$
 
+if ( ENABLE_LLVM ) # FIXME: compilation with llvm-gcc doesn't work right now
 
-set(CMAKE_C_FLAGS "-g -Wall -ansi -strict -std=c99 -I${CMAKE_CURRENT_SOURCE_DIR}/../src")
-set(CMAKE_C_LDFLAGS "-L${CMAKE_CURRENT_BINARY_DIR}/../src -ljrx")
+else ( ENABLE_LLVM )
 
-add_executable(retest retest.c)
-add_executable(testregex testregex.c)
+    set(CMAKE_C_FLAGS "-g -Wall -ansi -strict -std=c99 -I${CMAKE_CURRENT_SOURCE_DIR}/../src")
+    set(CMAKE_C_LDFLAGS "-L${CMAKE_CURRENT_BINARY_DIR}/../src -ljrx")
+
+    add_executable(retest retest.c)
+    target_link_libraries(retest jrx)
+
+    add_executable(testregex testregex.c)
+    target_link_libraries(testregex jrx)
+    
+endif ( ENABLE_LLVM )
+

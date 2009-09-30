@@ -1,6 +1,6 @@
 // $Id$
 
-#include "dfa-interpreter.h"
+#include "dfa-interpreter-std.h"
 #include "jrx.h"
 #include "jlocale.h"
 #include "nfa.h"
@@ -20,9 +20,9 @@ static int _ccl_match(jrx_ccl* ccl, jrx_char cp, jrx_char *previous, jrx_asserti
 {
     if ( ! ccl->ranges )
         return 0;
-    
+
     if ( ! _ccl_match_assertions(cp, previous, assertions, ccl->assertions) )
-        return 1;
+        return 0;
     
     // Look at ranges.
     set_for_each(char_range, ccl->ranges, r) {
@@ -141,26 +141,41 @@ keep_new:
     }
 }
 
-jrx_match_state* jrx_match_state_init(jrx_match_state* ms, jrx_dfa* dfa)
+jrx_match_state* jrx_match_state_init(const jrx_regex_t *preg, jrx_offset begin, jrx_match_state* ms)
 {
-    ms->accepts = set_match_accept_create(0);
+    jrx_dfa* dfa = preg->dfa;
+    
     ms->offset = 1;
+    ms->begin = begin;
     ms->previous = 0;
     ms->dfa = dfa;
     ms->state = dfa->initial;
     ms->current_tags = 0;
-    ms->tags1 = calloc(dfa->max_tag_groups, _tag_group_size(ms));
-    ms->tags2 = calloc(dfa->max_tag_groups, _tag_group_size(ms));
     
-    _update_tags(ms, dfa->initial_ops);
-    jrx_dfa_state* state = vec_dfa_state_get(dfa->states, ms->state);
-    _update_accepts(ms, state, 0, JRX_ASSERTION_BOL | JRX_ASSERTION_BOD);
+    if ( (dfa->options & JRX_OPTION_STD_MATCHER) ) {
+        ms->accepts = set_match_accept_create(0);
+        ms->tags1 = calloc(dfa->max_tag_groups, _tag_group_size(ms));
+        ms->tags2 = calloc(dfa->max_tag_groups, _tag_group_size(ms));
+        
+        _update_tags(ms, dfa->initial_ops);
+        jrx_dfa_state* state = vec_dfa_state_get(dfa->states, ms->state);
+        _update_accepts(ms, state, 0, JRX_ASSERTION_BOL | JRX_ASSERTION_BOD);
+    }
+    else {
+        ms->accepts = 0;
+        ms->current_tags = -1;
+        ms->tags1 = 0;
+        ms->tags2 = 0;
+    }
     
     return ms;
 }
 
 void jrx_match_state_done(jrx_match_state* ms)
 {
+    if ( ms->dfa->options & JRX_OPTION_NO_CAPTURE )
+        return;
+    
     set_for_each(match_accept, ms->accepts, acc) {
         if ( acc.tags )
             free(acc.tags);

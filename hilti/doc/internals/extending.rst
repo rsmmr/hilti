@@ -133,7 +133,7 @@ data types where appropiate.
    describing the type in way suitable for use in error messages;
    usually ``_name`` corresponds to the type's name in HILTI
    programs. ``_id`` is an integer unique across all types. To this
-   end, add a new ``__HLT_TYPE_*`` constant to |hilti_intern.h|,
+   end, add a new ``__HLT_TYPE_*`` constant to |rtti.h|,
    picking the next available number and use the same value with
    ``_id``.
    

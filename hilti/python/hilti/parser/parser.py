@@ -109,6 +109,7 @@ def p_def_type(p):
     """def_type : def_struct_decl
                 | def_enum_decl
                 | def_overlay_decl
+                | def_bitset_decl
                 """
     pass
 
@@ -131,6 +132,16 @@ def p_def_enum(p):
     for (label, value) in t.labels().items():
         eid = id.ID(p[3] + "::" + label, t, id.Role.CONST, location=loc(p, 1))
         p.parser.state.module.addID(eid, value)
+        
+def p_def_bitset(p):
+    """def_bitset_decl : BITSET _begin_nolines IDENT '{' id_with_opt_int_init_list '}' _end_nolines"""
+    t = type.Bitset(p[5])
+    _addTypeDecl(p, p[3], t, location=loc(p, 1))
+        
+    # Register the individual labels.
+    for (label, value) in t.labels().items():
+        eid = id.ID(p[3] + "::" + label, t, id.Role.CONST, location=loc(p, 1))
+        p.parser.state.module.addID(eid, value)        
 
 def p_def_overlay(p):
     """def_overlay_decl : OVERLAY _begin_nolines IDENT '{' overlay_field_list '}' _end_nolines"""
@@ -546,7 +557,21 @@ def p_id_list(p):
         p[0] = [p[1]]
     else:
         p[0] = [p[1]] + p[3]
+
+def p_id_with_opt_int_init_list(p):
+    """id_with_opt_int_init_list : IDENT opt_int_init "," id_with_opt_int_init_list
+                                 | IDENT opt_int_init """ 
+    if len(p) == 3:
+        p[0] = [(p[1], p[2])]
+    else:
+        p[0] = [(p[1], p[2])] + p[4]
         
+def p_opt_id_init(p):
+    """opt_int_init : '=' INTEGER
+                    | """
+
+    return p[2] if len(p) == 3 else None
+            
 def p_error(p):    
     if p:
         type = p.type.lower()

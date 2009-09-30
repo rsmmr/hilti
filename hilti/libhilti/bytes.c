@@ -1,31 +1,4 @@
-/* $Id$
- * 
- * Support functions for HILTI's bytes data type.
- * 
- * A Bytes object is internally represented as a list of variable-size data
- * chunks. While the list can be modified (e.g., adding another chunk of data
- * will append an entry to the list), the data chunks are immutable and can
- * therefore be shared across multiple Bytes objects. For example, creating a
- * new Bytes object containing only a subsequence of an existing one needs to
- * create only a new list pointing to the appropiate chunks 
- * 
- * There is one optimization of this basic scheme: To avoid fragmentation
- * when adding many tiny data chunks, in certain cases new data is copied
- * into an existing chunk. This will however never change any content a chunk
- * already has (because other Bytes objects might use that as well) but only
- * *append* to a chunk's data if the initial allocation was large enough. To
- * avoid conflicts, only the Bytes object which allocated a chunk in the
- * first place is allowed to extend it in this way; that object is called the
- * chunk's "owner".
- * 
- * To allow for efficient indexing and iteration over a Bytes objects, there
- * are also Position objects. Each Position is associated with a particular
- * bytes objects and can be used to locate a specific byte. Creating a
- * Position from an offset into the Bytes can be potentially expensive if the
- * target position is far into the chunk list; however once created,
- * Positions can be dererenced, incremented, and decremented efficiently. 
- * 
- */
+// $Id$
 
 #include <ctype.h>
 #include <string.h>
@@ -34,8 +7,8 @@
 #include "hilti.h"
 
 struct hlt_bytes_chunk {
-    const int8_t* start;            // Pointer to first data byte.
-    const int8_t* end;              // Pointer one beyond the last data byte.
+    const int8_t* start;          // Pointer to first data byte.
+    const int8_t* end;            // Pointer one beyond the last data byte.
     struct hlt_bytes_chunk* next; // Successor in bytes object.
     struct hlt_bytes_chunk* prev; // Predecessor in bytes object.
     
@@ -553,4 +526,48 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
     }
     
     return dst;
+}
+
+void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* excpt)
+{
+    if ( ! cookie ) {
+        
+        if ( hlt_bytes_pos_eq(start, end, excpt) ) {
+            block->start = block->end = start.cur;
+            block->next = 0;
+            return 0;
+        }
+        
+        if ( start.chunk != end.chunk  ) {
+            block->start = start.cur;
+            block->end = start.chunk->end;
+            block->next = start.chunk->next;
+        }
+        else {
+            block->start = start.cur;
+            block->end = end.cur; 
+            block->next = 0;
+            }
+    }
+    
+    else {
+        
+        if ( ! block->next )
+            return 0;
+            
+        if ( block->next != end.chunk ) {
+            block->start = block->next->start;
+            block->end = block->next->end;
+            block->next = block->next->next;
+        }
+        else {
+            block->start = end.chunk->start;
+            block->end = end.cur;
+            block->next = 0;
+        }
+    }
+    
+    // We don't care what we return if we haven't reached the end yet as long
+    // as it's not NULL.  
+    return block->next ? block : 0;
 }

@@ -1,0 +1,27 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+bitset MyBits { Bit0, Bit1, Bit23=23, Bit24 }
+
+void run() {
+     local MyBits b
+     local string s
+     b = MyBits::Bit0
+     call Hilti::print(b)
+     s = call Hilti::fmt("As string: %s", (b))
+     call Hilti::print(s)
+     s = call Hilti::fmt("As int: %d", (b))
+     call Hilti::print(s)
+     
+     call Hilti::print(MyBits::Bit0)
+     call Hilti::print(MyBits::Bit1)
+     call Hilti::print(MyBits::Bit23)
+     call Hilti::print(MyBits::Bit24)
+}     

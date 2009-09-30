@@ -290,7 +290,7 @@ void _nfa_state_follow_epsilons(jrx_nfa_context* ctx, jrx_nfa_state* state, set_
 
     set_nfa_state_id_insert(closure, state->id);
 
-    if ( state->accepts ) {
+    if ( state->accepts && state->accepts != *accepts ) {
         vec_for_each(nfa_accept, state->accepts, acc) {
             set_tag* ntags = 0;
             
@@ -454,11 +454,13 @@ static jrx_nfa* _nfa_compile_pattern(jrx_nfa_context* ctx, const char* pattern, 
 
 jrx_nfa* nfa_compile_add(jrx_nfa* nfa, const char* pattern, int len, const char** errmsg)
 {
+#if 0    
     if ( ! (nfa->ctx->options & JRX_OPTION_NO_CAPTURE) ) {
         *errmsg = "cannot capture subgroups with set matching; use OPTION_NO_CAPTURE";
         nfa_delete(nfa);
         return 0;
     }
+#endif    
     
     jrx_nfa* nnfa = _nfa_compile_pattern(nfa->ctx, pattern, len, errmsg);
     if ( ! nnfa ) {

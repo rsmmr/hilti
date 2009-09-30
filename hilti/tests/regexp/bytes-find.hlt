@@ -13,6 +13,7 @@ void run() {
     local iterator<bytes> i1
     local iterator<bytes> i2
     local ref<regexp> re
+    local ref<regexp> re2
     local int32 found
     
     re = new regexp
@@ -37,5 +38,21 @@ void run() {
     i1 = bytes.begin b
     i2 = bytes.end b
     found = regexp.find re i1 i2
+    call Hilti::print(found)
+
+    re2 = new regexp
+    regexp.compile re2 "^(Foo|Bar)"
+    call Hilti::print(re2)
+
+    b = b"Foo!"
+    i1 = bytes.begin b
+    i2 = bytes.end b
+    found = regexp.find re2 i1 i2
+    call Hilti::print(found)
+    
+    b = b"Hello Foo!"
+    i1 = bytes.begin b
+    i2 = bytes.end b
+    found = regexp.find re2 i1 i2
     call Hilti::print(found)
 }

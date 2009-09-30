@@ -1,0 +1,71 @@
+#! /usr/bin/env python
+#
+
+import re
+import sys
+
+import expander
+import docutils.examples
+
+comment = re.compile("^\s*///\s+([^@].*|)$")
+comment_until_eol = re.compile(".*///.*")
+
+incomment = False
+
+def writeln(line):
+    print "/// ", expander.expandMarkup(line)
+    print "/// "
+
+def expand(lines):
+    sec = expander.expandBlock(lines)
+    
+    if sec.first:
+        print "/// ", expander.expandMarkup(sec.first),
+
+    for line in sec.text.split("\n"):
+        print "/// ", expander.expandMarkup(line)
+    
+    print "/// "
+
+    for item in sec.args:
+        (t, id, desc) = item
+        writeln("\\param %s %s %s" % (id, t, desc))
+
+    for item in sec.returns:
+        (t, desc) = item
+        writeln("\\return %s %s" % (t, desc))
+
+    for item in sec.raises:
+        (t, desc) = item
+        writeln("\\exception %s %s" % (t, desc))
+        
+    for item in sec.notes:
+        writeln("\\note " + item)
+        
+    for item in sec.todos:
+        writeln("\\todo " + item)
+
+current = []
+        
+for line in open(sys.argv[1]):
+
+    m = comment.match(line)
+    
+    if m: 
+        current += [m.groups()[0].strip()]
+        continue
+
+    if current:
+        expand(current)
+    
+    current = []
+    
+    m = comment_until_eol.match(line)
+    
+    if m:
+        line = expander.expandMarkup(line)
+        
+    print line,
+            
+if current:
+    expand(current)

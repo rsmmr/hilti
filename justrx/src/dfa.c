@@ -248,7 +248,7 @@ static int _dfa_state_compute(jrx_nfa_context* ctx, jrx_dfa* dfa, jrx_dfa_state_
             if ( ! accepts ) 
                 accepts = vec_dfa_accept_create(0);
             
-            dfa_accept dacc = { acc.assertions, acc.aid, delem.tid, tops, 0 };
+            jrx_dfa_accept dacc = { acc.assertions, acc.aid, delem.tid, tops, 0 };
             vec_dfa_accept_append(accepts, dacc);
         }
     }
@@ -310,6 +310,9 @@ jrx_dfa* dfa_from_nfa(jrx_nfa* nfa)
     int lazy = (ctx->options & JRX_OPTION_LAZY);
     _dfa_state_compute(ctx, dfa, dfa->initial, initial, !lazy);
 
+    if ( ctx->options & JRX_OPTION_DEBUG )
+        dfa_print(dfa, stderr);
+    
     return dfa;
 }
 

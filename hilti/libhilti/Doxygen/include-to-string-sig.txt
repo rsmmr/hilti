@@ -1,0 +1,6 @@
+The function has the standard signature for string conversions.
+
+type: Type information for *obj*. The type must match what the function expects to convert.
+obj:  The object to be converted.
+options: Format options for string conversion. Currently unused.
+excpt: &

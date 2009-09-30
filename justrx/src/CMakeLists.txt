@@ -15,18 +15,11 @@ set(CMAKE_C_FLAGS "-g -Wall -ansi -strict -std=c99")
 include(EnableLLVM)
 
 set(SRCS 
-  ccl.c
-  dfa-interpreter.c
-  dfa-min-interpreter.c
-  dfa.c
-  jlocale.c
-  nfa.c
-  regex.c
-  util.c
-  
-  # Generated.
-  ${FLEX_rescan_OUTPUTS}
-  ${BISON_reparse_OUTPUT_SOURCE}
-  )
+    ccl.c dfa.c dfa-interpreter-std.c dfa-interpreter-min.c jlocale.c 
+    jrx.c nfa.c util.c
+    
+    # Generated.
+    ${FLEX_rescan_OUTPUTS} ${BISON_reparse_OUTPUT_SOURCE}
+    )
 
 add_library(jrx STATIC ${SRCS})  

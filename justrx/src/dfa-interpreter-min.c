@@ -1,6 +1,6 @@
 // $Id$
 
-#include "dfa-min-interpreter.h"
+#include "dfa-interpreter-min.h"
 #include "jlocale.h"
 #include "nfa.h"
 
@@ -32,7 +32,7 @@ static int _ccl_match(jrx_ccl* ccl, jrx_char cp, jrx_char *previous, jrx_asserti
     return 0;
 }
 
-int jrx_min_match_state_advance(jrx_min_match_state* ms, jrx_char cp, jrx_assertion assertions)
+int jrx_match_state_advance_min(jrx_match_state* ms, jrx_char cp, jrx_assertion assertions)
 {
     jrx_dfa_state* state = vec_dfa_state_get(ms->dfa->states, ms->state);
     
@@ -45,18 +45,18 @@ int jrx_min_match_state_advance(jrx_min_match_state* ms, jrx_char cp, jrx_assert
     vec_for_each(dfa_transition, state->trans, trans) {
         jrx_ccl* ccl = vec_ccl_get(ms->dfa->ccls->ccls, trans.ccl);
         
-        if ( ! _ccl_match(ccl, cp, ms->first ? &ms->previous : 0, assertions) )
+        if ( ! _ccl_match(ccl, cp, ms->offset == 0 ? &ms->previous : 0, assertions) )
             // Doesn't match.
             continue;
 
+        ++ms->offset;
+        
         // Found transition.
         jrx_dfa_state_id succ_id = trans.succ;
         jrx_dfa_state* succ_state = vec_dfa_state_get(ms->dfa->states, succ_id);
         
         ms->state = succ_id;
         ms->previous = cp;
-        if ( ms->first )
-            ms->first = 0;
 
         if ( ms->dfa->options & JRX_OPTION_DEBUG )
             fprintf(stderr, "-> found transition, new state is #%d", succ_id);

@@ -29,6 +29,7 @@
 #define HLT_TYPE_LIST     16
 #define HLT_TYPE_NET      17
 #define HLT_TYPE_REGEXP   18
+#define HLT_TYPE_BITSET   19
 
 #define HLT_TYPE_ITERATOR_BYTES  100
 #define HLT_TYPE_ITERATOR_VECTOR 101

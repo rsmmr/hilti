@@ -38,6 +38,12 @@ void run() {
     i2 = bytes.end b
     found = regexp.find re i1 i2
     call Hilti::print(found)
+    
+    b = b"Hello Hurz!"
+    i1 = bytes.begin b
+    i2 = bytes.end b
+    found = regexp.find re i1 i2
+    call Hilti::print(found)
 
     b = b"Hurz Bar Foo!"
     i1 = bytes.begin b

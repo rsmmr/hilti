@@ -31,6 +31,7 @@ keywords = {
     "any": "ANY", 
     "type": "METATYPE", 
     "enum": "ENUM",
+    "bitset": "BITSET",
     "Null": "NULL",
     "at": "AT",
     "after": "AFTER",
@@ -69,6 +70,7 @@ tokens = (
    'ADDR',
    'NET',
    'PORT',
+   'BITSET',
    
    'ATTR_DEFAULT'
 ) 

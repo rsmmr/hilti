@@ -361,6 +361,7 @@ iteratorVector =  _hasType(type.IteratorVector)
 list =  _hasType(type.List)
 iteratorList =  _hasType(type.IteratorList)
 regexp =  _hasType(type.RegExp)
+bitset =  _hasType(type.Bitset)
 
 function = _hasType(type.Function)
 label = _hasType(type.Label)

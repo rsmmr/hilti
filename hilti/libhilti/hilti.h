@@ -2,6 +2,19 @@
 // 
 // Top-level HILTI include file.
 
+/// \mainpage LibHILTI Reference Documentation
+/// 
+/// \section data-types HILTI Data Types
+/// 
+/// - \ref bytes
+/// - \ref regexp
+/// 
+/// \section run-time-support Run-Time Support
+/// 
+/// \section debugging Debugging Support
+/// 
+/// \section internals Internal Run-time Functions
+
 #ifndef HILTI_H
 #define HILTI_H
 

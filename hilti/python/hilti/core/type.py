@@ -452,6 +452,40 @@ class Enum(ValueType):
     _name = "enum"
     _id = 10
     
+class Bitset(ValueType):
+    """Type for bitsets. Each bit label is mapped to a unique integer
+    corresponding to its bit number.
+    
+    labels: list of (string, bit) - The labels and bit numbers that make up
+    the possible values of the bitset. 
+    """
+    def __init__(self, labels):
+        bits = ["%s = %s" % (label, str(bit)) for (label, bit) in labels]
+        name = "bitset { %s }" % ", ".join(bits)
+        super(Bitset, self).__init__([], name)
+        
+        self._labels = {}
+        next = 0
+        for (label, bit) in labels:
+            if bit == None:
+                bit = next 
+                
+            if bit >= 64:
+                raise HiltiType.ParameterMismatch(self, "bitset can only store bits 0..63")
+            
+            next = max(next, bit) + 1
+            self._labels[label] = next
+
+    def labels(self):
+        """Returns the bit labels with their corresponding bit numbers.
+        
+        Returns: dictonary string -> int - The labels mappend to their values.
+        """
+        return self._labels
+
+    _name = "bitset"
+    _id = 19
+    
 class Double(ValueType):
     """Type for doubles."""
     def __init__(self):

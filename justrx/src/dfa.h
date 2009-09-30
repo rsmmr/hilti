@@ -64,9 +64,9 @@ typedef struct {
     jrx_tag_group_id tid;           // The tag group to use.
     vec_tag_op* final_ops;          // Final tag operations when accepting.
     jrx_offset* tags;               // A copy of the final tag values. 
-} dfa_accept;
+} jrx_dfa_accept;
 
-DECLARE_VECTOR(dfa_accept, dfa_accept, uint32_t);
+DECLARE_VECTOR(dfa_accept, jrx_dfa_accept, uint32_t);
 
 typedef struct {
     vec_dfa_accept* accepts;    // Accepts for this state.
