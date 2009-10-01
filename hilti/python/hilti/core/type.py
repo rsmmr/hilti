@@ -460,10 +460,6 @@ class Bitset(ValueType):
     the possible values of the bitset. 
     """
     def __init__(self, labels):
-        bits = ["%s = %s" % (label, str(bit)) for (label, bit) in labels]
-        name = "bitset { %s }" % ", ".join(bits)
-        super(Bitset, self).__init__([], name)
-        
         self._labels = {}
         next = 0
         for (label, bit) in labels:
@@ -473,8 +469,12 @@ class Bitset(ValueType):
             if bit >= 64:
                 raise HiltiType.ParameterMismatch(self, "bitset can only store bits 0..63")
             
-            next = max(next, bit) + 1
-            self._labels[label] = next
+            next = max(next, bit + 1)
+            self._labels[label] = bit
+        
+        bits = ["%s = %s" % (label, str(bit)) for (label, bit) in self._labels.items()]
+        name = "bitset { %s }" % ", ".join(bits)
+        super(Bitset, self).__init__([], name)
 
     def labels(self):
         """Returns the bit labels with their corresponding bit numbers.

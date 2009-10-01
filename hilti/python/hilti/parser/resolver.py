@@ -10,12 +10,11 @@ class Resolver(visitor.Visitor):
     Performs an initial pass over an |ast|, preparing for later
     stages. The Resolver performs the following tasks:
     
-    - It resolves all ~~IDOperands. The parser initially sets all
-      ~~IDOperands to type ~~Unknown, and the resolver goes through
-      the |ast| and tries to resolve them to their actual type. If an
-      ~~IDOperand turns out to refer to a ~~TypeDeclType, it's turned into a
-      ~~TypeOperand. If an ~~IDOperand refers to an ~~Enum label, it's turned
-      into a ConstOperand.
+    - It resolves all ~~IDOperands. The parser initially sets all ~~IDOperands
+      to type ~~Unknown, and the resolver goes through the |ast| and tries to
+      resolve them to their actual type. If an ~~IDOperand turns out to refer
+      to a ~~TypeDeclType, it's turned into a ~~TypeOperand. If an ~~IDOperand
+      refers to an ~~Enum or ~~Bitset label, it's turned into a ConstOperand.
 
     - If a function ~~Call is lacking arguments but the called
       function's type provides defaults, we add corresponding
@@ -360,7 +359,7 @@ class Resolver(visitor.Visitor):
             if isinstance(ident.type(), type.TypeDeclType):
                 return (True, instruction.TypeOperand(ident.type().declType()))
 
-            if isinstance(ident.type(), type.Enum) and ident.role() == id.Role.CONST:
+            if (isinstance(ident.type(), type.Enum) or isinstance(ident.type(), type.Bitset) ) and ident.role() == id.Role.CONST:
                 label = ident.name() 
                 j = label.find("::")
                 assert j > 0

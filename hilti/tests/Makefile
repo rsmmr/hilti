@@ -5,10 +5,8 @@
 
 DIRS = misc core integer double string tuple channel libhilti c-api \
        bytes ref struct enum threads addr port overlay bool net \
-       vector list debug
+       vector list debug bitset regexp
        
-# regexp tests are known to fail.       
-
 all: test
 
 test:

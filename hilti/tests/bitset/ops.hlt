@@ -1,0 +1,47 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+bitset MyBits { Bit0, Bit1, Bit23=23, Bit24 }
+
+void run() {
+     local MyBits b
+     local MyBits b2
+     local MyBits b3
+     local bool c
+     
+     b = MyBits::Bit0
+     call Hilti::print(b)
+
+     b = bitset.set b MyBits::Bit23
+     call Hilti::print(b)
+     
+     b = bitset.clear b MyBits::Bit0
+     call Hilti::print(b)
+
+     c = bitset.has b MyBits::Bit23
+     call Hilti::print(c)
+
+     c = bitset.has b MyBits::Bit0
+     call Hilti::print(c)
+     
+     b2 = bitset.set b2 MyBits::Bit0
+     b2 = bitset.set b2 MyBits::Bit1
+     b2 = bitset.set b2 MyBits::Bit23
+     b2 = bitset.set b2 MyBits::Bit24
+     b = bitset.set b b2
+     call Hilti::print(b)
+     
+     b3 = bitset.set b3 MyBits::Bit23
+     b3 = bitset.set b3 MyBits::Bit24
+     call Hilti::print(b3)
+     c = bitset.has b2 b3 
+     call Hilti::print(c)
+     
+}     

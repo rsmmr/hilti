@@ -22,7 +22,10 @@ chaining them via the ``|`` operator::
 
    mybits = MyBits::Bit1 | MyBits::Bit2
 
-Note:: For efficiency reasons, HILTI supports only up to 64 bits per type. 
+Note: For efficiency reasons, HILTI supports only up to 64 bits per type. 
+
+Todo: We don't support multi-value bitset constants yet. Need to add logic for ``BIT1 |
+BIT2 | BIT3`` to parser.
 """
 
 from hilti.core.instruction import *

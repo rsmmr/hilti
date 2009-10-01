@@ -28,8 +28,7 @@ def _(type):
     aux = []
     zero = [codegen.llvmConstInt(0, 8)]
     for (label, value) in sorted(type.labels().items(), key=lambda x: x[1]):
-        txt = "%s=%d" % (label, value)
-        aux += [codegen.llvmConstInt(ord(c), 8) for c in txt] + zero
+        aux += [codegen.llvmConstInt(ord(c), 8) for c in label] + zero
 
     name = codegen.nameTypeInfo(type) + "_labels"
     const = llvm.core.Constant.array(llvm.core.Type.int(8), aux)
@@ -54,32 +53,32 @@ def _(type, refine_to):
 def _(op, refine_to):
     return codegen.llvmConstInt(1, 64).shl(codegen.llvmConstInt(op.value(), 64))
 
-@codegen.operator(instructions.bitset.Equal)
+@codegen.when(instructions.bitset.Equal)
 def _(self, i):
     op1 = self.llvmOp(i.op1())
     op2 = self.llvmOp(i.op2())
     result = self.builder().icmp(llvm.core.IPRED_EQ, op1, op2)
     self.llvmStoreInTarget(i.target(), result)
 
-@codegen.operator(instructions.bitset.Set)
+@codegen.when(instructions.bitset.Set)
 def _(self, i):
     op1 = self.llvmOp(i.op1())
     op2 = self.llvmOp(i.op2())
     result = self.builder().or_(op1, op2)
     self.llvmStoreInTarget(i.target(), result)
 
-@codegen.operator(instructions.bitset.Clear)
+@codegen.when(instructions.bitset.Clear)
 def _(self, i):
     op1 = self.llvmOp(i.op1())
     op2 = self.llvmOp(i.op2())
-    op2 = self.builder().xor(op2, -1)
+    op2 = self.builder().xor(op2, codegen.llvmConstInt(-1, 64))
     result = self.builder().and_(op1, op2)
     self.llvmStoreInTarget(i.target(), result)
 
-@codegen.operator(instructions.bitset.Has)
+@codegen.when(instructions.bitset.Has)
 def _(self, i):
     op1 = self.llvmOp(i.op1())
     op2 = self.llvmOp(i.op2())
-    tmp = self.builder().and_(tmp, op2)
+    tmp = self.builder().and_(op1, op2)
     result = self.builder().icmp(llvm.core.IPRED_EQ, tmp, op2)
     self.llvmStoreInTarget(i.target(), result)

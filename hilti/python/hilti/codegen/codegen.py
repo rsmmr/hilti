@@ -286,7 +286,7 @@ class CodeGen(visitor.Visitor):
         """
         
         canonified = type.name()
-        for c in ["<", ">", ",", "{", "}", " ", "*"]:
+        for c in ["<", ">", ",", "{", "}", " ", "*", "="]:
             canonified = canonified.replace(c, "_")
             
         while canonified.find("__") >= 0:
@@ -1791,11 +1791,11 @@ class CodeGen(visitor.Visitor):
                 addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.name())
                 return self.builder().load(addr, "op")
 
+            util.internal_error("llvmOp: unsupported ID operand type %s" % type)
+            
         if isinstance(op, instruction.TypeOperand):
             return self.llvmTypeInfoPtr(op.value())
-
-            util.internal_error("llvmOp: unsupported ID operand type %s" % type)
-
+        
         util.internal_error("llvmOp: unsupported operand type %s" % repr(op))
 
     def llvmTypeConvert(self, type, refine_to = None):
