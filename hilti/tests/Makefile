@@ -14,6 +14,9 @@ test:
 
 brief:
 	./run-tester $(TESTER_OPT) -b $(DIRS)
+    
+brief-debug:
+	./run-tester $(TESTER_OPT) -b -d $(DIRS)
 
 update-baseline:
 	./run-tester -U $(DIRS)

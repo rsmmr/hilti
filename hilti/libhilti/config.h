@@ -5,8 +5,11 @@
 #ifndef HILTI_CONFIG_H
 #define HILTI_CONFIG_H
 
+#include <stdio.h>
+
 #include "exceptions.h"
-#include "list.h"
+
+struct __hlt_list;
 
 // Configuration handling structures and functions for the HILTI run-time.
 typedef struct
@@ -20,7 +23,7 @@ typedef struct
     FILE* debug_out;
     
     // List of enabled debug output streams. Default is none.
-    hlt_list* debug_streams; // list<string> 
+    struct __hlt_list* debug_streams; // list<string> 
 } hilti_config;
 
 extern const hilti_config* hilti_config_get();

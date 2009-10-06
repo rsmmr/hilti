@@ -30,6 +30,8 @@
 #define HLT_TYPE_NET      17
 #define HLT_TYPE_REGEXP   18
 #define HLT_TYPE_BITSET   19
+#define HLT_TYPE_EXCEPTION    20
+#define HLT_TYPE_CONTINUATION 21
 
 #define HLT_TYPE_ITERATOR_BYTES  100
 #define HLT_TYPE_ITERATOR_VECTOR 101
@@ -38,6 +40,8 @@
 
    // %doc-hlt_type_info-start
 typedef struct __hlt_type_info hlt_type_info;
+
+struct __hlt_string;
 
 struct __hlt_type_info {
 
@@ -65,9 +69,9 @@ struct __hlt_type_info {
     // type. 'options' is currently unused and will be always zero for now.
     // In the future, we might use 'options' to pass in hints about the
     // prefered format. 'expt' can be set to raise an exception.
-    hlt_string (*to_string)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* expt);
-    int64_t (*to_int64)(const hlt_type_info* type, const void* obj, hlt_exception* expt);
-    double (*to_double)(const hlt_type_info* type, const void* obj, hlt_exception* expt);
+    struct __hlt_string* (*to_string)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt);
+    int64_t (*to_int64)(const hlt_type_info* type, const void* obj, hlt_exception** expt);
+    double (*to_double)(const hlt_type_info* type, const void* obj, hlt_exception** expt);
 
     // Type-parameters start here. The format is type-specific.
     char type_params[];

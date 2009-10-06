@@ -2,8 +2,12 @@
 #define HILTI_WORKER_THREAD_H
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <pthread.h>
 
 #include "exceptions.h"
+#include "context.h"
+#include "config.h"
 
 ///////////////////////////////////////////////////////////////////////////
 // Data types related to worker threads.
@@ -12,7 +16,7 @@
 // Typedefs used for interactions between C and HILTI.
 typedef void (*hlt_hilti_function)(void*);
 typedef void* hlt_hilti_frame;
-typedef void (*hlt_main_function)(hlt_exception*);
+typedef void (*hlt_main_function)(hlt_exception**);
 
 // This enumeration lists the possible states for a thread context.
 // RUN means that the worker threads should keep running, even if they run out
@@ -86,9 +90,13 @@ typedef struct hlt_worker_thread_t
     hlt_thread_context* context;
     hlt_job_node* job_queue_head;
     hlt_job_node* job_queue_tail;
-    hlt_exception except;
+    hlt_exception* except;
     hlt_exception_state except_state;
+    hlt_execution_context exec_context;
 } hlt_worker_thread;
+
+/// Returns true if HILTI environment is (potentially) running multiple threads.
+extern int8_t hlt_is_multi_threaded();
 
 ///////////////////////////////////////////////////////////////////////////
 // Thread context manipulation functions.
@@ -106,8 +114,8 @@ extern hlt_thread_context* hlt_new_thread_context(const hilti_config* config);
 extern void hlt_delete_thread_context(hlt_thread_context* context);
 extern void hlt_set_thread_context_state(hlt_thread_context* context, const hlt_thread_context_state new_state);
 extern hlt_thread_context_state hlt_get_thread_context_state(const hlt_thread_context* context);
-extern void hlt_run_main_thread(hlt_thread_context* context, hlt_main_function function, hlt_exception* except);
-extern hlt_exception hlt_get_next_exception(hlt_thread_context* context);
+extern void hlt_run_main_thread(hlt_thread_context* context, hlt_main_function function, hlt_exception** except);
+extern hlt_exception* hlt_get_next_exception(hlt_thread_context* context);
 
 ///////////////////////////////////////////////////////////////////////////
 // Internal scheduling functions.

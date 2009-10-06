@@ -7,12 +7,13 @@
 #include <stdio.h>
 
 #include "hilti.h"
+#include "str.h"
 
 static hlt_string_constant prefix = { 1, "(" };
 static hlt_string_constant postfix = { 1, ")" };
 static hlt_string_constant separator = { 1, "," };
 
-hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32_t options, hlt_exception* excpt)
+hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32_t options, hlt_exception** excpt)
 {
     assert(type->type == HLT_TYPE_TUPLE);
     

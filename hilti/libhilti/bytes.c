@@ -47,12 +47,12 @@ static void add_chunk(hlt_bytes* b, hlt_bytes_chunk* c)
     }
 }
 
-hlt_bytes* hlt_bytes_new(hlt_exception* excpt)
+hlt_bytes* hlt_bytes_new(hlt_exception** excpt)
 { 
     return hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes));
 }
 
-hlt_bytes* __hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_exception* excpt)
+hlt_bytes* __hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_exception** excpt)
 { 
     hlt_bytes* b = hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes));
     hlt_bytes_chunk* dst = hlt_gc_malloc_non_atomic(sizeof(hlt_bytes_chunk));
@@ -64,7 +64,7 @@ hlt_bytes* __hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_except
 }
 
 // Returns the number of bytes stored.
-hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception* excpt)
+hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt)
 {
     hlt_bytes_size len = 0;
     
@@ -75,20 +75,20 @@ hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception* excpt)
 }
 
 // Returns true if empty.
-int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception* excpt)
+int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception** excpt)
 {
     return b->head == 0;
 }
 
 // Appends one Bytes object to another.
-void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception* excpt)
+void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excpt)
 {
     if ( ! other->head )
         // Empty.
         return;
     
     if ( b == other ) {
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return;
     }
     
@@ -107,7 +107,7 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception* excpt
     
 }
 
-void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, hlt_exception* excpt)
+void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, hlt_exception** excpt)
 {
     if ( ! len )
         // Empty.
@@ -151,14 +151,14 @@ static inline int8_t is_end(hlt_bytes_pos pos)
     return pos.chunk == 0;
 }
 
-hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* excpt)
+hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt)
 {
     if ( hlt_bytes_pos_eq(start, end, excpt) )
         // Return an empty bytes object.
         return hlt_bytes_new(excpt);
     
     if ( is_end(start) ) {
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return 0;
     }
     
@@ -189,7 +189,7 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* 
                 break;
             
             // Start and end are not part of the same Bytes object!
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
         
@@ -212,19 +212,19 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* 
     return b;
 }
 
-static const int8_t* hlt_bytes_sub_raw_internal(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* excpt)
+static const int8_t* hlt_bytes_sub_raw_internal(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt)
 {    
     hlt_bytes_size len = hlt_bytes_pos_diff(start, end, excpt);
 
     if ( len == 0 ) {
         // Can't happen because we should have be in the easy case. 
-        *excpt = hlt_exception_internal_error;
+        hlt_set_exception(excpt, &hlt_exception_internal_error, 0);
         return 0;
         }
     
     if ( len < 0 ) {
         // Wrong order of arguments.
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return 0;
     }
 
@@ -247,7 +247,7 @@ static const int8_t* hlt_bytes_sub_raw_internal(hlt_bytes_pos start, hlt_bytes_p
                 break;
             
             // Start and end are not part of the same Bytes object!
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
         
@@ -268,7 +268,7 @@ static const int8_t* hlt_bytes_sub_raw_internal(hlt_bytes_pos start, hlt_bytes_p
 }
 
 
-const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* excpt)
+const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt)
 {
     // The easy case: start and end are within the same chunk.
     if ( start.chunk == end.chunk )
@@ -279,17 +279,17 @@ const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exce
     return hlt_bytes_sub_raw_internal(start, end, excpt);
 }
 
-const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception* excpt)
+const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt)
 {
     hlt_bytes_pos begin = hlt_bytes_begin(b, excpt);
     hlt_bytes_pos end = hlt_bytes_end(excpt);
     return hlt_bytes_sub_raw(begin, end, excpt);
 }
 
-int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_exception* excpt)
+int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_exception** excpt)
 {
     if ( is_end(*pos) || hlt_bytes_pos_eq(*pos, end, excpt) ) {
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return 0;
     }
 
@@ -315,7 +315,7 @@ int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_
     return b;
 }
 
-hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_exception* excpt)
+hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_exception** excpt)
 {
     if ( pos < 0 )
         pos += hlt_bytes_len(b, excpt);
@@ -325,7 +325,7 @@ hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_excep
         
         if ( ! c ) {
             // Position is out range.
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return PosEnd;
         }
         
@@ -339,7 +339,7 @@ hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_excep
     return p;
 }
 
-hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception* excpt)
+hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt)
 {
     if ( ! b->head )
         return PosEnd;
@@ -350,23 +350,23 @@ hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception* excpt)
     return p;
 }
 
-hlt_bytes_pos hlt_bytes_end(hlt_exception* excpt)
+hlt_bytes_pos hlt_bytes_end(hlt_exception** excpt)
 {
     return PosEnd;
 }
 
-int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception* excpt)
+int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception** excpt)
 {
     if ( is_end(pos) ) {
         // Position is out range.
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return 0;
     }
     
     return *pos.cur;
 }
 
-hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception* excpt)
+hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception** excpt)
 {
     if ( is_end(old) )
         // Fail silently. 
@@ -391,7 +391,7 @@ hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception* excpt)
     return pos;
 }
 
-hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int32_t n, hlt_exception* excpt)
+hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int32_t n, hlt_exception** excpt)
 {
     if ( is_end(old) )
         // Fail silently. 
@@ -425,7 +425,7 @@ hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int32_t n, hlt_exception*
 // This is a bit tricky because pos_end() doesn't return anything suitable
 // for iteration.  Let's leave this out for now until we know whether we
 // actually need reverse iteration. 
-void hlt_bytes_pos_decr(hlt_bytes_pos* pos, hlt_exception* excpt)
+void hlt_bytes_pos_decr(hlt_bytes_pos* pos, hlt_exception** excpt)
 {
     if ( is_end(pos) )
         // Fail silently. 
@@ -451,20 +451,20 @@ void hlt_bytes_pos_decr(hlt_bytes_pos* pos, hlt_exception* excpt)
 }
 #endif
 
-int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception* excpt)
+int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** excpt)
 {
     return pos1.cur == pos2.cur && pos1.chunk == pos2.chunk;
 }
 
 // Returns the number of bytes from pos1 to pos2 (not counting pos2).
-hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception* excpt)
+hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** excpt)
 {
     if ( hlt_bytes_pos_eq(pos1, pos2, excpt) )
         return 0;
     
     if ( is_end(pos1) && ! is_end(pos2) ) {
         // Invalid starting position.
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return 0;
     }
     
@@ -472,7 +472,7 @@ hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_ex
     if ( pos1.chunk == pos2.chunk ) {
         if ( pos1.cur > pos2.cur ) {
             // Invalid starting position.
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
         return pos2.cur - pos1.cur;
@@ -489,7 +489,7 @@ hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_ex
                 break;
             
             // The two positions are not part of the same Bytes object!
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
         
@@ -503,7 +503,7 @@ hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_ex
     return n;
 }
 
-hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt)
+hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
 {
     hlt_string dst = 0; 
     
@@ -528,7 +528,7 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
     return dst;
 }
 
-void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* excpt)
+void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt)
 {
     if ( ! cookie ) {
         

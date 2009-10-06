@@ -45,31 +45,31 @@ typedef struct hlt_channel_type_parameters
 
 
 // Returns a readable representation of a channel.
-extern hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t options, hlt_exception* excpt);
+extern hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t options, hlt_exception** excpt);
 
 // Creates a new channel.
-extern hlt_channel* hlt_channel_new(const hlt_type_info* type, hlt_exception* excpt);
+extern hlt_channel* hlt_channel_new(const hlt_type_info* type, hlt_exception** excpt);
 
 // Deletes a channel.
-extern void hlt_channel_destroy(hlt_channel* ch, hlt_exception* excpt);
+extern void hlt_channel_destroy(hlt_channel* ch, hlt_exception** excpt);
 
 // Write an item into a channel. If the channel is full, the function blocks
 // until an item is read from the channel.
-extern void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception* excpt);
+extern void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt);
 
 // Try to write an item into a channel. If the channel is full, an exception is
 // thrown indicating that the channel was full.
-extern void hlt_channel_try_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception* excpt);
+extern void hlt_channel_try_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt);
 
 // Read an item from a channel. If the channel is empty, the function blocks
 // until an item is written to the channel.
-extern void* hlt_channel_read(hlt_channel* ch, hlt_exception* excpt);
+extern void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt);
 
 // Try to read an element from the channel. If the channel is empty, an
 // exception is thrown indicating that the channel was empty. 
-extern void* hlt_channel_try_read(hlt_channel* ch, hlt_exception* excpt);
+extern void* hlt_channel_try_read(hlt_channel* ch, hlt_exception** excpt);
 
 // Returns the current channel size, i.e., the number of items in the channel.
-extern hlt_channel_size hlt_channel_get_size(hlt_channel* ch, hlt_exception* excpt);
+extern hlt_channel_size hlt_channel_get_size(hlt_channel* ch, hlt_exception** excpt);
 
 #endif

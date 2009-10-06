@@ -1,1 +1,1 @@
-hilti: uncaught exception, ChannelFull
+hilti: uncaught exception, ChannelFull (from /Users/robin/work/binpacpp/hilti/libhilti/channel.c:208)

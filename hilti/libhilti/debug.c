@@ -8,7 +8,7 @@
 extern const hlt_type_info hlt_type_info_string;
 extern const hlt_type_info hlt_type_info_tuple_string;
 
-void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception* excpt)
+void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception** excpt)
 {
     // FIXME: It's not very efficient to go through the stream-list every
     // time. Let's see if it's worth optimizing this even for the debug mode.
@@ -54,7 +54,7 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     return;
 }
 
-hlt_list* hlt_debug_parse_streams(const char* streams, hlt_exception* excpt)
+hlt_list* hlt_debug_parse_streams(const char* streams, hlt_exception** excpt)
 {
     hlt_list* l = hlt_list_new(&hlt_type_info_string, excpt);
     if ( *excpt )

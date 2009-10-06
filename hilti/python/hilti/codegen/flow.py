@@ -214,8 +214,6 @@ def _(self, i):
     
     _makeCall(self, func, args, llvm_succ)
     
-import sys    
-    
 @codegen.when(instructions.flow.CallC)
 def _(self, i):
     func = self.lookupFunction(i.op1().value())
@@ -274,8 +272,6 @@ def _(self, i):
     self.popBuilder()
     
     self.builder().cbranch(op1, block_true, block_false)
-
-import sys
 
 # FIXME: _constructFrame is based on _makeCall(), and currently there's a certain amount of code
 # duplication going on here. Can _makeCall() be made to utilize _constructFrame()?
@@ -394,3 +390,18 @@ def _(self, i):
     # Generate call to the global scheduler.
     call = self.builder().call(schedFunc, [vthread, castedFunc, castedFrame])
     call.calling_convention = llvm.core.CC_C
+
+@codegen.when(instructions.flow.Yield)
+def _(self, i):
+    next = self.currentBlock().next()
+    succ_func = self.llvmGetFunctionForBlock(next) 
+    
+    # Generate a Yield exception.
+    exception_new_yield = codegen.llvmCurrentModule().get_function_named("__hlt_exception_new_yield")
+    # FIXME: Add location information.
+    arg = self.llvmOp(i.op1()) if i.op1() != None else self.llvmConstInt(0, 32)
+    location = self.llvmAddGlobalStringConst(str(i.location()), "yield")
+    cont = self.llvmContinuation(succ_func, self.llvmCurrentFramePtr())
+    excpt = self.builder().call(exception_new_yield, [cont, arg, location])
+    self.llvmRaiseException(excpt)
+    

@@ -11,7 +11,7 @@
 static hlt_string_constant _sep = { 1, "|" };
 static hlt_string_constant _none = { 7, "<empty>" };
 
-hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt)
+hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
 {
     assert(type->type == HLT_TYPE_BITSET);
     int64_t i = *((int64_t*)obj);
@@ -38,7 +38,7 @@ hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int3
     return str ? str : &_none;
 }
 
-int64_t hlt_bitset_to_int64(const hlt_type_info* type, const void* obj, hlt_exception* expt)
+int64_t hlt_bitset_to_int64(const hlt_type_info* type, const void* obj, hlt_exception** expt)
 {
     assert(type->type == HLT_TYPE_BITSET);
     return *((int64_t*)obj);

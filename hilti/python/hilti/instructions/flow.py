@@ -100,6 +100,8 @@ class ThreadYield(Instruction):
     Schedules the next block on the same worker thread and
     returns to the scheduler to allow another virtual thread
     to run.
+    
+    Todo: Unify this with ``yield``
     """
     pass
 
@@ -107,5 +109,19 @@ class ThreadYield(Instruction):
 class ThreadSchedule(Instruction):
     """
     Schedules a function call onto a virtual thread.
+    """
+    pass
+
+@instruction("yield", op1=optional(integerOfWidth(32)), terminator=True)
+class Yield(Instruction):
+    """Raises a resumable ~~YieldException. The exception's argument will be
+    set to *op1* if given. If the exception is resumed, execution will
+    continue with the succeeding block.
+    
+    Note: While ideally, we'd like to allow any type for the argument, doing
+    so void prevent us from statically type-checking the code in the exception
+    handler, which is why we're limiting it to an integer. 
+    
+    Todo: Unify this with ``thread.yield``
     """
     pass

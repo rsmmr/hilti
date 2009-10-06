@@ -1,1 +1,1 @@
-hilti: uncaught exception, InvalidIterator
+hilti: uncaught exception, InvalidIterator (from /Users/robin/work/binpacpp/hilti/libhilti/list.c:255)

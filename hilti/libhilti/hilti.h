@@ -52,6 +52,7 @@ typedef struct __hlt_string* hlt_string;
 #include "tuple.h"
 #include "utf8proc.h"
 #include "vector.h"
+#include "continuation.h"
 
 #include "module/module.h"
 

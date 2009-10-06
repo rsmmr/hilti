@@ -18,7 +18,7 @@
 
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't 
  * convert to the locale encoding yet. We just print them in \u syntax. */
-void __hlt_print_str(FILE* file, hlt_string s, int8_t newline, hlt_exception* excpt)
+void __hlt_print_str(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt)
 {
     if ( ! s )
         // Empty string.
@@ -32,7 +32,7 @@ void __hlt_print_str(FILE* file, hlt_string s, int8_t newline, hlt_exception* ex
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &cp);
         
         if ( n < 0 ) {
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return;
         }
         

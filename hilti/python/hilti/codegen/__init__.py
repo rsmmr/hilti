@@ -33,6 +33,8 @@ import net
 import regexp
 import debug
 import bitset
+import exception
+import continuation
 
 def generateLLVM(ast, libpaths, debug=False, verify=True):
     """Compiles the |ast| into LLVM module.  The |ast| must be well-formed as

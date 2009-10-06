@@ -35,6 +35,7 @@
 #define HILTI_bytes_H
 
 #include "exceptions.h"
+#include "rtti.h"
 
 typedef int32_t hlt_bytes_size;     ///< Size of a ~~hlt_bytes instance, and also used for offsets.
 typedef struct hlt_bytes hlt_bytes; ///< Type for representing a HILTI ~~bytes object.
@@ -58,7 +59,7 @@ typedef struct hlt_bytes_pos {
 /// Instantiates a new bytes object. The bytes object is initially empty. 
 /// 
 /// Returns: The new bytes object. 
-extern hlt_bytes* hlt_bytes_new(hlt_exception* excpt);
+extern hlt_bytes* hlt_bytes_new(hlt_exception** excpt);
 
 /// Instantiates a new bytes object from raw data. After instantiation, the
 /// memory containing the raw data must not be modified or freed as the bytes
@@ -69,7 +70,7 @@ extern hlt_bytes* hlt_bytes_new(hlt_exception* excpt);
 /// excpt: &
 /// 
 /// Returns: The new bytes object. 
-extern hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_exception* excpt);
+extern hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_exception** excpt);
  
 /// Returns the number of individual bytes stored in a bytes object.
 /// 
@@ -80,7 +81,7 @@ extern hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_e
 /// Returns: The number of bytes stored in *b*.
 /// 
 /// Note: Calculating the length can potentially be expensive; it's not O(1).
-extern hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception* excpt);
+extern hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt);
 
 /// Tests whether a bytes object is empty. 
 /// 
@@ -92,7 +93,7 @@ extern hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception* excpt);
 /// ~~hlt_bytes_len() to zero. 
 /// 
 /// Returns: True if the object is empty.
-extern int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception* excpt);
+extern int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception** excpt);
 
 /// Appends the contents of a bytes object to another. The two objects must not be the same.
 /// 
@@ -101,7 +102,7 @@ extern int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception* excpt);
 /// excpt: &
 /// 
 /// Raises: ValueError - If the two objects are the same.
-extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception* excpt);
+extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excpt);
 
 /// Appends a sequence of raw bytes in memory to a bytes object. After
 /// appending, the memory by the raw bytes must not be modified or freed as
@@ -111,7 +112,7 @@ extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exceptio
 /// raw: A pointer to the beginning of the byte sequence to append. 
 /// len: The number of bytes to append starting from *raw*.
 /// excpt: &
-extern void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, hlt_exception* excpt);
+extern void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, hlt_exception** excpt);
 
 /// Returns a subsequence of a bytes object. 
 /// 
@@ -122,7 +123,7 @@ extern void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size
 /// Returns: A new bytes object representing the subsequence.
 /// 
 /// Raises: ValueError - If any of the positions is found to be out of range.
-extern hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* excpt);
+extern hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt);
 
 /// Returns a subsequence of a bytes object as a raw C array. 
 /// 
@@ -139,7 +140,7 @@ extern hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exce
 /// 
 /// Note: This function can either be very efficient (if the substring is already located 
 /// in continous memory), or expensive (if it's not, as then it needs to be copied). 
-extern const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* excpt);
+extern const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt);
 
 /// Converts a bytes object into a raw C array. 
 /// 
@@ -153,7 +154,7 @@ extern const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, h
 /// Note: This function can either be very efficient (if the data is already
 /// located in continous memory), or expensive (if it's not, as then it needs
 /// to be copied). 
-extern const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception* excpt);
+extern const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt);
 
 /// Returns one byte from a bytes object.
 /// 
@@ -176,7 +177,7 @@ extern const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception* excpt);
 /// 
 /// Todo: Once we start compiling libhilti with llvm-gcc, calls to this function
 /// should be optimized away. Check that. 
-extern int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_exception* excpt);
+extern int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_exception** excpt);
 
 /// Creates a new position object representing a specific offset.
 /// 
@@ -191,7 +192,7 @@ extern int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos en
 /// Note: Determing the length can be expensive; it's not O(1).
 /// 
 /// Raises: ValueError - If *offset* is found to be out of range.
-extern hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size offset, hlt_exception* excpt);
+extern hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size offset, hlt_exception** excpt);
     
 /// Returns a position representing the first element of a bytes object.    
 /// 
@@ -199,7 +200,7 @@ extern hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size offset,
 /// excpt: &
 /// 
 /// Returns: The position.
-extern hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception* excpt);
+extern hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt);
 
 /// Returns a position representing the end of any bytes object.
 /// 
@@ -208,7 +209,7 @@ extern hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception* excpt);
 /// Note: This function does not receive a ~~bytes object because internally,
 /// the end position is represented in a way independent of the actual
 /// object.
-extern hlt_bytes_pos hlt_bytes_end(hlt_exception* excpt);
+extern hlt_bytes_pos hlt_bytes_end(hlt_exception** excpt);
 
 /// Extracts the element at a position.  
 /// 
@@ -218,7 +219,7 @@ extern hlt_bytes_pos hlt_bytes_end(hlt_exception* excpt);
 /// Returns: The element. 
 /// 
 /// Raises: ValueError - If *pos* is found to be out of range.
-extern int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception* excpt);
+extern int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception** excpt);
 
 /// Increases a position by one. If the given position is already the last
 /// one, the increased position will return True if compated with
@@ -227,7 +228,7 @@ extern int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception* excpt);
 /// 
 /// pos: The position to increase.
 /// excpt: &
-extern hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos pos, hlt_exception* excpt);
+extern hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos pos, hlt_exception** excpt);
 
 /// Increases a position by a given number of positions. If this exceeds the
 /// number of available bytes, the return position will return True if
@@ -236,7 +237,7 @@ extern hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos pos, hlt_exception* excpt)
 /// pos: The position to increase.
 /// n: The number of bytes to skip.
 /// excpt: &
-extern hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos pos, int32_t n, hlt_exception* excpt);
+extern hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos pos, int32_t n, hlt_exception** excpt);
 
 /// Compares two positions whether they refer to the same offset within a bytes object. 
 ///
@@ -246,7 +247,7 @@ extern hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos pos, int32_t n, hlt_exc
 /// 
 /// Returns: True if the position refer to the same location. Returns false in
 /// particular when *pos1* and *pos2* do not refer to the same bytes object.
-extern int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception* excpt);
+extern int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** excpt);
 
 /// Calculates the number of bytes between two position. Both positions must
 /// refer to the same bytes object.
@@ -258,14 +259,14 @@ extern int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_excep
 /// Returns: The number of bytes between *pos1* and *pos2*.
 /// 
 /// Raises: ValueError - If any of the positions is found to be out of range.
-extern hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception* excpt);
+extern hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** excpt);
 
 /// Converts a bytes object into a string object.
 ///
 /// Include: include-to-string-sig.txt
 /// 
 /// Note: The conversion can be expensive. 
-hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt);
+hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt);
 
 ///< A block used for iteration by ~~hlt_bytes_iterate_raw.
 struct hlt_bytes_block {
@@ -300,7 +301,7 @@ typedef struct hlt_bytes_block hlt_bytes_block;
 /// Returns: Cookie for next call, or NULL if end has been reached. In the
 /// latter case, block will still contain the final data (which may have a
 /// length of zero); don't call the function again then.
-void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception* excpt);
+void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt);
 
 /// @}
 

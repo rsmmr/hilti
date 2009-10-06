@@ -12,7 +12,7 @@
 
 void printb(const hlt_bytes* b)
 {
-    hlt_exception e = 0;
+    hlt_exception* e = 0;
     hlt_string s = hlt_bytes_to_string(0, &b, 0, &e);
     int i;
     for ( i = 0; i < s->len; i++ )
@@ -33,7 +33,7 @@ void printc(const int8_t* c, int len)
     printf("\n");
 }
 
-const char* myexp(const hlt_exception e)
+const char* myexp(const hlt_exception* e)
 {
     if ( e )
         return "excepetion";
@@ -54,7 +54,7 @@ int main()
         sum += u;
     }
     
-    hlt_exception e = 0;
+    hlt_exception* e = 0;
     
     hlt_bytes* b = hlt_bytes_new(&e);
     hlt_bytes* b2 = hlt_bytes_new(&e);

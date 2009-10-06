@@ -149,7 +149,7 @@ def _(self, i):
     block_notattached = self.llvmNewBlock("not-attached")
     
     self.pushBuilder(block_notattached)
-    self.llvmRaiseExceptionByName("hlt_exception_overlay_not_attached")
+    self.llvmRaiseExceptionByName("hlt_exception_overlay_not_attached", i.location())
     self.popBuilder()
 
     _isNull(ov, 0, block_notattached, block_attached)

@@ -104,17 +104,17 @@ static __hlt_list_node* _make_node(hlt_list* l, void *val)
     return n;
 }
 
-hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_exception* excpt)
+hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_exception** excpt)
 {
     hlt_list* l = hlt_gc_malloc_non_atomic(sizeof(hlt_list));
     if ( ! l ) {
-        *excpt = hlt_exception_out_of_memory;
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return 0;
     }
     
     l->free = hlt_gc_calloc_non_atomic(InitialCapacity, sizeof(__hlt_list_node) + elemtype->size);
     if ( ! l->free ) {
-        *excpt = hlt_exception_out_of_memory;
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return 0;
     }
 
@@ -125,96 +125,96 @@ hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_exception* excpt)
     return l;
 }
 
-void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception* excpt)
+void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt)
 {
     assert(type == l->type);
     
     __hlt_list_node* n = _make_node(l, val);
     if ( ! n ) {
-        *excpt = hlt_exception_out_of_memory;
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return;
     }
     
     _link(l, n, 0);
 }
 
-void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception* excpt)
+void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt)
 {
     assert(type == l->type);
     
     __hlt_list_node* n = _make_node(l, val);
     if ( ! n ) {
-        *excpt = hlt_exception_out_of_memory;
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return;
     }
     
     _link(l, n, l->tail);
 }
 
-void* hlt_list_pop_front(hlt_list* l, hlt_exception* excpt)
+void* hlt_list_pop_front(hlt_list* l, hlt_exception** excpt)
 {
     if ( ! l->head ) {
-        *excpt = hlt_exception_underflow;
+        hlt_set_exception(excpt, &hlt_exception_underflow, 0);
         return 0;
     }
     
     return &(_unlink(l, l->head)->data);
 }
 
-void* hlt_list_pop_back(hlt_list* l, hlt_exception* excpt)
+void* hlt_list_pop_back(hlt_list* l, hlt_exception** excpt)
 {
     if ( ! l->tail ) {
-        *excpt = hlt_exception_underflow;
+        hlt_set_exception(excpt, &hlt_exception_underflow, 0);
         return 0;
     }
     
     return &(_unlink(l, l->tail)->data);
 }
 
-void* hlt_list_front(hlt_list* l, hlt_exception* excpt)
+void* hlt_list_front(hlt_list* l, hlt_exception** excpt)
 {
     if ( ! l->head ) {
-        *excpt = hlt_exception_underflow;
+        hlt_set_exception(excpt, &hlt_exception_underflow, 0);
         return 0;
     }
     
     return &l->head->data;
 }
 
-void* hlt_list_back(hlt_list* l, hlt_exception* excpt)
+void* hlt_list_back(hlt_list* l, hlt_exception** excpt)
 {
     if ( ! l->tail ) {
-        *excpt = hlt_exception_underflow;
+        hlt_set_exception(excpt, &hlt_exception_underflow, 0);
         return 0;
     }
     
     return &l->tail->data;
 }
 
-int64_t hlt_list_size(hlt_list* l, hlt_exception* excpt)
+int64_t hlt_list_size(hlt_list* l, hlt_exception** excpt)
 {
     return l->size;
 }
 
-void hlt_list_erase(hlt_list_iter i, hlt_exception* excpt)
+void hlt_list_erase(hlt_list_iter i, hlt_exception** excpt)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {
-        *excpt = hlt_exception_invalid_iterator;
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return;
     }
     
     if ( ! i.node ) {
-        *excpt = hlt_exception_invalid_iterator;
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return;
     }
 
     _unlink(i.list, i.node);
 }
 
-void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iter i, hlt_exception* excpt)
+void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iter i, hlt_exception** excpt)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {
-        *excpt = hlt_exception_invalid_iterator;
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return;
     }
     
@@ -222,7 +222,7 @@ void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iter i, hlt_
     
     __hlt_list_node* n = _make_node(i.list, val);
     if ( ! n ) {
-        *excpt = hlt_exception_out_of_memory;
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return;
     }
 
@@ -233,7 +233,7 @@ void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iter i, hlt_
         _link(i.list, n, i.node->prev); 
 }
 
-hlt_list_iter hlt_list_begin(hlt_list* l, hlt_exception* excpt)
+hlt_list_iter hlt_list_begin(hlt_list* l, hlt_exception** excpt)
 {
     hlt_list_iter i; 
     i.list = l;
@@ -241,7 +241,7 @@ hlt_list_iter hlt_list_begin(hlt_list* l, hlt_exception* excpt)
     return i;
 }
 
-hlt_list_iter hlt_list_end(hlt_list* l, hlt_exception* excpt)
+hlt_list_iter hlt_list_end(hlt_list* l, hlt_exception** excpt)
 {
     hlt_list_iter i; 
     i.list = l;
@@ -249,10 +249,10 @@ hlt_list_iter hlt_list_end(hlt_list* l, hlt_exception* excpt)
     return i;
 }
 
-hlt_list_iter hlt_list_iter_incr(hlt_list_iter i, hlt_exception* excpt)
+hlt_list_iter hlt_list_iter_incr(hlt_list_iter i, hlt_exception** excpt)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {
-        *excpt = hlt_exception_invalid_iterator;
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return i;
     }
     
@@ -267,17 +267,17 @@ hlt_list_iter hlt_list_iter_incr(hlt_list_iter i, hlt_exception* excpt)
     return j;
 }
 
-void* hlt_list_iter_deref(const hlt_list_iter i, hlt_exception* excpt)
+void* hlt_list_iter_deref(const hlt_list_iter i, hlt_exception** excpt)
 {
     if ( ! i.list || ! i.node || i.node->invalid ) {
-        *excpt = hlt_exception_invalid_iterator;
+        hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return 0;
     }
     
     return &i.node->data;
 }
 
-int8_t hlt_list_iter_eq(const hlt_list_iter i1, const hlt_list_iter i2, hlt_exception* excpt)
+int8_t hlt_list_iter_eq(const hlt_list_iter i1, const hlt_list_iter i2, hlt_exception** excpt)
 {
     return i1.list == i2.list && i1.node == i2.node;
 }
@@ -286,7 +286,7 @@ static hlt_string_constant prefix = { 1, "[" };
 static hlt_string_constant postfix = { 1, "]" };
 static hlt_string_constant separator = { 1, "," };
 
-hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt)
+hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
 {
     const hlt_list* l = *((const hlt_list**)obj);
     hlt_string s = &prefix; 

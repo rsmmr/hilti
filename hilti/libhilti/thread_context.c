@@ -7,6 +7,7 @@
 #include <pthread.h>
 
 #include "hilti.h"
+#include "context.h"
 #include "thread_context.h"
 
 // FIXME: Should a thread context start in the RUN state? Should we be able to reuse a thread context?
@@ -27,6 +28,11 @@ static const long __HLT_WAIT_FOR_SETSPECIFIC_NS = 10000000;
 static pthread_once_t hlt_once_control = PTHREAD_ONCE_INIT;
 static pthread_key_t hlt_thread_context_key;
 static pthread_key_t hlt_thread_id_key;
+
+int8_t hlt_is_multi_threaded()
+{
+    return hilti_config_get()->num_threads >= 2;
+}
 
 static void hlt_init_pthread_keys()
 {
@@ -85,6 +91,8 @@ hlt_thread_context* hlt_new_thread_context(const hilti_config* config)
         context->worker_threads[i].job_queue_tail = NULL;
         context->worker_threads[i].except = NULL;
         context->worker_threads[i].except_state = HLT_HANDLED;
+        
+        __hlt_execution_context_init(&context->worker_threads[i].exec_context);
 
         pthread_mutex_init(&context->worker_threads[i].mutex, NULL);
        
@@ -105,6 +113,8 @@ hlt_thread_context* hlt_new_thread_context(const hilti_config* config)
     context->main_thread->job_queue_tail = NULL;
     context->main_thread->except = NULL;
     context->main_thread->except_state = HLT_HANDLED;
+    
+    __hlt_execution_context_init(&context->main_thread->exec_context);
 
     // Initially there is no main function running.
     context->main_function = NULL;
@@ -147,8 +157,12 @@ void hlt_delete_thread_context(hlt_thread_context* context)
             hlt_delete_job_node(current);
             current = next;
         }
+        
+        __hlt_execution_context_done(&context->worker_threads[i].exec_context);
     }
 
+    __hlt_execution_context_done(&context->main_thread->exec_context);
+    
     // Free the worker thread structures.
     free(context->worker_threads);
 
@@ -278,7 +292,7 @@ hlt_thread_context_state hlt_get_thread_context_state(const hlt_thread_context* 
 }
 
 
-hlt_exception hlt_get_next_exception(hlt_thread_context* context)
+hlt_exception* hlt_get_next_exception(hlt_thread_context* context)
 {
     // Calling this function is an error if threads in this context are still running.
     if (context->state != HLT_DEAD)
@@ -299,7 +313,7 @@ hlt_exception hlt_get_next_exception(hlt_thread_context* context)
     {
         if (context->worker_threads[i].except != NULL)
         {
-            hlt_exception except = context->worker_threads[i].except;
+            hlt_exception* except = context->worker_threads[i].except;
             context->worker_threads[i].except = NULL;
             return except;
         }
@@ -309,7 +323,7 @@ hlt_exception hlt_get_next_exception(hlt_thread_context* context)
     return NULL;
 }
 
-void hlt_run_main_thread(hlt_thread_context* context, hlt_main_function function, hlt_exception* except)
+void hlt_run_main_thread(hlt_thread_context* context, hlt_main_function function, hlt_exception** except)
 {
     if (context->state != HLT_RUN)
     {
@@ -463,7 +477,7 @@ static void* hlt_worker_scheduler(void* worker_thread_ptr)
                 // been canceled, hlt_run_main_thread() will return to the user and they
                 // can take the action they deem appropriate. (Almost certainly, that means
                 // setting the thread context state to KILL.)
-                this_thread->context->main_thread->except = hlt_exception_worker_thread_threw_exception;
+                hlt_set_exception(&this_thread->context->main_thread->except, &hlt_exception_worker_thread_threw_exception, 0);
 
                 if (pthread_cancel(this_thread->context->main_thread->thread_handle))
                 {
@@ -533,7 +547,7 @@ void __hlt_schedule_job(hlt_thread_context* context, uint32_t thread_id, hlt_hil
     pthread_mutex_unlock(&target_thread->mutex);
 }
 
-void hlt_report_local_exception(hlt_exception except)
+void hlt_report_local_exception(hlt_exception* except)
 {
     hlt_thread_context* context = __hlt_get_current_thread_context();
     uint32_t thread_id = __hlt_get_current_thread_id();

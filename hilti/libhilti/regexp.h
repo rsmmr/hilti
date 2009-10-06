@@ -9,6 +9,7 @@
 #include "exceptions.h"
 #include "bytes.h"
 #include "vector.h"
+#include "list.h"
 
 /// Type for regular expressions.
 typedef struct hlt_regexp hlt_regexp;
@@ -30,7 +31,7 @@ typedef struct {
 /// excpt: &
 /// 
 /// Returns: The new Regexp instance.
-extern hlt_regexp* hlt_regexp_new(hlt_exception* excpt);
+extern hlt_regexp* hlt_regexp_new(hlt_exception** excpt);
 
 /// Compiles a pattern. 
 /// 
@@ -43,7 +44,7 @@ extern hlt_regexp* hlt_regexp_new(hlt_exception* excpt);
 /// 
 /// Raises: ~~hlt_exception_pattern_error - If the pattern cannot be compiled;
 /// Raises: ~~hlt_exception_value_error - If a pattern was already compiled into *re*.
-extern void hlt_regexp_compile(hlt_regexp* re, hlt_string pattern, hlt_exception* excpt);
+extern void hlt_regexp_compile(hlt_regexp* re, hlt_string pattern, hlt_exception** excpt);
 
 /// Compiles a set of patterns.
 /// 
@@ -56,7 +57,7 @@ extern void hlt_regexp_compile(hlt_regexp* re, hlt_string pattern, hlt_exception
 /// 
 /// Raises: ~~hlt_exception_pattern_error - If the pattern cannot be compiled;
 /// Raises: ~~hlt_exception_value_error - If a pattern was already compiled into *re*.
-extern void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception* excpt);
+extern void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception** excpt);
 
 /// Searches a regexp within a ~~string. 
 /// 
@@ -75,7 +76,7 @@ extern void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_excep
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
 /// 
 /// Todo: This function is not yet implemented.
-extern int32_t hlt_regexp_string_find(hlt_regexp* re, hlt_string s, hlt_exception* excpt);
+extern int32_t hlt_regexp_string_find(hlt_regexp* re, hlt_string s, hlt_exception** excpt);
 
 /// Searches a pattern within a bytes. 
 /// 
@@ -93,7 +94,7 @@ extern int32_t hlt_regexp_string_find(hlt_regexp* re, hlt_string s, hlt_exceptio
 /// data could change that).
 /// 
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
-extern int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception* excpt);
+extern int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt);
 
 /// Returns the substring matching a regexp.
 /// 
@@ -106,7 +107,7 @@ extern int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, 
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
 /// 
 /// Todo: This function is not yet implemented.
-extern hlt_string hlt_regexp_string_span(hlt_regexp* re, hlt_string s, hlt_exception* excpt);
+extern hlt_string hlt_regexp_string_span(hlt_regexp* re, hlt_string s, hlt_exception** excpt);
 
 /// Returns byte range matching a regexp.
 /// 
@@ -119,7 +120,7 @@ extern hlt_string hlt_regexp_string_span(hlt_regexp* re, hlt_string s, hlt_excep
 /// *end* are set to ~~hlt_bytes_end.
 /// 
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
-extern hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception* excpt);
+extern hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt);
 
 /// Returns substrings matching parenthesis expressions in a regexp.
 /// 
@@ -134,7 +135,7 @@ extern hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_by
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
 /// 
 /// Todo: This function is not yet implemented.
-extern hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, hlt_string s, hlt_exception* excpt);
+extern hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, hlt_string s, hlt_exception** excpt);
 
 /// Returns byte ranges matching parenthesis expressions in a regexp.
 /// 
@@ -150,12 +151,12 @@ extern hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, hlt_string s, hlt_ex
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
 /// 
 /// Todo: This function does not yet support sets as compiled via ~~hlt_regexp_compile_set.
-extern hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception* excpt);
+extern hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt);
 
 /// Converts a regexp into a string.
 ///
 /// Include: include-to-string-sig.txt
-hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt);
+hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt);
 
 /// @}
 

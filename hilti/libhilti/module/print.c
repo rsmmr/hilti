@@ -24,7 +24,7 @@
  * newline: bool - If true, a newline is added automatically.
  * 
  */
-void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_exception* excpt)
+void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_exception** excpt)
 {
     // To prevent race conditions with multiple threads, we have to lock stdout here and then
     // unlock it at each possible exit to this function.

@@ -17,7 +17,7 @@ static hlt_string_constant ASCII = { 5, "ascii" };
 static hlt_string_constant EMPTY = { 12, "<no-pattern>" };
 static hlt_string_constant PIPE = { 4, " | " };
 
-hlt_regexp* hlt_regexp_new(hlt_exception* excpt)
+hlt_regexp* hlt_regexp_new(hlt_exception** excpt)
 {
     hlt_regexp* re = hlt_gc_malloc_non_atomic(sizeof(hlt_regexp));
     re->num = 0;
@@ -30,7 +30,7 @@ static inline int _anchor(int cflags)
     return cflags | ((cflags & REG_NOSUB) ? REG_ANCHOR : 0);
 }
 
-static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_exception* excpt)
+static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_exception** excpt)
 {
     // FIXME: For now, the pattern must contain only ASCII characters.
     hlt_bytes* p = hlt_string_encode(pattern, &ASCII, excpt);
@@ -41,17 +41,17 @@ static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_except
     const int8_t* praw = hlt_bytes_to_raw(p, excpt);
     
     if ( jrx_regset_add(&re->regexp, (const char*)praw, plen) != 0 ) {
-        *excpt = hlt_exception_pattern_error;
+        hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
         return;
     }
     
     re->patterns[idx] = pattern;
 }
 
-void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception* excpt)
+void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception** excpt)
 {
     if ( re->num != 0 ) {
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return;
     }
 
@@ -62,10 +62,10 @@ void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception*
     jrx_regset_finalize(&re->regexp);
 }
 
-void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception* excpt)
+void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception** excpt)
 {
     if ( re->num != 0 ) {
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return;
     }
     
@@ -91,7 +91,7 @@ void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception* e
     jrx_regset_finalize(&re->regexp);
 }
 
-hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt)
+hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
 {
     const hlt_regexp* re = *((const hlt_regexp**)obj);
     
@@ -114,21 +114,21 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
 
 // String versions (not implemented yet).
 
-int32_t hlt_regexp_string_find(hlt_regexp* re, const hlt_string s, hlt_exception* excpt)
+int32_t hlt_regexp_string_find(hlt_regexp* re, const hlt_string s, hlt_exception** excpt)
 {
-    *excpt = hlt_exception_not_implemented;
+    hlt_set_exception(excpt, &hlt_exception_not_implemented, 0);
     return 0;
 }
 
-hlt_string hlt_regexp_string_span(hlt_regexp* re, const hlt_string s, hlt_exception* excpt)
+hlt_string hlt_regexp_string_span(hlt_regexp* re, const hlt_string s, hlt_exception** excpt)
 {
-    *excpt = hlt_exception_not_implemented;
+    hlt_set_exception(excpt, &hlt_exception_not_implemented, 0);
     return hlt_string_from_asciiz("", excpt);
 }
 
-hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, const hlt_string s, hlt_exception* excpt)
+hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, const hlt_string s, hlt_exception** excpt)
 {
-    *excpt = hlt_exception_not_implemented;
+    hlt_set_exception(excpt, &hlt_exception_not_implemented, 0);
     return 0;
 }
 
@@ -143,7 +143,7 @@ struct match_state {
 // first match. 
 static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms, 
                                      const hlt_bytes_pos begin, const hlt_bytes_pos end, 
-                                     jrx_offset* so, jrx_offset* eo, hlt_exception* excpt)
+                                     jrx_offset* so, jrx_offset* eo, hlt_exception** excpt)
 {
     // We follow one of two strategies here:
     // 
@@ -238,10 +238,10 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
     return acc;
 }
     
-int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception* excpt)
+int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt)
 {
     if ( ! re->num ) {
-        *excpt = hlt_exception_pattern_error;
+        hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
         return 0;
     }
     
@@ -251,12 +251,12 @@ int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const h
     return acc;
 }
     
-hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception* excpt)
+hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt)
 {
     hlt_regexp_span_result result;
     
     if ( ! re->num ) {
-        *excpt = hlt_exception_pattern_error;
+        hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
         return result;
     }
 
@@ -279,7 +279,7 @@ hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos
 
 extern const hlt_type_info hlt_type_info_tuple_iterator_bytes_iterator_bytes;
 
-static inline void _set_group(hlt_vector* vec, hlt_bytes_pos begin, int i, jrx_offset so, jrx_offset eo, hlt_exception* excpt)
+static inline void _set_group(hlt_vector* vec, hlt_bytes_pos begin, int i, jrx_offset so, jrx_offset eo, hlt_exception** excpt)
 {
     hlt_regexp_range span;    
     span.begin = hlt_bytes_pos_incr_by(begin, so, excpt);
@@ -287,11 +287,11 @@ static inline void _set_group(hlt_vector* vec, hlt_bytes_pos begin, int i, jrx_o
     hlt_vector_set(vec, i, &hlt_type_info_tuple_iterator_bytes_iterator_bytes, &span, excpt);
 }
 
-hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception* excpt)
+hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt)
 {
     if ( re->num != 1 ) {
         // No support for sets.
-        *excpt = hlt_exception_pattern_error;
+        hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
         return 0;
     }
 

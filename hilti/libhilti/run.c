@@ -11,7 +11,7 @@
 
 #include "hilti.h"
 
-void hilti_multithreaded_run(hlt_exception* hilti_except)
+void hilti_multithreaded_run(hlt_exception** hilti_except)
 {
     // Read configuration.
     const hilti_config *config = hilti_config_get();
@@ -21,7 +21,7 @@ void hilti_multithreaded_run(hlt_exception* hilti_except)
 
     // If the user requested fewer than 2 threads, they must have written a program that does not
     // require a scheduler. We just run main_run() directly, without creating a thread context.
-    if (config->num_threads < 2)
+    if ( ! hlt_is_multi_threaded() )
     {
         main_run(hilti_except);
         return;

@@ -24,7 +24,7 @@ static inline int is_v4(const hlt_addr addr)
     (((x) & 0x000000000000ff00LL) << 40) | \
     (((x) & 0x00000000000000ffLL) << 56))
 
-hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt)
+hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
 {
     assert(type->type == HLT_TYPE_ADDR);
     
@@ -37,7 +37,7 @@ hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_
         struct in_addr sa = { htonl(a) };
         
         if ( ! inet_ntop(AF_INET, &sa, buffer, 128) ) {
-            *excpt = hlt_exception_os_error;
+            hlt_set_exception(excpt, &hlt_exception_os_error, 0);
             return 0;
         }
     }
@@ -52,7 +52,7 @@ hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_
         memcpy(((char*)&sa) + 8, &a, 8);
         
         if ( ! inet_ntop(AF_INET6, &sa, buffer, 128) ) {
-            *excpt = hlt_exception_os_error;
+            hlt_set_exception(excpt, &hlt_exception_os_error, 0);
             return 0;
         }
     }

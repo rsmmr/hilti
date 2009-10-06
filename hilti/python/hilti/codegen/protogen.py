@@ -84,7 +84,10 @@ def _(self, f):
                 args += [ti.c_prototype]
 
         args = "".join(["%s, " % a for a in args])
-        self.addOutput("%s %s(%sconst hlt_exception *);" % (result, cg.nameFunction(f, prefix=False), args))
+        self.addOutput("%s %s(%shlt_exception **);" % (result, cg.nameFunction(f, prefix=False), args))
+        
+        # Resume function.
+        self.addOutput("%s %s_resume(const hlt_exception *, hlt_exception **);" % (result, cg.nameFunction(f, prefix=False)))
 
 @protogen.when(id.ID, type.ValueType)
 def _(self, i):

@@ -1,0 +1,28 @@
+# $Id$
+# 
+# @TEST-EXEC:  hilti-build -P %INPUT
+# @TEST-EXEC:  ${CC} -I . -c %DIR/yield-with-return-c.c -o yield-with-return-c.bc
+# @TEST-EXEC:  hilti-build yield-with-return-c.bc %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+#
+
+module Foo
+
+import Hilti
+
+export int<32> test() {
+    call Hilti::print("1")
+    yield
+    call Hilti::print("2")
+    yield
+    call Hilti::print("3")
+    yield
+    call Hilti::print("4")
+    yield
+    call Hilti::print("5")
+    
+    return.result 42
+}
+
+

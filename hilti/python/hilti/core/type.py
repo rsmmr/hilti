@@ -941,6 +941,30 @@ class Unknown(OperandType):
         super(Unknown, self).__init__("unknown")
 
     _name = "unknown"
+
+class Exception(HeapType):
+    """Type for ``exception``. 
+    
+    Note: Currently, this is an internal type that cannot directly be created
+    by an HILTI program.
+    """
+    def __init__(self):
+        super(Exception, self).__init__([], Exception._name)
+
+    _name = "exception"
+    _id = 20
+
+class Continuation(HeapType):
+    """Type for ``continuation``.
+    
+    Note: Currently, this is an internal type that cannot directly be created
+    by an HILTI program.
+    """
+    def __init__(self):
+        super(Continuation, self).__init__([], Continuation._name)
+
+    _name = "continuation"
+    _id = 21
     
 def _matchWithTypeClass(t, cls):
     """Checks whether a type instance matches with a type class; cls can be a tuple

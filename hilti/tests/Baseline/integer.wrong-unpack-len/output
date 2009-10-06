@@ -1,1 +1,1 @@
-hilti: uncaught exception, ValueError
+hilti: uncaught exception, ValueError (from /Users/robin/work/binpacpp/hilti/libhilti/bytes.c:292)

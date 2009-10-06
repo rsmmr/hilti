@@ -13,7 +13,7 @@
 
 static const int BufferSize = 128;
 
-static void _add_char(int8_t c, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception* excpt)
+static void _add_char(int8_t c, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt)
 { 
     // Adds one character 'c' to the string we're building. If there's space
     // in the buffer, it's added there and 'dst' is returned unmodified. If
@@ -36,7 +36,7 @@ static void _add_char(int8_t c, int8_t* buffer, hlt_string_size* bpos, hlt_strin
     }
 }
 
-static void _add_chars(const int8_t* data, hlt_string_size len, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception* excpt)
+static void _add_chars(const int8_t* data, hlt_string_size len, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt)
 {
     while ( len-- ) {
         _add_char(*data++, buffer, bpos, dst, excpt);
@@ -45,7 +45,7 @@ static void _add_chars(const int8_t* data, hlt_string_size len, int8_t* buffer, 
     }
 }
 
-static void _add_asciiz(const char* asciiz, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception* excpt)
+static void _add_asciiz(const char* asciiz, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt)
 {
     while ( *asciiz ) {
         _add_char(*asciiz++, buffer, bpos, dst, excpt);
@@ -54,7 +54,7 @@ static void _add_asciiz(const char* asciiz, int8_t* buffer, hlt_string_size* bpo
     }
 }
 
-static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple, int *type_param, hlt_string_size* i, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception* excpt) 
+static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple, int *type_param, hlt_string_size* i, int8_t* buffer, hlt_string_size* bpos, hlt_string* dst, hlt_exception** excpt) 
 {
     static const int tmp_size = 32;
     char tmp[tmp_size];
@@ -79,7 +79,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
             _add_asciiz(tmp, buffer, bpos, dst, excpt);
         }
         else {
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return;
         }
         
@@ -95,7 +95,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
             _add_asciiz(tmp, buffer, bpos, dst, excpt);
         }
         else {
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return;
         }
         
@@ -111,7 +111,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
             _add_asciiz(tmp, buffer, bpos, dst, excpt);
         }
         else {
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return;
         }
         
@@ -146,12 +146,12 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
         
       default:
         // Unknown format character.
-        *excpt = hlt_exception_wrong_arguments;
+        hlt_set_exception(excpt, &hlt_exception_wrong_arguments, 0);
     }
     
 }
 
-hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple, hlt_exception* excpt)
+hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple, hlt_exception** excpt)
 {
     assert(type->type == HLT_TYPE_TUPLE);
 
@@ -167,7 +167,7 @@ hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tupl
         
         if ( p[i] == '%' ) {
             if ( ++i == fmt->len ) {
-                *excpt = hlt_exception_wrong_arguments;
+                hlt_set_exception(excpt, &hlt_exception_wrong_arguments, 0);
                 return 0;
             }
             

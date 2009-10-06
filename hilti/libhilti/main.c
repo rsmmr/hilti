@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv)
 {
-    hlt_exception excpt = 0;
+    hlt_exception* excpt = 0;
     
     hilti_init();
 

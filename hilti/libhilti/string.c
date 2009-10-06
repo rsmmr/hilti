@@ -16,13 +16,13 @@
 
 static hlt_string_constant EmptyString = { 0, "" };
 
-hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt)
+hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
 {
     hlt_string s = *((hlt_string*)obj);
     return s ? s : &EmptyString;
 }
 
-hlt_string_size hlt_string_len(hlt_string s, hlt_exception* excpt)
+hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt)
 {
     int32_t dummy;
     const int8_t* p;
@@ -42,7 +42,7 @@ hlt_string_size hlt_string_len(hlt_string s, hlt_exception* excpt)
     while ( p < e ) {
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &dummy);
         if ( n < 0 ) {
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
         
@@ -51,7 +51,7 @@ hlt_string_size hlt_string_len(hlt_string s, hlt_exception* excpt)
     }
     
     if ( p != e ) {
-        *excpt = hlt_exception_value_error;
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return 0;
     }
     
@@ -60,7 +60,7 @@ hlt_string_size hlt_string_len(hlt_string s, hlt_exception* excpt)
 
 #include <stdio.h>
 
-hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception* excpt)
+hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt)
 {
     hlt_string_size len1;
     hlt_string_size len2;; 
@@ -83,7 +83,7 @@ hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception* excpt)
     hlt_string dst = hlt_gc_malloc_atomic(sizeof(hlt_string) + len1 + len2);
     
     if ( ! dst ) {
-        *excpt = hlt_exception_out_of_memory;
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return 0;
     }
     
@@ -94,7 +94,7 @@ hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception* excpt)
     return dst;
 }
 
-hlt_string hlt_string_substr(hlt_string s1, hlt_string_size pos, hlt_string_size len, hlt_exception* excpt)
+hlt_string hlt_string_substr(hlt_string s1, hlt_string_size pos, hlt_string_size len, hlt_exception** excpt)
 {
     if ( ! s1 )
         s1 = &EmptyString;
@@ -102,7 +102,7 @@ hlt_string hlt_string_substr(hlt_string s1, hlt_string_size pos, hlt_string_size
     return 0;
 }
 
-hlt_string_size hlt_string_find(hlt_string s, hlt_string pattern, hlt_exception* excpt)
+hlt_string_size hlt_string_find(hlt_string s, hlt_string pattern, hlt_exception** excpt)
 {
     if ( ! s )
         s = &EmptyString;
@@ -113,7 +113,7 @@ hlt_string_size hlt_string_find(hlt_string s, hlt_string pattern, hlt_exception*
     return 0;
 }
 
-int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception* excpt)
+int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception** excpt)
 {
     const int8_t* p1;
     const int8_t* p2;
@@ -144,13 +144,13 @@ int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception* excpt)
         
         n1 = utf8proc_iterate((uint8_t *)p1, s1->len - i, &cp1);
         if ( n1 < 0 ) {
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
         
         n2 = utf8proc_iterate((uint8_t *)p2, s2->len - i, &cp2);
         if ( n2 < 0 ) {
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
         
@@ -177,7 +177,12 @@ int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception* excpt)
     return 0;
 }
 
-hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception* excpt)
+hlt_string hlt_string_empty(hlt_exception** excpt)
+{
+    return &EmptyString;
+}
+
+hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt)
 {
     hlt_string_size len = strlen(asciiz);
     hlt_string dst = hlt_gc_malloc_atomic(sizeof(hlt_string) + len);
@@ -186,7 +191,7 @@ hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception* excpt)
     return dst;
 }
 
-hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exception* excpt)
+hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exception** excpt)
 {
     hlt_string dst = hlt_gc_malloc_atomic(sizeof(hlt_string) + len);
     dst->len = len;
@@ -194,11 +199,20 @@ hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exc
     return dst;
 }
 
+hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, hlt_exception** excpt)
+{
+    if ( type->to_string )
+        return (*type->to_string)(type, obj, 0, excpt);
+    else
+        return hlt_string_from_asciiz(type->tag, excpt);
+}
+
+
 static hlt_string_constant UTF8_STRING = { 4, "utf8" };
 static hlt_string_constant ASCII_STRING = { 5, "ascii" };
 enum Charset { ERROR, UTF8, ASCII };
 
-static enum Charset get_charset(hlt_string charset, hlt_exception* excpt)
+static enum Charset get_charset(hlt_string charset, hlt_exception** excpt)
 {
     if ( hlt_string_cmp(charset, &UTF8_STRING, excpt) == 0 )
         return UTF8;
@@ -206,11 +220,11 @@ static enum Charset get_charset(hlt_string charset, hlt_exception* excpt)
     if ( hlt_string_cmp(charset, &ASCII_STRING, excpt) == 0 )
         return ASCII;
     
-    *excpt = hlt_exception_value_error;
+    hlt_set_exception(excpt, &hlt_exception_value_error, 0);
     return ERROR;
 }
 
-hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception* excpt)
+hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** excpt)
 {
     const int8_t* p;
     const int8_t* e;
@@ -238,7 +252,7 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception* ex
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &uc);
         
         if ( n < 0 ) {
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
         
@@ -260,7 +274,7 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception* ex
     return dst;
 }
 
-hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception* excpt)
+hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** excpt)
 {
     enum Charset ch = get_charset(charset, excpt);
     if ( ch == ERROR )
@@ -301,7 +315,7 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception* ex
 
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't 
  * convert to the locale encoding yet. We just print them in \u syntax. */
-void __hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception* excpt)
+void __hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt)
 {
     if ( ! s )
         // Empty string.
@@ -315,7 +329,7 @@ void __hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception*
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &cp);
         
         if ( n < 0 ) {
-            *excpt = hlt_exception_value_error;
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return;
         }
         

@@ -82,3 +82,8 @@ def _(self, i):
 @canonifier.when(instructions.flow.ThreadYield)
 def _(self, i):
     _splitBlock(self, i, add_flow_dbg=True)
+
+@canonifier.when(instructions.flow.Yield)
+def _(self, i):
+    _splitBlock(self, i)
+    

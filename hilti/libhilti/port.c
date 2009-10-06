@@ -8,7 +8,7 @@
 
 #include "hilti.h"
 
-hlt_string hlt_port_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception* excpt)
+hlt_string hlt_port_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
 {
     assert(type->type == HLT_TYPE_PORT);
     
@@ -20,7 +20,7 @@ hlt_string hlt_port_to_string(const hlt_type_info* type, const void* obj, int32_
     return hlt_string_from_asciiz(buffer, excpt);
 }
 
-int64_t hlt_port_to_int64(const hlt_type_info* type, const void* obj, hlt_exception* expt)
+int64_t hlt_port_to_int64(const hlt_type_info* type, const void* obj, hlt_exception** expt)
 {
     assert(type->type == HLT_TYPE_PORT);
     hlt_port port = *((hlt_port *)obj);

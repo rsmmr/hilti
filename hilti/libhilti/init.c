@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include "hilti.h"
+#include "context.h"
 
 void hilti_init()
 {
@@ -20,4 +21,8 @@ void hilti_init()
 
     // Initialize configuration to defaults.
     __hlt_config_init();
+
+    if ( ! hlt_is_multi_threaded() )
+        __hlt_execution_context_init(&__hlt_global_execution_context);
+    
 }
