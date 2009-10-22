@@ -1,0 +1,17 @@
+#! /usr/bin/env bash
+#
+# Shell wrapper around hiltic to setup paths. 
+
+if [ "$HILTIDEPS" != "" -a -e "$HILTIDEPS/bin/setup-paths" ]; then
+   eval `$HILTIDEPS/bin/setup-paths`
+fi   
+
+link=`readlink $0`
+
+if [ "$link" != "" ]; then
+   script=$link
+else
+   script=$0
+fi   
+
+eval `dirname $script`/hiltic.py $@
