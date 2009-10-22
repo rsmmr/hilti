@@ -149,7 +149,7 @@ function link_all {
         exec=""
     fi   
     
-    execute "clang -o $output $exec $llvmldflags $libs $output.bc.S"
+    execute "clang -o $output $exec $llvmldflags $libsc $output.bc.S"
 }
 
 function find_libraries {
