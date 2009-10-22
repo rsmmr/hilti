@@ -2,6 +2,10 @@
 #
 # Runs the tester with the correct environment variables set.
 
+if [ "$HILTIDEPS" != "" -a -e "$HILTIDEPS/bin/setup-paths" ]; then
+   eval `$HILTIDEPS/bin/setup-paths`
+fi   
+
 BASE_DIR=`cd ../.. && pwd -P`
 TESTER=$BASE_DIR/tester/bin/tester
 HILTI_BASE=$BASE_DIR/hilti
@@ -17,7 +21,7 @@ CFLAGS=`$HILTI_CONFIG --cflags`
 PYPATH=`$HILTI_CONFIG --pythonpath`
 
 export PATH="$HILTI_BASE/tools/hiltic:$HILTI_BASE/tools/hilti-build:$PATH"
-export CC="llvm-gcc -emit-llvm -g $CFLAGS"
+export CC="clang -emit-llvm -g $CFLAGS"
 
 # Set a well-defined locale.
 export LANG=C

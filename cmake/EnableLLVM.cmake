@@ -1,7 +1,7 @@
 # $Id$
 #
 # If ENABLE_LLVM is defined, we change the compiler setting to compile and 
-# link LLVM bitcode.
+# link LLVM bitcode. 
 
 if ( ENABLE_LLVM )
    if ( LLVM_FOUND )
@@ -9,7 +9,7 @@ if ( ENABLE_LLVM )
        
        set(CMAKE_C_OUTPUT_EXTENSION ".bc")
        set(CMAKE_STATIC_LIBRARY_SUFFIX ".bca")
-       set(CMAKE_C_COMPILER "llvm-gcc")
+       set(CMAKE_C_COMPILER "clang")
        set(CMAKE_C_FLAGS "-emit-llvm ${CMAKE_C_FLAGS} ${LLVM_COMPILE_FLAGS}")
        set(CMAKE_AR "llvm-ar")
        set(CMAKE_RANLIB "llvm-ranlib")
@@ -21,5 +21,4 @@ if ( ENABLE_LLVM )
    
 else ( ENABLE_LLVM )
        message("building native object files")
-
 endif ( ENABLE_LLVM )

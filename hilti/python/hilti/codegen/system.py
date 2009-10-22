@@ -59,7 +59,14 @@ def isLittleEndian():
     util.error("isLittleEndian() does not support architecture %s" % arch, component="system.py")    
     
 _structSizeCache = {}    
+
+def targetArch():
+    """Return the target architecture string. 
     
+    Returns: string - The target architecture.
+    """
+    return machine
+
 def returnStructByValue(type):
     """Checks whether the host platform's ABI returns a struct type by value.
     If not, we assume that the struct must be passed via a pointer given as
@@ -82,6 +89,8 @@ def returnStructByValue(type):
         # LLVM function which we then execute JIT ...
         #
         module = llvm.core.Module.new("sizeof")
+        # The target doesn't seem to be initalized correctly by default.
+        module.target = targetArch()
         ft = llvm.core.Type.function(llvm.core.Type.int(32), [])
         func = llvm.core.Function.new(module, ft, "sizeof")
         block = func.append_basic_block ("")

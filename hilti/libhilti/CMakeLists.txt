@@ -4,8 +4,6 @@ cmake_minimum_required(VERSION 2.6)
 
 # set(CMAKE_VERBOSE_MAKEFILE "on")
 
-message($ENV{PATH})
-
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH}) 
 find_package(LLVM)
 
@@ -14,7 +12,7 @@ set(PROJECT_VERSION "0.1")
 
 add_subdirectory(justrx) # must come before EnableLLVM.
 
-set(CMAKE_C_FLAGS "-g -Wall -ansi -strict -std=c99 -pthread -I${CMAKE_SOURCE_DIR}/justrx/src")
+set(CMAKE_C_FLAGS "-g -Wall -std=c99 -I${CMAKE_SOURCE_DIR}/justrx/src")
 
 include(EnableLLVM)
 
@@ -25,7 +23,7 @@ set(SRCS
     addr.c port.c vector.c list.c net.c regexp.c debug.c
     bitset.c context.c
     
-    module/fmt.c module/print.c
+    module/fmt.c module/print.c module/abort.c
     )
 
 # FIXME: We should allow for multiple LLs and build a loop around

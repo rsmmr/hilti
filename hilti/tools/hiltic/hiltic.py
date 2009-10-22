@@ -1,7 +1,6 @@
 #! /usr/bin/env python2.6
 #
 # Command-line compiler for HILTI programs. 
-#
 
 Version = 0.1
 

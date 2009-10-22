@@ -323,7 +323,7 @@ class CodeGen(visitor.Visitor):
         ti_name = self.nameTypeInfo(ti.type)
         glob = self.llvmCurrentModule().add_global_variable(llvm.core.Type.pointer(th.type), ti_name)
         glob.global_constant = True
-        glob.linkage = llvm.core.LINKAGE_LINKONCE
+        glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
     
     def _initTypeInfo(self, ti):
         # Creates the type information for a single HiltiType.
@@ -373,7 +373,7 @@ class CodeGen(visitor.Visitor):
         name_glob = self.llvmCurrentModule().add_global_variable(name_type, name_name)
         name_glob.global_constant = True
         name_glob.initializer = name_val
-        name_glob.linkage = llvm.core.LINKAGE_LINKONCE
+        name_glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
     
         # Create the type info struct type. Note when changing this we
         # also need to adapt the type in self._llvm.type_type_information
@@ -980,7 +980,7 @@ class CodeGen(visitor.Visitor):
         func.args[0].name = "__frame"
         for i in range(len(addl_args)):
             func.args[i+1].name = addl_args[i][0]
-        
+
         self._llvm.functions[name] = func
 
         return func

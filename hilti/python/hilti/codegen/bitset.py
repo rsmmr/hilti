@@ -35,7 +35,7 @@ def _(type):
     glob = codegen.llvmCurrentModule().add_global_variable(const.type, name)
     glob.global_constant = True    
     glob.initializer = const
-    glob.linkage = llvm.core.LINKAGE_LINKONCE
+    glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
     
     typeinfo.aux = glob
     

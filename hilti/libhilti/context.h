@@ -33,4 +33,4 @@ void __hlt_execution_context_done(hlt_execution_context* ctx);
 /// TODO: The multi-threaded case has not been tested ...
 hlt_execution_context* hlt_current_execution_context();
 
-#endif HLT_CONTEXT_H
+#endif

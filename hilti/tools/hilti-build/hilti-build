@@ -10,6 +10,13 @@
 #     LLVMASFLAGS
 #     LLVMLDFLAGS
 #     CFLAGS
+#
+# If HILTIDEPS is set to the hilti-dependency location, paths are
+# setup accordingly.
+
+if [ "$HILTIDEPS" != "" -a -e "$HILTIDEPS/bin/setup-paths" ]; then
+   eval `$HILTIDEPS/bin/setup-paths`
+fi   
 
 function usage {
    echo "Usage: hilti-build [-m] [-t] [-v] -o <output> <input-files>"
@@ -76,12 +83,14 @@ function compile_ll {
     base=`basename $input .ll`
 
     if [ "$opt" != "" ]; then
-        opt="| opt $opt"
+        pipeopt="| opt $opt"
+    else
+        pipeopt=""
     fi
 
     bc=$base.tmp.bc
     tmpfiles="$tmpfiles $bc"
-    execute "llvm-as $llvmasflags < $input $opt >$bc"
+    execute "llvm-as $llvmasflags < $input $pipeopt >$bc"
     result=$bc
 }
 
@@ -93,7 +102,7 @@ function compile_c {
 
     bc=$base.tmp.bc
     tmpfiles="$tmpfiles $bc"
-    execute "llvm-gcc -c -emit-llvm $opt $cflags -o $bc $input"
+    execute "clang -c -emit-llvm $opt $cflags -o $bc $input"
     result=$bc
 }
 
@@ -113,32 +122,65 @@ function compile_cc {
 function link_all {
     bc=$@
     
+    execute "llvm-ld -disable-opt -b=$output.bc $llvmldflags $bc $libsbc" || exit 1
+    execute "rm $output" || exit 1 # Stupid shell script.
+
     if [ "$opt" != "" ]; then
-        lto=""
-    else
-        lto="-disable-opt"
+        tmpfiles="$tmpfiles $output.opt.bc"
+        execute "opt -f $opt $output.bc -o=$output.opt.bc" || exit 1
+        execute "mv $output.opt.bc $output.bc"
     fi   
 
     if [ "$bitcode" != "" ]; then
-        kind=""
-    else
-        kind="-native"
-        
-        if [ "$noexec" != "" ]; then
-            exec="-Xlinker=-r"
-        else
-            exec=""
-        fi   
+       # Done.
+       return
     fi
 
-    execute "llvm-ld $kind $exec $lto $llvmldflags $bc $libs -o $output" || exit 1 
+    tmpfiles="$tmpfiles $output.bc"
+    tmpfiles="$tmpfiles $output.bc.S"
+
+    # Compile into native assembler.
+    execute "llc -f -o=$output.bc.S $output.bc" || exit 1
     
-    if [ "$bitcode" != "" ]; then
-        # llvm-ld will have produces two outputs: (1) a shell script to start
-        # lli; and (2) a *.bc file. We only need the latter.
-        mv $output.bc $output
-    fi
+    # Assemble into executable code. Seems using the compiler driver is the way to go here ...
+    if [ "$noexec" != "" ]; then
+        exec="-Xlinker=-r"
+    else
+        exec=""
+    fi   
     
+    execute "clang -o $output $exec $llvmldflags $libs $output.bc.S"
+}
+
+function find_libraries {
+    result=""
+    paths=""
+    libs=""
+    ext=$1
+    shift 
+
+    for flag in $@; do 
+        echo $flag | grep -q '^-L'
+        if [ $? == 0 ]; then
+           paths="$paths `echo $flag | sed 's/^-L//g'`"
+        fi
+        
+        echo $flag | grep -q '^-l'
+        if [ $? == 0 ]; then
+           libs="$libs `echo $flag | sed 's/^-l//g'`"
+        fi
+    done
+    
+    for lib in $libs; do 
+        for path in $paths; do 
+            full=$path/lib$lib.$ext
+            if [ -f $full ]; then
+               result="$result $full"
+            fi
+        done
+    done
+    
+    echo $result
 }
 
 tmpfiles=""
@@ -147,12 +189,12 @@ protos=""
 noexec=""
 bitcode=""
 debug=""
-libsflag="--libs-main"
+libsbcflag="--libs-bc-main"
 
 while [ "$1" != "" ]; do
     case $1 in 
         -m)
-            libsflag="--libs" ; shift;;
+            libsbcflag="--libs-bc" ; shift;;
         -t)
             keeptmp=1; shift;;
         -v)
@@ -213,7 +255,8 @@ hilticflags="`$hilticonfig $debug --hilticflags` $HILTICFLAGS"
 llvmldflags="`$hilticonfig $debug --ldflags` $LLVMLDFLAGS"
 cflags="`$hilticonfig $debug --cflags` $CFLAGS"
 cxxflags="`$hilticonfig $debug --cxxflags` $CFLAGS"
-libs=`$hilticonfig $libsflag`
+libsbc=`$hilticonfig $libsbcflag`
+libsc=`$hilticonfig --libs-c`
 
 export PYTHONPATH=`$hilticonfig --pythonpath`:$PYTHONPATH
 

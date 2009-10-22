@@ -4,10 +4,6 @@
  * 
  */
 
-#define _POSIX_SOURCE
-#define _POSIX_C_SOURCE 199309
-
-#include <unistd.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>

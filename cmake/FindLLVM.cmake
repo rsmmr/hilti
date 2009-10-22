@@ -1,6 +1,7 @@
 # Detect LLVM and set various variable to link against the different component of LLVM
 #
 # [Robin] NOTE: This is adapted from http://code.roadsend.com/pcc/export/796/trunk/rphp/cmake/modules/FindLLVM.cmake
+# [Robin] We also switch the C compiler to clang if we find it. 
 #
 # NOTE: This is a modified version of the module originally found in the OpenGTL project
 # at www.opengtl.org
@@ -31,13 +32,24 @@ else (LLVM_INCLUDE_DIR)
       PATHS
       /opt/local/bin
   )
+  
+  find_program(LLVM_CLANG_EXECUTABLE
+      NAMES clang 
+      PATHS
+      /opt/local/bin
+  )
 
   if (LLVM_GXX_EXECUTABLE)
       MESSAGE(STATUS "LLVM llvm-g++ found at: ${LLVM_GXX_EXECUTABLE}")
-  else(LLVM_GXX_EXECUTABLE)
-      MESSAGE(FATAL_ERROR "LLVM llvm-g++ is required, but not found!")
+#  else(LLVM_GXX_EXECUTABLE)
+#      MESSAGE(FATAL_ERROR "LLVM llvm-g++ is required, but not found!")
   endif(LLVM_GXX_EXECUTABLE)
-  
+
+  if (LLVM_CLANG_EXECUTABLE)
+      MESSAGE(STATUS "clang found at: ${LLVM_GXX_EXECUTABLE}")
+      set(CMAKE_C_COMPILER "clang")
+  endif(LLVM_CLANG_EXECUTABLE)
+
   MACRO(FIND_LLVM_LIBS LLVM_CONFIG_EXECUTABLE _libname_ LIB_VAR OBJECT_VAR)
     exec_program( ${LLVM_CONFIG_EXECUTABLE} ARGS --libs ${_libname_}  OUTPUT_VARIABLE ${LIB_VAR} )
     STRING(REGEX MATCHALL "[^ ]*[.]o[ $]"  ${OBJECT_VAR} ${${LIB_VAR}})

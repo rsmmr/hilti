@@ -10,7 +10,7 @@ flex_target(rescan re-scan.l "${CMAKE_CURRENT_SOURCE_DIR}/re-scan.c")
 bison_target(reparse re-parse.y "${CMAKE_CURRENT_SOURCE_DIR}/re-parse.c")
 add_flex_bison_dependency(rescan reparse)
 
-set(CMAKE_C_FLAGS "-g -Wall -ansi -strict -std=c99")
+set(CMAKE_C_FLAGS "-g -Wall -std=c99")
 
 include(EnableLLVM)
 
