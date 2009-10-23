@@ -14,8 +14,11 @@ unset HILTICFLAGS
 unset LLVMASFLAGS
 unset LLVMLDFLAGS
 unset CFLAGS
+unset CPPFLAGS
+unset CXXFLAGS
 
 export HILTI_CONFIG=$BASE_DIR/hilti/tools/hilti-config/hilti-config
+export TEST_DIFF_CANONALIZER=$HILTI_BASE/tests/canonifier
 
 CFLAGS=`$HILTI_CONFIG --cflags`
 PYPATH=`$HILTI_CONFIG --pythonpath`

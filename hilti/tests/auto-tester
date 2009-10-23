@@ -9,6 +9,10 @@
 #     * mails out any failed tests.
 #
 
+if [ "$HILTIDEPS" != "" -a -e "$HILTIDEPS/bin/setup-paths" ]; then
+   eval `$HILTIDEPS/bin/setup-paths`
+fi   
+
 SSH_IDENTITY_FILE=~/.ssh/hilti-auto-tester
 USER=hilti-auto-tester
 MAIL_TO=hilti@icsi.berkeley.edu
@@ -113,7 +117,7 @@ if [ -s $TMP2 ]; then
    hostname >>$MAIL
    uname -a >>$MAIL
    (echo -n "LLVM "; llvm-config --version) >>$MAIL
-   llvm-gcc --version | head -1 >>$MAIL
+   clang --version | head -1 >>$MAIL
    echo >>$MAIL
    
    echo "--- Diagnostics (500 lines max) -------" >>$MAIL

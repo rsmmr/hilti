@@ -3,6 +3,8 @@
 # TEST_MODE={TEST|UPDATE}
 # TEST_BASELINE          
 # TEST_DIAGNOSTICS
+#
+# TEST_DIFF_CANONALIZER
 
 if [ "$#" -lt 1 ]; then
    echo "test-diff: wrong number of arguments" >$TEST_DIAGNOSTICS
@@ -17,6 +19,13 @@ if [ ! -f $input ]; then
    exit 1
 fi   
 
+tmpfiles=""
+function delete_tmps {
+     rm -f $tmpfiles
+}
+
+trap delete_tmps 0
+
 result=2
 
 rm -f $TEST_DIAGNOSTICS
@@ -24,8 +33,21 @@ echo "== File ===============================" >>$TEST_DIAGNOSTICS
 cat $input >>$TEST_DIAGNOSTICS
 
 if [ -e $TEST_BASELINE/$input ]; then
+
+   if [ "$TEST_DIFF_CANONALIZER" != "" ]; then
+       diff1=/tmp/test-diff.$$.$input.baseline.tmp
+       diff2=/tmp/test-diff.$$.$input.tmp
+       tmpfiles="$tmpfiles $diff1 $diff2"
+        
+       eval $TEST_DIFF_CANONALIZER <$TEST_BASELINE/$input >$diff1
+       eval $TEST_DIFF_CANONALIZER <$input >$diff2
+   else
+       diff1=$TEST_BASELINE/$input
+       diff2=$input
+   fi
+
    echo "== Diff ===============================" >>$TEST_DIAGNOSTICS
-   diff -u $@ $TEST_BASELINE/$input $input >>$TEST_DIAGNOSTICS
+   diff -u $@ $diff1 $diff2 >>$TEST_DIAGNOSTICS
    result=$?
 else
    echo "== Error===============================" >>$TEST_DIAGNOSTICS
