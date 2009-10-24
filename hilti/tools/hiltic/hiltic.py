@@ -9,6 +9,9 @@ import os.path
 import optparse
 import subprocess
 
+import llvm.core
+Target = llvm.core.getHostTriple()
+
 try:
     # Get hilti-config information.
     p = subprocess.Popen(["hilti-config", "--pythonpath"], stdout=subprocess.PIPE).communicate()[0].strip()
@@ -25,8 +28,9 @@ def import_path_callback(option, opt, value, parser):
         parser.values.import_paths += [value]
     except AttributeError:
         parser.values.import_paths = [value]
-    
-optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=Version)
+
+version_str = "hiltic %s\ntarget: %s" % (Version, Target)
+optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=version_str)
 optparser.add_option("-b", "--bitcode", action="store_true", dest="bitcode", default=False,
                      help="Output LLVM bitcode")
 optparser.add_option("-l", "--ll", action="store_true", dest="ll", default=False,
@@ -47,14 +51,13 @@ optparser.add_option("-P", "--prototypes", action="store_true", dest="protos", d
                      help="Generate C prototypes")
 optparser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
                      help="Compile with debugging support")
-
 options = None                     
                      
 if addl_flags:
     (options, args) = optparser.parse_args(args=addl_flags.split())
 
 (options, args) = optparser.parse_args(values=options)
-    
+
 if options.ll_noverify:
     options.ll = True
     
