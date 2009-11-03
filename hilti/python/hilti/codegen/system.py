@@ -104,6 +104,11 @@ def returnStructByValue(type):
         # Can't find documentation but looking at clang-cc, it seems to always
         # pass structs via temporary memory objects.
         return None
+    
+    if _target.startswith("i386-darwin"):
+        if sizeof in (1, 2, 4, 8):
+            return llvm.core.Type.int(sizeof * 8)
+        return None
 
     if _target.startswith("x86_64-linux") or _target.startswith("x86_64-darwin"):
         if sizeof == 1:
