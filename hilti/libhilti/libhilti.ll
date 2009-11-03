@@ -20,6 +20,7 @@ declare i8* @__hlt_bytes_new_from_data(i8*, i32, i8**)
 declare i8* @__hlt_exception_new({ i8*, \2*, i8* }*, i8*, i8*)
 declare i8* @__hlt_exception_new_yield(%__hlt_continuation*, i32, i8*)
 declare void @__hlt_exception_save_frame(i8*, %__hlt_basic_frame*)
+declare void @__hlt_exception_print_uncaught_abort(i8*)
 declare %__hlt_basic_frame* @__hlt_exception_restore_frame(i8*)
 declare %__hlt_continuation* @__hlt_exception_get_continuation(i8*)
 

@@ -1,0 +1,3 @@
+wrong-inherit.hlt:7: error, exception argument type must match that of base class (string)
+
+1 error found

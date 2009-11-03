@@ -31,6 +31,7 @@ extern hlt_string hlt_string_decode(hlt_bytes*, hlt_string charset, hlt_exceptio
 extern hlt_string hlt_string_empty(hlt_exception** excpt);
 extern hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt);
 extern hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exception** excpt);
+// Note that obj is a *pointer* to the object. 
 extern hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, hlt_exception** excpt);
 
 extern void __hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt);

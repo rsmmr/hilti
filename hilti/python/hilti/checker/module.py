@@ -5,9 +5,13 @@
 builtin_type = type
 
 import types
+import operators
 
 from hilti.core import *
 from checker import checker
+
+class _TestInstruction:
+    pass
 
 @checker.pre(module.Module)
 def _(self, m):
@@ -28,8 +32,8 @@ def _(self, m):
         elif not isinstance(run.type(), type.Function):
             self.error(run, "in module Main, ID 'run' must be a function")
     
-    for i in m.IDs():
-        if i.role() == id.Role.GLOBAL:
+    for i in sorted(m.IDs(), key=lambda x: x.name()): # Sort to get well-defind output.
+        if i.role() == id.Role.GLOBAL or i.role() == id.Role.CONST:
             
             if not isinstance(i.type(), type.ValueType) and \
                not isinstance(i.type(), type.Function) and \
@@ -40,7 +44,14 @@ def _(self, m):
             if isinstance(i.type(), type.ValueType) and i.type().wildcardType():
                 self.error(i, "global variable cannot have a wildcard type")
                 break
-    
+            
+        if i.role() == id.Role.CONST:
+            val = m.lookupIDVal(i)
+            if isinstance(val, instruction.ConstOperand):
+                if i.type() != val.type():
+                    self.error(i, "type mismatch in const initialization")
+                    break
+            
 @checker.post(module.Module)
 def _(self, m):
     self._module = None

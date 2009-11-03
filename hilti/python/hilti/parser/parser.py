@@ -85,6 +85,7 @@ def p_module_decl_list(p):
     
 def p_module_decl(p):
     """module_decl : def_global
+                   | def_const
                    | def_type
                    | def_declare
                    | def_import
@@ -101,6 +102,15 @@ def p_def_global(p):
     """def_global : GLOBAL global_id NL"""
     p.parser.state.module.addID(p[2])
 
+def p_def_const(p):
+    """def_const : CONST const_id '=' operand"""
+    
+    if not isinstance(p[4], instruction.ConstOperand):
+        error(p, "value must be a constant")
+        raise SyntaxError
+    
+    p.parser.state.module.addID(p[2], p[4])
+
 def p_def_local(p):
     """def_local : LOCAL local_id NL"""
     p.parser.state.function.addID(p[2])
@@ -110,6 +120,7 @@ def p_def_type(p):
                 | def_enum_decl
                 | def_overlay_decl
                 | def_bitset_decl
+                | def_exception_decl
                 """
     pass
 
@@ -143,6 +154,22 @@ def p_def_bitset(p):
         eid = id.ID(p[3] + "::" + label, t, id.Role.CONST, location=loc(p, 1))
         p.parser.state.module.addID(eid, value)        
 
+def p_def_exception(p):
+    """def_exception_decl : EXCEPTION IDENT opt_exception_arg opt_exception_base"""
+    _addTypeDecl(p, p[2], type.Exception(p[2], p[3], p[4]), location=loc(p, 1))
+    
+def p_opt_exception_arg(p):
+    """opt_exception_arg : '(' type ')'
+                             | 
+    """
+    p[0] = p[2] if len(p) != 1 else None
+    
+def p_opt_exception_base(p):
+    """opt_exception_base : ':' IDENT
+                             | 
+    """
+    p[0] = p[2] if len(p) != 1 else None
+    
 def p_def_overlay(p):
     """def_overlay_decl : OVERLAY _begin_nolines IDENT '{' overlay_field_list '}' _end_nolines"""
     t = type.Overlay()
@@ -343,15 +370,6 @@ def p_operand_string(p):
         error(p, "error in escape sequence %s" % p[1])
         raise SyntaxError
     
-def p_operand_bytes(p):
-    """operand : BYTES"""
-    try:
-        string = constant.Constant(util.expand_escapes(p[1], unicode=False), type.Reference([type.Bytes()]), location=loc(p, 1))
-        p[0] = instruction.ConstOperand(string, location=loc(p, 1))
-    except ValueError:
-        error(p, "error in escape sequence %s" % p[1])
-        raise SyntaxError
-
 def p_operand_tuple(p):
     """operand : tuple"""
     p[0] = instruction.TupleOperand(p[1], location=loc(p, 1))
@@ -371,6 +389,48 @@ def p_operand_port(p):
     const = constant.Constant(p[1], type.Port(), location=loc(p, 1))
     p[0] = instruction.ConstOperand(const, location=loc(p, 1))
     
+def p_operand_regexp(p):
+    """operand : regexp_list"""
+    const = constant.Constant(p[1], type.Reference([type.RegExp()]), location=loc(p, 1))
+    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
+
+def p_regexp_list(p):    
+    """regexp_list : REGEXP '|' regexp_list
+                   | REGEXP"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
+    
+def p_operand_list_non_empty(p):
+    """operand : '[' operand_list ']'"""
+    
+    ops = p[2]
+    
+    t = ops[0].type()
+    for op in ops:
+        if t != op.type():
+            error(p, "list of inhomogenous types" % p[1])
+            raise SyntaxError
+    
+    const = constant.Constant(ops, type.Reference([type.List([t])]), location=loc(p, 1))
+    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
+ 
+# FIXME: Can't derive type information.    
+#def p_operand_list_empty(p):
+#    """operand : '[' ']'"""
+#    const = constant.Constant([], type.Reference([type.List()]), location=loc(p, 1))
+#    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
+
+def p_operand_bytes(p):
+    """operand : BYTES"""
+    try:
+        string = constant.Constant(util.expand_escapes(p[1], unicode=False), type.Reference([type.Bytes()]), location=loc(p, 1))
+        p[0] = instruction.ConstOperand(string, location=loc(p, 1))
+    except ValueError:
+        error(p, "error in escape sequence %s" % p[1])
+        raise SyntaxError
+    
 def p_operand_type(p):
     """operand : type"""
     p[0] = instruction.TypeOperand(p[1], location=loc(p, 1))
@@ -389,7 +449,7 @@ def p_tuple_non_empty(p):
 
 def p_operand_list(p):
     """operand_list : operand ',' operand_list
-             | operand"""
+                    | operand"""
     if len(p) == 4:
         p[0] = [p[1]] + p[3]
     else:
@@ -429,6 +489,10 @@ def p_global_id(p):
     """global_id : type IDENT
                  | ANY IDENT"""
     p[0] = id.ID(p[2], p[1], id.Role.GLOBAL, location=loc(p, 2))
+
+def p_const_id(p):
+    """const_id : type IDENT"""
+    p[0] = id.ID(p[2], p[1], id.Role.CONST, location=loc(p, 2))
 
 def p_def_opt_default_val(p):
     """opt_default_val : '=' operand

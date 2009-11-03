@@ -14,26 +14,28 @@
 
 extern const hlt_type_info hlt_type_info_int_32;
 
-hlt_exception_type hlt_exception_division_by_zero = { "DivisionByZero", 0, 0 };
-hlt_exception_type hlt_exception_value_error = { "ValueError", 0, 0 };
-hlt_exception_type hlt_exception_out_of_memory = { "OutOfMemory", 0, 0 };
-hlt_exception_type hlt_exception_wrong_arguments = { "WrongArguments", 0, 0 };
-hlt_exception_type hlt_exception_undefined_value = { "UndefinedValue", 0, 0 };
-hlt_exception_type hlt_channel_full = { "ChannelFull", 0, 0 };
-hlt_exception_type hlt_channel_empty = { "ChannelEmpty", 0, 0 };
+// The mother of all exceptions.
 hlt_exception_type hlt_exception_unspecified = { "Unspecified", 0, 0 };
-hlt_exception_type hlt_exception_decoding_error = { "DecodingError", 0, 0 };
-hlt_exception_type hlt_exception_worker_thread_threw_exception = { "WorkerThreadThrewException", 0, 0 };
-hlt_exception_type hlt_exception_internal_error = { "InternalError", 0, 0 };
-hlt_exception_type hlt_exception_os_error = { "OSError", 0, 0 };
-hlt_exception_type hlt_exception_overlay_not_attached = { "OverlayNotAttached", 0, 0 };
-hlt_exception_type hlt_exception_index_error = { "IndexError", 0, 0 };
-hlt_exception_type hlt_exception_underflow = { "Underflow", 0, 0 };
-hlt_exception_type hlt_exception_invalid_iterator = { "InvalidIterator", 0, 0 };
-hlt_exception_type hlt_exception_not_implemented = { "NotImplemented", 0, 0 };
-hlt_exception_type hlt_exception_pattern_error = { "PatternError", 0, 0 };
 
-hlt_exception_type hlt_exception_resumable = { "Resumable", 0, 0 };
+hlt_exception_type hlt_exception_division_by_zero = { "DivisionByZero", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_value_error = { "ValueError", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_out_of_memory = { "OutOfMemory", 0, 0 };
+hlt_exception_type hlt_exception_wrong_arguments = { "WrongArguments", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_undefined_value = { "UndefinedValue", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_channel_full = { "ChannelFull", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_channel_empty = { "ChannelEmpty", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_decoding_error = { "DecodingError", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_worker_thread_threw_exception = { "WorkerThreadThrewException", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_internal_error = { "InternalError", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_os_error = { "OSError", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_overlay_not_attached = { "OverlayNotAttached", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_index_error = { "IndexError", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_underflow = { "Underflow", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_invalid_iterator = { "InvalidIterator", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_not_implemented = { "NotImplemented", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_pattern_error = { "PatternError", &hlt_exception_unspecified, 0 };
+
+hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, &hlt_type_info_int_32 };
 
 hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)
@@ -69,7 +71,7 @@ static void __exception_print(const char* prefix, hlt_exception* exception)
     fprintf(stderr, "%s%s", prefix, exception->type->name);
     
     if ( exception->arg ) {
-        hlt_string arg = hlt_string_from_object(exception->type->argtype, exception->arg, &excpt);
+        hlt_string arg = hlt_string_from_object(exception->type->argtype, &exception->arg, &excpt);
         fprintf(stderr, " with argument ");
         __hlt_string_print(stderr, arg, 0, &excpt);
     }
@@ -83,18 +85,21 @@ static void __exception_print(const char* prefix, hlt_exception* exception)
     fprintf(stderr, "\n");
 }
 
-// Reports a caught exception.
 void hlt_exception_print(hlt_exception* exception) 
 {
     __exception_print("", exception);
 }
 
-// Reports an uncaught exception.
 void hlt_exception_print_uncaught(hlt_exception* exception) 
 {
     __exception_print("hilti: uncaught exception, ", exception);
 }
 
+void __hlt_exception_print_uncaught_abort(hlt_exception* exception) 
+{
+    __exception_print("hilti: uncaught exception, ", exception);
+    abort();
+}
 
 void __hlt_exception_save_frame(hlt_exception* excpt, void* frame)
 {

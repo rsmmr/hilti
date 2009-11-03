@@ -51,7 +51,7 @@ class CodeGen(visitor.Visitor):
         self._block = None         # Current block.
         self._func_counter = 0     # Counter to generate unique function names.
         self._label_counter = 0    # Counter to generate unique labels.
-        self._const_counter = 0    # Counter to generate unique constant names.
+        self._glob_counter = 0    # Counter to generate unique constant names.
         
         self._llvm = _llvm_data()
         self._llvm.module = None   # Current LLVM module.
@@ -59,6 +59,7 @@ class CodeGen(visitor.Visitor):
         self._llvm.frameptr = None # Frame pointer for current LLVM function.
         self._llvm.builders = []   # Stack of llvm.core.Builders
         self._llvm.global_ctors = [] # List of registered ctors to run a startup.
+        self._llvm.excptypes = {}     # Exception types.
 
         # Cache some LLVM types.
          
@@ -206,7 +207,7 @@ class CodeGen(visitor.Visitor):
             
         # Cannot be reached
         assert False
-            
+        
     def nameFunctionForBlock(self, block):
     	"""Returns the internal LLVM name for the block's function. The
         compiler turns all blocks into functions, and this method returns the
@@ -244,20 +245,20 @@ class CodeGen(visitor.Visitor):
         else:
             return "l%d" % self._label_counter
         
-    def nameNewConstant(self, postfix=None):
-        """Returns a unique name for global constant. The name is guaranteed
+    def nameNewGlobal(self, postfix=None):
+        """Returns a unique name for global. The name is guaranteed
         to be unique within the :meth:`currentModule``.
         
         postfix: string - If given, the postfix is appended to the generated name.
         
         Returns: string - The unique name.
         """ 
-        self._const_counter += 1
+        self._glob_counter += 1
         
         if postfix:
-            return "c%d-%s" % (self._const_counter, postfix)
+            return "g%d-%s" % (self._glob_counter, postfix)
         else:
-            return "c%d" % self._const_counter
+            return "g%d" % self._glob_counter
     
     def nameNewFunction(self, prefix):
         """Returns a unique name for LLVM functions. The name is guaranteed to
@@ -443,6 +444,9 @@ class CodeGen(visitor.Visitor):
         Returns: llvm.core.Constant.pointer - The pointer to the type
         information.
         """
+        # For decl types, we are interested in the declared type.
+        if isinstance(t, type.TypeDeclType):
+            t = t.declType()
         
         # We special case ref's here, for which we pass the type info of
         # whatever they are pointing at.
@@ -521,7 +525,7 @@ class CodeGen(visitor.Visitor):
             except llvm.LLVMException, e:
                 util.error("LLVM error: %s" % e, fatal=False)
                 return (False, None)
-            
+
         return (True, self._llvm.module)
 
     def llvmCurrentModule(self):
@@ -583,9 +587,6 @@ class CodeGen(visitor.Visitor):
         """Returns the LLVM type representing an exception.
         
         Returns: llvm.core.Type - The type of an exception.
-        
-        Todo: We currently return just a transparent ``void *``. Once we make
-        exceptions accessible from HILTI, we'll need to change that. 
         """
         return self.llvmTypeGenericPointer()
 
@@ -605,6 +606,45 @@ class CodeGen(visitor.Visitor):
         th.type.refine(st)
           
         return  th.type
+
+    def llvmAddExceptionType(self, etype):
+        """Adds a new exception type to the current LLVM module. If the
+        exception type has already been added before, the existing one is
+        returned. 
+        
+        etype: ~~type.Exception - The type of the exception. 
+        
+        Returns: llvm.core.Value - The LLVM value representing the new type
+        object.
+        """
+        
+        if etype.isRootType():
+            # Special-case: the root type is defined externally.
+            return self.llvmGetGlobalConst("hlt_exception_unspecified", self.llvmTypeExceptionType(), ptr=True)
+        
+        name = etype.exceptionName()
+        
+        if name in self._llvm.excptypes:
+            return self._llvm.excptypes[name]
+
+        self._llvm.excptypes[name] = None # Avoid infinite recursion.
+        
+        assert etype.baseClass()
+        
+        lname = self.llvmAddGlobalStringConst(etype.exceptionName(), "excpt-name")
+        if etype.argType():
+            tinfo = self.llvmTypeInfoPtr(etype.argType()).bitcast(self.llvmTypeGenericPointer())
+        else:
+            tinfo = llvm.core.Constant.null(self.llvmTypeGenericPointer())
+        baseval = self.llvmAddExceptionType(etype.baseClass())
+        
+        assert baseval
+        
+        val = llvm.core.Constant.struct([lname, baseval, tinfo])
+        glob = self.llvmAddGlobalConst(val, "exception-type")
+        
+        self._llvm.excptypes[name] = glob
+        return glob
     
     def llvmTypeGenericPointer(self):
         """Returns the LLVM type that we use for representing a generic
@@ -942,6 +982,25 @@ class CodeGen(visitor.Visitor):
         glob.linkage = llvm.core.LINKAGE_EXTERNAL 
         return self.builder().load(glob, name) if not ptr else glob
 
+    def llvmGetGlobalConst(self, name, type, ptr=False):
+        """Generates an LLVM load instruction for reading a global constant.
+        The global can be either defined in the current module, or externally
+        (the latter is assumed if we don't fine the variable locally). The
+        load is built via the current :meth:`builder`.
+        
+        name: string - The internal LLVM name of the global. 
+        
+        type: llvm.core.Type - The LLVM type of the global.
+        
+        ptr: bool - If true, the returned value represents a pointer to the
+        global, rather than the global's value.
+        
+        Returns: llvm.core.Value - The result of the LLVM load instruction. 
+        """
+        glob = self.llvmGetGlobalVar(name, type, ptr)
+        glob.global_constant = True
+        return glob
+    
     # Creates a new function matching the block's frame/result. Additional
     # arguments to the function can be specified by passing (name, type)
     # tuples via addl_args.
@@ -1043,7 +1102,7 @@ class CodeGen(visitor.Visitor):
         
         return rt
         
-    def _llvmMakeArgsForCHiltiCall(self, func, args, arg_types):
+    def _llvmMakeArgsForCHiltiCall(self, func, args, arg_types, excpt_ptr):
         # Turns the arguments into the format used by CC C_HILTI (see there). 
         new_args = []
         for (arg, argty, prototype) in zip(args, arg_types, func.type().args()):
@@ -1063,7 +1122,6 @@ class CodeGen(visitor.Visitor):
                 new_args += [arg]
             
         # Add exception argument.
-        excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
         new_args += [excpt_ptr]
         return new_args
         
@@ -1125,7 +1183,7 @@ class CodeGen(visitor.Visitor):
             self._llvm.functions[name] = llvmfunc
             return llvmfunc
 
-    def _llvmGenerateExceptionTest(self, excpt_ptr):
+    def _llvmGenerateExceptionTest(self, excpt_ptr, abort_on_except=False):
         # Generates code to check whether a called C-HILTI function has raised
         # an exception.
         excpt = self.builder().load(excpt_ptr)
@@ -1136,13 +1194,20 @@ class CodeGen(visitor.Visitor):
         self.builder().cbranch(raised, block_excpt, block_noexcpt)
     
         self.pushBuilder(block_excpt)
-        self.llvmRaiseException(excpt)
+        
+        if not abort_on_except:
+            self.llvmRaiseException(excpt)
+        else:
+            abort = codegen.llvmCurrentModule().get_function_named("__hlt_exception_print_uncaught_abort")
+            self.builder().call(abort, [excpt])
+            self.builder().unreachable()
+
         self.popBuilder()
     
         # We leave this builder for subseqent code.
         self.pushBuilder(block_noexcpt)
     
-    def llvmGenerateCCall(self, func, args, arg_types=None, llvm_args=False):
+    def llvmGenerateCCall(self, func, args, arg_types=None, llvm_args=False, abort_on_except=False):
         """Generates a call to a C function. The method uses the current
         :meth:`builder`.
         
@@ -1161,6 +1226,12 @@ class CodeGen(visitor.Visitor):
         
         llvm_args: boolean - If true, *args* are expected to be of type
         ``llvm.core.Value``.
+
+        abort_on_except: boolean - If true, the generated code will *abort*
+        execution if an exception is thrown by the called function. In this
+        case, the code does not need access to a HILTI function's frame and be
+        used inside functions that don't follow normal calling conventions (in
+        particular in code generated via ~~llvmAddGlobalCtor).
         
         Returns: llvm.core.Value - A value representing the function's return
         value. 
@@ -1175,8 +1246,18 @@ class CodeGen(visitor.Visitor):
         else:
             assert arg_types
         
+        if not abort_on_except:
+            excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
+        else:
+            # Create a local to store the exception information so that we don't
+            # need a function frame. 
+            excpt_ptr = codegen.llvmAlloca(codegen.llvmTypeExceptionPtr())
+            excpt_ptr = codegen.builder().bitcast(excpt_ptr, llvm.core.Type.pointer(codegen.llvmTypeGenericPointer()))
+            zero = self.llvmConstNoException()
+            self.llvmInit(zero, excpt_ptr)
+            
         if func.callingConvention() == function.CallingConvention.C_HILTI:
-            args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types)
+            args = self._llvmMakeArgsForCHiltiCall(func, args, arg_types, excpt_ptr)
             
         if llvm_func.hidden_return_arg:
             hidden_return_arg = self.llvmAlloca(llvm_func.hidden_return_arg, "agg.tmp")
@@ -1208,14 +1289,12 @@ class CodeGen(visitor.Visitor):
                 result = self.builder().load(tmp)
                 
         call.calling_convention = llvm.core.CC_C
-        
+
         if func.callingConvention() == function.CallingConvention.C_HILTI:
-            excpt_ptr = self.llvmAddrException(self.llvmCurrentFramePtr())
-            self._llvmGenerateExceptionTest(excpt_ptr)
-            
+            self._llvmGenerateExceptionTest(excpt_ptr, abort_on_except)
         return result
 
-    def llvmGenerateCCallByName(self, name, args, arg_types = None, llvm_args=False):
+    def llvmGenerateCCallByName(self, name, args, arg_types = None, llvm_args=False, abort_on_except=False):
         """Generates a call to a C function given by it's name. The method
         uses the current :meth:`builder`.
         
@@ -1238,6 +1317,12 @@ class CodeGen(visitor.Visitor):
         llvm_args: boolean - If true, *args* are expected to be of type
         ``llvm.core.Value``.
         
+        abort_on_except: boolean - If true, the generated code will *abort*
+        execution if an exception is thrown by the called function. In this
+        case, the code does not need access to a HILTI function's frame and be
+        used inside functions that don't follow normal calling conventions (in
+        particular in code generated via ~~llvmAddGlobalCtor).
+        
         Returns: llvm.core.Value - A value representing the function's return
         value. 
         
@@ -1248,7 +1333,7 @@ class CodeGen(visitor.Visitor):
         if not func or not isinstance(func, function.Function):
             util.internal_error("llvmGenerateCCallByName: %s is not a known function" % name)
             
-        return self.llvmGenerateCCall(func, args, arg_types, llvm_args)
+        return self.llvmGenerateCCall(func, args, arg_types, llvm_args, abort_on_except)
         
     def llvmGenerateCStub(self, func):
         """Generates a C stub for a function. The stub function will be an
@@ -1514,7 +1599,34 @@ class CodeGen(visitor.Visitor):
         self.llvmInit(exception, addr)
         
         self.llvmGenerateTailCallToFunctionPtr(ptr, [frame])
-    
+        
+    def _llvmNewException(self, etype, arg, location):
+        if not arg:
+            arg = llvm.core.Constant.null(self.llvmTypeGenericPointer())
+            
+        exception_new = codegen.llvmCurrentModule().get_function_named("__hlt_exception_new")
+        arg = self.builder().bitcast(arg, self.llvmTypeGenericPointer())
+        location = self.llvmAddGlobalStringConst(str(location), "excpt")
+        
+        return self.builder().call(exception_new, [etype, arg, location])
+        
+    def llvmNewException(self, type, arg, location):
+        """Creates a new exception object. The method uses the current
+        :meth:`builder`.
+        
+	    type: type.Exception - The type of the exception to create.
+        
+        arg: llvm.core.Value - The exception argument if exception takes one,
+        or None otherwise. 
+        
+        location: Location - A location to associate with the exception.
+        
+        Returns: llvm.core.Value - The new exception object.
+        """
+        assert (type.argType() and arg) or (not type.argType() and not arg)
+        etype = codegen.llvmAddExceptionType(type)
+        return self._llvmNewException(etype, arg, location)
+        
     def llvmRaiseExceptionByName(self, exception, location):
         """Generates the raising of an exception given by name. The method
         uses the current :meth:`builder`.
@@ -1523,13 +1635,9 @@ class CodeGen(visitor.Visitor):
         representing the exception *type* to raise. These names are defined in 
         |hilti.h|.
         """
-        
-        exception = self.llvmGetGlobalVar(exception, self.llvmTypeExceptionType(), ptr=True)
-        exception_new = codegen.llvmCurrentModule().get_function_named("__hlt_exception_new")
-        location = self.llvmAddGlobalStringConst(str(location), "excpt")
-        # FIXME: Add support for arguments once we need it.
-        arg = llvm.core.Constant.null(self.llvmTypeGenericPointer())
-        excpt = self.builder().call(exception_new, [exception, arg, location])
+        etype = self.llvmGetGlobalVar(exception, self.llvmTypeExceptionType(), ptr=True)
+        # FIXME: Add support for arguments once needed.
+        excpt = self._llvmNewException(etype, None, location)
         self.llvmRaiseException(excpt)
         
     # Generates LLVM tail call code. From the LLVM 1.5 release notes:
@@ -1704,6 +1812,23 @@ class CodeGen(visitor.Visitor):
         
         util.internal_error("llvmStoreTupleInTarget: unknown target class: %s" % target)
 
+    def llvmAddGlobalVar(self, value, tag):
+        """Adds a global variable to the current module. The variable is
+        initialized with the given value, and will have only internal linkage.
+        
+        value: llvm.core.Value - The value to initialize the variable with.
+        tag: string - A tag which will be added the variable's name for easier
+        identification in the generated bitcode.
+        
+        Return: llvm.core.Value - A value representing the new variable.
+        """
+        name = self.nameNewGlobal(tag)
+        glob = codegen.llvmCurrentModule().add_global_variable(value.type, name)
+        glob.initializer = value
+        glob.linkage = llvm.core.LINKAGE_INTERNAL
+        return glob
+        
+        
     def llvmAddGlobalConst(self, value, tag):
         """Adds a global constant to the current module. The constant is
         initialized with the given value, and will have only internal linkage.
@@ -1714,11 +1839,8 @@ class CodeGen(visitor.Visitor):
         
         Return: llvm.core.Value - A value representing the new constant.
         """
-        name = self.nameNewConstant(tag)
-        glob = codegen.llvmCurrentModule().add_global_variable(value.type, name)
+        glob = self.llvmAddGlobalVar(value, tag)
         glob.global_constant = True
-        glob.initializer = value
-        glob.linkage = llvm.core.LINKAGE_INTERNAL
         return glob
     
     def llvmAddGlobalStringConst(self, s, tag): 
@@ -1780,10 +1902,19 @@ class CodeGen(visitor.Visitor):
         funct = llvm.core.Type.function(llvm.core.Type.void(), [])
         function = llvm.core.Function.new(self.llvmCurrentModule(), funct, self.nameNewFunction("ctor"))
         block = function.append_basic_block("")
+        
+        # Need to create a new list to save the old builders here.
+        save_builders = [b for b in self._llvm.builders]
+        save_current_func = self._llvm.func
+        self._llvm.func = function
+        
         self.pushBuilder(block)
         callback()
         self.builder().ret_void()
+        
         self.popBuilder()
+        self._llvm.func = save_current_func
+        self._llvm.builders = save_builders
         
         self._llvm.global_ctors += [function]
         
@@ -1937,15 +2068,23 @@ class CodeGen(visitor.Visitor):
 
         assert (not refine_to) or (refine_to == op.type())
         
-        type = op.type()
+        t = op.type()
         
         if isinstance(op, instruction.ConstOperand):
-            val = self._callCallback(CodeGen._CB_CTOR_EXPR, type, [op, refine_to])
+            val = self._callCallback(CodeGen._CB_CTOR_EXPR, t, [op, refine_to])
+            
+            # For references, constants are in fact a pointer to the const so we
+            # need an additional dereference. See, e.g., regexp.llvmCtorExpr.
+            # op.value() is None for the Null reference, which must not
+            # reference.
+            if isinstance(t, type.Reference) and op.value() != None:
+                val = self.builder().load(val, "const-deref")
+                
             val._value = op.value()  # Used in llvmUnpack()
             return val
         
         if isinstance(op, instruction.TupleOperand):
-            return self._callCallback(CodeGen._CB_CTOR_EXPR, type, [op, refine_to])
+            return self._callCallback(CodeGen._CB_CTOR_EXPR, t, [op, refine_to])
 
         if isinstance(op, instruction.IDOperand):
             i = op.id()
@@ -1954,7 +2093,30 @@ class CodeGen(visitor.Visitor):
                 addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.name())
                 return self.builder().load(addr, "op")
 
-            util.internal_error("llvmOp: unsupported ID operand type %s" % type)
+            if i.role() == id.Role.CONST:
+                # A global constant. 
+                init = self.currentModule().lookupIDVal(i)
+                # If init is an LLVM value, it represents the constant that
+                # we already have created previously.
+                if isinstance(init, llvm.core.Value):
+                    return self.builder().load(init, "const")
+
+                # Create the constant.
+                assert init and isinstance(init, instruction.ConstOperand)
+                val = self._callCallback(CodeGen._CB_CTOR_EXPR, t, [init, t])
+                const = self.llvmAddGlobalConst(val, i.name())
+
+                # Again, for references, constants are in fact a pointer to
+                # the const. Note that we can't use llvmOp() recursively here
+                # because the LLVM constant must have a const initializer.
+                if isinstance(t, type.Reference):
+                    const = self.builder().load(const, "const-deref")
+                
+                self.currentModule().addID(i, const) # Save the value for later. 
+                
+                return self.builder().load(const, "const")
+            
+            util.internal_error("llvmOp: unsupported ID operand type %s" % t)
             
         if isinstance(op, instruction.TypeOperand):
             return self.llvmTypeInfoPtr(op.value())

@@ -102,6 +102,7 @@ extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t 
 extern void __hlt_exception_save_frame(hlt_exception* excpt, void* frame);
 extern void* __hlt_exception_restore_frame(hlt_exception* excpt);
 extern hlt_continuation* __hlt_exception_get_continuation(hlt_exception* excpt);
+extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception); 
 
 extern void hlt_exception_print(hlt_exception* exception); 
 extern void hlt_exception_print_uncaught(hlt_exception* exception); 

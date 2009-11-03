@@ -52,7 +52,8 @@ class Module(ast.Node):
     def addID(self, id, value = True):
         """Adds an ID to the module's scope. An arbitrary value can be
         associated with each ~~ID. If there's no specific value that needs to
-        be stored, just use the default of *True*.
+        be stored, just use the default of *True*. If the ID already exists,
+        the old entry is replace with the new one. 
         
         An ~~ID defined elsewhere can be imported into a module by adding it
         with a scope of that other module. In this case, subsequent lookups

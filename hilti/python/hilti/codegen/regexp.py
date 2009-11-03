@@ -21,6 +21,47 @@ def _(type):
 def _(type, refine_to):
     return codegen.llvmTypeGenericPointer()
 
+@codegen.llvmCtorExpr(type.RegExp)
+def _(op, refine_to):
+    # We create a global that keeps the regular expressions.  Note that the
+    # global needs to be dynamically intialized via an LLVM ctor. 
+    ptr = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
+    const = codegen.llvmAddGlobalVar(ptr, "regexp-const")
+
+    def callback():
+        regexp = codegen.llvmGenerateCCallByName("hlt::regexp_new", [], abort_on_except=True)
+        ref_type = type.Reference([type.RegExp()])
+
+        if len(op.value()) == 1:
+            # Just one pattern. We use regexp_compile().
+            arg = instruction.ConstOperand(constant.Constant(op.value()[0], type.String()))
+            codegen.llvmGenerateCCallByName("hlt::regexp_compile", [regexp, codegen.llvmOp(arg)], 
+                                            arg_types = [ref_type, type.String()], 
+                                            llvm_args=True, abort_on_except=True)
+            
+        else:
+            # More than one pattern. We built a list of the patterns and the
+            # call compile_set. 
+            item_type = type.String()
+            list_type = type.Reference([type.List([item_type])])
+            
+            list = codegen.llvmGenerateCCallByName("hlt::list_new", [instruction.TypeOperand(item_type)], abort_on_except=True)
+            
+            for pat in op.value():
+                item = instruction.ConstOperand(constant.Constant(pat, item_type))
+                codegen.llvmGenerateCCallByName("hlt::list_push_back", [list, codegen.llvmOp(item)], 
+                                                arg_types=[list_type, item_type], llvm_args=True, abort_on_except=True)
+
+            codegen.llvmGenerateCCallByName("hlt::regexp_compile_set", [regexp, list], 
+                                            arg_types = [ref_type, list_type], 
+                                            llvm_args=True, abort_on_except=True)
+            
+        codegen.llvmAssign(regexp, const)
+
+    codegen.llvmAddGlobalCtor(callback)
+    
+    return const
+
 @codegen.operator(instructions.regexp.New)
 def _(self, i):
     result = self.llvmGenerateCCallByName("hlt::regexp_new", [])

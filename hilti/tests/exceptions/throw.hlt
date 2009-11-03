@@ -1,0 +1,64 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+exception myException
+
+void run() {
+
+     call Hilti::print ("A")
+     
+     local ref<myException> e
+     e = new myException
+     exception.throw e
+     
+     call Hilti::print ("B")
+}     
+
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+exception myException(string)
+
+void run() {
+
+     call Hilti::print ("A")
+     
+     local ref<myException> e
+     e = new myException "hallo"
+     exception.throw e
+     
+     call Hilti::print ("B")
+}     
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+exception myException(string)
+exception myException2(string) : myException
+
+void run() {
+
+     call Hilti::print ("A")
+     
+     local ref<myException2> e
+     e = new myException2 "hallo"
+     exception.throw e
+     
+     call Hilti::print ("B")
+}     
+
+

@@ -15,6 +15,7 @@ import operators
 import checker
 import module
 import integer
+import exception
 
 def checkAST(ast):
     """Verifies the semantic correctness of the |ast| *ast*. If any

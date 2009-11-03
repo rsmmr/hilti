@@ -1,4 +1,4 @@
-# $Id$
+# $Id$byt
 #
 # Code generator for string instructions.
 
@@ -21,16 +21,12 @@ def _makeLLVMString(s):
     size = llvm.core.Constant.int(llvm.core.Type.int(32), len(s))
     bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in s]
     struct = llvm.core.Constant.packed_struct([size, llvm.core.Constant.array(llvm.core.Type.int(8), bytes)])
-        
-    name = codegen.nameNewConstant("string")
-    glob = codegen.llvmCurrentModule().add_global_variable(_llvmStringType(len(s)), name)
-    glob.global_constant = True
-    glob.initializer = struct
-    glob.linkage = llvm.core.LINKAGE_INTERNAL
+
+    glob = codegen.llvmAddGlobalConst(struct, "string")
         
     # We need to cast the const, which has a specific array length, to the
     # actual string type, which has unspecified array length. 
-    return codegen.builder().bitcast(glob, _llvmStringTypePtr(), name)
+    return codegen.builder().bitcast(glob, _llvmStringTypePtr())
 
 @codegen.typeInfo(type.String)
 def _(type):

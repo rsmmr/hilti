@@ -293,7 +293,7 @@ class Container(HeapType):
         t = args[0]
         
         if not isinstance(t, ValueType):
-            raise HiltiType.ParameterMismatch(t, "vector type must be a value type")
+            raise HiltiType.ParameterMismatch(t, "container type must be a value type")
         
         self._type = t
         
@@ -945,15 +945,61 @@ class Unknown(OperandType):
 class Exception(HeapType):
     """Type for ``exception``. 
     
-    Note: Currently, this is an internal type that cannot directly be created
-    by an HILTI program.
+    ename: string - The name of the exception type. 
+    
+    argtype: type.ValueType - The type of the optional exception argument, or None if no
+    argument. If *baseclass* is specified and *baseclass* has an argument,
+    *argtype* must match that one. 
+    
+    baseclass: type.Exception - The base exception class this one is derived
+    from, or None if it should be derived from the built-in top-level
+    ``Hilti::Exception`` class. 
     """
-    def __init__(self):
+    def __init__(self, ename, argtype, baseclass):
+        name = "exception %s (%s) : %s" % (ename, argtype, str(baseclass) if baseclass else "Hilti::Exception")
         super(Exception, self).__init__([], Exception._name)
+        self._ename = ename
+        self._argtype = argtype
+        self._baseclass = baseclass
 
+    def exceptionName(self):
+        """Return the name of the exception type."""
+        return self._ename
+        
+    def argType(self):
+        """Returns the type of the exception's argument.
+        
+        Returns: Type - The type, or None if no argument.
+        """
+        return self._argtype
+    
+    def baseClass(self):
+        """Returns the type of the exception's base class.
+        
+        Returns: type.Exception - The type of the base class.
+        """
+        return self._baseclass if self._baseclass else Exception._root
+    
+    def setBaseClass(self, base):
+        """Set's the type of the exception's base class.
+        
+        base: type.Exception - The type of the base class.
+        """
+        self._baseclass = base
+    
+    def isRootType(self):
+        """Checks whether the exception type represents the top-level root type.
+        
+        Returns: bool - True if *t* is the root exception type. 
+        """
+        return id(self) == id(Exception._root)
+        
     _name = "exception"
     _id = 20
 
+# Special place-holder for the root of all exceptions. 
+Exception._root = Exception("$Root$", None, None)
+    
 class Continuation(HeapType):
     """Type for ``continuation``.
     

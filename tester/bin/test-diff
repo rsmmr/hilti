@@ -47,7 +47,7 @@ if [ -e $TEST_BASELINE/$input ]; then
    fi
 
    echo "== Diff ===============================" >>$TEST_DIAGNOSTICS
-   diff -u $@ $diff1 $diff2 >>$TEST_DIAGNOSTICS
+   diff -au $@ $diff1 $diff2 >>$TEST_DIAGNOSTICS
    result=$?
 else
    echo "== Error===============================" >>$TEST_DIAGNOSTICS

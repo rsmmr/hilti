@@ -16,7 +16,7 @@ the infrastructure to check them on a type-specific basis. Need to add that.
 from hilti.core.instruction import *
 from hilti.core.constraints import *
 
-@operator("new", op1=isType(heapType), target=referenceOfOp(1))
+@operator("new", op1=isType(heapType), op2=optional(any), target=referenceOfOp(1))
 class New(Operator):
     """
     Allocates a new instance of type *op1*.

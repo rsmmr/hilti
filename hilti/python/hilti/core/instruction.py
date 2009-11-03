@@ -365,12 +365,14 @@ _Instructions = {}
 _OverloadedOperators = {}
 
 def getInstructions():
-    """Returns a list of instructions. More precisely, the function returns a
-    list of all classes decorated with either ~~Instruction or ~~operator;
+    """Returns a dictionary of instructions. More precisely, the function
+    returns all classes decorated with either ~~Instruction or ~~operator;
     these classes will be all be derived from ~~Instruction and represent a
     complete enumeration of all instructions provided by the HILTI language.
+    The dictionary is indexed by the instruction name and maps the name to the
+    ~~Instruction instance.
     
-    Returns: list of ~~Instruction-derived classes - The list of all
+    Returns: dictionary of ~~Instruction-derived classes - The list of all
     instructions.
     """
     return _Instructions

@@ -36,6 +36,8 @@ keywords = {
     "at": "AT",
     "after": "AFTER",
     "with": "WITH",
+    "const": "CONST",
+    "exception": "EXCEPTION",
     
     "default": "ATTR_DEFAULT"
     }
@@ -71,11 +73,14 @@ tokens = (
    'NET',
    'PORT',
    'BITSET',
+   'CONST',
+   'REGEXP',
+   'EXCEPTION',
    
    'ATTR_DEFAULT'
 ) 
 
-literals = ['(',')','{','}', '<', '>', '=', ',', ':', '*' ]
+literals = ['[', ']', '(',')','{','}', '<', '>', '=', ',', ':', '*', '|' ]
 
 states = (
    # In nolines mode, newlines are ignored. Per default, they are passed on as token NL.
@@ -131,6 +136,11 @@ def t_ADDR6(t): # must come before DOUBLE.
         t.type = "NET"
         t.value = (addr[0], addr[1], len)
         
+    return t
+
+def t_REGEXP(t):
+    '/([^\n/]|\\\\/)*/'
+    t.value = t.value[1:-1]    
     return t
 
 def t_PORT(t):

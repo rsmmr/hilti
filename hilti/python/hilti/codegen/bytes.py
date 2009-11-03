@@ -68,7 +68,7 @@ def _(op, refine_to):
     array = llvm.core.Constant.array(llvm.core.Type.int(8), array)
     
     data = codegen.llvmAddGlobalConst(array, "bytes-data")
-    bytes = codegen.llvmAddGlobalConst(llvm.core.Constant.null(_llvmBytesType()), "bytes")
+    bytes = codegen.llvmAddGlobalVar(llvm.core.Constant.null(_llvmBytesType()), "bytes")
 
     def callback():
         builder = codegen.builder()
@@ -77,13 +77,11 @@ def _(op, refine_to):
         exception = codegen.builder().bitcast(exception, llvm.core.Type.pointer(codegen.llvmTypeGenericPointer()))
         datac = builder.bitcast(data, codegen.llvmTypeGenericPointer())
         newobj = builder.call(bytes_new_from_data, [datac, codegen.llvmConstInt(size, 32), exception])
-        # FIXME: What do we do if this guy raises an exception?
-        # Just ignore it for now ...
         codegen.llvmAssign(newobj, bytes)
 
     codegen.llvmAddGlobalCtor(callback)
     
-    return codegen.builder().load(bytes)
+    return bytes
     
 @codegen.operator(instructions.bytes.New)
 def _(self, i):

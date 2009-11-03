@@ -16,6 +16,10 @@ class Resolver(visitor.Visitor):
       to a ~~TypeDeclType, it's turned into a ~~TypeOperand. If an ~~IDOperand
       refers to an ~~Enum or ~~Bitset label, it's turned into a ConstOperand.
 
+    - Resolves the base classes of exception types. The parser intially sets
+      all base classes to a string with the name of the exception. The
+      resolvers looks up the ID and resets it to be the type itself. 
+
     - If a function ~~Call is lacking arguments but the called
       function's type provides defaults, we add corresponding
       ConstOperands to the call's parameter tuple.
@@ -424,7 +428,21 @@ class Resolver(visitor.Visitor):
                 if isinstance(f.arg.type(), type.Tuple):
                     self._adaptIntValues([(op, op.type(), None) for op in f.arg.value()])
                     f.arg.setTuple(f.arg.value()) # update types
-       
+
+    def resolveExceptionBase(self, t, ident):
+        base = t.baseClass()
+        
+        if not base or isinstance(base, type.HiltiType):
+            # Already resolved (or not set). 
+            return
+        
+        baseid = self._module.lookupID(base)
+        if not baseid:
+            self.error("unknow ID %s" % base, ident)
+            return
+            
+        t.setBaseClass(baseid.type().declType())
+                    
 resolver = Resolver()
 
 ##################################################################################
@@ -450,6 +468,9 @@ def _(self, id):
     t = id.type().declType()
     if isinstance(t, type.Overlay):
         self.resolveOverlayFields(t, id)
+        
+    if isinstance(t, type.Exception):
+        self.resolveExceptionBase(t, id)
     
 @resolver.when(instruction.Instruction)
 def _(self, i):

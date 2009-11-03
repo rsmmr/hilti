@@ -1,0 +1,6 @@
+wrong-inherit.hlt:7: error, loop in exception inheritance
+wrong-inherit.hlt:6: error, loop in exception inheritance
+wrong-inherit.hlt:8: error, loop in exception inheritance
+wrong-inherit.hlt:9: error, loop in exception inheritance
+
+4 errors found

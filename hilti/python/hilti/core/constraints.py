@@ -362,6 +362,7 @@ list =  _hasType(type.List)
 iteratorList =  _hasType(type.IteratorList)
 regexp =  _hasType(type.RegExp)
 bitset =  _hasType(type.Bitset)
+exception =  _hasType(type.Exception)
 
 function = _hasType(type.Function)
 label = _hasType(type.Label)

@@ -6,8 +6,7 @@ from hilti.instructions import flow
 from hilti.core import *
 from checker import checker
 
-@checker.when(instruction.Operator)
-def _(self, i):
+def _checkOverloadedOperator(i):
     ops = instruction.findOverloadedOperator(i)
     
     if len(ops) == 0:
@@ -18,5 +17,9 @@ def _(self, i):
         
         for o in ops:
             checker.error(i, "%s" % o._signature, indent=True)
+
+@checker.when(instruction.Operator)
+def _(self, i):
+    _checkOverloadedOperator(i)
         
 

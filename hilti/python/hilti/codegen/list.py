@@ -39,6 +39,36 @@ def _(type):
     # Must match with what the C implementation expects as end() marker.
     return llvm.core.Constant.struct([llvm.core.Constant.null(codegen.llvmTypeGenericPointer())] * 2)
 
+import sys
+
+@codegen.llvmCtorExpr(type.List)
+def _(op, refine_to):
+    # We create a global that keeps the list.  Note that the global needs to be
+    # dynamically intialized via an LLVM ctor. 
+    ptr = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
+    const = codegen.llvmAddGlobalVar(ptr, "list-const")
+
+    def callback():
+        # FIXME: We can't handle empty list yet because we don't have type
+        # information. 
+        assert len(op.value()) > 0
+        
+        item_type = op.value()[0].type()
+        list_type = type.List([item_type])
+        
+        list = codegen.llvmGenerateCCallByName("hlt::list_new", [instruction.TypeOperand(item_type)], abort_on_except=True)
+        
+        for o in op.value():
+            codegen.llvmGenerateCCallByName("hlt::list_push_back", [list, codegen.llvmOp(o)], 
+                                            arg_types=[type.Reference([list_type]), item_type], 
+                                            llvm_args=True, abort_on_except=True)
+                
+        codegen.llvmAssign(list, const)
+
+    codegen.llvmAddGlobalCtor(callback)
+    
+    return const
+
 @codegen.operator(instructions.list.New)
 def _(self, i):
     t = instruction.TypeOperand(i.op1().value().itemType())

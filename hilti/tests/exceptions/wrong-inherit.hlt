@@ -1,0 +1,65 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC:      test-diff output
+
+module Main
+
+import Hilti
+
+exception A(string)
+exception C : A
+
+void run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+exception A(string)
+exception B(bool) : A
+
+void run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+exception A : A
+
+void run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+exception A : B
+exception B : A
+
+void run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+exception A : B
+exception B : C
+exception C : D
+exception D : A
+
+void run() {
+}
+
+

@@ -125,3 +125,4 @@ class Yield(Instruction):
     Todo: Unify this with ``thread.yield``
     """
     pass
+
