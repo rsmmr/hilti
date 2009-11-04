@@ -117,12 +117,12 @@ class Literal(Terminal):
         super(Literal, self).__init__(literal.type(), name)
         self._literal = literal
 
-    def terminal(self):
-        """Returns the type of the terminal.
+    def literal(self):
+        """Returns the literal.
         
-        Returns: ~~Constant - The terminal.
+        Returns: ~~Constant - The literal.
         """
-        return self._terminal
+        return self._literal
 
     def _fmtDerived(self):
         return "literal('%s')" % self._literal
@@ -244,7 +244,13 @@ class Alternative(NonTerminal):
 
     
 class Grammar:
-    def __init__(self, root):
+    def __init__(self, name, root):
+        """Instantiates a grammar given its root production.
+        
+        name: string - A name which uniquely identifies this grammar.
+        root: Production - The grammar's root production.
+        """
+        self._name = name
         self._start = root._tag
         self._terms = {}
         self._prods = {}
@@ -258,7 +264,22 @@ class Grammar:
         #self._simplify()
         self._computeTables()
 
+    def name(self):
+        """Returns the name of the grammar. The name uniquely identifies the
+        grammar. 
+        
+        Returns: string - The name.
+        """
+        return self._name
+        
     def check(self):
+        """Checks the grammar for ambiguity. From an ambigious grammar, no
+        parser can be generated.
+        
+        Returns: string or None - If the return valuue is None, the grammar is
+        fine; otherwise the returned string contains a descriptions of the
+        ambiguities encountered, suitable for inclusion in an error message.
+        """
         
         def _loc(sym):
             try:
@@ -284,7 +305,43 @@ class Grammar:
                 msg += "%s: a variable must be the only option\n" % _loc(sym)
                 
         return msg if msg != "" else None
-                    
+
+    def parseTable(self):
+        """Returns the grammar's parse table. The parse table has the form of
+        a two-level dictionary. The first level is indexed by the LHS tag, and
+        yield a second-level dictionary describing the alternatives we have
+        when deriving a LHS. The alternative dictionary is indexed by the
+        look-ahead symbol and yields the RHS as a list of (a) ~~Terminal
+        instances for terminals, and (b) strings for non-terminals where the
+        string is the LHS tag of the production to follow (the tag can be
+        recursively used as the next index into the parse table). 
+          
+        The grammar must not be ambigious; if it is, this function will abort.
+        Use ~~check to make sure the grammar is ok.
+        
+        Returns: dictionary - The dictionary as described above.
+        
+        Note: The dictionary returned by this function is different from the
+        internal representation, which can map a look-ahead to multiple RHSs.
+        In that case the grammar is ambigious though and will be flagged by
+        ~~check.
+        """
+        assert not self.check()
+        
+        ptab = {}
+        for (lhs, lookaheads) in self._parser.items():
+            ptab[lhs] = dict([(sym, rhss[0]) for (sym, rhss) in lookaheads.values()])
+
+        return ptab
+
+    def startSymbol(self):
+        """Returns the LHS symbol of the starting production. The tag can be
+        used as index into the dictionary returned by ~~parseTable.
+        
+        Returns: string - The starting symbol.
+        """
+        return self._start
+    
     @staticmethod
     def _isTerminal(p):
         return isinstance(p, Terminal)
@@ -489,9 +546,9 @@ class Grammar:
                         _addla(lookahead, term, rhs)
                          
             self._parser[tag] = lookahead
-                    
+        
     def __str__(self):
-        s = ""
+        s = "Grammar '%s'\n" % self._name
         for (tag, alts) in self._prods.items():
             for a in alts:
                 start = "(*)" if tag == self._start else""
@@ -575,7 +632,7 @@ if __name__ == "__main__":
     aA.addProduction(a)
     aA.addProduction(A)
 
-    g1 = Grammar(S)
+    g1 = Grammar("Grammar1", S)
     print str(g1)
     
     error = g1.check()
@@ -609,7 +666,7 @@ if __name__ == "__main__":
     Fs.addProduction(Epsilon)
 
     root = Sequence([S,hs], sym="Start")
-    g2 = Grammar(root)
+    g2 = Grammar("Grammar2", root)
     
     print str(g2)
     
@@ -634,7 +691,7 @@ if __name__ == "__main__":
     list1.addProduction(list2)
     
     all = Alternative([list2, nl], sym="All")
-    g3 = Grammar(all)
+    g3 = Grammar("Grammar3", all)
     
     print str(g3)
     

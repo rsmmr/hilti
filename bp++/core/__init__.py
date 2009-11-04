@@ -1,3 +1,3 @@
 # $Id$
 
-__all__ = ["type", "grammar", "expr", "operators"]
+__all__ = ["type", "grammar", "expr", "operators", "pgen"]

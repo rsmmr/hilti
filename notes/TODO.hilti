@@ -31,6 +31,14 @@ Infrastructure
 
 - We can't type-check the additional (optional) argument of the @unpack yet. 
 
+- We don't ensure that instruction modyfing an arguments only get
+  a non-constants.
+  
+- The list ctor doesn't work for integers yet because we can't infer
+  the integer width. Need to add some heuristics to the
+  canonacalizer just as for integer tuples. Liekwise, the list ctor
+  can't create empty lists because we can't infer type information.
+
 Optimizations
 =============
 
@@ -88,6 +96,10 @@ instread.
 
 - libhilti's TRE is currently not linked statically into libhilti.
 Need to figure out how to compile it with llvm-gcc.
+
+- The varioys type ctros that take only one argument should be
+changed to accept it as a non-list (e.g., type.List(t) instead of
+type.List([t]). Note that we need to support both variants though.
 
 Documentation
 =============
