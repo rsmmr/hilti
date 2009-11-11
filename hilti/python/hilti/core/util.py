@@ -107,15 +107,18 @@ def expand_escapes(str, unicode=True):
     \\xXX          8-bit hex value          (r)
     ============   ============================
     
-    str: string - The string to expand.  unicode: bool - If true, a
-    Unicode string is returned and the escape sequences marked as
-    ``(u)`` are supported. If false, a raw byte string is returned
-    and the escape sequences marked as ``(r)`` are supported.
+    str: string - The string to expand.  
+    unicode: bool - If true, a Unicode string is returned and the escape
+    sequences marked as ``(u)`` are supported. If false, a raw byte string is
+    returned and the escape sequences marked as ``(r)`` are supported.
     
     Returns: unicode - A unicode string with escape sequences expanded.
     
     Raises: ValueError - Raised when an illegal sequence was found. 
     """
+    
+    if unicode:
+        str = str.decode("utf-8")
     
     if unicode:
         result = u""

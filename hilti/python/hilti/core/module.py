@@ -5,6 +5,7 @@ import id as idmod
 import location
 import type
 import visitor
+import id
 
 import sys
 
@@ -26,6 +27,7 @@ class Module(ast.Node):
         self._name = name.lower()
         self._location = location
         self._scope = {}
+        self._imported_modules = [] # Set by the parser.
 
     def name(self):
         """Returns the name of the module. The module's name will have been
@@ -136,17 +138,50 @@ class Module(ast.Node):
         """
         return self._lookupID(id, True)
 
+    def importedModules(self):
+        """Returns the modules which have been imported into this modules
+        namespace. 
+        
+        Returns: list of (module, path) - List of imported modules. ``module``
+        is the name of the module as it specified to be imported, and ``path``
+        is the full path of the file that got imported."""
+        return self._imported_modules
+    
     def __str__(self):
         return "module %s" % self._name
     
     # Visitor support.
-    def visit(self, v):
-        v.visitPre(self)
+    
+    def _visitType(self, v, ids, visited, filter):
         
-        for (id, value) in sorted(self._scope.values()):
+        objs = []
+        
+        for name in ids:
+            if name in visited:
+                continue
+            
+            (id, value) = self._scope[name]
+            if not filter(id):
+                continue
+            
+            objs += [(id, value)]
+            visited += [name]
+
+        for (id, value) in sorted(objs, key=lambda id: id[0].name()):
             v.visit(id)
             if isinstance(value, visitor.Visitable):
                 v.visit(value)
+            
+    def visit(self, v):
+        v.visitPre(self)
+
+        # Sort the ID names so that we get a deterministic order. 
+        ids = sorted(self._scope.keys())
+        
+        visited = []
+        self._visitType(v, ids, visited, lambda i: isinstance(i.type(), type.TypeDeclType))
+        self._visitType(v, ids, visited, lambda i: i.role() == id.Role.CONST)
+        self._visitType(v, ids, visited, lambda i: True) # all the rest.
         
         v.visitPost(self)
         

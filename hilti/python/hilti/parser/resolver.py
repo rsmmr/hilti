@@ -406,8 +406,8 @@ class Resolver(visitor.Visitor):
         
     def resolveOverlayFields(self, t, ident):
         for f in t.fields():
-            if isinstance(f.fmt, str):
-                label = f.fmt
+            if isinstance(f.fmt(), str):
+                label = f.fmt()
                 v = self._module.lookupID(label)
         
                 if not v or not isinstance(v.type(), type.Enum):
@@ -420,14 +420,14 @@ class Resolver(visitor.Visitor):
                     self.error("%s is not a label of type Hilti::Packed" % label, t)
                     continue
                     
-                f.fmt = self._module.lookupIDVal(label)
+                f._fmt = self._module.lookupIDVal(label)
                 
-            if f.arg:
+            if f.arg():
                 # Adapt integer constants' width in tuples. FIXME: We need one
                 # generic, recursive adapt-all-ints-operand function. 
-                if isinstance(f.arg.type(), type.Tuple):
-                    self._adaptIntValues([(op, op.type(), None) for op in f.arg.value()])
-                    f.arg.setTuple(f.arg.value()) # update types
+                if isinstance(f.arg().type(), type.Tuple):
+                    self._adaptIntValues([(op, op.type(), None) for op in f.arg().value()])
+                    f.arg().setTuple(f.arg().value()) # update types
 
     def resolveExceptionBase(self, t, ident):
         base = t.baseClass()
@@ -474,7 +474,6 @@ def _(self, id):
     
 @resolver.when(instruction.Instruction)
 def _(self, i):
-    
     self._debugInstruction(i, "starting on instruction")
     self.resolveInstrOperands(i) # need to do this first
     self._debugInstruction(i, "resolveInstrOperands()")

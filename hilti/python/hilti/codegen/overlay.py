@@ -103,8 +103,8 @@ def _(self, i):
             assert dep > 0
             begin = codegen.llvmExtractValue(ov, dep)
                     
-        arg = self.llvmOp(field.arg) if field.arg else None
-        (val, end) = codegen.llvmUnpack(field.type, begin, None, field.fmt, arg)
+        arg = self.llvmOp(field.arg()) if field.arg() else None
+        (val, end) = codegen.llvmUnpack(field.type(), begin, None, field.fmt(), arg)
         
         if field.depIndex() >= 0:
             ov = codegen.llvmInsertValue(ov, field.depIndex(), end)

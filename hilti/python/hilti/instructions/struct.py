@@ -22,7 +22,7 @@ def _fieldName(ty, op, i):
     if not isinstance(ty, type.String):
         return (False, "index must be string")
 
-    for (id, default) in i.op1().type().refType().Fields():
+    for (id, default) in i.op1().type().refType().fields():
         if op.value() == id.name():
             return (True, "")
     
@@ -30,7 +30,7 @@ def _fieldName(ty, op, i):
 
 @constraint("any")
 def _fieldType(ty, op, i):
-    for (id, default) in i.op1().type().refType().Fields():
+    for (id, default) in i.op1().type().refType().fields():
         if i.op2().value() == id.name():
             if ty == id.type():
                 return (True, "")

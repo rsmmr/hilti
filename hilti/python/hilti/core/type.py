@@ -612,20 +612,57 @@ class Overlay(ValueType):
             format used for unpacked the field. If an ID, then the ID's name
             must be ``Hilti::Packed`` label. The ~~Resolver will turn such IDs
             into the corresponding integer. 
-            
-            Note: Instances of this class will have attributes named after the
-            ctor's arguments, which can be directly accessed.
             """
-            self.name = name
-            self.start = start
-            self.type = type
-            self.fmt = fmt
-            self.arg = arg
+            self._name = name
+            self._start = start
+            self._type = type
+            self._fmt = fmt
+            self._arg = arg
             
             self._deps = []
             self._offset = -1
             self._idx = -1
+
+        def name(self):
+            """Returns the name of the field. 
+        
+            Returns: string - The name of the field.
+            """
+            return self._name
+        
+        def type(self):
+            """Returns the type of the field. 
+        
+            Returns: HiltiType - The type of the field.
+            """
+            return self._type
+
+        def start(self):
+            """Returns the field's start. 
             
+            start: integer or string - If an integer, it is the offset in
+            bytes from the start of the overlay. If it's a string, the string
+            is the name of an another field and the field then assumed 
+            starts right after that one.
+            """
+            return self._start
+
+        def fmt(self):
+            """Returns the format of the field. 
+        
+            Returns: integer - The value corresponds to the internal enum
+            value of the ``Hilti::Packed`` label defining the format used for
+            unpacking the field.
+            """
+            return self._fmt
+
+        def arg(self):
+            """Returns the optional argument of the field. 
+            
+            Returns: instruction.Operand or None - The operand or None if none.
+            """
+            return self._arg
+        
         def offset(self):
             """Returns the constant offset for the field. 
         
@@ -673,26 +710,26 @@ class Overlay(ValueType):
         field: ~~Field - The field to be added.         
         """
 
-        if field.name in self._fields:
-            raise HiltiType.ParameterMismatch(args[0], "field %s already defined" % field.name)
+        if field._name in self._fields:
+            raise HiltiType.ParameterMismatch(args[0], "field %s already defined" % field._name)
         
-        if isinstance(field.start, str):
+        if isinstance(field._start, str):
             # Field depends on another one. 
-            if not field.start in self._fields:
-                raise HiltiType.ParameterMismatch(args[0], "field %s not yet defined" % field.start)
+            if not field._start in self._fields:
+                raise HiltiType.ParameterMismatch(args[0], "field %s not yet defined" % field._start)
 
-            field._deps = self._fields[field.start]._deps + [field.start]
+            field._deps = self._fields[field._start]._deps + [field._start]
             
-            start = self._fields[field.start]
+            start = self._fields[field._start]
             if start._idx == -1:
                 self._idxcnt += 1
                 start._idx = self._idxcnt
             
         else:
             # Field has a constant offset.
-            field._offset = field.start
+            field._offset = field._start
         
-        self._fields[field.name] = field 
+        self._fields[field._name] = field 
 
     def fields(self):
         """Returns a list of all defined fields.
@@ -734,7 +771,7 @@ class Struct(HeapType):
         super(Struct, self).__init__([], name)
         self._ids = fields
     
-    def Fields(self):
+    def fields(self):
         """Returns the struct's fields.
         
         Returns: list of (~~ID, ~~Operand) - The struct's fields, given as

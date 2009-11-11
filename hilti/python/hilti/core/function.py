@@ -233,7 +233,7 @@ class Function(ast.Node):
     # Visitor support.
     def visit(self, visitor):
         visitor.visitPre(self)
-        
+
         for id in self._scope.values():
             id.visit(visitor)
         

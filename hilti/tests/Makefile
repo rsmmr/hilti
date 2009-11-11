@@ -3,20 +3,16 @@
 # Run HILTI tests. 
 #
 
-DIRS = misc core integer double string tuple channel libhilti c-api \
-       bytes ref struct enum threads addr port overlay bool net \
-       vector list debug bitset regexp
-       
 all: test
 
 test:
-	./run-tester $(DIRS)
+	./run-tester
 
 brief:
-	./run-tester $(TESTER_OPT) -b $(DIRS)
+	./run-tester $(TESTER_OPT) -b
     
 brief-debug:
-	./run-tester $(TESTER_OPT) -b -d $(DIRS)
+	./run-tester $(TESTER_OPT) -b -d
 
 update-baseline:
-	./run-tester -U $(DIRS)
+	./run-tester -U

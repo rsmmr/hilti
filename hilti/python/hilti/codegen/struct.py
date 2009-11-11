@@ -17,8 +17,8 @@ are converted recursively per the same rules.
 
 def _llvmStructType(struct):
     # Currently, we support only up to 32 fields.
-    assert len(struct.Fields()) <= 32
-    fields = [llvm.core.Type.int(32)] + [codegen.llvmTypeConvert(id.type()) for (id, default) in struct.Fields()]
+    assert len(struct.fields()) <= 32
+    fields = [llvm.core.Type.int(32)] + [codegen.llvmTypeConvert(id.type()) for (id, default) in struct.fields()]
     return llvm.core.Type.struct(fields)
 
 @codegen.typeInfo(type.Struct)
@@ -45,7 +45,7 @@ def _(self, op):
     zero = codegen.llvmGEPIdx(0)
     mask = 0
     
-    fields = structt.Fields()
+    fields = structt.fields()
     for j in range(len(fields)):
         (id, default) = fields[j]
         if default:
@@ -67,7 +67,7 @@ def _(self, op):
     
 def _getIndex(instr):
     
-    fields = instr.op1().type().refType().Fields()
+    fields = instr.op1().type().refType().fields()
     
     for i in range(len(fields)):
         (id, default) = fields[i]

@@ -2,134 +2,310 @@
 #
 # Overall control structures plus generic instruction printing.
 
+import socket
+import struct
+
+builtin_id = id
+
 from hilti.core import *
 from printer import printer
 
+def _suppressID(id):
+    
+    if not id.location():
+        return False
+    
+    # Don't print any standard IDs defined implicitly by the run-time
+    # environment.
+    if id.location().internal():
+        return True
+
+    # Don't print any IDs from an imported module; we will print out the import
+    # statements instead. 
+    paths = [path for (mod, path) in printer._module.importedModules()]
+    if id.location().file() in path:
+        return True
+
+    return False
+
+def _scopedID(id):
+    if id.scope() and id.scope() != printer._module.name():
+        return "%s::%s" % (id.scope(), id.name())
+    else:
+        return id.name()
+
+def _fmtOp(op):
+    # FIXME: Should we outsource this to a per-type decorator?
+    if isinstance(op, instruction.ConstOperand):
+        c = op.constant()
+
+        if isinstance(c.type(), type.String):
+            return '"%s"' % c.value().encode("utf-8")
+        
+        if isinstance(c.type(), type.Bitset):
+            for (label, val) in c.type().labels().items():
+                if c.value() == val:
+                    return "%s::%s" % (_findTypeName(c.type()), label)
+            assert False
+
+        if isinstance(c.type(), type.Enum):
+            for (label, val) in c.type().labels().items():
+                if c.value() == val:
+                    return "%s::%s" % (_findTypeName(c.type()), label)
+            assert False
+
+        if isinstance(c.type(), type.Reference) and \
+           isinstance(c.type().refType(), type.Bytes):
+            return 'b"%s"' % c.value().encode("string-escape")
+        
+        if isinstance(c.type(), type.Reference) and \
+           isinstance(c.type().refType(), type.RegExp):
+            return " | ".join(["/%s/" % re for re in c.value()])
+
+        if isinstance(c.type(), type.Reference) and c.value() == None:
+            return "Null"
+        
+        if isinstance(c.type(), type.Addr):
+            (b1, b2) = c.value()
+            
+            if b1 == 0 and b2 & 0xffffffff00000000 == 0:
+                # IPv4
+                return socket.inet_ntop(socket.AF_INET, struct.pack("!1L", b2))
+            else:
+                # IPv6
+                return socket.inet_ntop(socket.AF_INET6, struct.pack("!2Q", b1, b2))
+            
+        if isinstance(c.type(), type.Net):
+            (b1, b2, mask) = c.value()
+            
+            if b1 == 0 and b2 & 0xffffffff00000000 == 0:
+                # IPv4
+                return "%s/%d" % (socket.inet_ntop(socket.AF_INET, struct.pack("!1L", b2)), mask - 96)
+            else:
+                # IPv6
+                return "%s/%d" % (socket.inet_ntop(socket.AF_INET6, struct.pack("!2Q", b1, b2)), mask)
+        
+    if isinstance(op, instruction.IDOperand):
+        i = op.value()
+        return _scopedID(i)
+    
+    if isinstance(op, instruction.TypeOperand):
+        return _fmtType(op.value())
+    
+    if isinstance(op, instruction.TupleOperand):
+        return "(%s)" % ", ".join([_fmtOp(o) for o in op.value()])
+        
+    # For the others, the default printing does the trick.
+    return str(op)
+
+def _fmtInsOp(name, op, sig, prefix, postfix):
+    if not op:
+        return ""
+    
+    _printComment(op, name)
+    return "%s%s%s" % (prefix, _fmtOp(op), postfix) 
+
+def _findTypeName(ty):
+    for id in printer._module.IDs():
+        if not isinstance(id.type(), type.TypeDeclType):
+            continue
+
+        if builtin_id(id.type().declType()) == builtin_id(ty):
+            return _scopedID(id)
+        
+    assert False
+
+def _fmtType(ty):
+    
+    # If it's reference, recursively print the reference type.
+    if isinstance(ty, type.Reference):
+        return "ref<%s>" % _fmtType(ty.refType())
+    
+    # Likewise for iterators. 
+    if isinstance(ty, type.Iterator):
+        return "iterator<%s>" % _fmtType(ty.containerType())
+    
+    # See if we find a type declaration for this type in the modules scope. If
+    # so return the name of the type.
+    for id in printer._module.IDs():
+        if not isinstance(id.type(), type.TypeDeclType):
+            continue
+
+        if builtin_id(id.type().declType()) == builtin_id(ty):
+            return _scopedID(id)
+
+    return str(ty)
+
+def _printComment(node, prefix=None):
+    if not node.comment():
+        return
+
+    prefix = "(%s) " if prefix else ""
+    
+    for c in node.comment():
+        printer.output("# %s%s" % (prefix, c))
+        
 @printer.when(module.Module)
 def _(self, m):
     self._module = m
-    self.output("module %s" % m.name())
+    _printComment(m)
+    self.output("\nmodule %s\n" % m.name())
     
-### ID definitions. 
-
-@printer.when(id.ID, type.Function)
-def _(self, f):
-    # Nothing to do for function bindings, there are treated separately via the 
-    # Function visitor below.
-    pass
+    mods = [mod for (mod, path) in printer._module.importedModules()]
+    for mod in mods:
+        if mod == "libhilti.hlt":
+            continue
+        
+        self.output("import %s" % mod)
+        
+    if mods:
+        self.output()
     
 @printer.when(id.ID, type.TypeDeclType)
 def _(self, id):
-    assert not self._function
+    if _suppressID(id):
+        return
 
     name = id.name()
-    type = id.type().type()
-    
-    self.output("<<<@printer.when(id.ID, type.TypeDeclType) is broken>>>")
-    
-#    self.output("struct %s {" % name)
-#    self.push()
-#    
-#    for id in type.labels():
-#        self.output("%s %s, " % (id, id.name()))
-#        
-#    self.output("}")
-#    self.pop()
-#    self.output()
-    
-@printer.when(id.ID, type.ValueType)
-def _(self, id):
-    visibility = "local" if self.currentFunction() else "global"
-    self.output("%s %s %s" % (visibility, id.type().name(), id.name()))
+    role = id.role()
+    ty = id.type().type()
 
-### Function definitions.
+    _printComment(id)
 
-@printer.pre(function.Function)
-def _(self, f):
-    self._function = f
-    
-    type = f.type()
-    
-    result = type.resultType().name()
-    name = f.name()
-    args = ", ".join(["%s %s" % (id.type().name(), id.name())for id in type.args()])
-    linkage = ""
+    if isinstance(ty, type.Enum):
+        labels = [label for label in ty.labels().keys() if label != "Undef"]
+        labels.sort()
+        self.output("enum %s { %s }" % (name, ", ".join(labels)))
+        
+    if isinstance(ty, type.Bitset):
+        labels = ["%s=%d" % (n, v) for (n, v) in ty.labels().items()]
+        labels.sort()
+        self.output("bitset %s { %s }" % (name, ", ".join(labels)))
 
-    if f.linkage() == function.Linkage.EXPORTED:
-        
-        if not f.blocks():
-            linkage = "declare "
-        else:
-            linkage = "extern "
-        
-        if f.callingConvention() == function.CallingConvention.HILTI:
-            pass
-            
-        elif f.callingConvention() == function.CallingConvention.C:
-            linkage += "\"C\" "
-            
-        elif f.callingConvention() == function.CallingConvention.C_HILTI:
-            linkage += "\"C_HILTI\" "
-            
-        else:
-            # Cannot be reached
-            assert False
-    
-    self.output()
-    self.output("%s%s %s(%s)" % (linkage, result, name, args), nl=False)
-    
-    if not f.blocks():
-        self.output(" {")
-    else:
-        self.output("")
-    
-    self.push()
-
-@printer.post(function.Function)
-def _(self, f):
-    self._function = None
-    
-    if not f.blocks():
-        self.output("}")
-        
-    self.pop()
-
-### Block definitions.    
-    
-@printer.pre(block.Block)
-def _(self, b):
-    if b.name() or b.next():
-        self.pop()
-        self.output("")
-        
-        next = " # next: %s" % b.next().name() if b.next() else ""
-        name = "%s: " % b.name() if b.name() else ""
-        
-        self.output("%s%s" % (name, next))
+    if isinstance(ty, type.Struct):
+        self.output("struct %s {" % name)
         self.push()
 
-### Instructions.
-    
-# Generic instruction handler that can be overidden below with specialized versions.
-@printer.when(instruction.Instruction)
-def _(self, i):
-    
-    def fmtOp(op):
-        if isinstance(op, instruction.IDOperand):
-            return op.value().name()
+        for (fid, default) in ty.fields():
+            defop = " default=%s" % _fmtOp(default) if default else ""
+            sep = "," if fid != ty.fields()[-1][0] else ""
+            self.output("%s %s%s%s" % (_fmtType(fid.type()), fid.name(), defop, sep))
+            
+        self.output("}")
+        self.pop()
+        self.output()
 
-        if isinstance(op, instruction.ConstOperand):
-            return str(op.value()).encode("utf-8")
+    if isinstance(ty, type.Exception):
+        arg = "(%s)" % _fmtType(ty.argType()) if ty.argType() else ""
+        base = " : %s" % _fmtType(ty.baseClass().exceptionName()) if not ty.baseClass().isRootType() else ""
+        self.output("exception %s%s%s" % (ty.exceptionName(), arg, base))
         
-        if isinstance(op, instruction.TupleOperand):
-            return "(%s)" % ", ".join([fmtOp(o) for o in op.value()])
+    if isinstance(ty, type.Overlay):
+        self.output("overlay %s {" % name)
+        self.push()
         
-        return op
+        for f in ty.fields():
+            
+            if isinstance(f.start(), str):
+                pos = "after %s" % f.start()
+            else:
+                pos = "at %d" % f.start()
+            
+            packed = printer._module.lookupID("Hilti::Packed")
+            assert packed
+                
+            fmt = instruction.ConstOperand(constant.Constant(f.fmt(), packed.type().declType()))
+            arg = " %s" % _fmtOp(f.arg()) if f.arg() else ""
+            
+            sep = "," if f.name() != ty.fields()[-1].name() else ""
+            self.output("%s: %s %s unpack with %s%s%s" % (f.name(), _fmtType(f.type()), pos, _fmtOp(fmt), arg, sep))
+            
+        self.output("}")
+        self.pop()
+        self.output()
+        
+@printer.when(id.ID, type.Function)
+def _(self, i):
+    if _suppressID(i):
+        return
+
+    _printComment(i)
     
     name = i.name()
-    target = "%s = " % fmtOp(i.target()) if i.target() else ""
-    op1 = " %s" % fmtOp(i.op1()) if i.op1() else ""
-    op2 = " %s" % fmtOp(i.op2()) if i.op2() else ""
-    op3 = " %s" % fmtOp(i.op3()) if i.op3() else ""
+    ftype = i.type()
+    func = self._module.lookupIDVal(i)
+    assert func
     
-    self.output("%s%s%s%s%s" % (target, name, op1, op2, op3))  
+    linkage = ""
+    if not func.blocks():
+        linkage = "declare "
+    else:
+        if func.linkage() == function.Linkage.EXPORTED:
+            linkage = "export "
+
+    cc = ""
+    if func.callingConvention() == function.CallingConvention.C:
+        cc += "\"C\" "
+            
+    if func.callingConvention() == function.CallingConvention.C_HILTI:
+        cc += "\"C-HILTI\" "
+            
+    result = _fmtType(ftype.resultType())
+    
+    args = [(arg.type(), arg.name(), default) for (arg, default) in ftype.argsWithDefaults()]
+    args = ", ".join(["%s %s%s" % (_fmtType(t), n, " = %s" % _fmtOp(d) if d else "") for (t, n, d) in args])
+    self.output("\n%s%s%s %s(%s) " % (linkage, cc, result, name, args), nl=False)
+
+    if not func.blocks():
+        return
+    
+    self.output("{")
+    self.push()
+
+    for i in sorted(func.IDs(), key=lambda i: i.name()):
+        if i.role() == id.Role.LOCAL and not isinstance(i.type(), type.Label):
+            self.output("local %s %s" % (_fmtType(i.type()), i.name()))
+    
+    first = True
+    for block in func.blocks():
+        if not first:
+            self.output("")
+            
+        _printComment(block)
+        
+        if block.name():
+            self.pop()
+            self.output("%s:" % block.name())
+            self.push()
+
+        terminator = False
+        for ins in block.instructions():
+            target = _fmtInsOp("target", ins.target(), ins.signature().target(), "", " = ")
+            op1 = _fmtInsOp("op1", ins.op1(), ins.signature().op1(), " ", "")
+            op2 = _fmtInsOp("op2", ins.op2(), ins.signature().op2(), " ", "")
+            op3 = _fmtInsOp("op3", ins.op3(), ins.signature().op3(), " ", "")
+            self.output("%s%s%s%s%s" % (target, ins.name(), op1, op2, op3))
+            terminator = ins.signature().terminator()
+
+        if block.next() and not terminator: 
+            # Debugging aid: show the implicit jump at the end of a block that
+            # has not terminator instruction there.
+            self.output("# jump %s" % (block.next().name()))
+            
+        first = False
+            
+    self.pop()
+    self.output("}")
+
+@printer.when(id.ID)
+def _(self, i):
+    if _suppressID(i):
+        return
+    
+    if i.role() == id.Role.CONST:
+        val = self._module.lookupIDVal(i)
+        
+        if isinstance(val, instruction.ConstOperand):
+            op = instruction.ConstOperand(val)
+            self.output("const %s %s = %s" % (_fmtType(i.type()), i.name(), _fmtOp(op)))
+    

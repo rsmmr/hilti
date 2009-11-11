@@ -22,7 +22,7 @@ def _fieldName(ty, op, i):
     
 @constraint("any")
 def _fieldType(ty, op, i):
-    ft = i.op1().type().field(i.op2().value()).type
+    ft = i.op1().type().field(i.op2().value()).type()
     return (ty == ft, "target type must be %s" % ft)
 
 @instruction("overlay.attach", op1=overlay, op2=iteratorBytes)

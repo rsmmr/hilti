@@ -210,7 +210,7 @@ class Operand(ast.Node):
         self._type = type
     
     def __str__(self):
-        return "%s" % self._value
+        return str(self._value)
 
 class ConstOperand(Operand):
     """Represents a constant operand. For a ConstOperand, :meth:`value()`

@@ -33,7 +33,12 @@ def loc(p, num):
     """
     
     assert p.parser.state.filename
-    return location.Location(p.parser.state.filename, p.lineno(num))
+    l = location.Location(p.parser.state.filename, p.lineno(num))
+    
+    if p.parser.state.internal_module:
+        l.markInternal()
+
+    return l
 
 # Tracks state during parsing. 
 class State:
@@ -45,21 +50,27 @@ class State:
         self.filename = filename
         self.errors = 0
         self.module = None
+        self.internal_module = False
         self.function = None
         self.block = None
         self.import_paths = []
         self.imported_files = []
-        self.no_hilti_intern = False
+        self.comment = []
 
 def p_module(p):
-    """module : _eat_newlines MODULE IDENT _instantiate_module NL module_decl_list"""
+    """module : _eat_newlines MODULE IDENT _instantiate_module _clear_comment NL module_decl_list"""
     p[0] = p.parser.state.module
 
+def p_clear_comment(p):
+    """_clear_comment : """
+    p.parser.state.comment = []   
+    
 def p_eat_newlines(p):
     """_eat_newlines : NL _eat_newlines
+                     | comment_line NL _eat_newlines
                      | """
     pass
-    
+
 def p_begin_nolines(p):
     """_begin_nolines : """
     p.lexer.push_state('nolines') 
@@ -71,15 +82,16 @@ def p_end_nolines(p):
 def p_instantiate_module(p):
     """_instantiate_module :"""
     p.parser.state.module = module.Module(p[-1], location=loc(p, -1))
+    p.parser.state.module.setComment(p.parser.state.comment)
     
     # Implicitly import the internal libhilti functions.
-    if p.parser.state.module.name() != "libhilti" and not p.parser.state.no_hilti_intern:
-        if not _importFile(p.parser, "libhilti.hlt", loc(p, -1), no_hilti_intern=True):
+    if p.parser.state.module.name() != "libhilti" and not p.parser.state.internal_module:
+        if not _importFile(p.parser, "libhilti.hlt", loc(p, -1), internal_module=True):
             raise SyntaxError
     
 def p_module_decl_list(p):
-    """module_decl_list :   module_decl module_decl_list
-                        |   empty_line module_decl_list
+    """module_decl_list :   module_decl _clear_comment module_decl_list
+                        |   empty_line _clear_comment module_decl_list
                         |   """
     pass
     
@@ -90,8 +102,9 @@ def p_module_decl(p):
                    | def_declare
                    | def_import
                    | def_function"""
-    pass
                    
+    if p[1]:
+        p[1].setComment(p.parser.state.comment)
 
 def p_module_decl_error(p):
     """module_decl : error"""
@@ -101,6 +114,7 @@ def p_module_decl_error(p):
 def p_def_global(p):
     """def_global : GLOBAL global_id NL"""
     p.parser.state.module.addID(p[2])
+    return p[2]
 
 def p_def_const(p):
     """def_const : CONST const_id '=' operand"""
@@ -110,10 +124,12 @@ def p_def_const(p):
         raise SyntaxError
     
     p.parser.state.module.addID(p[2], p[4])
+    return p[2]
 
 def p_def_local(p):
     """def_local : LOCAL local_id NL"""
     p.parser.state.function.addID(p[2])
+    return p[2]
     
 def p_def_type(p):
     """def_type : def_struct_decl
@@ -122,13 +138,14 @@ def p_def_type(p):
                 | def_bitset_decl
                 | def_exception_decl
                 """
-    pass
+    return p[1]
 
 def _addTypeDecl(p, name, t, location):
     decl = type.TypeDeclType(t)
     i = id.ID(name, decl, id.Role.GLOBAL, location=location)
     p.parser.state.module.addID(i)
     type.registerHiltiType(t)
+    return i
     
 def p_def_struct(p):
     """def_struct_decl : STRUCT _begin_nolines IDENT '{' struct_id_list '}' _end_nolines"""
@@ -137,26 +154,30 @@ def p_def_struct(p):
 def p_def_enum(p):
     """def_enum_decl : ENUM _begin_nolines IDENT '{' id_list '}' _end_nolines"""
     t = type.Enum(p[5])
-    _addTypeDecl(p, p[3], t, location=loc(p, 1))
+    nid = _addTypeDecl(p, p[3], t, location=loc(p, 1))
         
     # Register the individual labels.
     for (label, value) in t.labels().items():
         eid = id.ID(p[3] + "::" + label, t, id.Role.CONST, location=loc(p, 1))
         p.parser.state.module.addID(eid, value)
         
+    return nid
+        
 def p_def_bitset(p):
     """def_bitset_decl : BITSET _begin_nolines IDENT '{' id_with_opt_int_init_list '}' _end_nolines"""
     t = type.Bitset(p[5])
-    _addTypeDecl(p, p[3], t, location=loc(p, 1))
+    nid = _addTypeDecl(p, p[3], t, location=loc(p, 1))
         
     # Register the individual labels.
     for (label, value) in t.labels().items():
         eid = id.ID(p[3] + "::" + label, t, id.Role.CONST, location=loc(p, 1))
         p.parser.state.module.addID(eid, value)        
 
+    return nid
+        
 def p_def_exception(p):
     """def_exception_decl : EXCEPTION IDENT opt_exception_arg opt_exception_base"""
-    _addTypeDecl(p, p[2], type.Exception(p[2], p[3], p[4]), location=loc(p, 1))
+    return _addTypeDecl(p, p[2], type.Exception(p[2], p[3], p[4]), location=loc(p, 1))
     
 def p_opt_exception_arg(p):
     """opt_exception_arg : '(' type ')'
@@ -176,7 +197,7 @@ def p_def_overlay(p):
     for f in p[5]:
         t.addField(f)
         
-    _addTypeDecl(p, p[3], t, location=loc(p, 1))
+    return _addTypeDecl(p, p[3], t, location=loc(p, 1))
 
 def p_def_overlay_field_list(p):    
     """overlay_field_list : overlay_field ',' overlay_field_list
@@ -227,7 +248,7 @@ def p_def_function_head(p):
 
     i = id.ID(p[4], func.type(), id.Role.GLOBAL, location=loc(p, 4))
     p.parser.state.module.addID(i, func)
-    
+
     func.setID(i)
     func.setLinkage(p[1])
 
@@ -288,8 +309,13 @@ def p_instruction_list(p):
                         | """
 
 def p_empty_line(p):
-    """empty_line : NL"""
-    pass
+    """empty_line : NL
+                  | comment_line NL
+    """
+
+def p_comment_line(p):
+    """comment_line : COMMENTLINE"""
+    p.parser.state.comment += [p[1]]
 
 def p_set_block_name(p):
     """_set_block_name : """
@@ -674,7 +700,7 @@ def error(p, msg, lineno=0):
 
 # Recursively imports another file and makes all declared/exported IDs available 
 # to the current module. 
-def _importFile(parser, filename, location, no_hilti_intern=False):
+def _importFile(parser, filename, location, internal_module=False):
     (root, ext) = os.path.splitext(filename)
     if not ext:
         ext = ".hlt"
@@ -685,15 +711,16 @@ def _importFile(parser, filename, location, no_hilti_intern=False):
     if not fullpath:
         util.error("cannot find %s for import" % filename, context=location)
 
-    if fullpath in parser.state.imported_files:
+    imp_paths = [path for (mod, path) in parser.state.imported_files]
+    if fullpath in imp_paths:
         # Already imported.
         return True
 
-    parser.state.imported_files += [fullpath]
+    parser.state.imported_files += [(filename, fullpath)]
     
-    nhi = no_hilti_intern or parser.state.no_hilti_intern
+    nhi = internal_module or parser.state.internal_module
     
-    (errors, ast, subparser) = _parse(fullpath, parser.state.import_paths, no_hilti_intern=nhi)
+    (errors, ast, subparser) = _parse(fullpath, parser.state.import_paths, internal_module=nhi)
     if errors > 0:
         return False
 
@@ -732,16 +759,16 @@ def _importFile(parser, filename, location, no_hilti_intern=False):
 
     return True
         
-def parse(filename, import_paths=["."], no_hilti_intern=False):
+def parse(filename, import_paths=["."], internal_module=False):
     """See ~~parse."""
-    (errors, ast, parser) = _parse(filename, import_paths, no_hilti_intern)
+    (errors, ast, parser) = _parse(filename, import_paths, internal_module)
     return (errors, ast)
         
-def _parse(filename, import_paths=["."], no_hilti_intern=False):
+def _parse(filename, import_paths=["."], internal_module=False):
     parser = ply.yacc.yacc(debug=0, write_tables=0)
     parser.state = State(filename)
     parser.state.import_paths = import_paths
-    parser.state.no_hilti_intern = no_hilti_intern
+    parser.state.internal_module = internal_module
 
     filename = os.path.expanduser(filename)
     
@@ -769,5 +796,7 @@ def _parse(filename, import_paths=["."], no_hilti_intern=False):
     
     if resolver_errors > 0:
         return (resolver_errors, None, parser)
+
+    parser.state.module._imported_modules = parser.state.imported_files
     
     return (0, ast, parser)    

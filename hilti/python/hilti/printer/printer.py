@@ -7,7 +7,8 @@ from hilti.core import *
 ### Printer visitor.
 
 class Printer(visitor.Visitor):
-    """Implements the conversion of an |ast| into a HILTI program."""
+    """Converts an |ast| into a textal represnetation. The result is a
+    parseable HILTI."""
     def __init__(self):
         super(Printer, self).__init__()
         self.reset()
@@ -19,8 +20,7 @@ class Printer(visitor.Visitor):
         self._output = sys.stdout
         self._indent = 0;
         self._module = None
-        self._function = None
-
+        
     def printAST(self, ast, output):
         """See ~~printAST."""
         self.reset()
@@ -36,14 +36,6 @@ class Printer(visitor.Visitor):
         """
         return self._module
     
-    def currentFunction(self):
-        """Returns the current function. Only valid while printing is in
-        progress.
-        
-        Returns: ~~Function - The current function.
-        """
-        return self._function
-    
     def push(self):
         """Increases indentation in the output by one level.""" 
         self._indent += 1
@@ -58,8 +50,8 @@ class Printer(visitor.Visitor):
         str: string - The string to print.
         nl: bool - If True, add a trailing newline. 
         """
-        print >>self._output, ("    " * self._indent) + str,
+        self._output.write("    " * self._indent + str)
         if nl:
-            print >>self._output
+            self._output.write("\n")
 
 printer = Printer()

@@ -14,31 +14,23 @@ import subprocess
 import copy
 import glob
 import fnmatch
+import ConfigParser
 
 Name ="tester"
-Glob = "test-*"
 Version = 0.1
 
-TmpDir = ".tmp"
-BaselineDir = "Baseline"
-BinDir = None
-
-IgnoreDirs = (".svn", "CVS", ".tmp", ".baseline")
-IgnoreFiles = ("*.tmp", "*.swp", "#*")
-
-# Commands as tuple (tag, regexp, more-than-one-is-ok, optional, group-main, group-add)
-RE_EXEC = ("exec", re.compile("@TEST-EXEC(-FAIL)?: *(.*)"), True, False, 2, 1)
-# RE_NAME = ("name", re.compile("@TEST-NAME: *(.*)"), False, False, 1, -1)
-# RE_GROUP = ("group", re.compile("@TEST-GROUP: *(.*)"), False, False, 1, -1)
-# RE_DIAG = ("diag-in", re.compile("@TEST-DIAG: *(.*)"), False, True, 1, -1)
-
-Commands = (RE_EXEC, )
+ConfigDefault = "tester.cfg"
+Config = None
 
 RE_INPUT = re.compile("%INPUT")
 RE_DIR = re.compile("%DIR")
 RE_ENV = re.compile("\$\{(\w+)\}")
-
 RE_START_NEXT_TEST = re.compile("@TEST-START-NEXT")
+
+# Commands as tuple (tag, regexp, more-than-one-is-ok, optional, group-main, group-add)
+RE_EXEC = ("exec", re.compile("@TEST-EXEC(-FAIL)?: *(.*)"), True, False, 2, 1)
+
+Commands = (RE_EXEC, )
 
 def output(msg, nl=True, file=None):
     if not file:
@@ -141,14 +133,20 @@ class Test(object):
         clone.cmdlines = self.cmdlines
         
         clone.content = content
+            
         return clone        
         
-    def run(self):
+    def run(self, filter=None):
         if self.number > 1:
             self.name = "%s-%d" % (self.name, self.number)
 
+        if not filter:
+            name = self.name
+        else:
+            name = "%s (%s)" % (self.name, filter)
+            
         if Options.verbose or not Options.brief:
-            output("%s ..." % self.name, nl=Options.verbose)
+            output("%s ..." % name, nl=Options.verbose)
             
         self.tmpdir = os.path.abspath(os.path.join(TmpDir, self.name))
         self.diag = os.path.join(self.tmpdir, ".diag")
@@ -159,7 +157,7 @@ class Test(object):
         mkdir(self.baseline)        
         mkdir(self.tmpdir)        
         os.chdir(self.tmpdir)
-        
+
         self.localfile = os.path.join(self.tmpdir, os.path.basename(self.file))
         
         content = open(self.localfile, "w")
@@ -172,19 +170,15 @@ class Test(object):
         self.stderr = open(os.path.join(self.tmpdir, ".stderr"), "w")
         
         for cmd in self.cmdlines:
-            
-            if Options.verbose:
-                output("  > %s" % cmd[0])
-            
-            if not self.execute(cmd):
+            if not self.execute(cmd, apply_filter=(filter != None)):
                 global Failed
                 Failed += 1
                 
                 if Options.verbose:
-                    output("... %s failed" % self.name)
+                    output("... %s failed" % name)
                 else:
                     if Options.brief:
-                        output("%s ..." % self.name, nl=False)
+                        output("%s ..." % name, nl=False)
                         
                     output("failed")
                     
@@ -192,13 +186,13 @@ class Test(object):
                     self.showDiag()
                 
                 if Options.diagfile:
-                    print >>Options.diagfile, "%s ... failed" % self.name
+                    print >>Options.diagfile, "%s ... failed" % name
                     self.showDiag(Options.diagfile)
                     
                 break
         else:
             if Options.verbose:
-                    output("... %s ok" % self.name)
+                    output("... %s ok" % name)
             else:
                 if not Options.brief:
                     output("ok")
@@ -218,11 +212,33 @@ class Test(object):
         self.stdout.close()
         self.stderr.close()
         
-    def execute(self, cmd):
+    def execute(self, cmd, apply_filter=False):
         (cmdline, expect_success) = cmd
+
         
+        # See if we need to apply a filter. 
+        filter_cmd = None
+        
+        if apply_filter:
+            try:
+                (path, executable) = os.path.split(cmdline.split()[0])
+                filter_cmd = Filters[executable]
+            except LookupError:
+                pass
+
+        if not filter_cmd or not expect_success: # Do not apply filter if we expect failure.
+            localfile = self.localfile
+        else:
+            # This is not quite correct as it does not necessarily need to be
+            # the %INPUT file which we are filtering ...
+            localfile = os.path.join(self.tmpdir, "filtered-%s" % os.path.basename(self.localfile))
+            self.execute(("%s %s %s" % (filter_cmd, self.localfile, localfile), True), apply_filter=False)
+
+        if Options.verbose:
+            output("  > %s" % cmdline)
+            
         # Replace special names. 
-        cmdline = RE_INPUT.sub(self.localfile, cmdline)
+        cmdline = RE_INPUT.sub(localfile, cmdline)
         cmdline = RE_DIR.sub(self.dir, cmdline)
         
         # Replace environment variables.
@@ -273,7 +289,7 @@ class Test(object):
         env = copy.deepcopy(os.environ)
         
         # Add the directory where this executable is located to PATH.
-        addpath = BinDir
+        addpath = os.path.abspath(os.path.dirname(sys.argv[0]))
         oldpath = os.environ["PATH"]
         env["PATH"] = "%s:%s" % (oldpath, addpath) if oldpath else addpath
 
@@ -307,6 +323,9 @@ class Test(object):
 # Walk the given directory and return all test files.    
 def findTests(paths):    
     tests = []
+
+    ignore_files = Config.get("tester", "IgnoreFiles").split()
+    ignore_dirs = Config.get("tester", "IgnoreDirs").split()
     
     for path in paths:
         if os.path.isfile(path):
@@ -315,14 +334,14 @@ def findTests(paths):
         elif os.path.isdir(path):
             for (dirpath, dirnames, filenames) in os.walk(path):
                 for file in filenames:
-                    for glob in IgnoreFiles:
+                    for glob in ignore_files:
                         if fnmatch.fnmatch(file, glob):
                             break
                     else:
                         tests += readTestFile(os.path.join(dirpath, file))
 
                 # Don't recurse into these. 
-                for skip in IgnoreDirs:
+                for skip in ignore_dirs:
                     if skip in dirnames:
                         dirnames.remove(skip)
                         
@@ -392,12 +411,26 @@ optparser.add_option("-w", "--wait", action="store_true", dest="wait", default=F
                      help="wait for <enter> after each failed (with -d) or all (with -D) tests")
 optparser.add_option("-b", "--brief", action="store_true", dest="brief", default=False,
                      help="outputs only failed tests")
+optparser.add_option("-c", "--config", action="store", type="string", dest="config", default=ConfigDefault,
+                     help="configuration file")
+optparser.add_option("-F", "--filter", action="store", type="string", dest="filter", default=None,
+                     help="active filter in given config file section")
 
 (Options, args) = optparser.parse_args()
 
-if len(args) < 1:
-    optparser.error("wrong number of arguments")
+(basedir, fname) = os.path.split(Options.config)
 
+if not basedir:
+    basedir = "."
+    
+Config = ConfigParser.ConfigParser({"basedir": os.path.abspath(basedir)})
+Config.read(Options.config)
+
+tests = args
+
+if not tests and Config.has_option("tester", "TestDirs"):
+    tests += Config.get("tester", "TestDirs").split()
+    
 if Options.diagfile:
     try:
         Options.diagfile = open(Options.diagfile, "a")
@@ -407,19 +440,34 @@ if Options.diagfile:
 tests = findTests(args)
 
 if not tests:
-    error("no tests")
+    error("no tests given")
 
-TmpDir = os.path.abspath(TmpDir)
-BaselineDir = os.path.abspath(BaselineDir)
-BinDir = os.path.abspath(os.path.dirname(sys.argv[0]))
-
+TmpDir = os.path.abspath(Config.get("tester", "TmpDir"))
+BaselineDir = os.path.abspath(Config.get("tester", "BaselineDir"))
 mkdir(BaselineDir)
 mkdir(TmpDir)
+
+Filters = {}
+if Options.filter: 
+    sec = "filters-%s" % Options.filter
+    if not Config.has_section(sec):
+        error("configuration file has no section '%s'" % sec)
+
+    for (name, value) in Config.items(sec):
+        Filters[name] = value
 
 Failed = 0
 
 for test in tests:
-    if test:
+    
+    if not test:
+        continue
+    
+    if Filters:
+        test2 = copy.deepcopy(test)
+        test.run()
+        test2.run(filter=Options.filter)
+    else:
         test.run()
 
 if Failed > 0:

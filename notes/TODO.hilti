@@ -39,6 +39,10 @@ Infrastructure
   canonacalizer just as for integer tuples. Liekwise, the list ctor
   can't create empty lists because we can't infer type information.
 
+- The parser doesn't associate line-comments correctly with global
+declarations (or better: it does not at all; the code doesn't seem to do the
+right thing.) It works for comments before the "module" statement though.
+  
 Optimizations
 =============
 
