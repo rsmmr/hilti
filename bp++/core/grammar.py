@@ -116,6 +116,7 @@ class Literal(Terminal):
     def __init__(self, literal, name=None, location=None):
         super(Literal, self).__init__(literal.type(), name)
         self._literal = literal
+        self._id = 0
 
     def literal(self):
         """Returns the literal.
@@ -124,6 +125,16 @@ class Literal(Terminal):
         """
         return self._literal
 
+    def id(self):
+        """Returns a unique for this terminal. The ID is unique within one
+        ~~Grammar and will be only availabe after the Terminal has become part
+        of a grammar.
+        
+        Returns: integer - The id, which will be > 0; return 0 if there is no
+        id yet.
+        """
+        return self._id
+    
     def _fmtDerived(self):
         return "literal('%s')" % self._literal
 
@@ -258,6 +269,7 @@ class Grammar:
         self._nullable = {}
         self._first = {}
         self._follow = {}
+        self._literals = 0
         
         self._addProduction(root)
         #self._simplify()
@@ -345,6 +357,10 @@ class Grammar:
     @staticmethod
     def _isTerminal(p):
         return isinstance(p, Terminal)
+    
+    @staticmethod
+    def _isLiteral(p):
+        return isinstance(p, Literal)
 
     @staticmethod
     def _isEpsilon(p):
@@ -380,7 +396,9 @@ class Grammar:
                 self._addProduction(q)
                 
         elif Grammar._isTerminal(p):
-            pass
+            if Grammar._isLiteral(p):
+                self._literals += 1
+                p._id = self._literals
 
         elif Grammar._isEpsilon(p):
             pass
