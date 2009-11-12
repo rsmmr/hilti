@@ -12,7 +12,7 @@ void REerror(yyscan_t scanner, const char* msg);
 
 %}
 
-%x COUNT CCL_FIRST CCL
+%x COUNT CCL_FIRST CCL ACCEPT_ID
 %option nounput noyywrap reentrant bison-bridge header-file="re-scan.h" prefix="RE"
 
 ESCSEQ          (\\([^\n]|[0-7]+|x[[:xdigit:]]{2}))
@@ -21,9 +21,13 @@ CCL_EXPR        ("[:"[[:alpha:]]+":]")
 CCL_CHAR_FIRST  ([^\\]|{CCL_EXPR}|{ESCSEQ})
 CCL_CHAR        ([^\\\]]|{CCL_EXPR}|{ESCSEQ})
 
+ACCEPT_ID       \{#[[:digit:]]+\}
+
 %%
 
 <INITIAL>{
+    {ACCEPT_ID}     yylval->count = atoi(yytext+2); return TOK_ACCEPT_ID;
+
 	"{"/[[:digit:]] BEGIN(COUNT); return '{';
 	"["             BEGIN(CCL_FIRST); return '[';
 
@@ -33,6 +37,8 @@ CCL_CHAR        ([^\\\]]|{CCL_EXPR}|{ESCSEQ})
 	"$"		yylval->assertion = JRX_ASSERTION_EOL; return TOK_ASSERTION;
 	"\\b"	yylval->assertion = JRX_ASSERTION_WORD_BOUNDARY; return TOK_ASSERTION;
 	"\\B"	yylval->assertion = JRX_ASSERTION_NOT_WORD_BOUNDARY; return TOK_ASSERTION;
+
+    {ACCEPT_ID}     return yylval->count = atoi(yytext); return TOK_ACCEPT_ID;
 
 	.       yylval->cp = yytext[0]; return TOK_CODEPOINT;
 }

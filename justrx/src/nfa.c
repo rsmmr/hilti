@@ -438,8 +438,9 @@ static jrx_nfa* _nfa_compile_pattern(jrx_nfa_context* ctx, const char* pattern, 
     
     assert(nfa);
 
-    // We take the next available accept IDs.
-    nfa = nfa_set_accept(nfa, ++ctx->max_accept);
+    // We take the next available accept IDs if we don't have one set yet.
+    if ( ! nfa->final->accepts )
+        nfa = nfa_set_accept(nfa, ++ctx->max_accept);
     
     if ( ctx->options & JRX_OPTION_DEBUG )
         nfa_print(nfa, stderr);

@@ -13,7 +13,7 @@
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 5
-#define YY_FLEX_SUBMINOR_VERSION 33
+#define YY_FLEX_SUBMINOR_VERSION 35
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -35,7 +35,7 @@
 
 /* C99 systems have <inttypes.h>. Non-C99 systems may or may not. */
 
-#if __STDC_VERSION__ >= 199901L
+#if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 
 /* C99 says to define __STDC_LIMIT_MACROS before including stdint.h,
  * if you want the limit (max/min) macros for int types. 
@@ -98,11 +98,12 @@ typedef unsigned int flex_uint32_t;
 
 #else	/* ! __cplusplus */
 
-#if __STDC__
+/* C99 requires __STDC__ to be defined as 1. */
+#if defined (__STDC__)
 
 #define YY_USE_CONST
 
-#endif	/* __STDC__ */
+#endif	/* defined (__STDC__) */
 #endif	/* ! __cplusplus */
 
 #ifdef YY_USE_CONST
@@ -128,21 +129,19 @@ typedef void* yyscan_t;
 #define yycolumn (YY_CURRENT_BUFFER_LVALUE->yy_bs_column)
 #define yy_flex_debug yyg->yy_flex_debug_r
 
-int RElex_init (yyscan_t* scanner);
+/* Size of default input buffer. */
+#ifndef YY_BUF_SIZE
+#define YY_BUF_SIZE 16384
+#endif
 
 #ifndef YY_TYPEDEF_YY_BUFFER_STATE
 #define YY_TYPEDEF_YY_BUFFER_STATE
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 #endif
 
-/* The following is because we cannot portably get our hands on size_t
- * (without autoconf's help, which isn't available because we want
- * flex-generated scanners to compile on their own).
- */
-
 #ifndef YY_TYPEDEF_YY_SIZE_T
 #define YY_TYPEDEF_YY_SIZE_T
-typedef unsigned int yy_size_t;
+typedef size_t yy_size_t;
 #endif
 
 #ifndef YY_STRUCT_YY_BUFFER_STATE
@@ -162,7 +161,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	int yy_n_chars;
+	yy_size_t yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -206,7 +205,7 @@ void REpop_buffer_state (yyscan_t yyscanner );
 
 YY_BUFFER_STATE RE_scan_buffer (char *base,yy_size_t size ,yyscan_t yyscanner );
 YY_BUFFER_STATE RE_scan_string (yyconst char *yy_str ,yyscan_t yyscanner );
-YY_BUFFER_STATE RE_scan_bytes (yyconst char *bytes,int len ,yyscan_t yyscanner );
+YY_BUFFER_STATE RE_scan_bytes (yyconst char *bytes,yy_size_t len ,yyscan_t yyscanner );
 
 void *REalloc (yy_size_t ,yyscan_t yyscanner );
 void *RErealloc (void *,yy_size_t ,yyscan_t yyscanner );
@@ -224,6 +223,7 @@ void REfree (void * ,yyscan_t yyscanner );
 #define COUNT 1
 #define CCL_FIRST 2
 #define CCL 3
+#define ACCEPT_ID 4
 
 #endif
 
@@ -238,6 +238,10 @@ void REfree (void * ,yyscan_t yyscanner );
 #ifndef YY_EXTRA_TYPE
 #define YY_EXTRA_TYPE void *
 #endif
+
+int RElex_init (yyscan_t* scanner);
+
+int RElex_init_extra (YY_EXTRA_TYPE user_defined,yyscan_t* scanner);
 
 /* Accessor methods to globals.
    These are made visible to non-reentrant scanners for convenience. */
@@ -260,7 +264,7 @@ FILE *REget_out (yyscan_t yyscanner );
 
 void REset_out  (FILE * out_str ,yyscan_t yyscanner );
 
-int REget_leng (yyscan_t yyscanner );
+yy_size_t REget_leng (yyscan_t yyscanner );
 
 char *REget_text (yyscan_t yyscanner );
 
@@ -312,9 +316,11 @@ static int yy_flex_strlen (yyconst char * ,yyscan_t yyscanner);
 #ifndef YY_DECL
 #define YY_DECL_IS_OURS 1
 
-extern int RElex (YYSTYPE * yylval_param ,yyscan_t yyscanner);
+extern int RElex \
+               (YYSTYPE * yylval_param ,yyscan_t yyscanner);
 
-#define YY_DECL int RElex (YYSTYPE * yylval_param , yyscan_t yyscanner)
+#define YY_DECL int RElex \
+               (YYSTYPE * yylval_param , yyscan_t yyscanner)
 #endif /* !YY_DECL */
 
 /* yy_get_previous_state - get the state just before the EOB char was reached */
@@ -331,9 +337,9 @@ extern int RElex (YYSTYPE * yylval_param ,yyscan_t yyscanner);
 #undef YY_DECL
 #endif
 
-#line 74 "re-scan.l"
+#line 80 "re-scan.l"
 
 
-#line 338 "re-scan.h"
+#line 344 "re-scan.h"
 #undef REIN_HEADER
 #endif /* REHEADER_H */

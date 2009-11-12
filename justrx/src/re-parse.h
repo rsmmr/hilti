@@ -43,7 +43,8 @@
      TOK_CODEPOINT = 259,
      TOK_NEGATE_CCL = 260,
      TOK_COUNT = 261,
-     TOK_DYNCCL = 262
+     TOK_DYNCCL = 262,
+     TOK_ACCEPT_ID = 263
    };
 #endif
 /* Tokens.  */
@@ -52,6 +53,7 @@
 #define TOK_NEGATE_CCL 260
 #define TOK_COUNT 261
 #define TOK_DYNCCL 262
+#define TOK_ACCEPT_ID 263
 
 
 
@@ -69,7 +71,7 @@ typedef union YYSTYPE
     jrx_ccl* ccl;
 }
 /* Line 1529 of yacc.c.  */
-#line 73 "/Users/robin/work/binpacpp/justrx/src/re-parse.h"
+#line 75 "/Users/robin/work/binpacpp/justrx/src/re-parse.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
