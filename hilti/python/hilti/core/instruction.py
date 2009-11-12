@@ -22,7 +22,7 @@ class Instruction(ast.Node):
     _signature = None
     
     def __init__(self, op1=None, op2=None, op3=None, target=None, location=None):
-        assert not target or isinstance(target, IDOperand)
+        assert not target or isinstance(target, IDOperand) or isinstance(target, LLVMOperand)
         
         super(Instruction, self).__init__(location)
         self._op1 = op1
@@ -305,6 +305,21 @@ class TypeOperand(Operand):
     
     def __str__(self):
         return str(self.value())
+    
+class LLVMOperand(Operand):
+    """Represents a internal operand for which we already have an LLVM
+    representation. For an LLVMOperand, :meth:`value()`
+    returns an ~~llvm.core.Value, and :meth:`type() returns the original ~~Type.
+     
+    v: ~~llvm.core.Value - The LLVM value for the operand.
+    t: ~~Type - The operand's original type.
+    location: ~~Location - A location to be associated with the operand. 
+    """
+    def __init__(self, v, t, location=None):
+        super(LLVMOperand, self).__init__(v, t, location)
+    
+    def __str__(self):
+        return "<LLVM Operand>"
 
 from signature import *
     

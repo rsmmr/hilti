@@ -36,6 +36,13 @@ def _encoding(ty, op, i):
     
     return (True, "")
 
+@overload(Equal, op1=string, op2=string, target=bool)
+class Equal(Operator):
+    """
+    Returns True if *op1* equals *op2*.
+    """
+    pass
+
 @instruction("string.length", op1=string, target=integerOfWidth(32))
 class Length(Instruction):
     """Returns the number of characters in the string *op1*."""

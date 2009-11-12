@@ -1784,7 +1784,11 @@ class CodeGen(visitor.Visitor):
                 addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.name())
                 self.llvmAssign(val, addr)
                 return 
-                
+
+        if isinstance(target, instruction.LLVMOperand):
+            self.llvmAssign(val, target.value())
+            return
+            
         util.internal_error("llvmStoreInTarget: unknown target class: %s" % target)
         
     def llvmStoreTupleInTarget(self, target, vals):
@@ -2120,6 +2124,9 @@ class CodeGen(visitor.Visitor):
             
         if isinstance(op, instruction.TypeOperand):
             return self.llvmTypeInfoPtr(op.value())
+
+        if isinstance(op, instruction.LLVMOperand):
+            return op.value()
         
         util.internal_error("llvmOp: unsupported operand type %s" % repr(op))
 

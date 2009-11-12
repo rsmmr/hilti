@@ -1,0 +1,38 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+
+void doSwitch(string n) {
+
+   switch n @default ( ("a", @b1), ("b", @b2), ("c", @b3) )
+   
+@b1:
+   call Hilti::print (1)
+   return.void
+   
+@b2:
+   call Hilti::print (2)
+   return.void
+
+@b3:
+   call Hilti::print (3)
+   return.void
+   
+@default:   
+   call Hilti::print (-1)
+   return.void
+}     
+
+void run() {
+   call doSwitch("c")
+   call doSwitch("b")
+   call doSwitch("a")
+   call doSwitch("Foo")
+   }

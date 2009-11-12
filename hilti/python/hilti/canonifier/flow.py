@@ -87,8 +87,11 @@ def _(self, i):
 def _(self, i):
     _splitBlock(self, i)
     
-@canonifier.when(instructions.exception.Throw)
+@canonifier.when(instructions.flow.Switch)
 def _(self, i):
     _splitBlock(self, i)
     
+@canonifier.when(instructions.exception.Throw)
+def _(self, i):
+    _splitBlock(self, i)
     

@@ -81,7 +81,11 @@ def _(self, i):
         result = self.llvmGenerateCCallByName("hlt::regexp_string_find", [i.op1(), i.op2()])
     else:
         # Bytes version.
-        result = self.llvmGenerateCCallByName("hlt::regexp_bytes_find", [i.op1(), i.op2(), i.op3()])
+        op1 = codegen.llvmOp(i.op1())
+        op2 = codegen.llvmOp(i.op2())
+        op3 = codegen.llvmOp(i.op3()) if i.op3() else bytes.llvmEnd()
+        types = [i.op1().type(), i.op2().type(), type.IteratorBytes(type.Bytes())]
+        result = self.llvmGenerateCCallByName("hlt::regexp_bytes_find", [op1, op2, op3], arg_types=types, llvm_args=True)
     
     self.llvmStoreInTarget(i.target(), result)
     

@@ -273,9 +273,55 @@ def _(self, i):
     
     self.builder().cbranch(op1, block_true, block_false)
 
+@codegen.when(instructions.flow.Switch)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    optype = i.op1().type()
+    default = self.currentFunction().lookupBlock(i.op2().value().name())
+    alts = i.op3().value()
+    vals = [op.value()[0] for op in alts]
+    names = [op.value()[1].id().name() for op in alts]
+    
+    dests = [self.currentFunction().lookupBlock(name) for name in names]
+    blocks = [self.llvmNewBlock("switch-%s" % name) for name in names]
+
+    for (d, b) in zip(dests, blocks):
+        self.pushBuilder(b)
+        self.llvmGenerateTailCallToBlock(d, [self.llvmCurrentFramePtr()])
+        self.popBuilder()
+
+    default_block = self.llvmNewBlock("switch-default")
+    self.pushBuilder(default_block)
+    self.llvmGenerateTailCallToBlock(default, [self.llvmCurrentFramePtr()])
+    self.popBuilder()
+        
+    # We optimize for integers here, for which LLVM directly provides a switch
+    # statement. 
+    if isinstance(optype, type.Integer):
+        switch = self.builder().switch(op1, default_block)
+        for (val, block) in zip(vals, blocks):
+            switch.add_case(self.llvmOp(val, refine_to=optype), block)
+
+    else:
+        # In all other cases, we build an if-else chain using the type's
+        # standard comparision operator. 
+        tmp = self.builder().alloca(llvm.core.Type.int(1))
+        target = instruction.LLVMOperand(tmp, type.Bool())
+        
+        for (val, block) in zip(vals, blocks):
+            # We build an artifical equal operator; just the types need to match. 
+            i = instructions.operators.Equal(target=target, op1=i.op1(), op2=val)
+            codegen.llvmExecuteOperator(i)
+            match = self.builder().icmp(llvm.core.IPRED_EQ, codegen.llvmConstInt(1, 1), self.builder().load(tmp))
+            
+            next_block = self.llvmNewBlock("switch-chain")
+            self.builder().cbranch(match, block, next_block)
+            self.pushBuilder(next_block)
+            
+        self.builder().branch(default_block)
+        
 # FIXME: _constructFrame is based on _makeCall(), and currently there's a certain amount of code
 # duplication going on here. Can _makeCall() be made to utilize _constructFrame()?
-
 def _constructFrame(cg, func, args, contNormFunc, contNormFrame, contExceptFunc, contExceptFrame):
     frame = cg.llvmCurrentFramePtr()
     builder = cg.builder()

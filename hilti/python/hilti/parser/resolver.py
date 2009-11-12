@@ -181,7 +181,7 @@ class Resolver(visitor.Visitor):
                     if isinstance(arg, instruction.TupleOperand):
                         # Recurse
                         _adaptSingle(arg, arg.value(), types[i].types())
-                        tuple.setTuple(tuple.value()) # update types
+                        tuple.setTuple(tuple.value()) # updat types
                         return
                     
                     if not isinstance(arg, instruction.ConstOperand):
@@ -293,7 +293,6 @@ class Resolver(visitor.Visitor):
         self._adaptIntValues(all_ops)
         
         # Then do all integer constants inside tuples.
-
         ops = []
         
         for (op, ty, sig) in all_ops:
@@ -320,7 +319,7 @@ class Resolver(visitor.Visitor):
             
         for t in tuples:
             self._adaptIntValues(t)
-
+        
         # Update types
         for (op, ty, sig) in all_ops:
             if op and isinstance(op, instruction.TupleOperand):

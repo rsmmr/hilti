@@ -48,6 +48,12 @@ def _(op, refine_to):
 def _(type, refine_to):
     return _llvmStringTypePtr()
 
+@codegen.operator(instructions.string.Equal)
+def _(self, i):
+    cmp = self.llvmGenerateCCallByName("hlt::string_cmp", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
+    result = self.builder().icmp(llvm.core.IPRED_EQ, cmp, self.llvmConstInt(0, 8))
+    self.llvmStoreInTarget(i.target(), result)
+
 @codegen.when(instructions.string.Length)
 def _(self, i):
     result = self.llvmGenerateCCallByName("hlt::string_len", [i.op1()], [i.op1().type()])

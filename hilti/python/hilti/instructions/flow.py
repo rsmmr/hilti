@@ -126,3 +126,40 @@ class Yield(Instruction):
     """
     pass
 
+
+@constraint("( (value, destination), ...)")
+def _switchTuple(ty, op, i):
+
+    if not isinstance(ty, type.Tuple):
+        return (False, "operand 3 must be a tuple")
+    
+    types = ty.types()
+
+    for j in range(0, len(types)):
+        et = types[j]
+    
+        if not isinstance(et, type.Tuple) or len(et.types()) != 2:
+            return (False, "tuple element %d is not a 2-tuple" % (j+1))
+        
+        ett = et.types()
+
+        if ett[0] != i.op1().type():
+            return (False, "all values must be of same type as operand 1 (value %d is not)" % (j+1))
+        
+        if not isinstance(ett[1], type.Label):
+            return (False, "all destination must be labels (destination %d is not)" % (j+1))
+    
+    return (True, "")
+
+@instruction("switch", op1=valueType, op2=label, op3=_switchTuple, terminator=True)
+class Switch(Instruction):
+    """Branches to one of several alternatives. *op1* determines which
+    alternative to take.  *op3* is a tuple of giving all alternatives as 
+    2-tuples *(value, destination)*. *value* must be of the same type as
+    *op1*, and *destination* is a block label. If *value* equals *op1*,
+    control is transfered to the corresponding block. If multiple alternatives
+    match *op1*, one of them is taken but it's undefined which one. If no
+    alternative matches, control is transfered to block *op2*.
+    """
+    
+    

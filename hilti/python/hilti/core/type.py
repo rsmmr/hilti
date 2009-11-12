@@ -192,19 +192,17 @@ class HiltiType(Type):
             
         self._itertype = itertype
 
+        self._updateName(name, args)
+        
         if len(args) == 1 and args[0] is Wildcard:
-            
             if not wildcard:
                 raise HiltiType.ParameterMismatch(self._type, "type does not accept wildcards")
             
-            self._name = "%s<*>" % name
             self._args = []
             self._wildcard = True
             return
         
         if args:
-            self._name = "%s<%s>" % (name, ",".join([str(arg) for arg in args]))
-            
             for a in args:
                 if a is Wildcard:
                     raise HiltiType.ParameterMismatch(self, "type arguments cannot be a wildcard here")
@@ -215,6 +213,14 @@ class HiltiType(Type):
 
     _name = "HILTI type"
 
+    def _updateName(self, name, args):
+        if len(args) == 1 and args[0] is Wildcard:
+            self._name = "%s<*>" % name
+        elif args:
+            self._name = "%s<%s>" % (name, ",".join([str(arg) for arg in args]))
+        else:
+            self._name = name
+    
     def args(self):
         """Returns the type's parameters.
         
@@ -414,6 +420,7 @@ class Integer(ValueType):
         width: int - The new bit-width. 
         """
         self._width = width
+        self._updateName(Integer._name, [width])
     
     def cmpWithSameType(self, other):
         if self._width == 0 or other._width == 0:
@@ -525,7 +532,15 @@ class Tuple(ValueType):
         Returns: list of ~~ValueType - The types.
         """
         return self._types
+
+    def setTypes(self, types):
+        """Sets the types of the typle elements.
         
+        types: list of ~~ValueType - The types.
+        """
+        self._types = types
+        self._updateName(Tuple._name, types)
+    
     def cmpWithSameType(self, other):
         return self.types() == other.types()
         

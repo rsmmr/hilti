@@ -60,23 +60,22 @@ class Compile(Instruction):
     second compilation attempt is performed. 
     
     Todo: We should support other than ASCII characters too but need the
-    notion of a local character set first. We should also support
-    back-references. (Our RE library does but we need to implement a bit more
-    C code for that (rewind & compare for reguexec).
+    notion of a local character set first.
     """
     pass
 
-@instruction("regexp.find", op1=referenceOf(regexp), op2=_string_or_iter, op3=_none_or_iter, target=integerOfWidth(32))
+@instruction("regexp.find", op1=referenceOf(regexp), op2=_string_or_iter, op3=optional(_none_or_iter), target=integerOfWidth(32))
 class Find(Instruction):
     """Scans either the string in *op1* or the byte iterator range between
-    *op2* and *op3* for the regular expression *op1*. Returns a positive
-    integer if a match found found; if a set of patterns has been compiled,
-    the integer then indicates which pattern has matched. If multiple
-    patterns from the set match, the left-most one is taken. If multiple
-    patterns match at the left-most position, it is undefined which of them is
-    returned. The instruction returns -1 if no match was found but adding more
-    input bytes could change that (i.e., a partial match). Returns 0 if no
-    match was found and adding more input would not change that. 
+    *op2* and *op3* for the regular expression *op1* (if op3 is not given,
+    searches until the end of the bytes object). Returns a positive integer if
+    a match found found; if a set of patterns has been compiled, the integer
+    then indicates which pattern has matched. If multiple patterns from the
+    set match, the left-most one is taken. If multiple patterns match at the
+    left-most position, it is undefined which of them is returned. The
+    instruction returns -1 if no match was found but adding more input bytes
+    could change that (i.e., a partial match). Returns 0 if no match was found
+    and adding more input would not change that. 
     
     Todo: The string variant is not yet implemented.
     """
