@@ -95,3 +95,7 @@ def _(self, i):
 def _(self, i):
     _splitBlock(self, i)
     
+@canonifier.when(instructions.debug.InternalError)
+def _(self, i):
+    _splitBlock(self, i)
+    

@@ -78,7 +78,8 @@ tokens = (
    'REGEXP',
    'EXCEPTION',
    'COMMENTLINE',
-   
+   'ATTRIBUTE',
+
    'ATTR_DEFAULT'
 ) 
 
@@ -149,6 +150,11 @@ def t_IDENT(t): # must come before ADDR6.
             pass
             # error(t, "Identifiers starting with '__' are reserved for internal use")
         
+    return t
+
+def t_ATTRIBUTE(t): 
+    r'\&[_a-zA-Z][a-zA-Z0-9._]*'
+    t.value = t.value[1:]
     return t
 
 def t_ADDR6(t): # must come before DOUBLE.

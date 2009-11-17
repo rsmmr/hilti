@@ -44,7 +44,7 @@ def _(self, m):
             if isinstance(i.type(), type.ValueType) and i.type().wildcardType():
                 self.error(i, "global variable cannot have a wildcard type")
                 break
-            
+        
         if i.role() == id.Role.CONST:
             val = m.lookupIDVal(i)
             if isinstance(val, instruction.ConstOperand):

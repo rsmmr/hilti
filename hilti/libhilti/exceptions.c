@@ -13,6 +13,7 @@
 #include "hilti.h"
 
 extern const hlt_type_info hlt_type_info_int_32;
+extern const hlt_type_info hlt_type_info_string;
 
 // The mother of all exceptions.
 hlt_exception_type hlt_exception_unspecified = { "Unspecified", 0, 0 };
@@ -26,7 +27,7 @@ hlt_exception_type hlt_channel_full = { "ChannelFull", &hlt_exception_unspecifie
 hlt_exception_type hlt_channel_empty = { "ChannelEmpty", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_decoding_error = { "DecodingError", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_worker_thread_threw_exception = { "WorkerThreadThrewException", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_exception_internal_error = { "InternalError", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_internal_error = { "InternalError", &hlt_exception_unspecified, &hlt_type_info_string };
 hlt_exception_type hlt_exception_os_error = { "OSError", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_overlay_not_attached = { "OverlayNotAttached", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_index_error = { "IndexError", &hlt_exception_unspecified, 0 };
@@ -34,6 +35,7 @@ hlt_exception_type hlt_exception_underflow = { "Underflow", &hlt_exception_unspe
 hlt_exception_type hlt_exception_invalid_iterator = { "InvalidIterator", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_not_implemented = { "NotImplemented", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_pattern_error = { "PatternError", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_assertion_error = { "AssertionError", &hlt_exception_unspecified, &hlt_type_info_string };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, &hlt_type_info_int_32 };

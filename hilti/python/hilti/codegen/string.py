@@ -17,6 +17,11 @@ def _llvmStringTypePtr(len=0):
     return llvm.core.Type.pointer(_llvmStringType(len))
 
 def _makeLLVMString(s):
+    
+    if not s:
+        # The empty string.
+        return llvm.core.Constant.null(_llvmStringTypePtr(0))
+    
     s = s.encode("utf-8")
     size = llvm.core.Constant.int(llvm.core.Type.int(32), len(s))
     bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in s]

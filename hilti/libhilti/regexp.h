@@ -14,6 +14,11 @@
 /// Type for regular expressions.
 typedef struct hlt_regexp hlt_regexp;
 
+/// Type for compilation flags. A mask of these is the stored as a type
+/// parameter with the regexp type.
+typedef int16_t hlt_regexp_flags;
+static const int HLT_REGEXP_NOSUB = 1;  /// Compile without support for capturing sub-expressions.
+
 /// Type for range within a ~~Bytes object.
 typedef struct {
     hlt_bytes_pos begin;
@@ -26,12 +31,19 @@ typedef struct {
     hlt_regexp_range span;
 } hlt_regexp_span_result;
 
+/// Type for the result of ~~hlt_regexp_match_token.
+typedef struct {
+    int32_t rc;
+    hlt_bytes_pos end;
+} hlt_regexp_match_token_result;
+
 /// Instantiates a new Regexp instance.
 /// 
+/// type: The type information for the regexp type. 
 /// excpt: &
 /// 
 /// Returns: The new Regexp instance.
-extern hlt_regexp* hlt_regexp_new(hlt_exception** excpt);
+extern hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt);
 
 /// Compiles a pattern. 
 /// 

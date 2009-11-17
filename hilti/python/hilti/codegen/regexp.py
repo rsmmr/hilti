@@ -2,11 +2,15 @@
 #
 # Code generator for regexp instructions.
 
+builtin_id = id
+
 import llvm.core
 
 from hilti.core import *
 from hilti import instructions
 from codegen import codegen
+
+import bytes
 
 _doc_c_conversion = """A ``regexp`` object is mapped to ``hlt_regexp *``."""
 
@@ -29,8 +33,9 @@ def _(op, refine_to):
     const = codegen.llvmAddGlobalVar(ptr, "regexp-const")
 
     def callback():
-        regexp = codegen.llvmGenerateCCallByName("hlt::regexp_new", [], abort_on_except=True)
-        ref_type = type.Reference([type.RegExp()])
+        ref_type = refine_to if refine_to else type.Reference([type.RegExp()]) 
+        top = instruction.TypeOperand(ref_type)
+        regexp = codegen.llvmGenerateCCallByName("hlt::regexp_new", [top], abort_on_except=True)
 
         if len(op.value()) == 1:
             # Just one pattern. We use regexp_compile().
@@ -64,7 +69,8 @@ def _(op, refine_to):
 
 @codegen.operator(instructions.regexp.New)
 def _(self, i):
-    result = self.llvmGenerateCCallByName("hlt::regexp_new", [])
+    top = instruction.TypeOperand(i.op1().value())
+    result = self.llvmGenerateCCallByName("hlt::regexp_new", [top])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.regexp.Compile)
@@ -73,7 +79,14 @@ def _(self, i):
         self.llvmGenerateCCallByName("hlt::regexp_compile", [i.op1(), i.op2()])
     else:
         self.llvmGenerateCCallByName("hlt::regexp_compile_set", [i.op1(), i.op2()])
-    
+
+def _bytesArgs(i):        
+    op1 = codegen.llvmOp(i.op1())
+    op2 = codegen.llvmOp(i.op2())
+    op3 = codegen.llvmOp(i.op3()) if i.op3() else bytes.llvmEnd()
+    types = [i.op1().type(), i.op2().type(), type.IteratorBytes(type.Bytes())]
+    return ([op1, op2, op3], types)
+        
 @codegen.when(instructions.regexp.Find)
 def _(self, i):
     if isinstance(i.op2().type(), type.String):
@@ -81,11 +94,20 @@ def _(self, i):
         result = self.llvmGenerateCCallByName("hlt::regexp_string_find", [i.op1(), i.op2()])
     else:
         # Bytes version.
-        op1 = codegen.llvmOp(i.op1())
-        op2 = codegen.llvmOp(i.op2())
-        op3 = codegen.llvmOp(i.op3()) if i.op3() else bytes.llvmEnd()
-        types = [i.op1().type(), i.op2().type(), type.IteratorBytes(type.Bytes())]
-        result = self.llvmGenerateCCallByName("hlt::regexp_bytes_find", [op1, op2, op3], arg_types=types, llvm_args=True)
+        (args, types) = _bytesArgs(i)
+        result = self.llvmGenerateCCallByName("hlt::regexp_bytes_find", args, arg_types=types, llvm_args=True)
+    
+    self.llvmStoreInTarget(i.target(), result)
+
+@codegen.when(instructions.regexp.MatchToken)
+def _(self, i):
+    if isinstance(i.op2().type(), type.String):
+        # String version.
+        result = self.llvmGenerateCCallByName("hlt::regexp_string_match_token", [i.op1(), i.op2()])
+    else:
+        # Bytes version.
+        (args, types) = _bytesArgs(i)
+        result = self.llvmGenerateCCallByName("hlt::regexp_bytes_match_token", args, arg_types=types, llvm_args=True)
     
     self.llvmStoreInTarget(i.target(), result)
     

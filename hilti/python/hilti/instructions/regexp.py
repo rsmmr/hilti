@@ -79,6 +79,30 @@ class Find(Instruction):
     
     Todo: The string variant is not yet implemented.
     """
+
+_token = isTuple([integerOfWidth(32), iteratorBytes])
+
+@instruction("regexp.match_token", op1=referenceOf(regexp), op2=_string_or_iter, op3=optional(_none_or_iter), target=_token)
+class MatchToken(Instruction):
+    """Matches the beginning of either the string in *op1* or the byte
+    iterator range between *op2* and *op3* for the regular expression *op1*
+    (if op3 is not given, searches until the end of the bytes object). Returns
+    a 2-tuple with (1) a integer match-indicator corresponding to the one
+    returned by ~~Find; and (2) a bytes iterator that, if a match has been
+    found, points to the first position after the match; if there's no match,
+    the second element is undefined. 
+    
+    The regexp must have been compiled with the ~~NoSub attribute. 
+
+    Note: As the name implies, this a specialized version for parsing
+    purposes, enabling optimizing for the case that we don't need any
+    subexpression capturing and must start the match right at the initial
+    position. Internally, the implementation is only slightly optimized at the
+    moment but it could be improved further at some point. 
+    
+    Todo: The string variant is not yet implemented. The bytes implementation
+    should be further optimized. 
+    """
     
 _range = isTuple([iteratorBytes] * 2)
 _span = isTuple([integerOfWidth(32), _range])

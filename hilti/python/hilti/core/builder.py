@@ -1,5 +1,7 @@
 # $Id$
 
+builtin_id = id
+
 import ast
 import instruction
 import function
@@ -8,13 +10,125 @@ import block
 import type
 import constant
 import module
+import util
 
-class ModuleBuilder(object):
+class OperandBuilder(object):
+    """A class for creating instruction operands.
+    """
+    def __init__(self):
+        self._cache = {}
+    
+    def constOp(self, value, ty=None):
+        """Return a constant operand.
+        
+        value: any - The value of the constant. 
+        ty: HiltiType - The type of the constant. For convenience, the type
+        can be skipped for integers.  
+        
+        Returns: ~~ConstOperand - The constant operand.
+        """
+        
+        if isinstance(value, int) and not ty:
+            ty = type.Integer(0)
+        
+        assert ty
+        
+        return instruction.ConstOperand(constant.Constant(value, ty))
+    
+    def typeOp(self, type):
+        """Return a type operand.
+        
+        type: HiltiType - The type reference by the operand.
+        
+        Returns: ~~TypeOperand - The type operand.
+        """
+        return instruction.TypeOperand(type)
+
+    def idOp(self, i):
+        """Return an ID operand.
+        
+        i: ID - The ID to build an operand for.
+        
+        Returns: IDOperand - The ID operand.
+        """
+        assert isinstance(i, id.ID)
+        return instruction.IDOperand(i)
+    
+    def tupleOp(self, elems):
+        """Return an tuple operand.
+        
+        elems: list of ~~Operand - The elements of the tuple.
+        
+        Returns: TupleOperand - The tuple operand made of the given elements. 
+        """
+        return instruction.TupleOperand(elems)
+    
+    def cache(self, key, compute):
+        """Caches onces computed values for later reuse. The first time the
+        method is called for a particular *key*, it calls the *compute*
+        function to compute a value (of arbitrary type), which is cached
+        internally and then returned. On subsequent calls with the same *key*,
+        the cached value is returned directly and *compute* is ignored. 
+        
+        key: string or any - If a string, the string comparision is used to
+        match the key with subsequent calls. Otherwise, ``id(key)`` is used.
+        
+        compute: function - A function returning the value to be cached. The
+        function will only be called if *cache* has not been called with the
+        same key before. The function must not return None. *compute* can be
+        set to None if the caller can guarentee that for the *key* a value has
+        already been cached earlier.
+        """
+        assert key
+        if not isinstance(key, str):
+            key = builtin_id(key)
+
+        try:
+            return self._cache[key]
+        except KeyError:
+            assert compute
+            value = compute()
+            assert value != None
+            self._cache[key] = value
+            return value
+
+    def isCached(self, key):
+        """Checks whether has already been cached for a key. 
+        
+        key: string or any - See ~~cache for details.
+        
+        Returns: bool - True if ~~cache() has already been called for that key.
+        """
+        assert key
+        if not isinstance(key, str):
+            key = builtin_id(key)
+            
+        return key in self._cache
+
+    def setCacheEntry(self, key, value):
+        """Initializes a cache entry explicity. This can be useful
+        if the *compute* function passed to ~~cache might
+        recursively access the same *key* during execution.
+        
+        key: string or any - If a string, the string comparision is used to
+        match the key with subsequent calls. Otherwise, ``id(key)`` is used.
+        
+        value: any - The value to associate with the key.  The value
+        must not be None.
+        """
+        assert key and value
+        if not isinstance(key, str):
+            key = builtin_id(key)
+            
+        self._cache[key] = value
+
+class ModuleBuilder(OperandBuilder):
     """A class for adding entities to a module.
     
     module: Module - The model going to be extended.
     """
     def __init__(self, module):
+        super(ModuleBuilder, self).__init__()
         self._module = module
 
     def module(self):
@@ -23,6 +137,37 @@ class ModuleBuilder(object):
         Returns: Module - The module.
         """
         return self._module
+
+    def importModule(self, name):
+        """Imports another module. This has the same effect as a HILTI
+        ``import`` statement.
+        
+        name: string - The name of the module.
+        
+        Returns: bool - True iff the module has been imported successfully.
+        
+        Todo: This function has not been implemented yet. 
+        """
+        assert False and "import not implemented yet"
+    
+    def idOp(self, i):
+        """Returns an ID operand. Different from ~~OperandBuilder.idOp, this
+        method can lookup the ID by name in  the module's scope.
+        
+        i: ID or string - The ID, or the name of the ID which is then looked
+        up in the module's scope. In the latter case, the ID *must* exist. 
+        
+        Returns: IDOperand - The ID operand.
+        """
+        if isinstance(i, str):
+            li = self._module.lookupID(i)
+            if not li:
+                raise ValueError("ID %s does not exist in function's scope" % i)
+
+            return instruction.IDOperand(li)
+            
+        else:
+            return OperandBuilder.idOp(self, i)
     
     def addConstant(self, name, type, value):
         """Adds a new global constant to the module scope's.
@@ -49,62 +194,9 @@ class ModuleBuilder(object):
         i = id.ID(name, type.TypeDeclType(ty), id.Role.GLOBAL)
         self._module.addID(i)        
         return self.typeOp(ty)
-
-    def constOp(self, value, type):
-        """Return a constant operand.
-        
-        value: any - The value of the constant.
-        type: HiltiType - The type of the constant.
-        
-        Returns: ~~ConstOperand - The constant operand.
-        """
-        return instruction.ConstOperand(constant.Constant(value, type))
     
-    def typeOp(self, type):
-        """Return a type operand.
-        
-        type: HiltiType - The type reference by the operand.
-        
-        Returns: ~~TypeOperand - The type operand.
-        """
-        return instruction.TypeOperand(type)
-        
-class BlockBuilder(ModuleBuilder): 
-    """A class for building sequences of instructions in memory. Each instance
-    of a Builder is associated with a ~~Block to which the instruction will be
-    added. 
-    
-    A ~~Builder supports all HILTI instructions as method calls. In general,
-    an instruction of the form ``<target> = <part1>.<part2> <op1> <op2>``
-    translated into a builder method ``<part1>_<part2>(<target>, <op1>,
-    <op2>)`` where ``<target>`` and ``<op1>/<op2>`` are instances of
-    ~~instruction.Operand. If an instruction has target, the method returns
-    the target operand. (Note that these methods are not documented in the
-    ~~Builder's method reference.)
-
-    mod: Module - The module the block is part of.
-    b: Block - The block the builder adds instruction to. 
-    """
-    def __init__(self, mod, b):
-        assert isinstance(mod, module.Module)
-        assert isinstance(b, block.Block)
-        super(BlockBuilder, self).__init__(mod)
-        self._block = b
-        
-    def block(self):
-        """Returns the block this builder is adding instructions to.
-        
-        Returns: Block - The block.
-        """
-        return self._block
-
-    def _setBlock(self, b):
-        assert isinstance(b, block.Block)
-        self._block = b
-
-class FunctionBuilder(BlockBuilder):
-    """A class for building functions. Instructions can be added to the
-    function in the same way as provided by ~~Builder for blocks.
+class FunctionBuilder(OperandBuilder):
+    """A class for building functions. 
     
     mbuilder: ModuleBuilder - The builder for the module the function will become part of.
     name: string - The name of the function.
@@ -113,14 +205,12 @@ class FunctionBuilder(BlockBuilder):
     location: Location - The location to be associated with the function.
     """
     def __init__(self, mbuilder, name, ftype, cc=function.CallingConvention.HILTI, location=None):
+        super(FunctionBuilder, self).__init__()
         i = id.ID(name, ftype, id.Role.GLOBAL)
-        self._func = function.Function(ftype, i, cc, location)
         self._mbuilder = mbuilder
+        self._func = function.Function(ftype, i, cc, location)
         mbuilder.module().addID(i, self._func)
-        self._block = block.Block(self._func)
-        self._func.addBlock(self._block)
-        self._blocks = 1
-        super(FunctionBuilder, self).__init__(mbuilder.module(), self._block)
+        self._idnames = set()
         
     def function(self):
         """Returns the HILTI function being build.
@@ -129,139 +219,377 @@ class FunctionBuilder(BlockBuilder):
         """
         return self._func
 
-    def idOp(self, i):
-        """Return an ID operand.
+    def moduleBuilder(self):
+        """Returns the builder for the module the function being built is part
+        of.
         
-        i: ID or string - The ID, or the name of the ID which is then
-        looked up in the current scope. In the latter case, the ID *must*
-        exist. 
+        Returns: ~~ModuleBuilder - The module builder.
+        """
+        return self._mbuilder
+
+    def cacheBuilder(self, name, generate):
+        """XXX"""
+        def _makeBlock():
+            def _do():
+                builder = BlockBuilder(name, self)
+                generate(builder)
+                return builder
+            
+            return _do
+            
+        return self.cache("_block-%s" % name, _makeBlock())
+    
+    def idOp(self, i):
+        """Returns an ID operand. Different from ~~OperandBuilder.idOp, this
+        method can lookup the ID by name in function's scope (including the
+        global module scope). 
+        
+        i: ID or string - The ID, or the name of the ID which is then looked
+        up in the module's scope. In the latter case, the ID *must* exist. 
         
         Returns: IDOperand - The ID operand.
         """
         if isinstance(i, str):
             li = self._func.lookupID(i)
-            if not li:
-                li = self._mbuilder.module().lookupID(i)
-            if not li:
-                raise ValueError("ID %s does not exist in function's scope" % i)
+            if li:
+                return instruction.IDOperand(li)            
+                
+            return self._mbuilder.idOp(i)
         
-            i = li
-            
-        return instruction.IDOperand(i)
-
-    def addLocal(self, name, type, value = None):
-        """Adds a new local variable. 
+        else:
+            return OperandBuilder.idOp(self, i)
+    
+    def addLocal(self, name, type, reuse=False, value=None):
+        """Adds a new local variable to the function. Unless *reuse* is true,
+        it is an error if the local already exists. If 
         
         name: string - The name of the variable.
-        type: ValueType - The type of the variable.
-        value: ConstOperand - Optional initialization of the local. 
         
-        Returns: IDOperand - An IDOperand referencing the new local. 
+        type: ValueType - The type of the variable; if the variable already
+        exists, the type must match of the existing declaration. 
+        
+        reuse: bool - If true, an existing local will be reused.  
+        
+        value: ConstOperand - Optional initialization of the local.  Note that
+        if the local already exists, it's current value will be overridden.
+        
+        Returns: IDOperand - An IDOperand referencing the new (or local) local. 
         """
-        i = id.ID(name, type, id.Role.LOCAL)
-        self._func.addID(i)
         
-        op = self.idOp(i)
+        if not reuse and self.isCached(name):
+            util.internal_error("local '%s' already exists" % name)
         
-        if value:
-            assert isinstance(value, instruction.ConstOperand)
-            self.assign(op, self.constOp(value, type))
+        def _makeLocal():
+            i = id.ID(name, type, id.Role.LOCAL)
+            self._func.addID(i)
             
-        return op
-    
-    def startNewBlock(self, postfix = None, _block=None):
-        """Starts a new block.
+            op = self.idOp(i)
+            
+            if value:
+                assert isinstance(value, instruction.ConstOperand)
+                self.assign(op, self.constOp(value, type))
+            
+            return op
+                    
+        return self.cache(name, _makeLocal)
         
-        postfix: string - A label appended to the auto-generated block name.
-        """
-        self._block = block.Block(self._func, name=self._blockName(postfix))
-        self._func.addBlock(self._block)
-        self._setBlock(self._block)
+    def _idName(self, name=""):
+        if name == None:
+            return None
         
-    def makeIfElse(self, cond):
-        """Builds an If-Else construct based on a given condition. The
-        function returns two ~~BlockBuilder for the two branches, which can
-        then be filled. It also starts a new block within this FunctionBuilder
-        to which all subsequent instruction will be added. The two branches
-        continue execution with that block eventually (unless they leave the
-        function otherwise). 
-        
-        cond: Operand - The condition operand; must be of type bool.
-        
-        Returns (BlockBuilder, BlockBuilder) - The first builder is for the
-        *true* branch, the second for the *false* branch.
-        """
-        assert cond.type() == type.Bool
-        
-        yes = BlockBuilder(self._mbuilder.module(), block.Block(self._func, name=self._blockName("true")))
-        no = BlockBuilder(self._mbuilder.module(), block.Block(self._func, name=self._blockName("false")))
-        self._func.addBlock(yes.block())
-        self._func.addBlock(no.block())
-        
-        self.if_else(cond, self.idOp(yes.block().name()), self.idOp(no.block().name()))
-        
-        self.startNewBlock("cont")
-        yes.block().setNext(self._block)
-        no.block().setNext(self._block)
-        
-        return (yes, no)
-    
-    def _makeIf(self, cond, case):
-        assert cond.type() == type.Bool
+        i = 1
+        nname = name
+        while nname in self._idnames:
+            i += 1
+            nname = "%s_%d" % (name, i)
+            
+        self._idnames.add(nname)
+        return nname
 
-        postfix = "true" if case else "false"
-        branch = BlockBuilder(self._mbuilder.module(), block.Block(self._func, name=self._blockName(postfix)))
-        self._func.addBlock(branch.block())
+class BlockBuilder(OperandBuilder): 
+    """A class for building blocks of instruction in memory. A ~~BlockBuilder
+    supports all HILTI instructions as method calls. In general, an
+    instruction of the form ``<target> = <part1>.<part2> <op1> <op2>``
+    translated into a builder method ``<part1>_<part2>(<target>, <op1>,
+    <op2>)`` where ``<target>`` and ``<op1>/<op2>`` are instances of
+    ~~instruction.Operand. If an instruction has target, the method returns
+    the target operand. (Note that these methods are not documented in the
+    ~~Builder's method reference.)
 
-        cont = block.Block(self._func, name=self._blockName("cont"))
-        self._func.addBlock(cont)
+    name: string or None - A label for the new block. If None, the block will
+    not have a label associated with it. Note the that generated label might
+    be different if a block of that name already exists; the new block will
+    always have a unique name. 
+    
+    fbuilder: ~~FunctionBuilder  - The builder for the function the block
+    being built is part of. 
+    """
+    def __init__(self, name, fbuilder):
+        super(BlockBuilder, self).__init__()
+        self._fbuilder = fbuilder
+        self._block = block.Block(self._fbuilder.function(), name="@%s" % fbuilder._idName(name))
+        self._fbuilder.function().addBlock(self._block)
+        self._next_comment = []
         
-        op1 = self.idOp(branch.block().name())
-        op2 = self.idOp(cont.name())
+    def block(self):
+        """Returns the block this builder is adding instructions to.
         
-        if case:
-            self.if_else(cond, op1, op2)
+        Returns: Block - The block.
+        """
+        return self._block
+
+    def functionBuilder(self):
+        """Returns the builder for the function the block being built is part
+        of.
+        
+        Returns: ~~FunctionBuilder - The function builder.
+        """
+        return self._fbuilder
+
+    def idOp(self, i):
+        """Returns an ID operand. Different from ~~OperandBuilder.idOp, this
+        method can lookup the ID by name in the block's scope (including the
+        function's scope and the global module scope). 
+        
+        i: ID or string - The ID, or the name of the ID which is then looked
+        up in the module's scope. In the latter case, the ID *must* exist. 
+        
+        Returns: IDOperand - The ID operand.
+        """
+        return self._fbuilder.idOp(i)
+    
+    def setComment(self, comment):
+        """Associates a comment with block being built.
+        
+        commment: string - The comment
+        """
+        self._block.setComment(comment)
+
+    def setNextComment(self, comment):
+        """Associates a comment with the next instruction that will be added
+        to the block.
+        
+        commment: string - The comment.
+        """
+        self._next_comment += [comment]
+        
+    def labelOp(self):
+        """Returns an ID operand referencing the block being built. The block
+        must have a name associated with. 
+        
+        Returns: IDOperand - The ID operand refering to the block.
+        """
+        return self._fbuilder.idOp(self._block.name())
+        
+    def _label(self, tag1, tag2):
+        
+        if tag1:
+            tag1 = "%s_" % tag1
         else:
-            self.if_else(cond, op2, op1)
-        
-        self._setBlock(cont)
-        branch.block().setNext(self._block)
-        
-        return branch
+            tag1 = ""
+
+        return self._fbuilder._idName(tag1 + tag2)
     
-    def makeIf(self, cond):
-        """Builds an If construct based on a given condition. The function
-        returns one ~~BlockBuilder for the case that the condition is true,
-        which can then be filled. It also starts a new block within this
-        FunctionBuilder to which all subsequent instructions will be added.
-        This block will be immediately branched to if the condition is false.
-        The true-branch continues execution with that block eventually as well
-        (unless it leaves the function otherwise first).
+    def makeIfElse(self, cond, yes=None, no=None, cont=None, tag=None):
+        """Builds an If-Else construct based on a given condition. The
+        function creates two ~~BlockBuilder for the two branches, which can
+        then be filled with instructions. The function also creates one
+        continuation block, and the two branches are setup to continue
+        execution there (unless they leave the current function otherwise).
         
-        cond: Operand - The condition operand; must be of type bool.
+        All three builders can optionally be substitued with one passed in.
+        Note that if *yes* or *no* are passed in, their successor block is
+        *not* set to the continuation builder (i.e., they are left untouched).
         
-        Returns BlockBuilder - The builder for the *true* branch. 
+        cond: ~~Operand - The condition operand; must be of type bool.
+        yes: ~~BlockBuilder - A builder to take the role of the true branch.
+        no: ~~BlockBuilder - A builder to take the role of the false branch.
+        cont: ~~BlockBuilder - A builder to take the role of continuation
+        branch.
+        tag: string - If given, will used to generate labels for the created
+        blocks.
+        
+        Returns (~~BlockBuilder, ~~BlockBuilder, ~~BlockBuilder) - The first
+        builder is for the *true* branch, the second for the *false* branch,
+        and the third for continuing execution afterwards. If any of these is
+        passed in, they will be returned here; otherwise, new builders will be
+        returned.
         """
-        return self._makeIf(cond, True)
-    
-    def makeIfNot(self, cond):
-        """Builds an If construct based on a given condition. The function
-        returns one ~~BlockBuilder for the case that the condition is true,
-        which can then be filled. It also starts a new block within this
-        FunctionBuilder to which all subsequent instructions will be added.
-        This block will be immediately branched to if the condition is false.
-        The true-branch continues execution with that block eventually as well
-        (unless it leaves the function otherwise first).
-        
-        cond: Operand - The condition operand; must be of type bool.
-        
-        Returns BlockBuilder - The builder for the *true* branch. 
-        """
-        return self._makeIf(cond, False)
+        assert cond.type() == type.Bool
+
+        yes_builder = BlockBuilder(self._label(tag, "true"), self._fbuilder) if not yes else yes
+        no_builder = BlockBuilder(self._label(tag, "false"), self._fbuilder) if not no else no
+        cont_builder = BlockBuilder(self._label(tag, "cont"), self._fbuilder) if not cont else cont
+
+        if not yes:
+            yes_builder.block().setNext(cont_builder.block())
             
-    def _blockName(self, postfix=""):
-        self._blocks += 1
-        return "b%d%s" % (self._blocks, ("_%s" % postfix) if postfix else "")
+        if not no:
+            no_builder.block().setNext(cont_builder.block())
+            
+        self.if_else(cond, yes_builder.labelOp(), no_builder.labelOp())
+        
+        return (yes_builder, no_builder, cont_builder)
+
+    def _makeIf(self, cond, invert, branch, cont, tag):
+        assert cond.type() == type.Bool
+
+        name = "false" if invert else "true"
+       
+        branch_builder = BlockBuilder(self._label(tag, name), self._fbuilder) if not branch else branch
+        cont_builder = BlockBuilder(self._label(tag, "cont"), self._fbuilder) if not cont else cont
+
+        if not branch:
+            branch_builder.block().setNext(cont_builder._block)
+
+        op1 = branch_builder.labelOp()
+        op2 = cont_builder.labelOp()
+        
+        if invert:
+            self.if_else(cond, op2, op1)
+        else:
+            self.if_else(cond, op1, op2)
+        
+        return (branch_builder, cont_builder)
+    
+    def makeIf(self, cond, yes=None, cont=None, tag=None):
+        """Builds an If construct based on a given condition.
+      
+        The function creates one ~~BlockBuilder for the true branch, which can
+        then be filled with instructions. The function also creates one
+        continuation block, and the branch is setup to continue execution
+        there (unless it leaves the current function otherwise).
+        
+        Both builders can optionally be substitued with one passed in. Note
+        that if *yes* is passed in, its successor block is *not* set to the
+        continuation builder (i.e., it is left untouched).
+        
+        cond: ~~Operand - The condition operand; must be of type bool.
+        yes: ~~BlockBuilder - A builder to take the role of the true branch.
+        cont: ~~BlockBuilder - A builder to take the role of continuation
+        branch.
+        tag: string - If given, will br used to generate labels for the created
+        blocks.
+        
+        Returns (~~BlockBuilder, ~~BlockBuilder) - The first builder is for
+        the *true* branch and the second for continuing execution afterwards.
+        If any of these is passed in, they will be returned here; otherwise,
+        new builders will be returned.
+        """
+        return self._makeIf(cond, False, yes, cont, tag)
+    
+    def makeIfNot(self, cond, no=None, cont=None, tag=None):
+        """Builds an If construct based on the inverse of a given condition.
+      
+        The function creates one ~~BlockBuilder for the false branch, which
+        can then be filled with instructions. The function also creates one
+        continuation block, and the branch is setup to continue execution
+        there (unless it leaves the current function otherwise).
+        
+        Both builders can optionally be substitued with one passed in. Note
+        that if *yes* is passed in, its successor block is *not* set to the
+        continuation builder (i.e., it is left untouched).
+        
+        cond: ~~Operand - The condition operand; must be of type bool.
+        no: ~~BlockBuilder - A builder to take the role of the false branch.
+        cont: ~~BlockBuilder - A builder to take the role of continuation
+        branch.
+        tag: string - If given, will be used to generate labels for the created
+        blocks.
+        
+        Returns (~~BlockBuilder, ~~BlockBuilder) - The first builder is for
+        the *no* branch and the second for continuing execution afterwards.
+        If any of these is passed in, they will be returned here; otherwise,
+        new builders will be returned.
+        """
+        return self._makeIf(cond, True, no, cont, tag)
+
+    def makeSwitch(self, cond, values, default=None, branches=None, cont=None, tag=None):
+        """Builds a Switch construct based on a given condition. The function
+        creates one ~~BlockBuilder for each alternative branch as well as one
+        for the default branch, all of which can then be filled with
+        instructions. All branches are setup to continue execution with *cont*
+        (unless they leave the current function otherwise)
+
+        All default and continuation builders can optionally be substitued
+        with ones passed in. Note that if *default* is passed in, its
+        successor block is *not* set to the continuation builder (i.e., it is
+        left untouched).
+
+        cond: ~~Operand - The condition operand.
+        values: list of ~~Operand - One operand for each possible alternative,
+        representing the value to be match against *cond*. The type of all the
+        operands must match that of *cond*.
+        default: ~~BlockBuilder - A builder to take the role of the default branch.
+        branches: list of ~~BlockBuilder - A list of builders to take the role
+        of the case branches; must have same length as *values*.
+        cont: ~~BlockBuilder - A builder to take the role of continuation
+        branch.
+        tag: string - If given, will used to generate labels for the created
+        blocks.
+        
+        Returns (~~BlockBuilder, list of ~~BlockBuilder, ~~BlockBuilder) - The
+        first builder is for the default branch; the list of builders has one
+        builder per alternative with their order corresponding to that of
+        *values*; and the final builder is for continuing execution afterwards
+        independent of the condition.  If any of these is passed in, they will
+        be returned here; otherwise, new builders will be returned.
+        """
+        
+        for v in values:
+            assert cond.type() == v.type()
+
+        alts = []
+        
+        if not branches:
+            branches = []
+            for i in range(len(values)):
+                b = BlockBuilder(self._label(tag, "case_%d" % i), self._fbuilder)
+                b.setComment("Case: %s" % values[i])
+                branches += [b]
+                
+        assert len(values) == len(branches)
+        alts = [self.tupleOp((v, b.labelOp())) for (v, b) in zip(values, branches)]
+
+        # Do these last to make the blocks' output order nicer.
+        default_builder = BlockBuilder(self._label(tag, "default"), self._fbuilder) if not default else default
+        cont_builder = BlockBuilder(self._label(tag, "cont"), self._fbuilder) if not cont else cont
+
+        if not default:
+            default_builder.block().setNext(cont_builder._block)
+        
+        for b in branches:
+            b.block().setNext(cont_builder._block)
+        
+        self.switch(cond, default_builder.labelOp(), self.tupleOp(alts))
+            
+        return (default_builder, branches, cont_builder)
+
+    def makeInternalError(self, msg):
+        """Generates an internal_error instruction.
+        
+        msg: string - A message to associate with the error.
+        """
+        self.debug_internal_error(self.constOp(msg, type.String))
+        
+    def makeRaiseException(self, exception, arg):
+        """Raises an exception.
+        
+        exception: string - The name of the exception.
+        arg: ~~Operand or None - The argument for the exception, or none if
+        the exception type does not expect an argument.
+        """
+        eid = self.idOp(exception)
+        assert eid.type() == type.TypeDeclType and eid.type().declType() == type.Exception
+        etype = eid.type().declType()
+        
+        def _addExcptLocal():
+            ename = self._fbuilder._idName("excpt")
+            return self._fbuilder.addLocal(ename, type.Reference([etype]))
+        
+        local = self._fbuilder.cache("makeRaiseException_local", _addExcptLocal)
+        self.new(local, eid, arg)
+        self.exception_throw(local)
         
 def _init_builder_instructions():
     # Adds all instructions as methods to the Builder class.
@@ -277,7 +605,7 @@ def _init_builder_instructions():
             if not args:
                 raise IndexError(op)
             
-            assert isinstance(args[0], instruction.Operand)
+            assert (not args[0]) or isinstance(args[0], instruction.Operand)
             
             return (args[0], args[1:])
         
@@ -296,6 +624,9 @@ def _init_builder_instructions():
                     raise TypeError("%s missing for instruction %s" % (e, _do_build.__name__))
                 
                 ins = _do_build._ins(op1=op1, op2=op2, op3=op3, target=target)
+                ins.setComment(self._next_comment)
+                self._next_comment = []
+                
                 self._block.addInstruction(ins)
                 
                 if sig.target():

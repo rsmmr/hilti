@@ -1627,17 +1627,21 @@ class CodeGen(visitor.Visitor):
         etype = codegen.llvmAddExceptionType(type)
         return self._llvmNewException(etype, arg, location)
         
-    def llvmRaiseExceptionByName(self, exception, location):
+    def llvmRaiseExceptionByName(self, exception, location, arg=None):
         """Generates the raising of an exception given by name. The method
         uses the current :meth:`builder`.
         
 	    exception: string - The name of the internal global variable
         representing the exception *type* to raise. These names are defined in 
         |hilti.h|.
+        
+        location: Location - A location to associate with the exception.
+
+        arg: llvm.core.Value - The exception argument if exception takes one,
+        or None otherwise. 
         """
         etype = self.llvmGetGlobalVar(exception, self.llvmTypeExceptionType(), ptr=True)
-        # FIXME: Add support for arguments once needed.
-        excpt = self._llvmNewException(etype, None, location)
+        excpt = self._llvmNewException(etype, arg, location)
         self.llvmRaiseException(excpt)
         
     # Generates LLVM tail call code. From the LLVM 1.5 release notes:
@@ -2103,6 +2107,10 @@ class CodeGen(visitor.Visitor):
                 # If init is an LLVM value, it represents the constant that
                 # we already have created previously.
                 if isinstance(init, llvm.core.Value):
+                    
+                    if isinstance(t, type.Reference):
+                        init = self.builder().load(init, "const-deref")
+                        
                     return self.builder().load(init, "const")
 
                 # Create the constant.
@@ -2110,13 +2118,15 @@ class CodeGen(visitor.Visitor):
                 val = self._callCallback(CodeGen._CB_CTOR_EXPR, t, [init, t])
                 const = self.llvmAddGlobalConst(val, i.name())
 
+                self.currentModule().addID(i, const) # Save the value for later. 
+
                 # Again, for references, constants are in fact a pointer to
                 # the const. Note that we can't use llvmOp() recursively here
-                # because the LLVM constant must have a const initializer.
+                # because the LLVM constant must have a const initializer. Do
+                # this *after* saving the value as otherwise we'd save a local
+                # tmp.
                 if isinstance(t, type.Reference):
                     const = self.builder().load(const, "const-deref")
-                
-                self.currentModule().addID(i, const) # Save the value for later. 
                 
                 return self.builder().load(const, "const")
             

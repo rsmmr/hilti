@@ -609,6 +609,7 @@ def p_type_param_list(p):
 def p_type_param(p):
     """type_param : INTEGER
                   | DOUBLE 
+                  | ATTRIBUTE
                   | type
                   | '*'
     """

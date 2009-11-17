@@ -1,0 +1,25 @@
+# $Id$
+#
+# @TEST-EXEC: hilti-build -d %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC: test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+     debug.assert False "Test False"
+}     
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+     debug.assert True "Test True"
+}     
+
+

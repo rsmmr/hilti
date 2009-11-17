@@ -1,9 +1,11 @@
 # $Id$
 
 builtin_type = type
+builtin_id = id
 
 import types 
 import inspect
+import id
 
 import util
 
@@ -224,11 +226,18 @@ class HiltiType(Type):
     def args(self):
         """Returns the type's parameters.
         
-        args: list of any - The type parameters, or the empty list for
-        non-parameterized types and wildcard types.  
         """
         return self._args
 
+    def setArgs(self, args):
+        """Sets the type's arguments.
+        
+        args: list of any - The type parameters, or the empty list for
+        non-parameterized types and wildcard types.  
+        """
+        self._args = args
+        self._updateName(self.__class__._name, args)
+    
     def wildcardType(self):
         """Returns whether this type matches any instanced of the same type.
         
@@ -905,28 +914,66 @@ class IteratorList(Iterator):
 
 class RegExp(HeapType):
     """Type for ``regexp``. 
+    
+    args: list containing strings - The set of compilation attributes applying
+    to this type; can be empty if none. Currently defined is only ``nosub`` to
+    specify that no subgroup capturing will be used. 
+    
+    Note: The attributes are internally converted into a single integer
+    containing the bitmask as expected by libhilti. 
+    
+    Todo: Not sure this attribute handling is great ... If more types need
+    something like this, we should come up with a nicer solution. 
     """
-    def __init__(self):
-        super(RegExp, self).__init__([], RegExp._name)
+    
+    # This table maps flag attributes to their decimal values. Note that the
+    # value must correspond to what libhilti defines in regexp.h.
+    _flags = {
+        "<wildcard>": 0,
+        "nosub": 1
+        }
+    
+    def __init__(self, args=[]):
 
+        flags = 0
+        for arg in args:
+            try:
+                flags += RegExp._flags[arg]
+            except KeyError:
+                raise HiltiType.ParameterMismatch(self, "unknown regexp flag %s" % arg)
+
+        super(RegExp, self).__init__([flags], RegExp._name)
+        self._updateName(RegExp._name, ["&%s" % a for a in args])
+
+    def cmpWithSameType(self, other):
+        # We ignore differences in flags. 
+        return True
+        
     _name = "regexp"
     _id = 18
     
 class Function(Type):
     """Type for functions. 
     
-    args: list of (~~ID, default) tuples - The function's arguments, with
-    *default* being optional default values. Set *default* to *None* if no
-    default.
+    args: list of either ~~IDs or of (~~ID, default) tuples - The function's
+    arguments, with *default* being optional default values in the latter
+    case. *default* can also be set to *None* for no default.
     
     resultt - ~~Type - The type of the function's return value (~~Void for none). 
     """
     def __init__(self, args, resultt):
-        name = "function (%s) -> %s" % (", ".join([str(id.type()) for (id, default) in args]), resultt)
-        super(Function, self).__init__(name)
-        self._ids = [id for (id, default) in args]
-        self._defaults = [default for (id, default) in args]
+        if args and isinstance(args[0], id.ID):
+            self._ids = args
+            self._defaults = [None] * len(args)
+        else:
+            self._ids = [i for (i, default) in args]
+            self._defaults = [default for (i, default) in args]
+            
         self._result = resultt
+
+        args = ", ".join([str(i.type()) for (i, default) in zip(self._ids, self._defaults)])
+        name = "function (%s) -> %s" % (args, resultt)
+        super(Function, self).__init__(name)
         
     def args(self):
         """Returns the functions's arguments.
@@ -1007,7 +1054,7 @@ class Exception(HeapType):
     from, or None if it should be derived from the built-in top-level
     ``Hilti::Exception`` class. 
     """
-    def __init__(self, ename, argtype, baseclass):
+    def __init__(self, ename, argtype=None, baseclass=None):
         name = "exception %s (%s) : %s" % (ename, argtype, str(baseclass) if baseclass else "Hilti::Exception")
         super(Exception, self).__init__([], Exception._name)
         self._ename = ename
@@ -1044,7 +1091,7 @@ class Exception(HeapType):
         
         Returns: bool - True if *t* is the root exception type. 
         """
-        return id(self) == id(Exception._root)
+        return builtin_id(self) == builtin_id(Exception._root)
         
     _name = "exception"
     _id = 20
@@ -1109,12 +1156,12 @@ def fmtTypeClass(cls, doc=False):
     return cls._name
     
 # List of keywords that the parser will understand to instantiate types.  Each
-# keyword is mapped to a tuple (class, args, defaults) where "class" is the
-# name of the class to instantiate for this keyword; num_args is the number
-# of type parameters this type expects (-1 for variable but one minimum); and
-# default is an optional list with predefined parameters to be used *instead* of
-# user-supplied params (optional). All classes given here must be derived from
-# HiltiType.
+# keyword is mapped to a tuple (class, args, defaults) where "class" is the name
+# of the class to instantiate for this keyword; num_args is the number of type
+# parameters this type expects (-1 for variable but one minimum; -2 for variable
+# with no mininum); and default is an optional list with predefined parameters
+# to be used *instead* of user-supplied params (optional). All classes given
+# here must be derived from HiltiType.
 
 _keywords = {
 	"int": (Integer, 1, None),
@@ -1135,7 +1182,7 @@ _keywords = {
     "port": (Port, 0, None),
     "vector": (Vector, 1, None),
     "list": (List, 1, None),
-    "regexp": (RegExp, 0, None),
+    "regexp": (RegExp, -2, []),
     }
 
 _all_hilti_types = {}
@@ -1156,7 +1203,7 @@ def getHiltiType(name, args = []):
     except KeyError:
         return (False, "no such type, %s" % name)
     
-    if args and (num_args == 0 or defs != None):
+    if args and (num_args == 0 or (defs != None and not num_args == -2)):
         return (False, "type %s does not accept type paramters" % name)
     
     wrong_args = False
@@ -1164,10 +1211,10 @@ def getHiltiType(name, args = []):
     if args and num_args >= 0 and len(args) != num_args and not (args == Wildcard or args == [Wildcard]):
         wrong_args = True
     
-    if num_args == -1 and not args:
+    if num_args < 0 and not args and defs == None:
         wrong_args = True
         
-    if  not args and not defs and num_args > 0:
+    if not args and not defs and num_args > 0:
         wrong_args = True
 
     if wrong_args:

@@ -8,7 +8,7 @@ class Node(visitor.Visitable):
     
     def __init__(self, location):
         self._location = location
-        self._comment = None
+        self._comment = []
         
     def location(self):
         """Returns the location associated with the node.
@@ -31,9 +31,9 @@ class Node(visitor.Visitable):
         node types. 
         """
         if isinstance(comment, str):
-            comment = [string]
+            comment = [comment]
             
-        self._comment = comment
+        self._comment += comment
     
     def comment(self):
         """Returns the comment associated with this node.

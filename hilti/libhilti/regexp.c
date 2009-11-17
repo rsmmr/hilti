@@ -10,6 +10,7 @@
 struct hlt_regexp {
     int32_t num; // Number of patterns in set.
     hlt_string* patterns;
+    hlt_regexp_flags flags;
     jrx_regex_t regexp;
 };
 
@@ -17,16 +18,26 @@ static hlt_string_constant ASCII = { 5, "ascii" };
 static hlt_string_constant EMPTY = { 12, "<no-pattern>" };
 static hlt_string_constant PIPE = { 4, " | " };
 
-hlt_regexp* hlt_regexp_new(hlt_exception** excpt)
+hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt)
 {
+    assert(type->type == HLT_TYPE_REGEXP);
+    assert(type->num_params == 1);
+
+    int64_t *flags = (int64_t*) &(type->type_params);
+
     hlt_regexp* re = hlt_gc_malloc_non_atomic(sizeof(hlt_regexp));
     re->num = 0;
     re->patterns = 0;
+    re->flags = (hlt_regexp_flags)(*flags);
     return re;
 }
 
-static inline int _anchor(int cflags) 
+static inline int _cflags(hlt_regexp_flags flags) 
 {
+    int cflags = REG_EXTENDED;
+    if ( flags & HLT_REGEXP_NOSUB )
+        cflags |= REG_NOSUB;
+    
     return cflags | ((cflags & REG_NOSUB) ? REG_ANCHOR : 0);
 }
 
@@ -57,7 +68,7 @@ void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception*
 
     re->num = 1;
     re->patterns = hlt_gc_malloc_non_atomic(sizeof(hlt_string));
-    jrx_regset_init(&re->regexp, -1, _anchor(REG_EXTENDED));
+    jrx_regset_init(&re->regexp, -1, _cflags(re->flags));
     _compile_one(re, pattern, 0, excpt);
     jrx_regset_finalize(&re->regexp);
 }
@@ -71,7 +82,7 @@ void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception** 
     
     re->num = hlt_list_size(patterns, excpt);
     re->patterns = hlt_gc_malloc_non_atomic(re->num * sizeof(hlt_string));
-    jrx_regset_init(&re->regexp, -1, _anchor(REG_EXTENDED));
+    jrx_regset_init(&re->regexp, -1, _cflags(re->flags));
 
     hlt_list_iter i = hlt_list_begin(patterns, excpt);
     hlt_list_iter end = hlt_list_end(patterns, excpt);
@@ -143,7 +154,8 @@ struct match_state {
 // first match. 
 static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms, 
                                      const hlt_bytes_pos begin, const hlt_bytes_pos end, 
-                                     jrx_offset* so, jrx_offset* eo, hlt_exception** excpt)
+                                     jrx_offset* so, jrx_offset* eo, hlt_exception** excpt,
+                                     int do_anchor)
 {
     // We follow one of two strategies here:
     // 
@@ -156,7 +168,9 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
     // (2) If we compiled with REG_NOSUB, we iterate ourselves over all
     // possible starting positions so that even though using the more
     // efficinet minimal matcher, we can still get starting and end
-    // positions. 
+    // positions. (Setting do_anchor to 1 prevents the iteration and will
+    // only match right from the beginning. Note that this flag only works
+    // with REG_NOSUB).
     
     // FIXME: In (2), we might be doing a bit more comparisions than with an
     // implicit .*, and the manual loop also adds a bit overhead. That seems
@@ -172,6 +186,8 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
     hlt_bytes_pos cur = begin;
     
     int8_t stdmatcher = ! (re->regexp.cflags & REG_NOSUB);
+
+    assert( (! do_anchor) || (re->regexp.cflags & REG_NOSUB));
     
     while ( acc <= 0 && ! hlt_bytes_pos_eq(cur, end, excpt) ) {
 
@@ -191,7 +207,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
             
             int len = block.end - block.start;
             jrx_accept_id rc = jrx_regexec_partial(&re->regexp, (const char*)block.start, len, first, last, ms);
-
+            
             if ( rc == 0 )
                 // No match.
                 break;
@@ -204,7 +220,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
                     if ( so )
                         *so = offset;
                     if ( eo )
-                        *eo = offset + ms->offset;
+                        *eo = offset + ms->offset - 1;
                 }
                 else if ( so || eo ) {
                     jrx_regmatch_t pmatch;
@@ -226,8 +242,8 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
             }
         }
         
-        if ( ! stdmatcher )
-            // We compiled with an implicit ".*". 
+        if ( stdmatcher || do_anchor )
+            // We compiled with an implicit ".*", or are asked to anchor.
             break;
         
         cur = hlt_bytes_pos_incr(cur, excpt);
@@ -246,7 +262,7 @@ int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const h
     }
     
     jrx_match_state ms;
-    jrx_accept_id acc = _search_pattern(re, &ms, begin, end, 0, 0, excpt);
+    jrx_accept_id acc = _search_pattern(re, &ms, begin, end, 0, 0, excpt, 0);
     jrx_match_state_done(&ms);
     return acc;
 }
@@ -263,7 +279,7 @@ hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos
     jrx_offset so = -1;
     jrx_offset eo = -1;
     jrx_match_state ms;
-    result.rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt);
+    result.rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt, 0);
     jrx_match_state_done(&ms);
     
     if ( result.rc > 0 ) {
@@ -303,7 +319,7 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, c
     jrx_offset so = -1;
     jrx_offset eo = -1;
     jrx_match_state ms;
-    int8_t rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt);
+    int8_t rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt, 0);
 
     if ( rc > 0 ) {
         _set_group(vec, begin, 0, so, eo, excpt);
@@ -324,4 +340,27 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, c
     jrx_match_state_done(&ms);
     return vec;
 }
+
+hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt)
+{
+    if ( ! re->num ) {
+        hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
+        hlt_regexp_match_token_result dummy;
+        return dummy;
+    }
     
+    if ( ! (re->regexp.cflags & REG_NOSUB) ) {
+        // Must be a REG_NOSUB pattern.
+        hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
+        hlt_regexp_match_token_result dummy;
+        return dummy;
+    }
+
+    jrx_match_state ms;
+    jrx_offset eo;
+    jrx_accept_id rc = _search_pattern(re, &ms, begin, end, 0, &eo, excpt, 1);
+    jrx_match_state_done(&ms);
+    
+    hlt_regexp_match_token_result result = { rc, hlt_bytes_pos_incr_by(begin, eo, excpt) };        
+    return result;
+}

@@ -86,6 +86,9 @@ extern hlt_exception_type hlt_exception_yield;
 // suspend execution.
 extern hlt_exception_type hlt_exception_yield;
 
+// Raised when debug.assert fails.
+extern hlt_exception_type hlt_exception_assertion_error;
+
 // Fall-back exception if nothing else is specified.
 extern hlt_exception_type hlt_exception_unspecified;
 

@@ -136,10 +136,13 @@ def _fmtType(ty):
 
     return str(ty)
 
-def _printComment(node, prefix=None):
+def _printComment(node, prefix=None, separate=False):
     if not node.comment():
         return
 
+    if separate:
+        printer.output("")
+    
     prefix = "(%s) " if prefix else ""
     
     for c in node.comment():
@@ -262,24 +265,30 @@ def _(self, i):
     self.output("{")
     self.push()
 
+    locals = False
     for i in sorted(func.IDs(), key=lambda i: i.name()):
         if i.role() == id.Role.LOCAL and not isinstance(i.type(), type.Label):
             self.output("local %s %s" % (_fmtType(i.type()), i.name()))
-    
+            locals = True
+            
+    if locals:
+        self.output("")
+            
     first = True
     for block in func.blocks():
         if not first:
             self.output("")
             
-        _printComment(block)
-        
         if block.name():
             self.pop()
             self.output("%s:" % block.name())
             self.push()
 
+        _printComment(block)
+            
         terminator = False
         for ins in block.instructions():
+            _printComment(ins, separate=True)
             target = _fmtInsOp("target", ins.target(), ins.signature().target(), "", " = ")
             op1 = _fmtInsOp("op1", ins.op1(), ins.signature().op1(), " ", "")
             op2 = _fmtInsOp("op2", ins.op2(), ins.signature().op2(), " ", "")

@@ -45,7 +45,7 @@ class Resolver(visitor.Visitor):
     - Resolves the *fmt* attribute of ~~Overlay fields (which is initially a
       string) to the numerical value corresponding to the ``Hilti::Packed``
       value; and assign a width to all potential integer field arguments.
-      
+
     Note: Methods in this class need to be careful with their input as it will
     not have been validated by the ~~checker when they are called; that's
     going to happen later. However, any errors the methods detect, they can
@@ -324,7 +324,7 @@ class Resolver(visitor.Visitor):
         for (op, ty, sig) in all_ops:
             if op and isinstance(op, instruction.TupleOperand):
                 op.setTuple(op.value())
-            
+
     def resolveInstrOperands(self, i):
         """Attempts to resolve all IDs in an instruction. ID's which cannot be
         resolved are left with type ~~Unknown. The given instruction is
@@ -441,7 +441,7 @@ class Resolver(visitor.Visitor):
             return
             
         t.setBaseClass(baseid.type().declType())
-                    
+
 resolver = Resolver()
 
 ##################################################################################
@@ -470,7 +470,7 @@ def _(self, id):
         
     if isinstance(t, type.Exception):
         self.resolveExceptionBase(t, id)
-    
+
 @resolver.when(instruction.Instruction)
 def _(self, i):
     self._debugInstruction(i, "starting on instruction")

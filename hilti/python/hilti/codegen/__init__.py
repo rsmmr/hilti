@@ -50,7 +50,7 @@ def generateLLVM(ast, libpaths, debug=False, verify=True):
     if *verify* is True, also verification) was successful. If so, the second
     element of the tuple is the resulting LLVM module.
     """
-    return codegen.codegen.generateLLVM(ast, libpaths, verify)
+    return codegen.codegen.generateLLVM(ast, libpaths, debug, verify)
 
 def generateCPrototypes(ast, fname):
     """Generates C interface prototypes for the functions in an |ast|.
