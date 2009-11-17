@@ -110,6 +110,7 @@ static int _regexec_partial_std(const jrx_regex_t *preg, const char *buffer, uns
 static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms)
 {
     jrx_accept_id acc = -1;
+    jrx_offset eo = 0;
     
     for ( const char* p = buffer; len; --len ) {
         jrx_assertion assertions = JRX_ASSERTION_NONE;
@@ -121,15 +122,19 @@ static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, uns
             assertions |= last;
         
         jrx_accept_id rc = jrx_match_state_advance_min(ms, *p++, assertions);
+
+        if ( ! rc ) {
+            ms->offset = eo;
+            return acc > 0 ? acc : 0;
+        }
         
-        if ( ! rc )
-            return 0;
-        
-        if ( rc > 0 ) 
+        if ( rc > 0 ) {
             acc = rc;
-        
+            eo = ms->offset;
+        }
     }
     
+    ms->offset = eo;
     return acc;
 }
 

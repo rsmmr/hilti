@@ -71,9 +71,9 @@ typedef struct jrx_regmatch_t {
 // ifdef's on them and/or expecting integers.
 #define REG_BASIC    0        // sic! (but not supported anyway)
 #define REG_EXTENDED (1 << 0) ///< "Extended" regular expression syntax (we only one we support).
+#define REG_NOSUB    (1 << 1)
     // FIXME: The following are not implemented currently. 
-#define REG_ICASE    (1 << 1) 
-#define REG_NOSUB    (1 << 2)
+#define REG_ICASE    (1 << 2) 
 #define REG_NEWLINE  (1 << 3)
 #define REG_NOTBOL   (1 << 4)  
 #define REG_NOTEOL   (1 << 5)   
