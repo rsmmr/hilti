@@ -8,6 +8,12 @@ import hilti.printer
 
 from core import grammar
 
+_LookAheadType = hilti.core.type.Integer(32)
+_LookAheadNone = hilti.core.instruction.ConstOperand(hilti.core.constant.Constant(0, _LookAheadType))
+
+def _flattenToStr(list):
+    return " ".join([str(e) for e in list])
+
 class ParserGen:
     def __init__(self, module):
         """Generates a parser from a grammar.
@@ -17,17 +23,21 @@ class ParserGen:
         """
         self._mbuilder = hilti.core.builder.ModuleBuilder(module)
         self._builders = {}
+        self._rhs_names = {}
         
         self._current_grammar = None
         self._current_ptab = None
-        self._current_builder = None
         self._current_type_struct = None
         self._current_type_struct_ref = None
-        self._current_type_token = None
+
+        # FIXME: Temporarily adding exception here. We should put these into an
+        # a separate BinPAC module but need to implement module import first. 
+        etype = hilti.core.type.Exception("ParseError", hilti.core.type.String())
+        excpt = hilti.core.id.ID("ParseError", hilti.core.type.TypeDeclType(etype), hilti.core.id.Role.GLOBAL, scope="BinPAC")
+        module.addID(excpt)
         
     def compile(self, grammar):
-        """Adds a parser to the HILTI module. The parser is generated from the
-        given grammar.
+        """Adds the parser for a grammar to the HILTI module. 
         
         This method can be called multiple times to generate a set of parsers
         for different grammars, all within the same module.
@@ -41,121 +51,273 @@ class ParserGen:
         # Create the struct type for the parsed grammar.
         fields = [hilti.core.id.ID("dummy", hilti.core.type.Integer(16), hilti.core.id.Role.LOCAL)]
         structty = hilti.core.type.Struct([(f, None) for f in fields])
-        self._mbuilder.addTypeDecl(self._makeName("object"), structty)
-        
+        self._mbuilder.addTypeDecl(self._name("object"), structty)
+
         self._current_ptab = grammar.parseTable()
         self._current_type_struct = structty
         self._current_type_struct_ref = hilti.core.type.Reference([structty])
-        self._current_type_token = hilti.core.type.Integer(32)
         
-        self._compileLHS(grammar.startSymbol())
+        self._functionNonTerminal(grammar.startSymbol())
 
-    def _makeName(self, tag1, tag2 = None):
+    ### Internal class to represent arguments of generated HILTI parsing function. 
+    
+    class _Args:
+        def __init__(self, fbuilder, args):
+            self.cur = fbuilder.idOp(args[0])
+            self.obj = fbuilder.idOp(args[1])
+            self.lahead = fbuilder.idOp(args[2])
+            
+        def tupleOp(self):
+            return hilti.core.instruction.TupleOperand([self.cur, self.obj, self.lahead])
+        
+    ### Methods generating parsing functions. 
+        
+    def _functionNonTerminal(self, symbol):
+        """Generates the HILTI function for parsing a non-terminal."""
+        
+        rules = self._current_ptab[symbol]
+        lookaheads = rules.keys()
+
+        # If we have only one look-ahead symbol, the decision is easy: there
+        # is only a single options for the RHS.
+        if len(lookaheads) == 1:
+            return self._functionRhsWithoutLookAhead(symbol, rules[lookaheads[0]])
+            
+        # If there are multiple look-ahead symbols, they must be all literals (a
+        # property that check() ensures that). We then need to peek at the next
+        # symbol to decide which one to take.
+        for sym in lookaheads:
+            assert isinstance(sym, grammar.Literal)
+            
+        return self._functionRhsWithLookAhead(symbol, rules)
+        
+    def _functionRhsWithoutLookAhead(self, symbol, rhs):
+        """Generates the HILTI function for parsing a non-terminal for that 
+        we do not need to do any look-ahead for deciding which RHS to use. 
+        """
+        def _makeSymFunction():
+            (fbuilder, builder, args) = self._createParseFunction("lahead", symbol)
+            builder = self._generateParseRhs(builder, rhs, args)
+            builder.return_result(builder.tupleOp([args.cur, args.lahead]))
+            return fbuilder.function()
+        
+        return self._mbuilder.cache(rhs, _makeSymFunction)
+    
+    def _functionRhsWithLookAhead(self, symbol, rules): 
+        """Generates the HILTI function for parsing a non-terminal for that we
+        need to do look-ahead for the next literal to decide which RHS to
+        use."""
+        
+        def _makeLookAheadFunction():
+            literals = rules.keys()
+            (fbuilder, builder, args) = self._createParseFunction("lahead", symbol)
+
+            # Initialize cache entry already here so that we can work
+            # recursively.
+            self._mbuilder.setCacheEntry(symbol, fbuilder.function())
+            
+            ### See if we have look-ahead symbol pending.
+            cond = fbuilder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
+            builder.equal(cond, args.lahead, _LookAheadNone)
+            (no_lahead, builder) = builder.makeIf(cond, tag="no-lahead")
+
+            ### If no, search for the next pattern.
+            
+            # Build a regular expression for all the possible symbols. 
+            syms = ["%s{#%d}" % (lit.literal().value(), lit.id()) for lit in literals]
+            match = self._generateMatchToken(no_lahead, "regexp", symbol, syms, args.cur)
+            builder.tuple_index(args.lahead, match, builder.constOp(0))
+
+            ### Now branch according the look-ahead.
+
+            # Built the branches.
+            values = []
+            branches = []
+
+            done = hilti.core.builder.BlockBuilder("done", fbuilder)
+            
+            for lit in literals:
+                rhs = rules[lit]
+                
+                def _makeBranch():
+                    branch = hilti.core.builder.BlockBuilder("case", fbuilder)
+                    nbranch = self._generateParseRhs(branch, rhs, args)
+                    nbranch.jump(done.labelOp())
+                    return branch
+                
+                branch = fbuilder.cache(rhs, _makeBranch)
+                branch.setComment("-> Sym: %s" % lit)
+                
+                values += [builder.constOp(lit.id())]
+                branches += [branch]
+                
+            (default, values, branches) = self._addMatchTokenErrorCases(fbuilder, values, branches, no_lahead)
+            builder.makeSwitch(args.lahead, values, default=default, branches=branches, cont=done, tag="lahead-next-sym")
+            
+            # Done, return the result.
+            done.return_result(done.tupleOp([args.cur, args.lahead]))
+            
+            return fbuilder.function()
+            
+        return self._mbuilder.cache(symbol, _makeLookAheadFunction)            
+
+    
+    ### Methods generating blocks of HILTI code. 
+
+    def _generateParseRhs(self, builder, rhs, args):
+        builder.setComment("-> Rhs: %s" % _flattenToStr(rhs))
+        
+        # Iterate through the RHS elements and parse them one after the other. 
+        for prod in rhs:
+            if isinstance(prod, str): # NonTerminal
+                builder = self._generateParseNonTerminal(builder, prod, args)
+            elif isinstance(prod, grammar.Literal):
+                builder = self._generateParseLiteral(builder, prod, args)
+            elif isinstance(prod, grammar.Variable):
+                builder = self._generateParseVariable(builder, prod, args)
+            elif isinstance(prod, grammar.EpsilonClass):
+                # Nothing to do.
+                pass
+            else:
+                util.internal_error("unexpected production in _generateParseRhs: %s" % prod)
+
+        return builder    
+    
+    def _generateParseLiteral(self, builder, lit, args):
+        """Generates code to parse a literal."""
+        builder.setNextComment("Parsing literal \"%s\"" % lit.literal())
+        
+        fbuilder = builder.functionBuilder()
+        
+        # See if we have a look-ahead symbol. 
+        cond = fbuilder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
+        cond = builder.equal(cond, args.lahead, _LookAheadNone)
+        (no_lahead, have_lahead, done) = builder.makeIfElse(cond, tag="no-lahead")
+
+        # If we do not have a look-ahead symbol pending, search for our literal.
+        match = self._generateMatchToken(no_lahead, "literal", str(lit.id()), [lit.literal().value()], args.cur)
+        symbol = fbuilder.addLocal("sym", hilti.core.type.Integer(32), reuse=True)
+        builder.tuple_index(symbol, match, builder.constOp(0))
+        
+        found_lit = hilti.core.builder.BlockBuilder("found-sym", fbuilder)
+        found_lit.tuple_index(args.cur, match, builder.constOp(1))
+        found_lit.jump(done.labelOp())
+
+        values = [no_lahead.constOp(lit.id())]
+        branches = [found_lit]
+        (default, values, branches) = self._addMatchTokenErrorCases(fbuilder, values, branches, no_lahead)
+        builder.makeSwitch(symbol, values, default=default, branches=branches, cont=done, tag="next-sym")
+        
+        # If we have a look-ahead symbol, its value must match what we expect.
+        have_lahead.setComment("Look-ahead symbol pending, check.")
+        have_lahead.equal(cond, have_lahead.constOp(lit.id()), args.lahead)
+        wrong_lahead = fbuilder.cacheBuilder("wrong-lahead", lambda b: self._generateParseError(b, "unexpected look-ahead symbol pending"))
+        (match, _, _) = have_lahead.makeIfElse(cond, no=wrong_lahead, cont=done, tag="check-lahead")
+
+        # If it matches, consume it (i.e., clear the look-ahead).
+        match.setComment("Correct look-ahead symbol pending, consume.")
+        match.assign(args.lahead, _LookAheadNone)
+
+        return done
+        
+    def _generateParseVariable(self, builder, var, args):
+        """Generates code to parse a variable."""
+        builder.setNextComment("Parsing variable %s" % var)
+        ### TODO: Missing.
+        return builder
+    
+    def _generateParseNonTerminal(self, builder, prod, args):
+        """Generates code to parse a non-terminal."""
+        builder.setNextComment("Parsing non-terminal %s" % prod)
+        fbuilder = builder.functionBuilder()
+        result = fbuilder.addLocal("nterm", fbuilder.function().type().resultType(), reuse=True)
+        func = self._functionNonTerminal(prod)
+        
+        builder.call(result, builder.idOp(func.name()), args.tupleOp())
+        builder.tuple_index(args.cur, result, builder.constOp(0, hilti.core.type.Integer(32)))
+        builder.tuple_index(args.lahead, result, builder.constOp(1, hilti.core.type.Integer(32)))
+        
+        return builder        
+    
+    def _generateParseError(self, builder, msg):
+        """Generates code to raise an exception."""
+        builder.makeRaiseException("BinPAC::ParseError", builder.constOp(msg, hilti.core.type.String()))
+        
+    def _generateYieldAndTryAgain(self, builder, cont):
+        """Generates code that yields and then jumps to a previous block to
+        repeat whatever it was doing."""
+        builder.yield_()
+        builder.jump(cont.labelOp())
+
+    def _generateMatchToken(self, builder, ntag1, ntag2, patterns, cur):
+        """Generates standard code around a ``regexp.match`` token
+        instruction.
+        """
+        fbuilder = builder.functionBuilder()
+        
+        match_rtype = hilti.core.type.Tuple([hilti.core.type.Integer(32), cur.type()])
+        match = fbuilder.addLocal("match", match_rtype, reuse=True)
+        cond = fbuilder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
+        name = self._name(ntag1, ntag2)
+        
+        def _makePatternConstant():
+            cty = hilti.core.type.Reference([hilti.core.type.RegExp()])
+            return fbuilder.moduleBuilder().addConstant(name, cty, patterns)
+        
+        pattern = fbuilder.moduleBuilder().cache(name, _makePatternConstant)
+        builder.regexp_match_token(match, pattern, cur)
+        return match
+        
+    ### Helper functions.
+    
+    def _name(self, tag1, tag2 = None):
+        """Combines two tags to an canonicalized ID name."""
         name = "%s_%s" % (self._current_grammar.name(), tag1)
         if tag2:
             name += "_%s" % tag2
-            
+        
         # Makes sure the name contains only valid characters. 
         chars = [c if (c.isalnum() or c in "_") else "_0x%x_" % ord(c) for c in name]
         return "".join(chars).lower()
-            
-    def _getFunction(self, prefix, tag):
-        name = self._makeName(prefix, tag)
-        try:
-            return self._builders[name].function()
-        except KeyError:
-            return None
-    
-    def _addFunction(self, prefix, tag, args = None, return_type = None):
-        # If we got passed a return_type, we create a function of type
-        #
-        #     tuple<iterator<bytes>, return_type> f(iterator<bytes>[, <args>])
-        #
-        # If not, the function's type will be 
-        #
-        #     iterator<bytes> f(iterator<bytes>[, <args>])
-                
-        name = self._makeName(prefix, tag)
-        iter_bytes = hilti.core.type.IteratorBytes(hilti.core.type.Bytes())
-        arg1 = hilti.core.id.ID("start", iter_bytes, hilti.core.id.Role.PARAM)
-        args = [(arg1, None)] + args
-        result = hilti.core.type.Tuple([iter_bytes, return_type]) if return_type else iter_bytes
+        
+    def _createParseFunction(self, prefix, tag):
+        """Creates a HILTI function with the standard parse function
+        signature."""
+        bytes_iter = hilti.core.type.IteratorBytes(hilti.core.type.Bytes())
+        
+        arg1 = hilti.core.id.ID("cur", bytes_iter, hilti.core.id.Role.PARAM)
+        arg2 = hilti.core.id.ID("obj", self._current_type_struct_ref, hilti.core.id.Role.PARAM)
+        arg3 = hilti.core.id.ID("lahead", _LookAheadType, hilti.core.id.Role.PARAM)
+        result = hilti.core.type.Tuple([bytes_iter, _LookAheadType]) 
+
+        args = [arg1, arg2, arg3]
         ftype = hilti.core.type.Function(args, result)
-        
+        name = self._name(prefix, tag)
         fbuilder = hilti.core.builder.FunctionBuilder(self._mbuilder, name, ftype)
-        self._builders[name] = fbuilder
-        self._current_builder = fbuilder
-        return fbuilder
+        bbuilder = hilti.core.builder.BlockBuilder(None, fbuilder)
 
-    def _compileLHS(self, symbol):
+        return (fbuilder, bbuilder, ParserGen._Args(fbuilder, args))
         
-        rules = self._current_ptab[symbol]
+    def _addMatchTokenErrorCases(self, fbuilder, values, branches, repeat):
+        """Build the standard error branches for the switch-statement
+        following a ``match_token`` instruction."""
         
-        # We have two different cases here for the look-ahead terminal we can
-        # have: (1) a single variable of a specific type; and (2) a set of
-        # literals. We handle them separately. Everything else is not allowed
-        # (and shouldn't show up here because Grammar.check() takes care of
-        # that). 
+        # Not found.
+        values += [fbuilder.constOp(0)]
+        branches += [fbuilder.cacheBuilder("not-found", lambda b: self._generateParseError(b, "look-ahead symbol not found"))]
+        
+        # Not enough input.
+        values += [fbuilder.constOp(-1)]
+        branches += [fbuilder.cacheBuilder("need-input", lambda b: self._generateYieldAndTryAgain(b, repeat))]
+        
+        # Unknown case.
+        default = fbuilder.cacheBuilder("unexpected-sym", lambda b: b.makeInternalError("unexpected look-ahead symbol returned"))
+        
+        return (default, values, branches)
+
     
-        lookaheads = rules.keys()
     
-        if len(lookaheads) == 1 and isinstance(lookaheads[0], grammar.Variable):
-            # A variable. We don't need to do any look-ahead and can directly
-            # parse the RHS. 
-            
-            # XXX TODO XXX
-            
-            rhs = rules[lookahead[0]]
-            self._compileRHS(rules[lookahead[0]])
-            
-        else:
-            # A set of literals. We need to do the look-ahead to figure out
-            # what the RHS is.
-            for sym in lookaheads:
-                assert isinstance(sym, grammar.Literal)
-            
-            self._compileLookAhead(symbol, rules)
-            
-    def _compileRHS(self, rhs):
-        # XXX
-        pass
-        
-    def _compileLookAhead(self, symbol, rules):
-        
-        func = self._getFunction(symbol, "lahead")
-        if not func:
-            arg2 = hilti.core.id.ID("obj", self._current_type_struct_ref, hilti.core.id.Role.PARAM)
-            arg3 = hilti.core.id.ID("lahead", self._current_type_token, hilti.core.id.Role.PARAM)
-            fbuilder = self._addFunction(symbol, "lahead", [(arg, None) for arg in (arg2, arg3)], return_type=self._current_type_token)
-            
-            obj = fbuilder.idOp(arg2)
-            lahead = fbuilder.idOp(arg3)
-            
-            # Build a regular expression for all the possible symbols. 
-            syms = ["%s{#%d}" % (term.literal().value(), term.id()) for term in rules.keys()]
-            cty = hilti.core.type.Reference([hilti.core.type.RegExp()])
-            pattern = self._mbuilder.addConstant(self._makeName(symbol, "regexp"), cty, syms)
-
-            ### Add the function body.
-            
-            # If we don't have a look-ahead symbol, search for the next symbol.
-            cond = fbuilder.addLocal("cond", hilti.core.type.Bool())
-            zero = fbuilder.constOp(0, hilti.core.type.Integer(32))
-            cond = fbuilder.equal(cond, lahead, zero)
-            no = fbuilder.makeIf(cond)
-            no.regexp_find(lahead, pattern, fbuilder.idOp("start"))
-
-            # If we don't find it because of lack of input, yield and try
-            # again. 
-            minus1 = fbuilder.constOp(-1, hilti.core.type.Integer(32))
-            cond = fbuilder.equal(cond, lahead, minus1)
-            again = fbuilder.makeIf(cond)
-            again.yield_()
-            again.jump(fbuilder.idOp(no.block().name()))
-            
-
 if __name__ == "__main__":
-
     from core.grammar import *
     from core import type
     from support import constant
@@ -196,10 +358,3 @@ if __name__ == "__main__":
     pgen.compile(g2)
 
     hilti.printer.printAST(module)
-    
-        
-    
-    
-        
-        
-        
