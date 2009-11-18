@@ -105,6 +105,19 @@ def _(self, f):
             if isinstance(i.type(), type.Integer) and i.type().width() == 0:
                 self.error(i, "local variable cannot have zero width")
                 break
+            
+    if f.linkage() == function.Linkage.INIT:
+        if f.type().args():
+            self.error(f, "init functions must not take any arguments")
+            
+        if not isinstance(f.type().resultType(), type.Void):
+            self.error(f, "init functions must not take any arguments")
+            
+    if f.callingConvention() == function.CallingConvention.C:
+        for i in f.IDs():
+            if i.role() == id.Role.LOCAL and not isinstance(i.type(), type.Label):
+                self.error(f, "todo: C functions cannot have local variables at the moment")
+                break
     
 @checker.post(function.Function)
 def _(self, f):

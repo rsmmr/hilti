@@ -15,6 +15,18 @@ class Linkage:
     EXPORTED = 2
     """A ~~Function with linkage EXPORTED is visible across all
     compilation units."""
+    
+    INIT = 3
+    """A ~~Function with linkage INIT will be executed once before any other
+    (non-INIT) functions defined inside the same ~~Module. The function is
+    only visible inside the ~~Module it is implemented in. A function with
+    linkage INIT must not receive any arguments and it must not return any
+    value. Note that if an INIT function throws an exception, execution of the
+    program will be terminated.
+    
+    Todo: Init function cannot have local variables at the moment because they
+    are compiled with the ~~C linkage.
+    """
         
 class CallingConvention:
     """The *calling convention* used by a ~~Function specifies which
@@ -34,6 +46,10 @@ class CallingConvention:
     exceptions and continuations.
     
     Note: See :ref:`interfacing-with-C` for more information.
+    
+    Todo: Implementing C functions in HILTI is not fully supported at the
+    moment: they can't have local variables for now because the code-generator
+    would try to locate them in the HILTI stack frame, whcih doesn't exist. 
     """
     
     C_HILTI = 3

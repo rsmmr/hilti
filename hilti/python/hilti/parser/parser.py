@@ -101,7 +101,8 @@ def p_module_decl(p):
                    | def_type
                    | def_declare
                    | def_import
-                   | def_function"""
+                   | def_function
+                   """
                    
     if p[1]:
         p[1].setComment(p.parser.state.comment)
@@ -282,13 +283,19 @@ def p_def_opt_cc(p):
                    
 def p_def_opt_linkage(p):
     """opt_linkage : EXPORT
+                   | INIT
                    | """
 
     if len(p) == 1:
         p[0] = function.Linkage.LOCAL
     else:
-        p[0] = function.Linkage.EXPORTED
-
+        if p[1] == "export":
+            p[0] = function.Linkage.EXPORTED
+        elif p[1] == "init":
+            p[0] = function.Linkage.INIT
+        else:
+            util.internal_error("unexpected state in p_def_opt_linkage")
+            
 def p_def_function(p):
     """def_function : function_head _begin_nolines '{' _instantiate_function  _end_nolines instruction_list _begin_nolines '}' _end_nolines """
     

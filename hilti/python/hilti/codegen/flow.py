@@ -227,15 +227,22 @@ def _(self, i):
         self.llvmStoreInTarget(i.target(), result)
 
 def _makeReturn(cg, llvm_result=None, result_type=None):
-    fpt = llvm.core.Type.pointer(cg.llvmTypeBasicFunctionPtr([result_type] if result_type else []))
-    addr = cg.llvmAddrDefContSuccessor(cg.llvmCurrentFramePtr(), fpt)
-    ptr = cg.builder().load(addr, "succ_ptr")
     
-    bfptr = llvm.core.Type.pointer(cg.llvmTypeBasicFrame())
-    addr = cg.llvmAddrDefContFrame(cg.llvmCurrentFramePtr(), llvm.core.Type.pointer(bfptr))
-    frame = cg.builder().load(addr, "frame_ptr")
+    if cg.currentFunction().callingConvention() == function.CallingConvention.HILTI:
+        fpt = llvm.core.Type.pointer(cg.llvmTypeBasicFunctionPtr([result_type] if result_type else []))
+        addr = cg.llvmAddrDefContSuccessor(cg.llvmCurrentFramePtr(), fpt)
+        ptr = cg.builder().load(addr, "succ_ptr")
+        
+        bfptr = llvm.core.Type.pointer(cg.llvmTypeBasicFrame())
+        addr = cg.llvmAddrDefContFrame(cg.llvmCurrentFramePtr(), llvm.core.Type.pointer(bfptr))
+        frame = cg.builder().load(addr, "frame_ptr")
     
-    cg.llvmGenerateTailCallToFunctionPtr(ptr, [frame] + ([llvm_result] if llvm_result else []))
+        cg.llvmGenerateTailCallToFunctionPtr(ptr, [frame] + ([llvm_result] if llvm_result else []))
+    else:
+        if llvm_result:
+            cg.builder().ret(llvm_result)
+        else:
+            cg.builder().ret_void()
     
 @codegen.when(instructions.flow.ReturnVoid)
 def _(self, i):

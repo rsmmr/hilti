@@ -88,6 +88,10 @@ def _(self, f):
     for b in f.blocks():
         if prev and not prev.next():
             prev.setNext(b)
+            
+    # "init" functions get C linkage.
+    if f.linkage() == function.Linkage.INIT:
+        f.setCallingConvention(function.CallingConvention.C)
 
 @canonifier.post(function.Function)
 def _(self, f):

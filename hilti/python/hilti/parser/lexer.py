@@ -39,6 +39,7 @@ keywords = {
     "with": "WITH",
     "const": "CONST",
     "exception": "EXCEPTION",
+    "init": "INIT",
     
     "default": "ATTR_DEFAULT"
     }
@@ -79,6 +80,7 @@ tokens = (
    'EXCEPTION',
    'COMMENTLINE',
    'ATTRIBUTE',
+   'INIT',
 
    'ATTR_DEFAULT'
 ) 

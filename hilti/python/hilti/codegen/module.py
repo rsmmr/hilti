@@ -40,6 +40,12 @@ def _(self, f):
     
     if f.linkage() == function.Linkage.EXPORTED and f.callingConvention() == function.CallingConvention.HILTI:
         codegen.llvmGenerateCStub(f)
+        
+    if f.linkage() == function.Linkage.INIT:
+        def _makeCall():
+            self.llvmGenerateCCall(f, [], [], abort_on_except=True)
+        
+        codegen.llvmAddGlobalCtor(_makeCall)
 
 @codegen.post(function.Function)
 def _(self, f):
@@ -56,7 +62,11 @@ def _(self, b):
     self._block = b
     
     self._llvm.func = self.llvmGetFunctionForBlock(b)
-    self._llvm.frameptr = self._llvm.func.args[0]
+    if self.currentFunction().callingConvention() == function.CallingConvention.HILTI:
+        self._llvm.frameptr = self._llvm.func.args[0]
+    else:
+        self._llvm.frameptr = None
+        
     self._llvm.block = self._llvm.func.append_basic_block("")
     self.pushBuilder(self._llvm.block)
     
