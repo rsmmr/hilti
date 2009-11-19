@@ -24,6 +24,7 @@ declare "C-HILTI" string port_to_string(any b, int32 options)
 declare "C-HILTI" string list_to_string(any l, int32 options)
 declare "C-HILTI" string regexp_to_string(any l, int32 options)
 declare "C-HILTI" string bitset_to_string(any b, int32 options)
+declare "C-HILTI" string caddr_to_string(any b, int32 options)
 
 declare "C-HILTI" string int_to_int64(any n)
 declare "C-HILTI" string bool_to_int64(any b)

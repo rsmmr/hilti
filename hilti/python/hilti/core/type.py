@@ -1111,6 +1111,14 @@ class Continuation(HeapType):
     _name = "continuation"
     _id = 21
     
+class CAddr(ValueType):
+    """Type for ``caddr``."""
+    def __init__(self):
+        super(CAddr, self).__init__([], CAddr._name)
+
+    _name = "caddr"
+    _id = 22
+    
 def _matchWithTypeClass(t, cls):
     """Checks whether a type instance matches with a type class; cls can be a tuple
     of classes as well."""
@@ -1182,6 +1190,7 @@ _keywords = {
     "port": (Port, 0, None),
     "vector": (Vector, 1, None),
     "list": (List, 1, None),
+    "caddr": (CAddr, 0, None),
     "regexp": (RegExp, -2, []),
     }
 

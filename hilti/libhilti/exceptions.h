@@ -31,6 +31,7 @@ typedef struct {
 ///////////////////////////////////////////////////////////////////////////////
 
     // %doc-std-exceptions-start
+    
 // A division by zero has occured.
 extern hlt_exception_type hlt_exception_division_by_zero;
 
@@ -91,6 +92,9 @@ extern hlt_exception_type hlt_exception_assertion_error;
 
 // Fall-back exception if nothing else is specified.
 extern hlt_exception_type hlt_exception_unspecified;
+
+// No exception.
+extern hlt_exception_type hlt_exception_none;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Exception-related functions.

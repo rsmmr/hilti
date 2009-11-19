@@ -720,7 +720,33 @@ class CodeGen(visitor.Visitor):
         self.llvmInit(frame, frame_addr)
         
         return cont
+
+    def llvmResumeContinuation(self, cont):
+        """Resume a continuation object.
+
+        cont: llvm.core.Value - The continuation object. 
         
+        Todo: This function has not been tested yet. 
+        """
+        zero = self.llvmGEPIdx(0)
+        one = self.llvmGEPIdx(1) 
+
+        succ_addr = self.builder().gep(cont, [zero, zero])
+        frame_addr = self.builder().gep(cont, [zero, one])
+
+        succ_addr = self.builder().bitcast(succ_addr, llvm.core.Type.pointer(self.llvmTypeBasicFunctionPtr()))
+        frame_addr = self.builder().bitcast(frame_addr, llvm.core.Type.pointer(llvm.core.Type.pointer(self.llvmTypeBasicFrame())))
+        
+        succ = self.builder().load(succ_addr)
+        frame = self.builder().load(frame_addr)
+
+        # Clear exception information.
+        addr = self.llvmAddrException(frame)
+        zero = self.llvmConstNoException()
+        self.llvmInit(zero, addr)
+
+        self.llvmGenerateTailCallToFunctionPtr(succ, [frame])
+    
     def llvmTypeBasicFrame(self):
         """Returns the LLVM type used for representing a basic-frame.
         
@@ -985,7 +1011,8 @@ class CodeGen(visitor.Visitor):
             return self.builder().load(glob, name) if not ptr else glob
         except llvm.LLVMException:
             pass
-        
+
+        assert type
         glob = self._llvm.module.add_global_variable(type, name)
         glob.linkage = llvm.core.LINKAGE_EXTERNAL 
         return self.builder().load(glob, name) if not ptr else glob

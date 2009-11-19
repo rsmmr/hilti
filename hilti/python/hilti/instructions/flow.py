@@ -126,6 +126,29 @@ class Yield(Instruction):
     """
     pass
 
+@constraint("YieldException")
+def _yieldException(ty, op, i):
+    if not isinstance(ty, type.Exception):
+        return (False, "argument must be reference to a YieldException")
+
+    if ty.exceptionName() != "Yield_Exception":
+        return (False, "argument must be reference to a YieldException")
+
+    return (True, "")
+            
+@instruction("resume", op1=referenceOf(_yieldException), terminator=True)
+class Resume(Instruction):
+    """Resumes a previously raised ~~YieldException. The control is transfered
+    to the location where it was previously suspended. 
+    
+    Note: Resuming does not work for exceptions passes in from C because for
+    them we can't propagate any *future* exceptions back. 
+    
+    Todo: Because we still can't catch exceptions in a HILTI program, it's
+    actually not possible to get a value for *op1*; therefore this instruction
+    is untested.
+    """
+    pass
 
 @constraint("( (value, destination), ...)")
 def _switchTuple(ty, op, i):

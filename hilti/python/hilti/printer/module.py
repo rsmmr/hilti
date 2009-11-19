@@ -22,10 +22,15 @@ def _suppressID(id):
 
     # Don't print any IDs from an imported module; we will print out the import
     # statements instead. 
+    # Todo: Is this now redundant with the next test for scopes?
     paths = [path for (mod, path) in printer._module.importedModules()]
-    if id.location().file() in path:
+    if id.location().file() in paths:
         return True
 
+    # Don't print any IDs with a different scope. 
+    if id.scope() and id.scope() != printer._module.name():
+        return True
+    
     return False
 
 def _scopedID(id):
@@ -245,6 +250,8 @@ def _(self, i):
     else:
         if func.linkage() == function.Linkage.EXPORTED:
             linkage = "export "
+        if func.linkage() == function.Linkage.INIT:
+            linkage = "init "
 
     cc = ""
     if func.callingConvention() == function.CallingConvention.C:

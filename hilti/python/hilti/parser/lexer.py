@@ -243,7 +243,7 @@ def t_nolines_newline(t):
 # Ignore comment lines in nolines modes.
 def t_nolines_COMMENTLINE(t):
     r'\#.*'
-    t.lexer.lineno += len(t.value)
+    t.lexer.lineno += 1
     
 def t_INITIAL_newline(t):
     r'\n+'

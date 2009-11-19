@@ -458,3 +458,12 @@ def _(self, i):
     excpt = self.builder().call(exception_new_yield, [cont, arg, location])
     self.llvmRaiseException(excpt)
     
+@codegen.when(instructions.flow.Resume)
+def _(self, i):
+    op1 = self.llvmOp(i.op1())
+    exception_get_continuation = codegen.llvmCurrentModule().get_function_named("__hlt_exception_get_continuation")
+    cont = self.builder().call(exception_get_continuation, [op1])
+    
+    self.llvmResumeContinuation(cont)
+    
+    

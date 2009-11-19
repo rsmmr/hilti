@@ -179,7 +179,6 @@ def findFileInPaths(filename, dirs, lower_case_ok=False):
     """
     
     for dir in dirs:
-        
         for name in (filename, filename.lower()):
             fullpath = os.path.realpath(os.path.join(dir, name))
             if os.path.exists(fullpath) and os.path.isfile(fullpath):

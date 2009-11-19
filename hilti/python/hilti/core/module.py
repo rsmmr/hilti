@@ -6,6 +6,7 @@ import location
 import type
 import visitor
 import id
+import function
 
 import sys
 
@@ -146,6 +147,43 @@ class Module(ast.Node):
         is the name of the module as it specified to be imported, and ``path``
         is the full path of the file that got imported."""
         return self._imported_modules
+
+    def importIDs(self, other):
+        """Makes the IDs of another module available to the current one.
+        
+        other: ~~Module - The other module.
+        """
+    
+        for i in other.IDs():
+        
+            if i.imported():
+                # Don't import IDs recursively.
+                continue
+            
+            t = i.type()
+            
+            # FIXME: Can we unify functions and other types here? Probably once we
+            # have a linkage for all IDs, see below.
+            if isinstance(t, type.Function):
+                func = other.lookupIDVal(i)
+                assert func and isinstance(func.type(), type.Function)
+                
+                if func.linkage() == function.Linkage.EXPORTED:
+                    newid = id.ID(i.name(), i.type(), i.role(), scope=i.scope(), imported=True, location=func.location())
+                    self.addID(newid, func)
+                    
+                continue
+                
+            # FIXME: We should introduce linkage for all IDs so that we can copy
+            # only "exported" ones over.
+            if isinstance(t, type.TypeDeclType) or i.role() == id.Role.CONST:
+                val = other.lookupIDVal(i)
+                newid = id.ID(i.name(), i.type(), i.role(), scope=i.scope(), imported=True, location=i.location())
+                self.addID(newid, val)
+                continue
+            
+            # Cannot export types other than those above at the moment. 
+            util.internal_error("can't handle IDs of type %s (role %d) in import" % (repr(t), i.role()))
     
     def __str__(self):
         return "module %s" % self._name

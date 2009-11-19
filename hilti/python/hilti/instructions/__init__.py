@@ -23,6 +23,7 @@ __all__ = [
     "debug",
     "bitset",
     "exception"
+    "caddr"
     ]
 
 import flow
@@ -49,3 +50,4 @@ import regexp
 import debug
 import bitset
 import exception
+import caddr

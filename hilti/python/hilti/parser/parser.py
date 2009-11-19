@@ -706,19 +706,25 @@ def error(p, msg, lineno=0):
     loc = location.Location(parser.state.filename, lineno)        
     util.error(msg, component="parser", context=loc, fatal=False)
 
-# Recursively imports another file and makes all declared/exported IDs available 
-# to the current module. 
-def _importFile(parser, filename, location, internal_module=False):
+def _findFile(filename, import_paths):
     (root, ext) = os.path.splitext(filename)
     if not ext:
         ext = ".hlt"
         
     filename = root + ext
-    
-    fullpath = util.findFileInPaths(filename, parser.state.import_paths, lower_case_ok=True)
+
+    fullpath = util.findFileInPaths(filename, import_paths, lower_case_ok=True)
     if not fullpath:
         util.error("cannot find %s for import" % filename, context=location)
 
+    return fullpath
+    
+# Recursively imports another file and makes all declared/exported IDs available 
+# to the current module. 
+def _importFile(parser, filename, location, internal_module=False):
+
+    fullpath = _findFile(filename, parser.state.import_paths)
+    
     imp_paths = [path for (mod, path) in parser.state.imported_files]
     if fullpath in imp_paths:
         # Already imported.
@@ -732,45 +738,14 @@ def _importFile(parser, filename, location, internal_module=False):
     if errors > 0:
         return False
 
-    substate = subparser.state
-
-    for i in substate.module.IDs():
-        
-        if i.imported():
-            # Don't import IDs recursively.
-            continue
-        
-        t = i.type()
-
-        # FIXME: Can we unify functions and other types here? Probably once we
-        # have a linkage for all IDs, see below.
-        if isinstance(t, type.Function):
-            func = substate.module.lookupIDVal(i)
-            assert func and isinstance(func.type(), type.Function)
-            
-            if func.linkage() == function.Linkage.EXPORTED:
-                newid = id.ID(i.name(), i.type(), i.role(), scope=i.scope(), imported=True, location=func.location())
-                parser.state.module.addID(newid, func)
-                
-            continue
-
-        # FIXME: We should introduce linkage for all IDs so that we can copy
-        # only "exported" ones over.
-        if isinstance(t, type.TypeDeclType) or i.role() == id.Role.CONST:
-            val = substate.module.lookupIDVal(i)
-            newid = id.ID(i.name(), i.type(), i.role(), scope=i.scope(), imported=True, location=i.location())
-            parser.state.module.addID(newid, val)
-            continue
-        
-        # Cannot export types other than those above at the moment. 
-        util.internal_error("can't handle IDs of type %s (role %d) in import" % (repr(t), i.role()))
+    parser.state.module.importIDs(subparser.state.module)
 
     return True
         
 def parse(filename, import_paths=["."], internal_module=False):
     """See ~~parse."""
     (errors, ast, parser) = _parse(filename, import_paths, internal_module)
-    return (errors, ast)
+    return (errors, parser.state.module)
         
 def _parse(filename, import_paths=["."], internal_module=False):
     parser = ply.yacc.yacc(debug=0, write_tables=0)

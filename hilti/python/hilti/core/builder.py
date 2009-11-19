@@ -23,17 +23,27 @@ class OperandBuilder(object):
         
         value: any - The value of the constant. 
         ty: HiltiType - The type of the constant. For convenience, the type
-        can be skipped for integers.  
+        can be skipped for integers and strings.
         
         Returns: ~~ConstOperand - The constant operand.
         """
         
         if isinstance(value, int) and not ty:
             ty = type.Integer(0)
+            
+        if isinstance(value, str) and not ty:
+            ty = type.String()
         
         assert ty
         
         return instruction.ConstOperand(constant.Constant(value, ty))
+    
+    def nullOp(self):
+        """Returns a constant operand representing the Null value.
+        
+        Returns: ~~ConstOperand - The Null value.
+        """
+        return instruction.ConstOperand(constant.Constant(None, type.Reference(type.Wildcard)))
     
     def typeOp(self, type):
         """Return a type operand.
@@ -168,7 +178,7 @@ class ModuleBuilder(OperandBuilder):
             
         else:
             return OperandBuilder.idOp(self, i)
-    
+
     def addConstant(self, name, type, value):
         """Adds a new global constant to the module scope's.
         
@@ -259,14 +269,16 @@ class FunctionBuilder(OperandBuilder):
         else:
             return OperandBuilder.idOp(self, i)
     
-    def addLocal(self, name, type, reuse=False, value=None):
+    def addLocal(self, name, ty, reuse=False, value=None):
         """Adds a new local variable to the function. Unless *reuse* is true,
         it is an error if the local already exists. If 
         
         name: string - The name of the variable.
         
-        type: ValueType - The type of the variable; if the variable already
-        exists, the type must match of the existing declaration. 
+        ty: ~~ValueType or ~~IDOperand - The type of the variable; if the
+        variable already exists, the type must match of the existing
+        declaration. If an ~~IDOperand, it must be a corresponding type
+        declaration.
         
         reuse: bool - If true, an existing local will be reused.  
         
@@ -279,15 +291,19 @@ class FunctionBuilder(OperandBuilder):
         if not reuse and self.isCached(name):
             util.internal_error("local '%s' already exists" % name)
         
+        if isinstance(ty, instruction.IDOperand):
+            assert isinstance(ty.type(), type.TypeDeclType)
+            ty = ty.type().declType()
+            
         def _makeLocal():
-            i = id.ID(name, type, id.Role.LOCAL)
+            i = id.ID(name, ty, id.Role.LOCAL)
             self._func.addID(i)
             
             op = self.idOp(i)
             
             if value:
                 assert isinstance(value, instruction.ConstOperand)
-                self.assign(op, self.constOp(value, type))
+                self.assign(op, self.constOp(value, ty))
             
             return op
                     
@@ -327,7 +343,7 @@ class BlockBuilder(OperandBuilder):
     def __init__(self, name, fbuilder):
         super(BlockBuilder, self).__init__()
         self._fbuilder = fbuilder
-        self._block = block.Block(self._fbuilder.function(), name="@%s" % fbuilder._idName(name))
+        self._block = block.Block(self._fbuilder.function(), name= "@%s" % fbuilder._idName(name) if name else "")
         self._fbuilder.function().addBlock(self._block)
         self._next_comment = []
         
