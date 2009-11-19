@@ -90,7 +90,7 @@ attribute; they are all class methods.
 import inspect
 import functools
 
-from support import *
+from binpac.support import *
 
 ### Available operators and operator methods.
 
@@ -292,5 +292,4 @@ for (op, args, descr) in _Operators:
     # op.__doc = descr
 
 # Trigger reading types.    
-    
-import pactypes
+import binpac.pactypes

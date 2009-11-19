@@ -6,7 +6,7 @@ import type
 import grammar
 
 import operators
-from support import *
+from binpac.support import *
 
 class Expression(ast.Node):
     """Base class for all expression objects.

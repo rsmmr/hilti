@@ -5,7 +5,7 @@
 import sys
 import copy
 
-from support import util
+from binpac.support import util
 
 class Production(object):
     """Base class for all grammar productions. All productions are generally
@@ -288,7 +288,7 @@ class Grammar:
         """Checks the grammar for ambiguity. From an ambigious grammar, no
         parser can be generated.
         
-        Returns: string or None - If the return valuue is None, the grammar is
+        Returns: string or None - If the return value is None, the grammar is
         fine; otherwise the returned string contains a descriptions of the
         ambiguities encountered, suitable for inclusion in an error message.
         """

@@ -6,7 +6,7 @@ import hilti.core.module
 import hilti.core.builder
 import hilti.printer
 
-from core import grammar
+from binpac.core import grammar
 
 _LookAheadType = hilti.core.type.Integer(32)
 _LookAheadNone = hilti.core.instruction.ConstOperand(hilti.core.constant.Constant(0, _LookAheadType))

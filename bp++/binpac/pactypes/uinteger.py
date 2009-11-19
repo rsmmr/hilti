@@ -2,9 +2,9 @@
 #
 # The signed integer type.
 
-from core import expr
-from core.type import *
-from core.operators import * 
+from binpac.core import expr
+from binpac.core.type import *
+from binpac.core.operators import * 
 
 @operator.Plus(UnsignedInteger, UnsignedInteger)
 class Plus:
