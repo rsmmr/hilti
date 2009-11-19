@@ -3,8 +3,7 @@
 
 __all__ = []
 
-import parser
-import lexer
+import hilti.parser.parser
 
 def parse(filename, import_paths=["."]):
     """Parses a file into an |ast|.

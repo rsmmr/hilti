@@ -1,0 +1,9 @@
+# $Id
+# 
+# Parts of the public BinPAC++ API that are also required by the code generator. 
+
+module BinPAC
+
+exception ParseError(string)
+
+
