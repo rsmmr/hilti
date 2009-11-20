@@ -23,21 +23,24 @@ def _suppressID(id):
     # Don't print any IDs from an imported module; we will print out the import
     # statements instead. 
     # Todo: Is this now redundant with the next test for scopes?
-    paths = [path for (mod, path) in printer._module.importedModules()]
-    if id.location().file() in paths:
-        return True
+    
+    if printer._module:
+        paths = [path for (mod, path) in printer._module.importedModules()]
+        if id.location().file() in paths:
+            return True
 
-    # Don't print any IDs with a different scope. 
-    if id.scope() and id.scope() != printer._module.name():
-        return True
+        # Don't print any IDs with a different scope. 
+        if id.scope() and id.scope() != printer._module.name():
+            return True
     
     return False
 
 def _scopedID(id):
-    if id.scope() and id.scope() != printer._module.name():
-        return "%s::%s" % (id.scope(), id.name())
-    else:
-        return id.name()
+    if printer._module:
+        if id.scope() and id.scope() != printer._module.name():
+            return "%s::%s" % (id.scope(), id.name())
+        
+    return id.name()
 
 def _fmtOp(op):
     # FIXME: Should we outsource this to a per-type decorator?
@@ -98,7 +101,9 @@ def _fmtOp(op):
         return _fmtType(op.value())
     
     if isinstance(op, instruction.TupleOperand):
-        return "(%s)" % ", ".join([_fmtOp(o) for o in op.value()])
+        elems = [_fmtOp(o) for o in op.value()]
+        elems = [o if o else "<None>" for o in elems]
+        return "(%s)" % ", ".join(elems)
         
     # For the others, the default printing does the trick.
     return str(op)
@@ -109,6 +114,15 @@ def _fmtInsOp(name, op, sig, prefix, postfix):
     
     _printComment(op, name)
     return "%s%s%s" % (prefix, _fmtOp(op), postfix) 
+
+def _fmtInstruction(ins):
+    _printComment(ins, separate=True)
+    target = _fmtInsOp("target", ins.target(), ins.signature().target(), "", " = ")
+    op1 = _fmtInsOp("op1", ins.op1(), ins.signature().op1(), " ", "")
+    op2 = _fmtInsOp("op2", ins.op2(), ins.signature().op2(), " ", "")
+    op3 = _fmtInsOp("op3", ins.op3(), ins.signature().op3(), " ", "")
+    printer.output("%s%s%s%s%s" % (target, ins.name(), op1, op2, op3))
+    terminator = ins.signature().terminator()
 
 def _findTypeName(ty):
     for id in printer._module.IDs():
@@ -295,14 +309,8 @@ def _(self, i):
             
         terminator = False
         for ins in block.instructions():
-            _printComment(ins, separate=True)
-            target = _fmtInsOp("target", ins.target(), ins.signature().target(), "", " = ")
-            op1 = _fmtInsOp("op1", ins.op1(), ins.signature().op1(), " ", "")
-            op2 = _fmtInsOp("op2", ins.op2(), ins.signature().op2(), " ", "")
-            op3 = _fmtInsOp("op3", ins.op3(), ins.signature().op3(), " ", "")
-            self.output("%s%s%s%s%s" % (target, ins.name(), op1, op2, op3))
-            terminator = ins.signature().terminator()
-
+            _fmtInstruction(ins)
+            
         if block.next() and not terminator: 
             # Debugging aid: show the implicit jump at the end of a block that
             # has not terminator instruction there.
@@ -324,4 +332,9 @@ def _(self, i):
         if isinstance(val, instruction.ConstOperand):
             op = instruction.ConstOperand(val)
             self.output("const %s %s = %s" % (_fmtType(i.type()), i.name(), _fmtOp(op)))
-    
+
+@printer.when(instruction.Instruction)
+def _(self, i):
+    # Only for when we print *only* an instruction.
+    if not self._module:
+        _fmtInstruction(i)

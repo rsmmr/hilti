@@ -1,5 +1,9 @@
 # $Id$
 
+import sys
+
+import hilti.printer
+
 from hilti.core import *
 
 class Checker(visitor.Visitor):
@@ -78,7 +82,15 @@ class Checker(visitor.Visitor):
         about the previous error and will be printed indented.
         """
         self._errors += 1
+        
+        if isinstance(obj, ast.Node):
+            hilti.printer.printAST(obj, output=sys.stderr, prefix=">>> ")
+        
         util.error(message, context=obj.location(), fatal=False, indent=indent)        
+        
+        if isinstance(obj, ast.Node):
+            print >>sys.stderr, ""
+        
         self.skipOthers()
 
 checker = Checker()

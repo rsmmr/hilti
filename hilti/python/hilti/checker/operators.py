@@ -10,6 +10,7 @@ def _checkOverloadedOperator(i):
     ops = instruction.findOverloadedOperator(i)
     
     if len(ops) == 0:
+        print i.target().type(), i.op1().type(), i.op2().type()
         checker.error(i, "no matching implementation of overloaded operator found")
     
     if len(ops) > 1:

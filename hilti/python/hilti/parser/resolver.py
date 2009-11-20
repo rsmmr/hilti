@@ -3,6 +3,7 @@
 import sys
 
 from hilti.core import *
+
 from hilti import instructions
 
 class Resolver(visitor.Visitor):

@@ -72,7 +72,7 @@ class OperandBuilder(object):
         Returns: TupleOperand - The tuple operand made of the given elements. 
         """
         return instruction.TupleOperand(elems)
-    
+
     def cache(self, key, compute):
         """Caches onces computed values for later reuse. The first time the
         method is called for a particular *key*, it calls the *compute*
@@ -148,6 +148,31 @@ class ModuleBuilder(OperandBuilder):
         """
         return self._module
 
+    def finish(self): 
+        """Finishes the building process. This must be called after all
+        elements have been added to the module to guarantee a correct module.
+        It also checks the semantic correctness of the module, and if it find
+        any problems it reports them to stderr.
+        
+        Returns: integer - The number of errors found. 
+        """
+
+        # Import only here to avoid conflicts.
+        import hilti.parser.resolver
+        import hilti.checker
+        
+        # FIXME: We should cleanup the resolver interface. Probably move it out
+        # of the parser, and make a module-level function for it. 
+        resolver_errors = hilti.parser.resolver.resolver.resolveOperands(self._module) 
+        if resolver_errors:
+            return resolver_errors
+        
+        errors = hilti.checker.checkAST(self._module)
+        if errors:
+            return errors
+        
+        return 0
+    
     def importModule(self, name):
         """Imports another module. This has the same effect as a HILTI
         ``import`` statement.
@@ -268,7 +293,29 @@ class FunctionBuilder(OperandBuilder):
         
         else:
             return OperandBuilder.idOp(self, i)
-    
+
+    def typeByID(self, name):
+        """Returns the type referenced by the an ID name. If the referenced
+        type is a ~~HeapType, returns a ~~Reference to it. 
+        
+        name: string - The name of the ID; it must be of type ~~TypeDeclType.
+        
+        Returns: hilti.core.type - The type referenced by the ID.
+        """
+        li = self.moduleBuilder().module().lookupID(name)
+        if not li:
+            raise ValueError("ID %s does not exist in function's scope" % i)
+
+        if not isinstance(li.type(), type.TypeDeclType):
+            raise ValueError("ID %s is not a type declaration" % i)
+        
+        ty = li.type().declType()
+        
+        if isinstance(ty, type.HeapType):
+            return type.Reference([ty])
+        else:
+            return ty
+        
     def addLocal(self, name, ty, reuse=False, value=None):
         """Adds a new local variable to the function. Unless *reuse* is true,
         it is an error if the local already exists. If 
@@ -586,7 +633,7 @@ class BlockBuilder(OperandBuilder):
         
         msg: string - A message to associate with the error.
         """
-        self.debug_internal_error(self.constOp(msg, type.String))
+        self.debug_internal_error(self.constOp(msg))
         
     def makeRaiseException(self, exception, arg):
         """Raises an exception.
@@ -604,7 +651,8 @@ class BlockBuilder(OperandBuilder):
             return self._fbuilder.addLocal(ename, type.Reference([etype]))
         
         local = self._fbuilder.cache("makeRaiseException_local", _addExcptLocal)
-        self.new(local, eid, arg)
+        
+        self.new(local, self.typeOp(etype), arg)
         self.exception_throw(local)
         
 def _init_builder_instructions():

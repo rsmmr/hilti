@@ -20,12 +20,14 @@ class Printer(visitor.Visitor):
         self._output = sys.stdout
         self._indent = 0;
         self._module = None
+        self._printing_function = False
         
-    def printAST(self, ast, output):
+    def printAST(self, ast, output, prefix=""):
         """See ~~printAST."""
-        self.reset()
         self._output = output
+        self._prefix = prefix
         self.visit(ast)
+        self.reset()
         return True
 
     def currentModule(self):
@@ -50,6 +52,7 @@ class Printer(visitor.Visitor):
         str: string - The string to print.
         nl: bool - If True, add a trailing newline. 
         """
+        self._output.write(self._prefix)
         self._output.write("    " * self._indent + str)
         if nl:
             self._output.write("\n")

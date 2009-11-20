@@ -14,14 +14,15 @@ import sys
 import printer
 import module
 
-def printAST(ast, output=sys.stdout):
+def printAST(ast, output=sys.stdout, prefix=""):
     """Prints out an |ast| as a HILTI program. The |ast| must be well-formed
     as verified by ~~checkAST.
     
     ast: ~~Node - The root of the |ast| to print.
     output: file - The file to write the output to.
+    prefix: string - Each output line begin with the prefix. 
     """
-    return printer.printer.printAST(ast, output)
+    return printer.printer.printAST(ast, output, prefix)
 
 
 
