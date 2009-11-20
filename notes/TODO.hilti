@@ -42,7 +42,7 @@ Infrastructure
 - The parser doesn't associate line-comments correctly with global
 declarations (or better: it does not at all; the code doesn't seem to do the
 right thing.) It works for comments before the "module" statement though.
-  
+
 Optimizations
 =============
 
@@ -68,6 +68,9 @@ Cleanup
 relying on "__"
 
 - Remove labels' @-prefix
+
+- Introduce id.Role.Label to separate local variables from labels (currently
+there's always an additional isistance(label) test which then can then remove).
 
 - Replace resolver's int-width derivation with usage of codegen's
  refine_to.
@@ -104,6 +107,9 @@ Need to figure out how to compile it with llvm-gcc.
 - The varioys type ctros that take only one argument should be
 changed to accept it as a non-list (e.g., type.List(t) instead of
 type.List([t]). Note that we need to support both variants though.
+
+- If dynamically create a typle, we currently have to put it into a
+ConstOperand even if some of the tuple's elements are not in fact constants.
 
 Documentation
 =============
