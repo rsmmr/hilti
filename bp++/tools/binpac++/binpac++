@@ -74,7 +74,7 @@ import binpac.core.pgen
     
 optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=Version)
 optparser.add_option("-n", "--hilti-no-verify", action="store_true", dest="hlt_noverify", default=False,
-                     help="Do not verify correctness of generated HILTI code")
+                     help="Output before verifying code (for debugging)")
 optparser.add_option("-o", "--output", action="store", type="string", dest="output", default=None,
                      help="Store output in file (default is print to stdout)", metavar="FILE")
 optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
@@ -125,11 +125,19 @@ if error:
     sys.exit(1)
 
 module = hilti.core.module.Module("ParserTest")
+mbuilder = hilti.core.builder.ModuleBuilder(module)
 
-pgen = binpac.core.pgen.ParserGen(module, import_paths)
+pgen = binpac.core.pgen.ParserGen(mbuilder, import_paths)
 pgen.compile(g)
 
-# errors = hilti.checker.checkAST(module)
+if options.hlt_noverify:
+    hilti.printer.printAST(module, output=output)
+    sys.exit(0)
+
+errors = mbuilder.finish()
+if errors:
+    print "%d errors, aborting." % errors
+    #sys.exit(1)
 
 hilti.printer.printAST(module, output=output)
 

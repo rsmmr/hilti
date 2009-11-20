@@ -15,15 +15,15 @@ def _flattenToStr(list):
     return " ".join([str(e) for e in list])
 
 class ParserGen:
-    def __init__(self, module, hilti_import_paths=["."]):
+    def __init__(self, mbuilder, hilti_import_paths=["."]):
         """Generates a parser from a grammar.
         
-        module: hilti.core.module - The HILTI module to which the generated
-        code will be added.
+        mbuilder: hilti.core.builder.ModuleBuilder - The HILTI module builder
+        which will be used for the code generation.
         
         hilti_import_paths: list of string - Paths to search for HILTI modules.
         """
-        self._mbuilder = hilti.core.builder.ModuleBuilder(module)
+        self._mbuilder = mbuilder
         
         hilti.parser.importModule(self._mbuilder.module(), "hilti", hilti_import_paths)
         hilti.parser.importModule(self._mbuilder.module(), "binpac", hilti_import_paths)
@@ -75,7 +75,7 @@ class ParserGen:
         fbuilder.function().setLinkage(hilti.core.function.Linkage.INIT)
         builder = hilti.core.builder.BlockBuilder(None, fbuilder)
 
-        parser = fbuilder.addLocal("parser", builder.idOp("BinPACIntern::Parser"))
+        parser = fbuilder.addLocal("parser", fbuilder.typeByID("BinPACIntern::Parser"))
         funcs = fbuilder.addLocal("funcs", hilti.core.type.Tuple([hilti.core.type.CAddr()] * 2))
         f = fbuilder.addLocal("f", hilti.core.type.CAddr())
         
@@ -287,7 +287,7 @@ class ParserGen:
     
     def _generateParseError(self, builder, msg):
         """Generates code to raise an exception."""
-        builder.makeRaiseException("BinPAC::ParseError", builder.constOp(msg, hilti.core.type.String()))
+        builder.makeRaiseException("BinPAC::ParseError", builder.constOp(msg))
         
     def _generateYieldAndTryAgain(self, builder, cont):
         """Generates code that yields and then jumps to a previous block to
