@@ -226,7 +226,10 @@ class Function(ast.Node):
         """
         for b in self._bodies:
             if b.name():
-                del self._scope[b.name()]
+                try:
+                    del self._scope[b.name()]
+                except:
+                    pass
         
         self._bodies = []
 

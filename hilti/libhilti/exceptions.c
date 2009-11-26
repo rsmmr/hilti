@@ -75,7 +75,7 @@ static void __exception_print(const char* prefix, hlt_exception* exception)
     if ( exception->arg ) {
         hlt_string arg = hlt_string_from_object(exception->type->argtype, &exception->arg, &excpt);
         fprintf(stderr, " with argument ");
-        __hlt_string_print(stderr, arg, 0, &excpt);
+        hlt_string_print(stderr, arg, 0, &excpt);
     }
 
     if ( exception->cont )

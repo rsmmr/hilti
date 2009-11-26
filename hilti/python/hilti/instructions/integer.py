@@ -31,7 +31,7 @@ class Incr(Operator):
     pass
 
 @overload(Equal, op1=integer, op2=integerOfWidthAsOp(1), target=bool)
-class Equals(Operator):
+class Equal(Operator):
     """
     Returns True if *op1* equals *op2*.
     """

@@ -38,7 +38,7 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
             return;
         }
 
-        __hlt_string_print(stdout, s, 0, excpt);
+        hlt_string_print(stdout, s, 0, excpt);
         if ( *excpt )
         {
             funlockfile(stdout);

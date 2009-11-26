@@ -23,7 +23,7 @@ class OperandBuilder(object):
         
         value: any - The value of the constant. 
         ty: HiltiType - The type of the constant. For convenience, the type
-        can be skipped for integers and strings.
+        can be skipped for integers and strings and bools.
         
         Returns: ~~ConstOperand - The constant operand.
         """
@@ -32,6 +32,9 @@ class OperandBuilder(object):
             ty = type.Integer(0)
             
         if isinstance(value, str) and not ty:
+            ty = type.String()
+            
+        if isinstance(value, bool) and not ty:
             ty = type.String()
         
         assert ty
@@ -148,11 +151,14 @@ class ModuleBuilder(OperandBuilder):
         """
         return self._module
 
-    def finish(self): 
+    def finish(self, validate=True): 
         """Finishes the building process. This must be called after all
         elements have been added to the module to guarantee a correct module.
         It also checks the semantic correctness of the module, and if it find
         any problems it reports them to stderr.
+        
+        validate: bool - If false, the HILTI validation is not
+        performed.
         
         Returns: integer - The number of errors found. 
         """
@@ -166,10 +172,11 @@ class ModuleBuilder(OperandBuilder):
         resolver_errors = hilti.parser.resolver.resolver.resolveOperands(self._module) 
         if resolver_errors:
             return resolver_errors
-        
-        errors = hilti.checker.checkAST(self._module)
-        if errors:
-            return errors
+
+        if validate:
+            errors = hilti.checker.checkAST(self._module)
+            if errors:
+                return errors
         
         return 0
     
@@ -316,7 +323,7 @@ class FunctionBuilder(OperandBuilder):
         else:
             return ty
         
-    def addLocal(self, name, ty, reuse=False, value=None):
+    def addLocal(self, name, ty, reuse=False):
         """Adds a new local variable to the function. Unless *reuse* is true,
         it is an error if the local already exists. If 
         
@@ -347,11 +354,6 @@ class FunctionBuilder(OperandBuilder):
             self._func.addID(i)
             
             op = self.idOp(i)
-            
-            if value:
-                assert isinstance(value, instruction.ConstOperand)
-                self.assign(op, self.constOp(value, ty))
-            
             return op
                     
         return self.cache(name, _makeLocal)
@@ -362,9 +364,12 @@ class FunctionBuilder(OperandBuilder):
         
         i = 1
         nname = name
+        
         while nname in self._idnames:
             i += 1
             nname = "%s_%d" % (name, i)
+
+        nname = nname.replace("-", "_")
             
         self._idnames.add(nname)
         return nname
@@ -451,7 +456,7 @@ class BlockBuilder(OperandBuilder):
         else:
             tag1 = ""
 
-        return self._fbuilder._idName(tag1 + tag2)
+        return tag1 + tag2
     
     def makeIfElse(self, cond, yes=None, no=None, cont=None, tag=None):
         """Builds an If-Else construct based on a given condition. The

@@ -14,6 +14,7 @@ Usage: hilti-config <options>
     --distbase     Print path of the HILTI source distribution.
     --hilticflags  Print flags for hiltic.
     --ldflags      Print flags for llvm-ld.
+    --libhilti     Print path to libhilti files.
     --libs-bc      Print bitcode libaries for llvm-ld.
     --libs-bc-main Print bitcode libaries for llvm-ld, including a main() routine.
     --libs-c       Print native libaries for system linker.
@@ -98,6 +99,10 @@ while [ "$1" != "" ]; do
             
         --cxxflags)
             echo "-I$base/libhilti"
+            shift;;
+            
+        --libhilti)
+            echo "$base/libhilti"
             shift;;
             
         --pythonpath)

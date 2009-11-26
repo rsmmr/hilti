@@ -49,7 +49,7 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     if ( *excpt )
         return;
     
-    __hlt_string_print(out, hlt_string_concat(prefix, usr, excpt), 1, excpt);
+    hlt_string_print(out, hlt_string_concat(prefix, usr, excpt), 1, excpt);
     
     return;
 }

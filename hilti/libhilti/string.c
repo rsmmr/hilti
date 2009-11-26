@@ -315,7 +315,7 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** e
 
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't 
  * convert to the locale encoding yet. We just print them in \u syntax. */
-void __hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt)
+void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt)
 {
     if ( ! s )
         // Empty string.

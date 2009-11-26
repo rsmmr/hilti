@@ -310,8 +310,8 @@ def p_instantiate_function(p):
 def p_instruction_list(p):
     """instruction_list : def_local instruction_list
                         | instruction instruction_list
-                        | LABEL _set_block_name instruction instruction_list
-                        | LABEL _set_block_name NL instruction instruction_list
+                        | LABEL _set_block_name instruction_list
+                        | LABEL _set_block_name NL instruction_list
                         | empty_line instruction_list
                         | """
 
@@ -323,7 +323,7 @@ def p_empty_line(p):
 def p_comment_line(p):
     """comment_line : COMMENTLINE"""
     p.parser.state.comment += [p[1]]
-
+    
 def p_set_block_name(p):
     """_set_block_name : """
     

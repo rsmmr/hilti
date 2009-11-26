@@ -307,11 +307,12 @@ def _(self, i):
 
         _printComment(block)
             
-        terminator = False
+        last = None
         for ins in block.instructions():
             _fmtInstruction(ins)
+            last = ins
             
-        if block.next() and not terminator: 
+        if block.next() and (not last or not last.signature().terminator()):
             # Debugging aid: show the implicit jump at the end of a block that
             # has not terminator instruction there.
             self.output("# jump %s" % (block.next().name()))

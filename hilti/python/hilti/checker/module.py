@@ -112,11 +112,11 @@ def _(self, f):
             
         if not isinstance(f.type().resultType(), type.Void):
             self.error(f, "init functions must not take any arguments")
-            
+
     if f.callingConvention() == function.CallingConvention.C:
         for i in f.IDs():
-            if i.role() == id.Role.LOCAL and not isinstance(i.type(), type.Label):
-                self.error(f, "todo: C functions cannot have local variables at the moment")
+            if i.role() == id.Role.PARAM:
+                self.error(f, "todo: C functions cannot have parameters at the moment")
                 break
     
 @checker.post(function.Function)

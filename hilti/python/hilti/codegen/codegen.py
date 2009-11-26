@@ -957,39 +957,61 @@ class CodeGen(visitor.Visitor):
         """
         return self._llvmAddrInBasicFrame(frameptr, 2, -1, None, "excep_frame")
     
-    def llvmAddrLocalVar(self, function, frameptr, name):
+    def llvmAddrLocalVar(self, func, frameptr, name):
         """Returns the address of a local variable inside a function's frame.
         The method uses the current :meth:`builder` to calculate the address
         and returns an LLVM value object that can be directly used with
         subsequent LLVM load or store instructions.
         
-        function: ~~Function - The function whose local variable should be
+        func: ~~Function - The function whose local variable should be
         accessed.
         
-        frameptr: llvm.core.* - The address of the function's frame. This must
+        frameptr: llvm.core.* or None - The address of the function's frame. This must
         be an LLVM object that can act as the frame's address in the LLVM
         instructions that will be built to calculate the field's address.
-        Often, it will be the result of :meth:`llvmCurrentFramePtr`.
+        Often, it will be the result of :meth:`llvmCurrentFramePtr`. The frame
+        can be None if the function is not of ~~Linkage ~~HILTI.
         
         name: string - The name of the local variable. 
 
         Returns: llvm.core.Value - An LLVM value with the address. 
         """
-        try:
-            # See whether we already calculated the field index dict. 
-            frame_idx = function._frame_index
-        except AttributeError:
-            # Not yet calculated.
-            self.llvmTypeFunctionFrame(function)
-            frame_idx = function._frame_index
-            
-        # The Python interface (as well as LLVM's C interface, which is used
-        # by the Python interface) does not have builder.extract_value() method,
-        # so we simulate it with a gep/load combination.
-        zero = self.llvmGEPIdx(0)
-        index = self.llvmGEPIdx(frame_idx[name])
-        return self.builder().gep(frameptr, [zero, index], name)
 
+        if func.callingConvention() == function.CallingConvention.HILTI:
+            try:
+                # See whether we already calculated the field index dict. 
+                frame_idx = func._frame_index
+            except AttributeError:
+                # Not yet calculated.
+                self.llvmTypeFunctionFrame(func)
+                frame_idx = func._frame_index
+                
+            # The Python interface (as well as LLVM's C interface, which is used
+            # by the Python interface) does not have builder.extract_value() method,
+            # so we simulate it with a gep/load combination.
+            zero = self.llvmGEPIdx(0)
+            index = self.llvmGEPIdx(frame_idx[name])
+            return self.builder().gep(frameptr, [zero, index], name)
+        
+        else:
+            # We create the locals dynamically on the stack for C funcs.
+            try:
+                clocals = func._clocals
+            except AttributeError:
+                clocals = {}
+                func._clocals = clocals
+
+            if name in clocals:
+                return clocals[name]
+                
+            for i in func.IDs():
+                if i.name() == name:
+                    addr = self.llvmAlloca(self.llvmTypeConvert(i.type()), tag=name)
+                    clocals[name] = addr
+                    return addr
+
+            util.internal_error("unknown local")
+            
     def llvmGetGlobalVar(self, name, type, ptr=False):
         """Generates an LLVM load instruction for reading a global variable.
         The global can be either defined in the current module, or externally
@@ -1036,7 +1058,7 @@ class CodeGen(visitor.Visitor):
         glob.global_constant = True
         return glob
     
-    # Creates a new function matching the block's frame/result. Additional
+    # Creates a new func matching the block's frame/result. Additional
     # arguments to the function can be specified by passing (name, type)
     # tuples via addl_args.
     def llvmCreateFunction(self, hilti_func, name = None, addl_args = []):
