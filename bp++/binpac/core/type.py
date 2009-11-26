@@ -1,53 +1,117 @@
 # $Id$
 
+import binpac.support.util as util
+
 class Type(object):
     """Base class for all data types provided by the BinPAC++ language.  
 
-    Any class derived from Type must include a class-variable ``_name``
-    containing a string that is suitable for use in error messages to
-    describes the HILTI type that the class is representing.
-    
-    name: string - The name of type in a readable form suited to present to
-    the user (e.g., in error messages and debugging output).
-        
-    docname: string - Optional string which, if given, will be used in the
-    automatically generated instruction documentation instead of *name*; it is
-    not used anywhere else than in the documentation.
+    prod: bool - True if the type can be used inside a ~~Unit declaration; if
+    so, the method ~~production must be overridden.
     
     location: ~~Location - A location object describing the point of definition.
     """
-    def __init__(self, name, docname=None, location=None):
-        self._name = name
-        self._docname = docname if docname else name
+    def __init__(self, prod=False, location=None):
+        self._prod = prod
+        self._location = location
     
     def name(self):
-        """Returns the name of the type.
+        """Returns a short name for the type. The name can be used
+        in message to the user. 
         
-        Returns: string - The name of the type.
+        This function must be overriden by derived classes.
         """
-        return self._name
-    
-    def docname(self):
-        """Returns the name of the type as used in the instruction
-        documentation.
-        
-        Returns: string - The documentation name of the type.
-        """
-        return self._docname
+        util.internal_error("Type.name() not overidden for %s" % self.__class__)
 
-    def location(self):
-        """Returns the location where the type was defined.
+    def toCode(self):
+        """Returns the type's full declaration. 
         
-        Returns: ~~Location - The location.
+        This function must be overriden by derived classes. For all
+        types that a user can directly used, the returned name must
+        be parseable by the BinPAC++ parser and fully describe the
+        type, including all attributes.
+        
+        Returns: string - The full type declaration. 
+        """
+        util.internal_error("Type.toCode() not overidden for %s" % self.__class__)
+
+    def hasProduction(self):
+        """Returns whether the type can used within a unit declaration.
+        
+        Returns: bool - True if it can used inside a ~~Unit.
+        """
+        return self._prod
+        
+    def validate(self, vld):
+        """Validates the semantic correctness of the type during code
+        generation. 
+        
+        Can be overridden by derived classes; the default implementation does
+        nothing. If there are any errors encountered during validation, the
+        method must call ~~Validator.error. If there are any sub-nodes that also
+        need to be checked, the method needs to do that recursively.
+        
+        vld: ~~Validator - The validator triggering the validation.
+        """
+        pass
+        
+    def hiltiType(self, cg, tag):
+        """Returns the corresponding HILTI type. 
+        
+        Must be overridden by derived classes for type that can be used by an
+        HILTI program. The methods can use *codegen* to add type declaratins
+        (or anything else) to the HILTI module.
+        
+        codegen: ~~CodeGen - The current code generator. 
+        
+        tag: string - A string that can be used to build meaningful ID names
+        when generating code via the code generator. There is not further
+        interpretation of the tag; it's mainly to generate more readable HILTI
+        code. For example, a *tag* might be the name of an BinPAC ID
+        accociated with the type.
+        
+        Returns: hilti.core.type.Type - The HILTI type.
+        """
+        util.internal_error("Type.hiltiType() not overidden for %s" % self.__class__)
+
+    def production(self):
+        """Returns a production for parsing instaces of this type.
+
+        Must be overridden by derived classes if *prod==True* was passed to
+        the ctor.
+        """
+        util.internal_error("Type.production() not overidden for %s" % self.__class__)
+        
+    def location(self):
+        """Returns the location associated with the type.
+        
+        Returns: ~~Location - The location. 
         """
         return self._location
-        
     
     def __str__(self):
         return self.name()
-    
-    _name = "type"
 
+class TypeDecl(Type):
+    """Type for type declarations.  
+    
+    t: ~~Type - The declared type.
+    
+    location: ~~Location - A location object describing the point of definition.
+    """
+    def __init__(self, t, location=None):
+        super(TypeDecl, self).__init__(location=location)
+        self._decl = t
+        
+    def declType(self):
+        """Returns the type declared.
+        
+        Returns: ~~Type - The type.
+        """
+        return self._decl
+
+    def name(self):
+        return "<type-decl>"
+        
 class Integer(Type):
     """Base type for integers.  
     
@@ -55,8 +119,8 @@ class Integer(Type):
 
     location: ~~Location - A location object describing the point of definition.
     """
-    def __init__(self, name, width, location=None):
-        super(Integer, self).__init__(name, location=location)
+    def __init__(self, width, location=None):
+        super(Integer, self).__init__(location=location)
         assert(width > 0 and width <= 64)
         self._width = width
 
@@ -74,148 +138,28 @@ class Integer(Type):
         width: int - The new bit-width. 
         """
         self._width = width
-    
-    _name = "<integer>"
 
-class SignedInteger(Integer):
-    """Type for signed integers.  
-    
-    width: integer - Specifies the bit-width of integers represented by this type.
+    def validate(self, vld):
+        # Overridden from Type.
+        if self._width < 1 or self._width > 64:
+            vld.error(self, "integer width out of range")
 
-    location: ~~Location - A location object describing the point of definition.
+
+# Trigger importing the other types into our namespace.
+
+def pac(ty):
+    """Class decorator to add a type class that is defined in some other
+    module to the namespace of *binpac.core.type*.
+    
+    ty: class - A class derived from ~~Type.
     """
-    def __init__(self, width, location=None):
-        super(SignedInteger, self).__init__(SignedInteger._name, width, location=location)
-        
-    _name = "int"
+    import binpac.core
+    binpac.core._types[ty.__name__] = ty
+    globals()[ty.__name__] = ty
 
-class UnsignedInteger(Integer):
-    """Type for unsigned integers.  
-    
-    width: integer - Specifies the bit-width of integers represented by this type.
+    return ty
 
-    location: ~~Location - A location object describing the point of definition.
-    """
-    def __init__(self, width, location=None):
-        super(UnsignedInteger, self).__init__(UnsignedInteger._name, width, location=location)
-        
-    _name = "uint"
-    
-class Bytes(Type):
-    """Type for bytes objects.  
-    
-    location: ~~Location - A location object describing the point of definition.
-    """
-    def __init__(self, location=None):
-        super(Bytes, self).__init__(Bytes._name, location=location)
+# No longer necessary?
+#for (name, ty) in binpac.core._types.items():
+#    globals()[name] = ty
 
-    _name = "bytes"
-
-class TypeDecl(Type):
-    """Type for type declarations.  
-    
-    t: ~~Type - The declared type.
-    
-    location: ~~Location - A location object describing the point of definition.
-    """
-    def __init__(self, location=None):
-        super(TypeDecl, self).__init__(Bytes._name, location=location)
-        
-    def __str__(self):
-        return "<type-decl>" 
-    
-    _name = "type-decl"
-    
-class Unit(Type):
-    """Type describing an individual parsing unit.
-    
-    A parsing unit is composed of (1) fields parsed from the traffic
-    stream, which are defined in the form of a grammar; (2)
-    attributes which are stored along with the parsed fields and can
-    be manipulated by user code; and (3) a number of "hooks", which
-    are functions to be run on certain occastions (like when an
-    error has been found). 
-    
-    prod: ~~Production - Optional start production of the grammar defining
-    how the unit's fields are parsed.
-
-    location: ~~Location - A location object describing the point of definition.
-    """
-
-    valid_hooks = ("ctor", "dtor", "error")
-    
-    def __init__(self, prod=None, location=None):
-        super(Unit, self).__init__(self._name, location=location)
-        self._prod = prod
-        self._attrs = []
-        self._hooks = {}
-
-    def attributes(self):
-        """Returns the attributes of the unit.
-        
-        Returns: list of ~~ID - The attributes.
-        """
-        return self._attrs
-    
-    def startProduction(self):
-        """Returns the start production of the grammar defining the unit's
-        fields.
-        
-        Returns: ~~Production or None - The production, or None if none has
-        been set. 
-        """
-        return self._prod
-    
-    def hooks(self, hook):
-        """Returns all functions registered for a hook. They are returned in
-        order of decreasing priority, i.e., in the order in which they should
-        be executed.
-        
-        hook: string - The name of the hook to retrieve the functions for.
-        
-        Returns: list of (func, priority) - The sorted list of functions.
-        """
-        return self._hooks.get(hook, []).sorted(lambda x, y: y[1]-x[1])
-        
-    def setStartProduction(self, prod):
-        """Sets the start production of the grammar defining how the unit's
-        fields are parsed.
-        
-        prod: ~~Production - The start production.
-        """
-        self._prod = prod
-        
-    def addAttribute(self, id):
-        """Adds an attribute to the unit.
-        
-        id: ~~ID - The attribute.
-        """
-        self._attrs += [id]
-        
-    def addHook(self, hook, func, priority):
-        """Adds a hook function to the unit. Hook functions are called when
-        certain events happen. 
-        
-        hook: string - The name of the hook for the function to be added.
-        func: ~~Function - The hook function itself.
-        priority: int - The priority of the function. If multiple functions
-        are defined for the same hook, they are executed in order of
-        decreasing priority.
-        """
-        
-        assert hook in _valid_hooks
-        try:
-            self._hooks[hook] += [(func, priority)]
-        except IndexError:
-            self._hooks[hook] = [(func, priority)]
-
-    def __str__(self):
-        attrs = [str(a) for a in self._attrs]
-        hooks = self._hooks.items()
-        return """unit
-    grammar:    %s
-    attributes: %s 
-    hooks:      %s""" % (self._prod, ", ".join(attrs), ", ".join(hooks))
-    
-    _name = "unit"
-        

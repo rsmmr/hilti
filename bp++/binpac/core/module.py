@@ -1,15 +1,17 @@
 # $Id$
 
-import ast
-import id as idmod
-import location
-import visitor
+builtin_id = id
 
-import sys
+import ast
+import id
+import type
+import location
+import binpac.support.visitor as visitor
 
 class Module(ast.Node):
-    """Represents a single link-time unit. A module has its own identifier
-    scope defining which ~~ID objects are visibile inside its namespace.  
+    """Represents a single HILTI link-time unit. A module has its
+    own identifier scope defining which ~~ID objects are visibile
+    inside its namespace.  
     
     name: string - The globally visible name of the module; modules
     names are treated case-insensitive. 
@@ -24,11 +26,12 @@ class Module(ast.Node):
         self._name = name.lower()
         self._location = location
         self._scope = {}
+        self._imported_modules = [] # Set by the parser.
 
     def name(self):
-        """Returns the name of the module. The module's name will have been
-        converted to all lower-case in accordance with the policy to treat is
-        case-independent.
+        """Returns the name of the module. The module's name will
+        have been converted to all lower-case in accordance with the
+        policy to treat it case-independent.
         
         Returns: string - The name.
         """
@@ -50,7 +53,8 @@ class Module(ast.Node):
     def addID(self, id, value = True):
         """Adds an ID to the module's scope. An arbitrary value can be
         associated with each ~~ID. If there's no specific value that needs to
-        be stored, just use the default of *True*.
+        be stored, just use the default of *True*. If the ID already exists,
+        the old entry is replace with the new one. 
         
         An ~~ID defined elsewhere can be imported into a module by adding it
         with a scope of that other module. In this case, subsequent lookups
@@ -73,38 +77,38 @@ class Module(ast.Node):
         if not id.scope():
             id.setScope(self._name)
 
-    def _lookupID(self, id, return_val):
+    def _lookupID(self, i, return_val):
 
-        if isinstance(id, str):
+        if isinstance(i, str):
             # We first look it up as a module-local variable, assuming there's no
             # scope in the name. 
             try:
-                idx = self._canonName(None, id)
-                (id, value) = self._scope[idx]
-                return value if return_val else id
+                idx = self._canonName(None, i)
+                (i, value) = self._scope[idx]
+                return value if return_val else i
             except KeyError:
                 pass
         
             # Now see if there's a scope given.
-            i = id.find("::")
+            i = i.find("::")
             if i < 0:
                 # No scope.
                 return None
 
             # Look up with the scope.
-            scope = id[0:i].lower()
-            name = id[i+2:]
+            scope = i[0:i].lower()
+            name = i[i+2:]
             
         else:
-            assert isinstance(id, idmod.ID)
-            scope = id.scope()
-            name = id.name()
+            assert isinstance(i, id.ID)
+            scope = i.scope()
+            name = i.name()
             
         idx = self._canonName(scope, name)
         
         try:
-            (id, value) = self._scope[idx]
-            return value if return_val else id
+            (i, value) = self._scope[idx]
+            return value if return_val else i
         
         except KeyError:
             return None        
@@ -133,24 +137,80 @@ class Module(ast.Node):
         """
         return self._lookupID(id, True)
 
-    def __str__(self):
-        s = "module %s\n" % self._name
-        for (id, value) in self._scope.values():
-            if value:
-                s += "%s = %s\n" % (id, value)
-            else:
-                s += "%s\n" % id
+    def importedModules(self):
+        """Returns the modules which have been imported into this modules
+        namespace. 
+        
+        Returns: list of (module, path) - List of imported modules. ``module``
+        is the name of the module as it specified to be imported, and ``path``
+        is the full path of the file that got imported."""
+        return self._imported_modules
+
+    def importIDs(self, other):
+        """Makes the IDs of another module available to the current one.
+        
+        other: ~~Module - The other module.
+        """
+    
+        for i in other.IDs():
+        
+            if i.imported():
+                # Don't import IDs recursively.
+                continue
+            
+            t = i.type()
+            
+            if i.linkage() == id.Linkage.EXPORTED:
+                val = self.lookupIDVal(i)
+                newid = id.ID(i.name(), i.type(), i.role(), i.linkage, scope=i.scope(), imported=True, location=id.location())
+                self.addID(newid, val)
                 
-        return s
+            # FIXME: We should introduce linkage for all IDs so that we can copy
+            # only "exported" ones over.
+            if isinstance(t, type.TypeDecl) or i.role() == id.Role.CONST:
+                val = other.lookupIDVal(i)
+                newid = id.ID(i.name(), i.type(), i.role(), scope=i.scope(), imported=True, location=i.location())
+                self.addID(newid, val)
+                continue
+            
+            # Cannot export types other than those above at the moment. 
+            util.internal_error("can't handle IDs of type %s (role %d) in import" % (repr(t), i.role()))
+    
+    def __str__(self):
+        return "module %s" % self._name
     
     # Visitor support.
-    def visit(self, v):
-        v.visitPre(self)
+    
+    def _visitType(self, v, ids, visited, filter):
         
-        for (id, value) in sorted(self._scope.values()):
+        objs = []
+        
+        for name in ids:
+            if name in visited:
+                continue
+            
+            (id, value) = self._scope[name]
+            if not filter(id):
+                continue
+            
+            objs += [(id, value)]
+            visited += [name]
+
+        for (id, value) in sorted(objs, key=lambda id: id[0].name()):
             v.visit(id)
             if isinstance(value, visitor.Visitable):
                 v.visit(value)
+            
+    def visit(self, v):
+        v.visitPre(self)
+
+        # Sort the ID names so that we get a deterministic order. 
+        ids = sorted(self._scope.keys())
+        
+        visited = []
+        self._visitType(v, ids, visited, lambda i: isinstance(i.type(), type.TypeDecl))
+        self._visitType(v, ids, visited, lambda i: i.role() == id.Role.CONST)
+        self._visitType(v, ids, visited, lambda i: True) # all the rest.
         
         v.visitPost(self)
         

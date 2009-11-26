@@ -1,11 +1,39 @@
 # $Id$
 #
-# The signed integer type.
+# The unsigned integer type.
 
-from binpac.core import expr
-from binpac.core.type import *
-from binpac.core.operators import * 
+import binpac.core.type as type
+import binpac.core.expr as expr
+import binpac.core.operator as operator
 
+import hilti.core.type
+
+@type.pac
+class UnsignedInteger(type.Integer):
+    """Type for unsigned integers.  
+    
+    width: integer - Specifies the bit-width of integers represented by this type.
+
+    location: ~~Location - A location object describing the point of definition.
+    """
+    def __init__(self, width, location=None):
+        super(UnsignedInteger, self).__init__(width, location=location)
+
+    def name(self):
+        # Overridden from Type.
+        return "uint<%d>" % self.width()
+    
+    def toCode(self):
+        # Overridden from Type.
+        return self.name()
+
+    def hiltiType(self, cg, tag):
+        return hilti.core.type.Integer(self.width() + 1)
+
+    #def production(self):
+    #    # XXX
+    #    pass
+    
 @operator.Plus(UnsignedInteger, UnsignedInteger)
 class Plus:
     def type(expr1, expr2):

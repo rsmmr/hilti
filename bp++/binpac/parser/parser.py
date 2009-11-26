@@ -8,11 +8,18 @@ import sys
 
 import ply
 
-from support import *
-from support.parseutil import *
-from core.operators import *
-from core import *
+import binpac.core.id as id
+import binpac.core.type as type
+import binpac.core.module as module
+import binpac.core.expr as expr
+import binpac.core.operators as operators
+import binpac.core.location as location
+import binpac.support.util as util
+import binpac.support.parseutil as parseutil
+import binpac.pactypes.unit as unit
 
+# FIXME: Why does this not work?
+#import binpac.parser.lexer as lexer
 import lexer
 
 tokens = lexer.tokens
@@ -39,18 +46,25 @@ def p_module_decl(p):
     pass
     
 def p_type_decl(p):
-    """type_decl : TYPE IDENT '=' type ';'"""
-    i = id.ID(p[2], type.TypeDecl(), id.Role.GLOBAL, location=_loc(p, 1))
+    """type_decl : opt_linkage TYPE IDENT '=' type ';'"""
+    i = id.ID(p[3], type.TypeDecl(p[5]), id.Role.GLOBAL, linkage=p[1], location=_loc(p, 2))
     p.parser.state.module.addID(i, p[4])
 
+def p_def_opt_linkage(p):
+    """opt_linkage : EXPORT
+                   | """
+    if len(p) == 1:
+        p[0] = id.Linkage.LOCAL
+    else:
+        if p[1] == "export":
+            p[0] = id.Linkage.EXPORTED
+        else:
+            util.internal_error("unexpected state in p_def_opt_linkage")
+    
 ### Simple types.
 
 def p_type(p):
-    """type : INT
-            | UINT
-            | STRING
-            | BYTES
-    """
+    """type : PACTYPE"""
     p[0] = p[1]
     
 ### More complex types.
@@ -58,71 +72,26 @@ def p_type(p):
 # Unit type.
 
 def p_type_unit(p):
-    """type : UNIT _instantiate_unit '{' unit_item_list '}'"""
-    p[0] = p.parser.state.unit
-    p.parser.state.unit = None 
+    """type : UNIT '{' unit_field_list '}'"""
+    p[0] = type.Unit(p[3], location=_loc(p, 1))
     
-def p_instantiate_unit(p):
-    """_instantiate_unit :"""
-    prod = grammar.Sequence([], location=_loc(p, -1))
-    p.parser.state.unit = type.Unit(prod, location=_loc(p, -1))
-
-def p_unit_item_list(p):
-    """unit_item_list : unit_item unit_item_list
-                      | """
-    pass
+def p_unit_field_list(p):
+    """unit_field_list : unit_field unit_field_list
+                       | unit_field"""
+    p[0] = [p[1]] + p[2] if len(p) != 2 else [p[1]]
     
-def p_unit_item_var(p):
-    """unit_item : ATTRIBUTE IDENT ':' type ';'"""
-    p.parser.state.unit.addAttribute(id.ID(p[2], p[4], id.Role.LOCAL, location=_loc(p, 1)))
+def p_unit_field_var(p):
+    """unit_field : opt_unit_field_name type ';'"""
+    p[0] = unit.Field(p[1], None, p[2], location=_loc(p, 2))
     
-def p_unit_item_production(p):
-    """unit_item : '>' production ';'"""
-    p.parser.state.unit.startProduction().addProduction(p[2])
-
-def p_production(p):
-    """production : production_name_opt production_body production_cond_opt"""
-    if p[1]:
-        p[2].setName(p[1])
+def p_unit_field_constant(p):
+    """unit_field : opt_unit_field_name CONSTANT ';'"""
+    p[0] = unit.Field(p[1], p[2], None, location=_loc(p, 2))
     
-    if p[3]:
-        p[2].setPredicate(p[3])
-
-    p[0] = p[2]
-        
-def p_production_cond_opt(p):
-    """production_cond_opt : IF expr
-                           | """
-    p[0] = p[2] if len(p) != 1 else None
-
-def p_production_name_opt(p):
-    """production_name_opt : IDENT ':'
+def p_opt_unit_field_name(p):
+    """opt_unit_field_name : IDENT ':'
                           | """
-    p[0] = p[1] if len(p) != 1 else ""
-    
-def p_production_body_type(p):
-    """production_body : type"""
-    p[0] = grammar.Variable(p[1], location=_loc(p, 1))
-    
-def p_production_body_literal(p):
-    """production_body : CONSTANT"""
-    p[0] = grammar.Literal(p[1], location=_loc(p, 1))
-
-def p_production_body_alternative(p):
-    """production_body : '(' production_alternative_list ')'"""
-    p[0] = grammar.Alternative(p[2], location=_loc(p, 1))
-
-def p_production_alternative_list(p):
-    """production_alternative_list : production '|' production_alternative_list
-                                   | production """
-    p[0] = [p[1]] + p[3] if len(p) != 2 else [p[1]]
-    
-# Support rules for types.
-
-#def p_type_list(p):    
-#    """type_list : type "," type
-#                 | type """
-#    p[0] = [p[1]] + p[3] if len(p) != 2 else [p[1]]
+    p[0] = p[1] if len(p) != 1 else None
 
 ### Expressions
 
@@ -161,16 +130,15 @@ def p_error(p):
         else:
             error(p, "unexpected %s '%s'" % (type, value), lineno=p.lineno)
     else:
-        error(p, "unexpected end of file")
-    
+        error(None, "unexpected end of file")
+        
 ##########        
 
-class BinPACState(State):
+class BinPACState(parseutil.State):
     """Tracks state during parsing."""
     def __init__(self, filename, import_paths):
         super(BinPACState, self).__init__(filename, import_paths)
         self.module = None
-        self.unit = None
 
 def _loc(p, num):
     assert p.parser.state._filename
@@ -182,13 +150,13 @@ def _loc(p, num):
         pass
     
     return location.Location(p.parser.state._filename, p.lineno(num))
-        
+
 # Same arguments as parser.parse().
 def _parse(filename, import_paths=["."]):
     state = BinPACState(filename, import_paths)
     lex = ply.lex.lex(debug=0, module=lexer)
     parser = ply.yacc.yacc(debug=0, write_tables=0)
-    initParser(parser, lex, state)
+    parseutil.initParser(parser, lex, state)
     
     filename = os.path.expanduser(filename)
     
@@ -204,8 +172,8 @@ def _parse(filename, import_paths=["."]):
         ast = None
 
     if parser.state.errors() > 0:
-        return (parser.state.errors, None, parser)
-        
+        return (parser.state.errors(), None, parser)
+
     return (0, ast, parser)    
 
 def _importFile(parser, filename, location, _parse):

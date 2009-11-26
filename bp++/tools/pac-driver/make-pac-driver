@@ -1,6 +1,11 @@
-#! /usr/bin/env bash
+#! /usr/bin/env bash -x
 
-SOURCES=pac.c
+pac=$1
 
-PACS=$@
+export CFLAGS=`binpac-config --cflags`
+export HILTICFLAGS=`binpac-config --hiltic`
+
+binpac++ $pac -o $pac.hlt || exit 1
+hilti-build -o pac-driver pac-driver.c $pac.hlt 
+
 

@@ -2,18 +2,21 @@
 #
 # The lexer. 
 
-import parser
+import binpac.core.constant as constant
+import binpac.core.type as type
+import binpac.core.location as location
+import binpac.support.util as util
+import binpac.support.parseutil as parseutil
 
-from core import *
-from support import *
-from support.parseutil import *
-
-# Language keywords. They will turned into the corresponding all-uppercase
+# Language keywords. They will be turned into the corresponding all-uppercase
 # token.
-keywords = ("attribute", "if", "module", "type")
+keywords = ["module", "type", "export", "unit"]
 
-# Type keywords. Also see below. 
-types = ("bytes", "string", "unit")
+# Keywords for simple types, with what we turn them into.
+types = {
+    "bytes": type.Bytes(),
+    "regexp": type.RegExp()
+    }
 
 # Literals.
 literals = ['(',')','{','}', '<', '>', '=', ',', ':', '*', ';', '+', '-', '*', '/', '|' ]
@@ -22,9 +25,8 @@ def _loc(t):
     return location.Location(t.lexer.parser.state._filename, t.lexer.lineno)
 
 tokens = [
-    "IDENT", "CONSTANT",
-    "INT", "UINT",
-    ] + [k.upper() for k in keywords + types]
+    "IDENT", "CONSTANT", "PACTYPE",
+    ] + [k.upper() for k in keywords]
 
 # Type keywords not covered by types.
 
@@ -89,10 +91,21 @@ def t_CONST_BYTES(t):
     t.value = constant.Constant(t.value[2:-1], type.Bytes(), location=_loc(t))
     return t
 
+def t_CONST_REGEXP(t):
+    '/([^\n/]|\\\\/)*/'
+    t.type = "CONSTANT"
+    t.value = constant.Constant(t.value[1:-1], type.RegExp(), location=_loc(t))
+    return t
+
 # Identifiers.
 def t_IDENT(t):
     r'[_a-zA-Z]([a-zA-Z0-9._]|::)*'
-    if t.value in keywords or t.value in types:
+    
+    if t.value in types:
+        t.value = types[t.value]
+        t.type = "PACTYPE"
+    
+    elif t.value in keywords or t.value in types:
         token = t.value.upper()
         assert token in tokens
         t.type = token
@@ -101,5 +114,5 @@ def t_IDENT(t):
     
 # Error handling.
 def t_error(t):
-    parser.error(t.lexer, "cannot parse input '%s...'" % t.value[0:10], lineno=t.lexer.lineno)
+    parseutil.error(t.lexer, "cannot parse input '%s...'" % t.value[0:10], lineno=t.lexer.lineno)
     

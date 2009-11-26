@@ -1,5 +1,8 @@
+# $Id$
 
-from binpac.support import util
+import bytes
+import integer
+import uinteger
+import regexp
 
-# Import all the other subpackages. 
-util.importByPattern(__name__, "*.py")
+import unit

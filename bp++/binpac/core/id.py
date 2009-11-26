@@ -23,6 +23,22 @@ class Role:
     
     PARAM = 4
     """An ~~PARAM :class:`ID` is defined as a function argument."""
+
+class Linkage:
+    """The *linkage* of an ~~IDFunction specifies its link-time
+    visibility.""" 
+                                                                                                                                                                            
+    LOCAL = 1                                                                                                                                                               
+    """An ~~ID with linkage LOCAL is only visible inside the 
+    ~~Module it is implemented in. This is the default linkage.""" 
+                                                                                                                                                                            
+    EXPORTED = 2                                                                                                                                                            
+    """An ~~ID with linkage EXPORTED is visible across all     
+    compilation units.
+    
+    Todo: Exported linkage is currently not supported for all types
+    of IDs because of HILTI limitations. 
+    """                 
     
 class ID(ast.Node):
     """Binds a name to a type.
@@ -32,6 +48,8 @@ class ID(ast.Node):
     type: ~~Type - The type of the ID.
     
     role: ~~Role - The role of the ID.
+    
+    linkage: ~~Linkage - The linkage of the ID.
     
     imported: bool - True to indicate that this ID was imported from another
     module. This does not change the semantics of the ID in any way but can be
@@ -45,7 +63,7 @@ class ID(ast.Node):
     Note: The class maps the ~~Visitor subtype to :meth:`~type`.
     """
     
-    def __init__(self, name, type, role, scope=None, location = None, imported=False):
+    def __init__(self, name, type, role, linkage=None, scope=None, location = None, imported=False):
         assert name
         assert type
         
@@ -54,6 +72,7 @@ class ID(ast.Node):
         self._scope = scope.lower() if scope else None
         self._type = type
         self._role = role
+        self._linkage = linkage
         self._imported = imported
         self._location = location
 
@@ -79,6 +98,13 @@ class ID(ast.Node):
         """
         self._scope = scope.lower() if scope else None
         
+    def setLinkage(self, linkage):
+        """Sets the ID's linkage.
+        
+        linkage: string - The new linkage.
+        """
+        self._linkage = linkage
+        
     def setName(self, name): 
         """Sets the ID's name.
         
@@ -99,6 +125,13 @@ class ID(ast.Node):
         Returns: ~~Role - The ID's role.
         """
         return self._role
+    
+    def linkage(self):
+        """Returns the ID's linkage.
+        
+        Returns: ~~Role - The ID's linkage.
+        """
+        return self._linkage
 
     def imported(self):
         """Returns whether the ID was imported from another module.

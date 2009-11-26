@@ -17,10 +17,10 @@ extern hlt_exception binpac_parseerror;
 
 /// Structure defining an BinPAC generated parser.
 typedef struct {
-    hlt_string name;                    /// Short descriptive name.
-    hlt_string description;             /// Longer textual description.
-    binpac_parse_function parse_func;   /// The C function performing the parsing.
-    binpac_resume_function resume_func; /// The C function resuming parsing after a yield.
+    hlt_string name;                     /// Short descriptive name.
+    hlt_string description;              /// Longer textual description.
+    binpac_parse_function *parse_func;   /// The C function performing the parsing.
+    binpac_resume_function *resume_func; /// The C function resuming parsing after a yield.
 } binpac_parser;
 
 /// Must be called exactly once at program startup to initialize the BinPAC
@@ -32,4 +32,4 @@ const void binpac_init();
 /// Returns: List of binpac_parser* instances - The available parsers.
 /// 
 /// excpt: &
-const hlt_list* binpac_parsers(hlt_exception** excpt);
+hlt_list* binpac_parsers(hlt_exception** excpt);

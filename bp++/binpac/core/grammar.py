@@ -5,11 +5,13 @@
 import sys
 import copy
 
-from binpac.support import util
+import binpac.support.util as util
 
 class Production(object):
     """Base class for all grammar productions. All productions are generally
     context-insensitive but can have semantic conditions attached to them.
+    Each production is assigned a unique LHS symbol that can be used to refer
+    to it. 
     
     name: string - A name for this production; can be the None for anonymous
     productions.
@@ -17,40 +19,51 @@ class Production(object):
     location: ~~Location - A location object decscribing the point of definition.
     """
     _counter = 0
+    _symbols = {}
     
-    def __init__(self, name=None, location=None):
+    def __init__(self, name=None, symbol=None, location=None):
         self._name = name
         self._pred = None
         self._pre = []
         self._post = []
         self._location = location
-        
-        # Internal production name.
-        Production._counter += 1
-        self._tag = "T%d" % Production._counter
-        
+
+        if not symbol:
+            # Internal production name.
+            Production._counter += 1
+            symbol = "T%d" % Production._counter
+            
+        else:
+            i = 1
+            s = symbol
+            while s in Production._symbols:
+                i += 1
+                s = "%s_%d" % (symbol, i)
+
+            symbol = s
+
+        self._symbols[symbol] = 1
+        self._symbol = symbol
+
     def location(self):
         """Returns the location where the production was defined.
         
         Returns: ~~Location - The location.
         """
         return self._location
+
+    def symbol(self):
+        """Returns production's unique LHS symbol. 
         
-    def setPredicate(self, expr):
-        """Adds a semantic Predicate to the production. The production will
-        only be considered if the Predicate evaluates to True. 
-        
-        expr: ~~Expr - The expression to set a the predicate. It must evaluate
-        to a boolen.
+        Returns: string - The symbol.
         """
-        expr = expr.simplify()
-        self._pred = expr
-        
+        return self._symbol
+    
     def setName(self, name):
-        """Sets the production's name.
+        """Sets the production's name. 
         
         name: string - The name. Setting it to None turns the production into
-        an anonymous one,
+        an anonymous one. 
         """
         self._name = name
         
@@ -61,60 +74,88 @@ class Production(object):
         """
         return self._name
     
-    def predicate(self):
-        """Returns the production's predicate.
-        
-        Returns: ~~Expr or None - The predicate, or None if none defined.
-        """
-        return self._pred
-
     def __str__(self):
         name = "($%s)" % self._name if self._name else ""
-        pred = " if %s" % str(self._pred) if self._pred else ""
-        return "%s%s%s" % (name, self._fmtDerived(), pred)
+        return "%s%s" % (name, self._fmtLong())
     
-    def _fmtDerived(self):
+    def _fmtShort(self):
         # To be overridden by derived classes.
-        return "<general production>"
+        return "<production>"
+    
+    def _fmtLong(self):
+        # To be overridden by derived classes.
+        return "<production>"
 
-class Terminal(Production):
-    """A terminal.
+    def _rhss(self):
+        # Must be overriden by derived classes, and return a list of RHS
+        # alternatives for this production. Each RHS is itself a list of
+        # Production instances.
+        util.internal_error("Production._rhss not overridden.")
     
-    type: ~~Type - The type of the literal.
-    
-    name: string - A name for this production; can be the None for anonymous
-    productions.
+class Epsilon(Production):
+    """An empty production.
     
     location: ~~Location - A location object decscribing the point of definition.
     """
-    def __init__(self, type, name=None, location=None):
-        super(Terminal, self).__init__(name, location=location)
-        self._type = type
-
-    def type(self):
-        """Returns the type of the terminal.
+    def __init__(self, location=None):
+        super(Epsilon, self).__init__(None, symbol="epsilon", location=location)
+        self._tag = "epsilon"
         
-        Returns: ~~Type - The type.
-        """
-        return self._type
-
-    def _fmtDerived(self):
-        return "<generic terminal>"
+    def _fmtShort(self):
+        return "<epsilon>"    
     
+    def _fmtLong(self):
+        return "<epsilon>"    
+
+    def _rhss(self):
+        return [[]]
+    
+class Terminal(Production):
+    """A terminal.
+    
+    name: string - A name for this production; can be the None for anonymous
+    productions.
+
+    expr: ~~Expression or None - An optinoal expression that will be evaluated
+    after the terminal has been parsed but before its value is assigned to its
+    destination variable. If the expression is given, *its* value is actually
+    assigned to the destination variable instead (and also determined the type
+    of that). This can be used, e.g., into cast the parsed value into a
+    different type.
+    
+    location: ~~Location - A location object decscribing the point of definition.
+    
+    Todo: The functionality for *expr* is not yet implemented, and the
+    parameter just stored but otherwise ignored.
+    """
+    def __init__(self, name, expr, location=None):
+        super(Terminal, self).__init__(name, symbol="terminal", location=location)
+        self._expr = expr
+
+    def expr():
+        """Returns the expression associated with the production.
+        
+        Returns: ~~Expression - The expression.
+        """
+        return self._expr
+        
 class Literal(Terminal):
     """A literal. A literal is anythig which can be directly scanned for as
     sequence of bytes. 
     
-    literal: ~~Constant - The literal. 
-    
     name: string - A name for this production; can be the None for anonymous
     productions.
+
+    literal: ~~Constant - The literal. Currently, it must be of type ~~Bytes.
+
+    expr: ~~Expression or None - An optional expression to be associated with
+    the production. See ~~Terminal for more information.
     
     location: ~~Location - A location object decscribing the point of definition.
     """
     
-    def __init__(self, literal, name=None, location=None):
-        super(Literal, self).__init__(literal.type(), name)
+    def __init__(self, name, literal, expr=None, location=None):
+        super(Literal, self).__init__(name, expr)
         self._literal = literal
         self._id = 0
 
@@ -135,74 +176,75 @@ class Literal(Terminal):
         """
         return self._id
     
-    def _fmtDerived(self):
-        return "literal('%s')" % self._literal
+    def _fmtShort(self):
+        return "'%s'" % self._literal.value()
+    
+    def _fmtLong(self):
+        return "'%s'" % self._literal.value()
 
+    def _rhss(self):
+        return [[self]]
+    
 class Variable(Terminal):
-    """A variable. A variable is terminal that will be parsed from the input
+    """A variable. A variable is a terminal that will be parsed from the input
     stream according to its type, yet is not recognizable as such in advance
     by just looking at the available bytes. If we start parsing, we assume it
     will match (and if not, generate an error).
     
-    type: ~~Type - The type of the variable.
-    
     name: string - A name for this production; can be the None for anonymous
     productions.
+
+    type: ~~Type - The type of the variable.
+
+    expr: ~~Expression or None - An optional expression to be associated with
+    the production. See ~~Terminal for more information.
     
     location: ~~Location - A location object decscribing the point of definition.
     """
     
-    def __init__(self, type, name=None, location=None):
-        super(Variable, self).__init__(type, name, location=location)
+    def __init__(self, name, type, expr=None, location=None):
+        super(Variable, self).__init__(name, expr, location=location)
+        self._type = type
 
-    def _fmtDerived(self):
-        return "type(%s)" % self.type()
-
-class EpsilonClass(Production):
-    """The empty production.
-    
-    location: ~~Location - A location object decscribing the point of definition.
-    """
-    def __init__(self, location=None):
-        super(EpsilonClass, self).__init__(None, location=location)
-        self._tag = "epsilon"
+    def _rhss(self):
+        return [[self]]
         
-    def _fmtDerived(self):
-        return "<epsilon>"    
+    def _fmtShort(self):
+        return "type(%s)" % self._type
 
-Epsilon = EpsilonClass()
-    
+    def _fmtLong(self):
+        return "type(%s)" % self._type
+
 class NonTerminal(Production):
     """A non-terminal.
     
-    type: ~~Type - The type of the literal.
-    
-    name: string - A name for this production; can be the None for anonymous
+    name: string - A name for this production; can be None for anonymous
     productions.
     
     location: ~~Location - A location object decscribing the point of definition.
     """
-    def __init__(self, name=None, sym=None, location=None):
-        super(NonTerminal, self).__init__(name, location=location)
-        self._sym = sym
-        if sym:
-            self._tag = "%s_%s" % (sym, self._tag)
+    def __init__(self, name, symbol=None, location=None):
+        super(NonTerminal, self).__init__(name, symbol=symbol, location=location)
 
-    def _fmtDerived(self):
-        return "<generic non-terminal>"
-    
+    def _simplify(self, grammar):
+        # Can be overriden by derived classes.
+        pass
+        
+    def _fmtShort(self):
+        return self.symbol()
+        
 class Sequence(NonTerminal):
     """A sequence of other productions. 
     
-    seq: list of ~~Production - The sequence of productions. 
-    
     name: string - A name for this production; can be the None 
     for anonymous productions.
+
+    seq: list of ~~Production - The sequence of productions. 
     
     location: ~~Location - A location object decscribing the point of definition.
     """
-    def __init__(self, seq, name=None, sym=None, location=None):
-        super(Sequence, self).__init__(name, sym, location=location)
+    def __init__(self, name, seq, symbol=None, location=None):
+        super(Sequence, self).__init__(name, symbol=symbol, location=location)
         self._seq = seq
 
     def sequence(self):
@@ -211,49 +253,202 @@ class Sequence(NonTerminal):
         Returns: list of ~~Production - The sequence.
         """
         return self._seq
-    
+
     def addProduction(self, prod):
         """Appends one production to the sequence.
         
-        prod: ~~Production - The production
+        prod: ~~Production - The production.
         """
         self._seq += [prod]
+    
+    def _rhss(self):
+        return [self._seq]
 
-    def _fmtDerived(self):
-        return "( " + "; ".join([str(p) for p in self._seq]) + " )"
+    def _simplify(self, grammar):
+        # For productions of the form "A->B; B->C;", let A points to C
+        # directly.
+        prods = self._seq
+        if len(prods) == 1 and isinstance(prods[0], NonTerminal):
+            self._seq = [prods[0]]
+        
+        # For productions of the form "A->xBy ; B -> terminal"',
+        for i in range(len(prods)):
+            p = prods[i]
+            if isinstance(p, NonTerminal):
+                succ = grammar._nterms[p.symbol()]
+                if isinstance(succ, Sequence) and len(succ.sequence()) == 1:
+                    q = succ.sequence()[0]
+                    if not isinstance(q, NonTerminal):
+                        prods[i] = q
+                        
+    def _fmtLong(self):
+        return "; ".join([p._fmtShort() for p in self._seq])
     
 class Alternative(NonTerminal):
-    """A alternative of other productions. 
-    
-    seq: list of ~~Production - The alternative of productions. 
+    """Base class for productions offering alternative RHSs.
     
     name: string - A name for this production; can be the None 
     for anonymous productions.
     
+    alts: list of ~~Production - The alternatives.
+    
     location: ~~Location - A location object decscribing the point of definition.
     """
-    def __init__(self, alt, name=None, sym=None, location=None):
-        super(Alternative, self).__init__(name, sym, location=location)
-        self._alt = alt
+    def __init__(self, name, alts, symbol=None, location=None):
+        super(Alternative, self).__init__(name, symbol=symbol, location=location)
+        self._alts = alts
+        self._prefix = "<prefix missing>"
 
     def alternatives(self):
-        """Returns the alternative of productions.
+        """Returns the alternative productions.
         
-        Returns: list of ~~Production - The alternative.
+        Returns: list of ~~Production - The alternatives.
         """
-        return self._alt
+        return self._alts
+
+    def _setAlternatives(self, alts):
+        self._alts = alts
     
-    def addProduction(self, prod):
-        """Appends one production to the alternative.
+    def _rhss(self):
+        return [[a] for a in self._alts]
+    
+    def _setFmtPrefix(self, prefix):
+        self._prefix = prefix
+
+    def _fmtLong(self):
+        return "( %s| " % self._prefix + " || ".join([a._fmtShort() for a in self._alts]) + " )"
+    
+class LookAhead(Alternative):
+    """A pair of alternatives between which we can decide with one token of look-ahead.
+    
+    name: string - A name for this production; can be the None 
+    for anonymous productions.
+
+    alt1: ~~Production: The first alternative. 
+    
+    alt2: ~~Production: The second alternative. 
+    """
+    def __init__(self, name, alt1, alt2, symbol=None, location=None):
+        super(LookAhead, self).__init__(name, [alt1, alt2], symbol=symbol, location=location)
+        self._setFmtPrefix("ll1")
+
+    def setAlternatives(self, alt1, alt2):
+        """Sets the two alternatives.
         
-        prod: ~~Production - The production
+        alts: tuple (~~Production, ~~Production) - The alternatives.
         """
-        self._alt += [prod]
+        self._setAlternatives([alt1, alt2])
+        self._alt1 = alt1
+        self._alt2 = alt2
+        self._laheads = None
+        
+    def lookAheads(self):
+        """Returns the look-aheads for the two alternatives. This function
+        must only be called after the instance has been added to a ~Grammar,
+        as that's when the look-aheads are computed. 
+        
+        Returns: 2-tuple (set, set): Two sets representing the look-aheads for
+        the first and second alternative, respectively. Each set contains the
+        ~~Literals for which the corresponding alternative should be selected.
+        """
+        assert self._laheads != None
+        return self._laheads
 
-    def _fmtDerived(self):
-        return "( " + " || ".join([str(p) for p in self._alt]) + " )"
-
+    def _setLookAheads(self, laheads):
+        self._laheads = laheads
     
+class Conditional(Alternative):
+    """Base class for productions offering alternative RHSs between we decide
+    based on semantic conditions.
+    
+    name: string - A name for this production; can be the None 
+    for anonymous productions.
+    
+    alts: list of ~~Production - The alternatives.
+    
+    location: ~~Location - A location object decscribing the point of definition.
+    """
+    def __init__(self, name, alts, symbol=None, location=None):
+        super(Conditional, self).__init__(name, alts, symbol=symbol, location=location)
+
+class Boolean(Conditional):
+    """A pair of alternatives between which we decide based on a boolean
+    expression.
+    
+    name: string - A name for this production; can be the None 
+    for anonymous productions.
+
+    expr: ~~Expr : An expression of type ~~Bool.
+
+    alt1: ~~Production: The first alternative for the *true* case.
+    
+    alt2: ~~Production: The second alternative for the *false* case.
+    """
+    def __init__(self, name, expr, alt1, alt2, symbol=None, location=None):
+        super(Boolean, self).__init__(name, [alt1, alt2], symbol=symbol, location=location)
+        self._setFmtPrefix("Bool")
+        self._expr = expr
+        self._alt1 = alt1
+        self._alt2 = alt2
+
+    def expr(self):
+        """Returns the conditional expression.
+        
+        Returns: ~~Expression - The expression of type ~~Bool.
+        """
+        return self._expr
+        
+    def branches(self):
+        """Returns the two possible branches.
+        
+        Returns: 2-tuple of ~~Production - The *true* and *false* branches.
+        """
+        return (self._alt1, self._alt2)
+        
+class Switch(Conditional):
+    """Alternatives between which we decide based on which value out of a set
+    of options is matched; plus a default if none.
+    
+    name: string - A name for this production; can be the None 
+    for anonymous productions.
+
+    expr: ~~Expr : An expression. 
+    
+    alts: list of tuple (value, ~~Production) - The alternatives. The value of
+    *expr* is matched against the possible values given in the list (which
+    must be of the same type); if a match is found the corresponding
+    production is selected.
+    
+    default: ~~Production - Default production if none of *alts* matches. 
+    """
+    def __init__(self, name, expr, alts, default, symbol=None, location=None):
+        super(Boolean, self).__init__(name, alts + [default], symbol=symbol, location=location)
+        self._setFmtPrefix("Bool")
+        self._expr = expr
+        self._default = defaults
+        self._cases = alts
+        
+    def expr(self):
+        """Returns the switch expression.
+        
+        Returns: ~~Expression - The expression.
+        """
+        return self._expr
+    
+    def cases(self):
+        """Returns the possible cases.
+        
+        Returns:  list of tuple (value, ~~Production) - The alternatives.
+        """
+        return self._cases
+    
+    def default(self):
+        """Returns the default case.
+        
+        Returns: ~~Production - The default case.
+        """
+        return self._default
+        
 class Grammar:
     def __init__(self, name, root):
         """Instantiates a grammar given its root production.
@@ -262,18 +457,17 @@ class Grammar:
         root: Production - The grammar's root production.
         """
         self._name = name
-        self._start = root._tag
-        self._terms = {}
-        self._prods = {}
-        self._locations = {}
+        self._start = root
+        self._productions = {}
+        self._nterms = {}
+        self._literals = 0
         self._nullable = {}
         self._first = {}
         self._follow = {}
-        self._literals = 0
         
         self._addProduction(root)
-        #self._simplify()
-        #self._simplify()
+        self._simplify()
+        self._simplify()
         self._computeTables()
 
     def name(self):
@@ -293,165 +487,97 @@ class Grammar:
         ambiguities encountered, suitable for inclusion in an error message.
         """
         
-        def _loc(sym):
-            try:
-                return self._locations[sym]
-            except KeyError:
-                return str(sym)
+        def _loc(p):
+            return p.location() if p.location() else "production %s" % p.symbol()
         
         msg = ""
         
-        for (sym, lookahead) in self._parser.items():
-            for (term, rhss) in lookahead.values():
-                if len(rhss) > 1:
-                    msg += "%s: productions are ambigious for look-ahead symbol %s\n" % (_loc(sym), term)
+        for p in self._nterms.values():
+            
+            if not isinstance(p, LookAhead):
+                continue
+            
+            laheads = p.lookAheads()
+            
+            if len(laheads[0]) == 0 or len(laheads[1]) == 0:
+                msg += "%s: alternative is not reachable because of empty look-ahead set\n" % _loc(p)
+            
+            isect = laheads[0] & laheads[1]
+            if isect:
+                isect = ", ".join([str(i) for i in isect])
+                msg += "%s: production is ambigious for look-ahead symbol(s) {%s}\n" % (_loc(p), isect)
 
-            have_var = False
-            total = 0
-            for (term, rhss) in lookahead.values():
-                if isinstance(term, Variable):
-                    have_var = True
-                total += 1
+            laheads = laheads[0] | laheads[1]
                 
-            if have_var and total > 1:
-                msg += "%s: a variable must be the only option\n" % _loc(sym)
+            for lahead in laheads:
+                if isinstance(lahead, Variable):
+                    msg += "%s: look-ahead cannot depend on variable\n" % _loc(p)
+                    break
                 
         return msg if msg != "" else None
 
-    def parseTable(self):
-        """Returns the grammar's parse table. The parse table has the form of
-        a two-level dictionary. The first level is indexed by the LHS tag, and
-        yield a second-level dictionary describing the alternatives we have
-        when deriving a LHS. The alternative dictionary is indexed by the
-        look-ahead symbol and yields the RHS as a list of (a) ~~Terminal
-        instances for terminals, and (b) strings for non-terminals where the
-        string is the LHS tag of the production to follow (the tag can be
-        recursively used as the next index into the parse table). 
-          
-        The grammar must not be ambigious; if it is, this function will abort.
-        Use ~~check to make sure the grammar is ok.
+    def productions(self):
+        """Returns the grammar's productions. The method returns a dictionary
+        that maps each production's ~~symbol to the ~~Production itself. Only
+        ~~NonTerminals are included.
         
         Returns: dictionary - The dictionary as described above.
-        
-        Note: The dictionary returned by this function is different from the
-        internal representation, which can map a look-ahead to multiple RHSs.
-        In that case the grammar is ambigious though and will be flagged by
-        ~~check.
         """
-        assert not self.check()
-        
-        ptab = {}
-        for (lhs, lookaheads) in self._parser.items():
-            ptab[lhs] = dict([(sym, rhss[0]) for (sym, rhss) in lookaheads.values()])
-
-        return ptab
+        return self._nterms
 
     def startSymbol(self):
-        """Returns the LHS symbol of the starting production. The tag can be
-        used as index into the dictionary returned by ~~parseTable.
+        """Returns starting production. 
         
-        Returns: string - The starting symbol.
+        Returns: Productions - The starting instruction.
         """
         return self._start
     
-    @staticmethod
-    def _isTerminal(p):
-        return isinstance(p, Terminal)
-    
-    @staticmethod
-    def _isLiteral(p):
-        return isinstance(p, Literal)
-
-    @staticmethod
-    def _isEpsilon(p):
-        return isinstance(p, EpsilonClass)
-    
-    @staticmethod
-    def _isNonTerminal(p):
-        return not (isinstance(p, Terminal) or isinstance(p, EpsilonClass))
-        
     def _addProduction(self, p):
-        if p._tag in self._prods:
+        if p.symbol() in self._productions:
+            # Already added.
             return
 
-        self._locations[p._tag] = p.location() if p.location() else p._tag
+        self._productions[p.symbol()] = p
         
-        def _conv(p):
-            return p._tag if Grammar._isNonTerminal(p) else p
-        
-        # We turn the productions into the classic lhs->rhs style here, with
-        # alternatives being converted into multiple of them. We keep terminals
-        # separately. For non-terminals, we only store their tag; for
-        # Terminals the instance itself.
-        if isinstance(p, Sequence):
-            self._prods[p._tag] = [[_conv(q) for q in p.sequence()]]
-
-            for q in p.sequence():
-                self._addProduction(q)
+        if isinstance(p, Literal):
+            # Assign unique IDs to literals.
+            self._literals += 1
+            p._id = self._literals
             
-        elif isinstance(p, Alternative):
-            self._prods[p._tag] = [[_conv(q)] for q in p.alternatives()]
-
-            for q in p.alternatives():
-                self._addProduction(q)
-                
-        elif Grammar._isTerminal(p):
-            if Grammar._isLiteral(p):
-                self._literals += 1
-                p._id = self._literals
-
-        elif Grammar._isEpsilon(p):
-            pass
+        if isinstance(p, NonTerminal):
+            self._nterms[p.symbol()] = p
             
-        else:
-            util.internal_error("unknown case in Grammar.addProduction: %s" % str(p))
+            for rhs in p._rhss():
+                for p in rhs:
+                    # Add productions recursive.y.
+                    self._addProduction(p)
             
     def _simplify(self):
-        # Remove some types of unecessary rules.
-        for alts in self._prods.values():
-            for i in range(len(alts)):
-                p = alts[i]
-            
-                # For productions of the form "A->B; B->C;", let A points to C
-                # directly.
-                if len(p) == 1 and Grammar._isNonTerminal(p[0]):
-                    succ = self._prods[p[0]]
-                    if len(succ) == 1:
-                        alts[i] = succ[0]
-                        
-                # For productions of the form "A-> xBy ; B -> terminal"',
-                # replace B with the Terminal.
-                for j in range(len(p)):
-                    q = p[j]
-                    if Grammar._isNonTerminal(q):
-                        succ = self._prods[q]
-                        if len(succ) == 1 and len(succ[0]) == 1 and not Grammar._isNonTerminal(succ[0][0]):
-                            p[j] = succ[0][0]
-            
         # Remove unused productions.
         def _closure(root, used):
-            used.add(root)
-            for a in self._prods[root]:
-                for p in a:
-                    if Grammar._isNonTerminal(p) and not p in used:
-                        _closure(p, used)
+            
+            idx = root.symbol()
+            
+            if idx in used:
+                return
+            
+            used.add(idx)
+            
+            for rhs in self._productions[idx]._rhss():
+                for p in rhs:
+                    _closure(p, used)
                         
             return used
         
         used = _closure(self._start, set())
         
-        for tag in set(self._prods) - used:
-            del self._prods[tag]
-
-        # Remove duplicates in the alternative list. We use the str()
-        # representation to identify identical alternatives.
-        for (tag, alts) in self._prods.items():
-            news = []
-            for a in alts:
-                if str(a) not in [str(n) for n in news]:
-                    news += [a]
-                
-            self._prods[tag] = news
+        for sym in set(self._productions.keys()) - used:
+            del self._nterms[sym]
+            del self._productions[sym]
+            
+        # Do some production-specific simplyfing.
+        for p in self._nterms.values():
+            p._simplify(self)
 
     def _computeTables(self):
         # Computes FIRST, FOLLOW, & NULLABLE. This follows roughly the Algorithm
@@ -459,33 +585,51 @@ class Grammar:
         # http://books.google.com/books?id=A3yqQuLW5RsC&pg=PA49
         
         def _add(tbl, dst, src, changed):
-            if tbl[dst] | set(src) == tbl[dst]:
+            idx = dst.symbol()
+            if tbl[idx] | set(src) == tbl[idx]:
                 return changed
             
-            tbl[dst] |= set(src)
+            tbl[idx] |= set(src)
             return True
             
-        def _nullable(a, i, j):
+        def _nullable(rhs, i, j):
             for l in range(i, j):
-                if Grammar._isEpsilon(a[l]):
+                if isinstance(rhs[l], Epsilon):
                     continue
                 
-                if Grammar._isTerminal(a[l]) or not self._nullable[a[l]]:
+                if isinstance(rhs[l], Terminal) or not self._nullable[rhs[l].symbol()]:
                     return False
-            
+                
             return True
         
-        def _first(t):
-            if Grammar._isEpsilon(t):
+        def _first(prod):
+            if isinstance(prod, Epsilon):
                 return []
             
-            if Grammar._isTerminal(t):
-                return [t]
+            if isinstance(prod, Terminal):
+                return [prod]
             
-            return self._first[t]
+            return self._first[prod.symbol()]
+
+        def _firstOfRhs(rhs):
+            first = set()
+            
+            for prod in rhs:
+                if isinstance(prod, Epsilon):
+                    continue
+                
+                if isinstance(prod, Terminal):
+                    return [prod]
+                
+                first |= self._first[prod.symbol()]
+                
+                if not self._nullable[prod.symbol()]:
+                    break
+            
+            return first
 
         # Initialize sets.
-        for t in self._prods:
+        for t in self._nterms:
             self._nullable[t] = False
             self._first[t] = set()
             self._follow[t] = set()
@@ -493,150 +637,146 @@ class Grammar:
         # Iterate until no further change.
         while True:
             changed = False
-            for (tag, alts) in self._prods.items():
-                for a in alts:
-                    k = len(a)
+            for (sym, p) in self._nterms.items():
+                for rhs in p._rhss():
+                    k = len(rhs)
 
-                    if _nullable(a, 0, k) and not self._nullable[tag]:
-                        self._nullable[tag] = True
+                    if _nullable(rhs, 0, k) and not self._nullable[sym]:
+                        self._nullable[sym] = True
                         changed = True
                         
                     for i in range(k):
-                        if _nullable(a, 0, i):
-                            changed = _add(self._first, tag, _first(a[i]), changed)
+                        if _nullable(rhs, 0, i):
+                            changed = _add(self._first, p, _first(rhs[i]), changed)
 
-                        if not Grammar._isNonTerminal(a[i]):
+                        if not isinstance(rhs[i], NonTerminal):
                             continue
                                 
-                        if _nullable(a, i+1, k):
-                            changed = _add(self._follow, a[i], self._follow[tag], changed)
+                        if _nullable(rhs, i+1, k):
+                            changed = _add(self._follow, rhs[i], self._follow[sym], changed)
 
                         for j in range(i+1, k):
-                            if _nullable(a, i+1, j):
-                                changed = _add(self._follow, a[i], _first(a[j]), changed)
+                            if _nullable(rhs, i+1, j):
+                                changed = _add(self._follow, rhs[i], _first(rhs[j]), changed)
                                     
             if not changed:
                 break
-            
-        # Build the parse table. 
-        def _addla(la, term, rhs):
-            assert Grammar._isTerminal(term)
-            try:
-                (term, cur) = la[str(term)]
-                for c in cur:
-                    if id(rhs) == id(c):
-                        return
 
-                cur += [rhs]
-                    
-                la[str(term)] = (term, cur)
-                
-            except KeyError:
-                la[str(term)] = (term, [rhs])
- 
-        def _firstOfRhs(rhs):
-            first = set()
+        # Build the look-ahead sets.
+        for (sym, p) in self._nterms.items():
+            if not isinstance(p, LookAhead):
+                continue
+
+            laheads = [set(), set()]
+            rhss = p._rhss()
             
-            for sym in rhs:
-                if Grammar._isEpsilon(sym):
-                    continue
+            assert(len(rhss) == 2)
+
+            for i in (0, 1):
+                rhs = rhss[i]
                 
-                if Grammar._isTerminal(sym):
-                    return [sym]
-                
-                first |= self._first[sym]
-                
-                if not self._nullable[sym]:
-                    break
-            
-            return first
-                
-        self._parser = {}
-        
-        for (tag, alts) in self._prods.items():
-            lookahead = {}
-            for rhs in alts:
                 for term in _firstOfRhs(rhs):
-                    _addla(lookahead, term, rhs)
-                                
+                    laheads[i] |= set([term]) 
+                                    
                 if _nullable(rhs, 0, len(rhs)):
-                    for term in self._follow[tag]:
-                        _addla(lookahead, term, rhs)
-                         
-            self._parser[tag] = lookahead
+                    for term in self._follow[sym]:
+                        laheads[i] |= set([term]) 
+                        
+            p._setLookAheads(laheads)
         
-    def __str__(self):
-        s = "Grammar '%s'\n" % self._name
-        for (tag, alts) in self._prods.items():
-            for a in alts:
-                start = "(*)" if tag == self._start else""
-                prod = "; ".join([p if Grammar._isNonTerminal(p) else str(p) for p in a])
-                s += "%3s %2s -> %s\n" % (start, tag, prod)
-                
-        s += "\n"
-        s += "    Epsilon:\n"
+    def printTables(self, verbose=False, file=sys.stdout):
+        """Prints the grammar's parser tables in a human readable form. Per
+        default, only the final pare table is printed. In *verbose* mode, the
+        full grammar and all the internal nullable/first/follow tables are
+        printed. 
         
-        for (tag, eps) in self._nullable.items():
-            s += "      %s = %s\n" % (tag, "true" if eps else "false" )
+        verbose: bool - True for verbose output.
+        file: file - The print destination.
+        """
         
-        s += "\n"
-        s += "    First_1:\n"
+        print >>file, "Grammar '%s'\n" % self._name
         
-        for (tag, first) in self._first.items():
-            s += "      %s = %s\n" % (tag, [str(f) for f in first])
+        if verbose:
+            for (sym, prod) in self._productions.items():
+                start = "(*)" if sym == self._start.symbol() else ""
+                print >>file, "%3s %5s -> %s" % (start, sym, prod)
+                    
+            print >>file, ""
+            print >>file, "    Epsilon:"
             
-        s += "\n"
-        s += "    Follow:\n"
-        
-        for (tag, follow) in self._follow.items():
-            s += "      %s = %s\n" % (tag, [str(f) for f in follow])
+            for (sym, eps) in self._nullable.items():
+                print >>file, "      %s = %s" % (sym, "true" if eps else "false" )
             
-        s += "\n"
-        s += "    Parse table:\n"
-        
-        for (tag, lookahead) in self._parser.items():
-            s += "      %s\n" % tag
-            for (sym, rhss) in lookahead.values():
-                s += "          %s -> #%d %s\n" % (sym, len(rhss), " || ".join([" ".join([str(r) for r in rhs]) for rhs in rhss]))
+            print >>file, ""
+            print >>file, "    First_1:"
+            
+            for (sym, first) in self._first.items():
+                print >>file, "      %s = %s" % (sym, [str(f) for f in first])
                 
-        return s
+            print >>file, ""
+            print >>file, "    Follow:\n"
+            
+            for (sym, follow) in self._follow.items():
+                print >>file, "      %s = %s" % (sym, [str(f) for f in follow])
+                
+            print >>file, ""
+            
+        print >>file, "    Parse table:"
+
+        for (sym, p) in self._nterms.items():
+            start = "(*)" if sym == self._start.symbol() else ""
+            print >>file, "%3s %5s" % (start, sym),
+
+            if isinstance(p, LookAhead):
+                def printAlt(i):
+                    lahead = p.lookAheads()[i]
+                    alt = p.alternatives()[i]
+                    print >>file, " -> %s, when next is {%s})" % (alt, ", ".join([str(l) for l in lahead]))
+                    
+                printAlt(0)
+                print >>file, "         ",
+                printAlt(1)
+                
+            else:
+                print >>file, " -> %s" % p
+
+            print >>file
 
 if __name__ == "__main__":
 
-    from core import type
-    from support import constant
+    from binpac.core import type
+    from binpac.support import constant
+
+    verbose = False
     
     # Simple example grammar from
     #
     # http://www.cs.uky.edu/~lewis/essays/compilers/td-parse.html
 
-    
-    print "=== Example grammar 1"
-    
-    a = Literal(constant.Constant("a", type.Bytes()))
-    b = Literal(constant.Constant("b", type.Bytes()))
-    c = Literal(constant.Constant("c", type.Bytes()))
-    d = Literal(constant.Constant("d", type.Bytes()))
+    a = Literal(None, constant.Constant("a", type.Bytes()))
+    b = Literal(None, constant.Constant("b", type.Bytes()))
+    c = Literal(None, constant.Constant("c", type.Bytes()))
+    d = Literal(None, constant.Constant("d", type.Bytes()))
 
 #    A = Sequence([a])
-#    B = Alternative([A, Sequence([A])])
+#    B = LookAhead([A, Sequence([A])])
 #    print Grammar(B)
     
     
 #    sys.exit(1)
     
-    cC = Sequence([])
-    bD = Sequence([])
-    AD = Sequence([])
-    aA = Sequence([])
+    cC = Sequence(None, [], symbol="cC")
+    bD = Sequence(None, [], symbol="bD")
+    AD = Sequence(None, [], symbol="AD")
+    aA = Sequence(None, [], symbol="aA")
     
-    A = Alternative([Epsilon, a], sym="A")
-    B = Alternative([Epsilon, bD], sym="B")
-    C = Alternative([AD, b], sym="C")
-    D = Alternative([aA, c], sym="D")
+    A = LookAhead(None, Epsilon(), a, symbol="A")
+    B = LookAhead(None, Epsilon(), bD, symbol="B")
+    C = LookAhead(None, AD, b, symbol="C")
+    D = LookAhead(None, aA, c, symbol="D")
 
-    ABA = Sequence([A,B,A])
-    S = Alternative([ABA, cC], sym="S")
+    ABA = Sequence(None, [A,B,A], symbol="ABA")
+    S = LookAhead(None, ABA, cC, symbol="S")
 
     cC.addProduction(c)
     cC.addProduction(C)
@@ -651,42 +791,37 @@ if __name__ == "__main__":
     aA.addProduction(A)
 
     g1 = Grammar("Grammar1", S)
-    print str(g1)
+    g1.printTables(verbose)
     
     error = g1.check()
     if error:
         print error
-    
+
     # Simple example grammar from "Parsing Techniques", Fig. 8.9
         
-    print "=== Example grammar 2"
+    hs = Literal(None, constant.Constant("#", type.Bytes()))
+    pl = Literal(None, constant.Constant("(", type.Bytes()))
+    pr = Literal(None, constant.Constant(")", type.Bytes()))
+    no = Literal(None, constant.Constant("!", type.Bytes()))
+    qu = Literal(None, constant.Constant("?", type.Bytes()))
+    st = Variable(None, type.Bytes())
 
-    hs = Literal(constant.Constant("#", type.Bytes()))
-    pl = Literal(constant.Constant("(", type.Bytes()))
-    pr = Literal(constant.Constant(")", type.Bytes()))
-    no = Literal(constant.Constant("!", type.Bytes()))
-    qu = Literal(constant.Constant("?", type.Bytes()))
-    st = Variable(type.Bytes())
-
-    F = Sequence([no, st], sym="Fact") 
-    Q = Sequence([qu, st], sym="Question")
+    F = Sequence(None, [no, st], symbol="Fact") 
+    Q = Sequence(None, [qu, st], symbol="Question")
     
-    S = Alternative([], sym="Session")
-    SS = Sequence([pl, S, pr, S])
-    Fs = Alternative([], sym="Facts")
-    FsQ = Sequence([Fs, Q])
-    FFs = Sequence([F,Fs])
+    S = LookAhead(None, None, None, symbol="Session")
+    SS = Sequence(None, [pl, S, pr, S], symbol="SS")
+    Fs = LookAhead(None, None, None, symbol="Facts")
+    FsQ = Sequence(None, [Fs, Q], symbol="FsQ")
+    FFs = Sequence(None, [F,Fs], symbol="FFs")
     
-    S.addProduction(FsQ)
-    S.addProduction(SS)
+    S.setAlternatives(FsQ, SS)
+    Fs.setAlternatives(FFs, Epsilon())
     
-    Fs.addProduction(FFs)
-    Fs.addProduction(Epsilon)
-
-    root = Sequence([S,hs], sym="Start")
+    root = Sequence(None, [S,hs], symbol="Start")
     g2 = Grammar("Grammar2", root)
-    
-    print str(g2)
+
+    g2.printTables(verbose)
     
     error = g2.check()
     if error:
@@ -694,24 +829,22 @@ if __name__ == "__main__":
     
     # Simple example grammar from "Parsing Techniques", Fig. 8.9
         
-    print "=== Example grammar 2"
+    hdrkey = Variable(None, type.Bytes())
+    colon = Literal(None, constant.Constant(":", type.Bytes()))
+    ws = Literal(None, constant.Constant("[ \\t]*", type.Bytes()))
+    hdrval = Variable(None, type.Bytes())
+    nl = Literal(None, constant.Constant("[\\r\\n]", type.Bytes()))
 
-    hdrkey = Variable(type.Bytes())
-    colon = Literal(constant.Constant(":", type.Bytes()))
-    ws = Literal(constant.Constant("[ \\t]*", type.Bytes()))
-    hdrval = Variable(type.Bytes())
-    nl = Literal(constant.Constant("[\\r\\n]", type.Bytes()))
+    header = Sequence(None, [hdrkey, ws, colon, ws, hdrval, nl], symbol="Header")
 
-    header = Sequence([hdrkey, ws, colon, ws, hdrval, nl], sym="Header")
-
-    list1 = Sequence([header], sym="List1")
-    list2 = Alternative([list1, Epsilon], sym="List2")
+    list1 = Sequence(None, [header], symbol="List1")
+    list2 = LookAhead(None, list1, Epsilon(), symbol="List2")
     list1.addProduction(list2)
     
-    all = Alternative([list2, nl], sym="All")
+    all = LookAhead(None, list2, nl, symbol="All")
     g3 = Grammar("Grammar3", all)
     
-    print str(g3)
+    g3.printTables(verbose)
     
     error = g3.check()
     if error:

@@ -185,7 +185,7 @@ def findFileInPaths(filename, dirs, lower_case_ok=False):
                 return fullpath
         
     return None
-                
+
 def importByPattern(modname, pattern):
     """Imports all submodules of a module which match a given pattern. The
     imported submodules will be accessible under the module's namespace, i.e.,
@@ -211,5 +211,4 @@ def importByPattern(modname, pattern):
         if name.endswith(".py"):
             name = name [:-3]
 
-        __import__("%s" % name, mod.__dict__, {}, [], -1)
-        
+        mod.__dict__[name] = __import__("%s" % name, mod.__dict__, {}, [], -1)

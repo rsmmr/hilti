@@ -3,10 +3,10 @@
 # BinPAC++ expressions.
 
 import type
+import ast
 import grammar
-
 import operators
-from binpac.support import *
+import binpac.support.util as util
 
 class Expression(ast.Node):
     """Base class for all expression objects.

@@ -90,7 +90,7 @@ attribute; they are all class methods.
 import inspect
 import functools
 
-from binpac.support import *
+import binpac.support.util as util
 
 ### Available operators and operator methods.
 
@@ -244,7 +244,7 @@ def _makeOp(op, *args):
 class _Decorators:    
     def __init__(self):
         for (op, args, descr) in _Operators:
-            self.__dict__[op] = functools.partial(_makeOp, op)
+            globals()[op] = functools.partial(_makeOp, op)
 
 def _findOp(method, op, args):
     assert method in _Methods
@@ -290,6 +290,3 @@ for (op, args, descr) in _Operators:
     Operator.__dict__[op] = op
     # FIXME: Can't change the docstring here. What to do?
     # op.__doc = descr
-
-# Trigger reading types.    
-import binpac.pactypes

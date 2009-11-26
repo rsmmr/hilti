@@ -45,20 +45,30 @@ def error(p, msg, lineno=0):
     given, the information is pulled from the first symbol in *p*.
     """
 
-    assert(p)
-    
-    if lineno <= 0:
-        lineno = p.lineno(1)
+    if p:
+        if lineno <= 0:
+            lineno = p.lineno(1)
 
-    if isinstance(p, ply.lex.LexToken):
-        parser = p.lexer.parser
+        if isinstance(p, ply.lex.LexToken):
+            parser = p.lexer.parser
+        else:
+            parser = p.parser
+            
+        state = parser.state
     else:
-        parser = p.parser
+        assert _state
+        state = _state
         
-    parser.state._errors += 1
-    loc = location.Location(parser.state._filename, lineno)        
+    state._errors += 1
+    loc = location.Location(state._filename, lineno)        
     util.error(msg, component="parser", context=loc, fatal=False)
 
+# This global is a bit unfortunate as it prevents us from having multiple
+# parsers in parallel. However, if PLY reports an end-of-file error, it
+# doesn't give us a parser object and so we can't access our state in state
+# case otherwise.
+_state = None
+    
 def initParser(parser, lexer, state):
     """Initializes a parser object's state. The state will then be assessible
     via the parser's +state+ attribute.
@@ -69,6 +79,8 @@ def initParser(parser, lexer, state):
     
     Returns: ply.yacc.yacc - The new parser.
     """
+    global _state
+    _state = state
     lexer.parser = parser
     parser.state = state
     
