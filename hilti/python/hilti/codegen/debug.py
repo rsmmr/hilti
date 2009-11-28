@@ -8,6 +8,8 @@ from hilti.core import *
 from hilti import instructions
 from codegen import codegen
 
+import sys
+
 @codegen.when(instructions.debug.Msg)
 def _(self, i):
     if codegen.debugMode():

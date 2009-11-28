@@ -23,7 +23,7 @@ class _DummyBuilder(object):
             pass
         return lambda *args: dummy()
     
-class CodeGen(visitor.Visitor):
+class CodeGen(visitor.Visitor,objcache.Cache):
     """Implements the generation of LLVM code from an HILTI |ast|."""
     TypeInfo = typeinfo.TypeInfo
     
@@ -433,8 +433,7 @@ class CodeGen(visitor.Visitor):
                 self._initTypeInfo(ti)
 
     def llvmAddTypeInfo(self, t):
-        """Adds run-time type information to the current LLVM module. The function
-        creates one type information object for each instantiated ~~HiltiType.
+        """Adds run-time type information for a type to the current LLVM module. 
         
         t: ~~HiltiType : The type to add type information for.
         """
@@ -1400,23 +1399,37 @@ class CodeGen(visitor.Visitor):
             util.internal_error("llvmGenerateCCallByName: %s is not a known function" % name)
             
         return self.llvmGenerateCCall(func, args, arg_types, llvm_args, abort_on_except)
-        
-    def llvmGenerateCStub(self, func):
-        """Generates a C stub for a function. The stub function will be an
-        externally visible function using standard C calling conventions, and
+
+    def llvmCStubs(self, func):
+        """Returns the C stubs for a function. The stub functions will be 
+        externally visible functions using standard C calling conventions, and
         expecting parameters corresponding to the function's HILTI parameters,
-        per the usual C<->HILTI translation. It gets one additional paramert
-        of type ``hlt_exception *``, which the callee can set to an
-        exception object to signal that an exception was thrown. 
+        per the usual C<->HILTI translation. The primary stub function gets
+        one additional parameter of type ``hlt_exception *``, which the callee
+        can set to an exception object to signal that an exception was thrown.
+        The secondary function is for resuming after a previous ~~Yield; 
+        it gets two parameters, the ~~YieldException and a ``hlt_exception *``
+        with the same semantics as for the primary function.
         
-        All the stub does when called is in turn calling the HILTI function,
-        adapting the calling conventions. The function must have ~~HILTI
-        calling convention.
+        All the primary stub does when called is in turn calling the HILTI
+        function, adapting the calling conventions. 
+                
+        func: ~~Function - The function to generate a stub for. The function
+        must have ~~HILTI calling convention.
         
-        func: ~~Function - The function to generate a stub for
+        Returns: 2-tuple of llvm.core.Value.Function - The two functions. 
         
         Note: ``hiltic`` can generate the right prototypes for such stub
         functions.
+        """
+        
+        def _makeStubs():
+            return self._llvmGenerateCStubs(func)
+        
+        return self.cache("c-stub-%s" % func.name(), _makeStubs )
+    
+    def _llvmGenerateCStubs(self, func):
+        """Internal function to generate the stubs, without caching.
         
         Todo: This function needs a cleanup. There's a lot of code duplication
         between the primary function and the resume function.
@@ -1559,7 +1572,9 @@ class CodeGen(visitor.Visitor):
 
         self.popBuilder() # block_noexcp
         self.popBuilder() # function body.
-            
+
+        primary = llvm_func
+        
         #### Create the resume function. 
         if not is_void:
             result_type = self.llvmTypeConvert(func.type().resultType())
@@ -1642,6 +1657,10 @@ class CodeGen(visitor.Visitor):
 
         self.popBuilder() # block_noexcept builder.
         self.popBuilder() # Function builder. 
+
+        resume = llvm_func
+        
+        return (primary, resume)
         
     def llvmRaiseException(self, exception):
         """Generates the raising of an exception. The method

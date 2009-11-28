@@ -37,7 +37,7 @@ def message(stream, fmt, args = []):
     
     stream: string - The name of the debug stream.
     msg: string - The format string.
-    args: list of ~~ConstOperand - The list of format arguments.
+    args: optional list of ~~Operand - The list of format arguments.
     """
 
     return Msg(op1=ConstOperand(Constant(stream, type.String())), 

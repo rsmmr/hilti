@@ -239,7 +239,7 @@ class Resolver(visitor.Visitor):
                 return 
 
             self._setIntWidth(op, rt.width())
-
+            
         adaptSingle(op, function.type().resultType())
             
     def _adaptIntValues(self, ops):
@@ -326,6 +326,30 @@ class Resolver(visitor.Visitor):
             if op and isinstance(op, instruction.TupleOperand):
                 op.setTuple(op.value())
 
+    def adaptIntSwitch(self, i):
+        if not isinstance(i.op1().type(), type.Integer):
+            return
+        
+        w = i.op1().type().width()
+        
+        tuple = i.op3().value()
+        for t in tuple:
+            if not isinstance(t, instruction.TupleOperand):
+                continue
+            
+            tt = t.value()[0].type()
+            if not isinstance(tt, type.Integer):
+                continue
+            
+            if tt.width() > 0:
+                continue
+
+            tt.setWidth(w)
+            
+            t.setTuple(t.value())
+            
+        i.op3().setTuple(i.op3().value())
+            
     def resolveInstrOperands(self, i):
         """Attempts to resolve all IDs in an instruction. ID's which cannot be
         resolved are left with type ~~Unknown. The given instruction is
@@ -492,6 +516,9 @@ def _(self, i):
         
     self.adaptIntConsts(i)
     self._debugInstruction(i, "adaptIntConsts()")
+    
+    if isinstance(i, instructions.flow.Switch):
+        self.adaptIntSwitch(i)
     
     if self.Debug:
         util.debug("---------------------")

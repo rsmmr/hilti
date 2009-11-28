@@ -39,7 +39,7 @@ def _(self, f):
         self.llvmCurrentModule().add_type_name(self.nameFunctionFrame(f), self.llvmTypeFunctionFrame(f))
     
     if f.linkage() == function.Linkage.EXPORTED and f.callingConvention() == function.CallingConvention.HILTI:
-        codegen.llvmGenerateCStub(f)
+        codegen.llvmCStubs(f)
         
     if f.linkage() == function.Linkage.INIT:
         def _makeCall():

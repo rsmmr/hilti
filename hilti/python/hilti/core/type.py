@@ -1012,11 +1012,15 @@ class Function(Type):
 
     _name = "function"
 
-class Label(OperandType):
-    """Type for block labels."""
+class Label(ValueType):
+    """Type for block labels.
+    
+    Note: This is a value type so that we can pass it to C functions.
+    """
     def __init__(self):
-        super(Label, self).__init__("label")
+        super(Label, self).__init__([], Label._name)
 
+    _id = 19 
     _name = "label"
     
 class Void(OperandType):

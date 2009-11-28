@@ -82,13 +82,20 @@ class Checker(visitor.Visitor):
         about the previous error and will be printed indented.
         """
         self._errors += 1
+
+        nl = False
         
-        if isinstance(obj, ast.Node):
+        if isinstance(obj, function.Function):
+            print >>sys.stderr, ">>> In function %s:" % obj.name()
+            nl = True
+        
+        elif isinstance(obj, ast.Node):
             hilti.printer.printAST(obj, output=sys.stderr, prefix=">>> ")
+            nl = True
         
         util.error(message, context=obj.location(), fatal=False, indent=indent)        
         
-        if isinstance(obj, ast.Node):
+        if nl:
             print >>sys.stderr, ""
         
         self.skipOthers()

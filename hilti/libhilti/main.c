@@ -13,19 +13,6 @@ int main(int argc, char** argv)
     
     hilti_init();
 
-    // Initialize debug streams from environment. 
-    const char* dbg = getenv("HILTI_DEBUG");
-    if ( dbg ) {
-        hilti_config cfg = *hilti_config_get();
-        cfg.debug_streams = hlt_debug_parse_streams(dbg, &excpt);
-        if ( excpt ) {
-            hlt_exception_print(excpt);
-            fprintf(stderr, "cannot parse HILTI_DEBUG environment variable");
-            return 1;
-        }
-        hilti_config_set(&cfg);
-    }
-    
     // Using this function is OK even in the single-threaded case, as
     // hilti_multithreaded_run won't create a threading environment
     // if the config only requests one thread. You can change the defaults
@@ -35,6 +22,6 @@ int main(int argc, char** argv)
 
     if ( excpt )
         hlt_exception_print_uncaught(excpt);
-    
+
     return 0;
 }

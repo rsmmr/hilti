@@ -32,18 +32,12 @@ def _(self, i):
     func = self.lookupFunction(fid)
     builder = self.builder()
 
-    main = self.llvmGetFunction(func)
-    main = builder.bitcast(main, self.llvmTypeGenericPointer())
-        
     if func.callingConvention() == function.CallingConvention.HILTI:
-        # FIXME: We can't used get_function_named() here because the function
-        # may not haven been created yet. Need something like lookupFunction()
-        # for the resume function as well.
-        resume = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
-        #resume = self._llvm.module.get_function_named(name + "_resume")
-        #resume = builder.bitcast(resume, self.llvmTypeGenericPointer())
+        (main, resume) = self.llvmCStubs(func)
+        main = builder.bitcast(main, self.llvmTypeGenericPointer())
+        resume = builder.bitcast(resume, self.llvmTypeGenericPointer())
     else:
-        resume = llvm.core.Constant.null(codegen.llvmTypeGenericPointer())
+        util.internal_error("caddr.Function not supported for non-HILTI functions yet")
         
     struct = llvm.core.Constant.struct([main, resume])
     codegen.llvmStoreInTarget(i.target(), struct)

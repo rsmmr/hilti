@@ -15,6 +15,7 @@ __all__ = [
     "util",
     "visitor",
     "builder",
+    "objcache",
     ]
     
 

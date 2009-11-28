@@ -6,6 +6,9 @@ class Visitable(object):
     """Base class for classes that provide visitor support. To enable a class
     to be visited by a ~~Visitor, derive the class from Visitable. Override
     the methods :meth:`visit` and :meth:`visitorSubType` as needed."""
+
+    def __init__(self):
+        super(Visitable, self).__init__()
     
     def visit(self, visitor):
         """Must be overridden if the derived class has any childs that need to
@@ -54,6 +57,7 @@ class Visitor(object):
     with the most specific type is called.
     """    
     def __init__(self, all=False):
+        super(Visitor, self).__init__()
         self._all = all
         self._pres = []
         self._posts = []

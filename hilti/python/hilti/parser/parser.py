@@ -326,14 +326,20 @@ def p_comment_line(p):
     
 def p_set_block_name(p):
     """_set_block_name : """
+
+    name = p[-1]
     
+    if name and p.parser.state.function.lookupID(name):
+        error(p, "block name %s already defined" % name, lineno=p.lexer.lineno)
+        raise SyntaxError
+        
     if len(p.parser.state.block.instructions()):
         # Start a new block.
-        p.parser.state.block = block.Block(p.parser.state.function, name=p[-1], location=loc(p, 0))
+        p.parser.state.block = block.Block(p.parser.state.function, name=name, location=loc(p, 0))
         p.parser.state.function.addBlock(p.parser.state.block)
     else:
         # Current block still empty so just set its name.
-        p.parser.state.block.setName(p[-1])
+        p.parser.state.block.setName(name)
 
 def p_instruction(p):
     """instruction : operand '=' INSTRUCTION operand operand operand NL

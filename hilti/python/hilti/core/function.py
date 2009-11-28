@@ -3,6 +3,7 @@
 import ast
 import type
 import id
+import util
 
 class Linkage:
     """The *linkage* of a ~~Function specifies its link-time
@@ -199,10 +200,14 @@ class Function(ast.Node):
         to the function's current list of blocks, and makes the new Block the
         he successor of the former tail Block. The new blocks own successor
         field is cleared. If the block has a name, it's added to the
-        function's scope.
+        function's scope (the name must not have been used before).
         
         b: ~~Block - The block to add.
         """
+        
+        if b.name() and self.lookupID(b.name()):
+            util.internal_error("block name %s already defined" % b.name())
+        
         if self._bodies:
             self._bodies[-1].setNext(b)
             

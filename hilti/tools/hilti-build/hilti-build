@@ -25,6 +25,7 @@ function usage {
    echo "    *.hlt     - HILTI files"
    echo "    *.ll      - LLVM assember file"
    echo "    *.bc      - LLVM bitcode files"
+   echo "    *.pac2    - BinPAC++ source files"
    echo
    echo "Options:"
    echo "    -o         Name of output file; mandatory."
@@ -94,6 +95,18 @@ function compile_ll {
     result=$bc
 }
 
+# Turns *.ll into *.bc
+function compile_pac {
+    input=$1
+    dir=`dirname $input`
+    base=`basename $input .ll`
+
+    hlt=$base.tmp.hlt
+    tmpfiles="$tmpfiles $hlt"
+    execute "binpac++ $binpacflags $input -o $hlt"
+    result=$hlt
+}
+
 # Turns *.c into *.bc
 function compile_c {
     input=$1
@@ -122,8 +135,8 @@ function compile_cc {
 function link_all {
     bc=$@
     
-    execute "llvm-ld -disable-opt -b=$output.bc $llvmldflags $bc $libsbc" || exit 1
-    execute "rm $output" || exit 1 # Stupid shell script.
+    execute "llvm-ld -disable-opt -b=$output.bc $bc $libsbc $llvmldflags" || exit 1
+    execute "rm -f $output" || exit 1 # Stupid shell script.
 
     if [ "$opt" != "" ]; then
         tmpfiles="$tmpfiles $output.opt.bc"
@@ -149,7 +162,7 @@ function link_all {
         exec=""
     fi   
     
-    execute "clang -o $output $exec $llvmldflags $libsc $output.bc.S"
+    execute "clang -g -o $output $exec $libsc $output.bc.S"
 }
 
 function find_libraries {
@@ -190,6 +203,7 @@ noexec=""
 bitcode=""
 debug=""
 libsbcflag="--libs-bc-main"
+have_pac2=0
 
 while [ "$1" != "" ]; do
     case $1 in 
@@ -220,6 +234,9 @@ while [ "$1" != "" ]; do
         -*)
             usage;;
         *)
+            if echo $1 | grep -q '\.pac2$'; then
+                have_pac2=1
+            fi
             inputs="$inputs $1"; shift;;
     esac
 done    
@@ -245,6 +262,12 @@ else
     hilticonfig=`which hilti-config 2>/dev/null`
 fi    
 
+if [ "$BINPAC_CONFIG" != "" ]; then
+    binpacconfig=$BINPAC_CONFIG
+else
+    binpacconfig=`which binpac-config 2>/dev/null`
+fi    
+
 if [ ! -x "$hilticonfig" ]; then
    echo "cannot find hilti-config; try setting HILTI_CONFIG." >&2
    exit 1
@@ -253,10 +276,17 @@ fi
 llvmasflags="$LLVMASFLAGS"
 hilticflags="`$hilticonfig $debug --hilticflags` $HILTICFLAGS"
 llvmldflags="`$hilticonfig $debug --ldflags` $LLVMLDFLAGS"
-cflags="`$hilticonfig $debug --cflags` $CFLAGS"
-cxxflags="`$hilticonfig $debug --cxxflags` $CFLAGS"
+cflags="`$hilticonfig $debug --cflags` -Wall $CFLAGS -g"
+cxxflags="`$hilticonfig $debug --cxxflags` $CFLAGS -g"
 libsbc=`$hilticonfig $libsbcflag`
 libsc=`$hilticonfig --libs-c`
+
+if [ "$have_pac2" == "1" ]; then
+   # Need binpac++ flags.
+   cflags="$cflags `$binpacconfig --cflags`"
+   hilticflags="$hilticflags `$binpacconfig --hiltic`"
+   llvmldflags="$llvmldflags `$binpacconfig --ldflags --libs-bc`"
+fi   
 
 export PYTHONPATH=`$hilticonfig --pythonpath`:$PYTHONPATH
 
@@ -286,6 +316,14 @@ for file in $inputs; do
        
     elif echo $file | grep -q '\.bc$' ; then
        objs="$objs $file"
+       
+    elif echo $file | grep -q '\.pac2$' ; then
+       compile_pac $file
+       compile_hlt $result
+       if [ "$protos" != "1" ]; then
+           compile_ll $result
+       fi
+       objs="$objs $result"
        
     else
        echo "unknown input type $file"
