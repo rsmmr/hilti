@@ -174,8 +174,8 @@ class Unit(type.Type):
         def _makeUnitCode():
             # Generate the parsing code for our unit.
             seq = [f.production() for f in self._fields]
-            seq = grammar.Sequence("top", seq, symbol="start", location=self.location())
-            g = grammar.Grammar("unit_%s" % tag, seq)
+            seq = grammar.Sequence("self", seq, symbol="start", location=self.location())
+            g = grammar.Grammar("%s" % tag, seq)
             
             gen = pgen.ParserGen(cg)
             return gen.compile(g)

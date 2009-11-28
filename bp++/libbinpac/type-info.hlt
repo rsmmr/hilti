@@ -1,0 +1,8 @@
+# A minimal HILTI program compiled only for generating type
+# information for objects used in libbinpac.
+
+module BinPacTypeInfo
+
+import BinPACIntern
+
+# Currently unused.

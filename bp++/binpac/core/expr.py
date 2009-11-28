@@ -5,7 +5,7 @@
 import type
 import ast
 import grammar
-import operators
+import operator
 import binpac.support.util as util
 
 class Expression(ast.Node):

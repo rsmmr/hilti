@@ -11,9 +11,9 @@ import grammar
 import id
 import location
 import module
-import operator
 import pgen
 import type
 import validator
+import operator
 
     

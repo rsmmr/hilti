@@ -1,0 +1,7 @@
+#! /usr/bin/env bash
+
+tools=`hilti-config --distbase`/tools
+
+export PATH=$tools/hilti-config:$PATH
+
+$tools/hiltic/hiltic -l $1 | llvm-as >$2

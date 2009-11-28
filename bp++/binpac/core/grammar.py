@@ -73,10 +73,12 @@ class Production(object):
         Returns: string - The name, or None for anonymous productions. 
         """
         return self._name
-    
+
     def __str__(self):
-        name = "($%s)" % self._name if self._name else ""
-        return "%s%s" % (name, self._fmtLong())
+        return "%s%s" % (self._fmtLong(), self._fmtName())
+    
+    def _fmtName(self):
+        return " [=: %s]" % self._name if self._name else ""
     
     def _fmtShort(self):
         # To be overridden by derived classes.
@@ -177,10 +179,10 @@ class Literal(Terminal):
         return self._id
     
     def _fmtShort(self):
-        return "'%s'" % self._literal.value()
+        return "%s" % self._literal.value()
     
     def _fmtLong(self):
-        return "'%s'" % self._literal.value()
+        return "%s" % self._literal.value()
 
     def _rhss(self):
         return [[self]]
@@ -232,7 +234,10 @@ class NonTerminal(Production):
         
     def _fmtShort(self):
         return self.symbol()
-        
+
+    def __str__(self):
+        return "%s -> %s%s" % (self.symbol(), self._fmtLong(), self._fmtName())
+    
 class Sequence(NonTerminal):
     """A sequence of other productions. 
     

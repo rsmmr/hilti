@@ -12,7 +12,7 @@ import binpac.core.id as id
 import binpac.core.type as type
 import binpac.core.module as module
 import binpac.core.expr as expr
-import binpac.core.operators as operators
+import binpac.core.operator as operator
 import binpac.core.location as location
 import binpac.support.util as util
 import binpac.support.parseutil as parseutil
