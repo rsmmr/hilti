@@ -2,37 +2,57 @@
 #
 # The unsigned integer type.
 
+import integer
+
 import binpac.core.type as type
 import binpac.core.expr as expr
 import binpac.core.operator as operator
 
 import hilti.core.type
 
-@type.pac
+@type.pac("uint")
 class UnsignedInteger(type.Integer):
     """Type for unsigned integers.  
     
     width: integer - Specifies the bit-width of integers represented by this type.
 
+    attrs: list of (name, value) pairs - See ~~ParseableType.
+
     location: ~~Location - A location object describing the point of definition.
     """
-    def __init__(self, width, location=None):
-        super(UnsignedInteger, self).__init__(width, location=location)
+    def __init__(self, width, attrs=[], location=None):
+        super(UnsignedInteger, self).__init__(width, attrs=attrs, location=location)
 
-    def name(self):
-        # Overridden from Type.
-        return "uint<%d>" % self.width()
+    ### Overridden from Type.
     
-    def toCode(self):
-        # Overridden from Type.
-        return self.name()
+    def name(self):
+        return "uint%d" % self.width()
 
+    def validate(self, vld):
+        pass
+    
     def hiltiType(self, cg, tag):
-        return hilti.core.type.Integer(self.width() + 1)
+        return hilti.core.type.Integer(self.width())
 
-    #def production(self):
-    #    # XXX
-    #    pass
+    def toCode(self):
+        return self.name()
+    
+    ### Overridden from ParseableType.
+
+    def production(self):
+        # XXX
+        pass
+    
+    def generateParser(self, codegen, dst):
+        pass
+
+@operator.Cast(type.Integer)
+class Cast:
+    def castConstantTo(const, dsttype):
+        if isinstance(dsttype, type.UInteger) and const.value() >= 0:
+            return constant.Constante(const.value(), type.Integer(dsttype.width()))
+        
+        raise operators.CastError
     
 @operator.Plus(UnsignedInteger, UnsignedInteger)
 class Plus:
@@ -43,7 +63,7 @@ class Plus:
         expr1 = expr1.fold()
         expr2 = expr2.fold()
     
-        if isinstance(expr1, expr.Constant) and isinstance(expr2, expr.Constant):
+        if expr1 and expr2:
             val = expr1.constant().value() + expr2.constant().value()
             const  = constant.Constant(val, UnsignedInteger(max(expr1.type().width(), expr2.type().width())))
             return expr.Constant(const)
@@ -51,6 +71,6 @@ class Plus:
         else:
             return self
         
-    def codegen(expr1, expr2):
+    def evaluate(codegen, builder, expr1, expr2):
         util.internal_error("not implemented")
 

@@ -60,7 +60,7 @@ def p_def_opt_linkage(p):
             p[0] = id.Linkage.EXPORTED
         else:
             util.internal_error("unexpected state in p_def_opt_linkage")
-    
+
 ### Simple types.
 
 def p_type(p):
@@ -81,7 +81,7 @@ def p_unit_field_list(p):
     p[0] = [p[1]] + p[2] if len(p) != 2 else [p[1]]
     
 def p_unit_field_var(p):
-    """unit_field : opt_unit_field_name type ';'"""
+    """unit_field : opt_unit_field_name type_with_attrs ';'"""
     p[0] = unit.Field(p[1], None, p[2], location=_loc(p, 2))
     
 def p_unit_field_constant(p):
@@ -93,6 +93,30 @@ def p_opt_unit_field_name(p):
                           | """
     p[0] = p[1] if len(p) != 1 else None
 
+### Type attributes.
+
+def p_type_with_attrs(p):
+    """type_with_attrs : type opt_type_attr_list"""
+    for attr in p[2]:
+        try:
+            p[1].addAttribute(attr[0], attr[1])
+        except type.ParseableType.AttributeMismatch, e:
+            parseutil.error(p, "invalid attribute &%s: %s" % (attr[0], e))
+            raise SyntaxError    
+        
+    p[0] = p[1]
+        
+def p_opt_type_attr_list(p):
+    """opt_type_attr_list : attr opt_type_attr_list
+                          | """
+    p[0] = [p[1]] + p[2] if len(p) > 1 else []
+
+def p_attr(p):
+    """attr : ATTRIBUTE '=' expr 
+            | ATTRIBUTE
+    """
+    p[0] = (p[1], p[3]) if len(p) > 2 else (p[1], None)
+    
 ### Expressions
 
 def p_expr_constant(p):
@@ -126,11 +150,11 @@ def p_error(p):
         type = p.type.lower()
         value = p.value
         if type == value:
-            error(p, "unexpected %s" % type, lineno=p.lineno)
+            parseutil.error(p, "unexpected %s" % type, lineno=p.lineno)
         else:
-            error(p, "unexpected %s '%s'" % (type, value), lineno=p.lineno)
+            parseutil.error(p, "unexpected %s '%s'" % (type, value), lineno=p.lineno)
     else:
-        error(None, "unexpected end of file")
+        parseutil.error(None, "unexpected end of file")
         
 ##########        
 
@@ -174,6 +198,8 @@ def _parse(filename, import_paths=["."]):
     if parser.state.errors() > 0:
         return (parser.state.errors(), None, parser)
 
+    assert ast
+    
     return (0, ast, parser)    
 
 def _importFile(parser, filename, location, _parse):

@@ -83,8 +83,8 @@ class Field:
         tag = "%s: " % self._name if self._name else ""
         return "%s%s" % self._type
     
-@type.pac
-class Unit(type.Type):
+@type.pac("unit")
+class Unit(type.ParseableType):
     """Type describing an individual parsing unit.
     
     A parsing unit is composed of (1) fields parsed from the traffic stream,
@@ -93,14 +93,14 @@ class Unit(type.Type):
     found). 
     
     fields: list of ~~Field - The unit's fields.
-
+    attrs: list of (name, value) pairs - See ~~ParseableType.
     location: ~~Location - A location object describing the point of definition.
     """
 
     valid_hooks = ("ctor", "dtor", "error")
     
-    def __init__(self, fields, location=None):
-        super(Unit, self).__init__(location=location)
+    def __init__(self, fields, attrs=[], location=None):
+        super(Unit, self).__init__(attrs=attrs, location=location)
         self._fields = fields
         self._hooks = {}
 
@@ -138,37 +138,9 @@ class Unit(type.Type):
             self._hooks[hook] += [(func, priority)]
         except IndexError:
             self._hooks[hook] = [(func, priority)]
-    
-    def name(self):
-        # Overridden from Type.
-        return "unit"
-    
-    def toCode(self):
-        # Overridden from Type.
-        s = "unit {\n"
-        for f in self._fields:
-            s += "    %s;\n" % f.name()
-        s = "}"
-    
-    def validate(self, vld):
-        # Overridden from Type.
-        for f in self._fields:
-            if not f.type().hasProduction():
-                # If the production function has not been overridden, we can't
-                # use that type in a unit field. 
-                vld.error(self, "type %s cannot be used inside a unit field" % f.type())
-                
-            if f.value():
-                # White-list the types we can deal with in constants.
-                for a in _AllowedConstantTypes:
-                    if isinstance(f.type(), a):
-                        break
-                else:
-                    vld.error(self, "type %s cannot be used in a constant unit field" % f.type())
-        
-    def hiltiType(self, cg, tag):
-        # Overridden from Type.
 
+    # Overridden from Type.
+    def hiltiType(self, cg, tag):
         mbuilder = cg.moduleBuilder()
 
         def _makeUnitCode():
@@ -182,8 +154,40 @@ class Unit(type.Type):
         
         return mbuilder.cache(self, _makeUnitCode)
 
-    #def production(self):
-    #    # Overridden from Type.
-    #    pass
+    def validate(self, vld):
+        for f in self._fields:
+            if not isinstance(f.type(), type.ParseableType):
+                # If the production function has not been overridden, we can't
+                # use that type in a unit field. 
+                vld.error(self, "type %s cannot be used inside a unit field" % f.type())
+                
+            if f.value():
+                # White-list the types we can deal with in constants.
+                for a in _AllowedConstantTypes:
+                    if isinstance(f.type(), a):
+                        break
+                else:
+                    vld.error(self, "type %s cannot be used in a constant unit field" % f.type())
+
+    def toCode(self):
+        # Overridden from Type.
+        s = "unit {\n"
+        for f in self._fields:
+            s += "    %s;\n" % f.name()
+        s = "}"
+                    
+    # Overridden from ParseableType.
+
+    def supportedAttributes(self):
+        return {}
+    
+    def production(self):
+        # XXX
+        pass
+    
+    def generateParser(self, codegen, dst):
+        pass
+    
+    
     
             

@@ -208,6 +208,13 @@ class Variable(Terminal):
         super(Variable, self).__init__(name, expr, location=location)
         self._type = type
 
+    def type(self):
+        """Returns the type of the variable.
+        
+        Returns: ~~Type - The type.
+        """
+        return self._type
+        
     def _rhss(self):
         return [[self]]
         

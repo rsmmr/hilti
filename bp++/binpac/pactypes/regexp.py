@@ -9,19 +9,17 @@ import binpac.core.operator as operator
 
 import hilti.core.type
 
-@type.pac
-class RegExp(type.Type):
+@type.pac("regexp")
+class RegExp(type.ParseableType):
     """Type for regexp objects.  
+    
+    attrs: list of (name, value) pairs - See ~~ParseableType.
     
     location: ~~Location - A location object describing the point of definition.
     """
-    def __init__(self, location=None):
-        super(RegExp, self).__init__(prod=True, location=location)
+    def __init__(self, attrs=[], location=None):
+        super(RegExp, self).__init__(attrs=attrs, location=location)
 
-    def name(self):
-        # Overridden from Type.
-        return "regexp" 
-    
     def toCode(self):
         # Overridden from Type.
         return self.name()

@@ -213,9 +213,27 @@ class ParserGen:
         
     def _parseVariable(self, builder, var, args):
         """Generates code to parse a variable."""
+        type = var.type()
+
+        def makeLocal():
+            name = builder.functionBuilder()._idName("var")
+            ty = type.hiltiType(self, builder)
+            return builder.functionBuilder().addLocal(name, ty)
+            
         builder.setNextComment("Parsing variable %s" % var)
-        ## self._finishedProduction(done, var, XXX)
-        ### TODO: Missing.
+        
+        # We must not have a pending look-ahead symbol at this point. 
+        cond = builder.functionBuilder().addLocal("cond", hilti.core.type.Bool(), reuse=True)
+        builder.equal(cond, args.lahead, _LookAheadNone)
+        builder.debug_assert(cond)
+        
+        # Call the type's parse function.
+        dst = builder.cache(var.type(), makeLocal)
+        (args.cur, builder) = type.generateParser(self, builder, args.cur, dst, var.name() == None)
+        
+        # We have successively parsed a rule. 
+        self._finishedProduction(builder, var, dst if var.name() != None else None)
+        
         return builder
 
     def _parseSequence(self, builder, prod, args):

@@ -12,10 +12,10 @@ import binpac.support.parseutil as parseutil
 # token.
 keywords = ["module", "type", "export", "unit"]
 
-# Keywords for simple types, with what we turn them into.
+# Keywords for simple types, and what we turn them into.
 types = {
-    "bytes": type.Bytes(),
-    "regexp": type.RegExp()
+    "bytes": type.Bytes,
+    "regexp": type.RegExp
     }
 
 # Literals.
@@ -25,7 +25,7 @@ def _loc(t):
     return location.Location(t.lexer.parser.state._filename, t.lexer.lineno)
 
 tokens = [
-    "IDENT", "CONSTANT", "PACTYPE",
+    "IDENT", "CONSTANT", "PACTYPE", "ATTRIBUTE",
     ] + [k.upper() for k in keywords]
 
 # Type keywords not covered by types.
@@ -99,10 +99,14 @@ def t_CONST_REGEXP(t):
 
 # Identifiers.
 def t_IDENT(t):
-    r'[_a-zA-Z]([a-zA-Z0-9._]|::)*'
+    r'&?[_a-zA-Z]([a-zA-Z0-9._]|::)*'
     
-    if t.value in types:
-        t.value = types[t.value]
+    if t.value.startswith("&"):
+        t.value = t.value[1:]
+        t.type = "ATTRIBUTE"
+    
+    elif t.value in types:
+        t.value = types[t.value]()
         t.type = "PACTYPE"
     
     elif t.value in keywords or t.value in types:

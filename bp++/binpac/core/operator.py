@@ -53,7 +53,7 @@ Class methods for operators
 
 A class decorated with @operator.* may provide the following methods. Most of
 them receive instances of ~~Expression objects as arguments, with the number
-determined by tge operator type.  Note these methods do not receive *self*
+determined by the operator type.  Note these methods do not receive a *self*
 attribute; they are all class methods.
 
 .. function:: typecheck(<exprs>)
@@ -66,8 +66,7 @@ attribute; they are all class methods.
 
 .. function:: fold(<exprs>)
 
-  Optional. Implement constant folding. It will only be called with
-  ~~Expressions for which ~~isConst() returns True.
+  Optional. Implement constant folding.
   
   Returns: ~~expr.Constant - A new expression object representing the folded
   expression. 
@@ -78,13 +77,61 @@ attribute; they are all class methods.
 
   Returns: ~~type.Type - An type *instance* defining the result type.
 
-.. function:: codegen(<exprs>)
+.. function:: evaluate(codegen, builder, <exprs>)
 
-  Mandatory. Implements HILTI code generation. The generated code must
-  correspond to one evaluation of the operator with the given expressions.
+  Mandatory. Implements evaluation of the operator, generating the
+  corresponding HILTI code. 
 
-  Returns: ~~support.HiltiNode - The root node of the generated HILTI code.
+  *codegen*: ~~CodeGen - The current code generator.
+  *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
 
+  Returns: tuple (~~hilti.core.instructin.Operand,
+  ~~hilti.core.builder.Builder) - The first element is an operand with
+  the value of the evaluated expression; the second element is the
+  builder to use for subsequent code. 
+
+.. function:: castConstTo(const, dsttype):
+
+   Optional. Casts a constant of the operator's type to another type. This may or
+   may not be possible; if not, the method must throw a ~~CastError.
+        
+   *const*: ~~Constant - The constant to cast. 
+   *dsttype*: ~~Type - The type to cast the constant into.
+        
+   Returns: ~~Constant - A constant of *dsttype* with the casted value.
+        
+   Throws: ~~CastError if the cast is not possible. There's no need to augment
+   the exception with an explaining string as that will be added automatically.
+
+.. function:: canCastNonConstExprTo(expr, dsttype):
+
+   Optional. Checks whether we can cast a non-constant expression of the
+   operator's type to another type. 
+   
+   *expr*: ~~Expr - The expression to cast. 
+   *dsttype*: ~~Type - The type to cast the expression into.
+
+   Note: The return value of this method should match with what ~~castConstTo
+   and ~~castExprTo are able to do. If in doubt, this function should accept a
+   superset of what those methods can do (with them then raising exceptions if
+   necessary). 
+   
+   Returns: bool - True if the cast is possible. 
+   
+.. function:: castNonConstExprTo(codegen, builder, expr, dsttype):
+   
+   Optional. Casts a non-constant expression of the operator's type to another
+   type. This function will only be called if the corresponding
+   ~~canCastNonConstExprTo indicates that the cast is possible. 
+        
+   *codegen*: ~~CodeGen - The current code generator.
+   *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
+   *expr*: ~~Expression - The expression to cast. 
+   *dsttype*: ~~Type - The type to cast the expression into.
+        
+   Returns: tuple (~~Expression, ~~hilti.core.builder.Builder) - The first
+   element is a new expression of the target type with the casted expression;
+   the second element is the builder to use for subsequent code.
 """
 
 import inspect
@@ -101,9 +148,10 @@ _Operators = [
     ("Mult", 2, "The product of two expressions. (`a * b`)"),
     ("Div", 2, "The division of two expressions. (`a / b`)"),
     ("Neg", 1, "The negation of an expressions. (`- a`)"),
+    ("Cast", 1, "Cast into another type."),
     ]
 
-_Methods = ["typecheck", "fold", "codegen", "type"]
+_Methods = ["typecheck", "fold", "codegen", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
     
 ### Public functions.    
     
@@ -116,7 +164,6 @@ def typecheck(op, *args):
     
     Returns: bool - True if operator and expressions are compatible.
     """
-    
     func = _findOp("typecheck", op, args)
     if not func:
         # Not matching operator found.
@@ -140,28 +187,36 @@ def fold(op, *args):
         util.error("no fold implementation for %s operator with %s" % (op, _fmtArgTypes(args)))
 
     func = _findOp("fold", op, args)
-    return func(*args) if func else None
+    result = func(*args) if func else None
+    assert not result or isinstance(result, expression.Constant) 
+    return result
 
-def codegen(op, *args):
+def evaluate(op, codegen, builder, *args):
     """Generates HILTI code for an expression.
     
     This function must only be called if ~~typecheck indicates that operator
     and expressions are compatible. 
 
     op: string - The name of the operator.
-    args: one or more ~~Expressions - The expressions for the operator.
+    *codegen*: ~~CodeGen - The current code generator.
+    *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
     
-    Returns: ~~support.HiltiNode - The root node of the generated HILTI code.
+    args: one or more ~~Expressions - The expressions for the operator.
+
+    Returns: tuple (~~hilti.core.instructin.Operand,
+    ~~hilti.core.builder.Builder) - The first element is an operand with
+    the value of the evaluated expression; the second element is the
+    builder to use for subsequent code. 
     """
     if not typecheck(op, *args):
         util.error("no matching %s operator for %s" % (op, _fmtArgTypes(args)))
 
-    func = _findOp("codegen", op, args)
+    func = _findOp("evaluate", op, args)
     
     if not func:
-        util.error("no codegen implementation for %s operator with %s" % (op, _fmtArgTypes(args)))
+        util.error("no evaluate implementation for %s operator with %s" % (op, _fmtArgTypes(args)))
     
-    return func(*args)
+    return func(codegen, builder, *args)
 
 def type(op, *args):
     """Returns the result type for an operator.
@@ -184,6 +239,95 @@ def type(op, *args):
     
     return func(*args)
 
+class CastError(Exception):
+    pass
+
+def canCastNonConstExprTo(expr, dsttype):
+    """Returns whether an non-constant expression can be cast to a given
+    target type. If *dsttype* is of the same type as the expression, the
+    result is always True. 
+    
+    *expr*: ~~Expression - The expression to check. 
+    *dstype*: ~~Type - The target type.
+        
+    Returns: bool - True if the expression can be casted. 
+    """
+    ty = expr.type()
+    
+    if ty == dsttype:
+        return True
+
+    if not typecheck(Cast, ty):
+        return False
+    
+    func = _findOp(Cast, "canCastNonConstExprTo", ty)
+    
+    if not func:
+        return False
+    
+    return func(expr, dsttype)
+    
+def castNonConstExprTo(codegen, builder, expr, dsttype): 
+    """
+    Casts a non-constant expression of one type into another. This operator must only
+    be called if ~~canCastNonConstExprTo indicates that the cast is supported. 
+    
+    *codegen*: ~~CodeGen - The current code generator.
+    *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
+    expr: ~~expr - The expression to cast. 
+    dsttype: ~~Type - The type to cast the expression into. 
+    
+    Returns: tuple (~~Expression, ~~hilti.core.builder.Builder) - The first
+    element is a new expression of the target type with the casted expression;
+    the second element is the builder to use for subsequent code.
+    """
+
+    assert canCastNonConstExpr(expr, dsttype)
+
+    ty = expr.type()
+    
+    if ty == dsttype:
+        return (expr, builder)
+
+    if not typecheck(Cast, ty):
+        return False
+    
+    func = _findOp(Cast, "castNonConstExprTo", ty)
+    
+    if not func:
+        return False
+    
+    return func(codegen, builder, expr, dsttype)
+    
+
+def castConstTo(const, dsttype): 
+    """
+    Casts a constant of one type into another. This may or may not be
+    possible; if not, a ~~CastError is thrown.
+
+    const: ~~Constant - The constant to cast. 
+    dsttype: ~~Type - The type to cast the constant into. 
+    
+    Returns: ~~Constant - A new constant of the target type with the casted
+    value.
+        
+    Throws: ~~CastError if the cast is not possible.
+    """
+    ty = const.type()
+
+    if ty == dsttype:
+        return const
+    
+    if not typecheck(Cast, ty):
+        raise CastError
+    
+    func = _findOp(Cast, "castConstantTo", ty)
+    
+    if not func:
+        raise CastError
+    
+    return func(const, dsttype)
+    
 class Operator:
     """Constants defining the available operators."""
     # Note: we add the constants dynamically to this class' namespace, see
