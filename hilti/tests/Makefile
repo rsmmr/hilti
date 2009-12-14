@@ -1,18 +1,19 @@
 #
-#
-# Run HILTI tests. 
+# Run all the tests. 
 #
 
-all: test
+TESTER=../../tester/bin/tester
 
-test:
-	./run-tester
+all: tests
+
+tests:
+	@$(TESTER)
 
 brief:
-	./run-tester $(TESTER_OPT) -b
+	@$(TESTER) -b
     
 brief-debug:
-	./run-tester $(TESTER_OPT) -b -d
+	@$(TESTER) -b -d
 
 update-baseline:
-	./run-tester -U
+	@$(TESTER) -U

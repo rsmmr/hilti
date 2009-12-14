@@ -224,6 +224,9 @@ class FunctionBuilder(OperandBuilder):
             return _do
             
         return self.cache("_block-%s" % name, _makeBlock())
+
+    def newBuilder(self, name):
+        return BlockBuilder(name, self)
     
     def idOp(self, i):
         """Returns an ID operand. Different from ~~OperandBuilder.idOp, this
@@ -280,10 +283,10 @@ class FunctionBuilder(OperandBuilder):
         
         reuse: bool - If true, an existing local will be reused.  
         
-        value: ConstOperand - Optional initialization of the local.  Note that
+        value: ~~ConstOperand - Optional initialization of the local.  Note that
         if the local already exists, it's current value will be overridden.
         
-        Returns: IDOperand - An IDOperand referencing the new (or local) local. 
+        Returns: ~~IDOperand - An IDOperand referencing the new (or local) local. 
         """
         
         if not reuse and self.isCached(name):
@@ -301,6 +304,21 @@ class FunctionBuilder(OperandBuilder):
             return op
                     
         return self.cache(name, _makeLocal)
+
+    def makeTmp(self, ty):
+        """Creates a temporary local variable. The variable can then
+        be used for storing intermediart results until this method
+        is called the next time for the same type.
+        
+        ty: ~~Type - The type of the temporary.
+        
+        Returns: ~~hilti.core.instruction.IDOperand - An IDOperand
+        referencing the temporary.
+        """
+        def _make():
+            return self.addLocal(self._idName("tmp"), ty)
+        
+        return self.cache(ty, _make)
         
     def _idName(self, name=""):
         if name == None:
@@ -359,6 +377,20 @@ class BlockBuilder(OperandBuilder):
         """
         return self._fbuilder
 
+    def addLocal(self, name, ty, reuse=False):
+        """Adds a new local variable to the function. This is just a
+        convinience function that forwards to
+        ~~FunctionBuilder.addLocal. See there for more information.
+        """
+        return self._fbuilder.addLocal(name, ty, reuse)
+
+    def makeTmp(self, ty):
+        """Creates a temporary local variable. This is just a
+        convinience function that forwards to
+        ~~FunctionBuilder.addLocal. See there for more information.
+        """
+        return self._fbuilder.makeTmp(ty)
+    
     def idOp(self, i):
         """Returns an ID operand. Different from ~~OperandBuilder.idOp, this
         method can lookup the ID by name in the block's scope (including the

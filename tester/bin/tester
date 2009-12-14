@@ -287,11 +287,6 @@ class Test(object):
     # Prepares the environment for the child processes.
     def prepareEnv(self):
         env = copy.deepcopy(os.environ)
-        
-        # Add the directory where this executable is located to PATH.
-        addpath = os.path.abspath(os.path.dirname(sys.argv[0]))
-        oldpath = os.environ["PATH"]
-        env["PATH"] = "%s:%s" % (oldpath, addpath) if oldpath else addpath
 
         env["TEST_BASELINE"] = self.baseline
         env["TEST_DIAGNOSTICS"] = self.diag
@@ -423,7 +418,10 @@ optparser.add_option("-F", "--filter", action="store", type="string", dest="filt
 if not basedir:
     basedir = "."
     
-Config = ConfigParser.ConfigParser({"basedir": os.path.abspath(basedir)})
+defaults=os.environ
+defaults["testbase"] = os.path.abspath(basedir)
+defaults["default_path"] = os.environ["PATH"]
+Config = ConfigParser.ConfigParser(defaults)
 Config.read(Options.config)
 
 tests = args
@@ -436,7 +434,17 @@ if Options.diagfile:
         Options.diagfile = open(Options.diagfile, "a")
     except IOError, e:
         print >>sys.stderr, "cannot open %s: %s" (Options.diagfile, e)
-    
+
+if Config.has_section("environment"):
+    for (name, value) in Config.items("environment"):
+        os.environ[name.upper()] = value
+        
+# Add the directory where this executable is located to PATH.
+addpath = os.path.abspath(os.path.dirname(sys.argv[0]))
+oldpath = os.environ["PATH"]
+os.environ["PATH"] = "%s:%s" % (addpath, oldpath) if oldpath else addpath
+
+
 tests = findTests(args)
 
 if not tests:
@@ -455,7 +463,7 @@ if Options.filter:
 
     for (name, value) in Config.items(sec):
         Filters[name] = value
-
+        
 Failed = 0
 
 for test in tests:
