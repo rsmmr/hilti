@@ -12,8 +12,10 @@ import binpac.core.id as id
 import binpac.core.type as type
 import binpac.core.module as module
 import binpac.core.expr as expr
+import binpac.core.constant as constant
 import binpac.core.operator as operator
 import binpac.core.location as location
+import binpac.core.stmt as stmt
 import binpac.support.util as util
 import binpac.support.parseutil as parseutil
 import binpac.pactypes.unit as unit
@@ -23,6 +25,7 @@ import binpac.pactypes.unit as unit
 import lexer
 
 tokens = lexer.tokens
+Operator = operator.Operator
 
 ########## BinPAC++ Grammar.
        
@@ -31,10 +34,13 @@ tokens = lexer.tokens
 def p_module(p):
     """module : MODULE IDENT _instantiate_module ';' module_decl_list"""
     p[0] = p.parser.state.module
-
+    _popScope(p)
+    
 def p_instantiate_module(p):
     """_instantiate_module :"""
     p.parser.state.module = module.Module(p[-1], location=_loc(p, -1))
+    p.parser.state.scopes = [None]
+    _pushScope(p, p.parser.state.module.scope())
     
 def p_module_decl_list(p):
     """module_decl_list :   module_decl module_decl_list
@@ -47,8 +53,8 @@ def p_module_decl(p):
     
 def p_type_decl(p):
     """type_decl : opt_linkage TYPE IDENT '=' type ';'"""
-    i = id.ID(p[3], type.TypeDecl(p[5]), id.Role.GLOBAL, linkage=p[1], location=_loc(p, 2))
-    p.parser.state.module.addID(i, p[4])
+    i = id.Type(p[3], p[5], linkage=p[1], location=_loc(p, 2))
+    _currentScope(p).addID(i)
 
 def p_def_opt_linkage(p):
     """opt_linkage : EXPORT
@@ -72,21 +78,46 @@ def p_type(p):
 # Unit type.
 
 def p_type_unit(p):
-    """type : UNIT '{' unit_field_list '}'"""
-    p[0] = type.Unit(p[3], location=_loc(p, 1))
+    """type : UNIT _instantiate_unit '{' unit_field_list '}'"""
+    p[0] = p.parser.state.unit
     
+def p_instantiate_unit(p):
+    """_instantiate_unit :"""
+    p.parser.state.unit = type.Unit(location=_loc(p, -1))
+
 def p_unit_field_list(p):
     """unit_field_list : unit_field unit_field_list
                        | unit_field"""
-    p[0] = [p[1]] + p[2] if len(p) != 2 else [p[1]]
+    pass
     
-def p_unit_field_var(p):
-    """unit_field : opt_unit_field_name type_with_attrs ';'"""
-    p[0] = unit.Field(p[1], None, p[2], location=_loc(p, 2))
+def p_unit_field(p):
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field ';'"""
+    pass
+
+def p_unit_field_with_hook(p):
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_field_hook stmt_block _leave_field_hook"""
+    p.parser.state.field.addHook(p[5], 0)
     
-def p_unit_field_constant(p):
-    """unit_field : opt_unit_field_name CONSTANT ';'"""
-    p[0] = unit.Field(p[1], p[2], None, location=_loc(p, 2))
+def p_instantiate_field(p):
+    """_instantiate_field : """
+    p.parser.state.field = unit.Field(p[-2], p[-1][0], p[-1][1], _currentScope(p), p.parser.state.unit, location=_loc(p, -1))
+    
+def p_enter_field_hook(p):
+    """_enter_field_hook : """
+    _pushScope(p, p.parser.state.field.scope())
+    
+def p_leave_field_hook(p):
+    """_leave_field_hook : """
+    p.parser.state.unit.addField(p.parser.state.field)
+    _popScope(p)
+    
+def p_unit_field_type_const(p):
+    """unit_field_type : CONSTANT"""
+    p[0] = (p[1], p[1].type())
+    
+def p_unit_field_type_type(p):
+    """unit_field_type : type_with_attrs"""
+    p[0] = (None, p[1])
     
 def p_opt_unit_field_name(p):
     """opt_unit_field_name : IDENT ':'
@@ -122,27 +153,78 @@ def p_attr(p):
 def p_expr_constant(p):
     """expr : CONSTANT"""
     p[0] = expr.Constant(p[1], location=_loc(p, 1))
+
+def p_expr_attribute(p):
+    """expr : expr '.' IDENT"""
+    const = constant.Constant(p[3], type.Identifier())
+    ident = expr.Constant(const, location=_loc(p, 1))
+    p[0] = expr.Overloaded(Operator.Attribute, (p[1], ident), location=_loc(p, 1))
     
-def p_expr_ident(p):
+def p_expr_name(p):
     """expr : IDENT"""
-    p[0] = expr.ID(p[1], location=_loc(p, 1))
+    p[0] = expr.Name(p[1], _currentScope(p), location=_loc(p, 1))
     
 def p_expr_add(p):
     """expr : expr '+' expr"""
-    p[0] = expr.OverloadedBinary(Operator.Plus, (p[1], p[3]), location=_loc(p, 1))
+    p[0] = expr.Overloaded(Operator.Plus, (p[1], p[3]), location=_loc(p, 1))
     
 def p_expr_sub(p):
     """expr : expr '-' expr"""
-    p[0] = expr.OverloadedBinary(Operator.Minus, (p[1], p[3]), location=_loc(p, 1))
+    p[0] = expr.Overloaded(Operator.Minus, (p[1], p[3]), location=_loc(p, 1))
     
 def p_expr_mult(p):
     """expr : expr '*' expr"""
-    p[0] = expr.OverloadedBinary(Operator.Mult, (p[1], p[3]), location=_loc(p, 1))
+    p[0] = expr.Overloaded(Operator.Mult, (p[1], p[3]), location=_loc(p, 1))
     
 def p_expr_div(p):
     """expr : expr '/' expr"""
-    p[0] = expr.OverloadedBinary(Operator.Div, (p[1], p[3]), location=_loc(p, 1))
+    p[0] = expr.Overloaded(Operator.Div, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_list(p):
+    """expr_list : expr ',' expr_list
+                 | expr
+    """
+    p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
     
+### Statement blocks.
+
+def p_stmt_block(p):
+    """stmt_block : '{' _instantiate_block stmt_list _leave_block '}'"""
+    p[0] = p.parser.state.block
+    
+def p_instantiate_block(p):
+    """_instantiate_block :"""
+    p.parser.state.block = stmt.Block(_currentScope(p), location=_loc(p, -1))
+    _pushScope(p, p.parser.state.block.scope())
+    
+def p_leave_block(p):
+    """_leave_block :"""
+    _popScope(p)
+    
+### Statements
+
+def p_stmt_print(p):
+    """stmt : PRINT expr_list ';'"""
+    p[0] = stmt.Print(p[2], location=_loc(p,1))
+
+def p_stmt_list(p):
+    """stmt_list : stmt stmt_list
+                 | """
+    if len(p) > 1:
+        p.parser.state.block.addStatement(p[1])
+
+### Scope management.
+def _currentScope(p):
+    scope = p.parser.state.scopes[-1]
+    assert scope
+    return scope
+    
+def _pushScope(p, scope):
+    p.parser.state.scopes += [scope]
+    
+def _popScope(p):
+    p.parser.state.scopes = p.parser.state.scopes[:-1]
+        
 ### Error handling.
 
 def p_error(p):    
@@ -211,9 +293,3 @@ def _importFile(parser, filename, location, _parse):
     ## Do something with the parsed file here.
     
     return (errors == 0, ast)
-    
-    
-    
-
-        
-

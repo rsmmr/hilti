@@ -20,14 +20,19 @@ class RegExp(type.ParseableType):
     def __init__(self, attrs=[], location=None):
         super(RegExp, self).__init__(attrs=attrs, location=location)
 
-    def toCode(self):
-        # Overridden from Type.
-        return self.name()
-
-    def hiltiType(self, cg, tag):
+    def hiltiType(self, cg):
         return hilti.core.type.RegExp()
 
     def production(self):
         return grammar.Variable(None, hilti.core.type.RegExp(), location=self.location())
         
+    def validateConst(self, vld, value):
+        if not isinstance(value, str):
+            vld.error("constant of wrong internal type")
+    
+    def pac(self, printer):
+        printer.output("regexp")
+        
+    def pacConstant(self, printer, value):
+        printer.output("/%s/" % value)
     

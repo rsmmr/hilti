@@ -48,6 +48,7 @@ class CodeGen(object):
         
         self._errors = 0
         self._mbuilder = 0
+        self._builders = [None]
 
     def debug(self):
         """Returns true if compiling in debugging mode. 
@@ -55,6 +56,61 @@ class CodeGen(object):
         Returns: bool - True if in debugging mode. 
         """
         return self._debug
+
+    def beginFunction(self, name, ftype):
+        """Starts a new function. The method creates the function builder as
+        well as the initial block builder (which will be returned by
+        subsequent calls to ~~builder). 
+        
+        When done building this function, ~~endFunction must be called.
+        
+        name: string - The name of the function.
+        ftype: hilti.core.type.Function - The HILTI type of the
+        function.
+        
+        Returns: tuple (~~hilti.core.builder.FunctionBuilder,
+        ~~hilti.core.builder.BlockBuilder) - The builders created
+        for the new function.
+        """
+        fbuilder = hilti.core.builder.FunctionBuilder(self._mbuilder, name, ftype)
+        self._builders += [fbuilder.newBuilder(None)]
+        
+        return (fbuilder, self._builders[-1])
+
+    def endFunction(self):
+        """Finished building a function. Must be called after ~~beginFunction
+        once the code of the function has been fully generated. It resets the
+        block builder.
+        """
+        self._builders = self._builders[:-1]
+        
+    def setBuilder(self, builder):
+        """Sets the current builder. The set builder will then be
+        returned by subsequent ~~builder calls.
+        
+        builder: hilti.core.hilti.BlockBuilder: The builder to set.
+        """
+        assert builder
+        self._builders[-1] = builder
+        
+    def builder(self):
+        """Returns the current block builder.
+        
+        Returns: hilti.core.builder.BlockBuilder - The block
+        builder, as set by ~~setBuilder."""
+        assert self._builders[-1]
+        return self._builders[-1]
+
+    def functionBuilder(self):
+        """
+        Returns the current function builder.
+        
+        Returns: hilti.core.builder.FunctionBuilder - The function
+        builder.
+        """
+        fbuilder = self.builder().functionBuilder()
+        assert fbuilder
+        return fbuilder
     
     def moduleBuilder(self):
         """Returns the builder for the HILTI module currently being built.
@@ -91,10 +147,10 @@ class CodeGen(object):
         
         self._errors = 0
 
-        for i in self._module.IDs():
-            if isinstance(i.type(), type.TypeDecl) and i.linkage() == id.Linkage.EXPORTED:
+        for i in self._module.scope().IDs():
+            if isinstance(i, id.Type) and i.linkage() == id.Linkage.EXPORTED:
                 # Make sure all necessary HILTI code for this type is generated.
-                i.type().declType().hiltiType(self, i.name())
+                i.type().hiltiType(self)
         
         self._errors += self._mbuilder.finish(validate=False)
 

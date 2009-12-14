@@ -2,27 +2,9 @@
 
 import ast
 import location
+import copy
 
-class Role:
-    """The *Role* of an ~~ID separates IDs into several subgroups
-    according to where they are defined."""
-
-    UNKNOWN = 0
-    """An ~~UNKNOWN` role is a place-holder used during parsing when we
-    don't know an ~~ID's role yet."""
-    
-    GLOBAL = 1
-    """A ~~GLOBAL ~~ID is defined at module-level scope."""
-    
-    CONST = 2
-    """A ~~CONST ~~ID is defined at module-level scope and represents a
-    constant value."""
-    
-    LOCAL = 3
-    """A ~~LOCAL ~~ID is defined inside another entity such as a function."""
-    
-    PARAM = 4
-    """An ~~PARAM :class:`ID` is defined as a function argument."""
+import binpac.support.util as util
 
 class Linkage:
     """The *linkage* of an ~~IDFunction specifies its link-time
@@ -35,9 +17,6 @@ class Linkage:
     EXPORTED = 2                                                                                                                                                            
     """An ~~ID with linkage EXPORTED is visible across all     
     compilation units.
-    
-    Todo: Exported linkage is currently not supported for all types
-    of IDs because of HILTI limitations. 
     """                 
     
 class ID(ast.Node):
@@ -47,31 +26,28 @@ class ID(ast.Node):
     
     type: ~~Type - The type of the ID.
     
-    role: ~~Role - The role of the ID.
-    
     linkage: ~~Linkage - The linkage of the ID.
     
     imported: bool - True to indicate that this ID was imported from another
     module. This does not change the semantics of the ID in any way but can be
     used to avoid importing it recursively at some later time.
     
-    scope: string - An optional scope of the ID, i.e., the name of the module
-    in which it is defined. 
+    namespace: string - An optional namespace of the ID, i.e., the name of the
+    module in which it is defined. 
     
     location: ~~Location - A location to be associated with the ID. 
     
     Note: The class maps the ~~Visitor subtype to :meth:`~type`.
     """
     
-    def __init__(self, name, type, role, linkage=None, scope=None, location = None, imported=False):
+    def __init__(self, name, type, linkage=Linkage.LOCAL, namespace=None, location = None, imported=False):
         assert name
         assert type
         
         super(ID, self).__init__(location)
         self._name = name
-        self._scope = scope.lower() if scope else None
+        self._namespace = namespace.lower() if namespace else None
         self._type = type
-        self._role = role
         self._linkage = linkage
         self._imported = imported
         self._location = location
@@ -83,20 +59,20 @@ class ID(ast.Node):
         """
         return self._name
 
-    def scope(self):
-        """Returns the ID's scope.
+    def namespace(self):
+        """Returns the ID's namespace.
         
-        Returns: string - The ID's scope, or None if it does not have one. The
-        scope will be lower-case.
+        Returns: string - The ID's namespace, or None if it does not have one. The
+        namespace will be lower-case.
         """
-        return self._scope
+        return self._namespace
     
-    def setScope(self, scope):
-        """Sets the ID's scope.
+    def setNamespace(self, namespace):
+        """Sets the ID's namespace.
         
-        scope: string - The new scope.
+        namespace: string - The new namespace.
         """
-        self._scope = scope.lower() if scope else None
+        self._namespace = namespace.lower() if namespace else None
         
     def setLinkage(self, linkage):
         """Sets the ID's linkage.
@@ -119,17 +95,10 @@ class ID(ast.Node):
         """
         return self._type
 
-    def role(self):
-        """Returns the ID's role.
-        
-        Returns: ~~Role - The ID's role.
-        """
-        return self._role
-    
     def linkage(self):
         """Returns the ID's linkage.
         
-        Returns: ~~Role - The ID's linkage.
+        Returns: ~~Linkage - The ID's linkage.
         """
         return self._linkage
 
@@ -139,12 +108,174 @@ class ID(ast.Node):
         Returns: bool - True if the ID was imported.
         """
         return self._imported
-    
+
+    def setImportant(self):
+        """Marks the ID as being imported from another module."""
+        self._imported = True
+
+    def clone(self):
+        """Returns a deep-copy of the ID.
+        
+        Returns: ~~ID - The deep-copy.
+        """
+        return copy.deep_copy(self)
+        
     def __str__(self):
-        return "%s: %s" % (self._name, self._type)
-    
+        return self._name
+
+    ### Methods for derived classes to override.    
+
+    def evaluate(self, cg):
+        """Generates HILTI code to load the ID's value.
+        
+        This method must be overidden for all derived class that represent IDs
+        that can be directly accessed.
+        
+        cg: ~~CodeGen - The code generator to use.
+        
+        Returns: ~~hilti.core.instruction.Operand - An operand representing
+        the evaluated ID. 
+        """
+        util.internal_error("id.evaluate() not overidden for %s" % self.__class__)
+
     # Visitor support.
     def visitorSubType(self):
         return self._type
     
+class Constant(ID):
+    """An ID representing a constant value. See ~~ID for arguments not listed
+    in the following.
+    
+    const: ~~Constant - The constant.
+    """
+    def __init__(self, name, const, linkage=None, namespace=None, location=None, imported=False):
+        super(Constant, self).__init__(name, const.type(), linkage, namespace, location, imported)
+        self._const = const
+        
+    def value(self):
+        """Returns the const value. 
+        
+        Returns: ~~Constant - The constant.
+        """
+        return self._const
 
+    ### Overidden from ast.Node.
+
+    def validate(self, vld):
+        self._const.validate(vld)
+
+    def pac(self, printer):
+        printer.output("const %s: " % self.name(), nl=False)
+        self.type().pac(printer)
+        printer.output(" = ")
+        printer._const.pac(printer)
+        printer.output(";", nl=True)
+    
+    ### Overidden from ID.
+    
+    def evaluate(self, cg):
+        return self.type().hiltiConstant(cg, self._const)
+        
+class Local(ID):
+    """An ID representing a local function variable. See ~~ID for arguments.
+    """
+    def __init__(self, name, type, linkage=None, namespace=None, location=None, imported=False):
+        super(Local, self).__init__(name, type, linkage, namespace, location, imported)
+
+    ### Overidden from ast.Node.
+
+    def validate(self, vld):
+        pass
+
+    def pac(self):
+        printer.output("local %s: " % self.name())
+        self.type().pac(printer)
+        printer.output(";", nl=True)
+        
+    ### Overidden from ID.
+    
+    #def evaluate(self, cg):
+    #    # XXX Not yet implemented because we don't have functions yet.
+        
+class Parameter(ID):
+    """An ID representing a function parameter. See ~~ID for arguments.
+    """
+    def __init__(self, name, type, linkage=None, namespace=None, location=None, imported=False):
+        super(Parameter, self).__init__(name, type, linkage, namespace, location, imported)
+
+    ### Overidden from ast.Node.
+
+    def validate(self, vld):
+        pass
+
+    def pac(self):
+        printer.output("%s: " % self.name())
+        self.type().pac(printer)
+        
+    ### Overidden from ID.
+    
+    def evaluate(self, cg):
+        return cg.builder().idOp(self.name())
+        
+class Global(ID):
+    """An ID representing a module-global variable. See ~~ID for arguments.
+    """
+    def __init__(self, name, type, linkage=None, namespace=None, location=None, imported=False):
+        super(Global, self).__init__(name, type, linkage, namespace, location, imported)
+        
+    ### Overidden from ast.Node.
+
+    def validate(self, vld):
+        pass
+
+    def pac(self, printer):
+        printer.output("global %s: " % self.name())
+        self.type().pac(printer)
+        printer.output(";", nl=True)
+    
+    ### Overidden from ID.
+    
+    #def evaluate(self, cg):
+    #    # XXX Not yet implemented because we don't have globals yet (just
+    # typedelc, which however can't appear 
+
+class Type(ID):
+    """An ID representing a type-declaration. See ~~ID for arguments.
+    """
+    def __init__(self, name, type, linkage=None, namespace=None, location=None, imported=False):
+        super(Type, self).__init__(name, type, linkage, namespace, location, imported)
+        
+    ### Overidden from ast.Node.
+
+    def validate(self, vld):
+        self.type().validate(vld)
+
+    def pac(self, printer):
+        printer.output("type %s = " % self.name())
+        self.type().pac(printer)
+        printer.output(";", nl=True)
+    
+    ### Overidden from ID.
+    
+    def evaluate(self, cg):
+        util.internal_error("evaluate must not be called for id.Type")
+    
+class Attribute(ID):
+    """An ID representing the RHS of an attribute expression.  See ~~ID for
+    arguments not listed in the following.
+    """
+    def __init__(self, name, type, location=None):
+        super(Attribute, self).__init__(name, type, location=location)
+
+    ### Overidden from ast.Node.
+
+    def validate(self, vld):
+        pass
+
+    def pac(self, printer):
+        printer.output("%s" % self.name())
+        
+    ### Overidden from ID.
+    
+    def evaluate(self, cg):
+        util.internal_error("evaluate must not be called for id.Attribute")

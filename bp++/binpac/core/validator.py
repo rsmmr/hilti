@@ -40,11 +40,8 @@ class Validator(object):
     def _validate(self):
         # Top-level driver of the validation process.
         self._errors = 0
-        
-        for id in self._module.IDs():
-            t = id.type()
-            if isinstance(id.type(), type.TypeDecl):
-                id.type().declType().validate(self)
+
+        self._module.validate(self)
         
         if self._errors > 0:
             return self._errors

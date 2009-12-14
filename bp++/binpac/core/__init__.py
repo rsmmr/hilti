@@ -15,5 +15,6 @@ import pgen
 import type
 import validator
 import operator
-
-    
+import scope
+import stmt
+import printer    

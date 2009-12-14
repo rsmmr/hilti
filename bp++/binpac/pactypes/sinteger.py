@@ -29,21 +29,15 @@ class SignedInteger(type.Integer):
     def name(self):
         return "int%d" % self.width()
 
-    def validate(self, vld):
-        pass
-    
-    def hiltiType(self, cg, tag):
+    def hiltiType(self, cg):
         return hilti.core.type.Integer(self.width())
 
-    def toCode(self):
-        return self.name()
-    
     ### Overridden from ParseableType.
 
     def production(self):
         # XXX
         pass
     
-    def generateParser(self, codegen, dst):
+    def generateParser(self, cg, dst):
         pass
         

@@ -2,10 +2,13 @@
 #
 # Turns a grammar into a recursive descent HILTI parser. 
 
+builtin_id = id
+
 import hilti.core
 import hilti.printer
 
 import grammar
+import id
 
 _BytesIterType = hilti.core.type.IteratorBytes(hilti.core.type.Bytes())
 _LookAheadType = hilti.core.type.Integer(32)
@@ -55,6 +58,37 @@ class ParserGen:
         
         return self._typeParseObjectRef()
 
+    def cg(self):
+        """Returns the current code generator. 
+        
+        Returns: ~~CodeGen - The code generator.
+        """
+        return self._cg
+    
+    def builder(self):
+        """Returns the current block builder. This is a convenience function
+        just forwarding to ~~CodeGen.builder.
+        
+        Returns: ~~hilti.core.builder.BlockBuilder - The current builder.
+        """
+        return self._cg.builder()
+    
+    def functionBuilder(self):
+        """Returns the current function builder. This is a convenience
+        function just forwarding to ~~CodeGen.functionBuilder.
+        
+        Returns: ~~hilti.core.builder.FunctionBuilder - The current builder.
+        """
+        return self._cg.functionBuilder()
+    
+    def moduleBuilder(self):
+        """Returns the current module builder. This is a convenience function
+        just forwarding to ~~CodeGen.moduleBuilder.
+        
+        Returns: ~~hilti.core.builder.ModuleBuilder - The current builder.
+        """
+        return self._cg.moduleBuilder()
+    
     ### Internal class to represent arguments of generated HILTI parsing function. 
     
     class _Args:
@@ -76,16 +110,15 @@ class ParserGen:
         
         ftype = hilti.core.type.Function([], hilti.core.type.Void())
         name = self._name("init")
-        fbuilder = hilti.core.builder.FunctionBuilder(self._mbuilder, name, ftype)
+        (fbuilder, builder) = self.cg().beginFunction(name, ftype)
         fbuilder.function().setLinkage(hilti.core.function.Linkage.INIT)
-        builder = hilti.core.builder.BlockBuilder(None, fbuilder)
 
         parser_type = fbuilder.typeByID("BinPACIntern::Parser")
-        parser = fbuilder.addLocal("parser", parser_type)
-        funcs = fbuilder.addLocal("funcs", hilti.core.type.Tuple([hilti.core.type.CAddr()] * 2))
-        f = fbuilder.addLocal("f", hilti.core.type.CAddr())
+        parser = builder.addLocal("parser", parser_type)
+        funcs = builder.addLocal("funcs", hilti.core.type.Tuple([hilti.core.type.CAddr()] * 2))
+        f = builder.addLocal("f", hilti.core.type.CAddr())
 
-        builder.new(parser, fbuilder.typeOp(parser_type.refType()))
+        builder.new(parser, builder.typeOp(parser_type.refType()))
         
         builder.caddr_function(funcs, builder.idOp(self._name("parse")))
         
@@ -97,7 +130,9 @@ class ParserGen:
         builder.struct_set(parser, builder.constOp("resume_func"), f)
         builder.call(None, builder.idOp("BinPACIntern::register_parser"), builder.tupleOp([builder.idOp("parser")]))
         builder.return_void()
-    
+
+        self.cg().endFunction()
+        
     def _functionHostApplication(self):
         """Generates the C function visible to the host application for
         parsing the given grammar. See ``binpac.h`` for the exact semantics of
@@ -111,47 +146,73 @@ class ParserGen:
         args = [cur]
         ftype = hilti.core.type.Function(args, result)
         name = self._name("parse")
-        fbuilder = hilti.core.builder.FunctionBuilder(self._mbuilder, name, ftype)
-        fbuilder.function().setLinkage(hilti.core.function.Linkage.EXPORTED)
-        builder = hilti.core.builder.BlockBuilder(None, fbuilder)
-
-        pobj = fbuilder.addLocal("pobj", self._typeParseObjectRef())
-        presult = fbuilder.addLocal("presult", _ParseFunctionResultType)
-        lahead = fbuilder.addLocal("lahead", _LookAheadType)
-        lahstart = fbuilder.addLocal("lahstart", _BytesIterType)
-        builder.assign(lahead, _LookAheadNone)
         
+        (fbuilder, builder) = self.cg().beginFunction(name, ftype)
+        
+        fbuilder.function().setLinkage(hilti.core.function.Linkage.EXPORTED)
+        
+        pobj = builder.addLocal("pobj", self._typeParseObjectRef())
+        presult = builder.addLocal("presult", _ParseFunctionResultType)
+        lahead = builder.addLocal("lahead", _LookAheadType)
+        lahstart = builder.addLocal("lahstart", _BytesIterType)
+        builder.assign(lahead, _LookAheadNone)
+
         builder.new(pobj, builder.typeOp(self._typeParseObject()))
         
         args = ParserGen._Args(fbuilder, ["cur", "pobj", "lahead", "lahstart"])
+        self._parseProduction(grammar.startSymbol(), args)
         
-        self._parseProduction(builder, grammar.startSymbol(), args)
+        self.builder().return_result(pobj)
+
+        self.cg().endFunction()
+
+    def _functionHook(self, hook, stmt):
+        """Generates the function to execute a hook statement.
         
-        builder.return_result(pobj)
+        Todo: We currently create "normal" functions; once HILTI's hook data
+        type is implemented, we'll switch over to using that. 
+        """
+        
+        def makeFunc():
+            cg = self.cg()
+            
+            slf = hilti.core.id.ID("self", self._typeParseObjectRef(), hilti.core.id.Role.PARAM)
+            ftype = hilti.core.type.Function([slf], hilti.core.type.Void())
+            name = self._name("hook", hook)
+            
+            (fbuilder, builder) = cg.beginFunction(name, ftype)        
+            
+            func = fbuilder.function()
+            self.moduleBuilder().setCacheEntry(stmt, func)
+            
+            stmt.execute(cg)
+            cg.endFunction()
+            return func
+        
+        return self.moduleBuilder().cache(stmt, makeFunc())
         
     ### Methods generating parsing code for Productions.
 
-    def _parseProduction(self, builder, prod, args):
-        
+    def _parseProduction(self, prod, args):
         pname = prod.__class__.__name__.lower()
         
-        builder.makeDebugMsg("binpac", "bgn %s '%s'" % (pname, prod))
+        self.builder().makeDebugMsg("binpac", "bgn %s '%s'" % (pname, prod))
         
         if isinstance(prod, grammar.Literal):
-            builder = self._parseLiteral(builder, prod, args)
+            self._parseLiteral(prod, args)
             
         elif isinstance(prod, grammar.Variable):
-            builder = self._parseVariable(builder, prod, args)
+            self._parseVariable(prod, args)
             
         elif isinstance(prod, grammar.Epsilon):
             # Nothing to do.
-            builder = builder
+            pass
         
         elif isinstance(prod, grammar.Sequence):
-            builder = self._parseSequence(builder, prod, args)
+            self._parseSequence(prod, args)
 
         elif isinstance(prod, grammar.LookAhead):
-            builder = self._parseLookAhead(builder, prod, args)
+            self._parseLookAhead(prod, args)
         
         elif isinstance(prod, grammar.Boolean):
             util.internal_error("grammar.Boolean not yet supported")
@@ -162,39 +223,36 @@ class ParserGen:
         else:
             util.internal_error("unexpected non-terminal type %s" % repr(prod))
 
-        builder.makeDebugMsg("binpac", "end %s '%s'" % (pname, prod))
+        self.builder().makeDebugMsg("binpac", "end %s '%s'" % (pname, prod))
         
-        return builder
-            
-    def _parseLiteral(self, builder, lit, args):
+    def _parseLiteral(self, lit, args):
         """Generates code to parse a literal."""
+        builder = self.builder()
         builder.setNextComment("Parsing literal '%s'" % lit.literal().value())
         
-        fbuilder = builder.functionBuilder()
-        
         # See if we have a look-ahead symbol. 
-        cond = fbuilder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
+        cond = builder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
         cond = builder.equal(cond, args.lahead, _LookAheadNone)
         (no_lahead, have_lahead, done) = builder.makeIfElse(cond, tag="no-lahead")
-
+        
         # If we do not have a look-ahead symbol pending, search for our literal.
         match = self._matchToken(no_lahead, "literal", str(lit.id()), [lit], args)
-        symbol = fbuilder.addLocal("lahead", hilti.core.type.Integer(32), reuse=True)
+        symbol = builder.addLocal("lahead", hilti.core.type.Integer(32), reuse=True)
         no_lahead.tuple_index(args.lahead, match, no_lahead.constOp(0))
         
-        found_lit = hilti.core.builder.BlockBuilder("found-sym", fbuilder)
+        found_lit = self.functionBuilder().newBuilder("found-sym")
         found_lit.tuple_index(args.cur, match, found_lit.constOp(1))
         found_lit.jump(done.labelOp())
 
         values = [no_lahead.constOp(lit.id())]
         branches = [found_lit]
-        (default, values, branches) = self._addMatchTokenErrorCases(fbuilder, values, branches, no_lahead)
+        (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead)
         no_lahead.makeSwitch(symbol, values, default=default, branches=branches, cont=done, tag="next-sym")
         
         # If we have a look-ahead symbol, its value must match what we expect.
         have_lahead.setComment("Look-ahead symbol pending, check.")
         have_lahead.equal(cond, have_lahead.constOp(lit.id()), args.lahead)
-        wrong_lahead = fbuilder.cacheBuilder("wrong-lahead", lambda b: self._parseError(b, "unexpected look-ahead symbol pending"))
+        wrong_lahead = self.functionBuilder().cacheBuilder("wrong-lahead", lambda b: self._parseError(b, "unexpected look-ahead symbol pending"))
         (match, _, _) = have_lahead.makeIfElse(cond, no=wrong_lahead, cont=done, tag="check-lahead")
 
         # If it matches, consume it (i.e., clear the look-ahead).
@@ -205,75 +263,86 @@ class ParserGen:
         done.assign(args.lahead, _LookAheadNone)
         
         # Extract token value.
-        token = fbuilder.addLocal("token", hilti.core.type.Reference([hilti.core.type.Bytes()]), reuse=True)
+        token = builder.addLocal("token", hilti.core.type.Reference([hilti.core.type.Bytes()]), reuse=True)
         done.bytes_sub(token, args.lahstart, args.cur)
-        self._finishedProduction(done, lit, token)
         
-        return done
+        self.cg().setBuilder(done)
         
-    def _parseVariable(self, builder, var, args):
+        self._finishedProduction(args.obj, lit, token)
+        
+    def _parseVariable(self, var, args):
         """Generates code to parse a variable."""
         type = var.type()
 
         def makeLocal():
-            name = builder.functionBuilder()._idName("var")
-            ty = type.hiltiType(self, builder)
-            return builder.functionBuilder().addLocal(name, ty)
+            name = self.functionBuilder()._idName("var")
+            ty = type.hiltiType(self)
+            return self.builder().addLocal(name, ty)
             
+        builder = self.builder()
         builder.setNextComment("Parsing variable %s" % var)
         
         # We must not have a pending look-ahead symbol at this point. 
-        cond = builder.functionBuilder().addLocal("cond", hilti.core.type.Bool(), reuse=True)
+        cond = builder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
         builder.equal(cond, args.lahead, _LookAheadNone)
         builder.debug_assert(cond)
         
         # Call the type's parse function.
         dst = builder.cache(var.type(), makeLocal)
-        (args.cur, builder) = type.generateParser(self, builder, args.cur, dst, var.name() == None)
+        args.cur = type.generateParser(self, args.cur, dst, var.name() == None)
         
-        # We have successively parsed a rule. 
-        self._finishedProduction(builder, var, dst if var.name() != None else None)
+        # We have successfully parsed a rule. 
+        self._finishedProduction(args.obj, var, dst if var.name() != None else None)
+   
+    def _parseSequence(self, prod, args):
         
-        return builder
-
-    def _parseSequence(self, builder, prod, args):
         def _makeFunction():
-            (fbuilder, builder, args) = self._createParseFunction("sequence", prod)
-            builder.setNextComment("Parse function for production '%s'" % prod)
+            (func, args) = self._createParseFunction("sequence", prod)
+            
+            self.builder().setNextComment("Parse function for production '%s'" % prod)
             
             # Initialize cache entry already here so that we can work
             # recursively.
-            self._mbuilder.setCacheEntry(prod.symbol(), fbuilder.function())
+            self.moduleBuilder().setCacheEntry(prod.symbol(), func)
             
             for p in prod.sequence():
-                builder = self._parseProduction(builder, p, args)
+                self._parseProduction(p, args)
                 
-            self._finishedProduction(builder, prod, None)
+            self._finishedProduction(args.obj, prod, None)
+            
+            builder = self.builder()
             builder.return_result(builder.tupleOp([args.cur, args.lahead, args.lahstart]))
-            return fbuilder.function()
+            
+            self.cg().endFunction()
+            
+            return func
         
-        func = self._mbuilder.cache(prod.symbol(), _makeFunction)
+        func = self.moduleBuilder().cache(prod.symbol(), _makeFunction)
         
+        builder = self.builder()
         builder.setNextComment("Parsing non-terminal %s" % prod.symbol())
 
-        result = builder.functionBuilder().addLocal("presult", _ParseFunctionResultType, reuse=True)
+        result = builder.addLocal("presult", _ParseFunctionResultType, reuse=True)
         builder.call(result, builder.idOp(func.name()), args.tupleOp())
         builder.tuple_index(args.cur, result, builder.constOp(0))
         builder.tuple_index(args.lahead, result, builder.constOp(1))
+
+        self._finishedProduction(args.obj, prod, None)
         
-        return builder        
-    
-    def _parseLookAhead(self, builder, prod, args):
+    def _parseLookAhead(self, prod, args):
+        
         def _makeFunction():
-            (fbuilder, builder, args) = self._createParseFunction("lahead", prod)
+            (func, args) = self._createParseFunction("lahead", prod)
+            
+            builder = self.builder()
             builder.setNextComment("Parse function for production '%s'" % prod)
 
             # Initialize cache entry already here so that we can work
             # recursively.
-            self._mbuilder.setCacheEntry(prod.symbol(), fbuilder.function())
+            self.moduleBuilder().setCacheEntry(prod.symbol(), func)
             
             ### See if we have look-ahead symbol pending.
-            cond = fbuilder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
+            cond = builder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
             builder.equal(cond, args.lahead, _LookAheadNone)
             (no_lahead, builder) = builder.makeIf(cond, tag="no-lahead")
 
@@ -287,16 +356,16 @@ class ParserGen:
             no_lahead.tuple_index(args.lahead, match, builder.constOp(0))
 
             ### Now branch according the look-ahead.
-
-            done = hilti.core.builder.BlockBuilder("done", fbuilder)
+            done = self.functionBuilder().newBuilder("done")
             
             # Built the cases.
             def _makeBranch(i, alts, literals):
-                branch = hilti.core.builder.BlockBuilder("case-%d" % i, fbuilder)
+                branch = self.cg().setBuilder("case-%d" % i)
                 branch.setComment("For look-ahead set {%s}" % ", ".join(['"%s"' % l.literal().value() for l in literals[i]]))
-                nbranch = self._parseProduction(branch, alts[i], args)
-                self._finishedProduction(nbranch, alts[i], None)
-                nbranch.jump(done.labelOp())
+                self.cg().setBuilder(branch)
+                self._parseProduction(alts[i], args)
+                self._finishedProduction(args.obj, alts[i], None)
+                self.builder().jump(done.labelOp())
                 return branch
             
             values = []
@@ -309,27 +378,27 @@ class ParserGen:
                     values += [builder.constOp(lit.id())]
                     branches += [case]
                 
-            (default, values, branches) = self._addMatchTokenErrorCases(fbuilder, values, branches, no_lahead)
+            (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead)
             builder.makeSwitch(args.lahead, values, default=default, branches=branches, cont=done, tag="lahead-next-sym")
             
             # Done, return the result.
             done.return_result(done.tupleOp([args.cur, args.lahead, args.lahstart]))
-            
-            return fbuilder.function()        
-        
-        func = self._mbuilder.cache(prod.symbol(), _makeFunction)
 
+            self.cg().endFunction()
+            return func
+
+        func = self.moduleBuilder().cache(prod.symbol(), _makeFunction)
+
+        builder = self.builder()
         builder.setNextComment("Parsing non-terminal %s" % prod.symbol())
         
-        result = builder.functionBuilder().addLocal("presult", _ParseFunctionResultType, reuse=True)
+        result = builder.addLocal("presult", _ParseFunctionResultType, reuse=True)
         builder.call(result, builder.idOp(func.name()), args.tupleOp())
         builder.tuple_index(args.cur, result, builder.constOp(0))
         builder.tuple_index(args.lahead, result, builder.constOp(1))
-        
-        return builder        
 
     ### Methods generating helper code. 
-    
+        
     def _parseError(self, builder, msg):
         """Generates code to raise an exception."""
         builder.makeRaiseException("BinPAC::ParseError", builder.constOp(msg))
@@ -361,25 +430,34 @@ class ParserGen:
         builder.regexp_match_token(match, pattern, args.cur)
         return match
 
-    def _finishedProduction(self, builder, prod, value):
+    def _finishedProduction(self, obj, prod, value):
         """Called whenever a production has sucessfully parsed value."""
+        
+        builder = self.builder()
         
         if isinstance(prod, grammar.Terminal):
             if value:
                 builder.makeDebugMsg("binpac", "- matched '%s' to '%%s'" % prod, [value])
             else:
                 builder.makeDebugMsg("binpac", "- matched '%s'" % prod)
+
+        if prod.name() and value:
+            builder.struct_set(obj, builder.constOp(prod.name()), value)
                 
-    
+        for (stmt, prio) in prod.hooks():
+            name = "on_%s" % (prod.name() if prod.name() else "anon_%s" % builtin_id(prod))
+            hookf = self._functionHook(name, stmt)
+            builder.call(None, builder.idOp(hookf.name()), builder.tupleOp([obj]))
+        
     ### Methods defining types. 
     
     def _typeParseObject(self):
         """Returns the struct type for the parsed grammar."""
         
         def _makeType():
-            # TODO: Not yet implemented. 
-            fields = [hilti.core.id.ID("dummy", hilti.core.type.Integer(16), hilti.core.id.Role.LOCAL)]
-            structty = hilti.core.type.Struct([(f, None) for f in fields])
+            fields = self._current_grammar.scope().IDs()
+            fields = [(hilti.core.id.ID(f.name(), f.type().hiltiType(self.cg()), hilti.core.id.Role.LOCAL), None) for f in fields]
+            structty = hilti.core.type.Struct(fields)
             self._mbuilder.addTypeDecl(self._name("object"), structty)
             return structty
         
@@ -404,6 +482,7 @@ class ParserGen:
     def _createParseFunction(self, prefix, prod):
         """Creates a HILTI function with the standard parse function
         signature."""
+        
         arg1 = hilti.core.id.ID("cur", _BytesIterType, hilti.core.id.Role.PARAM)
         arg2 = hilti.core.id.ID("obj", self._typeParseObjectRef(), hilti.core.id.Role.PARAM)
         arg3 = hilti.core.id.ID("lahead", _LookAheadType, hilti.core.id.Role.PARAM)
@@ -413,14 +492,15 @@ class ParserGen:
         args = [arg1, arg2, arg3, arg4]
         ftype = hilti.core.type.Function(args, result)
         name = self._name(prefix, prod.symbol())
-        fbuilder = hilti.core.builder.FunctionBuilder(self._mbuilder, name, ftype)
-        bbuilder = hilti.core.builder.BlockBuilder(None, fbuilder)
-
-        return (fbuilder, bbuilder, ParserGen._Args(fbuilder, args))
         
-    def _addMatchTokenErrorCases(self, fbuilder, values, branches, repeat):
+        (fbuilder, builder) = self.cg().beginFunction(name, ftype)
+        return (fbuilder.function(), ParserGen._Args(fbuilder, args))
+        
+    def _addMatchTokenErrorCases(self, builder, values, branches, repeat):
         """Build the standard error branches for the switch-statement
         following a ``match_token`` instruction."""
+        
+        fbuilder = builder.functionBuilder()
         
         # Not found.
         values += [fbuilder.constOp(0)]
@@ -433,8 +513,8 @@ class ParserGen:
         # Unknown case.
         default = fbuilder.cacheBuilder("unexpected-sym", lambda b: b.makeInternalError("unexpected look-ahead symbol returned"))
         
-        return (default, values, branches)
-    
+        return (default, values, branches)        
+ 
 if __name__ == "__main__":
     from binpac.core.grammar import *
     from binpac.core import type

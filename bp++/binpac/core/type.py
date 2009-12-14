@@ -1,5 +1,6 @@
 # $Id$
 
+import scope
 import binpac.support.util as util
 
 import hilti.core.constant
@@ -24,6 +25,8 @@ class Type(object):
         pass
     
     def __init__(self, params=[], location=None):
+        super(Type, self).__init__()
+        
         self._location = location
         self._params = []
         
@@ -107,8 +110,7 @@ class Type(object):
         return []
         
     def validate(self, vld):
-        """Validates the semantic correctness of the type during code
-        generation. 
+        """Validates the semantic correctness of the type.
         
         Can be overridden by derived classes; the default implementation does
         nothing. If there are any errors encountered during validation, the
@@ -118,27 +120,33 @@ class Type(object):
         vld: ~~Validator - The validator triggering the validation.
         """
         pass
+    
+    def validateConst(self, vld, const):
+        """Validates the semantic correctness of a constant of the
+        type.
         
-    def hiltiType(self, cg, tag):
+        Must be overidden by derived classes if constants with their
+        type can be created.
+        
+        vld: ~~Validator - The validator triggering the validation.
+        const: ~~Constant - The constant, which will have the type's type.
+        """
+        util.internal_error("Type.validateConst() not overidden for %s" % self.__class__)
+        
+    def hiltiType(self, cg):
         """Returns the corresponding HILTI type. 
         
         Must be overridden by derived classes for types that can be used by an
-        HILTI program. The methods can use *codegen* to add type declarations
+        HILTI program. The methods can use *cg* to add type declarations
         (or anything else) to the HILTI module.
         
-        codegen: ~~CodeGen - The current code generator. 
-        
-        tag: string - A string that can be used to build meaningful ID names
-        when generating code via the code generator. There is not further
-        interpretation of the tag; it's mainly to generate more readable HILTI
-        code. For example, a *tag* might be the name of an BinPAC ID
-        accociated with the type.
+        cg: ~~CodeGen - The current code generator. 
         
         Returns: hilti.core.type.Type - The HILTI type.
         """
         util.internal_error("Type.hiltiType() not overidden for %s" % self.__class__)
 
-    def hiltiConstant(self, const, codegen, builder):
+    def hiltiConstant(self, cg, const):
         """Returns the HILTI constant for a constant of this type.
         
         Can be overridden by derived classes for types. The default
@@ -147,24 +155,33 @@ class Type(object):
         all types for which the values are represented in the same interal way
         in BinPAC and HILTI.
         
+        cg: ~~CodeGen - The current code generator. 
         *const*: ~~Constant - The constant to convert to HILTI.
         
         Returns: hilti.core.constant.Constant - The HILTI constant.
         """
-        hlt = const.type().hiltiType(codegen, builder)
+        hlt = const.type().hiltiType(cg)
         return hilti.core.constant.Constant(const.value(), hlt)
         
-    def toCode(self):
-        """Returns the type's full declaration as readable string. 
+    def pac(self, printer):
+        """Converts the type into parseable BinPAC++ code.
+
+        Must be overidden by derived classes.
         
-        This function must be overriden by derived classes. For all
-        types that a user can directly used, the returned string must
-        be parseable by the BinPAC++ parser and fully describe the
-        type, including all attributes.
-        
-        Returns: string - The full type declaration. 
+        printer: ~~Printer - The printer to use.
         """
-        util.internal_error("Type.toCode() not overidden for %s" % self.__class__)
+        util.internal_error("Type.pac() not overidden for %s" % self.__class__)
+
+    def pacConstant(self, printer, value):
+        """Converts the a constant of the type into its BinPAC++ representation.
+
+        Must be overidden by derived classes if constants with their type can
+        be created.
+        
+        value: any - The value of the constant.
+        printer: ~~Printer - The printer to use.
+        """
+        util.internal_error("Type.pacConstant() not overidden for %s" % self.__class__)
 
     def __eq__(self, other):
         """Compare two types for compatibility. If the comparision yields
@@ -317,14 +334,12 @@ class ParseableType(Type):
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
         
-    def generateParser(self, codegen, builder, cur, dst, skipping):
+    def generateParser(self, cg, cur, dst, skipping):
         """Generates code for parsing an instace of the type. 
         
         The method must be overridden by derived classes.
         
-        codegen: CodeGen - The current code generator.. 
-        
-        builder: hilti.core.builder.Builder - The HILTI builder to use. 
+        cg: ~~CodeGen - The current code generator. 
         
         dst: hilti.core.instruction.Operand - The operand in which to store
         the parsed value. The operand will have the type returned by
@@ -338,32 +353,43 @@ class ParseableType(Type):
         storing anything in *dst*. It however must still return the advanced
         iterator.
         
-        Returns: tuple (hilti.core.instruction.Operand,
-        hilti.core.builder.Builder) - The first element is a a byte iterator
+        Returns: ~~hilti.core.instruction.Operand - A a byte iterator
         containing the advanced parsing position, pointing to the first byte
-        *not* consumed anymore; the second element is the builder to use for
-        subsequent code.
+        *not* consumed anymore.
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
     
-class TypeDecl(Type):
-    """Type for type declarations.  
-    
-    t: ~~Type - The declared type.
+class Identifier(Type):
+    """Type for an unbound identifier.
     
     location: ~~Location - A location object describing the point of definition.
     """
-    def __init__(self, t, location=None):
-        super(TypeDecl, self).__init__(location=location)
-        self._decl = t
-        
-    def declType(self):
-        """Returns the type declared.
-        
-        Returns: ~~Type - The type.
-        """
-        return self._decl
+    def __init__(self, location=None):
+        super(Identifier, self).__init__(location=location)
 
+    def validateConst(self, vld, value):
+        if not isinstance(value, str):
+            vld.error("constant of wrong internal type")
+            
+    def pac(self, printer):
+        printer.output("<type.Identifier>") # Should get here.
+        
+    def pacConstant(self, printer, value):
+        printer.output(value)
+        
+    def hiltiType(self, cg):
+        return hilti.core.type.String()
+        
+# Additional traits types may have.
+#class Derefable(object):
+#    """A deref'able type can appear as the LHS in attribute expressions of the
+#    form ``foo.bar``. It has a scope of valid attributes that is initially
+#    empty. 
+#    """
+#    def __init__(self):
+#        super(Derefable, self).__init__()
+#        self._scope = scope.Scope(None, None)
+    
 # Trigger importing the other types into our namespace.
 
 def pac(name):

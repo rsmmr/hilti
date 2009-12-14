@@ -63,6 +63,13 @@ attribute; they are all class methods.
   that all other class methods will only be called if this check returns True.
   
   Returns: bool - True if the operator applies to these expression types.
+  
+.. function:: validate(vld, <exprs>)
+
+  Optional. Adds additional validation functionality performed *after* it has
+  already been determined that the operator applies.
+
+  vld: ~~Validator - The validator to use.
 
 .. function:: fold(<exprs>)
 
@@ -77,18 +84,15 @@ attribute; they are all class methods.
 
   Returns: ~~type.Type - An type *instance* defining the result type.
 
-.. function:: evaluate(codegen, builder, <exprs>)
+.. function:: evaluate(cg, <exprs>)
 
   Mandatory. Implements evaluation of the operator, generating the
   corresponding HILTI code. 
 
-  *codegen*: ~~CodeGen - The current code generator.
-  *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
+  *cg*: ~~CodeGen - The current code generator.
 
-  Returns: tuple (~~hilti.core.instructin.Operand,
-  ~~hilti.core.builder.Builder) - The first element is an operand with
-  the value of the evaluated expression; the second element is the
-  builder to use for subsequent code. 
+  Returns: ~~hilti.core.instructin.Operand - An operand with the
+  value of the evaluated expression. 
 
 .. function:: castConstTo(const, dsttype):
 
@@ -118,20 +122,18 @@ attribute; they are all class methods.
    
    Returns: bool - True if the cast is possible. 
    
-.. function:: castNonConstExprTo(codegen, builder, expr, dsttype):
+.. function:: castNonConstExprTo(cg, expr, dsttype):
    
    Optional. Casts a non-constant expression of the operator's type to another
    type. This function will only be called if the corresponding
    ~~canCastNonConstExprTo indicates that the cast is possible. 
         
-   *codegen*: ~~CodeGen - The current code generator.
-   *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
+   *cg*: ~~CodeGen - The current code generator.
    *expr*: ~~Expression - The expression to cast. 
    *dsttype*: ~~Type - The type to cast the expression into.
         
-   Returns: tuple (~~Expression, ~~hilti.core.builder.Builder) - The first
-   element is a new expression of the target type with the casted expression;
-   the second element is the builder to use for subsequent code.
+   Returns: ~~Expression - A new expression of the target type with
+   the casted expression.
 """
 
 import inspect
@@ -141,41 +143,80 @@ import binpac.support.util as util
 
 ### Available operators and operator methods.
 
-_Operators = [
-    # Operator name, #operands, description.
-    ("Plus", 2, "The sum of two expressions. (`a + b`)"),
-    ("Minus", 2, "The difference of two expressions. (`a + b`)"),
-    ("Mult", 2, "The product of two expressions. (`a * b`)"),
-    ("Div", 2, "The division of two expressions. (`a / b`)"),
-    ("Neg", 1, "The negation of an expressions. (`- a`)"),
-    ("Cast", 1, "Cast into another type."),
-    ]
+def _pacUnary(op):
+    def _pac(printer, exprs):
+        printer.output(op)
+        exprs[0].pac(printer)
 
-_Methods = ["typecheck", "fold", "codegen", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
+    return _pac    
+    
+def _pacBinary(op):
+    def _pac(printer, exprs):
+        exprs[0].pac(printer)
+        printer.output(op)
+        exprs[1].pac(printer)
+        
+    return _pac    
+
+_Operators = {
+    # Operator name, #operands, description.
+    "Plus": (2, "The sum of two expressions. (`a + b`)", _pacBinary(" + ")),
+    "Minus": (2, "The difference of two expressions. (`a - b`)", _pacBinary(" + ")),
+    "Mult": (2, "The product of two expressions. (`a * b`)", _pacBinary(" + ")),
+    "Div": (2, "The division of two expressions. (`a / b`)", _pacBinary(" + ")),
+    "Neg": (1, "The negation of an expressions. (`- a`)", _pacUnary("-")),
+    "Cast": (1, "Cast into another type.", lambda p, e: p.output("<Cast>")),
+    "Attribute": (2, "Attribute expression. (`a.b`)", _pacBinary(".")),
+    }
+
+_Methods = ["typecheck", "validate", "fold", "evaluate", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
     
 ### Public functions.    
     
-def typecheck(op, *args):
+def typecheck(op, exprs):
     """Checks whether an operator is compatible with a set of operand
     expressions. 
     
     op: ~~Operator - The operator.
-    args: one or more ~~Expressions - The expressions for the operator.
+    exprs: list of ~~Expression - The expressions for the operator.
     
     Returns: bool - True if operator and expressions are compatible.
+    
+    Note: This function uses the ``typecheck`` operator to find a matching
+    implementation, and then validates any potential additional constraints
+    via ``validate``, aborting if it finds an error.
     """
-    func = _findOp("typecheck", op, args)
+    func = _findOp("typecheck", op, exprs)
     if not func:
         # Not matching operator found.
         return False
+
+    result = func(*exprs)
     
-    return func(*args)
+    if not result:
+        return False
     
-def fold(op, *args):
+    return True
+
+def validate(op, vld, exprs):
+    """Validates an operator's arguments.
+    
+    op: ~~Operator - The operator.
+    vld: ~~Validator - The validator to use.
+    exprs: list of ~~Expression - The expressions for the operator.
+    """
+    func = _findOp("validate", op, exprs)
+    if not func:
+        # No validate function defined means ok.
+        return None
+    
+    return func(vld, *exprs)
+    
+def fold(op, exprs):
     """Evaluates an operator with constant expressions.
     
     op: ~~Operator - The operator.
-    args: one or more ~~Expressions - The expressions for the operator.
+    exprs: list of ~~Expression - The expressions for the operator.
     
     Returns: ~~expr.Constant - An new expression, representing the folded
     expression; or None if the operator does not support constant folding.
@@ -183,61 +224,59 @@ def fold(op, *args):
     Note: This function must only be called if ~~typecheck indicates that
     operator and expressions are compatible. 
     """
-    if not typecheck(op, *args):
-        util.error("no fold implementation for %s operator with %s" % (op, _fmtArgTypes(args)))
+    if not typecheck(op, exprs):
+        util.error("no fold implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
 
-    func = _findOp("fold", op, args)
-    result = func(*args) if func else None
+    func = _findOp("fold", op, exprs)
+    result = func(*exprs) if func else None
     assert not result or isinstance(result, expression.Constant) 
     return result
 
-def evaluate(op, codegen, builder, *args):
+def evaluate(op, cg, exprs):
     """Generates HILTI code for an expression.
     
     This function must only be called if ~~typecheck indicates that operator
     and expressions are compatible. 
 
     op: string - The name of the operator.
-    *codegen*: ~~CodeGen - The current code generator.
-    *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
-    
-    args: one or more ~~Expressions - The expressions for the operator.
+    *cg*: ~~CodeGen - The current code generator.
 
-    Returns: tuple (~~hilti.core.instructin.Operand,
-    ~~hilti.core.builder.Builder) - The first element is an operand with
-    the value of the evaluated expression; the second element is the
-    builder to use for subsequent code. 
+    exprs: list of ~~Expression - The expressions for the operator.
+
+    Returns: ~~hilti.core.instructin.Operand - An operand with the value of
+    the evaluated expression. 
     """
-    if not typecheck(op, *args):
-        util.error("no matching %s operator for %s" % (op, _fmtArgTypes(args)))
+    
+    if not typecheck(op, exprs):
+        util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
 
-    func = _findOp("evaluate", op, args)
+    func = _findOp("evaluate", op, exprs)
     
     if not func:
-        util.error("no evaluate implementation for %s operator with %s" % (op, _fmtArgTypes(args)))
+        util.error("no evaluate implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
     
-    return func(codegen, builder, *args)
+    return func(cg, *exprs)
 
-def type(op, *args):
+def type(op, exprs):
     """Returns the result type for an operator.
     
     This function must only be called if ~~typecheck indicates that operator
     and expressions are compatible.
 
     op: string - The name of the operator.
-    args: one or more ~~Expressions - The expressions for the operator.
+    exprs: list of ~~Expression - The expressions for the operator.
     
     Returns: ~~type.Type - The result type.
     """
-    if not typecheck(op, *args):
-        util.error("no matching %s operator for %s" % (op, _fmtArgTypes(args)))
+    if not typecheck(op, exprs):
+        util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
 
-    func = _findOp("type", op, args)
+    func = _findOp("type", op, exprs)
     
     if not func:
-        util.error("no type implementation for %s operator with %s" % (op, _fmtArgTypes(args)))
+        util.error("no type implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
     
-    return func(*args)
+    return func(*exprs)
 
 class CastError(Exception):
     pass
@@ -267,19 +306,17 @@ def canCastNonConstExprTo(expr, dsttype):
     
     return func(expr, dsttype)
     
-def castNonConstExprTo(codegen, builder, expr, dsttype): 
+def castNonConstExprTo(cg, expr, dsttype): 
     """
     Casts a non-constant expression of one type into another. This operator must only
     be called if ~~canCastNonConstExprTo indicates that the cast is supported. 
     
-    *codegen*: ~~CodeGen - The current code generator.
-    *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
+    *cg*: ~~CodeGen - The current code generator.
     expr: ~~expr - The expression to cast. 
     dsttype: ~~Type - The type to cast the expression into. 
     
-    Returns: tuple (~~Expression, ~~hilti.core.builder.Builder) - The first
-    element is a new expression of the target type with the casted expression;
-    the second element is the builder to use for subsequent code.
+    Returns: ~~Expression - A new expression of the target type with the
+    casted expression.
     """
 
     assert canCastNonConstExpr(expr, dsttype)
@@ -297,7 +334,7 @@ def castNonConstExprTo(codegen, builder, expr, dsttype):
     if not func:
         return False
     
-    return func(codegen, builder, expr, dsttype)
+    return func(cg, expr, dsttype)
     
 
 def castConstTo(const, dsttype): 
@@ -340,46 +377,58 @@ def generateDecoratorDoc(file):
     
     file: file - The filo into which the output will be written.
     """
-    for (op, args, descr) in _Operators.sorted():
-        args = ", ".join(["type"] * args)
-        print >>file, ".. function @operator.%s(%s)" % (op, args)
+    for (op, vals) in _Operators.items().sorted():
+        (exprs, descr, pac) = vals
+        exprs = ", ".join(["type"] * exprs)
+        print >>file, ".. function @operator.%s(%s)" % (op, exprs)
         print >>file
         print >>file, "   %s" % descr
         print >>file
-            
+
+def pacOperator(printer, op, exprs):
+    """Converts an operator into parseable BinPAC++ code.
+
+    printer: ~~Printer - The printer to use.
+    op: string - The name of the operator; use the operator.Operator.*
+    constants here.
+    exprs: list of ~Expression - The operator's operands.
+    """
+    vals = _Operators[op]
+    (exprs, descr, pac) = vals
+    pac(p, exprs)
+        
 ### Internal code for keeping track of registered operators.
 
 _OverloadTable = {}
 
-def _registerOperator(operator, f, args):
+def _registerOperator(operator, f, exprs):
     try:
-        _OverloadTable[operator] += [(f, args)]
+        _OverloadTable[operator] += [(f, exprs)]
     except KeyError:
-        _OverloadTable[operator] = [(f, args)]
+        _OverloadTable[operator] = [(f, exprs)]
 
-def _default_typecheck(*args):
+def _default_typecheck(*exprs):
     return True
 
 def _fmtTypes(types):
     return ",".join([str(t) for t in types])
 
-def _fmtArgTypes(args):
-    return " ".join([str(a.type()) for a in args])
+def _fmtArgTypes(exprs):
+    return " ".join([str(a.type()) for a in exprs])
 
-def _makeOp(op, *args):
+def _makeOp(op, *exprs):
     def __makeOp(cls):
-        
         for m in _Methods:
             if m in cls.__dict__:
                 f = cls.__dict__[m]
-                if len(inspect.getargspec(f)[0]) != len(args):
-                    util.internal_error("%s has wrong number of argument for %s" % (m, _fmtTypes(args)))
+                #if len(inspect.getexprspec(f)[0]) != len(exprs):
+                #    util.internal_error("%s has wrong number of argument for %s" % (m, _fmtTypes(exprs)))
                 
-                _registerOperator((op, m), f, args)
+                _registerOperator((op, m), f, exprs)
 
         if not "typecheck" in cls.__dict__:
             # Add a "always true" typecheck if there's no other defined.
-            _registerOperator((op, "typecheck"), _default_typecheck, args)
+            _registerOperator((op, "typecheck"), _default_typecheck, exprs)
                 
         return cls
     
@@ -387,10 +436,11 @@ def _makeOp(op, *args):
     
 class _Decorators:    
     def __init__(self):
-        for (op, args, descr) in _Operators:
+        for (op, vals) in _Operators.items():
+            (exprs, descr, pac) = vals
             globals()[op] = functools.partial(_makeOp, op)
 
-def _findOp(method, op, args):
+def _findOp(method, op, exprs):
     assert method in _Methods
     
     try:
@@ -401,11 +451,11 @@ def _findOp(method, op, args):
     matches = []
     
     for (func, types) in ops:
-        if len(types) != len(args):
+        if len(types) != len(exprs):
             continue
         
         found = True
-        for (a, t) in zip(args, types):
+        for (a, t) in zip(exprs, types):
             if not isinstance(a.type(), t):
                 found = False
 
@@ -418,7 +468,7 @@ def _findOp(method, op, args):
     if len(matches) == 1:
         return matches[0][0]
 
-    msg = "ambigious operator definitions: types %s match\n" % _fmtArgTypes(args)
+    msg = "ambigious operator definitions: types %s match\n" % _fmtArgTypes(exprs)
     for (func, types) in matches:
         msg += "    %s\n" % _fmtTypes(types)
         
@@ -430,7 +480,8 @@ def _findOp(method, op, args):
 operator = _Decorators()            
 
 # Add operator constants to class Operators.
-for (op, args, descr) in _Operators:
+for (op, vals) in _Operators.items():
+    (exprs, descr, pac) = vals
     Operator.__dict__[op] = op
     # FIXME: Can't change the docstring here. What to do?
     # op.__doc = descr

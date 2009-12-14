@@ -13,23 +13,10 @@ import hilti.core.instruction
 class Expression(ast.Node):
     """Base class for all expression objects.
 
-    All derived classes must throw ValueError in their constructor if they
-    encounter invalid arguments.
-    
-    type: ~~Type - The type the expression evaluates to.
-    
     location: ~~Location - The location where the expression was defined. 
     """
-    def __init__(self, type, location=None):
+    def __init__(self, location=None):
         super(Expression, self).__init__(location)
-        self._type = type
-        
-    def type(self):
-        """Returns the type to which the expression evaluates to.
-        
-        Returns: ~~Type - The type.
-        """
-        return self._type
 
     def canCastTo(self, dsttype):
         """Returns whether the expression can be cast to a given target type.
@@ -55,22 +42,17 @@ class Expression(ast.Node):
         else:
             return operator.canCastNonConstExprTo(self, dsttype)
         
-    def castTo(self, dsttype, codegen=None, builder=None):
+    def castTo(self, dsttype, cg=None):
         """Casts the expression to a differenent type. It's ok if *dsttype* is
         the same as the expressions type, the method will be a no-op then. 
         
         *dsttype*: ~~Type - The type to cast the expression into. 
         
-        *codegen*: ~~CodeGen - The current code generator; can be None if the
+        *cg*: ~~CodeGen - The current code generator; can be None if the
         expression is constant. 
         
-        *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use;
-        can be None if the expression is constant. 
-        
-        Returns: tuple (~~Expression, ~~hilti.core.builder.Builder) - The
-        first element is a new expression of the target type with the casted
-        expression; the second element is the builder to use for subsequent
-        code.
+        Returns: Expression - The new expression of the target type
+        with the casted expression.
         
         Throws: operator.CastError - If the conversion is not possible.  This
         will only happen if ~~canCastTo returns *False*.
@@ -83,14 +65,14 @@ class Expression(ast.Node):
             assert isinstance(const, Constant)
             try:
                 const = operator.castConstTo(const, dsttype)
-                return (const, builder)
+                return const
             except operator.CastError:
                 # Can't happen because canCastTo() returned true ...
                 util.internal_error("unexpected cast error from %s to %s" % (self.type(), dsttype()))
             
         else:
-            assert builder and codegen 
-            return operator.castNonConstExprTo(codegen, builder, self, dsttype)
+            assert cg 
+            return operator.castNonConstExprTo(cg, self, dsttype)
     
     def isConst(self):
         """Returns true if the expression evaluates to a constant value.
@@ -109,6 +91,15 @@ class Expression(ast.Node):
         return False
 
     ### Methods for derived classes to override.    
+
+    def type(self):
+        """Returns the type to which the expression evaluates to.
+
+        Must be overidden by derived classes.
+        
+        Returns: ~~Type - The type.
+        """
+        util.internal_error("Expression::type not overridden in %s", self.__class__)
     
     def fold(self):
         """Performs constant folding. 
@@ -142,185 +133,73 @@ class Expression(ast.Node):
         
         return expr
 
-    def evaluate(self, codegen, builder):
+    def evaluate(self, cg):
         """Generates code to evaluate the expression.
  
         Must be overidden by derived classes. 
  
-        *codegen*: ~~CodeGen - The current code generator.
-        *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
+        *cg*: ~~CodeGen - The current code generator.
         
-        Returns: tuple (~~hilti.core.instruction.Operand,
-        ~~hilti.core.builder.Builder) - The first element is an operand with
-        the value of the evaluated expression; the second element is the
-        builder to use for subsequent code. 
+        Returns: ~~hilti.core.instruction.Operand - An operand with
+        the value of the evaluated expression.
         """
         util.internal_error("Expression::evaluate not overridden in %s", self.__class__)
-    
+
     def __str__(self):
-        return "<generic-expression>"
+        return "<generic expression>"
         
-class Unary(Expression):
-    """Base class for expressions depending on a single other expression.
+class Overloaded(Expression):
+    """Class for expressions overloaded by the type of their operands. 
 
-    Implements ~~isConst for the derived classes.
+    op: string - The name of the operator; use one of the
+    ``operator.Operator.*`` constants here.
     
-    expr: ~~Expression - The expression this one depends on.
-    location: ~~Location - The location where the expression was defined. 
-    """
-    
-    def __init__(self, expr, location=None):
-        super(Unary, self).__init__(expr.type(), location=location)
-        self._expr = expr
-
-    def expr(self):
-        """Returns the other expression this expression depends on.
-        
-        Returns: ~~Expression - The other expression.
-        """
-        return self._expr
-        
-    ### Methods for derived classes to override.    
-
-    def _subEvaluate(self, codegen, builder, expr):
-        """Evaluates the unary expression given an already evaluated operand.
-        
-        Must be overidden by derived classes. 
-        
-        *codegen*: ~~CodeGen - The current code generator.
-        *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
-        *expr*: ~~hilti.core.instruction.Operand - The already evaluated
-        operand of the unary expression.
-        
-        Returns: tuple (~~hilti.core.instructin.Operand,
-        ~~hilti.core.builder.Builder) - The first element is an operand with
-        the value of the evaluated expression; the second element is the
-        builder to use for subsequent code.         """
-        util.internal_error("expression.Binary._subEvaluate not overidden for %s" % self.__class__)
-        
-    ### Overidden from Expression.
-        
-    def evaluate(self, codegen, builder):
-        (expr, builder) = self._expr.evaluate(codegen, builder)
-        return self._subEvaluate(codegen, builder, expr)
-    
-    def __str__(self):
-        return "<unary-expression>"
-    
-class Binary(Expression):
-    """Base class for expressions depending on two other expressions.
-
-    exprs: tuple (~~Expression, ~~Expression) - The expressions this one depends on.
-    type: ~~Type - The type the expression evaluates to.
+    exprs: list of ~~Expression - The operand expressions.
     
     location: ~~Location - The location where the expression was defined. 
     """
     
-    def __init__(self, exprs, t, location=None):
-        super(Binary, self).__init__(t, location=location)
+    def __init__(self,op, exprs, location=None):
+        super(Overloaded, self).__init__(location=location)
+        self._op = op
         self._exprs = exprs
 
     def exprs(self):
-        """Returns the other expressions this expression depends on.
+        """Returns the expression's operands.
         
-        Returns: tuple (~~Expression, ~~Expression) - The other expressions.
+        Returns: list of ~~Expression - The operands.
         """
         return self._exprs
 
-    ### Methods for derived classes to override.    
+    ### Overidden from ast.Node.
 
-    def _subEvaluate(self, codegen, builder, expr1, expr2):
-        """Evaluates the binary expression given already evaluated operands.
+    def validate(self, vld):
+        for expr in self._exprs:
+            expr.validate(vld)
+            
+        if not operator.typecheck(self._op, self._exprs):
+            vld.error(self, "no match for overloaded operator")
+            
+        operator.validate(self._op, vld, self._exprs)
+
+    def pac(self, printer):
+        operator.pacOp(printer, self._op, self._exprs)
         
-        Must be overidden by derived classes. 
-        
-        *codegen*: ~~CodeGen - The current code generator.
-        *builder*: ~~hilti.core.builder.Builder - The HILTI builder to use.
-        *expr1*: ~~hilti.core.instruction.Operand - The already evaluated
-        operand 1 of the binary expression.
-        *expr2*: ~~hilti.core.instruction.Operand - The already evaluated
-        operand 2 of the binary expression.
-        
-        Returns: tuple (~~hilti.core.instructin.Operand,
-        ~~hilti.core.builder.Builder) - The first element is an operand with
-        the value of the evaluated expression; the second element is the
-        builder to use for subsequent code. 
-        """
-        util.internal_error("expression.Binary._subEvaluate not overidden for %s" % self.__class__)
-    
     ### Overidden from Expression.
 
-    def evaluate(self, codegen, builder):
-        (expr, builder) = self._expr.evaluate(codegen, builder)
-        return self._subEvaluate(codegen, builder, self._exprs[0], self._exprs[1])
-    
-    def __str__(self):
-        return "<binary-expression>"
-
-class OverloadedUnary(Unary):
-    """A unary expression for an operator overloaded by the types of its
-    operand.
-    
-    op: string - The name of the operator.
-    expr: ~~Expression - The expression this one depends on.
-    location: ~~Location - The location where the expression was defined. 
-    """
-    def __init__(self, op, expr, location=None):
-        if not operators.typecheck(op, expr):
-            util.error("no match for overloaded operator", context=location)
-        
-        t = operators.type(op, expr)
+    def type(self):
+        t = operator.type(self._op, self._exprs)
         assert t
-        
-        super(OverloadedUnary, self).__init__(expr, t, location=location)
-        self._op = op
+        return t
 
-    ### Overidden from Expression.
-        
     def fold(self):
-        return operators.fold(self._op, self.expr())
+        return operator.fold(self._op, self._exprs)
+
+    def evaluate(self, cg):
+        return operator.evaluate(self._op, cg, self._exprs)
 
     def __str__(self):
-        return "(%s %s)" % (self._op, self.expr())
-
-    ### Overidden from UnaryExpression.
-    
-    def _subEvaluate(self, codegen, builder, expr):
-        return operators.evaluate(self._op, codegen, builder, self.expr())
-    
-class OverloadedBinary(Binary):
-    """A binary expression for an operator overloaded by the types of its
-    operands.
-    
-    op: ~~Operator - The operator.
-    exprs: tuple (~~Expression, ~~Expression) - The expressions this expression depends
-    on, with their number determined by the operator.
-    location: ~~Location - The location where the expression was defined. 
-    """
-    def __init__(self, op, exprs, location=None):
-        if not operators.typecheck(op, *exprs):
-            util.error("no match for overloaded operator", context=location)
-        
-        t = operators.type(op, *exprs)
-        assert t
-        
-        super(OverloadedBinary, self).__init__(exprs, t, location=location)
-        self._op = op
-
-    ### Overidden from Expression.
-        
-    def fold(self):
-        e = self.exprs()
-        return operators.fold(self._op, e[0], e[1])
-
-    def __str__(self):
-        e = self.exprs()
-        return "(%s %s %s)" % (self._op, e[0], e[1])
-
-    ### Overidden from BinaryExpression.
-    
-    def _subEvaluate(self, codegen, builder, expr1, expr2):
-        return operators.evaluate(self._op, codegen, builder, expr1, expr2)
+        return "(%s %s)" % (self._op, " ".join([str(e) for e in self._exprs]))
     
 class Constant(Expression):
     """A constant expression.
@@ -330,7 +209,7 @@ class Constant(Expression):
     """
     
     def __init__(self, const, location=None):
-        super(Constant, self).__init__(const.type(), location=location)
+        super(Constant, self).__init__(location=location)
         self._const = const
         
     def constant(self):
@@ -339,59 +218,61 @@ class Constant(Expression):
         Returns: ~~Constant - The constant.
         """
         return self._const
+
+    ### Overidden from ast.Node.
+    
+    def validate(self, vld):
+        self._const.validate(vld)
+    
+    def pac(self, printer):
+        self._const.pac(printer)
     
     ### Overidden from Expression.
-
-    def evaluate(self, codegen, builder):
-        c = self._const.type().hiltiConstant(self._const, codegen, builder)
-        return (hilti.core.instruction.ConstOperand(c), builder)
+    
+    def type(self):
+        return self._const.type()
+    
+    def evaluate(self, cg):
+        c = self._const.type().hiltiConstant(cg, self._const)
+        return hilti.core.instruction.ConstOperand(c)
     
     def __str__(self):
         return str(self._const.value())
     
-class ID(Expression):
-    """An expression referencing an ID.
+class Name(Expression):
+    """An expression referencing an identifier.
     
-    id: ~~id.ID - The ID.
+    name: string - The name of the ID.
     scope: ~~Scope - The scope in which to evaluate the ID.
     location: ~~Location - The location where the expression was defined. 
     """
     
-    def __init__(self, id, scope, location=None):
-        assert scope.lookup(id.name())
-        super(Constant, self).__init__(id.type(), location=location)
-        self._id = id
+    def __init__(self, name, scope, location=None):
+        super(Name, self).__init__(location=location)
+        self._name = name
         self._scope = scope
 
+    ### Overidden from ast.Node.
+    
+    def validate(self, vld):
+        if not self._scope.lookupID(self._name):
+            vld.error(self, "unknown identifier %s" % self._name)
+        
+    def pac(self, printer):
+        printer.output(self._name)
+        
     ### Overidden from Expression.
-        
+    
+    def type(self):
+        id = self._scope.lookupID(self._name)
+        assert id
+        return id.type()
+    
     def fold(self):
         return None
 
-    def evaluate(self, codegen, builder):
-        util.internal_error("expr.ID.evaluate not implemented")
+    def evaluate(self, cg):
+        return cg.functionBuilder().idOp(self._name)
     
     def __str__(self):
-        return self._id.name()
-
-class HILTIOperand(Expression):
-    """An expression refering an already built HILTI Operand.
-    
-    op: ~~hilti.core.instruction.Operand - The HILTI operand. 
-    ty: ~~Type - The BinPAC type *op*'s type corresponds to.
-    location: ~~Location - The location where the expression was defined. 
-    """
-    
-    def __init__(self, op, ty, location=None):
-        super(HILTIOperand, self).__init__(ty, location=location)
-        self._op = op
-        
-    def fold(self):
-        return None
-
-    def evaluate(self, codegen, builder):
-        return (self._op, builder)
-    
-    def __str__(self):
-        return self._id.name()
-        
+        return self._name

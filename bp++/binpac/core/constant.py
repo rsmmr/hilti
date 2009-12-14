@@ -46,11 +46,26 @@ class Constant(object):
         Returns: ~~Location - The location. 
         """
         return self._location
+
+    def validate(self, vld):
+        """Validates the semantic correctness of the constant.
         
+        vld: ~~Validator - The validator triggering the validation.
+        """
+        self._type.validateConst(vld, self._value)
+    
+    def pac(self, printer):
+        """Converts the statement into parseable BinPAC++ code.
+
+        Must be overidden by derived classes.
+        
+        printer: ~~Printer - The printer to use.
+        """
+        self._type.pacConstant(printer, self._value)
+
     def __str__(self):
         return "%s: %s" % (self._value, self._type)
-    
+        
     # Visitor support.
     def visitorSubType(self):
         return self._type
-

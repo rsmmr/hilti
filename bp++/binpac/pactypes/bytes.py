@@ -36,12 +36,19 @@ class Bytes(type.ParseableType):
             
         if c > 1:
             vld.error(self, "bytes types accepts exactly one attribute")
-    
-    def hiltiType(self, cg, tag):
+
+    def validateConst(self, vld, value):
+        if not isinstance(value, str):
+            vld.error("constant of wrong internal type")
+            
+    def hiltiType(self, cg):
         return hilti.core.type.Reference([hilti.core.type.Bytes()])
 
-    def toCode(self):
-        return self.name()
+    def pac(self, printer):
+        printer.output("bytes")
+        
+    def pacConstant(self, printer, value):
+        printer.output("b\"%s\"" % value)
     
     ### Overridden from ParseableType.
 
@@ -54,38 +61,42 @@ class Bytes(type.ParseableType):
     def production(self):
         return grammar.Variable(None, self, location=self.location())
     
-    def generateParser(self, codegen, builder, cur, dst, skipping):
+    def generateParser(self, cg, cur, dst, skipping):
         
         bytesit = hilti.core.type.IteratorBytes(hilti.core.type.Bytes())
-        resultt = hilti.core.type.Tuple([self.hiltiType(codegen, builder), bytesit])
+        resultt = hilti.core.type.Tuple([self.hiltiType(cg), bytesit])
         
         def addTmp1():
-            name = builder.functionBuilder()._idName("end")
-            return builder.functionBuilder().addLocal(name, bytesit)
+            fbuilder = cg.functionBuilder()
+            name = fbuilder._idName("end")
+            return fbuilder.addLocal(name, bytesit)
         
         def addTmp2():
-            name = builder.functionBuilder()._idName("unpacked")
-            return builder.functionBuilder().addLocal(name, resultt)
+            fbuilder = cg.functionBuilder()
+            name = fbuilder._idName("unpacked")
+            return fbuilder.addLocal(name, resultt)
         
         # FIXME: We trust here that bytes iterators are inialized with the
         # generic end position. We should add a way to get that position
         # directly (but without a bytes object).
-        end = builder.cache(bytesit, addTmp1)
+        end = cg.builder().cache(bytesit, addTmp1)
         
-        op1 = builder.tupleOp([cur, end])
+        op1 = cg.builder().tupleOp([cur, end])
         op2 = None
         op3 = None
         
         if self.hasAttribute("length"):
-            op2 = builder.idOp("Hilti::Packed::BytesFixed" if not skipping else "Hilti::Packed::SkipBytesFixed")
-            (expr, builder) = self.attributeExpr("length").castTo(type.UnsignedInteger(64), codegen, builder)
-            (op3, builder) = expr.evaluate(codegen, builder)
+            op2 = cg.builder().idOp("Hilti::Packed::BytesFixed" if not skipping else "Hilti::Packed::SkipBytesFixed")
+            expr = self.attributeExpr("length").castTo(type.UnsignedInteger(64), cg)
+            op3 = expr.evaluate(cg)
             
         elif self.hasAttribute("until"):
-            op2 = builder.idOp("Hilti::Packed::BytesDelim" if not skipping else "Hilti::Packed::SkipBytesDelim")
-            (expr, builder) = self.attributeExpr("until").castTo(type.Bytes(), codegen, builder)
-            (op3, builder) = expr.evaluate(codegen, builder)
-        
+            op2 = cg.builder().idOp("Hilti::Packed::BytesDelim" if not skipping else "Hilti::Packed::SkipBytesDelim")
+            expr = self.attributeExpr("until").castTo(type.Bytes(), cg)
+            op3 = expr.evaluate(cg)
+
+        builder = cg.builder()
+            
         result = builder.cache(str(resultt), addTmp2)
 
         builder.unpack(result, op1, op2, op3)
@@ -95,7 +106,7 @@ class Bytes(type.ParseableType):
 
         cur = builder.tuple_index(cur, result, builder.constOp(1))
         
-        return (cur, builder) 
+        return cur
             
         
         

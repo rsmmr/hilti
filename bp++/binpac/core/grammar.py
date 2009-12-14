@@ -5,6 +5,9 @@
 import sys
 import copy
 
+import scope
+import id
+
 import binpac.support.util as util
 
 class Production(object):
@@ -16,16 +19,23 @@ class Production(object):
     name: string - A name for this production; can be the None for anonymous
     productions.
     
+    type: ~~Type - A type for storing the result of parsing this ~~Production.
+    Must be given iff *name* is given.
+    
     location: ~~Location - A location object decscribing the point of definition.
     """
     _counter = 0
     _symbols = {}
     
-    def __init__(self, name=None, symbol=None, location=None):
+    def __init__(self, name=None, type=None, symbol=None, location=None):
+        assert not name or type
+        
         self._name = name
+        self._type = type
         self._pred = None
         self._pre = []
         self._post = []
+        self._hooks = []
         self._location = location
 
         if not symbol:
@@ -74,6 +84,33 @@ class Production(object):
         """
         return self._name
 
+    def type(self):
+        """Returns the type for storing the result of parsing the production.
+        
+        Returns: ~~Type - The type, or None if ~~name return None.
+        """
+        return self._type if self._name else None
+    
+    def hooks(self):
+        """Returns the hook statements associated with the production.
+        
+        Returns: list of (~~Block, int) - The hook block with their
+        priorities.
+        """
+        return self._hooks
+        
+    def addHook(self, stmt, priority):
+        """Adds a hook block to the production. The statement will be
+        executed when the production has been fully parsed.
+        
+        stmt: ~~Block - The hook block.
+        
+        priority: int - The priority of the statement. If multiple statements
+        are defined for the same production, they are executed in order of
+        decreasing priority.
+        """
+        self._hooks += [(stmt, priority)]
+    
     def __str__(self):
         return "%s%s" % (self._fmtLong(), self._fmtName())
     
@@ -100,7 +137,7 @@ class Epsilon(Production):
     location: ~~Location - A location object decscribing the point of definition.
     """
     def __init__(self, location=None):
-        super(Epsilon, self).__init__(None, symbol="epsilon", location=location)
+        super(Epsilon, self).__init__(symbol="epsilon", location=location)
         self._tag = "epsilon"
         
     def _fmtShort(self):
@@ -118,6 +155,9 @@ class Terminal(Production):
     name: string - A name for this production; can be the None for anonymous
     productions.
 
+    type: ~~Type - A type for storing the result of parsing this ~~Production.
+    Must be given iff *name* is given.
+
     expr: ~~Expression or None - An optinoal expression that will be evaluated
     after the terminal has been parsed but before its value is assigned to its
     destination variable. If the expression is given, *its* value is actually
@@ -130,8 +170,8 @@ class Terminal(Production):
     Todo: The functionality for *expr* is not yet implemented, and the
     parameter just stored but otherwise ignored.
     """
-    def __init__(self, name, expr, location=None):
-        super(Terminal, self).__init__(name, symbol="terminal", location=location)
+    def __init__(self, name, type, expr, location=None):
+        super(Terminal, self).__init__(name, type, symbol="terminal", location=location)
         self._expr = expr
 
     def expr():
@@ -157,7 +197,7 @@ class Literal(Terminal):
     """
     
     def __init__(self, name, literal, expr=None, location=None):
-        super(Literal, self).__init__(name, expr)
+        super(Literal, self).__init__(name, literal.type(), expr)
         self._literal = literal
         self._id = 0
 
@@ -205,7 +245,7 @@ class Variable(Terminal):
     """
     
     def __init__(self, name, type, expr=None, location=None):
-        super(Variable, self).__init__(name, expr, location=location)
+        super(Variable, self).__init__(name, type, expr, location=location)
         self._type = type
 
     def type(self):
@@ -230,10 +270,13 @@ class NonTerminal(Production):
     name: string - A name for this production; can be None for anonymous
     productions.
     
+    type: ~~Type - A type for storing the result of parsing this ~~Production.
+    Must be given iff *name* is given.
+    
     location: ~~Location - A location object decscribing the point of definition.
     """
-    def __init__(self, name, symbol=None, location=None):
-        super(NonTerminal, self).__init__(name, symbol=symbol, location=location)
+    def __init__(self, name, type, symbol=None, location=None):
+        super(NonTerminal, self).__init__(name, type, symbol=symbol, location=location)
 
     def _simplify(self, grammar):
         # Can be overriden by derived classes.
@@ -251,12 +294,15 @@ class Sequence(NonTerminal):
     name: string - A name for this production; can be the None 
     for anonymous productions.
 
+    type: ~~Type - A type for storing the result of parsing this ~~Production.
+    Must be given iff *name* is given.
+
     seq: list of ~~Production - The sequence of productions. 
     
     location: ~~Location - A location object decscribing the point of definition.
     """
-    def __init__(self, name, seq, symbol=None, location=None):
-        super(Sequence, self).__init__(name, symbol=symbol, location=location)
+    def __init__(self, name=None, type=None, seq=[], symbol=None, location=None):
+        super(Sequence, self).__init__(name, type, symbol=symbol, location=location)
         self._seq = seq
 
     def sequence(self):
@@ -299,15 +345,12 @@ class Sequence(NonTerminal):
 class Alternative(NonTerminal):
     """Base class for productions offering alternative RHSs.
     
-    name: string - A name for this production; can be the None 
-    for anonymous productions.
-    
     alts: list of ~~Production - The alternatives.
     
     location: ~~Location - A location object decscribing the point of definition.
     """
-    def __init__(self, name, alts, symbol=None, location=None):
-        super(Alternative, self).__init__(name, symbol=symbol, location=location)
+    def __init__(self, alts, symbol=None, location=None):
+        super(Alternative, self).__init__(symbol=symbol, location=location)
         self._alts = alts
         self._prefix = "<prefix missing>"
 
@@ -333,15 +376,12 @@ class Alternative(NonTerminal):
 class LookAhead(Alternative):
     """A pair of alternatives between which we can decide with one token of look-ahead.
     
-    name: string - A name for this production; can be the None 
-    for anonymous productions.
-
     alt1: ~~Production: The first alternative. 
     
     alt2: ~~Production: The second alternative. 
     """
-    def __init__(self, name, alt1, alt2, symbol=None, location=None):
-        super(LookAhead, self).__init__(name, [alt1, alt2], symbol=symbol, location=location)
+    def __init__(self, alt1, alt2, symbol=None, location=None):
+        super(LookAhead, self).__init__([alt1, alt2], symbol=symbol, location=location)
         self._setFmtPrefix("ll1")
 
     def setAlternatives(self, alt1, alt2):
@@ -373,31 +413,25 @@ class Conditional(Alternative):
     """Base class for productions offering alternative RHSs between we decide
     based on semantic conditions.
     
-    name: string - A name for this production; can be the None 
-    for anonymous productions.
-    
     alts: list of ~~Production - The alternatives.
     
     location: ~~Location - A location object decscribing the point of definition.
     """
-    def __init__(self, name, alts, symbol=None, location=None):
-        super(Conditional, self).__init__(name, alts, symbol=symbol, location=location)
+    def __init__(self, alts, symbol=None, location=None):
+        super(Conditional, self).__init__(alts, symbol=symbol, location=location)
 
 class Boolean(Conditional):
     """A pair of alternatives between which we decide based on a boolean
     expression.
     
-    name: string - A name for this production; can be the None 
-    for anonymous productions.
-
     expr: ~~Expr : An expression of type ~~Bool.
 
     alt1: ~~Production: The first alternative for the *true* case.
     
     alt2: ~~Production: The second alternative for the *false* case.
     """
-    def __init__(self, name, expr, alt1, alt2, symbol=None, location=None):
-        super(Boolean, self).__init__(name, [alt1, alt2], symbol=symbol, location=location)
+    def __init__(self, expr, alt1, alt2, symbol=None, location=None):
+        super(Boolean, self).__init__([alt1, alt2], symbol=symbol, location=location)
         self._setFmtPrefix("Bool")
         self._expr = expr
         self._alt1 = alt1
@@ -421,9 +455,6 @@ class Switch(Conditional):
     """Alternatives between which we decide based on which value out of a set
     of options is matched; plus a default if none.
     
-    name: string - A name for this production; can be the None 
-    for anonymous productions.
-
     expr: ~~Expr : An expression. 
     
     alts: list of tuple (value, ~~Production) - The alternatives. The value of
@@ -433,8 +464,8 @@ class Switch(Conditional):
     
     default: ~~Production - Default production if none of *alts* matches. 
     """
-    def __init__(self, name, expr, alts, default, symbol=None, location=None):
-        super(Boolean, self).__init__(name, alts + [default], symbol=symbol, location=location)
+    def __init__(self, expr, alts, default, symbol=None, location=None):
+        super(Boolean, self).__init__(alts + [default], symbol=symbol, location=location)
         self._setFmtPrefix("Bool")
         self._expr = expr
         self._default = defaults
@@ -466,11 +497,12 @@ class Grammar:
         """Instantiates a grammar given its root production.
         
         name: string - A name which uniquely identifies this grammar.
-        root: Production - The grammar's root production.
+        root: ~~Production - The grammar's root production.
         """
         self._name = name
         self._start = root
         self._productions = {}
+        self._scope = scope.Scope(None, None)
         self._nterms = {}
         self._literals = 0
         self._nullable = {}
@@ -537,6 +569,14 @@ class Grammar:
         """
         return self._nterms
 
+    def scope(self):
+        """Returns a scope for this grammar. The scope contains all
+        identifiers defined by this grammar. 
+        
+        Returns: ~~Scope - The scope.
+        """
+        return self._scope
+    
     def startSymbol(self):
         """Returns starting production. 
         
@@ -549,6 +589,11 @@ class Grammar:
             # Already added.
             return
 
+        if p.name():
+            assert p.type()
+            i = id.Attribute(p.name(), p.type())
+            self._scope.addID(i)
+        
         self._productions[p.symbol()] = p
         
         if isinstance(p, Literal):

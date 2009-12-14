@@ -16,29 +16,26 @@ class Node(visitor.Visitable):
         """
         return self._location
 
-    def validate(self, cg):
-        """Validates the semantic correctness of this node. This
-        method can be overriden by derived classes; the default
-        implementation does not do anything. If there are any errors
-        encountered during validation, the method must call
-        ~~CodeGen.error. If there are any sub-nodes that also need
-        to be checked, the method needs to do that recursively.
+    ### Method that can be overridden by derived classes.
+
+    def validate(self, vld):
+        """Validates the semantic correctness of the node.
         
-        cg: ~~CodeGen - The code generator triggering the validation.
+        Can be overridden by derived classes; the default implementation does
+        nothing. If there are any errors encountered during validation, the
+        method must call ~~Validator.error. If there are any sub-nodes that
+        also need to be checked, the method needs to do that recursively.
+        
+        vld: ~~Validator - The validator triggering the validation.
         """
         pass
     
-    def codegen(self, cg):
-        """Generates HILTI code for this node. This method can be
-        overriden bv derived classes; the default implementation
-        does not do anything. If there are any errors encountered
-        during code generation, the method must call
-        ~~CodeGen.error. If there are any sub-nodes for which code
-        also needs to be generated, the method needs to do that
-        recursively.
+    def pac(self, printer):
+        """Converts the statement into parseable BinPAC++ code.
+
+        Must be overidden by derived classes.
         
-        cg: ~~CodeGen - The code generator to use.
+        printer: ~~Printer - The printer to use.
         """
-        pass
-    
+        util.internal_error("Node.pac() not overidden by %s" % self.__class__)    
         

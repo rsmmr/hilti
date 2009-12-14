@@ -45,12 +45,22 @@ class Integer(type.ParseableType):
         if self._width < 1 or self._width > 64:
             vld.error(self, "integer width out of range")
 
+    def validateConst(self, vld, value):
+        if not isinstance(value, str):
+            vld.error("constant of wrong internal type")
+            
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.width() == other.width()
         
         return NotImplemented
-            
+    
+    def pac(self, printer):
+        printer.output(self.name())
+    
+    def pacConstant(self, printer, value):
+        printer.output("%d" % value)
+    
     ### Overridden from ParseableType.
     
     def supportedAttributes(self):
