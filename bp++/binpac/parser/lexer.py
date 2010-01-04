@@ -10,16 +10,17 @@ import binpac.support.parseutil as parseutil
 
 # Language keywords. They will be turned into the corresponding all-uppercase
 # token.
-keywords = ["module", "type", "export", "unit", "print"]
+keywords = ["module", "type", "export", "unit", "print", "list", "global"]
 
 # Keywords for simple types, and what we turn them into.
 types = {
     "bytes": type.Bytes,
-    "regexp": type.RegExp
+    "regexp": type.RegExp,
+    "string": type.String,
     }
 
 # Literals.
-literals = ['(',')','{','}', '<', '>', '=', ',', ':', '*', ';', '+', '-', '*', '/', '|', '.' ]
+literals = ['(',')','{','}', '[', ']', '<', '>', '=', ',', ':', '*', ';', '+', '-', '*', '/', '|', '.' ]
 
 def _loc(t):
     return location.Location(t.lexer.parser.state._filename, t.lexer.lineno)
@@ -95,6 +96,12 @@ def t_CONST_REGEXP(t):
     '/([^\n/]|\\\\/)*/'
     t.type = "CONSTANT"
     t.value = constant.Constant(t.value[1:-1], type.RegExp(), location=_loc(t))
+    return t
+
+def t_CONST_BOOL(t):
+    'True|False'
+    t.type = "CONSTANT"
+    t.value = constant.Constant(t.value == "True", type.Bool(), location=_loc(t))
     return t
 
 # Identifiers.

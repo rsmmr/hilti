@@ -139,6 +139,8 @@ attribute; they are all class methods.
 import inspect
 import functools
 
+import type as mod_type
+
 import binpac.support.util as util
 
 ### Available operators and operator methods.
@@ -158,6 +160,20 @@ def _pacBinary(op):
         
     return _pac    
 
+def _pacMethodCall(printer, exprs):
+    exprs[0].pac(printer)
+    printer.output(".%s" % exprs[1])
+    printer.output("(")
+    
+    args = exprs[2]
+    
+    for i in range(len(args)):
+        args[i].pac(printer)
+        if i != len(args) - 1:
+            printer.output(",")
+            
+    printer.output(")")
+
 _Operators = {
     # Operator name, #operands, description.
     "Plus": (2, "The sum of two expressions. (`a + b`)", _pacBinary(" + ")),
@@ -167,6 +183,7 @@ _Operators = {
     "Neg": (1, "The negation of an expressions. (`- a`)", _pacUnary("-")),
     "Cast": (1, "Cast into another type.", lambda p, e: p.output("<Cast>")),
     "Attribute": (2, "Attribute expression. (`a.b`)", _pacBinary(".")),
+    "MethodCall": (3, "Method call. (`a.b()`)", _pacMethodCall),
     }
 
 _Methods = ["typecheck", "validate", "fold", "evaluate", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
@@ -180,11 +197,7 @@ def typecheck(op, exprs):
     op: ~~Operator - The operator.
     exprs: list of ~~Expression - The expressions for the operator.
     
-    Returns: bool - True if operator and expressions are compatible.
     
-    Note: This function uses the ``typecheck`` operator to find a matching
-    implementation, and then validates any potential additional constraints
-    via ``validate``, aborting if it finds an error.
     """
     func = _findOp("typecheck", op, exprs)
     if not func:
@@ -275,7 +288,7 @@ def type(op, exprs):
     
     if not func:
         util.error("no type implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
-    
+
     return func(*exprs)
 
 class CastError(Exception):
@@ -364,7 +377,7 @@ def castConstTo(const, dsttype):
         raise CastError
     
     return func(const, dsttype)
-    
+
 class Operator:
     """Constants defining the available operators."""
     # Note: we add the constants dynamically to this class' namespace, see
@@ -394,8 +407,8 @@ def pacOperator(printer, op, exprs):
     exprs: list of ~Expression - The operator's operands.
     """
     vals = _Operators[op]
-    (exprs, descr, pac) = vals
-    pac(p, exprs)
+    (num, descr, pac) = vals
+    pac(printer, exprs)
         
 ### Internal code for keeping track of registered operators.
 
@@ -414,7 +427,7 @@ def _fmtTypes(types):
     return ",".join([str(t) for t in types])
 
 def _fmtArgTypes(exprs):
-    return " ".join([str(a.type()) for a in exprs])
+    return " ".join([str(a.type() if isinstance(a, mod_type.Type) else a) for a in exprs])
 
 def _makeOp(op, *exprs):
     def __makeOp(cls):
@@ -440,6 +453,40 @@ class _Decorators:
             (exprs, descr, pac) = vals
             globals()[op] = functools.partial(_makeOp, op)
 
+class Mutable:
+    def __init__(self, arg):
+        self._arg = arg
+
+def _matchExpr(expr, proto, all):
+    if isinstance(proto, list) or isinstance(proto, tuple):
+        if not (isinstance(expr, list) or isinstance(expr, tuple)):
+            return False
+        
+        if len(proto) != len(expr):
+            return False
+        
+        for (e, p) in zip(expr, proto):
+            if not _matchExpr(e, p, all):
+                return False
+            
+        return True
+
+    if inspect.isfunction(proto):
+        proto = proto(all)
+
+    mutable = False
+    if isinstance(proto, Mutable):
+        mutable = True
+        proto = proto._arg
+        
+    if inspect.isclass(proto):
+        return isinstance(expr.type(), proto) and (not mutable or not expr.isConst())
+
+    if isinstance(proto, mod_type.Type):
+        return proto == expr.type() and (not mutable or not expr.isConst())
+
+    return expr == proto
+            
 def _findOp(method, op, exprs):
     assert method in _Methods
     
@@ -449,17 +496,16 @@ def _findOp(method, op, exprs):
         return None
 
     matches = []
-    
+
     for (func, types) in ops:
+        
         if len(types) != len(exprs):
             continue
         
-        found = True
         for (a, t) in zip(exprs, types):
-            if not isinstance(a.type(), t):
-                found = False
-
-        if found:
+            if not _matchExpr(a, t, exprs):
+                break
+        else:
             matches += [(func, types)]
 
     if not matches:

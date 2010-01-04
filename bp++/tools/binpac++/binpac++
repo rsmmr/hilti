@@ -49,6 +49,8 @@ optparser.add_option("-I", "--import-path", action="callback", callback=import_p
                      help="Add DIR to search path for imports", metavar="DIR")
 optparser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
                      help="Compile with debugging support")
+optparser.add_option("-p", "--print", action="store_true", dest="printer", default=False,
+                     help="Output the BinPAC++ code as it was parsed via the internal code printer")
 
 (options, args) = optparser.parse_args()
 
@@ -93,6 +95,10 @@ if errors:
     print >>sys.stderr, "\n%d errors in input, aborting." % errors
     sys.exit(1)
 
+if options.printer:
+    binpac.core.printer.printModule(mod, output)
+    sys.exit(0)
+    
 (success, hltmod) = binpac.core.codegen.compileModule(mod, import_paths=import_paths, debug=options.debug, validate=options.hlt_novalidate)
 if not success:
     print >>sys.stderr, "\ncode generation failed, aborting."

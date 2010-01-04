@@ -32,7 +32,7 @@ Operator = operator.Operator
 ### Top-level constructs.
 
 def p_module(p):
-    """module : MODULE IDENT _instantiate_module ';' module_decl_list"""
+    """module : MODULE IDENT _instantiate_module ';' module_global_list"""
     p[0] = p.parser.state.module
     _popScope(p)
     
@@ -42,14 +42,41 @@ def p_instantiate_module(p):
     p.parser.state.scopes = [None]
     _pushScope(p, p.parser.state.module.scope())
     
-def p_module_decl_list(p):
-    """module_decl_list :   module_decl module_decl_list
-                        |   """
+def p_module_global_list(p):
+    """module_global_list :   module_global module_global_list
+                          |   """
     pass
     
-def p_module_decl(p):
-    """module_decl : type_decl"""
+def p_module_global_type(p):
+    """module_global : type_decl"""
     pass
+
+def p_module_global_global(p):
+    """module_global : global_decl"""
+    pass
+
+def p_module_global_stmt(p):
+    """module_global : stmt"""
+    p.parser.state.module.addStatement(p[1])
+
+def p_global_decl(p):
+    """global_decl : opt_linkage GLOBAL IDENT ':' type ';'
+                   | opt_linkage GLOBAL IDENT '=' expr ';'
+                   | opt_linkage GLOBAL IDENT ':' type '=' expr ';'
+    """
+
+    if isinstance(p[5], type.Type):
+        ty = p[5]
+        
+    else:
+        ty = p[5].type() 
+    
+    linkage = p[1]
+    name = p[3]
+    value = p[7] if len(p) > 7 else None
+    
+    i = id.Global(name, ty, value, linkage=linkage, location=_loc(p, 2))
+    _currentScope(p).addID(i)
     
 def p_type_decl(p):
     """type_decl : opt_linkage TYPE IDENT '=' type ';'"""
@@ -72,9 +99,15 @@ def p_def_opt_linkage(p):
 def p_type(p):
     """type : PACTYPE"""
     p[0] = p[1]
+
+### Container types.
+
+def p_list(p):
+    """type : LIST '<' type '>'"""
+    p[0] = type.List(p[3], location=_loc(p, 1))
     
 ### More complex types.
-    
+
 # Unit type.
 
 def p_type_unit(p):
@@ -92,11 +125,12 @@ def p_unit_field_list(p):
     
 def p_unit_field(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field ';'"""
-    pass
+    p.parser.state.unit.addField(p.parser.state.field)
 
 def p_unit_field_with_hook(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_field_hook stmt_block _leave_field_hook"""
     p.parser.state.field.addHook(p[5], 0)
+    p.parser.state.unit.addField(p.parser.state.field)
     
 def p_instantiate_field(p):
     """_instantiate_field : """
@@ -108,11 +142,10 @@ def p_enter_field_hook(p):
     
 def p_leave_field_hook(p):
     """_leave_field_hook : """
-    p.parser.state.unit.addField(p.parser.state.field)
     _popScope(p)
     
 def p_unit_field_type_const(p):
-    """unit_field_type : CONSTANT"""
+    """unit_field_type : constant"""
     p[0] = (p[1], p[1].type())
     
 def p_unit_field_type_type(p):
@@ -147,11 +180,42 @@ def p_attr(p):
             | ATTRIBUTE
     """
     p[0] = (p[1], p[3]) if len(p) > 2 else (p[1], None)
+
+### Constants
+
+def p_constant_const(p):
+    """constant : CONSTANT"""
+    p[0] = p[1]
+    
+def p_constant_list(p):
+    """constant : '[' opt_const_list ']'
+                | LIST '<' type '>' '(' ')'"""
+    if len(p) > 4:
+        val = []    
+        ty = p[3]
+    else:
+        if not len(p[2]):
+            parseutil.error(p, "list constants cannot be empty (use list<T>() instead)")
+            raise SyntaxError    
+        val = p[2]
+        ty = p[2][0].type()
+        
+    p[0] = constant.Constant(val, type.List(ty))
+
+def p_const_list(p):
+    """const_list : constant ',' const_list
+                  | constant """
+    p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
+    
+def p_opt_const_list(p):
+    """opt_const_list : const_list
+                      | """
+    p[0] = p[1] if len(p) > 1 else []
     
 ### Expressions
 
 def p_expr_constant(p):
-    """expr : CONSTANT"""
+    """expr : constant"""
     p[0] = expr.Constant(p[1], location=_loc(p, 1))
 
 def p_expr_attribute(p):
@@ -180,6 +244,10 @@ def p_expr_div(p):
     """expr : expr '/' expr"""
     p[0] = expr.Overloaded(Operator.Div, (p[1], p[3]), location=_loc(p, 1))
 
+def p_expr_method_call(p):
+    """expr : expr '.' IDENT '(' expr_list ')'"""
+    p[0] = expr.Overloaded(Operator.MethodCall, (p[1], p[3], p[5]), location=_loc(p, 1))
+    
 def p_expr_list(p):
     """expr_list : expr ',' expr_list
                  | expr
@@ -206,6 +274,10 @@ def p_leave_block(p):
 def p_stmt_print(p):
     """stmt : PRINT expr_list ';'"""
     p[0] = stmt.Print(p[2], location=_loc(p,1))
+    
+def p_stmt_expr(p):
+    """stmt : expr ';'"""
+    p[0] = stmt.Expression(p[1], location=_loc(p,1))
 
 def p_stmt_list(p):
     """stmt_list : stmt stmt_list
@@ -275,6 +347,7 @@ def _parse(filename, import_paths=["."]):
         ast = parser.parse(lines, lexer=lex, debug=0)
     except ply.lex.LexError, e:
         # Already reported.
+        print e
         ast = None
 
     if parser.state.errors() > 0:

@@ -2,6 +2,15 @@
 
 import sys
 
+def printModule(mod, output):
+    """Prints the module as BinPAC++ code.
+    
+    mod: ~~Module - The module to print. 
+    output: file - The file to write the output to. 
+    """
+    printer = Printer()
+    printer.printNode(mod, output)
+
 class Printer(object):
     """Converts an BinPAC++ AST into a parseable source code."""
     def __init__(self):
@@ -27,7 +36,7 @@ class Printer(object):
         """
         self._output = output
         self._prefix = prefix
-        self.pac(ast)
+        ast.pac(self)
         self.reset()
 
     def push(self):

@@ -1,0 +1,13 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build -t %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Test;
+
+global myList: list<string>;
+
+myList.push_back("hello");
+
+print myList;

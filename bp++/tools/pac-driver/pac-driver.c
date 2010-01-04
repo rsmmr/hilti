@@ -21,18 +21,23 @@ static void usage(const char* prog)
 {
     fprintf(stderr, "%s [options]\n\n", prog);
     fprintf(stderr, "  Options:\n\n");
-    fprintf(stderr, "    -p <parser>   Use given parser (mandatory)\n");
+    fprintf(stderr, "    -p <parser>   Use given parser\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -d            Enable basic BinPAC++ debug output\n");
     fprintf(stderr, "    -dd           Enable detailed BinPAC++ debug output\n");
     fprintf(stderr, "    -v            Enable verbose output\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  Available parsers: \n\n");
 
     hlt_exception* excpt = 0;
-    
     hlt_list* parsers = binpac_parsers(&excpt);
+
+    if ( hlt_list_size(parsers, &excpt) == 0 ) {
+        fprintf(stderr, "  No parsers defined.\n\n");
+        exit(1);
+    }
     
+    fprintf(stderr, "  Available parsers: \n\n");
+
     hlt_list_iter i = hlt_list_begin(parsers, &excpt);
     hlt_list_iter end = hlt_list_end(parsers, &excpt);
 
@@ -64,7 +69,7 @@ static void usage(const char* prog)
     exit(1);
 }
 
-static binpac_parser* getParser(const char* name)
+static binpac_parser* findParser(const char* name)
 {
     hlt_exception* excpt = 0;
     
@@ -133,6 +138,8 @@ int main(int argc, char** argv)
     int debug = 0;
     int verbose = 0;
     const char* parser = 0;
+
+    hilti_init();
     
     char ch;
     while ((ch = getopt(argc, argv, "p:vdh")) != -1) {
@@ -162,17 +169,32 @@ int main(int argc, char** argv)
     
     if ( argc != 0 )
         usage(argv[0]);
+
+    binpac_parser* p = 0;
     
     if ( ! parser ) {
-        fprintf(stderr, "An parser must be given via -p. See usage for list.\n");
+        hlt_exception* excpt = 0;
+        hlt_list* parsers = binpac_parsers(&excpt);
+    
+        // If we have exactly one parser, that's the one we'll use.
+        if ( hlt_list_size(parsers, &excpt) == 1 ) {
+            hlt_list_iter i = hlt_list_begin(parsers, &excpt);
+            p = *(binpac_parser**) hlt_list_iter_deref(i, &excpt);
+            assert(p);
+        }
+        
+        // If we don't have any parsers, we do nothing and just exit
+        // normally.
+        if ( hlt_list_size(parsers, &excpt) == 0 )
+            exit(0);
+        
+        fprintf(stderr, "no parser specified; see usage for list.\n");
         exit(1);
     }
  
-    hilti_init();
-    
-    binpac_parser* p = getParser(parser);
+    p = findParser(parser);
     if ( ! p ) {
-        fprintf(stderr, "Unknown parser '%s'. See usage for list.\n", parser);
+        fprintf(stderr, "unknown parser '%s'. See usage for list.\n", parser);
         exit(1);
     }
 

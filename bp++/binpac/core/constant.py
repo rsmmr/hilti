@@ -52,7 +52,7 @@ class Constant(object):
         
         vld: ~~Validator - The validator triggering the validation.
         """
-        self._type.validateConst(vld, self._value)
+        self._type.validateConst(vld, self)
     
     def pac(self, printer):
         """Converts the statement into parseable BinPAC++ code.
@@ -61,7 +61,7 @@ class Constant(object):
         
         printer: ~~Printer - The printer to use.
         """
-        self._type.pacConstant(printer, self._value)
+        self._type.pacConstant(printer, self)
 
     def __str__(self):
         return "%s: %s" % (self._value, self._type)

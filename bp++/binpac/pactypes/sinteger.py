@@ -16,12 +16,10 @@ class SignedInteger(type.Integer):
     
     width: integer - Specifies the bit-width of integers represented by this type.
 
-    attrs: list of (name, value) pairs - See ~~ParseableType.
-
     location: ~~Location - A location object describing the point of definition.
     """
-    def __init__(self, width, attrs=[], location=None):
-        super(SignedInteger, self).__init__(width, attrs=attrs, location=location)
+    def __init__(self, width, location=None):
+        super(SignedInteger, self).__init__(width, location=location)
 
         
     ### Overridden from Type.

@@ -29,11 +29,6 @@ class ParserGen:
         self._cg = cg
         self._mbuilder = cg.moduleBuilder()
         
-        paths = cg.importPaths()
-        hilti.parser.importModule(self._mbuilder.module(), "hilti", paths)
-        hilti.parser.importModule(self._mbuilder.module(), "binpac", paths)
-        hilti.parser.importModule(self._mbuilder.module(), "binpacintern", paths)
-
         self._builders = {}
         self._rhs_names = {}
         
@@ -51,7 +46,6 @@ class ParserGen:
         Returns: hilti.core.Type.Reference - A reference type for 
         struct generated for parsing this grammar. 
         """
-
         self._current_grammar = grammar
         self._functionHostApplication()
         self._functionInit()

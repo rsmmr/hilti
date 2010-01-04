@@ -15,12 +15,10 @@ class Integer(type.ParseableType):
     
     width: integer - Specifies the bit-width of integers represented by this type.
     
-    attrs: list of (name, value) pairs - See ~~ParseableType.
-    
     location: ~~Location - A location object describing the point of definition.
     """
-    def __init__(self, width, attrs=[], location=None):
-        super(Integer, self).__init__(attrs=attrs, location=location)
+    def __init__(self, width, location=None):
+        super(Integer, self).__init__(location=location)
         assert(width > 0 and width <= 64)
         self._width = width
 
@@ -45,9 +43,9 @@ class Integer(type.ParseableType):
         if self._width < 1 or self._width > 64:
             vld.error(self, "integer width out of range")
 
-    def validateConst(self, vld, value):
-        if not isinstance(value, str):
-            vld.error("constant of wrong internal type")
+    def validateConst(self, vld, const):
+        if not isinstance(const.value(), int):
+            vld.error(const, "constant of wrong internal type")
             
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -58,8 +56,8 @@ class Integer(type.ParseableType):
     def pac(self, printer):
         printer.output(self.name())
     
-    def pacConstant(self, printer, value):
-        printer.output("%d" % value)
+    def pacConstant(self, printer, const):
+        printer.output("%d" % const.value())
     
     ### Overridden from ParseableType.
     

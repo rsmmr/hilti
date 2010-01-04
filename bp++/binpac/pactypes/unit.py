@@ -172,7 +172,6 @@ class Unit(type.ParseableType):
     are statements to be run on certain occasions (like when an error has been
     found). 
 
-    attrs: list of (name, value) pairs - See ~~ParseableType.
     location: ~~Location - A location object describing the point of definition.
     
     Todo: We need to document the available hooks.
@@ -180,9 +179,9 @@ class Unit(type.ParseableType):
 
     _valid_hooks = ("ctor", "dtor", "error")
     
-    def __init__(self, attrs=[], location=None):
-        super(Unit, self).__init__(attrs=attrs, location=location)
-        self._attrs = {}
+    def __init__(self, location=None):
+        super(Unit, self).__init__(location=location)
+        self._props = {}
         self._fields = {}
         self._hooks = {}
 
@@ -195,6 +194,8 @@ class Unit(type.ParseableType):
 
     def fieldType(self, name):
         """Returns the type of a field.
+        
+        name: string - The name of the field. 
         
         Returns: ~~Type - The type, or None if there's no field of this type.
         """
@@ -250,7 +251,7 @@ class Unit(type.ParseableType):
             # Generate the parsing code for our unit.
             seq = [f.production() for f in self._fields.values()]
             seq = grammar.Sequence(seq=seq, symbol="start", location=self.location())
-            name = self._attrs.get("name", "unit")
+            name = self._props.get("name", "unit")
             g = grammar.Grammar(name, seq)
             
             gen = pgen.ParserGen(cg)
@@ -288,6 +289,7 @@ class Attribute:
             vld.error(lhs, "unknown unit attribute '%s'" % ident)
         
     def type(lhs, ident):
+        ident = ident.constant().value()
         return lhs.type().fieldType(ident)
     
     def evaluate(cg, lhs, ident):

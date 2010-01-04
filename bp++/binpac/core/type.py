@@ -60,7 +60,7 @@ class Type(object):
         
         Returns: list of ~~Expr - Each entry corresponds to the corresponding
         index in what ~~supportedParameters returns; missing parameters are
-        replaces with their defaults"""
+        replaced with their defaults"""
         return self._params
         
     def location(self):
@@ -162,7 +162,21 @@ class Type(object):
         """
         hlt = const.type().hiltiType(cg)
         return hilti.core.constant.Constant(const.value(), hlt)
+
+    def hiltiDefault(self, cg):
+        """Returns the default value to initialize HILTI variables of this
+        type with.
+
+        cg: ~~CodeGen - The current code generator. 
         
+        Can be overridden by derived classes if the default value set by
+        HILTI for variables is not the desired one. 
+        
+        Returns: hilti.core.constant.Constant - The default value, of None if the HILTI
+        default is correct.
+        """
+        return None
+    
     def pac(self, printer):
         """Converts the type into parseable BinPAC++ code.
 
@@ -178,7 +192,7 @@ class Type(object):
         Must be overidden by derived classes if constants with their type can
         be created.
         
-        value: any - The value of the constant.
+        value: ~~Constant - The constant of the type.
         printer: ~~Printer - The printer to use.
         """
         util.internal_error("Type.pacConstant() not overidden for %s" % self.__class__)
@@ -203,24 +217,18 @@ class Type(object):
             if p1 != p2:
                 return False
             
-        return False
+        return True
         
 class ParseableType(Type):
     """Type that can be parsed from an input stream. Only these types can be
     used inside a ~~Unit.
     
-    attrs: list of (name, value) pairs - The attributes for this type. They
-    will be checked against what ~~supportedAttributes returns; if they don't
-    match, an ``AttributeError`` exception is thrown. *name* is a string
-    (excluding the ampersand), and *expr* is an ~~Expr.
+    params: list of any - The type's parameters.
     """
-    def __init__(self, params=[], attrs=[], location=None):
+    def __init__(self, params=[], location=None):
         super(ParseableType, self).__init__(params=params, location=location)
         self._attrs = {}
         
-        for (name, expr) in attrs:
-            self.addAttribute(name, expr)
-
     def hasAttribute(self, name):
         """Returns whether an attribute has been defined. If an attribute has
         a default expression, it is always returned as being defined.
@@ -367,9 +375,9 @@ class Identifier(Type):
     def __init__(self, location=None):
         super(Identifier, self).__init__(location=location)
 
-    def validateConst(self, vld, value):
-        if not isinstance(value, str):
-            vld.error("constant of wrong internal type")
+    def validateConst(self, vld, const):
+        if not isinstance(const.value(), str):
+            vld.error(const, "constant of wrong internal type")
             
     def pac(self, printer):
         printer.output("<type.Identifier>") # Should get here.

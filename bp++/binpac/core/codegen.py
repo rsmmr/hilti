@@ -141,17 +141,49 @@ class CodeGen(object):
         self._errors += 1
         
     def _compile(self):
-        # Top-level driver of the compilation process.
+        """Top-level driver of the compilation process."""
         hltmod = hilti.core.module.Module(self._module.name())
         self._mbuilder = hilti.core.builder.ModuleBuilder(hltmod)
-        
+
         self._errors = 0
 
+        paths = self.importPaths()
+        hilti.parser.importModule(self._mbuilder.module(), "hilti", paths)
+        hilti.parser.importModule(self._mbuilder.module(), "binpac", paths)
+        hilti.parser.importModule(self._mbuilder.module(), "binpacintern", paths)
+        
         for i in self._module.scope().IDs():
             if isinstance(i, id.Type) and i.linkage() == id.Linkage.EXPORTED:
                 # Make sure all necessary HILTI code for this type is generated.
                 i.type().hiltiType(self)
-        
+                
+            if isinstance(i, id.Global):
+                if i.value():
+                    val = i.value().fold()
+                    assert val
+                else:
+                    default = i.type().hiltiDefault(self)
+                    val = hilti.core.instruction.ConstOperand(default) if default else None
+                    
+                hltmod.addID(hilti.core.id.ID(i.name(), i.type().hiltiType(self), hilti.core.id.Role.GLOBAL), val)
+
+        self._initFunction()
+                
         self._errors += self._mbuilder.finish(validate=False)
 
         return self._errors == 0
+    
+    def _initFunction(self):
+        """Generates HILTI function initializing the module."""
+        
+        ftype = hilti.core.type.Function([], hilti.core.type.Void())
+        name = "init_%s" % self._module.name()
+        (fbuilder, builder) = self.beginFunction(name, ftype)
+        fbuilder.function().setLinkage(hilti.core.function.Linkage.INIT)
+
+        for stmt in self._module.statements():
+            stmt.execute(self)
+        
+        self.endFunction()
+        
+    

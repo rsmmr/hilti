@@ -13,11 +13,10 @@ import hilti.core.type
 class Bytes(type.ParseableType):
     """Type for bytes objects.  
     
-    attrs: list of (name, value) pairs - See ~~ParseableType.
     location: ~~Location - A location object describing the point of definition.
     """
-    def __init__(self, attrs=[], location=None):
-        super(Bytes, self).__init__(attrs=attrs, location=location)
+    def __init__(self, location=None):
+        super(Bytes, self).__init__(location=location)
 
     ### Overridden from Type.
     
@@ -37,9 +36,9 @@ class Bytes(type.ParseableType):
         if c > 1:
             vld.error(self, "bytes types accepts exactly one attribute")
 
-    def validateConst(self, vld, value):
-        if not isinstance(value, str):
-            vld.error("constant of wrong internal type")
+    def validateConst(self, vld, const):
+        if not isinstance(const.value(), str):
+            vld.error(const, "constant of wrong internal type")
             
     def hiltiType(self, cg):
         return hilti.core.type.Reference([hilti.core.type.Bytes()])

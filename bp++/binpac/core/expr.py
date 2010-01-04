@@ -77,8 +77,6 @@ class Expression(ast.Node):
     def isConst(self):
         """Returns true if the expression evaluates to a constant value.
         
-        Must be overidden by derived classes.
-        
         Returns: bool - Boolean indicating whether the expression is a constant.
         """
         if isinstance(self, Constant):
@@ -175,7 +173,8 @@ class Overloaded(Expression):
 
     def validate(self, vld):
         for expr in self._exprs:
-            expr.validate(vld)
+            if isinstance(expr, Expression):
+                expr.validate(vld)
             
         if not operator.typecheck(self._op, self._exprs):
             vld.error(self, "no match for overloaded operator")
@@ -183,7 +182,7 @@ class Overloaded(Expression):
         operator.validate(self._op, vld, self._exprs)
 
     def pac(self, printer):
-        operator.pacOp(printer, self._op, self._exprs)
+        operator.pacOperator(printer, self._op, self._exprs)
         
     ### Overidden from Expression.
 

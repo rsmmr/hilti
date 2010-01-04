@@ -1,0 +1,2 @@
+<struct { b ref<bytes>, a ref<bytes> }>
+<struct { b ref<bytes>, a ref<bytes> }>

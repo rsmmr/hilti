@@ -27,6 +27,7 @@ class Module(ast.Node):
         self._name = name.lower()
         self._location = location
         self._scope = scope.Scope(name, None)
+        self._stmts = []
         self._imported_modules = [] # Set by the parser.
 
     def name(self):
@@ -76,7 +77,23 @@ class Module(ast.Node):
             
             # Cannot export types other than those above at the moment. 
             util.internal_error("can't handle IDs of type %s in import" % (repr(t)))
-    
+
+    def addStatement(self, stmt):
+        """Adds a global statements to the module. Global statements will
+        executed at module initialization time.
+        
+        stmt: ~~Statement - The statement.
+        """
+        self._stmts += [stmt]
+
+    def statements(self):
+        """Returns the module-global statements. These will be execute at
+        module initialization time.
+        
+        Returns : list of ~~Statement - The statements.
+        """
+        return self._stmts
+        
     def __str__(self):
         return "module %s" % self._name
 
@@ -85,12 +102,18 @@ class Module(ast.Node):
     def validate(self, vld):
         for id in self._scope.IDs():
             id.validate(vld)
+            
+        for stmt in self.statements():
+            stmt.validate(vld)
 
     def pac(self, printer):
         printer.output("module %s\n" % self._name, nl=True)
         
-        for id in self._scope:
+        for id in self._scope.IDs():
             id.pac(printer)
+            
+        for stmt in self.statements():
+            stmt.pac(printer)
 
     # Visitor support.
     def visit(self, v):

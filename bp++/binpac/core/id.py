@@ -219,14 +219,26 @@ class Parameter(ID):
         
 class Global(ID):
     """An ID representing a module-global variable. See ~~ID for arguments.
+    
+    value: ~~Expression - The constant expression to initialize the global
+    with, or None for initialization with the default value.
     """
-    def __init__(self, name, type, linkage=None, namespace=None, location=None, imported=False):
+    def __init__(self, name, type, value, linkage=None, namespace=None, location=None, imported=False):
         super(Global, self).__init__(name, type, linkage, namespace, location, imported)
+        self._value = value
+        
+    def value(self):
+        """Returns the initialization value of the global.
+        
+        Returns: ~~Expression - The init value, or None if none was set.
+        """
+        return self._value
         
     ### Overidden from ast.Node.
 
     def validate(self, vld):
-        pass
+        if self._value and self._value.type() != self.type():
+            vld.error("type of initializer expression does not match")
 
     def pac(self, printer):
         printer.output("global %s: " % self.name())

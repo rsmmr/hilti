@@ -4,6 +4,7 @@
 
 import ast
 import scope
+import type
 import binpac.support.util as util
 
 import hilti.core.instruction
@@ -94,10 +95,19 @@ class Print(Statement):
     
     def validate(self, vld):
         for expr in self._exprs:
+            if isinstance(expr.type(), type.Void):
+                vld.error(expr, "cannot print void expressions")
+                
             expr.validate(vld)
 
     def pac(self, printer):
-        printer.output("print %s;\n" % ", ".join([expr.pac() for expr in self._exprs]), nl=True)
+        printer.output("print ")
+        for i in range(len(self._exprs)):
+            self._exprs[i].pac(printer)
+            if i != len(self._exprs) - 1:
+                printer.output(", ")
+                
+        printer.output(";", nl=True)
     
     ### Overidden from Statement.
         
@@ -117,3 +127,32 @@ class Print(Statement):
         
     def __str__(self):
         return "<print statement>"
+    
+class Expression(Statement):
+    """A statement evaluating an expression.
+
+    expr: ~~Expression - The expression to evaluate.
+    
+    location: ~~Location - The location where the statement was defined. 
+    """
+    def __init__(self, expr, location=None):
+        super(Expression, self).__init__(location=location)
+        self._expr = expr
+        
+    ### Overidden from ast.Node.
+    
+    def validate(self, vld):
+        self._expr.validate(vld)
+
+    def pac(self, printer):
+        self._expr.pac(printer)
+        printer.output(";", nl=True)
+    
+    ### Overidden from Statement.
+        
+    def execute(self, cg):
+        self._expr.evaluate(cg)
+        
+    def __str__(self):
+        return str(self._expr) + ";"
+    
