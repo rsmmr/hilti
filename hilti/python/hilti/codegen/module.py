@@ -26,8 +26,35 @@ def _(self, i):
         return
 
     if i.role() == id.Role.GLOBAL:
-        self.llvmCurrentModule().add_global_variable(self.llvmTypeConvert(i.type()), i.name())
+        val = self.currentModule().lookupIDVal(i)
+        
+        # FIXME: This logic here should move to codegen; not clear where though.
+        # Also, we should look for ways to unify this all a bit more. 
+        if isinstance(i.type(), type.Reference):
+            if val:
+                assert isinstance(val, instruction.ConstOperand)
+                # Can't use llvmOp() here as it would attempt to dereference the
+                # value.
+                init = self._callCallback(codegen._CB_CTOR_EXPR, val.type(), [val, i.type()])
+            else:
+                tmp = codegen.llvmConstDefaultValue(i.type())
+                init = self.llvmCurrentModule().add_global_variable(tmp.type, i.name() + "-default")
+                init.initializer = tmp
+                
+        else:
+            if val:
+                init = codegen.llvmOp(val, refine_to=i.type())
+            else:
+                init = codegen.llvmConstDefaultValue(i.type())
 
+        glob = self.llvmCurrentModule().add_global_variable(init.type, i.name())
+        glob.initializer = init
+        
+        # FIXME: LLVM doesn't support TLS on many platforms yet; this then
+        # generates a run-time error.
+        # 
+        # llvm._core.LLVMSetThreadLocal(glob.ptr, 1)
+        
 ### Function definitions.
 
 @codegen.pre(function.Function)
@@ -43,7 +70,12 @@ def _(self, f):
         
     if f.linkage() == function.Linkage.INIT:
         def _makeCall():
-            self.llvmGenerateCCall(f, [], [], abort_on_except=True)
+            # We register the function to be called from hilti_init() later,
+            # rather than calling it directly here. That ensures that all the
+            # HILTI internal init stuff gets executed first.
+            llvm_func = self.llvmGetCFunction(f)
+            llvm_func = self.builder().bitcast(llvm_func, self.llvmTypeGenericPointer())
+            self.llvmGenerateCCallByName("hlt::register_init_function", [llvm_func], arg_types=[f.type()], llvm_args=True, abort_on_except=True)
         
         codegen.llvmAddGlobalCtor(_makeCall)
 

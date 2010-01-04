@@ -16,7 +16,9 @@ void run() {
     
     a = caddr.function run
     call Hilti::print (a)
-    
-    a = caddr.function Hilti::print
-    call Hilti::print (a)
+
+#   Not supported at the moment. 
+#
+#    a = caddr.function Hilti::print
+#    call Hilti::print (a)
 }     

@@ -1,3 +1,5 @@
+>>> b = tuple.index a 2
 wrong-index.hlt:14: error, operand 2 is out of range
+
 
 1 error found

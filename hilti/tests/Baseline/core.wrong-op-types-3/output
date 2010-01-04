@@ -1,3 +1,5 @@
+>>> foo = int.add 1 2
 wrong-op-types.hlt:5: error, target must be of same integer type as operand 1, which is int<64>
+
 
 1 error found

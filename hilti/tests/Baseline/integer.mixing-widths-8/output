@@ -1,3 +1,5 @@
+>>> i2 = int.trunc i1
 mixing-widths.hlt:7: error, width of integer operand too small
+
 
 1 error found

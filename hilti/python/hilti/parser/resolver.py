@@ -330,6 +330,9 @@ class Resolver(visitor.Visitor):
         if not isinstance(i.op1().type(), type.Integer):
             return
         
+        if not isinstance(i.op3(), instruction.TupleOperand):
+            return
+        
         w = i.op1().type().width()
         
         tuple = i.op3().value()
@@ -347,7 +350,7 @@ class Resolver(visitor.Visitor):
             tt.setWidth(w)
             
             t.setTuple(t.value())
-            
+
         i.op3().setTuple(i.op3().value())
             
     def resolveInstrOperands(self, i):

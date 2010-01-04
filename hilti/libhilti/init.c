@@ -11,6 +11,11 @@
 #include "hilti.h"
 #include "context.h"
 
+typedef void (*init_func)();
+
+static init_func* _registered_funcs = 0;
+static int _num_registered_funcs = 0;
+
 void hilti_init()
 {
     // Initialize locale.
@@ -39,4 +44,14 @@ void hilti_init()
         
         hilti_config_set(&cfg);
     }
+    
+    for ( int i = 0; i < _num_registered_funcs; i++ )
+        (*(_registered_funcs[i]))();
+}
+
+void hlt_register_init_function(init_func func, hlt_exception* expt)
+{
+    ++_num_registered_funcs;
+    _registered_funcs = hlt_gc_realloc_atomic(_registered_funcs, _num_registered_funcs * sizeof(init_func));
+    _registered_funcs[_num_registered_funcs - 1] = func;
 }

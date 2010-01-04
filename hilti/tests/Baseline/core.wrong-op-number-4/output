@@ -1,3 +1,5 @@
+>>> int.add 1 2
 wrong-op-number.hlt:4: error, target missing
+
 
 1 error found

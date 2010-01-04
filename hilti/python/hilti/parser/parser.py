@@ -113,8 +113,17 @@ def p_module_decl_error(p):
     pass
 
 def p_def_global(p):
-    """def_global : GLOBAL global_id NL"""
-    p.parser.state.module.addID(p[2])
+    """def_global : GLOBAL global_id NL
+                  | GLOBAL global_id '=' operand NL"""
+    if len(p) < 5:
+        p.parser.state.module.addID(p[2], None)
+    else:
+        if not isinstance(p[4], instruction.ConstOperand):
+            error(p, "value must be a constant")
+            raise SyntaxError
+        
+        p.parser.state.module.addID(p[2], p[4])
+    
     return p[2]
 
 def p_def_const(p):
@@ -149,7 +158,7 @@ def _addTypeDecl(p, name, t, location):
     return i
     
 def p_def_struct(p):
-    """def_struct_decl : STRUCT _begin_nolines IDENT '{' struct_id_list '}' _end_nolines"""
+    """def_struct_decl : STRUCT _begin_nolines IDENT '{' opt_struct_id_list '}' _end_nolines"""
     _addTypeDecl(p, p[3], type.Struct(p[5]), location=loc(p, 1))
     
 def p_def_enum(p):
@@ -441,26 +450,6 @@ def p_regexp_list(p):
     else:
         p[0] = [p[1]] + p[3]
     
-def p_operand_list_non_empty(p):
-    """operand : '[' operand_list ']'"""
-    
-    ops = p[2]
-    
-    t = ops[0].type()
-    for op in ops:
-        if t != op.type():
-            error(p, "list of inhomogenous types" % p[1])
-            raise SyntaxError
-    
-    const = constant.Constant(ops, type.Reference([type.List([t])]), location=loc(p, 1))
-    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
- 
-# FIXME: Can't derive type information.    
-#def p_operand_list_empty(p):
-#    """operand : '[' ']'"""
-#    const = constant.Constant([], type.Reference([type.List()]), location=loc(p, 1))
-#    p[0] = instruction.ConstOperand(const, location=loc(p, 1))
-
 def p_operand_bytes(p):
     """operand : BYTES"""
     try:
@@ -478,6 +467,25 @@ def p_operand_ununsed(p):
     """operand : """
     p[0] = None 
 
+def p_operand_ctor(p):
+    """operand : type '(' opt_operand_list ')'"""
+    
+    t = p[1]
+    ops = p[3]
+    
+    if isinstance(p[1], type.List):
+        for op in ops:
+            if t.itemType() != op.type():
+                error(p, "list element %s is of wrong type" % op)
+                raise SyntaxError
+        
+        const = constant.Constant(ops, type.Reference([t]), location=loc(p, 1))
+        p[0] = instruction.ConstOperand(const, location=loc(p, 1))
+        return
+        
+    error(p, "type %s does not support constructor expression" % t)
+    raise SyntaxError    
+    
 def p_tuple_empty(p):
     """tuple : '(' ')'"""
     p[0] = []
@@ -493,6 +501,13 @@ def p_operand_list(p):
         p[0] = [p[1]] + p[3]
     else:
         p[0] = [p[1]]
+        
+def p_opt_operand_list(p):
+    """opt_operand_list : operand_list"""
+    if len(p[1]) == 1 and p[1][0] == None:
+        p[0] = []
+    else:
+        p[0] = p[1]
 
 def p_param_list(p):
     """param_list : param_id opt_default_val ',' param_list
@@ -653,6 +668,11 @@ def p_struct_id_list(p):
         p[0] = [p[1]]
     else:
         p[0] = [p[1]] + p[3]
+
+def p_opt_struct_id_list(p):
+    """opt_struct_id_list : struct_id_list
+                          | """
+    p[0] = p[1] if len(p) == 2 else []
 
 def p_id_list(p):
     """id_list : IDENT "," id_list

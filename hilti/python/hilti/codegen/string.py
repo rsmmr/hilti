@@ -31,7 +31,7 @@ def _makeLLVMString(s):
         
     # We need to cast the const, which has a specific array length, to the
     # actual string type, which has unspecified array length. 
-    return codegen.builder().bitcast(glob, _llvmStringTypePtr())
+    return glob.bitcast(_llvmStringTypePtr())
 
 @codegen.typeInfo(type.String)
 def _(type):

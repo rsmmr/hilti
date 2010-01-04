@@ -1,3 +1,5 @@
+>>> call foo 42
 wrong-calls.hlt:13: error, function arguments must be a tuple
+
 
 1 error found

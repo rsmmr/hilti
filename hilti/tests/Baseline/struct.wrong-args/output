@@ -1,3 +1,5 @@
+>>> i = new struct { i int<64>, b bool, test string, d double }
 wrong-args.hlt:24: error, no matching implementation of overloaded operator found
+
 
 1 error found

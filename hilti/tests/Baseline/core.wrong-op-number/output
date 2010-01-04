@@ -1,3 +1,5 @@
+>>> sum = int.add
 wrong-op-number.hlt:14: error, operand 1 missing
+
 
 1 error found

@@ -1010,6 +1010,21 @@ class CodeGen(visitor.Visitor,objcache.Cache):
                     return addr
 
             util.internal_error("unknown local")
+
+    def llvmAddrGlobalVar(self, i):
+        """Returns the address of a global variable inside the current module.
+        
+        i: ~~ID - The ID corresponding the global.
+
+        Returns: llvm.core.Value - An LLVM value with the address. 
+        """
+        glob = self._llvm.module.get_global_variable_named(i.name())
+        
+        if isinstance(i.type(), type.Reference):
+            # Need an additional dereference operation.
+            glob = self.builder().load(glob, "deref")
+            
+        return glob
             
     def llvmGetGlobalVar(self, name, type, ptr=False):
         """Generates an LLVM load instruction for reading a global variable.
@@ -1873,6 +1888,12 @@ class CodeGen(visitor.Visitor,objcache.Cache):
                 addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.name())
                 self.llvmAssign(val, addr)
                 return 
+            
+            if i.role() == id.Role.GLOBAL:
+                # A local variable.
+                addr = self.llvmAddrGlobalVar(i)
+                self.llvmAssign(val, addr)
+                return 
 
         if isinstance(target, instruction.LLVMOperand):
             self.llvmAssign(val, target.value())
@@ -2169,7 +2190,6 @@ class CodeGen(visitor.Visitor,objcache.Cache):
         
         if isinstance(op, instruction.ConstOperand):
             val = self._callCallback(CodeGen._CB_CTOR_EXPR, t, [op, refine_to])
-            
             # For references, constants are in fact a pointer to the const so we
             # need an additional dereference. See, e.g., regexp.llvmCtorExpr.
             # op.value() is None for the Null reference, which must not
@@ -2188,6 +2208,11 @@ class CodeGen(visitor.Visitor,objcache.Cache):
             if i.role() == id.Role.LOCAL or i.role() == id.Role.PARAM:
                 # A local variable.
                 addr = self.llvmAddrLocalVar(self._function, self._llvm.frameptr, i.name())
+                return self.builder().load(addr, "op")
+            
+            if i.role() == id.Role.GLOBAL:
+                # A (thread-local) global variable.
+                addr = self.llvmAddrGlobalVar(i)
                 return self.builder().load(addr, "op")
 
             if i.role() == id.Role.CONST:

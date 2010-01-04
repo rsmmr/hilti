@@ -1,3 +1,5 @@
+>>> i = struct.get a "b"
 wrong-args.hlt:19: error, target type must be bool
+
 
 1 error found

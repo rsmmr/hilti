@@ -49,17 +49,13 @@ def _(op, refine_to):
     const = codegen.llvmAddGlobalVar(ptr, "list-const")
 
     def callback():
-        # FIXME: We can't handle empty list yet because we don't have type
-        # information. 
-        assert len(op.value()) > 0
-        
-        item_type = op.value()[0].type()
-        list_type = type.List([item_type])
+        list_type = op.type().refType()
+        item_type = op.type().refType().itemType()
         
         list = codegen.llvmGenerateCCallByName("hlt::list_new", [instruction.TypeOperand(item_type)], abort_on_except=True)
         
         for o in op.value():
-            codegen.llvmGenerateCCallByName("hlt::list_push_back", [list, codegen.llvmOp(o)], 
+            codegen.llvmGenerateCCallByName("hlt::list_push_back", [list, codegen.llvmOp(o, refine_to=item_type)], 
                                             arg_types=[type.Reference([list_type]), item_type], 
                                             llvm_args=True, abort_on_except=True)
                 

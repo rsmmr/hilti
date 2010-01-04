@@ -1,3 +1,5 @@
+>>> switch n @default "foo"
 switch-wrong-types.hlt:8: error, operand 3 operand 3 must be a tuple
+
 
 1 error found

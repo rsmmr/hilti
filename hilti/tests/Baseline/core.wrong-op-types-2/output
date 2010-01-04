@@ -1,3 +1,5 @@
+>>> sum = int.add 1 True
 wrong-op-types.hlt:5: error, operand 2 must be of same integer type as operand 1, which is int<32>
+
 
 1 error found

@@ -81,7 +81,7 @@ tokens = (
    'COMMENTLINE',
    'ATTRIBUTE',
    'INIT',
-
+   
    'ATTR_DEFAULT'
 ) 
 

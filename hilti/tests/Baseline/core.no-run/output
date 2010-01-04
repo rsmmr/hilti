@@ -1,3 +1,14 @@
+>>> # $Id$
+>>> # 
+>>> # @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+>>> # @TEST-EXEC:      test-diff output
+>>> # 
+>>> # A Main module without a Main::run function.
+>>> 
+module main
+
+>>> 
 no-run.hlt: error, module Main must define a run() function
+
 
 1 error found

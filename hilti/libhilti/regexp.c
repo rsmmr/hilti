@@ -361,6 +361,6 @@ hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const
     jrx_accept_id rc = _search_pattern(re, &ms, begin, end, 0, &eo, excpt, 1);
     jrx_match_state_done(&ms);
     
-    hlt_regexp_match_token_result result = { rc, hlt_bytes_pos_incr_by(begin, eo, excpt) };        
+    hlt_regexp_match_token_result result = { rc, (rc > 0 ? hlt_bytes_pos_incr_by(begin, eo, excpt) : begin) };        
     return result;
 }

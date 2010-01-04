@@ -219,6 +219,7 @@ class Module(ast.Node):
         visited = []
         self._visitType(v, ids, visited, lambda i: isinstance(i.type(), type.TypeDeclType))
         self._visitType(v, ids, visited, lambda i: i.role() == id.Role.CONST)
+        self._visitType(v, ids, visited, lambda i: isinstance(i.type(), type.ValueType))
         self._visitType(v, ids, visited, lambda i: True) # all the rest.
         
         v.visitPost(self)

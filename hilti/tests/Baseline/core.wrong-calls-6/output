@@ -1,3 +1,5 @@
+>>> In function foo:
 wrong-calls.hlt:4: error, only functions using C-HILTI calling convention can take wildcard parameters
+
 
 1 error found

@@ -121,4 +121,6 @@ declare "C-HILTI" tuple<int32, iterator<bytes>> regexp_bytes_match_token(ref<reg
 
 declare "C-HILTI" void debug_printf(string stream, string fmt, any args)
 
+##
 
+declare "C-HILTI" void register_init_function(caddr func)

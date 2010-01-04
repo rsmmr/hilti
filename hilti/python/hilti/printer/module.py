@@ -44,6 +44,7 @@ def _scopedID(id):
 
 def _fmtOp(op):
     # FIXME: Should we outsource this to a per-type decorator?
+    
     if isinstance(op, instruction.ConstOperand):
         c = op.constant()
 
@@ -69,7 +70,7 @@ def _fmtOp(op):
         if isinstance(c.type(), type.Reference) and \
            isinstance(c.type().refType(), type.RegExp):
             return " | ".join(["/%s/" % re for re in c.value()])
-
+        
         if isinstance(c.type(), type.Reference) and c.value() == None:
             return "Null"
         
@@ -92,7 +93,11 @@ def _fmtOp(op):
             else:
                 # IPv6
                 return "%s/%d" % (socket.inet_ntop(socket.AF_INET6, struct.pack("!2Q", b1, b2)), mask)
-        
+            
+        if isinstance(c.type(), type.Reference) and \
+           isinstance(c.type().refType(), type.List):
+            return "%s(%s)" % (c.type().refType(), ", ".join([_fmtOp(c) for c in c.value() ]))
+
     if isinstance(op, instruction.IDOperand):
         i = op.value()
         return _scopedID(i)
@@ -146,12 +151,13 @@ def _fmtType(ty):
     
     # See if we find a type declaration for this type in the modules scope. If
     # so return the name of the type.
-    for id in printer._module.IDs():
-        if not isinstance(id.type(), type.TypeDeclType):
-            continue
+    if printer._module:
+        for id in printer._module.IDs():
+            if not isinstance(id.type(), type.TypeDeclType):
+                continue
 
-        if builtin_id(id.type().declType()) == builtin_id(ty):
-            return _scopedID(id)
+            if builtin_id(id.type().declType()) == builtin_id(ty):
+                return _scopedID(id)
 
     return str(ty)
 
@@ -245,7 +251,24 @@ def _(self, id):
         self.output("}")
         self.pop()
         self.output()
-        
+
+@printer.when(id.ID, type.ValueType)
+def _(self, i):
+    if not self._module:
+        return
+    
+    if _suppressID(i):
+        return
+    
+    if i.role() != id.Role.GLOBAL and i.role() != id.Role.CONST:
+        return
+
+    _printComment(i)
+    
+    val = self._module.lookupIDVal(i)
+    init = " = %s" % _fmtOp(val) if val else ""
+    self.output("global %s %s%s" % (i.type(), i.name(), init))
+
 @printer.when(id.ID, type.Function)
 def _(self, i):
     if _suppressID(i):

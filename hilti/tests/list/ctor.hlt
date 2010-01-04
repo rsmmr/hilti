@@ -13,17 +13,20 @@ module Main
 
 import Hilti
 
-const ref<list<bool>> gl = [False, True, False]
-const ref<list<string>> gl2 = ["foo", "bar"]
-
-const ref<list<ref<bytes>>> gl3 = [b"123", b"345"]
+const ref<list<bool>> gl = list<bool>(False, True, False)
+const ref<list<string>> gl2 = list<string>("foo", "bar")
+const ref<list<ref<bytes>>> gl3 = list<ref<bytes>>(b"123", b"345")
+const ref<list<int64>> gl4 = list<int<64>>(1, 2, 3)
+const ref<list<int64>> gl5 = list<int<64>>()
 
 void run() {
     local ref<list<bool>> l
-    l = [True, False, True]
+    l = list<bool>(True, False, True)
     call Hilti::print(l)
     
     call Hilti::print(gl)
     call Hilti::print(gl2)
     call Hilti::print(gl3)
+    call Hilti::print(gl4)
+    call Hilti::print(gl5)
 }

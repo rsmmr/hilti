@@ -1,3 +1,5 @@
+>>> return.result True
 wrong-returns.hlt:5: error, return type does not match function definition (is bool, expected int<32>)
+
 
 1 error found

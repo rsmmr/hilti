@@ -9,7 +9,11 @@ module Main
 import Hilti
 
 init void f() {
-     call Hilti::print("Init function called!")
+     call Hilti::print("Init function 1 called!")
+}
+
+init void g() {
+     call Hilti::print("Init function 2 called!")
 }
 
 void run() {

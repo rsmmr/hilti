@@ -1,3 +1,5 @@
+>>> a = assign (1, 2)
 wrong-assign.hlt: error, no matching implementation of overloaded operator found
+
 
 1 error found

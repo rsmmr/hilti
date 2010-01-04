@@ -1,3 +1,5 @@
+>>> jump foo
 wrong-id-types.hlt:7: error, operand 1 must be of type label but is function (int<32>) -> void
+
 
 1 error found
