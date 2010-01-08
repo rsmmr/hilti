@@ -1,4 +1,4 @@
-[binpac] bgn sequence 'start -> Foo; Bar; Foo[0-9]*Bar; Bar [=: self]'
+[binpac] bgn sequence 'start -> Foo; Bar; Foo[0-9]*Bar; Bar'
 [binpac] bgn literal 'Foo'
 [binpac] - matched 'Foo' to 'Foo'
 [binpac] end literal 'Foo'
@@ -11,4 +11,4 @@
 [binpac] bgn literal 'Bar'
 [binpac] - matched 'Bar' to 'Bar'
 [binpac] end literal 'Bar'
-[binpac] end sequence 'start -> Foo; Bar; Foo[0-9]*Bar; Bar [=: self]'
+[binpac] end sequence 'start -> Foo; Bar; Foo[0-9]*Bar; Bar'

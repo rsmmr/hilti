@@ -183,14 +183,16 @@ class Unit(type.ParseableType):
         super(Unit, self).__init__(location=location)
         self._props = {}
         self._fields = {}
+        self._fields_ordered = []
         self._hooks = {}
 
     def fields(self):
-        """Returns the unit's fields.
+        """Returns the unit's fields. 
         
-        Returns: list of ~~Field - The fields.
+        Returns: list of ~~Field - The fields sorted in the order the field
+        were added.
         """
-        return self._fields.values()
+        return self._fields_ordered
 
     def fieldType(self, name):
         """Returns the type of a field.
@@ -212,7 +214,8 @@ class Unit(type.ParseableType):
         assert builtin_id(field._parent) == builtin_id(self)
         idx = field.name() if field.name() else str(builtin_id(field))
         self._fields[idx] = field
-    
+        self._fields_ordered += [field]
+        
     def hooks(self, hook):
         """Returns all statements registered for a hook. 
         
@@ -249,7 +252,8 @@ class Unit(type.ParseableType):
 
         def _makeUnitCode():
             # Generate the parsing code for our unit.
-            seq = [f.production() for f in self._fields.values()]
+            seq = [f.production() for f in self._fields_ordered]
+
             seq = grammar.Sequence(seq=seq, symbol="start", location=self.location())
             name = self._props.get("name", "unit")
             g = grammar.Grammar(name, seq)
