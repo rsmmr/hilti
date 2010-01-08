@@ -38,6 +38,7 @@ function usage {
    echo "    -c         Produce a native, linkable object file, not an executable."
    echo "    -b         Produce a bitcode file for JITing."
    echo "    -d         Compile HILTI files with debugging support."
+   echo "    -a         Set flags for compiling BinPAC++ sources even if not given"
    echo
    exit 1 
 }
@@ -229,6 +230,8 @@ while [ "$1" != "" ]; do
             bitcode="1"; shift;; 
         -d)
             debug="--debug"; shift;; 
+        -a)
+            have_pac2=1; shift;;
         -h) 
             usage;; 
         -*)

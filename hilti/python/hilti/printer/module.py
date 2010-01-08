@@ -267,7 +267,8 @@ def _(self, i):
     
     val = self._module.lookupIDVal(i)
     init = " = %s" % _fmtOp(val) if val else ""
-    self.output("global %s %s%s" % (i.type(), i.name(), init))
+    role = "global" if i.role() == id.Role.GLOBAL else "const"
+    self.output("%s %s %s%s" % (role, i.type(), i.name(), init))
 
 @printer.when(id.ID, type.Function)
 def _(self, i):
