@@ -45,7 +45,7 @@ class Integer(type.ParseableType):
 
     def validateConst(self, vld, const):
         if not isinstance(const.value(), int):
-            vld.error(const, "constant of wrong internal type")
+            vld.error(const, "integer: constant of wrong internal type")
             
     def __eq__(self, other):
         if isinstance(other, self.__class__):

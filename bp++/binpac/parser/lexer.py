@@ -10,7 +10,7 @@ import binpac.support.parseutil as parseutil
 
 # Language keywords. They will be turned into the corresponding all-uppercase
 # token.
-keywords = ["module", "type", "export", "unit", "print", "list", "global"]
+keywords = ["module", "type", "export", "unit", "print", "list", "global", "const"]
 
 # Keywords for simple types, and what we turn them into.
 types = {
@@ -26,7 +26,7 @@ def _loc(t):
     return location.Location(t.lexer.parser.state._filename, t.lexer.lineno)
 
 tokens = [
-    "IDENT", "CONSTANT", "PACTYPE", "ATTRIBUTE",
+    "IDENT", "CONSTANT", "PACTYPE", "ATTRIBUTE", "PROPERTY"
     ] + [k.upper() for k in keywords]
 
 # Type keywords not covered by types.
@@ -93,7 +93,7 @@ def t_CONST_BYTES(t):
     return t
 
 def t_CONST_REGEXP(t):
-    '/([^\n/]|\\\\/)*/'
+    '/([^\n/]|\\/)*/'
     t.type = "CONSTANT"
     t.value = constant.Constant(t.value[1:-1], type.RegExp(), location=_loc(t))
     return t
@@ -106,11 +106,15 @@ def t_CONST_BOOL(t):
 
 # Identifiers.
 def t_IDENT(t):
-    r'&?[_a-zA-Z]([a-zA-Z0-9_]|::)*'
+    r'[%&]?[_a-zA-Z]([a-zA-Z0-9_]|::)*'
     
     if t.value.startswith("&"):
         t.value = t.value[1:]
         t.type = "ATTRIBUTE"
+        
+    elif t.value.startswith("%"):
+        t.value = t.value[1:]
+        t.type = "PROPERTY"
     
     elif t.value in types:
         t.value = types[t.value]()

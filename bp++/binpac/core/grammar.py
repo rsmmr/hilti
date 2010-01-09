@@ -11,11 +11,8 @@ import id
 import binpac.support.util as util
 
 class Production(object):
-    """Base class for all grammar productions. All productions are generally
-    context-insensitive but can have semantic conditions attached to them.
-    Each production is assigned a unique LHS symbol that can be used to refer
-    to it. 
-    
+    """Base class for all grammar productions. 
+        
     name: string - A name for this production; can be the None for anonymous
     productions.
     
@@ -287,6 +284,19 @@ class NonTerminal(Production):
 
     def __str__(self):
         return "%s -> %s%s" % (self.symbol(), self._fmtLong(), self._fmtName())
+
+class ChildGrammar(NonTerminal):
+    """A type described by another independent unit type.
+    
+    ty: ~~Unit - The unit type to parse. 
+    
+    location: ~~Location - A location object decscribing the point of definition.
+    """
+    def __init__(self, type, symbol=None, location=None):
+        super(NonTerminal, self).__init__(type.name(), type, symbol=symbol, location=location)
+        
+    def _rhss(self):
+        return [self.type().grammar().productions().values()]
     
 class Sequence(NonTerminal):
     """A sequence of other productions. 

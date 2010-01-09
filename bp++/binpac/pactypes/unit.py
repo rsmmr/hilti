@@ -13,6 +13,7 @@ import binpac.core.pgen as pgen
 import binpac.core.operator as operator
 import binpac.core.id as id 
 import binpac.core.scope as scope
+import binpac.core.constant as constant
 
 import binpac.support.util as util
 
@@ -46,7 +47,7 @@ class Field:
         
         self._scope = scope.Scope(None, pscope)
         self._scope.addID(id.Parameter("self", parent, location=location))
-        
+
         assert self._type
 
     def location(self):
@@ -178,14 +179,28 @@ class Unit(type.ParseableType):
     """
 
     _valid_hooks = ("ctor", "dtor", "error")
-    
+
     def __init__(self, location=None):
+        Unit._counter += 1
         super(Unit, self).__init__(location=location)
         self._props = {}
         self._fields = {}
         self._fields_ordered = []
         self._hooks = {}
-
+        self._prod = None 
+        self._grammar = None
+        
+    def name(self):
+        """Returns the name of the unit. A default is automatically chosen,
+        but a user-defined name can override the default via the ``.name``
+        property.
+        
+        Returns: string - The name of the unit. 
+        
+        Note: This overrides ~~type.Type.name().
+        """
+        return self.property("name").value()
+        
     def fields(self):
         """Returns the unit's fields. 
         
@@ -246,22 +261,74 @@ class Unit(type.ParseableType):
         except IndexError:
             self._hooks[hook] = [(func, priority)]
 
+    def allProperties(self):
+        """Returns a list of all recognized properties.
+        
+        Returns: dict mapping string to ~~Constant - For each allowed
+        property, there is one entry under it's name (excluding the leading
+        dot) mapping to its default value.
+        """
+        return { "export": constant.Constant(False, type.Bool()),
+                 "name": constant.Constant(self._name, type.String())
+               }
+
+    def property(self, name):
+        """Returns the value of property. The property name must be one of
+        those returned by ~~allProperties.
+        
+        name: string - The name of the property. 
+        
+        Returns: ~~Constant - The value of the property. If not explicity
+        set, the default value is returned. The returned constant will be of
+        the same type as that of the default value returned by ~~allProperties. 
+        """
+        try:
+            default = self.allProperties()[name]
+        except IndexError:
+            util.internal_error("unknown property '%s'" % name)
+
+        return self._props.get(name, default)
+        
+    def setProperty(self, name, constant):
+        """Sets the value of a property. The property name must be one of
+        those returned by ~~allProperties. 
+        
+        name: string - The name of the property. 
+        value: any - The value to set it to. The type must correspond to what
+        ~~allProperties specifies for the default value. 
+        
+        Raises: ValueError if ``name`` is not a valid property; and TypeError
+        if the type of *constant* is not correct. 
+        """
+        try:
+            default = self.allProperties()[name]
+        except:
+            raise ValueError(name)
+        
+        if not constant.type() == default.type():
+            raise TypeError(default.type())
+            
+        self._props[name] = constant
+    
+    def grammar(self):
+        """Returns the grammar for this type."""
+        if not self._grammar:
+            seq = [f.production() for f in self._fields_ordered]
+            seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
+            self._grammar = grammar.Grammar(self.name(), seq)
+        
+        return self._grammar
+            
     # Overridden from Type.
     def hiltiType(self, cg):
         mbuilder = cg.moduleBuilder()
 
-        def _makeUnitCode():
+        def _makeType():
             # Generate the parsing code for our unit.
-            seq = [f.production() for f in self._fields_ordered]
-
-            seq = grammar.Sequence(seq=seq, symbol="start", location=self.location())
-            name = self._props.get("name", "unit")
-            g = grammar.Grammar(name, seq)
-            
             gen = pgen.ParserGen(cg)
-            return gen.compile(g)
+            return gen.objectType(self.grammar())
         
-        return mbuilder.cache(self, _makeUnitCode)
+        return mbuilder.cache(self, _makeType)
 
     def validate(self, vld):
         for f in self._fields.values():
@@ -272,18 +339,25 @@ class Unit(type.ParseableType):
             
     def pac(self, printer):
         printer.output("<bytes type - TODO>")
-        
+
     # Overridden from ParseableType.
 
     def supportedAttributes(self):
         return {}
-    
+
     def production(self):
-        # XXX
-        pass
-    
+        #seq = [f.production() for f in self._fields_ordered]
+        #seq = grammar.Sequence(seq=seq, type=self, symbol="start-%s" % self.name(), location=self.location())
+        #return seq
+        if not self._prod:
+            self._prod = grammar.ChildGrammar(self, location=self.location())
+            
+        return self._prod
+
     def generateParser(self, cg, dst):
-        pass
+        # This will not be called because we handle the grammar.ChildGrammar
+        # case separetely in the parser generator. 
+        util.internal_error("cannot be reached")
     
 @operator.Attribute(Unit, type.Identifier)
 class Attribute:

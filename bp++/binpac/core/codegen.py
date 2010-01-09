@@ -7,6 +7,7 @@ import hilti.codegen
 import ast
 import type
 import id
+import pgen
 
 import binpac.support.util as util
 
@@ -153,10 +154,13 @@ class CodeGen(object):
         hilti.parser.importModule(self._mbuilder.module(), "binpacintern", paths)
         
         for i in self._module.scope().IDs():
-            if isinstance(i, id.Type) and i.linkage() == id.Linkage.EXPORTED:
-                # Make sure all necessary HILTI code for this type is generated.
-                i.type().hiltiType(self)
-                
+            if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
+                if i.type().property("export").value():
+                    gen = pgen.ParserGen(self)
+                    grammar = i.type().grammar()
+                    gen.compile(grammar)
+                    gen.export(grammar)
+            
             if isinstance(i, id.Global):
                 if i.value():
                     val = i.value().fold()

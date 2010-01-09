@@ -19,6 +19,8 @@ class Type(object):
     """
 
     _type_name = "<type_name not set>" # Set by the pac() the decorator.
+
+    _counter = 1
     
     class ParameterError(Exception):
         """Signals a type parameter error."""
@@ -29,6 +31,7 @@ class Type(object):
         
         self._location = location
         self._params = []
+        self._name = "type_%d" % Type._counter
         
         all = self.supportedParameters()
         
@@ -54,7 +57,24 @@ class Type(object):
                 raise ParameterError, "type parameter must be a constant"
                 
             self._params += [param]
+
+    def name(self):
+        """Returns the type object's name. This can be used, e.g., to track
+        assigment of types to ~~IDs. A unique default name is chosen
+        automatically. 
         
+        Returns: string - The name.
+        """
+        return self._name
+    
+    def setName(self, name):
+        """Set the type object's name. This can be used, e.g., to track
+        assigment of types to ~~IDs. 
+        
+        name: string - The name.
+        """
+        self._name = name
+            
     def parameters(self):
         """Returns the types parameters.
         
@@ -341,9 +361,9 @@ class ParseableType(Type):
         The method must be overridden by derived classes.
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
-        
+
     def generateParser(self, cg, cur, dst, skipping):
-        """Generates code for parsing an instace of the type. 
+        """Generate code for parsing an instance of the type. 
         
         The method must be overridden by derived classes.
         
@@ -377,7 +397,7 @@ class Identifier(Type):
 
     def validateConst(self, vld, const):
         if not isinstance(const.value(), str):
-            vld.error(const, "constant of wrong internal type")
+            vld.error(const, "identifier: constant of wrong internal type")
             
     def pac(self, printer):
         printer.output("<type.Identifier>") # Should get here.

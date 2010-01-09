@@ -27,7 +27,7 @@ class String(type.ParseableType):
 
     def validateConst(self, vld, const):
         if not isinstance(const.value(), str):
-            vld.error(const, "constant of wrong internal type")
+            vld.error(const, "string: constant of wrong internal type")
             
     def hiltiType(self, cg):
         return hilti.core.type.String()

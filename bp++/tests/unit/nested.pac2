@@ -1,0 +1,41 @@
+# $Id$
+#
+# FIXME: Can't use control sequence in cmd lines.
+#
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  echo -e "GET index.html HTTP/1.0\nMessage" | ./a.out -p CRequest
+# @TEST-EXEC:  test-diff output
+
+module HTTP;
+
+const Token      = /[^ \t\n\r\n]+/;
+const URI        = /[^ \t\n\r\n]+/;
+const WhiteSpace = /[ \t]+/;
+const NewLine    = /[\r\n]+/;
+const Version    = /HTTP\/[0-9]\.[0-9]/;
+
+type ARequestLine = unit {
+    method:  Token;
+    :        WhiteSpace;
+    uri:     URI;
+    :        WhiteSpace;
+    version: Version;
+    :        NewLine;
+    };
+
+type BMessage = unit {
+    msg:     /Message/;
+    };
+    
+type CRequest = unit {
+    %export True;
+    
+    request: ARequestLine;
+    message: BMessage
+       { 
+       print self.request.method;
+       print self.request.uri;
+       print self.request.version;
+       print self.message.msg;
+       }
+    };

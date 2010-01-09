@@ -24,7 +24,7 @@ class Bool(type.ParseableType):
 
     def validateConst(self, vld, const):
         if not isinstance(const.value(), bool):
-            vld.error(const, "constant of wrong internal type")
+            vld.error(const, "bool: constant of wrong internal type")
             
     def hiltiType(self, cg):
         return hilti.core.type.Bool()

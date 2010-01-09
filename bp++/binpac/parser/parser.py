@@ -60,9 +60,9 @@ def p_module_global_stmt(p):
     p.parser.state.module.addStatement(p[1])
 
 def p_global_decl(p):
-    """global_decl : opt_linkage GLOBAL IDENT ':' type ';'
-                   | opt_linkage GLOBAL IDENT '=' expr ';'
-                   | opt_linkage GLOBAL IDENT ':' type '=' expr ';'
+    """global_decl : opt_linkage global_or_const IDENT ':' type ';'
+                   | opt_linkage global_or_const IDENT '=' expr ';'
+                   | opt_linkage global_or_const IDENT ':' type '=' expr ';'
     """
 
     if isinstance(p[5], type.Type):
@@ -73,14 +73,45 @@ def p_global_decl(p):
     
     linkage = p[1]
     name = p[3]
-    value = p[7] if len(p) > 7 else None
+
+    if len(p) > 7:
+        e = p[7]
+        
+    elif p[4] == '=':
+        e = p[5]
+
+    else:
+        e = None
+
+    if e:
+        e = e.fold()
+        if not e:
+            parseutil.error(p, "expression must be constant")
+            raise SyntaxError    
+        
+    const = e.constant() if e else None
     
-    i = id.Global(name, ty, value, linkage=linkage, location=_loc(p, 2))
+    if p[2] == "const":
+        i = id.Constant(name, const, linkage=linkage, location=_loc(p, 2))
+    else:
+        i = id.Global(name, ty, const, linkage=linkage, location=_loc(p, 2))
+        
     _currentScope(p).addID(i)
+
+def p_global_or_const(p):
+    """global_or_const : GLOBAL
+                       | CONST
+    """
+    p[0] = p[1]                   
     
 def p_type_decl(p):
     """type_decl : opt_linkage TYPE IDENT '=' type ';'"""
-    i = id.Type(p[3], p[5], linkage=p[1], location=_loc(p, 2))
+    name = p[3]
+    type = p[5]
+    
+    i = id.Type(name, type, linkage=p[1], location=_loc(p, 2))
+    type.setName(name)
+    
     _currentScope(p).addID(i)
 
 def p_def_opt_linkage(p):
@@ -131,6 +162,23 @@ def p_unit_field_with_hook(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_field_hook stmt_block _leave_field_hook"""
     p.parser.state.field.addHook(p[5], 0)
     p.parser.state.unit.addField(p.parser.state.field)
+
+def p_unit_field_property(p):
+    """unit_field : PROPERTY expr ';'"""
+    
+    expr = p[2].fold()
+    if not expr:
+        parseutil.error(p, "expression must be constant")
+        raise SyntaxError    
+    
+    try:
+        p.parser.state.unit.setProperty(p[1], expr.constant())
+    except ValueError, e:
+        parseutil.error(p, "unknown property %s" % p[1])
+        raise SyntaxError    
+    except TypeError, e:
+        parseutil.error(p, "expression must be of type %s" % e)
+        raise SyntaxError    
     
 def p_instantiate_field(p):
     """_instantiate_field : """
@@ -148,14 +196,33 @@ def p_unit_field_type_const(p):
     """unit_field_type : constant"""
     p[0] = (p[1], p[1].type())
     
+def p_unit_field_type_ident(p):
+    """unit_field_type : IDENT"""
+    
+    i = _currentScope(p).lookupID(p[1])
+    if not i:
+        parseutil.error(p, "unknown identifier %s" % p[1])
+        raise SyntaxError    
+    
+    if isinstance(i, id.Constant):
+        const = i.value()
+        p[0] = (const, const.type())
+    
+    elif isinstance(i, id.Type):
+        p[0] = (None, i.type())
+        
+    else:
+        parseutil.error(p, "identifier must be type or constant")
+        raise SyntaxError    
+    
 def p_unit_field_type_type(p):
     """unit_field_type : type_with_attrs"""
     p[0] = (None, p[1])
     
 def p_opt_unit_field_name(p):
     """opt_unit_field_name : IDENT ':'
-                          | """
-    p[0] = p[1] if len(p) != 1 else None
+                          | ':'"""
+    p[0] = p[1] if len(p) > 2 else None
 
 ### Type attributes.
 
@@ -280,10 +347,10 @@ def p_stmt_expr(p):
     p[0] = stmt.Expression(p[1], location=_loc(p,1))
 
 def p_stmt_list(p):
-    """stmt_list : stmt stmt_list
+    """stmt_list : stmt_list stmt 
                  | """
     if len(p) > 1:
-        p.parser.state.block.addStatement(p[1])
+        p.parser.state.block.addStatement(p[2])
 
 ### Scope management.
 def _currentScope(p):

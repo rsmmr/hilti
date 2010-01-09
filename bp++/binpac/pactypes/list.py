@@ -36,11 +36,11 @@ class List(type.ParseableType):
     
     def validateConst(self, vld, const):
         if not isinstance(const.value(), list):
-            vld.error(const, "constant of wrong internal type")
+            vld.error(const, "list: constant of wrong internal type")
             
         for elem in const.value():
             if elem.type() != self._item:
-                vld.error(const, "constant must be of type %s" % elem.type())
+                vld.error(const, "list: constant must be of type %s" % elem.type())
             
             elem.validate(vld)
 

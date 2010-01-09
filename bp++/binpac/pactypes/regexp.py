@@ -19,14 +19,14 @@ class RegExp(type.ParseableType):
         super(RegExp, self).__init__(location=location)
 
     def hiltiType(self, cg):
-        return hilti.core.type.RegExp()
+        return hilti.core.type.Reference([hilti.core.type.Bytes()])
 
     def production(self):
         return grammar.Variable(None, hilti.core.type.RegExp(), location=self.location())
         
     def validateConst(self, vld, const):
         if not isinstance(const.value(), str):
-            vld.error(const, "constant of wrong internal type")
+            vld.error(const, "regular expression: constant of wrong internal type")
     
     def pac(self, printer):
         printer.output("regexp")
