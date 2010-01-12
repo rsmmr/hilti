@@ -1,0 +1,31 @@
+# $Id$
+#
+# @TEST-EXEC:  hiltic %INPUT -p -o out.ll
+# @TEST-EXEC:  test-diff out.ll
+
+module Main
+
+import Hilti
+
+global ref<A> a
+global ref<B> b
+global ref<list<ref<A>>> v
+global tuple<ref<A>, ref<B>> t
+exception myException(ref<A>)
+
+ref<A> foo(ref<B> b) {
+}
+
+struct A {
+    ref<A> a,
+    ref<B> b
+    }
+
+struct B {
+    ref<A> a,
+    ref<B> b,
+    ref<A> c,
+    ref<B> d
+    }
+
+void  run() { }

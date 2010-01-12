@@ -1,3 +1,5 @@
-module.hlt:4: parser error, unknown identifier Foo
+module.hlt:4: parser error, unexpected nl '
+
+'
 
 1 error found

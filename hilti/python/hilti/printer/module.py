@@ -49,7 +49,7 @@ def _fmtOp(op):
         c = op.constant()
 
         if isinstance(c.type(), type.String):
-            return '"%s"' % c.value().encode("utf-8")
+            return '"%s"' % c.value().encode("utf-8").replace("\\", "\\\\")
         
         if isinstance(c.type(), type.Bitset):
             for (label, val) in c.type().labels().items():
@@ -140,7 +140,6 @@ def _findTypeName(ty):
     assert False
 
 def _fmtType(ty):
-    
     # If it's reference, recursively print the reference type.
     if isinstance(ty, type.Reference):
         return "ref<%s>" % _fmtType(ty.refType())
@@ -148,7 +147,38 @@ def _fmtType(ty):
     # Likewise for iterators. 
     if isinstance(ty, type.Iterator):
         return "iterator<%s>" % _fmtType(ty.containerType())
-    
+
+    # Unknown types internally have a unique name, which isn't so nice for
+    # printing (though note that when an unknown type is printed, there's some
+    # error in the program anyway). 
+    if isinstance(ty, type.Unknown):
+        return "(unresolvable type)"
+
+    if isinstance(ty, type.HiltiType):
+        args = ty.args()
+
+        if len(args) == 1 and args[0] is type.Wildcard:
+            return "%s<*>" % ty._plain_name
+
+        if args:
+            # FIXME: This is a hack. If there's at least one type arg, we format
+            # all the args ourselves to make sure recursive types are printed
+            # correctly. This should really be moved into type-specific methods.
+            have_type = False
+            for a in args:
+                if isinstance(a, type.Type):
+                    have_type = True
+                    
+            if have_type:
+                nargs = []
+                for a in args:
+                    if isinstance(a, type.Type):
+                        nargs += [_fmtType(a)]
+                    else:
+                        nargs += [_fmtOp(a)]
+                    
+                return "%s<%s>" % (ty._plain_name, ",".join(nargs))
+
     # See if we find a type declaration for this type in the modules scope. If
     # so return the name of the type.
     if printer._module:
@@ -268,7 +298,7 @@ def _(self, i):
     val = self._module.lookupIDVal(i)
     init = " = %s" % _fmtOp(val) if val else ""
     role = "global" if i.role() == id.Role.GLOBAL else "const"
-    self.output("%s %s %s%s" % (role, i.type(), i.name(), init))
+    self.output("%s %s %s%s" % (role, _fmtType(i.type()), i.name(), init))
 
 @printer.when(id.ID, type.Function)
 def _(self, i):

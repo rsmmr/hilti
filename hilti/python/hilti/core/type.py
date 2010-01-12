@@ -92,9 +92,81 @@ class Type(object):
         """
         assert self.__class__ == other.__class__
         return self.name() == other.name()
-    
+
+    def resolveUnknownTypes(self, mod, _done=None):
+        """Resolves previously unknown types potentially referenced by this
+        type. (Think: forward references). For these, the type will initiallly
+        be created as ~~Unknown; later, when the type is known, this
+        method will be called to then lookup the real type. 
+        
+        mod: ~~Module - The module in whose scope the unknown IDs should be
+        looked up.
+        _done: any - Internal argument; leave unset except when calling from
+        child class' ~~_resolveUnknownTypes method (see there). 
+        
+        Returnd: tuple (bool, ~~Type). If all unknown types could be correctly
+        resolved, returns True and the type with all  unknown replaced with
+        their actual values; the returned type must then be used instead by
+        the caller (instead of *self*). If any unknown type could not be
+        resolved, returns False plus the failing ~~Unknown.
+        
+        Note: This function uses the abstract ~~_resolveUnknownTypes to do the
+        work, which must be overridden if the type may have unknown subtypes.
+        """
+        if not _done:
+            # Can't use a list as the default arg because all invocations
+            # would receive the same instant. 
+            _done = []
+        
+        if builtin_id(self) in _done:
+            # Avoid infinite recursion.
+            return (True, self)
+        
+        _done += [builtin_id(self)]
+        
+        if isinstance(self, Unknown):
+            id = mod.lookupID(self.idName())
+            if not id:
+                return (False, self)
+        
+            if not isinstance(id.type(), TypeDeclType):
+                return (False, self)
+            
+            return (True, id.type().declType())
+        
+        else:
+            unknown = self._resolveUnknownTypes(mod, _done)
+            if unknown:
+                return (False, unknown)
+            else:
+                return (True, self)
+        
+    def _resolveUnknownTypes(self, mod, _done):
+        """Resolves all unknown types this type might refer to. This function
+        will be called from ~~resolveUnknownTypes and it must recursively call
+        that method for every child type (replacing the child type with what
+        that method returns). The recursive calls must pass in *_done*
+        unchanged. 
+        
+        The method must be overridden by all types that may reference a
+        user-defined type, or which can reference other types that may so. The
+        default implementation always returns success without doing anything
+        else. 
+
+        mod: ~~Module - The module in whose scope the unknown IDs should be
+        looked up.
+        
+        _done: any - Internal argument that must be passed on when calling either
+        ~~resolveUnknownTypes recursively.
+        
+        Returns: None or ~~Unknown - If None is returned, that indicates
+        that all unknown types have successfully been resolved (which includes
+        the case that there are none to resovle). If an ~~Unknown is
+        returned, that one could not be resolved.  """
+        return None
+
     def __str__(self):
-        return self.name()
+        return self.name() 
     
     def __eq__(self, other):
         # Special case for tuples/list: one of the members has to match.
@@ -216,6 +288,7 @@ class HiltiType(Type):
     _name = "HILTI type"
 
     def _updateName(self, name, args):
+        self._plain_name = name
         if len(args) == 1 and args[0] is Wildcard:
             self._name = "%s<*>" % name
         elif args:
@@ -318,7 +391,19 @@ class Container(HeapType):
         Returns: ~~ValueType - The type of the channel items.
         """
         return self._type
+
+    def _resolveUnknownTypes(self, mod, _done):
+        if not self._type:
+            return
         
+        (result, self._type) = self._type.resolveUnknownTypes(mod, _done)
+        if not result:
+            return self._type
+
+        self.setArgs([self._type])
+        
+        return None 
+    
     _name = "container type"
     
 class OperandType(Type):
@@ -356,6 +441,13 @@ class TypeDeclType(Type):
         """
         return self._type
 
+    def _resolveUnknownTypes(self, mod, _done):
+        (result, self._type) = self._type.resolveUnknownTypes(mod, _done)
+        if not result:
+            return self._type
+
+        return None 
+    
     _name = "type-declaration type"
 
 class Iterator(ValueType):
@@ -376,7 +468,16 @@ class Iterator(ValueType):
         Returns: ~~HeapType - The container type the iterator can iterator over.
         """
         return self._elem_type
+
+    def _resolveUnknownTypes(self, mod, _done):
+        (result, self._elem_type) = self._elem_type.resolveUnknownTypes(mod, _done)
+        if not result:
+            return self._elem_type
+
+        self.setArgs([self._elem_type])
         
+        return None 
+    
     _name = "iterator"
     
 # Actual types.    
@@ -552,7 +653,19 @@ class Tuple(ValueType):
     
     def cmpWithSameType(self, other):
         return self.types() == other.types()
-        
+
+    def _resolveUnknownTypes(self, mod, _done):
+        newtypes = []
+        for t in self._types:
+            (result, t) = t.resolveUnknownTypes(mod, _done)
+            if not result:
+                return t
+            
+            newtypes += [t]
+
+        self.setTypes(newtypes)
+        self.setArgs(newtypes)
+    
     _name = "tuple"
     _id = 5
 
@@ -570,7 +683,7 @@ class Reference(ValueType):
 
         assert len(args) == 1
         
-        if not isinstance(args[0], HeapType):
+        if not isinstance(args[0], HeapType) and not isinstance(args[0], Unknown):
             raise HiltiType.ParameterMismatch(t, "reference type must be a heap type")
         
         self._type = args[0]
@@ -582,7 +695,16 @@ class Reference(ValueType):
         wildcard type.
         """
         return self._type
+
+    def _resolveUnknownTypes(self, mod, _done):
+        (result, self._type) = self._type.resolveUnknownTypes(mod, _done)
+        if not result:
+            return self._type
+
+        self.setArgs([self._type])
         
+        return None 
+    
     def cmpWithSameType(self, other):
         return self._type == other._type
     
@@ -803,6 +925,14 @@ class Struct(HeapType):
         """
         return self._ids
 
+    def _resolveUnknownTypes(self, mod, _done):
+        for (id, op) in self._ids:
+            (result, t) = id.type().resolveUnknownTypes(mod, _done)
+            if not result:
+                return t
+            
+            id.setType(t)
+        
     _name = "struct"
     _id = 7
 
@@ -1010,6 +1140,23 @@ class Function(Type):
         """
         return self._result
 
+    def _resolveUnknownTypes(self, mod, _done):
+        for id in self._ids:
+            (result, t) = id.type().resolveUnknownTypes(mod, _done)
+            if not result:
+                return t
+            
+            id.setType(t)
+            
+        if not self._result:
+            return None
+        
+        (result, self._result) = self._result.resolveUnknownTypes(mod, _done)
+        if not result:
+            return self._result
+
+        return None 
+    
     _name = "function"
 
 class Label(ValueType):
@@ -1037,14 +1184,35 @@ class Any(OperandType):
 
     _name = "any"
 
-class Unknown(OperandType):
-    """Place-holder type when the real type is unknown. This type is used
-    during parsing when the final types have not been determined yet."""
-    def __init__(self):
-        super(Unknown, self).__init__("unknown")
+class Unknown(Type):
+    """Place-holder type when we do not yet know the actual type of something.
+    
+    name: string or None - If the unknown type is refered to by an identifier
+    (i.e., a forward reference), its name. None otherwise.
+    """
+    def __init__(self, name=None):
+        super(Unknown, self).__init__(self._name)
+        self._id = name
+        
+    def cmpWithSameType(self, other):
+        # Never match another unknown.
+        return False
 
-    _name = "unknown"
+    def name(self):
+        # Need to return a unique name here so that multiple instances of
+        # Unknown are considered to be separate types. 
+        return "unknown_type_%s" % builtin_id(self)
+    
+    def idName(self):
+        """Returns the identifier name that needs to be resolved to get this
+        type. 
+        
+        Returns: string or None - The name of the identifier, or None if the
+        type does not depend on an identifier."""
+        return self._id
 
+    _name = "unknown_type"
+    
 class Exception(HeapType):
     """Type for ``exception``. 
     
@@ -1096,7 +1264,18 @@ class Exception(HeapType):
         Returns: bool - True if *t* is the root exception type. 
         """
         return builtin_id(self) == builtin_id(Exception._root)
+
+    def _resolveUnknownTypes(self, mod, _done):
+        if not self._argtype:
+            return
         
+        (result, self._argtype) = self._argtype.resolveUnknownTypes(mod, _done)
+        if not result:
+            return self._argtype
+
+        return None 
+    
+    
     _name = "exception"
     _id = 20
 

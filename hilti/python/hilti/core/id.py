@@ -93,6 +93,13 @@ class ID(ast.Node):
         """
         return self._type
 
+    def setType(self, ty): 
+        """Sets the ID's type.
+        
+        ty: string - The new type.
+        """
+        self._type = ty
+    
     def role(self):
         """Returns the ID's role.
         

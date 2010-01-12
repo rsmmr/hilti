@@ -17,6 +17,10 @@ class Resolver(visitor.Visitor):
       to a ~~TypeDeclType, it's turned into a ~~TypeOperand. If an ~~IDOperand
       refers to an ~~Enum or ~~Bitset label, it's turned into a ConstOperand.
 
+    - It resolves all ~~UnknownTypes.  The parser initially sets all types
+      that are referenced by an ID to ~~UnknownType, and the resolver then
+      goes through the |ast| and tries to resolve them to their actual type. 
+
     - Resolves the base classes of exception types. The parser intially sets
       all base classes to a string with the name of the exception. The
       resolvers looks up the ID and resets it to be the type itself. 
@@ -61,7 +65,7 @@ class Resolver(visitor.Visitor):
     Debug = False
     
     def __init__(self):
-        super(Resolver, self).__init__()
+        super(Resolver, self).__init__(all=True)
         self.reset()
         
     def reset(self):
@@ -490,6 +494,13 @@ def _(self, f):
 def _(self, f):
     self._function = None
 
+@resolver.when(id.ID)
+def _(self, id):
+    t = id.type()
+    (success, unknown) = t.resolveUnknownTypes(self._module)
+    if not success:
+        self.error("ID %s does not reference a type" % unknown.idName(), id)
+    
 @resolver.when(id.ID, type.TypeDeclType)
 def _(self, id):
     t = id.type().declType()
@@ -498,7 +509,7 @@ def _(self, id):
         
     if isinstance(t, type.Exception):
         self.resolveExceptionBase(t, id)
-
+        
 @resolver.when(instruction.Instruction)
 def _(self, i):
     self._debugInstruction(i, "starting on instruction")

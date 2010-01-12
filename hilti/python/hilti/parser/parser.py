@@ -6,6 +6,8 @@ import os.path
 import warnings
 import sys
 
+builtin_id = id
+
 # ply.yacc triggers "DeprecationWarning: the md5 module is deprecated; use hashlib instead"
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -583,9 +585,10 @@ def p_type_ident(p):
     # Must be a type name.
     id = p.parser.state.module.lookupID(p[1])
     if not id:
-        error(p, "unknown identifier %s" % p[1])
-        raise SyntaxError
-    
+        # Resolver will look this up later.
+        p[0] = type.Unknown(p[1])
+        return
+        
     if not isinstance(id.type(), type.TypeDeclType):
         error(p, "%s is not a type name" % p[1])
         raise SyntaxError
