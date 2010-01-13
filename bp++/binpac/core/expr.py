@@ -264,8 +264,7 @@ class Name(Expression):
     
     def type(self):
         id = self._scope.lookupID(self._name)
-        assert id
-        return id.type()
+        return id.type() if id else type.Unknown(self._name, location=self.location())
     
     def fold(self):
         return None

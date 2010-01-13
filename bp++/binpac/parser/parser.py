@@ -23,6 +23,7 @@ import binpac.pactypes.unit as unit
 # FIXME: Why does this not work?
 #import binpac.parser.lexer as lexer
 import lexer
+import resolver
 
 tokens = lexer.tokens
 Operator = operator.Operator
@@ -125,12 +126,43 @@ def p_def_opt_linkage(p):
         else:
             util.internal_error("unexpected state in p_def_opt_linkage")
 
+def p_param_list(p):
+    """param_list : param ',' opt_param_list
+                  | param
+    """
+    p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
+       
+def p_opt_param_list(p):
+    """opt_param_list : param_list
+                      | 
+    """
+    p[0] = p[1] if len(p) > 1 else []
+    
+def p_param(p):
+    """param : IDENT ':' type"""
+    p[0] = id.ID(p[1], p[3], location=_loc(p, 1))
+    
 ### Simple types.
 
-def p_type(p):
+def p_type_pac(p):
     """type : PACTYPE"""
     p[0] = p[1]
 
+def p_type_ident(p):
+    """type : IDENT"""
+    
+    i = _currentScope(p).lookupID(p[1])
+    if not i:
+        # We try to resolve it later.
+        p[0] = type.Unknown(p[1], location=_loc(p, 1))
+        return
+    
+    if not isinstance(i, id.Type):
+        parseutil.error(p, "%s is not a type " % p[1])
+        raise SyntaxError    
+        
+    p[0] = i.type()
+    
 ### Container types.
 
 def p_list(p):
@@ -142,12 +174,25 @@ def p_list(p):
 # Unit type.
 
 def p_type_unit(p):
-    """type : UNIT _instantiate_unit '{' unit_field_list '}'"""
+    """type : UNIT opt_unit_param_list _instantiate_unit '{' _enter_unit_hook unit_field_list _leave_unit_hook  '}' """
     p[0] = p.parser.state.unit
-    
+
 def p_instantiate_unit(p):
     """_instantiate_unit :"""
-    p.parser.state.unit = type.Unit(location=_loc(p, -1))
+    p.parser.state.unit = type.Unit(_currentScope(p), params=p[-1], location=_loc(p, -1))
+
+def p_enter_unit_hook(p):
+    """_enter_unit_hook : """
+    _pushScope(p, p.parser.state.unit.scope())
+    
+def p_leave_unit_hook(p):
+    """_leave_unit_hook : """
+    _popScope(p)
+        
+def p_unit_param_list(p):
+    """opt_unit_param_list : '(' opt_param_list ')'
+                           | """
+    p[0] = p[2] if len(p) > 2 else []
 
 def p_unit_field_list(p):
     """unit_field_list : unit_field unit_field_list
@@ -159,8 +204,8 @@ def p_unit_field(p):
     p.parser.state.unit.addField(p.parser.state.field)
 
 def p_unit_field_with_hook(p):
-    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_field_hook stmt_block _leave_field_hook"""
-    p.parser.state.field.addHook(p[5], 0)
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field stmt_block"""
+    p.parser.state.field.addHook(p[4], 0)
     p.parser.state.unit.addField(p.parser.state.field)
 
 def p_unit_field_property(p):
@@ -182,22 +227,21 @@ def p_unit_field_property(p):
     
 def p_instantiate_field(p):
     """_instantiate_field : """
-    p.parser.state.field = unit.Field(p[-2], p[-1][0], p[-1][1], _currentScope(p), p.parser.state.unit, location=_loc(p, -1))
-    
-def p_enter_field_hook(p):
-    """_enter_field_hook : """
-    _pushScope(p, p.parser.state.field.scope())
-    
-def p_leave_field_hook(p):
-    """_leave_field_hook : """
-    _popScope(p)
+    p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], _currentScope(p), p.parser.state.unit, params=p[-1][1], location=_loc(p, -1))
+
+    for attr in p[-1][2]:
+        try:
+            p.parser.state.field[1].addAttribute(attr[0], attr[1])
+        except type.ParseableType.AttributeMismatch, e:
+            parseutil.error(p, "invalid attribute &%s: %s" % (attr[0], e))
+            raise SyntaxError    
     
 def p_unit_field_type_const(p):
-    """unit_field_type : constant"""
-    p[0] = (p[1], p[1].type())
+    """unit_field_type : constant opt_type_attr_list"""
+    p[0] = ((p[1], p[1].type()), [], p[2])
     
 def p_unit_field_type_ident(p):
-    """unit_field_type : IDENT"""
+    """unit_field_type : IDENT opt_unit_field_params opt_type_attr_list"""
     
     i = _currentScope(p).lookupID(p[1])
     if not i:
@@ -206,19 +250,22 @@ def p_unit_field_type_ident(p):
     
     if isinstance(i, id.Constant):
         const = i.value()
-        p[0] = (const, const.type())
+        val = (const, const.type())
     
     elif isinstance(i, id.Type):
-        p[0] = (None, i.type())
+        val = (None, i.type())
         
     else:
         parseutil.error(p, "identifier must be type or constant")
         raise SyntaxError    
+
+    p[0] = (val, p[2], p[3])
     
-def p_unit_field_type_type(p):
-    """unit_field_type : type_with_attrs"""
-    p[0] = (None, p[1])
-    
+def p_opt_unit_field_params(p):
+    """opt_unit_field_params : '(' opt_expr_list ')'
+                             | """
+    p[0] = p[2] if len(p) > 2  else []
+
 def p_opt_unit_field_name(p):
     """opt_unit_field_name : IDENT ':'
                           | ':'"""
@@ -226,17 +273,6 @@ def p_opt_unit_field_name(p):
 
 ### Type attributes.
 
-def p_type_with_attrs(p):
-    """type_with_attrs : type opt_type_attr_list"""
-    for attr in p[2]:
-        try:
-            p[1].addAttribute(attr[0], attr[1])
-        except type.ParseableType.AttributeMismatch, e:
-            parseutil.error(p, "invalid attribute &%s: %s" % (attr[0], e))
-            raise SyntaxError    
-        
-    p[0] = p[1]
-        
 def p_opt_type_attr_list(p):
     """opt_type_attr_list : attr opt_type_attr_list
                           | """
@@ -320,6 +356,12 @@ def p_expr_list(p):
                  | expr
     """
     p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
+
+def p_opt_expr_list(p):
+    """opt_expr_list : expr_list
+                     | 
+    """
+    p[0] = p[1] if len(p) > 1 else None
     
 ### Statement blocks.
 
@@ -421,8 +463,10 @@ def _parse(filename, import_paths=["."]):
         return (parser.state.errors(), None, parser)
 
     assert ast
+
+    errors = resolver.Resolver().resolve(ast)
     
-    return (0, ast, parser)    
+    return (errors, ast, parser)    
 
 def _importFile(parser, filename, location, _parse):
     if not checkImport(filename):

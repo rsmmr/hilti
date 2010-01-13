@@ -34,19 +34,22 @@ class Field:
     
     parent: ~~Unit - The unit type this field is part of.
     
+    params: list of ~~Expr - If *type* is a unit type, the parameters passed to
+    that on construction; if not (or if the unit type doesn't take any
+    parameters), an empty list.
+    
     Todo: Only ~~Bytes constant are supported at the moment. Which other's do
     we want? (Regular expressions for sure.)
     """
-    def __init__(self, name, value, type, pscope, parent, location=None):
+    def __init__(self, name, value, type, pscope, parent, params=[], location=None):
         self._name = name
         self._type = type if type else value.type()
         self._value = value
         self._parent = parent
         self._location = location
         self._hooks = []
-        
-        self._scope = scope.Scope(None, pscope)
-        self._scope.addID(id.Parameter("self", parent, location=location))
+        self._params = params
+        self._scope = scope.Scope(None, parent.scope())
 
         assert self._type
 
@@ -85,6 +88,15 @@ class Field:
         Returns: ~~Scope - The scope.
         """
         return self._scope
+
+    def params(self):
+        """Returns the parameters passed to the sub-type. Only relevant if
+        *type* is also a ~~Unit type. 
+        
+        Returns: list of ~~Expr - The parameters; empty list for no
+        parameters.
+        """
+        return self._params
     
     def hook(self):
         """Returns the hook statements associated with the field.
@@ -126,6 +138,10 @@ class Field:
             assert prod
             prod.setName(self._name)
             
+            if self._params:
+                assert isinstance(prod, grammar.ChildGrammar)
+                prod.setParams(self._params)
+            
         assert prod
         for (stmt, prio) in self._hooks:
             prod.addHook(stmt, prio)
@@ -153,13 +169,35 @@ class Field:
             else:
                 vld.error(self, "type %s cannot be used in a constant unit field" % self.type())
 
+        if isinstance(self._type, Unit):
+            if len(self._params) != len(self._type.params()):
+                vld.error(self, "number of unit parameters do not match (have %d, but expected %d)" % (len(self._params), len(self._type.params())))
+
+            i = 0
+            for (have, want) in zip(self._params, self._type.params()):
+                i += 1
+                if have.type() != want.type():
+                    vld.error(self, "unit parameter %d mismatch: is %s but need %s" % (have.type(), want.type()))
+
+        else:
+            if len(self._params):
+                vld.error(self, "type does not receive any parameters")
+                    
     def pac(self, printer):
         """Converts the field into parseable BinPAC++ code.
 
         printer: ~~Printer - The printer to use.
         """
         printer.output("<UnitField TODO>")
-                
+
+    def resolve(self, resolver):
+        """See ~~Type.resolve."""
+        if resolver.already(self):
+            return
+
+        self._type = self._type.resolve(resolver)
+        return self
+        
     def __str__(self):
         tag = "%s: " % self._name if self._name else ""
         return "%s%s" % (tag, self._type)
@@ -173,6 +211,10 @@ class Unit(type.ParseableType):
     are statements to be run on certain occasions (like when an error has been
     found). 
 
+    pscope: ~~Scope - The parent scope for this unit. 
+
+    params: list of ~~ID - Optional parameters for the unit type. 
+    
     location: ~~Location - A location object describing the point of definition.
     
     Todo: We need to document the available hooks.
@@ -180,7 +222,7 @@ class Unit(type.ParseableType):
 
     _valid_hooks = ("ctor", "dtor", "error")
 
-    def __init__(self, location=None):
+    def __init__(self, pscope, params=[], location=None):
         Unit._counter += 1
         super(Unit, self).__init__(location=location)
         self._props = {}
@@ -189,6 +231,12 @@ class Unit(type.ParseableType):
         self._hooks = {}
         self._prod = None 
         self._grammar = None
+        self._params = params
+        self._scope = scope.Scope(None, pscope)
+        
+        self._scope.addID(id.Parameter("self", self, location=location))
+        for p in params:
+            self._scope.addID(p)
         
     def name(self):
         """Returns the name of the unit. A default is automatically chosen,
@@ -200,7 +248,14 @@ class Unit(type.ParseableType):
         Note: This overrides ~~type.Type.name().
         """
         return self.property("name").value()
+
+    def scope(self):
+        """Returns the scope for the unit.
         
+        Returns: ~~Scope - The scope.
+        """
+        return self._scope
+    
     def fields(self):
         """Returns the unit's fields. 
         
@@ -209,6 +264,13 @@ class Unit(type.ParseableType):
         """
         return self._fields_ordered
 
+    def params(self):
+        """Returns the unit's parameters.
+        
+        Returns: list of ~~ID - The parameter; empty list for no parameters.
+        """
+        return self._params
+    
     def fieldType(self, name):
         """Returns the type of a field.
         
@@ -315,11 +377,12 @@ class Unit(type.ParseableType):
         if not self._grammar:
             seq = [f.production() for f in self._fields_ordered]
             seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
-            self._grammar = grammar.Grammar(self.name(), seq)
+            self._grammar = grammar.Grammar(self.name(), seq, self._params)
         
         return self._grammar
             
     # Overridden from Type.
+    
     def hiltiType(self, cg):
         mbuilder = cg.moduleBuilder()
 
@@ -340,6 +403,18 @@ class Unit(type.ParseableType):
     def pac(self, printer):
         printer.output("<bytes type - TODO>")
 
+    def resolve(self, resolver):
+        if resolver.already(self):
+            return self
+        
+        for param in self._params:
+            param.resolve(resolver)
+
+        for f in self._fields.values():
+            f.resolve(resolver)
+
+        return self
+            
     # Overridden from ParseableType.
 
     def supportedAttributes(self):
@@ -349,10 +424,7 @@ class Unit(type.ParseableType):
         #seq = [f.production() for f in self._fields_ordered]
         #seq = grammar.Sequence(seq=seq, type=self, symbol="start-%s" % self.name(), location=self.location())
         #return seq
-        if not self._prod:
-            self._prod = grammar.ChildGrammar(self, location=self.location())
-            
-        return self._prod
+        return grammar.ChildGrammar(self, location=self.location())
 
     def generateParser(self, cg, dst):
         # This will not be called because we handle the grammar.ChildGrammar

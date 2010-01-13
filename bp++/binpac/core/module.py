@@ -115,6 +115,16 @@ class Module(ast.Node):
         for stmt in self.statements():
             stmt.pac(printer)
 
+    def resolve(self, resolver):
+        if resolver.already(self):
+            return
+
+        for id in self._scope.IDs():
+            id.resolve(resolver)
+            
+        for stmt in self.statements():
+            stmt.resolve(resolver)
+            
     # Visitor support.
     def visit(self, v):
         v.visit(self._scope)

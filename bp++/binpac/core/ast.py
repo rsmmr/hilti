@@ -39,3 +39,16 @@ class Node(visitor.Visitable):
         """
         util.internal_error("Node.pac() not overidden by %s" % self.__class__)    
         
+    def resolve(self, resolver):
+        """Resolves any unknown identifier the node may have. 
+        
+        Can be overridden by derived classes; the default implementation does
+        nothing. If there are any errors encountered during resolving, the
+        method must call ~~Resolver.error. If there are any sub-nodes that may 
+        also have something to resolve, the method needs to do that recursively.
+        
+        XXXX
+        
+        """
+        pass
+        

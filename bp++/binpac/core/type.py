@@ -1,6 +1,9 @@
 # $Id$
 
+builtin_id = id
+
 import scope
+import id
 import binpac.support.util as util
 
 import hilti.core.constant
@@ -336,6 +339,31 @@ class ParseableType(Type):
         except KeyError:
             raise AttributeMismatch, "unknown type attribute &%s" % name
 
+    def resolve(self, resolver):
+        """XXXXX Resolves any previously unknown types that might be referenced by
+        this type. (Think: forward references). For these, the type will have
+        initiallly been created as ~~Unknown; later, when the type is supposed
+        to be known, this method will be called to then lookup the real type.
+        If an error is encountered, an error message will be reported to the
+        *resolver*. 
+        
+        resolver: ~~Resolver - The current resolver to use. 
+        
+        _done: list - Internal argument; set to empty list except when calling
+        from child class. See above. 
+        
+        Return: ~~Type - Returns the resolved type, which will also have all
+        subtypes resolved. Note that this may be a new type and thus the
+        caller must use the returned type instead of *self* afterwards. If an
+        error is encountered, an ~~Unknown type is returned after the error
+        has been registered with the *resolver*. 
+        
+        Note: ~~Type is not derived from ~~Node and thus we are not overriding
+        ~~Node.resolve here even though this method works similar. It does
+        however return a value, which ~~Node.resolve does not. 
+        """
+        return self
+        
     ### Methods for derived classes to override.    
     
     def supportedAttributes(self):
@@ -386,6 +414,42 @@ class ParseableType(Type):
         *not* consumed anymore.
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
+
+class Unknown(Type):
+    """Type for an identifier that has not yet been resolved. This is used
+    initially for forward references, and then later replaced the actual type.
+    
+    idname: string - The name of the identifier that needs to be resolved.
+    
+    location: ~~Location - A location object describing the point of definition.
+    """
+    def __init__(self, idname, location=None):
+        super(Unknown, self).__init__(location=location)
+        self._id = idname
+        
+    def idName(self):
+        """Returns the name of the ID that needs to be resolved."""
+        return self._id
+
+    # Overidden from Type.
+    
+    def resolve(self, resolver):
+        if resolver.already(self):
+            return
+        
+        i = resolver.scope().lookupID(self._id)
+        
+        if not i:
+            resolver.error(self, "undefined type id %s" % self._id)
+            return self
+        
+        if not isinstance(i, id.Type):
+            resolver.error(self, "identifier %s does not refer to a type" % self._id)
+            return self 
+            
+        return i.type()
+
+    _type_name = "<unknown type>" 
     
 class Identifier(Type):
     """Type for an unbound identifier.
@@ -400,7 +464,7 @@ class Identifier(Type):
             vld.error(const, "identifier: constant of wrong internal type")
             
     def pac(self, printer):
-        printer.output("<type.Identifier>") # Should get here.
+        printer.output("<type.Identifier>") # Should not get here.
         
     def pacConstant(self, printer, value):
         printer.output(value)

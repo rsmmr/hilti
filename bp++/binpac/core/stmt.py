@@ -95,10 +95,10 @@ class Print(Statement):
     
     def validate(self, vld):
         for expr in self._exprs:
+            expr.validate(vld)
+            
             if isinstance(expr.type(), type.Void):
                 vld.error(expr, "cannot print void expressions")
-                
-            expr.validate(vld)
 
     def pac(self, printer):
         printer.output("print ")

@@ -294,7 +294,23 @@ class ChildGrammar(NonTerminal):
     """
     def __init__(self, type, symbol=None, location=None):
         super(NonTerminal, self).__init__(type.name(), type, symbol=symbol, location=location)
+        self._params = []
         
+    def params(self):
+        """Returns the parameters passed into the parser for the child grammar.
+        
+        Returns: list of ~~Expr - Parameters to pass to the child grammar;
+        returns an empty list if none. 
+        """
+        return self._params
+        
+    def setParams(self, params):
+        """Sets the parameters passed into the parser for the child grammar.
+        
+        params: list of ~~Expr - Parameters to pass to the child grammar.
+        """
+        self._params = params
+    
     def _rhss(self):
         return [self.type().grammar().productions().values()]
     
@@ -503,11 +519,13 @@ class Switch(Conditional):
         return self._default
         
 class Grammar:
-    def __init__(self, name, root):
+    def __init__(self, name, root, params=[]):
         """Instantiates a grammar given its root production.
         
         name: string - A name which uniquely identifies this grammar.
         root: ~~Production - The grammar's root production.
+        params: list of ~~ID - Additional parameters passed into the
+        grammar's parser. 
         """
         self._name = name
         self._start = root
@@ -518,6 +536,7 @@ class Grammar:
         self._nullable = {}
         self._first = {}
         self._follow = {}
+        self._params = params
         
         self._addProduction(root)
         self._simplify()
@@ -531,7 +550,15 @@ class Grammar:
         Returns: string - The name.
         """
         return self._name
+
+    def params(self):
+        """Returns any additionla paramaters passed into the grammar's parser.
         
+        Returns: list of ~~ID - The parameters.
+        return self._params
+        """
+        return self._params
+    
     def check(self):
         """Checks the grammar for ambiguity. From an ambigious grammar, no
         parser can be generated.

@@ -123,6 +123,14 @@ class ID(ast.Node):
     def __str__(self):
         return self._name
 
+    ### Overidden from ast.Node.
+    
+    def resolve(self, resolver):
+        if resolver.already(self):
+            return
+        
+        self._type = self._type.resolve(resolver)
+    
     ### Methods for derived classes to override.    
 
     def evaluate(self, cg):
