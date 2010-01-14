@@ -26,6 +26,8 @@ RE_INPUT = re.compile("%INPUT")
 RE_DIR = re.compile("%DIR")
 RE_ENV = re.compile("\$\{(\w+)\}")
 RE_START_NEXT_TEST = re.compile("@TEST-START-NEXT")
+RE_START_FILE = re.compile("@TEST-START-FILE +([^\n ]*)")
+RE_END_FILE = re.compile("@TEST-END-FILE")
 
 # Commands as tuple (tag, regexp, more-than-one-is-ok, optional, group-main, group-add)
 RE_EXEC = ("exec", re.compile("@TEST-EXEC(-FAIL)?: *(.*)"), True, False, 2, 1)
@@ -67,6 +69,7 @@ class Test(object):
         self.tmpdir = None
         self.diag = None 
         self.baseline = None
+        self.files = []
 
         # Parse the test's content. 
     def parse(self, content):
@@ -158,6 +161,17 @@ class Test(object):
         mkdir(self.tmpdir)        
         os.chdir(self.tmpdir)
 
+        for (fname, lines) in self.files:
+            try:
+                ffile = open(fname, "w")
+            except IOError, e:
+                error("cannot write test's additional file '%s'" % fname)
+                
+            for line in lines:
+                print >>ffile, line,
+                
+            ffile.close()
+        
         self.localfile = os.path.join(self.tmpdir, os.path.basename(self.file))
         
         content = open(self.localfile, "w")
@@ -293,6 +307,10 @@ class Test(object):
         env["TEST_MODE"] = Options.mode.upper()
         
         return env
+
+    def addFiles(self, files):
+        # files is a list of tuple (fname, lines).
+        self.files = files
     
     def showDiag(self, file=None):
         for line in self.diagmsgs:
@@ -359,33 +377,69 @@ def readTestFile(filename):
             return previous.clone(content)
     
     try:
-        file = open(filename)
+        input = open(filename)
     except IOError, e:
         error("cannot read test file: %s" % e)
 
     tests = []
+    files = []
+    
     content = []
     previous = None
+    file = (None, [])
         
-    for line in file:
-        m = RE_START_NEXT_TEST.search(line)
+    state = "test"
+    
+    for line in input:
+        
+        if state == "test":
+            m = RE_START_FILE.search(line)
+            if m:
+                state = "file"
+                file = (m.group(1), [])
+                continue
 
-        if not m:
-            content += [line]
-            continue
+            m = RE_END_FILE.search(line)
+            if m:
+                error("unexpected @test-end-file")
+            
+            m = RE_START_NEXT_TEST.search(line)
+            if not m:
+                content += [line]
+                continue
+    
+            t = newTest(content, previous)
+            if not t:
+                return []
+            
+            tests += [t]
+            
+            previous = t
+            content = []
+            
+        elif state == "file":
+            m = RE_END_FILE.search(line)
+            if m:
+                state = "test"
+                files += [file]
+                file = (None, [])
+                continue
+            
+            file = (file[0], file[1] + [line])
+            
+        else:
+            error("internal: unknown state %s" % state)
 
-        t = newTest(content, previous)
-        if not t:
-            return []
-        
-        tests += [t]
-        
-        previous = t
-        content = []
+    if state == "file":
+        files += [file]
 
     tests += [newTest(content, previous)]
+        
+    input.close()
 
-    file.close()
+    for t in tests:
+        if t:
+            t.addFiles(files)
     
     return tests
 
