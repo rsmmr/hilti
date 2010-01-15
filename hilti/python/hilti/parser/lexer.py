@@ -191,7 +191,8 @@ def t_ADDR6(t): # must come before DOUBLE.
     return t
 
 def t_REGEXP(t):
-    '/([^\n/]|\\/)*/'
+    #'/([^\n/]|\\/)*/'
+    r'/[^\n]*?(?<!\\)/'
     t.value = t.value[1:-1]    
     return t
 
