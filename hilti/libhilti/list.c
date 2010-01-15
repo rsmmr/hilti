@@ -284,7 +284,7 @@ int8_t hlt_list_iter_eq(const hlt_list_iter i1, const hlt_list_iter i2, hlt_exce
 
 static hlt_string_constant prefix = { 1, "[" };
 static hlt_string_constant postfix = { 1, "]" };
-static hlt_string_constant separator = { 1, "," };
+static hlt_string_constant separator = { 2, ", " };
 
 hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
 {

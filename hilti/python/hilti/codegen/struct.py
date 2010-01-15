@@ -24,6 +24,36 @@ def _llvmStructType(struct):
 @codegen.typeInfo(type.Struct)
 def _(type):
     typeinfo = codegen.TypeInfo(type)
+    typeinfo.to_string = "hlt::struct_to_string";
+    typeinfo.args = [id.type() for (id, op) in type.fields()]
+    
+    ## FIXME: This code is copied (and slightly adapted) from tuple. Factor
+    # this out. 
+    
+    # Calculate the offset array. 
+    zero = codegen.llvmGEPIdx(0)
+    null = llvm.core.Constant.null(llvm.core.Type.pointer(_llvmStructType(type)))
+    
+    offsets = []
+    for i in range(len(type.fields())):
+        # Note that we skip the bitmask here. 
+        idx = codegen.llvmGEPIdx(i + 1)
+        # This is a pretty awful hack but I can't find a nicer way to
+        # calculate the offsets as *constants*, and this hack is actually also
+        # used by LLVM internaly to do sizeof() for constants so it can't be
+        # totally disgusting. :-)
+        offset = null.gep([zero, idx]).ptrtoint(llvm.core.Type.int(16))
+        offsets += [offset]
+
+    name = codegen.nameTypeInfo(type) + "_offsets"
+    const = llvm.core.Constant.array(llvm.core.Type.int(16), offsets)
+    glob = codegen.llvmCurrentModule().add_global_variable(const.type, name)
+    glob.global_constant = True    
+    glob.initializer = const
+    glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
+
+    typeinfo.aux = glob
+    
     return typeinfo
 
 @codegen.llvmCtorExpr(type.Struct)

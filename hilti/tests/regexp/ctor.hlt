@@ -16,4 +16,5 @@ void run() {
     call Hilti::print(re)
     call Hilti::print(/def/)
     call Hilti::print(/ghi/)
+    call Hilti::print(g)
 }

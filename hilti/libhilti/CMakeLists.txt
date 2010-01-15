@@ -21,7 +21,7 @@ set(SRCS
     int.c double.c bool.c tuple.c channel.c enum.c
     bytes.c config.c schedulers.c thread_context.c run.c
     addr.c port.c vector.c list.c net.c regexp.c debug.c
-    bitset.c context.c caddr.c
+    bitset.c context.c caddr.c struct.c
     
     module/fmt.c module/print.c module/abort.c
     )

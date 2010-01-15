@@ -26,7 +26,7 @@ def _fieldName(ty, op, i):
         if op.value() == id.name():
             return (True, "")
     
-    return (False, "%s is not a field name in %s" % (op.value(), instr.op1().type().refType()))
+    return (False, "%s is not a field name in %s" % (op.value(), i.op1().type().refType()))
 
 @constraint("any")
 def _fieldType(ty, op, i):

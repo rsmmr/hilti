@@ -96,7 +96,7 @@ def _fmtOp(op):
             
         if isinstance(c.type(), type.Reference) and \
            isinstance(c.type().refType(), type.List):
-            return "%s(%s)" % (c.type().refType(), ", ".join([_fmtOp(c) for c in c.value() ]))
+            return "%s(%s)" % (_fmtType(c.type().refType()), ", ".join([_fmtOp(c) for c in c.value() ]))
 
     if isinstance(op, instruction.IDOperand):
         i = op.value()

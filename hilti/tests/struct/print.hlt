@@ -1,0 +1,41 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+struct B { }
+
+
+struct A {
+    int64 i default=100,
+    bool b,
+    string test,
+    double d,
+    double e default=3.41,
+    ref<B> r1,
+    ref<B> r2
+    }
+
+void run() {
+    local int64 i 
+    local string s
+    local double d
+    local ref<A> a
+    local ref<B> x
+    local bool b
+
+    a = new A
+    x = new B
+    
+    struct.set a "i" 101
+    struct.set a "b" True
+    struct.set a "test" "Abrakadraba"
+    struct.set a "r1" x
+
+    call Hilti::print(a)
+}
