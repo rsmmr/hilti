@@ -41,7 +41,7 @@ class Field:
     Todo: Only ~~Bytes constant are supported at the moment. Which other's do
     we want? (Regular expressions for sure.)
     """
-    def __init__(self, name, value, type, pscope, parent, params=[], location=None):
+    def __init__(self, name, value, type, parent, params=[], location=None):
         self._name = name
         self._type = type if type else value.type()
         self._value = value
@@ -49,7 +49,6 @@ class Field:
         self._location = location
         self._hooks = []
         self._params = params
-        self._scope = scope.Scope(None, parent.scope())
 
         assert self._type
 
@@ -59,7 +58,14 @@ class Field:
         Returns: ~~Location - The location. 
         """
         return self._location        
+
+    def parent(self):
+        """Returns the parent type this field is part of.
         
+        Returns: ~~Unit - The parent type.
+        """
+        return self._parent
+    
     def name(self):
         """Returns the name of the field.
         
@@ -82,13 +88,6 @@ class Field:
         """
         return self._value
 
-    def scope(self):
-        """Returns the scope for hook blocks.
-        
-        Returns: ~~Scope - The scope.
-        """
-        return self._scope
-
     def params(self):
         """Returns the parameters passed to the sub-type. Only relevant if
         *type* is also a ~~Unit type. 
@@ -98,25 +97,20 @@ class Field:
         """
         return self._params
     
-    def hook(self):
+    def hooks(self):
         """Returns the hook statements associated with the field.
         
-        Returns: list of (~~Block, int) - The hook blocks with their
-        priorities.
+        Returns: list of ~~FieldHook - The hooks. 
         """
         return self._hooks
         
-    def addHook(self, stmt, priority):
+    def addHook(self, hook):
         """Adds a hook statement to the field. The statement will be executed
         when the field has been fully parsed.
         
-        stmt: ~~Block - The hook block.
-        
-        priority: int - The priority of the statement. If multiple statements
-        are defined for the same field, they are executed in order of
-        decreasing priority.
+        hook: ~~FieldHook - The hook.
         """
-        self._hooks += [(stmt, priority)]
+        self._hooks += [hook]
             
     def production(self):
         """Returns a production to parse the field.
@@ -134,17 +128,18 @@ class Field:
                 util.internal_error("unexpected constant type for literal")
 
         else:
-            prod = self._type.production()
+            prod = self._type.production(self)
             assert prod
             prod.setName(self._name)
+            prod.setType(self._type)
             
             if self._params:
                 assert isinstance(prod, grammar.ChildGrammar)
                 prod.setParams(self._params)
             
         assert prod
-        for (stmt, prio) in self._hooks:
-            prod.addHook(stmt, prio)
+        for hook in self._hooks:
+            prod.addHook(hook)
 
         return prod
 
@@ -153,8 +148,8 @@ class Field:
         
         vld: ~~Validator - The validator triggering the validation.
         """
-        for (stmt, prio) in self._hooks:
-            stmt.validate(vld)
+        for hook in self._hooks:
+            hook.validate(vld)
         
         if not isinstance(self._type, type.ParseableType):
             # If the production function has not been overridden, we can't
@@ -293,35 +288,30 @@ class Unit(type.ParseableType):
         self._fields[idx] = field
         self._fields_ordered += [field]
         
-    def hooks(self, hook):
-        """Returns all statements registered for a hook. 
+    def hooks(self, name):
+        """Returns all hooks registered for a hook name. 
         
-        hook: string - The name of the hook to retrieve the statements for.
+        name: string - The name of the hook to retrieve the hooks for.
         
-        Returns: list of (~~Block, int) - The hook blocks with their
-        priorities.
+        Returns: list of ~~FieldHook - The hooks with their priorities.
         """
-        assert hook in _valid_hooks
-        return self._hooks.get(hook, [])
+        assert name in _valid_hooks
+        return self._hooks.get(name, [])
         
-    def addHook(self, hook, stmt, priority):
+    def addHook(self, name, hook, priority):
         """Adds a hook statement to the unit. The statement will be executed
         as determined by the hook's semantics.
         
-        hook: string - The name of the hook for the statement to be added.
+        name: string - The name of the hook for the statement to be added.
         
-        stmt: ~~Block - The hook block itself.
-        
-        priority: int - The priority of the statement. If multiple statements
-        are defined for the same hook, they are executed in order of
-        decreasing priority.
+        hook: ~~Block - The hook itself.
         """
-        assert hook in _valid_hooks
+        assert name in _valid_hooks
         
         try:
-            self._hooks[hook] += [(func, priority)]
+            self._hooks[name] += [hook]
         except IndexError:
-            self._hooks[hook] = [(func, priority)]
+            self._hooks[name] = [hook]
 
     def allProperties(self):
         """Returns a list of all recognized properties.
@@ -377,8 +367,8 @@ class Unit(type.ParseableType):
         if not self._grammar:
             seq = [f.production() for f in self._fields_ordered]
             seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
-            self._grammar = grammar.Grammar(self.name(), seq, self._params)
-        
+            self._grammar = grammar.Grammar(self.name(), seq, self._params, location=self.location())
+            
         return self._grammar
             
     # Overridden from Type.
@@ -394,11 +384,16 @@ class Unit(type.ParseableType):
         return mbuilder.cache(self, _makeType)
 
     def validate(self, vld):
+        
+        error = self.grammar().check()
+        if error:
+            vld.error(self, error)
+        
         for f in self._fields.values():
             f.validate(vld)
 
-        for (stmt, prio) in self._hooks:
-            stmt.validate(vld)
+        for hook in self._hooks:
+            hook.validate(vld)
             
     def pac(self, printer):
         printer.output("<bytes type - TODO>")
@@ -420,7 +415,7 @@ class Unit(type.ParseableType):
     def supportedAttributes(self):
         return {}
 
-    def production(self):
+    def production(self, field):
         #seq = [f.production() for f in self._fields_ordered]
         #seq = grammar.Sequence(seq=seq, type=self, symbol="start-%s" % self.name(), location=self.location())
         #return seq

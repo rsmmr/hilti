@@ -141,15 +141,17 @@ def p_opt_param_list(p):
 def p_param(p):
     """param : IDENT ':' type"""
     p[0] = id.ID(p[1], p[3], location=_loc(p, 1))
-    
-### Simple types.
 
-def p_type_pac(p):
-    """type : PACTYPE"""
+### Types 
+
+def p_type(p):
+    """type : builtin_type
+            | type_ident
+    """
     p[0] = p[1]
-
+    
 def p_type_ident(p):
-    """type : IDENT"""
+    """type_ident : IDENT"""
     
     i = _currentScope(p).lookupID(p[1])
     if not i:
@@ -163,23 +165,30 @@ def p_type_ident(p):
         
     p[0] = i.type()
     
-### Container types.
+ # Simple types.
+
+def p_type_pac(p):
+    """builtin_type : PACTYPE"""
+    p[0] = p[1]
+
+    
+ # Container types.
 
 def p_list(p):
-    """type : LIST '<' type '>'"""
+    """builtin_type : LIST '<' type '>'"""
     p[0] = type.List(p[3], location=_loc(p, 1))
     
-### More complex types.
+ # More complex types.
 
-# Unit type.
-
+   # Unit type.
 def p_type_unit(p):
-    """type : UNIT opt_unit_param_list _instantiate_unit '{' _enter_unit_hook unit_field_list _leave_unit_hook  '}' """
+    """builtin_type : UNIT opt_unit_param_list _instantiate_unit '{' _enter_unit_hook unit_field_list _leave_unit_hook  '}' """
+    p.parser.state.unit.setLocation(_loc(p, 1))
     p[0] = p.parser.state.unit
 
 def p_instantiate_unit(p):
     """_instantiate_unit :"""
-    p.parser.state.unit = type.Unit(_currentScope(p), params=p[-1], location=_loc(p, -1))
+    p.parser.state.unit = type.Unit(_currentScope(p), params=p[-1])
 
 def p_enter_unit_hook(p):
     """_enter_unit_hook : """
@@ -205,7 +214,8 @@ def p_unit_field(p):
 
 def p_unit_field_with_hook(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field stmt_block"""
-    p.parser.state.field.addHook(p[4], 0)
+    hook = stmt.FieldHook(p.parser.state.field, 0, stmts=p[4].statements())
+    p.parser.state.field.addHook(hook)
     p.parser.state.unit.addField(p.parser.state.field)
 
 def p_unit_field_property(p):
@@ -227,7 +237,7 @@ def p_unit_field_property(p):
     
 def p_instantiate_field(p):
     """_instantiate_field : """
-    p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], _currentScope(p), p.parser.state.unit, params=p[-1][1], location=_loc(p, -1))
+    p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=_loc(p, -1))
 
     for attr in p[-1][2]:
         try:
@@ -237,29 +247,38 @@ def p_instantiate_field(p):
             raise SyntaxError    
     
 def p_unit_field_type_const(p):
-    """unit_field_type : constant opt_type_attr_list"""
-    p[0] = ((p[1], p[1].type()), [], p[2])
+    """unit_field_type : constant     opt_type_attr_list
+                       | builtin_type opt_unit_field_params opt_type_attr_list
+                       | IDENT        opt_unit_field_params opt_type_attr_list
+    """
+    i = p[1]
+
+    if isinstance(i, str):
+        i = _currentScope(p).lookupID(i)
+        if not i:
+            # We try to resolve it later.
+            val = (None, type.Unknown(p[1], location=_loc(p, 1)))
+            p[0] = (val, p[2], p[3])
+            return
     
-def p_unit_field_type_ident(p):
-    """unit_field_type : IDENT opt_unit_field_params opt_type_attr_list"""
-    
-    i = _currentScope(p).lookupID(p[1])
-    if not i:
-        parseutil.error(p, "unknown identifier %s" % p[1])
-        raise SyntaxError    
-    
-    if isinstance(i, id.Constant):
+    if isinstance(i, type.Type):
+        val = (None, i)
+
+    elif isinstance(i, constant.Constant):
+        val = (i, i.type())
+        
+    elif isinstance(i, id.Constant):
         const = i.value()
         val = (const, const.type())
     
     elif isinstance(i, id.Type):
         val = (None, i.type())
-        
+
     else:
         parseutil.error(p, "identifier must be type or constant")
         raise SyntaxError    
 
-    p[0] = (val, p[2], p[3])
+    p[0] = (val, p[2], p[3] if len(p) > 3 else [])
     
 def p_opt_unit_field_params(p):
     """opt_unit_field_params : '(' opt_expr_list ')'
@@ -325,6 +344,7 @@ def p_expr_attribute(p):
     """expr : expr '.' IDENT"""
     const = constant.Constant(p[3], type.Identifier())
     ident = expr.Constant(const, location=_loc(p, 1))
+    # FIXME: Need to unify type of ident here with expr_method_call()
     p[0] = expr.Overloaded(Operator.Attribute, (p[1], ident), location=_loc(p, 1))
     
 def p_expr_name(p):

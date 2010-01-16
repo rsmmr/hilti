@@ -2,6 +2,9 @@
 
 import sys
 
+import type
+import id
+
 def printModule(mod, output):
     """Prints the module as BinPAC++ code.
     
@@ -11,6 +14,19 @@ def printModule(mod, output):
     printer = Printer()
     printer.printNode(mod, output)
 
+def printGrammars(mod, output, verbose=False):
+    """Prints out all grammars generated for the module. In verbose mode, all
+    internal parse tables are printed as well.
+            
+    mod: ~~Module - The module to print tables for. 
+    output: file - The file to write the output to. 
+    verbose: bool - True for verbose output.
+    """
+    for i in mod.scope().IDs():
+        if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
+            grammar = i.type().grammar()
+            grammar.printTables(verbose, output)
+    
 class Printer(object):
     """Converts an BinPAC++ AST into a parseable source code."""
     def __init__(self):
@@ -22,6 +38,7 @@ class Printer(object):
         to print another AST.
         """
         self._output = sys.stdout
+        self._prefix = ""
         self._indent = 0;
         self._module = None
         self._printing_function = False

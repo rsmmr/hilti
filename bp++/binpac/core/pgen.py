@@ -192,7 +192,7 @@ class ParserGen:
         
         builder.assign(lahead, _LookAheadNone)
 
-        builder.new(pobj, builder.typeOp(self._typeParseObject()))
+        self._newParseObject(pobj)
         
         args = ParserGen._Args(fbuilder, ["cur", "pobj", "lahead", "lahstart"])
         self._parseStartSymbol(args, [])
@@ -201,7 +201,7 @@ class ParserGen:
 
         self.cg().endFunction()
 
-    def _functionHook(self, hook, stmt):
+    def _functionHook(self, fname, hook):
         """Generates the function to execute a hook statement.
         
         Todo: We currently create "normal" functions; once HILTI's hook data
@@ -214,23 +214,23 @@ class ParserGen:
             args = []
             args += [hilti.core.id.ID("self", self._typeParseObjectRef(), hilti.core.id.Role.PARAM)]
             
-            for p in self._current_grammar.params():
+            for p in self._current_grammar.params() + hook.params():
                 args += [hilti.core.id.ID(p.name(), p.type().hiltiType(self._cg), hilti.core.id.Role.PARAM)]
-            
+
             ftype = hilti.core.type.Function(args, hilti.core.type.Void())
             
-            name = self._name("hook", hook)
+            name = self._name("hook", fname)
             
             (fbuilder, builder) = cg.beginFunction(name, ftype)        
             
             func = fbuilder.function()
-            self.moduleBuilder().setCacheEntry(stmt, func)
+            self.moduleBuilder().setCacheEntry(hook, func)
             
-            stmt.execute(cg)
+            hook.execute(cg)
             cg.endFunction()
             return func
         
-        return self.moduleBuilder().cache(stmt, makeFunc())
+        return self.moduleBuilder().cache(hook, makeFunc())
         
     ### Methods generating parsing code for Productions.
 
@@ -342,13 +342,18 @@ class ParserGen:
         cond = builder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
         builder.equal(cond, args.lahead, _LookAheadNone)
         builder.debug_assert(cond)
+
+        # Do we actually need the parsed value?
+        # We do if (1) we're storing it in the destination struct, or (2) the
+        # variable's type defines a '$$' parameter that we need to set. 
+        need_val = var.name() or hook.field().type().dollarDollarType(hook.field())
         
         # Call the type's parse function.
         dst = builder.cache(var.type(), makeLocal)
-        args.cur = type.generateParser(self, args.cur, dst, var.name() == None)
+        args.cur = type.generateParser(self, args.cur, dst, need_val)
         
         # We have successfully parsed a rule. 
-        self._finishedProduction(args.obj, var, dst if var.name() != None else None)
+        self._finishedProduction(args.obj, var, dst if need_val else None)
 
     def _parseChildGrammar(self, child, args):
         """Generates code to parse another type represented by its own grammar."""
@@ -366,7 +371,9 @@ class ParserGen:
         # Call the parsing code. 
         result = builder.addLocal("presult", _ParseFunctionResultType, reuse=True)
         cobj = builder.addLocal("cobj_%s" % utype.name(), utype.hiltiType(self._cg), reuse=True)
-        builder.new(cobj, builder.typeOp(cpgen._typeParseObject()))
+        
+        cpgen._newParseObject(cobj)
+        
         cargs = ParserGen._Args(self.functionBuilder(), (args.cur, cobj, args.lahead, args.lahstart))
         
         params = [p.evaluate(self._cg) for p in child.params()]
@@ -376,10 +383,9 @@ class ParserGen:
         if child.name():
             builder.struct_set(args.obj, builder.constOp(child.name()), cobj)
         
-        self._finishedProduction(args.obj, child, None)
+        self._finishedProduction(args.obj, child, cobj)
         
-    def _parseSequence(self, prod, args, params=None):
-        
+    def _parseSequence(self, prod, args, params=[]):
         def _makeFunction():
             (func, args) = self._createParseFunction("sequence", prod)
             
@@ -415,6 +421,7 @@ class ParserGen:
         builder.call(result, builder.idOp(func.name()), args.tupleOp(params))
         builder.tuple_index(args.cur, result, builder.constOp(0))
         builder.tuple_index(args.lahead, result, builder.constOp(1))
+        builder.tuple_index(args.lahstart, result, builder.constOp(2))
 
         self._finishedProduction(args.obj, prod, None)
         
@@ -449,8 +456,9 @@ class ParserGen:
             
             # Built the cases.
             def _makeBranch(i, alts, literals):
-                branch = self.cg().setBuilder("case-%d" % i)
+                branch = self.functionBuilder().newBuilder("case-%d" % i)
                 branch.setComment("For look-ahead set {%s}" % ", ".join(['"%s"' % l.literal().value() for l in literals[i]]))
+                branch.tuple_index(args.cur, match, builder.constOp(1)) # Update current position.
                 self.cg().setBuilder(branch)
                 self._parseProduction(alts[i], args)
                 self._finishedProduction(args.obj, alts[i], None)
@@ -483,6 +491,7 @@ class ParserGen:
         
         result = builder.addLocal("presult", _ParseFunctionResultType, reuse=True)
         
+        params = []
         for p in self._current_grammar.params():
             params += [builder.idOp(p.name())]
 
@@ -521,6 +530,19 @@ class ParserGen:
         
         pattern = fbuilder.moduleBuilder().cache(name, _makePatternConstant)
         builder.assign(args.lahstart, args.cur) # Record starting position.
+        
+        next5 = fbuilder.addLocal("next5", _BytesIterType, reuse=True)
+        str = fbuilder.addLocal("str", hilti.core.type.Reference([hilti.core.type.Bytes()]), reuse=True)
+        builder.assign(next5, args.cur)
+        builder.incr(next5, next5)
+        builder.incr(next5, next5)
+        builder.incr(next5, next5)
+        builder.incr(next5, next5)
+        builder.incr(next5, next5)
+        builder.bytes_sub(str, args.cur, next5)
+        
+        builder.makeDebugMsg("binpac", "- input is %s ...", [str])
+        
         builder.regexp_match_token(match, pattern, args.cur)
         return match
 
@@ -538,14 +560,19 @@ class ParserGen:
         if prod.name() and value:
             builder.struct_set(obj, builder.constOp(prod.name()), value)
                 
-        for (stmt, prio) in prod.hooks():
+        for hook in prod.hooks():
             name = "on_%s" % (prod.name() if prod.name() else "anon_%s" % builtin_id(prod))
-            hookf = self._functionHook(name, stmt)
+            hookf = self._functionHook(name, hook)
             
             params = []
             for p in self._current_grammar.params():
                 params += [builder.idOp(p.name())]
-            
+
+            if hook.field().type().dollarDollarType(hook.field()):
+                # Add the implicit '$$' argument. 
+                assert value
+                params += [value]
+                
             builder.call(None, builder.idOp(hookf.name()), builder.tupleOp([obj] + params))
         
     ### Methods defining types. 
@@ -565,6 +592,23 @@ class ParserGen:
     def _typeParseObjectRef(self):
         """Returns a reference to the struct type for the parsed grammar."""
         return hilti.core.type.Reference([self._typeParseObject()])
+
+    def _newParseObject(self, obj):
+        """Allocates and initializes a struct type for the parsed grammar.
+        
+        obj: hilti.core.instruction.Operand - The operand to the new object in.
+        """
+        
+        self.builder().new(obj, self.builder().typeOp(self._typeParseObject()))
+        
+        for f in self._current_grammar.scope().IDs():
+            default = f.type().hiltiDefault(self.cg())
+            if not default:
+                continue
+            
+            name = self.builder().constOp(f.name())
+            default = hilti.core.instruction.ConstOperand(default)
+            self.builder().struct_set(obj, name, default)
     
     ### Helper methods.
 

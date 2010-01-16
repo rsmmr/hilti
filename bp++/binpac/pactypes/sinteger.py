@@ -32,7 +32,7 @@ class SignedInteger(type.Integer):
 
     ### Overridden from ParseableType.
 
-    def production(self):
+    def production(self, field):
         # XXX
         pass
     

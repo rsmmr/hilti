@@ -71,6 +71,8 @@ class Production(object):
         
         name: string - The name. Setting it to None turns the production into
         an anonymous one. 
+        
+        Note: When you set a name, you also must set a type.
         """
         self._name = name
         
@@ -81,6 +83,13 @@ class Production(object):
         """
         return self._name
 
+    def setType(self, type):
+        """Sets the production's type. 
+        
+        tyoe: string - The type. 
+        """
+        self._type = type
+    
     def type(self):
         """Returns the type for storing the result of parsing the production.
         
@@ -89,24 +98,19 @@ class Production(object):
         return self._type if self._name else None
     
     def hooks(self):
-        """Returns the hook statements associated with the production.
+        """Returns the hooks associated with the production.
         
-        Returns: list of (~~Block, int) - The hook block with their
-        priorities.
+        Returns: list of ~~FieldHook - The hooks.
         """
         return self._hooks
         
-    def addHook(self, stmt, priority):
-        """Adds a hook block to the production. The statement will be
-        executed when the production has been fully parsed.
+    def addHook(self, hook):
+        """Adds a hook to the production. The hook will be executed when the
+        production has been fully parsed.
         
-        stmt: ~~Block - The hook block.
-        
-        priority: int - The priority of the statement. If multiple statements
-        are defined for the same production, they are executed in order of
-        decreasing priority.
+        hook: ~~FieldHook - The hook.
         """
-        self._hooks += [(stmt, priority)]
+        self._hooks += [hook]
     
     def __str__(self):
         return "%s%s" % (self._fmtLong(), self._fmtName())
@@ -192,11 +196,14 @@ class Literal(Terminal):
     
     location: ~~Location - A location object decscribing the point of definition.
     """
+
+    _counter = 1
     
     def __init__(self, name, literal, expr=None, location=None):
         super(Literal, self).__init__(name, literal.type(), expr)
         self._literal = literal
-        self._id = 0
+        self._id = Literal._counter
+        Literal._counter += 1
 
     def literal(self):
         """Returns the literal.
@@ -206,12 +213,10 @@ class Literal(Terminal):
         return self._literal
 
     def id(self):
-        """Returns a unique for this terminal. The ID is unique within one
-        ~~Grammar and will be only availabe after the Terminal has become part
-        of a grammar.
+        """Returns a unique for this terminal. The ID is unique across all
+        ~~Grammars.
         
-        Returns: integer - The id, which will be > 0; return 0 if there is no
-        id yet.
+        Returns: integer - The id, which will be > 0. 
         """
         return self._id
     
@@ -283,7 +288,7 @@ class NonTerminal(Production):
         return self.symbol()
 
     def __str__(self):
-        return "%s -> %s%s" % (self.symbol(), self._fmtLong(), self._fmtName())
+        return "%s%s" % (self._fmtLong(), self._fmtName())
 
 class ChildGrammar(NonTerminal):
     """A type described by another independent unit type.
@@ -312,7 +317,15 @@ class ChildGrammar(NonTerminal):
         self._params = params
     
     def _rhss(self):
-        return [self.type().grammar().productions().values()]
+        return [[self.type().grammar().startSymbol()]]
+
+    def _fmtShort(self):
+        #return self.type().grammar().name()
+        return self.symbol()
+    
+    def _fmtLong(self):
+        prods = self.type().grammar().productions().values()
+        return " | ".join([p._fmtShort() for p in prods])
     
 class Sequence(NonTerminal):
     """A sequence of other productions. 
@@ -376,7 +389,7 @@ class Alternative(NonTerminal):
     location: ~~Location - A location object decscribing the point of definition.
     """
     def __init__(self, alts, symbol=None, location=None):
-        super(Alternative, self).__init__(symbol=symbol, location=location)
+        super(Alternative, self).__init__(name=None, type=None, symbol=symbol, location=location)
         self._alts = alts
         self._prefix = "<prefix missing>"
 
@@ -519,7 +532,7 @@ class Switch(Conditional):
         return self._default
         
 class Grammar:
-    def __init__(self, name, root, params=[]):
+    def __init__(self, name, root, params=[], location=None):
         """Instantiates a grammar given its root production.
         
         name: string - A name which uniquely identifies this grammar.
@@ -532,7 +545,6 @@ class Grammar:
         self._productions = {}
         self._scope = scope.Scope(None, None)
         self._nterms = {}
-        self._literals = 0
         self._nullable = {}
         self._first = {}
         self._follow = {}
@@ -542,6 +554,7 @@ class Grammar:
         self._simplify()
         self._simplify()
         self._computeTables()
+        self._location = location
 
     def name(self):
         """Returns the name of the grammar. The name uniquely identifies the
@@ -551,6 +564,13 @@ class Grammar:
         """
         return self._name
 
+    def location(self):
+        """Returns the location associated with the grammar.
+        
+        Returns: ~~Location - The location. 
+        """
+        return self._location
+    
     def params(self):
         """Returns any additionla paramaters passed into the grammar's parser.
         
@@ -569,7 +589,12 @@ class Grammar:
         """
         
         def _loc(p):
-            return p.location() if p.location() else "production %s" % p.symbol()
+            gloc = " (%s)" % self.location() if self.location() else ""
+            gname = "grammar %s%s, " % (self._name, gloc) if self._name else ""
+            ploc = " (%s, %s)" % (p.symbol(), p.location()) if p.location() else "(%s)" % p.symbol()
+            pname = "production %s%s" % (p.name() if p.name() else "<anonymous>", ploc)
+                
+            return "%s%s" % (gname, pname)
         
         msg = ""
         
@@ -581,12 +606,12 @@ class Grammar:
             laheads = p.lookAheads()
             
             if len(laheads[0]) == 0 or len(laheads[1]) == 0:
-                msg += "%s: alternative is not reachable because of empty look-ahead set\n" % _loc(p)
+                msg += "%s is not reachable because of empty look-ahead set\n" % _loc(p)
             
             isect = laheads[0] & laheads[1]
             if isect:
                 isect = ", ".join([str(i) for i in isect])
-                msg += "%s: production is ambigious for look-ahead symbol(s) {%s}\n" % (_loc(p), isect)
+                msg += "%s is ambigious for look-ahead symbol(s) {%s}\n" % (_loc(p), isect)
 
             laheads = laheads[0] | laheads[1]
                 
@@ -633,11 +658,6 @@ class Grammar:
         
         self._productions[p.symbol()] = p
         
-        if isinstance(p, Literal):
-            # Assign unique IDs to literals.
-            self._literals += 1
-            p._id = self._literals
-            
         if isinstance(p, NonTerminal):
             self._nterms[p.symbol()] = p
             
@@ -664,7 +684,7 @@ class Grammar:
             return used
         
         used = _closure(self._start, set())
-        
+
         for sym in set(self._productions.keys()) - used:
             del self._nterms[sym]
             del self._productions[sym]
@@ -779,62 +799,61 @@ class Grammar:
             p._setLookAheads(laheads)
         
     def printTables(self, verbose=False, file=sys.stdout):
-        """Prints the grammar's parser tables in a human readable form. Per
-        default, only the final pare table is printed. In *verbose* mode, the
-        full grammar and all the internal nullable/first/follow tables are
-        printed. 
+        """Prints the grammar in a human readable form. In *verbose* mode, the
+        grammar and all the internal nullable/first/follow tables are printed.
         
         verbose: bool - True for verbose output.
         file: file - The print destination.
         """
         
-        print >>file, "Grammar '%s'\n" % self._name
+        print >>file, "=== Grammar '%s'\n" % self._name
+
+        for (sym, prod) in self._productions.items():
+            start = "(*)" if sym == self._start.symbol() else ""
+            print >>file, "%3s %5s -> %s" % (start, sym, prod)
         
         if verbose:
-            for (sym, prod) in self._productions.items():
-                start = "(*)" if sym == self._start.symbol() else ""
-                print >>file, "%3s %5s -> %s" % (start, sym, prod)
                     
             print >>file, ""
-            print >>file, "    Epsilon:"
+            print >>file, "    -- Epsilon:\n"
             
             for (sym, eps) in self._nullable.items():
                 print >>file, "      %s = %s" % (sym, "true" if eps else "false" )
             
             print >>file, ""
-            print >>file, "    First_1:"
+            print >>file, "    -- First_1:\n"
             
             for (sym, first) in self._first.items():
                 print >>file, "      %s = %s" % (sym, [str(f) for f in first])
                 
             print >>file, ""
-            print >>file, "    Follow:\n"
+            print >>file, "    -- Follow:\n"
             
             for (sym, follow) in self._follow.items():
                 print >>file, "      %s = %s" % (sym, [str(f) for f in follow])
                 
             print >>file, ""
             
-        print >>file, "    Parse table:"
-
-        for (sym, p) in self._nterms.items():
-            start = "(*)" if sym == self._start.symbol() else ""
-            print >>file, "%3s %5s" % (start, sym),
-
-            if isinstance(p, LookAhead):
-                def printAlt(i):
-                    lahead = p.lookAheads()[i]
-                    alt = p.alternatives()[i]
-                    print >>file, " -> %s, when next is {%s})" % (alt, ", ".join([str(l) for l in lahead]))
+            print >>file, "    -- Parse table:\n"
+    
+            for (sym, p) in self._nterms.items():
+                start = "(*)" if sym == self._start.symbol() else ""
+                print >>file, "  %3s %5s" % (start, sym),
+    
+                if isinstance(p, LookAhead):
+                    def printAlt(i):
+                        lahead = p.lookAheads()[i]
+                        alt = p.alternatives()[i]
+                        print >>file, "  [%d] -> %s, when next is {%s})" % (i, alt, ", ".join([str(l) for l in lahead]))
+                        
+                    printAlt(0)
+                    print >>file, "         ",
+                    printAlt(1)
                     
-                printAlt(0)
-                print >>file, "         ",
-                printAlt(1)
-                
-            else:
-                print >>file, " -> %s" % p
+                else:
+                    print >>file, "   -> %s" % p
 
-            print >>file
+        print >>file
 
 if __name__ == "__main__":
 

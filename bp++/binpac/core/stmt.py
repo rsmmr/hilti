@@ -5,6 +5,7 @@
 import ast
 import scope
 import type
+import id
 import binpac.support.util as util
 
 import hilti.core.instruction
@@ -50,9 +51,15 @@ class Block(Statement):
         """
         return self._scope
 
+    def statements(self):
+        """Returns the block's statements.
+        
+        Returns: list of ~~Statement - The statements.
+        """
+        return self._stmts
+    
     def addStatement(self, stmt):
         """Adds a statement to the block.
-        
         stmt: ~~Statement - The statement to add.
         """
         self._stmts += [stmt]
@@ -74,12 +81,78 @@ class Block(Statement):
     ### Overidden from Statement.
 
     def execute(self, cg):
+        for i in self._scope.IDs():
+            if isinstance(i, id.Local):
+                cg.builder().addLocal(i.name(), i.type().hiltiType(cg))
+        
         for stmt in self._stmts:
             stmt.execute(cg)
 
     def __str__(self):
         return "<statement block>"
+
+class FieldHook(Block):
+    """A field hook is a series of statements executed when a unit field has
+    been parsed.
+    
+    field: ~~Field - The field to which hook is attached. 
+    
+    prio: int - The priority of the statement. If multiple statements are
+    defined for the same field, they are executed in order of decreasing
+    priority.
+    
+    stms: list of ~~Statement - Series of statements to initalize the hook with.
+    """
+    def __init__(self, field, prio, stmts=[], location=None):
+        self._field = field
+        self._prio = prio
+        
+        super(FieldHook, self).__init__(field.parent().scope(), location=location)
+
+        for stmt in stmts:
+            self.addStatement(stmt)
+
+    def field(self):
+        """Returns the field associated with the hook.
+        
+        Returns: ~~Field - The field.
+        """
+        return self._field
             
+    def priority(self):
+        """Returns the priority associated with the hook.  If multiple statements are
+        defined for the same field, they are executed in order of decreasing
+        priority.
+        
+        Returns: int - The priority.
+        """
+        return self._prio
+        
+    def params(self):
+        """Returns parameters to passed into the hook.
+        
+        Returns: list of ~~id.Parameter - The paramemters.
+        """
+        ddt = self._field.type().dollarDollarType(self._field)
+
+        if not ddt:
+            return []
+        
+        return [id.Parameter("__dollardollar", ddt, location=self.location())] if ddt else []
+
+    # Overriden from Block.
+    
+    def scope(self):
+        # If our parameters aren't yet in there, add them. Can't do that in
+        # the ctor because types might not be resolved at that time.
+        scope = super(FieldHook, self).scope()
+        
+        for p in self.params():
+            if not scope.lookupID(p.name()):
+                scope.addID(p)
+                
+        return scope
+    
 class Print(Statement):
     """The ``print`` statement.
     

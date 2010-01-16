@@ -93,6 +93,13 @@ class Type(object):
         """
         return self._location
 
+    def setLocation(self, location):
+        """Sets the location associated with the type.
+        
+        location: ~~Location - The location. 
+        """
+        self._location = location
+
     def __ne__(self, other):
         return not self.__eq__(other)
     
@@ -383,17 +390,34 @@ class ParseableType(Type):
         """
         return {}
         
-    def production(self):
+    def production(self, field):
         """Returns a production for parsing instances of this type.
+        
+        field: ~~Field - The unit field of type *self* that is to be parsed. 
 
         The method must be overridden by derived classes.
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
 
+    def dollarDollarType(self, field):
+        """Returns the type of the ``$$`` variable when parsing this type.
+        
+        The method can be overridden by derived classes. The default
+        implementation returns None. 
+        
+        field: ~~Field - The unit field the ``$$`` variable will be associated
+        with. 
+        
+        Returns: ~~Type - The type of ``$$`, or None if the variable isn't
+        used for this type. 
+        """
+        return None
+        
     def generateParser(self, cg, cur, dst, skipping):
         """Generate code for parsing an instance of the type. 
         
-        The method must be overridden by derived classes.
+        The method must be overridden by derived classes which may be used as
+        the type of ~~Variable production.
         
         cg: ~~CodeGen - The current code generator. 
         
@@ -467,7 +491,7 @@ class Identifier(Type):
         printer.output("<type.Identifier>") # Should not get here.
         
     def pacConstant(self, printer, value):
-        printer.output(value)
+        printer.output(value.value())
         
     def hiltiType(self, cg):
         return hilti.core.type.String()

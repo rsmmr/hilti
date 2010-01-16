@@ -93,7 +93,7 @@ def t_CONST_BYTES(t):
     return t
 
 def t_CONST_REGEXP(t):
-    '/([^\n/]|\\/)*/'
+    r'/[^\n]*?(?<!\\)/'    
     t.type = "CONSTANT"
     t.value = constant.Constant(t.value[1:-1], type.RegExp(), location=_loc(t))
     return t

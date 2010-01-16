@@ -57,7 +57,7 @@ class Bytes(type.ParseableType):
             "until": (type.Bytes(), False, None),
             }
 
-    def production(self):
+    def production(self, field):
         return grammar.Variable(None, self, location=self.location())
     
     def generateParser(self, cg, cur, dst, skipping):

@@ -51,7 +51,11 @@ optparser.add_option("-d", "--debug", action="store_true", dest="debug", default
                      help="Compile with debugging support")
 optparser.add_option("-p", "--print", action="store_true", dest="printer", default=False,
                      help="Output the BinPAC++ code as it was parsed via the internal code printer")
-
+optparser.add_option("-t", "--print-tables", action="store_true", dest="debug_tables", default=False,
+                     help="Output all generated parse tables to stdout; this for debugging and does not generate any code.""")
+optparser.add_option("-T", "--print-all-tables", action="store_true", dest="debug_tables_verbose", default=False,
+                     help="Output all generated grammars, parse tables, and all intermediary tables; this for debugging and does not generate any code.""")
+                     
 (options, args) = optparser.parse_args()
 
 if not options.output:
@@ -90,6 +94,14 @@ if errors:
     print >>sys.stderr, "\n%d errors in input, aborting." % errors
     sys.exit(1)
 
+if options.debug_tables:
+    binpac.core.printer.printGrammars(mod, sys.stdout, False)
+    sys.exit(0)
+    
+if options.debug_tables_verbose:
+    binpac.core.printer.printGrammars(mod, sys.stdout, True)
+    sys.exit(0)
+    
 errors = binpac.core.validator.validateModule(mod)
 if errors:
     print >>sys.stderr, "\n%d errors in input, aborting." % errors

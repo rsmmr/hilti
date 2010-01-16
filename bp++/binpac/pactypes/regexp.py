@@ -21,7 +21,7 @@ class RegExp(type.ParseableType):
     def hiltiType(self, cg):
         return hilti.core.type.Reference([hilti.core.type.Bytes()])
 
-    def production(self):
+    def production(self, field):
         return grammar.Variable(None, hilti.core.type.RegExp(), location=self.location())
         
     def validateConst(self, vld, const):

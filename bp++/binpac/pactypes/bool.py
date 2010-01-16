@@ -43,7 +43,7 @@ class Bool(type.ParseableType):
     def supportedAttributes(self):
         return {}
 
-    def production(self):
+    def production(self, field):
         util.internal_error("bool parsing not implemented")
     
     def generateParser(self, cg, cur, dst, skipping):
