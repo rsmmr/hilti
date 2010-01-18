@@ -1,0 +1,52 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+#
+
+module Main
+
+import Hilti
+
+const ref<bytes> b1 = b"123"
+const ref<bytes> b2 = b"123"
+const ref<bytes> b3 = b"abc"
+const ref<bytes> b4 = b"12"
+const ref<bytes> b5 = b"1234"
+const ref<bytes> b6 = b""
+const ref<bytes> b7 = b""
+
+void run() {
+
+    local int<8> i
+    local bool b
+
+    i = bytes.cmp b1 b2
+    call Hilti::print (i)
+    
+    i = bytes.cmp b1 b3
+    call Hilti::print (i)
+
+    i = bytes.cmp b1 b4
+    call Hilti::print (i)
+
+    i = bytes.cmp b1 b5
+    call Hilti::print (i)
+    
+    i = bytes.cmp b1 b6
+    call Hilti::print (i)
+    
+    i = bytes.cmp b6 b1
+    call Hilti::print (i)
+    
+    i = bytes.cmp b6 b7
+    call Hilti::print (i)
+    
+    b = equal b1 b2
+    call Hilti::print (b)
+    
+    b = equal b1 b3
+    call Hilti::print (b)
+    
+}

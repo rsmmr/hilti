@@ -47,6 +47,12 @@ class IterEqual(Operator):
     """
     pass
 
+@overload(Equal, op1=referenceOf(bytes), op2=referenceOf(bytes), target=bool)
+class Equal(Operator):
+    """Returns True if the content of the two bytes objects are equal.
+    """
+    pass
+
 @instruction("bytes.length", op1=referenceOf(bytes), target=integerOfWidth(32))
 class Length(Instruction):
     """Returns the number of bytes stored in *op1*."""
@@ -96,8 +102,10 @@ class Diff(Instruction):
 #    finds it. Returns -1 if it does not find *op2* in *op1*."""
 #    pass
 #
-#@instruction("bytes.cmp", op1=Reference, op2=Reference, target=Bool)
-#class Cmp(Instruction):
-#    """Compares *op1* with *op2* and returns *True* if their contents match.
-#    Returns *False* otherwise."""
-#    pass
+
+@instruction("bytes.cmp", op1=referenceOf(bytes), op2=referenceOf(bytes), target=integerOfWidth(8))
+class Cmp(Instruction):
+    """Compares *op1* with *op2* lexicographically. If *op1* is larger,
+    returns -1. If both are equal, returns 0. If *op2* is larger, returns 1.
+    """
+    pass

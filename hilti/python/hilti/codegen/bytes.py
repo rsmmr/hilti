@@ -102,6 +102,13 @@ def _(self, i):
 def _(self, i):
     result = self.llvmGenerateCCallByName("hlt::bytes_pos_eq", [i.op1(), i.op2()], [i.op1().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
+    
+@codegen.operator(instructions.bytes.Equal)
+def _(self, i):
+    cmp = self.llvmGenerateCCallByName("hlt::bytes_cmp", [i.op1(), i.op2()], [i.op2().type(), i.op2().type()])
+    zero = codegen.llvmConstInt(0, 8)
+    result = codegen.builder().icmp(llvm.core.IPRED_EQ, cmp, zero)
+    self.llvmStoreInTarget(i.target(), result)
 
 @codegen.when(instructions.bytes.Length)
 def _(self, i):
@@ -140,6 +147,11 @@ def _(self, i):
 @codegen.when(instructions.bytes.Diff)
 def _(self, i):
     result = self.llvmGenerateCCallByName("hlt::bytes_pos_diff", [i.op1(), i.op2()], [i.op2().type(), i.op2().type()])
+    self.llvmStoreInTarget(i.target(), result)
+    
+@codegen.when(instructions.bytes.Cmp)
+def _(self, i):
+    result = self.llvmGenerateCCallByName("hlt::bytes_cmp", [i.op1(), i.op2()], [i.op2().type(), i.op2().type()])
     self.llvmStoreInTarget(i.target(), result)
 
 @codegen.unpack(type.Bytes)

@@ -95,6 +95,17 @@ extern hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt);
 /// Returns: True if the object is empty.
 extern int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception** excpt);
 
+/// Compares the content of two bytes objects.
+/// 
+/// b1: The first byte object. 
+/// b2: The second byte object. 
+///
+/// excpt: &
+/// 
+/// Returns: 0 if the two are equal; -1 if *b1* is lexicographically smaller
+/// than *b2*, and 1 if *b2* is lexicographically smaller than *b1*.
+extern int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** excpt);
+
 /// Appends the contents of a bytes object to another. The two objects must not be the same.
 /// 
 /// b: The bytes object to append to.

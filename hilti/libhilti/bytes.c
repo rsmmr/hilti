@@ -613,3 +613,34 @@ void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos 
     // as it's not NULL.  
     return block->next ? block : 0;
 }
+
+int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** excpt)
+{
+    if ( ! (b1 && b2) ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+    
+    // FIXME: This is not the smartest implementation. Rather than using the
+    // iterator functions, we should compare larger chunks at once. 
+    hlt_bytes_pos p1 = hlt_bytes_begin(b1, excpt);
+    hlt_bytes_pos p2 = hlt_bytes_begin(b2, excpt);
+
+    while ( true ) {
+        
+        if ( is_end(p1) )
+            return is_end(p2) ? 0 : 1;
+        
+        if ( is_end(p2) )
+            return -1;
+        
+        int8_t c1 = hlt_bytes_pos_deref(p1, excpt);
+        int8_t c2 = hlt_bytes_pos_deref(p2, excpt);
+        
+        if ( c1 != c2 )
+            return c1 > c2 ? -1 : 1;
+        
+        p1 = hlt_bytes_pos_incr(p1, excpt);
+        p2 = hlt_bytes_pos_incr(p2, excpt);
+    }
+}
