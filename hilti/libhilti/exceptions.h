@@ -90,6 +90,9 @@ extern hlt_exception_type hlt_exception_yield;
 // Raised when debug.assert fails.
 extern hlt_exception_type hlt_exception_assertion_error;
 
+// Raised when we encounter an unexpected null reference. 
+extern hlt_exception_type hlt_exception_null_reference;
+
 // Fall-back exception if nothing else is specified.
 extern hlt_exception_type hlt_exception_unspecified;
 

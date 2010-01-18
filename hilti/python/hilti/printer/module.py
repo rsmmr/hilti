@@ -296,6 +296,7 @@ def _(self, i):
     _printComment(i)
     
     val = self._module.lookupIDVal(i)
+    
     init = " = %s" % _fmtOp(val) if val else ""
     role = "global" if i.role() == id.Role.GLOBAL else "const"
     self.output("%s %s %s%s" % (role, _fmtType(i.type()), i.name(), init))

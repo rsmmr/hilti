@@ -36,6 +36,7 @@ hlt_exception_type hlt_exception_invalid_iterator = { "InvalidIterator", &hlt_ex
 hlt_exception_type hlt_exception_not_implemented = { "NotImplemented", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_pattern_error = { "PatternError", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_assertion_error = { "AssertionError", &hlt_exception_unspecified, &hlt_type_info_string };
+hlt_exception_type hlt_exception_null_reference = { "NulLReference", &hlt_exception_unspecified, 0 };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, &hlt_type_info_int_32 };

@@ -66,6 +66,11 @@ hlt_bytes* __hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_except
 // Returns the number of bytes stored.
 hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt)
 {
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+    
     hlt_bytes_size len = 0;
     
     for ( const hlt_bytes_chunk* c = b->head; c; c = c->next )
@@ -77,12 +82,22 @@ hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt)
 // Returns true if empty.
 int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception** excpt)
 {
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+    
     return b->head == 0;
 }
 
 // Appends one Bytes object to another.
 void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excpt)
 {
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return;
+    }
+    
     if ( ! other->head )
         // Empty.
         return;
@@ -109,6 +124,11 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
 
 void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, hlt_exception** excpt)
 {
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return;
+    }
+    
     if ( ! len )
         // Empty.
         return;
@@ -281,6 +301,11 @@ const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exce
 
 const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt)
 {
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+    
     hlt_bytes_pos begin = hlt_bytes_begin(b, excpt);
     hlt_bytes_pos end = hlt_bytes_end(excpt);
     return hlt_bytes_sub_raw(begin, end, excpt);
@@ -317,6 +342,12 @@ int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_
 
 hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_exception** excpt)
 {
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_bytes_pos p;
+        return p;
+    }
+    
     if ( pos < 0 )
         pos += hlt_bytes_len(b, excpt);
     
@@ -341,6 +372,12 @@ hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_excep
 
 hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt)
 {
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_bytes_pos p;
+        return p;
+    }
+    
     if ( ! b->head )
         return PosEnd;
     
@@ -511,6 +548,11 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
     
     const hlt_bytes* b = *((const hlt_bytes**)obj);
 
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+    
     // FIXME: I'm sure we can do this more efficiently ...
     for ( const hlt_bytes_chunk* c = b->head; c; c = c->next ) {
         for ( const int8_t* p = c->start; p < c->end; ++p ) {

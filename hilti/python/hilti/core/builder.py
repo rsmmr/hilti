@@ -31,15 +31,15 @@ class OperandBuilder(objcache.Cache):
         Returns: ~~ConstOperand - The constant operand.
         """
         
-        if isinstance(value, int) and not ty:
+        if isinstance(value, bool) and not ty:
+            ty = type.Bool()
+            
+        elif isinstance(value, int) and not ty:
             ty = type.Integer(0)
             
-        if isinstance(value, str) and not ty:
+        elif isinstance(value, str) and not ty:
             ty = type.String()
             
-        if isinstance(value, bool) and not ty:
-            ty = type.String()
-        
         assert ty
         
         return instruction.ConstOperand(constant.Constant(value, ty))
@@ -195,8 +195,8 @@ class FunctionBuilder(OperandBuilder):
         i = id.ID(name, ftype, id.Role.GLOBAL)
         self._mbuilder = mbuilder
         self._func = function.Function(ftype, i, cc, location)
+        self._tmps = {}
         mbuilder.module().addID(i, self._func)
-        self._idnames = set()
         
     def function(self):
         """Returns the HILTI function being build.
@@ -270,55 +270,87 @@ class FunctionBuilder(OperandBuilder):
         else:
             return ty
         
-    def addLocal(self, name, ty, reuse=False):
-        """Adds a new local variable to the function. Unless *reuse* is true,
-        it is an error if the local already exists. If 
+    def addLocal(self, name, ty, value = None, force=False, reuse=False):
+        """Adds a new local variable to the function. Normally, it's an error
+        if the local already exists. If *force* is given however, the name is
+        adapted to be unique in that case. If *reuse* is given instead, the
+        exisiting local is returned (which must have type *ty*). 
         
         name: string - The name of the variable.
         
-        ty: ~~ValueType or ~~IDOperand - The type of the variable; if the
-        variable already exists, the type must match of the existing
-        declaration. If an ~~IDOperand, it must be a corresponding type
+        ty: ~~ValueType or ~~IDOperand - The type of the variable.
+        If an ~~IDOperand, it must be a corresponding type
         declaration.
-        
-        reuse: bool - If true, an existing local will be reused.  
         
         value: ~~ConstOperand - Optional initialization of the local.  Note that
         if the local already exists, it's current value will be overridden.
         
-        Returns: ~~IDOperand - An IDOperand referencing the new (or local) local. 
+        force: ~~bool - Adapt the name to be unique if necssary. 
+        
+        Returns: ~~IDOperand - An IDOperand referencing the new local. 
+        
+        Note: There's ~~addTmp if you need only a temporary that doesn't need
+        to remain valid very long
         """
         
-        if not reuse and self.isCached(name):
-            util.internal_error("local '%s' already exists" % name)
+        assert not (reuse and force)
+        
+        old = self._func.lookupID(name)
+        
+        if old:
+            if reuse:
+                return old
+            
+            if not force:
+                util.internal_error("ID %s already exists" % name)
+            else:
+                # Generate a unique name.
+                name = self._idName(name)
         
         if isinstance(ty, instruction.IDOperand):
             assert isinstance(ty.type(), type.TypeDeclType)
             ty = ty.type().declType()
             
-        def _makeLocal():
-            i = id.ID(name, ty, id.Role.LOCAL)
-            self._func.addID(i)
+        i = id.ID(name, ty, id.Role.LOCAL)
+        self._func.addID(i)
+        op = self.idOp(i)    
+        
+        if value:
+            self.assign(op, value)
             
-            op = self.idOp(i)
-            return op
-                    
-        return self.cache(name, _makeLocal)
-
-    def makeTmp(self, ty):
-        """Creates a temporary local variable. The variable can then
-        be used for storing intermediart results until this method
-        is called the next time for the same type.
+        return op
+        
+    def addTmp(self, name, ty):
+        """Creates a temporary local variable. The variable can then be used
+        for storing intermediary results until this method is called the next
+        time with the same name and type; in that case, the existing local
+        will be returned. If the method is later called with the same name but
+        a different type, the name will be adapted to be unique (and
+        subsequent calls with the same name/type combination will return the
+        local with the adapted name). 
+        
+        name: string - The name of the temporary.
         
         ty: ~~Type - The type of the temporary.
         
         Returns: ~~hilti.core.instruction.IDOperand - An IDOperand
         referencing the temporary.
-        """
-        def _make():
-            return self.addLocal(self._idName("tmp"), ty)
         
-        return self.cache(ty, _make)
+        Note: There's ~~addLocal if you need a variable that will remain valid
+        longer.
+        """
+        
+        idx = "%s|%s" % (name, ty)
+
+        try:
+            return self._tmps[idx]
+        except KeyError:
+            pass
+        
+        tmp = self.addLocal(name, ty, force=True)
+        
+        self._tmps[idx] = tmp
+        return tmp
         
     def _idName(self, name=""):
         if name == None:
@@ -329,11 +361,10 @@ class FunctionBuilder(OperandBuilder):
         i = 1
         nname = name
         
-        while nname in self._idnames:
+        while self._func.lookupID(nname):
             i += 1
-            nname = "%s_%d" % (name, i)
+            nname = "%s%d" % (name, i)
 
-        self._idnames.add(nname)
         return nname
 
 class BlockBuilder(OperandBuilder): 
@@ -377,19 +408,19 @@ class BlockBuilder(OperandBuilder):
         """
         return self._fbuilder
 
-    def addLocal(self, name, ty, reuse=False):
+    def addLocal(self, name, ty, value=None):
         """Adds a new local variable to the function. This is just a
         convinience function that forwards to
         ~~FunctionBuilder.addLocal. See there for more information.
         """
-        return self._fbuilder.addLocal(name, ty, reuse)
+        return self._fbuilder.addLocal(name, ty, value)
 
-    def makeTmp(self, ty):
+    def addTmp(self, ty):
         """Creates a temporary local variable. This is just a
         convinience function that forwards to
         ~~FunctionBuilder.addLocal. See there for more information.
         """
-        return self._fbuilder.makeTmp(ty)
+        return self._fbuilder.addTmp(ty)
     
     def idOp(self, i):
         """Returns an ID operand. Different from ~~OperandBuilder.idOp, this
