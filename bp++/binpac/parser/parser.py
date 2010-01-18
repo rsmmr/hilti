@@ -350,6 +350,10 @@ def p_expr_attribute(p):
 def p_expr_name(p):
     """expr : IDENT"""
     p[0] = expr.Name(p[1], _currentScope(p), location=_loc(p, 1))
+
+def p_expr_not(p):
+    """expr : '!' expr"""
+    p[0] = expr.Overloaded(Operator.Not, (p[2], ), location=_loc(p, 1))
     
 def p_expr_add(p):
     """expr : expr '+' expr"""
@@ -366,7 +370,16 @@ def p_expr_mult(p):
 def p_expr_div(p):
     """expr : expr '/' expr"""
     p[0] = expr.Overloaded(Operator.Div, (p[1], p[3]), location=_loc(p, 1))
-
+    
+def p_expr_equal(p):
+    """expr : expr EQUAL expr"""
+    p[0] = expr.Overloaded(Operator.Equal, (p[1], p[3]), location=_loc(p, 1))
+    
+def p_expr_unequal(p):
+    """expr : expr UNEQUAL expr"""
+    eq = expr.Overloaded(Operator.Equal, (p[1], p[3]), location=_loc(p, 1))
+    p[0] = expr.Overloaded(Operator.Not, (eq, ), location=_loc(p, 1))
+    
 def p_expr_method_call(p):
     """expr : expr '.' IDENT '(' expr_list ')'"""
     p[0] = expr.Overloaded(Operator.MethodCall, (p[1], p[3], p[5]), location=_loc(p, 1))

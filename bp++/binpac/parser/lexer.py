@@ -20,15 +20,26 @@ types = {
     }
 
 # Literals.
-literals = ['(',')','{','}', '[', ']', '<', '>', '=', ',', ':', '*', ';', '+', '-', '*', '/', '|', '.' ]
+literals = ['(',')','{','}', '[', ']', '<', '>', '=', ',', ':', '*', ';', '+', '-', '*', '/', '|', '.', '!']
 
 def _loc(t):
     return location.Location(t.lexer.parser.state._filename, t.lexer.lineno)
 
 tokens = [
-    "IDENT", "CONSTANT", "PACTYPE", "ATTRIBUTE", "PROPERTY"
+    "IDENT", "CONSTANT", "PACTYPE", "ATTRIBUTE", "PROPERTY",
+    "EQUAL", "UNEQUAL",
     ] + [k.upper() for k in keywords]
 
+# Operators with more than one character.
+
+def t_EQUAL(t):
+    r'=='
+    return t
+
+def t_UNEQUAL(t):
+    r'!='
+    return t
+    
 # Type keywords not covered by types.
 
 def t_INT(t):

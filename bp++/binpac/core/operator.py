@@ -140,6 +140,7 @@ import inspect
 import functools
 
 import type as mod_type
+import expr
 
 import binpac.support.util as util
 
@@ -193,6 +194,8 @@ _Operators = {
     "Attribute": (2, "Attribute expression. (`a.b`)", _pacBinary(".")),
     "MethodCall": (3, "Method call. (`a.b()`)", _pacMethodCall),
     "Size": (1, "The size of an expression's value, with type-defined definition of \"size\" (`|a|`)", _pacUnary("|")),
+    "Equal": (2, "Compares two values whether they are equal. (``a == b``)", _pacBinary(" + ")),
+    "Not": (2, "Inverts a boolean value. (``! a``)", _pacUnary("-"))
     }
 
 _Methods = ["typecheck", "validate", "fold", "evaluate", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
@@ -247,10 +250,12 @@ def fold(op, exprs):
     operator and expressions are compatible. 
     """
     if not typecheck(op, exprs):
-        util.error("no fold implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
+        return None
 
     func = _findOp("fold", op, exprs)
     result = func(*exprs) if func else None
+    
+    assert (not result) or isinstance(result, expr.Constant)
     return result
 
 def evaluate(op, cg, exprs):

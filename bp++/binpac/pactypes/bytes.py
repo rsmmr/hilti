@@ -119,6 +119,24 @@ class _:
         tmp = cg.functionBuilder().addTmp("__size", hilti.core.type.Integer(32))
         cg.builder().bytes_length(tmp, e.evaluate(cg))
         return tmp
+    
+@operator.Equal(Bytes, Bytes)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+    
+    def fold(e1, e2):
+        if not e1.isConst() or not e2.isConst():
+            return None
+            
+        b = (e1.fold().constant().value() == e2.fold().constant().value())
+        return expr.Constant(constant.Constant(b, type.Bool()))
+        
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addTmp("__equal", hilti.core.type.Bool())
+        cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp
+    
         
     
     

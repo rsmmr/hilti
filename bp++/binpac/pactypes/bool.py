@@ -5,6 +5,7 @@
 import binpac.core.type as type
 import binpac.core.expr as expr
 import binpac.core.operator as operator
+import binpac.core.constant as constant
 
 import hilti.core.type
 
@@ -49,7 +50,22 @@ class Bool(type.ParseableType):
     def generateParser(self, cg, cur, dst, skipping):
         util.internal_error("bool parsing not implemented")
         
+@operator.Not(Bool)
+class _:
+    def type(e):
+        return type.Bool()
+    
+    def fold(e):
+        if not e.isConst():
+            return None
         
+        inverse = not e.fold().constant().value()
+        return expr.Constant(constant.Constant(inverse, type.Bool()))
+        
+    def evaluate(cg, e):
+        tmp = cg.functionBuilder().addTmp("__not", hilti.core.type.Bool())
+        cg.builder().bool_not(tmp, e.evaluate(cg))
+        return tmp
         
     
     
