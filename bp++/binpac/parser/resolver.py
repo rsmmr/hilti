@@ -30,6 +30,7 @@ class Resolver(object):
         self._already = set()
         mod.resolve(self)
         self._scope = None
+        
         return self._errors
     
     def scope(self):

@@ -163,12 +163,11 @@ class CodeGen(object):
             
             if isinstance(i, id.Global):
                 if i.value():
-                    val = i.value().fold()
-                    assert val
+                    default = i.type().hiltiConstant(self, i.value())
                 else:
                     default = i.type().hiltiDefault(self)
-                    val = hilti.core.instruction.ConstOperand(default) if default else None
                     
+                val = hilti.core.instruction.ConstOperand(default) if default else None
                 hltmod.addID(hilti.core.id.ID(i.name(), i.type().hiltiType(self), hilti.core.id.Role.GLOBAL), val)
 
         self._initFunction()

@@ -1,0 +1,12 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL:  binpac++ %INPUT | grep bytes.length
+#
+# Makes sure constants are folded.
+
+module Test;
+
+print b"Test", |b"Test"|;
+print b"", |b""|;
+
+

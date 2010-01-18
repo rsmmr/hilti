@@ -228,8 +228,8 @@ class Parameter(ID):
 class Global(ID):
     """An ID representing a module-global variable. See ~~ID for arguments.
     
-    value: ~~Expression - The constant expression to initialize the global
-    with, or None for initialization with the default value.
+    value: ~~Constant - The constant to initialize the global with, or None
+    for initialization with the default value.
     """
     def __init__(self, name, type, value, linkage=None, namespace=None, location=None, imported=False):
         super(Global, self).__init__(name, type, linkage, namespace, location, imported)
@@ -238,7 +238,7 @@ class Global(ID):
     def value(self):
         """Returns the initialization value of the global.
         
-        Returns: ~~Expression - The init value, or None if none was set.
+        Returns: ~~Constant - The init value, or None if none was set.
         """
         return self._value
         

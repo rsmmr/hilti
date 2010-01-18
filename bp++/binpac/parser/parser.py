@@ -370,6 +370,10 @@ def p_expr_div(p):
 def p_expr_method_call(p):
     """expr : expr '.' IDENT '(' expr_list ')'"""
     p[0] = expr.Overloaded(Operator.MethodCall, (p[1], p[3], p[5]), location=_loc(p, 1))
+
+def p_expr_size(p):
+    """expr : '|' expr '|'"""
+    p[0] = expr.Overloaded(Operator.Size, (p[2], ), location=_loc(p, 1))
     
 def p_expr_list(p):
     """expr_list : expr ',' expr_list
@@ -485,6 +489,8 @@ def _parse(filename, import_paths=["."]):
     assert ast
 
     errors = resolver.Resolver().resolve(ast)
+    
+    ast.simplify()
     
     return (errors, ast, parser)    
 

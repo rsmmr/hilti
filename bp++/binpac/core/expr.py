@@ -6,6 +6,8 @@ import type
 import ast
 import grammar
 import operator
+import constant
+import id
 import binpac.support.util as util
 
 import hilti.core.instruction
@@ -105,32 +107,10 @@ class Expression(ast.Node):
         Can be overidden by derived classes.
         
         Returns: ~~expression.Constant - The folded expression if foldable, or
-        None if not (including for non-constant expression). 
+        the original express (i.e., *self*) of not.
         """
         return self
         
-    def simplify(self):
-        """Simplifies the expression. A expression is only modified if
-        possible in a way that does not change its value, and potentially not
-        even then. 
-        
-        The base class implements constant folding.
-        
-        Can be overidden by derived classes, in which case the superclass'
-        version must be called first. 
-        
-        Returns: ~~Expression - The simplified expression (which may be just
-        +self+).
-        """
-        
-        expr = self
-        
-        # Constant folding.
-        if self.isConst():
-            expr = expr.fold()
-        
-        return expr
-
     def evaluate(self, cg):
         """Generates code to evaluate the expression.
  
@@ -183,6 +163,12 @@ class Overloaded(Expression):
 
     def pac(self, printer):
         operator.pacOperator(printer, self._op, self._exprs)
+
+    def simplify(self):
+        self._exprs = [e.fold() for e in self._exprs]
+        
+        for e in self._exprs:
+            e.simplify()
         
     ### Overidden from Expression.
 
@@ -192,7 +178,8 @@ class Overloaded(Expression):
         return t
 
     def fold(self):
-        return operator.fold(self._op, self._exprs)
+        folded = operator.fold(self._op, self._exprs)
+        return folded if folded else self
 
     def evaluate(self, cg):
         return operator.evaluate(self._op, cg, self._exprs)
@@ -209,6 +196,7 @@ class Constant(Expression):
     
     def __init__(self, const, location=None):
         super(Constant, self).__init__(location=location)
+        assert isinstance(const, constant.Constant)
         self._const = const
         
     def constant(self):
@@ -225,7 +213,7 @@ class Constant(Expression):
     
     def pac(self, printer):
         self._const.pac(printer)
-    
+
     ### Overidden from Expression.
     
     def type(self):
@@ -261,14 +249,21 @@ class Name(Expression):
         printer.output(self._name)
         
     ### Overidden from Expression.
+
+    def fold(self):
+        i = self._scope.lookupID(self._name)
+        assert i
+        
+        if isinstance(i, id.Constant):
+            return Constant(i.value())
     
+        else:
+            return self
+        
     def type(self):
         id = self._scope.lookupID(self._name)
         return id.type() if id else type.Unknown(self._name, location=self.location())
     
-    def fold(self):
-        return None
-
     def evaluate(self, cg):
         return cg.functionBuilder().idOp(self._name)
     

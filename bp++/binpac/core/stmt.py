@@ -19,7 +19,7 @@ class Statement(ast.Node):
         super(Statement, self).__init__(location=location)
     
     # Methods for derived classes to override.
-    
+
     def execute(self, cg):
         """Generates HILTI code executing the statement.
         
@@ -77,7 +77,11 @@ class Block(Statement):
             stmt.pac(printer)
         printer.output("}", nl=True)
         printer.pop()
-    
+
+    def simplify(self):
+        for s in self._stmts:
+            s.simplify()
+        
     ### Overidden from Statement.
 
     def execute(self, cg):
@@ -181,9 +185,15 @@ class Print(Statement):
                 printer.output(", ")
                 
         printer.output(";", nl=True)
-    
-    ### Overidden from Statement.
+
+    def simplify(self):
+        self._exprs = [e.fold() for e in self._exprs]
         
+        for e in self._exprs:
+            e.simplify()
+        
+    ### Overidden from Statement.
+
     def execute(self, cg):
         func = cg.builder().idOp("Hilti::print")
         
@@ -195,8 +205,11 @@ class Print(Statement):
         
         for i in range(len(ops)):
             builder = cg.builder()
-            nl = builder.constOp(i == len(ops) - 1)
+            last = (i == len(ops) - 1)
+            nl = builder.constOp(last)
             builder.call(None, func, builder.tupleOp([ops[i], nl]))
+            if not last:
+                builder.call(None, func, builder.tupleOp([builder.constOp(" "), builder.constOp(False)]))
         
     def __str__(self):
         return "<print statement>"
@@ -220,9 +233,13 @@ class Expression(Statement):
     def pac(self, printer):
         self._expr.pac(printer)
         printer.output(";", nl=True)
-    
-    ### Overidden from Statement.
+
+    def simplify(self):
+        self._expr = self._expr.fold()
+        self._expr.simplify()
         
+    ### Overidden from Statement.
+
     def execute(self, cg):
         self._expr.evaluate(cg)
         

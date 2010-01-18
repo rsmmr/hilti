@@ -111,7 +111,7 @@ if options.printer:
     binpac.core.printer.printModule(mod, output)
     sys.exit(0)
     
-(success, hltmod) = binpac.core.codegen.compileModule(mod, import_paths=import_paths, debug=options.debug, validate=options.hlt_novalidate)
+(success, hltmod) = binpac.core.codegen.compileModule(mod, import_paths=import_paths, debug=options.debug, validate=(not options.hlt_novalidate))
 if not success:
     print >>sys.stderr, "\ncode generation failed, aborting."
     sys.exit(1)

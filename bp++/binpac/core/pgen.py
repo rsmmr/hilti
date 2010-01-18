@@ -185,10 +185,10 @@ class ParserGen:
         
         fbuilder.function().setLinkage(hilti.core.function.Linkage.EXPORTED)
         
-        pobj = builder.addLocal("pobj", self._typeParseObjectRef())
-        presult = builder.addLocal("presult", _ParseFunctionResultType)
-        lahead = builder.addLocal("lahead", _LookAheadType)
-        lahstart = builder.addLocal("lahstart", _BytesIterType)
+        pobj = builder.addLocal("__pobj", self._typeParseObjectRef())
+        presult = builder.addLocal("__presult", _ParseFunctionResultType)
+        lahead = builder.addLocal("__lahead", _LookAheadType)
+        lahstart = builder.addLocal("__lahstart", _BytesIterType)
         
         builder.assign(lahead, _LookAheadNone)
 
@@ -287,13 +287,13 @@ class ParserGen:
         builder.setNextComment("Parsing literal '%s'" % lit.literal().value())
         
         # See if we have a look-ahead symbol. 
-        cond = builder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
+        cond = builder.addTmp("__cond", hilti.core.type.Bool())
         cond = builder.equal(cond, args.lahead, _LookAheadNone)
         (no_lahead, have_lahead, done) = builder.makeIfElse(cond, tag="no-lahead")
         
         # If we do not have a look-ahead symbol pending, search for our literal.
         match = self._matchToken(no_lahead, "literal", str(lit.id()), [lit], args)
-        symbol = builder.addLocal("lahead", hilti.core.type.Integer(32), reuse=True)
+        symbol = builder.addTmp("__lahead", hilti.core.type.Integer(32))
         no_lahead.tuple_index(args.lahead, match, no_lahead.constOp(0))
         
         found_lit = self.functionBuilder().newBuilder("found-sym")
@@ -319,7 +319,7 @@ class ParserGen:
         done.assign(args.lahead, _LookAheadNone)
         
         # Extract token value.
-        token = builder.addLocal("token", hilti.core.type.Reference([hilti.core.type.Bytes()]), reuse=True)
+        token = builder.addTmp("__token", hilti.core.type.Reference([hilti.core.type.Bytes()]))
         done.bytes_sub(token, args.lahstart, args.cur)
         
         self.cg().setBuilder(done)
@@ -330,16 +330,11 @@ class ParserGen:
         """Generates code to parse a variable."""
         type = var.type()
 
-        def makeLocal():
-            name = self.functionBuilder()._idName("var")
-            ty = type.hiltiType(self._cg)
-            return self.builder().addLocal(name, ty)
-            
         builder = self.builder()
         builder.setNextComment("Parsing variable %s" % var)
         
         # We must not have a pending look-ahead symbol at this point. 
-        cond = builder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
+        cond = builder.addTmp("__cond", hilti.core.type.Bool())
         builder.equal(cond, args.lahead, _LookAheadNone)
         builder.debug_assert(cond)
 
@@ -349,7 +344,7 @@ class ParserGen:
         need_val = var.name() or hook.field().type().dollarDollarType(hook.field())
         
         # Call the type's parse function.
-        dst = builder.cache(var.type(), makeLocal)
+        dst = self.builder().addTmp(name, ty)
         args.cur = type.generateParser(self, args.cur, dst, need_val)
         
         # We have successfully parsed a rule. 
@@ -369,8 +364,8 @@ class ParserGen:
         cpgen.compile(cgrammar)
 
         # Call the parsing code. 
-        result = builder.addLocal("presult", _ParseFunctionResultType, reuse=True)
-        cobj = builder.addLocal("cobj_%s" % utype.name(), utype.hiltiType(self._cg), reuse=True)
+        result = builder.addTmp("__presult", _ParseFunctionResultType)
+        cobj = builder.addTmp("__cobj_%s" % utype.name(), utype.hiltiType(self._cg))
         
         cpgen._newParseObject(cobj)
         
@@ -412,7 +407,7 @@ class ParserGen:
         builder = self.builder()
         builder.setNextComment("Parsing non-terminal %s" % prod.symbol())
 
-        result = builder.addLocal("presult", _ParseFunctionResultType, reuse=True)
+        result = builder.addTmp("__presult", _ParseFunctionResultType)
 
         if not params:
             for p in self._current_grammar.params():
@@ -438,7 +433,7 @@ class ParserGen:
             self.moduleBuilder().setCacheEntry(prod.symbol(), func)
             
             ### See if we have look-ahead symbol pending.
-            cond = builder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
+            cond = builder.addTmp("__cond", hilti.core.type.Bool())
             builder.equal(cond, args.lahead, _LookAheadNone)
             (no_lahead, builder) = builder.makeIf(cond, tag="no-lahead")
 
@@ -489,7 +484,7 @@ class ParserGen:
         builder = self.builder()
         builder.setNextComment("Parsing non-terminal %s" % prod.symbol())
         
-        result = builder.addLocal("presult", _ParseFunctionResultType, reuse=True)
+        result = builder.addLocal("__presult", _ParseFunctionResultType)
         
         params = []
         for p in self._current_grammar.params():
@@ -519,8 +514,8 @@ class ParserGen:
         
 #        match_rtype = hilti.core.type.Tuple([hilti.core.type.Integer(32), args.cur.type()])
         match_rtype = hilti.core.type.Tuple([hilti.core.type.Integer(32), _BytesIterType])
-        match = fbuilder.addLocal("match", match_rtype, reuse=True)
-        cond = fbuilder.addLocal("cond", hilti.core.type.Bool(), reuse=True)
+        match = fbuilder.addTmp("__match", match_rtype)
+        cond = fbuilder.addTmp("__cond", hilti.core.type.Bool())
         name = self._name(ntag1, ntag2)
         
         def _makePatternConstant():
@@ -531,8 +526,8 @@ class ParserGen:
         pattern = fbuilder.moduleBuilder().cache(name, _makePatternConstant)
         builder.assign(args.lahstart, args.cur) # Record starting position.
         
-        next5 = fbuilder.addLocal("next5", _BytesIterType, reuse=True)
-        str = fbuilder.addLocal("str", hilti.core.type.Reference([hilti.core.type.Bytes()]), reuse=True)
+        next5 = fbuilder.addTmp("__next5", _BytesIterType)
+        str = fbuilder.addTmp("__str", hilti.core.type.Reference([hilti.core.type.Bytes()]))
         builder.assign(next5, args.cur)
         builder.incr(next5, next5)
         builder.incr(next5, next5)

@@ -4,6 +4,7 @@
 
 import binpac.core.type as type
 import binpac.core.expr as expr
+import binpac.core.constant as constant
 import binpac.core.grammar as grammar
 import binpac.core.operator as operator
 
@@ -43,6 +44,9 @@ class Bytes(type.ParseableType):
     def hiltiType(self, cg):
         return hilti.core.type.Reference([hilti.core.type.Bytes()])
 
+    def hiltiDefault(self, cg):
+        return hilti.core.constant.Constant("", self.hiltiType(cg))
+    
     def pac(self, printer):
         printer.output("bytes")
         
@@ -53,7 +57,7 @@ class Bytes(type.ParseableType):
 
     def supportedAttributes(self):
         return { 
-            "length": (type.UnsignedInteger(64), False, None),
+            "length": (type.UnsignedInteger(32), False, None),
             "until": (type.Bytes(), False, None),
             }
 
@@ -64,21 +68,12 @@ class Bytes(type.ParseableType):
         
         bytesit = hilti.core.type.IteratorBytes(hilti.core.type.Bytes())
         resultt = hilti.core.type.Tuple([self.hiltiType(cg), bytesit])
-        
-        def addTmp1():
-            fbuilder = cg.functionBuilder()
-            name = fbuilder._idName("end")
-            return fbuilder.addLocal(name, bytesit)
-        
-        def addTmp2():
-            fbuilder = cg.functionBuilder()
-            name = fbuilder._idName("unpacked")
-            return fbuilder.addLocal(name, resultt)
+        fbuilder = cg.functionBuilder()
         
         # FIXME: We trust here that bytes iterators are inialized with the
         # generic end position. We should add a way to get that position
         # directly (but without a bytes object).
-        end = cg.builder().cache(bytesit, addTmp1)
+        end = fbuilder.addTmp("__end", bytesit)
         
         op1 = cg.builder().tupleOp([cur, end])
         op2 = None
@@ -86,7 +81,7 @@ class Bytes(type.ParseableType):
         
         if self.hasAttribute("length"):
             op2 = cg.builder().idOp("Hilti::Packed::BytesFixed" if not skipping else "Hilti::Packed::SkipBytesFixed")
-            expr = self.attributeExpr("length").castTo(type.UnsignedInteger(64), cg)
+            expr = self.attributeExpr("length").castTo(type.UnsignedInteger(32), cg)
             op3 = expr.evaluate(cg)
             
         elif self.hasAttribute("until"):
@@ -96,8 +91,7 @@ class Bytes(type.ParseableType):
 
         builder = cg.builder()
             
-        result = builder.cache(str(resultt), addTmp2)
-
+        result = fbuilder.addTmp("__unpacked", resultt)
         builder.unpack(result, op1, op2, op3)
         
         if dst:
@@ -107,8 +101,24 @@ class Bytes(type.ParseableType):
         
         return cur
             
+@operator.Size(Bytes)
+class _:
+    def type(e):
+        return type.UnsignedInteger(32)
+    
+    def fold(e):
+        if e.isConst():
+            n = len(e.fold().constant().value())
+            const = constant.Constant(n, type.UnsignedInteger(32))
+            return expr.Constant(const)
         
+        else:
+            return None
         
+    def evaluate(cg, e):
+        tmp = cg.functionBuilder().addTmp("__size", hilti.core.type.Integer(32))
+        cg.builder().bytes_length(tmp, e.evaluate(cg))
+        return tmp
         
     
     

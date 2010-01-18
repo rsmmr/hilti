@@ -51,4 +51,17 @@ class Node(visitor.Visitable):
         
         """
         pass
+    
+    def simplify(self):
+        """Simplifies the node. The definition of 'simplify' is left to the
+        derived classes but the node may only change in a way thay does not
+        modify its semantics.
+        
+        The base class does not do anything..
+        
+        Can be overidden by derived classes, in which case the superclass'
+        version must be called first. 
+        """
+        pass
+
         

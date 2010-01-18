@@ -76,7 +76,7 @@ attribute; they are all class methods.
   Optional. Implement constant folding.
   
   Returns: ~~expr.Constant - A new expression object representing the folded
-  expression. 
+  expression, or None if it can't folded into a constant. 
 
 .. function:: type(<exprs>)
 
@@ -160,6 +160,14 @@ def _pacBinary(op):
         
     return _pac    
 
+def _pacEnclosed(op):
+    def _pac(printer, exprs):
+        printer.output(op)
+        exprs[0].pac(printer)
+        printer.output(op)
+
+    return _pac    
+
 def _pacMethodCall(printer, exprs):
     exprs[0].pac(printer)
     printer.output(".%s" % exprs[1])
@@ -173,7 +181,7 @@ def _pacMethodCall(printer, exprs):
             printer.output(",")
             
     printer.output(")")
-
+    
 _Operators = {
     # Operator name, #operands, description.
     "Plus": (2, "The sum of two expressions. (`a + b`)", _pacBinary(" + ")),
@@ -184,6 +192,7 @@ _Operators = {
     "Cast": (1, "Cast into another type.", lambda p, e: p.output("<Cast>")),
     "Attribute": (2, "Attribute expression. (`a.b`)", _pacBinary(".")),
     "MethodCall": (3, "Method call. (`a.b()`)", _pacMethodCall),
+    "Size": (1, "The size of an expression's value, with type-defined definition of \"size\" (`|a|`)", _pacUnary("|")),
     }
 
 _Methods = ["typecheck", "validate", "fold", "evaluate", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
@@ -242,7 +251,6 @@ def fold(op, exprs):
 
     func = _findOp("fold", op, exprs)
     result = func(*exprs) if func else None
-    assert not result or isinstance(result, expression.Constant) 
     return result
 
 def evaluate(op, cg, exprs):
