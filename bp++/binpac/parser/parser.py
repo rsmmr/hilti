@@ -85,8 +85,7 @@ def p_global_decl(p):
         e = None
 
     if e:
-        e = e.fold()
-        if not e:
+        if not e.isConst():
             parseutil.error(p, "expression must be constant")
             raise SyntaxError    
         
@@ -221,8 +220,8 @@ def p_unit_field_with_hook(p):
 def p_unit_field_property(p):
     """unit_field : PROPERTY expr ';'"""
     
-    expr = p[2].fold()
-    if not expr:
+    expr = p[2]
+    if not expr.isConst():
         parseutil.error(p, "expression must be constant")
         raise SyntaxError    
     
@@ -355,6 +354,10 @@ def p_expr_not(p):
     """expr : '!' expr"""
     p[0] = expr.Overloaded(Operator.Not, (p[2], ), location=_loc(p, 1))
     
+def p_expr_assign(p):
+    """expr : expr '=' expr"""
+    p[0] = expr.Assign(p[1], p[3], location=_loc(p, 1))
+    
 def p_expr_add(p):
     """expr : expr '+' expr"""
     p[0] = expr.Overloaded(Operator.Plus, (p[1], p[3]), location=_loc(p, 1))
@@ -431,6 +434,16 @@ def p_stmt_list(p):
     if len(p) > 1:
         p.parser.state.block.addStatement(p[2])
 
+def p_stmt_if_else(p):
+    """stmt : IF '(' expr ')' stmt
+            | IF '(' expr ')' stmt ELSE stmt
+    """
+    cond = p[3]
+    yes = p[5]
+    no = p[7] if len(p) > 7 else None
+    
+    p[0] = stmt.IfElse(cond, yes, no, location=_loc(p,1))
+        
 ### Scope management.
 def _currentScope(p):
     scope = p.parser.state.scopes[-1]

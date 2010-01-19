@@ -71,12 +71,16 @@ attribute; they are all class methods.
 
   vld: ~~Validator - The validator to use.
 
-.. function:: fold(<exprs>)
+.. function:: simplify(<exprs>)
 
-  Optional. Implement constant folding.
+  Optional. Implements simplifactions of the operator, such as constant
+  folding.
   
-  Returns: ~~expr.Constant - A new expression object representing the folded
-  expression, or None if it can't folded into a constant. 
+  The argument expression passed will be already be simplified. 
+  
+  Returns: ~~expr - A new expression object representing a simplified version
+  of the operator to be used instead; or None if it can't be simplified into
+  something else. 
 
 .. function:: type(<exprs>)
 
@@ -198,7 +202,7 @@ _Operators = {
     "Not": (2, "Inverts a boolean value. (``! a``)", _pacUnary("-"))
     }
 
-_Methods = ["typecheck", "validate", "fold", "evaluate", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
+_Methods = ["typecheck", "validate", "simplify", "evaluate", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
     
 ### Public functions.    
     
@@ -237,14 +241,15 @@ def validate(op, vld, exprs):
     
     return func(vld, *exprs)
     
-def fold(op, exprs):
-    """Evaluates an operator with constant expressions.
+def simplify(op, exprs):
+    """Simplifies an operator. 
     
     op: ~~Operator - The operator.
-    exprs: list of ~~Expression - The expressions for the operator.
+    exprs: list of ~~Expression - The expressions for the operator. They are
+    expected to already be simplified.
     
-    Returns: ~~expr.Constant - An new expression, representing the folded
-    expression; or None if the operator does not support constant folding.
+    Returns: ~~expr - A new expression, representing the simplified operator
+    to be used instead; or None if the operator could not be simplified.
     
     Note: This function must only be called if ~~typecheck indicates that
     operator and expressions are compatible. 
@@ -252,7 +257,7 @@ def fold(op, exprs):
     if not typecheck(op, exprs):
         return None
 
-    func = _findOp("fold", op, exprs)
+    func = _findOp("simplify", op, exprs)
     result = func(*exprs) if func else None
     
     assert (not result) or isinstance(result, expr.Constant)
@@ -544,3 +549,4 @@ for (op, vals) in _Operators.items():
     Operator.__dict__[op] = op
     # FIXME: Can't change the docstring here. What to do?
     # op.__doc = descr
+

@@ -31,6 +31,22 @@ class Statement(ast.Node):
 
     def __str__(self):
         return "<generic statement>"
+    
+class Epsilon(Statement):
+    """A no-op statement.
+    
+    location: ~~Location - The location where the expression was defined. 
+    """
+    def __init__(self, location=None):
+        super(Epsilon, self).__init__(location=location)
+    
+    ### Overidden from Statement.
+
+    def execute(self, cg):
+        pass
+
+    def __str__(self):
+        return "<empty statement>"
         
 class Block(Statement):
     """A block of statements executed in sequence. Such a block has its own
@@ -79,15 +95,15 @@ class Block(Statement):
         printer.pop()
 
     def simplify(self):
-        for s in self._stmts:
-            s.simplify()
+        self._stmts = [s.simplify() for s in self._stmts]
+        return self
         
     ### Overidden from Statement.
 
     def execute(self, cg):
         for i in self._scope.IDs():
             if isinstance(i, id.Local):
-                cg.builder().addLocal(i.name(), i.type().hiltiType(cg))
+                cg.builder().addLocal(i.name(), i.type().hiltiType(cg), reuse=True)
         
         for stmt in self._stmts:
             stmt.execute(cg)
@@ -154,6 +170,8 @@ class FieldHook(Block):
         for p in self.params():
             if not scope.lookupID(p.name()):
                 scope.addID(p)
+
+        scope.addID(id.Local("__hookrc", type.Bool()))
                 
         return scope
     
@@ -187,10 +205,8 @@ class Print(Statement):
         printer.output(";", nl=True)
 
     def simplify(self):
-        self._exprs = [e.fold() for e in self._exprs]
-        
-        for e in self._exprs:
-            e.simplify()
+        self._exprs = [e.simplify() for e in self._exprs]
+        return self
         
     ### Overidden from Statement.
 
@@ -235,8 +251,8 @@ class Expression(Statement):
         printer.output(";", nl=True)
 
     def simplify(self):
-        self._expr = self._expr.fold()
-        self._expr.simplify()
+        self._expr = self._expr.simplify()
+        return self
         
     ### Overidden from Statement.
 
@@ -245,4 +261,97 @@ class Expression(Statement):
         
     def __str__(self):
         return str(self._expr) + ";"
+
+class IfElse(Statement):
+    """A statement branching to one of two alternatives based on the value of
+    an expression. 
+
+    cond: ~~Expression - The expression to evaluate; must be convertable a
+    boolean value.
+    
+    yes: ~~Stmt - The statement to execute when *cond* is True. 
+    
+    no: ~~Stmt, or None - The statement to execute when *cond* is False. Can
+    be None if in this case, nothing should be done. 
+    
+    location: ~~Location - The location where the statement was defined. 
+    """
+    def __init__(self, cond, yes, no=None, location=None):
+        super(IfElse, self).__init__(location=location)
+        self._cond = cond
+        self._yes = yes
+        self._no = no
+        
+    ### Overidden from ast.Node.
+    
+    def validate(self, vld):
+        self._cond.validate(vld)
+        self._yes.validate(vld)
+        if self._no:
+            self._no.validate(vld)
+        
+        # FIXME
+        #if not self._cond.canCastTo(type.Bool()):
+        #    vld.error(self._cond, "expression must be of type bool")
+
+    def pac(self, printer):
+        printer.output("if ( ")
+        self._cond.pac(printer)
+        printer.output(" ) { ", nl=True)
+        printer.pushIndent()
+        self._yes.pac(printer)
+        printer.popIndent()
+        printer.output("}", nl=True)
+
+        if self._no:
+            printer.output("else { ", nl=True)
+            printer.pushIndent()
+            self._no.pac(printer)
+            printer.popIndent()
+            printer.output("}", nl=True)
+            
+    def simplify(self):
+        self._cond = self._cond.simplify()
+        self._yes = self._yes.simplify()
+        if self._no:
+            self._no.simplify()
+            
+        if self._cond.isConst():
+            if self._cond.constant().value():
+                return self._yes
+            else:
+                if self._no:
+                    return self._no
+                else:
+                    return Epsilon()
+                
+        return self
+        
+    ### Overidden from Statement.
+
+    def execute(self, cg):
+        fbuilder = cg.builder().functionBuilder()
+        
+        yes = fbuilder.newBuilder("__true")
+        no = fbuilder.newBuilder("__false") if self._no else None
+        cont = fbuilder.newBuilder("__cont")
+        
+        cond = self._cond.evaluate(cg)
+        
+        cg.builder().if_else(cond, yes.labelOp(), no.labelOp() if no else cont.labelOp())
+        
+        cg.setBuilder(yes)
+        self._yes.execute(cg)
+        yes.jump(cont.labelOp())
+        
+        if no:
+            cg.setBuilder(no)
+            self._no.execute(cg)
+            no.jump(cont.labelOp())
+            
+        cg.setBuilder(cont)
+        
+    def __str__(self):
+        return "if ( %s ) { %s } else { %s }" % (self._cond, self._yes, self._no)
+    
     

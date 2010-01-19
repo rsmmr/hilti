@@ -126,8 +126,7 @@ class Module(ast.Node):
             stmt.resolve(resolver)
 
     def simplify(self):
-        for s in self._stmts:
-            s.simplify()
+        self._stmts = [s.simplify() for s in self._stmts]
         
     # Visitor support.
     def visit(self, v):

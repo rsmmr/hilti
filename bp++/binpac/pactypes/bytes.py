@@ -106,9 +106,9 @@ class _:
     def type(e):
         return type.UnsignedInteger(32)
     
-    def fold(e):
+    def simplify(e):
         if e.isConst():
-            n = len(e.fold().constant().value())
+            n = len(e.constant().value())
             const = constant.Constant(n, type.UnsignedInteger(32))
             return expr.Constant(const)
         
@@ -125,11 +125,11 @@ class _:
     def type(e1, e2):
         return type.Bool()
     
-    def fold(e1, e2):
+    def simplify(e1, e2):
         if not e1.isConst() or not e2.isConst():
             return None
             
-        b = (e1.fold().constant().value() == e2.fold().constant().value())
+        b = (e1.constant().value() == e2.constant().value())
         return expr.Constant(constant.Constant(b, type.Bool()))
         
     def evaluate(cg, e1, e2):

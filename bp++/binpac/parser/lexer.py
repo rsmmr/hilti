@@ -10,7 +10,7 @@ import binpac.support.parseutil as parseutil
 
 # Language keywords. They will be turned into the corresponding all-uppercase
 # token.
-keywords = ["module", "type", "export", "unit", "print", "list", "global", "const"]
+keywords = ["module", "type", "export", "unit", "print", "list", "global", "const", "if", "else"]
 
 # Keywords for simple types, and what we turn them into.
 types = {

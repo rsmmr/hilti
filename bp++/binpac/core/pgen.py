@@ -170,7 +170,7 @@ class ParserGen:
 
         grammar = self._current_grammar
         
-        cur = hilti.core.id.ID("cur", _BytesIterType, hilti.core.id.Role.PARAM)
+        cur = hilti.core.id.ID("__cur", _BytesIterType, hilti.core.id.Role.PARAM)
         result = self._typeParseObjectRef()
 
         args = [cur]
@@ -194,7 +194,7 @@ class ParserGen:
 
         self._newParseObject(pobj)
         
-        args = ParserGen._Args(fbuilder, ["cur", "pobj", "lahead", "lahstart"])
+        args = ParserGen._Args(fbuilder, ["__cur", "__pobj", "__lahead", "__lahstart"])
         self._parseStartSymbol(args, [])
         
         self.builder().return_result(pobj)
@@ -212,12 +212,12 @@ class ParserGen:
             cg = self.cg()
 
             args = []
-            args += [hilti.core.id.ID("self", self._typeParseObjectRef(), hilti.core.id.Role.PARAM)]
+            args += [hilti.core.id.ID("__self", self._typeParseObjectRef(), hilti.core.id.Role.PARAM)]
             
             for p in self._current_grammar.params() + hook.params():
                 args += [hilti.core.id.ID(p.name(), p.type().hiltiType(self._cg), hilti.core.id.Role.PARAM)]
 
-            ftype = hilti.core.type.Function(args, hilti.core.type.Void())
+            ftype = hilti.core.type.Function(args, hilti.core.type.Bool())
             
             name = self._name("hook", fname)
             
@@ -226,7 +226,16 @@ class ParserGen:
             func = fbuilder.function()
             self.moduleBuilder().setCacheEntry(hook, func)
             
+            rc = hilti.core.id.ID("__hookrc", hilti.core.type.Bool(), hilti.core.id.Role.LOCAL)
+            oprc = cg.builder().idOp(rc)
+            
+            func.addID(rc)
+            cg.builder().assign(oprc, builder.constOp(True))
+            
             hook.execute(cg)
+            
+            cg.builder().return_result(oprc)
+            
             cg.endFunction()
             return func
         
@@ -259,7 +268,7 @@ class ParserGen:
             self._parseLookAhead(prod, args)
             
         elif isinstance(prod, grammar.Boolean):
-            util.internal_error("grammar.Boolean not yet supported")
+            self._parseBoolean(prod, args)
             
         elif isinstance(prod, grammar.Switch):
             util.internal_error("grammar.Switch not yet supported")
@@ -484,7 +493,7 @@ class ParserGen:
         builder = self.builder()
         builder.setNextComment("Parsing non-terminal %s" % prod.symbol())
         
-        result = builder.addLocal("__presult", _ParseFunctionResultType)
+        result = builder.addTmp("__presult", _ParseFunctionResultType)
         
         params = []
         for p in self._current_grammar.params():
@@ -494,6 +503,29 @@ class ParserGen:
         builder.tuple_index(args.cur, result, builder.constOp(0))
         builder.tuple_index(args.lahead, result, builder.constOp(1))
 
+    def _parseBoolean(self, prod, args):
+        builder = self.builder()
+        builder.setNextComment("Parsing boolean %s" % prod.symbol())
+
+        save_builder = self.builder()
+        
+        done = self.functionBuilder().newBuilder("done")
+        branches = [None, None]
+        
+        for (i, tag) in ((0, "True"), (1, "False")):
+            alts = prod.branches()
+            branches[i] = self.functionBuilder().newBuilder("if-%s" % tag)
+            branches[i].setComment("Branch for %s" % tag)
+            self.cg().setBuilder(branches[i])
+            self._parseProduction(alts[i], args)
+            self._finishedProduction(args.obj, alts[i], None)
+            self.builder().jump(done.labelOp())
+        
+        bool = prod.expr().evaluate(self.cg())
+        save_builder.if_else(bool, branches[0].labelOp(), branches[1].labelOp())
+        
+        self.cg().setBuilder(done)
+        
     ### Methods generating helper code. 
         
     def _parseError(self, builder, msg):
@@ -545,6 +577,7 @@ class ParserGen:
         """Called whenever a production has sucessfully parsed value."""
         
         builder = self.builder()
+        fbuilder = self.functionBuilder()
         
         if isinstance(prod, grammar.Terminal):
             if value:
@@ -565,10 +598,10 @@ class ParserGen:
 
             if hook.field().type().dollarDollarType(hook.field()):
                 # Add the implicit '$$' argument. 
-                assert value
                 params += [value]
                 
-            builder.call(None, builder.idOp(hookf.name()), builder.tupleOp([obj] + params))
+            rc = fbuilder.addTmp("__hookrc", hilti.core.type.Bool())
+            builder.call(rc, builder.idOp(hookf.name()), builder.tupleOp([obj] + params))
         
     ### Methods defining types. 
     
@@ -621,10 +654,10 @@ class ParserGen:
         """Creates a HILTI function with the standard parse function
         signature."""
         
-        arg1 = hilti.core.id.ID("cur", _BytesIterType, hilti.core.id.Role.PARAM)
-        arg2 = hilti.core.id.ID("self", self._typeParseObjectRef(), hilti.core.id.Role.PARAM)
-        arg3 = hilti.core.id.ID("lahead", _LookAheadType, hilti.core.id.Role.PARAM)
-        arg4 = hilti.core.id.ID("lahstart", _BytesIterType, hilti.core.id.Role.PARAM)
+        arg1 = hilti.core.id.ID("__cur", _BytesIterType, hilti.core.id.Role.PARAM)
+        arg2 = hilti.core.id.ID("__self", self._typeParseObjectRef(), hilti.core.id.Role.PARAM)
+        arg3 = hilti.core.id.ID("__lahead", _LookAheadType, hilti.core.id.Role.PARAM)
+        arg4 = hilti.core.id.ID("__lahstart", _BytesIterType, hilti.core.id.Role.PARAM)
         result = _ParseFunctionResultType
 
         args = [arg1, arg2, arg3, arg4]

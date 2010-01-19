@@ -16,6 +16,18 @@ class Node(visitor.Visitable):
         """
         return self._location
 
+    def simplify(self):
+        """Simplifies the node. The definition of 'simplify' is left to the
+        derived classes but the node may only change in a way thay does not
+        modify its semantics.
+        
+        Returns: ~~Node - The simplified node, which may be just *self*.
+
+        Note: Derived classes must not override this method but ~~doSimplify.
+        """
+        node = self.doSimplify()
+        return node if node else self
+    
     ### Method that can be overridden by derived classes.
 
     def validate(self, vld):
@@ -52,16 +64,19 @@ class Node(visitor.Visitable):
         """
         pass
     
-    def simplify(self):
+    def doSimplify(self):
         """Simplifies the node. The definition of 'simplify' is left to the
         derived classes but the node may only change in a way thay does not
         modify its semantics.
         
-        The base class does not do anything..
+        The base class does not do anything and always return *None*.
+        
+        Returns: ~~Node or None - If the derived classes was able to simplify
+        the node, the new simpler node. If not, *None*. 
         
         Can be overidden by derived classes, in which case the superclass'
-        version must be called first. 
+        version must be called first. If the superclass returns a simplified
+        node, that one must be returned directly. 
         """
-        pass
-
+        return None
         

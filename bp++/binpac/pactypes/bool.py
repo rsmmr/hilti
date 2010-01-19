@@ -55,11 +55,11 @@ class _:
     def type(e):
         return type.Bool()
     
-    def fold(e):
+    def simplify(e):
         if not e.isConst():
             return None
         
-        inverse = not e.fold().constant().value()
+        inverse = not e.constant().value()
         return expr.Constant(constant.Constant(inverse, type.Bool()))
         
     def evaluate(cg, e):

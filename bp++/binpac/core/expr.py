@@ -31,7 +31,8 @@ class Expression(ast.Node):
         """
         
         if self.isConst():
-            const = self.fold()
+            const = self.simplify()
+            # This will be a constant now
             assert isinstance(const, Constant)
             
             # We just try the case. 
@@ -53,7 +54,7 @@ class Expression(ast.Node):
         *cg*: ~~CodeGen - The current code generator; can be None if the
         expression is constant. 
         
-        Returns: Expression - The new expression of the target type
+        Returns: ~~hilti.core.instruction.operand - The resulting  expression of the target type
         with the casted expression.
         
         Throws: operator.CastError - If the conversion is not possible.  This
@@ -63,7 +64,8 @@ class Expression(ast.Node):
             raise operator.CastError, "cannot convert type %s to type %s" % (self.type(), dsttype)
 
         if self.isConst():
-            const = self.fold()
+            const = self.simplify()
+            # This will be a constant now.
             assert isinstance(const, Constant)
             try:
                 const = operator.castConstTo(const, dsttype)
@@ -85,7 +87,7 @@ class Expression(ast.Node):
             return True
         
         # Test if we can fold us into a constant.
-        if isinstance(self.fold(), Constant):
+        if isinstance(self.simplify(), Constant):
             return True
         
         return False
@@ -101,16 +103,6 @@ class Expression(ast.Node):
         """
         util.internal_error("Expression::type not overridden in %s", self.__class__)
     
-    def fold(self):
-        """Performs constant folding. 
-        
-        Can be overidden by derived classes.
-        
-        Returns: ~~expression.Constant - The folded expression if foldable, or
-        the original express (i.e., *self*) of not.
-        """
-        return self
-        
     def evaluate(self, cg):
         """Generates code to evaluate the expression.
  
@@ -125,7 +117,25 @@ class Expression(ast.Node):
 
     def __str__(self):
         return "<generic expression>"
+
+class Assignable(Expression):
+    """Base class for all expression objects to which one can assign values.
+    
+    location: ~~Location - The location where the expression was defined. 
+    """
+    def __init__(self, location=None):
+        super(Assignable, self).__init__(location)
+    
+    def assign(self, cg, value):
+        """Generates code to assign a value to the expression.
         
+        Must be overridden by derived classes.
+        
+        *cg*: ~~CodeGen - The current code generator.
+        *value* hilti.core.instruction.operand - The value to assign.
+        """
+        util.internal_error("Assignable::assign not overridden in %s", self.__class__)
+    
 class Overloaded(Expression):
     """Class for expressions overloaded by the type of their operands. 
 
@@ -165,10 +175,9 @@ class Overloaded(Expression):
         operator.pacOperator(printer, self._op, self._exprs)
 
     def simplify(self):
-        self._exprs = [e.fold() for e in self._exprs]
-        
-        for e in self._exprs:
-            e.simplify()
+        self._exprs = [e.simplify() for e in self._exprs]
+        expr = operator.simplify(self._op, self._exprs)
+        return expr if expr else self
         
     ### Overidden from Expression.
 
@@ -176,10 +185,6 @@ class Overloaded(Expression):
         t = operator.type(self._op, self._exprs)
         assert t
         return t
-
-    def fold(self):
-        folded = operator.fold(self._op, self._exprs)
-        return folded if folded else self
 
     def evaluate(self, cg):
         return operator.evaluate(self._op, cg, self._exprs)
@@ -226,7 +231,7 @@ class Constant(Expression):
     def __str__(self):
         return str(self._const.value())
     
-class Name(Expression):
+class Name(Assignable):
     """An expression referencing an identifier.
     
     name: string - The name of the ID.
@@ -239,6 +244,16 @@ class Name(Expression):
         self._name = name
         self._scope = scope
 
+    def _internalName(self):
+        """Maps user-visible name to internal name.
+        
+        Todo:  Not sure this is the best place for this ...
+        """
+        if self._name == "self":
+            return "__self"
+        
+        return self._name
+        
     ### Overidden from ast.Node.
     
     def validate(self, vld):
@@ -247,25 +262,89 @@ class Name(Expression):
         
     def pac(self, printer):
         printer.output(self._name)
-        
-    ### Overidden from Expression.
 
-    def fold(self):
+    def simplify(self):
+        expr = super(Name, self).simplify()
+        if expr:
+            return expr
+
         i = self._scope.lookupID(self._name)
         assert i
         
         if isinstance(i, id.Constant):
             return Constant(i.value())
     
-        else:
-            return self
+        return self
         
+    ### Overidden from Expression.
+
     def type(self):
         id = self._scope.lookupID(self._name)
         return id.type() if id else type.Unknown(self._name, location=self.location())
-    
+
     def evaluate(self, cg):
-        return cg.functionBuilder().idOp(self._name)
+        name = self._internalName()
+        return cg.functionBuilder().idOp(name)
     
     def __str__(self):
         return self._name
+
+    ### Overidden from Assignable.
+
+    def assign(self, cg, value):
+        i = self._scope.lookupID(self._name)
+        assert i
+        
+        if isinstance(i, id.Global) or isinstance(i, id.Local) or isinstance(i, id.Parameter):
+            name = self._internalName()
+            cg.builder().assign(cg.functionBuilder().idOp(name), value)
+            
+        else:
+            util.internal_error("unexpected id type %s in NameExpr::assign", repr(i))
+            
+        
+class Assign(Expression):
+    """An expression assigning a value to a destination.
+    
+    dest: ~~Expression - The destination expression.
+    value: ~~Expression - The value to assign.
+    location: ~~Location - The location where the expression was defined. 
+    """
+    
+    def __init__(self, dest, value, location=None):
+        super(Assign, self).__init__(location=location)
+        self._dest = dest
+        self._value = value
+
+    ### Overidden from ast.Node.
+    
+    def validate(self, vld):
+        self._dest.validate(vld)
+        self._value.validate(vld)
+        
+        if not isinstance(self._dest, Assignable):
+            vld.error(self, "cannot assign to lhs expression")
+        
+        if self._dest.type() != self._value.type():
+            vld.error(self, "types do not match in assigment")
+
+        if self._dest.isConst():
+            vld.error(self, "cannot assign to constant")
+            
+    def pac(self, printer):
+        self._dest.pac(printer)
+        printer.output(" = ")
+        self._value.pac(printer)
+
+    ### Overidden from Expression.
+
+    def type(self):
+        return self._dest.type()
+    
+    def evaluate(self, cg):
+        value = self._value.evaluate(cg)
+        self._dest.assign(cg, value)
+    
+    def __str__(self):
+        return self._name
+    

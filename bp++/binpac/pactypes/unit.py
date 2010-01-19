@@ -442,7 +442,7 @@ class Attribute:
         type = lhs.type().fieldType(ident)
         
         builder = cg.builder()
-        tmp = builder.makeTmp(type.hiltiType(cg))
+        tmp = builder.addTmp("__attr", type.hiltiType(cg))
         builder.struct_get(tmp, lhs.evaluate(cg), builder.constOp(ident))
         return tmp
     

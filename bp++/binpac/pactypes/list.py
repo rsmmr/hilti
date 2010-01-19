@@ -82,38 +82,64 @@ class List(type.ParseableType):
     ### Overridden from ParseableType.
 
     def supportedAttributes(self):
-        return {}
+        return { "until": (type.Bool(), False, None) }
 
     def production(self, field):
         loc = self.location()
-        # Left-factored & right-recursive. 
-        #
-        # List1 -> Item List2
-        # List2 -> Epsilon | List1
-        l1 = grammar.Sequence(location=loc)
-        l2 = grammar.LookAhead(grammar.Epsilon(), l1, location=loc)
-        item = self.itemType().production(field)
-        l1.addProduction(item)
-        l1.addProduction(l2) 
-        
-        loc = field.location()
+        until = self.attributeExpr("until")
 
-        # Create a hook "list.push_back($$)".
-        
+        # Create a hook. 
         hook = stmt.FieldHook(field, 255, location=loc)
         
+        # Create a "list.push_back($$)" statement. 
         dollar = expr.Name("__dollardollar", hook.scope(), location=loc)
-        self = expr.Name("self", hook.scope(), location=loc)
+        slf = expr.Name("self", hook.scope(), location=loc)
         list = expr.Constant(constant.Constant(field.name(), type.Identifier()), location=loc)
-        push_back = "push_back" #expr.Constant(constant.Constant("push_back", type.Identifier()), location=loc)
+        method = "push_back" #expr.Constant(constant.Constant("push_back", type.Identifier()), location=loc)
+        attr = expr.Overloaded(operator.Operator.Attribute, (slf, list), location=loc)
+        push_back = expr.Overloaded(operator.Operator.MethodCall, (attr, method, [dollar]), location=loc)
+        push_back = stmt.Expression(push_back, location=loc)
         
-        attr = expr.Overloaded(operator.Operator.Attribute, (self, list), location=loc)
-        call = expr.Overloaded(operator.Operator.MethodCall, (attr, push_back, [dollar]), location=loc)
-
-        hook.addStatement(stmt.Expression(call))
-        
-        item.addHook(hook)
-        
+        if until:
+            # &until(expr)
+             
+            # List1 -> Item Alt
+            # List2 -> Epsilon
+            jookrc = expr.Name("__hookrc", hook.scope())
+            l1 = grammar.Sequence(location=loc)
+            eps = grammar.Epsilon(location=loc)
+            alt = grammar.Boolean(hookrc, l1, eps, location=loc)
+            item = self.itemType().production(field)
+            l1.addProduction(item)
+            l1.addProduction(alt)
+            
+            # if ( <until-expr> ) 
+            #     __hookrc = False
+            # else
+            #     list.push_back($$)
+            
+            stop = stmt.Expression(expr.Assign(hookrc, expr.Constant(constant.Constant(False, type.Bool()))))
+            ifelse = stmt.IfElse(expr, stop, push_back, location=loc)
+            
+            item.addHook(hook)
+            
+        else:
+            # No attributes, use look-ahead to figure out when to stop parsing. 
+            
+            # Left-factored & right-recursive. 
+            #
+            # List1 -> Item List2
+            # List2 -> Epsilon | List1
+            l1 = grammar.Sequence(location=loc)
+            l2 = grammar.LookAhead(grammar.Epsilon(), l1, location=loc)
+            item = self.itemType().production(field)
+            l1.addProduction(item)
+            l1.addProduction(l2) 
+            
+            #     list.push_back($$)
+            hook.addStatement(push_back)        
+            item.addHook(hook)
+            
         return l1
 
     def dollarDollarType(self, field):
