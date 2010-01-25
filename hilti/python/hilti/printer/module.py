@@ -65,7 +65,7 @@ def _fmtOp(op):
 
         if isinstance(c.type(), type.Reference) and \
            isinstance(c.type().refType(), type.Bytes):
-            return 'b"%s"' % c.value().encode("string-escape")
+            return 'b"%s"' % c.value().encode("string-escape").replace("\\\\", "\\")
         
         if isinstance(c.type(), type.Reference) and \
            isinstance(c.type().refType(), type.RegExp):

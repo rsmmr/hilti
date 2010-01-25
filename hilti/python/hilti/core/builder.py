@@ -408,19 +408,19 @@ class BlockBuilder(OperandBuilder):
         """
         return self._fbuilder
 
-    def addLocal(self, name, ty, value=None):
+    def addLocal(self, name, ty, value=None, force=False, reuse=False):
         """Adds a new local variable to the function. This is just a
         convinience function that forwards to
         ~~FunctionBuilder.addLocal. See there for more information.
         """
-        return self._fbuilder.addLocal(name, ty, value)
+        return self._fbuilder.addLocal(name, ty, value, force, reuse)
 
-    def addTmp(self, ty):
+    def addTmp(self, name, ty):
         """Creates a temporary local variable. This is just a
         convinience function that forwards to
         ~~FunctionBuilder.addLocal. See there for more information.
         """
-        return self._fbuilder.addTmp(ty)
+        return self._fbuilder.addTmp(name, ty)
     
     def idOp(self, i):
         """Returns an ID operand. Different from ~~OperandBuilder.idOp, this

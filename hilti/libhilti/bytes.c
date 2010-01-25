@@ -446,12 +446,13 @@ hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int32_t n, hlt_exception*
         // Need to switch chunk.
         n -= pos.chunk->end - pos.cur;
         pos.chunk = pos.chunk->next;
-        pos.cur = pos.chunk->start;
         
         if ( ! pos.chunk ) {
             // End reached.
             return PosEnd;
         }
+        
+        pos.cur = pos.chunk->start;
     }
     
     return pos;

@@ -1,0 +1,28 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build  %INPUT -o a.out 
+#
+# Makes sure the CPS conversion deals correctly with "C" function
+# which don't get a frame pointer. 
+
+module Main
+
+import Hilti
+
+global bool b = True
+global ref<bytes> x = b""
+
+void init_test() {
+    call hilti::print (x, True)
+    if.else b @__true @__false
+    
+@__true:
+    jump @__cont
+    
+@__false:
+    jump @__cont
+    
+@__cont:
+}
+
+void  run() {}

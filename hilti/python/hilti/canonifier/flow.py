@@ -36,7 +36,7 @@ def _splitBlock(canonifier, ins=None, add_flow_dbg=False):
         
         current_block.addInstruction(ins)
     
-    new_block = block.Block(canonifier.currentFunction(), instructions = [], name=canonifier.makeUniqueLabel())
+    new_block = block.Block(canonifier.currentFunction(), instructions = [], name=canonifier.makeUniqueLabel(), may_remove=True)
     canonifier.addTransformedBlock(new_block)
     return new_block
 

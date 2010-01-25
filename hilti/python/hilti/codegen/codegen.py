@@ -550,7 +550,7 @@ class CodeGen(visitor.Visitor,objcache.Cache):
         
         Returns: llvm.core.Type.struct - The current frame pointer.
         """
-        return self._llvm.frameptr
+        return self._llvm.frameptr 
     
     def llvmConstInt(self, n, width):
         """Creates a LLVM integer constant. The constant is signed. 
@@ -1096,7 +1096,12 @@ class CodeGen(visitor.Visitor,objcache.Cache):
             name = self.nameFunction(hilti_func)
         
         # Build function type.
-        args = [llvm.core.Type.pointer(self.llvmTypeFunctionFrame(hilti_func))]
+        
+        if hilti_func.callingConvention() == function.CallingConvention.HILTI:
+            args = [llvm.core.Type.pointer(self.llvmTypeFunctionFrame(hilti_func))]
+        else:
+            args = []
+            
         ft = llvm.core.Type.function(llvm.core.Type.void(), args + [t for (n, t) in addl_args]) 
         
         # Create function.
@@ -1107,7 +1112,10 @@ class CodeGen(visitor.Visitor,objcache.Cache):
             func.linkage = llvm.core.LINKAGE_INTERNAL
         
         # Set parameter names. 
-        func.args[0].name = "__frame"
+        
+        if args:
+            func.args[0].name = "__frame"
+            
         for i in range(len(addl_args)):
             func.args[i+1].name = addl_args[i][0]
 
@@ -1784,8 +1792,18 @@ class CodeGen(visitor.Visitor,objcache.Cache):
         
         block: ~~Block - The block to call the function for. 
         args: list of llvm.core.Value - The arguments to pass to the function.
+        
+        Todo: Even though this method can currently be called for functions of
+        all calling conventiosn, the callers always pass in the frameptr as
+        first arguments. We generally discard the first argument for all
+        functions which are't of ~~HILTI convention. That's just a bad hack
+        and we should clean this up. 
         """
         llvm_func = self.llvmGetFunctionForBlock(block)
+        
+        if block.function().callingConvention() != function.CallingConvention.HILTI:
+            args = args[1:]
+        
         self._llvmGenerateTailCall(llvm_func, args)
             
     def llvmGenerateTailCallToFunction(self, func, args, llvm_result=None):

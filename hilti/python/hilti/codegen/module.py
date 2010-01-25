@@ -97,7 +97,7 @@ def _(self, b):
     if self.currentFunction().callingConvention() == function.CallingConvention.HILTI:
         self._llvm.frameptr = self._llvm.func.args[0]
     else:
-        self._llvm.frameptr = None
+        self._llvm.frameptr = None # llvm.core.Constant.null(self._llvm.func.args[0].type)
         
     self._llvm.block = self._llvm.func.append_basic_block("")
     self.pushBuilder(self._llvm.block)

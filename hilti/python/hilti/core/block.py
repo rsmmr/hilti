@@ -23,7 +23,7 @@ class Block(ast.Node):
     location: ~~Location - A location to be associated with the block. 
     """
     
-    def __init__(self, function, may_remove=True, instructions = None, name = None, location = None):
+    def __init__(self, function, may_remove=False, instructions = None, name = None, location = None):
         super(Block, self).__init__(location)
         self._function = function
         self._ins = instructions if instructions else []
