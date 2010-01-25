@@ -33,7 +33,9 @@ class State(object):
         """
         return self._import_paths
 
-def error(p, msg, lineno=0):
+_loc = location
+    
+def error(p, msg, lineno=0, location=None):
     """Reports an parsing error.
     
     p: ply.yacc.YaccProduction - The current production as handed to parsing
@@ -43,6 +45,9 @@ def error(p, msg, lineno=0):
     
     lineno: int - The line number to report the error in. If zero and *p* is
     given, the information is pulled from the first symbol in *p*.
+    
+    loc: Location - Location information which will override that from
+    *p* and *lineno*.
     """
 
     if p:
@@ -60,8 +65,11 @@ def error(p, msg, lineno=0):
         state = _state
         
     state._errors += 1
-    loc = location.Location(state._filename, lineno)        
-    util.error(msg, component="parser", context=loc, fatal=False)
+    
+    if not location:
+        location = _loc.Location(state._filename, lineno)
+        
+    util.error(msg, component="parser", context=location, fatal=False)
 
 # This global is a bit unfortunate as it prevents us from having multiple
 # parsers in parallel. However, if PLY reports an end-of-file error, it

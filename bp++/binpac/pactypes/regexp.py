@@ -18,6 +18,9 @@ class RegExp(type.ParseableType):
     def __init__(self, location=None):
         super(RegExp, self).__init__(location=location)
 
+    def parsedType(self):
+        return type.Bytes()
+        
     def hiltiType(self, cg):
         return hilti.core.type.Reference([hilti.core.type.Bytes()])
 

@@ -322,9 +322,6 @@ class ParseableType(Type):
         Throws: ~~AttributeMismatch - If the attribute does not match with what
         ~supportedAttributes specifies.
         """
-        if expr and not expr.isConst():
-            raise ParseableType.AttributeMismatch, "attribute expr must be constant"
- 
         try:
             all = self.supportedAttributes()
             (ty, const, default) = all[name]
@@ -334,7 +331,7 @@ class ParseableType(Type):
             
             if expr and not ty:
                 raise ParseableType.AttributeMismatch, "attribute cannot have an expression"
-            
+
             if const and not expr.isConst():
                 raise ParseableType.AttributeMismatch, "attribute's expression must be a constant"
 
@@ -372,6 +369,10 @@ class ParseableType(Type):
         return self
         
     ### Methods for derived classes to override.    
+
+    def parsedType(self):
+        """XXX"""
+        return self
     
     def supportedAttributes(self):
         """Returns the attributes this type supports.
@@ -389,7 +390,11 @@ class ParseableType(Type):
         implementation returns an empty dictionary, i.e., no supported attributes.
         """
         return {}
-        
+
+    def initParser(self, field):
+        """XXX"""
+        pass
+    
     def production(self, field):
         """Returns a production for parsing instances of this type.
         
@@ -398,20 +403,6 @@ class ParseableType(Type):
         The method must be overridden by derived classes.
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
-
-    def dollarDollarType(self, field):
-        """Returns the type of the ``$$`` variable when parsing this type.
-        
-        The method can be overridden by derived classes. The default
-        implementation returns None. 
-        
-        field: ~~Field - The unit field the ``$$`` variable will be associated
-        with. 
-        
-        Returns: ~~Type - The type of ``$$`, or None if the variable isn't
-        used for this type. 
-        """
-        return None
         
     def generateParser(self, cg, cur, dst, skipping):
         """Generate code for parsing an instance of the type. 

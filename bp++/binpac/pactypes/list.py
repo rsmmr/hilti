@@ -84,12 +84,15 @@ class List(type.ParseableType):
     def supportedAttributes(self):
         return { "until": (type.Bool(), False, None) }
 
+    def initParser(self, field):
+        ctlhook = stmt.FieldControlHook(field, 255, self.itemType())
+        field.setControlHook(ctlhook)
+    
     def production(self, field):
         loc = self.location()
         until = self.attributeExpr("until")
-
-        # Create a hook. 
-        hook = stmt.FieldHook(field, 255, location=loc)
+        hook = field.controlHook()
+        assert hook
         
         # Create a "list.push_back($$)" statement. 
         dollar = expr.Name("__dollardollar", hook.scope(), location=loc)
@@ -105,7 +108,7 @@ class List(type.ParseableType):
              
             # List1 -> Item Alt
             # List2 -> Epsilon
-            jookrc = expr.Name("__hookrc", hook.scope())
+            hookrc = expr.Name("__hookrc", hook.scope())
             l1 = grammar.Sequence(location=loc)
             eps = grammar.Epsilon(location=loc)
             alt = grammar.Boolean(hookrc, l1, eps, location=loc)
@@ -119,8 +122,9 @@ class List(type.ParseableType):
             #     list.push_back($$)
             
             stop = stmt.Expression(expr.Assign(hookrc, expr.Constant(constant.Constant(False, type.Bool()))))
-            ifelse = stmt.IfElse(expr, stop, push_back, location=loc)
+            ifelse = stmt.IfElse(until, stop, push_back, location=loc)
             
+            hook.addStatement(ifelse)
             item.addHook(hook)
             
         else:
@@ -142,9 +146,6 @@ class List(type.ParseableType):
             
         return l1
 
-    def dollarDollarType(self, field):
-        return field.type().itemType()
-    
 def itemType(exprs):
     return exprs[0].type().itemType()
         

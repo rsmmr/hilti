@@ -9,6 +9,7 @@ import hilti.printer
 
 import grammar
 import id
+import stmt
 
 import binpac.support.util as util
 
@@ -214,9 +215,12 @@ class ParserGen:
             args = []
             args += [hilti.core.id.ID("__self", self._typeParseObjectRef(), hilti.core.id.Role.PARAM)]
             
-            for p in self._current_grammar.params() + hook.params():
+            for p in self._current_grammar.params():
                 args += [hilti.core.id.ID(p.name(), p.type().hiltiType(self._cg), hilti.core.id.Role.PARAM)]
 
+            if isinstance(hook, stmt.FieldControlHook):
+                args += [hilti.core.id.ID("__dollardollar", hook.dollarDollarType().hiltiType(self.cg()), hilti.core.id.Role.PARAM)]
+                
             ftype = hilti.core.type.Function(args, hilti.core.type.Bool())
             
             name = self._name("hook", fname)
@@ -247,6 +251,9 @@ class ParserGen:
         pname = prod.__class__.__name__.lower()
         
         self.builder().makeDebugMsg("binpac", "bgn %s '%s'" % (pname, prod))
+
+        self._debugShowInput("input", args.cur)
+        self._debugShowInput("lahead start", args.lahstart)
         
         if isinstance(prod, grammar.Literal):
             self._parseLiteral(prod, args)
@@ -258,7 +265,8 @@ class ParserGen:
             self._parseChildGrammar(prod, args)
             
         elif isinstance(prod, grammar.Epsilon):
-            # Nothing to do.
+            # Nothing else to do.
+            self._finishedProduction(args.obj, prod, None)
             pass
         
         elif isinstance(prod, grammar.Sequence):
@@ -303,7 +311,7 @@ class ParserGen:
         # If we do not have a look-ahead symbol pending, search for our literal.
         match = self._matchToken(no_lahead, "literal", str(lit.id()), [lit], args)
         symbol = builder.addTmp("__lahead", hilti.core.type.Integer(32))
-        no_lahead.tuple_index(args.lahead, match, no_lahead.constOp(0))
+        no_lahead.tuple_index(symbol, match, no_lahead.constOp(0))
         
         found_lit = self.functionBuilder().newBuilder("found-sym")
         found_lit.tuple_index(args.cur, match, found_lit.constOp(1))
@@ -347,10 +355,15 @@ class ParserGen:
         builder.equal(cond, args.lahead, _LookAheadNone)
         builder.debug_assert(cond)
 
-        # Do we actually need the parsed value?
-        # We do if (1) we're storing it in the destination struct, or (2) the
-        # variable's type defines a '$$' parameter that we need to set. 
-        need_val = var.name() or hook.field().type().dollarDollarType(hook.field())
+        # Do we actually need the parsed value? We do if (1) we're storing it
+        # in the destination struct, or (2) the variable's type defines a '$$'
+        # parameter (i.e., there is a control hook) that we need to set. 
+        
+        need_val = (var.name() != None)
+        
+        for h in var.hooks():
+            if isinstance(h, stmt.FieldControlHook):
+                need_val = True
         
         # Call the type's parse function.
         dst = self.builder().addTmp(name, ty)
@@ -375,7 +388,7 @@ class ParserGen:
         # Call the parsing code. 
         result = builder.addTmp("__presult", _ParseFunctionResultType)
         cobj = builder.addTmp("__cobj_%s" % utype.name(), utype.hiltiType(self._cg))
-        
+
         cpgen._newParseObject(cobj)
         
         cargs = ParserGen._Args(self.functionBuilder(), (args.cur, cobj, args.lahead, args.lahstart))
@@ -386,7 +399,11 @@ class ParserGen:
 
         if child.name():
             builder.struct_set(args.obj, builder.constOp(child.name()), cobj)
-        
+
+        builder.assign(args.cur, cargs.cur)
+        builder.assign(args.lahead, cargs.lahead)
+        builder.assign(args.lahstart, cargs.lahstart)
+            
         self._finishedProduction(args.obj, child, cobj)
         
     def _parseSequence(self, prod, args, params=[]):
@@ -502,6 +519,7 @@ class ParserGen:
         builder.call(result, builder.idOp(func.name()), args.tupleOp(params))
         builder.tuple_index(args.cur, result, builder.constOp(0))
         builder.tuple_index(args.lahead, result, builder.constOp(1))
+        builder.tuple_index(args.lahstart, result, builder.constOp(2))
 
     def _parseBoolean(self, prod, args):
         builder = self.builder()
@@ -558,21 +576,26 @@ class ParserGen:
         pattern = fbuilder.moduleBuilder().cache(name, _makePatternConstant)
         builder.assign(args.lahstart, args.cur) # Record starting position.
         
-        next5 = fbuilder.addTmp("__next5", _BytesIterType)
-        str = fbuilder.addTmp("__str", hilti.core.type.Reference([hilti.core.type.Bytes()]))
-        builder.assign(next5, args.cur)
-        builder.incr(next5, next5)
-        builder.incr(next5, next5)
-        builder.incr(next5, next5)
-        builder.incr(next5, next5)
-        builder.incr(next5, next5)
-        builder.bytes_sub(str, args.cur, next5)
-        
-        builder.makeDebugMsg("binpac", "- input is %s ...", [str])
-        
         builder.regexp_match_token(match, pattern, args.cur)
         return match
 
+    def _debugShowInput(self, tag, cur):
+        fbuilder = self.cg().functionBuilder()
+        builder = self.cg().builder()
+        
+        next5 = fbuilder.addTmp("__next5", _BytesIterType)
+        str = fbuilder.addTmp("__str", hilti.core.type.Reference([hilti.core.type.Bytes()]))
+        builder.assign(next5, cur)
+        builder.incr(next5, next5)
+        builder.incr(next5, next5)
+        builder.incr(next5, next5)
+        builder.incr(next5, next5)
+        builder.incr(next5, next5)
+        builder.bytes_sub(str, cur, next5)
+        
+        msg = "- %s is " % tag
+        builder.makeDebugMsg("binpac", msg + "%s ...", [str])
+    
     def _finishedProduction(self, obj, prod, value):
         """Called whenever a production has sucessfully parsed value."""
         
@@ -596,8 +619,9 @@ class ParserGen:
             for p in self._current_grammar.params():
                 params += [builder.idOp(p.name())]
 
-            if hook.field().type().dollarDollarType(hook.field()):
+            if isinstance(hook, stmt.FieldControlHook):
                 # Add the implicit '$$' argument. 
+                assert value
                 params += [value]
                 
             rc = fbuilder.addTmp("__hookrc", hilti.core.type.Bool())

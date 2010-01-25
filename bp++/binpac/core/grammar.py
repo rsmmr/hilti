@@ -198,12 +198,20 @@ class Literal(Terminal):
     """
 
     _counter = 1
+    _all = {}
     
     def __init__(self, name, literal, expr=None, location=None):
         super(Literal, self).__init__(name, literal.type(), expr)
         self._literal = literal
-        self._id = Literal._counter
-        Literal._counter += 1
+        
+        idx = str(literal.value()) + str(literal.type())
+        
+        try:
+            self._id = Literal._all[idx]
+        except:
+            self._id = Literal._counter
+            Literal._all[idx] = self._id
+            Literal._counter += 1
 
     def literal(self):
         """Returns the literal.
@@ -221,7 +229,7 @@ class Literal(Terminal):
         return self._id
     
     def _fmtShort(self):
-        return "%s" % self._literal.value()
+        return "%s" % self.symbol()
     
     def _fmtLong(self):
         return "%s" % self._literal.value()
@@ -607,10 +615,18 @@ class Grammar:
             
             if len(laheads[0]) == 0 or len(laheads[1]) == 0:
                 msg += "%s is not reachable because of empty look-ahead set\n" % _loc(p)
-            
-            isect = laheads[0] & laheads[1]
+
+            lid0 = [l.id() for l in laheads[0]]
+            lid1 = [l.id() for l in laheads[1]]
+                
+            isect = set(lid0) & set(lid1)
             if isect:
-                isect = ", ".join([str(i) for i in isect])
+                # FIMXE: I'm sure we can do the mapping id->names nicer ...
+                syms = []
+                for l in (laheads[0] | laheads[1]):
+                    if l.id() in isect:
+                        syms += [str(l.literal())]
+                isect = ", ".join([syms[i] for i in isect])
                 msg += "%s is ambigious for look-ahead symbol(s) {%s}\n" % (_loc(p), isect)
 
             laheads = laheads[0] | laheads[1]
@@ -838,16 +854,17 @@ class Grammar:
     
             for (sym, p) in self._nterms.items():
                 start = "(*)" if sym == self._start.symbol() else ""
-                print >>file, "  %3s %5s" % (start, sym),
+                print >>file, "  %5s %15s" % (start, sym),
     
                 if isinstance(p, LookAhead):
+                    print >>file, "   ->",
                     def printAlt(i):
                         lahead = p.lookAheads()[i]
                         alt = p.alternatives()[i]
-                        print >>file, "  [%d] -> %s, when next is {%s})" % (i, alt, ", ".join([str(l) for l in lahead]))
+                        print >>file, "[%d] %s (with {%s})" % (i, alt, ", ".join([str(l) for l in lahead]))
                         
                     printAlt(0)
-                    print >>file, "         ",
+                    print >>file, " " * 29,
                     printAlt(1)
                     
                 else:

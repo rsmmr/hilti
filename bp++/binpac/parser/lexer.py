@@ -137,7 +137,13 @@ def t_IDENT(t):
         t.type = token
         
     return t    
-    
+
+def t_DOLLARDOLLAR(t):
+    r'\$\$'
+    t.value = "__dollardollar"
+    t.type = "IDENT"
+    return t
+
 # Error handling.
 def t_error(t):
     parseutil.error(t.lexer, "cannot parse input '%s...'" % t.value[0:10], lineno=t.lexer.lineno)

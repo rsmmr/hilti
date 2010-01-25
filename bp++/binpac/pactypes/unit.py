@@ -8,6 +8,7 @@ builtin_id = id
 
 import binpac.core.type as type
 import binpac.core.expr as expr
+import binpac.core.stmt as stmt
 import binpac.core.grammar as grammar
 import binpac.core.pgen as pgen
 import binpac.core.operator as operator
@@ -29,7 +30,7 @@ class Field:
     
     value: ~~Constant or None - The value for constant fields.
     
-    type: ~~Type or None - The type of the field; can be None if *constant* is
+    ty: ~~Type or None - The type of the field; can be None if *constant* is
     given.
     
     parent: ~~Unit - The unit type this field is part of.
@@ -41,16 +42,20 @@ class Field:
     Todo: Only ~~Bytes constant are supported at the moment. Which other's do
     we want? (Regular expressions for sure.)
     """
-    def __init__(self, name, value, type, parent, params=[], location=None):
+    def __init__(self, name, value, ty, parent, params=[], location=None):
         self._name = name
-        self._type = type if type else value.type()
+        self._type = ty if ty else value.type()
         self._value = value
         self._parent = parent
         self._location = location
         self._hooks = []
+        self._ctlhook = None
         self._params = params
 
         assert self._type
+        
+        if isinstance(ty, type.ParseableType):
+            ty.initParser(self)
 
     def location(self):
         """Returns the location associated with the constant.
@@ -59,6 +64,10 @@ class Field:
         """
         return self._location        
 
+    def setLocation(self, location):
+        """XXXX"""
+        self._location = location
+    
     def parent(self):
         """Returns the parent type this field is part of.
         
@@ -79,6 +88,10 @@ class Field:
         Returns: string - The name.
         """
         return self._type
+    
+    def parsedType(self):
+        """XXX"""
+        return self._type.parsedType()
     
     def value(self):
         """Returns the value for constant fields.
@@ -109,9 +122,21 @@ class Field:
         when the field has been fully parsed.
         
         hook: ~~FieldHook - The hook.
+        
+        Note: The control hook set via ~~setControlHook must not be added via
+        this method.
         """
         self._hooks += [hook]
-            
+
+    def setControlHook(self, hook):
+        """XXX"""
+        assert isinstance(hook, stmt.FieldControlHook)
+        self._ctlhook = hook
+
+    def controlHook(self):
+        """XXX"""
+        return self._ctlhook
+        
     def production(self):
         """Returns a production to parse the field.
         
@@ -136,11 +161,18 @@ class Field:
             if self._params:
                 assert isinstance(prod, grammar.ChildGrammar)
                 prod.setParams(self._params)
-            
-        assert prod
-        for hook in self._hooks:
-            prod.addHook(hook)
 
+        assert prod
+        
+        # We add the hooks to a concatened epsilon production. If we woudl add
+        # them to the returned production, they might end up being executed
+        # multiple times if that contains some kind of loop of itself.
+        eps = grammar.Epsilon()
+        prod = grammar.Sequence(seq=[prod, eps])
+                
+        for hook in self._hooks:
+            eps.addHook(hook)
+            
         return prod
 
     def validate(self, vld):
@@ -275,6 +307,15 @@ class Unit(type.ParseableType):
         """
         try:
             return self._fields[name].type()
+        except KeyError:
+            return None
+            
+    def parsedFieldType(self, name):
+        """
+        XXX
+        """
+        try:
+            return self._fields[name].parsedType()
         except KeyError:
             return None
         
@@ -430,16 +471,16 @@ class Unit(type.ParseableType):
 class Attribute:
     def validate(vld, lhs, ident):
         ident = ident.constant().value()
-        if not lhs.type().fieldType(ident):
+        if not lhs.type().parsedFieldType(ident):
             vld.error(lhs, "unknown unit attribute '%s'" % ident)
         
     def type(lhs, ident):
         ident = ident.constant().value()
-        return lhs.type().fieldType(ident)
+        return lhs.type().parsedFieldType(ident)
     
     def evaluate(cg, lhs, ident):
         ident = ident.constant().value()
-        type = lhs.type().fieldType(ident)
+        type = lhs.type().parsedFieldType(ident)
         
         builder = cg.builder()
         tmp = builder.addTmp("__attr", type.hiltiType(cg))

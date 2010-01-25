@@ -300,6 +300,7 @@ def type(op, exprs):
     Returns: ~~type.Type - The result type.
     """
     if not typecheck(op, exprs):
+        print op, [e.type() for e in exprs]
         util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
 
     func = _findOp("type", op, exprs)

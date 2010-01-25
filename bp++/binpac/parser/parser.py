@@ -16,6 +16,7 @@ import binpac.core.constant as constant
 import binpac.core.operator as operator
 import binpac.core.location as location
 import binpac.core.stmt as stmt
+import binpac.core.scope as scope
 import binpac.support.util as util
 import binpac.support.parseutil as parseutil
 import binpac.pactypes.unit as unit
@@ -206,17 +207,42 @@ def p_unit_field_list(p):
     """unit_field_list : unit_field unit_field_list
                        | unit_field"""
     pass
-    
+
+def _addAttrs(p, attrs):
+    for attr in attrs:
+        try:
+            p.parser.state.field.type().addAttribute(attr[0], attr[1])
+        except type.ParseableType.AttributeMismatch, e:
+            parseutil.error(p, "invalid attribute &%s: %s" % (attr[0], e))
+            raise SyntaxError    
+
 def p_unit_field(p):
-    """unit_field : opt_unit_field_name unit_field_type _instantiate_field ';'"""
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list _leave_unit_field ';'"""
+    _addAttrs(p, p[5])
     p.parser.state.unit.addField(p.parser.state.field)
 
 def p_unit_field_with_hook(p):
-    """unit_field : opt_unit_field_name unit_field_type _instantiate_field stmt_block"""
-    hook = stmt.FieldHook(p.parser.state.field, 0, stmts=p[4].statements())
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list stmt_block _leave_unit_field"""
+    hook = stmt.FieldHook(p.parser.state.field, 0, stmts=p[6].statements())
+    _addAttrs(p, p[5])
+    
     p.parser.state.field.addHook(hook)
     p.parser.state.unit.addField(p.parser.state.field)
 
+def p_enter_unit_field(p):
+    """_enter_unit_field : """
+    # If the field has a control hook, we push it's scope.
+    hook = p.parser.state.field.controlHook()
+    if hook:
+        _pushScope(p, hook.scope())
+    else:
+        # Push a dummy scope so that we can pop in any case.
+        _pushScope(p, scope.Scope(None, _currentScope(p)))
+
+def p_leave_unit_field(p):
+    """_leave_unit_field : """
+    _popScope(p)
+    
 def p_unit_field_property(p):
     """unit_field : PROPERTY expr ';'"""
     
@@ -236,19 +262,13 @@ def p_unit_field_property(p):
     
 def p_instantiate_field(p):
     """_instantiate_field : """
-    p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=_loc(p, -1))
-
-    for attr in p[-1][2]:
-        try:
-            p.parser.state.field[1].addAttribute(attr[0], attr[1])
-        except type.ParseableType.AttributeMismatch, e:
-            parseutil.error(p, "invalid attribute &%s: %s" % (attr[0], e))
-            raise SyntaxError    
+    loc = location.Location(p.lexer.parser.state._filename, p.lexer.lineno)
+    p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=loc)
     
 def p_unit_field_type_const(p):
-    """unit_field_type : constant     opt_type_attr_list
-                       | builtin_type opt_unit_field_params opt_type_attr_list
-                       | IDENT        opt_unit_field_params opt_type_attr_list
+    """unit_field_type : constant     
+                       | builtin_type opt_unit_field_params 
+                       | IDENT        opt_unit_field_params 
     """
     i = p[1]
 
@@ -257,7 +277,7 @@ def p_unit_field_type_const(p):
         if not i:
             # We try to resolve it later.
             val = (None, type.Unknown(p[1], location=_loc(p, 1)))
-            p[0] = (val, p[2], p[3])
+            p[0] = (val, p[2])
             return
     
     if isinstance(i, type.Type):
@@ -277,7 +297,7 @@ def p_unit_field_type_const(p):
         parseutil.error(p, "identifier must be type or constant")
         raise SyntaxError    
 
-    p[0] = (val, p[2], p[3] if len(p) > 3 else [])
+    p[0] = (val, p[2])
     
 def p_opt_unit_field_params(p):
     """opt_unit_field_params : '(' opt_expr_list ')'
@@ -298,6 +318,7 @@ def p_opt_type_attr_list(p):
 
 def p_attr(p):
     """attr : ATTRIBUTE '=' expr 
+            | ATTRIBUTE '(' expr ')'
             | ATTRIBUTE
     """
     p[0] = (p[1], p[3]) if len(p) > 2 else (p[1], None)
@@ -390,6 +411,10 @@ def p_expr_method_call(p):
 def p_expr_size(p):
     """expr : '|' expr '|'"""
     p[0] = expr.Overloaded(Operator.Size, (p[2], ), location=_loc(p, 1))
+
+def p_expr_paren(p):
+    """expr : '(' expr ')'"""
+    p[0] = p[1]
     
 def p_expr_list(p):
     """expr_list : expr ',' expr_list

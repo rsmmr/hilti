@@ -128,7 +128,8 @@ class FieldHook(Block):
         self._prio = prio
         
         super(FieldHook, self).__init__(field.parent().scope(), location=location)
-
+        super(FieldHook, self).scope().addID(id.Local("__hookrc", type.Bool()))
+        
         for stmt in stmts:
             self.addStatement(stmt)
 
@@ -148,31 +149,22 @@ class FieldHook(Block):
         """
         return self._prio
         
-    def params(self):
-        """Returns parameters to passed into the hook.
+class FieldControlHook(FieldHook):
+    """XXX"""
+    def __init__(self, field, prio, ddtype, stmts=[], location=None):
+        super(FieldControlHook, self).__init__(field, prio, stmts, location=location)
+        self._ddtype = ddtype
         
-        Returns: list of ~~id.Parameter - The paramemters.
-        """
-        ddt = self._field.type().dollarDollarType(self._field)
+    def dollarDollarType(self):
+        return self._ddtype
 
-        if not ddt:
-            return []
-        
-        return [id.Parameter("__dollardollar", ddt, location=self.location())] if ddt else []
-
-    # Overriden from Block.
-    
     def scope(self):
-        # If our parameters aren't yet in there, add them. Can't do that in
-        # the ctor because types might not be resolved at that time.
+        # Add the $$ identifier. Can't do that in the ctor because types might
+        # not be resolved at that time.
         scope = super(FieldHook, self).scope()
-        
-        for p in self.params():
-            if not scope.lookupID(p.name()):
-                scope.addID(p)
-
-        scope.addID(id.Local("__hookrc", type.Bool()))
-                
+        if not scope.lookupID("__dollardollar"):
+            scope.addID(id.ID("__dollardollar", self._ddtype))
+            
         return scope
     
 class Print(Statement):
@@ -298,16 +290,16 @@ class IfElse(Statement):
         printer.output("if ( ")
         self._cond.pac(printer)
         printer.output(" ) { ", nl=True)
-        printer.pushIndent()
+        printer.push()
         self._yes.pac(printer)
-        printer.popIndent()
+        printer.pop()
         printer.output("}", nl=True)
 
         if self._no:
             printer.output("else { ", nl=True)
-            printer.pushIndent()
+            printer.push()
             self._no.pac(printer)
-            printer.popIndent()
+            printer.pop()
             printer.output("}", nl=True)
             
     def simplify(self):
