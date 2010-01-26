@@ -57,7 +57,7 @@ class Bytes(type.ParseableType):
 
     def supportedAttributes(self):
         return { 
-            "length": (type.UnsignedInteger(32), False, None),
+            "length": (type.UnsignedInteger(64), False, None),
             "until": (type.Bytes(), False, None),
             }
 
@@ -78,10 +78,10 @@ class Bytes(type.ParseableType):
         op1 = cg.builder().tupleOp([cur, end])
         op2 = None
         op3 = None
-        
+
         if self.hasAttribute("length"):
             op2 = cg.builder().idOp("Hilti::Packed::BytesFixed" if not skipping else "Hilti::Packed::SkipBytesFixed")
-            expr = self.attributeExpr("length").castTo(type.UnsignedInteger(32), cg)
+            expr = self.attributeExpr("length").castTo(type.UnsignedInteger(64), cg)
             op3 = expr.evaluate(cg)
             
         elif self.hasAttribute("until"):
@@ -94,29 +94,29 @@ class Bytes(type.ParseableType):
         result = fbuilder.addTmp("__unpacked", resultt)
         builder.unpack(result, op1, op2, op3)
         
-        if dst:
+        if dst and not skipping:
             builder.tuple_index(dst, result, builder.constOp(0))
 
-        cur = builder.tuple_index(cur, result, builder.constOp(1))
+        builder.tuple_index(cur, result, builder.constOp(1))
         
         return cur
-            
+        
 @operator.Size(Bytes)
 class _:
     def type(e):
-        return type.UnsignedInteger(32)
+        return type.UnsignedInteger(64)
     
     def simplify(e):
         if e.isConst():
             n = len(e.constant().value())
-            const = constant.Constant(n, type.UnsignedInteger(32))
+            const = constant.Constant(n, type.UnsignedInteger(64))
             return expr.Constant(const)
         
         else:
             return None
         
     def evaluate(cg, e):
-        tmp = cg.functionBuilder().addTmp("__size", hilti.core.type.Integer(32))
+        tmp = cg.functionBuilder().addTmp("__size", hilti.core.type.Integer(64))
         cg.builder().bytes_length(tmp, e.evaluate(cg))
         return tmp
     
@@ -136,9 +136,3 @@ class _:
         tmp = cg.functionBuilder().addTmp("__equal", hilti.core.type.Bool())
         cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
-    
-        
-    
-    
-        
-    

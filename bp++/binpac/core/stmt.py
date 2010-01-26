@@ -150,14 +150,36 @@ class FieldHook(Block):
         return self._prio
         
 class FieldControlHook(FieldHook):
-    """XXX"""
+    """An internal field hook that can exercise control over the parsing. A
+    field control is hook is not user-visible but internally created by types
+    that define a ``$$`` identifier for use in a field's attribute
+    expressions. It is associated with a field by calling ~~setControlHook.
+    The hook's ~~scope has the ``$$`` identifier defined. 
+    
+    field: ~~Field - The field to which hook is attached. 
+    
+    prio: int - The priority of the statement. If multiple statements are
+    defined for the same field, they are executed in order of decreasing
+    priority.
+
+    ddtype: ~~Type - The type of the ``$$`` identifier defined by this hook.
+    
+    stms: list of ~~Statement - Series of statements to initalize the hook with.
+    
+    """
     def __init__(self, field, prio, ddtype, stmts=[], location=None):
         super(FieldControlHook, self).__init__(field, prio, stmts, location=location)
         self._ddtype = ddtype
         
     def dollarDollarType(self):
+        """Returns the type of the hook's ``$$`` identifier.
+        
+        Returns: ~~Type - The type.
+        """
         return self._ddtype
 
+    # Overidden from Block.
+    
     def scope(self):
         # Add the $$ identifier. Can't do that in the ctor because types might
         # not be resolved at that time.

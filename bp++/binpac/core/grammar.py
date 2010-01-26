@@ -93,9 +93,9 @@ class Production(object):
     def type(self):
         """Returns the type for storing the result of parsing the production.
         
-        Returns: ~~Type - The type, or None if ~~name return None.
+        Returns: ~~Type - The type, or None if not type has been set.
         """
-        return self._type if self._name else None
+        return self._type
     
     def hooks(self):
         """Returns the hooks associated with the production.

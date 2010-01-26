@@ -175,7 +175,7 @@ class Overloaded(Expression):
         operator.pacOperator(printer, self._op, self._exprs)
 
     def simplify(self):
-        self._exprs = [e.simplify() for e in self._exprs]
+        self._exprs = [(e.simplify() if isinstance(e, ast.Node) else e) for e in self._exprs]
         expr = operator.simplify(self._op, self._exprs)
         return expr if expr else self
         

@@ -183,20 +183,26 @@ int main(int argc, char** argv)
             assert(p);
         }
         
-        // If we don't have any parsers, we do nothing and just exit
-        // normally.
-        if ( hlt_list_size(parsers, &excpt) == 0 )
-            exit(0);
+        else { 
+            // If we don't have any parsers, we do nothing and just exit
+            // normally.
+            if ( hlt_list_size(parsers, &excpt) == 0 )
+                exit(0);
         
-        fprintf(stderr, "no parser specified; see usage for list.\n");
-        exit(1);
+            fprintf(stderr, "no parser specified; see usage for list.\n");
+            exit(1);
+            }
     }
  
-    p = findParser(parser);
-    if ( ! p ) {
-        fprintf(stderr, "unknown parser '%s'. See usage for list.\n", parser);
-        exit(1);
+    else {
+        p = findParser(parser);
+        if ( ! p ) {
+            fprintf(stderr, "unknown parser '%s'. See usage for list.\n", parser);
+            exit(1);
+            }
     }
+
+    assert(p);
 
     hlt_bytes* input = readInput();
 

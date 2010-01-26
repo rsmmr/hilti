@@ -1,0 +1,36 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  cat test.txt | ./a.out >output
+# @TEST-EXEC:  test-diff output
+
+module HTTP;
+
+type Foo = unit {
+    %export True;
+
+    : /ABC/;
+    : Bar(b"XXX");
+    : Bar2(b"Y1", b"Y2");
+    : Bar3();
+    : /GHI/;
+    };
+
+type Bar = unit(b: bytes) {
+    : /DEF/
+        { print b; }
+    };
+
+type Bar2 = unit(b1: bytes, b2: bytes) {
+    : /DEF/
+        { print b1, b2; }
+    };
+
+type Bar3 = unit() {
+    : /DEF/
+        { print b"ok"; }
+    };
+
+### @TEST-START-FILE test.txt
+ABCDEFDEFDEFGHI
+### # @TEST-END-FILE

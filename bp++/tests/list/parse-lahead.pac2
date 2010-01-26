@@ -1,0 +1,32 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  cat test.txt | ./a.out -p Test >output
+# @TEST-EXEC:  test-diff output
+
+module HTTP;
+
+const LINE = /[^\n]+\n/;
+const DASHES = /---\n/;
+
+type Item = unit {
+    line:   LINE;
+};
+
+type Test = unit {
+    %export True;
+    lines: list<Item>
+        { print self.lines; }
+    : DASHES;
+    end: LINE;
+    };
+
+### @TEST-START-FILE test.txt
+AAA
+BBB
+CCC
+DDD
+EEE
+---
+FFF
+### # @TEST-END-FILE

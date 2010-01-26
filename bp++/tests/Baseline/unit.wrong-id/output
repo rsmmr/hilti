@@ -1,0 +1,4 @@
+wrong-id.pac2:12: codegen error, unknown identifier xxx
+wrong-id.pac2.tmp.hlt: parser error, unexpected end of file
+
+1 error found

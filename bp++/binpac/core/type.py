@@ -344,34 +344,42 @@ class ParseableType(Type):
             raise AttributeMismatch, "unknown type attribute &%s" % name
 
     def resolve(self, resolver):
-        """XXXXX Resolves any previously unknown types that might be referenced by
-        this type. (Think: forward references). For these, the type will have
-        initiallly been created as ~~Unknown; later, when the type is supposed
-        to be known, this method will be called to then lookup the real type.
-        If an error is encountered, an error message will be reported to the
-        *resolver*. 
+        """Resolves any previously unknown types that might be
+        referenced by this type. (Think: forward references). For
+        these, the not-yet-known types will have been created as
+        ~~Unknown; later, when the type should be known, this method
+        will be called to then lookup the real type. If an error is
+        encountered (e.g., we still don't the identifier), an error
+        message will be reported via the *resolver*. 
         
         resolver: ~~Resolver - The current resolver to use. 
         
-        _done: list - Internal argument; set to empty list except when calling
-        from child class. See above. 
+        Return: ~~Type - Returns a type equivalent to *self* with
+        all unknowns resolved; that may either be *self* itself, or
+        a newly instantiated type; the caller must then use the
+        returned type instead of *self* afterwards.
         
-        Return: ~~Type - Returns the resolved type, which will also have all
-        subtypes resolved. Note that this may be a new type and thus the
-        caller must use the returned type instead of *self* afterwards. If an
-        error is encountered, an ~~Unknown type is returned after the error
-        has been registered with the *resolver*. 
-        
-        Note: ~~Type is not derived from ~~Node and thus we are not overriding
-        ~~Node.resolve here even though this method works similar. It does
-        however return a value, which ~~Node.resolve does not. 
+        Note: ~~Type is not derived from ~~Node and thus we are not
+        overriding ~~Node.resolve here, even though it might
+        initially look like that. This method does work similar but
+        it returns a value, which ~~Node.resolve does not. 
         """
         return self
         
     ### Methods for derived classes to override.    
 
     def parsedType(self):
-        """XXX"""
+        """Returns the type of values parsed by this type. This type will
+        become the type of the corresponding ~~Unit field. While usually the
+        parsed type is the same as the type itself (and that's what the
+        default implementation returns), it does not need to. The ~~RegExp
+        type returns ~~Bytes for example.
+        
+        This method can be overridden by derived classes. The default
+        implementation returns just *self*. 
+        
+        Returns: ~~Type - The type for parsed fields.
+        """
         return self
     
     def supportedAttributes(self):
@@ -392,7 +400,17 @@ class ParseableType(Type):
         return {}
 
     def initParser(self, field):
-        """XXX"""
+        """Hook into parser initialization. The method will be called at the
+        time a ~~UnitField is created that has this type as its
+        ~~UnitField.type. 
+        
+        This method can be overridden by derived classes if they need to
+        perform some field-specific initialization already before *production*
+        is called. An example is setting the field's ~~FieldControlHook.  The
+        default implementation does nothing. 
+        
+        field: ~~UnitField - The newly instantiated unit field. 
+        """
         pass
     
     def production(self, field):
@@ -401,6 +419,9 @@ class ParseableType(Type):
         field: ~~Field - The unit field of type *self* that is to be parsed. 
 
         The method must be overridden by derived classes.
+        
+        Note: It is guarenteed that ~~initParser will have been called with
+        the same *field* before ~~production.
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
         

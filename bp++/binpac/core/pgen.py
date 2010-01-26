@@ -270,7 +270,7 @@ class ParserGen:
             pass
         
         elif isinstance(prod, grammar.Sequence):
-            self._parseSequence(prod, args)
+            self._parseSequence(prod, args, [])
 
         elif isinstance(prod, grammar.LookAhead):
             self._parseLookAhead(prod, args)
@@ -366,8 +366,9 @@ class ParserGen:
                 need_val = True
         
         # Call the type's parse function.
-        dst = self.builder().addTmp(name, ty)
-        args.cur = type.generateParser(self, args.cur, dst, need_val)
+        name = var.name() if var.name() else "__tmp"
+        dst = self.builder().addTmp(name , var.type().hiltiType(self.cg()))
+        args.cur = type.generateParser(self, args.cur, dst, not need_val)
         
         # We have successfully parsed a rule. 
         self._finishedProduction(args.obj, var, dst if need_val else None)
@@ -406,7 +407,7 @@ class ParserGen:
             
         self._finishedProduction(args.obj, child, cobj)
         
-    def _parseSequence(self, prod, args, params=[]):
+    def _parseSequence(self, prod, args, params):
         def _makeFunction():
             (func, args) = self._createParseFunction("sequence", prod)
             

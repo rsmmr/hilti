@@ -58,9 +58,15 @@ class Node(visitor.Visitable):
         nothing. If there are any errors encountered during resolving, the
         method must call ~~Resolver.error. If there are any sub-nodes that may 
         also have something to resolve, the method needs to do that recursively.
+
+        To avoid infinite recursion, an implementation overiding the default
+        *must* check whether it has already been resolved previous with the
+        following piece of code:
         
-        XXXX
-        
+            if resolver.already(self):
+              return
+              
+        resolver: ~~Resolver - The resolver to use. 
         """
         pass
     

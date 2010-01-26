@@ -1,5 +1,7 @@
 # $Id$
 
+import binpac.support.util as util
+
 class Resolver(object):
     """Class that resolves all still unresolved identifiers in a module."""
     def __init__(self):
@@ -41,12 +43,18 @@ class Resolver(object):
         """
         return self._scope
     
-    def already(self, item):
-        """XXX"""
-        if id(item) in self._already:
+    def already(self, node):
+        """Checks whether a node has already been resolved. The first time
+        this method is called for a *node*, it returns True. If called
+        susequently for the same *node*, it returns False.
+        
+        Note: This function must be used when overiding ~~Node.resolve; see
+        there. 
+         """
+        if id(node) in self._already:
             return True
         
-        self._already.add(id(item))
+        self._already.add(id(node))
         return False
         
         

@@ -1,0 +1,4 @@
+wrong-id.pac2:8: codegen error, unknown unit attribute 'b'
+wrong-id.pac2.tmp.hlt: parser error, unexpected end of file
+
+1 error found

@@ -297,7 +297,7 @@ def p_unit_field_type_const(p):
         parseutil.error(p, "identifier must be type or constant")
         raise SyntaxError    
 
-    p[0] = (val, p[2])
+    p[0] = (val, p[2] if len(p) > 2 else [])
     
 def p_opt_unit_field_params(p):
     """opt_unit_field_params : '(' opt_expr_list ')'
@@ -426,7 +426,7 @@ def p_opt_expr_list(p):
     """opt_expr_list : expr_list
                      | 
     """
-    p[0] = p[1] if len(p) > 1 else None
+    p[0] = p[1] if len(p) > 1 else []
     
 ### Statement blocks.
 

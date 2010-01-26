@@ -1,8 +1,0 @@
-[binpac] bgn sequence 'start -> type(bytes); type(bytes)'
-[binpac] bgn variable 'type(bytes) [=: a]'
-[binpac] - matched 'type(bytes) [=: a]' to '1234'
-[binpac] end variable 'type(bytes) [=: a]'
-[binpac] bgn variable 'type(bytes) [=: b]'
-[binpac] - matched 'type(bytes) [=: b]' to '567890'
-[binpac] end variable 'type(bytes) [=: b]'
-[binpac] end sequence 'start -> type(bytes); type(bytes)'

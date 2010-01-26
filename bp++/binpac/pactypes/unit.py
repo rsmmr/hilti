@@ -65,7 +65,10 @@ class Field:
         return self._location        
 
     def setLocation(self, location):
-        """XXXX"""
+        """Set the location assocated with this constant.
+        
+        location: ~~Location - The location.
+        """
         self._location = location
     
     def parent(self):
@@ -90,7 +93,11 @@ class Field:
         return self._type
     
     def parsedType(self):
-        """XXX"""
+        """Returns the type of values parsed by this type. Forwards simply to
+        ~~Type.parsedType for the type returned by ~~type.
+        
+        Returns: ~~Type - The type of parsed values.
+        """
         return self._type.parsedType()
     
     def value(self):
@@ -129,12 +136,24 @@ class Field:
         self._hooks += [hook]
 
     def setControlHook(self, hook):
-        """XXX"""
+        """Sets the control hook for the field. The hook will be exectuted
+        when the field has been fully parsed. Different from \"normal\" hooks,
+        the control hook defines the ``$$`` identifier for the field's
+        attribute expressions.
+        
+        hook: ~~FieldControlHook - The hook.
+        """
         assert isinstance(hook, stmt.FieldControlHook)
         self._ctlhook = hook
 
     def controlHook(self):
-        """XXX"""
+        """Returns the field's control hook. The hook will be exectuted when
+        the field has been fully parsed. Different from \"normal\" hooks, the
+        control hook defines the ``$$`` identifier for the field's attribute
+        expressions.
+        
+        Returns:  ~~FieldControlHook - The hook.
+        """
         return self._ctlhook
         
     def production(self):
@@ -311,8 +330,13 @@ class Unit(type.ParseableType):
             return None
             
     def parsedFieldType(self, name):
-        """
-        XXX
+        """Returns the type of values parsed for a field given by name. The
+        method located the field by the given name, and passes on what that
+        field's ~~parsedType method returns. 
+        
+        name: string - The name of the field. 
+        
+        Returns: ~~Type - The parsed value. 
         """
         try:
             return self._fields[name].parsedType()
