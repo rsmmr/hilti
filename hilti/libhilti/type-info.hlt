@@ -1,11 +1,14 @@
 # A minimal HILTI program compiled only for generating type
 # information for # objects used in libhilti.
 
-module Mini
+module InternalTypeInfo
 
-import Hilti
+export tuple<string>
+export tuple<iterator<bytes>,iterator<bytes>>
 
-# FIXME: Dummy function to instantiate the type information for tuple<string>.
-# Need to add a "declare type" or so.
-declare "C-HILTI" void declare_tuple_string(tuple<string> dummy)
-
+# This is an internal function that the code-generator will
+# auto-generate if exported. Note that the signature here doesn't
+# really matter.
+# Todo: Need to find a nicer mechanism for this. See also codegen()
+# in module.py
+declare "C" void hlt_closure_execute()

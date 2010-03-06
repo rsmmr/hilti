@@ -68,15 +68,3 @@ void run() {
     call foo ((1,2))
 }
 
-# @TEST-START-NEXT
-
-module Main
-
-"C" void foo(tuple<*> t) {
-}
-
-void run() {
-    call foo ((1,2))
-}
-
-

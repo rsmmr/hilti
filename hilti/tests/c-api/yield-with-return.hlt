@@ -11,7 +11,7 @@ module Foo
 
 import Hilti
 
-export int<32> test() {
+int<32> test() {
     call Hilti::print("1")
     yield
     call Hilti::print("2")
@@ -25,4 +25,4 @@ export int<32> test() {
     return.result 42
 }
 
-
+export test

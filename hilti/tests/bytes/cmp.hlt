@@ -9,13 +9,13 @@ module Main
 
 import Hilti
 
-const ref<bytes> b1 = b"123"
-const ref<bytes> b2 = b"123"
-const ref<bytes> b3 = b"abc"
-const ref<bytes> b4 = b"12"
-const ref<bytes> b5 = b"1234"
-const ref<bytes> b6 = b""
-const ref<bytes> b7 = b""
+global ref<bytes> b1 = b"123"
+global ref<bytes> b2 = b"123"
+global ref<bytes> b3 = b"abc"
+global ref<bytes> b4 = b"12"
+global ref<bytes> b5 = b"1234"
+global ref<bytes> b6 = b""
+global ref<bytes> b7 = b""
 
 void run() {
 

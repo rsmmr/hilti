@@ -51,6 +51,8 @@ optparser.add_option("-P", "--prototypes", action="store_true", dest="protos", d
                      help="Generate C prototypes")
 optparser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
                      help="Compile with debugging support")
+optparser.add_option("-D", "--debug-codegen", action="store_true", dest="debug_cg", default=False,
+                     help="Print debugging information during code generation phase")
 options = None                     
                      
 if addl_flags:
@@ -69,15 +71,21 @@ if not "import_paths" in options.__dict__:
 
 # Always search in current directory.    
 options.import_paths += ["."]    
-    
+
+protos_only = False
+
 if len(args) < 1:
     optparser.error("no input file specified")
 
 if len(args) > 1:
     optparser.error("more than one input file specified")
     
-if not (options.bitcode or options.ll or options.hilti_plain or options.hilti_canon or options.protos):
-    optparser.error("no output type specified")
+if not (options.bitcode or options.ll or options.hilti_plain or options.hilti_canon):
+    if options.protos:
+        protos_only = True
+        
+    else:
+        optparser.error("no output type specified")
     
 input = args[0]    
 dest = options.output    
@@ -94,9 +102,12 @@ if not dest:
         
     if options.ll or options.ll_noverify or options.hilti_plain or options.hilti_canon:
         dest = "/dev/stdout"
-
+        
 if options.protos:
-    prototypes = root + ".h"
+    if protos_only:
+        prototypes = dest if dest else "/dev/stdout" 
+    else:
+        prototypes = root + ".h"
 
 if dest:
     try:
@@ -105,11 +116,18 @@ if dest:
         print >>sys.stderr, "cannot open %s: %s" % (dest, e)
         
 # Parse input.    
-(errors, ast) = hilti.parser.parse(input, options.import_paths)
+(errors, mod) = hilti.parseModule(input, options.import_paths)
+
+if errors > 0:
+    print >>sys.stderr, "\n%d error%s found" % (errors, "s" if errors > 1 else "")
+    sys.exit(1)
+
+# Resolve unknown symbols.
+hilti.resolveModule(mod)
 
 if errors == 0:
     # Verify semantic correctness.
-    errors = hilti.checker.checkAST(ast)
+    errors = hilti.validateModule(mod)
 
 if errors > 0:
     print >>sys.stderr, "\n%d error%s found" % (errors, "s" if errors > 1 else "")
@@ -117,17 +135,17 @@ if errors > 0:
     
 if options.hilti_plain:
     # Output HILTI code as it is parsed. 
-    hilti.printer.printAST(ast, output)
+    hilti.printModule(mod, output)
     sys.exit(0)
 
 # Canonify the code.     
-if not hilti.canonifier.canonifyAST(ast, debug=options.debug):
+if not hilti.canonifyModule(mod, debug=options.debug):
     print >>sys.stderr, "error during canonicalization"
     sys.exit(1)
 
 # Make sure it's still valid code.    
 if not options.hilti_canon_noverify:
-   errs = hilti.checker.checkAST(ast)  
+   errs = hilti.validateModule(mod)  
 else:
    errs = 0	
 
@@ -137,11 +155,11 @@ if errs > 0:
         
 if options.hilti_canon:
     # Output canonified HILTI code.
-    hilti.printer.printAST(ast, output)
+    hilti.printModule(mod, output)
     sys.exit(0)
 
 # Generate code. 
-(success, llvm_module) = hilti.codegen.generateLLVM(ast, options.import_paths, debug=options.debug, verify=(not options.ll_noverify))
+(success, llvm_module) = hilti.codegen(mod, options.import_paths, debug=options.debug, trace=options.debug_cg, verify=(not options.ll_noverify))
 
 if not success:
     print >>sys.stderr, "error during code generation"
@@ -149,7 +167,7 @@ if not success:
 
 # Generate C prototypes.
 if prototypes:
-    hilti.codegen.generateCPrototypes(ast, prototypes)
+    hilti.protogen(mod, prototypes)
     
 if options.ll:
     # Output human-readable code.

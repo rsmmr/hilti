@@ -11,7 +11,7 @@ module Foo
 
 import Hilti
 
-export void test() {
+void test() {
     call Hilti::print("1")
     yield
     call Hilti::print("2")
@@ -23,4 +23,5 @@ export void test() {
     call Hilti::print("5")
 }
 
+export test
 

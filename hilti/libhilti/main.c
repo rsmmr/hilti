@@ -20,8 +20,9 @@ int main(int argc, char** argv)
     // change the configuration as needed.
     hilti_multithreaded_run(&excpt);
 
-    if ( excpt )
+    if ( excpt ) {
         hlt_exception_print_uncaught(excpt);
+    }
 
     return 0;
 }

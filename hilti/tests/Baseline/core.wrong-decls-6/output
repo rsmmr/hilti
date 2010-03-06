@@ -1,4 +1,3 @@
-wrong-decls.hlt:4: error, illegal type for global identifier
-
+wrong-decls.hlt:4: error, cannot create global variable of type any
 
 1 error found

@@ -12,17 +12,21 @@ module Foo
 
 import Hilti
 
-export void foo1(int<32> a, bool b) {
+export foo1
+export foo2
+export foo3
+
+void foo1(int<32> a, bool b) {
     call Hilti::print(a)
     call Hilti::print(b)
 }
 
-export int<32> foo2(int<32> a) {
+int<32> foo2(int<32> a) {
     a = int.add a a
     return.result a
 }
 
-export string foo3(string a) {
+string foo3(string a) {
     a = string.concat a a
     return.result a
 }

@@ -1,5 +1,5 @@
 >>> sum = int.add True 1
-wrong-op-types.hlt:14: error, operand 1 must be of type int but is bool
+wrong-op-types.hlt:14: error, operand 1 must be an integer
 
 
 1 error found

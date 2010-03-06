@@ -11,7 +11,7 @@ import Hilti
 const int<32> c1 = 12
 const int<32> c2 = 30
 const string s = "Hello world!"
-const ref<bytes> b = b"abc"
+global ref<bytes> b = b"abc"
 
 void run() {
 

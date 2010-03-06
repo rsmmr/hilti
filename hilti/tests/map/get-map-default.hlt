@@ -1,0 +1,23 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int32 v
+    local ref<map<string, int32>> m
+    
+    m = new map<string, int32>
+    map.default m 100
+    
+    map.insert m "Foo" 10
+    map.insert m "Bar" 20
+    
+    v = map.get m "FooBar"
+    call Hilti::print(v)
+}

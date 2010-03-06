@@ -25,8 +25,8 @@
 #include <pthread.h>
 #include <assert.h>
 
-// Define here to avoid recursive dependencies.
-typedef struct __hlt_string* hlt_string;
+#include "module/_hilti.h"
+#include "types.h"
 
 #include "addr.h"
 #include "bool.h"
@@ -53,6 +53,9 @@ typedef struct __hlt_string* hlt_string;
 #include "utf8proc.h"
 #include "vector.h"
 #include "continuation.h"
+#include "list.h"
+#include "timer.h"
+#include "map_set.h"
 
 #include "module/module.h"
 

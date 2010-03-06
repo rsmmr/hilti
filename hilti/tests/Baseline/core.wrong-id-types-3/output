@@ -1,5 +1,5 @@
->>> jump struct { bar int<32> }
-wrong-id-types.hlt:9: error, operand 1 must be of type label but is struct { bar int<32> }
+>>> jump foo
+wrong-id-types.hlt:9: error, operand 1 must be of type label but is struct { int<32> bar }
 
 
 1 error found

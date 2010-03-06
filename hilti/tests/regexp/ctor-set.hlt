@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-const ref<regexp> g = /abc/ | /def/ | /ghi/
+global ref<regexp> g = /abc/ | /def/ | /ghi/
 
 void run() {
     call Hilti::print(g)

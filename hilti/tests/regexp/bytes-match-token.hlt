@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-const ref<regexp<&nosub>> re = /Foo/ | /Bar/ | /Foolein/ 
+global ref<regexp<&nosub>> re = /Foo/ | /Bar/ | /Foolein/ 
 
 iterator<bytes> next_token(iterator<bytes> start) {
     local int32 rc

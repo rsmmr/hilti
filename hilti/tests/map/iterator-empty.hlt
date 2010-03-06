@@ -1,0 +1,35 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local tuple<string,tuple<bool,bool>> i
+    local tuple<bool,bool> v
+    local ref<map<string,tuple<bool,bool>>> m
+
+    local bool eq
+    local iterator<map<string,tuple<bool,bool>>> cur
+    local iterator<map<string,tuple<bool,bool>>> end
+
+    m = new map<string,tuple<bool,bool>>
+    cur = map.begin m
+    end = map.end m
+
+@loop:
+    eq = equal cur end
+    if.else eq @exit @cont
+    
+@cont:
+    i = deref cur
+    call Hilti::print (i)
+    cur = incr cur
+    jump @loop
+    
+@exit: return.void
+    }

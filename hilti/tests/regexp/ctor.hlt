@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-const ref<regexp> g = /ghi/
+global ref<regexp> g = /ghi/
 
 void run() {
     local ref<regexp> re

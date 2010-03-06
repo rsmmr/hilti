@@ -537,7 +537,7 @@ hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_ex
     if ( c )
         // Count last chunk.
         n += pos2.cur - pos2.chunk->start;
-    
+
     return n;
 }
 

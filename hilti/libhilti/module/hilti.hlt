@@ -11,7 +11,10 @@ declare "C-HILTI" void print(any obj, bool newline = True)
 declare "C-HILTI" string fmt(string fmt, tuple<*> vals)
 declare "C-HILTI" void abort()
 
-enum Packed {
+# # FIXME: Inconsistent naming in the C layer.
+# exception Yield_Exception
+# 
+type Packed = enum {
 
     # String 
     ASCIIZ,
@@ -73,7 +76,9 @@ enum Packed {
 
 
 }    
-
-enum AddrFamily { IPv4, IPv6 }
-enum Protocol   { TCP, UDP }
+ 
+type AddrFamily = enum { IPv4, IPv6 }
+type Protocol = enum { TCP, UDP }
+type ExpireStrategy = enum { Create, Access }
     
+

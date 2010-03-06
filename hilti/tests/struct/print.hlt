@@ -8,15 +8,15 @@ module Main
 
 import Hilti
 
-struct B { }
+type B = struct { }
 
 
-struct A {
-    int64 i default=100,
+type A = struct {
+    int64 i &default=100,
     bool b,
     string test,
     double d,
-    double e default=3.41,
+    double e &default=3.41,
     ref<B> r1,
     ref<B> r2
     }

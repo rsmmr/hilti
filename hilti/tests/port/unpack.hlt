@@ -8,34 +8,55 @@ module Main
 
 import Hilti
 
-void p(ref<bytes> b, Hilti::Packed fmt) {
+void run() {
     local iterator<bytes> begin
     local iterator<bytes> end
     local iterator<bytes> nbegin
     local int32 diff
     local string out
-
-    local tuple<port, iterator<bytes>> t
+    local ref<bytes> b
+    local tuple<port,iterator<bytes>> t
     local port p
+    
+    b = b"\x01\x02"
     
     begin = bytes.begin b
     end = bytes.end b
 
-    t = unpack (begin,end) fmt
+    ####
     
+    t = unpack (begin,end) Hilti::Packed::PortTCP
     p = tuple.index t 0
     nbegin = tuple.index t 1
     diff = bytes.diff begin nbegin
-    
     out = call Hilti::fmt ("port=%s diff=%d", (p, diff))
     call Hilti::print(out)
-}
-
-void run() {
-    local ref<bytes> b
-    b = b"\x01\x02"
-    call p(b, Hilti::Packed::PortTCP)
-    call p(b, Hilti::Packed::PortUDP)
-    call p(b, Hilti::Packed::PortTCPNetwork)
-    call p(b, Hilti::Packed::PortUDPNetwork)
+    
+    ####
+    
+    t = unpack (begin,end) Hilti::Packed::PortUDP
+    p = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    out = call Hilti::fmt ("port=%s diff=%d", (p, diff))
+    call Hilti::print(out)
+    
+    ####
+    
+    t = unpack (begin,end) Hilti::Packed::PortTCPNetwork
+    p = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    out = call Hilti::fmt ("port=%s diff=%d", (p, diff))
+    call Hilti::print(out)
+    
+    ####
+    
+    t = unpack (begin,end) Hilti::Packed::PortUDPNetwork
+    p = tuple.index t 0
+    nbegin = tuple.index t 1
+    diff = bytes.diff begin nbegin
+    out = call Hilti::fmt ("port=%s diff=%d", (p, diff))
+    call Hilti::print(out)
+    
     }

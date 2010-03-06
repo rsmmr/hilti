@@ -211,6 +211,11 @@ void hlt_list_erase(hlt_list_iter i, hlt_exception** excpt)
     _unlink(i.list, i.node);
 }
 
+void hlt_list_expire(hlt_list_iter i, hlt_exception** excpt)
+{
+    hlt_list_erase(i, excpt);
+}
+
 void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iter i, hlt_exception** excpt)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {

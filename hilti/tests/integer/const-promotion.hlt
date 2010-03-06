@@ -18,5 +18,6 @@ void run() {
     local int8 a
     # Constant should be promoted to int<16>.
     a = call foo(42)
+    call Hilti::print (a)
 }     
 

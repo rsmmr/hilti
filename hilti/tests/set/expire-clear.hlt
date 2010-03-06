@@ -1,0 +1,35 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int32 s
+    local bool b
+    local ref<timer_mgr> t
+    local ref<set<string>> m
+    
+    t = new timer_mgr
+    m = new set<string> t
+    set.timeout m Hilti::ExpireStrategy::Access 20.0
+    
+    set.insert m "A-0"
+    set.insert m "B-0"
+    set.insert m "C-5"
+    set.insert m "D-5"
+    set.insert m "E-10"
+    set.insert m "F-10"
+    
+    call Hilti::print(m)
+    call Hilti::print(t)
+    
+    set.clear m
+
+    call Hilti::print(m)
+    call Hilti::print(t)
+}

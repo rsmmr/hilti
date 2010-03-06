@@ -9,7 +9,7 @@ module Main
 
 import Hilti
 
-enum Foo { A, BC, DEF }
+type Foo = enum { A, BC, DEF }
 
 void run() {
      call Hilti::print(A)
@@ -21,7 +21,7 @@ module Main
 
 import Hilti
 
-enum Foo { A, BC, DEF }
+type Foo = enum { A, BC, DEF }
 
 void run() {
      call Hilti::print(Undef)
@@ -33,7 +33,7 @@ module Main
 
 import Hilti
 
-enum Foo { A, BC, DEF }
+type Foo = enum { A, BC, DEF }
 
 void run() {
      call Hilti::print(Packed::ASCIIZ)

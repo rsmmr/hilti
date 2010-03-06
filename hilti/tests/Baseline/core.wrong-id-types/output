@@ -1,5 +1,5 @@
 >>> call bar 42
-wrong-id-types.hlt:12: error, not a function name
+wrong-id-types.hlt:12: error, operand 1 must be of type function but is int<32>
 
 
 1 error found

@@ -1,0 +1,22 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<set<tuple<string,int64>> m
+    
+    m = new set<tuple<string,int64>>
+    
+    set.insert m ("Foo",1) 10
+    set.insert m ("Bar",2) 20
+    set.insert m ("Foo",1) 30
+    set.insert m ("Bar",2) 40
+
+    call Hilti::print(m)
+}

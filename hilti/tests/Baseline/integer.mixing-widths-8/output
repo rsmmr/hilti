@@ -1,3 +1,9 @@
+WARNING: Token 'ATTRIBUTE' defined, but not used
+WARNING: Token 'LIST' defined, but not used
+WARNING: There are 2 unused tokens
+WARNING: Token 'ATTRIBUTE' defined, but not used
+WARNING: Token 'LIST' defined, but not used
+WARNING: There are 2 unused tokens
 >>> i2 = int.trunc i1
 mixing-widths.hlt:7: error, width of integer operand too small
 

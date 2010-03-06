@@ -10,7 +10,7 @@ module Main
 
 import Hilti
 
-struct A { string s }
+type A = struct { string s }
 
 void run() {
     local int<16> i

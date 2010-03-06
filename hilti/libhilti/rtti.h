@@ -34,6 +34,9 @@
 #define HLT_TYPE_CONTINUATION 21
 #define HLT_TYPE_CADDR 22
 #define HLT_TYPE_LABEL 23
+#define HLT_TYPE_ANY 24
+#define HLT_TYPE_TIMER 25
+#define HLT_TYPE_TIMER_MGR 26
 
 #define HLT_TYPE_ITERATOR_BYTES  100
 #define HLT_TYPE_ITERATOR_VECTOR 101
@@ -75,6 +78,16 @@ struct __hlt_type_info {
     int64_t (*to_int64)(const hlt_type_info* type, const void* obj, hlt_exception** expt);
     double (*to_double)(const hlt_type_info* type, const void* obj, hlt_exception** expt);
 
+    // Calculates a hash of the value. If not given, the default is hash as
+    // many bytes as size specifies. Note that the excpt argument will not be
+    // used and will always be null.
+    hlt_hash (*hash)(const hlt_type_info* type, const void* obj, hlt_exception** expt);
+    
+    // Compares to values for equality. If not given, the default is to
+    // compare as many bytes as size specified.  Note that the excpt argument
+    // will not be used and will always be null.
+    int8_t (*equal)(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** expt);
+    
     // Type-parameters start here. The format is type-specific.
     char type_params[];
 };

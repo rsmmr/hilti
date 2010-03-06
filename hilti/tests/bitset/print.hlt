@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-bitset MyBits { Bit0, Bit1, Bit23=23, Bit24 }
+type MyBits = bitset { Bit0, Bit1, Bit23=23, Bit24 }
 
 void run() {
      local MyBits b

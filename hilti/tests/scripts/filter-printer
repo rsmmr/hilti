@@ -10,9 +10,11 @@
 #     into $2, which can then be used by the tester to perform the
 #     regression test.
 #     
-#
 # The script reads $1 and convertes that into $2, it can be used as
 # an external filter for "tester".
+#
+# If $1 does not end in ".hlt", the script just copies it over to $2 
+# and does nothing otherwise.
 
 function error {
 
@@ -48,12 +50,22 @@ fi
 input=$1
 output=$2
 
+echo $1 | grep -q '\.hlt$'
+if [ $? == 1 ]; then
+   cat $1 >$2
+   exit 0
+fi   
+
+if [ "$HILTI_CONFIG" == "" ]; then
+   HILTI_CONFIG="hilti-config"
+fi   
+
 tmp1=$1.printer-test-$$-1.tmp
 tmp2=$1.printer-test-$$-2.tmp
 diag=$1.printer-test-$$-diag.tmp
 
-hiltic -p -o $tmp1 $input 2>$diag || error "hiltic failed with input file"
-hiltic -p -o $tmp2 $tmp1  2>$diag || error "hiltic failed with the output of the initial hiltic" $tmp1
+hiltic -p `$HILTI_CONFIG --hilticflags` -o $tmp1 $input 2>$diag || error "hiltic failed with input file"
+hiltic -p `$HILTI_CONFIG --hilticflags` -o $tmp2 $tmp1  2>$diag || error "hiltic failed with the output of the initial hiltic run" $tmp1
 diff -u $tmp1 $tmp2 >$diag || error "differences between hiltic outputs"
 
 cp $input $output

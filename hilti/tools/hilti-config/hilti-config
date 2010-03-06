@@ -106,7 +106,7 @@ while [ "$1" != "" ]; do
             shift;;
             
         --pythonpath)
-            echo "$base/python"
+            echo "$base"
             shift;;
             
         --debug)

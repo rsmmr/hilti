@@ -1,5 +1,5 @@
->>> i = new struct { i int<64>, b bool, test string, d double }
-wrong-args.hlt:24: error, no matching implementation of overloaded operator found
+>>> i = new A
+wrong-args.hlt:24: error, target type must be ref<struct { int<64> i, bool b, string test, double d }>
 
 
 1 error found

@@ -1,5 +1,11 @@
+WARNING: Token 'ATTRIBUTE' defined, but not used
+WARNING: Token 'LIST' defined, but not used
+WARNING: There are 2 unused tokens
+WARNING: Token 'ATTRIBUTE' defined, but not used
+WARNING: Token 'LIST' defined, but not used
+WARNING: There are 2 unused tokens
 >>> cond = int.eq i1 i2
-mixing-widths.hlt:8: error, operand 2 must be of same integer type as operand 1, which is int<8>
+mixing-widths.hlt:8: error, operand 2 can't be coerced from integer of width 16 to one of width 8
 
 
 1 error found

@@ -11,17 +11,19 @@ global ref<A> a
 global ref<B> b
 global ref<list<ref<A>>> v
 global tuple<ref<A>, ref<B>> t
-exception myException(ref<A>)
+
+type myException = exception<ref<A>>
 
 ref<A> foo(ref<B> b) {
+    return.result a
 }
 
-struct A {
+type A = struct {
     ref<A> a,
     ref<B> b
     }
 
-struct B {
+type B = struct {
     ref<A> a,
     ref<B> b,
     ref<A> c,

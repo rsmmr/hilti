@@ -7,8 +7,8 @@ module Main
 
 import Hilti
 
-exception A(string)
-exception C : A
+type A = exception<string>
+type C = exception : A
 
 void run() {
 }
@@ -19,8 +19,8 @@ module Main
 
 import Hilti
 
-exception A(string)
-exception B(bool) : A
+type A = exception<string>
+type B = exception<bool> : A
 
 void run() {
 }
@@ -31,7 +31,7 @@ module Main
 
 import Hilti
 
-exception A : A
+type A = exception : A
 
 void run() {
 }
@@ -42,8 +42,8 @@ module Main
 
 import Hilti
 
-exception A : B
-exception B : A
+type A = exception : B
+type B = exception : A
 
 void run() {
 }
@@ -54,10 +54,10 @@ module Main
 
 import Hilti
 
-exception A : B
-exception B : C
-exception C : D
-exception D : A
+type A = exception : B
+type B = exception : C
+type C = exception : D
+type D = exception : A
 
 void run() {
 }

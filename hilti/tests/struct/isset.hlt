@@ -8,10 +8,10 @@ module Main
 
 import Hilti
 
-struct A {
-    int64 i default=100,
+type A = struct {
+    int64 i &default=100,
     bool b,
-    string test default="Hurz",
+    string test &default="Hurz",
     double d
     }
 

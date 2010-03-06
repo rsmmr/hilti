@@ -245,8 +245,14 @@ class Test(object):
         else:
             # This is not quite correct as it does not necessarily need to be
             # the %INPUT file which we are filtering ...
-            localfile = os.path.join(self.tmpdir, "filtered-%s" % os.path.basename(self.localfile))
-            self.execute(("%s %s %s" % (filter_cmd, self.localfile, localfile), True), apply_filter=False)
+            filtered = os.path.join(self.tmpdir, "filtered-%s" % os.path.basename(self.localfile))
+            if not self.execute(("%s %s %s" % (filter_cmd, self.localfile, filtered), True), apply_filter=False):
+                return False
+            
+            if not self.execute(("mv %s %s" % (filtered, self.localfile), True), apply_filter=False):
+                return False
+            
+            localfile = self.localfile
 
         if Options.verbose:
             output("  > %s" % cmdline)

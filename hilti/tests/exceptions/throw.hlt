@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-exception myException
+type myException = exception
 
 void run() {
 
@@ -28,7 +28,7 @@ module Main
 
 import Hilti
 
-exception myException(string)
+type myException = exception<string>
 
 void run() {
 
@@ -47,8 +47,8 @@ module Main
 
 import Hilti
 
-exception myException(string)
-exception myException2(string) : myException
+type myException = exception<string>
+type myException2 = exception<string> : myException
 
 void run() {
 

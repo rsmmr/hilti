@@ -1,0 +1,57 @@
+ 
+class Type
+    def name(self):
+    def resolve(self, resolver):
+    def validate(self, vld):
+    def output(self, printer):
+    def cmpWithSameType(self, other):
+
+class HiltiType(Type):
+    def typeInfo(self, cg):
+    def llvmType(self, cg):
+        The doc string of derived classes should document how the type is
+        mapped to C.
+        
+    def cPassTypeInfo(self):
+    def canCastTo(self, dsttype):
+    def llvmCastTo(self, cg, value, dsttype):
+        
+class ValueType(HiltiType):
+    def llvmDefault(self, cg):         
+        The doc string of derived classes should document the default value of
+        not explicitly initiallized HILTI variables of this type. 
+
+class HeapType(HiltiType):
+
+class Container(HeapType, Iterable):
+    def itemType(self):
+        
+class Constable: 
+    def validateConstant(self, vld, const):
+    def llvmConstant(self, cg, const):
+        The doc string of derived classes should document the HILTI syntax for
+        constants of this type. 
+
+    def canCastConstantTo(self, const, dsttype):
+    def castConstantTo(self, cg, const, dsttype):
+    def outputConstant(self, printer, const):
+
+class Constructable:
+    def validateCtor(self, vld, value):
+    def llvmCtor(self, cg, value):
+
+class Parameterizable: 
+    def args(self):
+
+class Iterable: 
+    def iterType(self):
+
+class Unpackable: 
+    def formats(self):
+        The doc string of derived classes should have a doc string documenting
+        the specifics of the unpacking, in partciular including which
+        ``Hilti::Packed`` constants are supported.
+        
+    def llvmUnpack(cg, begin, end, fmt, arg):
+
+

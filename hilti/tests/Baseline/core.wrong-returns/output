@@ -1,5 +1,5 @@
 >>> return.void
-wrong-returns.hlt:11: error, function does not return a value
+wrong-returns.hlt:11: error, function must return a value
 
 
 1 error found

@@ -1,30 +1,3 @@
-Traceback (most recent call last):
-  File "/Users/robin/work/binpacpp/hilti/tests/../../hilti/tools/hiltic/hiltic.py", line 108, in <module>
-    (errors, ast) = hilti.parser.parse(input, options.import_paths)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/parser/__init__.py", line 20, in parse
-    return parser.parse(filename, import_paths)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/parser/parser.py", line 776, in parse
-    (errors, ast, parser) = _parse(filename, import_paths, internal_module)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/parser/parser.py", line 807, in _parse
-    resolver_errors = resolver.resolver.resolveOperands(ast)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/parser/resolver.py", line 86, in resolveOperands
-    self.visit(ast)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/core/visitor.py", line 71, in visit
-    node.visit(self)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/core/module.py", line 223, in visit
-    self._visitType(v, ids, visited, lambda i: True) # all the rest.
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/core/module.py", line 211, in _visitType
-    v.visit(value)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/core/visitor.py", line 71, in visit
-    node.visit(self)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/core/function.py", line 262, in visit
-    id.visit(visitor)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/core/visitor.py", line 28, in visit
-    visitor._visitSelf(self)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/core/visitor.py", line 96, in _visitSelf
-    self._dovisit(obj, self._visits)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/core/visitor.py", line 173, in _dovisit
-    func(self, obj)
-  File "/Users/robin/work/binpacpp/hilti/python/hilti/parser/resolver.py", line 500, in _
-    (success, unknown) = t.resolveUnknownTypes(self._module)
-AttributeError: 'str' object has no attribute 'resolveUnknownTypes'
+wrong-decls.hlt:11: error, cannot create local variable of type any
+
+1 error found

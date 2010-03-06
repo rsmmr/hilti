@@ -6,7 +6,7 @@ module IP
 
 import Hilti
 
-overlay Header {
+type Header = overlay {
     version:     int<16> at 0 unpack with Hilti::Packed::UInt8Big (0, 3),
     hdr_len:     int<16> at 0 unpack with Hilti::Packed::UInt8Big (4, 7),
     tos:         int<16> at 1 unpack with Hilti::Packed::UInt8Big,

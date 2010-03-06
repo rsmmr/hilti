@@ -17,3 +17,7 @@ brief-debug:
 
 update-baseline:
 	@$(TESTER) -U
+    
+auto-tester:
+	@$(TESTER) -b -F printer
+    

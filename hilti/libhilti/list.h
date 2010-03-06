@@ -43,6 +43,9 @@ extern int64_t hlt_list_size(hlt_list* l, hlt_exception** excpt);
 // Removes the element located by the iterator. 
 extern void hlt_list_erase(hlt_list_iter i, hlt_exception** excpt);
 
+// Expires the entry the iterator references from the list.
+extern void hlt_list_iter_expire(hlt_list_iter i, hlt_exception** excpt);
+
 // Inserts a new element before the element located by the iterator.
 extern void hlt_list_insert(const hlt_type_info* type, void* elem, hlt_list_iter i, hlt_exception** excpt);
 

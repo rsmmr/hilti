@@ -1,5 +1,5 @@
 >>> call foo 42
-wrong-calls.hlt:13: error, function arguments must be a tuple
+wrong-calls.hlt:13: error, operand 2 must be of type tuple but is int<64>
 
 
 1 error found

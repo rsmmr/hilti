@@ -1,0 +1,25 @@
+
+This is from http://www.freewebs.com/attractivechaos 
+
+Changes to original version:
+
+- We're using libhilti's memory management from libhilti/memory.h.
+
+- We define kh_##name##_t outside of the Big Macros in map.h/set.h, and
+  intergrate some additional fields in there so that we can use the struct as
+  our hlt_map/set types directly (i.e., we save one memory allocation per
+  instance).
+
+- khint_t changed from uint32_t to uint64_t, and we define it outside of
+  khash.h (because the definition of kh_##name##_t already needs it.)
+
+- get() and put() get an extra cookie parameter which is passed through to
+  hash_func and hash_equal
+
+TODO:
+
+- The hash function's don't check for running out of memory. We should add
+  that. 
+  
+- With uint64_t as kh_int_t, we need to increase the numbers of primes as
+  well. Not done yet. 

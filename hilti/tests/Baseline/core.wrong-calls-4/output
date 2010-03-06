@@ -1,5 +1,5 @@
 >>> x = call foo ()
-wrong-calls.hlt:8: error, function does not return a value
+wrong-calls.hlt:8: error, called function does not return a value
 
 
 1 error found

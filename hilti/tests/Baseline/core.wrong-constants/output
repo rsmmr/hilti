@@ -1,4 +1,3 @@
-wrong-constants.hlt:10: error, type mismatch in const initialization
-
+wrong-constants.hlt:10: parser error, cannot initialize constant of type int<32> with value of type string
 
 1 error found

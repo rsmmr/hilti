@@ -93,6 +93,16 @@ extern hlt_exception_type hlt_exception_assertion_error;
 // Raised when we encounter an unexpected null reference. 
 extern hlt_exception_type hlt_exception_null_reference;
 
+// Raised when a timer is associated with multiple timer managers. 
+extern hlt_exception_type hlt_exception_timer_already_scheduled;
+    
+// Raised when a timer is must be scheduled for an operation but is not.
+extern hlt_exception_type hlt_exception_timer_not_scheduled;
+
+// Raised when expiration is requested for a container with which no timer
+// manager has been associated.
+extern hlt_exception_type hlt_exception_no_timer_manager;
+
 // Fall-back exception if nothing else is specified.
 extern hlt_exception_type hlt_exception_unspecified;
 

@@ -1,5 +1,5 @@
 >>> a = new int<32>
-wrong-operators.hlt:12: error, no matching implementation of overloaded operator found
+wrong-operators.hlt:12: error, operand 1 must be of type heap type but is int<32>
 
 
 1 error found

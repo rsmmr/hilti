@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-enum Foo { A, BC, DEF }
+type Foo = enum { A, BC, DEF }
 
 void run() {
      local Foo f1

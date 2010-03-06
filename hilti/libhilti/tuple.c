@@ -53,3 +53,37 @@ hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32
     
     return hlt_string_concat(s, &postfix, excpt);
 }
+
+hlt_hash hlt_tuple_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt)
+{
+    assert(type->type == HLT_TYPE_TUPLE);
+
+    hlt_hash hash = 0;
+    
+    int16_t* offsets = (int16_t *)type->aux;
+    hlt_type_info** types = (hlt_type_info**) &type->type_params;
+    
+    for ( int i = 0; i < type->num_params; i++ ) {
+        assert(types[i]->hash);
+        hash += (*types[i]->hash)(types[i], obj + offsets[i], excpt);
+    }
+    
+    return hash;
+}
+
+int8_t hlt_tuple_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt)
+{
+    assert(type1->type == HLT_TYPE_TUPLE);
+    assert(type1->type == type2->type);
+    
+    int16_t* offsets = (int16_t *)type1->aux;
+    hlt_type_info** types = (hlt_type_info**) &type1->type_params;
+    
+    for ( int i = 0; i < type1->num_params; i++ ) {
+        assert(types[i]->equal);
+        if ( ! (*types[i]->equal)(types[i], obj1 + offsets[i], types[i], obj2 + offsets[i], excpt) )
+            return 0;
+    }
+    
+    return 1;
+}

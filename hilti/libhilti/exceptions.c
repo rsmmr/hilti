@@ -37,9 +37,12 @@ hlt_exception_type hlt_exception_not_implemented = { "NotImplemented", &hlt_exce
 hlt_exception_type hlt_exception_pattern_error = { "PatternError", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_assertion_error = { "AssertionError", &hlt_exception_unspecified, &hlt_type_info_string };
 hlt_exception_type hlt_exception_null_reference = { "NulLReference", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_timer_already_scheduled = { "TimerAlreadyScheduled", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_timer_not_scheduled = { "TimerNotScheduled", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_no_timer_manager = { "NoTimerManager", &hlt_exception_unspecified, 0 };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, &hlt_type_info_int_32 };
+hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}; // FIXME: &hlt_type_info_int_32 };
 
 hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)
 {

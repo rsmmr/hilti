@@ -1,3 +1,3 @@
-wrong-inherit.hlt:7: error, exception argument type must match that of base class (string)
+wrong-inherit.hlt:7: error, exception argument type must match that of parent, which is string
 
 1 error found

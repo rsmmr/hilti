@@ -1,0 +1,27 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void foo(int32 n) {
+    call Hilti::print ("Timer at ", False)
+    call Hilti::print (n)
+}
+
+void run() {
+
+    local ref<timer> t
+    t = new timer foo (4)
+    timer.update t 10.0
+
+    call Hilti::print("not reached")
+
+    return.void
+}     
+
+

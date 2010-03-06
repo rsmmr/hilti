@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-const ref<bytes> g1 = b"E"
+global ref<bytes> g1 = b"E"
 
 void run() {
     local ref<list<ref<bytes>>> l

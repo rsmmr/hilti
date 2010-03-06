@@ -1,5 +1,5 @@
 >>> a = new string
-wrong-args.hlt:18: error, no matching implementation of overloaded operator found
+wrong-args.hlt:18: error, operand 1 must be of type heap type but is string
 
 
 1 error found

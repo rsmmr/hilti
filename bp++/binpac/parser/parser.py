@@ -502,22 +502,14 @@ class BinPACState(parseutil.State):
         super(BinPACState, self).__init__(filename, import_paths)
         self.module = None
 
-def _loc(p, num):
-    assert p.parser.state._filename
-    
-    try:
-        if p[num].location():
-            return p[num].location()
-    except AttributeError:
-        pass
-    
-    return location.Location(p.parser.state._filename, p.lineno(num))
+_loc = parseutil.loc
 
 # Same arguments as parser.parse().
 def _parse(filename, import_paths=["."]):
     state = BinPACState(filename, import_paths)
     lex = ply.lex.lex(debug=0, module=lexer)
     parser = ply.yacc.yacc(debug=0, write_tables=0)
+    
     parseutil.initParser(parser, lex, state)
     
     filename = os.path.expanduser(filename)
@@ -531,7 +523,6 @@ def _parse(filename, import_paths=["."]):
         ast = parser.parse(lines, lexer=lex, debug=0)
     except ply.lex.LexError, e:
         # Already reported.
-        print e
         ast = None
 
     if parser.state.errors() > 0:
@@ -546,7 +537,9 @@ def _parse(filename, import_paths=["."]):
     return (errors, ast, parser)    
 
 def _importFile(parser, filename, location, _parse):
-    if not checkImport(filename):
+    fullpath = parseutil.checkImport(parser, filename, "hlt", location)
+        
+    if not fullpath:
         return False
     
     (errors, ast, subparser) = _parse(fullpath, parser.state.importPaths())
