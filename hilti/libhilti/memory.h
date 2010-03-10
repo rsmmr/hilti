@@ -40,4 +40,7 @@ extern void* hlt_gc_realloc_atomic(void* ptr, uint64_t n);
 // with a *_non_atomic function as well.
 extern void* hlt_gc_realloc_non_atomic(void* ptr, uint64_t n);
 
+// Initializes the GC subsystem. This is called from hilti_init().
+void __hlt_init_gc();
+
 #endif

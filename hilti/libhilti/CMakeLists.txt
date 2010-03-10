@@ -91,9 +91,11 @@ else ( ENABLE_LLVM )
 
 endif ( ENABLE_LLVM )
 
+# Get all the files which go into libgcmt-lib.a.
+FILE(GLOB_RECURSE LIBGC "${CMAKE_CURRENT_BINARY_DIR}/3rdparty/bdwgc/CMakeFiles/gcmt-lib.dir/*")
 
-add_library(hilti STATIC ${SRCS} ${OBJS})  
-add_library(hiltimain STATIC ${SRCS} ${OBJS} main.c)  
+add_library(hilti STATIC ${SRCS} ${OBJS} ${LIBGC})  
+add_library(hiltimain STATIC ${SRCS} ${OBJS} main.c ${LIBGC})  
 
 set(DOXYGEN ${CMAKE_CURRENT_SOURCE_DIR}/Doxygen)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxygen/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)

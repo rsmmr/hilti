@@ -100,6 +100,15 @@ Documentation
 - The C layer is mostly undocumneted. Need to add Doxygen comments
   across the board. 
 
+3rd party
+=========
+
+- The Boehm-Weiser garbage collector does not seem to support 
+  PARALLEL_MARK and THREAD_LOCAL_ALLOC on all platforms; notably not
+  on FreeBSD. We enable always specify them in
+  libhilti/scripts/do-build, but bdwgc/CMakeLists.txt may ignore
+  them based on platform. Check that more carefully.
+
 Links
 =====
 

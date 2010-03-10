@@ -53,9 +53,9 @@ fi
 
 ### Add the libpcap flags
 
-which -s pcap-config
+pcap_config=`which -s pcap-config 2>/dev/null`
 
-if [ $? == 1 ]; then
+if [ "$pcap_config" == "" ]; then
    echo "cannot find pcap-config"
    exit 1
 fi 

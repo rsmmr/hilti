@@ -26,7 +26,10 @@ void hilti_init()
 
     // Initialize configuration to defaults.
     __hlt_config_init();
-
+    
+    // Initialize the garbage collector.
+    __hlt_init_gc();
+    
     if ( ! hlt_is_multi_threaded() )
         __hlt_execution_context_init(&__hlt_global_execution_context);
 
