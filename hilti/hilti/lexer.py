@@ -35,6 +35,10 @@ keywords = {
     "init": "INIT",
     "type": "TYPE",
     "iterator": "ITERATOR",
+    "for": "FOR",
+    "in": "IN",
+    "do": "DO",
+    "done": "DONE",
     }
 
 all = set([t.upper() for t in types + keywords.values()])

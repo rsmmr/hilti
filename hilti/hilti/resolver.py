@@ -14,6 +14,7 @@ class Resolver(object):
         """
         self._errors = 0
         self._scope = mod.scope()
+        self._functions = []
         mod.resolve(self)
         self._scope = None
         
@@ -26,4 +27,23 @@ class Resolver(object):
         Returns: ~~Scope - The scope, or None if ~~resolve is not running.
         """
         return self._scope
+
+    def startFunction(self, f):
+        """Indicates that resolving starts for a new function.
+        
+        f: ~~Function - The function.
+        """
+        self._functions += [f]
+        
+    def endFunction(self):
+        """Indicates that resolving is finished with the current function."""
+        self._functions = self._functions[:-1]
+    
+    def currentFunction(self):
+        """Returns the current function. Only valid while resolving is in
+        progress.
+        
+        Returns: ~~Function - The current function.
+        """
+        return self._functions[-1]
     

@@ -303,6 +303,8 @@ class Function(node.Node):
     ### Overridden from Node.
     
     def resolve(self, resolver):
+        resolver.startFunction(self)
+        
         if self._type:
             self._type = self._type.resolve(resolver)
             
@@ -311,6 +313,8 @@ class Function(node.Node):
         for b in self._bodies:
             b.resolve(resolver)
 
+        resolver.endFunction()
+            
     def validate(self, vld):
         vld.startFunction(self)
         self._type.validate(vld)

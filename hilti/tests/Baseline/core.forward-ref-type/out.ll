@@ -7,7 +7,6 @@ type A = struct {
     ref<A> a,
     ref<B> b
 }
-
 type B = struct {
     ref<A> a,
     ref<B> b,
@@ -16,7 +15,6 @@ type B = struct {
 }
 
 global ref<A> a
-
 global ref<B> b
 
 ref<A> foo(ref<B> b) {
@@ -31,6 +29,4 @@ void run() {
     }
 
 global tuple<ref<A>,ref<B>> t
-
 global ref<list<ref<A>>> v
-

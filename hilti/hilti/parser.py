@@ -16,6 +16,8 @@ import operand
 import type
 import util
 
+import instructions.foreach
+
 from lexer import tokens
 
 # ply.yacc triggers "DeprecationWarning: the md5 module is deprecated; use hashlib instead"
@@ -259,7 +261,6 @@ def p_def_function_head(p):
     p[0] = func
     
     p.parser.state.function = None
-    p.parser.state.block = None
 
 def p_def_opt_cc(p):
     """opt_cc : CSTRING
@@ -297,16 +298,25 @@ def p_def_opt_linkage(p):
             util.internal_error("unexpected state in p_def_opt_linkage")
             
 def p_def_function(p):
-    """def_function : function_head _begin_nolines '{' _instantiate_function _end_nolines instruction_list _begin_nolines _pop_scope '}' _end_nolines """
+    """def_function : function_head _begin_nolines '{' _instantiate_function _end_nolines instruction_list _begin_nolines _pop_scope '}' _finish_function _end_nolines """
     
 def p_instantiate_function(p):
     """_instantiate_function :"""
     func = p[-3]
     p.parser.state.function = func
-    p.parser.state.block = block.Block(func, location=_loc(p, 0))
-    p.parser.state.block.setMayRemove(False)
-    p.parser.state.function.addBlock(p.parser.state.block)
+    
+    _pushBlockList(p)    
     _pushScope(p, p.parser.state.function.scope())
+    
+    b = block.Block(func, location=_loc(p, 0))
+    b.setMayRemove(False)
+    _addBlock(p, b)
+
+def p_finish_function(p):
+    """_finish_function :"""
+    blocks = _popBlockList(p)
+    for b in blocks:
+        p.parser.state.function.addBlock(b)
     
 def p_pop_scope(p):
     """_pop_scope :"""    
@@ -340,8 +350,8 @@ def p_set_block_name(p):
             raise SyntaxError
         
         # Start a new block.
-        p.parser.state.block = block.Block(p.parser.state.function, name=name, location=_loc(p, 0))
-        p.parser.state.function.addBlock(p.parser.state.block)
+        b = block.Block(p.parser.state.function, name=name, location=_loc(p, 0))
+        _addBlock(p, b)
     else:
         # Current block still empty so just set its name.
         if name and p.parser.state.function.scope().lookup(name) and name != p.parser.state.block.name():
@@ -374,7 +384,7 @@ def p_instruction(p):
     if not ins:
         util.parser_error(p, "unknown instruction %s" % name)
         raise SyntaxError
-    
+
     p.parser.state.block.addInstruction(ins)
 
 def p_assignment(p):
@@ -383,6 +393,20 @@ def p_assignment(p):
     ins = instruction.createInstruction("assign", p[3], None, None, p[1], location=_loc(p, 1))
     assert ins
     p.parser.state.block.addInstruction(ins)
+
+def p_foreach(p):
+    """instruction : FOR IDENT IN operand DO NL _push_blocklist instruction_list DONE NL""" 
+    blocks = _popBlockList(p)
+    ins = instructions.foreach.ForEach(p[2], p[4], blocks, location=_loc(p, 1))
+    p.parser.state.block.addInstruction(ins)
+    
+def p_push_blocklist(p):
+    """_push_blocklist : """
+    _pushBlockList(p)
+    
+    b = block.Block(p.parser.state.function, location=_loc(p, 0))
+    b.setMayRemove(False)
+    _addBlock(p, b)
     
 def p_operand_ident(p):
     """operand : IDENT"""
@@ -476,7 +500,7 @@ def p_operand_ctor(p):
     
     if isinstance(p[1], type.List):
         for op in ops:
-            if t.itemType() != op.type():
+            if not op.canCoerceTo(t.itemType()):
                 util.parser_error(p, "list element %s is of wrong type" % op)
                 raise SyntaxError
 
@@ -794,6 +818,7 @@ class HILTIState(util.State):
         self.internal_module = internal_module
         self.comment = []   
         self.scopes = []
+        self.blocklists = []
         
 _loc = util.loc
 
@@ -859,3 +884,22 @@ def _pushScope(p, scope):
     
 def _popScope(p):
     p.parser.state.scopes = p.parser.state.scopes[:-1]
+    
+def _pushBlockList(p):
+    p.parser.state.blocklists += [[]]
+    
+def _popBlockList(p):
+    bl = p.parser.state.blocklists[-1]
+    p.parser.state.blocklists = p.parser.state.blocklists[:-1]
+    
+    try:
+        p.parser.state.block = p.parser.state.blocklists[-1][-1]
+    except IndexError:
+        p.parser.state.block = None
+    
+    return bl
+
+def _addBlock(p, b):
+    p.parser.state.block = b
+    p.parser.state.blocklists[-1] += [b]
+    

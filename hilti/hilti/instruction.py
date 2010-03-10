@@ -32,8 +32,8 @@ class Instruction(node.Node):
         self._op3 = op3
         self._target = target
         self._location = location
-        
-        cb = self.signature().callback()
+    
+        cb = self.signature().callback() if self.signature() else None
         if cb:
             cb(self)
 

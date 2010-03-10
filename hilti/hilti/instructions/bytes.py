@@ -102,7 +102,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
         datac = cg.builder().bitcast(data, self.llvmType(cg))
     
         exception = cg.llvmAlloca(cg.llvmTypeExceptionPtr())
-        newobj = cg.llvmCallCInternal("__hlt_bytes_new_from_data", [datac, cg.llvmConstInt(size, 32), exception])
+        newobj = cg.llvmCallCInternal("hlt_bytes_new_from_data", [datac, cg.llvmConstInt(size, 32), exception])
         
         return newobj
         

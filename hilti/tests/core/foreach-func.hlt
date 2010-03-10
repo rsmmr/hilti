@@ -1,0 +1,35 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void f(int32 x, int32 y) {
+    local string s
+    s = call Hilti::fmt ("%d %d", (x, y))
+    call Hilti::print (s)
+}
+
+void run() {
+
+    local ref<list<int32>> l
+
+    l = list<int32>(1,2,3,4,5)
+
+    call Hilti::print ("A", True)
+    
+    for x in l do
+        for y in l do
+            call f (x,y)
+        done
+    done
+        
+    call Hilti::print ("B", True)
+    
+    return.void
+}
+
