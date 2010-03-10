@@ -28,12 +28,12 @@ void* hlt_gc_malloc_non_atomic(uint64_t n)
 
 void* hlt_gc_calloc_atomic(uint64_t count, uint64_t n)
 {
-    return GC_MALLOC_ATOMIC(n);
+    return GC_MALLOC_ATOMIC(count * n);
 }
 
 void* hlt_gc_calloc_non_atomic(uint64_t count, uint64_t n)
 {
-    return GC_MALLOC(n);
+    return GC_MALLOC(count * n);
 }
 
 void* hlt_gc_realloc_atomic(void* ptr, uint64_t n)
