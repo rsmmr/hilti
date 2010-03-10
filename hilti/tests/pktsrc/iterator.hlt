@@ -1,0 +1,36 @@
+# $Id$
+#
+# @TEST-EXEC:  cp %DIR/trace.pcap .
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local bool eq
+    local ref<pktsrc<Hilti::PktSrc::PcapOffline>> psrc
+    local tuple<double,ref<bytes>> pkt
+    local iterator<pktsrc<Hilti::PktSrc::PcapOffline>> cur
+    local iterator<pktsrc<Hilti::PktSrc::PcapOffline>> last
+
+    psrc = new pktsrc<Hilti::PktSrc::PcapOffline> "trace.pcap"
+
+    cur = begin psrc
+    last = end psrc
+
+@loop:
+    eq = equal cur last
+    if.else eq @exit @cont
+    
+@cont:
+    pkt = deref cur
+    call Hilti::print (pkt)
+    cur = incr cur
+    jump @loop
+    
+@exit: return.void
+}     
+

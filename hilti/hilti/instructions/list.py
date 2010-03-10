@@ -201,14 +201,14 @@ class Insert(Instruction):
         op1 = self.op1().coerceTo(cg, self.op2().type().derefType())
         cg.llvmCallC("hlt::list_insert", [op1, self.op2()])
 
-@hlt.instruction("list.begin", op1=cReferenceOf(cList), target=cIteratorList)
+@hlt.overload(Begin, op1=cReferenceOf(cList), target=cIteratorList)
 class Begin(Instruction):
     """Returns an iterator representing the first element of *op1*."""
     def codegen(self, cg):
         result = cg.llvmCallC("hlt::list_begin", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("list.end", op1=cReferenceOf(cList), target=cIteratorList)
+@hlt.overload(End, op1=cReferenceOf(cList), target=cIteratorList)
 class End(Instruction):
     """Returns an iterator representing the position one after the last element of *op1*."""
     def codegen(self, cg):

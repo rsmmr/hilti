@@ -29,7 +29,7 @@ void run() {
     list.push_back l 1000
     call Hilti::print(l)
 
-    c = list.begin l
+    c = begin l
     list.insert 50 c
     call Hilti::print(l)
 
@@ -62,7 +62,7 @@ void run() {
 
     call Hilti::print("")
 
-    c = list.begin l
+    c = begin l
     c2 = incr c
     list.erase c
     call Hilti::print(l)

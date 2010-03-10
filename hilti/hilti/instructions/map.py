@@ -222,15 +222,15 @@ class Clear(Instruction):
     def codegen(self, cg):
         cg.llvmCallC("hlt::map_clear", [self.op1()])
 
-@hlt.instruction("map.begin", op1=cReferenceOf(cMap), target=cIteratorMap)
-class Begin(Instruction):
+@hlt.overload(Begin, op1=cReferenceOf(cMap), target=cIteratorMap)
+class Begin(Operator):
     """Returns an iterator representing the first element of *op1*."""
     def codegen(self, cg):
         result = cg.llvmCallC("hlt::map_begin", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("map.end", op1=cReferenceOf(cMap), target=cIteratorMap)
-class End(Instruction):
+@hlt.overload(End, op1=cReferenceOf(cMap), target=cIteratorMap)
+class End(Operator):
     """Returns an iterator representing the position one after the last
     element of *op1*."""
     def codegen(self, cg):

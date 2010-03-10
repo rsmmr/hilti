@@ -18,7 +18,7 @@ void run() {
     local ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> v
     local tuple<iterator<bytes>,iterator<bytes>> span
     local iterator<vector<tuple<iterator<bytes>,iterator<bytes>>>> cur
-    local iterator<vector<tuple<iterator<bytes>,iterator<bytes>>>> end
+    local iterator<vector<tuple<iterator<bytes>,iterator<bytes>>>> last
     
     re = new regexp
     call Hilti::print(re)
@@ -29,16 +29,16 @@ void run() {
     b = b"xxA123456789Bxx"
     call Hilti::print(b)
     
-    i1 = bytes.begin b
-    i2 = bytes.end b
+    i1 = begin b
+    i2 = end b
     
     v = regexp.groups re i1 i2
 
-    cur = vector.begin v
-    end = vector.end v
+    cur = begin v
+    last = end v
     
 @loop:
-    eq = equal cur end
+    eq = equal cur last
     if.else eq @exit @cont
     
 @cont:

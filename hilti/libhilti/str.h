@@ -36,4 +36,6 @@ extern hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, h
 
 extern void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt);
 
+extern const char* hlt_string_to_native(hlt_string s, hlt_exception** excpt);
+
 #endif

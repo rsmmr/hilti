@@ -14,15 +14,15 @@ void run() {
     local ref<bytes> b
     local bool eq
     local iterator<bytes> cur
-    local iterator<bytes> end
+    local iterator<bytes> last
     local int8 i
     
     b = string.encode "0123456789" "ascii"
-    cur = bytes.begin b
-    end = bytes.end b
+    cur = begin b
+    last = end b
 
 @loop:
-    eq = equal cur end
+    eq = equal cur last
     if.else eq @exit @cont
     
 @cont:

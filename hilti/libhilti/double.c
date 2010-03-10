@@ -18,7 +18,7 @@ hlt_string hlt_double_to_string(const hlt_type_info* type, const void* obj, int3
     // FIXME: This is just a hack for now. Rather than depending on snprintf,
     // we should code our own itoa().
     char buffer[128];
-    int len = snprintf(buffer, 128, "%.2f", val);
+    int len = snprintf(buffer, 128, "%.6f", val);
     hlt_string s = hlt_gc_malloc_atomic(sizeof(hlt_string) + len);
     memcpy(s->bytes, buffer, len);
     s->len = len;

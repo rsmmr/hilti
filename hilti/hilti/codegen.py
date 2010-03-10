@@ -369,6 +369,9 @@ class CodeGen(objcache.Cache):
         if isinstance(i, operand.ID):
             i = i.value()
         
+        if not i:
+            return None
+            
         assert isinstance(i, id.Function)
         func = i.function()
         
@@ -840,6 +843,11 @@ class CodeGen(objcache.Cache):
                 arg_types += [other_ti.type]
                 arg_vals += [other_ti]
                 
+            elif isinstance(arg, str):
+                arg = self.llvmEnumLabel(arg)
+                arg_types += [arg.type]
+                arg_vals += [arg]
+               
             else:
                 util.internal_error("llvmAddTypeInfos: unsupported type parameter %s" % repr(arg))
 
@@ -995,7 +1003,7 @@ class CodeGen(objcache.Cache):
         self.builder().store(val, ptr)
         return self.builder().load(addr)
 
-    def llvmSwitch(self, op, cases):
+    def llvmSwitch(self, op, cases, result=False):
         """Helper to build an LLVM switch statement for integer and enum
         operands. For each case, the caller provides a function that will be
         called to build the case's body. The helper will build the necessary
@@ -1018,10 +1026,26 @@ class CodeGen(objcache.Cache):
         they specify; in this case, *function* will only be called for the
         first entry of the list. 
         
+        *result*: bool - If true, the functions in *cases* are expected to
+        return ``llvm.core.Value`` values, which must be all of the same type.
+        These are then merged with an LLVM ``phi`` instruction to select the
+        one from the branch being taken, and the ``phi`` result is returned by
+        ``llvmSwitch``.
+        
+        Returns: llvm.core.Value or nothing - A value if *result* is true,
+        nothin otherwise. 
+        
         Note: The function is optimized for the case where *op* is constant;
         it then generates just the code for the corresponding branch. 
         """
-        assert isinstance(op.type(), type.Integer) or isinstance(op.type(), type.Enum)
+        assert isinstance(op, str) or isinstance(op.type(), type.Integer) or isinstance(op.type(), type.Enum)
+        
+        if isinstance(op, str):
+            i = self.currentModule().scope().lookup(op)
+            if not i:
+                util.internal_error("llvmSwitch: %s is not a know enum value" % op)
+                
+            op = operand.ID(i)
         
         if op.constant():
             # Version for a const operand.             
@@ -1039,8 +1063,7 @@ class CodeGen(objcache.Cache):
                         val = i.value()
 
                     if val.value() == c:
-                        function(val)
-                        return
+                        return function(val)
                     
             util.internal_error("codegen.llvmSwitch: constant %s does not specify a known case" % c)
         
@@ -1056,6 +1079,7 @@ class CodeGen(objcache.Cache):
         
             llvmop = self.llvmOp(op)
             switch = builder.switch(llvmop, default)
+            returns = []
         
             for (vals, function) in cases:
                 if not isinstance(vals, list):
@@ -1063,7 +1087,8 @@ class CodeGen(objcache.Cache):
                     
                 block = self.llvmNewBlock("switch-%s" % str(vals[0]))
                 self.pushBuilder(block)
-                function(vals[0])
+                ret = function(vals[0])
+                returns = (ret, block)
                 self.builder().branch(cont)
                 self.popBuilder()
                 
@@ -1088,6 +1113,14 @@ class CodeGen(objcache.Cache):
         
             self.pushBuilder(cont) # Leave on stack.
 
+            if result:
+                assert returns
+                phi = cont.phi(returns[0][0].type)
+                for ret in returns:
+                    phi.add_incoming(returns[ret][0], returns[ret][1])
+                    
+                return phi
+                
     def llvmCallIntrinsic(self, intr, types, args):
         """Calls an LLVM intrinsic. 
         
@@ -1588,8 +1621,14 @@ class CodeGen(objcache.Cache):
 
         if isinstance(ty, type.Type):
             ty = self.llvmType(ty)
-        
-        b = self._llvm.func.get_entry_basic_block()
+
+        try: 
+            b = self._llvm.func.get_entry_basic_block()
+        except TypeError:
+            # FIXME: Get this when in building C stub; not sure why. Let's
+            # ignore it for now.
+            return self.builder().alloca(ty)
+
         builder = llvm.core.Builder.new(b)
         
         if b.instructions:
@@ -1599,7 +1638,7 @@ class CodeGen(objcache.Cache):
             # in llvm-py SVN. Change this once we update.
             builder.position_at_beginning(b)
 
-        return self.builder().alloca(ty)
+        return builder.alloca(ty)
 
     def llvmMalloc(self, ty):
         """Allocates memory for the given type. From the caller's perspective

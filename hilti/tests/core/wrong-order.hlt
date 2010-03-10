@@ -7,7 +7,7 @@
 # Note: This is actually expected to work because the location of
 # local's does indeed not matter. I don't see any harm in doing so
 # and short of forcing all locals to be defined right at the
-# beginning, it wouldn't be easy to change because IDs are only
+# firstning, it wouldn't be easy to change because IDs are only
 # resolved after all of the input has been parsed. 
 
 module Main

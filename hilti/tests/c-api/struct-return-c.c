@@ -4,6 +4,7 @@
  */
     
 #include <stdint.h>
+#include <hilti.h>
 
 struct A { 
     int8_t x;
@@ -56,6 +57,11 @@ struct J {
 struct K { 
     int32_t x;
     int64_t y;
+};
+
+struct L { 
+    double d;
+    hlt_string s;
 };
 
 struct A fa() {
@@ -133,5 +139,16 @@ struct K fk() {
     return k; 
 }
 
+static hlt_string_constant OK = { 2, "OK" };
 
+struct L fl() {
+    struct L l;
+    l.d = 42.0;
+    l.s = &OK;
+    return l; 
+}
 
+void LLL()
+{
+    struct L l = fl();
+}

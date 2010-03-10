@@ -70,10 +70,10 @@ def returnStructByValue(type):
     *type*: llvm.core.Type.struct - The struct for which one wants to know
     whether it is returned by value.
 
-    Returns: llvm.core.Type.int or None - If an integer type, the struct is
-    returned by value and the integer type specifies the type of the return
-    value that the ABI uses for returning such structs. If None, the struct is
-    not returned by value.
+    Returns: llvm.core.Type or None - If a type, the struct is returned by
+    value and the integer type specifies the type of the return value that the
+    ABI uses for returning such structs. If None, the struct is not returned
+    by value.
     """
 
     try:
@@ -122,6 +122,15 @@ def returnStructByValue(type):
             return llvm.core.Type.int(64)
 
         if sizeof <= 16:
+            # FIXME: We special case here: if we have a tuple<double,ptr>, we
+            # explictly return the right type. This is just a hack to make
+            # this type work. Seems our heuristic isn't sufficient to handle
+            # it yet. What a pain ...
+            if isinstance(type, llvm.core.StructType) and len(type.elements) == 2:
+                if type.elements[0] == llvm.core.Type.double() and \
+                   isinstance(type.elements[1], llvm.core.PointerType):
+                       return llvm.core.Type.struct([llvm.core.Type.double(), llvm.core.Type.int(64)])
+            
             return llvm.core.Type.int(128)
 
         return None

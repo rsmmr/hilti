@@ -370,3 +370,21 @@ void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** 
         fputc('\n', file);
         
 }
+
+/* FIXME: We don't really do "to native" yet, but just to ASCII ... */
+const char* hlt_string_to_native(hlt_string s, hlt_exception** excpt)
+{
+    hlt_bytes* b = hlt_string_encode(s, &ASCII_STRING, excpt);
+    if ( *excpt )
+        return 0;
+
+    const int8_t* raw = hlt_bytes_to_raw(b, excpt);    
+    if ( *excpt )
+        return 0;
+    
+    int64_t len = hlt_bytes_len(b, excpt);
+    char* buffer = hlt_gc_malloc_atomic(len + 1);
+    memcpy(buffer, raw, len);
+    buffer[len] = '\0';
+    return (const char*) raw;
+}

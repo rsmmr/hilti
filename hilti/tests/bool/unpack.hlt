@@ -17,24 +17,24 @@ void run() {
     local bool boo
     
     b = b"\x02"
-    p1 = bytes.begin b
-    p2 = bytes.end b
+    p1 = begin b
+    p2 = end b
 
     t = unpack (p1,p2) Hilti::Packed::Bool
     boo = tuple.index t 0
     call Hilti::print (boo)
 
     b = b"\x00"
-    p1 = bytes.begin b
-    p2 = bytes.end b
+    p1 = begin b
+    p2 = end b
 
     t = unpack (p1,p2) Hilti::Packed::Bool
     boo = tuple.index t 0
     call Hilti::print (boo)
 
     b = b"\x04"
-    p1 = bytes.begin b
-    p2 = bytes.end b
+    p1 = begin b
+    p2 = end b
 
     t = unpack (p1,p2) Hilti::Packed::Bool 1
     boo = tuple.index t 0

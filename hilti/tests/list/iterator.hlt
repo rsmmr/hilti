@@ -15,7 +15,7 @@ void run() {
 
     local bool eq
     local iterator<list<int32>> cur
-    local iterator<list<int32>> end
+    local iterator<list<int32>> last
 
     l = new list<int32>
     list.push_back l 10
@@ -24,11 +24,11 @@ void run() {
     list.push_back l 40
     list.push_back l 50
 
-    cur = list.begin l
-    end = list.end l
+    cur = begin l
+    last = end l
 
 @loop:
-    eq = equal cur end
+    eq = equal cur last
     if.else eq @exit @cont
     
 @cont:

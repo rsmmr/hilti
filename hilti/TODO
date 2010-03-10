@@ -63,6 +63,13 @@ LLVM problems
 
 - Can't add the tailcall attribute in llvm-py currently.
 
+- At least for X86_64, our struct-return heuristic isn't sufficient.
+  It does for example not return tuple<double,string> correctly.
+  Worked around that particular cases by hard-coding it in system.h,
+  but generally it seems we need a more complex set of rules. 
+  
+  Don't know what the situation is on other ABIs.
+
 Optimizations
 =============
 

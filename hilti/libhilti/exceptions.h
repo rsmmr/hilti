@@ -31,7 +31,13 @@ typedef struct {
 ///////////////////////////////////////////////////////////////////////////////
 
     // %doc-std-exceptions-start
-    
+
+// Fall-back exception if nothing else is specified.
+extern hlt_exception_type hlt_exception_unspecified;
+
+// No exception.
+extern hlt_exception_type hlt_exception_none;
+
 // A division by zero has occured.
 extern hlt_exception_type hlt_exception_division_by_zero;
 
@@ -103,11 +109,11 @@ extern hlt_exception_type hlt_exception_timer_not_scheduled;
 // manager has been associated.
 extern hlt_exception_type hlt_exception_no_timer_manager;
 
-// Fall-back exception if nothing else is specified.
-extern hlt_exception_type hlt_exception_unspecified;
+// Raised when a packet source cannot provide any further packets.
+extern hlt_exception_type hlt_exception_pktsrc_exhausted;
 
-// No exception.
-extern hlt_exception_type hlt_exception_none;
+// Raised when a packet source encounters an error condition.
+extern hlt_exception_type hlt_exception_pktsrc_error;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Exception-related functions.

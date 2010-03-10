@@ -8,7 +8,7 @@
 # This test uses a constant, which shouldn't compile.
 #
 # FIXME: Currently, we get only an internal error. Still need to 
-# extend the checker for this, but I'm waiting until we have the new
+# extlast the checker for this, but I'm waiting until we have the new
 # cabilities for specifying signatures.
 #
 # @TEST-IGNORE
@@ -25,8 +25,8 @@ void run() {
     local Hilti::Packed e
     
     b = b"\x11\x22\x33\x44\x55\x66\x77\x88\x99"
-    p1 = bytes.begin b
-    p2 = bytes.end b
+    p1 = begin b
+    p2 = end b
     t32 = unpack (p1,p2) Hilti::Packed::Undef
     }
 

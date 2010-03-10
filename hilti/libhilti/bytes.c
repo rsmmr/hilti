@@ -52,14 +52,16 @@ hlt_bytes* hlt_bytes_new(hlt_exception** excpt)
     return hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes));
 }
 
-hlt_bytes* __hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_exception** excpt)
+hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_exception** excpt)
 { 
     hlt_bytes* b = hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes));
     hlt_bytes_chunk* dst = hlt_gc_malloc_non_atomic(sizeof(hlt_bytes_chunk));
     dst->start = data;
     dst->end = data + len;
     dst->owner = 0;
+
     add_chunk(b, dst);
+    
     return b;
 }
 
@@ -559,7 +561,7 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
         for ( const int8_t* p = c->start; p < c->end; ++p ) {
             unsigned char c = (unsigned char) *p;
         
-            if ( isprint(c) ) 
+            if ( isprint(c) && c < 128 ) 
                 dst = hlt_string_concat(dst, hlt_string_from_data((int8_t*)&c, 1, excpt), excpt);
             else {
                 snprintf(buf, sizeof(buf) - 1, "\\x%02x", c);

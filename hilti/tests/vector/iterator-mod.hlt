@@ -15,14 +15,14 @@ void run() {
 
     local bool eq
     local iterator<vector<int32>> cur
-    local iterator<vector<int32>> end
+    local iterator<vector<int32>> last
 
     v = new vector<int32>
     vector.set v 0 10
     vector.set v 2 11
     vector.set v 4 12
 
-    cur = vector.begin v
+    cur = begin v
 
     i = deref cur
     call Hilti::print (i)

@@ -15,14 +15,14 @@ void run() {
 
     local bool eq
     local iterator<map<string,tuple<bool,bool>>> cur
-    local iterator<map<string,tuple<bool,bool>>> end
+    local iterator<map<string,tuple<bool,bool>>> last
 
     m = new map<string,tuple<bool,bool>>
-    cur = map.begin m
-    end = map.end m
+    cur = begin m
+    last = end m
 
 @loop:
-    eq = equal cur end
+    eq = equal cur last
     if.else eq @exit @cont
     
 @cont:

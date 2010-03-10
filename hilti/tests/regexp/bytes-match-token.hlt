@@ -37,7 +37,7 @@ void run() {
     b = b"FooBarFooleinX"
     call Hilti::print(b)
 
-    start = bytes.begin b
+    start = begin b
     start = call next_token(start)
     start = call next_token(start)
     start = call next_token(start)
@@ -46,7 +46,7 @@ void run() {
     b = b"FooBarFooleinBa"
     call Hilti::print(b)
 
-    start = bytes.begin b
+    start = begin b
     start = call next_token(start)
     start = call next_token(start)
     start = call next_token(start)

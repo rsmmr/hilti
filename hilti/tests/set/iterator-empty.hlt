@@ -14,14 +14,14 @@ void run() {
 
     local bool eq
     local iterator<set<string>> cur
-    local iterator<set<string>> end
+    local iterator<set<string>> last
 
     m = new set<string>
-    cur = set.begin m
-    end = set.end m
+    cur = begin m
+    last = end m
 
 @loop:
-    eq = equal cur end
+    eq = equal cur last
     if.else eq @exit @cont
     
 @cont:

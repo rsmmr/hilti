@@ -170,15 +170,15 @@ class Clear(Instruction):
     def codegen(self, cg):
         cg.llvmCallC("hlt::set_clear", [self.op1()])
 
-@hlt.instruction("set.begin", op1=cReferenceOf(cSet), target=cIteratorSet)
-class Begin(Instruction):
+@hlt.overload(Begin, op1=cReferenceOf(cSet), target=cIteratorSet)
+class Begin(Operator):
     """Returns an iterator representing the first element of *op1*."""
     def codegen(self, cg):
         result = cg.llvmCallC("hlt::set_begin", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("set.end", op1=cReferenceOf(cSet), target=cIteratorSet)
-class End(Instruction):
+@hlt.overload(End, op1=cReferenceOf(cSet), target=cIteratorSet)
+class End(Operator):
     """Returns an iterator representing the position one after the last
     element of *op1*."""
     def codegen(self, cg):

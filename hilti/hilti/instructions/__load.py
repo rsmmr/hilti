@@ -28,4 +28,5 @@ import overlay
 import timer
 import map
 import set
+import pktsrc
 

@@ -37,10 +37,12 @@
 #define HLT_TYPE_ANY 24
 #define HLT_TYPE_TIMER 25
 #define HLT_TYPE_TIMER_MGR 26
+#define HLT_TYPE_PKTSRC 27
 
 #define HLT_TYPE_ITERATOR_BYTES  100
 #define HLT_TYPE_ITERATOR_VECTOR 101
 #define HLT_TYPE_ITERATOR_LIST   102
+#define HLT_TYPE_ITERATOR_PKTSRC 103
    // HILTI_%doc-__HLT_TYPE-end
 
    // %doc-hlt_type_info-start

@@ -6,13 +6,14 @@ cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH}) 
 find_package(LLVM)
+find_package(Pcap)
 
 project(libhilti)
 set(PROJECT_VERSION "0.1")
 
 add_subdirectory(justrx) # must come before EnableLLVM.
 
-set(CMAKE_C_FLAGS "-g -std=c99 -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src")
+set(CMAKE_C_FLAGS "-g -std=c99 -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src -I{PCAP_CFLAGS}")
 
 include(EnableLLVM)
 
@@ -22,6 +23,7 @@ set(SRCS
     bytes.c config.c schedulers.c thread_context.c run.c
     addr.c port.c vector.c list.c net.c regexp.c debug.c
     bitset.c context.c caddr.c struct.c timer.c map_set.c
+    pktsrc-pcap.c
     
     module/fmt.c module/print.c module/abort.c
     

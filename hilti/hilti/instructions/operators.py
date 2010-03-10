@@ -44,6 +44,20 @@ class Equal(Operator):
     """
     pass
 
+@operator("begin", op1=cReferenceOf(cIterable), target=cIterator)
+class Begin(Operator):
+    """
+    Returns an iterator for the starting position of a sequence.
+    """
+    pass
+
+@operator("end", op1=cReferenceOf(cIterable), target=cIterator)
+class End(Operator):
+    """
+    Returns an iterator for the end position of a sequence.
+    """
+    pass
+
 # FIXME: For op2, what we really want is "is of type enum Hilti::Packed". But
 # how can we express that?
 def cUnpackTarget(constraint):

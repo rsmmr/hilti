@@ -174,7 +174,7 @@ def cReferenceOf(constr):
     instruction.assert_constraint(constr)
     @hlt.constraint(lambda sig: "ref<%s>" % sig.getOpDoc(constr))
     def _referenceOf(ty, op, i):
-        if not isinstance(op.type(), type.Reference):
+        if not isinstance(ty, type.Reference):
             return (False, "must be a reference")
 
         return constr(ty.refType(), None, i)
@@ -340,9 +340,13 @@ cMap = _hasType("Map")
 cSet = _hasType("Set")
 cIteratorMap = _hasType("IteratorMap", "iterator<map>")
 cIteratorSet = _hasType("IteratorSet", "iterator<set>")
+cPktSrc = _hasType("PktSrc")
+cIteratorPktSrc = _hasType("IteratorPktSrc", "iterator<pktsrc>")
 
 cFunction = _hasType("Function")
 cLabel = _hasType("Label")
 cHiltiType = _hasType("HiltiType")
 cHeapType = _hasType("HeapType", "heap type")
 cValueType = _hasType("ValueType", "value type")
+cIterator = _hasType("Iterator")
+cIterable = _hasType("Iterable")

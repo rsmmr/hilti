@@ -90,7 +90,8 @@ class Operand(node.Node):
         Todo: We should remove this in-place modification and always return a
         new operand.
         """
-        assert self.canCoerceTo(ty)
+        if not self.canCoerceTo(ty):
+            util.internal_error("cannot coerce operand of type %s to type %s" % (self.type(), ty))
         
         if isinstance(ty, type.Any):
             return self

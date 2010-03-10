@@ -8,6 +8,4 @@
 # Remove absolute paths from exception information.
 sed 's#(from .*/\([^/]\{1,\}\):#(from XXX/\1:#g' | \
 sed 's#from filtered-#from #g' | \
-sed 's#addr:0x[0-9a-z]*#addr:XXX#g' \
-\
-| sed 's/^WARNING.*//g' | sed 's/^>>> .*//g' | grep -v '^$'
+sed 's#addr:0x[0-9a-z]*#addr:XXX#g'

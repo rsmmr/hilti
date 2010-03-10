@@ -22,20 +22,20 @@ void run() {
     call Hilti::print(re)
     
     b = b"Bar"
-    i1 = bytes.begin b
-    i2 = bytes.end b
+    i1 = begin b
+    i2 = end b
     found = regexp.find re i1 i2
     call Hilti::print(found)
     
     b = b"Fo"
-    i1 = bytes.begin b
-    i2 = bytes.end b
+    i1 = begin b
+    i2 = end b
     found = regexp.find re i1 i2
     call Hilti::print(found)
     
     b = b"Bar!!!"
-    i1 = bytes.begin b
-    i2 = bytes.end b
+    i1 = begin b
+    i2 = end b
     found = regexp.find re i1 i2
     call Hilti::print(found)
     

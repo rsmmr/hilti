@@ -392,15 +392,15 @@ class Offset(Instruction):
         result = cg.llvmCallC("hlt::bytes_offset", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("bytes.begin", op1=cReferenceOf(cBytes), target=cIteratorBytes)
-class Begin(Instruction):
+@hlt.overload(Begin, op1=cReferenceOf(cBytes), target=cIteratorBytes)
+class Begin(Operator):
     """Returns an iterator representing the first element of *op1*."""
     def codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_begin", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("bytes.end", op1=cReferenceOf(cBytes), target=cIteratorBytes)
-class End(Instruction):
+@hlt.overload(End, op1=cReferenceOf(cBytes), target=cIteratorBytes)
+class End(Operator):
     """Returns an iterator representing the position one after the last element of *op1*."""
     def codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_end")

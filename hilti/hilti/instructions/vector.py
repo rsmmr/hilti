@@ -133,15 +133,15 @@ class Reserve(Instruction):
         op2 = self.op2().coerceTo(cg, type.Integer(64))
         cg.llvmCallC("hlt::vector_reserve", [self.op1(), op2])
 
-@hlt.instruction("vector.begin", op1=cReferenceOf(cVector), target=cIteratorVector)
-class Begin(Instruction):
+@hlt.overload(Begin, op1=cReferenceOf(cVector), target=cIteratorVector)
+class Begin(Operator):
     """Returns an iterator representing the first element of *op1*."""
     def codegen(self, cg):
         result = cg.llvmCallC("hlt::vector_begin", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("vector.end", op1=cReferenceOf(cVector), target=cIteratorVector)
-class End(Instruction):
+@hlt.overload(End, op1=cReferenceOf(cVector), target=cIteratorVector)
+class End(Operator):
     """Returns an iterator representing the position one after the last element of *op1*."""
     def codegen(self, cg):
         result = cg.llvmCallC("hlt::vector_end", [self.op1()])

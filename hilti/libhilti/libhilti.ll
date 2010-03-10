@@ -89,6 +89,7 @@ declare %__hlt_void* @__hlt_timer_new_closure(%__hlt_continuation*, %__hlt_excep
 @hlt_exception_division_by_zero = external constant %__hlt_exception_type
 @hlt_exception_overlay_not_attached = external constant %__hlt_exception_type
 @hlt_exception_undefined_value = external constant %__hlt_exception_type
+@hlt_exception_pktsrc_exhausted = external constant %__hlt_exception_type
 
 ;;;;;;;;;;;;;;;;;; OLD - Need to update.
 ; Thread scheduling functions.

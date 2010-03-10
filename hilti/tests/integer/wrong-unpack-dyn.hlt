@@ -18,8 +18,8 @@ void run() {
     local Hilti::Packed e
     
     b = b"\x11\x22\x33\x44\x55\x66\x77\x88\x99"
-    p1 = bytes.begin b
-    p2 = bytes.end b
+    p1 = begin b
+    p2 = end b
     
     e = Hilti::Packed::Undef
     

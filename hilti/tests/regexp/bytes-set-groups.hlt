@@ -29,7 +29,7 @@ void run() {
     call Hilti::print(re)
     
     b = b"Hello Foo!"
-    i1 = bytes.begin b
-    i2 = bytes.end b
+    i1 = begin b
+    i2 = end b
     v = regexp.groups re i1 i2
 }

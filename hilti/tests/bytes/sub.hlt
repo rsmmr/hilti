@@ -27,8 +27,8 @@ void run() {
     b2 = bytes.sub i1 i2
     call Hilti::print (b2)
     
-    i1 = bytes.begin b1
-    i2 = bytes.end b1
+    i1 = begin b1
+    i2 = end b1
     b2 = bytes.sub i1 i2
     call Hilti::print (b2)
 }

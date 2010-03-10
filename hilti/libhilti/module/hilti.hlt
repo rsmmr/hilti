@@ -77,8 +77,9 @@ type Packed = enum {
 
 }    
  
+ 
 type AddrFamily = enum { IPv4, IPv6 }
 type Protocol = enum { TCP, UDP }
 type ExpireStrategy = enum { Create, Access }
-    
+type PktSrc = enum { PcapLive, PcapOffline }
 

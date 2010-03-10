@@ -51,6 +51,18 @@ if [ ! -d "$base/libhilti" ]; then
     exit 1
 fi
 
+### Add the libpcap flags
+
+which -s pcap-config
+
+if [ $? == 1 ]; then
+   echo "cannot find pcap-config"
+   exit 1
+fi 
+
+pcap_cflags=`pcap-config --cflags `
+pcap_libs=`pcap-config --libs | sed 's/-L /-L/g'` # clang doesn't like spaces.
+
 ### Parse command line.
 
 if [ "$#" == "0" ]; then 
@@ -82,7 +94,7 @@ while [ "$1" != "" ]; do
             shift;;
             
         --libs-c)
-            echo "-lc -lpthread"
+            echo "-lc -lpthread $pcap_libs"
             shift;;
             
         --hilticflags)
@@ -94,11 +106,11 @@ while [ "$1" != "" ]; do
             shift;;
             
         --cflags)
-            echo "-I$base/libhilti"
+            echo "-I$base/libhilti $pcap_cflags"
             shift;;
             
         --cxxflags)
-            echo "-I$base/libhilti"
+            echo "-I$base/libhilti $pcap_cflags"
             shift;;
             
         --libhilti)

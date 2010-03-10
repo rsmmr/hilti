@@ -27,8 +27,8 @@ void run() {
     local int64 i64
     
     b = b"\x11\x22\x33\x44\x55\x66\x77\x88\x99"
-    p1 = bytes.begin b
-    p2 = bytes.end b
+    p1 = begin b
+    p2 = end b
 
     ## 
 
@@ -152,10 +152,10 @@ void run() {
 
     ######
     
-    # This is -42 in little endian (for all bit-sizes).
+    # This is -42 in little lastian (for all bit-sizes).
     b2 = b"\xd6\xff\xff\xff\xff\xff\xff\xff"   
-    p1 = bytes.begin b2
-    p2 = bytes.end b2
+    p1 = begin b2
+    p2 = end b2
 
     t8 = unpack (p1,p2) Hilti::Packed::Int8Little
     i8 = tuple.index t8 0

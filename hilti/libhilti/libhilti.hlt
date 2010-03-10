@@ -30,6 +30,7 @@ declare "C-HILTI" string timer_to_string(any s, int32 options)
 declare "C-HILTI" string timer_mgr_to_string(any s, int32 options)
 declare "C-HILTI" string map_to_string(any s, int32 options)
 declare "C-HILTI" string set_to_string(any s, int32 options)
+declare "C-HILTI" string pktsrc_to_string(any s, int32 options)
 
 declare "C-HILTI" string int_to_int64(any n)
 declare "C-HILTI" string bool_to_int64(any b)
@@ -55,7 +56,7 @@ declare "C-HILTI" string string_concat(string s1, string s2)
 declare "C-HILTI" int8 string_cmp(string s1, string s2)
 declare "C-HILTI" ref<bytes> string_encode(string s, string charset)
 declare "C-HILTI" string string_decode(ref<bytes> b, string charset)
-# declare "C-HILTI" tuple<string,iterator<bytes>> string_unpack(iterator<bytes> begin, iterator<bytes> end, Hilti::Packed fmt)
+# declare "C-HILTI" tuple<string,iterator<bytes>> string_unpack(iterator<bytes> first, iterator<bytes> last, Hilti::Packed fmt)
 
 ###
 
@@ -72,13 +73,13 @@ declare "C-HILTI" ref<bytes> bytes_new()
 declare "C-HILTI" int32 bytes_len(ref<bytes> b)
 declare "C-HILTI" bool bytes_empty(ref<bytes> b)
 declare "C-HILTI" void  bytes_append(ref<bytes> b, ref<bytes> other)
-declare "C-HILTI" ref<bytes> bytes_sub(iterator<bytes> start, iterator<bytes> end)
+declare "C-HILTI" ref<bytes> bytes_sub(iterator<bytes> start, iterator<bytes> last)
 declare "C-HILTI" iterator<bytes> bytes_offset(ref<bytes> b, int32 offset)
 declare "C-HILTI" iterator<bytes> bytes_begin(ref<bytes> b)
 declare "C-HILTI" iterator<bytes> bytes_end()
 declare "C-HILTI" int8 bytes_cmp(ref<bytes> b1, ref<bytes> b2)
 
-declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> end)
+declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> last)
 
 declare "C-HILTI" int8 bytes_pos_deref(iterator<bytes> pos)
 declare "C-HILTI" iterator<bytes> bytes_pos_incr(iterator<bytes> pos)
@@ -124,13 +125,13 @@ declare "C-HILTI" ref<regexp> regexp_new(type regexp_type)
 declare "C-HILTI" void regexp_compile(ref<regexp> re, string pattern)
 declare "C-HILTI" void regexp_compile_set(ref<regexp> re, ref<list<string>> patterns)
 declare "C-HILTI" int32 regexp_string_find(ref<regexp> re, string s)
-declare "C-HILTI" int32 regexp_bytes_find(ref<regexp> re, iterator<bytes> begin, iterator<bytes> end)
+declare "C-HILTI" int32 regexp_bytes_find(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
 declare "C-HILTI" tuple<int32, tuple<iterator<bytes>,iterator<bytes>>> regexp_string_span(ref<regexp> re, string s)
-declare "C-HILTI" tuple<int32, tuple<iterator<bytes>,iterator<bytes>>> regexp_bytes_span(ref<regexp> re, iterator<bytes> begin, iterator<bytes> end)
+declare "C-HILTI" tuple<int32, tuple<iterator<bytes>,iterator<bytes>>> regexp_bytes_span(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
 declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_string_groups(ref<regexp> re, string s)
-declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_bytes_groups(ref<regexp> re, iterator<bytes> begin, iterator<bytes> end)
+declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_bytes_groups(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
 declare "C-HILTI" tuple<int32, iterator<bytes>> regexp_string_match_token(ref<regexp> re, string s)
-declare "C-HILTI" tuple<int32, iterator<bytes>> regexp_bytes_match_token(ref<regexp> re, iterator<bytes> begin, iterator<bytes> end)
+declare "C-HILTI" tuple<int32, iterator<bytes>> regexp_bytes_match_token(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
 
 ##
 
@@ -176,6 +177,16 @@ declare "C-HILTI" iterator<set<*>> set_end()
 declare "C-HILTI" iterator<set<*>> set_iter_incr(iterator<set<*>> i)
 declare "C-HILTI" any set_iter_deref(iterator<set<*>> i)
 declare "C-HILTI" bool set_iter_eq(iterator<set<*>> i1, iterator<set<*>> i2)
+
+## 
+
+declare "C-HILTI" ref<pktsrc<*>> pktsrc_new_pcap_live(string interface)
+declare "C-HILTI" tuple<double, ref<bytes>> pktsrc_read_pcap_live(ref<pktsrc<*>> src, bool block, bool keep_link_layer)
+declare "C-HILTI" void pktsrc_close_pcap_live(ref<pktsrc<*>> src)
+
+declare "C-HILTI" ref<pktsrc<*>> pktsrc_new_pcap_offline(string interface)
+declare "C-HILTI" tuple<double, ref<bytes>> pktsrc_read_pcap_offline(ref<pktsrc<*>> src, bool block, bool keep_link_layer)
+declare "C-HILTI" void pktsrc_close_pcap_offline(ref<pktsrc<*>> src)
 
 ##
 

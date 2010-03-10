@@ -34,8 +34,8 @@ void run() {
     b = b"1234AxyxyxyB5678"
     call Hilti::print(b)
     
-    i1 = bytes.begin b
-    i2 = bytes.end b
+    i1 = begin b
+    i2 = end b
     
     span = regexp.span re i1 i2
     
@@ -50,8 +50,8 @@ void run() {
     b = b"1234XYZ5678"
     call Hilti::print(b)
     
-    i1 = bytes.begin b
-    i2 = bytes.end b
+    i1 = begin b
+    i2 = end b
     
     span = regexp.span re i1 i2
     

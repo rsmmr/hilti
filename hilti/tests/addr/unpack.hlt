@@ -10,9 +10,9 @@ import Hilti
 
 void run() {
     local ref<bytes> b
-    local iterator<bytes> begin
-    local iterator<bytes> end
-    local iterator<bytes> nbegin
+    local iterator<bytes> first
+    local iterator<bytes> last
+    local iterator<bytes> nfirst
     local int32 diff
     local string out
 
@@ -20,27 +20,27 @@ void run() {
     local addr a
     
     b = b"\xc0\xa8\x01\x01"
-    begin = bytes.begin b
-    end = bytes.end b
+    first = begin b
+    last = end b
 
-    t = unpack (begin,end) Hilti::Packed::IPv4Network
+    t = unpack (first,last) Hilti::Packed::IPv4Network
     
     a = tuple.index t 0
-    nbegin = tuple.index t 1
-    diff = bytes.diff begin nbegin
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
     
     out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
     call Hilti::print(out)
     
     b = b" \x01\x0d\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x14(W\xab"
-    begin = bytes.begin b
-    end = bytes.end b
+    first = begin b
+    last = end b
 
-    t = unpack (begin,end) Hilti::Packed::IPv6Network
+    t = unpack (first,last) Hilti::Packed::IPv6Network
     
     a = tuple.index t 0
-    nbegin = tuple.index t 1
-    diff = bytes.diff begin nbegin
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
     
     out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
     call Hilti::print(out)
@@ -49,34 +49,34 @@ void run() {
     
     ####
 
-    begin = bytes.begin b
-    end = bytes.end b
+    first = begin b
+    last = end b
 
-    t = unpack (begin,end) Hilti::Packed::IPv4Network
+    t = unpack (first,last) Hilti::Packed::IPv4Network
     a = tuple.index t 0
-    nbegin = tuple.index t 1
-    diff = bytes.diff begin nbegin
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
     out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
     call Hilti::print(out)
 
-    t = unpack (begin,end) Hilti::Packed::IPv4
+    t = unpack (first,last) Hilti::Packed::IPv4
     a = tuple.index t 0
-    nbegin = tuple.index t 1
-    diff = bytes.diff begin nbegin
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
     out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
     call Hilti::print(out)
     
-    t = unpack (begin,end) Hilti::Packed::IPv6Network
+    t = unpack (first,last) Hilti::Packed::IPv6Network
     a = tuple.index t 0
-    nbegin = tuple.index t 1
-    diff = bytes.diff begin nbegin
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
     out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
     call Hilti::print(out)
 
-    t = unpack (begin,end) Hilti::Packed::IPv6
+    t = unpack (first,last) Hilti::Packed::IPv6
     a = tuple.index t 0
-    nbegin = tuple.index t 1
-    diff = bytes.diff begin nbegin
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
     out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
     call Hilti::print(out)
     }

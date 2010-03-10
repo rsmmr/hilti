@@ -670,6 +670,15 @@ def p_type_set(p):
         p[0] = type.Set(p[3])
     else:
         p[0] = type.Set(None)
+
+def p_type_pktsrc(p):
+    """type : PKTSRC '<' IDENT '>'
+            | PKTSRC '<' '*' '>'
+    """
+    if p[3] != "*":
+        p[0] = type.PktSrc(p[3])
+    else:
+        p[0] = type.PktSrc(None)
         
 def p_type_channel(p):
     """type : CHANNEL '<' type ',' CINTEGER '>'
