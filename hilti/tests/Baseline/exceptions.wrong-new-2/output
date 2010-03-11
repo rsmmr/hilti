@@ -1,3 +1,5 @@
+>>> e = new myException 42
 wrong-new.hlt:10: error, exception argument must be of type string
+
 
 1 error found

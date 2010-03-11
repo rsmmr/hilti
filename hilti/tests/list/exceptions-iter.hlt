@@ -19,7 +19,7 @@ void run() {
     l = new list<int32>
     list.push_back l 1
 
-    c = first l
+    c = begin l
     c = incr c
     list.erase c
     
@@ -40,7 +40,7 @@ void run() {
     l = new list<int32>
     list.push_back l 1
 
-    c = first l
+    c = begin l
     list.erase c
     list.erase c
     
@@ -61,9 +61,9 @@ void run() {
     l = new list<int32>
     list.push_back l 1
 
-    c = first l
+    c = begin l
     list.erase c
-    c = first l
+    c = begin l
     list.erase c
     
 }     
@@ -83,7 +83,7 @@ void run() {
     l = new list<int32>
     list.push_back l 1
 
-    c = first l
+    c = begin l
     list.erase c
     c = incr c
     

@@ -168,13 +168,16 @@ class CodeGen(objcache.Cache):
         self._label_counter = 0
         self._global_label_counter = 0
         self._global_id_counter = 0
+        self._globals = {}
         
         self._llvm.frameptr = None # Frame pointer for current LLVM function.
+        self._llvm.ctxptr = None   # Execution context pointer for current LLVM function.
         self._llvm.builders = []   # Stack of llvm.core.Builders
         self._llvm.global_ctors = [] # List of registered ctors to run a startup.
         
         mod.codegen(self)
         
+        self._llvmGenerateExecutionContextFunc()
         self._llvmGenerateCtors()
         
         return self.llvmModule(verify)
@@ -307,6 +310,7 @@ class CodeGen(objcache.Cache):
         function."""
         self._functions = self._functions[:-1]
         self._llvm.frameptr = None
+        self._llvm.ctxptr = None
         
     def startBlock(self, b):
         """Indicates that code generation starts for a new block.
@@ -320,8 +324,10 @@ class CodeGen(objcache.Cache):
         self._llvm.func = self.llvmFunctionForBlock(b)
         if self.currentFunction().callingConvention() == function.CallingConvention.HILTI:
             self._llvm.frameptr = self._llvm.func.args[0]
+            self._llvm.ctxptr = self._llvm.func.args[1]
         else:
             self._llvm.frameptr = None 
+            self._llvm.ctxptr = None
         
         self._llvm.block = self._llvm.func.append_basic_block("")
         self.pushBuilder(self._llvm.block)
@@ -350,6 +356,20 @@ class CodeGen(objcache.Cache):
         Returns: llvm.core.Value - The current frame pointer.
         """
         return self._llvm.frameptr 
+    
+    def llvmCurrentExecutionContextPtr(self):
+        """Returns the execution context pointer for the current LLVM
+        function. The context pointer provides access to per-thread
+        information, including a thread's set of global variables.  The HILTI
+        execution model always passes the context pointer into a function as
+        its second parameter.
+
+        If there is no current function with HILTI linkage, we return the
+        context pointer for the main thread (i.e., virtual thread 0). 
+        
+        Returns: llvm.core.Value - The current context pointer.
+        """
+        return self._llvm.ctxptr if self._llvm.ctxptr else self._llvmExecutionContextThreadZeroPtr()
     
     def lookupFunction(self, i):
         """Looks up the function for the given ID inside the current module.
@@ -704,21 +724,15 @@ class CodeGen(objcache.Cache):
         
     ### Add new objects to the current module.
     
-    def llvmNewGlobalVar(self, name, value):
+    def llvmNewGlobalVar(self, i):
         """Adds a global variable to the current module. The variable is
-        initialized with the given value, and will have internal linkage. 
-        
-        name: string - The name. It should have been created with one of the
-        CodeGen's ``name*`` methods.
-        
-        value: llvm.core.Value - The value to initialize the variable with.
-        
-        Return: llvm.core.Value - A value representing the new variable.
+        initialized with its specified value (or its default if not set), and
+        will have internal linkage. 
+      
+        i: ~~id.Global - The global.
         """
-        glob = self.llvmCurrentModule().add_global_variable(value.type, name)
-        glob.initializer = value
-        glob.linkage = llvm.core.LINKAGE_INTERNAL
-        return glob
+        idx = len(self._globals) + 1 # Sic! First index is 1.
+        self._globals[i.name()] = (i, idx)
         
     def llvmNewGlobalConst(self, name, value):
         """Adds a global constant to the current module. The constant is
@@ -731,7 +745,9 @@ class CodeGen(objcache.Cache):
         
         Return: llvm.core.Value - A value representing the new constant.
         """
-        glob = self.llvmNewGlobalVar(name, value)
+        glob = self.llvmCurrentModule().add_global_variable(value.type, name)
+        glob.initializer = value
+        glob.linkage = llvm.core.LINKAGE_INTERNAL
         glob.global_constant = True
         return glob
     
@@ -1297,6 +1313,7 @@ class CodeGen(objcache.Cache):
 	    exception: llvm.core.Value - A value with the exception.
         """
         ptr = self.llvmFrameExcptSucc()
+        
         frame = self.llvmFrameExcptFrame()
         self.llvmFrameSetException(exception, frame)
         self.llvmTailCall(ptr, frame=frame)
@@ -1640,7 +1657,7 @@ class CodeGen(objcache.Cache):
 
         return builder.alloca(ty)
 
-    def llvmMalloc(self, ty):
+    def llvmMalloc(self, ty, cast_to=None):
         """Allocates memory for the given type. From the caller's perspective
         essentially acts like a ``builder().malloc(type)``. However, it must
         be used instead of that as will branch out the internal memory
@@ -1664,7 +1681,11 @@ class CodeGen(objcache.Cache):
         one = self.llvmGEPIdx(1)
         sizeof = null.gep([one]).ptrtoint(llvm.core.Type.int(64))
         mem = self.llvmCallCInternal("hlt_gc_malloc_non_atomic", [sizeof])
-        return self.builder().bitcast(mem, ptrty)    
+        
+        if not cast_to:
+            cast_to = ptrty
+        
+        return self.builder().bitcast(mem, cast_to)    
     
     def llvmLoadLocalVar(self, id, func=None, frame=None):
         """Returns the value of function's a variable. The variable can be
@@ -1702,10 +1723,23 @@ class CodeGen(objcache.Cache):
         in the ~~currentModule.
         
         id: ~~id.Global - ID referencing the global. 
+        
+        Returns: llvm.core.Value - The value.
         """
-        name = self.nameGlobal(id)
-        glob = self._llvm.module.get_global_variable_named(name)
-        return self.builder().load(glob)
+        
+        try:
+            (i, idx) = self._globals[id.name()]
+        except:
+            util.internal_error("llvmLoadGlobalVar: unknown global ID %s" % id)
+
+        ctx = self.llvmCurrentExecutionContextPtr()
+        assert ctx
+        ctx = self.builder().bitcast(ctx, self.llvmTypeExecutionContextFullPtr())
+        
+        zero = self.llvmGEPIdx(0)
+        idx = self.llvmGEPIdx(idx)
+        addr = self.builder().gep(ctx, [zero, idx])
+        return self.builder().load(addr)
     
     def llvmStoreGlobalVar(self, id, val):
         """Stores a value for a global variable. The global must be located in
@@ -1715,9 +1749,156 @@ class CodeGen(objcache.Cache):
         
         val: llvm.core.Value - The value to store. 
         """
-        name = self.nameGlobal(id)
-        glob = self._llvm.module.get_global_variable_named(name)
-        return self.llvmAssign(val, glob)
+        try:
+            (i, idx) = self._globals[id.name()]
+        except:
+            util.internal_error("llvmStoreGlobalVar: unknown global ID %s" % id)
+
+        ctx = self.llvmCurrentExecutionContextPtr()
+        assert ctx
+        ctx = self.builder().bitcast(ctx, self.llvmTypeExecutionContextFullPtr())
+        
+        zero = self.llvmGEPIdx(0)
+        idx = self.llvmGEPIdx(idx)
+        addr = self.builder().gep(ctx, [zero, idx])
+        self.llvmAssign(val, addr)
+
+    def llvmTypeExecutionContextFull(self):
+        """Returns the type for storing a thread's complete execution context.
+        The returned type will start with an instance of
+        ``hlt_execution_context``, followed by all globals defined via
+        ~~llvmNewGlobal.
+        
+        Returns: llvm.core.StructType - The type.
+        
+        Note: This must only be called after all globals have already been
+        created via ~~llvmNewGlobal.
+        """
+        
+        def _llvmTypeExecutionContextFull():
+            header = self.llvmTypeExecutionContext()
+            types = [header]
+            
+            for (i, idx) in sorted(self._globals.values(), key=lambda x: x[1]):
+                types += [self.llvmType(i.type())]
+        
+            ty = llvm.core.Type.struct(types)
+            self.llvmCurrentModule().add_type_name("__hlt_execution_context_full", ty)
+            
+            return ty
+        
+        return self.cache("__hlt_execution_context", _llvmTypeExecutionContextFull)
+
+    def llvmTypeExecutionContextFullPtr(self):
+        """Returns the type for storing a pointer to a thread's execution
+        context. See ~~llvmTypeExecutionContext for more information.
+        
+        Returns: llvm.core.Value.pointer - The pointer.
+        """
+        return llvm.core.Type.pointer(self.llvmTypeExecutionContextFull())
+    
+    def llvmTypeExecutionContext(self):
+        """Returns the type for ``hlt_execution_context.``
+        
+        Returns: llvm.core.Type - The type.
+        """
+        return self.llvmTypeInternal("__hlt_execution_context")
+    
+    def llvmTypeExecutionContextPtr(self):
+        """Returns the type for ``hlt_execution_context *``
+        
+        Returns: llvm.core.Value.pointer - The pointer.
+        """
+        return llvm.core.Type.pointer(self.llvmTypeInternal("__hlt_execution_context"))
+    
+    def _llvmExecutionContextThreadZeroPtr(self):
+         """Returns a pointer to the execution context for virtual thread 0. 
+         This is the context that will be used for the main virtual thread
+         (thread 0) in a multi-threaded context, and for the whole program in
+         a single-threaded context.
+         
+         Returns: llvm.core.Type - The pointer of type
+         ``__hlt_execution_context*``.
+         """
+         
+         def __llvmExecutionContextThreadZeroPtr():
+             pty = self.llvmTypeExecutionContextPtr()
+             glob = self.llvmCurrentModule().add_global_variable(pty, "__hlt_execution_context_vthread_0")
+             glob.initializer = llvm.core.Constant.null(pty)
+             glob.linkage = llvm.core.LINKAGE_INTERNAL
+             # The global will be initialized by the code created by
+             # llvmGenerateExecutionContextFunc.
+             return glob
+         
+         return self.cache("__hlt_execution_context_vthread_0", __llvmExecutionContextThreadZeroPtr)
+    
+    def _llvmGenerateExecutionContextFunc(self):
+        """Generates a function allocating a new set of globals. The function
+        will be called ``__hlt_execution_context_new`` and return a ``void *``
+        pointer of newly allocated memory of sufficient size to store all
+        global created so far by ~~llvmNewGlobalVar. All the globals in there
+        will be initialized with their initial values. 
+        
+        The function also installs code for creating virtual thread 0's
+        context at startup. Use ~~_llvmExecutionContextThreadZeroPtr to access
+        that context. 
+        
+        Returns: llvm.core.StructType - The type.
+        
+        Todo: The mechanism won't work when having multiple compilation units
+        as we'll need to merge their globals then. It's unclear what's the
+        best way for doing so it, but for now we're limited to a single unit
+        anyway and thus ignore the problem.
+        """
+        ty_full = self.llvmTypeExecutionContextFull()
+        ty_ptr = self.llvmTypeExecutionContextPtr()
+        
+        # Create the function.
+        tid = self.llvmTypeInternal("__hlt_thread_id")
+        ft = llvm.core.Type.function(ty_ptr, [tid])
+        func = llvm.core.Function.new(self.llvmCurrentModule(), ft, "__hlt_execution_context_new")
+        func.args[0].name = "thread_id"
+
+        self._llvm.func = func
+        self.pushBuilder(func.append_basic_block(""))
+
+        # Make sure GC is initialized.
+        self.llvmSafeCall(self.llvmCFunctionInternal("__hlt_init_gc"), [])
+        
+        # Allocate the memory for the globals.
+        rec = self.llvmMalloc(ty_full)
+        
+        # Initialize the header.
+        zero = self.llvmGEPIdx(0)
+        addr = self.builder().gep(rec, [zero, zero, zero])
+        self.llvmAssign(func.args[0], addr)
+        
+        # Initialize the globals.
+        
+        for (i, idx) in self._globals.values():
+            self.trace("Init code for global %s" % i)
+            
+            if i.value():
+                init = i.value().coerceTo(self, i.type()).llvmLoad(self)
+            else:
+                init = i.type().llvmDefault(self)
+            
+            idx = self.llvmGEPIdx(idx)
+            addr = self.builder().gep(rec, [zero, idx])
+            self.llvmAssign(init, addr)
+            
+        result = self.builder().bitcast(rec, ty_ptr)
+        self.builder().ret(result)
+        self.popBuilder()
+        self._llvm.func = None
+        
+        # Add a ctor function to initialize vthread 0's context. 
+        def _initContext(cg):
+            ctx = self.llvmSafeCall(func, [self.llvmConstInt(0, tid.width)])
+            glob = self._llvmExecutionContextThreadZeroPtr()
+            cg.llvmAssign(ctx, glob)
+        
+        self.llvmNewGlobalCtor(_initContext)
 
     def llvmConstDefaultValue(self, ty):
         """Returns a type's default value for uninitialized instances. 
@@ -1772,7 +1953,7 @@ class CodeGen(objcache.Cache):
             val = self.llvmOp(val)
             
         if coerce_from:
-           assert coerce_from.canCoerceTo(self, cg, target.type())
+           assert coerce_from.canCoerceTo(self, target.type())
            coerce_from.coerceTo(self, cg, target.type())         
         
         return target.llvmStore(self, val)    
@@ -2165,12 +2346,11 @@ class CodeGen(objcache.Cache):
                 name = self.nameFunctionForBlock(b) if b else self.nameFunction(f)
 
             if f.callingConvention() == function.CallingConvention.HILTI:
-                # Build the signature for according to the HILTI calling
-                # convention.
+                # Build the signature according to the HILTI calling convention.
                 rtype = llvm.core.Type.void()
                 
                 if f.callingConvention() == function.CallingConvention.HILTI:
-                    args = [self.llvmTypeFunctionFramePtr(f)]
+                    args = [self.llvmTypeFunctionFramePtr(f), self.llvmTypeExecutionContextPtr()]
                 else:
                     args = []
                     
@@ -2184,6 +2364,7 @@ class CodeGen(objcache.Cache):
                 # Set parameter names. 
                 if f.callingConvention() == function.CallingConvention.HILTI:
                     llvm_func.args[0].name = "__frame"
+                    llvm_func.args[1].name = "__ctx"
 
                 # Done for HILTI functions.
                 return llvm_func
@@ -2402,7 +2583,7 @@ class CodeGen(objcache.Cache):
                 
         return result
     
-    def llvmTailCall(self, func, frame=None, addl_args=[], prototype=None):
+    def llvmTailCall(self, func, frame=None, ctx=None, addl_args=[], prototype=None):
         """Calls a function with HILTI linkage. The call will be tail call,
         i.e., any subsequent code in the same block will be never be reached. 
         This method cannot be used for calling HILTI functions; use
@@ -2415,6 +2596,9 @@ class CodeGen(objcache.Cache):
         
         frame: llvm.core.value - The frame pointer to pass to the called
         function. If not given, ~~llvmCurrentFramePtr is used. 
+        
+        ctx: llvm.core.value - The execution context pointer to pass to the
+        called function. If not given, ~~llvmCurrentContextPtr is used. 
         
         addl_args: list of ~~Operand, or list of tuples (llvm.core.Value,
         ~~Type) - Additional arguments for the call, which will be appended to
@@ -2431,6 +2615,9 @@ class CodeGen(objcache.Cache):
         
         if not frame:
             frame = self.llvmCurrentFramePtr()
+            
+        if not ctx:
+            ctx = self.llvmCurrentExecutionContextPtr()
         
         # Get the LLVM function.
         if isinstance(func, function.Function):
@@ -2448,7 +2635,11 @@ class CodeGen(objcache.Cache):
             # any addl arguments we got passed). 
             addl_types = [arg.type for arg in llvm_addl_args]
             voidt = llvm.core.Type.void()
-            ft = llvm.core.Type.function(voidt, [self.llvmTypeBasicFramePtr()] + addl_types)
+            
+            rt = self.llvmTypeBasicFunctionPtr().pointee.return_type
+            args = self.llvmTypeBasicFunctionPtr().pointee.args
+            
+            ft = llvm.core.Type.function(rt, args + addl_types)
             llvm_func = self.builder().bitcast(func, llvm.core.Type.pointer(ft))
             
         assert isinstance(llvm_func, llvm.core.Value)
@@ -2457,7 +2648,7 @@ class CodeGen(objcache.Cache):
         if frame:
             assert isinstance(frame, llvm.core.Value)
             frame = self.builder().bitcast(frame, llvm_func.type.pointee.args[0])
-            llvm_args = [frame] + llvm_addl_args
+            llvm_args = [frame, ctx] + llvm_addl_args
         else:
             # We are in a function without frame.
             assert self.currentFunction().callingConvention() != function.CallingConvention.C_HILTI
@@ -2479,7 +2670,7 @@ class CodeGen(objcache.Cache):
             #        ret int %Y
             #    }
             #
-        
+            
         call = self.llvmSafeCall(llvm_func, llvm_args)
         call.calling_convention = llvm.core.CC_FASTCALL
         call.tail_call = True
@@ -2521,6 +2712,7 @@ class CodeGen(objcache.Cache):
         # Build function type.
         if hilti_func.callingConvention() == function.CallingConvention.HILTI:
             args = [llvm.core.Type.pointer(self.llvmTypeFunctionFrame(hilti_func))]
+            args += [self.llvmTypeExecutionContextPtr()]
         else:
             args = []
             
@@ -2537,9 +2729,10 @@ class CodeGen(objcache.Cache):
         
         if args:
             func.args[0].name = "__frame"
+            func.args[1].name = "__ctx"
             
         for i in range(len(addl_args)):
-            func.args[i+1].name = addl_args[i][0]
+            func.args[i+2].name = addl_args[i][0]
 
         return func
         
@@ -2677,7 +2870,7 @@ class CodeGen(objcache.Cache):
         self.pushBuilder(stub_return_block)
 
         if result_id:
-            self.llvmStoreLocalVar(result_id, stub_return_func.args[1], func=dummyfunc, frame=stub_return_func.args[0])
+            self.llvmStoreLocalVar(result_id, stub_return_func.args[2], func=dummyfunc, frame=stub_return_func.args[0])
 
         self.builder().ret_void()
         self.popBuilder()
@@ -2711,7 +2904,8 @@ class CodeGen(objcache.Cache):
         callee_frame = self.llvmMakeFunctionFrame(func, callee_args, stub_return_func, frame, stub_excpt_func, frame)
         callee = self.llvmFunction(func)
         
-        result = self.llvmSafeCall(callee, [callee_frame])
+        ctx = self.builder().load(self._llvmExecutionContextThreadZeroPtr())
+        result = self.llvmSafeCall(callee, [callee_frame, ctx])
         result.calling_convention = llvm.core.CC_FASTCALL
 
         _makeEpilog(stub_func, dummyfunc, frame, result_id)
@@ -2739,7 +2933,8 @@ class CodeGen(objcache.Cache):
         self.llvmFrameClearException(frame)
 
            # Do the call.
-        call = self.llvmSafeCall(succ, [succ_frame])
+        ctx = self.builder().load(self._llvmExecutionContextThreadZeroPtr())
+        call = self.llvmSafeCall(succ, [succ_frame, ctx])
         call.calling_convention = llvm.core.CC_FASTCALL
         
         frame = self.builder().bitcast(frame, self.llvmTypeFunctionFramePtr(dummyfunc))
@@ -2754,14 +2949,13 @@ class CodeGen(objcache.Cache):
     ## Init-time constructores.
         
     def llvmNewGlobalCtor(self, callback):
-        """Registers code to be executed at program startup. This is primarily
-        intended for registering constructors for global variables, which will
-        then be run before any other code is executed. 
+        """Registers code to be executed at program startup.
         
         The code itself needs to be generated by the *callback*, which should
-        use the current ~~builder. *callback* will not receive any arguments.
+        use the current ~~builder. *callback* will receive a single arguments
+        with the current ~~CodeGen.
         
-        callback: Function - Function receiving no parameters.
+        callback: Function - Function receiving a single parameter.
         """
 
         funct = llvm.core.Type.function(llvm.core.Type.void(), [])
@@ -2778,7 +2972,7 @@ class CodeGen(objcache.Cache):
         self._llvm.func = function
         
         self.pushBuilder(block)
-        callback()
+        callback(self)
         self.builder().ret_void()
         
         self.popBuilder()

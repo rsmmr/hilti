@@ -109,11 +109,7 @@ class RegExp(type.HeapType, type.Constructable, type.Parameterizable):
             list_op = operand.LLVM(list, list_type)
             cg.llvmCallC("hlt::regexp_compile_set", [regexp_op, list_op], abort_on_except=True)
                                             
-        # We create a global that keeps the regular expression.
-        ptr = llvm.core.Constant.null(cg.llvmTypeGenericPointer())
-        glob = cg.llvmNewGlobalVar(cg.nameNewGlobal("regexp"), ptr)
-        cg.llvmAssign(regexp, glob)
-        return cg.builder().load(glob)
+        return regexp
     
     def outputCtor(self, printer, val):
         printer.output(" | ".join(["/%s/" % v for v in val]))

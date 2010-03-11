@@ -463,7 +463,7 @@ class Function(node.Node):
             cg.llvmCStubs(self)
         
         if self.id().linkage() == id.Linkage.INIT:
-            def _makeCall():
+            def _makeCall(cg):
                 # We register the function to be called from hilti_init() later,
                 # rather than calling it directly here. That ensures that all the
                 # HILTI internal init stuff gets executed first.

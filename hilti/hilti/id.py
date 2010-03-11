@@ -383,7 +383,7 @@ class Global(ID):
         Returns: ~~Operand - The init value, or None if none was set.
         """
         return self._init
-        
+
     ### Overidden from ID.
 
     def llvmLoad(self, cg):
@@ -421,20 +421,7 @@ class Global(ID):
         printer.output()
 
     def codegen(self, cg):
-        cg.trace("ID %s" % self)
-        
-        if self._init:
-            init = self._init.coerceTo(cg, self.type()).llvmLoad(cg)
-            assert init
-        else:
-            init = None 
-                
-        default = self.type().llvmDefault(cg)            
-
-        glob = cg.llvmNewGlobalVar(cg.nameGlobal(self), default)
-        
-        if init:
-            cg.llvmAssign(init, glob)
+        cg.llvmNewGlobalVar(self)
     
 class Function(ID):        
     """An ID representing a function definition. 

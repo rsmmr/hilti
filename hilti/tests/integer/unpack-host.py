@@ -29,8 +29,8 @@ void run() {
     local string out
     
     b = b\"%s\"
-    p1 = bytes.begin b
-    p2 = bytes.end b
+    p1 = begin b
+    p2 = end b
     t32 = unpack (p1,p2) Hilti::Packed::Int32
     i32 = tuple.index t32 0
     p3 = tuple.index t32 1

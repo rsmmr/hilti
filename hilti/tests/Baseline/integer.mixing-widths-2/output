@@ -1,9 +1,3 @@
-WARNING: Token 'ATTRIBUTE' defined, but not used
-WARNING: Token 'LIST' defined, but not used
-WARNING: There are 2 unused tokens
-WARNING: Token 'ATTRIBUTE' defined, but not used
-WARNING: Token 'LIST' defined, but not used
-WARNING: There are 2 unused tokens
 >>> i1 = int.add i2 i2
 mixing-widths.hlt:7: error, operand 1 can't be coerced from integer of width 16 to one of width 8
 

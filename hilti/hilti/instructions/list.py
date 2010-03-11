@@ -86,10 +86,6 @@ class List(type.Container, type.Constructable, type.Iterable):
     
     def llvmCtor(self, cg, val):
         # We create a global that keeps the list.  
-        
-        ptr = llvm.core.Constant.null(self.llvmType(cg))
-        glob = cg.llvmNewGlobalVar(cg.nameNewGlobal("list"), ptr)
-
         list = cg.llvmCallC("hlt::list_new", [operand.Type(self.itemType())], abort_on_except=True)
         listop = operand.LLVM(list, type.Reference(self))
         
@@ -97,8 +93,7 @@ class List(type.Container, type.Constructable, type.Iterable):
             o = o.coerceTo(cg, self.itemType())
             cg.llvmCallC("hlt::list_push_back", [listop, o], abort_on_except=True)
             
-        cg.llvmAssign(list, glob)
-        return cg.builder().load(glob)
+        return list
 
     def outputCtor(self, printer, val):
         printer.printType(self)

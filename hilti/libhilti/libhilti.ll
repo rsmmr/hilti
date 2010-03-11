@@ -2,12 +2,11 @@
 ;
 ; Internal LLVM code accessible only to the code generator.
 
-
 ;;; Type definitions.
 
 %__hlt_void = type i8
 %__hlt_cchar = type i8
-%__hlt_func = type void (%__hlt_bframe*)
+%__hlt_func = type void (%__hlt_bframe*, %__hlt_execution_context*)
 
 ; A basic frame
 %__hlt_bframe = type { 
@@ -56,6 +55,13 @@
     %__hlt_bframe*
 }
 
+; Identifier unique across virtual threads.
+%__hlt_thread_id = type i64
+
+; The common header of all per-thread execution contexts. This
+; structure is then followed with the set of all global variables. 
+%__hlt_execution_context = type { %__hlt_thread_id } 
+
 ; A global function to be run at startup.
 ; This must match with what LLVM expects for the llvm.global_ctorsarray.
 %__hlt_global_ctor = type { i32, void() * }
@@ -71,6 +77,7 @@ declare %__hlt_exception* @__hlt_exception_new_yield(%__hlt_continuation*, i32, 
 declare void @__hlt_exception_print_uncaught_abort(%__hlt_exception*)
 
 ;;; Memory management.
+declare void @__hlt_init_gc()
 declare %__hlt_void* @hlt_gc_malloc_non_atomic(i64)
 
 ;;; Bytes.

@@ -1,3 +1,5 @@
+>>> e = new myException "hello"
 wrong-new.hlt:10: error, exception type does not take an argument
+
 
 1 error found

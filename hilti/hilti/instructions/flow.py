@@ -319,8 +319,8 @@ class CallTailResult(Instruction):
         result_block = result_func.append_basic_block("")
 
         cg.pushBuilder(result_block)
-        cg.llvmStoreLocalVar(self.target().value(), result_func.args[1], frame=result_func.args[0])
-        cg.llvmTailCall(llvm_succ, frame=result_func.args[0])
+        cg.llvmStoreLocalVar(self.target().value(), result_func.args[2], frame=result_func.args[0])
+        cg.llvmTailCall(llvm_succ, frame=result_func.args[0], ctx=result_func.args[1])
         cg.builder().ret_void()
         cg.popBuilder()
 

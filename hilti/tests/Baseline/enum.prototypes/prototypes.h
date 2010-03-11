@@ -14,4 +14,3 @@ void main_run(hlt_exception **);
 void main_run_resume(const hlt_exception *, hlt_exception **);
 
 #endif
-

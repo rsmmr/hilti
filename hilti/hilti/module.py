@@ -148,32 +148,13 @@ class Module(node.Node):
             if isinstance(ty, id.Type):
                 cg.llvmTypeInfoPtr(ty.type())
 
-        hltmod = cg.llvmCurrentModule()
-           
-        # Create a function for initializations of globals that need a builder.
-        ftype = llvm.core.Type.function(llvm.core.Type.void(), [])
-        func = llvm.core.Function.new(hltmod, ftype, cg.nameNewFunction("init_globals"))
-        block = func.append_basic_block("")
-        builder = cg.pushBuilder(block)
-
-        # FIXME: Not nice but llvmAlloc needs it.
-        cg._llvm.func = func
-        
         for i in self._scope.IDs():
             # Need to do globals first so that they are defined when functions
             # want to access them.
             if isinstance(i, id.Global):
                 i.codegen(cg)
 
-        if block.instructions:
-            # Finish the init function.
-            cg.builder().ret_void()
-            cg.llvmRegisterGlobalCtor(func)
-        else:
-            func.delete()
-        
         for i in self._scope.IDs():
-            
             # Todo: This is a bit of a hack: if this function is declared, we
             # generate it here directly. This is for libhilti to include it into
             # the library. However, we should build a nicer general mechanism
