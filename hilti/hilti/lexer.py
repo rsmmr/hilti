@@ -39,6 +39,8 @@ keywords = {
     "in": "IN",
     "do": "DO",
     "done": "DONE",
+    "try": "TRY",
+    "catch": "CATCH",
     }
 
 all = set([t.upper() for t in types + keywords.values()])

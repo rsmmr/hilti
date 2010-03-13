@@ -179,6 +179,8 @@ class Function(node.Node):
         self._cc = cc
         self._type = ty
         self._id = ident
+        self._handlers_cnt = 1
+        self._handlers = []
 
         self._scope = scope.Scope(parent)
         for i in ty.args():
@@ -296,7 +298,145 @@ class Function(node.Node):
             if b.name() == name:
                 return b
         return None
+
+    def pushExceptionHandler(self, excpt, handler):
+        """Pushed a new exception handler on the the handler stack. If 
+        subsequent code raised the given exception, or any derived from it,
+        control is transfered to a handler block. Note the if multiple
+        handlers match a raised exception, the one pushed most recently wins
+        and will be executed.
+        
+        Can only be used during code generation.
+        
+        cg: ~~CodeGen - The current code generator.
+        
+        excpt: ~~Exception - The exception type to catch.
+        
+        handler: ~~Block - The block to execute when an exception of type
+        ~~excpt is raised.
+        """
+        util.check_class(excpt, type.Exception, "pushExceptionHandler")
+        util.check_class(handler, block.Block, "pushExceptionHandler")
+        
+        # We assign unique IDs to each handler, which we can later use to
+        # generate unique labels.
+        self._handlers += [(excpt, handler, self._handlers_cnt)]
+        self._handlers_cnt += 1
+
+    def popExceptionHandler(self):
+        """Pops the most recently push exception handler from the handler stack.
+        
+        Can only be used during code generation.
+        """
+        # We pop all with the same number, as they all have been added with the
+        # last push.
+        assert self._handlers
+        self._handlers = self._handlers[0:-1]
+
+    def llvmHandleException(self, cg):
+        """Builds code for finding the right handler for the current exception
+        as set in the current function's frame. The code first checks whether
+        we have any matching handler defined via ~~pushExceptionHander(); if
+        so, it transferts control to there.  If not, it escalates the
+        exception to its caller. 
+        
+        The method uses the code generation's current builder. Any code build
+        subsequently with the same builder will never be reached. 
+        
+        The method must only be called if *self* is the code generators
+        current function. 
+        
+        cg: ~~CodeGen - The current code generator.
+        """
+        assert builtin_id(self) == builtin_id(cg.currentFunction())
+        
+        if self._handlers:
+            cg.llvmTailCall(self.llvmExceptionHandler(cg))
+        
+        else:
+            # No handlers, escalate directly to caller. 
+            excpt = cg.llvmFrameException()
+            cg.llvmEscalateException(excpt)
+        
+        
+    def llvmExceptionHandler(self, cg):
+        """Returns an handler to handle exception raised at the current
+        location during code generation. If handlers have been installed
+        via ~~pushExceptionHandler, corresponding code is built and a
+        function containing it is returned. If no handlers have been
+        installed, we return our parent function's handler. 
+        
+        The returned function is suitable to store in a function's frame
+        via ~~llvmMakeFunctionFrame's ``contExceptFunc`` argument. 
+        
+        The method must only be called if *self* is the code generators
+        current function. 
     
+        cg: ~~CodeGen - The current code generator.
+        
+        Returns: llvm.core.Value - The handler function. 
+        """
+        def _makeOne(func, idx):
+            # Generates code for checking whether self._handlers[idx] or any
+            # of it predecessors applies. Returns the *block* to which we
+            # can jump to execute the code.
+            check = cg.llvmNewBlock("match")
+            cg.pushBuilder(check) 
+            
+            excpt = cg.llvmFrameException()
+            
+            if idx < 0:
+                # No further handler to check, send to caller. 
+                cg.llvmEscalateException(excpt)
+                
+            else:
+                (etype, handler, num) = self._handlers[idx]
+                
+                # Build code for calling handler in case of a match.
+                found = cg.llvmNewBlock("found")
+                cg.pushBuilder(found) 
+                cg.llvmFrameClearException()
+                cg.llvmTailCall(handler)
+                cg.popBuilder()
+                
+                # See if the given handler matches the exception's type.
+                cmp = cg.llvmCallCInternal("__hlt_exception_match_type", [excpt, cg.llvmObjectForExceptionType(etype)])
+                cg.builder().cbranch(cmp, found, _makeOne(func, idx-1))
+                
+            cg.popBuilder()
+            return check
+
+        name = "%s_exception_%s" % (cg.nameFunction(self), self._handlers[-1][2])
+        
+        def _makeFunction():
+            # Build the whole function.
+            func = cg.llvmNewHILTIFunction(self, name=name)
+            
+            # TODO: This is clearly a hack. Need to build a better interface
+            # for building a function while another is in progress.
+            old_func = cg._llvm.func
+            old_frameptr = cg._llvm.frameptr
+            old_ctxptr = cg._llvm.ctxptr
+            
+            cg._llvm.func = func
+            cg._llvm.frameptr = func.args[0]
+            cg._llvm.ctxptr = func.args[1]
+            
+            _makeOne(func, len(self._handlers) - 1)
+            
+            cg._llvm.func = old_func
+            cg._llvm.frameptr = old_frameptr
+            cg._llvm.ctxptr = old_ctxptr
+            
+            return func
+
+        if not self._handlers:
+            # No handlers defined, pass on to parent.
+            return cg.llvmFrameExcptSucc()
+        
+        return cg.cache(name, _makeFunction)
+            
+
     def __str__(self):
         return "%s" % self._id.name()
 
@@ -453,6 +593,13 @@ class Function(node.Node):
             if b.instructions() or not b.mayRemove():
                 _unifyBlock(canonifier, b)
                 self.addBlock(b)
+
+        # Chain blocks  where not done yet; again because canonicalization may
+        # have added new blocks. 
+        prev = None
+        for b in self.blocks():
+            if prev and not prev.next():
+                prev.setNext(b.name())
                 
         canonifier.endFunction()
         

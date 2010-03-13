@@ -193,14 +193,20 @@ class Canonifier(object):
         except IndexError:
             return None
         
-    def makeUniqueLabel(self):
+    def makeUniqueLabel(self, tag=""):
         """Generates a unique label. The label is guarenteed to be unique
         within the function returned by ``currentFunction``.
+        
+        tag: string - Will be included in the generated label.
         
         Returns: string - The generated label.
         """
         self._functions[-1].label_counter += 1
-        return "@__l%d" % self._functions[-1].label_counter
+        
+        if tag:
+            tag = "-%s" % tag
+        
+        return "@__l%d%s" % (self._functions[-1].label_counter, tag)
 
 
 

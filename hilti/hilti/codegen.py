@@ -1276,8 +1276,6 @@ class CodeGen(objcache.Cache):
         if etype.isRootType():
             return self.llvmGlobalInternalPtr("hlt_exception_unspecified")
         
-        print str(etype)
-        
         return self.cache("excpt-type-%s" % builtin_id(etype), _llvmTypeException)
     
     def llvmNewException(self, type, arg, location):
@@ -1312,8 +1310,19 @@ class CodeGen(objcache.Cache):
         
 	    exception: llvm.core.Value - A value with the exception.
         """
-        ptr = self.llvmFrameExcptSucc()
+        assert self.currentFunction()
+        self.llvmFrameSetException(exception)
+        self.currentFunction().llvmHandleException(self)
         
+    def llvmEscalateException(self, exception):
+        """Propagates an exception to the caller of the current function. This
+        function should normally not be used directly as it ignores any
+        installed exception handlers. Use ~~llvmRaiseException instead.
+        
+	    exception: llvm.core.Value - A value with the exception.
+        """
+        assert self.currentFunction()
+        ptr = self.llvmFrameExcptSucc()
         frame = self.llvmFrameExcptFrame()
         self.llvmFrameSetException(exception, frame)
         self.llvmTailCall(ptr, frame=frame)
@@ -2079,9 +2088,12 @@ class CodeGen(objcache.Cache):
         """Instantiates a new function frame. The frame will be initialized
         with the given values. If any of the optional ones is not specified,
         their values will be taken from the current frame pointed to by
-        ~~llvmCurrentFramePtr, with the exception of *contNormFrame* which by
-        default will be set to ~~llvmCurrentFramePtr itself. All local
-        varibles are initalized with their defaults.
+        ~~llvmCurrentFramePtr, with the exceptions of *contNormFrame* which by
+        default will be set to ~~llvmCurrentFramePtr itself, and
+        *contExceptFunc* which will be set to the current function's
+        ~~llvmExceptionHandler.
+        
+         All local varibles are initalized with their defaults.
         
         func: ~~Function - The function to create a frame for. This must have
         calling convention ~~C_HILTI.
@@ -2116,7 +2128,7 @@ class CodeGen(objcache.Cache):
             contNormFrame = self.builder().bitcast(contNormFrame, self.llvmTypeBasicFramePtr())
             
         if not contExceptFunc:
-            contExceptFunc = self.llvmFrameExcptSucc()
+            contExceptFunc = self.currentFunction().llvmExceptionHandler(self)
         else:
             contExceptFunc = self.builder().bitcast(contExceptFunc, self.llvmTypeBasicFunctionPtr())
 

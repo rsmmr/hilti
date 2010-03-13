@@ -17,6 +17,7 @@ import type
 import util
 
 import instructions.foreach
+import instructions.trycatch
 
 from lexer import tokens
 
@@ -334,6 +335,12 @@ def p_empty_line(p):
     """empty_line : NL
                   | comment_line NL
     """
+    
+def p_empty_lines(p):
+    """empty_lines : NL
+                  | comment_line NL
+                  | empty_lines NL
+    """
 
 def p_comment_line(p):
     """comment_line : COMMENTLINE"""
@@ -398,6 +405,15 @@ def p_foreach(p):
     """instruction : FOR IDENT IN operand DO NL _push_blocklist instruction_list DONE NL""" 
     blocks = _popBlockList(p)
     ins = instructions.foreach.ForEach(p[2], p[4], blocks, location=_loc(p, 1))
+    p.parser.state.block.addInstruction(ins)
+
+def p_trycatch(p):
+    """instruction : TRY '{' NL _push_blocklist instruction_list '}' empty_lines CATCH type '{' NL _push_blocklist instruction_list '}' NL""" 
+    catch_blocks = _popBlockList(p)
+    try_blocks = _popBlockList(p)
+    excpt = p[9]
+    
+    ins = instructions.trycatch.TryCatch(try_blocks, excpt, catch_blocks, location=_loc(p, 1))
     p.parser.state.block.addInstruction(ins)
     
 def p_push_blocklist(p):

@@ -41,8 +41,8 @@ class ForEach(instruction.Instruction):
         for b in self._blocks:
             b.validate(vld)
             
-        # Make sure loop var is not yet defined.
-        # Make sure container is iterable.
+        # TODO: Make sure loop var is not yet defined.
+        # TODO: Make sure container is iterable.
         
     def output(self, printer):
         printer.output("for %s in " % self._var)

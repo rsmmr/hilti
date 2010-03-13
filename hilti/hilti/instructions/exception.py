@@ -55,7 +55,7 @@ class Exception(type.HeapType, type.Parameterizable):
         base: type.Exception - The type of the base class.
         """
         self._baseclass = base
-    
+
     def isRootType(self):
         """Checks whether the exception type represents the top-level root type.
         
@@ -228,7 +228,34 @@ class Throw(Instruction):
         exception = cg.llvmOp(self.op1())
         cg.llvmRaiseException(exception)
         
+@hlt.instruction(".push_exception_handler", op1=cType(cException), op2=cLabel)
+class PushHandler(Instruction):
+    """Installs an exception handler for exceptions of *op1*, including any
+    derived from that type. If such an exception is thrown subsequently,
+    control is transfered to *op2*.
+    """
+    def validate(self, vld):
+        if not vld.currentFunction():
+            vld.error(self, "cannot catch exceptions here")
+    
+    def codegen(self, cg):
+        excpt = self.op1().value()
+        handler = cg.lookupBlock(self.op2())
+        cg.currentFunction().pushExceptionHandler(excpt, handler)
+
+@hlt.instruction(".pop_exception_handler")
+class PopHandler(Instruction):
+    """Uninstalls the most recently installed exception handler. Exceptions of
+    its type are no longer caught in subsequent code.
+    """
+    def validate(self, vld):
+        if not vld.currentFunction():
+            vld.error(self, "cannot catch exceptions here")
+            
+    def codegen(self, cg):
+        cg.currentFunction().popExceptionHandler()
         
+                
         
     
         
