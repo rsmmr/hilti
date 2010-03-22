@@ -406,6 +406,10 @@ class Function(node.Node):
             cg.popBuilder()
             return check
 
+        if not self._handlers:
+            # No handlers defined, pass on to parent.
+            return cg.llvmFrameExcptSucc()
+        
         name = "%s_exception_%s" % (cg.nameFunction(self), self._handlers[-1][2])
         
         def _makeFunction():
@@ -416,24 +420,23 @@ class Function(node.Node):
             # for building a function while another is in progress.
             old_func = cg._llvm.func
             old_frameptr = cg._llvm.frameptr
+            old_eoss = cg._llvm.eoss
             old_ctxptr = cg._llvm.ctxptr
             
             cg._llvm.func = func
             cg._llvm.frameptr = func.args[0]
-            cg._llvm.ctxptr = func.args[1]
+            cg._llvm.eoss = func.args[1]
+            cg._llvm.ctxptr = func.args[2]
             
             _makeOne(func, len(self._handlers) - 1)
             
             cg._llvm.func = old_func
             cg._llvm.frameptr = old_frameptr
+            cg._llvm.eoss = old_eoss
             cg._llvm.ctxptr = old_ctxptr
             
             return func
 
-        if not self._handlers:
-            # No handlers defined, pass on to parent.
-            return cg.llvmFrameExcptSucc()
-        
         return cg.cache(name, _makeFunction)
             
 

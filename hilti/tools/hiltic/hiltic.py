@@ -49,10 +49,12 @@ optparser.add_option("-I", "--import-path", action="callback", callback=import_p
                      help="Add DIR to search path for imports", metavar="DIR")
 optparser.add_option("-P", "--prototypes", action="store_true", dest="protos", default=False,
                      help="Generate C prototypes")
-optparser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
-                     help="Compile with debugging support")
+optparser.add_option("-d", "--debug", action="count", dest="debug", default=0,
+                     help="Compile with debugging support. Multiple times increases level.")
 optparser.add_option("-D", "--debug-codegen", action="store_true", dest="debug_cg", default=False,
                      help="Print debugging information during code generation phase")
+optparser.add_option("-S", "--stack-size", action="store", dest="stack", default=16384,
+                     help="Default stack segment size in bytes (default: 16384)")
 options = None                     
                      
 if addl_flags:
@@ -139,7 +141,7 @@ if options.hilti_plain:
     sys.exit(0)
 
 # Canonify the code.     
-if not hilti.canonifyModule(mod, debug=options.debug):
+if not hilti.canonifyModule(mod, debug=(options.debug!=0)):
     print >>sys.stderr, "error during canonicalization"
     sys.exit(1)
 
@@ -159,7 +161,7 @@ if options.hilti_canon:
     sys.exit(0)
 
 # Generate code. 
-(success, llvm_module) = hilti.codegen(mod, options.import_paths, debug=options.debug, trace=options.debug_cg, verify=(not options.ll_noverify))
+(success, llvm_module) = hilti.codegen(mod, options.import_paths, debug=options.debug, stack=options.stack, trace=options.debug_cg, verify=(not options.ll_noverify))
 
 if not success:
     print >>sys.stderr, "error during code generation"

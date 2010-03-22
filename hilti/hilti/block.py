@@ -203,7 +203,9 @@ class Block(node.Node):
         cg.startBlock(self)
             
         for i in self._ins:
+            cg.startInstruction(i)
             i.codegen(cg)
+            cg.endInstruction()
         
         cg.endBlock()
     

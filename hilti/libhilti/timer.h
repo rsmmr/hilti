@@ -13,7 +13,7 @@
 /// 
 /// The action executed by a timer is determined at construction time by
 /// choosing the corresponding ``hlt_timer_new_*`` function. Actions include
-/// executing a closure, and expiring container elements. We hard-code
+/// executing a bound function, and expiring container elements. We hard-code
 /// the individual actions into the C code for efficiency, rather than using
 /// indirection via some kind generic mechanism. 
 /// 
@@ -42,7 +42,7 @@ struct __hlt_timer {
     size_t queue_pos;   // Used by priority queue. 
     int16_t type;       // One of HLT_TIMER_* indicating the timer's type. 
     union {             // The timer's payload cookie corresponding to its type.
-        hlt_continuation* closure;
+        hlt_continuation* function;
 #if 0        
         __hlt_list_timer_cookie list;
 #endif        
@@ -148,15 +148,15 @@ extern hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void*
 /// This function has the standard RTTI signature.
 extern double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception);
 
-/// Instantiates a new timer object that will execute a closure when it
+/// Instantiates a new timer object that will execute a bound function when it
 /// fires.
 /// 
-/// closure: The closure.
+/// func: The function.
 /// 
 /// excpt: &
 /// 
 /// Returns: The new timer object. 
-extern hlt_timer* __hlt_timer_new_closure(hlt_continuation* closure, hlt_exception** excpt);
+extern hlt_timer* __hlt_timer_new_function(hlt_continuation* func, hlt_exception** excpt);
 
 #if 0
 /// Instantiates a new timer object that will expire a list entry when it

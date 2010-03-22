@@ -53,7 +53,8 @@ hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const ch
     excpt->cont = 0;
     excpt->arg = arg;
     excpt->location = location;
-    excpt->frame = 0;
+    excpt->fptr = 0;
+    excpt->eoss = 0;
     return excpt;
 }
 
@@ -70,6 +71,16 @@ void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* ar
 {
     assert(dst);
     *dst = __hlt_exception_new(type, arg, location);
+}
+
+int8_t __hlt_exception_match_type(hlt_exception* excpt, hlt_exception_type* type)
+{
+    for ( hlt_exception_type* t = excpt->type; t; t = t->parent ) {
+        if ( t == type )
+            return 1;
+    }
+    
+    return 0;
 }
 
 static void __exception_print(const char* prefix, hlt_exception* exception)
@@ -109,17 +120,8 @@ void __hlt_exception_print_uncaught_abort(hlt_exception* exception)
     abort();
 }
 
-void __hlt_exception_save_frame(hlt_exception* excpt, void* frame)
+void __hlt_abort(void* fptr, void* eeos, void* ctx)
 {
-    excpt->frame = frame;
-}
-
-void* __hlt_exception_restore_frame(hlt_exception* excpt)
-{
-    return excpt->frame;
-}
-
-hlt_continuation* __hlt_exception_get_continuation(hlt_exception* excpt)
-{
-    return excpt->cont;
+    fprintf(stderr, "internal HILTI error: hlt_abort() called");
+    abort();
 }

@@ -91,6 +91,8 @@ class ReturnResult(Instruction):
             rtype = cg.currentFunction().type().resultType()
             succ = cg.llvmFrameNormalSucc()
             frame = cg.llvmFrameNormalFrame()
+
+            addr = cg._llvmAddrInBasicFrame(frame.fptr(), 0, 2)
             cg.llvmTailCall(succ, frame=frame, addl_args=[(op1, rtype)])
         else:
             cg.builder().ret(op1)
@@ -311,7 +313,7 @@ class CallTailResult(Instruction):
         args = self.op2()
         succ = cg.lookupBlock(self.op3())
         llvm_succ = cg.llvmFunctionForBlock(succ)
-        
+
         # Build a helper function that receives the result.
         result_name = cg.nameFunctionForBlock(cg.currentBlock()) + "_result"
         result_type = cg.llvmType(func.type().resultType())
@@ -319,12 +321,15 @@ class CallTailResult(Instruction):
         result_block = result_func.append_basic_block("")
 
         cg.pushBuilder(result_block)
-        cg.llvmStoreLocalVar(self.target().value(), result_func.args[2], frame=result_func.args[0])
-        cg.llvmTailCall(llvm_succ, frame=result_func.args[0], ctx=result_func.args[1])
+        cg.llvmStoreLocalVar(self.target().value(), result_func.args[3], frame=result_func.args[0])
+        fdesc = cg.makeFrameDescriptor(result_func.args[0], result_func.args[1])
+        
+        cg.llvmTailCall(llvm_succ, frame=fdesc, ctx=result_func.args[2]) # XXX
         cg.builder().ret_void()
         cg.popBuilder()
 
         frame = cg.llvmMakeFunctionFrame(func, args, result_func)
+        
         cg.llvmTailCall(func, frame=frame)
         
 @hlt.instruction("thread.yield", terminator=True)
@@ -425,17 +430,13 @@ class ThreadSchedule(Instruction):
         call = cg.builder().call(schedFunc, [vthread, castedFunc, castedFrame])
         call.calling_convention = llvm.core.CC_C
     
-@hlt.instruction("yield", op1=cOptional(cIntegerOfWidth(32)), terminator=True)
+@hlt.instruction("yield", terminator=True)
 class Yield(Instruction):
-    """Raises a resumable ~~YieldException. The exception's argument will be
-    set to *op1* if given. If the exception is resumed, execution will
-    continue with the succeeding block.
-    
-    Note: While ideally, we'd like to allow any type for the argument, doing
-    so void prevent us from statically type-checking the code in the exception
-    handler, which is why we're limiting it to an integer. 
-    
-    Todo: Unify this with ``thread.yield``
+    """Yields processing back to the current scheduler, to be resumed later.
+    If running in a virtual thread other than zero, this instruction yield to
+    other virtual threads running within the same physical thread. Of running
+    in virtual thread zero (or in non-threading mode), returns execution back
+    to the calling C function (see interfacing with C). 
     """
     def canonify(self, canonifier):
         Instruction.canonify(self, canonifier)
@@ -447,52 +448,17 @@ class Yield(Instruction):
         next = cg.currentBlock().next()
         next = cg.currentFunction().lookupBlock(next)
         assert next
-        succ_func = cg.llvmFunctionForBlock(next) 
         
-        # Generate a Yield exception.
-        exception_new_yield = cg.llvmCFunctionInternal("__hlt_exception_new_yield")
-        # FIXME: Add location information.
-        arg = cg.llvmOp(self.op1()) if self.op1() != None else cg.llvmConstInt(0, 32)
-        location = cg.llvmNewGlobalStringConst(cg.nameNewGlobal("yield"), str(self.location()))
-        cont = cg.llvmNewContinuation(succ_func, cg.llvmCurrentFramePtr())
-        excpt = cg.builder().call(exception_new_yield, [cont, arg, location])
-        cg.llvmRaiseException(excpt)
-        
-@hlt.constraint("YieldException")
-def _yieldException(ty, op, i):
-    if not isinstance(ty, type.Exception):
-        return (False, "argument must be reference to a YieldException")
+        succ = cg.llvmFunctionForBlock(next) 
 
-    if ty.exceptionName() != "Yield_Exception":
-        return (False, "argument must be reference to a YieldException")
-
-    return (True, "")
-            
-@hlt.instruction("resume", op1=cReferenceOf(_yieldException), terminator=True)
-class Resume(Instruction):
-    """Resumes a previously raised ~~YieldException. The control is transfered
-    to the location where it was previously suspended. 
-    
-    Note: Resuming does not work for exceptions passes in from C because for
-    them we can't propagate any *future* exceptions back. 
-    
-    Todo: Because we still can't catch exceptions in a HILTI program, it's
-    actually not possible to get a value for *op1*; therefore this instruction
-    is untested.
-    """
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
-        canonifier.splitBlock(self, add_flow_dbg=True)
-    
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+        # Save where we want to resume.
+        cont = cg.llvmNewContinuation(succ, cg.llvmCurrentFrameDescriptor())
+        cg.llvmExecutionContextSetResume(cont)
         
-        op1 = cg.llvmOp(self.op1())
-        exception_get_continuation = cg.llvmCFunctionInternal("__hlt_exception_get_continuation")
-        cont = cg.builder().call(exception_get_continuation, [op1])
+        # Transfer to scheduler, as defined in the yield attribute. 
+        yield_ = cg.llvmExecutionContextYield()
+        cg.llvmResumeContinuation(yield_)
         
-        cg.llvmResumeContinuation(cont)
-
 @hlt.constraint("( (value, destination), ...)")
 def _switchTuple(ty, op, i):
 

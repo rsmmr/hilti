@@ -6,10 +6,14 @@
 
 module Main
 
+import Hilti
+
 void run() {
 
     local string s
     s = "Hello, world!"
+    
+    call Hilti::print(s)
     
     return.void
 }     

@@ -37,8 +37,10 @@ function usage {
    echo "    -P         Generate only C prototypes for *.hlt files; does nothing else."
    echo "    -c         Produce a native, linkable object file, not an executable."
    echo "    -b         Produce a bitcode file for JITing."
-   echo "    -d         Compile HILTI files with debugging support."
+   echo "    -d         Compile HILTI files with debugging support (level 1)."
+   echo "    -D         Compile HILTI files with debugging support (level 2)."
    echo "    -a         Set flags for compiling BinPAC++ sources even if not given"
+   echo "    -S <size>  Default stack segment size to pass to hiltic"
    echo
    exit 1 
 }
@@ -203,6 +205,7 @@ protos=""
 noexec=""
 bitcode=""
 debug=""
+stack=""
 libsbcflag="--libs-bc-main"
 have_pac2=0
 
@@ -230,8 +233,12 @@ while [ "$1" != "" ]; do
             bitcode="1"; shift;; 
         -d)
             debug="--debug"; shift;; 
+        -D)
+            hiltic_debug_addl="-d"; debug="--debug"; shift;; 
         -a)
             have_pac2=1; shift;;
+        -S)
+            stack="-S $2"; shift; shift;;
         -h) 
             usage;; 
         -*)
@@ -277,7 +284,7 @@ if [ ! -x "$hilticonfig" ]; then
 fi
 
 llvmasflags="$LLVMASFLAGS"
-hilticflags="`$hilticonfig $debug --hilticflags` $HILTICFLAGS"
+hilticflags="`$hilticonfig $debug --hilticflags` $hiltic_debug_addl $stack $HILTICFLAGS"
 llvmldflags="`$hilticonfig $debug --ldflags` $LLVMLDFLAGS"
 cflags="`$hilticonfig $debug --cflags` -Wall $CFLAGS -g"
 cxxflags="`$hilticonfig $debug --cxxflags` $CFLAGS -g"

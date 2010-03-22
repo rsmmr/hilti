@@ -1,8 +1,12 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build -S 0 %INPUT -o a.out 
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  test-diff output
+#
+# Compiling the recursive program with non-standard default stack segment size. 
+#
+# Note: -S 0 will cause every frame to be newly allocated on the stack. 
 
 module Main
 

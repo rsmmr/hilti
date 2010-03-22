@@ -16,12 +16,13 @@ typedef struct hlt_exception_type {
     const struct __hlt_type_info* argtype;   //< The type of the exception's argument, or 0 if no argument.
 } hlt_exception_type;
 
-typedef struct {
+typedef struct hlt_exception {
     hlt_exception_type* type;        //< The type of the exeception.
     hlt_continuation* cont;          //< If the exeption is resumable, the continuation for doing so.
     void *arg;                       //< The arguments of type ``type.argtype``, or 0 if none.
     const char* location;            //< A string describing the location where the exception was raised.
-    void *frame;                     //< Saved stub frame for resuming later. 
+    void *fptr;                      //< Saved frame pointer for resuming later.
+    void *eoss;                      //< Saved end-of-stack segment for resuming later. 
 } hlt_exception;
 
     // %doc-hlt_exception-end
@@ -122,12 +123,6 @@ extern hlt_exception_type hlt_exception_pktsrc_error;
 extern hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const char* location);
 extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location);
 
-// Todo: These could be implemented directly in the codegen but then we'd
-// need to declare the exception type there. We'll do that eventually and
-// then we can get rid of these functions.
-extern void __hlt_exception_save_frame(hlt_exception* excpt, void* frame);
-extern void* __hlt_exception_restore_frame(hlt_exception* excpt);
-extern hlt_continuation* __hlt_exception_get_continuation(hlt_exception* excpt);
 extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception); 
 
 extern void hlt_exception_print(hlt_exception* exception); 

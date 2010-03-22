@@ -19,7 +19,7 @@ class Msg(Instruction):
     *op2* is printf-style format string and *op3* the correponding arguments.
     """
     def codegen(self, cg):
-        if not cg.debugMode():
+        if cg.debugLevel() == 0:
             return
         
         cg.llvmCallC("hlt::debug_printf", [self.op1(), self.op2(), self.op3()])
@@ -30,7 +30,7 @@ class Assert(Instruction):
     an ~~AssertionError exception with *op2* as its value if given.
     """
     def codegen(self, cg):
-        if not cg.debugMode():
+        if cg.debugMode() == 0:
             return
         
         op1 = cg.llvmOp(self.op1())

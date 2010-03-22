@@ -76,9 +76,9 @@ class NewTimer(Operator):
     def codegen(self, cg):
         func = cg.lookupFunction(self.op2())
         args = self.op3()
-        cont = cg.llvmNewClosure(func, args)
+        cont = cg.llvmBindFunction(func, args)
         
-        result = cg.llvmCallCInternal("__hlt_timer_new_closure", [cont, cg.llvmFrameExceptionAddr()])
+        result = cg.llvmCallCInternal("__hlt_timer_new_function", [cont, cg.llvmFrameExceptionAddr()])
         cg.llvmExceptionTest()
         cg.llvmStoreInTarget(self, result)
     

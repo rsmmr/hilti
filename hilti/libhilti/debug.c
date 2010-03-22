@@ -78,4 +78,35 @@ hlt_list* hlt_debug_parse_streams(const char* streams, hlt_exception** excpt)
     
     return l;
 }
+
+static int indent = 0;
+
+void __hlt_debug_print_str(const char* msg)
+{
+    fprintf(stderr, "debug: %3d ", indent);
+   
+    for ( int i = indent * 4; i; --i )
+        fputc(' ', stderr);
     
+    fprintf(stderr, "%s\n", msg);
+}
+
+void __hlt_debug_print_ptr(const char* s, void* ptr)
+{
+    fprintf(stderr, "debug: %3d ", indent);
+    
+    for ( int i = indent * 4; i; --i )
+        fputc(' ', stderr);
+    
+    fprintf(stderr, "%s %p\n", s, ptr);
+}
+
+void __hlt_debug_push_indent()
+{
+    ++indent;
+}
+void __hlt_debug_pop_indent()
+{
+    --indent;
+}
+

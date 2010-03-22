@@ -110,7 +110,7 @@ def canonifyModule(mod, debug=False):
     """
     return canonifier.Canonifier().canonify(mod, debug)
 
-def codegen(mod, libpaths, debug=False, trace=False, verify=True):
+def codegen(mod, libpaths, debug=0, stack=16384, trace=False, verify=True):
     """Compiles a module into LLVM module.  The module must be well-formed as
     verified by ~~validateModule, and it must have been canonified by
     ~~canonifyModule.
@@ -122,7 +122,10 @@ def codegen(mod, libpaths, debug=False, trace=False, verify=True):
     verify: bool - If true, the correctness of the generated LLVM code will
     be verified via LLVM's internal validator.
     
-    debug: bool - If true, debugging support is compiled in.
+    debug: int - Debugging level. With 1 or 2, debugging support or more
+    debugging support is compiled in.
+    
+    stack: int - The default stack segment size. 
     
     trace: bool - If true, debugging information will be printed to trace
     where codegeneration currently is. 
@@ -134,7 +137,7 @@ def codegen(mod, libpaths, debug=False, trace=False, verify=True):
     
     gen = cg.CodeGen()
     mod._cg = gen
-    return gen.codegen(mod, libpaths, debug, trace, verify)
+    return gen.codegen(mod, libpaths, debug, stack, trace, verify)
 
 def protogen(mod, fname):
     """Generates C interface prototypes for the functions in a module. The

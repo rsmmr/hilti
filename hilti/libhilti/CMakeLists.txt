@@ -23,7 +23,7 @@ set(SRCS
     bytes.c config.c schedulers.c thread_context.c run.c
     addr.c port.c vector.c list.c net.c regexp.c debug.c
     bitset.c context.c caddr.c struct.c timer.c map_set.c
-    pktsrc-pcap.c
+    pktsrc-pcap.c continuation.c
     
     module/fmt.c module/print.c module/abort.c
     

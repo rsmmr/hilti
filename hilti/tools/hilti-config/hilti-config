@@ -106,11 +106,11 @@ while [ "$1" != "" ]; do
             shift;;
             
         --cflags)
-            echo "-I$base/libhilti $pcap_cflags"
+            echo "-I$base/libhilti -g $pcap_cflags"
             shift;;
             
         --cxxflags)
-            echo "-I$base/libhilti $pcap_cflags"
+            echo "-I$base/libhilti -g $pcap_cflags"
             shift;;
             
         --libhilti)

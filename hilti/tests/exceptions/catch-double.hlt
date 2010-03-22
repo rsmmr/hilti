@@ -1,0 +1,82 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+type myException1 = exception
+type myException2 = exception
+
+void run() {
+
+     call Hilti::print ("A")
+     
+     try {
+     
+          try {
+     
+            local ref<myException1> e
+            e = new myException1
+            exception.throw e
+       
+            call Hilti::print ("Cannot be reached")
+          }
+          
+          catch myException1 {
+              call Hilti::print ("Caught it 1!")
+          }
+     }
+     
+     catch myException2 {
+       call Hilti::print ("Caught it 2!")
+     }
+
+     
+     call Hilti::print ("C")
+     return.void
+     
+}     
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type myException1 = exception
+type myException2 = exception
+
+void run() {
+
+     call Hilti::print ("A")
+     
+     try {
+     
+          try {
+     
+            local ref<myException2> e
+            e = new myException2
+            exception.throw e
+       
+            call Hilti::print ("Cannot be reached")
+          }
+          
+          catch myException1 {
+              call Hilti::print ("Caught it 1!")
+          }
+     }
+     
+     catch myException2 {
+       call Hilti::print ("Caught it 2!")
+     }
+
+     call Hilti::print ("C")
+     return.void
+     
+}     
+
+
