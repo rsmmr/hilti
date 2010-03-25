@@ -92,7 +92,6 @@ typedef struct hlt_worker_thread_t
     hlt_job_node* job_queue_tail;
     hlt_exception* except;
     hlt_exception_state except_state;
-    hlt_execution_context exec_context;
 } hlt_worker_thread;
 
 /// Returns true if HILTI environment is (potentially) running multiple threads.

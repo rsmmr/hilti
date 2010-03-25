@@ -64,7 +64,7 @@ extern hlt_exception_type hlt_channel_full;
 extern hlt_exception_type hlt_channel_empty;
 
 // A worker thread threw an exception.
-extern hlt_exception_type hlt_exception_worker_thread_threw_exception;
+extern hlt_exception_type hlt_exception_uncaught_thread_exception;
 
 // A system or libc function returned an unexpected error.
 extern hlt_exception_type hlt_exception_os_error;
@@ -127,6 +127,7 @@ extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception);
 
 extern void hlt_exception_print(hlt_exception* exception); 
 extern void hlt_exception_print_uncaught(hlt_exception* exception); 
+extern void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_vthread_id vid);
 
 #define __hlt_stringify2(arg) #arg
 #define __hlt_stringify(arg) __hlt_stringify2(arg)

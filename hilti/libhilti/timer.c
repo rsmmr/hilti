@@ -20,7 +20,7 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt)
 {
     switch (timer->type) {
       case HLT_TIMER_FUNCTION:
-        hlt_call_bound_function(timer->cookie.function, 0, excpt);
+        hlt_call_continuation(timer->cookie.function, 0, excpt);
         break;
         
 #if 0        

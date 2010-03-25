@@ -160,7 +160,7 @@ class Module(node.Node):
             # the library. However, we should build a nicer general mechanism
             # for static auto-generated functions.
             if i.name() == "hlt_call_bound_function":
-                cg._llvmFunctionCallBoundFunction()
+                cg._llvmFunctionCallContinuationFunction()
                 continue
             
             if isinstance(i, id.Function):

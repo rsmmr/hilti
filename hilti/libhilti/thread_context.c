@@ -92,8 +92,6 @@ hlt_thread_context* hlt_new_thread_context(const hilti_config* config)
         context->worker_threads[i].except = NULL;
         context->worker_threads[i].except_state = HLT_HANDLED;
         
-        __hlt_execution_context_init(&context->worker_threads[i].exec_context);
-
         pthread_mutex_init(&context->worker_threads[i].mutex, NULL);
        
         if (pthread_create(&context->worker_threads[i].thread_handle, &context->thread_attributes, hlt_worker_scheduler, (void*) &context->worker_threads[i]))
@@ -114,8 +112,6 @@ hlt_thread_context* hlt_new_thread_context(const hilti_config* config)
     context->main_thread->except = NULL;
     context->main_thread->except_state = HLT_HANDLED;
     
-    __hlt_execution_context_init(&context->main_thread->exec_context);
-
     // Initially there is no main function running.
     context->main_function = NULL;
 
@@ -157,12 +153,8 @@ void hlt_delete_thread_context(hlt_thread_context* context)
             hlt_delete_job_node(current);
             current = next;
         }
-        
-        __hlt_execution_context_done(&context->worker_threads[i].exec_context);
     }
 
-    __hlt_execution_context_done(&context->main_thread->exec_context);
-    
     // Free the worker thread structures.
     free(context->worker_threads);
 
@@ -477,7 +469,7 @@ static void* hlt_worker_scheduler(void* worker_thread_ptr)
                 // been canceled, hlt_run_main_thread() will return to the user and they
                 // can take the action they deem appropriate. (Almost certainly, that means
                 // setting the thread context state to KILL.)
-                hlt_set_exception(&this_thread->context->main_thread->except, &hlt_exception_worker_thread_threw_exception, 0);
+                hlt_set_exception(&this_thread->context->main_thread->except, &hlt_exception_uncaught_thread_exception, 0);
 
                 if (pthread_cancel(this_thread->context->main_thread->thread_handle))
                 {

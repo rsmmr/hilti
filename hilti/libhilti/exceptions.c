@@ -26,7 +26,7 @@ hlt_exception_type hlt_exception_undefined_value = { "UndefinedValue", &hlt_exce
 hlt_exception_type hlt_channel_full = { "ChannelFull", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_channel_empty = { "ChannelEmpty", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_decoding_error = { "DecodingError", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_exception_worker_thread_threw_exception = { "WorkerThreadThrewException", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_uncaught_thread_exception = { "ThreadException", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_internal_error = { "InternalError", &hlt_exception_unspecified, &hlt_type_info_string };
 hlt_exception_type hlt_exception_os_error = { "OSError", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_overlay_not_attached = { "OverlayNotAttached", &hlt_exception_unspecified, 0 };
@@ -112,6 +112,11 @@ void hlt_exception_print(hlt_exception* exception)
 void hlt_exception_print_uncaught(hlt_exception* exception) 
 {
     __exception_print("hilti: uncaught exception, ", exception);
+}
+
+void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_vthread_id vid) 
+{
+    __exception_print("hilti: uncaught exception in worker thread, ", exception);
 }
 
 void __hlt_exception_print_uncaught_abort(hlt_exception* exception) 

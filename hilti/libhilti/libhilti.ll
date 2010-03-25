@@ -63,8 +63,10 @@
 
 ; The common header of all per-thread execution contexts. This
 ; structure is then followed with the set of all global variables. 
+; Must match hlt_exception in context.h. See there for fields.
 %__hlt_execution_context = type { 
     %__hlt_thread_id,
+    %__hlt_void*,
     %__hlt_continuation*,
     %__hlt_continuation*
 }

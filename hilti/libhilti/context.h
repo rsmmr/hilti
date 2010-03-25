@@ -1,36 +1,41 @@
 // $Id$
-// 
-/// Global execution context. An execution context is a collection of
-/// attributes globally available in each execution unit. In a
-/// single-threaded environment, there's only one execution unit and thus
-/// also only one global execution object. In a multi-threaded environments,
-/// each thread has it's own execution context and the access functions
-/// transparently return the current thread's context. 
-/// 
-/// Note: This data is not really used at all at the moment, but will in the
-/// future.
 
 #ifndef HLT_CONTEXT_H
 #define HLT_CONTEXT_H
 
+#if 0
+
+#include "threading.h"
+
+/// A per-thread execution context. This is however just the common header of
+/// all contexts; in memory, the header will be followed with the set of
+/// thread-local variables.
 typedef struct {
-    // Pointer to global variables (global relative to this context).
-    // FIXME: Currently unused because globals aren't implemented yet. 
-    void* globals; 
-} hlt_execution_context;
+    hlt_vthread_id vid;        /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
+    hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread. 
+    hlt_continuation* yield;   /// A continuation to call when a ``yield`` statement is executed.
+    hlt_continuation* resume;  /// A continuation to call when resuming after a ``yield`` statement. Is set by the ``yield``.
+};
 
-// The global context which is used in single-threaded setups.
-hlt_execution_context __hlt_global_execution_context;
+typedef yield_func(void* frame, void* eoss, hlt_execution_ctx* ctx);
 
-void __hlt_execution_context_init(hlt_execution_context* ctx);
-void __hlt_execution_context_done(hlt_execution_context* ctx);
-
-/// Returns the current execution context. The context is relative to the
-/// current execution unit (i.e., either the global context in a
-/// single-threaded setup, or the thread-local context in a multi-threaded
-/// setup.)
+/// Creates a new execution context. 
 /// 
-/// TODO: The multi-threaded case has not been tested ...
-hlt_execution_context* hlt_current_execution_context();
+/// vid: The ID of the virtual thread the context will belong to.
+/// ~~HLT_VID_MAIN for the main (non-worker) thread.  
+/// 
+/// yield: A function to return control to when a ``yield`` statement is
+/// executed. The function must have the standard HILTI signature, i.e.,
+/// ``void f(void* frame, void* eoss, hlt_execution_ctx* ctx``. However, the
+/// two former fields will always be 0 when the function is called. The
+/// ``ctx`` will always be a pointer to the newly allocated context. 
+/// 
+/// Returns: The new context. 
+hlt_exceution_ctx* hlt_execution_context_new(hlt_vthread_id vid, yield_func* func);
 
+#else
+typedef int hlt_vthread_id;
+struct hlt_execution_context;
 #endif
+
+#endif 
