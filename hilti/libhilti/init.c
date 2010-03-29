@@ -16,7 +16,7 @@ typedef void (*init_func)();
 static init_func* _registered_funcs = 0;
 static int _num_registered_funcs = 0;
 
-void hilti_init()
+void hlt_init()
 {
     // Initialize locale.
     if ( ! setlocale(LC_CTYPE, "") ) {
@@ -34,7 +34,7 @@ void hilti_init()
     const char* dbg = getenv("HILTI_DEBUG");
     if ( dbg ) {
         hlt_exception* excpt = 0;
-        hilti_config cfg = *hilti_config_get();
+        hlt_config cfg = *hlt_config_get();
         cfg.debug_streams = hlt_debug_parse_streams(dbg, &excpt);
         if ( excpt ) {
             hlt_exception_print(excpt);
@@ -42,7 +42,7 @@ void hilti_init()
             exit(1);
         }
         
-        hilti_config_set(&cfg);
+        hlt_config_set(&cfg);
     }
     
     for ( int i = 0; i < _num_registered_funcs; i++ )

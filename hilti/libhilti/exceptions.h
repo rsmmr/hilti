@@ -4,6 +4,7 @@
 #define HILTI_EXCEPTIONS_H
 
 #include "continuation.h"
+#include "threading.h"
 
 struct __hlt_type_info;
 
@@ -23,6 +24,7 @@ typedef struct hlt_exception {
     const char* location;            //< A string describing the location where the exception was raised.
     void *fptr;                      //< Saved frame pointer for resuming later.
     void *eoss;                      //< Saved end-of-stack segment for resuming later. 
+    hlt_vthread_id vid;              //< If a virtual thread raised the exeception, it's ID. 
 } hlt_exception;
 
     // %doc-hlt_exception-end
@@ -57,14 +59,15 @@ extern hlt_exception_type hlt_exception_undefined_value;
 // An internal error that indicates a bug in HILTI.
 extern hlt_exception_type hlt_exception_internal_error;
 
-// A write operation on a full channel has been attempted.
-extern hlt_exception_type hlt_channel_full;
-
-// A read operation on an empty channel has been attempted.
-extern hlt_exception_type hlt_channel_empty;
+// An operation could not be performed without blocking. 
+extern hlt_exception_type hlt_exception_would_block;
 
 // A worker thread threw an exception.
 extern hlt_exception_type hlt_exception_uncaught_thread_exception;
+
+// An operation that depends on having threads was attempted even though we
+// aren't configured for threading. 
+extern hlt_exception_type hlt_exception_no_threading;
 
 // A system or libc function returned an unexpected error.
 extern hlt_exception_type hlt_exception_os_error;

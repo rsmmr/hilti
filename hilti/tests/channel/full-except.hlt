@@ -15,12 +15,18 @@ void run() {
     local int64 a
     local int64 b
     local int64 c
+    local int64 d
 
     a = int.mul 7 6
     b = int.add 9 6
     c = int.sub 50 8
 
-    channel.write ch a
-    channel.write ch b
-    channel.write ch c
+    channel.write_try ch a
+    channel.write_try ch b
+    channel.write_try ch c
+    channel.write_try ch d
+    
+    d = channel.size ch
+    call Hilti::print(d)
+    
 }

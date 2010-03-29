@@ -13,5 +13,5 @@ void run() {
     ch = new channel<int64,0>
 
     local int64 x
-    x = channel.read ch
+    x = channel.read_try ch
 }

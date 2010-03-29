@@ -19,17 +19,17 @@ void run() {
     b = int.add 9 6
     c = int.sub 50 8
 
-    channel.write ch a
-    channel.write ch b
-    channel.write ch c
+    channel.write_try ch a
+    channel.write_try ch b
+    channel.write_try ch c
 
     local int32 x
     local int32 y
     local int32 z
 
-    x = channel.read ch
-    y = channel.read ch
-    z = channel.read ch
+    x = channel.read_try ch
+    y = channel.read_try ch
+    z = channel.read_try ch
 
     call Hilti::print(x)
     call Hilti::print(y)

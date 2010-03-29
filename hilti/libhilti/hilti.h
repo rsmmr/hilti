@@ -18,12 +18,22 @@
 #ifndef HILTI_H
 #define HILTI_H
 
+#define DEBUG
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <assert.h>
+
+// gc.h must be included library-wide because it overwrites some standard
+// functions (such as pthreads_create())
+#ifdef DEBUG
+#define GC_DEBUG
+#endif
+
+#include "3rdparty/bdwgc/include/gc.h"
 
 #include "module/_hilti.h"
 #include "types.h"
@@ -46,9 +56,8 @@
 #include "overlay.h"
 #include "port.h"
 #include "regexp.h"
-#include "run.h"
 #include "str.h"
-#include "thread_context.h"
+#include "threading.h"
 #include "tuple.h"
 #include "utf8proc.h"
 #include "vector.h"
@@ -57,6 +66,8 @@
 #include "timer.h"
 #include "map_set.h"
 #include "pktsrc.h"
+#include "context.h"
+#include "globals.h"
 
 #include "module/module.h"
 

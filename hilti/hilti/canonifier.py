@@ -177,6 +177,7 @@ class Canonifier(object):
             current_block.addInstruction(ins)
         
         new_block = block.Block(self.currentFunction(), instructions = [], name=self.makeUniqueLabel(), may_remove=True)
+        new_block.setNext(current_block.next())
         self.addTransformedBlock(new_block)
         return new_block
     

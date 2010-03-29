@@ -1,1 +1,1 @@
-hilti: uncaught exception, ChannelEmpty (from /Users/robin/work/binpacpp/hilti/libhilti/channel.c:244)
+hilti: uncaught exception, WouldBlock (from /Users/robin/work/binpacpp/hilti/libhilti/channel.c:215)

@@ -1,0 +1,40 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out -t 1 >output 2>&1 
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void printhello(int32 i) {
+    local string s
+    
+    s = call Hilti::fmt ("%d: Before yield.", (i))
+    call Hilti::print (s, True)
+    
+    yield
+
+    s = call Hilti::fmt ("%d: After yield.", (i))
+    call Hilti::print (s, True)
+
+    return.void
+}
+
+void doSchedule() {
+    # This will run on the same worker as the two helles, i.e., we
+    # serialize execution here.
+    thread.schedule 1 printhello(1)
+    thread.schedule 2 printhello(2)
+    thread.schedule 3 printhello(3)
+    thread.schedule 4 printhello(4)
+    thread.schedule 5 printhello(5)
+}
+
+void run() {
+    thread.schedule 1 doSchedule()
+    
+    # Make sure doSchedule gets a chance to schedule.
+    call Hilti::sleep(2.0)
+}

@@ -21,7 +21,7 @@ void printhello() {
 
     call Hilti::print ("Before yield.", True)
     
-    thread.yield
+    yield
 
     call Hilti::print ("After yield.", True)
 

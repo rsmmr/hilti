@@ -7,27 +7,35 @@
 
 #include <stdio.h>
 
-#include "exceptions.h"
-
 struct __hlt_list;
 
-// Configuration handling structures and functions for the HILTI run-time.
+/// Configuration parameters for the HILTI run-time system. 
 typedef struct
 {
-    unsigned num_threads;
-    long sleep_ns;
-    unsigned watchdog_s;
+    /// Number of worker threads to spawn.
+    unsigned num_workers;
+    
+    /// Seconds to sleep when worker thread is idle.
+    double time_idle;
+    
+    /// Secs o wait for threads to termintate after asking them to stop. 
+    double time_terminate;
+    
+    /// Stack size for worker threads.
     size_t stack_size;
 
-    // Where debug output is to be sent. Default is stderr.
+    /// Where debug output is to be sent. Default is stderr.
     FILE* debug_out;
     
-    // List of enabled debug output streams. Default is none.
-    struct __hlt_list* debug_streams; // list<string> 
-} hilti_config;
+    /// List of enabled debug output streams. This is of type
+    /// ``list<string>``. Per default, the list is empty.
+    struct __hlt_list* debug_streams; 
+} hlt_config;
 
-extern const hilti_config* hilti_config_get();
-extern void hilti_config_set(const hilti_config* new_config);
+extern const hlt_config* hlt_config_get();
+
+// This must not been called after hlt_init.
+extern void hlt_config_set(const hlt_config* new_config);
 
 extern void __hlt_config_init();
 

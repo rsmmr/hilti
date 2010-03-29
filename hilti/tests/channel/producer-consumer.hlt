@@ -23,7 +23,7 @@ module Main
 import Hilti
 
 void produce(ref<channel<int32,0>> ch, int32 x) {
-    channel.write ch x
+    channel.write_try ch x
 
     local string str
     str = call Hilti::fmt("produced %d", (x))
@@ -32,7 +32,7 @@ void produce(ref<channel<int32,0>> ch, int32 x) {
 
 void consume(ref<channel<int32,0>> ch) {
     local int32 x
-    x = channel.read ch
+    x = channel.read_try ch
     
     local string str
     str = call Hilti::fmt("consumed %d", (x))

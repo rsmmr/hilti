@@ -9,67 +9,76 @@
 
 #include "exceptions.h"
 
-typedef int64_t hlt_channel_size;
+/// Type for current size and capacity of a channel.
+typedef int64_t hlt_channel_capacity;
 typedef struct hlt_channel hlt_channel;
 
-// A gc'ed chunk of memory used by the channel.
-typedef struct hlt_channel_chunk hlt_channel_chunk;
+/// Creates a new channel. The channel's capacity can be either bounded or
+/// unbounded. 
+/// 
+/// item_type: The type of the items written into the channel. 
+/// 
+/// capacity: The maximum capacity of the channel, or zero if unbounded. 
+/// 
+/// excpt: &
+/// 
+/// Returns: The new channel.
+extern hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt);
 
-    // %doc-hlt_channel-start
-struct hlt_channel {
-    const hlt_type_info* type;        /* Type information of the channel's data type. */
-    hlt_channel_size capacity;        /* Maximum number of channel items. */
-    volatile hlt_channel_size size;   /* Current number of channel items. */
-
-    size_t chunk_cap;                   /* Chunk capacity of the next chunk. */
-    hlt_channel_chunk* rc;            /* Pointer to the reader chunk. */
-    hlt_channel_chunk* wc;            /* Pointer to the writer chunk. */
-    void* head;                         /* Pointer to the next item to read. */
-    void* tail;                         /* Pointer to the first empty slot for writing. */
-
-    pthread_mutex_t mutex;              /* Synchronizes access to the channel. */
-    pthread_cond_t empty_cv;            /* Condition variable for an empty channel. */
-    pthread_cond_t full_cv;             /* Condition variable for a full channel. */
-};
-    // %doc-hlt_channel-end
-
-/* FIXME: This struct represents the type parameters that are currently only
- * available at the HILTI layer. The compiler should eventually autogenerate
- * such structs.
- */
-typedef struct hlt_channel_type_parameters
-{
-    hlt_type_info* item_type;
-    uint64_t capacity;
-} hlt_channel_params;
-
-
-// Returns a readable representation of a channel.
-extern hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t options, hlt_exception** excpt);
-
-// Creates a new channel.
-extern hlt_channel* hlt_channel_new(const hlt_type_info* type, hlt_exception** excpt);
-
-// Deletes a channel.
-extern void hlt_channel_destroy(hlt_channel* ch, hlt_exception** excpt);
-
-// Write an item into a channel. If the channel is full, the function blocks
-// until an item is read from the channel.
+/// Write an item into a channel. If the channel has already reached its
+/// capacity, the function blocks until an item is read from the channel.
+/// 
+/// ch: The channel to write into. 
+/// 
+/// data: The item to write. 
+/// 
+/// excpt: &
+/// 
+/// Note: When the write blocks, the function does not yield processing in
+/// any form (because we can't from a C function).
 extern void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt);
 
-// Try to write an item into a channel. If the channel is full, an exception is
-// thrown indicating that the channel was full.
-extern void hlt_channel_try_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt);
+/// Attemtps to write an item into a channel. If the channel has already
+/// reached its capacity, a ChannelFull exception is thrown.
+/// 
+/// ch: The channel to write into. 
+/// 
+/// data: The item to write. 
+/// 
+/// excpt: &
+extern void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt);
 
-// Read an item from a channel. If the channel is empty, the function blocks
-// until an item is written to the channel.
+/// Reads an item from a channel. If the channel is empty, the function
+/// blocks until an item is written to the channel.
+/// 
+/// ch: The channel to read from. 
+/// 
+/// excpt: &
+/// 
+/// Returns: A pointer to the read item. 
+/// 
+/// Note: When the read blocks, the function does not yield processing in any
+/// form (because we can't from a C function).
 extern void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt);
 
-// Try to read an element from the channel. If the channel is empty, an
-// exception is thrown indicating that the channel was empty. 
-extern void* hlt_channel_try_read(hlt_channel* ch, hlt_exception** excpt);
+/// Attempts to read an item from a channel. If the channel is empty, 
+/// a ChannelEmpty exception is thrown.
+/// 
+/// ch: The channel to read from. 
+/// 
+/// excpt: &
+/// 
+/// Returns: A pointer to the read item. 
+extern void* hlt_channel_read_try(hlt_channel* ch, hlt_exception** excpt);
 
-// Returns the current channel size, i.e., the number of items in the channel.
-extern hlt_channel_size hlt_channel_get_size(hlt_channel* ch, hlt_exception** excpt);
+/// Returns the current channel size, i.e., the number of items in the
+/// channel.
+/// 
+/// ch: The channel.
+/// 
+/// excpt: &
+/// 
+/// Returns: The channel's current size. 
+extern hlt_channel_capacity hlt_channel_size(hlt_channel* ch, hlt_exception** excpt);
 
 #endif

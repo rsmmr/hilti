@@ -18,14 +18,13 @@ set(CMAKE_C_FLAGS "-g -std=c99 -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/justr
 include(EnableLLVM)
 
 set(SRCS
-    exceptions.c utf8proc.c init.c memory.c string.c
-    int.c double.c bool.c tuple.c channel.c enum.c
-    bytes.c config.c schedulers.c thread_context.c run.c
-    addr.c port.c vector.c list.c net.c regexp.c debug.c
-    bitset.c context.c caddr.c struct.c timer.c map_set.c
-    pktsrc-pcap.c continuation.c
+    exceptions.c utf8proc.c init.c memory.c string.c int.c double.c
+    bool.c tuple.c channel.c enum.c bytes.c config.c threading.c 
+    addr.c port.c vector.c list.c net.c regexp.c debug.c bitset.c
+    context.c caddr.c struct.c timer.c map_set.c pktsrc-pcap.c
+    continuation.c globals.c
     
-    module/fmt.c module/print.c module/abort.c
+    module/fmt.c module/print.c module/misc.c
     
     3rdparty/libpqueue/src/pqueue.c
     )

@@ -332,104 +332,7 @@ class CallTailResult(Instruction):
         
         cg.llvmTailCall(func, frame=frame)
         
-@hlt.instruction("thread.yield", terminator=True)
-class ThreadYield(Instruction):
-    """
-    Schedules the next block on the same worker thread and
-    returns to the scheduler to allow another virtual thread
-    to run.
-    
-    Todo: Unify this with ``yield``
-    """
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
-        canonifier.splitBlock(self, add_flow_dbg=True)
-    
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
         
-        # Create a 'void *' type. (in LLVM it's pointer to i8)
-        voidPtrType = cg.llvmTypeGenericPointer()
-        
-        # Get the next block as a function pointer.
-        block = cg.currentBlock()
-        nextBlock = cg.currentFunction().lookupBlock(block.next())
-        assert nextBlock
-        llvmFunc = cg.llvmFunctionForBlock(nextBlock) 
-        castedLLVMFunc = cg.builder().bitcast(llvmFunc, voidPtrType)
-    
-        # Get the current frame.
-        frame = cg.llvmCurrentFramePtr()
-    
-        # Get an LLVM handle for the worker scheduler function.
-        schedFunc = cg.llvmCFunctionInternal('__hlt_local_schedule_job')
-    
-        # Cast the frame to 'void *'.
-        castedFrame = cg.builder().bitcast(frame, voidPtrType, 'castedFrame')
-    
-        # Generate call to the worker scheduler.
-        call = cg.builder().call(schedFunc, [castedLLVMFunc, castedFrame])
-        call.calling_convention = llvm.core.CC_C
-    
-        # This is a terminator instructor, so we need to generate a tail call to the next block.
-        cg.llvmTailCall(nextBlock, frame)
-        
-@hlt.instruction("thread.schedule", op1=cIntegerOfWidth(32), op2=cFunction, op3=cTuple, terminator=False)
-class ThreadSchedule(Instruction):
-    """
-    Schedules a function call onto a virtual thread.
-    """
-    def validate(self, vld):
-        Instruction.validate(self, vld)
-        
-        func = self.op2().value().function()
-        if not _checkFunc(vld, self, func, [function.CallingConvention.HILTI]):
-            return
-    
-        rt = func.type().resultType()
-        
-        if rt != type.Void:
-            vld.error(self, "thread.schedule used to call a function that returns a value")
-        
-        _checkArgs(vld, self, func, self.op3())
-    
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
-        
-        # Get standard information for frame.
-        (contNormFunc, contNormFrame, contExceptFunc, contExceptFrame) = _getStandardFrame(cg)
-    
-        # Get the virtual thread number.
-        vthread = cg.llvmOp(self.op1().coerceTo(cg, type.Integer(32)))
-    
-        # Get the function to schedule.
-        func = cg.lookupFunction(self.op2().value())
-        assert func
-        llvmFunc = cg.llvmFunction(func)
-    
-        # Get a pointer to the function.
-        funcPtrType = cg.llvmTypeBasicFunctionPtr()
-        castedFunc = cg.builder().bitcast(llvmFunc, funcPtrType)
-    
-        # Get the function arguments.
-        args = self.op3().value()
-    
-        # Generate the frame for the function.
-        frame = cg.llvmMakeFunctionFrame(cg, func, args, contNormFunc, contNormFrame, contExceptFunc, contExceptFrame)
-    
-        # Create a 'void *' type. (in LLVM it's pointer to i8)
-        voidPtrType = cg.llvmTypeGenericPointer()
-    
-        # Get an LLVM handle for the global scheduler function.
-        schedFunc = cg.llvmCFunctionInternal('__hlt_global_schedule_job')
-    
-        # Cast the frame to 'void *'.
-        castedFrame = cg.builder().bitcast(frame, voidPtrType, 'castedFrame')
-    
-        # Generate call to the global scheduler.
-        call = cg.builder().call(schedFunc, [vthread, castedFunc, castedFrame])
-        call.calling_convention = llvm.core.CC_C
-    
 @hlt.instruction("yield", terminator=True)
 class Yield(Instruction):
     """Yields processing back to the current scheduler, to be resumed later.
@@ -450,14 +353,7 @@ class Yield(Instruction):
         assert next
         
         succ = cg.llvmFunctionForBlock(next) 
-
-        # Save where we want to resume.
-        cont = cg.llvmNewContinuation(succ, cg.llvmCurrentFrameDescriptor())
-        cg.llvmExecutionContextSetResume(cont)
-        
-        # Transfer to scheduler, as defined in the yield attribute. 
-        yield_ = cg.llvmExecutionContextYield()
-        cg.llvmResumeContinuation(yield_)
+        cg.llvmYield(succ)
         
 @hlt.constraint("( (value, destination), ...)")
 def _switchTuple(ty, op, i):

@@ -10,6 +10,7 @@ module Hilti
 declare "C-HILTI" void print(any obj, bool newline = True)
 declare "C-HILTI" string fmt(string fmt, tuple<*> vals)
 declare "C-HILTI" void abort()
+declare "C-HILTI" void sleep(double secs)
 
 # # FIXME: Inconsistent naming in the C layer.
 # exception Yield_Exception

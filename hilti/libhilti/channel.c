@@ -26,18 +26,31 @@ static hlt_string_constant postfix = { 1, ">" };
 static hlt_string_constant separator = { 1, "," };
 
 // A gc'ed chunk of memory used by the channel.
-struct hlt_channel_chunk
-{
-    size_t capacity;                /* Maximum number of items. */
-    size_t wcnt;                    /* Number of items written. */
-    size_t rcnt;                    /* Number of items read. */
-    void* data;                     /* Chunk data. */
-    hlt_channel_chunk* next;      /* Pointer to the next chunk. */
+typedef struct hlt_channel_chunk {
+    size_t capacity;                 /* Maximum number of items. */
+    size_t wcnt;                     /* Number of items written. */
+    size_t rcnt;                     /* Number of items read. */
+    void* data;                      /* Chunk data. */
+    struct hlt_channel_chunk* next; /* Pointer to the next chunk. */
+} hlt_channel_chunk;
+
+struct hlt_channel {
+    const hlt_type_info* type;      /* Type information of the channel's data type. */
+    hlt_channel_capacity capacity;      /* Maximum number of channel items. */
+    volatile hlt_channel_capacity size; /* Current number of channel items. */
+
+    size_t chunk_cap;               /* Chunk capacity of the next chunk. */
+    hlt_channel_chunk* rc;          /* Pointer to the reader chunk. */
+    hlt_channel_chunk* wc;          /* Pointer to the writer chunk. */
+    void* head;                     /* Pointer to the next item to read. */
+    void* tail;                     /* Pointer to the first empty slot for writing. */
+
+    pthread_mutex_t mutex;          /* Synchronizes access to the channel. */
+    pthread_cond_t empty_cv;        /* Condition variable for an empty channel. */
+    pthread_cond_t full_cv;         /* Condition variable for a full channel. */
 };
 
-
-// Creates a new gc'ed channel chunk.
-static hlt_channel_chunk* hlt_chunk_create(size_t capacity, int16_t item_size, hlt_exception** excpt)
+static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, hlt_exception** excpt)
 {
     hlt_channel_chunk *chunk = hlt_gc_malloc_non_atomic(sizeof(hlt_channel_chunk));
     if ( ! chunk ) {
@@ -60,7 +73,7 @@ static hlt_channel_chunk* hlt_chunk_create(size_t capacity, int16_t item_size, h
 }
 
 // Internal helper function performing a read operation.
-static inline void* hlt_channel_read_item(hlt_channel* ch)
+static inline void* _hlt_channel_read_item(hlt_channel* ch)
 {
     if ( ch->rc->rcnt == ch->rc->capacity ) {
         assert(ch->rc->next);
@@ -79,7 +92,7 @@ static inline void* hlt_channel_read_item(hlt_channel* ch)
 }
 
 // Internal helper function performing a write operation.
-static inline int hlt_channel_write_item(hlt_channel* ch, void* data, hlt_exception** excpt)
+static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_exception** excpt)
 {
     if ( ch->wc->wcnt == ch->wc->capacity ) {
         if ( ch->capacity )
@@ -88,7 +101,7 @@ static inline int hlt_channel_write_item(hlt_channel* ch, void* data, hlt_except
         else if ( ch->chunk_cap < MAX_CHUNK_SIZE )
             ch->chunk_cap *= 2;
 
-        ch->wc->next = hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt);
+        ch->wc->next = _hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt);
         if ( ! ch->wc->next ) {
             hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
             return 1;
@@ -105,6 +118,116 @@ static inline int hlt_channel_write_item(hlt_channel* ch, void* data, hlt_except
     ++ch->size;
 
     return 0;
+}
+
+hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt)
+{
+    hlt_channel *ch = hlt_gc_malloc_non_atomic(sizeof(hlt_channel));
+    if ( ! ch ) {
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
+        return 0;
+    }
+
+    ch->type = item_type;
+    ch->capacity = capacity;
+    ch->size = 0;
+
+    ch->chunk_cap = INITIAL_CHUNK_SIZE;
+    ch->rc = ch->wc = _hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt);
+    if ( ! ch->rc ) {
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
+        return 0;
+    }
+
+    ch->head = ch->tail = ch->rc->data;
+
+    pthread_mutex_init(&ch->mutex, NULL);
+    pthread_cond_init(&ch->empty_cv, NULL);
+    pthread_cond_init(&ch->full_cv, NULL);
+
+    return ch;
+}
+
+void _hlt_channel_destroy(hlt_channel* ch, hlt_exception** excpt)
+{
+    // XXX fianlzuer needed XXX
+
+    pthread_mutex_destroy(&ch->mutex);
+    pthread_cond_destroy(&ch->empty_cv);
+    pthread_cond_destroy(&ch->full_cv);
+}
+
+void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt)
+{ 
+    pthread_mutex_lock(&ch->mutex);
+
+    if ( _hlt_channel_write_item(ch, data, excpt) )
+        goto unlock_exit;
+
+    pthread_cond_signal(&ch->empty_cv);
+
+unlock_exit:
+    pthread_mutex_unlock(&ch->mutex);
+    return;
+}
+
+void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt)
+{ 
+    pthread_mutex_lock(&ch->mutex);
+
+    if ( ch->capacity && ch->size == ch->capacity ) {
+        hlt_set_exception(excpt, &hlt_exception_would_block, 0);
+        goto unlock_exit;
+    }
+
+    if ( _hlt_channel_write_item(ch, data, excpt) )
+        goto unlock_exit;
+
+    pthread_cond_signal(&ch->empty_cv);
+
+unlock_exit:
+    pthread_mutex_unlock(&ch->mutex);
+    return;
+}
+
+void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt)
+{
+    pthread_mutex_lock(&ch->mutex);
+
+    while ( ch->size == 0 )
+        pthread_cond_wait(&ch->empty_cv, &ch->mutex);
+
+    void *item = _hlt_channel_read_item(ch);
+    
+    pthread_cond_signal(&ch->full_cv);
+
+    pthread_mutex_unlock(&ch->mutex);
+    return item;
+}
+
+void* hlt_channel_read_try(hlt_channel* ch, hlt_exception** excpt)
+{
+    pthread_mutex_lock(&ch->mutex);
+
+    void *item = 0;
+
+    if ( ch->size == 0 ) {
+        hlt_set_exception(excpt, &hlt_exception_would_block, 0);
+        goto unlock_exit;
+    }
+
+    item = _hlt_channel_read_item(ch);
+    
+    pthread_cond_signal(&ch->full_cv);
+
+unlock_exit:
+    pthread_mutex_unlock(&ch->mutex);
+    return item;
+}
+
+hlt_channel_capacity hlt_channel_size(hlt_channel* ch, hlt_exception** excpt)
+{
+    return ch->size;
 }
 
 hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t options, hlt_exception** excpt)
@@ -143,118 +266,4 @@ hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t o
     }
 
     return hlt_string_concat(s, &postfix, excpt);
-}
-
-
-hlt_channel* hlt_channel_new(const hlt_type_info* type, hlt_exception** excpt)
-{
-    assert(type->type == HLT_TYPE_CHANNEL);
-    assert(type->num_params == 2);
-
-    hlt_channel_params* params = (hlt_channel_params*) &type->type_params;
-
-    hlt_channel *ch = hlt_gc_malloc_non_atomic(sizeof(hlt_channel));
-    if ( ! ch ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
-
-    ch->type = params->item_type;
-    ch->capacity = params->capacity;
-    ch->size = 0;
-
-    ch->chunk_cap = INITIAL_CHUNK_SIZE;
-    ch->rc = ch->wc = hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt);
-    if ( ! ch->rc ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
-
-    ch->head = ch->tail = ch->rc->data;
-
-    pthread_mutex_init(&ch->mutex, NULL);
-    pthread_cond_init(&ch->empty_cv, NULL);
-    pthread_cond_init(&ch->full_cv, NULL);
-
-    return ch;
-}
-
-void hlt_channel_destroy(hlt_channel* ch, hlt_exception** excpt)
-{
-    pthread_mutex_destroy(&ch->mutex);
-    pthread_cond_destroy(&ch->empty_cv);
-    pthread_cond_destroy(&ch->full_cv);
-}
-
-void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt)
-{ 
-    pthread_mutex_lock(&ch->mutex);
-
-    if ( hlt_channel_write_item(ch, data, excpt) )
-        goto unlock_exit;
-
-    pthread_cond_signal(&ch->empty_cv);
-
-unlock_exit:
-    pthread_mutex_unlock(&ch->mutex);
-    return;
-}
-
-void hlt_channel_try_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt)
-{ 
-    pthread_mutex_lock(&ch->mutex);
-
-    if ( ch->capacity && ch->size == ch->capacity ) {
-        hlt_set_exception(excpt, &hlt_channel_full, 0);
-        goto unlock_exit;
-    }
-
-    if ( hlt_channel_write_item(ch, data, excpt) )
-        goto unlock_exit;
-
-    pthread_cond_signal(&ch->empty_cv);
-
-unlock_exit:
-    pthread_mutex_unlock(&ch->mutex);
-    return;
-}
-
-void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt)
-{
-    pthread_mutex_lock(&ch->mutex);
-
-    while ( ch->size == 0 )
-        pthread_cond_wait(&ch->empty_cv, &ch->mutex);
-
-    void *item = hlt_channel_read_item(ch);
-    
-    pthread_cond_signal(&ch->full_cv);
-
-    pthread_mutex_unlock(&ch->mutex);
-    return item;
-}
-
-void* hlt_channel_try_read(hlt_channel* ch, hlt_exception** excpt)
-{
-    pthread_mutex_lock(&ch->mutex);
-
-    void *item = 0;
-
-    if ( ch->size == 0 ) {
-        hlt_set_exception(excpt, &hlt_channel_empty, 0);
-        goto unlock_exit;
-    }
-
-    item = hlt_channel_read_item(ch);
-    
-    pthread_cond_signal(&ch->full_cv);
-
-unlock_exit:
-    pthread_mutex_unlock(&ch->mutex);
-    return item;
-}
-
-hlt_channel_size hlt_channel_get_size(hlt_channel* ch, hlt_exception** excpt)
-{
-    return ch->size;
 }

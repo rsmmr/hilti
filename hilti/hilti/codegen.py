@@ -423,11 +423,11 @@ class CodeGen(objcache.Cache):
         its second parameter.
 
         If there is no current function with HILTI linkage, we return the
-        context pointer for the main thread (i.e., virtual thread 0). 
+        context pointer for the primary thread. 
         
         Returns: llvm.core.Value - The current context pointer.
         """
-        return self._llvm.ctxptr if self._llvm.ctxptr else self._llvmExecutionContextThreadZeroPtr()
+        return self._llvm.ctxptr if self._llvm.ctxptr else self._llvmGlobalExecutionContextPtr()
     
     def llvmCurrentEndOfStackSegmentPtr(self):
         """Returns a pointer to (one beyond) the end of the current
@@ -573,7 +573,7 @@ class CodeGen(objcache.Cache):
         Returns: llvm.core.Value - The global.
         """
         return self.builder().load(self.llvmGlobalInternalPtr(name))
-        
+
     def llvmGlobalInternalPtr(self, name):
         """Returns a pointer to an externally defined global. The global must
         be defined with the given name in ``libhilti.ll`` , and it will be
@@ -635,8 +635,6 @@ class CodeGen(objcache.Cache):
         except llvm.LLVMException, e:
             util.error("cannot import %s: %s" % (prototypes, e))
     
-        
-            
     ### Get the LLVM-level name for for something.
     
     def nameFunction(self, func, prefix=True, internal=False):
@@ -990,6 +988,24 @@ class CodeGen(objcache.Cache):
 
         return glob    
 
+    ### Threading related.
+    
+    def llvmGlobalThreadMgrPtr(self):
+         """Returns a pointer to the global thread manager. The value of the
+         pointer will be null if threading has not been initialized. 
+         
+         Returns: llvm.core.Type - The pointer of type
+         ``__hlt_execution_context*``.
+         """
+         return self.llvmGlobalInternal("__hlt_global_thread_mgr")
+
+    def llvmTypeVThreadID(self):
+        """Returns the type used for storingi the IDs of virtual threads.
+        
+        Returns: llvm.core.Type - The type.
+        """
+        return self.llvmTypeInternal("__hlt_vthread_id")
+     
     ### Helpers to construct and use LLVM constructs/objects.
 
     def llvmConstInt(self, n, width):
@@ -1652,7 +1668,12 @@ class CodeGen(objcache.Cache):
         return_func = self._llvmBoundFunctionReturnFunc() # Always returns to our own function.
     
         frame = self.llvmMakeFunctionFrame(func, args, return_func, no_frame, return_func, no_frame, stack=stack)
-        
+
+        # We set the exception handler's frame to the frame itself so that we
+        # get access to the exception field without the next to create another
+        # frame. 
+        self.llvmFrameSetExcptFrame(frame, frame)
+
         llvm_func = self.llvmFunctionForBlock(func)
         return self.llvmNewContinuation(llvm_func, frame)        
 
@@ -2010,27 +2031,44 @@ class CodeGen(objcache.Cache):
             
         resume = self.builder().gep(ctx, [self.llvmGEPIdx(0), self.llvmGEPIdx(3)])
         self.llvmAssign(cont, resume)
+
+    def llvmExecutionContextVThreadID(self, ctx=None):
+        """Returns the ``vid`` field from an execution context. 
         
-    def _llvmExecutionContextThreadZeroPtr(self):
-         """Returns a pointer to the execution context for virtual thread 0. 
-         This is the context that will be used for the main virtual thread
-         (thread 0) in a multi-threaded context, and for the whole program in
-         a single-threaded context.
+        ctx: llvm.core.Value - Pointer to the execution context. If not given,
+        ~~llvmCurrentExecutionContextPtr is used. 
+        
+        Returns: llvm.core.Value - The thread ID. 
+        """
+        if not ctx:
+            ctx = self.llvmCurrentExecutionContextPtr()
+            
+        vid = self.builder().gep(ctx, [self.llvmGEPIdx(0), self.llvmGEPIdx(0)])
+        return self.builder().load(vid)
+    
+    def llvmYield(self, resume):
+        """Generates code to yield execution back to caller/scheduler. 
+        
+        resume: llvm.core.Function - The function where to resume execution
+        later. 
+        """
+        
+        # Save where we want to resume.
+        cont = cg.llvmNewContinuation(resume, cg.llvmCurrentFrameDescriptor())
+        cg.llvmExecutionContextSetResume(cont)
+        
+        # Transfer to scheduler, as defined in the execution context's yield
+        # attribute. 
+        yield_ = cg.llvmExecutionContextYield()
+        cg.llvmResumeContinuation(yield_)
+    
+    def _llvmGlobalExecutionContextPtr(self):
+         """Returns a pointer to the execution context for the main thread. 
          
          Returns: llvm.core.Type - The pointer of type
          ``__hlt_execution_context*``.
          """
-         
-         def __llvmExecutionContextThreadZeroPtr():
-             pty = self.llvmTypeExecutionContextPtr()
-             glob = self.llvmCurrentModule().add_global_variable(pty, "__hlt_execution_context_vthread_0")
-             glob.initializer = llvm.core.Constant.null(pty)
-             glob.linkage = llvm.core.LINKAGE_INTERNAL
-             # The global will be initialized by the code created by
-             # llvmGenerateExecutionContextFunc.
-             return glob
-         
-         return self.cache("__hlt_execution_context_vthread_0", __llvmExecutionContextThreadZeroPtr)
+         return self.llvmGlobalInternal("__hlt_global_execution_context")
     
     def _llvmGenerateExecutionContextFunc(self):
         """Generates a function allocating a new set of globals. The function
@@ -2039,9 +2077,9 @@ class CodeGen(objcache.Cache):
         global created so far by ~~llvmNewGlobalVar. All the globals in there
         will be initialized with their initial values. 
         
-        The function also installs code for creating virtual thread 0's
-        context at startup. Use ~~_llvmExecutionContextThreadZeroPtr to access
-        that context. 
+        The function also installs code for creating main thread's execution
+        context at startup. Use ~~_llvmGlobalExecutionContextPtr to access that
+        context. 
         
         Returns: llvm.core.StructType - The type.
         
@@ -2054,7 +2092,7 @@ class CodeGen(objcache.Cache):
         ty_ptr = self.llvmTypeExecutionContextPtr()
         
         # Create the function.
-        tid = self.llvmTypeInternal("__hlt_thread_id")
+        tid = self.llvmTypeVThreadID()
         ft = llvm.core.Type.function(ty_ptr, [tid])
         func = llvm.core.Function.new(self.llvmCurrentModule(), ft, "__hlt_execution_context_new")
         func.linkage = llvm.core.LINKAGE_LINKONCE_ODR
@@ -2107,10 +2145,10 @@ class CodeGen(objcache.Cache):
         self.popBuilder()
         self._llvm.func = None
         
-        # Add a ctor function to initialize vthread 0's context. 
+        # Add a ctor function to initialize the global execution context. 
         def _initContext(cg):
-            ctx = self.llvmSafeCall(func, [self.llvmConstInt(0, tid.width)])
-            glob = self._llvmExecutionContextThreadZeroPtr()
+            ctx = self.llvmSafeCall(func, [self.llvmConstInt(-1, tid.width)])
+            glob = self.llvmGlobalInternalPtr("__hlt_global_execution_context")
             cg.llvmAssign(ctx, glob)
         
         self.llvmNewGlobalCtor(_initContext)
@@ -2493,7 +2531,7 @@ class CodeGen(objcache.Cache):
         
         self.llvmAssign(contNormFunc, self._llvmAddrInBasicFrame(fptr, 0, 0))
         self.llvmAssign(contNormFrame.fptr(), self._llvmAddrInBasicFrame(fptr, 0, 1))
-        self.llvmAssign(contNormFrame.eoss(), self._llvmAddrInBasicFrame(fptr, 0, 2)) ## XXXX
+        self.llvmAssign(contNormFrame.eoss(), self._llvmAddrInBasicFrame(fptr, 0, 2))
         self.llvmAssign(contExceptFunc, self._llvmAddrInBasicFrame(fptr, 1, 0))
         self.llvmAssign(contExceptFrame.fptr(), self._llvmAddrInBasicFrame(fptr, 1, 1))
         self.llvmAssign(contExceptFrame.eoss(), self._llvmAddrInBasicFrame(fptr, 1, 2))
@@ -2581,6 +2619,20 @@ class CodeGen(objcache.Cache):
         nfptr = self.builder().load(self._llvmAddrInBasicFrame(fptr, 1, 1))
         neoss = self.builder().load(self._llvmAddrInBasicFrame(fptr, 1, 2))
         return self.makeFrameDescriptor(nfptr, neoss)
+    
+    def llvmFrameSetExcptFrame(self, frame, val):
+        """Sets the frame descriptor for the exeptional successor stored in a
+        frame.  
+        
+        frame: ~~FrameDescriptor - The frame descriptor to update. 
+        
+        val: ~~FrameDescriptor - The frame descriptor to write into the
+        exeception handler's frame field. 
+        """
+        
+        fptr = frame.fptr()
+        self.llvmAssign(val.fptr(), self._llvmAddrInBasicFrame(fptr, 1, 1))
+        self.llvmAssign(val.eoss(), self._llvmAddrInBasicFrame(fptr, 1, 2))
         
     def llvmFrameException(self, frame=None):
         """Returns the exception field stored in a frame.  
@@ -2834,8 +2886,14 @@ class CodeGen(objcache.Cache):
         Returns: llvm.core.Value - The LLVM function.
         """
         return self.llvmFunction(block)
-        
-    def llvmCallC(self, func, args=[], prototype=None, abort_on_except=False):
+
+    def llvmCallCWithRetry(self, func, args=[], result=None):
+        """XXX"""
+        # We need to create a new function here that does the C call. That
+        # functiom will then be the destination for a resume continuation. 
+        pass
+    
+    def llvmCallC(self, func, args=[], prototype=None, abort_on_except=False, _retry=False):
         """Calls a function with C/C_HILTI linkage. This method cannot be used
         for calling HILTI functions; use ~~llvmTailCall instead. 
         
@@ -2856,6 +2914,12 @@ class CodeGen(objcache.Cache):
         called function raises an exception. If this is set, the method
         doesn't need a current framepointer and can be used from non-HILTI
         functions. 
+        
+        _retry: bool - XXXX If true, we specifically check for a ``WouldBlock``
+        exception after the call. If that is found, we yield processing back
+        to the caller/scheduler and then retry the same function call when
+        we're resumed. This loop repeats until no ``WouldBlock`` is raised
+        anymore. 
         """
         llvm_func = None
 
@@ -2943,6 +3007,16 @@ class CodeGen(objcache.Cache):
         call.calling_convention = llvm.core.CC_C
         
         if excpt:
+            
+            if _retry:
+                # First check for a WouldBlock exception. 
+                self.builder().cmp(excpt, self.llvmGlobalInternalPtr("__hlt_exception_would_block"))
+                yes = self.llvmNewBlock("yield")
+                no = self.llvmnewBlock("no-yield")
+                self.pushBuilder(yes)
+                XXXXXX
+                
+            
             self.llvmExceptionTest(excpt, abort_on_except)
 
         if hidden_return_arg:
@@ -3305,7 +3379,7 @@ class CodeGen(objcache.Cache):
         frame = self.llvmMakeFunctionFrame(dummyfunc, [], stub_return_func, null, stub_excpt_func, null, llvm_func=stub_func, stack=stack)
 
             # Set the execution context's yield handler. 
-        ctx = self.builder().load(self._llvmExecutionContextThreadZeroPtr())
+        ctx = self._llvmGlobalExecutionContextPtr()
         yield_ = self.llvmNewContinuation(stub_excpt_func, frame)
         self.llvmExecutionContextSetYield(yield_, ctx)
         
@@ -3346,7 +3420,7 @@ class CodeGen(objcache.Cache):
         self.llvmFrameClearException(frame)
 
            # Do the call.
-        ctx = self.builder().load(self._llvmExecutionContextThreadZeroPtr())
+        ctx = self._llvmGlobalExecutionContextPtr()
         call = self.llvmSafeCall(succ, [succ_frame.fptr(), succ_frame.eoss(), ctx])
         call.calling_convention = llvm.core.CC_FASTCALL
         

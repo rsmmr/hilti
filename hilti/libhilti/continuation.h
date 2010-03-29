@@ -3,13 +3,14 @@
 #ifndef HILTI_CONTINUATION_H
 #define HILTI_CONTINUATION_H
 
-#include "context.h"
+struct hlt_execution_context;
+struct hlt_exception;
 
 #define HLT_BOUND_FUNCTION_STACK_SIZE 1024 ///< The initial amount of stack size to allocate for bound functions. 
 
 /// A continuation instance. We don't define the attributes further as they
 /// aren't usable from C. 
-typedef struct {
+typedef struct hlt_continuation {
     void *succ;
     void *frame;
     void *eoss;

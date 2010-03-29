@@ -23,10 +23,10 @@ hlt_exception_type hlt_exception_value_error = { "ValueError", &hlt_exception_un
 hlt_exception_type hlt_exception_out_of_memory = { "OutOfMemory", 0, 0 };
 hlt_exception_type hlt_exception_wrong_arguments = { "WrongArguments", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_undefined_value = { "UndefinedValue", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_channel_full = { "ChannelFull", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_channel_empty = { "ChannelEmpty", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_would_block = { "WouldBlock", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_decoding_error = { "DecodingError", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_uncaught_thread_exception = { "ThreadException", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_no_threading = { "NoThreading", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_internal_error = { "InternalError", &hlt_exception_unspecified, &hlt_type_info_string };
 hlt_exception_type hlt_exception_os_error = { "OSError", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_overlay_not_attached = { "OverlayNotAttached", &hlt_exception_unspecified, 0 };
@@ -52,6 +52,9 @@ hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const ch
     excpt->type = type;
     excpt->cont = 0;
     excpt->arg = arg;
+    // FIXME: We don't see the vid yet, as we don't have access to the
+    // current ctx at the moment.
+    excpt->vid = HLT_VID_MAIN;
     excpt->location = location;
     excpt->fptr = 0;
     excpt->eoss = 0;
@@ -86,7 +89,8 @@ int8_t __hlt_exception_match_type(hlt_exception* excpt, hlt_exception_type* type
 static void __exception_print(const char* prefix, hlt_exception* exception)
 {
     hlt_exception* excpt = 0;
-    
+
+    flockfile(stderr);
     fprintf(stderr, "%s%s", prefix, exception->type->name);
     
     if ( exception->arg ) {
@@ -98,10 +102,16 @@ static void __exception_print(const char* prefix, hlt_exception* exception)
     if ( exception->cont )
         fprintf(stderr, ", resumable");
     
+    if ( exception->vid != HLT_VID_MAIN )
+        fprintf(stderr, " in virtual thread %d", exception->vid);
+    
     if ( exception->location )
         fprintf(stderr, " (from %s)", exception->location);
     
     fprintf(stderr, "\n");
+    
+    fflush(stderr);
+    funlockfile(stderr);
 }
 
 void hlt_exception_print(hlt_exception* exception) 
