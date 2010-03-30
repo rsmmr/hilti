@@ -30,4 +30,5 @@ void printhello() {
 
 void run() {
     thread.schedule 1 printhello()
+    call Hilti::wait_for_threads()
 }

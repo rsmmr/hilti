@@ -9,8 +9,8 @@ module Main
 import Hilti
 
 void run() {
-    local ref<channel<int64,2>> ch
-    ch = new channel<int64,2>
+    local ref<channel<int64>> ch
+    ch = new channel<int64> 2
 
     local int64 a
     local int64 b

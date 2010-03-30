@@ -78,6 +78,9 @@ void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* ar
 
 int8_t __hlt_exception_match_type(hlt_exception* excpt, hlt_exception_type* type)
 {
+    if ( ! excpt )
+        return 0;
+    
     for ( hlt_exception_type* t = excpt->type; t; t = t->parent ) {
         if ( t == type )
             return 1;

@@ -721,13 +721,13 @@ def p_type_pktsrc(p):
         p[0] = type.PktSrc(None)
         
 def p_type_channel(p):
-    """type : CHANNEL '<' type ',' CINTEGER '>'
+    """type : CHANNEL '<' type '>'
             | CHANNEL '<' '*' '>'
     """
     if p[3] != "*":
-        p[0] = type.Channel(p[3], p[5])
+        p[0] = type.Channel(p[3])
     else:
-        p[0] = type.Channel(None, 0)
+        p[0] = type.Channel(None)
         
 def p_type_iterator(p):
     """type : ITERATOR '<' type '>'

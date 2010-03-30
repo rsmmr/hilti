@@ -120,6 +120,14 @@ static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_excep
     return 0;
 }
 
+void _hlt_channel_finalizer(void* ch_ptr)
+{
+    hlt_channel* ch = ch_ptr;
+    pthread_mutex_destroy(&ch->mutex);
+    pthread_cond_destroy(&ch->empty_cv);
+    pthread_cond_destroy(&ch->full_cv);
+}
+
 hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt)
 {
     hlt_channel *ch = hlt_gc_malloc_non_atomic(sizeof(hlt_channel));
@@ -145,16 +153,9 @@ hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacit
     pthread_cond_init(&ch->empty_cv, NULL);
     pthread_cond_init(&ch->full_cv, NULL);
 
+    hlt_gc_register_finalizer(ch, _hlt_channel_finalizer);
+    
     return ch;
-}
-
-void _hlt_channel_destroy(hlt_channel* ch, hlt_exception** excpt)
-{
-    // XXX fianlzuer needed XXX
-
-    pthread_mutex_destroy(&ch->mutex);
-    pthread_cond_destroy(&ch->empty_cv);
-    pthread_cond_destroy(&ch->full_cv);
 }
 
 void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt)

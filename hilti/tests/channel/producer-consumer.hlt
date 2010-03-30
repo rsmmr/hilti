@@ -22,7 +22,7 @@ module Main
 
 import Hilti
 
-void produce(ref<channel<int32,0>> ch, int32 x) {
+void produce(ref<channel<int32>> ch, int32 x) {
     channel.write_try ch x
 
     local string str
@@ -30,7 +30,7 @@ void produce(ref<channel<int32,0>> ch, int32 x) {
     call Hilti::print(str)
 }
 
-void consume(ref<channel<int32,0>> ch) {
+void consume(ref<channel<int32>> ch) {
     local int32 x
     x = channel.read_try ch
     
@@ -41,13 +41,13 @@ void consume(ref<channel<int32,0>> ch) {
 
 
 void run() {
-    local ref<channel<int32,0>> ch
+    local ref<channel<int32>> ch
     local int32 count
     local int32 limit
     local bool eq
     local string str
 
-    ch = new channel<int32,0>
+    ch = new channel<int32>
 
     count = int.div 7 7
     limit = int.mul 1 42

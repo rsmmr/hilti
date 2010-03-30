@@ -9,8 +9,8 @@ module Main
 import Hilti
 
 void run() {
-    local ref<channel<int32,0>> ch
-    ch = new channel<int32,0>
+    local ref<channel<int32>> ch
+    ch = new channel<int32>
     local int32 a
     local int32 b
     local int32 c

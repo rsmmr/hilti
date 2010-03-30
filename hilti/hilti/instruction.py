@@ -7,6 +7,10 @@ import constant
 import node
 import operand
 import type
+import block
+import util
+
+import llvm.core
 
 class Instruction(node.Node):
     """Base class for all instructions supported by the HILTI language.
@@ -172,6 +176,80 @@ class Instruction(node.Node):
 
         visitor.visitPost(self)
 
+class BlockingInstruction(Instruction):
+    """An instruction that can potentially block when executed. If so,
+    execution yields back to the scheduler an the instruction will be executed
+    again upon resuming. 
+    
+    Currently, the instruction's functionality must be implemented as a call
+    to C function; we might generalize that at some point though. The function
+    must throw ``WouldBlock`` exception to signal blocking and return to its
+    caller.
+    
+    Derived classes must override ~~cCall, and can override ~~cResult.
+    
+    See ~~Instruction for arguments. 
+    """
+    def __init__(self, op1=None, op2=None, op3=None, target=None, location=None):
+        Instruction.__init__(self, op1, op2, op3, target, location)
+        
+    def cCall(self, cg):
+        """Returns the name of the C function to call for this instruction,
+        and the calls arguments. 
+        
+        Must be overridden by derived classes.
+        
+        cg: ~~CodeGen - The code generator to use.
+        
+        Returns: tuple (func, args) - *func* is the name of the C function, and
+        *arg* a list of arguments to pass into it. 
+        """
+        util.internal_error("cCall() not overridden")
+    
+    def cResult(self, cg, result):
+        """Receives the C calls return value. It can, e.g., use
+        ~~llvmStoreInTarget() to store the value. This function will only be
+        called if the instruction has a target operand. 
+        
+        Can be overridden by derived classes. The default implementation does
+        nothing. 
+        
+        cg: ~~CodeGen - The code generator to use.
+        
+        result: llvm.core.Value - The return value.
+        """
+        pass
+        
+    def canonify(self, canonifier):
+        Instruction.canonify(self, canonifier)
+        
+        # We rewrite the instruction into the form
+        #
+        #    <instruction>
+        #    jump new_block
+        #  newblock:
+        #    <...>
+        #
+        # This ensures that we capture a continuation at newblock. 
+        canonifier.deleteCurrentInstruction()
+        
+        current_block = canonifier.currentTransformedBlock()
+        current_block.addInstruction(self)
+        
+        new_block = block.Block(canonifier.currentFunction(), name=canonifier.makeUniqueLabel())
+        new_block.setNext(current_block.next())
+        current_block.setNext(new_block.name())
+        canonifier.addTransformedBlock(new_block)
+        
+        self._succ = new_block
+    
+    def codegen(self, cg):
+        def _result(cg, result):
+            self.cResult(cg, result)
+        
+        (cfunc, cargs) = self.cCall(cg)
+        cg.llvmCallCWithRetry(self._succ, cfunc, cargs, result_func=_result if self.target() else None)
+        
 class Operator(Instruction):
     """Class for instructions that are overloaded by their operands' types.
     While most HILTI instructions are tied to a particular type, *operators*

@@ -836,7 +836,7 @@ class CodeGen(objcache.Cache):
         array = llvm.core.Constant.array(llvm.core.Type.int(8), bytes)
         return self.llvmNewGlobalConst(name, array).bitcast(self.llvmTypeConstCharPointer())
 
-    def llvmNewBlock(self, tag):
+    def llvmNewBlock(self, tag, llvm_func=None):
         """Creates a new LLVM block. The block gets a label that is guaranteed
         to be unique within the ~~currentFunction, and it is added to that
         function's implementation.
@@ -844,9 +844,16 @@ class CodeGen(objcache.Cache):
         tag: string - If given, the postfix is added to the block's
         label.
         
+        llvm_func:  llvm.core.Function - The function to add the block to. If
+        not set, the default is the current function's implmentation.
+        
         Returns: llvm.core.Block - The new block.
         """         
-        return self._llvm.func.append_basic_block(self.nameNewLabel(tag))
+        
+        if not llvm_func:
+            llvm_func = self._llvm.func
+        
+        return llvm_func.append_basic_block(self.nameNewLabel(tag))
     
     ### Type-info related.
 
@@ -2054,21 +2061,21 @@ class CodeGen(objcache.Cache):
         """
         
         # Save where we want to resume.
-        cont = cg.llvmNewContinuation(resume, cg.llvmCurrentFrameDescriptor())
-        cg.llvmExecutionContextSetResume(cont)
+        cont = self.llvmNewContinuation(resume, self.llvmCurrentFrameDescriptor())
+        self.llvmExecutionContextSetResume(cont)
         
         # Transfer to scheduler, as defined in the execution context's yield
         # attribute. 
-        yield_ = cg.llvmExecutionContextYield()
-        cg.llvmResumeContinuation(yield_)
-    
+        yield_ = self.llvmExecutionContextYield()
+        self.llvmResumeContinuation(yield_)
+        
     def _llvmGlobalExecutionContextPtr(self):
-         """Returns a pointer to the execution context for the main thread. 
-         
-         Returns: llvm.core.Type - The pointer of type
-         ``__hlt_execution_context*``.
-         """
-         return self.llvmGlobalInternal("__hlt_global_execution_context")
+        """Returns a pointer to the execution context for the main thread. 
+        
+        Returns: llvm.core.Type - The pointer of type
+        ``__hlt_execution_context*``.
+        """
+        return self.llvmGlobalInternal("__hlt_global_execution_context")
     
     def _llvmGenerateExecutionContextFunc(self):
         """Generates a function allocating a new set of globals. The function
@@ -2887,13 +2894,89 @@ class CodeGen(objcache.Cache):
         """
         return self.llvmFunction(block)
 
-    def llvmCallCWithRetry(self, func, args=[], result=None):
-        """XXX"""
+    def llvmCallCWithRetry(self, succ, cfunc, args=[], result_func=None):
+        """Calls a C-HILTI function that can potentially block. If the
+        function wants to block (as signaled by raising an ~~WouldBlock
+        exception), execution is yielded back to the scheduler. When resuming,
+        the same call is executed again, and this process repeast until no
+        blocking is indicated. 
+        
+        succ: ~~Block - The block where execution is to continue in the
+        non-blocking case.
+        
+        func: ~Function, string, or llvm.core.Value - Either the ~~Function to
+        call; or the name of the function to call; or an LLVM function
+        previously returned by ~~llvmFunction. In the latter case *prototype*
+        must be given.
+        
+        args: list of ~~Operand, or list of tuples (llvm.core.Value, ~~Type) -
+        The arguments for the call. The automatically coerced types to what
+        the function's signature specifies where possible. 
+        
+        result_func: Python function - If the call is successful (i.e.,
+        doesn't block and doesn't throw any exceptions), this function will be
+        called. It receives the current ~~CodeGen as its first argument, and
+        and the function's return value in the form of an ``llvm.core.Value``
+        as its second arguments.
+        """
         # We need to create a new function here that does the C call. That
         # functiom will then be the destination for a resume continuation. 
-        pass
-    
-    def llvmCallC(self, func, args=[], prototype=None, abort_on_except=False, _retry=False):
+        fname = self.nameFunctionForBlock(self.currentBlock()) + "_retry"
+        ffunc = self.llvmNewHILTIFunction(self.currentFunction(), fname)
+        
+        self.llvmTailCall(ffunc)
+        
+        fblock = ffunc.append_basic_block("")
+        self.pushBuilder(fblock)
+        
+        # TODO: This is clearly a hack. Need to build a better interface
+        # for building a function while another is in progress.
+        old_func = self._llvm.func
+        old_frameptr = self._llvm.frameptr
+        old_eoss = self._llvm.eoss
+        old_ctxptr = self._llvm.ctxptr
+        
+        self._llvm.func = ffunc
+        self._llvm.frameptr = ffunc.args[0]
+        self._llvm.eoss = ffunc.args[1]
+        self._llvm.ctxptr = ffunc.args[2]
+            
+        def _excpt_test(cg, excpt):
+            # First check for a WouldBlock exception. 
+            
+            would_block = cg.llvmGlobalInternalPtr("hlt_exception_would_block")
+            cmp = cg.llvmCallCInternal("__hlt_exception_match_type", [cg.builder().load(excpt), would_block])
+            
+            yes = cg.llvmNewBlock("yield")
+            no = cg.llvmNewBlock("no-yield")
+            cg.builder().cbranch(cmp, yes, no)
+            
+            cg.pushBuilder(yes)
+            self.llvmFrameClearException()
+            cg.llvmYield(ffunc)
+            cg.popBuilder()
+            
+            cg.pushBuilder(no)
+            # Standard exception test.
+            cg.llvmExceptionTest(excpt)
+            # Leave builder on stack. 
+
+        result = self.llvmCallC(cfunc, args, excpt_test=_excpt_test)
+            
+        if result_func != None:
+            # Process return value.
+            result_func(self, result)
+        
+        fdesc = self.makeFrameDescriptor(ffunc.args[0], ffunc.args[1])
+        self.llvmTailCall(succ, frame=fdesc, ctx=ffunc.args[2])
+        self.builder().ret_void()
+        
+        self._llvm.func = old_func
+        self._llvm.frameptr = old_frameptr
+        self._llvm.eoss = old_eoss
+        self._llvm.ctxptr = old_ctxptr
+        
+    def llvmCallC(self, func, args=[], prototype=None, abort_on_except=False, excpt_test=None):
         """Calls a function with C/C_HILTI linkage. This method cannot be used
         for calling HILTI functions; use ~~llvmTailCall instead. 
         
@@ -2915,11 +2998,11 @@ class CodeGen(objcache.Cache):
         doesn't need a current framepointer and can be used from non-HILTI
         functions. 
         
-        _retry: bool - XXXX If true, we specifically check for a ``WouldBlock``
-        exception after the call. If that is found, we yield processing back
-        to the caller/scheduler and then retry the same function call when
-        we're resumed. This loop repeats until no ``WouldBlock`` is raised
-        anymore. 
+        excpt_test: Python function - A Python function that is called instead
+        of doing the standard exception test. The function receives two
+        arguments: the current ~~CodeGen, and an ``llvm.core.Value`` with the
+        current exception value as set by the called function (which will be
+        null if no exception has been raised). 
         """
         llvm_func = None
 
@@ -3007,17 +3090,10 @@ class CodeGen(objcache.Cache):
         call.calling_convention = llvm.core.CC_C
         
         if excpt:
-            
-            if _retry:
-                # First check for a WouldBlock exception. 
-                self.builder().cmp(excpt, self.llvmGlobalInternalPtr("__hlt_exception_would_block"))
-                yes = self.llvmNewBlock("yield")
-                no = self.llvmnewBlock("no-yield")
-                self.pushBuilder(yes)
-                XXXXXX
-                
-            
-            self.llvmExceptionTest(excpt, abort_on_except)
+            if excpt_test != None:
+                excpt_test(self, excpt)
+            else:
+                self.llvmExceptionTest(excpt, abort_on_except)
 
         if hidden_return_arg:
             # Return value is in additional argument. 

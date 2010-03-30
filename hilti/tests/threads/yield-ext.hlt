@@ -34,7 +34,5 @@ void doSchedule() {
 
 void run() {
     thread.schedule 1 doSchedule()
-    
-    # Make sure doSchedule gets a chance to schedule.
-    call Hilti::sleep(2.0)
+    call Hilti::wait_for_threads()
 }

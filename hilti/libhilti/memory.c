@@ -48,6 +48,16 @@ void* hlt_gc_realloc_non_atomic(void* ptr, uint64_t n)
     return GC_REALLOC(ptr, n);
 }
 
+static _finalizer(GC_PTR obj, GC_PTR client_data)
+{
+    (*((hlt_gc_finalizer_func*)client_data))(obj);
+}
+
+void hlt_gc_register_finalizer(void* obj, hlt_gc_finalizer_func* func)
+{
+    GC_REGISTER_FINALIZER(obj, _finalizer, func, 0, 0);
+}
+
 #else
 
 void __hlt_init_gc()
@@ -83,5 +93,11 @@ void* hlt_gc_realloc_non_atomic(void* ptr, uint64_t n)
 {
     return realloc(ptr, n);
 }
+
+void hlt_gc_register_finalizer(void* obj, hlt_gc_finalizer_func* func)
+{
+    // Can't do finalizers.
+}
+
 
 #endif

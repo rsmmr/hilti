@@ -37,6 +37,10 @@ typedef enum {
     /// out of jobs.
     HLT_THREAD_MGR_RUN,
 
+    /// FINISH means that the worker threads should terminate if none of them
+    /// has any jobs anymore. 
+    HLT_THREAD_MGR_FINISH,
+        
     /// STOP means that the worker threads should disallow any new job
     /// scheduling, and terminate once their job queue is empty.
     HLT_THREAD_MGR_STOP,

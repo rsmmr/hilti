@@ -1,0 +1,49 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void do_read(ref<channel<int32>> ch) {
+     local int32 n
+     call Hilti::print("doing read ...")
+     n = channel.read ch
+     call Hilti::print(n)
+     call Hilti::print("sleeping ...")
+     call Hilti::sleep(0.3)
+}
+
+void reader(ref<channel<int32>> ch) {
+     call do_read(ch)
+     call do_read(ch)
+     call do_read(ch)
+     call do_read(ch)
+     call do_read(ch)
+}
+
+void writer(ref<channel<int32>> ch) {
+    call Hilti::print("doing write ...")
+    channel.write ch 1
+    call Hilti::print("doing write ...")
+    channel.write ch 2
+    call Hilti::print("doing write ...")
+    channel.write ch 3
+    call Hilti::print("doing write ...")
+    channel.write ch 4
+    call Hilti::print("doing write ...")
+    channel.write ch 5
+}
+
+void run() {
+    local ref<channel<int32>> ch
+    ch = new channel<int32> 1
+    
+    thread.schedule 1 writer (ch)
+    thread.schedule 2 reader (ch)
+    
+    call Hilti::wait_for_threads()
+}

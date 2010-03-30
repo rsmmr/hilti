@@ -9,8 +9,8 @@ module Main
 import Hilti
 
 void run() {
-    local ref<channel<int64,0>> ch
-    ch = new channel<int64,0>
+    local ref<channel<int64>> ch
+    ch = new channel<int64>
 
     local int64 x
     x = channel.read_try ch
