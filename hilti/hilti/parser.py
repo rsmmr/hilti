@@ -712,13 +712,13 @@ def p_type_set(p):
         p[0] = type.Set(None)
 
 def p_type_pktsrc(p):
-    """type : PKTSRC '<' IDENT '>'
-            | PKTSRC '<' '*' '>'
+    """type : IOSRC '<' IDENT '>'
+            | IOSRC '<' '*' '>'
     """
     if p[3] != "*":
-        p[0] = type.PktSrc(p[3])
+        p[0] = type.IOSrc(p[3])
     else:
-        p[0] = type.PktSrc(None)
+        p[0] = type.IOSrc(None)
         
 def p_type_channel(p):
     """type : CHANNEL '<' type '>'

@@ -15,13 +15,13 @@ import Hilti
 
 void run() {
 
-    local ref<pktsrc<Hilti::PktSrc::PcapLive>> psrc
+    local ref<iosrc<Hilti::IOSrc::PcapLive>> psrc
     local tuple<double,ref<bytes>> pkt
 
-    psrc = new pktsrc<Hilti::PktSrc::PcapLive> "en0"
+    psrc = new iosrc<Hilti::IOSrc::PcapLive> "en0"
     
 @loop:
-    pkt = pktsrc.read psrc
+    pkt = iosrc.read psrc
     call Hilti::print (pkt, True)
     jump @loop
     

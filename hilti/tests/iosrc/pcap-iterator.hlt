@@ -11,12 +11,12 @@ import Hilti
 
 void run() {
     local bool eq
-    local ref<pktsrc<Hilti::PktSrc::PcapOffline>> psrc
+    local ref<iosrc<Hilti::IOSrc::PcapOffline>> psrc
     local tuple<double,ref<bytes>> pkt
-    local iterator<pktsrc<Hilti::PktSrc::PcapOffline>> cur
-    local iterator<pktsrc<Hilti::PktSrc::PcapOffline>> last
+    local iterator<iosrc<Hilti::IOSrc::PcapOffline>> cur
+    local iterator<iosrc<Hilti::IOSrc::PcapOffline>> last
 
-    psrc = new pktsrc<Hilti::PktSrc::PcapOffline> "trace.pcap"
+    psrc = new iosrc<Hilti::IOSrc::PcapOffline> "trace.pcap"
 
     cur = begin psrc
     last = end psrc

@@ -1798,7 +1798,7 @@ class CodeGen(objcache.Cache):
 
         try: 
             b = self._llvm.func.get_entry_basic_block()
-        except TypeError:
+        except (TypeError, AttributeError):
             # FIXME: Get this when in building C stub; not sure why. Let's
             # ignore it for now.
             return self.builder().alloca(ty)
@@ -2894,7 +2894,7 @@ class CodeGen(objcache.Cache):
         """
         return self.llvmFunction(block)
 
-    def llvmCallCWithRetry(self, succ, cfunc, args=[], result_func=None):
+    def llvmCallCWithRetry(self, succ, call_func, result_func=None):
         """Calls a C-HILTI function that can potentially block. If the
         function wants to block (as signaled by raising an ~~WouldBlock
         exception), execution is yielded back to the scheduler. When resuming,
@@ -2902,16 +2902,15 @@ class CodeGen(objcache.Cache):
         blocking is indicated. 
         
         succ: ~~Block - The block where execution is to continue in the
-        non-blocking case.
-        
-        func: ~Function, string, or llvm.core.Value - Either the ~~Function to
-        call; or the name of the function to call; or an LLVM function
-        previously returned by ~~llvmFunction. In the latter case *prototype*
-        must be given.
-        
-        args: list of ~~Operand, or list of tuples (llvm.core.Value, ~~Type) -
-        The arguments for the call. The automatically coerced types to what
-        the function's signature specifies where possible. 
+
+        call_func: Python function - Callback function that must return a
+        tuple ``(func, args)``. *func* is ~Function, string, or
+        llvm.core.Value being either a ~~Function to call; or the name of the
+        function to call; or an LLVM function previously returned by
+        ~~llvmFunction. *args* is a list of ~~Operand, or list of tuples
+        (llvm.core.Value, ~~Type) with the arguments for the call. The
+        automatically coerced types to what the function's signature specifies
+        where possible. 
         
         result_func: Python function - If the call is successful (i.e.,
         doesn't block and doesn't throw any exceptions), this function will be
@@ -2960,7 +2959,8 @@ class CodeGen(objcache.Cache):
             # Standard exception test.
             cg.llvmExceptionTest(excpt)
             # Leave builder on stack. 
-
+            
+        (cfunc, args) = call_func(self)
         result = self.llvmCallC(cfunc, args, excpt_test=_excpt_test)
             
         if result_func != None:
@@ -3012,9 +3012,10 @@ class CodeGen(objcache.Cache):
             prototype = func
             
         elif isinstance(func, str):
-            func = self.lookupFunction(func)
+            name = func
+            func = self.lookupFunction(name)
             if not func:
-                util.internal_error("unknown function %s" % func)
+                util.internal_error("unknown function %s" % name)
             llvm_func = self.llvmFunction(func)
             prototype = func
                 

@@ -176,10 +176,10 @@ class Instruction(node.Node):
 
         visitor.visitPost(self)
 
-class BlockingInstruction(Instruction):
-    """An instruction that can potentially block when executed. If so,
-    execution yields back to the scheduler an the instruction will be executed
-    again upon resuming. 
+class BlockingBase:
+    """Base class for instructions/operators that can potentially block when
+    executed. If so, execution yields back to the scheduler and the
+    instruction will be executed again upon resuming. 
     
     Currently, the instruction's functionality must be implemented as a call
     to C function; we might generalize that at some point though. The function
@@ -190,9 +190,6 @@ class BlockingInstruction(Instruction):
     
     See ~~Instruction for arguments. 
     """
-    def __init__(self, op1=None, op2=None, op3=None, target=None, location=None):
-        Instruction.__init__(self, op1, op2, op3, target, location)
-        
     def cCall(self, cg):
         """Returns the name of the C function to call for this instruction,
         and the calls arguments. 
@@ -219,10 +216,8 @@ class BlockingInstruction(Instruction):
         result: llvm.core.Value - The return value.
         """
         pass
-        
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
-        
+
+    def blockingCanonify(self, canonifier):
         # We rewrite the instruction into the form
         #
         #    <instruction>
@@ -230,7 +225,7 @@ class BlockingInstruction(Instruction):
         #  newblock:
         #    <...>
         #
-        # This ensures that we capture a continuation at newblock. 
+        # This ensures that we can capture a continuation at newblock. 
         canonifier.deleteCurrentInstruction()
         
         current_block = canonifier.currentTransformedBlock()
@@ -243,12 +238,29 @@ class BlockingInstruction(Instruction):
         
         self._succ = new_block
     
-    def codegen(self, cg):
+    def blockingCodegen(self, cg):
         def _result(cg, result):
             self.cResult(cg, result)
         
-        (cfunc, cargs) = self.cCall(cg)
-        cg.llvmCallCWithRetry(self._succ, cfunc, cargs, result_func=_result if self.target() else None)
+        def _cfunc(cg):
+            return self.cCall(cg)
+            
+        cg.llvmCallCWithRetry(self._succ, self.cCall, result_func=_result if self.target() else None)
+
+class BlockingInstruction(Instruction, BlockingBase):
+    """Class for instructions that can potentially block when
+    executed. See ~~BlockingBase for more information.
+    
+    Derived classes must override ~~cCall, and can override ~~cResult.
+    
+    See ~~Instruction for arguments. 
+    """
+    def canonify(self, canonifier):
+        Instruction.canonify(self, canonifier)
+        self.blockingCanonify(canonifier)
+        
+    def codegen(self, cg):
+        self.blockingCodegen(cg)
         
 class Operator(Instruction):
     """Class for instructions that are overloaded by their operands' types.
@@ -311,6 +323,25 @@ class Operator(Instruction):
                 o.__class__.__dict__[method](o, arg)
             except KeyError:
                 pass
+
+class BlockingOperator(Operator, BlockingBase):
+    """Class for instructions that can potentially block when executed. See
+    ~~BlockingBase for more information.
+    
+    Derived classes must override ~~cCall, and can override ~~cResult. Derived
+    classes must also still override ~~canonify and ~~codegen, and in both
+    cases forward directly to ~~blockingCanonify and ~~blockingCodegen,
+    respectively. The latter is different than with ~~BlockingInstruction,
+    which doesn't require that (though it doesn't hurt either). ~~canonify
+    must also call ~~Instruction.canonify(!).
+    
+    See ~~Instruction for arguments. 
+    
+    Note: The interface for derived classes insn't very nice but required due
+    to the way we currently do the method lookups. Should find a better
+    solution. 
+    """
+    pass
             
 from signature import *
     

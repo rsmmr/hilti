@@ -114,10 +114,10 @@ extern hlt_exception_type hlt_exception_timer_not_scheduled;
 extern hlt_exception_type hlt_exception_no_timer_manager;
 
 // Raised when a packet source cannot provide any further packets.
-extern hlt_exception_type hlt_exception_pktsrc_exhausted;
+extern hlt_exception_type hlt_exception_iosrc_exhausted;
 
 // Raised when a packet source encounters an error condition.
-extern hlt_exception_type hlt_exception_pktsrc_error;
+extern hlt_exception_type hlt_exception_iosrc_error;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Exception-related functions.

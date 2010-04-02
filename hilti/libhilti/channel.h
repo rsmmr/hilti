@@ -39,7 +39,7 @@ extern hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_
 extern void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt);
 
 /// Attemtps to write an item into a channel. If the channel has already
-/// reached its capacity, a ChannelFull exception is thrown.
+/// reached its capacity, a WouldBlock exception is thrown.
 /// 
 /// ch: The channel to write into. 
 /// 
@@ -62,7 +62,7 @@ extern void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, vo
 extern void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt);
 
 /// Attempts to read an item from a channel. If the channel is empty, 
-/// a ChannelEmpty exception is thrown.
+/// a WouldBlock exception is thrown.
 /// 
 /// ch: The channel to read from. 
 /// 

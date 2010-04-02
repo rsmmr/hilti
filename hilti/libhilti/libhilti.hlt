@@ -30,7 +30,7 @@ declare "C-HILTI" string timer_to_string(any s, int32 options)
 declare "C-HILTI" string timer_mgr_to_string(any s, int32 options)
 declare "C-HILTI" string map_to_string(any s, int32 options)
 declare "C-HILTI" string set_to_string(any s, int32 options)
-declare "C-HILTI" string pktsrc_to_string(any s, int32 options)
+declare "C-HILTI" string iosrc_pcap_to_string(any s, int32 options)
 
 declare "C-HILTI" string int_to_int64(any n)
 declare "C-HILTI" string bool_to_int64(any b)
@@ -178,13 +178,10 @@ declare "C-HILTI" bool set_iter_eq(iterator<set<*>> i1, iterator<set<*>> i2)
 
 ## 
 
-declare "C-HILTI" ref<pktsrc<*>> pktsrc_new_pcap_live(string interface)
-declare "C-HILTI" tuple<double, ref<bytes>> pktsrc_read_pcap_live(ref<pktsrc<*>> src, bool block, bool keep_link_layer)
-declare "C-HILTI" void pktsrc_close_pcap_live(ref<pktsrc<*>> src)
-
-declare "C-HILTI" ref<pktsrc<*>> pktsrc_new_pcap_offline(string interface)
-declare "C-HILTI" tuple<double, ref<bytes>> pktsrc_read_pcap_offline(ref<pktsrc<*>> src, bool block, bool keep_link_layer)
-declare "C-HILTI" void pktsrc_close_pcap_offline(ref<pktsrc<*>> src)
+declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_live(string interface)
+declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_offline(string interface)
+declare "C-HILTI" tuple<double, ref<bytes>> iosrc_pcap_read_try(ref<iosrc<*>> src, bool keep_link_layer)
+declare "C-HILTI" void iosrc_pcap_close(ref<iosrc<*>> src)
 
 ##
 

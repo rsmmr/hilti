@@ -95,7 +95,7 @@ declare i1 @__hlt_exception_match_type(%__hlt_exception*, %__hlt_exception_type*
 @hlt_exception_division_by_zero = external constant %__hlt_exception_type
 @hlt_exception_overlay_not_attached = external constant %__hlt_exception_type
 @hlt_exception_undefined_value = external constant %__hlt_exception_type
-@hlt_exception_pktsrc_exhausted = external constant %__hlt_exception_type
+@hlt_exception_iosrc_exhausted = external constant %__hlt_exception_type
 @hlt_exception_yield = external constant %__hlt_exception_type
 @hlt_exception_would_block = external constant %__hlt_exception_type
 
