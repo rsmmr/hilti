@@ -214,7 +214,8 @@ class Test(object):
             if Options.diagall:
                 self.showDiag()
                 
-            self.rmTmp()
+            if not Options.tmps:
+                self.rmTmp()
         
         try:
             # Try removing the baseline directory. If it works, it's empty, i.e., no baseline was created.
@@ -470,6 +471,8 @@ optparser.add_option("-c", "--config", action="store", type="string", dest="conf
                      help="configuration file")
 optparser.add_option("-F", "--filter", action="store", type="string", dest="filter", default=None,
                      help="active filter in given config file section")
+optparser.add_option("-t", "--tmp-keep", action="store_true", dest="tmps", default=False,
+                     help="do not delete tmp files created for running tests")
 
 (Options, args) = optparser.parse_args()
 
