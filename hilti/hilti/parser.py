@@ -487,9 +487,13 @@ def p_regexp_list(p):
     """regexp_list : CREGEXP '|' regexp_list
                    | CREGEXP"""
     if len(p) == 2:
-        p[0] = [p[1]]
+        patterns = [p[1]]
+        attrs = []
+        p[0] = (patterns, attrs)
     else:
-        p[0] = [p[1]] + p[3]
+        patterns = [p[1]] + p[3][0]
+        attrs = [] + p[3][1]
+        p[0] = (patterns, attrs)
 
 def p_operand_bytes(p):
     """operand : CBYTES"""

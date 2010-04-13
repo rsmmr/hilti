@@ -43,8 +43,13 @@ static int _want_stream(hlt_string stream, hlt_exception** excpt)
 static void _make_prefix(hlt_string stream, char* dst, int len, hlt_exception** excpt)
 {
     const char* s = hlt_string_to_native(stream, excpt);
-    const char* t = hlt_thread_mgr_current_native_thread(__hlt_global_thread_mgr);
-    snprintf(dst, len, "[%s/%s] ", s, t);
+    
+    if ( hlt_is_multi_threaded() ) {
+        const char* t = hlt_thread_mgr_current_native_thread(__hlt_global_thread_mgr);
+        snprintf(dst, len, "[%s/%s] ", s, t);
+    }
+    else
+        snprintf(dst, len, "[%s] ", s);
 }
 
 void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception** excpt)

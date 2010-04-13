@@ -289,7 +289,7 @@ class Incr(Operator):
         result = cg.builder().add(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
-@hlt.overload(Equal, op1=cIntegerOfWidthAsOp(0), op2=cIntegerOfWidthAsOp(0), target=cBool)
+@hlt.overload(Equal, op1=cInteger, op2=cIntegerOfWidthAsOp(1), target=cBool)
 class Equal(Operator):
     """
     Returns True if *op1* equals *op2*.

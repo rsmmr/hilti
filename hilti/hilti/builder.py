@@ -12,8 +12,9 @@ import module
 import objcache
 import type
 import util
+import operand
 
-# import hilti.instructions.debug
+import hilti
 
 class OperandBuilder(objcache.Cache):
     """A class for creating instruction operands.
@@ -35,7 +36,7 @@ class OperandBuilder(objcache.Cache):
             ty = type.Bool()
             
         elif isinstance(value, int) and not ty:
-            ty = type.Integer(0)
+            ty = type.Integer(64)
             
         elif isinstance(value, str) and not ty:
             ty = type.String()
@@ -75,9 +76,10 @@ class OperandBuilder(objcache.Cache):
         
         elems: list of ~~Operand - The elements of the tuple.
         
-        Returns: TupleOperand - The tuple operand made of the given elements. 
+        Returns: operand.Constant - The tuple operand made of the given elements. 
         """
-        return operand.TupleOperand(elems)
+        const = constant.Constant(elems, type.Tuple([e.type() for e in elems]))
+        return operand.Constant(const)
 
 class ModuleBuilder(OperandBuilder):
     """A class for adding entities to a module.
@@ -107,18 +109,13 @@ class ModuleBuilder(OperandBuilder):
         Returns: integer - The number of errors found. 
         """
 
-        # Import only here to avoid conflicts.
-        import hilti.parser.resolver
-        import hilti.checker
+        resolver_errors = hilti.resolveModule(self._module)
         
-        # FIXME: We should cleanup the resolver interface. Probably move it out
-        # of the parser, and make a module-level function for it. 
-        resolver_errors = hilti.parser.resolver.resolver.resolveOperands(self._module) 
         if resolver_errors:
             return resolver_errors
 
         if validate:
-            errors = hilti.checker.checkAST(self._module)
+            errors = hilti.validateModule(self._module)
             if errors:
                 return errors
         
@@ -167,6 +164,19 @@ class ModuleBuilder(OperandBuilder):
         i = id.Constant(name, constant.Constant(value, type))
         self._module.scope().add(i)
         return operand.ID(i)
+    
+    def addGlobal(self, name, type, value):
+        """Adds a new non-constant global to the module scope's.
+        
+        name: string - The name of the global ID. 
+        type: HiltiType - The type of the global ID.
+        value: ~~Operand - The value the global.
+        
+        Returns: ~~ID - An ID operand referencing the constant. 
+        """
+        i = id.Global(name, type, value)
+        self._module.scope().add(i)
+        return operand.ID(i)
         
     def addTypeDecl(self, name, ty):
         """Adds a new global type declaration to the module scope's.
@@ -191,11 +201,13 @@ class FunctionBuilder(OperandBuilder):
     """
     def __init__(self, mbuilder, name, ftype, cc=function.CallingConvention.HILTI, location=None):
         super(FunctionBuilder, self).__init__()
-        i = id.Global(name, ftype)
+        
+        self._func = function.Function(ftype, None, mbuilder.module().scope(), cc, location)
+        i = id.Function(name, ftype, self._func)
+        self._func.setID(i)
         self._mbuilder = mbuilder
-        self._func = function.Function(ftype, i, mbuilder.module().scope(), cc, location)
         self._tmps = {}
-        mbuilder.module().scope().add(i, self._func)
+        mbuilder.module().scope().add(i)
         
     def function(self):
         """Returns the HILTI function being build.
@@ -265,7 +277,7 @@ class FunctionBuilder(OperandBuilder):
         ty = li.type()
         
         if isinstance(ty, type.HeapType):
-            return type.Reference([ty])
+            return type.Reference(ty)
         else:
             return ty
         
@@ -497,10 +509,10 @@ class BlockBuilder(OperandBuilder):
         cont_builder = BlockBuilder(self._label(tag, "cont"), self._fbuilder) if not cont else cont
 
         if not yes:
-            yes_builder.block().setNext(cont_builder.block())
+            yes_builder.block().setNext(cont_builder.block().name())
             
         if not no:
-            no_builder.block().setNext(cont_builder.block())
+            no_builder.block().setNext(cont_builder.block().name())
             
         self.if_else(cond, yes_builder.labelOp(), no_builder.labelOp())
         
@@ -515,7 +527,7 @@ class BlockBuilder(OperandBuilder):
         cont_builder = BlockBuilder(self._label(tag, "cont"), self._fbuilder) if not cont else cont
 
         if not branch:
-            branch_builder.block().setNext(cont_builder._block)
+            branch_builder.block().setNext(cont_builder._block.name())
 
         op1 = branch_builder.labelOp()
         op2 = cont_builder.labelOp()
@@ -612,7 +624,7 @@ class BlockBuilder(OperandBuilder):
         """
         
         for v in values:
-            assert cond.type() == v.type()
+            assert v.canCoerceTo(cond.type())
 
         alts = []
         
@@ -631,10 +643,10 @@ class BlockBuilder(OperandBuilder):
         cont_builder = BlockBuilder(self._label(tag, "cont"), self._fbuilder) if not cont else cont
 
         if not default:
-            default_builder.block().setNext(cont_builder._block)
+            default_builder.block().setNext(cont_builder._block.name())
         
         for b in branches:
-            b.block().setNext(cont_builder._block)
+            b.block().setNext(cont_builder._block.name())
         
         self.switch(cond, default_builder.labelOp(), self.tupleOp(alts))
             
@@ -664,17 +676,16 @@ class BlockBuilder(OperandBuilder):
         arg: ~~Operand or None - The argument for the exception, or none if
         the exception type does not expect an argument.
         """
-        eid = self.idOp(exception)
-        assert instance(eid, id.Type) and eid.type() == type.Exception
-        etype = eid.type()
+        etype = self.idOp(exception)
+        util.check_class(etype.type(), type.Exception, "Builder.makeRaiseException")
         
         def _addExcptLocal():
             ename = self._fbuilder._idName("excpt")
-            return self._fbuilder.addLocal(ename, type.Reference([etype]))
+            return self._fbuilder.addLocal(ename, type.Reference(etype.type()))
         
         local = self._fbuilder.cache("makeRaiseException_local", _addExcptLocal)
         
-        self.new(local, self.typeOp(etype), arg)
+        self.new(local, etype, arg)
         self.exception_throw(local)
         
 def _init_builder_instructions():

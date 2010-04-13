@@ -113,19 +113,19 @@ class Printer(object):
         string in parentheses.
         
         separate: bool - If true, an additional blank line is inserted before
-        the the comment.
+        the comment.
         """
         
         if not node.comment():
             return
     
         if separate:
-            self.output("")
+            self.output("", nl=True)
         
         prefix = "(%s) " if prefix else ""
         
         for c in node.comment():
-            self.output("# %s%s" % (prefix, c))
+            self.output("# %s%s" % (prefix, c), nl=True)
             
     def printType(self, ty):
         """Outputs a type. If an identifier in the current module's scope

@@ -13,7 +13,7 @@ static hlt_string_constant prefix = { 1, "<" };
 static hlt_string_constant postfix = { 1, ">" };
 static hlt_string_constant separator = { 2, ", " };
 
-hlt_string hlt_struct_to_string(const hlt_type_info* type, const char* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_struct_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
 {
     assert(type->type == HLT_TYPE_STRUCT);
     

@@ -2287,7 +2287,7 @@ class CodeGen(objcache.Cache):
             if name in clocals:
                 return clocals[name]
                 
-            for i in func.IDs():
+            for i in func.scope().IDs():
                 if i.name() == name:
                     addr = self.llvmAlloca(self.llvmType(i.type()), tag=name)
                     clocals[name] = addr
@@ -3309,23 +3309,54 @@ class CodeGen(objcache.Cache):
         
         All the primary stub does when called is in turn calling the HILTI
         function, adapting the calling conventions. 
+        
+        Note that this function just returns prototypes for the stub
+        functions, while ~~llvmGenerateCStubs creates the functions
+        themselves. The latter must be called only once, this method can be
+        called whenever access to the stubs is needed.
                 
-        func: ~~Function - The function to generate a stub for. The function
+        func: ~~Function - The function to return a stub for. The function
         must have ~~HILTI calling convention.
         
-        Returns: 2-tuple of llvm.core.Value.Function - The two functions. 
+        Returns: 4-tuple of (function.Function, llvm.core.Value.Function,
+        function.Function, llvm.core.Value.Function) - The first two elements
+        define the primary stub function (with its HILTI and LLVM function,
+        respectively), and the latter two elements likewise define the resume
+        function.
         
         Note: ``hiltic`` can generate the right prototypes for such stub
         functions.
         """
     
-        def _makeStubs():
-            return self._llvmGenerateCStubs(func)
+        def _makeStubPrototypes():
+            
+            ### The primary stub function.
+            
+            # We recreate the function with linkage C-HILTI.
+            cfunc = function.Function(func.type(), func.id(), func.scope(), cc=function.CallingConvention.C_HILTI, location=func.location())
+            stub_func = self.llvmFunction(cfunc)
+
+            ### The resume function. 
+            
+            rtype = cfunc.type().resultType()
+            args = [id.Parameter("yield", type.Exception())]
+            ft = type.Function(args, rtype)
+            rid = id.Global(cfunc.name() + "_resume", ft, None, namespace=cfunc.id().namespace(), linkage=id.Linkage.EXPORTED)
+            rfunc = function.Function(ft, rid, None, cc=function.CallingConvention.C_HILTI)
+            resume_func = self.llvmFunction(rfunc)
+
+            return (cfunc, stub_func, rfunc, resume_func)
+            
+        return self.cache("c-stub-%s-%s" % (func.name(), func.callingConvention()), _makeStubPrototypes )
+
+    def llvmGenerateCStubs(self, func, resume=False):
+        """Generate C stubs for a function. See ~~llvmCStubs for more
+        information about stubs.
         
-        return self.cache("c-stub-%s-%s" % (func.name(), func.callingConvention()), _makeStubs )
-    
-    def _llvmGenerateCStubs(self, func, resume=False):
-        """Internal function to generate the stubs, without caching.
+        func: ~~Function - The function to return a stub for. The function
+        must have ~~HILTI calling convention.
+        
+        resume: TODO: Still used? 
         
         Todo: This function needs a refactoring. 
         """
@@ -3364,11 +3395,9 @@ class CodeGen(objcache.Cache):
                 
         assert func.callingConvention() == function.CallingConvention.HILTI
 
-        # We recreate the function with linkage C-HILTI.
         
-        cfunc = copy.deepcopy(func)
-        cfunc.setCallingConvention(function.CallingConvention.C_HILTI)
-
+        (cfunc, stub_func, rfunc, resume_func) = self.llvmCStubs(func)
+        
         # Create an local for the result, if we have one.
         rtype = func.type().resultType()
         if not isinstance(rtype, type.Void):
@@ -3442,7 +3471,6 @@ class CodeGen(objcache.Cache):
         self.popBuilder()
 
         # Create the stub function itself.
-        stub_func = self.llvmFunction(cfunc)
         block = stub_func.append_basic_block("")
         self.pushBuilder(block)
         
@@ -3477,13 +3505,7 @@ class CodeGen(objcache.Cache):
         self.popBuilder() # function body.
     
         #### Create the resume function. 
-        
-        rtype = cfunc.type().resultType()
-        args = [id.Parameter("yield", type.Exception())]
-        ft = type.Function(args, rtype)
-        rid = id.Global(cfunc.name() + "_resume", ft, None, namespace=cfunc.id().namespace(), linkage=id.Linkage.EXPORTED)
-        rfunc = function.Function(ft, rid, None, cc=function.CallingConvention.C_HILTI)
-        resume_func = self.llvmFunction(rfunc)
+  
         resume_block = resume_func.append_basic_block("")
         self.pushBuilder(resume_block)
         

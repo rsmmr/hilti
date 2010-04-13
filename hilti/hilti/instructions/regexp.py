@@ -41,6 +41,14 @@ class RegExp(type.HeapType, type.Constructable, type.Parameterizable):
     def __init__(self, attrs=[], location=None):
         super(RegExp, self).__init__(location=location)
         self._attrs = attrs
+
+    def attrs(self):
+        """Returns the regexp's compilation attributes.
+        
+        attrs: list containing strings - The set of compilation attributes applying
+        to this type; can be empty if none.
+        """
+        return self._attrs
         
     ### Overridden from Type.
 
@@ -58,7 +66,7 @@ class RegExp(type.HeapType, type.Constructable, type.Parameterizable):
 
     def output(self, printer):
         printer.output(self.name())
-    
+
     ### Overridden from HiltiType.
     
     def llvmType(self, cg):
@@ -75,22 +83,45 @@ class RegExp(type.HeapType, type.Constructable, type.Parameterizable):
 
     def validateCtor(self, cg, val):
         """Todo."""
-        if not (isinstance(val, list) or isinstance(val, tuple)):
-            util.internal_error("ctor value for regexp must be list of string")
-            
-        for v in val:
-            if not isinstance(v, str):
-                util.internal_error("ctor value for regexp must be string")
+        def is_list(l):
+            return isinstance(val, list) or isinstance(val, tuple)
+        
+        if not is_list(val):
+            util.internal_error("ctor value for regexp must be list of tuple (list of string, list of string)")
+
+        if not is_list(val) or len(val) != 2:
+            util.internal_error("ctor value must contain elements of tuple (list of string, list of string)")
+
+        (pats, attrs) = val
+
+        if not is_list(pats):
+            util.internal_error("ctor value must contains elements of tuple (list of string, list of string), but idx 0 of one is something different")
+        
+        for p in pats:
+            if not isinstance(p, str):
+                util.internal_error("ctor value must contains patterns as strings")
+                
+        if not is_list(attrs):
+            util.internal_error("ctor value must contains elements of tuple (string, list of string), but idx 1 of one is something different")
+                
+        for a in attrs:
+            if not isinstance(a, str):
+                util.internal_error("ctor value must contains attributes as strings")
+                    
+            if not a in _attrs:
+                util.internal_error("ctor value must contains undefined")
             
     def llvmCtor(self, cg, val):
-        ref_type = type.Reference(type.RegExp())
+        (patterns, attrs) = val
+        
+        ref_type = type.Reference(type.RegExp(attrs))
         top = operand.Type(ref_type)
         regexp = cg.llvmCallC("hlt::regexp_new", [top], abort_on_except=True)
         regexp_op = operand.LLVM(regexp, ref_type)
         
-        if len(val) == 1:
+        if len(patterns) == 1:
             # Just one pattern. We use regexp_compile().
-            arg = operand.Constant(constant.Constant(val[0], type.String()))
+            arg = operand.Constant(constant.Constant(patterns[0], type.String()))
             
             cg.llvmCallC("hlt::regexp_compile", [regexp_op, arg], abort_on_except=True)
             
@@ -101,7 +132,7 @@ class RegExp(type.HeapType, type.Constructable, type.Parameterizable):
             list_type = type.Reference(type.List(item_type))
             list = cg.llvmCallC("hlt::list_new", [operand.Type(item_type)], abort_on_except=True)
 
-            for pat in val:
+            for pat in patterns:
                 item = operand.Constant(constant.Constant(pat, item_type))
                 list_op = operand.LLVM(list, list_type)
                 cg.llvmCallC("hlt::list_push_back", [list_op, item], abort_on_except=True)
@@ -112,8 +143,20 @@ class RegExp(type.HeapType, type.Constructable, type.Parameterizable):
         return regexp
     
     def outputCtor(self, printer, val):
-        printer.output(" | ".join(["/%s/" % v for v in val]))
+        (patterns, attrs) = val
+        
+        patterns = " | ".join(["/%s/" % p for p in patterns])
+        attrs = "".join([" %s" % a for a in attrs])
 
+        printer.output(patterns + attrs)
+
+    def canCoerceCtorTo(self, ctor, dsttype):
+        return isinstance(dsttype, type.RegExp)
+        
+    def coerceCtorTo(self, cg, ctor, dsttype):
+        assert self.canCoerceCtorTo(ctor, dsttype)
+        return [ctor[0], dsttype.attrs()]
+        
     ### Overridden from Parameterizable.
     
     def args(self):

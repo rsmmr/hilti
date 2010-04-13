@@ -189,6 +189,12 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
 
     assert( (! do_anchor) || (re->regexp.cflags & REG_NOSUB));
     
+    if ( hlt_bytes_pos_eq(cur, end, excpt) ) { 
+        // Nothing to do, but still need to init the match state.
+        jrx_match_state_init(&re->regexp, offset, ms);
+        return -1;
+    }
+    
     while ( acc <= 0 && ! hlt_bytes_pos_eq(cur, end, excpt) ) {
 
         if ( need_msdone )

@@ -610,7 +610,7 @@ class Function(node.Node):
         cg.startFunction(self)
         
         if self.id().linkage() == id.Linkage.EXPORTED and self.callingConvention() == CallingConvention.HILTI:
-            cg.llvmCStubs(self)
+            cg.llvmGenerateCStubs(self)
         
         if self.id().linkage() == id.Linkage.INIT:
             def _makeCall(cg):

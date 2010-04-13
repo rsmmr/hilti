@@ -228,10 +228,25 @@ def _addDebugPreInstruction(canonifier, b, i):
         
         if isinstance(op.type(), type.Label):
             return operand.Constant(constant.Constant(op.value().name(), type.String()))
-
+        
+        if isinstance(op.type(), type.Tuple):
+            return operand.Constant(constant.Constant("tuple", type.String())) # XXX
+        
+            if isinstance(op, operand.Constant):
+                tup = [replace(o) for o in op.value().value()]
+                return operand.Constant(constant.Constant(tup, type.Tuple([e.type() for e in tup])))
+            else:
+                return operand.Constant(constant.Constant("tuple", type.String()))
+        
         if isinstance(op, operand.Type):
             return operand.Constant(constant.Constant(str(op), type.String()))
         
+        if isinstance(op, operand.Ctor):
+            return operand.Constant(constant.Constant(str(op), type.String()))
+
+        if isinstance(op, operand.ID):
+            return operand.Constant(constant.Constant(op.value().name(), type.String()))
+            
         if not isinstance(op.type(), type.HiltiType):
             return operand.Constant(constant.Constant("<%s>" % op.type().name(), type.String()))
 

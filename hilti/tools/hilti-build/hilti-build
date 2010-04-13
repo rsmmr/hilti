@@ -295,7 +295,8 @@ if [ "$have_pac2" == "1" ]; then
    # Need binpac++ flags.
    cflags="$cflags `$binpacconfig --cflags`"
    hilticflags="$hilticflags `$binpacconfig --hiltic`"
-   llvmldflags="$llvmldflags `$binpacconfig --ldflags --libs-bc`"
+   llvmldflags="$llvmldflags `$binpacconfig --ldflags`"
+   libsbc="`$binpacconfig --libs-bc` $libsbc" # Order is important!
 fi   
 
 export PYTHONPATH=`$hilticonfig --pythonpath`:$PYTHONPATH

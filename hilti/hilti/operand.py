@@ -268,8 +268,24 @@ class Ctor(Operand):
         
     def constant(self):
         return None
+
+    def canCoerceTo(self, ty):
+        return self.type().canCoerceCtorTo(self._value, ty)
+        
+    def coerceTo(self, cg, ty):
+        if not self.canCoerceTo(ty):
+            util.internal_error("cannot coerce operand of type %s to %s" % (self.type(), ty))
+
+        value = self.type().coerceCtorTo(cg, self._value, ty)
+        return Ctor(value, self.type(), location=self.location())
     
     def llvmLoad(self, cg):
+        
+        if self._coerced:
+            dsttype = self._coerced[0]
+        else:
+            dsttype = None
+        
         return self._coerce(cg, self._orig_type.llvmCtor(cg, self._value))
         
     def llvmStore(self, cg):

@@ -115,7 +115,7 @@ def check_class(val, cls, orig):
         if isinstance(val, c):
             return 
         
-    internal_error("%s: must have %s but got %s" % (orig, "or".join([str(c) for c in cls]), repr(val)))
+    internal_error("%s: must have %s but got %s" % (orig, " or ".join([str(c) for c in cls]), repr(val)))
     
 def expand_escapes(str, unicode=True):
     r"""Expands escape sequences. The following escape sequences are supported:
@@ -201,10 +201,14 @@ def findFileInPaths(filename, dirs, lower_case_ok=False):
     Returns: string or None - The full path of the file if found, or None if
     not.
     """
+
+    if lower_case_ok:
+        files = (filename, filename.lower())
+    else:
+        files = (filename, )
     
     for dir in dirs:
-        
-        for name in (filename, filename.lower()):
+        for name in files:
             fullpath = os.path.realpath(os.path.join(dir, name))
             if os.path.exists(fullpath) and os.path.isfile(fullpath):
                 return fullpath

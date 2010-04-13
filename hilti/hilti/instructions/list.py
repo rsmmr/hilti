@@ -85,7 +85,6 @@ class List(type.Container, type.Constructable, type.Iterable):
                 vld.error(self, "list element not coercable to %s" % self.itemType())
     
     def llvmCtor(self, cg, val):
-        # We create a global that keeps the list.  
         list = cg.llvmCallC("hlt::list_new", [operand.Type(self.itemType())], abort_on_except=True)
         listop = operand.LLVM(list, type.Reference(self))
         

@@ -181,7 +181,7 @@ class ID(node.Node):
         Must be overridden by derived classes.
         
         cg: The current code generator.
-        
+
         Returns: llvm.core.Value - The value.
         """
         util.internal_error("llvmLoad not implemented for %s" % repr(self))
@@ -264,7 +264,7 @@ class Constant(ID):
         return cg.builder().load(self._llvm)
         
     def llvmStore(self, cg, val):
-        util.internal_error("llvmStore called for ConstID")
+        util.internal_error("llvmStore called for id.ConstID")
         
     def clone(self):
         return Constant(self.name(), self._const, self.linkage(), self.imported(), self.namespace(), location=self.location())
@@ -448,10 +448,10 @@ class Function(ID):
     ### Overidden from ID.
 
     def llvmLoad(self, cg):
-        util.internal_error("llvmLoad called for Function")
+        util.internal_error("llvmLoad called for id.Function")
         
     def llvmStore(self, cg, val):
-        util.internal_error("llvmStore called for Function")
+        util.internal_error("llvmStore called for id.Function")
 
     def clone(self):
         return Function(self.name(), self.type(), self._func, self.linkage(), self.imported(), self.namespace(), location=self.location())
@@ -493,10 +493,10 @@ class Type(ID):
     ### Overidden from ID.
 
     def llvmLoad(self, cg):
-        util.internal_error("llvmLoad called for Type")
+        util.internal_error("llvmLoad called for id.Type")
         
     def llvmStore(self, cg, val):
-        util.internal_error("llvmStore called for Type")
+        util.internal_error("llvmStore called for id.Type")
 
     def clone(self):
         return Type(self.name(), self.type(), self.linkage(), self.imported(), self.namespace(), location=self.location())
@@ -534,10 +534,10 @@ class Unknown(ID):
     ### Overidden from ID.
 
     def llvmLoad(self, cg):
-        util.internal_error("llvmLoad called for Unknown")
+        util.internal_error("llvmLoad called for id.Unknown")
         
     def llvmStore(self, cg, val):
-        util.internal_error("llvmStore called for Unknown")
+        util.internal_error("llvmStore called for id.Unknown")
 
     def clone(self):
         return Unknown(self.name(), location=self.location())

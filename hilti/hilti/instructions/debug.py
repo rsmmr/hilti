@@ -9,6 +9,8 @@ import llvm.core
 import hilti.util as util
 import hilti.constant as constant
 
+import hilti.instructions.string as string
+
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
@@ -30,7 +32,7 @@ class Assert(Instruction):
     an ~~AssertionError exception with *op2* as its value if given.
     """
     def codegen(self, cg):
-        if cg.debugMode() == 0:
+        if cg.debugLevel() == 0:
             return
         
         op1 = cg.llvmOp(self.op1())
@@ -40,7 +42,7 @@ class Assert(Instruction):
         cg.builder().cbranch(op1, block_true, block_false)
         
         cg.pushBuilder(block_false)
-        arg = cg.llvmOp(self.op2()) if self.op2() else string._makeLLVMString("")
+        arg = cg.llvmOp(self.op2()) if self.op2() else string._makeLLVMString(cg, "")
         cg.llvmRaiseExceptionByName("hlt_exception_assertion_error", self.location(), arg)
         cg.popBuilder()
 

@@ -46,12 +46,17 @@ def importModule(mod, filename, import_paths=["."]):
         
     Returns: bool - True if no errors were encountered.
     """
-    fullpath = parser._findFile(filename, import_paths)
     
-    (errors, nmod) = parse(fullpath, import_paths)
+    if not filename.endswith(".hlt"):
+        filename += ".hlt"
+        
+    fullpath = util.findFileInPaths(filename, import_paths, True)
+    if not fullpath:
+        return False
+    
+    (errors, nmod) = parseModule(fullpath, import_paths)
     if not errors:
         mod.importIDs(nmod)
-        mod._imported_modules += [(filename, fullpath)]
         return True
     else:
         return False

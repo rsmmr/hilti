@@ -68,7 +68,7 @@ class Function(Instruction):
         builder = cg.builder()
     
         if func.callingConvention() == function.CallingConvention.HILTI:
-            (main, resume) = cg.llvmCStubs(func)
+            (hltmain, main, hltresume, resume) = cg.llvmCStubs(func)
             main = builder.bitcast(main, cg.llvmTypeGenericPointer())
             resume = builder.bitcast(resume, cg.llvmTypeGenericPointer())
         else:

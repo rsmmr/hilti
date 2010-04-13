@@ -141,7 +141,7 @@ class Scope(node.Node):
             
             # Do not print any internal IDs defined implicitly by the run-time
             # environment. 
-            if i.location().internal():
+            if i.location() and i.location().internal():
                 continue
 
             # Don't print any IDs with a different namespace than the current

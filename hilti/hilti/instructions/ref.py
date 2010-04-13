@@ -16,6 +16,7 @@ import llvm.core
 
 from hilti import hlt
 from hilti import type
+from hilti import util
 from hilti.constraints import *
 from hilti.instruction import *
 
@@ -27,7 +28,9 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
     wildcard reference ``ref<*>``.
     """
     def __init__(self, ty):
-        assert not ty or isinstance(ty, type.HeapType) or isinstance(ty, type.Unknown)
+        if ty:
+            util.check_class(ty, [type.HeapType, type.Unknown], "Reference.__init__")
+        
         super(Reference, self).__init__()
         self._type = ty
        
@@ -127,9 +130,12 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
 
     def validateConstant(self, vld, const):
         if const.value():
-            util.internal_error("Python value for const ref can only be None")
+            util.internal_error("Python value for const ref can only be None but is %s" % const.value())
     
     def canCoerceConstantTo(self, const, dsttype):
+        if isinstance(dsttype, type.Any):
+            return True
+        
         if not isinstance(dsttype, type.Reference):
             return False
 
@@ -142,13 +148,16 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
         return False
 
     def coerceConstantTo(self, cg, const, dsttype):
+        if isinstance(dsttype, type.Any):
+            return const
+        
         return constant.Constant(None, dsttype)
 
     def llvmConstant(self, cg, const):
         """There is a special ``null`` constant marking an unset reference.
         ``null`` can be converted to any other reference type."""
         # This can only be "null"
-        assert not const.value()
+        assert const.value() == None
         ltype = cg.llvmType(const.type())
         return llvm.core.Constant.null(ltype)
 
@@ -161,7 +170,7 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
     
     def outputConstant(self, printer, const):
         # This can only be "null"
-        assert not const.value()
+        assert const.value() == None
         printer.output("Null")
 
     ### Overridden from Constructable.
@@ -169,6 +178,24 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
     def validateCtor(self, vld, value):
         assert isinstance(self._type, type.Constructable)
         self._type.validateCtor(vld, value)
+
+    def canCoerceCtorTo(self, ctor, dsttype):
+        if isinstance(dsttype, type.Any):
+            return True
+        
+        if not isinstance(dsttype, type.Reference):
+            return False
+
+        if not dsttype.refType():
+            return True
+        
+        return self.refType().canCoerceCtorTo(ctor, dsttype.refType())
+
+    def coerceCtorTo(self, cg, ctor, dsttype):
+        if isinstance(dsttype, type.Any):
+            return ctor
+        
+        return self.refType().coerceCtorTo(cg, ctor, dsttype.refType())
         
     def llvmCtor(self, cg, value):
         assert isinstance(self._type, type.Constructable)

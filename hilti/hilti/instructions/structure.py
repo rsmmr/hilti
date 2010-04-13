@@ -171,7 +171,7 @@ def _fieldType(ty, op, i):
     
     for (id, default) in i.op1().type().refType().fields():
         if c.value() == id.name():
-            if ty == id.type():
+            if ty.canCoerceTo(id.type()):
                 return (True, "")
             else:
                 return (False, "type must be %s" % id.type())
