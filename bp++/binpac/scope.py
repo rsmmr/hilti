@@ -3,7 +3,7 @@
 import id
 import ast
 import type
-import binpac.support.visitor as visitor
+import binpac.visitor as visitor
 
 class Scope(visitor.Visitable):
     """Groups a set of IDs into a common visibility space. A scope can have a

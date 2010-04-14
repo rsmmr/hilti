@@ -5,4 +5,4 @@ module BinPacTypeInfo
 
 import BinPACIntern
 
-# Currently unused.
+export BinPACIntern::Parser

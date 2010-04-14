@@ -6,19 +6,19 @@ import inspect
 
 builtin_id = id
 
-import binpac.core.type as type
-import binpac.core.expr as expr
-import binpac.core.stmt as stmt
-import binpac.core.grammar as grammar
-import binpac.core.pgen as pgen
-import binpac.core.operator as operator
-import binpac.core.id as id 
-import binpac.core.scope as scope
-import binpac.core.constant as constant
+import binpac.type as type
+import binpac.expr as expr
+import binpac.stmt as stmt
+import binpac.grammar as grammar
+import binpac.pgen as pgen
+import binpac.operator as operator
+import binpac.id as id 
+import binpac.scope as scope
+import binpac.constant as constant
 
-import binpac.support.util as util
+import binpac.util as util
 
-import hilti.core.type
+import hilti.type
 
 _AllowedConstantTypes = (type.Bytes, type.RegExp)
 
@@ -206,7 +206,9 @@ class Field:
             # If the production function has not been overridden, we can't
             # use that type in a unit field. 
             vld.error(self, "type %s cannot be used inside a unit field" % self._type)
-                
+
+        self._type.validateInUnit(vld)
+            
         if self._value:
             # White-list the types we can deal with in constants.
             for a in _AllowedConstantTypes:

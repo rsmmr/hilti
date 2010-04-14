@@ -1,6 +1,6 @@
 # $Id$
 
-import binpac.support.visitor as visitor
+import binpac.visitor as visitor
 
 class Node(visitor.Visitable):
     """Base class for all classes that can be nodes in an |ast|.

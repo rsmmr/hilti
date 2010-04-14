@@ -4,7 +4,7 @@ import ast
 import location
 import copy
 
-import binpac.support.util as util
+import binpac.util as util
 
 class Linkage:
     """The *linkage* of an ~~IDFunction specifies its link-time
@@ -141,7 +141,7 @@ class ID(ast.Node):
         
         cg: ~~CodeGen - The code generator to use.
         
-        Returns: ~~hilti.core.instruction.Operand - An operand representing
+        Returns: ~~hilti.operand.Operand - An operand representing
         the evaluated ID. 
         """
         util.internal_error("id.evaluate() not overidden for %s" % self.__class__)
@@ -228,24 +228,24 @@ class Parameter(ID):
 class Global(ID):
     """An ID representing a module-global variable. See ~~ID for arguments.
     
-    value: ~~Constant - The constant to initialize the global with, or None
+    expr: ~~Expression - The expression to initialize the global with, or None
     for initialization with the default value.
     """
-    def __init__(self, name, type, value, linkage=None, namespace=None, location=None, imported=False):
+    def __init__(self, name, type, expr, linkage=None, namespace=None, location=None, imported=False):
         super(Global, self).__init__(name, type, linkage, namespace, location, imported)
-        self._value = value
+        self._expr = expr
         
-    def value(self):
-        """Returns the initialization value of the global.
+    def expr(self):
+        """Returns the initialization expressopm of the global.
         
-        Returns: ~~Constant - The init value, or None if none was set.
+        Returns: ~~Constant - The init expression, or None if none was set.
         """
-        return self._value
+        return self._expr
         
     ### Overidden from ast.Node.
 
     def validate(self, vld):
-        if self._value and self._value.type() != self.type():
+        if self._expr and self._expr.type() != self.type():
             vld.error("type of initializer expression does not match")
 
     def pac(self, printer):

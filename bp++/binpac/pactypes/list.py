@@ -2,18 +2,19 @@
 #
 # The list type.
 
-import binpac.core.type as type
-import binpac.core.expr as expr
-import binpac.core.stmt as stmt
-import binpac.core.id as id
-import binpac.core.constant as constant
-import binpac.core.printer as printer
+import binpac.type as type
+import binpac.expr as expr
+import binpac.stmt as stmt
+import binpac.id as id
+import binpac.constant as constant
+import binpac.printer as printer
 
-import binpac.core.operator as operator
-import binpac.core.grammar as grammar
-import binpac.support.util as util
+import binpac.operator as operator
+import binpac.grammar as grammar
+import binpac.util as util
 
-import hilti.core.type
+import hilti.type
+import hilti.operand
 
 @type.pac("list")
 class List(type.ParseableType):
@@ -41,25 +42,32 @@ class List(type.ParseableType):
     def validate(self, vld):
         return True
     
-    def validateConst(self, vld, const):
-        if not isinstance(const.value(), list):
-            vld.error(const, "list: constant of wrong internal type")
+    def validateCtor(self, vld, value):
+        if not isinstance(value, list):
+            vld.error(self, "list: ctor value of wrong internal type")
             
-        for elem in const.value():
+        for elem in value:
+            if not isinstance(elem, expr.Expression):
+                vld.error(self, "list: ctor value's elements of wrong internal type")
+            
+        for elem in value:
             if elem.type() != self._item:
-                vld.error(const, "list: constant must be of type %s" % elem.type())
+                vld.error(self, "list: ctor value must be of type %s" % elem.type())
             
             elem.validate(vld)
 
-    def hiltiConstant(self, cg, const):
-        elems = [hilti.core.instruction.ConstOperand(self._item.hiltiConstant(cg, c)) for c in const.value()]
-        return hilti.core.constant.Constant(elems, const.type().hiltiType(cg))
+    def hiltiCtor(self, cg, value):
+        elems = [e.evaluate(cg) for e in value]
+        ltype = hilti.type.List(self._item.hiltiType(cg))
+        return hilti.operand.Ctor(elems, ltype)
             
     def hiltiType(self, cg):
-        return hilti.core.type.Reference([hilti.core.type.List([self._item.hiltiType(cg)])])
+        ltype = hilti.type.List(self._item.hiltiType(cg))
+        return hilti.type.Reference(ltype)
 
-    def hiltiDefault(self, cg):
-        return hilti.core.constant.Constant([], self.hiltiType(cg))
+    def hiltiDefault(self, cg, must_have=True):
+        ltype = hilti.type.List(self._item.hiltiType(cg))
+        return hilti.operand.Ctor([], hilti.type.Reference(ltype))
 
     def resolve(self, resolver):
         self._item = self._item.resolve(resolver)
@@ -70,9 +78,8 @@ class List(type.ParseableType):
         self._item.pac(printer)
         printer.output(">")
 
-    def pacConstant(self, printer, const):
+    def pacCtor(self, printer, elems):
         printer.output("[")
-        elems = const.value()
         for i in range(len(elems)):
             self._item.pacConstant(printer, elems[i])
             if i != len(elems) - 1:

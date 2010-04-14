@@ -13,12 +13,12 @@ type Item = unit {
     line:   LINE;
 };
 
-type Test = unit {
+export type Test = unit {
     %export True;
     lines: list<Item>
         { print self.lines; }
     : DASHES;
-    end: LINE;
+    last: LINE;
     };
 
 ### @TEST-START-FILE test.txt

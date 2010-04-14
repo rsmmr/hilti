@@ -5,9 +5,9 @@ import ast
 import module
 import id
 import type
-import binpac.support.util as util
+import binpac.util as util
 
-import hilti.checker
+import hilti
 
 def validateModule(mod):
     """Validates the semantic correctness of  a BinPAC++ module.
@@ -46,7 +46,7 @@ class Validator(object):
         if self._errors > 0:
             return self._errors
         
-        errors = hilti.checker.checkAST(self._module)                                                                                                                   
+        errors = hilti.validateModule(self._module)                                                                                                                   
         
         return errors
 

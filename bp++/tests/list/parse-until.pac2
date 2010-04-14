@@ -17,7 +17,7 @@ type Test = unit {
     %export True;
     lines: list<Item> &until($$.line == b"---\n")
         { print self.lines; }
-    end: LINE;
+    last: LINE;
     };
 
 ### @TEST-START-FILE test.txt

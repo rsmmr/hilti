@@ -2,9 +2,9 @@
 #
 # The void type.
 
-import binpac.core.type as type
+import binpac.type as type
 
-import hilti.core.type
+import hilti.type
 
 @type.pac("void")
 class Void(type.Type):
@@ -21,7 +21,7 @@ class Void(type.Type):
         return True
             
     def hiltiType(self, cg):
-        return hilti.core.type.Void()
+        return hilti.type.Void()
 
     def name(self):
         return "void" 

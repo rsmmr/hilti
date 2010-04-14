@@ -8,7 +8,7 @@ import copy
 import scope
 import id
 
-import binpac.support.util as util
+import binpac.util as util
 
 class Production(object):
     """Base class for all grammar productions. 

@@ -2,12 +2,12 @@
 #
 # The regexp type.
 
-import binpac.core.type as type
-import binpac.core.expr as expr
-import binpac.core.grammar as grammar
-import binpac.core.operator as operator
+import binpac.type as type
+import binpac.expr as expr
+import binpac.grammar as grammar
+import binpac.operator as operator
 
-import hilti.core.type
+import hilti.type
 
 @type.pac("regexp")
 class RegExp(type.ParseableType):
@@ -22,10 +22,10 @@ class RegExp(type.ParseableType):
         return type.Bytes()
         
     def hiltiType(self, cg):
-        return hilti.core.type.Reference([hilti.core.type.Bytes()])
+        return hilti.type.Reference(hilti.type.Bytes())
 
     def production(self, field):
-        return grammar.Variable(None, hilti.core.type.RegExp(), location=self.location())
+        return grammar.Variable(None, hilti.type.RegExp(), location=self.location())
         
     def validateConst(self, vld, const):
         if not isinstance(const.value(), str):

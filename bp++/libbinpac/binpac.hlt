@@ -4,6 +4,6 @@
 
 module BinPAC
 
-exception ParseError(string)
+type ParseError = exception<string>
 
 

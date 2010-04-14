@@ -5,9 +5,9 @@
 module BinPACIntern
 
 # Raised when a generated parser encounters an error in its input.
-exception ParseError(string)
+type ParseError = exception<string>
 
-struct Parser {
+type Parser = struct {
     string name,        # Short descriptive name.
     string description, # Longer textual description.
     caddr parse_func,   # The C function performing the parsing.

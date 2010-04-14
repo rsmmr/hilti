@@ -6,9 +6,9 @@ import ast
 import scope
 import type
 import id
-import binpac.support.util as util
+import binpac.util as util
 
-import hilti.core.instruction
+import hilti.instruction
 
 class Statement(ast.Node):
     """Base class for BinPAC++ statements.

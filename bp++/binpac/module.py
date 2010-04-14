@@ -7,7 +7,7 @@ import id
 import scope
 import type
 import location
-import binpac.support.visitor as visitor
+import binpac.visitor as visitor
 
 class Module(ast.Node):
     """Represents a single HILTI link-time unit. A module has its

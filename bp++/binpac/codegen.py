@@ -1,15 +1,14 @@
 # $Id$
 """Compiles a BinPAC++ module into a HILTI module."""
 
-import hilti.checker
-import hilti.codegen
-
 import ast
 import type
 import id
 import pgen
 
-import binpac.support.util as util
+import hilti
+import hilti.builder
+import binpac.util as util
 
 def compileModule(mod, import_paths, debug=False, validate=True):
     """Compiles a BinPAC++ module into a HILTI module.  *mod* must be
@@ -33,7 +32,7 @@ def compileModule(mod, import_paths, debug=False, validate=True):
     hltmod = codegen.moduleBuilder().module()
     
     if validate:
-        errors = hilti.checker.checkAST(hltmod)
+        errors = hilti.validateModule(hltmod)
         if errors > 0:
             return (False, None)
 
@@ -66,14 +65,14 @@ class CodeGen(object):
         When done building this function, ~~endFunction must be called.
         
         name: string - The name of the function.
-        ftype: hilti.core.type.Function - The HILTI type of the
+        ftype: hilti.type.Function - The HILTI type of the
         function.
         
-        Returns: tuple (~~hilti.core.builder.FunctionBuilder,
-        ~~hilti.core.builder.BlockBuilder) - The builders created
+        Returns: tuple (~~hilti.builder.FunctionBuilder,
+        ~~hilti.builder.BlockBuilder) - The builders created
         for the new function.
         """
-        fbuilder = hilti.core.builder.FunctionBuilder(self._mbuilder, name, ftype)
+        fbuilder = hilti.builder.FunctionBuilder(self._mbuilder, name, ftype)
         self._builders += [fbuilder.newBuilder(None)]
         
         return (fbuilder, self._builders[-1])
@@ -89,7 +88,7 @@ class CodeGen(object):
         """Sets the current builder. The set builder will then be
         returned by subsequent ~~builder calls.
         
-        builder: hilti.core.hilti.BlockBuilder: The builder to set.
+        builder: hilti.hilti.BlockBuilder: The builder to set.
         """
         assert builder
         self._builders[-1] = builder
@@ -97,7 +96,7 @@ class CodeGen(object):
     def builder(self):
         """Returns the current block builder.
         
-        Returns: hilti.core.builder.BlockBuilder - The block
+        Returns: hilti.builder.BlockBuilder - The block
         builder, as set by ~~setBuilder."""
         assert self._builders[-1]
         return self._builders[-1]
@@ -106,7 +105,7 @@ class CodeGen(object):
         """
         Returns the current function builder.
         
-        Returns: hilti.core.builder.FunctionBuilder - The function
+        Returns: hilti.builder.FunctionBuilder - The function
         builder.
         """
         fbuilder = self.builder().functionBuilder()
@@ -117,7 +116,7 @@ class CodeGen(object):
         """Returns the builder for the HILTI module currently being built.
         Must only be used after ~~compile() has been called.
         
-        Returns: ~~hilti.core.builder.ModuleBuilder - The HILTI module builder.
+        Returns: ~~hilti.builder.ModuleBuilder - The HILTI module builder.
         """
         assert self._mbuilder
         return self._mbuilder
@@ -143,15 +142,16 @@ class CodeGen(object):
         
     def _compile(self):
         """Top-level driver of the compilation process."""
-        hltmod = hilti.core.module.Module(self._module.name())
-        self._mbuilder = hilti.core.builder.ModuleBuilder(hltmod)
+        hltmod = hilti.module.Module(self._module.name())
+        self._mbuilder = hilti.builder.ModuleBuilder(hltmod)
 
         self._errors = 0
 
         paths = self.importPaths()
-        hilti.parser.importModule(self._mbuilder.module(), "hilti", paths)
-        hilti.parser.importModule(self._mbuilder.module(), "binpac", paths)
-        hilti.parser.importModule(self._mbuilder.module(), "binpacintern", paths)
+        
+        for mod in ["hilti", "binpac", "binpacintern"]:
+            if not hilti.importModule(self._mbuilder.module(), mod, paths):
+                self.error(hltmod, "cannot import module %s" % mod)
         
         for i in self._module.scope().IDs():
             if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
@@ -162,13 +162,12 @@ class CodeGen(object):
                     gen.export(grammar)
             
             if isinstance(i, id.Global):
-                if i.value():
-                    default = i.type().hiltiConstant(self, i.value())
+                if i.expr():
+                    init = i.expr().evaluate(self)
                 else:
-                    default = i.type().hiltiDefault(self)
+                    init = i.type().hiltiDefault(self)
                     
-                val = hilti.core.instruction.ConstOperand(default) if default else None
-                hltmod.addID(hilti.core.id.ID(i.name(), i.type().hiltiType(self), hilti.core.id.Role.GLOBAL), val)
+                hltmod.scope().add(hilti.id.Global(i.name(), i.type().hiltiType(self), init))
 
         self._initFunction()
                 
@@ -177,12 +176,12 @@ class CodeGen(object):
         return self._errors == 0
     
     def _initFunction(self):
-        """Generates HILTI function initializing the module."""
+        """Generates a HILTI function initializing the module."""
         
-        ftype = hilti.core.type.Function([], hilti.core.type.Void())
+        ftype = hilti.type.Function([], hilti.type.Void())
         name = "init_%s" % self._module.name()
         (fbuilder, builder) = self.beginFunction(name, ftype)
-        fbuilder.function().setLinkage(hilti.core.function.Linkage.INIT)
+        fbuilder.function().id().setLinkage(hilti.id.Linkage.INIT)
 
         for stmt in self._module.statements():
             stmt.execute(self)

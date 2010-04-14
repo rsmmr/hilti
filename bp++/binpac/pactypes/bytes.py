@@ -2,13 +2,14 @@
 #
 # The bytes type.
 
-import binpac.core.type as type
-import binpac.core.expr as expr
-import binpac.core.constant as constant
-import binpac.core.grammar as grammar
-import binpac.core.operator as operator
+import binpac.type as type
+import binpac.expr as expr
+import binpac.constant as constant
+import binpac.grammar as grammar
+import binpac.operator as operator
 
-import hilti.core.type
+import hilti.type
+import hilti.operand
 
 @type.pac("bytes")
 class Bytes(type.ParseableType):
@@ -24,33 +25,41 @@ class Bytes(type.ParseableType):
     def name(self):
         return "bytes" 
 
-    def validate(self, vld):
+    def validateInUnit(self, vld):
         # We need exactly one of the attributes. 
         c = 0
-        for (name, const, default) in self._suppportedAttributes(self):
+        for (name, (ty, const, default)) in self.supportedAttributes().items():
             if self.hasAttribute(name):
                 c += 1
             
         if c == 0:
-            vld.error(self, "bytes types needs an attribute")
+            vld.error(self, "bytes type needs an attribute")
             
         if c > 1:
-            vld.error(self, "bytes types accepts exactly one attribute")
+            vld.error(self, "bytes type accepts exactly one attribute")
 
-    def validateConst(self, vld, const):
-        if not isinstance(const.value(), str):
-            vld.error(const, "bytes: constant of wrong internal type")
+    def validateCtor(self, vld, value):
+        if not isinstance(value, str):
+            vld.error(const, "bytes: ctor of wrong internal type")
+
+    def hiltiCtor(self, cg, val):
+        print repr(val), repr("---\n")
+        
+        return hilti.operand.Ctor(val, hilti.type.Reference(hilti.type.Bytes()))
             
     def hiltiType(self, cg):
-        return hilti.core.type.Reference([hilti.core.type.Bytes()])
+        return hilti.type.Reference(hilti.type.Bytes())
 
-    def hiltiDefault(self, cg):
-        return hilti.core.constant.Constant("", self.hiltiType(cg))
+    def hiltiDefault(self, cg, must_have=True):
+        if not must_have:
+            return None
+        
+        return hilti.operand.Ctor("", self.hiltiType(cg))
     
     def pac(self, printer):
         printer.output("bytes")
         
-    def pacConstant(self, printer, value):
+    def pacCtor(self, printer, value):
         printer.output("b\"%s\"" % value)
     
     ### Overridden from ParseableType.
@@ -66,8 +75,8 @@ class Bytes(type.ParseableType):
     
     def generateParser(self, cg, cur, dst, skipping):
         
-        bytesit = hilti.core.type.IteratorBytes(hilti.core.type.Bytes())
-        resultt = hilti.core.type.Tuple([self.hiltiType(cg), bytesit])
+        bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
+        resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
         fbuilder = cg.functionBuilder()
         
         # FIXME: We trust here that bytes iterators are inialized with the
@@ -104,19 +113,19 @@ class Bytes(type.ParseableType):
 @operator.Size(Bytes)
 class _:
     def type(e):
-        return type.UnsignedInteger(64)
+        return type.UnsignedInteger(32)
     
     def simplify(e):
         if e.isConst():
-            n = len(e.constant().value())
-            const = constant.Constant(n, type.UnsignedInteger(64))
+            n = len(e.value())
+            const = constant.Constant(n, type.UnsignedInteger(32))
             return expr.Constant(const)
         
         else:
             return None
         
     def evaluate(cg, e):
-        tmp = cg.functionBuilder().addTmp("__size", hilti.core.type.Integer(64))
+        tmp = cg.functionBuilder().addTmp("__size", hilti.type.Integer(32))
         cg.builder().bytes_length(tmp, e.evaluate(cg))
         return tmp
     
@@ -129,10 +138,10 @@ class _:
         if not e1.isConst() or not e2.isConst():
             return None
             
-        b = (e1.constant().value() == e2.constant().value())
+        b = (e1.value() == e2.value())
         return expr.Constant(constant.Constant(b, type.Bool()))
         
     def evaluate(cg, e1, e2):
-        tmp = cg.functionBuilder().addTmp("__equal", hilti.core.type.Bool())
+        tmp = cg.functionBuilder().addTmp("__equal", hilti.type.Bool())
         cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp

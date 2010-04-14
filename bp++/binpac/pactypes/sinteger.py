@@ -4,11 +4,11 @@
 
 import integer
 
-import binpac.core.type as type
-import binpac.core.expr as expr
-import binpac.core.operator as operator
+import binpac.type as type
+import binpac.expr as expr
+import binpac.operator as operator
 
-import hilti.core.type
+import hilti.type
 
 @type.pac("int")
 class SignedInteger(type.Integer):
@@ -28,7 +28,7 @@ class SignedInteger(type.Integer):
         return "int%d" % self.width()
 
     def hiltiType(self, cg):
-        return hilti.core.type.Integer(self.width())
+        return hilti.type.Integer(self.width())
 
     ### Overridden from ParseableType.
 

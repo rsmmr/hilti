@@ -34,9 +34,7 @@ def import_path_callback(option, opt, value, parser):
 initPaths()
 
 import hilti
-import binpac.parser
-import binpac.core.validator
-import binpac.core.codegen
+import binpac
     
 ### Main.    
     
@@ -89,29 +87,29 @@ except IOError, e:
     sys.exit(1)
         
 # Parse input.    
-(errors, mod) = binpac.parser.parse(input, import_paths)
+(errors, mod) = binpac.parser.parsePAC(input, import_paths)
 if errors:
     print >>sys.stderr, "\n%d errors in input, aborting." % errors
     sys.exit(1)
 
 if options.debug_tables:
-    binpac.core.printer.printGrammars(mod, sys.stdout, False)
+    binpac.printer.printGrammars(mod, sys.stdout, False)
     sys.exit(0)
     
 if options.debug_tables_verbose:
-    binpac.core.printer.printGrammars(mod, sys.stdout, True)
+    binpac.printer.printGrammars(mod, sys.stdout, True)
     sys.exit(0)
     
-errors = binpac.core.validator.validateModule(mod)
+errors = binpac.validator.validateModule(mod)
 if errors:
     print >>sys.stderr, "\n%d errors in input, aborting." % errors
     sys.exit(1)
 
 if options.printer:
-    binpac.core.printer.printModule(mod, output)
+    binpac.printer.printModule(mod, output)
     sys.exit(0)
     
-(success, hltmod) = binpac.core.codegen.compileModule(mod, import_paths=import_paths, debug=options.debug, validate=(not options.hlt_novalidate))
+(success, hltmod) = binpac.codegen.compileModule(mod, import_paths=import_paths, debug=options.debug, validate=(not options.hlt_novalidate))
 if not success:
     print >>sys.stderr, "\ncode generation failed, aborting."
     sys.exit(1)
@@ -122,7 +120,7 @@ if errors:
 
 # Done.     
     
-hilti.printer.printAST(hltmod, output=output)
+hilti.printModule(hltmod, output=output)
 
 sys.exit(0)
 

@@ -2,12 +2,12 @@
 #
 # The bytes type.
 
-import binpac.core.type as type
-import binpac.core.expr as expr
-import binpac.core.operator as operator
-import binpac.core.constant as constant
+import binpac.type as type
+import binpac.expr as expr
+import binpac.operator as operator
+import binpac.constant as constant
 
-import hilti.core.type
+import hilti.type
 
 @type.pac("bool")
 class Bool(type.ParseableType):
@@ -28,7 +28,7 @@ class Bool(type.ParseableType):
             vld.error(const, "bool: constant of wrong internal type")
             
     def hiltiType(self, cg):
-        return hilti.core.type.Bool()
+        return hilti.type.Bool()
 
     def name(self):
         return "bool" 
@@ -63,7 +63,7 @@ class _:
         return expr.Constant(constant.Constant(inverse, type.Bool()))
         
     def evaluate(cg, e):
-        tmp = cg.functionBuilder().addTmp("__not", hilti.core.type.Bool())
+        tmp = cg.functionBuilder().addTmp("__not", hilti.type.Bool())
         cg.builder().bool_not(tmp, e.evaluate(cg))
         return tmp
         

@@ -2,11 +2,11 @@
 #
 # The bytes type.
 
-import binpac.core.type as type
-import binpac.core.expr as expr
-import binpac.core.operator as operator
+import binpac.type as type
+import binpac.expr as expr
+import binpac.operator as operator
 
-import hilti.core.type
+import hilti.type
 
 @type.pac("string")
 class String(type.ParseableType):
@@ -26,11 +26,11 @@ class String(type.ParseableType):
         return True
 
     def validateConst(self, vld, const):
-        if not isinstance(const.value(), str):
+        if not isinstance(const.value(), str) and not isinstance(const.value(), unicode):
             vld.error(const, "string: constant of wrong internal type")
             
     def hiltiType(self, cg):
-        return hilti.core.type.String()
+        return hilti.type.String()
 
     def pac(self, printer):
         printer.output("string")

@@ -8,9 +8,9 @@ import grammar
 import operator
 import constant
 import id
-import binpac.support.util as util
+import binpac.util as util
 
-import hilti.core.instruction
+import hilti.operand
 
 class Expression(ast.Node):
     """Base class for all expression objects.
@@ -54,7 +54,7 @@ class Expression(ast.Node):
         *cg*: ~~CodeGen - The current code generator; can be None if the
         expression is constant. 
         
-        Returns: ~~hilti.core.instruction.operand - The resulting  expression of the target type
+        Returns: ~~hilti.operand.Operand - The resulting  expression of the target type
         with the casted expression.
         
         Throws: operator.CastError - If the conversion is not possible.  This
@@ -83,7 +83,7 @@ class Expression(ast.Node):
         
         Returns: bool - Boolean indicating whether the expression is a constant.
         """
-        if isinstance(self, Constant):
+        if isinstance(self, Constant) or isinstance(self, Ctor):
             return True
         
         # Test if we can fold us into a constant.
@@ -110,7 +110,7 @@ class Expression(ast.Node):
  
         *cg*: ~~CodeGen - The current code generator.
         
-        Returns: ~~hilti.core.instruction.Operand - An operand with
+        Returns: ~~hilti.operand.Operand - An operand with
         the value of the evaluated expression.
         """
         util.internal_error("Expression::evaluate not overridden in %s", self.__class__)
@@ -132,7 +132,7 @@ class Assignable(Expression):
         Must be overridden by derived classes.
         
         *cg*: ~~CodeGen - The current code generator.
-        *value* hilti.core.instruction.operand - The value to assign.
+        *value* hilti.operand.operand - The value to assign.
         """
         util.internal_error("Assignable::assign not overridden in %s", self.__class__)
     
@@ -226,10 +226,50 @@ class Constant(Expression):
     
     def evaluate(self, cg):
         c = self._const.type().hiltiConstant(cg, self._const)
-        return hilti.core.instruction.ConstOperand(c)
+        return hilti.operand.Constant(c)
     
     def __str__(self):
         return str(self._const.value())
+    
+class Ctor(Expression):
+    """A constructor expression.
+    
+    value: any - The value of the ctor of a type-specific type.
+    ty: ~~Type - The type of the expression.
+    location: ~~Location - The location where the expression was defined. 
+    """
+    
+    def __init__(self, value, ty, location=None):
+        super(Ctor, self).__init__(location=location)
+        self._value = value
+        self._type = ty
+        
+    def value(self):
+        """Returns the value of the ctor expression.
+        
+        Returns: any - The value of the ctor of a type-specific type.
+        """
+        return self._value
+
+    ### Overidden from ast.Node.
+    
+    def validate(self, vld):
+        self._type.validate(vld)
+        self._type.validateCtor(vld, self._value)
+    
+    def pac(self, printer):
+        self._type.pacCtor(printer, self._value)
+
+    ### Overidden from Expression.
+    
+    def type(self):
+        return self._type
+    
+    def evaluate(self, cg):
+        return self._type.hiltiCtor(cg, self._value)
+    
+    def __str__(self):
+        return str(self._value)
     
 class Name(Assignable):
     """An expression referencing an identifier.

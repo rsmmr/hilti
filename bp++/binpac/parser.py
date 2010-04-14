@@ -8,26 +8,41 @@ import sys
 
 import ply
 
-import binpac.core.id as id
-import binpac.core.type as type
-import binpac.core.module as module
-import binpac.core.expr as expr
-import binpac.core.constant as constant
-import binpac.core.operator as operator
-import binpac.core.location as location
-import binpac.core.stmt as stmt
-import binpac.core.scope as scope
-import binpac.support.util as util
-import binpac.support.parseutil as parseutil
+import binpac.id as id
+import binpac.type as type
+import binpac.module as module
+import binpac.expr as expr
+import binpac.constant as constant
+import binpac.operator as operator
+import binpac.location as location
+import binpac.stmt as stmt
+import binpac.scope as scope
+import binpac.util as util
 import binpac.pactypes.unit as unit
 
 # FIXME: Why does this not work?
-#import binpac.parser.lexer as lexer
+#import binpac.lexer as lexer
 import lexer
 import resolver
 
 tokens = lexer.tokens
 Operator = operator.Operator
+
+def parsePAC(filename, import_paths=["."]):
+    """Parses a file into an |ast|.
+    
+    filename: string - The name of the file to parse.
+    import_paths: list of strings - Search paths for ``import``
+    statement.
+    
+    Returns: tuple (int, ~~Node) - The integer is the number of
+    errors found
+    during parsing. If there were no errors, ~~Node is the root of
+    the parsed
+    |ast|.
+    """
+    (errors, ast, p) = _parse(filename, import_paths)
+    return (errors, ast)
 
 ########## BinPAC++ Grammar.
        
@@ -85,17 +100,15 @@ def p_global_decl(p):
     else:
         e = None
 
-    if e:
-        if not e.isConst():
-            parseutil.error(p, "expression must be constant")
-            raise SyntaxError    
-        
-    const = e.constant() if e else None
-    
     if p[2] == "const":
+        if e:
+            if not e.isConst():
+                util.parser_error(p, "expression must be constant")
+                raise SyntaxError    
+        const = e.constant() if e else None
         i = id.Constant(name, const, linkage=linkage, location=_loc(p, 2))
     else:
-        i = id.Global(name, ty, const, linkage=linkage, location=_loc(p, 2))
+        i = id.Global(name, ty, e, linkage=linkage, location=_loc(p, 2))
         
     _currentScope(p).addID(i)
 
@@ -160,7 +173,7 @@ def p_type_ident(p):
         return
     
     if not isinstance(i, id.Type):
-        parseutil.error(p, "%s is not a type " % p[1])
+        util.parser_error(p, "%s is not a type " % p[1])
         raise SyntaxError    
         
     p[0] = i.type()
@@ -213,7 +226,7 @@ def _addAttrs(p, attrs):
         try:
             p.parser.state.field.type().addAttribute(attr[0], attr[1])
         except type.ParseableType.AttributeMismatch, e:
-            parseutil.error(p, "invalid attribute &%s: %s" % (attr[0], e))
+            util.parser_error(p, "invalid attribute &%s: %s" % (attr[0], e))
             raise SyntaxError    
 
 def p_unit_field(p):
@@ -248,16 +261,16 @@ def p_unit_field_property(p):
     
     expr = p[2]
     if not expr.isConst():
-        parseutil.error(p, "expression must be constant")
+        util.parser_error(p, "expression must be constant")
         raise SyntaxError    
     
     try:
         p.parser.state.unit.setProperty(p[1], expr.constant())
     except ValueError, e:
-        parseutil.error(p, "unknown property %s" % p[1])
+        util.parser_error(p, "unknown property %s" % p[1])
         raise SyntaxError    
     except TypeError, e:
-        parseutil.error(p, "expression must be of type %s" % e)
+        util.parser_error(p, "expression must be of type %s" % e)
         raise SyntaxError    
     
 def p_instantiate_field(p):
@@ -266,7 +279,7 @@ def p_instantiate_field(p):
     p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=loc)
     
 def p_unit_field_type_const(p):
-    """unit_field_type : constant     
+    """unit_field_type : CONSTANT     
                        | builtin_type opt_unit_field_params 
                        | IDENT        opt_unit_field_params 
     """
@@ -294,7 +307,7 @@ def p_unit_field_type_const(p):
         val = (None, i.type())
 
     else:
-        parseutil.error(p, "identifier must be type or constant")
+        util.parser_error(p, "identifier must be type or constant")
         raise SyntaxError    
 
     p[0] = (val, p[2] if len(p) > 2 else [])
@@ -323,42 +336,50 @@ def p_attr(p):
     """
     p[0] = (p[1], p[3]) if len(p) > 2 else (p[1], None)
 
-### Constants
+### Ctor expressions.
 
-def p_constant_const(p):
-    """constant : CONSTANT"""
-    p[0] = p[1]
-    
-def p_constant_list(p):
-    """constant : '[' opt_const_list ']'
-                | LIST '<' type '>' '(' ')'"""
+def p_ctor_constant(p):
+    """ctor : CONSTANT"""
+    p[0] = expr.Constant(p[1], location=_loc(p, 1))
+
+def p_ctor_bytes(p):
+    """ctor : BYTES"""
+    p[0] = expr.Ctor(p[1], type.Bytes(), location=_loc(p, 1))
+
+def p_ctor_list(p):
+    """ctor : '[' opt_ctor_list_list ']'
+            | LIST '<' type '>' '(' ')'"""
     if len(p) > 4:
         val = []    
         ty = p[3]
     else:
         if not len(p[2]):
-            parseutil.error(p, "list constants cannot be empty (use list<T>() instead)")
+            util.parser_error(p, "list ctors cannot be empty (use list<T>() instead)")
             raise SyntaxError    
         val = p[2]
         ty = p[2][0].type()
         
-    p[0] = constant.Constant(val, type.List(ty))
+    p[0] = expr.Ctor(val, type.List(ty))
 
-def p_const_list(p):
-    """const_list : constant ',' const_list
-                  | constant """
-    p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
-    
-def p_opt_const_list(p):
-    """opt_const_list : const_list
-                      | """
+def p_opt_ctor_list_list(p):
+    """opt_ctor_list_list : ctor_list_list
+                          | """
     p[0] = p[1] if len(p) > 1 else []
+    
+def p_ctor_list_list(p):
+    """ctor_list_list : ctor ',' ctor_list_list
+                      | ctor """
+    p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
     
 ### Expressions
 
 def p_expr_constant(p):
-    """expr : constant"""
+    """expr : CONSTANT"""
     p[0] = expr.Constant(p[1], location=_loc(p, 1))
+    
+def p_expr_ctor(p):
+    """expr : ctor"""
+    p[0] = p[1]
 
 def p_expr_attribute(p):
     """expr : expr '.' IDENT"""
@@ -488,21 +509,21 @@ def p_error(p):
         type = p.type.lower()
         value = p.value
         if type == value:
-            parseutil.error(p, "unexpected %s" % type, lineno=p.lineno)
+            util.parser_error(p, "unexpected %s" % type, lineno=p.lineno)
         else:
-            parseutil.error(p, "unexpected %s '%s'" % (type, value), lineno=p.lineno)
+            util.parser_error(p, "unexpected %s '%s'" % (type, value), lineno=p.lineno)
     else:
-        parseutil.error(None, "unexpected end of file")
+        util.parser_error(None, "unexpected end of file")
         
 ##########        
 
-class BinPACState(parseutil.State):
+class BinPACState(util.State):
     """Tracks state during parsing."""
     def __init__(self, filename, import_paths):
         super(BinPACState, self).__init__(filename, import_paths)
         self.module = None
 
-_loc = parseutil.loc
+_loc = util.loc
 
 # Same arguments as parser.parse().
 def _parse(filename, import_paths=["."]):
@@ -510,14 +531,14 @@ def _parse(filename, import_paths=["."]):
     lex = ply.lex.lex(debug=0, module=lexer)
     parser = ply.yacc.yacc(debug=0, write_tables=0)
     
-    parseutil.initParser(parser, lex, state)
+    util.initParser(parser, lex, state)
     
     filename = os.path.expanduser(filename)
     
     try:
         lines = open(filename).read()
     except IOError, e:
-        util.error("cannot open file %s: %s" % (filename, e))
+        util.parser_error("cannot open file %s: %s" % (filename, e))
 
     try:
         ast = parser.parse(lines, lexer=lex, debug=0)
@@ -537,7 +558,7 @@ def _parse(filename, import_paths=["."]):
     return (errors, ast, parser)    
 
 def _importFile(parser, filename, location, _parse):
-    fullpath = parseutil.checkImport(parser, filename, "hlt", location)
+    fullpath = util.checkImport(parser, filename, "hlt", location)
         
     if not fullpath:
         return False

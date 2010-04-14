@@ -1,6 +1,6 @@
 # $Id$
 
-import binpac.support.util as util
+import binpac.util as util
 
 class Resolver(object):
     """Class that resolves all still unresolved identifiers in a module."""

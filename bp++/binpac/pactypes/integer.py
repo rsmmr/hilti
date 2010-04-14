@@ -2,12 +2,12 @@
 #
 # Base class for integer types.
 
-import binpac.core.type as type
-import binpac.core.expr as expr
-import binpac.core.grammar as grammar
-import binpac.core.operator as operator
+import binpac.type as type
+import binpac.expr as expr
+import binpac.grammar as grammar
+import binpac.operator as operator
 
-import hilti.core.type
+import hilti.type
 
 @type.pac("int")
 class Integer(type.ParseableType):

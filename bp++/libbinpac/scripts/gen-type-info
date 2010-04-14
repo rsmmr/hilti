@@ -1,7 +1,8 @@
 #! /usr/bin/env bash
 
 tools=`hilti-config --distbase`/tools
+hiltic=`binpac-config --hiltic`
 
 export PATH=$tools/hilti-config:$PATH
 
-$tools/hiltic/hiltic -l $1 | llvm-as >$2
+$tools/hiltic/hiltic $hiltic -l $1 | llvm-as >$2

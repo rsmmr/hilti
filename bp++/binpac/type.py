@@ -4,9 +4,9 @@ builtin_id = id
 
 import scope
 import id
-import binpac.support.util as util
+import binpac.util as util
 
-import hilti.core.constant
+import hilti.constant
 
 class Type(object):
     """Base class for all data types provided by the BinPAC++ language.  
@@ -163,6 +163,17 @@ class Type(object):
         """
         util.internal_error("Type.validateConst() not overidden for %s" % self.__class__)
         
+    def validateCtor(self, vld, value):
+        """Validates the semantic correctness of a ctor value of the type.
+        
+        Must be overidden by derived classes if ctors with their type can be
+        created.
+        
+        vld: ~~Validator - The validator triggering the validation.
+        value: any - The value in type-specific type. 
+        """
+        util.internal_error("Type.validateCtor() not overidden for %s" % self.__class__)
+        
     def hiltiType(self, cg):
         """Returns the corresponding HILTI type. 
         
@@ -172,7 +183,7 @@ class Type(object):
         
         cg: ~~CodeGen - The current code generator. 
         
-        Returns: hilti.core.type.Type - The HILTI type.
+        Returns: hilti.type.Type - The HILTI type.
         """
         util.internal_error("Type.hiltiType() not overidden for %s" % self.__class__)
 
@@ -188,22 +199,41 @@ class Type(object):
         cg: ~~CodeGen - The current code generator. 
         *const*: ~~Constant - The constant to convert to HILTI.
         
-        Returns: hilti.core.constant.Constant - The HILTI constant.
+        Returns: hilti.constant.Constant - The HILTI constant.
         """
         hlt = const.type().hiltiType(cg)
-        return hilti.core.constant.Constant(const.value(), hlt)
+        return hilti.constant.Constant(const.value(), hlt)
 
-    def hiltiDefault(self, cg):
+    def hiltiCtor(self, cg, value):
+        """Returns a HILTI ctor operand for constructing an element of this type.
+        
+        Must be overridden by derived classes for types that provide ctor
+        expressions.
+        
+        cg: ~~CodeGen - The current code generator. 
+        *cal*: any - The value of a type-specififc type.
+        
+        Returns: hilti.operand.Ctor - The HILTI ctor.
+        """
+        util.internal_error("Type.hiltiCtor() not overidden for %s" % self.__class__)
+    
+    def hiltiDefault(self, cg, must_have=True):
         """Returns the default value to initialize HILTI variables of this
         type with.
 
         cg: ~~CodeGen - The current code generator. 
         
+        must_have: bool - If False, it is an option to leave return
+        None of there is no particular default. This is for example
+        useful for structs where we can leave fields unset. If 
+        True, the funtion must return a value. 
+        
         Can be overridden by derived classes if the default value set by
         HILTI for variables is not the desired one. 
         
-        Returns: hilti.core.constant.Constant - The default value, of None if the HILTI
-        default is correct.
+        Returns: hilti.operand.Operand - The default value, of None
+        if the HILTI default is correct or *must_have* is False and
+        no default value is picked. 
         """
         return None
     
@@ -226,6 +256,17 @@ class Type(object):
         printer: ~~Printer - The printer to use.
         """
         util.internal_error("Type.pacConstant() not overidden for %s" % self.__class__)
+        
+    def pacCtor(self, printer, value):
+        """Converts a ctor of the type into its BinPAC++ representation.
+
+        Must be overidden by derived classes if ctors with their type can be
+        created.
+        
+        value: any - The value of the ctor in a type-specific type.
+        printer: ~~Printer - The printer to use.
+        """
+        util.internal_error("Type.pacCtor() not overidden for %s" % self.__class__)
 
     def __eq__(self, other):
         """Compare two types for compatibility. If the comparision yields
@@ -399,6 +440,19 @@ class ParseableType(Type):
         """
         return {}
 
+    def validateInUnit(self, vld):
+        """Validates the semantic correctness of the type when used inside a
+        unit definition.
+        
+        Can be overridden by derived classes; the default implementation does
+        nothing. If there are any errors encountered during validation, the
+        method must call ~~Validator.error. If there are any sub-nodes that
+        also need to be checked, the method needs to do that recursively.
+        
+        vld: ~~Validator - The validator triggering the validation.
+        """
+        pass
+    
     def initParser(self, field):
         """Hook into parser initialization. The method will be called at the
         time a ~~UnitField is created that has this type as its
@@ -433,11 +487,11 @@ class ParseableType(Type):
         
         cg: ~~CodeGen - The current code generator. 
         
-        dst: hilti.core.instruction.Operand - The operand in which to store
+        dst: hilti.operand.Operand - The operand in which to store
         the parsed value. The operand will have the type returned by
         ~~hiltiType. 
         
-        cur: hilti.core.instruction.Operand - A bytes iterator with the
+        cur: hilti.operand.Operand - A bytes iterator with the
         position where to start parsing. 
         
         skipping: boolean - True if the parsed value will actually never be
@@ -445,7 +499,7 @@ class ParseableType(Type):
         storing anything in *dst*. It however must still return the advanced
         iterator.
         
-        Returns: ~~hilti.core.instruction.Operand - A a byte iterator
+        Returns: ~~hilti.operand.Operand - A a byte iterator
         containing the advanced parsing position, pointing to the first byte
         *not* consumed anymore.
         """
@@ -506,7 +560,7 @@ class Identifier(Type):
         printer.output(value.value())
         
     def hiltiType(self, cg):
-        return hilti.core.type.String()
+        return hilti.type.String()
         
 # Additional traits types may have.
 #class Derefable(object):
@@ -522,7 +576,7 @@ class Identifier(Type):
 
 def pac(name):
     """Class decorator to add a type class that is defined in some other
-    module to the namespace of *binpac.core.type*.
+    module to the namespace of *binpac.type*.
 
     name: a short, descriptive name for the type that be used in messages to
     the users to describe instances of the type. 
@@ -531,8 +585,8 @@ def pac(name):
     """
     
     def _pac(ty):
-        import binpac.core
-        binpac.core._types[ty.__name__] = ty
+        import binpac
+        binpac._types[ty.__name__] = ty
         globals()[ty.__name__] = ty
         ty._type_name = name
         return ty

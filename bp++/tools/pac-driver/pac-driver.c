@@ -139,7 +139,7 @@ int main(int argc, char** argv)
     int verbose = 0;
     const char* parser = 0;
 
-    hilti_init();
+    hlt_init();
     
     char ch;
     while ((ch = getopt(argc, argv, "p:vdh")) != -1) {

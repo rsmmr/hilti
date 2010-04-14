@@ -95,7 +95,7 @@ attribute; they are all class methods.
 
   *cg*: ~~CodeGen - The current code generator.
 
-  Returns: ~~hilti.core.instructin.Operand - An operand with the
+  Returns: ~~hilti.instructin.Operand - An operand with the
   value of the evaluated expression. 
 
 .. function:: castConstTo(const, dsttype):
@@ -146,7 +146,7 @@ import functools
 import type as mod_type
 import expr
 
-import binpac.support.util as util
+import binpac.util as util
 
 ### Available operators and operator methods.
 
@@ -274,7 +274,7 @@ def evaluate(op, cg, exprs):
 
     exprs: list of ~~Expression - The expressions for the operator.
 
-    Returns: ~~hilti.core.instructin.Operand - An operand with the value of
+    Returns: ~~hilti.instructin.Operand - An operand with the value of
     the evaluated expression. 
     """
     
