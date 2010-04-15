@@ -540,13 +540,15 @@ class Switch(Conditional):
         return self._default
         
 class Grammar:
-    def __init__(self, name, root, params=[], location=None):
+    def __init__(self, name, root, params=[], addl_ids=[], location=None):
         """Instantiates a grammar given its root production.
         
         name: string - A name which uniquely identifies this grammar.
         root: ~~Production - The grammar's root production.
         params: list of ~~ID - Additional parameters passed into the
         grammar's parser. 
+        addl_ids: list of ~~ID - Additional IDs that should become part of the
+        generated parser object. 
         """
         self._name = name
         self._start = root
@@ -563,7 +565,10 @@ class Grammar:
         self._simplify()
         self._computeTables()
         self._location = location
-
+        
+        for id in addl_ids:
+            self._scope.addID(id)
+        
     def name(self):
         """Returns the name of the grammar. The name uniquely identifies the
         grammar. 

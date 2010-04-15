@@ -276,6 +276,7 @@ class Unit(type.ParseableType):
         self._props = {}
         self._fields = {}
         self._fields_ordered = []
+        self._vars = {}
         self._hooks = {}
         self._prod = None 
         self._grammar = None
@@ -354,6 +355,21 @@ class Unit(type.ParseableType):
         idx = field.name() if field.name() else str(builtin_id(field))
         self._fields[idx] = field
         self._fields_ordered += [field]
+
+    def variables(self):
+        """Returns all user-defined variables.
+        
+        Returns: dictionary of string -> ~~id.Variable - The variables,
+        indexed by their name.
+        """
+        return self._vars
+    
+    def addVariable(self, var):
+        """Adds a user-defined variable to the unit type.
+        
+        var: id.Variable - The variable.
+        """
+        self._vars[var.name()] = var
         
     def hooks(self, name):
         """Returns all hooks registered for a hook name. 
@@ -434,7 +450,7 @@ class Unit(type.ParseableType):
         if not self._grammar:
             seq = [f.production() for f in self._fields_ordered]
             seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
-            self._grammar = grammar.Grammar(self.name(), seq, self._params, location=self.location())
+            self._grammar = grammar.Grammar(self.name(), seq, self._params, addl_ids=self._vars.values(), location=self.location())
             
         return self._grammar
             
@@ -459,11 +475,14 @@ class Unit(type.ParseableType):
         for f in self._fields.values():
             f.validate(vld)
 
+        for var in self._vars.values():
+            var.validate(vld)
+            
         for hook in self._hooks:
             hook.validate(vld)
             
     def pac(self, printer):
-        printer.output("<bytes type - TODO>")
+        printer.output("<unit type - TODO>")
 
     def resolve(self, resolver):
         if resolver.already(self):
@@ -495,22 +514,36 @@ class Unit(type.ParseableType):
     
 @operator.Attribute(Unit, type.Identifier)
 class Attribute:
+    @staticmethod 
+    def attrType(lhs, ident):
+        name = ident.constant().value()
+        
+        if name in lhs.type().variables():
+            return lhs.type().variables()[name].type()
+        
+        else:
+            return lhs.type().parsedFieldType(name)
+    
+    
     def validate(vld, lhs, ident):
-        ident = ident.constant().value()
-        if not lhs.type().parsedFieldType(ident):
-            vld.error(lhs, "unknown unit attribute '%s'" % ident)
+        name = ident.constant().value()
+        if not name in lhs.type().variables() and not lhs.type().parsedFieldType(name):
+            vld.error(lhs, "unknown unit attribute '%s'" % name)
         
     def type(lhs, ident):
-        ident = ident.constant().value()
-        return lhs.type().parsedFieldType(ident)
+        return Attribute.attrType(lhs, ident)
     
     def evaluate(cg, lhs, ident):
-        ident = ident.constant().value()
-        type = lhs.type().parsedFieldType(ident)
-        
+        name = ident.constant().value()
+        type = Attribute.attrType(lhs, ident)
         builder = cg.builder()
         tmp = builder.addTmp("__attr", type.hiltiType(cg))
-        builder.struct_get(tmp, lhs.evaluate(cg), builder.constOp(ident))
+        builder.struct_get(tmp, lhs.evaluate(cg), builder.constOp(name))
         return tmp
     
-            
+    def assign(cg, lhs, ident, rhs):
+        name = ident.constant().value()
+        type = Attribute.attrType(lhs, ident)
+        builder = cg.builder()
+        builder.struct_set(lhs.evaluate(cg), builder.constOp(name), rhs)
+    

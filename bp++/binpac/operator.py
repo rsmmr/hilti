@@ -97,6 +97,15 @@ attribute; they are all class methods.
 
   Returns: ~~hilti.instructin.Operand - An operand with the
   value of the evaluated expression. 
+  
+.. function:: assign(cg, <exprs>, rhs)
+
+  Optional. Implements assignment, generating the corresponding HILTI code.
+  If not implemented, it is assumed that the operator doesn't allow
+  assignment. The ``<exprs>`` are interpreted just as with ~~evaluate;
+  ``rhs`` is the right-hand side value to assign (as a ~~hilti.operand.Operand).
+
+  *cg*: ~~CodeGen - The current code generator.
 
 .. function:: castConstTo(const, dsttype):
 
@@ -202,7 +211,7 @@ _Operators = {
     "Not": (2, "Inverts a boolean value. (``! a``)", _pacUnary("-"))
     }
 
-_Methods = ["typecheck", "validate", "simplify", "evaluate", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
+_Methods = ["typecheck", "validate", "simplify", "evaluate", "assign", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
     
 ### Public functions.    
     
@@ -288,6 +297,30 @@ def evaluate(op, cg, exprs):
     
     return func(cg, *exprs)
 
+def assign(op, cg, exprs, rhs):
+    """Generates HILTI code for an assignment.
+    
+    This function must only be called if ~~typecheck indicates that operator
+    and expressions are compatible. 
+
+    op: string - The name of the operator.
+    *cg*: ~~CodeGen - The current code generator.
+
+    exprs: list of ~~Expression - The expressions for the operator.
+    
+    rhs: ~~hilti.operand.Operand - The right-hand side to assign.
+    """
+    
+    if not typecheck(op, exprs):
+        util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
+
+    func = _findOp("assign", op, exprs)
+    
+    if not func:
+        util.error("no assign implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
+
+    func(cg, *(exprs + [rhs]))
+        
 def type(op, exprs):
     """Returns the result type for an operator.
     

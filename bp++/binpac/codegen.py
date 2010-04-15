@@ -155,7 +155,8 @@ class CodeGen(object):
         
         for i in self._module.scope().IDs():
             if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
-                if i.type().property("export").value():
+                # FIXME: Should get rid of %export.
+                if i.type().property("export").value() or i.linkage() == id.Linkage.EXPORTED:
                     gen = pgen.ParserGen(self)
                     grammar = i.type().grammar()
                     gen.compile(grammar)

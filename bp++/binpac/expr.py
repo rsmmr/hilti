@@ -126,13 +126,13 @@ class Assignable(Expression):
     def __init__(self, location=None):
         super(Assignable, self).__init__(location)
     
-    def assign(self, cg, value):
+    def assign(self, cg, rhs):
         """Generates code to assign a value to the expression.
         
         Must be overridden by derived classes.
         
         *cg*: ~~CodeGen - The current code generator.
-        *value* hilti.operand.operand - The value to assign.
+        *rhs* hilti.operand.Operand - The value to assign.
         """
         util.internal_error("Assignable::assign not overridden in %s", self.__class__)
     
@@ -189,9 +189,12 @@ class Overloaded(Expression):
     def evaluate(self, cg):
         return operator.evaluate(self._op, cg, self._exprs)
 
+    def assign(self, cg, rhs):
+        return operator.assign(self._op, cg, self._exprs, rhs)
+    
     def __str__(self):
         return "(%s %s)" % (self._op, " ".join([str(e) for e in self._exprs]))
-    
+
 class Constant(Expression):
     """A constant expression.
     
@@ -331,13 +334,13 @@ class Name(Assignable):
 
     ### Overidden from Assignable.
 
-    def assign(self, cg, value):
+    def assign(self, cg, rhs):
         i = self._scope.lookupID(self._name)
         assert i
         
         if isinstance(i, id.Global) or isinstance(i, id.Local) or isinstance(i, id.Parameter):
             name = self._internalName()
-            cg.builder().assign(cg.functionBuilder().idOp(name), value)
+            cg.builder().assign(cg.functionBuilder().idOp(name), rhs)
             
         else:
             util.internal_error("unexpected id type %s in NameExpr::assign", repr(i))
@@ -347,25 +350,25 @@ class Assign(Expression):
     """An expression assigning a value to a destination.
     
     dest: ~~Expression - The destination expression.
-    value: ~~Expression - The value to assign.
+    rhs: ~~Expression - The value to assign.
     location: ~~Location - The location where the expression was defined. 
     """
     
-    def __init__(self, dest, value, location=None):
+    def __init__(self, dest, rhs, location=None):
         super(Assign, self).__init__(location=location)
         self._dest = dest
-        self._value = value
+        self._rhs = rhs
 
     ### Overidden from ast.Node.
     
     def validate(self, vld):
         self._dest.validate(vld)
-        self._value.validate(vld)
+        self._rhs.validate(vld)
         
-        if not isinstance(self._dest, Assignable):
+        if "assign" in self._dest.__dict__:
             vld.error(self, "cannot assign to lhs expression")
         
-        if self._dest.type() != self._value.type():
+        if self._dest.type() != self._rhs.type():
             vld.error(self, "types do not match in assigment")
 
         if self._dest.isConst():
@@ -374,7 +377,7 @@ class Assign(Expression):
     def pac(self, printer):
         self._dest.pac(printer)
         printer.output(" = ")
-        self._value.pac(printer)
+        self._rhs.pac(printer)
 
     ### Overidden from Expression.
 
@@ -382,8 +385,8 @@ class Assign(Expression):
         return self._dest.type()
     
     def evaluate(self, cg):
-        value = self._value.evaluate(cg)
-        self._dest.assign(cg, value)
+        rhs = self._rhs.evaluate(cg)
+        self._dest.assign(cg, rhs)
     
     def __str__(self):
         return self._name

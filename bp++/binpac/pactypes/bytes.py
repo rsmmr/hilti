@@ -43,8 +43,6 @@ class Bytes(type.ParseableType):
             vld.error(const, "bytes: ctor of wrong internal type")
 
     def hiltiCtor(self, cg, val):
-        print repr(val), repr("---\n")
-        
         return hilti.operand.Ctor(val, hilti.type.Reference(hilti.type.Bytes()))
             
     def hiltiType(self, cg):

@@ -195,7 +195,7 @@ def p_list(p):
 
    # Unit type.
 def p_type_unit(p):
-    """builtin_type : UNIT opt_unit_param_list _instantiate_unit '{' _enter_unit_hook unit_field_list _leave_unit_hook  '}' """
+    """builtin_type : UNIT opt_unit_param_list _instantiate_unit '{' _enter_unit_hook unit_item_list _leave_unit_hook  '}' """
     p.parser.state.unit.setLocation(_loc(p, 1))
     p[0] = p.parser.state.unit
 
@@ -216,10 +216,21 @@ def p_unit_param_list(p):
                            | """
     p[0] = p[2] if len(p) > 2 else []
 
-def p_unit_field_list(p):
-    """unit_field_list : unit_field unit_field_list
-                       | unit_field"""
+def p_unit_item_list(p):
+    """unit_item_list :  unit_item unit_item_list
+                       | unit_item"""
     pass
+
+def p_unit_item(p):
+    """unit_item : VAR unit_var
+                 | unit_field
+    """
+    pass
+
+def p_unit_var(p):
+    """unit_var : IDENT ':' type ';'"""
+    i = id.Variable(p[1], p[3])
+    p.parser.state.unit.addVariable(i)
 
 def _addAttrs(p, attrs):
     for attr in attrs:
@@ -398,7 +409,7 @@ def p_expr_not(p):
     
 def p_expr_assign(p):
     """expr : expr '=' expr"""
-    p[0] = expr.Assign(p[1], p[3], location=_loc(p, 1))
+    p[0] = expr.Assign(p[1], p[3], location=_loc(p, 1))    
     
 def p_expr_add(p):
     """expr : expr '+' expr"""

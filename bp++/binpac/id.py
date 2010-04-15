@@ -299,3 +299,24 @@ class Attribute(ID):
     
     def evaluate(self, cg):
         util.internal_error("evaluate must not be called for id.Attribute")
+        
+class Variable(ID):
+    """An ID representing a user-defined unit variable. See ~~ID for arguments
+    not listed in the following.
+    """
+    def __init__(self, name, type, location=None):
+        super(Variable, self).__init__(name, type, location=location)
+
+    ### Overidden from ast.Node.
+
+    def validate(self, vld):
+        pass
+
+    def pac(self, printer):
+        printer.output("var %s" % self.name())
+        
+    ### Overidden from ID.
+    
+    def evaluate(self, cg):
+        util.internal_error("evaluate must not be called for id.Variable")
+        
