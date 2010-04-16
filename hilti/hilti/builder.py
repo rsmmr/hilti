@@ -281,10 +281,11 @@ class FunctionBuilder(OperandBuilder):
         else:
             return ty
         
-    def addLocal(self, name, ty, value = None, force=False, reuse=False):
-        """Adds a new local variable to the function. Normally, it's an error
-        if the local already exists. If *force* is given however, the name is
-        adapted to be unique in that case. If *reuse* is given instead, the
+    def addLocal(self, name, ty, value = None, force=True, reuse=False):
+        """Adds a new local variable to the function. Normally, it's ok if the
+        local already exists, the name is then adapted to be unique. However,
+        if *force* is set to false, it is an error if a variable under that
+        name already exists.  If *force* is False and *reuse* is set, the
         exisiting local is returned (which must have type *ty*). 
         
         name: string - The name of the variable.
