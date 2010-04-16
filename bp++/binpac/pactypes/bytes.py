@@ -29,14 +29,14 @@ class Bytes(type.ParseableType):
         # We need exactly one of the attributes. 
         c = 0
         for (name, (ty, const, default)) in self.supportedAttributes().items():
-            if self.hasAttribute(name):
+            if self.hasAttribute(name) and name != "default":
                 c += 1
             
         if c == 0:
-            vld.error(self, "bytes type needs an attribute")
+            vld.error(self, "bytes type needs a termination attribute")
             
         if c > 1:
-            vld.error(self, "bytes type accepts exactly one attribute")
+            vld.error(self, "bytes type accepts exactly one termination attribute")
 
     def validateCtor(self, vld, value):
         if not isinstance(value, str):
@@ -64,6 +64,7 @@ class Bytes(type.ParseableType):
 
     def supportedAttributes(self):
         return { 
+            "default": (self, True, None),
             "length": (type.UnsignedInteger(64), False, None),
             "until": (type.Bytes(), False, None),
             }
@@ -114,7 +115,7 @@ class _:
         return type.UnsignedInteger(32)
     
     def simplify(e):
-        if e.isConst():
+        if e.isInit():
             n = len(e.value())
             const = constant.Constant(n, type.UnsignedInteger(32))
             return expr.Constant(const)
@@ -133,7 +134,7 @@ class _:
         return type.Bool()
     
     def simplify(e1, e2):
-        if not e1.isConst() or not e2.isConst():
+        if not e1.isInit() or not e2.isInit():
             return None
             
         b = (e1.value() == e2.value())

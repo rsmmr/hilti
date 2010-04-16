@@ -304,8 +304,8 @@ class ParseableType(Type):
         """Returns whether an attribute has been defined. If an attribute has
         a default expression, it is always returned as being defined.
         
-        name: string - The name of the attribute. The name must be returned by
-        ~~supportedAttributes.
+        name: string - The name of the attribute, without the leading
+        ampersand. The name must be returned by ~~supportedAttributes.
         
         Returns: bool - True if the attribute is defined.
         """
@@ -316,7 +316,7 @@ class ParseableType(Type):
             all = self.supportedAttributes()
             (ty, const, default) = all[name]
         except KeyError:
-            util.internal_error("attribute %s not valid for type %s" % (name, self))
+            return None
             
         if default:
             return True
@@ -329,8 +329,8 @@ class ParseableType(Type):
         have an expression, *None* is returned. If the value is not defined
         but has a default expression, the default is returned.
 
-        name: string - The name of the attribute. The name must be returned by
-        ~~supportedAttributes.
+        name: string - The name of the attribute, without the leading
+        ampersand. The name must be returned by ~~supportedAttributes.
         
         Returns: ~~Expr or None - The expression associated with the
         attribute, or None as described above.
@@ -339,7 +339,7 @@ class ParseableType(Type):
             all = self.supportedAttributes()
             (ty, const, default) = all[name]
         except KeyError:
-            util.internal_error("attribute %s not valid for type %s" % (name, self))
+            return None
             
         if name in self._attrs:
             return self._attrs[name]
@@ -352,7 +352,7 @@ class ParseableType(Type):
     def addAttribute(self, name, expr):
         """Adds an attribute to the type.
         
-        name: string - The name of the attribute, which must be among those
+        name: string - The name of the attribute without the leading ampersand, which must be among those
         reported by ~~supportedAttributes.
         
         expr: ~~Expr - a constant ~~Expression giving the attribute's
@@ -365,7 +365,7 @@ class ParseableType(Type):
         """
         try:
             all = self.supportedAttributes()
-            (ty, const, default) = all[name]
+            (ty, init, default) = all[name]
             
             if ty and not expr:
                 raise ParseableType.AttributeMismatch, "attribute must have expression of type %s" % ty
@@ -373,8 +373,8 @@ class ParseableType(Type):
             if expr and not ty:
                 raise ParseableType.AttributeMismatch, "attribute cannot have an expression"
 
-            if const and not expr.isConst():
-                raise ParseableType.AttributeMismatch, "attribute's expression must be a constant"
+            if init and not expr.isInit():
+                raise ParseableType.AttributeMismatch, "attribute's expression must be suitable for initializing a value"
 
             if not expr.canCastTo(ty):
                 raise ParseableType.AttributeMismatch, "attribute's expression must be of type %s, but is %s" % (ty, expr.type())
@@ -426,17 +426,24 @@ class ParseableType(Type):
     def supportedAttributes(self):
         """Returns the attributes this type supports.
         
-        Returns: dictionary *name* -> (*type*, *constant*, *default*) - *name*
-        is a string with the attribute's name (excluding the leading
-        ampersand); *type* is a ~~Type defining the type the attribute's
-        expression must have, or None if the attribute doesn't take a
-        expression; *constant* is a boolean indicating whether the attribute's
-        expression must be constant; and *default* is a ~~Constant expression
-        with a default expression to be used if the attributes is not
-        explicitly specified, or None if the attribute is unset by default.
+        Returns: dictionary *name* -> (*type*, *init*, *default*) -
+        *name* is a string with the attribute's name (excluding the
+        leading ampersand); *type* is a ~~Type defining the type the
+        attribute's expression must have, or None if the attribute
+        doesn't take a expression; *init* is a boolean indicating
+        whether the attribute's expression must suitable for
+        intializing a HILTI variable; and *default* is a ~~Constant
+        expression with a default expression to be used if the
+        attributes is not explicitly specified, or None if the
+        attribute is unset by default.
 
-        This method can be overridden by derived classes. The default
-        implementation returns an empty dictionary, i.e., no supported attributes.
+        This method can be overridden by derived classes. The
+        default implementation returns an empty dictionary, i.e., no
+        supported attributes. 
+        
+        Note if you want to support the ``&default`` attribute, you need to
+        overwrite this method and add an entry ``{ "default": (self, True,
+        None) }``. You don't need to do anything else than that though.
         """
         return {}
 

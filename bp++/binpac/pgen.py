@@ -637,8 +637,18 @@ class ParserGen:
         
         def _makeType():
             fields = self._current_grammar.scope().IDs()
-            fields = [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), None) for f in fields]
-            structty = hilti.type.Struct(fields)
+            ids = []
+            
+            for f in fields:
+                default = f.type().attributeExpr("default")
+                if default:
+                    hlt_default = default.hiltiInit(self.cg())
+                else:
+                    hlt_default = f.type().hiltiDefault(self.cg(), False)
+                
+                ids += [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), hlt_default)]
+                
+            structty = hilti.type.Struct(ids)
             self._mbuilder.addTypeDecl(self._name("object"), structty)
             return structty
         
@@ -656,14 +666,6 @@ class ParserGen:
         
         self.builder().new(obj, self.builder().typeOp(self._typeParseObject()))
         
-        for f in self._current_grammar.scope().IDs():
-            default = f.type().hiltiDefault(self.cg(), False)
-            if default == None:
-                continue
-            
-            name = self.builder().constOp(f.name())
-            self.builder().struct_set(obj, name, default)
-    
     ### Helper methods.
 
     def _name(self, tag1, tag2 = None):

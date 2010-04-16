@@ -83,7 +83,7 @@ class Expression(ast.Node):
         
         Returns: bool - Boolean indicating whether the expression is a constant.
         """
-        if isinstance(self, Constant) or isinstance(self, Ctor):
+        if isinstance(self, Constant):
             return True
         
         # Test if we can fold us into a constant.
@@ -92,8 +92,31 @@ class Expression(ast.Node):
         
         return False
 
-    ### Methods for derived classes to override.    
+    def isInit(self):
+        """Returns true if the expression evaluates to a value that can be
+        used as the initialization value for a HILTI object. 
 
+        Can be overidden by derived classes. The default implementation always
+        returns False.
+        
+        Returns: bool - Boolean indicating whether the expression is an
+        initialization value."""
+        if isinstance(self, Ctor):
+            return True
+        
+        return self.isConst()
+    
+    def hiltiInit(self, cg):
+        """Returns a HILTI operand suitable to initialize a HILTI variable
+        with the value of the expression. This method must only be called if
+        ~~isInit indicates that the expression can be used in this fashio.
+        
+        Returns: hilti.operand.Operand - The initialization value. 
+        """
+        return self.evaluate(cg)
+        
+    ### Methods for derived classes to override.    
+    
     def type(self):
         """Returns the type to which the expression evaluates to.
 
@@ -102,7 +125,7 @@ class Expression(ast.Node):
         Returns: ~~Type - The type.
         """
         util.internal_error("Expression::type not overridden in %s", self.__class__)
-    
+
     def evaluate(self, cg):
         """Generates code to evaluate the expression.
  
@@ -223,7 +246,7 @@ class Constant(Expression):
         self._const.pac(printer)
 
     ### Overidden from Expression.
-    
+
     def type(self):
         return self._const.type()
     
@@ -264,7 +287,7 @@ class Ctor(Expression):
         self._type.pacCtor(printer, self._value)
 
     ### Overidden from Expression.
-    
+
     def type(self):
         return self._type
     

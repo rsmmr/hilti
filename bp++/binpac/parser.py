@@ -158,9 +158,10 @@ def p_param(p):
 ### Types 
 
 def p_type(p):
-    """type : builtin_type
-            | type_ident
+    """type : builtin_type opt_type_attr_list
+            | type_ident opt_type_attr_list
     """
+    _addAttrs(p, p[1], p[2])
     p[0] = p[1]
     
 def p_type_ident(p):
@@ -232,23 +233,23 @@ def p_unit_var(p):
     i = id.Variable(p[1], p[3])
     p.parser.state.unit.addVariable(i)
 
-def _addAttrs(p, attrs):
+def _addAttrs(p, t, attrs):
     for attr in attrs:
         try:
-            p.parser.state.field.type().addAttribute(attr[0], attr[1])
+            t.addAttribute(attr[0], attr[1])
         except type.ParseableType.AttributeMismatch, e:
             util.parser_error(p, "invalid attribute &%s: %s" % (attr[0], e))
             raise SyntaxError    
 
 def p_unit_field(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list _leave_unit_field ';'"""
-    _addAttrs(p, p[5])
+    _addAttrs(p, p.parser.state.field.type(), p[5])
     p.parser.state.unit.addField(p.parser.state.field)
 
 def p_unit_field_with_hook(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list stmt_block _leave_unit_field"""
     hook = stmt.FieldHook(p.parser.state.field, 0, stmts=p[6].statements())
-    _addAttrs(p, p[5])
+    _addAttrs(p, p.parser.state.field.type(), p[5])
     
     p.parser.state.field.addHook(hook)
     p.parser.state.unit.addField(p.parser.state.field)
