@@ -63,10 +63,10 @@ class ParserGen:
         """
         
         def _doCompile():
-            self._current_grammar = grammar
             self._functionHostApplication()
             return True
-            
+    
+        self._current_grammar = grammar
         self._mbuilder.cache(grammar.name(), _doCompile)
         
     def objectType(self, grammar):
@@ -527,10 +527,12 @@ class ParserGen:
         builder = self.builder()
         builder.setNextComment("Parsing boolean %s" % prod.symbol())
 
-        save_builder = self.builder()
+        bool = prod.expr().evaluate(self.cg())
         
-        done = self.functionBuilder().newBuilder("done")
+        save_builder = builder
         branches = [None, None]
+
+        done = self.functionBuilder().newBuilder("done")
         
         for (i, tag) in ((0, "True"), (1, "False")):
             alts = prod.branches()
@@ -540,8 +542,7 @@ class ParserGen:
             self._parseProduction(alts[i], args)
             self._finishedProduction(args.obj, alts[i], None)
             self.builder().jump(done.labelOp())
-        
-        bool = prod.expr().evaluate(self.cg())
+            
         save_builder.if_else(bool, branches[0].labelOp(), branches[1].labelOp())
         
         self.cg().setBuilder(done)

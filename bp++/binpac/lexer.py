@@ -17,6 +17,7 @@ types = {
     "bytes": type.Bytes,
     "regexp": type.RegExp,
     "string": type.String,
+    "bool": type.Bool,
     }
 
 # Literals.

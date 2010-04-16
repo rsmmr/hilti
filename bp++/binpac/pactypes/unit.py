@@ -50,6 +50,7 @@ class Field:
         self._location = location
         self._hooks = []
         self._ctlhook = None
+        self._cond = None
         self._params = params
 
         assert self._type
@@ -155,7 +156,22 @@ class Field:
         Returns:  ~~FieldControlHook - The hook.
         """
         return self._ctlhook
+
+    def condition(self, cond):
+        """Returns any boolean condidition associated with the field.
         
+        Returns: ~~Expression: The condition, or None if none has been set. 
+        """
+        return self._cond
+    
+    def setCondition(self, cond):
+        """Associates a boolean condition with the field. The field will only
+        be parsed if the condition evaluates to True.
+        
+        cond: ~~Expression: The condition, which must evaluate to a ~~Bool.
+        """
+        self._cond = cond
+    
     def production(self):
         """Returns a production to parse the field.
         
@@ -191,6 +207,9 @@ class Field:
                 
         for hook in self._hooks:
             eps.addHook(hook)
+            
+        if self._cond:
+            prod = grammar.Boolean(self._cond, prod, grammar.Epsilon())
             
         return prod
 
@@ -230,6 +249,10 @@ class Field:
         else:
             if len(self._params):
                 vld.error(self, "type does not receive any parameters")
+                
+        if self._cond and not isinstance(self._cond.type(), type.Bool):
+            vld.error(self, "field condition must be boolean")
+            
                     
     def pac(self, printer):
         """Converts the field into parseable BinPAC++ code.
@@ -244,6 +267,10 @@ class Field:
             return
 
         self._type = self._type.resolve(resolver)
+        
+        if self._cond:
+            self._cond.resolve(resolver)
+        
         return self
         
     def __str__(self):

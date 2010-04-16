@@ -242,13 +242,13 @@ def _addAttrs(p, t, attrs):
             raise SyntaxError    
 
 def p_unit_field(p):
-    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list _leave_unit_field ';'"""
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond _leave_unit_field ';'"""
     _addAttrs(p, p.parser.state.field.type(), p[5])
     p.parser.state.unit.addField(p.parser.state.field)
 
 def p_unit_field_with_hook(p):
-    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list stmt_block _leave_unit_field"""
-    hook = stmt.FieldHook(p.parser.state.field, 0, stmts=p[6].statements())
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond stmt_block _leave_unit_field"""
+    hook = stmt.FieldHook(p.parser.state.field, 0, stmts=p[7].statements())
     _addAttrs(p, p.parser.state.field.type(), p[5])
     
     p.parser.state.field.addHook(hook)
@@ -333,6 +333,12 @@ def p_opt_unit_field_name(p):
     """opt_unit_field_name : IDENT ':'
                           | ':'"""
     p[0] = p[1] if len(p) > 2 else None
+    
+def p_opt_unit_field_cond(p):
+    """opt_unit_field_cond : IF '(' expr ')'
+                           | """
+    if len(p) > 1:
+        p.parser.state.field.setCondition(p[3])
 
 ### Type attributes.
 
