@@ -167,7 +167,8 @@ class UnitHook(Block):
         Returns: int - The priority.
         """
         return self._prio
-        
+
+    
 class FieldControlHook(UnitHook):
     """An internal field hook that can exercise control over the parsing. A
     field control is hook is not user-visible but internally created by types

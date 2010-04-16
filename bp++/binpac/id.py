@@ -306,7 +306,23 @@ class Variable(ID):
     """
     def __init__(self, name, type, location=None):
         super(Variable, self).__init__(name, type, location=location)
+        self._hooks = []
 
+    def hooks(self):
+        """Returns the hook statements associated with the variable.
+        
+        Returns: list of ~~UnitHook - The hooks. 
+        """
+        return self._hooks
+        
+    def addHook(self, hook):
+        """Adds a hook statement to the variable. The statement will be executed
+        when the variable is assigned to.
+        
+        hook: ~~UnitHook - The hook.
+        """
+        self._hooks += [hook]
+        
     ### Overidden from ast.Node.
 
     def validate(self, vld):

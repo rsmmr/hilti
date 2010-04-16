@@ -401,6 +401,16 @@ class Unit(type.ParseableType):
         indexed by their name.
         """
         return self._vars
+
+    def variable(self, name):
+        """Returns a specific variable.
+        
+        Returns: ~~id.Variable - The variable, or None if there's no variable of that name. 
+        """
+        try:
+            return self._vars[name]
+        except KeyError:
+            return None
     
     def addVariable(self, var):
         """Adds a user-defined variable to the unit type.
@@ -549,6 +559,15 @@ class Unit(type.ParseableType):
                     
                 del self._hooks[name]
                 
+            elif name in self._vars:
+                # Move over to variable.
+                var = self._vars[name]
+                
+                for h in hooks:
+                    var.addHook(h)
+                    
+                del self._hooks[name]
+                
             else:
                 # Unit-global hook, not attached to field.
                 assert name in _valid_hooks
@@ -613,11 +632,28 @@ class Attribute:
         obj = lhs.evaluate(cg)
         builder.struct_set(obj, builder.constOp(name), rhs)
         
+        # TODO: Need to clean this hook calling up once we have real hooks in
+        # HILTI.
+        
         field = lhs.type().field(name)
         if field:
             # Run the fields hook.
             field.parent().parserGen().runHooks(cg, obj, field.hooks())
-
+            return
+        
+        var = lhs.type().variable(name)
+        if var:
+            rc = cg.functionBuilder().addTmp("__hookrc", hilti.type.Bool())
+            builder = cg.builder()
+            
+            for hook in var.hooks():
+                hookf = lhs.type().parserGen().functionHook(cg, hook)
+                builder.call(rc, builder.idOp(hookf.name()), builder.tupleOp([obj]))
+                
+            return
+            
+        # Cannot be reached
+        assert False
 
         
     

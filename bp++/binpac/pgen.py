@@ -202,11 +202,11 @@ class ParserGen:
 
         self.cg().endFunction()
 
-    def _functionHook(self, cg, hook):
+    def functionHook(self, cg, hook):
         """Generates the function to execute a hook statement.
         
         Todo: We currently create "normal" functions; once HILTI's hook data
-        type is implemented, we'll switch over to using that. 
+        type is implemented, we'll switch over to using that.
         """
         
         fname = "on_%s" % "anon_%s" % builtin_id(hook)
@@ -622,7 +622,7 @@ class ParserGen:
         fbuilder = cg.functionBuilder()
         
         for hook in hooks:
-            hookf = self._functionHook(cg, hook)
+            hookf = self.functionHook(cg, hook)
             
             params = []
             for p in self._grammar.params():
