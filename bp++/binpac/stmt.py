@@ -111,11 +111,14 @@ class Block(Statement):
     def __str__(self):
         return "<statement block>"
 
-class FieldHook(Block):
-    """A field hook is a series of statements executed when a unit field has
-    been parsed.
+class UnitHook(Block):
+    """A unit hook is a series of statements executed when a certain
+    condition occurs, such as unit field being parsed.
+
+    unit: ~~Unit - The unit this hook is part of.
     
-    field: ~~Field - The field to which hook is attached. 
+    field: ~~Field - The field to which hook is attached, or None if
+    not attached a specific field.
     
     prio: int - The priority of the statement. If multiple statements are
     defined for the same field, they are executed in order of decreasing
@@ -123,23 +126,39 @@ class FieldHook(Block):
     
     stms: list of ~~Statement - Series of statements to initalize the hook with.
     """
-    def __init__(self, field, prio, stmts=[], location=None):
+    def __init__(self, unit, field, prio, stmts=[], location=None):
+        self._unit = unit
         self._field = field
         self._prio = prio
         
-        super(FieldHook, self).__init__(field.parent().scope(), location=location)
-        super(FieldHook, self).scope().addID(id.Local("__hookrc", type.Bool()))
+        super(UnitHook, self).__init__(unit.scope(), location=location)
+        super(UnitHook, self).scope().addID(id.Local("__hookrc", type.Bool()))
         
         for stmt in stmts:
             self.addStatement(stmt)
 
+    def unit(self):
+        """Returns the unit associated with the hook.
+        
+        Returns: ~~Unit - The unit.
+        """
+        return self._unit
+            
     def field(self):
         """Returns the field associated with the hook.
         
-        Returns: ~~Field - The field.
+        Returns: ~~Field - The field, or None if no field is
+        associated with the hook.
         """
         return self._field
-            
+
+    def setField(self, field):
+        """Associates a unit field with this hook.
+        
+        field: ~~Field - The field.
+        """
+        self._field = field
+    
     def priority(self):
         """Returns the priority associated with the hook.  If multiple statements are
         defined for the same field, they are executed in order of decreasing
@@ -149,7 +168,7 @@ class FieldHook(Block):
         """
         return self._prio
         
-class FieldControlHook(FieldHook):
+class FieldControlHook(UnitHook):
     """An internal field hook that can exercise control over the parsing. A
     field control is hook is not user-visible but internally created by types
     that define a ``$$`` identifier for use in a field's attribute
@@ -168,7 +187,7 @@ class FieldControlHook(FieldHook):
     
     """
     def __init__(self, field, prio, ddtype, stmts=[], location=None):
-        super(FieldControlHook, self).__init__(field, prio, stmts, location=location)
+        super(FieldControlHook, self).__init__(field.parent(), field, prio, stmts, location=location)
         self._ddtype = ddtype
         
     def dollarDollarType(self):
@@ -183,7 +202,7 @@ class FieldControlHook(FieldHook):
     def scope(self):
         # Add the $$ identifier. Can't do that in the ctor because types might
         # not be resolved at that time.
-        scope = super(FieldHook, self).scope()
+        scope = super(UnitHook, self).scope()
         if not scope.lookupID("__dollardollar"):
             scope.addID(id.ID("__dollardollar", self._ddtype))
             

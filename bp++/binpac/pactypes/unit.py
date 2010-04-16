@@ -121,7 +121,7 @@ class Field:
     def hooks(self):
         """Returns the hook statements associated with the field.
         
-        Returns: list of ~~FieldHook - The hooks. 
+        Returns: list of ~~UnitHook - The hooks. 
         """
         return self._hooks
         
@@ -129,7 +129,7 @@ class Field:
         """Adds a hook statement to the field. The statement will be executed
         when the field has been fully parsed.
         
-        hook: ~~FieldHook - The hook.
+        hook: ~~UnitHook - The hook.
         
         Note: The control hook set via ~~setControlHook must not be added via
         this method.
@@ -295,7 +295,7 @@ class Unit(type.ParseableType):
     Todo: We need to document the available hooks.
     """
 
-    _valid_hooks = ("ctor", "dtor", "error")
+    _valid_hooks = ("%ctor", "%dtor", "%error")
 
     def __init__(self, pscope, params=[], location=None):
         Unit._counter += 1
@@ -399,28 +399,33 @@ class Unit(type.ParseableType):
         self._vars[var.name()] = var
         
     def hooks(self, name):
-        """Returns all hooks registered for a hook name. 
+        """Returns all hooks registered for a hook name.  If *name* is the
+        name of a field or variable, any hooks attached to that will be
+        returned. Note that the result for theses is not well-defined until
+        ~~resolve has been called.
         
         name: string - The name of the hook to retrieve the hooks for.
         
-        Returns: list of ~~FieldHook - The hooks with their priorities.
+        Returns: list of ~~UnitHook - The hooks with their priorities. The
+        list will be empty if no hooks have been registered for that name. 
         """
-        assert name in _valid_hooks
+        if name in self._fields:
+            return self._fields[name].hooks()
+        
         return self._hooks.get(name, [])
         
     def addHook(self, name, hook, priority):
         """Adds a hook statement to the unit. The statement will be executed
-        as determined by the hook's semantics.
+        as determined by the hook's semantics. If the name is the name of a
+        field or variable, the hook will be attached to that one. 
         
         name: string - The name of the hook for the statement to be added.
         
         hook: ~~Block - The hook itself.
         """
-        assert name in _valid_hooks
-        
         try:
             self._hooks[name] += [hook]
-        except IndexError:
+        except KeyError:
             self._hooks[name] = [hook]
 
     def allProperties(self):
@@ -505,8 +510,9 @@ class Unit(type.ParseableType):
         for var in self._vars.values():
             var.validate(vld)
             
-        for hook in self._hooks:
-            hook.validate(vld)
+        for (name, hooks) in self._hooks:
+            for h in hooks:
+                h.validate(vld)
             
     def pac(self, printer):
         printer.output("<unit type - TODO>")
@@ -518,9 +524,30 @@ class Unit(type.ParseableType):
         for param in self._params:
             param.resolve(resolver)
 
+        # Transfer all the hooks refereing to a field or variable over to that
+        # one. We do this here so that hooks for these can be defined before
+        # we actually now about the field. 
+        for (name, hooks) in self._hooks.items():
+            if name in self._fields:
+                # Move over to field.
+                field = self._fields[name]
+                
+                for h in hooks:
+                    h.setField(field)
+                    field.addHook(h)
+                    
+                del self._hooks[name]
+                
+            else:
+                # Unit-global hook, not attached to field.
+                assert name in _valid_hooks
+                
+                for h in hooks:
+                    h.resolve(resolver)
+
         for f in self._fields.values():
             f.resolve(resolver)
-
+                
         return self
             
     # Overridden from ParseableType.

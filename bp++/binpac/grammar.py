@@ -100,7 +100,7 @@ class Production(object):
     def hooks(self):
         """Returns the hooks associated with the production.
         
-        Returns: list of ~~FieldHook - The hooks.
+        Returns: list of ~~UnitHook - The hooks.
         """
         return self._hooks
         
@@ -108,7 +108,7 @@ class Production(object):
         """Adds a hook to the production. The hook will be executed when the
         production has been fully parsed.
         
-        hook: ~~FieldHook - The hook.
+        hook: ~~UnitHook - The hook.
         """
         self._hooks += [hook]
     

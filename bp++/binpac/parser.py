@@ -225,6 +225,7 @@ def p_unit_item_list(p):
 def p_unit_item(p):
     """unit_item : VAR unit_var
                  | unit_field
+                 | unit_hook
     """
     pass
 
@@ -233,6 +234,11 @@ def p_unit_var(p):
     i = id.Variable(p[1], p[3])
     p.parser.state.unit.addVariable(i)
 
+def p_unit_hook(p):
+    """unit_hook : ON IDENT stmt_block"""
+    hook = stmt.UnitHook(p.parser.state.unit, None, 0, stmts=p[3].statements())
+    p.parser.state.unit.addHook(p[2], hook, 0)
+    
 def _addAttrs(p, t, attrs):
     for attr in attrs:
         try:
@@ -248,7 +254,7 @@ def p_unit_field(p):
 
 def p_unit_field_with_hook(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond stmt_block _leave_unit_field"""
-    hook = stmt.FieldHook(p.parser.state.field, 0, stmts=p[7].statements())
+    hook = stmt.UnitHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[7].statements())
     _addAttrs(p, p.parser.state.field.type(), p[5])
     
     p.parser.state.field.addHook(hook)

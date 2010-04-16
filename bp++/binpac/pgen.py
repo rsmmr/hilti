@@ -616,7 +616,8 @@ class ParserGen:
             builder.struct_set(obj, builder.constOp(prod.name()), value)
                 
         for hook in prod.hooks():
-            name = "on_%s" % (prod.name() if prod.name() else "anon_%s" % builtin_id(prod))
+            name = "on_%s" % (prod.name() if prod.name() else "anon_%s" % builtin_id(hook))
+            
             hookf = self._functionHook(name, hook)
             
             params = []
