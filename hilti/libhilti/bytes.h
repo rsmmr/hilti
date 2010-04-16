@@ -153,6 +153,15 @@ extern hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exce
 /// in continous memory), or expensive (if it's not, as then it needs to be copied). 
 extern const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt);
 
+/// Copies a byte object into a new instance.
+/// 
+/// b: The bytes object to duplicate. 
+/// 
+/// excpt: &
+/// 
+/// Returns: The new object.
+extern hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt);
+
 /// Converts a bytes object into a raw C array. 
 /// 
 /// b: The object to convert. 

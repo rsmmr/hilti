@@ -76,6 +76,7 @@ declare "C-HILTI" iterator<bytes> bytes_offset(ref<bytes> b, int32 offset)
 declare "C-HILTI" iterator<bytes> bytes_begin(ref<bytes> b)
 declare "C-HILTI" iterator<bytes> bytes_end()
 declare "C-HILTI" int8 bytes_cmp(ref<bytes> b1, ref<bytes> b2)
+declare "C-HILTI" ref<bytes> bytes_copy(ref<bytes> b)
 
 declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> last)
 

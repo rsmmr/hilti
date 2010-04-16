@@ -384,6 +384,13 @@ class Sub(Instruction):
     def codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_sub", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
+        
+@hlt.instruction("bytes.copy", op1=cReferenceOf(cBytes), target=cReferenceOf(cBytes))
+class Copy(Instruction):
+    """Copy the contents of *op1* into a new byte instance."""
+    def codegen(self, cg):
+        result = cg.llvmCallC("hlt::bytes_copy", [self.op1()])
+        cg.llvmStoreInTarget(self, result)
 
 @hlt.instruction("bytes.offset", op1=cReferenceOf(cBytes), op2=cIntegerOfWidth(32), target=cIteratorBytes)
 class Offset(Instruction):

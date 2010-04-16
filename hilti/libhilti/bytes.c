@@ -173,6 +173,13 @@ static inline int8_t is_end(hlt_bytes_pos pos)
     return pos.chunk == 0;
 }
 
+hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt)
+{
+    hlt_bytes_pos begin = hlt_bytes_begin(b, excpt);
+    hlt_bytes_pos end = hlt_bytes_end(excpt);
+    return hlt_bytes_sub(begin, end, excpt);
+}
+
 hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt)
 {
     if ( hlt_bytes_pos_eq(start, end, excpt) )
