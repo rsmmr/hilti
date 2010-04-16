@@ -28,7 +28,7 @@ def _loc(t):
 
 tokens = [
     "IDENT", "CONSTANT", "BYTES", "PACTYPE", "ATTRIBUTE", "PROPERTY",
-    "EQUAL", "UNEQUAL",
+    "EQUAL", "UNEQUAL", "HASATTR"
     ] + [k.upper() for k in keywords]
 
 # Operators with more than one character.
@@ -39,6 +39,10 @@ def t_EQUAL(t):
 
 def t_UNEQUAL(t):
     r'!='
+    return t
+
+def t_HASATTR(t):
+    r'\?.'
     return t
     
 # Type keywords not covered by types.

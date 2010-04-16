@@ -205,6 +205,7 @@ _Operators = {
     "Neg": (1, "The negation of an expressions. (`- a`)", _pacUnary("-")),
     "Cast": (1, "Cast into another type.", lambda p, e: p.output("<Cast>")),
     "Attribute": (2, "Attribute expression. (`a.b`)", _pacBinary(".")),
+    "HasAttribute": (2, "Has-attribute expression. (`a?.b`)", _pacBinary("?.")),
     "MethodCall": (3, "Method call. (`a.b()`)", _pacMethodCall),
     "Size": (1, "The size of an expression's value, with type-defined definition of \"size\" (`|a|`)", _pacUnary("|")),
     "Equal": (2, "Compares two values whether they are equal. (``a == b``)", _pacBinary(" + ")),

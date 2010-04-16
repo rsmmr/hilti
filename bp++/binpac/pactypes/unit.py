@@ -655,5 +655,20 @@ class Attribute:
         # Cannot be reached
         assert False
 
+@operator.HasAttribute(Unit, type.Identifier)
+class Attribute:
+    def validate(vld, lhs, ident):
+        name = ident.constant().value()
+        if not name in lhs.type().variables() and not lhs.type().parsedFieldType(name):
+            vld.error(lhs, "unknown unit attribute '%s'" % name)
         
+    def type(lhs, ident):
+        return hilti.type.Bool()
+    
+    def evaluate(cg, lhs, ident):
+        name = ident.constant().value()
+        tmp = cg.builder().addTmp("__has_attr", hilti.type.Bool())
+        cg.builder().struct_is_set(tmp, lhs.evaluate(cg), cg.builder().constOp(name))
+        return tmp
+
     
