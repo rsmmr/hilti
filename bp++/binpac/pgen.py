@@ -21,10 +21,12 @@ def _flattenToStr(list):
     return " ".join([str(e) for e in list])
 
 class ParserGen:
-    def __init__(self, cg):
-        """Generates a parser from a grammar.
+    def __init__(self, cg, ty):
+        """Generates a parser for a parseable type.
         
         cg: ~~CodeGen - The code generator to use.
+        
+        tyr: ~~ParseableType - The type to generate a grammar for
         
         hilti_import_paths: list of string - Paths to search for HILTI modules.
         """
@@ -34,9 +36,10 @@ class ParserGen:
         self._builders = {}
         self._rhs_names = {}
         
-        self._current_grammar = None
+        self._grammar = ty.grammar()
+        ty._pgen = self
 
-    def export(self, grammar):
+    def export(self):
         """Generates code for using the compiled parser from external C
         functions. The functions generates an appropiate intialization
         function that registers the parser with the BinPAC++ run-time library.
@@ -46,30 +49,27 @@ class ParserGen:
         """
 
         def _doCompile():
-            self._current_grammar = grammar
             self._functionInit()
             return True
             
-        self._mbuilder.cache(grammar.name() + "$export", _doCompile)
+        self._mbuilder.cache(self._grammar.name() + "$export", _doCompile)
         
-    def compile(self, grammar):
-        """Adds the parser for a grammar to the HILTI module. 
-        
-        This method can be called multiple times to generate a set of parsers
-        for different grammars, all within the same module.
+    def compile(self):
+        """Adds the parser for a grammar to the current HILTI module. 
         
         grammar: Grammar - The grammar to generate the parser from.  The
         grammar must pass ~~Grammar.check.
         """
         
         def _doCompile():
+            self._cg.beginCompile(self)
             self._functionHostApplication()
+            self._cg.endCompile()
             return True
     
-        self._current_grammar = grammar
-        self._mbuilder.cache(grammar.name(), _doCompile)
+        self._mbuilder.cache(self._grammar.name(), _doCompile)
         
-    def objectType(self, grammar):
+    def objectType(self):
         """Returns the type of the destination struct generated for a grammar. 
         
         grammar: Grammar - The grammar to return the type for.  The grammar
@@ -78,7 +78,6 @@ class ParserGen:
         Returns: hilti.Type.Reference - A reference type for 
         struct generated for parsing this grammar. 
         """
-        self._current_grammar = grammar
         return self._typeParseObjectRef()
     
     def cg(self):
@@ -134,7 +133,7 @@ class ParserGen:
     def _functionInit(self):
         """Generates the init function registering the parser with the BinPAC
         runtime."""
-        grammar = self._current_grammar
+        grammar = self._grammar
         
         ftype = hilti.type.Function([], hilti.type.Void())
         name = self._name("init")
@@ -170,14 +169,14 @@ class ParserGen:
         yet. 
         """
 
-        grammar = self._current_grammar
+        grammar = self._grammar
         
         cur = hilti.id.Parameter("__cur", _BytesIterType)
         result = self._typeParseObjectRef()
 
         args = [cur]
         
-        for p in self._current_grammar.params():
+        for p in self._grammar.params():
             args += [hilti.id.Parameter(p.name(), p.type().hiltiType(self._cg))]
         
         ftype = hilti.type.Function(args, result)
@@ -203,24 +202,24 @@ class ParserGen:
 
         self.cg().endFunction()
 
-    def _functionHook(self, fname, hook):
+    def _functionHook(self, cg, hook):
         """Generates the function to execute a hook statement.
         
         Todo: We currently create "normal" functions; once HILTI's hook data
         type is implemented, we'll switch over to using that. 
         """
         
+        fname = "on_%s" % "anon_%s" % builtin_id(hook)
+        
         def makeFunc():
-            cg = self.cg()
-
             args = []
             args += [hilti.id.Parameter("__self", self._typeParseObjectRef())]
             
-            for p in self._current_grammar.params():
-                args += [hilti.id.Parameter(p.name(), p.type().hiltiType(self._cg))]
+            for p in self._grammar.params():
+                args += [hilti.id.Parameter(p.name(), p.type().hiltiType(cg))]
 
             if isinstance(hook, stmt.FieldControlHook):
-                args += [hilti.id.Parameter("__dollardollar", hook.dollarDollarType().hiltiType(self.cg()))]
+                args += [hilti.id.Parameter("__dollardollar", hook.dollarDollarType().hiltiType(cg))]
                 
             ftype = hilti.type.Function(args, hilti.type.Bool())
             
@@ -229,7 +228,7 @@ class ParserGen:
             (fbuilder, builder) = cg.beginFunction(name, ftype)        
             
             func = fbuilder.function()
-            self.moduleBuilder().setCacheEntry(hook, func)
+            cg.moduleBuilder().setCacheEntry(hook, func)
             
             rc = hilti.id.Local("__hookrc", hilti.type.Bool())
             oprc = cg.builder().idOp(rc)
@@ -244,7 +243,7 @@ class ParserGen:
             cg.endFunction()
             return func
         
-        return self.moduleBuilder().cache(hook, makeFunc())
+        return cg.moduleBuilder().cache(hook, makeFunc())
         
     ### Methods generating parsing code for Productions.
 
@@ -288,7 +287,7 @@ class ParserGen:
         self.builder().makeDebugMsg("binpac", "end %s '%s'" % (pname, prod))
 
     def _parseStartSymbol(self, args, params):
-        prod = self._current_grammar.startSymbol()
+        prod = self._grammar.startSymbol()
         pname = prod.__class__.__name__.lower()
         
         # The start symbol is always a sequence.
@@ -383,9 +382,8 @@ class ParserGen:
         builder.setNextComment("Parsing child grammar %s" % child.type().name())
 
         # Generate the parsing code for the child grammar. 
-        cpgen = ParserGen(self._cg)
-        cgrammar = child.type().grammar()
-        cpgen.compile(cgrammar)
+        cpgen = ParserGen(self._cg, child.type())
+        cpgen.compile()
 
         # Call the parsing code. 
         result = builder.addTmp("__presult", _ParseFunctionResultType)
@@ -438,7 +436,7 @@ class ParserGen:
         result = builder.addTmp("__presult", _ParseFunctionResultType)
 
         if not params:
-            for p in self._current_grammar.params():
+            for p in self._grammar.params():
                 params += [builder.idOp(p.name())]
 
         builder.call(result, builder.idOp(func.name()), args.tupleOp(params))
@@ -515,7 +513,7 @@ class ParserGen:
         result = builder.addTmp("__presult", _ParseFunctionResultType)
         
         params = []
-        for p in self._current_grammar.params():
+        for p in self._grammar.params():
             params += [builder.idOp(p.name())]
 
         builder.call(result, builder.idOp(func.name()), args.tupleOp(params))
@@ -614,14 +612,20 @@ class ParserGen:
 
         if prod.name() and value:
             builder.struct_set(obj, builder.constOp(prod.name()), value)
-                
-        for hook in prod.hooks():
-            name = "on_%s" % (prod.name() if prod.name() else "anon_%s" % builtin_id(hook))
+        
+        self.runHooks(self._cg, obj, prod.hooks(), value)
             
-            hookf = self._functionHook(name, hook)
+    def runHooks(self, cg, obj, hooks, value=None):
+        """XXXX"""
+
+        builder = cg.builder()
+        fbuilder = cg.functionBuilder()
+        
+        for hook in hooks:
+            hookf = self._functionHook(cg, hook)
             
             params = []
-            for p in self._current_grammar.params():
+            for p in self._grammar.params():
                 params += [builder.idOp(p.name())]
 
             if isinstance(hook, stmt.FieldControlHook):
@@ -631,14 +635,14 @@ class ParserGen:
                 
             rc = fbuilder.addTmp("__hookrc", hilti.type.Bool())
             builder.call(rc, builder.idOp(hookf.name()), builder.tupleOp([obj] + params))
-        
+            
     ### Methods defining types. 
     
     def _typeParseObject(self):
         """Returns the struct type for the parsed grammar."""
         
         def _makeType():
-            fields = self._current_grammar.scope().IDs()
+            fields = self._grammar.scope().IDs()
             ids = []
             
             for f in fields:
@@ -654,7 +658,7 @@ class ParserGen:
             self._mbuilder.addTypeDecl(self._name("object"), structty)
             return structty
         
-        return self._mbuilder.cache("struct_%s" % self._current_grammar.name(), _makeType)
+        return self._mbuilder.cache("struct_%s" % self._grammar.name(), _makeType)
 
     def _typeParseObjectRef(self):
         """Returns a reference to the struct type for the parsed grammar."""
@@ -672,7 +676,7 @@ class ParserGen:
 
     def _name(self, tag1, tag2 = None):
         """Combines two tags to an canonicalized ID name."""
-        name = "%s_%s" % (self._current_grammar.name(), tag1)
+        name = "%s_%s" % (self._grammar.name(), tag1)
         if tag2:
             name += "_%s" % tag2
         
@@ -692,7 +696,7 @@ class ParserGen:
 
         args = [arg1, arg2, arg3, arg4]
         
-        for p in self._current_grammar.params():
+        for p in self._grammar.params():
             args += [hilti.id.Parameter(p.name(), p.type().hiltiType(self._cg))]
 
         ftype = hilti.type.Function(args, result)

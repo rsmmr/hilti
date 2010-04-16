@@ -299,6 +299,15 @@ class ParseableType(Type):
     def __init__(self, params=[], location=None):
         super(ParseableType, self).__init__(params=params, location=location)
         self._attrs = {}
+        self._pgen = None
+
+    def parserGen(self):
+        """Returns the parser generator used for this type. Only valid once
+        the grammar for this unit has been compiled.
+        
+        Returns: ~~ParserGen - The parser generator that compiled this unit.
+        """
+        return self._pgen
         
     def hasAttribute(self, name):
         """Returns whether an attribute has been defined. If an attribute has

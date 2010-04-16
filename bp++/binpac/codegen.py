@@ -49,6 +49,7 @@ class CodeGen(object):
         self._errors = 0
         self._mbuilder = 0
         self._builders = [None]
+        self._pgens = [None]
 
     def debug(self):
         """Returns true if compiling in debugging mode. 
@@ -121,6 +122,26 @@ class CodeGen(object):
         assert self._mbuilder
         return self._mbuilder
 
+    def beginCompile(self, pgen):
+        """Starts parser generation with a new generator. 
+        
+        pgen: ~~ParserGen - The parser generator.
+        """
+        self._pgens += [pgen]
+        
+    def endCompile(self):
+        """Finishes compiling with a parser generator. 
+        """
+        self._pgens = self._pgens[:-1]
+    
+    def parserGen(self):
+        """Returns the parser generator for grammar currently being compiled.
+        
+        Returns: ~~ParserGen - The parser generator.
+        """
+        assert self._pgens[-1]
+        return self._pgens[-1]
+    
     def importPaths(self):
         """Returns the HILTI library paths to search.
         
@@ -157,10 +178,9 @@ class CodeGen(object):
             if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
                 # FIXME: Should get rid of %export.
                 if i.type().property("export").value() or i.linkage() == id.Linkage.EXPORTED:
-                    gen = pgen.ParserGen(self)
-                    grammar = i.type().grammar()
-                    gen.compile(grammar)
-                    gen.export(grammar)
+                    gen = pgen.ParserGen(self, i.type())
+                    gen.compile()
+                    gen.export()
             
             if isinstance(i, id.Global):
                 if i.expr():

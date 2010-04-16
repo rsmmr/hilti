@@ -339,6 +339,17 @@ class Unit(type.ParseableType):
         were added.
         """
         return self._fields_ordered
+    
+    
+    def field(self, name):
+        """Returns a specific field.
+        
+        Returns: ~~Field - The field, or None if there's no field of that name. 
+        """
+        try:
+            return self._fields[name]
+        except KeyError:
+            return None
 
     def params(self):
         """Returns the unit's parameters.
@@ -485,7 +496,7 @@ class Unit(type.ParseableType):
             self._grammar = grammar.Grammar(self.name(), seq, self._params, addl_ids=self._vars.values(), location=self.location())
             
         return self._grammar
-            
+
     # Overridden from Type.
     
     def hiltiType(self, cg):
@@ -493,8 +504,8 @@ class Unit(type.ParseableType):
 
         def _makeType():
             # Generate the parsing code for our unit.
-            gen = pgen.ParserGen(cg)
-            return gen.objectType(self.grammar())
+            gen = pgen.ParserGen(cg, self)
+            return gen.objectType()
         
         return mbuilder.cache(self, _makeType)
 
@@ -594,10 +605,19 @@ class Attribute:
         tmp = builder.addTmp("__attr", type.hiltiType(cg))
         builder.struct_get(tmp, lhs.evaluate(cg), builder.constOp(name))
         return tmp
-    
+
     def assign(cg, lhs, ident, rhs):
         name = ident.constant().value()
         type = Attribute.attrType(lhs, ident)
         builder = cg.builder()
-        builder.struct_set(lhs.evaluate(cg), builder.constOp(name), rhs)
+        obj = lhs.evaluate(cg)
+        builder.struct_set(obj, builder.constOp(name), rhs)
+        
+        field = lhs.type().field(name)
+        if field:
+            # Run the fields hook.
+            field.parent().parserGen().runHooks(cg, obj, field.hooks())
+
+
+        
     
