@@ -420,7 +420,7 @@ class BlockBuilder(OperandBuilder):
         """
         return self._fbuilder
 
-    def addLocal(self, name, ty, value=None, force=False, reuse=False):
+    def addLocal(self, name, ty, value=None, force=True, reuse=False):
         """Adds a new local variable to the function. This is just a
         convinience function that forwards to
         ~~FunctionBuilder.addLocal. See there for more information.
