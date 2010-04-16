@@ -270,7 +270,7 @@ def simplify(op, exprs):
     func = _findOp("simplify", op, exprs)
     result = func(*exprs) if func else None
     
-    assert (not result) or isinstance(result, expr.Constant)
+    assert (not result) or isinstance(result, expr.Constant) or isinstance(result, expr.Ctor)
     return result
 
 def evaluate(op, cg, exprs):

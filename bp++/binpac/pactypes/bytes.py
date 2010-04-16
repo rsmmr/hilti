@@ -144,3 +144,22 @@ class _:
         tmp = cg.functionBuilder().addTmp("__equal", hilti.type.Bool())
         cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
+
+@operator.Plus(Bytes, Bytes)
+class Plus:
+    def type(e1, e2):
+        return type.Bytes()
+    
+    def simplify(e1, e2):
+        if not e1.isInit() or not e2.isInit():
+            return None
+            
+        b = (e1.value() + e2.value())
+        return expr.Ctor(b, type.Bytes())
+        
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addLocal("__copy", e1.type().hiltiType(cg), force=True)
+        cg.builder().bytes_copy(tmp, e1.evaluate(cg))
+        cg.builder().bytes_append(tmp, e2.evaluate(cg))
+        return tmp
+    
