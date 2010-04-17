@@ -103,7 +103,7 @@ class Block(Statement):
     def execute(self, cg):
         for i in self._scope.IDs():
             if isinstance(i, id.Local):
-                cg.builder().addLocal(i.name(), i.type().hiltiType(cg), reuse=True)
+                cg.builder().addLocal(i.name(), i.type().hiltiType(cg), force=False, reuse=True)
         
         for stmt in self._stmts:
             stmt.execute(cg)

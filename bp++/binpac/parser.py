@@ -236,7 +236,7 @@ def p_unit_var(p):
     i = id.Variable(p[1], p[3])
     p.parser.state.unit.addVariable(i)
     
-    if len(p) > 2:
+    if p[4] != ';':
         hook = stmt.UnitHook(p.parser.state.unit, None, 0, stmts=p[4].statements())
         i.addHook(hook)
 

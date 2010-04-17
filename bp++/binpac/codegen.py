@@ -50,6 +50,7 @@ class CodeGen(object):
         self._mbuilder = 0
         self._builders = [None]
         self._pgens = [None]
+        self._hooks = [None]
 
     def debug(self):
         """Returns true if compiling in debugging mode. 
@@ -133,7 +134,29 @@ class CodeGen(object):
         """Finishes compiling with a parser generator. 
         """
         self._pgens = self._pgens[:-1]
-    
+
+    def beginHook(self, hook):
+        """Starts compiling a unit hook.
+        
+        hook: ~~UnitHook - The hook.
+        """
+        self._hooks += [hook]
+        
+    def endHook(self):
+        """Finishes compiling a unit hook.
+        """
+        self._hooks = self._hooks[:-1]
+
+    def inHook(self, hook):
+        """Checks whether we are currently compiling a given hook. This can be
+        used to avoid infinite recursion when one hook triggers another one.
+        
+        hook: ~~UnitHook - The hook.
+        
+        Returns: True if the hook is currently bein compiled.
+        """
+        return hook in self._hooks
+        
     def parserGen(self):
         """Returns the parser generator for grammar currently being compiled.
         

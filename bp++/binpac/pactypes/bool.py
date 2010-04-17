@@ -63,7 +63,7 @@ class _:
         return expr.Constant(constant.Constant(inverse, type.Bool()))
         
     def evaluate(cg, e):
-        tmp = cg.functionBuilder().addTmp("__not", hilti.type.Bool())
+        tmp = cg.functionBuilder().addLocal("__not", hilti.type.Bool())
         cg.builder().bool_not(tmp, e.evaluate(cg))
         return tmp
         

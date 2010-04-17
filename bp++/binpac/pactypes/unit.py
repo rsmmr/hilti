@@ -621,7 +621,7 @@ class Attribute:
         name = ident.constant().value()
         type = Attribute.attrType(lhs, ident)
         builder = cg.builder()
-        tmp = builder.addTmp("__attr", type.hiltiType(cg))
+        tmp = builder.addLocal("__attr", type.hiltiType(cg))
         builder.struct_get(tmp, lhs.evaluate(cg), builder.constOp(name))
         return tmp
 
@@ -647,6 +647,11 @@ class Attribute:
             builder = cg.builder()
             
             for hook in var.hooks():
+                
+                if cg.inHook(hook):
+                    # Avoid recursion.
+                    continue
+                
                 hookf = lhs.type().parserGen().functionHook(cg, hook)
                 builder.call(rc, builder.idOp(hookf.name()), builder.tupleOp([obj]))
                 
@@ -656,7 +661,7 @@ class Attribute:
         assert False
 
 @operator.HasAttribute(Unit, type.Identifier)
-class Attribute:
+class HasAttribute:
     def validate(vld, lhs, ident):
         name = ident.constant().value()
         if not name in lhs.type().variables() and not lhs.type().parsedFieldType(name):
@@ -667,7 +672,7 @@ class Attribute:
     
     def evaluate(cg, lhs, ident):
         name = ident.constant().value()
-        tmp = cg.builder().addTmp("__has_attr", hilti.type.Bool())
+        tmp = cg.builder().addLocal("__has_attr", hilti.type.Bool())
         cg.builder().struct_is_set(tmp, lhs.evaluate(cg), cg.builder().constOp(name))
         return tmp
 

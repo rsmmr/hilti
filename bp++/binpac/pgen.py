@@ -212,6 +212,8 @@ class ParserGen:
         fname = "on_%s" % "anon_%s" % builtin_id(hook)
         
         def makeFunc():
+            cg.beginHook(hook)
+            
             args = []
             args += [hilti.id.Parameter("__self", self._typeParseObjectRef())]
             
@@ -241,6 +243,8 @@ class ParserGen:
             cg.builder().return_result(oprc)
             
             cg.endFunction()
+            
+            cg.endHook()
             return func
         
         return cg.moduleBuilder().cache(hook, makeFunc())
@@ -622,6 +626,11 @@ class ParserGen:
         fbuilder = cg.functionBuilder()
         
         for hook in hooks:
+            
+            if cg.inHook(hook):
+                # Avoid recursion.
+                continue
+            
             hookf = self.functionHook(cg, hook)
             
             params = []

@@ -124,7 +124,7 @@ class _:
             return None
         
     def evaluate(cg, e):
-        tmp = cg.functionBuilder().addTmp("__size", hilti.type.Integer(32))
+        tmp = cg.functionBuilder().addLocal("__size", hilti.type.Integer(32))
         cg.builder().bytes_length(tmp, e.evaluate(cg))
         return tmp
     
@@ -141,7 +141,7 @@ class _:
         return expr.Constant(constant.Constant(b, type.Bool()))
         
     def evaluate(cg, e1, e2):
-        tmp = cg.functionBuilder().addTmp("__equal", hilti.type.Bool())
+        tmp = cg.functionBuilder().addLocal("__equal", hilti.type.Bool())
         cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
@@ -158,7 +158,7 @@ class Plus:
         return expr.Ctor(b, type.Bytes())
         
     def evaluate(cg, e1, e2):
-        tmp = cg.functionBuilder().addLocal("__copy", e1.type().hiltiType(cg), force=True)
+        tmp = cg.functionBuilder().addLocal("__copy", e1.type().hiltiType(cg))
         cg.builder().bytes_copy(tmp, e1.evaluate(cg))
         cg.builder().bytes_append(tmp, e2.evaluate(cg))
         return tmp
