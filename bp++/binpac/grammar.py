@@ -34,6 +34,7 @@ class Production(object):
         self._post = []
         self._hooks = []
         self._location = location
+        self._noid = False
 
         if not symbol:
             # Internal production name.
@@ -83,6 +84,21 @@ class Production(object):
         """
         return self._name
 
+    def setNoID(self):
+        """Sets a flags indicating the HILTI struct using this production
+        should not contain an item for its name. 
+        """
+        self._noid = True
+        
+    def isNoID(self):
+        """Returns whether the HILTI struct uisng this production should not
+        contain an item for this field. The default is yes but that can be
+        changed with ~~setNoID.
+        
+        Returns: bool - True if no item should be created.
+        """
+        return self._noid
+    
     def setType(self, type):
         """Sets the production's type. 
         
@@ -504,18 +520,19 @@ class Switch(Conditional):
     
     expr: ~~Expr : An expression. 
     
-    alts: list of tuple (value, ~~Production) - The alternatives. The value of
-    *expr* is matched against the possible values given in the list (which
-    must be of the same type); if a match is found the corresponding
-    production is selected.
+    alts: list of tuple (expr, ~~Production) - The alternatives. The value of
+    *expr* is matched against the evaluated values of the expressions given in
+    the list (which must be of the same type); if a match is found the
+    corresponding production is selected.
     
-    default: ~~Production - Default production if none of *alts* matches. 
+    default: ~~Production - Default production if none of *alts* matches. If
+    None, a ~~ParseError will be generated if no other alternative matches.
     """
     def __init__(self, expr, alts, default, symbol=None, location=None):
-        super(Boolean, self).__init__(alts + [default], symbol=symbol, location=location)
-        self._setFmtPrefix("Bool")
+        super(Switch, self).__init__([p for (e, p) in alts] + ([default] if default else []), symbol=symbol, location=location)
+        self._setFmtPrefix("Switch")
         self._expr = expr
-        self._default = defaults
+        self._default = default
         self._cases = alts
         
     def expr(self):
@@ -528,7 +545,7 @@ class Switch(Conditional):
     def cases(self):
         """Returns the possible cases.
         
-        Returns:  list of tuple (value, ~~Production) - The alternatives.
+        Returns:  list of tuple (~~Expression, ~~Production) - The alternatives.
         """
         return self._cases
     
@@ -672,7 +689,7 @@ class Grammar:
             # Already added.
             return
 
-        if p.name():
+        if p.name() and not p.isNoID():
             assert p.type()
             i = id.Attribute(p.name(), p.type())
             self._scope.addID(i)

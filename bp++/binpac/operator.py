@@ -385,12 +385,12 @@ def castNonConstExprTo(cg, expr, dsttype):
     casted expression.
     """
 
-    assert canCastNonConstExpr(expr, dsttype)
+    assert canCastNonConstExprTo(expr, dsttype)
 
     ty = expr.type()
     
     if ty == dsttype:
-        return (expr, builder)
+        return expr
 
     if not typecheck(Cast, ty):
         return False
@@ -398,7 +398,7 @@ def castNonConstExprTo(cg, expr, dsttype):
     func = _findOp(Cast, "castNonConstExprTo", ty)
     
     if not func:
-        return False
+        raise CastError
     
     return func(cg, expr, dsttype)
     
@@ -510,13 +510,29 @@ class Mutable:
     def __init__(self, arg):
         self._arg = arg
 
+class Optional:
+    def __init__(self, arg):
+        self._arg = arg
+        
 def _matchExpr(expr, proto, all):
+    
+    if isinstance(proto, Optional):
+        if not expr:
+            return True
+        else:
+            proto = proto._arg
+    
+    if not expr:
+        return False
+    
     if isinstance(proto, list) or isinstance(proto, tuple):
         if not (isinstance(expr, list) or isinstance(expr, tuple)):
             return False
-        
-        if len(proto) != len(expr):
+
+        if len(proto) < len(expr):
             return False
+        
+        expr = expr + [None] * (len(proto) - len(expr))
         
         for (e, p) in zip(expr, proto):
             if not _matchExpr(e, p, all):
@@ -551,10 +567,11 @@ def _findOp(method, op, exprs):
     matches = []
 
     for (func, types) in ops:
-        
-        if len(types) != len(exprs):
+
+        if len(types) < len(exprs):
             continue
         
+        exprs = exprs + [None] * (len(types) - len(exprs))
         for (a, t) in zip(exprs, types):
             if not _matchExpr(a, t, exprs):
                 break

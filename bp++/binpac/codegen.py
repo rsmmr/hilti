@@ -196,7 +196,7 @@ class CodeGen(object):
         for mod in ["hilti", "binpac", "binpacintern"]:
             if not hilti.importModule(self._mbuilder.module(), mod, paths):
                 self.error(hltmod, "cannot import module %s" % mod)
-        
+
         for i in self._module.scope().IDs():
             if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
                 # FIXME: Should get rid of %export.
@@ -220,16 +220,40 @@ class CodeGen(object):
         return self._errors == 0
     
     def _initFunction(self):
-        """Generates a HILTI function initializing the module."""
+        """Generates a HILTI function initializing the module.
+        
+        We actually generate two: one of linkage HILTI with the
+        actual module-level statements, and one wrappre of linkage
+        INIT just calling the first one's stub function. 
+        """
+        
+        # Primary function.
         
         ftype = hilti.type.Function([], hilti.type.Void())
         name = "init_%s" % self._module.name()
         (fbuilder, builder) = self.beginFunction(name, ftype)
-        fbuilder.function().id().setLinkage(hilti.id.Linkage.INIT)
+        fbuilder.function().id().setLinkage(hilti.id.Linkage.EXPORTED)
 
         for stmt in self._module.statements():
             stmt.execute(self)
         
         self.endFunction()
+
+        # Wrapper function.
+        
+        wftype = hilti.type.Function([], hilti.type.Void())
+        wname = "init_%s_wrapper" % self._module.name()
+        (wfbuilder, wbuilder) = self.beginFunction(wname, wftype)
+        wfbuilder.function().id().setLinkage(hilti.id.Linkage.INIT)
+
+        funcs = wbuilder.addLocal("funcs", hilti.type.Tuple([hilti.type.CAddr()] * 2))
+        wbuilder.caddr_function(funcs, wbuilder.idOp(fbuilder.function().name()))
+        f = wbuilder.addLocal("f", hilti.type.CAddr())
+        wbuilder.tuple_index(f, funcs, builder.constOp(0))
+
+        wbuilder.call(None, wbuilder.idOp("BinPACIntern::call_init_func"), wbuilder.tupleOp(([f])))
+        
+        self.endFunction()
+        
         
     

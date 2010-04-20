@@ -10,7 +10,7 @@ import binpac.expr as expr
 
 # Language keywords. They will be turned into the corresponding all-uppercase
 # token.
-keywords = ["module", "type", "export", "unit", "print", "list", "global", "const", "if", "else", "var", "on"]
+keywords = ["module", "type", "export", "unit", "print", "list", "global", "const", "if", "else", "var", "on", "switch"]
 
 # Keywords for simple types, and what we turn them into.
 types = {
@@ -27,8 +27,8 @@ def _loc(t):
     return location.Location(t.lexer.parser.state._filename, t.lexer.lineno)
 
 tokens = [
-    "IDENT", "CONSTANT", "BYTES", "PACTYPE", "ATTRIBUTE", "PROPERTY",
-    "EQUAL", "UNEQUAL", "HASATTR"
+    "IDENT", "CONSTANT", "BYTES", "REGEXP", "PACTYPE", "ATTRIBUTE", "PROPERTY",
+    "EQUAL", "UNEQUAL", "HASATTR", "ARROW"
     ] + [k.upper() for k in keywords]
 
 # Operators with more than one character.
@@ -44,7 +44,11 @@ def t_UNEQUAL(t):
 def t_HASATTR(t):
     r'\?.'
     return t
-    
+
+def t_ARROW(t):
+    r'->'
+    return t
+
 # Type keywords not covered by types.
 
 def t_INT(t):
@@ -103,12 +107,6 @@ def t_CONST_STRING(t):
     t.value = constant.Constant(s, type.String(), location=_loc(t))
     return t
 
-def t_CONST_REGEXP(t):
-    r'/[^\n]*?(?<!\\)/'    
-    t.type = "CONSTANT"
-    t.value = constant.Constant(t.value[1:-1], type.RegExp(), location=_loc(t))
-    return t
-
 def t_CONST_BOOL(t):
     'True|False'
     t.type = "CONSTANT"
@@ -121,6 +119,12 @@ def t_CTOR_BYTES(t):
     'b"([^\n"]|\\\\")*"'
     t.type = "BYTES"
     t.value = util.expand_escapes(t.value[2:-1], unicode=False)
+    return t
+
+def t_CTOR_REGEXP(t):
+    r'/[^\n]*?(?<!\\)/'    
+    t.type = "REGEXP"
+    t.value = t.value[1:-1]
     return t
 
 # Identifiers.

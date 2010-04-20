@@ -1,0 +1,9 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL:  binpac++ %INPUT | grep bytes.append
+#
+# Makes sure constants are folded.
+
+module Mini;
+
+print b"123" + b"456" + b"789";

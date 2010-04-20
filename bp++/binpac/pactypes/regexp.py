@@ -21,19 +21,22 @@ class RegExp(type.ParseableType):
     def parsedType(self):
         return type.Bytes()
         
+    def hiltiCtor(self, cg, ctor):
+        return hilti.operand.Ctor(([ctor], []), hilti.type.Reference(hilti.type.RegExp()))
+            
     def hiltiType(self, cg):
         return hilti.type.Reference(hilti.type.Bytes())
 
     def production(self, field):
         return grammar.Variable(None, hilti.type.RegExp(), location=self.location())
         
-    def validateConst(self, vld, const):
-        if not isinstance(const.value(), str):
-            vld.error(const, "regular expression: constant of wrong internal type")
+    def validateCtor(self, vld, ctor):
+        if not isinstance(ctor, str):
+            vld.error(ctor, "regular expression: constant of wrong internal type")
     
     def pac(self, printer):
         printer.output("regexp")
         
-    def pacConstant(self, printer, const):
-        printer.output("/%s/" % const.value())
+    def pacCtor(self, printer, ctor):
+        printer.output("/%s/" % ctor)
     

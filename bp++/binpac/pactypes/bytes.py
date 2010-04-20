@@ -163,3 +163,22 @@ class Plus:
         cg.builder().bytes_append(tmp, e2.evaluate(cg))
         return tmp
     
+@operator.MethodCall(type.Bytes, "match", [type.RegExp, operator.Optional(type.UnsignedInteger)])
+class Match:
+    def type(obj, method, args):
+        return type.Bytes()
+    
+    def evaluate(cg, obj, method, args):
+        obj = obj.evaluate(cg)
+        re = args[0].evaluate(cg)
+        
+        if len(args) > 1:
+            group = args[1].evaluate(cg)
+        else:
+            group = cg.builder().constOp(0)
+        
+        func = cg.builder().idOp("BinPACIntern::bytes_match")
+        args = cg.builder().tupleOp([obj, re, group])
+        tmp = cg.functionBuilder().addLocal("__match", obj.type())
+        cg.builder().call(tmp, func, args)
+        return tmp

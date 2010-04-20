@@ -1,0 +1,18 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Test;
+
+global b = b"12345ABBBBC67890";
+
+print b.match(/.*A(.*)C.*/);
+print b.match(/A(.*)C/, 0);
+print b.match(/.*A(.*)C.*/, 1);
+
+print b.match(/XXX/);
+print b.match(/XXX/, 0);
+print b.match(/.*A(.*)C.*/, 10);
+

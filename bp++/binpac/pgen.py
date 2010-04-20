@@ -218,7 +218,7 @@ class ParserGen:
             args += [hilti.id.Parameter("__self", self._typeParseObjectRef())]
             
             for p in self._grammar.params():
-                args += [hilti.id.Parameter(p.name(), p.type().hiltiType(cg))]
+                args += [hilti.id.Parameter(p.name(), p.type().parsedType().hiltiType(cg))]
 
             if isinstance(hook, stmt.FieldControlHook):
                 args += [hilti.id.Parameter("__dollardollar", hook.dollarDollarType().hiltiType(cg))]
@@ -283,7 +283,7 @@ class ParserGen:
             self._parseBoolean(prod, args)
             
         elif isinstance(prod, grammar.Switch):
-            util.internal_error("grammar.Switch not yet supported")
+            self._parseSwitch(prod, args)
 
         else:
             util.internal_error("unexpected non-terminal type %s" % repr(prod))
@@ -371,7 +371,7 @@ class ParserGen:
         
         # Call the type's parse function.
         name = var.name() if var.name() else "__tmp"
-        dst = self.builder().addTmp(name , var.type().hiltiType(self.cg()))
+        dst = self.builder().addTmp(name , var.type().parsedType().hiltiType(self.cg()))
         args.cur = type.generateParser(self, args.cur, dst, not need_val)
         
         # We have successfully parsed a rule. 
@@ -548,6 +548,36 @@ class ParserGen:
         save_builder.if_else(bool, branches[0].labelOp(), branches[1].labelOp())
         
         self.cg().setBuilder(done)
+
+    def _parseSwitch(self, prod, args):
+        cg = self.cg()
+        self.builder().setNextComment("Parsing switch %s" % prod.symbol())
+
+        prods = [p for (e, p) in prod.cases()]
+        
+        expr = prod.expr().evaluate(cg)
+        
+        dsttype = prod.expr().type()
+        values = [e.castTo(dsttype, cg).evaluate(cg) for (e, p) in prod.cases()]
+        
+        (default_builder, case_builders, done) = cg.builder().makeSwitch(expr, values);
+        
+        for (case_prod, builder) in zip(prods, case_builders):
+            cg.setBuilder(builder)
+            self._parseProduction(case_prod, args)
+            self._finishedProduction(args.obj, case_prod, None)
+            self.builder().jump(done.labelOp())
+        
+        cg.setBuilder(default_builder)
+        
+        if prod.default():
+            self._parseProduction(prod.default(), args)
+        else:
+            self._parseError(default_builder, "unexpected switch case")
+        
+        self.builder().jump(done.labelOp())
+        
+        self.cg().setBuilder(done)
         
     ### Methods generating helper code. 
         
@@ -653,7 +683,7 @@ class ParserGen:
         def _makeType():
             fields = self._grammar.scope().IDs()
             ids = []
-            
+
             for f in fields:
                 default = f.type().attributeExpr("default")
                 if default:
@@ -661,7 +691,7 @@ class ParserGen:
                 else:
                     hlt_default = f.type().hiltiDefault(self.cg(), False)
                 
-                ids += [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), hlt_default)]
+                ids += [(hilti.id.Local(f.name(), f.type().parsedType().hiltiType(self._cg)), hlt_default)]
                 
             structty = hilti.type.Struct(ids)
             self._mbuilder.addTypeDecl(self._name("object"), structty)

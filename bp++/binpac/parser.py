@@ -203,6 +203,7 @@ def p_type_unit(p):
 def p_instantiate_unit(p):
     """_instantiate_unit :"""
     p.parser.state.unit = type.Unit(_currentScope(p), params=p[-1])
+    p.parser.state.in_switch = None 
 
 def p_enter_unit_hook(p):
     """_enter_unit_hook : """
@@ -224,10 +225,32 @@ def p_unit_item_list(p):
 
 def p_unit_item(p):
     """unit_item : VAR unit_var
-                 | unit_field
-                 | unit_hook
+                 |     unit_field_top_level
+                 |     unit_switch
+                 |     unit_hook
+                 |     unit_property
     """
-    pass
+
+def p_unit_field_top_level(p):
+    """unit_field_top_level : unit_field"""
+    p.parser.state.unit.addField(p[1])
+    
+def p_unit_field_property(p):
+    """unit_property : PROPERTY expr ';'"""
+    
+    expr = p[2]
+    if not expr.isConst():
+        util.parser_error(p, "expression must be constant")
+        raise SyntaxError    
+    
+    try:
+        p.parser.state.unit.setProperty(p[1], expr.constant())
+    except ValueError, e:
+        util.parser_error(p, "unknown property %s" % p[1])
+        raise SyntaxError    
+    except TypeError, e:
+        util.parser_error(p, "expression must be of type %s" % e)
+        raise SyntaxError    
 
 def p_unit_var(p):
     """unit_var : IDENT ':' type ';'
@@ -256,7 +279,7 @@ def _addAttrs(p, t, attrs):
 def p_unit_field(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond _leave_unit_field ';'"""
     _addAttrs(p, p.parser.state.field.type(), p[5])
-    p.parser.state.unit.addField(p.parser.state.field)
+    p[0] = p.parser.state.field
 
 def p_unit_field_with_hook(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond stmt_block _leave_unit_field"""
@@ -264,7 +287,7 @@ def p_unit_field_with_hook(p):
     _addAttrs(p, p.parser.state.field.type(), p[5])
     
     p.parser.state.field.addHook(hook)
-    p.parser.state.unit.addField(p.parser.state.field)
+    p[0] = p.parser.state.field
 
 def p_enter_unit_field(p):
     """_enter_unit_field : """
@@ -280,27 +303,14 @@ def p_leave_unit_field(p):
     """_leave_unit_field : """
     _popScope(p)
     
-def p_unit_field_property(p):
-    """unit_field : PROPERTY expr ';'"""
-    
-    expr = p[2]
-    if not expr.isConst():
-        util.parser_error(p, "expression must be constant")
-        raise SyntaxError    
-    
-    try:
-        p.parser.state.unit.setProperty(p[1], expr.constant())
-    except ValueError, e:
-        util.parser_error(p, "unknown property %s" % p[1])
-        raise SyntaxError    
-    except TypeError, e:
-        util.parser_error(p, "expression must be of type %s" % e)
-        raise SyntaxError    
-    
 def p_instantiate_field(p):
     """_instantiate_field : """
     loc = location.Location(p.lexer.parser.state._filename, p.lexer.lineno)
-    p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=loc)
+    
+    if not p.parser.state.in_switch:
+        p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=loc)
+    else:
+        p.parser.state.field = unit.SwitchFieldCase(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=loc)
     
 def p_unit_field_type_const(p):
     """unit_field_type : CONSTANT     
@@ -352,6 +362,31 @@ def p_opt_unit_field_cond(p):
     if len(p) > 1:
         p.parser.state.field.setCondition(p[3])
 
+def p_unit_switch(p):
+    """unit_switch : SWITCH '(' expr ')' '{' _instantiate_switch unit_switch_case_list '}'"""
+    p.parser.state.unit.addField(p.parser.state.in_switch)
+    p.parser.state.in_switch = None
+    
+def p_instantiate_switch(p):
+    """_instantiate_switch : """
+    loc = location.Location(p.lexer.parser.state._filename, p.lexer.lineno)
+    p.parser.state.in_switch = unit.SwitchField(p[-3], p.parser.state.unit, location=loc)
+
+def p_unit_switch_case_list(p):
+    """unit_switch_case_list : unit_switch_case unit_switch_case_list
+                             | """
+    if len(p) > 1:
+        p.parser.state.in_switch.addCase(p[1])
+        
+def p_unit_switch_case(p):
+    """unit_switch_case : expr ARROW unit_field
+                        | '*'  ARROW unit_field
+    """
+    assert isinstance(p[3], unit.SwitchFieldCase)
+    expr = p[1] if p[1] != "*" else None
+    p[3].setExpr(expr)
+    p[0] = p[3]
+    
 ### Type attributes.
 
 def p_opt_type_attr_list(p):
@@ -375,6 +410,10 @@ def p_ctor_constant(p):
 def p_ctor_bytes(p):
     """ctor : BYTES"""
     p[0] = expr.Ctor(p[1], type.Bytes(), location=_loc(p, 1))
+    
+def p_ctor_regexp(p):
+    """ctor : REGEXP"""
+    p[0] = expr.Ctor(p[1], type.RegExp(), location=_loc(p, 1))
 
 def p_ctor_list(p):
     """ctor : '[' opt_ctor_list_list ']'

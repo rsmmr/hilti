@@ -22,7 +22,7 @@ import hilti.type
 
 _AllowedConstantTypes = (type.Bytes, type.RegExp)
 
-class Field:
+class Field(object):
     """One field within a unit data type.
     
     name: string or None - The name of the fields, or None for anonymous
@@ -30,8 +30,10 @@ class Field:
     
     value: ~~Constant or None - The value for constant fields.
     
-    ty: ~~Type or None - The type of the field; can be None if *constant* is
-    given.
+    ty: ~~Type or None - The type of the field; can be None if
+    *constant* is given. It can also be none for 'umbrella' fields
+    that never get converted into an actual parsed field themselves
+    (e.g., the ~~SwitchField).
     
     parent: ~~Unit - The unit type this field is part of.
     
@@ -44,7 +46,7 @@ class Field:
     """
     def __init__(self, name, value, ty, parent, params=[], location=None):
         self._name = name
-        self._type = ty if ty else value.type()
+        self._type = ty if ty else (value.type() if value else None)
         self._value = value
         self._parent = parent
         self._location = location
@@ -52,9 +54,8 @@ class Field:
         self._ctlhook = None
         self._cond = None
         self._params = params
+        self._noid = False
 
-        assert self._type
-        
         if isinstance(ty, type.ParseableType):
             ty.initParser(self)
 
@@ -171,7 +172,23 @@ class Field:
         cond: ~~Expression: The condition, which must evaluate to a ~~Bool.
         """
         self._cond = cond
-    
+
+    def setNoID(self):
+        """Sets a flags indicating the HILTI struct for the parent union
+        should not contain an item for this field. This can be used if
+        another field already creates an item of the same name (and type).
+        """
+        self._noid = True
+        
+    def isNoID(self):
+        """Returns whether the HILTI struct for the parent union should
+        contain an item for this field. The default is yes but that can be
+        changed with ~~setNoID.
+        
+        Returns: bool - True if no item should be created.
+        """
+        return self._noid
+        
     def production(self):
         """Returns a production to parse the field.
         
@@ -192,6 +209,9 @@ class Field:
             assert prod
             prod.setName(self._name)
             prod.setType(self._type)
+            
+            if self._noid:
+                prod.setNoID()
             
             if self._params:
                 assert isinstance(prod, grammar.ChildGrammar)
@@ -221,13 +241,14 @@ class Field:
         for hook in self._hooks:
             hook.validate(vld)
         
-        if not isinstance(self._type, type.ParseableType):
-            # If the production function has not been overridden, we can't
-            # use that type in a unit field. 
-            vld.error(self, "type %s cannot be used inside a unit field" % self._type)
+        if self._type:
+            if not isinstance(self._type, type.ParseableType):
+                # If the production function has not been overridden, we can't
+                # use that type in a unit field. 
+                vld.error(self, "type %s cannot be used inside a unit field" % self._type)
 
-        self._type.validateInUnit(vld)
-            
+            self._type.validateInUnit(vld)
+        
         if self._value:
             # White-list the types we can deal with in constants.
             for a in _AllowedConstantTypes:
@@ -265,8 +286,9 @@ class Field:
         """See ~~Type.resolve."""
         if resolver.already(self):
             return
-
-        self._type = self._type.resolve(resolver)
+        
+        if self._type:
+            self._type = self._type.resolve(resolver)
         
         if self._cond:
             self._cond.resolve(resolver)
@@ -277,6 +299,162 @@ class Field:
         tag = "%s: " % self._name if self._name else ""
         return "%s%s" % (tag, self._type)
 
+class SwitchField(Field):
+    """An umbrella field for a switch construct. This field contains all of
+    the switch's cases as sub-fields, and it is in charge of generating their
+    productions. The cases must be added via ~~addCase, not directly to the
+    parent ~~Unit. 
+    
+    expr: ~~Expression - The switch condition.
+    
+    parent: ~~Unit - The unit type this field is part of.
+    
+    location: ~~Location - Location information for the switch.
+    """
+    def __init__(self, expr, parent, location=None):
+        super(SwitchField, self).__init__("<switch>", None, None, parent, location=location)
+        self._expr = expr
+        self._cases = []
+
+    def addCase(self, case):
+        """Adds a case to the switch.
+        
+        case: ~~SwitchFieldCase - The case.
+        """
+        self._cases += [case]
+        self.parent().addField(case)
+
+    ### Overridden from Field.
+        
+    def production(self):
+        grammar_cases = []
+        default = None
+        
+        for case in self._cases:
+            if case.isDefault():
+                default = case.production()
+                
+            else:
+                grammar_cases += [(case.expr(), case.production())]
+                
+        return grammar.Switch(self._expr, grammar_cases, default, symbol="switch", location=self.location())
+    
+    def resolve(self, resolver):
+        super(SwitchField, self).resolve(resolver)
+        self._expr.resolve(resolver)
+        
+        # Having multiple cases with the same field name is ok if they are
+        # of the same type. In that case, make sure that only one of them
+        # actually ends up in the HILTI struct.  Note that error reporting for
+        # non-matching types will be done in validate.
+        names = {}
+        for field in self._cases:
+            name = field.name()
+            if not name in names:
+                names[name] = field.type()
+            elif field.type() == names[name]:
+                field.setNoID()
+        
+    def validate(self, vld):
+        super(SwitchField, self).validate(vld)
+        
+        self._expr.validate(vld)
+        
+        defaults = 0
+        values = []
+        for case in self._cases:
+            if case.isDefault():
+                defaults += 1
+                continue
+            
+            if not case.expr():
+                util.internal_error("no expression for switch case")
+            
+            if not case.expr().canCastTo(self._expr.type()):
+                vld.error(self, "case expression is of type %s, but must be %s" % (case.expr().type(), self._expr.type()))
+                
+            if case.expr().isConst():
+                c = case.expr().constant()
+                if c.value() in values:
+                    vld.error(self, "case '%s' defined more than once" % c.value())
+                else:
+                    values += [c.value()]
+                
+        if defaults > 1:
+            vld.error(self, "more than one default case")
+
+    def pac(self, printer):
+        printer.output("<SwitchFieldCase TODO>")
+
+    def __str__(self):
+        return "<__str__ SwitchFieldCase TODO>"
+
+class SubField(Field):
+    """An abstract base class for fields that are part of another 'umbrealla'
+    field. A ~~Unit will not directly create productions/IDs for SubFields,
+    but delegate that to the umbrella field.
+    """
+    pass
+    
+class SwitchFieldCase(SubField):
+    """A SubField for the cases of a switch. Instances of this class must be
+    added to their umbrella ~~SwitchField, not directly to the ~~Unit they are
+    part of. After an instance has been created, ~~setExpr must be called to
+    set the case's expression (including for the default case). 
+    
+    See ~~Field for parameters.
+    """
+    def __init__(self, name, value, ty, parent, params=[], location=None):
+        super(SwitchFieldCase, self).__init__(name, value, ty, parent, params=params, location=location)
+        self._default = False
+        self._expr = None
+
+    def isDefault(self):
+        """Returns whether this field is the default branch.
+        
+        Returns: Bool - True if the field is the default.
+        """
+        return self._default
+        
+    def expr(self):
+        """Returns the expression associated with the case.         
+        
+        Returns: ~~Expression - The expression, or None for the default branch.
+        """
+        return self._expr
+        
+    def setExpr(self, expr):
+        """Sets the expression associated with the field. This must be called
+        once for every case (including the default case).
+        
+        expr: ~~Expression - The expression, or None to mark the case as the
+        default.
+        """
+        self._expr = expr
+        
+        if not self._expr:
+            self._default = True
+
+    ### Overridden from Field.
+        
+    def resolve(self, resolver):
+        super(SwitchFieldCase, self).resolve(resolver)
+        if self._expr:
+            self._expr.resolve(resolver)
+
+    def validate(self, vld):
+        assert self._default or self._expr
+        
+        super(SwitchFieldCase, self).validate(vld)
+        if self._expr:
+            self._expr.validate(vld)
+
+    def pac(self, printer):
+        printer.output("<SwitchFieldCase TODO>")
+
+    def __str__(self):
+        return "<__str__ SwitchFieldCase TODO>"
+    
 @type.pac("unit")
 class Unit(type.ParseableType):
     """Type describing an individual parsing unit.
@@ -340,16 +518,19 @@ class Unit(type.ParseableType):
         """
         return self._fields_ordered
     
-    
     def field(self, name):
-        """Returns a specific field.
+        """Returns the fields of a specific name.
         
-        Returns: ~~Field - The field, or None if there's no field of that name. 
+        Returns: list ~~Field - The fields, which may be empty if there's no
+        field of that name. 
+        
+        Note: In some case, there can multiple fields of the same name, and
+        thus this returns a list.
         """
         try:
             return self._fields[name]
         except KeyError:
-            return None
+            return []
 
     def params(self):
         """Returns the unit's parameters.
@@ -364,9 +545,12 @@ class Unit(type.ParseableType):
         name: string - The name of the field. 
         
         Returns: ~~Type - The type, or None if there's no field of this type.
+        
+        Note: Even there can multiple fields of the same name, they all must
+        have the same type and thus returns just a single type.
         """
         try:
-            return self._fields[name].type()
+            return self._fields[name][0].type()
         except KeyError:
             return None
             
@@ -378,9 +562,12 @@ class Unit(type.ParseableType):
         name: string - The name of the field. 
         
         Returns: ~~Type - The parsed value. 
+        
+        Note: Even there can multiple fields of the same name, they all must
+        have the same type and thus returns just a single type.
         """
         try:
-            return self._fields[name].parsedType()
+            return self._fields[name][0].parsedType()
         except KeyError:
             return None
         
@@ -391,7 +578,12 @@ class Unit(type.ParseableType):
         """
         assert builtin_id(field._parent) == builtin_id(self)
         idx = field.name() if field.name() else str(builtin_id(field))
-        self._fields[idx] = field
+        
+        if idx in self._fields:
+            self._fields[idx] += [field]
+        else:
+            self._fields[idx] = [field]
+            
         self._fields_ordered += [field]
 
     def variables(self):
@@ -429,9 +621,20 @@ class Unit(type.ParseableType):
         
         Returns: list of ~~UnitHook - The hooks with their priorities. The
         list will be empty if no hooks have been registered for that name. 
+        
+        Note: If there are multiple fields with the same name, the returned
+        list will contains the hooks for all of them.
         """
+        hooks = []
+        
         if name in self._fields:
-            return self._fields[name].hooks()
+            for f in self._fields[name]:
+                hooks += f.hooks
+                
+            return hooks
+
+        if name in self._vars:
+            return self._vars[name].hooks()
         
         return self._hooks.get(name, [])
         
@@ -497,11 +700,11 @@ class Unit(type.ParseableType):
             raise TypeError(default.type())
             
         self._props[name] = constant
-    
+
     def grammar(self):
         """Returns the grammar for this type."""
         if not self._grammar:
-            seq = [f.production() for f in self._fields_ordered]
+            seq = [f.production() for f in self._fields_ordered if not isinstance(f, SubField)]
             seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
             self._grammar = grammar.Grammar(self.name(), seq, self._params, addl_ids=self._vars.values(), location=self.location())
             
@@ -525,8 +728,9 @@ class Unit(type.ParseableType):
         if error:
             vld.error(self, error)
         
-        for f in self._fields.values():
-            f.validate(vld)
+        for fields in self._fields.values():
+            for f in fields:
+                f.validate(vld)
 
         for var in self._vars.values():
             var.validate(vld)
@@ -534,7 +738,20 @@ class Unit(type.ParseableType):
         for (name, hooks) in self._hooks:
             for h in hooks:
                 h.validate(vld)
-            
+                
+        for fields in self._fields.values():
+            if len(fields) > 1:
+                cnt_ids = 0
+                for f in fields:
+                    if f.type().hasAttribute("default"):
+                        vld.error(self, "if multiple fields have the same name, none can have a &default")
+                    
+                    if not f.isNoId():
+                        cnt_ids += 1
+                        
+                if cnd_ids > 1:
+                    vld.error(self, "field name defined more than once with different types")
+
     def pac(self, printer):
         printer.output("<unit type - TODO>")
 
@@ -551,11 +768,12 @@ class Unit(type.ParseableType):
         for (name, hooks) in self._hooks.items():
             if name in self._fields:
                 # Move over to field.
-                field = self._fields[name]
+                fields = self._fields[name]
                 
-                for h in hooks:
-                    h.setField(field)
-                    field.addHook(h)
+                for field in fields:
+                    for h in hooks:
+                        h.setField(field)
+                        field.addHook(h)
                     
                 del self._hooks[name]
                 
@@ -575,8 +793,9 @@ class Unit(type.ParseableType):
                 for h in hooks:
                     h.resolve(resolver)
 
-        for f in self._fields.values():
-            f.resolve(resolver)
+        for fields in self._fields.values():
+            for f in fields:
+                f.resolve(resolver)
                 
         return self
             
@@ -635,10 +854,10 @@ class Attribute:
         # TODO: Need to clean this hook calling up once we have real hooks in
         # HILTI.
         
-        field = lhs.type().field(name)
-        if field:
-            # Run the fields hook.
-            field.parent().parserGen().runHooks(cg, obj, field.hooks())
+        fields = lhs.type().field(name)
+        if fields:
+            for field in fields:
+                field.parent().parserGen().runHooks(cg, obj, field.hooks())
             return
         
         var = lhs.type().variable(name)
