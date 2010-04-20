@@ -597,7 +597,8 @@ class BlockBuilder(OperandBuilder):
         creates one ~~BlockBuilder for each alternative branch as well as one
         for the default branch, all of which can then be filled with
         instructions. All branches are setup to continue execution with *cont*
-        (unless they leave the current function otherwise)
+        (unless they leave the current function otherwise; and see the note
+        below).
 
         All default and continuation builders can optionally be substitued
         with ones passed in. Note that if *default* is passed in, its
@@ -622,6 +623,14 @@ class BlockBuilder(OperandBuilder):
         *values*; and the final builder is for continuing execution afterwards
         independent of the condition.  If any of these is passed in, they will
         be returned here; otherwise, new builders will be returned.
+        
+        Note: The blocks are setup to continue execution with the *cont*
+        block. This is done by chaining the blocks via ~~setNext so that the
+        HILTI canonifier will later insert a branch instruction. However, note
+        that this link will not survive when printing the HILTI program into
+        an ``*.ll`` file: the link will be output as a comment and thus
+        ignored by any later parsing. If in doubt, insert a manual branch at
+        the end of all block. 
         """
         
         for v in values:

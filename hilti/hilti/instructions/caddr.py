@@ -48,6 +48,9 @@ def _exportedFunction(ty, op, i):
     if not isinstance(op, operand.ID):
         return (False, "must be a function name")
 
+    if op.value().linkage() != id.Linkage.EXPORTED:
+        return (False, "must have export linkage")
+    
     # TODO: Should check that we reference a constant here. But how?
     
     return (True, "")

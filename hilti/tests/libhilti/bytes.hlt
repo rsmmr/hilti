@@ -1,0 +1,39 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+#
+module Main
+
+import Hilti
+
+void run() {
+     local ref<bytes> b
+     local int<64> i
+     
+     b = call Hilti::bytes_to_lower(b"AbCdEfG")
+     call Hilti::print(b)
+     
+     b = call Hilti::bytes_to_lower(b"")
+     call Hilti::print(b)
+     
+     i = call Hilti::bytes_to_int(b"1234")
+     call Hilti::print(i)
+
+     i = call Hilti::bytes_to_int(b"1")
+     call Hilti::print(i)
+
+     i = call Hilti::bytes_to_int(b"-1234")
+     call Hilti::print(i)
+
+     i = call Hilti::bytes_to_int(b"-1")
+     call Hilti::print(i)
+
+     i = call Hilti::bytes_to_int(b"000")
+     call Hilti::print(i)
+     
+     i = call Hilti::bytes_to_int(b"001")
+     call Hilti::print(i)
+}     
+

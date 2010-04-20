@@ -9,6 +9,7 @@ import node
 import operand
 import scope
 import type
+import resolver
 
 class Module(node.Node):
     """Represents a single HILTI link-time unit. A module has its
@@ -63,6 +64,8 @@ class Module(node.Node):
         
         other: ~~Module - The other module.
         """
+        resolver.Resolver().resolve(other)
+        
         for i in other.scope().IDs():
         
             if i.imported():
@@ -75,7 +78,7 @@ class Module(node.Node):
                 newid.setImported()
                 newid.setNamespace(other.name())
                 self.scope().add(newid)
-        
+                
         self._imported_modules += [(other, "<need to set path>")]
 
     def exportIdent(self, id):
@@ -97,10 +100,12 @@ class Module(node.Node):
         new_exported = []
         for i in self._exported:
             rid = self._scope.lookup(i.name())
-            new_exported += [rid if rid else i]
+            nid = rid if rid else i
+            nid.setLinkage(id.Linkage.EXPORTED)
+            new_exported += [nid]
                 
         self._exported = new_exported
-        
+
     def validate(self, vld):
         vld.startModule(self)
         self._scope.validate(vld)
@@ -126,9 +131,6 @@ class Module(node.Node):
     
     def canonify(self, canonifier):
         canonifier.startModule(self)
-
-        for i in self._exported:
-            i.setLinkage(id.Linkage.EXPORTED)
         
         for i in self._scope.IDs():
             i.canonify(canonifier)

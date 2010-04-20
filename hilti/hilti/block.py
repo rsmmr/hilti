@@ -168,7 +168,6 @@ class Block(node.Node):
     ### Overridden from Node.
         
     def canonify(self, canonifier):
-        
         # If we are in debug mode, first add message instructions. 
         if canonifier.debugMode():
             b = Block(canonifier.currentFunction(), instructions=[], name=self._name, location=self.location())

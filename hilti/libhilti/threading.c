@@ -431,6 +431,9 @@ void hlt_threading_start()
     __hlt_global_thread_mgr = hlt_thread_mgr_new();
     if ( ! __hlt_global_thread_mgr )
         _fatal_error("cannot create threading manager");
+    
+    //__hlt_cmd_queue_start();    
+    //__hlt_files_start();
 }
 
 void hlt_threading_stop(hlt_exception** excpt)
@@ -440,6 +443,9 @@ void hlt_threading_stop(hlt_exception** excpt)
 
     DBG_LOG(DBG_STREAM, "stopping threading system");
 
+    //__hlt_files_stop();
+    //__hlt_cmd_queue_stop();    
+    
     hlt_thread_mgr* mgr = __hlt_global_thread_mgr;
 
     if ( mgr->state != HLT_THREAD_MGR_DEAD ) {

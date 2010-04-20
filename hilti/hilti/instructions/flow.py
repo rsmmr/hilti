@@ -500,7 +500,11 @@ def _checkFunc(vld, i, func, cc):
 
     if cc and not func.callingConvention() in cc:
         vld.error(i, "call to function with incompatible calling convention")
-    
+
+    if vld.currentFunction().callingConvention() != function.CallingConvention.HILTI and \
+       func.callingConvention() == function.CallingConvention.HILTI:
+           vld.error(i, "cannot call HILTI function from non-HILTI function")
+        
     return True
 
 def _checkArgs(vld, i, func, op):
