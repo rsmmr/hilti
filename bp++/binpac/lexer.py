@@ -10,7 +10,7 @@ import binpac.expr as expr
 
 # Language keywords. They will be turned into the corresponding all-uppercase
 # token.
-keywords = ["module", "type", "export", "unit", "print", "list", "global", "const", "if", "else", "var", "on", "switch"]
+keywords = ["module", "type", "export", "unit", "print", "list", "global", "const", "if", "else", "var", "on", "switch", "extern"]
 
 # Keywords for simple types, and what we turn them into.
 types = {
@@ -53,11 +53,13 @@ def t_ARROW(t):
 
 def t_INT(t):
     r'int(8|16|32|64)'
+    t.type = "PACTYPE"
     t.value = type.SignedInteger(int(t.value[3:]))
     return t
    
 def t_UINT(t):
     r'uint(8|16|32|64)'
+    t.type = "PACTYPE"
     t.value = type.UnsignedInteger(int(t.value[4:]))
     return t
 

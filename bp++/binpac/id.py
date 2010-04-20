@@ -3,6 +3,7 @@
 import ast
 import location
 import copy
+import type
 
 import binpac.util as util
 
@@ -335,4 +336,36 @@ class Variable(ID):
     
     def evaluate(self, cg):
         util.internal_error("evaluate must not be called for id.Variable")
+        
+
+class Function(ID):
+    """An ID representing an (overloaded) function. 
+    
+    name: string - The ID's name.
+    
+    func: ~~OverloadedFunction: The function referenced by this ID.
+    """
+    def __init__(self, name, func, location=None):
+        super(Function, self).__init__(name, func.type(), location=location)
+        self._func = func
+
+    def function(self):
+        """
+        Returns the (overloaded) function referenced by this ID.
+        
+        Returns: ~~OverloadedFunction - The function.
+        """
+        return self._func
+        
+    ### Overidden from ID.
+    
+    def validate(self, vld):
+        pass
+
+    def pac(self, printer):
+        printer.output(self.name())
+    
+    def evaluate(self, cg):
+        for f in self._funcs:
+            f.codegen(cg)
         

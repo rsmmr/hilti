@@ -310,6 +310,10 @@ class Name(Assignable):
         self._name = name
         self._scope = scope
 
+    def name(self):
+        """Returns the name that is referenced."""
+        return self._name
+        
     def _internalName(self):
         """Maps user-visible name to internal name.
         

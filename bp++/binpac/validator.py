@@ -37,16 +37,18 @@ class Validator(object):
         util.error(msg, component="codegen", context=loc)
         self._errors += 1
 
+    def currentModule(self):
+        """Returns the module currently being validated.
+        
+        Returns: ~~Module - The module
+        """
+        return self._module
+        
     def _validate(self):
         # Top-level driver of the validation process.
         self._errors = 0
 
         self._module.validate(self)
         
-        if self._errors > 0:
-            return self._errors
-        
-        errors = hilti.validateModule(self._module)                                                                                                                   
-        
-        return errors
+        return self._errors
 

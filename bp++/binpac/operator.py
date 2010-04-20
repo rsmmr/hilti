@@ -196,6 +196,19 @@ def _pacMethodCall(printer, exprs):
             
     printer.output(")")
     
+def _pacCall(printer, exprs):
+    exprs[0].pac(printer)
+    printer.output("(")
+    
+    args = exprs[1]
+    
+    for i in range(len(args)):
+        args[i].pac(printer)
+        if i != len(args) - 1:
+            printer.output(",")
+            
+    printer.output(")")
+    
 _Operators = {
     # Operator name, #operands, description.
     "Plus": (2, "The sum of two expressions. (`a + b`)", _pacBinary(" + ")),
@@ -206,6 +219,7 @@ _Operators = {
     "Cast": (1, "Cast into another type.", lambda p, e: p.output("<Cast>")),
     "Attribute": (2, "Attribute expression. (`a.b`)", _pacBinary(".")),
     "HasAttribute": (2, "Has-attribute expression. (`a?.b`)", _pacBinary("?.")),
+    "Call": (1, "Function call. (`a()`)", _pacCall),
     "MethodCall": (3, "Method call. (`a.b()`)", _pacMethodCall),
     "Size": (1, "The size of an expression's value, with type-defined definition of \"size\" (`|a|`)", _pacUnary("|")),
     "Equal": (2, "Compares two values whether they are equal. (``a == b``)", _pacBinary(" + ")),
@@ -513,8 +527,14 @@ class Mutable:
 class Optional:
     def __init__(self, arg):
         self._arg = arg
+
+class Any:
+    pass
         
 def _matchExpr(expr, proto, all):
+
+    if isinstance(proto, Any):
+        return True
     
     if isinstance(proto, Optional):
         if not expr:

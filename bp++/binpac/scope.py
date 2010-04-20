@@ -77,14 +77,14 @@ class Scope(visitor.Visitable):
                 pass
         
             # Now see if there's a namespace given.
-            i = i.find("::")
-            if i < 0:
+            n = i.find("::")
+            if n < 0:
                 # No namespace.
                 return None
 
             # Look up with the namespace.
-            namespace = i[0:i].lower()
-            name = i[i+2:]
+            namespace = i[0:n].lower()
+            name = i[n+2:]
             
         else:
             assert isinstance(i, id.ID)

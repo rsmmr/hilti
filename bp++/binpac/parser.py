@@ -19,6 +19,7 @@ import binpac.stmt as stmt
 import binpac.scope as scope
 import binpac.util as util
 import binpac.pactypes.unit as unit
+import binpac.pactypes.function as function
 
 # FIXME: Why does this not work?
 #import binpac.lexer as lexer
@@ -70,6 +71,10 @@ def p_module_global_type(p):
 
 def p_module_global_global(p):
     """module_global : global_decl"""
+    pass
+
+def p_module_global_function(p):
+    """module_global : function_decl"""
     pass
 
 def p_module_global_stmt(p):
@@ -153,8 +158,36 @@ def p_opt_param_list(p):
     
 def p_param(p):
     """param : IDENT ':' type"""
-    p[0] = id.ID(p[1], p[3], location=_loc(p, 1))
+    p[0] = id.Parameter(p[1], p[3], location=_loc(p, 1))
 
+### Functions
+
+def p_function_decl(p):
+    """function_decl : extern_func"""
+    pass
+    
+def p_extern_func(p):
+    """extern_func : EXTERN func_head ';'"""
+    (name, ftype) = p[2]
+    
+    i = _currentScope(p).lookupID(name)
+    if not i:
+        ty = type.OverloadedFunction(ftype.resultType(), location=_loc(p, 1))
+        func = function.OverloadedFunction(ty, None, location=_loc(p, 1))
+        i = id.Function(name, func)
+        func.setID(i)
+        _currentScope(p).addID(i)
+
+    util.check_class(i, id.Function, "extern_func")
+    hfunc = function.HILTIFunction(ftype, name)
+    i.function().addFunction(hfunc)
+    
+def p_func_head(p):
+    """func_head : type IDENT '(' param_list ')'"""
+    name = p[2]
+    ftype = type.Function(p[4], p[1], location=_loc(p, 1))
+    p[0] = (name, ftype)
+    
 ### Types 
 
 def p_type(p):
@@ -501,10 +534,14 @@ def p_expr_unequal(p):
     eq = expr.Overloaded(Operator.Equal, (p[1], p[3]), location=_loc(p, 1))
     p[0] = expr.Overloaded(Operator.Not, (eq, ), location=_loc(p, 1))
     
+def p_expr_function_call(p):
+    """expr : expr '(' expr_list ')'"""
+    p[0] = expr.Overloaded(Operator.Call, (p[1], p[3]), location=_loc(p, 1))
+
 def p_expr_method_call(p):
     """expr : expr '.' IDENT '(' expr_list ')'"""
     p[0] = expr.Overloaded(Operator.MethodCall, (p[1], p[3], p[5]), location=_loc(p, 1))
-
+    
 def p_expr_size(p):
     """expr : '|' expr '|'"""
     p[0] = expr.Overloaded(Operator.Size, (p[2], ), location=_loc(p, 1))
@@ -620,6 +657,7 @@ def _parse(filename, import_paths=["."]):
         ast = parser.parse(lines, lexer=lex, debug=0)
     except ply.lex.LexError, e:
         # Already reported.
+        print e
         ast = None
 
     if parser.state.errors() > 0:

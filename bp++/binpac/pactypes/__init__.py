@@ -10,3 +10,4 @@ import string
 import bool
 import list
 import void
+import function

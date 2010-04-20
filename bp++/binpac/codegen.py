@@ -59,6 +59,13 @@ class CodeGen(object):
         """
         return self._debug
 
+    def currentModule(self):
+        """Returns the module currently being validated.
+        
+        Returns: ~~Module - The module
+        """
+        return self._module
+    
     def beginFunction(self, name, ftype):
         """Starts a new function. The method creates the function builder as
         well as the initial block builder (which will be returned by
