@@ -149,7 +149,7 @@ class _:
 class Plus:
     def type(e1, e2):
         return type.Bytes()
-    
+
     def simplify(e1, e2):
         if not e1.isInit() or not e2.isInit():
             return None

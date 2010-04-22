@@ -63,6 +63,13 @@ attribute; they are all class methods.
   that all other class methods will only be called if this check returns True.
   
   Returns: bool - True if the operator applies to these expression types.
+
+.. function:: resolve(resolver, <exprs>)
+
+  Optional. Adds additional resolvingfunctionality performed *after* it has
+  already been determined that the operator applies.
+
+  resolver: ~~Resolver - The resolver to use.
   
 .. function:: validate(vld, <exprs>)
 
@@ -226,7 +233,7 @@ _Operators = {
     "Not": (2, "Inverts a boolean value. (``! a``)", _pacUnary("-"))
     }
 
-_Methods = ["typecheck", "validate", "simplify", "evaluate", "assign", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
+_Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
     
 ### Public functions.    
     
@@ -250,6 +257,20 @@ def typecheck(op, exprs):
         return False
     
     return True
+
+def resolve(op, resolver, exprs):
+    """Resolves an operator's arguments.
+    
+    op: ~~Operator - The operator.
+    resolver: ~~Resolver - The resolver to use.
+    exprs: list of ~~Expression - The expressions for the operator.
+    """
+    func = _findOp("resolve", op, exprs)
+    if not func:
+        # No validate function defined means ok.
+        return None
+    
+    return func(resolver, *exprs)
 
 def validate(op, vld, exprs):
     """Validates an operator's arguments.
@@ -591,7 +612,7 @@ def _findOp(method, op, exprs):
         if len(types) < len(exprs):
             continue
         
-        exprs = exprs + [None] * (len(types) - len(exprs))
+        exprs = [e for e in exprs] + [None] * (len(types) - len(exprs))
         for (a, t) in zip(exprs, types):
             if not _matchExpr(a, t, exprs):
                 break

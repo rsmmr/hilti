@@ -82,6 +82,10 @@ class Block(Statement):
     
     ### Overidden from ast.Node.
 
+    def resolve(self, resolver):
+        for stmt in self._stmts:
+            stmt.resolve(resolver)
+    
     def validate(self, vld):
         for stmt in self._stmts:
             stmt.validate(vld)
@@ -94,7 +98,7 @@ class Block(Statement):
         printer.output("}", nl=True)
         printer.pop()
 
-    def simplify(self):
+    def doSimplify(self):
         self._stmts = [s.simplify() for s in self._stmts]
         return self
         
@@ -103,7 +107,8 @@ class Block(Statement):
     def execute(self, cg):
         for i in self._scope.IDs():
             if isinstance(i, id.Local):
-                cg.builder().addLocal(i.name(), i.type().hiltiType(cg), force=False, reuse=True)
+                init = i.expr().hiltiInit(cg) if i.expr() else i.type().hiltiDefault()
+                cg.builder().addLocal(i.name(), i.type().hiltiType(cg), init, force=False, reuse=True)
         
         for stmt in self._stmts:
             stmt.execute(cg)
@@ -222,6 +227,10 @@ class Print(Statement):
         
     ### Overidden from ast.Node.
     
+    def resolve(self, resolver):
+        for expr in self._exprs:
+            expr.resolve(resolver)
+    
     def validate(self, vld):
         for expr in self._exprs:
             expr.validate(vld)
@@ -238,7 +247,7 @@ class Print(Statement):
                 
         printer.output(";", nl=True)
 
-    def simplify(self):
+    def doSimplify(self):
         self._exprs = [e.simplify() for e in self._exprs]
         return self
         
@@ -277,6 +286,9 @@ class Expression(Statement):
         
     ### Overidden from ast.Node.
     
+    def resolve(self, resolver):
+        self._expr.resolve(resolver)
+    
     def validate(self, vld):
         self._expr.validate(vld)
 
@@ -284,7 +296,7 @@ class Expression(Statement):
         self._expr.pac(printer)
         printer.output(";", nl=True)
 
-    def simplify(self):
+    def doSimplify(self):
         self._expr = self._expr.simplify()
         return self
         
@@ -318,6 +330,12 @@ class IfElse(Statement):
         
     ### Overidden from ast.Node.
     
+    def resolve(self, resolver):
+        self._cond.resolve(resolver)
+        self._yes.resolve(resolver)
+        if self._no:
+            self._no.resolve(resolver)
+    
     def validate(self, vld):
         self._cond.validate(vld)
         self._yes.validate(vld)
@@ -344,7 +362,7 @@ class IfElse(Statement):
             printer.pop()
             printer.output("}", nl=True)
             
-    def simplify(self):
+    def doSimplify(self):
         self._cond = self._cond.simplify()
         self._yes = self._yes.simplify()
         if self._no:
@@ -389,3 +407,53 @@ class IfElse(Statement):
         return "if ( %s ) { %s } else { %s }" % (self._cond, self._yes, self._no)
     
     
+class Return(Statement):
+    """The ``return`` statement.
+    
+    expr: ~Expression - The expr to return, or None for void functions.
+    
+    location: ~~Location - The location where the expression was defined. 
+    """
+    def __init__(self, expr, location=None):
+        super(Return, self).__init__(location=location)
+        self._expr = expr
+        
+    ### Overidden from ast.Node.
+
+    def resolve(self, resolver):
+        if self._expr:
+            self._expr.resolve(resolver)
+    
+    def validate(self, vld):
+        if self._expr:
+            self._expr.validate(vld)
+        
+        if not vld.currentFunction():
+            vld.error(self, "return outside of function")
+            return
+        
+        if vld.currentFunction().resultType() == type.Void and self._expr:
+            vld.error(expr, "returning value in void function")
+            
+        if vld.currentFunction().resultType() != type.Void and not self._expr:
+            vld.error(expr, "missing return value")
+
+    def pac(self, printer):
+        printer.output("return ")
+        self._expr.pac(printer)
+        printer.output(";", nl=True)
+
+    def doSimplify(self):
+        self._expr = self._expr.simplify()
+        return self
+        
+    ### Overidden from Statement.
+
+    def execute(self, cg):
+        if self._expr:
+            cg.builder().return_result(self._expr.evaluate(cg))
+        else:
+            cg.builder().return_void()
+        
+    def __str__(self):
+        return "<return statement>"

@@ -184,6 +184,14 @@ class Overloaded(Expression):
 
     ### Overidden from ast.Node.
 
+    def resolve(self, resolver):
+        for expr in self._exprs:
+            if isinstance(expr, Expression):
+                expr.resolve(resolver)
+
+        if operator.typecheck(self._op, self._exprs):
+            operator.resolve(self._op, resolver, self._exprs)
+                
     def validate(self, vld):
         for expr in self._exprs:
             if isinstance(expr, Expression):

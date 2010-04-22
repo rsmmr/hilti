@@ -163,13 +163,11 @@ def p_param(p):
 ### Functions
 
 def p_function_decl(p):
-    """function_decl : extern_func"""
+    """function_decl : extern_func
+                     | func_def"""
     pass
-    
-def p_extern_func(p):
-    """extern_func : EXTERN func_head ';'"""
-    (name, ftype) = p[2]
-    
+
+def _getFunc(p, name, ftype):
     i = _currentScope(p).lookupID(name)
     if not i:
         ty = type.OverloadedFunction(ftype.resultType(), location=_loc(p, 1))
@@ -177,13 +175,28 @@ def p_extern_func(p):
         i = id.Function(name, func)
         func.setID(i)
         _currentScope(p).addID(i)
+        
+    util.check_class(i, id.Function, "_getFunc")
+    return i
 
-    util.check_class(i, id.Function, "extern_func")
-    hfunc = function.HILTIFunction(ftype, name)
+def p_extern_func(p):
+    """extern_func : EXTERN func_head ';'"""
+    (name, ftype) = p[2]
+    i = _getFunc(p, name, ftype)
+
+    hfunc = function.HILTIFunction(ftype, name, location=_loc(p, 1))
     i.function().addFunction(hfunc)
+
+def p_func_def(p):
+    """func_def : func_head stmt_block"""    
+    (name, ftype) = p[1]
+    i = _getFunc(p, name, ftype)
+
+    pfunc = function.PacFunction(name, ftype, p[2], location=_loc(p, 1))
+    i.function().addFunction(pfunc)
     
 def p_func_head(p):
-    """func_head : type IDENT '(' param_list ')'"""
+    """func_head : type IDENT '(' opt_param_list ')'"""
     name = p[2]
     ftype = type.Function(p[4], p[1], location=_loc(p, 1))
     p[0] = (name, ftype)
@@ -535,7 +548,7 @@ def p_expr_unequal(p):
     p[0] = expr.Overloaded(Operator.Not, (eq, ), location=_loc(p, 1))
     
 def p_expr_function_call(p):
-    """expr : expr '(' expr_list ')'"""
+    """expr : expr '(' opt_expr_list ')'"""
     p[0] = expr.Overloaded(Operator.Call, (p[1], p[3]), location=_loc(p, 1))
 
 def p_expr_method_call(p):
@@ -561,11 +574,21 @@ def p_opt_expr_list(p):
                      | 
     """
     p[0] = p[1] if len(p) > 1 else []
+
+def p_opt_expr(p):
+    """opt_expr : expr
+                |
+    """
+    p[0] = p[1] if len(p) > 1 else None
     
 ### Statement blocks.
 
 def p_stmt_block(p):
-    """stmt_block : '{' _instantiate_block stmt_list _leave_block '}'"""
+    """stmt_block : '{' _instantiate_block opt_local_var_list stmt_list _leave_block '}'"""
+    
+    for local in p[3]:
+        p.parser.state.block.scope().addID(local)
+    
     p[0] = p.parser.state.block
     
 def p_instantiate_block(p):
@@ -576,6 +599,22 @@ def p_instantiate_block(p):
 def p_leave_block(p):
     """_leave_block :"""
     _popScope(p)
+
+def p_opt_local_var_list(p):
+    """opt_local_var_list : local_var opt_local_var_list
+                          |
+    """
+    p[0] = [p[1]] + p[2] if len(p) > 1 else []
+
+def p_local_var(p):
+    """local_var : LOCAL IDENT ':' type opt_init_expr ';'"""
+    p[0] = id.Local(p[2], p[4], p[5], location=_loc(p,1))
+
+def p_opt_init_expr(p):
+    """opt_init_expr : '=' expr
+                     | 
+    """
+    p[0] = p[2] if len(p) > 1 else None
     
 ### Statements
 
@@ -602,7 +641,11 @@ def p_stmt_if_else(p):
     no = p[7] if len(p) > 7 else None
     
     p[0] = stmt.IfElse(cond, yes, no, location=_loc(p,1))
-        
+
+def p_stmt_return(p):
+    """stmt : RETURN opt_expr ';'"""
+    p[0] = stmt.Return(p[2], location=_loc(p,1))
+    
 ### Scope management.
 def _currentScope(p):
     scope = p.parser.state.scopes[-1]

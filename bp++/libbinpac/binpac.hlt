@@ -5,5 +5,3 @@
 module BinPAC
 
 type ParseError = exception<string>
-
-

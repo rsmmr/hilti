@@ -187,14 +187,29 @@ class Constant(ID):
         
 class Local(ID):
     """An ID representing a local function variable. See ~~ID for arguments.
+    
+    expr: ~~Expression - The expression to initialize the local with, or None
+    for initialization with the default value.
     """
-    def __init__(self, name, type, linkage=None, namespace=None, location=None, imported=False):
+    def __init__(self, name, type, expr=None, linkage=None, namespace=None, location=None, imported=False):
         super(Local, self).__init__(name, type, linkage, namespace, location, imported)
+        self._expr = expr
+        
+    def expr(self):
+        """Returns the initialization expression for the local.
+        
+        Returns: ~~Expression - The init expression, or None if none was set.
+        """
+        return self._expr
 
     ### Overidden from ast.Node.
 
     def validate(self, vld):
-        pass
+        if self._expr and self._expr.type() != self.type():
+            vld.error("type of initializer expression does not match")
+            
+        if self._expr and not self._expr.isInit():
+            vld.error("expression cannot be used as initializer")
 
     def pac(self):
         printer.output("local %s: " % self.name())
@@ -239,7 +254,7 @@ class Global(ID):
     def expr(self):
         """Returns the initialization expressopm of the global.
         
-        Returns: ~~Constant - The init expression, or None if none was set.
+        Returns: ~~Expression - The init expression, or None if none was set.
         """
         return self._expr
         
@@ -248,6 +263,9 @@ class Global(ID):
     def validate(self, vld):
         if self._expr and self._expr.type() != self.type():
             vld.error("type of initializer expression does not match")
+            
+        if self._expr and not self._expr.isInit():
+            vld.error("expression cannot be used as initializer")
 
     def pac(self, printer):
         printer.output("global %s: " % self.name())
@@ -358,14 +376,16 @@ class Function(ID):
         return self._func
         
     ### Overidden from ID.
+
+    def resolve(self, resolver):
+        self._func.resolve(resolver)
     
     def validate(self, vld):
-        pass
+        self._func.validate(vld)
 
+    def doSimplify(self):
+        self._func = self._func.simplify()
+        return self
+        
     def pac(self, printer):
         printer.output(self.name())
-    
-    def evaluate(self, cg):
-        for f in self._funcs:
-            f.codegen(cg)
-        

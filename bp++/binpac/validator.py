@@ -24,6 +24,7 @@ class Validator(object):
         """Main validator class. See ~~validateModule for arguments."""
         self._module = mod
         self._errors = 0
+        self._funcs = [None]
 
     def error(self, context, msg):
         """Reports an error during code generation.
@@ -43,6 +44,26 @@ class Validator(object):
         Returns: ~~Module - The module
         """
         return self._module
+
+    def beginFunction(self, func):
+        """Indicates that the start of function's validation.
+        
+        func: ~~function.Function - The function now being validated.
+        """
+        self._funcs += [func]
+        
+    def endFunction(self):
+        """Indicates that the end of function's validation.
+        """
+        self._funcs += self._funcs[:-1]
+
+    def currentFunction(self):
+        """Returns the function currently being validated.
+        
+        Returns: ~~function.Function - The function, or None if we are not
+        within a function.
+        """
+        return self._funcs[-1]
         
     def _validate(self):
         # Top-level driver of the validation process.

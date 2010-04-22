@@ -10,7 +10,7 @@ import binpac.expr as expr
 
 # Language keywords. They will be turned into the corresponding all-uppercase
 # token.
-keywords = ["module", "type", "export", "unit", "print", "list", "global", "const", "if", "else", "var", "on", "switch", "extern"]
+keywords = ["module", "type", "export", "unit", "print", "list", "global", "const", "if", "else", "var", "on", "switch", "extern", "local", "return"]
 
 # Keywords for simple types, and what we turn them into.
 types = {
@@ -18,6 +18,7 @@ types = {
     "regexp": type.RegExp,
     "string": type.String,
     "bool": type.Bool,
+    "void": type.Void,
     }
 
 # Literals.

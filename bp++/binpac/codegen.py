@@ -219,6 +219,9 @@ class CodeGen(object):
                     init = i.type().hiltiDefault(self)
                     
                 hltmod.scope().add(hilti.id.Global(i.name(), i.type().hiltiType(self), init))
+                
+            if isinstance(i, id.Function):
+                i.function().evaluate(self)
 
         self._initFunction()
                 

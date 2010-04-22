@@ -135,6 +135,7 @@ class OverloadedFunction(type.Type):
     """
     def __init__(self, resultt, location=None):
         super(type.OverloadedFunction, self).__init__(location=location)
+        assert resultt
         self._result = resultt
 
     def resultType(self):
@@ -276,7 +277,82 @@ class HILTIFunction(Function):
     def hiltiCall(self, cg, args):
         builder = cg.builder()
         id = hilti.id.Unknown(self._hltname, cg.moduleBuilder().module().scope())
-        tmp = cg.functionBuilder().addLocal("__result", self.resultType().hiltiType(cg))
+        
+        if self.resultType() == type.Void():
+            tmp = None
+        else:
+            cg.builder().return_result(self._expr.evaluate(cg))
+            
+        builder.call(tmp, hilti.operand.ID(id), builder.tupleOp([a.evaluate(cg) for a in args]))
+        return tmp
+    
+class PacFunction(Function):
+    """A function written in BinPAC++. 
+    
+    name: string - The name of the function.
+    
+    ty: ~~Function - The type of the function.
+    
+    stmts: ~~Block - The statements of the function's body.
+    
+    location: ~~Location - A location to be associated with the function. 
+    """
+    def __init__(self, name, ty, stmts, location=None):
+        super(PacFunction, self).__init__(ty, location=location)
+        self._name = name
+        self._stmts = stmts
+        self._nr = 0
+        
+        for arg in ty.args():
+            self._stmts.scope().addID(arg)
+            
+    def _hltname(self):
+        return "%s_%d" % (self._name, self._nr)
+            
+    ### Methods overidden from ast.Node.
+
+    def pac(self, printer):
+        printer.output("<PacFunction.pac2 not implemented>")
+        
+    ### Methods overidden from Function.
+    
+    def setParent(self, p): 
+        super(PacFunction, self).setParent(p)
+        self._nr = len(p.functions())
+    
+    def resolve(self, resolver):
+        if resolver.already(self):
+            return
+        
+        self._stmts.resolve(resolver)
+
+    def validate(self, vld):
+        vld.beginFunction(self)
+        self._stmts.validate(vld)
+        vld.endFunction()
+        
+    def simplify(self):
+        self._stmts = self._stmts.simplify()
+        return self
+        
+    def evaluate(self, cg):
+        args = [(hilti.id.Parameter(a.name(), a.type().hiltiType(cg)), None) for a in self.type().args()]
+        resultt = self.type().resultType().hiltiType(cg)
+        ftype = hilti.type.Function(args, resultt)
+        
+        cg.beginFunction(self._hltname(), ftype)
+        self._stmts.execute(cg)
+        cg.endFunction()
+
+    def hiltiCall(self, cg, args):
+        builder = cg.builder()
+        id = hilti.id.Unknown(self._hltname(), cg.moduleBuilder().module().scope())
+        
+        if self.resultType() == type.Void():
+            tmp = None
+        else:
+            tmp = cg.functionBuilder().addLocal("__result", self.resultType().hiltiType(cg))
+        
         builder.call(tmp, hilti.operand.ID(id), builder.tupleOp([a.evaluate(cg) for a in args]))
         return tmp
 
@@ -308,7 +384,7 @@ class OverloadedFunction(ast.Node):
         self._funcs += [func]
         func.setParent(self)
         
-    def functions():
+    def functions(self):
         """Returns all functions part of this overloaded function.
         
         Returns: list of ~~Function - The functions. 
@@ -411,9 +487,13 @@ class OverloadedFunction(ast.Node):
             
             func.validate(vld)
 
-    def codegen(self, cg):
+    def simplify(self):
+        self._funcs = [f.simplify() for f in self._funcs]
+        return self
+            
+    def evaluate(self, cg):
         for f in self._funcs:
-            f.codegen(cg)
+            f.evaluate(cg)
             
 @operator.Call(type.OverloadedFunction, operator.Any())
 class Call:
