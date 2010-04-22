@@ -67,6 +67,22 @@ class _:
         cg.builder().bool_not(tmp, e.evaluate(cg))
         return tmp
         
+@operator.And(Bool, Bool)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+    
+    def simplify(e1, e2):
+        if not (e1.isConst() and e2.isConst()):
+            return None
+        
+        result = e1.constant().value() and e2.constant().value()
+        return expr.Constant(constant.Constant(result, type.Bool()))
+        
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addLocal("__and", hilti.type.Bool())
+        cg.builder().bool_and(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp    
     
     
         

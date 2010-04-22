@@ -546,7 +546,11 @@ def p_expr_unequal(p):
     """expr : expr UNEQUAL expr"""
     eq = expr.Overloaded(Operator.Equal, (p[1], p[3]), location=_loc(p, 1))
     p[0] = expr.Overloaded(Operator.Not, (eq, ), location=_loc(p, 1))
-    
+
+def p_expr_and(p):
+    """expr : expr AND expr"""
+    p[0] = expr.Overloaded(Operator.And, (p[1], p[3]), location=_loc(p, 1))
+
 def p_expr_function_call(p):
     """expr : expr '(' opt_expr_list ')'"""
     p[0] = expr.Overloaded(Operator.Call, (p[1], p[3]), location=_loc(p, 1))

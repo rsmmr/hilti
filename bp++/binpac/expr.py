@@ -198,7 +198,8 @@ class Overloaded(Expression):
                 expr.validate(vld)
             
         if not operator.typecheck(self._op, self._exprs):
-            vld.error(self, "no match for overloaded operator")
+            types = ", ".join([str(e.type()) for e in self._exprs])
+            vld.error(self, "no match for overloaded operator %s with types (%s)" % (self._op, types))
             
         operator.validate(self._op, vld, self._exprs)
 
