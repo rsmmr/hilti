@@ -323,13 +323,10 @@ class FunctionBuilder(OperandBuilder):
             assert isinstance(ty.id(), id.Type)
             ty = ty.id()
             
-        i = id.Local(name, ty)
+        i = id.Local(name, ty, value)
         self._func.scope().add(i)
         op = self.idOp(i)    
         
-        if value:
-            self.assign(op, value)
-            
         return op
         
     def addTmp(self, name, ty):

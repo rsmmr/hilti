@@ -570,8 +570,11 @@ def p_param_id(p):
     p[0] = id.Parameter(p[2], p[1], location=_loc(p, 2))
 
 def p_local_id(p):
-    """local_id : type IDENT"""
-    p[0] = id.Local(p[2], p[1], location=_loc(p, 2))
+    """local_id : type IDENT
+                | type IDENT '=' operand"""
+                
+    op = p[4] if len(p) > 4 else None
+    p[0] = id.Local(p[2], p[1], op, location=_loc(p, 2))
 
 def p_struct_id(p): 
     """struct_id : type IDENT

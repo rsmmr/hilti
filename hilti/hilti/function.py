@@ -540,6 +540,7 @@ class Function(node.Node):
             first = False
                 
         printer.output("}", nl=True)        
+        printer.output("", nl=True)        
         printer.pop()
         
     def canonify(self, canonifier):

@@ -297,11 +297,22 @@ class Constant(ID):
 class Local(ID):
     """An ID representing a local function variable. 
     
+    init: ~~Operand - The operand to initialize the global with, or None for
+    initialization with the default value.
+    
     See ~~ID for arguments.
     """
-    def __init__(self, name, type, linkage=Linkage.LOCAL, imported=False, namespace=None, location=None):
+    def __init__(self, name, type, init=None, linkage=Linkage.LOCAL, imported=False, namespace=None, location=None):
         super(Local, self).__init__(name, type, linkage, imported, namespace, location=location)
+        self._init = init
 
+    def value(self):
+        """Returns the initialization value of the global.
+        
+        Returns: ~~Operand - The init value, or None if none was set.
+        """
+        return self._init
+        
     ### Overidden from ID.
 
     def llvmLoad(self, cg):
@@ -311,7 +322,7 @@ class Local(ID):
         return cg.llvmStoreLocalVar(self, val)
 
     def clone(self):
-        return Local(self.name(), self.type(), self.linkage(), self.imported(), self.namespace(), location=self.location())
+        return Local(self.name(), self.type(), self.init(), self.linkage(), self.imported(), self.namespace(), location=self.location())
         
     ### Overidden from node.Node.
 
@@ -324,11 +335,20 @@ class Local(ID):
         
         if not self.type().instantiable():
             vld.error(self, "cannot create local variable of type %s" % self.type())
-    
+            
+        if self._init:
+            self._init.validate(vld)
+            
+            if not self._init.canCoerceTo(self.type()):
+                vld.error(self, "initialization has incompatible type")
+            
     def output(self, printer):
         printer.printComment(self)
         printer.printType(self.type())
         printer.output(" %s" % self._name)
+        if self._init:
+            printer.output(" = ")
+            self._init.output(printer)
     
 class Parameter(ID):
     """An ID representing a function parameter. 
@@ -409,6 +429,9 @@ class Global(ID):
 
         if self._init:
             self._init.validate(vld)
+
+            if not self._init.canCoerceTo(self.type()):
+                vld.error(self, "initialization has incompatible type")
             
     def output(self, printer):
         ID.output(self, printer)

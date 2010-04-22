@@ -2558,7 +2558,8 @@ class CodeGen(objcache.Cache):
         # Initialize local variables.
         for i in func.locals():
             if isinstance(i, id.Local):
-                self.llvmStoreLocalVar(i, i.type().llvmDefault(self), frame=fptr, func=func)
+                init = i.value().coerceTo(self, i.type()).llvmLoad(self) if i.value() else i.type().llvmDefault(self)
+                self.llvmStoreLocalVar(i, init, frame=fptr, func=func)
 
         return self.makeFrameDescriptor(fptr, eoss)
 
