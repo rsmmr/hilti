@@ -387,9 +387,9 @@ hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt)
         return p;
     }
     
-    if ( ! b->head )
+    if ( hlt_bytes_len(b, excpt) == 0 )
         return PosEnd;
-    
+
     hlt_bytes_pos p;
     p.chunk = b->head;
     p.cur = b->head ? b->head->start : 0;
