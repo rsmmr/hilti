@@ -182,3 +182,19 @@ class Match:
         tmp = cg.functionBuilder().addLocal("__match", obj.type())
         cg.builder().call(tmp, func, args)
         return tmp
+    
+@operator.MethodCall(type.Bytes, "startswith", [type.Bytes])
+class Match:
+    def type(obj, method, args):
+        return type.Bool()
+    
+    def evaluate(cg, obj, method, args):
+        obj = obj.evaluate(cg)
+        pattern = args[0].evaluate(cg)
+        
+        func = cg.builder().idOp("Hilti::bytes_starts_with")
+        args = cg.builder().tupleOp([obj, pattern])
+        tmp = cg.functionBuilder().addLocal("__starts", hilti.type.Bool())
+        cg.builder().call(tmp, func, args)
+        return tmp
+    
