@@ -509,11 +509,15 @@ def p_expr_has_attribute(p):
     ident = expr.Constant(const, location=_loc(p, 1))
     # FIXME: Need to unify type of ident here with expr_method_call()
     p[0] = expr.Overloaded(Operator.HasAttribute, (p[1], ident), location=_loc(p, 1))    
+
+#def p_expr_type(p):
+#    """expr : type"""
+#    p[0] = expr.Type(p[1], _currentScope(p), location=_loc(p, 1))
     
 def p_expr_name(p):
     """expr : IDENT"""
     p[0] = expr.Name(p[1], _currentScope(p), location=_loc(p, 1))
-
+    
 def p_expr_not(p):
     """expr : '!' expr"""
     p[0] = expr.Overloaded(Operator.Not, (p[2], ), location=_loc(p, 1))

@@ -385,7 +385,7 @@ class ParseableType(Type):
             if init and not expr.isInit():
                 raise ParseableType.AttributeMismatch, "attribute's expression must be suitable for initializing a value"
 
-            if not expr.canCastTo(ty):
+            if not expr.canCastTo(ty) and not isinstance(ty, Any):
                 raise ParseableType.AttributeMismatch, "attribute's expression must be of type %s, but is %s" % (ty, expr.type())
 
             self._attrs[name] = expr.simplify()
@@ -577,6 +577,43 @@ class Identifier(Type):
         
     def hiltiType(self, cg):
         return hilti.type.String()
+    
+class MetaType(Type):
+    """Type for types. 
+    
+    t: ~~Type - The type referenced. 
+    
+    location: ~~Location - A location object describing the point of definition.
+    """
+    def __init__(self, t, location=None):
+        super(MetaType, self).__init__(location=location)
+        self._type = t
+
+    def type(self):
+        """Returns the referenced type.
+        
+        Returns: Type - The type.
+        """
+        return self._type
+
+    # Overidden from Type.
+    
+    def resolve(self, resolver):
+        self._type = self._type.resolve(resolver)
+        
+    def validate(self, vld):
+        self._type.validate(vld)
+    
+    def pac(self, printer):
+        self._type.output(printer)
+        
+    def hiltiType(self, cg):
+        util.internal_error("hiltiType() not defined for MetaType")
+        
+class Any(Type):
+    """Type indicating a match with any other type.
+    """
+    pass
         
 # Additional traits types may have.
 #class Derefable(object):

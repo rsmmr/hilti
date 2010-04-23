@@ -245,7 +245,7 @@ class Function(ast.Node):
         
         cg: ~~CodeGen - The code generator to use. 
         
-        args: list of Expression - The function arguments.
+        args: list of ~~Expression - The function arguments.
         
         Returns: ~~Expression or None - The function's result if it has any.
         """
@@ -273,6 +273,9 @@ class HILTIFunction(Function):
         printer.output("<HILTIFunction.pac2 not implemented>")
         
     ### Methods overidden from Function.
+
+    def evaluate(self, cg):
+        pass
     
     def hiltiCall(self, cg, args):
         builder = cg.builder()
@@ -281,7 +284,7 @@ class HILTIFunction(Function):
         if self.resultType() == type.Void():
             tmp = None
         else:
-            cg.builder().return_result(self._expr.evaluate(cg))
+            tmp = cg.functionBuilder().addLocal("__result", self.resultType().hiltiType(cg))
             
         builder.call(tmp, hilti.operand.ID(id), builder.tupleOp([a.evaluate(cg) for a in args]))
         return tmp

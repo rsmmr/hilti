@@ -100,7 +100,7 @@ class Field(object):
         
         Returns: ~~Type - The type of parsed values.
         """
-        return self._type.parsedType()
+        return self._type
     
     def value(self):
         """Returns the value for constant fields.
@@ -557,7 +557,9 @@ class Unit(type.ParseableType):
     def parsedFieldType(self, name):
         """Returns the type of values parsed for a field given by name. The
         method located the field by the given name, and passes on what that
-        field's ~~parsedType method returns. 
+        field's ~~parsedType method returns. If the field however has
+        ``&convert`` Attribute defined, the return type will be the result
+        type of that function.
         
         name: string - The name of the field. 
         
@@ -567,7 +569,14 @@ class Unit(type.ParseableType):
         have the same type and thus returns just a single type.
         """
         try:
-            return self._fields[name][0].parsedType()
+            field = self._fields[name][0]
+            
+            convert = field.type().attributeExpr("convert")
+            if not convert:
+                return field.parsedType()
+            
+            return convert.type().resultType()
+            
         except KeyError:
             return None
         
@@ -745,6 +754,9 @@ class Unit(type.ParseableType):
                 for f in fields:
                     if f.type().hasAttribute("default"):
                         vld.error(self, "if multiple fields have the same name, none can have a &default")
+                        
+                    if f.type().hasAttribute("default"):
+                        vld.error(self, "if multiple fields have the same name, none can have a &convertt")
                     
                     if not f.isNoId():
                         cnt_ids += 1
@@ -825,7 +837,7 @@ class Attribute:
             return lhs.type().variables()[name].type()
         
         else:
-            return lhs.type().parsedFieldType(name)
+           return lhs.type().parsedFieldType(name)
     
     
     def validate(vld, lhs, ident):

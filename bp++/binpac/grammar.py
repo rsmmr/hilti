@@ -107,11 +107,23 @@ class Production(object):
         self._type = type
     
     def type(self):
-        """Returns the type for storing the result of parsing the production.
-        
+        """Returns the type for storing the result of parsing the production. 
+
         Returns: ~~Type - The type, or None if not type has been set.
         """
-        return self._type
+        return self._type.parsedType()
+    
+    def parsedType(self):
+        """Returns the type of the production that is used for parsing it.
+        This will usually be the same as ~~type, but may be different like in
+        the case of ~~Variable a ~~filter may cause ~~type to be different.
+        
+        Can be overridden by derived classes. The default implementation
+        returns the same as ~~type.
+        
+        Returns: ~~Type - The type.
+        """
+        return self.type()
     
     def hooks(self):
         """Returns the hooks associated with the production.
@@ -266,21 +278,35 @@ class Variable(Terminal):
 
     expr: ~~Expression or None - An optional expression to be associated with
     the production. See ~~Terminal for more information.
+
+    filter: ~~Expression - A function called when a value has been parsed for
+    this variable. The function's return value is then used instead of the
+    parsed value subsequently. None for no filtering. 
     
     location: ~~Location - A location object decscribing the point of definition.
     """
     
-    def __init__(self, name, type, expr=None, location=None):
+    def __init__(self, name, type, expr=None, filter=None, location=None):
         super(Variable, self).__init__(name, type, expr, location=location)
         self._type = type
+        self._filter = filter
+
+    def parsedType(self):
+        return self._type.parsedType()
 
     def type(self):
-        """Returns the type of the variable.
+        if self._filter:
+            return self._filter.type().resultType()
+        else:
+            return self.parsedType()
         
-        Returns: ~~Type - The type.
+    def filter(self):
+        """Returns the filter function.
+        
+        Returns: ~~Function - The filter function, or None if none defined.
         """
-        return self._type
-        
+        return self._filter
+    
     def _rhss(self):
         return [[self]]
         

@@ -9,6 +9,8 @@ import hilti.printer
 import grammar
 import id
 import stmt
+import operator
+import expr
 
 import binpac.util as util
 
@@ -218,7 +220,7 @@ class ParserGen:
             args += [hilti.id.Parameter("__self", self._typeParseObjectRef())]
             
             for p in self._grammar.params():
-                args += [hilti.id.Parameter(p.name(), p.type().parsedType().hiltiType(cg))]
+                args += [hilti.id.Parameter(p.name(), p.parsedType().hiltiType(cg))]
 
             if isinstance(hook, stmt.FieldControlHook):
                 args += [hilti.id.Parameter("__dollardollar", hook.dollarDollarType().hiltiType(cg))]
@@ -371,8 +373,13 @@ class ParserGen:
         
         # Call the type's parse function.
         name = var.name() if var.name() else "__tmp"
-        dst = self.builder().addTmp(name , var.type().parsedType().hiltiType(self.cg()))
-        args.cur = type.generateParser(self, args.cur, dst, not need_val)
+        dst = self.builder().addTmp(name , var.parsedType().hiltiType(self.cg()))
+        args.cur = var.parsedType().generateParser(self, args.cur, dst, not need_val)
+        
+        # Run the value through any potential filter function. 
+        filter = var.filter()
+        if filter:
+            dst = operator.evaluate(operator.Operator.Call, self.cg(), [filter, [expr.Hilti(dst, var.parsedType())]])
         
         # We have successfully parsed a rule. 
         self._finishedProduction(args.obj, var, dst if need_val else None)
@@ -691,7 +698,7 @@ class ParserGen:
                 else:
                     hlt_default = f.type().hiltiDefault(self.cg(), False)
                 
-                ids += [(hilti.id.Local(f.name(), f.type().parsedType().hiltiType(self._cg)), hlt_default)]
+                ids += [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), hlt_default)]
                 
             structty = hilti.type.Struct(ids)
             self._mbuilder.addTypeDecl(self._name("object"), structty)

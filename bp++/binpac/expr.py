@@ -381,49 +381,105 @@ class Name(Assignable):
         else:
             util.internal_error("unexpected id type %s in NameExpr::assign", repr(i))
             
-        
-class Assign(Expression):
-    """An expression assigning a value to a destination.
+class Constant(Expression):
+    """A constant expression.
     
-    dest: ~~Expression - The destination expression.
-    rhs: ~~Expression - The value to assign.
+    const: ~~Constant - The constant.
     location: ~~Location - The location where the expression was defined. 
     """
     
-    def __init__(self, dest, rhs, location=None):
-        super(Assign, self).__init__(location=location)
-        self._dest = dest
-        self._rhs = rhs
+    def __init__(self, const, location=None):
+        super(Constant, self).__init__(location=location)
+        assert isinstance(const, constant.Constant)
+        self._const = const
+        
+    def constant(self):
+        """Returns the constant value.
+        
+        Returns: ~~Constant - The constant.
+        """
+        return self._const
 
     ### Overidden from ast.Node.
     
     def validate(self, vld):
-        self._dest.validate(vld)
-        self._rhs.validate(vld)
-        
-        if "assign" in self._dest.__dict__:
-            vld.error(self, "cannot assign to lhs expression")
-        
-        if self._dest.type() != self._rhs.type():
-            vld.error(self, "types do not match in assigment")
-
-        if self._dest.isConst():
-            vld.error(self, "cannot assign to constant")
-            
+        self._const.validate(vld)
+    
     def pac(self, printer):
-        self._dest.pac(printer)
-        printer.output(" = ")
-        self._rhs.pac(printer)
+        self._const.pac(printer)
 
     ### Overidden from Expression.
 
     def type(self):
-        return self._dest.type()
+        return self._const.type()
     
     def evaluate(self, cg):
-        rhs = self._rhs.evaluate(cg)
-        self._dest.assign(cg, rhs)
+        c = self._const.type().hiltiConstant(cg, self._const)
+        return hilti.operand.Constant(c)
     
     def __str__(self):
-        return self._name
+        return str(self._const.value())
+            
+class Type(Expression):
+    """An expression representing a BinPAC++ type.
     
+    ty: ~~Type - The type represented by the expression.
+    location: ~~Location - The location where the expression was defined. 
+    """
+    
+    def __init__(self, ty, location=None):
+        super(Expression, self).__init__(location=location)
+        self._type = ty
+
+    def referencedType(self):
+        """Returns the referenced type.
+        
+        Returns: ~~Type - The type.
+        """
+        return self._type
+        
+    ### Overidden from ast.Node.
+
+    def resolve(self, resolver):
+        self._type = self._type(resolver)
+    
+    def validate(self, vld):
+        self._type.validate(vld)
+        
+    def pac(self, printer):
+        self._type.pac(printer)
+
+    ### Overidden from Expression.
+
+    def type(self):
+        return type.MetaType(self._type, location=self.location())
+    
+    def __str__(self):
+        return str(self._type)
+    
+class Hilti(Expression):
+    """An expression encapsulating an already eveluated HILTI operand. This
+    enables HILTI operands to be passed into evaluation functions that expect
+    expressions.
+    
+    op: ~~hilti.operand.Operand - The HILTI operand.
+    
+    ty: ~~Type - The BinPAC++ type that the operand has. 
+
+    location: ~~Location - The location where the expression was defined. 
+    """
+    def __init__(self, op, ty, location=None):
+        super(Hilti, self).__init__(location)
+        self._op = op
+        self._type = ty
+
+    ### Methods for derived classes to override.    
+    
+    def type(self):
+        return self._type
+
+    def evaluate(self, cg):
+        return self._op
+
+    def __str__(self):
+        return "<HILTI operand>"

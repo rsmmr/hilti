@@ -107,7 +107,7 @@ class Block(Statement):
     def execute(self, cg):
         for i in self._scope.IDs():
             if isinstance(i, id.Local):
-                init = i.expr().hiltiInit(cg) if i.expr() else i.type().hiltiDefault()
+                init = i.expr().hiltiInit(cg) if i.expr() else i.type().hiltiDefault(cg)
                 cg.builder().addLocal(i.name(), i.type().hiltiType(cg), init, force=False, reuse=True)
         
         for stmt in self._stmts:

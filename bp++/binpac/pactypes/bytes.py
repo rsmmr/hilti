@@ -29,7 +29,7 @@ class Bytes(type.ParseableType):
         # We need exactly one of the attributes. 
         c = 0
         for (name, (ty, const, default)) in self.supportedAttributes().items():
-            if self.hasAttribute(name) and name != "default":
+            if self.hasAttribute(name) and not name in ("default", "convert"):
                 c += 1
             
         if c == 0:
@@ -65,12 +65,14 @@ class Bytes(type.ParseableType):
     def supportedAttributes(self):
         return { 
             "default": (self, True, None),
+            "convert": (type.Any(), False, None),
             "length": (type.UnsignedInteger(64), False, None),
             "until": (type.Bytes(), False, None),
             }
 
     def production(self, field):
-        return grammar.Variable(None, self, location=self.location())
+        filter = self.attributeExpr("convert")
+        return grammar.Variable(None, self, filter=filter, location=self.location())
     
     def generateParser(self, cg, cur, dst, skipping):
         
