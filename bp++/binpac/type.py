@@ -126,6 +126,18 @@ class Type(object):
         """
         return self.__class__.typeName()
 
+    def canCastTo(self, dsttype):
+        """Returns whether a this type can be coerced to a destination type.
+        
+        Can be overridden by derived classes. The default implementation
+        returns True iff *dstype* is equals the curren type.
+        
+        dsttype: ~~Type - The target type.
+        
+        Returns: bool - Whether the coercion is ok.
+        """
+        return self == dsttype
+    
     def supportedParameters(self):
         """Returns the type parameters this type supports.
         

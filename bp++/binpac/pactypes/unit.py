@@ -274,6 +274,18 @@ class Field(object):
         if self._cond and not isinstance(self._cond.type(), type.Bool):
             vld.error(self, "field condition must be boolean")
             
+        convert = self.type().attributeExpr("convert")
+        if convert:
+            fid = vld.currentModule().scope().lookupID(convert.name())
+            if fid:
+                funcs = fid.function().matchFunctions([self.parsedType()])
+                if len(funcs) == 0:
+                    vld.error("no matching function for &convert found")
+                
+                if len(funcs) > 1:
+                    vld.error("&convert function is ambigious")
+        else:
+            vld.error(self, "unknown &convert function")
                     
     def pac(self, printer):
         """Converts the field into parseable BinPAC++ code.
@@ -755,8 +767,8 @@ class Unit(type.ParseableType):
                     if f.type().hasAttribute("default"):
                         vld.error(self, "if multiple fields have the same name, none can have a &default")
                         
-                    if f.type().hasAttribute("default"):
-                        vld.error(self, "if multiple fields have the same name, none can have a &convertt")
+                    if f.type().hasAttribute("convert"):
+                        vld.error(self, "if multiple fields have the same name, none can have a &convert")
                     
                     if not f.isNoId():
                         cnt_ids += 1
