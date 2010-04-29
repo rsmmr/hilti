@@ -106,12 +106,7 @@ def p_global_decl(p):
         e = None
 
     if p[2] == "const":
-        if e:
-            if not e.isConst():
-                util.parser_error(p, "expression must be constant")
-                raise SyntaxError    
-        const = e.constant() if e else None
-        i = id.Constant(name, const, linkage=linkage, location=_loc(p, 2))
+        i = id.Constant(name, ty, e, linkage=linkage, location=_loc(p, 2))
     else:
         i = id.Global(name, ty, e, linkage=linkage, location=_loc(p, 2))
         
@@ -316,11 +311,7 @@ def p_unit_hook(p):
     
 def _addAttrs(p, t, attrs):
     for attr in attrs:
-        try:
-            t.addAttribute(attr[0], attr[1])
-        except type.ParseableType.AttributeMismatch, e:
-            util.parser_error(p, "invalid attribute &%s: %s" % (attr[0], e))
-            raise SyntaxError    
+        t.addAttribute(attr[0], attr[1])
 
 def p_unit_field(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond _leave_unit_field ';'"""
@@ -357,40 +348,27 @@ def p_instantiate_field(p):
         p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=loc)
     else:
         p.parser.state.field = unit.SwitchFieldCase(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=loc)
-    
+
+
 def p_unit_field_type_const(p):
-    """unit_field_type : CONSTANT     
-                       | builtin_type opt_unit_field_params 
-                       | IDENT        opt_unit_field_params 
-    """
-    i = p[1]
+    """unit_field_type : CONSTANT opt_unit_field_params"""
+    e = expr.Constant(p[1], p[1].type())
+    p[0] = ((e, p[1].type()), p[2])
 
-    if isinstance(i, str):
-        i = _currentScope(p).lookupID(i)
-        if not i:
-            # We try to resolve it later.
-            val = (None, type.Unknown(p[1], location=_loc(p, 1)))
-            p[0] = (val, p[2])
-            return
+def p_unit_field_type_regexp(p):
+    """unit_field_type : REGEXP opt_unit_field_params"""
+    e = expr.Ctor(p[1], type.RegExp())
+    p[0] = ((e, type.RegExp()), p[2])
+
+def p_unit_field_type_ident(p):
+    """unit_field_type : IDENT opt_unit_field_params"""
+    # We resolve it later.
+    val = (None, type.Unknown(p[1], location=_loc(p, 1)))
+    p[0] = (val, p[2])
     
-    if isinstance(i, type.Type):
-        val = (None, i)
-
-    elif isinstance(i, constant.Constant):
-        val = (i, i.type())
-        
-    elif isinstance(i, id.Constant):
-        const = i.value()
-        val = (const, const.type())
-    
-    elif isinstance(i, id.Type):
-        val = (None, i.type())
-
-    else:
-        util.parser_error(p, "identifier must be type or constant")
-        raise SyntaxError    
-
-    p[0] = (val, p[2] if len(p) > 2 else [])
+def p_unit_field_type_builtin_type(p):
+    """unit_field_type : builtin_type opt_unit_field_params"""
+    p[0] = ((None, p[1]), p[2])
     
 def p_opt_unit_field_params(p):
     """opt_unit_field_params : '(' opt_expr_list ')'
@@ -551,6 +529,10 @@ def p_expr_unequal(p):
     eq = expr.Overloaded(Operator.Equal, (p[1], p[3]), location=_loc(p, 1))
     p[0] = expr.Overloaded(Operator.Not, (eq, ), location=_loc(p, 1))
 
+def p_expr_add_assign(p):
+    """expr : expr PLUSEQUAL expr"""
+    p[0] = expr.Overloaded(Operator.AddAssign, (p[1], p[3]), location=_loc(p, 1))
+    
 def p_expr_and(p):
     """expr : expr AND expr"""
     p[0] = expr.Overloaded(Operator.And, (p[1], p[3]), location=_loc(p, 1))
@@ -626,14 +608,18 @@ def p_opt_init_expr(p):
     
 ### Statements
 
+def p_stmt_expr(p):
+    """stmt : expr ';'"""
+    p[0] = stmt.Expression(p[1], location=_loc(p,1))
+    
+def p_stmt_stmt_block(p):
+    """stmt : stmt_block"""
+    p[0] = p[1]
+
 def p_stmt_print(p):
     """stmt : PRINT expr_list ';'"""
     p[0] = stmt.Print(p[2], location=_loc(p,1))
     
-def p_stmt_expr(p):
-    """stmt : expr ';'"""
-    p[0] = stmt.Expression(p[1], location=_loc(p,1))
-
 def p_stmt_list(p):
     """stmt_list : stmt_list stmt 
                  | """

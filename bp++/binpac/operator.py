@@ -114,7 +114,7 @@ attribute; they are all class methods.
 
   *cg*: ~~CodeGen - The current code generator.
 
-.. function:: castConstTo(const, dsttype):
+.. function:: castConstantTo(const, dsttype):
 
    Optional. Casts a constant of the operator's type to another type. This may or
    may not be possible; if not, the method must throw a ~~CastError.
@@ -135,10 +135,10 @@ attribute; they are all class methods.
    *expr*: ~~Expr - The expression to cast. 
    *dsttype*: ~~Type - The type to cast the expression into.
 
-   Note: The return value of this method should match with what ~~castConstTo
-   and ~~castExprTo are able to do. If in doubt, this function should accept a
-   superset of what those methods can do (with them then raising exceptions if
-   necessary). 
+   Note: The return value of this method should match with what
+   ~~castConstantTo and ~~castExprTo are able to do. If in doubt,
+   this function should accept a superset of what those methods can
+   do (with them then raising exceptions if necessary). 
    
    Returns: bool - True if the cast is possible. 
    
@@ -231,10 +231,12 @@ _Operators = {
     "Size": (1, "The size of an expression's value, with type-defined definition of \"size\" (`|a|`)", _pacUnary("|")),
     "Equal": (2, "Compares two values whether they are equal. (``a == b``)", _pacBinary(" + ")),
     "Not": (1, "Inverts a boolean value. (``! a``)", _pacUnary("!")),
-    "And": (2, "Logical 'and' of boolean values. (``a && b``)", _pacBinary("&&"))
+    "And": (2, "Logical 'and' of boolean values. (``a && b``)", _pacBinary("&&")),
+    "AddAssign": (2, "Adds to an operand in place (`` a += b``)", _pacBinary("+="))
     }
 
-_Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type", "castConstTo", "canCastNonConstExprTo", "castNonConstExprTo"]
+_Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type", 
+            "castConstantTo", "canCastNonConstantExprTo", "castNonConstantExprTo"]
     
 ### Public functions.    
     
@@ -249,8 +251,8 @@ def typecheck(op, exprs):
     """
     func = _findOp("typecheck", op, exprs)
     if not func:
-        # Not matching operator found.
-        return False
+        # Not matching operator found, default is ok.
+        return True
 
     result = func(*exprs)
     
@@ -330,6 +332,8 @@ def evaluate(op, cg, exprs):
     func = _findOp("evaluate", op, exprs)
     
     if not func:
+        import sys
+        print >>sys.stderr, [e.type() for e in exprs]
         util.error("no evaluate implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
     
     return func(cg, *exprs)
@@ -376,6 +380,7 @@ def type(op, exprs):
     func = _findOp("type", op, exprs)
     
     if not func:
+        print [e.type() for e in exprs]
         util.error("no type implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
 
     return func(*exprs)
@@ -383,7 +388,7 @@ def type(op, exprs):
 class CastError(Exception):
     pass
 
-def canCastNonConstExprTo(expr, dsttype):
+def canCastNonConstantExprTo(expr, dsttype):
     """Returns whether an non-constant expression can be cast to a given
     target type. If *dsttype* is of the same type as the expression, the
     result is always True. 
@@ -393,22 +398,20 @@ def canCastNonConstExprTo(expr, dsttype):
         
     Returns: bool - True if the expression can be casted. 
     """
-    ty = expr.type()
-    
-    if ty == dsttype:
-        return True
+    if expr.type() == dsttype:
+        return expr
 
-    if not typecheck(Cast, ty):
+    if not typecheck(Operator.Cast, expr.type()):
         return False
     
-    func = _findOp(Cast, "canCastNonConstExprTo", ty)
+    func = _findOp("canCastNonConstantExprTo", Operator.Cast, [expr])
     
     if not func:
         return False
     
     return func(expr, dsttype)
     
-def castNonConstExprTo(cg, expr, dsttype): 
+def castNonConstantExprTo(cg, expr, dsttype): 
     """
     Casts a non-constant expression of one type into another. This operator must only
     be called if ~~canCastNonConstExprTo indicates that the cast is supported. 
@@ -421,51 +424,44 @@ def castNonConstExprTo(cg, expr, dsttype):
     casted expression.
     """
 
-    assert canCastNonConstExprTo(expr, dsttype)
+    assert canCastNonConstantExprTo(expr, dsttype)
 
-    ty = expr.type()
-    
-    if ty == dsttype:
+    if expr.type() == dsttype:
         return expr
-
-    if not typecheck(Cast, ty):
+    
+    if not typecheck(Cast, expr.Type()):
         return False
     
-    func = _findOp(Cast, "castNonConstExprTo", ty)
+    func = _findOp("castNonConstExprTo", Operator.Cast, [expr])
     
     if not func:
         raise CastError
     
     return func(cg, expr, dsttype)
-    
 
-def castConstTo(const, dsttype): 
-    """
-    Casts a constant of one type into another. This may or may not be
-    possible; if not, a ~~CastError is thrown.
+def castConstantTo(e, dsttype): 
+    """Casts a constant expression of one type into another. This may or may
+    not be possible; if not, a ~~CastError is thrown.
 
-    const: ~~Constant - The constant to cast. 
+    const: ~~Expression - The constant expression to cast. 
     dsttype: ~~Type - The type to cast the constant into. 
     
-    Returns: ~~Constant - A new constant of the target type with the casted
-    value.
+    Returns: ~~Expression - A new constant expression of the target type with
+    the casted value.
         
     Throws: ~~CastError if the cast is not possible.
     """
-    ty = const.type()
+    if e.type() == dsttype:
+        return e
+    
+    func = _findOp("castConstantTo", Operator.Cast, [e])
 
-    if ty == dsttype:
-        return const
-    
-    if not typecheck(Cast, ty):
-        raise CastError
-    
-    func = _findOp(Cast, "castConstantTo", ty)
-    
     if not func:
         raise CastError
     
-    return func(const, dsttype)
+    assert e.isConst()
+    const = func(e.simplify().constant(), dsttype)
+    return expr.Constant(const)
 
 class Operator:
     """Constants defining the available operators."""
@@ -554,7 +550,6 @@ class Any:
     pass
         
 def _matchExpr(expr, proto, all):
-
     if isinstance(proto, Any):
         return True
     
@@ -601,6 +596,8 @@ def _matchExpr(expr, proto, all):
 def _findOp(method, op, exprs):
     assert method in _Methods
     
+    util.check_class(op, str, "_findOp (use Operator.*)")
+
     try:
         ops = _OverloadTable[(op, method)]
     except KeyError:
@@ -609,10 +606,9 @@ def _findOp(method, op, exprs):
     matches = []
 
     for (func, types) in ops:
-
         if len(types) < len(exprs):
             continue
-        
+
         exprs = [e for e in exprs] + [None] * (len(types) - len(exprs))
         for (a, t) in zip(exprs, types):
             if not _matchExpr(a, t, exprs):

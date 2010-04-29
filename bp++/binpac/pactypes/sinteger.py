@@ -38,4 +38,13 @@ class SignedInteger(type.Integer):
     
     def generateParser(self, cg, dst):
         pass
+
+@operator.Cast(type.SignedInteger)
+class Cast:
+    def castConstantTo(const, dsttype):
+        if isinstance(dsttype, type.SignedInteger) and const.value() >= 0:
+            return constant.Constante(const.value(), type.Integer(dsttype.width()))
+        
+        raise operators.CastError
+        
         

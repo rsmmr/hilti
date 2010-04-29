@@ -2,6 +2,8 @@
 
 builtin_id = id
 
+import copy
+
 import scope
 import id
 import binpac.util as util
@@ -150,7 +152,30 @@ class Type(object):
         parameter is not given.
         """ 
         return []
+
+    def resolve(self, resolver):
+        """Resolves any previously unknown types that might be
+        referenced by this type. (Think: forward references). For
+        these, the not-yet-known types will have been created as
+        ~~Unknown; later, when the type should be known, this method
+        will be called to then lookup the real type. If an error is
+        encountered (e.g., we still don't the identifier), an error
+        message will be reported via the *resolver*. 
         
+        resolver: ~~Resolver - The current resolver to use. 
+        
+        Return: ~~Type - Returns a type equivalent to *self* with
+        all unknowns resolved; that may either be *self* itself, or
+        a newly instantiated type; the caller must then use the
+        returned type instead of *self* afterwards.
+        
+        Note: ~~Type is not derived from ~~Node and thus we are not
+        overriding ~~Node.resolve here, even though it might
+        initially look like that. This method does work similar but
+        it returns a value, which ~~Node.resolve does not. 
+        """
+        return self
+    
     def validate(self, vld):
         """Validates the semantic correctness of the type.
         
@@ -373,59 +398,47 @@ class ParseableType(Type):
     def addAttribute(self, name, expr):
         """Adds an attribute to the type.
         
-        name: string - The name of the attribute without the leading ampersand, which must be among those
-        reported by ~~supportedAttributes.
+        name: string - The name of the attribute without the leading
+        ampersand, which must be among those reported by
+        ~~supportedAttributes.
         
         expr: ~~Expr - a constant ~~Expression giving the attribute's
         expression, or None if the attributes doesn't have an expression. Presence
         and type of *expr* must correspond to what ~~supportedAttributes
         specifies.
-        
-        Throws: ~~AttributeMismatch - If the attribute does not match with what
-        ~supportedAttributes specifies.
         """
-        try:
+        self._attrs[name] = expr.simplify() if expr else None
+        
+    def validate(self, vld):
+        for (name, expr) in self._attrs.values():
+            
             all = self.supportedAttributes()
+            if name not in all:
+                vld.error(self, "unknown type attribute &%s" % name)
+                continue
+            
             (ty, init, default) = all[name]
             
             if ty and not expr:
-                raise ParseableType.AttributeMismatch, "attribute must have expression of type %s" % ty
+                vld.error(self, "attribute must have expression of type %s" % ty)
             
             if expr and not ty:
-                raise ParseableType.AttributeMismatch, "attribute cannot have an expression"
+                vld.error(self, "attribute cannot have an expression")
 
             if init and not expr.isInit():
-                raise ParseableType.AttributeMismatch, "attribute's expression must be suitable for initializing a value"
+                vld.error(self, "attribute's expression must be suitable for initializing a value")
 
             if not expr.canCastTo(ty) and not isinstance(ty, Any):
-                raise ParseableType.AttributeMismatch, "attribute's expression must be of type %s, but is %s" % (ty, expr.type())
-
-            self._attrs[name] = expr.simplify()
+                vld.error(self, "attribute's expression must be of type %s, but is %s" % (ty, expr.type()))
             
-        except KeyError:
-            raise AttributeMismatch, "unknown type attribute &%s" % name
-
+            if expr:
+                expr.validate(vld)
+        
     def resolve(self, resolver):
-        """Resolves any previously unknown types that might be
-        referenced by this type. (Think: forward references). For
-        these, the not-yet-known types will have been created as
-        ~~Unknown; later, when the type should be known, this method
-        will be called to then lookup the real type. If an error is
-        encountered (e.g., we still don't the identifier), an error
-        message will be reported via the *resolver*. 
-        
-        resolver: ~~Resolver - The current resolver to use. 
-        
-        Return: ~~Type - Returns a type equivalent to *self* with
-        all unknowns resolved; that may either be *self* itself, or
-        a newly instantiated type; the caller must then use the
-        returned type instead of *self* afterwards.
-        
-        Note: ~~Type is not derived from ~~Node and thus we are not
-        overriding ~~Node.resolve here, even though it might
-        initially look like that. This method does work similar but
-        it returns a value, which ~~Node.resolve does not. 
-        """
+        for expr in self._attrs.values():
+            if expr:
+                expr.resolve(resolver)
+                
         return self
         
     ### Methods for derived classes to override.    
@@ -533,7 +546,7 @@ class ParseableType(Type):
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
 
-class Unknown(Type):
+class Unknown(ParseableType):
     """Type for an identifier that has not yet been resolved. This is used
     initially for forward references, and then later replaced the actual type.
     
@@ -553,7 +566,7 @@ class Unknown(Type):
     
     def resolve(self, resolver):
         if resolver.already(self):
-            return
+            return self
         
         i = resolver.scope().lookupID(self._id)
         
@@ -564,8 +577,10 @@ class Unknown(Type):
         if not isinstance(i, id.Type):
             resolver.error(self, "identifier %s does not refer to a type" % self._id)
             return self 
-            
-        return i.type()
+
+        t = copy.deepcopy(i.type())
+        t._attrs = self._attrs
+        return t
 
     _type_name = "<unknown type>" 
     
@@ -612,6 +627,7 @@ class MetaType(Type):
     
     def resolve(self, resolver):
         self._type = self._type.resolve(resolver)
+        return self
         
     def validate(self, vld):
         self._type.validate(vld)

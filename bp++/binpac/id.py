@@ -155,23 +155,28 @@ class Constant(ID):
     """An ID representing a constant value. See ~~ID for arguments not listed
     in the following.
     
-    const: ~~Constant - The constant.
+    expr: ~~Expression - The expression to initialize the constant with, or
+    None for initialization with the default value.
     """
-    def __init__(self, name, const, linkage=None, namespace=None, location=None, imported=False):
-        super(Constant, self).__init__(name, const.type(), linkage, namespace, location, imported)
-        self._const = const
+    def __init__(self, name, type, expr, linkage=None, namespace=None, location=None, imported=False):
+        super(Constant, self).__init__(name, type, linkage, namespace, location, imported)
+        self._expr = expr
         
-    def value(self):
-        """Returns the const value. 
+    def expr(self):
+        """Returns the initialization expression for the local.
         
-        Returns: ~~Constant - The constant.
+        Returns: ~~Expression - The init expression, or None if none was set.
         """
-        return self._const
+        return self._expr
 
     ### Overidden from ast.Node.
 
     def validate(self, vld):
-        self._const.validate(vld)
+        if self._expr and self._expr.type() != self.type():
+            vld.error("type of initializer expression does not match")
+            
+        if self._expr and not self._expr.isInit():
+            vld.error("expression cannot be used as initializer")
 
     def pac(self, printer):
         printer.output("const %s: " % self.name(), nl=False)

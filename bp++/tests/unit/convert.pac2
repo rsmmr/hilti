@@ -6,7 +6,7 @@
 
 module Mini;
 
-# These are implemented in libbinpac. 
+# These are implemented in libhilti.
 extern int64 Hilti::bytes_to_int(b: bytes);
 extern bytes Hilti::bytes_to_lower(b: bytes);
 

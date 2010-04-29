@@ -165,6 +165,16 @@ class Plus:
         cg.builder().bytes_append(tmp, e2.evaluate(cg))
         return tmp
     
+@operator.AddAssign(Bytes, Bytes)
+class Plus:
+    def type(e1, e2):
+        return type.Bytes()
+
+    def evaluate(cg, e1, e2):
+        e1 = e1.evaluate(cg)
+        cg.builder().bytes_append(e1, e2.evaluate(cg))
+        return e1
+    
 @operator.MethodCall(type.Bytes, "match", [type.RegExp, operator.Optional(type.UnsignedInteger)])
 class Match:
     def type(obj, method, args):

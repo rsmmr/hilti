@@ -1,2 +1,2 @@
-ambigious.pac2:14: codegen error, grammar Test (ambigious.pac2:14), production <anonymous> (T3, ambigious.pac2:16) is ambigious for look-ahead symbol(s) {[^\n]+\n: regexp}
+ambigious.pac2:14: codegen error, grammar Test (ambigious.pac2:14), production <anonymous> (T3, ambigious.pac2:16) is ambigious for look-ahead symbol(s) {[^\n]+\n}
 

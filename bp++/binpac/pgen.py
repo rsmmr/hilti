@@ -220,7 +220,7 @@ class ParserGen:
             args += [hilti.id.Parameter("__self", self._typeParseObjectRef())]
             
             for p in self._grammar.params():
-                args += [hilti.id.Parameter(p.name(), p.parsedType().hiltiType(cg))]
+                args += [hilti.id.Parameter(p.name(), p.type().hiltiType(cg))]
 
             if isinstance(hook, stmt.FieldControlHook):
                 args += [hilti.id.Parameter("__dollardollar", hook.dollarDollarType().hiltiType(cg))]

@@ -28,7 +28,7 @@ class Field(object):
     name: string or None - The name of the fields, or None for anonymous
     fields.
     
-    value: ~~Constant or None - The value for constant fields.
+    value: ~~Expression or None - The value for constant fields.
     
     ty: ~~Type or None - The type of the field; can be None if
     *constant* is given. It can also be none for 'umbrella' fields
@@ -45,6 +45,9 @@ class Field(object):
     we want? (Regular expressions for sure.)
     """
     def __init__(self, name, value, ty, parent, params=[], location=None):
+        if value:
+            assert isinstance(value, expr.Expression)
+            
         self._name = name
         self._type = ty if ty else (value.type() if value else None)
         self._value = value
@@ -88,7 +91,7 @@ class Field(object):
         return self._name
 
     def type(self):
-        """Returns the name of the field.
+        """Returns the type of the field.
         
         Returns: string - The name.
         """
@@ -100,12 +103,12 @@ class Field(object):
         
         Returns: ~~Type - The type of parsed values.
         """
-        return self._type
+        return self._type.parsedType()
     
     def value(self):
         """Returns the value for constant fields.
         
-        Returns: ~~Constant or None - The constant, or None if not a constant
+        Returns: ~~Expression or None - The expression, or None if not a constant
         field.
         """
         return self._value
@@ -238,6 +241,9 @@ class Field(object):
         
         vld: ~~Validator - The validator triggering the validation.
         """
+        if self._value:
+            util.check_class(self._value, expr.Expression, "Field.validate")
+        
         for hook in self._hooks:
             hook.validate(vld)
         
@@ -274,7 +280,7 @@ class Field(object):
         if self._cond and not isinstance(self._cond.type(), type.Bool):
             vld.error(self, "field condition must be boolean")
             
-        convert = self.type().attributeExpr("convert")
+        convert = self.type().attributeExpr("convert") if self.type() else None
         if convert:
             fid = vld.currentModule().scope().lookupID(convert.name())
             if fid:
@@ -284,8 +290,8 @@ class Field(object):
                 
                 if len(funcs) > 1:
                     vld.error("&convert function is ambigious")
-        else:
-            vld.error(self, "unknown &convert function")
+            else:
+                vld.error(self, "unknown &convert function")
                     
     def pac(self, printer):
         """Converts the field into parseable BinPAC++ code.
@@ -300,7 +306,15 @@ class Field(object):
             return
         
         if self._type:
-            self._type = self._type.resolve(resolver)
+            # Before we resolve the type, let's see if it's actuall refering
+            # to a constanst.
+            if isinstance(self._type, type.Unknown):
+                i = resolver.scope().lookupID(self.type().idName())
+                if i and isinstance(i, id.Constant):
+                    self._value = i.expr()
+                    self._type = i.expr().type()
+                else:
+                    self._type = self._type.resolve(resolver)
         
         if self._cond:
             self._cond.resolve(resolver)
@@ -366,7 +380,7 @@ class SwitchField(Field):
                 names[name] = field.type()
             elif field.type() == names[name]:
                 field.setNoID()
-        
+                
     def validate(self, vld):
         super(SwitchField, self).validate(vld)
         
@@ -453,7 +467,7 @@ class SwitchFieldCase(SubField):
         super(SwitchFieldCase, self).resolve(resolver)
         if self._expr:
             self._expr.resolve(resolver)
-
+            
     def validate(self, vld):
         assert self._default or self._expr
         
@@ -770,10 +784,10 @@ class Unit(type.ParseableType):
                     if f.type().hasAttribute("convert"):
                         vld.error(self, "if multiple fields have the same name, none can have a &convert")
                     
-                    if not f.isNoId():
+                    if not f.isNoID():
                         cnt_ids += 1
                         
-                if cnd_ids > 1:
+                if cnt_ids > 1:
                     vld.error(self, "field name defined more than once with different types")
 
     def pac(self, printer):
@@ -849,8 +863,7 @@ class Attribute:
             return lhs.type().variables()[name].type()
         
         else:
-           return lhs.type().parsedFieldType(name)
-    
+            return lhs.type().parsedFieldType(name)
     
     def validate(vld, lhs, ident):
         name = ident.constant().value()

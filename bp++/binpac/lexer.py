@@ -29,7 +29,7 @@ def _loc(t):
 
 tokens = [
     "IDENT", "CONSTANT", "BYTES", "REGEXP", "PACTYPE", "ATTRIBUTE", "PROPERTY",
-    "EQUAL", "UNEQUAL", "HASATTR", "ARROW", "AND"
+    "EQUAL", "UNEQUAL", "HASATTR", "ARROW", "AND", "PLUSEQUAL", 
     ] + [k.upper() for k in keywords]
 
 # Operators with more than one character.
@@ -52,6 +52,10 @@ def t_ARROW(t):
 
 def t_AND(t):
     r'&&'
+    return t
+
+def t_PLUSEQUAL(t):
+    r'\+='
     return t
 
 # Type keywords not covered by types.

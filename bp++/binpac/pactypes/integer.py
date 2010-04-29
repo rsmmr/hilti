@@ -62,10 +62,8 @@ class Integer(type.ParseableType):
     ### Overridden from ParseableType.
     
     def supportedAttributes(self):
-        return {}
+        return { "default": (self, True, None) }
 
-        
-        
         
         
         

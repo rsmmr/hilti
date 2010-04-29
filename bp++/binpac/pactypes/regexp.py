@@ -27,9 +27,6 @@ class RegExp(type.ParseableType):
     def hiltiType(self, cg):
         return hilti.type.Reference(hilti.type.Bytes())
 
-    def production(self, field):
-        return grammar.Variable(None, hilti.type.RegExp(), location=self.location())
-        
     def validateCtor(self, vld, ctor):
         if not isinstance(ctor, str):
             vld.error(ctor, "regular expression: constant of wrong internal type")
@@ -39,4 +36,16 @@ class RegExp(type.ParseableType):
         
     def pacCtor(self, printer, ctor):
         printer.output("/%s/" % ctor)
+    
+    ### Overridden from ParseableType.
+
+    def supportedAttributes(self):
+        return { 
+            "default": (self, True, None),
+            "convert": (type.Any(), False, None),
+            }
+    
+    def production(self, field):
+        return grammar.Variable(None, hilti.type.RegExp(), location=self.location())
+        
     

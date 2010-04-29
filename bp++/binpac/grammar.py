@@ -217,7 +217,7 @@ class Literal(Terminal):
     name: string - A name for this production; can be the None for anonymous
     productions.
 
-    literal: ~~Constant - The literal. Currently, it must be of type ~~Bytes.
+    literal: ~~Expression - The literal. Currently, it must be of type ~~Bytes.
 
     expr: ~~Expression or None - An optional expression to be associated with
     the production. See ~~Terminal for more information.

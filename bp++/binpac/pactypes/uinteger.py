@@ -6,6 +6,7 @@ import integer
 
 import binpac.type as type
 import binpac.expr as expr
+import binpac.constant as constant
 import binpac.operator as operator
 
 import hilti.type
@@ -38,13 +39,13 @@ class UnsignedInteger(type.Integer):
     def generateParser(self, cg, dst):
         pass
 
-@operator.Cast(type.Integer)
+@operator.Cast(type.UnsignedInteger)
 class Cast:
     def castConstantTo(const, dsttype):
-        if isinstance(dsttype, type.UInteger) and const.value() >= 0:
-            return constant.Constante(const.value(), type.Integer(dsttype.width()))
+        if isinstance(dsttype, type.SignedInteger):
+            return constant.Constant(const.value(), type.SignedInteger(dsttype.width()))
         
-        raise operators.CastError
+        raise operator.CastError
     
 @operator.Plus(UnsignedInteger, UnsignedInteger)
 class Plus:

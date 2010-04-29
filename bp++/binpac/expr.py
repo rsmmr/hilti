@@ -31,19 +31,15 @@ class Expression(ast.Node):
         """
         
         if self.isConst():
-            const = self.simplify()
-            # This will be a constant now
-            assert isinstance(const, Constant)
-            
             # We just try the case. 
             try:
-                operator.castConstTo(const, dsttype)
+                operator.castConstantTo(self, dsttype)
                 return True # It worked.
             except operator.CastError:
                 return False # It did not.
             
         else:
-            return operator.canCastNonConstExprTo(self, dsttype)
+            return operator.canCastNonConstantExprTo(self, dsttype)
         
     def castTo(self, dsttype, cg=None):
         """Casts the expression to a differenent type. It's ok if *dsttype* is
@@ -64,11 +60,8 @@ class Expression(ast.Node):
             raise operator.CastError, "cannot convert type %s to type %s" % (self.type(), dsttype)
 
         if self.isConst():
-            const = self.simplify()
-            # This will be a constant now.
-            assert isinstance(const, Constant)
             try:
-                const = operator.castConstTo(const, dsttype)
+                const = operator.castConstantTo(self, dsttype)
                 return const
             except operator.CastError:
                 # Can't happen because canCastTo() returned true ...
@@ -76,7 +69,7 @@ class Expression(ast.Node):
             
         else:
             assert cg 
-            return operator.castNonConstExprTo(cg, self, dsttype)
+            return operator.castNonConstantExprTo(cg, self, dsttype)
     
     def isConst(self):
         """Returns true if the expression evaluates to a constant value.
@@ -456,6 +449,51 @@ class Type(Expression):
     
     def __str__(self):
         return str(self._type)
+
+class Assign(Expression):
+    """An expression assigning a value to a destination.
+    
+    dest: ~~Expression - The destination expression.
+    rhs: ~~Expression - The value to assign.
+    location: ~~Location - The location where the expression was defined. 
+    """
+    
+    def __init__(self, dest, rhs, location=None):
+        super(Assign, self).__init__(location=location)
+        self._dest = dest
+        self._rhs = rhs
+
+    ### Overidden from ast.Node.
+    
+    def validate(self, vld):
+        self._dest.validate(vld)
+        self._rhs.validate(vld)
+        
+        if "assign" in self._dest.__dict__:
+            vld.error(self, "cannot assign to lhs expression")
+        
+        if self._dest.type() != self._rhs.type():
+            vld.error(self, "types do not match in assigment")
+
+        if self._dest.isConst():
+            vld.error(self, "cannot assign to constant")
+            
+    def pac(self, printer):
+        self._dest.pac(printer)
+        printer.output(" = ")
+        self._rhs.pac(printer)
+
+    ### Overidden from Expression.
+
+    def type(self):
+        return self._dest.type()
+    
+    def evaluate(self, cg):
+        rhs = self._rhs.evaluate(cg)
+        self._dest.assign(cg, rhs)
+    
+    def __str__(self):
+        return self._name
     
 class Hilti(Expression):
     """An expression encapsulating an already eveluated HILTI operand. This
