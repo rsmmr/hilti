@@ -66,7 +66,7 @@ attribute; they are all class methods.
 
 .. function:: resolve(resolver, <exprs>)
 
-  Optional. Adds additional resolvingfunctionality performed *after* it has
+  Optional. Adds additional resolving functionality performed *after* it has
   already been determined that the operator applies.
 
   resolver: ~~Resolver - The resolver to use.
@@ -83,7 +83,7 @@ attribute; they are all class methods.
   Optional. Implements simplifactions of the operator, such as constant
   folding.
   
-  The argument expression passed will be already be simplified. 
+  The argument expressions passed will be already be simplified. 
   
   Returns: ~~expr - A new expression object representing a simplified version
   of the operator to be used instead; or None if it can't be simplified into
@@ -114,46 +114,49 @@ attribute; they are all class methods.
 
   *cg*: ~~CodeGen - The current code generator.
 
-.. function:: castConstantTo(const, dsttype):
+.. function:: coerceCtorTo(const, dsttype):
 
-   Optional. Casts a constant of the operator's type to another type. This may or
-   may not be possible; if not, the method must throw a ~~CastError.
+   Optional. Applies only to the ~~Coerce operator. Coerces a ctor of the
+   operator's type to another type. This may or may not be possible; if not,
+   the method must throw a ~~CoerceError.
         
-   *const*: ~~Constant - The constant to cast. 
-   *dsttype*: ~~Type - The type to cast the constant into.
+   *ctor*: ~~expression.Ctor - The ctor expression to coerce. 
+   
+   *dsttype*: ~~Type - The type to coerce the constant into.
         
-   Returns: ~~Constant - A constant of *dsttype* with the casted value.
+   Returns: ~~expression.Ctor - A ctor of *dsttype* with the coerceed value.
         
-   Throws: ~~CastError if the cast is not possible. There's no need to augment
+   Throws: ~~CoerceError if the coerce is not possible. There's no need to augment
    the exception with an explaining string as that will be added automatically.
 
-.. function:: canCastNonConstExprTo(expr, dsttype):
+.. function:: canCoerceExprTo(expr, dsttype):
 
-   Optional. Checks whether we can cast a non-constant expression of the
-   operator's type to another type. 
+   Optional. Applies only to the ~~Coerce operator. Checks whether we can
+   coerce a non-constant expression of the operator's type to another type. 
    
-   *expr*: ~~Expr - The expression to cast. 
-   *dsttype*: ~~Type - The type to cast the expression into.
+   *expr*: ~~Expr - The expression to coerce. 
+   *dsttype*: ~~Type - The type to coerce the expression into.
 
    Note: The return value of this method should match with what
-   ~~castConstantTo and ~~castExprTo are able to do. If in doubt,
+   ~~coerceCtorTo and ~~coerceExprTo are able to do. If in doubt,
    this function should accept a superset of what those methods can
    do (with them then raising exceptions if necessary). 
    
-   Returns: bool - True if the cast is possible. 
+   Returns: bool - True if the coerce is possible. 
    
-.. function:: castNonConstExprTo(cg, expr, dsttype):
+.. function:: coerceExprTo(cg, expr, dsttype):
    
-   Optional. Casts a non-constant expression of the operator's type to another
-   type. This function will only be called if the corresponding
-   ~~canCastNonConstExprTo indicates that the cast is possible. 
+   Optional. Applies only to the ~~Coerce operator. Coerces a non-constant
+   expression of the operator's type to another type. This function will only
+   be called if the corresponding ~~canCoerceExprTo indicates that the
+   coerce is possible. 
         
    *cg*: ~~CodeGen - The current code generator.
-   *expr*: ~~Expression - The expression to cast. 
-   *dsttype*: ~~Type - The type to cast the expression into.
+   *expr*: ~~Expression - The expression to coerce. 
+   *dsttype*: ~~Type - The type to coerce the expression into.
         
    Returns: ~~Expression - A new expression of the target type with
-   the casted expression.
+   the coerceed expression.
 """
 
 import inspect
@@ -223,7 +226,7 @@ _Operators = {
     "Mult": (2, "The product of two expressions. (`a * b`)", _pacBinary(" + ")),
     "Div": (2, "The division of two expressions. (`a / b`)", _pacBinary(" + ")),
     "Neg": (1, "The negation of an expressions. (`- a`)", _pacUnary("-")),
-    "Cast": (1, "Cast into another type.", lambda p, e: p.output("<Cast>")),
+    "Coerce": (1, "Coerce into another type.", lambda p, e: p.output("<Coerce>")),
     "Attribute": (2, "Attribute expression. (`a.b`)", _pacBinary(".")),
     "HasAttribute": (2, "Has-attribute expression. (`a?.b`)", _pacBinary("?.")),
     "Call": (1, "Function call. (`a()`)", _pacCall),
@@ -236,7 +239,7 @@ _Operators = {
     }
 
 _Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type", 
-            "castConstantTo", "canCastNonConstantExprTo", "castNonConstantExprTo"]
+            "coerceCtorTo", "canCoerceExprTo", "coerceExprTo"]
     
 ### Public functions.    
     
@@ -308,7 +311,7 @@ def simplify(op, exprs):
     func = _findOp("simplify", op, exprs)
     result = func(*exprs) if func else None
     
-    assert (not result) or isinstance(result, expr.Constant) or isinstance(result, expr.Ctor)
+    assert (not result) or isinstance(result, expr.Ctor)
     return result
 
 def evaluate(op, cg, exprs):
@@ -380,88 +383,90 @@ def type(op, exprs):
     func = _findOp("type", op, exprs)
     
     if not func:
-        print [e.type() for e in exprs]
-        util.error("no type implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
-
+        for e in exprs:
+            print e, repr(e), e.type(), repr(e.type())
+        
+        args = _fmtArgTypes(exprs)
+        util.error("no type implementation for %s operator with expression types %s" % (op, args), context=exprs[0].location())
+        
     return func(*exprs)
 
-class CastError(Exception):
+class CoerceError(Exception):
     pass
 
-def canCastNonConstantExprTo(expr, dsttype):
-    """Returns whether an non-constant expression can be cast to a given
-    target type. If *dsttype* is of the same type as the expression, the
-    result is always True. 
+def canCoerceExprTo(expr, dsttype):
+    """Returns whether an expression (assumed to be non-constant) can be
+    coerced to a given target type. If *dsttype* is of the same type as the
+    expression, the result is always True. 
     
     *expr*: ~~Expression - The expression to check. 
     *dstype*: ~~Type - The target type.
         
-    Returns: bool - True if the expression can be casted. 
+    Returns: bool - True if the expression can be coerceed. 
     """
     if expr.type() == dsttype:
         return expr
 
-    if not typecheck(Operator.Cast, expr.type()):
+    if not typecheck(Operator.Coerce, expr.type()):
         return False
     
-    func = _findOp("canCastNonConstantExprTo", Operator.Cast, [expr])
+    func = _findOp("canCoerceExprTo", Operator.Coerce, [expr])
     
     if not func:
         return False
     
     return func(expr, dsttype)
     
-def castNonConstantExprTo(cg, expr, dsttype): 
-    """
-    Casts a non-constant expression of one type into another. This operator must only
-    be called if ~~canCastNonConstExprTo indicates that the cast is supported. 
+def coerceExprTo(cg, expr, dsttype): 
+    """Coerces an expression (assumed to be non-constant) of one type into
+    another. This operator must only be called if ~~canCoerceExprTo indicates
+    that the coerce is supported. 
     
     *cg*: ~~CodeGen - The current code generator.
-    expr: ~~expr - The expression to cast. 
-    dsttype: ~~Type - The type to cast the expression into. 
+    expr: ~~expr - The expression to coerce. 
+    dsttype: ~~Type - The type to coerce the expression into. 
     
     Returns: ~~Expression - A new expression of the target type with the
-    casted expression.
+    coerceed expression.
     """
 
-    assert canCastNonConstantExprTo(expr, dsttype)
+    assert canCoerceExprTo(expr, dsttype)
 
     if expr.type() == dsttype:
         return expr
     
-    if not typecheck(Cast, expr.Type()):
+    if not typecheck(Coerce, expr.Type()):
         return False
     
-    func = _findOp("castNonConstExprTo", Operator.Cast, [expr])
+    func = _findOp("coerceExprTo", Operator.Coerce, [expr])
     
     if not func:
-        raise CastError
+        raise CoerceError
     
     return func(cg, expr, dsttype)
 
-def castConstantTo(e, dsttype): 
-    """Casts a constant expression of one type into another. This may or may
-    not be possible; if not, a ~~CastError is thrown.
+def coerceCtorTo(e, dsttype): 
+    """Coerces a ctor expression of one type into another. This may or may
+    not be possible; if not, a ~~CoerceError is thrown.
 
-    const: ~~Expression - The constant expression to cast. 
-    dsttype: ~~Type - The type to cast the constant into. 
+    const: ~~expression.Ctor - The ctor expression to coerce. 
+    dsttype: ~~Type - The type to coerce the constant into. 
     
-    Returns: ~~Expression - A new constant expression of the target type with
-    the casted value.
+    Returns: ~~expression.Ctor - A new ctor expression of the target type
+    with the coerceed value.
         
-    Throws: ~~CastError if the cast is not possible.
+    Throws: ~~CoerceError if the coerce is not possible.
     """
     if e.type() == dsttype:
         return e
     
-    func = _findOp("castConstantTo", Operator.Cast, [e])
+    func = _findOp("coerceCtorTo", Operator.Coerce, [e])
 
     if not func:
-        raise CastError
+        raise CoerceError
     
-    assert e.isConst()
-    const = func(e.simplify().constant(), dsttype)
-    return expr.Constant(const)
+    assert e.isInit()
+    return func(e.simplify(), dsttype)
 
 class Operator:
     """Constants defining the available operators."""
@@ -511,8 +516,17 @@ def _default_typecheck(*exprs):
 def _fmtTypes(types):
     return ",".join([str(t) for t in types])
 
+def _fmtOneArgType(a):
+    if isinstance(a, list):
+        return '(' + ", ".join([_fmtOneArgType(x) for x in a]) + ')'
+    
+    if isinstance(a.type(), mod_type.Type):
+        return str(a.type())
+    
+    return str(a)
+    
 def _fmtArgTypes(exprs):
-    return " ".join([str(a.type() if isinstance(a, mod_type.Type) else a) for a in exprs])
+    return " and ".join([_fmtOneArgType(a) for a in exprs])
 
 def _makeOp(op, *exprs):
     def __makeOp(cls):
@@ -584,12 +598,12 @@ def _matchExpr(expr, proto, all):
     if isinstance(proto, Mutable):
         mutable = True
         proto = proto._arg
-        
+
     if inspect.isclass(proto):
-        return isinstance(expr.type(), proto) and (not mutable or not expr.isConst())
+        return isinstance(expr.type(), proto) and (not mutable or not expr.isInit())
 
     if isinstance(proto, mod_type.Type):
-        return proto == expr.type() and (not mutable or not expr.isConst())
+        return proto == expr.type() and (not mutable or not expr.isInit())
 
     return expr == proto
             
@@ -604,12 +618,13 @@ def _findOp(method, op, exprs):
         return None
 
     matches = []
-
+    
     for (func, types) in ops:
         if len(types) < len(exprs):
             continue
 
         exprs = [e for e in exprs] + [None] * (len(types) - len(exprs))
+        
         for (a, t) in zip(exprs, types):
             if not _matchExpr(a, t, exprs):
                 break

@@ -191,7 +191,7 @@ class Terminal(Production):
     after the terminal has been parsed but before its value is assigned to its
     destination variable. If the expression is given, *its* value is actually
     assigned to the destination variable instead (and also determined the type
-    of that). This can be used, e.g., into cast the parsed value into a
+    of that). This can be used, e.g., into coerce the parsed value into a
     different type.
     
     location: ~~Location - A location object decscribing the point of definition.
@@ -295,10 +295,7 @@ class Variable(Terminal):
         return self._type.parsedType()
 
     def type(self):
-        if self._filter:
-            return self._filter.type().resultType()
-        else:
-            return self.parsedType()
+        return self._type.fieldType()
         
     def filter(self):
         """Returns the filter function.
@@ -674,7 +671,7 @@ class Grammar:
                 for l in (laheads[0] | laheads[1]):
                     if l.id() in isect:
                         syms += [str(l.literal())]
-                isect = ", ".join([syms[i] for i in isect])
+                isect = ", ".join(syms)
                 msg += "%s is ambigious for look-ahead symbol(s) {%s}\n" % (_loc(p), isect)
 
             laheads = laheads[0] | laheads[1]

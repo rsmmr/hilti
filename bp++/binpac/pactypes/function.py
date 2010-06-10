@@ -2,7 +2,7 @@
 #
 # The function type.
 
-import binpac.ast as ast
+import binpac.node as node
 import binpac.type as type
 import binpac.expr as expr
 import binpac.id as id
@@ -77,9 +77,23 @@ class Function(type.Type):
         """
         return self._result
 
-    ### Methods overidden from ast.Node.
+    ### Methods overidden from Type.
     
+    def doResolve(self, resolver):
+        super(Function, self).doResolve(resolver)
+        
+        for i in self._ids:
+            i.resolve(resolver)
+            
+        for d in self._defaults:
+            if d:
+                d.resolve(resolver)
+            
+        self._result = self._result.resolve(resolver)
+        
     def validate(self, vld):
+        type.Type.validate(self, vld)
+        
         for i in self._ids:
             util.check_class(i, id.Parameter, "type.Function.validate")
             i.validate(vld)
@@ -91,29 +105,8 @@ class Function(type.Type):
                 
                 d.validate(vld)
 
-    def resolve(self, resolver):
-        if resolver.already(self):
-            return self
-        
-        for i in self._ids:
-            i.resolve(resolver)
-            
-        for d in self._defaults:
-            if d:
-                d.resolve(resolver)
-            
-        self._result = self._result.resolve(resolver)
-        
-        return self
-
-    def doSimplify(self):
-        self._defaults = [d.simplify() for d in self._defaults]
-        return self
-        
     def pac(self, printer):
         printer.output("<function-type pac2 not implemented>")
-        
-    ### Methods overidden from Type.
         
     def hiltiType(self, cg):
         result = self._result.hiltiType()
@@ -145,18 +138,15 @@ class OverloadedFunction(type.Type):
         """
         return self._result
 
-    ### Methods overidden from ast.Node.
+    ### Methods overidden from node.Node.
     
     def validate(self, vld):
         self._result.validate(vld)
         
-    def resolve(self, resolver):
-        if resolver.already(self):
-            return self
-        
+    def doResolve(self, resolver):
+        type.Type.doResolve(self, resolver)
         self._result = self._result.resolve(resolver)
-        return self
-
+        
     def pac(self, printer):
         printer.output("<overloaded function pac not implemented>")
         
@@ -168,7 +158,7 @@ class OverloadedFunction(type.Type):
     def name(self):
         return "overloaded function"     
     
-class Function(ast.Node):
+class Function(node.Node):
     """Base class for function implementations.
     
     ty: ~~Function - The type of the function.
@@ -218,17 +208,14 @@ class Function(ast.Node):
         """
         self._parent = p
 
-    ### Methods overidden from ast.Node.
+    ### Methods overidden from node.Node.
 
     def validate(self, vld):
         self._type.validate(vld)
         
-    def resolve(self, resolver):
-        if resolver.already(self):
-            return self
-        
+    def doResolve(self, resolver):
+        super(Function, self).doResolve(resolver)
         self._type = self._type.resolve(resolver)
-        return self
 
     ### Methods for derived classes to override.
     
@@ -267,7 +254,7 @@ class HILTIFunction(Function):
         super(HILTIFunction, self).__init__(ty, location=location)
         self._hltname = hltname
         
-    ### Methods overidden from ast.Node.
+    ### Methods overidden from node.Node.
 
     def pac(self, printer):
         printer.output("<HILTIFunction.pac2 not implemented>")
@@ -312,7 +299,7 @@ class PacFunction(Function):
     def _hltname(self):
         return "%s_%d" % (self._name, self._nr)
             
-    ### Methods overidden from ast.Node.
+    ### Methods overidden from node.Node.
 
     def pac(self, printer):
         printer.output("<PacFunction.pac2 not implemented>")
@@ -323,10 +310,8 @@ class PacFunction(Function):
         super(PacFunction, self).setParent(p)
         self._nr = len(p.functions())
     
-    def resolve(self, resolver):
-        if resolver.already(self):
-            return
-        
+    def doResolve(self, resolver):
+        super(PacFunction, self).doResolve(resolver)
         self._stmts.resolve(resolver)
 
     def validate(self, vld):
@@ -359,7 +344,7 @@ class PacFunction(Function):
         builder.call(tmp, hilti.operand.ID(id), builder.tupleOp([a.evaluate(cg) for a in args]))
         return tmp
 
-class OverloadedFunction(ast.Node):
+class OverloadedFunction(node.Node):
     """Class for an overloaded function, that is a function with multiple
     implemenations between we choose by the types of their arguments. 
     
@@ -450,7 +435,7 @@ class OverloadedFunction(ast.Node):
             
             for i in range(len(proto)):
                 if i < len(args):
-                    if not args[i].canCastTo(proto[i]):
+                    if not args[i].canCoerceTo(proto[i]):
                         break
                     
                 else:
@@ -463,20 +448,16 @@ class OverloadedFunction(ast.Node):
                 
         return funcs
 
-    ### Methods overidden from ast.Node.
+    ### Methods overidden from node.Node.
 
-    def resolve(self, resolver):
-        if resolver.already(self):
-            return self
-        
+    def doResolve(self, resolver):
+        super(OverloadedFunction, self).doResolve(resolver)
         self._type = self._type.resolve(resolver)
         self._id.resolve(resolver)
         
         for func in self._funcs:
             func.resolve(resolver)
             
-        return self
-
     def validate(self, vld):
         self._type.validate(vld)
         # Don't validate ID to avoid recursion.

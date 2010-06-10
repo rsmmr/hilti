@@ -15,6 +15,7 @@ import binpac.operator as operator
 import binpac.id as id 
 import binpac.scope as scope
 import binpac.constant as constant
+import binpac.node as node
 
 import binpac.util as util
 
@@ -22,7 +23,7 @@ import hilti.type
 
 _AllowedConstantTypes = (type.Bytes, type.RegExp)
 
-class Field(object):
+class Field(node.Node):
     """One field within a unit data type.
     
     name: string or None - The name of the fields, or None for anonymous
@@ -95,7 +96,9 @@ class Field(object):
         
         Returns: string - The name.
         """
-        return self._type
+        
+        t = self._type.fieldType() if self._type else None
+        return self._type.fieldType() if self._type else None
     
     def parsedType(self):
         """Returns the type of values parsed by this type. Forwards simply to
@@ -236,11 +239,40 @@ class Field(object):
             
         return prod
 
-    def validate(self, vld):
-        """Validates the semantic correctness of the field.
+    def __str__(self):
+        tag = "%s: " % self._name if self._name else ""
+        return "%s%s" % (tag, self._type)
+    
+    ### Overriden from node.Node.
+
+    def resolve(self, resolver):
+        if self._type:
+
+            old_type = self._type
+
+            # Before we resolve the type, let's see if it's actually refering
+            # to a constanst.
+            if isinstance(self._type, type.Unknown):
+                i = resolver.scope().lookupID(self.type().idName())
+                
+                if i and isinstance(i, id.Constant):
+                    self._value = i.expr()
+                    self._type = i.expr().type()
+                else:
+                    self._type = self._type.resolve(resolver)
+                    
+            else:
+                self._type = self._type.resolve(resolver)
+
+            self._type.copyAttributesFrom(old_type)
+
+        if self._cond:
+            self._cond.resolve(resolver)
         
-        vld: ~~Validator - The validator triggering the validation.
-        """
+        if self._ctlhook:
+            self._ctlhook.resolve(resolver)
+            
+    def validate(self, vld):
         if self._value:
             util.check_class(self._value, expr.Expression, "Field.validate")
         
@@ -253,7 +285,7 @@ class Field(object):
                 # use that type in a unit field. 
                 vld.error(self, "type %s cannot be used inside a unit field" % self._type)
 
-            self._type.validateInUnit(vld)
+            self._type.validateInUnit(self, vld)
         
         if self._value:
             # White-list the types we can deal with in constants.
@@ -292,38 +324,14 @@ class Field(object):
                     vld.error("&convert function is ambigious")
             else:
                 vld.error(self, "unknown &convert function")
-                    
+
     def pac(self, printer):
         """Converts the field into parseable BinPAC++ code.
 
         printer: ~~Printer - The printer to use.
         """
         printer.output("<UnitField TODO>")
-
-    def resolve(self, resolver):
-        """See ~~Type.resolve."""
-        if resolver.already(self):
-            return
-        
-        if self._type:
-            # Before we resolve the type, let's see if it's actuall refering
-            # to a constanst.
-            if isinstance(self._type, type.Unknown):
-                i = resolver.scope().lookupID(self.type().idName())
-                if i and isinstance(i, id.Constant):
-                    self._value = i.expr()
-                    self._type = i.expr().type()
-                else:
-                    self._type = self._type.resolve(resolver)
-        
-        if self._cond:
-            self._cond.resolve(resolver)
-        
-        return self
-        
-    def __str__(self):
-        tag = "%s: " % self._name if self._name else ""
-        return "%s%s" % (tag, self._type)
+    
 
 class SwitchField(Field):
     """An umbrella field for a switch construct. This field contains all of
@@ -364,9 +372,15 @@ class SwitchField(Field):
                 grammar_cases += [(case.expr(), case.production())]
                 
         return grammar.Switch(self._expr, grammar_cases, default, symbol="switch", location=self.location())
+
+    def __str__(self):
+        return "<__str__ SwitchFieldCase TODO>"
+    
+    ### Overriden from node.Node.
     
     def resolve(self, resolver):
-        super(SwitchField, self).resolve(resolver)
+        Field.resolve(self, resolver)
+        
         self._expr.resolve(resolver)
         
         # Having multiple cases with the same field name is ok if they are
@@ -375,6 +389,8 @@ class SwitchField(Field):
         # non-matching types will be done in validate.
         names = {}
         for field in self._cases:
+            field.resolve(resolver)
+            
             name = field.name()
             if not name in names:
                 names[name] = field.type()
@@ -382,7 +398,7 @@ class SwitchField(Field):
                 field.setNoID()
                 
     def validate(self, vld):
-        super(SwitchField, self).validate(vld)
+        Field.validate(self, vld)
         
         self._expr.validate(vld)
         
@@ -396,11 +412,11 @@ class SwitchField(Field):
             if not case.expr():
                 util.internal_error("no expression for switch case")
             
-            if not case.expr().canCastTo(self._expr.type()):
+            if not case.expr().canCoerceTo(self._expr.type()):
                 vld.error(self, "case expression is of type %s, but must be %s" % (case.expr().type(), self._expr.type()))
                 
-            if case.expr().isConst():
-                c = case.expr().constant()
+            if isinstance(case.expr(), expr.Ctor):
+                c = case.expr()
                 if c.value() in values:
                     vld.error(self, "case '%s' defined more than once" % c.value())
                 else:
@@ -411,9 +427,6 @@ class SwitchField(Field):
 
     def pac(self, printer):
         printer.output("<SwitchFieldCase TODO>")
-
-    def __str__(self):
-        return "<__str__ SwitchFieldCase TODO>"
 
 class SubField(Field):
     """An abstract base class for fields that are part of another 'umbrealla'
@@ -461,14 +474,19 @@ class SwitchFieldCase(SubField):
         if not self._expr:
             self._default = True
 
-    ### Overridden from Field.
+    def __str__(self):
+        return "<__str__ SwitchFieldCase TODO>" + str(self.type()._attrs)
+            
+    ### Overridden from node.Node
         
     def resolve(self, resolver):
-        super(SwitchFieldCase, self).resolve(resolver)
+        SubField.resolve(self, resolver)
         if self._expr:
             self._expr.resolve(resolver)
-            
+
     def validate(self, vld):
+        SubField.validate(self, vld)
+
         assert self._default or self._expr
         
         super(SwitchFieldCase, self).validate(vld)
@@ -478,9 +496,6 @@ class SwitchFieldCase(SubField):
     def pac(self, printer):
         printer.output("<SwitchFieldCase TODO>")
 
-    def __str__(self):
-        return "<__str__ SwitchFieldCase TODO>"
-    
 @type.pac("unit")
 class Unit(type.ParseableType):
     """Type describing an individual parsing unit.
@@ -565,47 +580,6 @@ class Unit(type.ParseableType):
         """
         return self._params
     
-    def fieldType(self, name):
-        """Returns the type of a field.
-        
-        name: string - The name of the field. 
-        
-        Returns: ~~Type - The type, or None if there's no field of this type.
-        
-        Note: Even there can multiple fields of the same name, they all must
-        have the same type and thus returns just a single type.
-        """
-        try:
-            return self._fields[name][0].type()
-        except KeyError:
-            return None
-            
-    def parsedFieldType(self, name):
-        """Returns the type of values parsed for a field given by name. The
-        method located the field by the given name, and passes on what that
-        field's ~~parsedType method returns. If the field however has
-        ``&convert`` Attribute defined, the return type will be the result
-        type of that function.
-        
-        name: string - The name of the field. 
-        
-        Returns: ~~Type - The parsed value. 
-        
-        Note: Even there can multiple fields of the same name, they all must
-        have the same type and thus returns just a single type.
-        """
-        try:
-            field = self._fields[name][0]
-            
-            convert = field.type().attributeExpr("convert")
-            if not convert:
-                return field.parsedType()
-            
-            return convert.type().resultType()
-            
-        except KeyError:
-            return None
-        
     def addField(self, field):
         """Adds a field to the unit type.
         
@@ -690,12 +664,12 @@ class Unit(type.ParseableType):
     def allProperties(self):
         """Returns a list of all recognized properties.
         
-        Returns: dict mapping string to ~~Constant - For each allowed
+        Returns: dict mapping string to ~~Ctor - For each allowed
         property, there is one entry under it's name (excluding the leading
         dot) mapping to its default value.
         """
-        return { "export": constant.Constant(False, type.Bool()),
-                 "name": constant.Constant(self._name, type.String())
+        return { "export": expr.Ctor(False, type.Bool()),
+                 "name": expr.Ctor(self._name, type.String())
                }
 
     def property(self, name):
@@ -704,7 +678,7 @@ class Unit(type.ParseableType):
         
         name: string - The name of the property. 
         
-        Returns: ~~Constant - The value of the property. If not explicity
+        Returns: ~~Ctor - The value of the property. If not explicity
         set, the default value is returned. The returned constant will be of
         the same type as that of the default value returned by ~~allProperties. 
         """
@@ -757,7 +731,49 @@ class Unit(type.ParseableType):
         
         return mbuilder.cache(self, _makeType)
 
+    def doResolve(self, resolver):
+        super(Unit, self).doResolve(resolver)
+        
+        for param in self._params:
+            param.resolve(resolver)
+
+        for fields in self._fields.values():
+            for f in fields:
+                f.resolve(resolver)
+            
+        # Transfer all the hooks refereing to a field or variable over to that
+        # one. We do this here so that hooks for these can be defined before
+        # we actually know about the field. 
+        for (name, hooks) in self._hooks.items():
+            for h in hooks:
+                h.resolve(resolver)
+            
+            if name in self._fields:
+                # Move over to field.
+                fields = self._fields[name]
+                
+                for field in fields:
+                    for h in hooks:
+                        h.setField(field)
+                        field.addHook(h)
+                    
+                del self._hooks[name]
+                
+            elif name in self._vars:
+                # Move over to variable.
+                var = self._vars[name]
+                
+                for h in hooks:
+                    var.addHook(h)
+                    
+                del self._hooks[name]
+                
+            else:
+                # Unit-global hook, not attached to field.
+                assert name in _valid_hooks
+
     def validate(self, vld):
+        type.ParseableType.validate(self, vld)
         
         error = self.grammar().check()
         if error:
@@ -793,51 +809,7 @@ class Unit(type.ParseableType):
     def pac(self, printer):
         printer.output("<unit type - TODO>")
 
-    def resolve(self, resolver):
-        if resolver.already(self):
-            return self
-        
-        for param in self._params:
-            param.resolve(resolver)
-
-        # Transfer all the hooks refereing to a field or variable over to that
-        # one. We do this here so that hooks for these can be defined before
-        # we actually now about the field. 
-        for (name, hooks) in self._hooks.items():
-            if name in self._fields:
-                # Move over to field.
-                fields = self._fields[name]
-                
-                for field in fields:
-                    for h in hooks:
-                        h.setField(field)
-                        field.addHook(h)
-                    
-                del self._hooks[name]
-                
-            elif name in self._vars:
-                # Move over to variable.
-                var = self._vars[name]
-                
-                for h in hooks:
-                    var.addHook(h)
-                    
-                del self._hooks[name]
-                
-            else:
-                # Unit-global hook, not attached to field.
-                assert name in _valid_hooks
-                
-                for h in hooks:
-                    h.resolve(resolver)
-
-        for fields in self._fields.values():
-            for f in fields:
-                f.resolve(resolver)
-                
-        return self
-            
-    # Overridden from ParseableType.
+    ### Overridden from ParseableType.
 
     def supportedAttributes(self):
         return {}
@@ -853,28 +825,28 @@ class Unit(type.ParseableType):
         # case separetely in the parser generator. 
         util.internal_error("cannot be reached")
     
-@operator.Attribute(Unit, type.Identifier)
+@operator.Attribute(Unit, type.String)
 class Attribute:
     @staticmethod 
     def attrType(lhs, ident):
-        name = ident.constant().value()
+        name = ident.name()
         
         if name in lhs.type().variables():
             return lhs.type().variables()[name].type()
         
         else:
-            return lhs.type().parsedFieldType(name)
+            return lhs.type().field(name)[0].type()
     
     def validate(vld, lhs, ident):
-        name = ident.constant().value()
-        if not name in lhs.type().variables() and not lhs.type().parsedFieldType(name):
+        name = ident.name()
+        if not name in lhs.type().variables() and not lhs.type().field(name):
             vld.error(lhs, "unknown unit attribute '%s'" % name)
         
     def type(lhs, ident):
         return Attribute.attrType(lhs, ident)
     
     def evaluate(cg, lhs, ident):
-        name = ident.constant().value()
+        name = ident.name()
         type = Attribute.attrType(lhs, ident)
         builder = cg.builder()
         tmp = builder.addLocal("__attr", type.hiltiType(cg))
@@ -882,7 +854,7 @@ class Attribute:
         return tmp
 
     def assign(cg, lhs, ident, rhs):
-        name = ident.constant().value()
+        name = ident.name()
         type = Attribute.attrType(lhs, ident)
         builder = cg.builder()
         obj = lhs.evaluate(cg)
@@ -916,18 +888,18 @@ class Attribute:
         # Cannot be reached
         assert False
 
-@operator.HasAttribute(Unit, type.Identifier)
+@operator.HasAttribute(Unit, type.String)
 class HasAttribute:
     def validate(vld, lhs, ident):
-        name = ident.constant().value()
-        if not name in lhs.type().variables() and not lhs.type().parsedFieldType(name):
+        name = ident.name()
+        if not name in lhs.type().variables() and not lhs.type().field(name):
             vld.error(lhs, "unknown unit attribute '%s'" % name)
         
     def type(lhs, ident):
-        return hilti.type.Bool()
+        return type.Bool()
     
     def evaluate(cg, lhs, ident):
-        name = ident.constant().value()
+        name = ident.name()
         tmp = cg.builder().addLocal("__has_attr", hilti.type.Bool())
         cg.builder().struct_is_set(tmp, lhs.evaluate(cg), cg.builder().constOp(name))
         return tmp

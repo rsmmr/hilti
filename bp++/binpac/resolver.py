@@ -29,7 +29,6 @@ class Resolver(object):
         """
         self._errors = 0
         self._scope = mod.scope()
-        self._already = set()
         mod.resolve(self)
         self._scope = None
         
@@ -50,11 +49,13 @@ class Resolver(object):
         
         Note: This function must be used when overiding ~~Node.resolve; see
         there. 
-         """
-        if id(node) in self._already:
-            return True
+        """
+        try:
+            return node.__already
+        except AttributeError:
+            pass
         
-        self._already.add(id(node))
+        node.__already = 1
         return False
         
         

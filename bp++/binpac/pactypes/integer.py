@@ -43,8 +43,8 @@ class Integer(type.ParseableType):
         if self._width < 1 or self._width > 64:
             vld.error(self, "integer width out of range")
 
-    def validateConst(self, vld, const):
-        if not isinstance(const.value(), int):
+    def validateCtor(self, vld, ctor):
+        if not isinstance(ctor, int):
             vld.error(const, "integer: constant of wrong internal type")
             
     def __eq__(self, other):
@@ -56,8 +56,8 @@ class Integer(type.ParseableType):
     def pac(self, printer):
         printer.output(self.name())
     
-    def pacConstant(self, printer, const):
-        printer.output("%d" % const.value())
+    def pacCtor(self, printer, ctor):
+        printer.output("%d" % ctor)
     
     ### Overridden from ParseableType.
     

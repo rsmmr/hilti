@@ -2,7 +2,7 @@
 #
 # BinPAC++ statements
 
-import ast
+import node
 import scope
 import type
 import id
@@ -10,7 +10,7 @@ import binpac.util as util
 
 import hilti.instruction
 
-class Statement(ast.Node):
+class Statement(node.Node):
     """Base class for BinPAC++ statements.
     
     location: ~~Location - The location where the expression was defined. 
@@ -23,7 +23,8 @@ class Statement(ast.Node):
     def execute(self, cg):
         """Generates HILTI code executing the statement.
         
-        Must be overidden by derived classes.
+        Must be overidden by derived classes. Derived classes should generally
+        not call the parent's implementation. 
         
         cg: ~~Codegen - The current code generator.
         """
@@ -80,13 +81,17 @@ class Block(Statement):
         """
         self._stmts += [stmt]
     
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
 
     def resolve(self, resolver):
+        Statement.resolve(self, resolver)
+        
         for stmt in self._stmts:
             stmt.resolve(resolver)
     
     def validate(self, vld):
+        Statement.validate(self, vld)
+        
         for stmt in self._stmts:
             stmt.validate(vld)
             
@@ -98,10 +103,6 @@ class Block(Statement):
         printer.output("}", nl=True)
         printer.pop()
 
-    def doSimplify(self):
-        self._stmts = [s.simplify() for s in self._stmts]
-        return self
-        
     ### Overidden from Statement.
 
     def execute(self, cg):
@@ -173,6 +174,22 @@ class UnitHook(Block):
         """
         return self._prio
 
+    ### Overidden from node.Node.
+
+    def resolve(self, resolver):
+        Block.resolve(self, resolver)
+        self._unit.resolve(resolver)
+        
+        if self._field:
+            self._field.resolve(resolver)
+            
+    def validate(self, vld):
+        Block.validate(self, vld)
+
+        self._unit.validate(vld)
+        
+        if self._field:
+            self._field.validate(vld)
     
 class FieldControlHook(UnitHook):
     """An internal field hook that can exercise control over the parsing. A
@@ -202,15 +219,25 @@ class FieldControlHook(UnitHook):
         Returns: ~~Type - The type.
         """
         return self._ddtype
-
-    # Overidden from Block.
+    
+    ### Overidden from node.Node.
+    
+    def resolve(self, resolver):
+        UnitHook.resolve(self, resolver)
+        self._ddtype = self._ddtype.resolve(resolver)
+    
+    def validate(self, vld):
+        UnitHook.validate(self, resolver)
+        self._ddtype.validate(resolver)
+        
+    ### Overidden from Block.
     
     def scope(self):
         # Add the $$ identifier. Can't do that in the ctor because types might
         # not be resolved at that time.
         scope = super(UnitHook, self).scope()
-        if not scope.lookupID("__dollardollar"):
-            scope.addID(id.ID("__dollardollar", self._ddtype))
+        if not scope.lookupID("__dollardollar") and self._ddtype and not isinstance(self._ddtype, type.Unknown):
+            scope.addID(id.Local("__dollardollar", self._ddtype))
             
         return scope
     
@@ -225,13 +252,17 @@ class Print(Statement):
         super(Print, self).__init__(location=location)
         self._exprs = exprs
         
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
     
     def resolve(self, resolver):
+        Statement.resolve(self, resolver)
+        
         for expr in self._exprs:
             expr.resolve(resolver)
     
     def validate(self, vld):
+        Statement.validate(self, vld)
+        
         for expr in self._exprs:
             expr.validate(vld)
             
@@ -247,17 +278,13 @@ class Print(Statement):
                 
         printer.output(";", nl=True)
 
-    def doSimplify(self):
-        self._exprs = [e.simplify() for e in self._exprs]
-        return self
-        
     ### Overidden from Statement.
 
     def execute(self, cg):
         func = cg.builder().idOp("Hilti::print")
         
         if len(self._exprs):
-            ops = [expr.evaluate(cg) for expr in self._exprs]
+            ops = [expr.simplify().evaluate(cg) for expr in self._exprs]
         else:
             # Print an empty line.
             ops = [cg.builder().constOp("")]
@@ -284,26 +311,24 @@ class Expression(Statement):
         super(Expression, self).__init__(location=location)
         self._expr = expr
         
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
     
     def resolve(self, resolver):
+        Statement.resolve(self, resolver)
         self._expr.resolve(resolver)
     
     def validate(self, vld):
+        Statement.validate(self, vld)
         self._expr.validate(vld)
 
     def pac(self, printer):
         self._expr.pac(printer)
         printer.output(";", nl=True)
 
-    def doSimplify(self):
-        self._expr = self._expr.simplify()
-        return self
-        
     ### Overidden from Statement.
 
     def execute(self, cg):
-        self._expr.evaluate(cg)
+        self._expr.simplify().evaluate(cg)
         
     def __str__(self):
         return str(self._expr) + ";"
@@ -328,23 +353,26 @@ class IfElse(Statement):
         self._yes = yes
         self._no = no
         
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
     
     def resolve(self, resolver):
+        Statement.resolve(self, resolver)
+        
         self._cond.resolve(resolver)
         self._yes.resolve(resolver)
         if self._no:
             self._no.resolve(resolver)
     
     def validate(self, vld):
+        Statement.validate(self, vld)
+        
         self._cond.validate(vld)
         self._yes.validate(vld)
         if self._no:
             self._no.validate(vld)
         
-        # FIXME
-        #if not self._cond.canCastTo(type.Bool()):
-        #    vld.error(self._cond, "expression must be of type bool")
+        if not self._cond.canCoerceTo(type.Bool()):
+            vld.error(self._cond, "expression must be of type bool")
 
     def pac(self, printer):
         printer.output("if ( ")
@@ -362,24 +390,6 @@ class IfElse(Statement):
             printer.pop()
             printer.output("}", nl=True)
             
-    def doSimplify(self):
-        self._cond = self._cond.simplify()
-        self._yes = self._yes.simplify()
-        if self._no:
-            self._no.simplify()
-            
-        if self._cond.isConst():
-            if self._cond.constant().value():
-                return self._yes
-            else:
-                if self._no:
-                    return self._no
-                else:
-                    return Epsilon()
-                
-        return self
-        
-    ### Overidden from Statement.
 
     def execute(self, cg):
         fbuilder = cg.builder().functionBuilder()
@@ -388,7 +398,7 @@ class IfElse(Statement):
         no = fbuilder.newBuilder("__false") if self._no else None
         cont = fbuilder.newBuilder("__cont")
         
-        cond = self._cond.evaluate(cg)
+        cond = self._cond.simplify().evaluate(cg)
         
         cg.builder().if_else(cond, yes.labelOp(), no.labelOp() if no else cont.labelOp())
         
@@ -418,13 +428,17 @@ class Return(Statement):
         super(Return, self).__init__(location=location)
         self._expr = expr
         
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
 
     def resolve(self, resolver):
+        Statement.resolve(self, resolver)
+        
         if self._expr:
             self._expr.resolve(resolver)
     
     def validate(self, vld):
+        Statement.validate(self, vld)
+        
         if self._expr:
             self._expr.validate(vld)
         
@@ -443,15 +457,11 @@ class Return(Statement):
         self._expr.pac(printer)
         printer.output(";", nl=True)
 
-    def doSimplify(self):
-        self._expr = self._expr.simplify()
-        return self
-        
     ### Overidden from Statement.
 
     def execute(self, cg):
         if self._expr:
-            cg.builder().return_result(self._expr.evaluate(cg))
+            cg.builder().return_result(self._expr.simplify().evaluate(cg))
         else:
             cg.builder().return_void()
         

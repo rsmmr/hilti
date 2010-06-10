@@ -2,14 +2,14 @@
 
 builtin_id = id
 
-import ast
+import node
 import id
 import scope
 import type
 import location
 import binpac.visitor as visitor
 
-class Module(ast.Node):
+class Module(node.Node):
     """Represents a single HILTI link-time unit. A module has its
     own identifier scope defining which ~~ID objects are visibile
     inside its namespace.  
@@ -97,7 +97,7 @@ class Module(ast.Node):
     def __str__(self):
         return "module %s" % self._name
 
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
 
     def validate(self, vld):
         for id in self._scope.IDs():
@@ -105,6 +105,13 @@ class Module(ast.Node):
             
         for stmt in self.statements():
             stmt.validate(vld)
+
+    def resolve(self, resolver):
+        for id in self._scope.IDs():
+            id.resolve(resolver)
+            
+        for stmt in self.statements():
+            stmt.resolve(resolver)
 
     def pac(self, printer):
         printer.output("module %s\n" % self._name, nl=True)
@@ -114,19 +121,6 @@ class Module(ast.Node):
             
         for stmt in self.statements():
             stmt.pac(printer)
-
-    def resolve(self, resolver):
-        if resolver.already(self):
-            return
-
-        for id in self._scope.IDs():
-            id.resolve(resolver)
-            
-        for stmt in self.statements():
-            stmt.resolve(resolver)
-
-    def simplify(self):
-        self._stmts = [s.simplify() for s in self._stmts]
         
     # Visitor support.
     def visit(self, v):

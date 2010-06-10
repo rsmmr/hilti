@@ -18,9 +18,6 @@ class RegExp(type.ParseableType):
     def __init__(self, location=None):
         super(RegExp, self).__init__(location=location)
 
-    def parsedType(self):
-        return type.Bytes()
-        
     def hiltiCtor(self, cg, ctor):
         return hilti.operand.Ctor(([ctor], []), hilti.type.Reference(hilti.type.RegExp()))
             
@@ -46,6 +43,21 @@ class RegExp(type.ParseableType):
             }
     
     def production(self, field):
-        return grammar.Variable(None, hilti.type.RegExp(), location=self.location())
+        filter = self.attributeExpr("convert")
+        return grammar.Variable(None, self, filter=filter, location=self.location())
+
+    def parsedType(self):
+        t = type.Bytes()
+        t.copyAttributesFrom(self)
+        return t
+    
+    def fieldType(self):
+        filter = self.attributeExpr("convert")
+
+        if filter and not isinstance(filter.type(), type.Unknown):
+            return filter.type().resultType()
+        else:
+            return self.parsedType()
+    
         
     

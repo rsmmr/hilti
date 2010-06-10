@@ -1,7 +1,7 @@
 # $Id$
 
 import id
-import ast
+import node
 import type
 import binpac.visitor as visitor
 

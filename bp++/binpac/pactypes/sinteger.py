@@ -30,6 +30,10 @@ class SignedInteger(type.Integer):
     def hiltiType(self, cg):
         return hilti.type.Integer(self.width())
 
+    def hiltiCtor(self, cg, ctor):
+        const = hilti.constant.Constant(ctor, hilti.type.Integer(self.width()))
+        return hilti.operand.Constant(const)
+    
     ### Overridden from ParseableType.
 
     def production(self, field):
@@ -39,12 +43,12 @@ class SignedInteger(type.Integer):
     def generateParser(self, cg, dst):
         pass
 
-@operator.Cast(type.SignedInteger)
-class Cast:
-    def castConstantTo(const, dsttype):
-        if isinstance(dsttype, type.SignedInteger) and const.value() >= 0:
-            return constant.Constante(const.value(), type.Integer(dsttype.width()))
+@operator.Coerce(type.SignedInteger)
+class Coerce:
+    def coerceCtorTo(ctor, dsttype):
+        if isinstance(dsttype, type.SignedInteger) and ctor >= 0:
+            return expr.Ctor(ctor, type.Integer(dsttype.width()))
         
-        raise operators.CastError
+        raise operators.CoerceError
         
         

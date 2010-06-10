@@ -92,10 +92,10 @@ def t_CONST_INT(t):
     t.type = "CONSTANT"
     
     try:
-        t.value = constant.Constant(int(t.value), type.SignedInteger(64), location=_loc(t))
+        t.value = (int(t.value), type.SignedInteger(64))
     except ValueError:
         error(t, "cannot parse signed integer %s" % t.value)
-        t.value = constant.Constant(0, type.SignedInteger(64), location=_loc(t))
+        t.value = (0, type.SignedInteger(64))
         
     return t
 
@@ -104,10 +104,10 @@ def t_CONST_UINT(t):
     t.type = "CONSTANT"
     
     try:
-        t.value = constant.Constant(int(t.value), type.UnsignedInteger(64), location=_loc(t))
+        t.value = (int(t.value), type.UnsignedInteger(64))
     except ValueError:
         error(t, "cannot parse unsigned integer %s" % t.value)
-        t.value = constant.Constant(0, type.UnsignedInteger(64), location=_loc(t))
+        t.value = (0, type.UnsignedInteger(64))
         
     return t
 
@@ -115,13 +115,13 @@ def t_CONST_STRING(t):
     '"([^\n"]|\\\\")*"'
     t.type = "CONSTANT"
     s =  util.expand_escapes(t.value[1:-1], unicode=True)
-    t.value = constant.Constant(s, type.String(), location=_loc(t))
+    t.value = (s, type.String())
     return t
 
 def t_CONST_BOOL(t):
     'True|False'
     t.type = "CONSTANT"
-    t.value = constant.Constant(t.value == "True", type.Bool(), location=_loc(t))
+    t.value = (t.value == "True", type.Bool())
     return t
 
 # Non-constant constructors.

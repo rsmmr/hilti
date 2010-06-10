@@ -4,6 +4,7 @@ builtin_id = id
 
 import copy
 
+import node
 import scope
 import id
 import binpac.util as util
@@ -24,9 +25,8 @@ class Type(object):
     """
 
     _type_name = "<type_name not set>" # Set by the pac() the decorator.
-
     _counter = 1
-    
+
     class ParameterError(Exception):
         """Signals a type parameter error."""
         pass
@@ -37,6 +37,7 @@ class Type(object):
         self._location = location
         self._params = []
         self._name = "type_%d" % Type._counter
+        self._resolved = False
         
         all = self.supportedParameters()
         
@@ -58,8 +59,8 @@ class Type(object):
                 if param.type() != ty:
                     raise ParameterError, "type parameter must be of type %s" % ty
                 
-            if not param.isConst():
-                raise ParameterError, "type parameter must be a constant"
+            if not param.isInit():
+                raise ParameterError, "type parameter must be an initialization value"
                 
             self._params += [param]
 
@@ -128,18 +129,6 @@ class Type(object):
         """
         return self.__class__.typeName()
 
-    def canCastTo(self, dsttype):
-        """Returns whether a this type can be coerced to a destination type.
-        
-        Can be overridden by derived classes. The default implementation
-        returns True iff *dstype* is equals the curren type.
-        
-        dsttype: ~~Type - The target type.
-        
-        Returns: bool - Whether the coercion is ok.
-        """
-        return self == dsttype
-    
     def supportedParameters(self):
         """Returns the type parameters this type supports.
         
@@ -152,7 +141,8 @@ class Type(object):
         parameter is not given.
         """ 
         return []
-
+    
+    # @node.check_recursion # Expensinve
     def resolve(self, resolver):
         """Resolves any previously unknown types that might be
         referenced by this type. (Think: forward references). For
@@ -161,6 +151,8 @@ class Type(object):
         will be called to then lookup the real type. If an error is
         encountered (e.g., we still don't the identifier), an error
         message will be reported via the *resolver*. 
+        
+        Derived classes should *not* call their parent's implementation.
         
         resolver: ~~Resolver - The current resolver to use. 
         
@@ -172,9 +164,20 @@ class Type(object):
         Note: ~~Type is not derived from ~~Node and thus we are not
         overriding ~~Node.resolve here, even though it might
         initially look like that. This method does work similar but
-        it returns a value, which ~~Node.resolve does not. 
+        it returns a value, which ~~Node.resolve does not. If you want to
+        resolve attributes of the class (rather than an instance of the class
+        itself), overridde ~~doResolve instead.
         """
+        if self._resolved:
+            return self
+        
+        self._resolved = True
+        self.doResolve(resolver)
         return self
+    
+    def doResolve(self, resolver):
+        """XXXX"""
+        pass
     
     def validate(self, vld):
         """Validates the semantic correctness of the type.
@@ -183,23 +186,13 @@ class Type(object):
         nothing. If there are any errors encountered during validation, the
         method must call ~~Validator.error. If there are any sub-nodes that also
         need to be checked, the method needs to do that recursively.
+
+        Derived classes should call their parent's implementation.
         
         vld: ~~Validator - The validator triggering the validation.
         """
         pass
     
-    def validateConst(self, vld, const):
-        """Validates the semantic correctness of a constant of the
-        type.
-        
-        Must be overidden by derived classes if constants with their
-        type can be created.
-        
-        vld: ~~Validator - The validator triggering the validation.
-        const: ~~Constant - The constant, which will have the type's type.
-        """
-        util.internal_error("Type.validateConst() not overidden for %s" % self.__class__)
-        
     def validateCtor(self, vld, value):
         """Validates the semantic correctness of a ctor value of the type.
         
@@ -223,23 +216,6 @@ class Type(object):
         Returns: hilti.type.Type - The HILTI type.
         """
         util.internal_error("Type.hiltiType() not overidden for %s" % self.__class__)
-
-    def hiltiConstant(self, cg, const):
-        """Returns the HILTI constant for a constant of this type.
-        
-        Can be overridden by derived classes for types. The default
-        implementation turns the constant into a HILTI constant of type
-        ~~hiltiType(), keeping the same value as *const* has. This works for
-        all types for which the values are represented in the same interal way
-        in BinPAC and HILTI.
-        
-        cg: ~~CodeGen - The current code generator. 
-        *const*: ~~Constant - The constant to convert to HILTI.
-        
-        Returns: hilti.constant.Constant - The HILTI constant.
-        """
-        hlt = const.type().hiltiType(cg)
-        return hilti.constant.Constant(const.value(), hlt)
 
     def hiltiCtor(self, cg, value):
         """Returns a HILTI ctor operand for constructing an element of this type.
@@ -283,17 +259,6 @@ class Type(object):
         """
         util.internal_error("Type.pac() not overidden for %s" % self.__class__)
 
-    def pacConstant(self, printer, value):
-        """Converts the a constant of the type into its BinPAC++ representation.
-
-        Must be overidden by derived classes if constants with their type can
-        be created.
-        
-        value: ~~Constant - The constant of the type.
-        printer: ~~Printer - The printer to use.
-        """
-        util.internal_error("Type.pacConstant() not overidden for %s" % self.__class__)
-        
     def pacCtor(self, printer, value):
         """Converts a ctor of the type into its BinPAC++ representation.
 
@@ -407,10 +372,22 @@ class ParseableType(Type):
         and type of *expr* must correspond to what ~~supportedAttributes
         specifies.
         """
-        self._attrs[name] = expr.simplify() if expr else None
+        self._attrs[name] = expr
+
+    def copyAttributesFrom(self, other):
+        """XXXX"""
+        
+        if builtin_id(self._attrs) == builtin_id(other._attrs):
+            return
+        
+        self._attrs = {}
+        for (key, val) in other._attrs.items():
+            self._attrs[key] = val
         
     def validate(self, vld):
-        for (name, expr) in self._attrs.values():
+        Type.validate(self, vld)
+        
+        for (name, expr) in self._attrs.items():
             
             all = self.supportedAttributes()
             if name not in all:
@@ -428,19 +405,17 @@ class ParseableType(Type):
             if init and not expr.isInit():
                 vld.error(self, "attribute's expression must be suitable for initializing a value")
 
-            if not expr.canCastTo(ty) and not isinstance(ty, Any):
+            if not expr.canCoerceTo(ty) and not isinstance(ty, Any):
                 vld.error(self, "attribute's expression must be of type %s, but is %s" % (ty, expr.type()))
             
             if expr:
                 expr.validate(vld)
         
-    def resolve(self, resolver):
+    def doResolve(self, resolver):
         for expr in self._attrs.values():
             if expr:
                 expr.resolve(resolver)
                 
-        return self
-        
     ### Methods for derived classes to override.    
 
     def parsedType(self):
@@ -456,6 +431,18 @@ class ParseableType(Type):
         Returns: ~~Type - The type for parsed fields.
         """
         return self
+
+    def fieldType(self):
+        """Returns the final type of the field parsed with this type. This
+        will usually be the same as ~~parsedType, but may differ if additional
+        post-filter function are applied. 
+        
+        This method can be overridden by derived classes. The default
+        implementation returns just ~~parsedType.
+        
+        Returns: ~~Type - The type for parsed fields.
+        """
+        return self.parsedType()
     
     def supportedAttributes(self):
         """Returns the attributes this type supports.
@@ -466,7 +453,7 @@ class ParseableType(Type):
         attribute's expression must have, or None if the attribute
         doesn't take a expression; *init* is a boolean indicating
         whether the attribute's expression must suitable for
-        intializing a HILTI variable; and *default* is a ~~Constant
+        intializing a HILTI variable; and *default* is a ~~Ctor
         expression with a default expression to be used if the
         attributes is not explicitly specified, or None if the
         attribute is unset by default.
@@ -481,7 +468,7 @@ class ParseableType(Type):
         """
         return {}
 
-    def validateInUnit(self, vld):
+    def validateInUnit(self, field, vld):
         """Validates the semantic correctness of the type when used inside a
         unit definition.
         
@@ -489,6 +476,8 @@ class ParseableType(Type):
         nothing. If there are any errors encountered during validation, the
         method must call ~~Validator.error. If there are any sub-nodes that
         also need to be checked, the method needs to do that recursively.
+        
+        field: ~~unit.Field - The unit type the type is part of. 
         
         vld: ~~Validator - The validator triggering the validation.
         """
@@ -562,12 +551,9 @@ class Unknown(ParseableType):
         """Returns the name of the ID that needs to be resolved."""
         return self._id
 
-    # Overidden from Type.
+    ### Overidden from Type.
     
     def resolve(self, resolver):
-        if resolver.already(self):
-            return self
-        
         i = resolver.scope().lookupID(self._id)
         
         if not i:
@@ -577,9 +563,11 @@ class Unknown(ParseableType):
         if not isinstance(i, id.Type):
             resolver.error(self, "identifier %s does not refer to a type" % self._id)
             return self 
-
-        t = copy.deepcopy(i.type())
-        t._attrs = self._attrs
+        
+        i.resolve(resolver)
+        
+        t = copy.copy(i.type())
+        t._attrs = copy.copy(self._attrs)
         return t
 
     _type_name = "<unknown type>" 
@@ -592,15 +580,8 @@ class Identifier(Type):
     def __init__(self, location=None):
         super(Identifier, self).__init__(location=location)
 
-    def validateConst(self, vld, const):
-        if not isinstance(const.value(), str):
-            vld.error(const, "identifier: constant of wrong internal type")
-            
     def pac(self, printer):
         printer.output("<type.Identifier>") # Should not get here.
-        
-    def pacConstant(self, printer, value):
-        printer.output(value.value())
         
     def hiltiType(self, cg):
         return hilti.type.String()
@@ -623,11 +604,10 @@ class MetaType(Type):
         """
         return self._type
 
-    # Overidden from Type.
+    ### Overidden from Type.
     
-    def resolve(self, resolver):
+    def doResolve(self, resolver):
         self._type = self._type.resolve(resolver)
-        return self
         
     def validate(self, vld):
         self._type.validate(vld)

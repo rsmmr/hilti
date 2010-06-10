@@ -17,12 +17,6 @@ class Void(type.Type):
 
     ### Overridden from Type.
     
-    def resolve(self, resolver):
-        return self
-    
-    def validate(self, vld):
-        pass
-            
     def hiltiType(self, cg):
         return hilti.type.Void()
 

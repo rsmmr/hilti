@@ -1,6 +1,6 @@
 # $Id$
 
-import ast
+import node
 import location
 import copy
 import type
@@ -20,7 +20,7 @@ class Linkage:
     compilation units.
     """                 
     
-class ID(ast.Node):
+class ID(node.Node):
     """Binds a name to a type.
     
     name: string - The name of the ID.
@@ -120,18 +120,29 @@ class ID(ast.Node):
         Returns: ~~ID - The deep-copy.
         """
         return copy.deep_copy(self)
+
+    def _internalName(self):
+        """Returns the internal HILTI name of this ID.
         
+        Returns: string - The name.
+        """
+        # Todo: Not sure this is the best place for this ...
+        if self._name == "self":
+            return "__self"
+        
+        return self._name
+    
     def __str__(self):
         return self._name
 
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
     
     def resolve(self, resolver):
-        if resolver.already(self):
-            return
-        
         self._type = self._type.resolve(resolver)
-    
+
+    def validate(self, vld):
+        self._type.validate(vld)
+        
     ### Methods for derived classes to override.    
 
     def evaluate(self, cg):
@@ -169,9 +180,15 @@ class Constant(ID):
         """
         return self._expr
 
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
 
+    def resolve(self, resolver):
+        ID.resolve(self, resolver)
+        self._expr.resolve(resolver)
+    
     def validate(self, vld):
+        ID.validate(self, vld)
+        
         if self._expr and self._expr.type() != self.type():
             vld.error("type of initializer expression does not match")
             
@@ -207,9 +224,15 @@ class Local(ID):
         """
         return self._expr
 
-    ### Overidden from ast.Node.
-
+    ### Overidden from node.Node.
+    
+    def resolve(self, resolver):
+        ID.resolve(self, resolver)
+        self._expr.resolve(resolver)
+    
     def validate(self, vld):
+        ID.validate(self, vld)
+        
         if self._expr and self._expr.type() != self.type():
             vld.error("type of initializer expression does not match")
             
@@ -223,8 +246,8 @@ class Local(ID):
         
     ### Overidden from ID.
     
-    #def evaluate(self, cg):
-    #    # XXX Not yet implemented because we don't have functions yet.
+    def evaluate(self, cg):
+        return cg.functionBuilder().idOp(self._internalName())
         
 class Parameter(ID):
     """An ID representing a function parameter. See ~~ID for arguments.
@@ -232,10 +255,7 @@ class Parameter(ID):
     def __init__(self, name, type, linkage=None, namespace=None, location=None, imported=False):
         super(Parameter, self).__init__(name, type, linkage, namespace, location, imported)
 
-    ### Overidden from ast.Node.
-
-    def validate(self, vld):
-        pass
+    ### Overidden from node.Node.
 
     def pac(self):
         printer.output("%s: " % self.name())
@@ -244,7 +264,7 @@ class Parameter(ID):
     ### Overidden from ID.
     
     def evaluate(self, cg):
-        return cg.builder().idOp(self.name())
+        return cg.builder().idOp(self._internalName())
         
 class Global(ID):
     """An ID representing a module-global variable. See ~~ID for arguments.
@@ -263,9 +283,16 @@ class Global(ID):
         """
         return self._expr
         
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
 
+    def resolve(self, resolver):
+        ID.resolve(self, resolver)
+        if self._expr:
+            self._expr.resolve(resolver)
+    
     def validate(self, vld):
+        ID.validate(self, vld)
+        
         if self._expr and self._expr.type() != self.type():
             vld.error("type of initializer expression does not match")
             
@@ -279,9 +306,8 @@ class Global(ID):
     
     ### Overidden from ID.
     
-    #def evaluate(self, cg):
-    #    # XXX Not yet implemented because we don't have globals yet (just
-    # typedelc, which however can't appear 
+    def evaluate(self, cg):
+        return cg.functionBuilder().idOp(self._internalName())
 
 class Type(ID):
     """An ID representing a type-declaration. See ~~ID for arguments.
@@ -289,10 +315,7 @@ class Type(ID):
     def __init__(self, name, type, linkage=None, namespace=None, location=None, imported=False):
         super(Type, self).__init__(name, type, linkage, namespace, location, imported)
         
-    ### Overidden from ast.Node.
-
-    def validate(self, vld):
-        self.type().validate(vld)
+    ### Overidden from node.Node.
 
     def pac(self, printer):
         printer.output("type %s = " % self.name())
@@ -311,10 +334,7 @@ class Attribute(ID):
     def __init__(self, name, type, location=None):
         super(Attribute, self).__init__(name, type, location=location)
 
-    ### Overidden from ast.Node.
-
-    def validate(self, vld):
-        pass
+    ### Overidden from node.Node.
 
     def pac(self, printer):
         printer.output("%s" % self.name())
@@ -347,10 +367,22 @@ class Variable(ID):
         """
         self._hooks += [hook]
         
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
 
     def validate(self, vld):
-        pass
+        self.type().validate(vld)
+    
+    def resolve(self, resolver):
+        ID.resolve(self, resolver)
+        
+        for h in self._hooks:
+            h.resolve(resolver)
+        
+    def validate(self, vld):
+        ID.validate(self, vld)
+        
+        for h in self._hooks:
+            h.validate(vld)
 
     def pac(self, printer):
         printer.output("var %s" % self.name())
@@ -360,7 +392,6 @@ class Variable(ID):
     def evaluate(self, cg):
         util.internal_error("evaluate must not be called for id.Variable")
         
-
 class Function(ID):
     """An ID representing an (overloaded) function. 
     
@@ -383,14 +414,12 @@ class Function(ID):
     ### Overidden from ID.
 
     def resolve(self, resolver):
+        ID.resolve(self, resolver)
         self._func.resolve(resolver)
     
     def validate(self, vld):
+        ID.validate(self, vld)
         self._func.validate(vld)
 
-    def doSimplify(self):
-        self._func = self._func.simplify()
-        return self
-        
     def pac(self, printer):
         printer.output(self.name())

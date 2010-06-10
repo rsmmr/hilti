@@ -16,6 +16,8 @@ import binpac.util as util
 import hilti.type
 import hilti.operand
 
+import copy
+
 @type.pac("list")
 class List(type.ParseableType):
     """Type for list objects.  
@@ -39,8 +41,12 @@ class List(type.ParseableType):
     def name(self):
         return "list<%s>" % self._item.name()
 
+    def doResolve(self, resolver):
+        self._item = self._item.resolve(resolver)
+    
     def validate(self, vld):
-        return True
+        type.ParseableType.validate(self, vld)
+        self._item.validate(vld)
     
     def validateCtor(self, vld, value):
         if not isinstance(value, list):
@@ -69,10 +75,6 @@ class List(type.ParseableType):
         ltype = hilti.type.List(self._item.hiltiType(cg))
         return hilti.operand.Ctor([], hilti.type.Reference(ltype))
 
-    def resolve(self, resolver):
-        self._item = self._item.resolve(resolver)
-        return self
-    
     def pac(self, printer):
         printer.output("list<")
         self._item.pac(printer)
@@ -81,7 +83,7 @@ class List(type.ParseableType):
     def pacCtor(self, printer, elems):
         printer.output("[")
         for i in range(len(elems)):
-            self._item.pacConstant(printer, elems[i])
+            self._item.pacCtor(printer, elems[i])
             if i != len(elems) - 1:
                 printer.output(", ")
         printer.output("]")
@@ -92,7 +94,7 @@ class List(type.ParseableType):
         return { "until": (type.Bool(), False, None) }
 
     def initParser(self, field):
-        ctlhook = stmt.FieldControlHook(field, 255, self.itemType())
+        ctlhook = stmt.FieldControlHook(field, 255, copy.deepcopy(self.itemType()))
         field.setControlHook(ctlhook)
     
     def production(self, field):
@@ -104,8 +106,8 @@ class List(type.ParseableType):
         # Create a "list.push_back($$)" statement. 
         dollar = expr.Name("__dollardollar", hook.scope(), location=loc)
         slf = expr.Name("self", hook.scope(), location=loc)
-        list = expr.Constant(constant.Constant(field.name(), type.Identifier()), location=loc)
-        method = "push_back" #expr.Constant(constant.Constant("push_back", type.Identifier()), location=loc)
+        list = expr.Attribute(field.name(), location=loc)
+        method = expr.Attribute("push_back", location=loc)
         attr = expr.Overloaded(operator.Operator.Attribute, (slf, list), location=loc)
         push_back = expr.Overloaded(operator.Operator.MethodCall, (attr, method, [dollar]), location=loc)
         push_back = stmt.Expression(push_back, location=loc)
@@ -128,7 +130,7 @@ class List(type.ParseableType):
             # else
             #     list.push_back($$)
             
-            stop = stmt.Expression(expr.Assign(hookrc, expr.Constant(constant.Constant(False, type.Bool()))))
+            stop = stmt.Expression(expr.Assign(hookrc, expr.Ctor(False, type.Bool())))
             ifelse = stmt.IfElse(until, stop, push_back, location=loc)
             
             hook.addStatement(ifelse)
@@ -156,7 +158,7 @@ class List(type.ParseableType):
 def itemType(exprs):
     return exprs[0].type().itemType()
         
-@operator.MethodCall(operator.Mutable(List), "push_back", [itemType])
+@operator.MethodCall(operator.Mutable(List), expr.Attribute("push_back"), [itemType])
 class PushBack:
     def type(obj, method, args):
         return obj.type()

@@ -23,20 +23,24 @@ class Bool(type.ParseableType):
     def validate(self, vld):
         return True
 
-    def validateConst(self, vld, const):
-        if not isinstance(const.value(), bool):
-            vld.error(const, "bool: constant of wrong internal type")
+    def validateCtor(self, vld, ctor):
+        if not isinstance(ctor, bool):
+            vld.error(ctor, "bool: constant of wrong internal type")
             
     def hiltiType(self, cg):
         return hilti.type.Bool()
 
+    def hiltiCtor(self, cg, ctor):
+        const = hilti.constant.Constant(ctor, hilti.type.Bool())
+        return hilti.operand.Constant(const)
+    
     def name(self):
         return "bool" 
     
     def pac(self, printer):
         printer.output("bool")
         
-    def pacConstant(self, printer, value):
+    def pacCtor(self, printer, value):
         printer.output("True" if value else "False")
     
     ### Overridden from ParseableType.
@@ -56,11 +60,11 @@ class _:
         return type.Bool()
     
     def simplify(e):
-        if not e.isConst():
+        if not isinstance(e, expr.Ctor):
             return None
         
-        inverse = not e.constant().value()
-        return expr.Constant(constant.Constant(inverse, type.Bool()))
+        inverse = not e.value()
+        return expr.Ctor(inverse, type.Bool())
         
     def evaluate(cg, e):
         tmp = cg.functionBuilder().addLocal("__not", hilti.type.Bool())
@@ -73,11 +77,11 @@ class _:
         return type.Bool()
     
     def simplify(e1, e2):
-        if not (e1.isConst() and e2.isConst()):
+        if not (isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor)):
             return None
         
-        result = e1.constant().value() and e2.constant().value()
-        return expr.Constant(constant.Constant(result, type.Bool()))
+        result = e1.value() and e2.value()
+        return expr.Ctor(result, type.Bool())
         
     def evaluate(cg, e1, e2):
         tmp = cg.functionBuilder().addLocal("__and", hilti.type.Bool())

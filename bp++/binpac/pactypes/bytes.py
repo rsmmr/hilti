@@ -25,7 +25,7 @@ class Bytes(type.ParseableType):
     def name(self):
         return "bytes" 
 
-    def validateInUnit(self, vld):
+    def validateInUnit(self, field, vld):
         # We need exactly one of the attributes. 
         c = 0
         for (name, (ty, const, default)) in self.supportedAttributes().items():
@@ -33,10 +33,10 @@ class Bytes(type.ParseableType):
                 c += 1
             
         if c == 0:
-            vld.error(self, "bytes type needs a termination attribute")
+            vld.error(field, "bytes type needs a termination attribute")
             
         if c > 1:
-            vld.error(self, "bytes type accepts exactly one termination attribute")
+            vld.error(field, "bytes type accepts exactly one termination attribute")
 
     def validateCtor(self, vld, value):
         if not isinstance(value, str):
@@ -68,11 +68,19 @@ class Bytes(type.ParseableType):
             "convert": (type.Any(), False, None),
             "length": (type.UnsignedInteger(64), False, None),
             "until": (type.Bytes(), False, None),
+            "eod": (None, False, None),
             }
 
     def production(self, field):
         filter = self.attributeExpr("convert")
         return grammar.Variable(None, self, filter=filter, location=self.location())
+
+    def fieldType(self):
+        filter = self.attributeExpr("convert")
+        if filter:
+            return filter.type().resultType()
+        else:
+            return self.parsedType()
     
     def generateParser(self, cg, cur, dst, skipping):
         
@@ -91,12 +99,12 @@ class Bytes(type.ParseableType):
 
         if self.hasAttribute("length"):
             op2 = cg.builder().idOp("Hilti::Packed::BytesFixed" if not skipping else "Hilti::Packed::SkipBytesFixed")
-            expr = self.attributeExpr("length").castTo(type.UnsignedInteger(64), cg)
+            expr = self.attributeExpr("length").coerceTo(type.UnsignedInteger(64), cg)
             op3 = expr.evaluate(cg)
             
         elif self.hasAttribute("until"):
             op2 = cg.builder().idOp("Hilti::Packed::BytesDelim" if not skipping else "Hilti::Packed::SkipBytesDelim")
-            expr = self.attributeExpr("until").castTo(type.Bytes(), cg)
+            expr = self.attributeExpr("until").coerceTo(type.Bytes(), cg)
             op3 = expr.evaluate(cg)
 
         builder = cg.builder()
@@ -119,8 +127,7 @@ class _:
     def simplify(e):
         if e.isInit():
             n = len(e.value())
-            const = constant.Constant(n, type.UnsignedInteger(32))
-            return expr.Constant(const)
+            return expr.Ctor(n, type.UnsignedInteger(32))
         
         else:
             return None
@@ -140,7 +147,7 @@ class _:
             return None
             
         b = (e1.value() == e2.value())
-        return expr.Constant(constant.Constant(b, type.Bool()))
+        return expr.Ctor(b, type.Bool())
         
     def evaluate(cg, e1, e2):
         tmp = cg.functionBuilder().addLocal("__equal", hilti.type.Bool())
@@ -175,7 +182,7 @@ class Plus:
         cg.builder().bytes_append(e1, e2.evaluate(cg))
         return e1
     
-@operator.MethodCall(type.Bytes, "match", [type.RegExp, operator.Optional(type.UnsignedInteger)])
+@operator.MethodCall(type.Bytes, expr.Attribute("match"), [type.RegExp, operator.Optional(type.UnsignedInteger)])
 class Match:
     def type(obj, method, args):
         return type.Bytes()
@@ -195,7 +202,7 @@ class Match:
         cg.builder().call(tmp, func, args)
         return tmp
     
-@operator.MethodCall(type.Bytes, "startswith", [type.Bytes])
+@operator.MethodCall(type.Bytes, expr.Attribute("startswith"), [type.Bytes])
 class Match:
     def type(obj, method, args):
         return type.Bool()

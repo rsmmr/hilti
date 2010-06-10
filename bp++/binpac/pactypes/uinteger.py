@@ -30,6 +30,10 @@ class UnsignedInteger(type.Integer):
     def hiltiType(self, cg):
         return hilti.type.Integer(self.width())
 
+    def hiltiCtor(self, cg, ctor):
+        const = hilti.constant.Constant(ctor, hilti.type.Integer(self.width()))
+        return hilti.operand.Constant(const)
+    
     ### Overridden from ParseableType.
 
     def production(self, field):
@@ -39,13 +43,13 @@ class UnsignedInteger(type.Integer):
     def generateParser(self, cg, dst):
         pass
 
-@operator.Cast(type.UnsignedInteger)
-class Cast:
-    def castConstantTo(const, dsttype):
+@operator.Coerce(type.UnsignedInteger)
+class Coerce:
+    def coerceCtorTo(ctor, dsttype):
         if isinstance(dsttype, type.SignedInteger):
-            return constant.Constant(const.value(), type.SignedInteger(dsttype.width()))
+            return expr.Ctor(ctor, type.SignedInteger(dsttype.width()))
         
-        raise operator.CastError
+        raise operator.CoerceError
     
 @operator.Plus(UnsignedInteger, UnsignedInteger)
 class Plus:
@@ -53,13 +57,12 @@ class Plus:
         return UnsignedInteger(max(expr1.type().width(), expr2.type().width()))
     
     def simplify(expr1, expr2):
-        if expr1.isConst() and expr2.isConst():
-            val = expr1.constant().value() + expr2.constant().value()
-            const  = constant.Constant(val, UnsignedInteger(max(expr1.type().width(), expr2.type().width())))
-            return expr.Constant(const)
+        if isinstanct(expr1, expr.Ctor) and isinstanct(expr2, expr.Ctor):
+            val = expr1.value() + expr2.value()
+            return expr.Ctor(val, UnsignedInteger(max(expr1.type().width(), expr2.type().width())))
 
         else:
-            return self
+            return None
         
     def evaluate(cg, expr1, expr2):
         util.internal_error("not implemented")

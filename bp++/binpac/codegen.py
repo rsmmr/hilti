@@ -1,7 +1,7 @@
 # $Id$
 """Compiles a BinPAC++ module into a HILTI module."""
 
-import ast
+import node
 import type
 import id
 import pgen
@@ -192,7 +192,10 @@ class CodeGen(object):
         self._errors += 1
         
     def _compile(self):
-        """Top-level driver of the compilation process."""
+        """Top-level driver of the compilation process.
+        
+        Todo: Much of this implementation should move to Module.
+        """
         hltmod = hilti.module.Module(self._module.name())
         self._mbuilder = hilti.builder.ModuleBuilder(hltmod)
 

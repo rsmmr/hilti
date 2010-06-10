@@ -280,12 +280,12 @@ def p_unit_field_property(p):
     """unit_property : PROPERTY expr ';'"""
     
     expr = p[2]
-    if not expr.isConst():
-        util.parser_error(p, "expression must be constant")
+    if not expr.isInit():
+        util.parser_error(p, "expression must be init")
         raise SyntaxError    
     
     try:
-        p.parser.state.unit.setProperty(p[1], expr.constant())
+        p.parser.state.unit.setProperty(p[1], expr)
     except ValueError, e:
         util.parser_error(p, "unknown property %s" % p[1])
         raise SyntaxError    
@@ -322,7 +322,6 @@ def p_unit_field_with_hook(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond stmt_block _leave_unit_field"""
     hook = stmt.UnitHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[7].statements())
     _addAttrs(p, p.parser.state.field.type(), p[5])
-    
     p.parser.state.field.addHook(hook)
     p[0] = p.parser.state.field
 
@@ -352,7 +351,8 @@ def p_instantiate_field(p):
 
 def p_unit_field_type_const(p):
     """unit_field_type : CONSTANT opt_unit_field_params"""
-    e = expr.Constant(p[1], p[1].type())
+    (val, type) = p[1]
+    e = expr.Ctor(val, type)
     p[0] = ((e, p[1].type()), p[2])
 
 def p_unit_field_type_regexp(p):
@@ -429,7 +429,8 @@ def p_attr(p):
 
 def p_ctor_constant(p):
     """ctor : CONSTANT"""
-    p[0] = expr.Constant(p[1], location=_loc(p, 1))
+    (val, type) = p[1]
+    p[0] = expr.Ctor(val, type, location=_loc(p, 1))
 
 def p_ctor_bytes(p):
     """ctor : BYTES"""
@@ -468,7 +469,8 @@ def p_ctor_list_list(p):
 
 def p_expr_constant(p):
     """expr : CONSTANT"""
-    p[0] = expr.Constant(p[1], location=_loc(p, 1))
+    (val, type) = p[1]
+    p[0] = expr.Ctor(val, type, location=_loc(p, 1))
     
 def p_expr_ctor(p):
     """expr : ctor"""
@@ -476,17 +478,13 @@ def p_expr_ctor(p):
 
 def p_expr_attribute(p):
     """expr : expr '.' IDENT"""
-    const = constant.Constant(p[3], type.Identifier())
-    ident = expr.Constant(const, location=_loc(p, 1))
-    # FIXME: Need to unify type of ident here with expr_method_call()
-    p[0] = expr.Overloaded(Operator.Attribute, (p[1], ident), location=_loc(p, 1))
+    attr = expr.Attribute(p[3])
+    p[0] = expr.Overloaded(Operator.Attribute, (p[1], attr), location=_loc(p, 1))
     
 def p_expr_has_attribute(p):
     """expr : expr HASATTR IDENT"""
-    const = constant.Constant(p[3], type.Identifier())
-    ident = expr.Constant(const, location=_loc(p, 1))
-    # FIXME: Need to unify type of ident here with expr_method_call()
-    p[0] = expr.Overloaded(Operator.HasAttribute, (p[1], ident), location=_loc(p, 1))    
+    attr = expr.Attribute(p[3])
+    p[0] = expr.Overloaded(Operator.HasAttribute, (p[1], attr), location=_loc(p, 1))
 
 #def p_expr_type(p):
 #    """expr : type"""
@@ -543,7 +541,8 @@ def p_expr_function_call(p):
 
 def p_expr_method_call(p):
     """expr : expr '.' IDENT '(' expr_list ')'"""
-    p[0] = expr.Overloaded(Operator.MethodCall, (p[1], p[3], p[5]), location=_loc(p, 1))
+    attr = expr.Attribute(p[3])
+    p[0] = expr.Overloaded(Operator.MethodCall, (p[1], attr, p[5]), location=_loc(p, 1))
     
 def p_expr_size(p):
     """expr : '|' expr '|'"""
@@ -692,6 +691,7 @@ def _parse(filename, import_paths=["."]):
 
     try:
         ast = parser.parse(lines, lexer=lex, debug=0)
+        
     except ply.lex.LexError, e:
         # Already reported.
         print e
@@ -701,10 +701,8 @@ def _parse(filename, import_paths=["."]):
         return (parser.state.errors(), None, parser)
 
     assert ast
-
-    errors = resolver.Resolver().resolve(ast)
     
-    ast.simplify()
+    errors = resolver.Resolver().resolve(ast)
     
     return (errors, ast, parser)    
 

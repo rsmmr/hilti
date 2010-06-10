@@ -3,16 +3,15 @@
 # BinPAC++ expressions.
 
 import type
-import ast
+import node
 import grammar
 import operator
-import constant
 import id
 import binpac.util as util
 
 import hilti.operand
 
-class Expression(ast.Node):
+class Expression(node.Node):
     """Base class for all expression objects.
 
     location: ~~Location - The location where the expression was defined. 
@@ -20,84 +19,75 @@ class Expression(ast.Node):
     def __init__(self, location=None):
         super(Expression, self).__init__(location)
 
-    def canCastTo(self, dsttype):
-        """Returns whether the expression can be cast to a given target type.
+    def simplify(self):
+        """Simplifies the expression. The definition of 'simplify' is left to
+        the derived classes but the expression may only change in a way thay
+        does not modify its semantics.
+        
+        Can be overridden by derived classes. The default implementation
+        returns just *self*.
+        
+        Returns: ~~Expression - The simplified expression, which may be just *self*.
+        """
+        return self
+        
+    def canCoerceTo(self, dsttype):
+        """Returns whether the expression can be coerce to a given target type.
         If *dsttype* is of the same type as that of the expression, the result
         is always True. 
         
         *dstype*: ~~Type - The target type.
         
-        Returns: bool - True if the expression can be casted. 
+        Returns: bool - True if the expression can be coerceed. 
         """
-        
-        if self.isConst():
-            # We just try the case. 
+        if self.isInit():
+            # We just try in the case. 
             try:
-                operator.castConstantTo(self, dsttype)
+                operator.coerceCtorTo(self, dsttype)
                 return True # It worked.
-            except operator.CastError:
+            except operator.CoerceError:
                 return False # It did not.
             
         else:
-            return operator.canCastNonConstantExprTo(self, dsttype)
+            return operator.canCoerceExprTo(self, dsttype)
         
-    def castTo(self, dsttype, cg=None):
-        """Casts the expression to a differenent type. It's ok if *dsttype* is
+    def coerceTo(self, dsttype, cg=None):
+        """Coerces the expression to a differenent type. It's ok if *dsttype* is
         the same as the expressions type, the method will be a no-op then. 
         
-        *dsttype*: ~~Type - The type to cast the expression into. 
+        *dsttype*: ~~Type - The type to coerce the expression into. 
         
         *cg*: ~~CodeGen - The current code generator; can be None if the
-        expression is constant. 
+        expression is a ~~Ctor. 
         
-        Returns: ~~hilti.operand.Operand - The resulting  expression of the target type
-        with the casted expression.
+        Returns: ~~Expression - The resulting  expression of the target type
+        with the coerceed expression.
         
-        Throws: operator.CastError - If the conversion is not possible.  This
-        will only happen if ~~canCastTo returns *False*.
+        Throws: operator.CoerceError - If the conversion is not possible.  This
+        will only happen if ~~canCoerceTo returns *False*.
         """
-        if not self.canCastTo(dsttype):
-            raise operator.CastError, "cannot convert type %s to type %s" % (self.type(), dsttype)
+        if not self.canCoerceTo(dsttype):
+            raise operator.CoerceError, "cannot convert type %s to type %s" % (self.type(), dsttype)
 
-        if self.isConst():
+        if isinstance(self, Ctor):
             try:
-                const = operator.castConstantTo(self, dsttype)
-                return const
-            except operator.CastError:
-                # Can't happen because canCastTo() returned true ...
-                util.internal_error("unexpected cast error from %s to %s" % (self.type(), dsttype()))
+                return operator.coerceCtorTo(self, dsttype)
+            except operator.CoerceError:
+                # Can't happen because canCoerceTo() returned true ...
+                util.internal_error("unexpected coerce error from %s to %s" % (self.type(), dsttype()))
             
         else:
             assert cg 
-            return operator.castNonConstantExprTo(cg, self, dsttype)
+            return operator.coerceExprTo(cg, self, dsttype)
     
-    def isConst(self):
-        """Returns true if the expression evaluates to a constant value.
-        
-        Returns: bool - Boolean indicating whether the expression is a constant.
-        """
-        if isinstance(self, Constant):
-            return True
-        
-        # Test if we can fold us into a constant.
-        if isinstance(self.simplify(), Constant):
-            return True
-        
-        return False
-
     def isInit(self):
         """Returns true if the expression evaluates to a value that can be
         used as the initialization value for a HILTI object. 
 
-        Can be overidden by derived classes. The default implementation always
-        returns False.
-        
         Returns: bool - Boolean indicating whether the expression is an
         initialization value."""
-        if isinstance(self, Ctor):
-            return True
-        
-        return self.isConst()
+        e = self.simplify()
+        return isinstance(e, Ctor)
     
     def hiltiInit(self, cg):
         """Returns a HILTI operand suitable to initialize a HILTI variable
@@ -175,17 +165,19 @@ class Overloaded(Expression):
         """
         return self._exprs
 
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
 
     def resolve(self, resolver):
+        Expression.resolve(self, resolver)
         for expr in self._exprs:
             if isinstance(expr, Expression):
                 expr.resolve(resolver)
 
-        if operator.typecheck(self._op, self._exprs):
-            operator.resolve(self._op, resolver, self._exprs)
-                
+        #if operator.typecheck(self._op, self._exprs):
+        #    operator.resolve(self._op, resolver, self._exprs)
+            
     def validate(self, vld):
+        Expression.validate(self, vld)
         for expr in self._exprs:
             if isinstance(expr, Expression):
                 expr.validate(vld)
@@ -199,11 +191,6 @@ class Overloaded(Expression):
     def pac(self, printer):
         operator.pacOperator(printer, self._op, self._exprs)
 
-    def simplify(self):
-        self._exprs = [(e.simplify() if isinstance(e, ast.Node) else e) for e in self._exprs]
-        expr = operator.simplify(self._op, self._exprs)
-        return expr if expr else self
-        
     ### Overidden from Expression.
 
     def type(self):
@@ -211,6 +198,11 @@ class Overloaded(Expression):
         assert t
         return t
 
+    def simplify(self):
+        self._exprs = [(e.simplify() if isinstance(e, node.Node) else e) for e in self._exprs]
+        expr = operator.simplify(self._op, self._exprs)
+        return expr if expr else self
+    
     def evaluate(self, cg):
         return operator.evaluate(self._op, cg, self._exprs)
 
@@ -220,45 +212,6 @@ class Overloaded(Expression):
     def __str__(self):
         return "(%s %s)" % (self._op, " ".join([str(e) for e in self._exprs]))
 
-class Constant(Expression):
-    """A constant expression.
-    
-    const: ~~Constant - The constant.
-    location: ~~Location - The location where the expression was defined. 
-    """
-    
-    def __init__(self, const, location=None):
-        super(Constant, self).__init__(location=location)
-        assert isinstance(const, constant.Constant)
-        self._const = const
-        
-    def constant(self):
-        """Returns the constant value.
-        
-        Returns: ~~Constant - The constant.
-        """
-        return self._const
-
-    ### Overidden from ast.Node.
-    
-    def validate(self, vld):
-        self._const.validate(vld)
-    
-    def pac(self, printer):
-        self._const.pac(printer)
-
-    ### Overidden from Expression.
-
-    def type(self):
-        return self._const.type()
-    
-    def evaluate(self, cg):
-        c = self._const.type().hiltiConstant(cg, self._const)
-        return hilti.operand.Constant(c)
-    
-    def __str__(self):
-        return str(self._const.value())
-    
 class Ctor(Expression):
     """A constructor expression.
     
@@ -279,9 +232,14 @@ class Ctor(Expression):
         """
         return self._value
 
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
+
+    def resolve(self, resolver):
+        Expression.resolve(self, resolver)
+        self._type = self._type.resolve(resolver)
     
     def validate(self, vld):
+        Expression.validate(self, vld)
         self._type.validate(vld)
         self._type.validateCtor(vld, self._value)
     
@@ -303,7 +261,9 @@ class Name(Assignable):
     """An expression referencing an identifier.
     
     name: string - The name of the ID.
+    
     scope: ~~Scope - The scope in which to evaluate the ID.
+    
     location: ~~Location - The location where the expression was defined. 
     """
     
@@ -316,38 +276,16 @@ class Name(Assignable):
         """Returns the name that is referenced."""
         return self._name
         
-    def _internalName(self):
-        """Maps user-visible name to internal name.
-        
-        Todo:  Not sure this is the best place for this ...
-        """
-        if self._name == "self":
-            return "__self"
-        
-        return self._name
-        
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
     
     def validate(self, vld):
+        Assignable.validate(self, vld)
         if not self._scope.lookupID(self._name):
             vld.error(self, "unknown identifier %s" % self._name)
         
     def pac(self, printer):
         printer.output(self._name)
 
-    def simplify(self):
-        expr = super(Name, self).simplify()
-        if expr:
-            return expr
-
-        i = self._scope.lookupID(self._name)
-        assert i
-        
-        if isinstance(i, id.Constant):
-            return Constant(i.value())
-    
-        return self
-        
     ### Overidden from Expression.
 
     def type(self):
@@ -355,8 +293,10 @@ class Name(Assignable):
         return id.type() if id else type.Unknown(self._name, location=self.location())
 
     def evaluate(self, cg):
-        name = self._internalName()
-        return cg.functionBuilder().idOp(name)
+        assert self._scope
+        i = self._scope.lookupID(self._name)
+        assert i
+        return i.evaluate(cg)
     
     def __str__(self):
         return self._name
@@ -364,54 +304,44 @@ class Name(Assignable):
     ### Overidden from Assignable.
 
     def assign(self, cg, rhs):
+        assert self._scope
         i = self._scope.lookupID(self._name)
         assert i
+        cg.builder().assign(i.evaluate(cg), rhs)
         
-        if isinstance(i, id.Global) or isinstance(i, id.Local) or isinstance(i, id.Parameter):
-            name = self._internalName()
-            cg.builder().assign(cg.functionBuilder().idOp(name), rhs)
-            
-        else:
-            util.internal_error("unexpected id type %s in NameExpr::assign", repr(i))
-            
-class Constant(Expression):
-    """A constant expression.
+        
+class Attribute(Expression):
+    """An expression referencing an attribute of another object. This
+    expression has always type ~~String.
     
-    const: ~~Constant - The constant.
+    name: string - The name of the attribute.
+    
     location: ~~Location - The location where the expression was defined. 
     """
     
-    def __init__(self, const, location=None):
-        super(Constant, self).__init__(location=location)
-        assert isinstance(const, constant.Constant)
-        self._const = const
-        
-    def constant(self):
-        """Returns the constant value.
-        
-        Returns: ~~Constant - The constant.
-        """
-        return self._const
+    def __init__(self, name, location=None):
+        super(Attribute, self).__init__(location=location)
+        self._name = name
 
-    ### Overidden from ast.Node.
-    
-    def validate(self, vld):
-        self._const.validate(vld)
+    def name(self):
+        """Returns the attribute name that is referenced."""
+        return self._name
+        
+    ### Overidden from node.Node.
     
     def pac(self, printer):
-        self._const.pac(printer)
+        printer.output(self._name)
 
     ### Overidden from Expression.
 
     def type(self):
-        return self._const.type()
-    
-    def evaluate(self, cg):
-        c = self._const.type().hiltiConstant(cg, self._const)
-        return hilti.operand.Constant(c)
-    
+        return type.String()
+
     def __str__(self):
-        return str(self._const.value())
+        return self._name
+    
+    def __eq__(self, other):
+        return self._name == other._name
             
 class Type(Expression):
     """An expression representing a BinPAC++ type.
@@ -431,12 +361,14 @@ class Type(Expression):
         """
         return self._type
         
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
 
     def resolve(self, resolver):
-        self._type = self._type(resolver)
+        Expression.resolve(self, resolver)
+        self._type = self._type.resolve(resolver)
     
     def validate(self, vld):
+        Expression.validate(self, vld)
         self._type.validate(vld)
         
     def pac(self, printer):
@@ -463,9 +395,17 @@ class Assign(Expression):
         self._dest = dest
         self._rhs = rhs
 
-    ### Overidden from ast.Node.
+    ### Overidden from node.Node.
+
+    def resolve(self, resolver):
+        Expression.resolve(self, resolver)
+        
+        self._dest.resolve(resolver)
+        self._rhs.resolve(resolver)
     
     def validate(self, vld):
+        Expression.validate(self, vld)
+        
         self._dest.validate(vld)
         self._rhs.validate(vld)
         
@@ -475,8 +415,8 @@ class Assign(Expression):
         if self._dest.type() != self._rhs.type():
             vld.error(self, "types do not match in assigment")
 
-        if self._dest.isConst():
-            vld.error(self, "cannot assign to constant")
+        if self._dest.isInit():
+            vld.error(self, "cannot assign to an init expression")
             
     def pac(self, printer):
         self._dest.pac(printer)
@@ -487,7 +427,7 @@ class Assign(Expression):
 
     def type(self):
         return self._dest.type()
-    
+
     def evaluate(self, cg):
         rhs = self._rhs.evaluate(cg)
         self._dest.assign(cg, rhs)
@@ -516,6 +456,14 @@ class Hilti(Expression):
     def type(self):
         return self._type
 
+    def resolve(self, resolver):
+        Expression.resolve(self, resolver)
+        self._type = self._type.resolve(resolver)
+
+    def validate(self, vld):
+        Expression.validate(self, vld)
+        self._type.validate(vld)
+        
     def evaluate(self, cg):
         return self._op
 

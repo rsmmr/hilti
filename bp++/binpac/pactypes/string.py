@@ -25,13 +25,17 @@ class String(type.ParseableType):
     def validate(self, vld):
         return True
 
-    def validateConst(self, vld, const):
-        if not isinstance(const.value(), str) and not isinstance(const.value(), unicode):
-            vld.error(const, "string: constant of wrong internal type")
+    def validateCtor(self, vld, ctor):
+        if not isinstance(ctor, str) and not isinstance(ctor, unicode):
+            vld.error(ctor, "string: constant of wrong internal type")
             
     def hiltiType(self, cg):
         return hilti.type.String()
 
+    def hiltiCtor(self, cg, ctor):
+        const = hilti.constant.Constant(ctor, hilti.type.String())
+        return hilti.operand.Constant(const)
+    
     def pac(self, printer):
         printer.output("string")
         

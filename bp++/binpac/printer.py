@@ -47,7 +47,7 @@ class Printer(object):
         """Prints out an |ast| as a HILTI program. The |ast| must be
         well-formed as verified by ~~checkAST.
     
-        ast: ~~ast.Node - The root of the |ast| to print. 
+        ast: ~~node.Node - The root of the |ast| to print. 
         output: file - The file to write the output to. 
         prefix: string - Each output line begin with the prefix. 
         """

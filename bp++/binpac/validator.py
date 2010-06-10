@@ -1,7 +1,7 @@
 # $Id$
 """Validates the correctness of a BinPAC++ module"""
 
-import ast
+import node
 import module
 import id
 import type

@@ -2,9 +2,8 @@
 # The @pactype decorator registers its type in this list.
 _types = {}
 
-import ast
+import node
 import codegen
-import constant
 import expr
 import grammar
 import id
