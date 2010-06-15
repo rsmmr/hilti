@@ -1,0 +1,32 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+type myException = exception
+
+void run() {
+
+     call Hilti::print ("A")
+     
+     try {
+         local int<32> i
+         i = 0
+         i = int.div 32 i
+         call Hilti::print (i)
+     }
+     
+     catch Hilti::DivisionByZero {
+       call Hilti::print ("Caught it!")
+     }
+     
+     call Hilti::print ("C")
+     return.void
+     
+}     
+

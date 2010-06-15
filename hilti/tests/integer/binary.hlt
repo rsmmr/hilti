@@ -1,0 +1,40 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> i
+    i = int.or 2 4
+    call Hilti::print (i)
+}     
+
+### @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> i
+    i = int.and 255 16
+    call Hilti::print (i)
+}     
+
+### @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> i
+    i = int.xor 170 255
+    call Hilti::print (i)
+}     
+
