@@ -479,7 +479,44 @@ class Trunc(Instruction):
         result = cg.builder().trunc(op1, cg.llvmType(type.Integer(width)))
         cg.llvmStoreInTarget(self, result)
             
-
+@hlt.instruction("int.and", op1=cIntegerOfWidthAsOp(0), op2=cIntegerOfWidthAsOp(0), target=cInteger)
+class And(Instruction):
+    """Calculates the binary *and* of the two operands. Operands and target
+    must be of same width.
+    """
+    def codegen(self, cg):
+        Instruction.codegen(self, cg)
+        t = self.target().type()
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().and_(op1, op2)
+        cg.llvmStoreInTarget(self, result)
+        
+@hlt.instruction("int.or", op1=cIntegerOfWidthAsOp(0), op2=cIntegerOfWidthAsOp(0), target=cInteger)
+class And(Instruction):
+    """Calculates the binary *or* of the two operands. Operands and target
+    must be of same width.
+    """
+    def codegen(self, cg):
+        Instruction.codegen(self, cg)
+        t = self.target().type()
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().or_(op1, op2)
+        cg.llvmStoreInTarget(self, result)
+        
+@hlt.instruction("int.xor", op1=cIntegerOfWidthAsOp(0), op2=cIntegerOfWidthAsOp(0), target=cInteger)
+class And(Instruction):
+    """Calculates the binary *xor* of the two operands. Operands and target
+    must be of same width.
+    """
+    def codegen(self, cg):
+        Instruction.codegen(self, cg)
+        t = self.target().type()
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().xor(op1, op2)
+        cg.llvmStoreInTarget(self, result)
     
 # tag, id, width, extend, little, bytes
 _Unpacks = {  

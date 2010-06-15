@@ -175,8 +175,17 @@ def p_def_bitset(p):
     return nid
 
 def p_def_exception(p):
-    """def_exception_decl : TYPE IDENT '=' EXCEPTION '<' opt_type '>' opt_exception_base"""
-    return _addTypeDecl(p, p[2], type.Exception(p[6], p[8], location=_loc(p, 1)), location=_loc(p, 1))
+    """def_exception_decl : TYPE IDENT '=' EXCEPTION '<' opt_type '>' opt_exception_base opt_internal"""
+    t = type.Exception(p[6], p[8], location=_loc(p, 1))
+    if p[9]:
+        t.setInternalName(p[9])
+    
+    return _addTypeDecl(p, p[2], t, location=_loc(p, 1))
+
+def p_opt_internal(p):
+    """opt_internal : INTERNAL '(' CSTRING ')'
+                    | """
+    p[0] = p[3] if len(p) > 1 else None
     
 def p_def_exception_no_type(p):
     """def_exception_decl : TYPE IDENT '=' EXCEPTION opt_exception_base"""

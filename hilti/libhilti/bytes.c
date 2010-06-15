@@ -323,7 +323,7 @@ const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt)
 int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_exception** excpt)
 {
     if ( is_end(*pos) || hlt_bytes_pos_eq(*pos, end, excpt) ) {
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        hlt_set_exception(excpt, &hlt_exception_would_block, 0);
         return 0;
     }
 

@@ -13,9 +13,11 @@ declare "C-HILTI" void abort()
 declare "C-HILTI" void sleep(double secs)
 declare "C-HILTI" void wait_for_threads()
 
-# # FIXME: Inconsistent naming in the C layer.
-# exception Yield_Exception
-# 
+# FIXME: Add the other internal exceptions here as well.
+type Exception = exception<> @internal("hlt_exception_unspecified") # The base of all exceptions.
+type DivisionByZero = exception<string> @internal("hlt_exception_division_by_zero")
+type WouldBlock = exception<string> @internal("hlt_exception_would_block")
+
 type Packed = enum {
 
     # String 

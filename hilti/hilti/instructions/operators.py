@@ -78,16 +78,19 @@ class Unpack(Instruction):
     component is the newly unpacked instance and the second component is
     locates the first bytes that has *not* been consumed anymore. 
     
-    Raises ~~UnpackError if the raw bytes are not as expected (and
-    that fact can be verified); this includes the case that the
-    provided range does not contain sufficient bytes for unpacking
-    one instance.
+    Raises ~~WouldBlock if there are not sufficient bytes available
+    for unpacking the type. Can also raise other exceptions if other
+    errors occur, in particular if the raw bytes are not as expected
+    (and that fact can be verified).
 
     Note: The ``unpack`` operator uses a generic implementation able to handle all data
     types. Different from most other operators, it's implementation is not
     overloaded on a per-type based. However, each type must come with an
     ~~unpack decorated function, which the generic operator implementatin
     relies on for doing the unpacking.
+    
+    Note: We should define error semantics more crisply. Ideally, a
+    single UnpackError should be raised in all error cases. 
     """
     def validate(self, vld):
         Instruction.validate(self, vld)

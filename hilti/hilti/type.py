@@ -59,6 +59,7 @@ class Type(object):
         super(Type, self).__init__()
         Type._type_name = "type"
         self._location = location
+        self._internal_name = None
 
     def location(self):
         """Returns  location information for the type.
@@ -66,6 +67,24 @@ class Type(object):
         Returns: ~~Location - The location where the type was defined."""
         return self._location
 
+    def setInternalName(self, name):
+        """Sets the internal C name for this type. If this is set, it is
+        assumed that the type is defined externally and references to it will
+        be replaced with this name.
+        
+        name: string - The internal name.
+        """
+        self._internal_name = name
+        
+    def internalName(self):
+        """Returns the internal name of this type.  If this is set, it is
+        assumed that the type is defined externally and references to it will
+        be replaced with this name.
+        
+        Returns: string or None - The name, or None if none has been set. 
+        """
+        return self._internal_name
+    
     @classmethod
     def token(cls):
         """Returns the parser token for the type. This is what's passed to

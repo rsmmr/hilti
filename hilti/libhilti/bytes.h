@@ -188,7 +188,7 @@ extern const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt)
 /// 
 /// excpt: &
 /// 
-/// Raises: ValueError - If *pos* is already the end of bytes object. 
+/// Raises: WouldBlock - If *pos* is already the end of bytes object. 
 /// 
 /// Note: This function is optimized for the case where you need a few
 /// subsequent bytes from the string as well an iterator pointing to the

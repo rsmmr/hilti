@@ -8,8 +8,6 @@ module Main
 
 import Hilti
 
-type myException = exception
-
 void run() {
 
      call Hilti::print ("A")

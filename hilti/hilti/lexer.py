@@ -41,6 +41,7 @@ keywords = {
     "done": "DONE",
     "try": "TRY",
     "catch": "CATCH",
+    "@internal": "INTERNAL",
     }
 
 all = set([t.upper() for t in types + keywords.values()])

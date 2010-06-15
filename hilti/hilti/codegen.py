@@ -1347,8 +1347,13 @@ class CodeGen(objcache.Cache):
             
             assert etype.baseClass()
             
-            name = self.lookupIDForType(etype).name()
-    
+            tid = self.lookupIDForType(etype)
+            
+            if tid.type().internalName():
+                return self.llvmGlobalInternalPtr(tid.type().internalName())
+            
+            name = tid.name()
+            
             ename = self.nameNewGlobal("excpt-name")
             lname = self.llvmNewGlobalStringConst(ename, name)
             if etype.argType():
