@@ -417,13 +417,26 @@ def p_foreach(p):
     p.parser.state.block.addInstruction(ins)
 
 def p_trycatch(p):
-    """instruction : TRY '{' NL _push_blocklist instruction_list '}' empty_lines CATCH type '{' NL _push_blocklist instruction_list '}' NL""" 
-    catch_blocks = _popBlockList(p)
+    """instruction : TRY '{' NL _push_blocklist instruction_list '}' empty_lines catch_list"""
     try_blocks = _popBlockList(p)
-    excpt = p[9]
+    catches = p[8]
     
-    ins = instructions.trycatch.TryCatch(try_blocks, excpt, catch_blocks, location=_loc(p, 1))
+    ins = instructions.trycatch.TryCatch(try_blocks, catches, location=_loc(p, 1))
     p.parser.state.block.addInstruction(ins)
+
+def p_catch_list(p):
+    """catch_list : catch catch_list
+                  | catch
+    """
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[2]
+    
+def p_catch(p):
+    """catch : CATCH opt_type '{' NL _push_blocklist instruction_list '}' empty_lines """ 
+    excpt = p[2] if p[2] else type.Exception.root()
+    p[0] = (excpt, _popBlockList(p))
     
 def p_push_blocklist(p):
     """_push_blocklist : """

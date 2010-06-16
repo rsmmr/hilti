@@ -236,8 +236,9 @@ class FunctionBuilder(OperandBuilder):
             
         return self.cache("_block-%s" % name, _makeBlock())
 
-    def newBuilder(self, name):
-        return BlockBuilder(name, self)
+    def newBuilder(self, name, add=True):
+        """XXX"""
+        return BlockBuilder(name, self, add)
     
     def idOp(self, i):
         """Returns an ID operand. Different from ~~OperandBuilder.idOp, this
@@ -393,13 +394,16 @@ class BlockBuilder(OperandBuilder):
     
     fbuilder: ~~FunctionBuilder  - The builder for the function the block
     being built is part of. 
+    
+    add: ~~Boolean - Whether to add the new block to the function's body.
     """
-    def __init__(self, name, fbuilder):
+    def __init__(self, name, fbuilder, add=True):
         super(BlockBuilder, self).__init__()
         self._fbuilder = fbuilder
         name =  fbuilder._idName("@%s" % name) if name else ""
         self._block = block.Block(self._fbuilder.function(), name=name)
-        self._fbuilder.function().addBlock(self._block)
+        if add:
+            self._fbuilder.function().addBlock(self._block)
         self._next_comment = []
         
     def block(self):

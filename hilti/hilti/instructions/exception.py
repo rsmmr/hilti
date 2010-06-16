@@ -7,6 +7,8 @@ The *exception* data type represents an exception that can divert control up
 the calling stack to the closest function prepared to handle it.
 """
 
+builtid_id = id
+
 import llvm.core
 
 import hilti.util as util
@@ -63,6 +65,14 @@ class Exception(type.HeapType, type.Parameterizable):
         """
         return builtin_id(self) == builtin_id(_ExceptionRoot)
 
+    @staticmethod
+    def root():
+        """Returns the root exception type.
+        
+        Returns: ~~Exception - The root execption.
+        """
+        return _ExceptionRoot
+    
     ### Overridden from Type.
     
     def name(self):
@@ -147,7 +157,10 @@ class Exception(type.HeapType, type.Parameterizable):
         if self._baseclass and not self._baseclass.isRootType():
             printer.output(" : ")
             printer.printType(self._baseclass)
-        
+
+    def cmpWithSameType(self, other):
+        return builtin_id(self) == builtin_id(other)
+            
     ### Overridden from HiltiType.
     
     def llvmType(self, cg):
@@ -228,7 +241,7 @@ class Throw(Instruction):
         exception = cg.llvmOp(self.op1())
         cg.llvmRaiseException(exception)
         
-@hlt.instruction(".push_exception_handler", op1=cType(cException), op2=cLabel)
+@hlt.instruction(".push_exception_handler", op1=cLabel, op2=cOptional(cType(cException)))
 class PushHandler(Instruction):
     """Installs an exception handler for exceptions of *op1*, including any
     derived from that type. If such an exception is thrown subsequently,
@@ -239,8 +252,8 @@ class PushHandler(Instruction):
             vld.error(self, "cannot catch exceptions here")
     
     def codegen(self, cg):
-        excpt = self.op1().value()
-        handler = cg.lookupBlock(self.op2())
+        handler = cg.lookupBlock(self.op1())
+        excpt = self.op2().value() if self.op2() else type.Exception.root()
         cg.currentFunction().pushExceptionHandler(excpt, handler)
 
 @hlt.instruction(".pop_exception_handler")
