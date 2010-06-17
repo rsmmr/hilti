@@ -224,12 +224,20 @@ extern hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt);
 
 /// Returns a position representing the end of any bytes object.
 /// 
+/// b: The bytes object to return the beginning of.
+/// excpt: &
+/// 
+/// Returns: The position.
+extern hlt_bytes_pos hlt_bytes_end(const hlt_bytes* b, hlt_exception** excpt);
+
+/// Returns a position representing the end of *any* bytes object.
+/// 
 /// Returns: The position.
 /// 
-/// Note: This function does not receive a ~~bytes object because internally,
-/// the end position is represented in a way independent of the actual
-/// object.
-extern hlt_bytes_pos hlt_bytes_end(hlt_exception** excpt);
+/// Note: This function returns a end position that will match the end
+/// position of any bytes object. However, it is not attached to any specific
+/// one so it can't go beyond a former end position if more data is appended. 
+extern hlt_bytes_pos hlt_bytes_generic_end(hlt_exception** excpt);
 
 /// Extracts the element at a position.  
 /// 

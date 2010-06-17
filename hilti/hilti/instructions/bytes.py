@@ -410,7 +410,7 @@ class Begin(Operator):
 class End(Operator):
     """Returns an iterator representing the position one after the last element of *op1*."""
     def codegen(self, cg):
-        result = cg.llvmCallC("hlt::bytes_end")
+        result = cg.llvmCallC("hlt::bytes_end", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
 @hlt.instruction("bytes.diff", op1=cIteratorBytes, op2=cIteratorBytes, target=cIntegerOfWidth(32))

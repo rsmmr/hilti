@@ -294,7 +294,7 @@ hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos
     }
     
     else
-        result.span.begin = result.span.end = hlt_bytes_end(excpt);
+        result.span.begin = result.span.end = hlt_bytes_generic_end(excpt);
     
     return result;
 }
@@ -318,7 +318,7 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, c
     }
 
     hlt_regexp_range def_span;
-    def_span.begin = def_span.end = hlt_bytes_end(excpt);
+    def_span.begin = def_span.end = hlt_bytes_generic_end(excpt);
 
     hlt_vector* vec = hlt_vector_new(&hlt_type_info_tuple_iterator_bytes_iterator_bytes, &def_span, excpt);
 

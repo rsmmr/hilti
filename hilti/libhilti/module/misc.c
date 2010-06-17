@@ -32,7 +32,7 @@ int64_t hilti_bytes_to_int(hlt_bytes* b, hlt_exception** excpt)
     int8_t* p = tmp;
     
     hlt_bytes_pos cur = hlt_bytes_begin(b, excpt);
-    hlt_bytes_pos end = hlt_bytes_end(excpt);
+    hlt_bytes_pos end = hlt_bytes_end(b, excpt);
 
     int64_t value = 0;
     int8_t first = 1;
@@ -65,7 +65,7 @@ hlt_bytes* hilti_bytes_to_lower(hlt_bytes* b, hlt_exception** excpt)
     int8_t* p = tmp;
     
     hlt_bytes_pos cur = hlt_bytes_begin(b, excpt);
-    hlt_bytes_pos end = hlt_bytes_end(excpt);
+    hlt_bytes_pos end = hlt_bytes_end(b, excpt);
     
     while ( ! hlt_bytes_pos_eq(cur, end, excpt) )
         *p++ = tolower(__hlt_bytes_extract_one(&cur, end, excpt));
@@ -83,11 +83,12 @@ int8_t hilti_bytes_starts_with(hlt_bytes* b, hlt_bytes* s, hlt_exception** excpt
     
     hlt_bytes_pos cur_b = hlt_bytes_begin(b, excpt);
     hlt_bytes_pos cur_s = hlt_bytes_begin(s, excpt);
-    hlt_bytes_pos end = hlt_bytes_end(excpt);
+    hlt_bytes_pos end_b = hlt_bytes_end(b, excpt);
+    hlt_bytes_pos end_s = hlt_bytes_end(s, excpt);
     
-    while ( ! hlt_bytes_pos_eq(cur_s, end, excpt) ) {
-        int8_t c1 = __hlt_bytes_extract_one(&cur_b, end, excpt);
-        int8_t c2 = __hlt_bytes_extract_one(&cur_s, end, excpt);
+    while ( ! hlt_bytes_pos_eq(cur_s, end_s, excpt) ) {
+        int8_t c1 = __hlt_bytes_extract_one(&cur_b, end_b, excpt);
+        int8_t c2 = __hlt_bytes_extract_one(&cur_s, end_s, excpt);
         if ( c1 != c2 )
             return 0;
     }

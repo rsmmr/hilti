@@ -306,7 +306,7 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** e
     if ( ch == UTF8 ) {
         // Data is already in UTF-8, just need to copy it into a string.
         hlt_bytes_pos begin = hlt_bytes_begin(b, excpt);
-        const hlt_bytes_pos end = hlt_bytes_end(excpt);
+        const hlt_bytes_pos end = hlt_bytes_end(b, excpt);
         const int8_t* raw = hlt_bytes_sub_raw(begin, end, excpt);
         const hlt_string dst = hlt_string_from_data(raw, hlt_bytes_len(b, excpt), excpt);
         return dst;
@@ -320,7 +320,7 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** e
         int8_t* p = dst->bytes;
         
         hlt_bytes_pos i = hlt_bytes_begin(b, excpt);
-        while ( ! hlt_bytes_pos_eq(i, hlt_bytes_end(excpt), excpt) ) {
+        while ( ! hlt_bytes_pos_eq(i, hlt_bytes_end(b, excpt), excpt) ) {
             char c = hlt_bytes_pos_deref(i, excpt);
             *p++ = (c & 0x7f) == c ? c : '?';
             i = hlt_bytes_pos_incr(i, excpt);

@@ -166,22 +166,38 @@ void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, h
     add_chunk(b, dst);
 }
 
-static hlt_bytes_pos PosEnd = { 0, 0 };
+static hlt_bytes_pos GenericEndPos = { 0, 0 };
 
 static inline int8_t is_end(hlt_bytes_pos pos)
 {
-    return pos.chunk == 0;
+    return pos.chunk == 0 || pos.cur >= pos.chunk->end;
+}
+
+static inline void normalize_pos(hlt_bytes_pos* pos)
+{
+    if ( ! pos->cur )
+        return;
+    
+    // If the pos was previously an end position, but now new data has been
+    // added, adjust it so that it's pointing to the next byte.
+    if ( pos->cur >= pos->chunk->end && pos->chunk->next ) {
+        pos->chunk = pos->chunk->next;
+        pos->cur = pos->chunk->start;
+    }
 }
 
 hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt)
 {
     hlt_bytes_pos begin = hlt_bytes_begin(b, excpt);
-    hlt_bytes_pos end = hlt_bytes_end(excpt);
+    hlt_bytes_pos end = hlt_bytes_end(b, excpt);
     return hlt_bytes_sub(begin, end, excpt);
 }
 
 hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt)
 {
+    normalize_pos(&start);
+    normalize_pos(&end);
+    
     if ( hlt_bytes_pos_eq(start, end, excpt) )
         // Return an empty bytes object.
         return hlt_bytes_new(excpt);
@@ -243,6 +259,9 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
 
 static const int8_t* hlt_bytes_sub_raw_internal(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt)
 {    
+    normalize_pos(&start);
+    normalize_pos(&end);
+    
     hlt_bytes_size len = hlt_bytes_pos_diff(start, end, excpt);
 
     if ( len == 0 ) {
@@ -299,6 +318,9 @@ static const int8_t* hlt_bytes_sub_raw_internal(hlt_bytes_pos start, hlt_bytes_p
 
 const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt)
 {
+    normalize_pos(&start);
+    normalize_pos(&end);
+    
     // The easy case: start and end are within the same chunk.
     if ( start.chunk == end.chunk )
         return start.cur;
@@ -316,12 +338,15 @@ const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt)
     }
     
     hlt_bytes_pos begin = hlt_bytes_begin(b, excpt);
-    hlt_bytes_pos end = hlt_bytes_end(excpt);
+    hlt_bytes_pos end = hlt_bytes_end(b, excpt);
     return hlt_bytes_sub_raw(begin, end, excpt);
 }
 
-int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_exception** excpt)
+int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, hlt_bytes_pos end, hlt_exception** excpt)
 {
+    normalize_pos(pos);
+    normalize_pos(&end);
+    
     if ( is_end(*pos) || hlt_bytes_pos_eq(*pos, end, excpt) ) {
         hlt_set_exception(excpt, &hlt_exception_would_block, 0);
         return 0;
@@ -330,20 +355,21 @@ int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_
     // Extract byte.
     int8_t b = *(pos->cur);
 
-    // Increate iterator. 
-    
+    // Increase iterator. 
     if ( pos->cur < pos->chunk->end - 1 ) 
         // We stay inside chunk.
         ++pos->cur;
-        
+    
     else {
-        // Switch to next chunk.
-        pos->chunk = pos->chunk->next;
-        if ( pos->chunk )
+        if ( pos->chunk->next ) {
+            // Switch to next chunk.
+            pos->chunk = pos->chunk->next;
             pos->cur = pos->chunk->start;
-        else   
+        }
+        else {  
             // End reached.
-            *pos = PosEnd;
+            pos->cur = pos->chunk->end;
+        }
     }
     
     return b;
@@ -366,7 +392,7 @@ hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_excep
         if ( ! c ) {
             // Position is out range.
             hlt_set_exception(excpt, &hlt_exception_value_error, 0);
-            return PosEnd;
+            return GenericEndPos;
         }
         
         pos -= (c->end - c->start);
@@ -388,7 +414,7 @@ hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt)
     }
     
     if ( hlt_bytes_len(b, excpt) == 0 )
-        return PosEnd;
+        return hlt_bytes_end(b, excpt);
 
     hlt_bytes_pos p;
     p.chunk = b->head;
@@ -396,13 +422,29 @@ hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt)
     return p;
 }
 
-hlt_bytes_pos hlt_bytes_end(hlt_exception** excpt)
+hlt_bytes_pos hlt_bytes_end(const hlt_bytes* b, hlt_exception** excpt)
 {
-    return PosEnd;
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        hlt_bytes_pos p;
+        return p;
+    }
+    
+    hlt_bytes_pos p;
+    p.chunk = b->tail;
+    p.cur = b->tail->end;
+    return p;
+}
+
+hlt_bytes_pos hlt_bytes_generic_end(hlt_exception** excpt)
+{
+    return GenericEndPos;
 }
 
 int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception** excpt)
 {
+    normalize_pos(&pos);
+    
     if ( is_end(pos) ) {
         // Position is out range.
         hlt_set_exception(excpt, &hlt_exception_value_error, 0);
@@ -414,6 +456,8 @@ int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception** excpt)
 
 hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception** excpt)
 {
+    normalize_pos(&old);
+    
     if ( is_end(old) )
         // Fail silently. 
         return old;
@@ -426,19 +470,22 @@ hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception** excpt)
         return pos;
     }
 
-    // Need to switch chunk.
-    pos.chunk = pos.chunk->next;
-    if ( ! pos.chunk ) {
-        // End reached.
-        return PosEnd;
+    if ( pos.chunk->next ) {
+        // Need to switch chunk.
+        pos.chunk = pos.chunk->next;
+        pos.cur = pos.chunk->start;
     }
+    else
+        // End reached.
+        pos.cur = pos.chunk->end;
     
-    pos.cur = pos.chunk->start;
     return pos;
 }
 
 hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int32_t n, hlt_exception** excpt)
 {
+    normalize_pos(&old);
+    
     if ( is_end(old) )
         // Fail silently. 
         return old;
@@ -452,16 +499,16 @@ hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int32_t n, hlt_exception*
             return pos;
         }
         
-        // Need to switch chunk.
         n -= pos.chunk->end - pos.cur;
-        pos.chunk = pos.chunk->next;
         
-        if ( ! pos.chunk ) {
-            // End reached.
-            return PosEnd;
+        if ( pos.chunk->next ) {
+            // Need to switch chunk.
+            pos.chunk = pos.chunk->next;
+            pos.cur = pos.chunk->start;
         }
-        
-        pos.cur = pos.chunk->start;
+        else
+            // End reached.
+            pos.cur = pos.chunk->end;
     }
     
     return pos;
@@ -474,6 +521,8 @@ hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int32_t n, hlt_exception*
 // actually need reverse iteration. 
 void hlt_bytes_pos_decr(hlt_bytes_pos* pos, hlt_exception** excpt)
 {
+    normalize_pos(&pos);
+    
     if ( is_end(pos) )
         // Fail silently. 
         return;
@@ -488,7 +537,7 @@ void hlt_bytes_pos_decr(hlt_bytes_pos* pos, hlt_exception** excpt)
     pos->chunk = pos->chunk->prev;
     if ( ! pos->chunk ) {
         // End reached.
-        *pos = PosEnd;
+        *pos = GenericEndPos; XXX not correct anymore XXX
         return;
     }
     
@@ -500,12 +549,18 @@ void hlt_bytes_pos_decr(hlt_bytes_pos* pos, hlt_exception** excpt)
 
 int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** excpt)
 {
+    normalize_pos(&pos1);
+    normalize_pos(&pos2);
+
     return pos1.cur == pos2.cur && pos1.chunk == pos2.chunk;
 }
 
 // Returns the number of bytes from pos1 to pos2 (not counting pos2).
 hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** excpt)
 {
+    normalize_pos(&pos1);
+    normalize_pos(&pos2);
+    
     if ( hlt_bytes_pos_eq(pos1, pos2, excpt) )
         return 0;
     
@@ -582,6 +637,9 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
 
 void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt)
 {
+    normalize_pos(&start);
+    normalize_pos(&end);
+    
     if ( ! cookie ) {
         
         if ( hlt_bytes_pos_eq(start, end, excpt) ) {
