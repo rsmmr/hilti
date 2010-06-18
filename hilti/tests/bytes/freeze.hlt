@@ -1,0 +1,44 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+#
+# More extensive tests of the bytes functions are in c-api/bytes.c
+#
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b = b"abc"
+    local bool frozen 
+    
+    frozen = bytes.is_frozen b
+    call Hilti::print (frozen)
+    
+    bytes.freeze b 
+
+    frozen = bytes.is_frozen b
+    call Hilti::print (frozen)
+    
+    bytes.unfreeze b 
+
+    frozen = bytes.is_frozen b
+    call Hilti::print (frozen)
+    
+    bytes.append b b"cde"
+    
+    frozen = bytes.is_frozen b
+    call Hilti::print (frozen)
+    
+    bytes.freeze b 
+
+    frozen = bytes.is_frozen b
+    call Hilti::print (frozen)
+    
+    bytes.unfreeze b 
+
+    frozen = bytes.is_frozen b
+    call Hilti::print (frozen)
+}

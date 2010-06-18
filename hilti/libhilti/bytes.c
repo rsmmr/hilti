@@ -13,6 +13,7 @@ struct hlt_bytes_chunk {
     struct hlt_bytes_chunk* prev; // Predecessor in bytes object.
     
     int8_t owner;           // True if we "own" the data, i.e., allocated it.
+    int8_t frozen;          // True if the object has been frozen.
     int16_t free;           // Bytes still available in allocated block. Only valid if owner. 
 };
 
@@ -59,6 +60,7 @@ hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_exceptio
     dst->start = data;
     dst->end = data + len;
     dst->owner = 0;
+    dst->frozen = 0;
 
     add_chunk(b, dst);
     
@@ -100,14 +102,14 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
         return;
     }
     
-    if ( ! other->head )
-        // Empty.
-        return;
-    
-    if ( b == other ) {
+    if ( b == other || hlt_bytes_is_frozen(b, excpt) ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return;
     }
+    
+    if ( ! other->head )
+        // Empty.
+        return;
     
     // Special case: if the other object has only one chunk, pass it on to
     // the *_raw version which might decide to copy the data over.
@@ -119,6 +121,7 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
         dst->start = src->start;
         dst->end = src->end;
         dst->owner = 0;
+        dst->frozen = 0;
         add_chunk(b, dst);
     }
     
@@ -128,6 +131,11 @@ void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, h
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return;
+    }
+    
+    if ( hlt_bytes_is_frozen(b, excpt) ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return;
     }
     
@@ -152,6 +160,7 @@ void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, h
         dst->start = mem;
         dst->end = dst->start + len;
         dst->owner = 1;
+        dst->frozen = 0;
         dst->free = ALLOC_SIZE - (dst->end - dst->start);
         memcpy(mem, raw, len);
     }
@@ -161,6 +170,7 @@ void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, h
         dst->start = raw;
         dst->end = raw + len;
         dst->owner = 0;
+        dst->frozen = 0;
     }
     
     add_chunk(b, dst);
@@ -215,6 +225,7 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
         c->start = start.cur;
         c->end = end.cur ? end.cur : start.chunk->end;
         c->owner = 0;
+        c->frozen = 0;
         add_chunk(b, c);
         return b;
     }
@@ -224,6 +235,7 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
     first->start = start.cur;
     first->end = start.chunk->end;
     first->owner = 0;
+    first->frozen = 0;
     add_chunk(b, first);
     
     // Copy the chunks in between.
@@ -242,6 +254,7 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
         dst->start = c->start;
         dst->end = c->end;
         dst->owner = 0;
+        dst->frozen = 0;
         add_chunk(b, dst);
     }
 
@@ -251,6 +264,7 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
         last->start = end.chunk->start;
         last->end = end.cur;
         last->owner = 0;
+        last->frozen = 0;
         add_chunk(b, last);
     }
     
@@ -441,6 +455,45 @@ hlt_bytes_pos hlt_bytes_generic_end(hlt_exception** excpt)
     return GenericEndPos;
 }
 
+void hlt_bytes_freeze(const hlt_bytes* b, int8_t freeze, hlt_exception** excpt)
+{
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return;
+    }
+    
+    if ( (! b->tail) && freeze ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+        return;
+    }
+    
+    b->tail->frozen = freeze;
+}
+
+int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt) 
+{
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+    
+    return b->tail ? b->tail->frozen : 0;
+}
+
+int8_t hlt_bytes_pos_is_frozen(hlt_bytes_pos pos, hlt_exception** excpt)
+{
+    normalize_pos(&pos);
+    
+    if ( ! pos.chunk )
+        return 0;
+    
+    // Go to last chunk of string.
+    const hlt_bytes_chunk* c;
+    for ( c = pos.chunk; c->next; c = c->next );
+    
+    return c->frozen;
+}
+
 int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception** excpt)
 {
     normalize_pos(&pos);
@@ -506,12 +559,12 @@ hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int32_t n, hlt_exception*
             pos.chunk = pos.chunk->next;
             pos.cur = pos.chunk->start;
         }
-        else
+        else {
             // End reached.
             pos.cur = pos.chunk->end;
+            return pos;
+        }
     }
-    
-    return pos;
 }
 
 
@@ -552,6 +605,9 @@ int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** 
     normalize_pos(&pos1);
     normalize_pos(&pos2);
 
+    if ( is_end(pos1) && is_end(pos2) )
+        return 1;
+    
     return pos1.cur == pos2.cur && pos1.chunk == pos2.chunk;
 }
 

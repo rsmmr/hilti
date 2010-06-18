@@ -1,0 +1,3 @@
+False
+True
+hilti: uncaught exception, ValueError (from /Users/robin/work/binpacpp/hilti/libhilti/bytes.c:106)

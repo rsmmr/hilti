@@ -59,10 +59,11 @@ def _exportedFunction(ty, op, i):
 class Function(Instruction):
     """Returns the physical address of a function. The function must be of
     linkage ~~EXPORT, and the instruction returns two separate addresses. For
-    functions of linkage ~~HILTI, the first is that of the compiled function
-    itself and the second is that of the corresponding ~~resume function. For
-    functions of linkage ~~C and ~~HILTI, only the first element of the target
-    tuple is used, and the second is undefined. *op1* must be a constant. 
+    functions of calling convention ~~HILTI, the first is that of the compiled
+    function itself and the second is that of the corresponding ~~resume
+    function. For functions of calling convention ~~C and ~~C_HILTI, only the
+    first element of the target tuple is used, and the second is undefined.
+    *op1* must be a constant. 
     """
     def codegen(self, cg):
         

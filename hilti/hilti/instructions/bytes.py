@@ -372,7 +372,12 @@ class Empty(Instruction):
 
 @hlt.instruction("bytes.append", op1=cReferenceOf(cBytes), op2=cReferenceOf(cBytes))
 class Append(Instruction):
-    """Appends *op2* to *op1*."""
+    """Appends *op2* to *op1*. The two operands must not refer to the same
+    object.
+    
+    Raises ValueError if *op1* has been frozen, or if *op1* is the same as
+    *op2*.
+    """
     def codegen(self, cg):
         cg.llvmCallC("hlt::bytes_append", [self.op1(), self.op2()])
 
@@ -435,4 +440,42 @@ class Cmp(Instruction):
     def codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_cmp", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("bytes.freeze", op1=cReferenceOf(cBytes))
+class Freeze(Instruction):
+    """Freezes the bytes object *op1*. A frozen bytes object cannot be further
+    modified until unfrozen. If the object is already frozen, the instruction
+    is ignored.
+    """
+    def codegen(self, cg):
+        freeze = constant.Constant(1, type.Bool())
+        cg.llvmCallC("hlt::bytes_freeze", [self.op1(), operand.Constant(freeze)])
+        
+@hlt.instruction("bytes.unfreeze", op1=cReferenceOf(cBytes))
+class Unfreeze(Instruction):
+    """Unfreezes the bytes object *op1*. An unfrozen bytes object can be
+    further modified. If the object is already unfrozen (which is the
+    default), the instruction is ignored.
+    """
+    def codegen(self, cg):
+        freeze = constant.Constant(0, type.Bool())
+        cg.llvmCallC("hlt::bytes_freeze", [self.op1(), operand.Constant(freeze)])
     
+@hlt.constraint("ref<bytes> or iterator<bytes>")
+def _bytesOrIterator(ty, op, i):
+    (bytes, msg) = cIteratorBytes(ty, op, i)
+    (iter, msg) = cReferenceOf(cBytes)(ty, op, i)
+    return (bytes or iter, "must be ref<bytes> or iterator<bytes>")
+
+@hlt.instruction("bytes.is_frozen", op1=_bytesOrIterator, target=cBool)
+class IsFrozen(Instruction):
+    """Returns whether the bytes object *op1* (or the bytes objects referred
+    to be the iterator *op1*) has been frozen.
+    """
+    def codegen(self, cg):
+        if isinstance(self.op1().type(), type.Reference):
+            result = cg.llvmCallC("hlt::bytes_is_frozen", [self.op1()])
+        else:
+            result = cg.llvmCallC("hlt::bytes_pos_is_frozen", [self.op1()])
+            
+        cg.llvmStoreInTarget(self, result)

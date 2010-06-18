@@ -112,7 +112,8 @@ extern int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_except
 /// other: The bytes object to append from.
 /// excpt: &
 /// 
-/// Raises: ValueError - If the two objects are the same.
+/// Raises: ValueError - If the two objects are the same, or *b* has been
+/// frozen.
 extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excpt);
 
 /// Appends a sequence of raw bytes in memory to a bytes object. After
@@ -123,6 +124,8 @@ extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exceptio
 /// raw: A pointer to the beginning of the byte sequence to append. 
 /// len: The number of bytes to append starting from *raw*.
 /// excpt: &
+/// 
+/// Raises: ValueError - If *b* has been frozen.
 extern void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, hlt_exception** excpt);
 
 /// Returns a subsequence of a bytes object. 
@@ -197,7 +200,7 @@ extern const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt)
 /// 
 /// Todo: Once we start compiling libhilti with llvm-gcc, calls to this function
 /// should be optimized away. Check that. 
-extern int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, const hlt_bytes_pos end, hlt_exception** excpt);
+extern int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, hlt_bytes_pos end, hlt_exception** excpt);
 
 /// Creates a new position object representing a specific offset.
 /// 
@@ -238,6 +241,41 @@ extern hlt_bytes_pos hlt_bytes_end(const hlt_bytes* b, hlt_exception** excpt);
 /// position of any bytes object. However, it is not attached to any specific
 /// one so it can't go beyond a former end position if more data is appended. 
 extern hlt_bytes_pos hlt_bytes_generic_end(hlt_exception** excpt);
+
+/// Freezes/unfreezes a bytes object. A frozen object cannot be further
+/// extended via any of the append functions. If the object already is in the
+/// given state, the call is ignored. Note that empty bytes objects cannot be
+/// frozen (unfreezing them is fine).
+/// 
+/// b: The bytes object to (un-)freeze.
+/// 
+/// freeze: 1 to freeze, 0 to unfreeze.
+/// 
+/// excpt: &
+/// 
+/// Raises: ValueError - If the bytes object is empty.
+extern void hlt_bytes_freeze(const hlt_bytes* b, int8_t freeze, hlt_exception** excpt);
+
+/// Returns whether a bytes object has been frozen. For an empty object, this
+/// returns always 0.
+/// 
+/// b: The bytes object.
+/// 
+/// excpt: &
+/// 
+/// Returns: 1 if frozen, 0 otherwise..
+extern int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt);
+
+/// Returns whether the bytes object a position is refering to has been
+/// frozen. For an empty bytes object as well as for the generic end
+/// position, this returns always 0.
+/// 
+/// pos: The position.
+/// 
+/// excpt: &
+/// 
+/// Returns: 1 if frozen, 0 otherwise..
+extern int8_t hlt_bytes_pos_is_frozen(hlt_bytes_pos pos, hlt_exception** excpt);
 
 /// Extracts the element at a position.  
 /// 
