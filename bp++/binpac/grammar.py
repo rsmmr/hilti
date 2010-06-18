@@ -387,9 +387,9 @@ class Sequence(NonTerminal):
     
     location: ~~Location - A location object decscribing the point of definition.
     """
-    def __init__(self, name=None, type=None, seq=[], symbol=None, location=None):
+    def __init__(self, name=None, type=None, seq=None, symbol=None, location=None):
         super(Sequence, self).__init__(name, type, symbol=symbol, location=location)
-        self._seq = seq
+        self._seq = seq if seq != None else []
 
     def sequence(self):
         """Returns the sequence of productions.
@@ -580,7 +580,7 @@ class Switch(Conditional):
         return self._default
         
 class Grammar:
-    def __init__(self, name, root, params=[], addl_ids=[], location=None):
+    def __init__(self, name, root, params=None, addl_ids=None, location=None):
         """Instantiates a grammar given its root production.
         
         name: string - A name which uniquely identifies this grammar.
@@ -598,7 +598,7 @@ class Grammar:
         self._nullable = {}
         self._first = {}
         self._follow = {}
-        self._params = params
+        self._params = params if params else []
         
         self._addProduction(root)
         self._simplify()
@@ -606,8 +606,9 @@ class Grammar:
         self._computeTables()
         self._location = location
         
-        for id in addl_ids:
-            self._scope.addID(id)
+        if addl_ids:
+            for id in addl_ids:
+                self._scope.addID(id)
         
     def name(self):
         """Returns the name of the grammar. The name uniquely identifies the
@@ -658,8 +659,10 @@ class Grammar:
             
             laheads = p.lookAheads()
             
-            if len(laheads[0]) == 0 or len(laheads[1]) == 0:
-                msg += "%s is not reachable because of empty look-ahead set\n" % _loc(p)
+            # This seems ok.
+            #
+            #if len(laheads[0]) == 0 or len(laheads[1]) == 0:
+            #    msg += "%s is not reachable because of empty look-ahead set\n" % _loc(p)
 
             lid0 = [l.id() for l in laheads[0]]
             lid1 = [l.id() for l in laheads[1]]

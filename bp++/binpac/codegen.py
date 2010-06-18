@@ -206,7 +206,7 @@ class CodeGen(object):
         for mod in ["hilti", "binpac", "binpacintern"]:
             if not hilti.importModule(self._mbuilder.module(), mod, paths):
                 self.error(hltmod, "cannot import module %s" % mod)
-
+                
         for i in self._module.scope().IDs():
             if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
                 # FIXME: Should get rid of %export.

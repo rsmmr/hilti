@@ -47,9 +47,21 @@ class UnsignedInteger(type.Integer):
 class Coerce:
     def coerceCtorTo(ctor, dsttype):
         if isinstance(dsttype, type.SignedInteger):
-            return expr.Ctor(ctor, type.SignedInteger(dsttype.width()))
+            return ctor 
         
         raise operator.CoerceError
+
+    def canCoerceExprTo(expr, dsttype):
+        if isinstance(dsttype, type.Integer):
+            return True
+        
+    def coerceExprTo(cg, e, dsttype):
+        if dsttype.width() >= e.type().width():
+            return e
+        
+        tmp = cg.builder().addLocal("__truncated", dsttype)
+        cg.builder().int_trunc(tmp, e.evaluate(cg))
+        return expr.Hilti(tmp, dsttype)
     
 @operator.Plus(UnsignedInteger, UnsignedInteger)
 class Plus:

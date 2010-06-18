@@ -17,6 +17,7 @@ import binpac.util as util
 _BytesIterType = hilti.type.IteratorBytes(hilti.type.Bytes())
 _LookAheadType = hilti.type.Integer(32)
 _LookAheadNone = hilti.operand.Constant(hilti.constant.Constant(0, _LookAheadType))
+_FlagsType     = hilti.type.Integer(8) # Note: flags are currently unused. 
 _ParseFunctionResultType = hilti.type.Tuple([_BytesIterType, _LookAheadType, _BytesIterType])
 
 def _flattenToStr(list):
@@ -119,17 +120,18 @@ class ParserGen:
         def __init__(self, fbuilder=None, args=None):
             def _makeArg(arg):
                 return arg if isinstance(arg, hilti.operand.Operand) else fbuilder.idOp(arg)
-
+            
             self.cur = _makeArg(args[0])
             self.obj = _makeArg(args[1])
             self.lahead = _makeArg(args[2])
             self.lahstart = _makeArg(args[3])
+            self.flags = _makeArg(args[4])
                 
-        def tupleOp(self, addl=[]):
-            elems = [self.cur, self.obj, self.lahead, self.lahstart] + addl
+        def tupleOp(self, addl=None):
+            elems = [self.cur, self.obj, self.lahead, self.lahstart, self.flags] + (addl if addl else [])
             const = hilti.constant.Constant(elems, hilti.type.Tuple([e.type() for e in elems]))
             return hilti.operand.Constant(const)
-        
+
     ### Methods generating parsing functions. 
 
     def _functionInit(self):
@@ -174,9 +176,10 @@ class ParserGen:
         grammar = self._grammar
         
         cur = hilti.id.Parameter("__cur", _BytesIterType)
+        flags = hilti.id.Parameter("__flags", _FlagsType)
         result = self._typeParseObjectRef()
 
-        args = [cur]
+        args = [cur, flags]
         
         for p in self._grammar.params():
             args += [hilti.id.Parameter(p.name(), p.type().hiltiType(self._cg))]
@@ -197,7 +200,7 @@ class ParserGen:
 
         self._newParseObject(pobj)
         
-        args = ParserGen._Args(fbuilder, ["__cur", "__pobj", "__lahead", "__lahstart"])
+        args = ParserGen._Args(fbuilder, ["__cur", "__pobj", "__lahead", "__lahstart", "__flags"])
         self._parseStartSymbol(args, [])
         
         self.builder().return_result(pobj)
@@ -298,7 +301,7 @@ class ParserGen:
         
         # The start symbol is always a sequence.
         assert isinstance(prod, grammar.Sequence)
-        self.builder().makeDebugMsg("binpac", "bgn start-sym %s '%s'" % (pname, prod))
+        self.builder().makeDebugMsg("binpac", "bgn start-sym %s '%s' with flags %%d" % (pname, prod), [args.flags])
         
         self._parseSequence(prod, args, params)
         
@@ -374,7 +377,7 @@ class ParserGen:
         # Call the type's parse function.
         name = var.name() if var.name() else "__tmp"
         dst = self.builder().addTmp(name , var.parsedType().hiltiType(self.cg()))
-        args.cur = var.parsedType().generateParser(self, args.cur, dst, not need_val)
+        args.cur = var.parsedType().generateParser(self.cg(), args.cur, dst, not need_val)
         
         # Run the value through any potential filter function. 
         filter = var.filter()
@@ -402,7 +405,7 @@ class ParserGen:
 
         cpgen._newParseObject(cobj)
         
-        cargs = ParserGen._Args(self.functionBuilder(), (args.cur, cobj, args.lahead, args.lahstart))
+        cargs = ParserGen._Args(self.functionBuilder(), (args.cur, cobj, args.lahead, args.lahstart, args.flags))
         
         params = [p.evaluate(self._cg) for p in child.params()]
         
@@ -565,8 +568,9 @@ class ParserGen:
         expr = prod.expr().evaluate(cg)
         
         dsttype = prod.expr().type()
-        values = [e.coerceTo(dsttype, cg).evaluate(cg) for (e, p) in prod.cases()]
         
+        values = [e.coerceTo(dsttype, cg).evaluate(cg) for (e, p) in prod.cases()]
+
         (default_builder, case_builders, done) = cg.builder().makeSwitch(expr, values);
         
         for (case_prod, builder) in zip(prods, case_builders):
@@ -738,9 +742,10 @@ class ParserGen:
         arg2 = hilti.id.Parameter("__self", self._typeParseObjectRef())
         arg3 = hilti.id.Parameter("__lahead", _LookAheadType)
         arg4 = hilti.id.Parameter("__lahstart", _BytesIterType)
+        arg5 = hilti.id.Parameter("__flags", _FlagsType)
         result = _ParseFunctionResultType
 
-        args = [arg1, arg2, arg3, arg4]
+        args = [arg1, arg2, arg3, arg4, arg5]
         
         for p in self._grammar.params():
             args += [hilti.id.Parameter(p.name(), p.type().hiltiType(self._cg))]

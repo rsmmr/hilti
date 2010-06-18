@@ -45,7 +45,7 @@ class Field(node.Node):
     Todo: Only ~~Bytes constant are supported at the moment. Which other's do
     we want? (Regular expressions for sure.)
     """
-    def __init__(self, name, value, ty, parent, params=[], location=None):
+    def __init__(self, name, value, ty, parent, params=None, location=None):
         if value:
             assert isinstance(value, expr.Expression)
             
@@ -57,7 +57,7 @@ class Field(node.Node):
         self._hooks = []
         self._ctlhook = None
         self._cond = None
-        self._params = params
+        self._params = params if params else []
         self._noid = False
 
         if isinstance(ty, type.ParseableType):
@@ -263,7 +263,7 @@ class Field(node.Node):
                     
             else:
                 self._type = self._type.resolve(resolver)
-
+                
             self._type.copyAttributesFrom(old_type)
 
         if self._cond:
@@ -284,7 +284,8 @@ class Field(node.Node):
                 # If the production function has not been overridden, we can't
                 # use that type in a unit field. 
                 vld.error(self, "type %s cannot be used inside a unit field" % self._type)
-
+                
+            self._type.validate(vld)
             self._type.validateInUnit(self, vld)
         
         if self._value:
@@ -308,7 +309,7 @@ class Field(node.Node):
         else:
             if len(self._params):
                 vld.error(self, "type does not receive any parameters")
-                
+            
         if self._cond and not isinstance(self._cond.type(), type.Bool):
             vld.error(self, "field condition must be boolean")
             
@@ -324,7 +325,7 @@ class Field(node.Node):
                     vld.error("&convert function is ambigious")
             else:
                 vld.error(self, "unknown &convert function")
-
+                
     def pac(self, printer):
         """Converts the field into parseable BinPAC++ code.
 
@@ -443,7 +444,7 @@ class SwitchFieldCase(SubField):
     
     See ~~Field for parameters.
     """
-    def __init__(self, name, value, ty, parent, params=[], location=None):
+    def __init__(self, name, value, ty, parent, params=None, location=None):
         super(SwitchFieldCase, self).__init__(name, value, ty, parent, params=params, location=location)
         self._default = False
         self._expr = None
@@ -516,7 +517,7 @@ class Unit(type.ParseableType):
 
     _valid_hooks = ("%ctor", "%dtor", "%error")
 
-    def __init__(self, pscope, params=[], location=None):
+    def __init__(self, pscope, params=None, location=None):
         Unit._counter += 1
         super(Unit, self).__init__(location=location)
         self._props = {}
@@ -526,7 +527,7 @@ class Unit(type.ParseableType):
         self._hooks = {}
         self._prod = None 
         self._grammar = None
-        self._params = params
+        self._params = params if params else []
         self._scope = scope.Scope(None, pscope)
         
         self._scope.addID(id.Parameter("self", self, location=location))
@@ -775,9 +776,11 @@ class Unit(type.ParseableType):
     def validate(self, vld):
         type.ParseableType.validate(self, vld)
         
-        error = self.grammar().check()
-        if error:
-            vld.error(self, error)
+        g = self.grammar()
+        if g.name() == "Message":
+            error = g.check()
+            if error:
+                vld.error(self, error)
         
         for fields in self._fields.values():
             for f in fields:
@@ -830,11 +833,11 @@ class Attribute:
     @staticmethod 
     def attrType(lhs, ident):
         name = ident.name()
-        
         if name in lhs.type().variables():
             return lhs.type().variables()[name].type()
         
         else:
+            t = lhs.type().field(name)[0].type()
             return lhs.type().field(name)[0].type()
     
     def validate(vld, lhs, ident):

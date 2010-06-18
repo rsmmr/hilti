@@ -23,11 +23,14 @@ class List(type.ParseableType):
     """Type for list objects.  
     
     itemty: ~~Type - The type of the list elements. 
+    itemparams: list of ~~Expr - Optional parameters for parsing the items. Only valid
+    if the type is a ~~Unit and used inside another unit's field.
     location: ~~Location - A location object describing the point of definition.
     """
-    def __init__(self, itemty, location=None):
+    def __init__(self, itemty, itemparams=None, location=None):
         super(List, self).__init__(location=location)
         self._item = itemty
+        self._params = itemparams
 
     def itemType(self):
         """Returns the type of the list elements.
@@ -43,10 +46,21 @@ class List(type.ParseableType):
 
     def doResolve(self, resolver):
         self._item = self._item.resolve(resolver)
-    
+
+        if self._params:
+            for p in self._params:
+                p.resolve(resolver)
+        
     def validate(self, vld):
         type.ParseableType.validate(self, vld)
         self._item.validate(vld)
+        
+        if self._params and not isinstance(self._item, type.Unit):
+            vld.error(self, "parameters only allowed for unit types")
+            
+        if self._params:
+            for p in self._params:
+                p.validate(vld)
     
     def validateCtor(self, vld, value):
         if not isinstance(value, list):
@@ -100,6 +114,7 @@ class List(type.ParseableType):
     def production(self, field):
         loc = self.location()
         until = self.attributeExpr("until")
+        
         hook = field.controlHook()
         assert hook
         
@@ -112,6 +127,10 @@ class List(type.ParseableType):
         push_back = expr.Overloaded(operator.Operator.MethodCall, (attr, method, [dollar]), location=loc)
         push_back = stmt.Expression(push_back, location=loc)
         
+        item = self.itemType().production(field)
+        if self._params:
+            item.setParams(self._params)
+        
         if until:
             # &until(expr)
              
@@ -121,7 +140,6 @@ class List(type.ParseableType):
             l1 = grammar.Sequence(location=loc)
             eps = grammar.Epsilon(location=loc)
             alt = grammar.Boolean(hookrc, l1, eps, location=loc)
-            item = self.itemType().production(field)
             l1.addProduction(item)
             l1.addProduction(alt)
             
@@ -145,16 +163,15 @@ class List(type.ParseableType):
             # List2 -> Epsilon | List1
             l1 = grammar.Sequence(location=loc)
             l2 = grammar.LookAhead(grammar.Epsilon(), l1, location=loc)
-            item = self.itemType().production(field)
             l1.addProduction(item)
             l1.addProduction(l2) 
             
-            #     list.push_back($$)
+            # list.push_back($$)
             hook.addStatement(push_back)        
             item.addHook(hook)
-            
+        
         return l1
-
+            
 def itemType(exprs):
     return exprs[0].type().itemType()
         

@@ -2,6 +2,8 @@
 #
 # The parser.
 
+builtin_id = id
+
 import os.path
 import warnings
 import sys
@@ -58,6 +60,7 @@ def p_instantiate_module(p):
     """_instantiate_module :"""
     p.parser.state.module = module.Module(p[-1], location=_loc(p, -1))
     p.parser.state.scopes = [None]
+    p.parser.state.blocks = [None]
     _pushScope(p, p.parser.state.module.scope())
     
 def p_module_global_list(p):
@@ -230,8 +233,8 @@ def p_type_pac(p):
  # Container types.
 
 def p_list(p):
-    """builtin_type : LIST '<' type '>'"""
-    p[0] = type.List(p[3], location=_loc(p, 1))
+    """builtin_type : LIST '<' type opt_unit_field_params '>'"""
+    p[0] = type.List(p[3], itemparams=p[4], location=_loc(p, 1))
     
  # More complex types.
 
@@ -573,22 +576,19 @@ def p_opt_expr(p):
 ### Statement blocks.
 
 def p_stmt_block(p):
-    """stmt_block : '{' _instantiate_block opt_local_var_list stmt_list _leave_block '}'"""
-    
+    """stmt_block : '{' _instantiate_block opt_local_var_list stmt_list '}'"""
+
+    b = _popBlock(p)
+
     for local in p[3]:
-        p.parser.state.block.scope().addID(local)
+        b.addID(local)
     
-    p[0] = p.parser.state.block
+    p[0] = b
     
 def p_instantiate_block(p):
     """_instantiate_block :"""
-    p.parser.state.block = stmt.Block(_currentScope(p), location=_loc(p, -1))
-    _pushScope(p, p.parser.state.block.scope())
+    _pushBlock(p, stmt.Block(_currentScope(p), location=_loc(p, -1)))
     
-def p_leave_block(p):
-    """_leave_block :"""
-    _popScope(p)
-
 def p_opt_local_var_list(p):
     """opt_local_var_list : local_var opt_local_var_list
                           |
@@ -623,7 +623,7 @@ def p_stmt_list(p):
     """stmt_list : stmt_list stmt 
                  | """
     if len(p) > 1:
-        p.parser.state.block.addStatement(p[2])
+        _currentBlock(p).addStatement(p[2])
 
 def p_stmt_if_else(p):
     """stmt : IF '(' expr ')' stmt
@@ -634,7 +634,7 @@ def p_stmt_if_else(p):
     no = p[7] if len(p) > 7 else None
     
     p[0] = stmt.IfElse(cond, yes, no, location=_loc(p,1))
-
+    
 def p_stmt_return(p):
     """stmt : RETURN opt_expr ';'"""
     p[0] = stmt.Return(p[2], location=_loc(p,1))
@@ -650,7 +650,22 @@ def _pushScope(p, scope):
     
 def _popScope(p):
     p.parser.state.scopes = p.parser.state.scopes[:-1]
-        
+    
+def _currentBlock(p):
+    b = p.parser.state.blocks[-1]
+    assert b
+    return b
+    
+def _pushBlock(p, b):
+    p.parser.state.blocks += [b]
+    _pushScope(p, b.scope())
+    
+def _popBlock(p):
+    b = _currentBlock(p)
+    p.parser.state.blocks = p.parser.state.blocks[:-1]
+    _popScope(p)
+    return b
+    
 ### Error handling.
 
 def p_error(p):    

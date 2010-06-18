@@ -46,9 +46,39 @@ class SignedInteger(type.Integer):
 @operator.Coerce(type.SignedInteger)
 class Coerce:
     def coerceCtorTo(ctor, dsttype):
-        if isinstance(dsttype, type.SignedInteger) and ctor >= 0:
-            return expr.Ctor(ctor, type.Integer(dsttype.width()))
+        if isinstance(dsttype, type.UnsignedInteger) and ctor >= 0:
+            return ctor 
         
         raise operators.CoerceError
+
+    def canCoerceExprTo(expr, dsttype):
+        if isinstance(dsttype, type.Integer):
+            return True
         
+        return False
+        
+    def coerceExprTo(cg, e, dsttype):
+        if dsttype.width() >= e.type().width():
+            return e
+        
+        tmp = cg.builder().addLocal("__truncated", dsttype.hiltiType(cg))
+        cg.builder().int_trunc(tmp, e.evaluate(cg))
+        return expr.Hilti(tmp, dsttype)
+    
+@operator.Equal(SignedInteger, type.UnsignedInteger)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+    
+    def simplify(e1, e2):
+        if not e1.isInit() or not e2.isInit():
+            return None
+            
+        b = (e1.value() == e2.value())
+        return expr.Ctor(b, type.Bool())
+        
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addLocal("__equal", hilti.type.Bool())
+        cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp
         

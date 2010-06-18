@@ -83,7 +83,6 @@ class Bytes(type.ParseableType):
             return self.parsedType()
     
     def generateParser(self, cg, cur, dst, skipping):
-        
         bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
         resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
         fbuilder = cg.functionBuilder()
@@ -106,11 +105,32 @@ class Bytes(type.ParseableType):
             op2 = cg.builder().idOp("Hilti::Packed::BytesDelim" if not skipping else "Hilti::Packed::SkipBytesDelim")
             expr = self.attributeExpr("until").coerceTo(type.Bytes(), cg)
             op3 = expr.evaluate(cg)
-
-        builder = cg.builder()
             
-        result = fbuilder.addTmp("__unpacked", resultt)
-        builder.unpack(result, op1, op2, op3)
+        elif self.hasAttribute("eod"):
+            
+            loop = fbuilder.newBuilder("eod_loop")
+            done = fbuilder.newBuilder("eod_reached")
+            suspend = fbuilder.newBuilder("eod_not_reached")
+            
+            cg.builder().jump(loop.labelOp())
+            
+            eod = fbuilder.addTmp("__eod", hilti.type.Bool())
+            loop.bytes_is_frozen(eod, cur)
+            loop.if_else(eod, done.labelOp(), suspend.labelOp())
+            
+            cg.setBuilder(suspend)
+            self.generateInsufficientInputHandler(cg, cur)
+            cg.builder().jump(loop.labelOp())
+            
+            cg.setBuilder(done)
+            if not skipping:
+                done.bytes_sub(dst, cur, end)
+            
+            return end
+
+        result = self.generateUnpack(cg, op1, op2, op3)
+        
+        builder = cg.builder()
         
         if dst and not skipping:
             builder.tuple_index(dst, result, builder.constOp(0))
@@ -122,18 +142,18 @@ class Bytes(type.ParseableType):
 @operator.Size(Bytes)
 class _:
     def type(e):
-        return type.UnsignedInteger(32)
+        return type.UnsignedInteger(64)
     
     def simplify(e):
         if e.isInit():
             n = len(e.value())
-            return expr.Ctor(n, type.UnsignedInteger(32))
+            return expr.Ctor(n, type.UnsignedInteger(64))
         
         else:
             return None
         
     def evaluate(cg, e):
-        tmp = cg.functionBuilder().addLocal("__size", hilti.type.Integer(32))
+        tmp = cg.functionBuilder().addLocal("__size", hilti.type.Integer(64))
         cg.builder().bytes_length(tmp, e.evaluate(cg))
         return tmp
     

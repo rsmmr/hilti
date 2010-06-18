@@ -407,7 +407,7 @@ def canCoerceExprTo(expr, dsttype):
     if expr.type() == dsttype:
         return expr
 
-    if not typecheck(Operator.Coerce, expr.type()):
+    if not typecheck(Operator.Coerce, [expr]):
         return False
     
     func = _findOp("canCoerceExprTo", Operator.Coerce, [expr])
@@ -435,7 +435,7 @@ def coerceExprTo(cg, expr, dsttype):
     if expr.type() == dsttype:
         return expr
     
-    if not typecheck(Coerce, expr.Type()):
+    if not typecheck(Operator.Coerce, [expr]):
         return False
     
     func = _findOp("coerceExprTo", Operator.Coerce, [expr])
@@ -466,7 +466,7 @@ def coerceCtorTo(e, dsttype):
         raise CoerceError
     
     assert e.isInit()
-    return func(e.simplify(), dsttype)
+    return expr.Ctor(func(e.value(), dsttype), dsttype)
 
 class Operator:
     """Constants defining the available operators."""

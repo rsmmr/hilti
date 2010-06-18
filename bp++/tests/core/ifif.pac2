@@ -1,0 +1,22 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Test;
+
+global b = True;
+global x: bytes;
+
+if ( b ) {
+    print "1";
+    print "2";
+    }
+    
+if ( b )
+    print "1";
+
+
+
+

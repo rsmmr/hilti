@@ -2,6 +2,8 @@
 #
 # BinPAC++ statements
 
+builtin_id = id
+
 import node
 import scope
 import type
@@ -85,7 +87,7 @@ class Block(Statement):
 
     def resolve(self, resolver):
         Statement.resolve(self, resolver)
-        
+
         for stmt in self._stmts:
             stmt.resolve(resolver)
     
@@ -115,7 +117,8 @@ class Block(Statement):
             stmt.execute(cg)
 
     def __str__(self):
-        return "<statement block>"
+        return "; ".join([str(s) for s in self._stmts])
+        # return "<statement block>"
 
 class UnitHook(Block):
     """A unit hook is a series of statements executed when a certain
@@ -132,7 +135,7 @@ class UnitHook(Block):
     
     stms: list of ~~Statement - Series of statements to initalize the hook with.
     """
-    def __init__(self, unit, field, prio, stmts=[], location=None):
+    def __init__(self, unit, field, prio, stmts=None, location=None):
         self._unit = unit
         self._field = field
         self._prio = prio
@@ -140,8 +143,9 @@ class UnitHook(Block):
         super(UnitHook, self).__init__(unit.scope(), location=location)
         super(UnitHook, self).scope().addID(id.Local("__hookrc", type.Bool()))
         
-        for stmt in stmts:
-            self.addStatement(stmt)
+        if stmts:
+            for stmt in stmts:
+                self.addStatement(stmt)
 
     def unit(self):
         """Returns the unit associated with the hook.
@@ -209,7 +213,7 @@ class FieldControlHook(UnitHook):
     stms: list of ~~Statement - Series of statements to initalize the hook with.
     
     """
-    def __init__(self, field, prio, ddtype, stmts=[], location=None):
+    def __init__(self, field, prio, ddtype, stmts=None, location=None):
         super(FieldControlHook, self).__init__(field.parent(), field, prio, stmts, location=location)
         self._ddtype = ddtype
         

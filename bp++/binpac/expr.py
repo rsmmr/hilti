@@ -225,6 +225,8 @@ class Ctor(Expression):
         self._value = value
         self._type = ty
         
+        assert not isinstance(value, Expression)
+        
     def value(self):
         """Returns the value of the ctor expression.
         
@@ -433,7 +435,7 @@ class Assign(Expression):
         self._dest.assign(cg, rhs)
     
     def __str__(self):
-        return self._name
+        return str(self._dest) + " = " + str(self._rhs)
     
 class Hilti(Expression):
     """An expression encapsulating an already eveluated HILTI operand. This

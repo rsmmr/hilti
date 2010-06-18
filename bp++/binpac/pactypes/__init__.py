@@ -1,8 +1,8 @@
 # $Id$
 
 import integer
-import sinteger
 import uinteger
+import sinteger
 import regexp
 import bytes
 import string

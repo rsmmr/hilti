@@ -4,10 +4,10 @@
 
 #include <hilti.h>
 
-/// The main entry function to a BinPAC generated parser. This function is
+/// The main entry function to a BinPAC-generated parser. This function is
 /// used for both starting the parsing initially and resuming it after a
 /// YieldException. The protocols is as follows: TODO
-typedef void* binpac_parse_function(hlt_bytes_pos iter, hlt_exception** excpt);
+typedef void* binpac_parse_function(hlt_bytes_pos iter, int8_t reserved, hlt_exception** excpt);
 typedef void* binpac_resume_function(hlt_exception* yield, hlt_exception** excpt);
 
 // Predefined exceptions.
