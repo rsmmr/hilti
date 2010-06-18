@@ -25,6 +25,7 @@ static void usage(const char* prog)
     fprintf(stderr, "\n");
     fprintf(stderr, "    -d            Enable basic BinPAC++ debug output\n");
     fprintf(stderr, "    -dd           Enable detailed BinPAC++ debug output\n");
+    fprintf(stderr, "    -i  <n>       Feed input incrementally in chunks of size <n>\n");
     fprintf(stderr, "    -v            Enable verbose output\n");
     fprintf(stderr, "\n");
 
@@ -123,31 +124,95 @@ hlt_bytes* readInput()
         
 }
 
-void parseInput(binpac_parser* p, hlt_bytes* input)
+void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
 {
     hlt_exception* excpt = 0;
-    hlt_bytes_pos begin = hlt_bytes_begin(input, &excpt);
-    check_exception(excpt);
+    hlt_bytes_pos cur = hlt_bytes_begin(input, &excpt);
     
-    (*p->parse_func)(begin, &excpt);
     check_exception(excpt);
+
+    if ( ! chunk_size ) {
+        // Feed all input at once.
+        hlt_bytes_freeze(input, 1, &excpt);
+        (*p->parse_func)(cur, 0, &excpt);
+        check_exception(excpt);
+        return;
+    }
+
+    // Feed incrementally.
+    
+    hlt_bytes* chunk;
+    hlt_bytes_pos end = hlt_bytes_end(input, &excpt);
+    hlt_bytes_pos cur_end;
+    int8_t done = 0;
+    hlt_exception* resume = 0;
+    
+    input = hlt_bytes_new(&excpt);
+    
+    while ( ! done ) {
+        cur_end = hlt_bytes_pos_incr_by(cur, chunk_size, &excpt);
+        done = hlt_bytes_pos_eq(cur_end, end, &excpt);
+        
+        chunk = hlt_bytes_sub(cur, cur_end, &excpt);
+        hlt_bytes_append(input, chunk, &excpt);
+        
+        if ( done )
+            hlt_bytes_freeze(input, 1, &excpt);
+
+        check_exception(excpt);
+        
+        if ( ! resume ) {
+            fprintf(stderr, "--- pac-driver: starting parsing.\n");
+            hlt_bytes_pos s = hlt_bytes_begin(input, &excpt);
+            check_exception(excpt);
+            
+            (*p->parse_func)(s, 0, &excpt);
+        }
+        
+        else {
+            fprintf(stderr, "--- pac-driver: resuming parsing.\n");
+            (*p->resume_func)(resume, &excpt);
+        }
+
+        if ( excpt ) {
+            if ( excpt->type == &hlt_exception_yield ) {
+                fprintf(stderr, "--- pac-driver: parsing yielded.\n");
+                resume = excpt;
+                excpt = 0;
+            }
+            
+            else
+                check_exception(excpt);
+        }
+        
+        else if ( ! done )
+            fprintf(stderr, "End of input reached even though more could be parsed.");
+        
+        cur = cur_end;
+    }
 }
 
 int main(int argc, char** argv)
 {
     int debug = 0;
     int verbose = 0;
+    int chunk_size = 0;
     const char* parser = 0;
 
     hlt_init();
     
     char ch;
-    while ((ch = getopt(argc, argv, "p:vdh")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:vdh")) != -1) {
         
         switch (ch) {
             
+          case 'i':
+            chunk_size = atoi(optarg);
+            break;
+            
           case 'p':
             parser = optarg;
+            break;
             
           case 'v':
             verbose = 1;
@@ -206,7 +271,7 @@ int main(int argc, char** argv)
 
     hlt_bytes* input = readInput();
 
-    parseInput(p, input);
+    parseInput(p, input, chunk_size);
     
     exit(0);
     
