@@ -169,7 +169,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
                 zero = cg.llvmConstInt(0, width)
                 one = cg.llvmConstInt(1, width)
     
-                lop = cg.llvmOp(n, coerce_to=type.Integer(64))
+                lop = cg.llvmOp(n, coerce_to=type.Integer(width))
                 
                 # Copy the start iterator.
                 cg.builder().store(begin, iter)
