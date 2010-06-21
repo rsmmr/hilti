@@ -335,8 +335,8 @@ def evaluate(op, cg, exprs):
     func = _findOp("evaluate", op, exprs)
     
     if not func:
-        import sys
-        print >>sys.stderr, [e.type() for e in exprs]
+        print [str(e) for e in exprs]
+        print str(exprs[2][0]), exprs[2][0].type()
         util.error("no evaluate implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
     
     return func(cg, *exprs)
@@ -383,9 +383,6 @@ def type(op, exprs):
     func = _findOp("type", op, exprs)
     
     if not func:
-        for e in exprs:
-            print e, repr(e), e.type(), repr(e.type())
-        
         args = _fmtArgTypes(exprs)
         util.error("no type implementation for %s operator with expression types %s" % (op, args), context=exprs[0].location())
         

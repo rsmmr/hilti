@@ -87,6 +87,7 @@ class Expression(node.Node):
         Returns: bool - Boolean indicating whether the expression is an
         initialization value."""
         e = self.simplify()
+        
         return isinstance(e, Ctor)
     
     def hiltiInit(self, cg):
@@ -273,13 +274,24 @@ class Name(Assignable):
         super(Name, self).__init__(location=location)
         self._name = name
         self._scope = scope
+        self._is_init = False
 
     def name(self):
         """Returns the name that is referenced."""
         return self._name
         
     ### Overidden from node.Node.
+
+    def resolve(self, resolver):
+        Assignable.resolve(self, resolver)
+        
+        i = self._scope.lookupID(self._name)
+        if not i:
+            # Will be reported in validate.
+            return
     
+        self._is_init = isinstance(i, id.Constant)
+        
     def validate(self, vld):
         Assignable.validate(self, vld)
         if not self._scope.lookupID(self._name):
@@ -299,6 +311,9 @@ class Name(Assignable):
         i = self._scope.lookupID(self._name)
         assert i
         return i.evaluate(cg)
+
+    def isInit(self):
+        return self._is_init
     
     def __str__(self):
         return self._name

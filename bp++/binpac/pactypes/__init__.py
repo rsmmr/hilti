@@ -11,3 +11,4 @@ import bool
 import list
 import void
 import function
+import enum

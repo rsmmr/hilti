@@ -46,6 +46,10 @@ class RegExp(type.ParseableType):
         filter = self.attributeExpr("convert")
         return grammar.Variable(None, self, filter=filter, location=self.location())
 
+    def productionForLiteral(self, field, literal):
+        filter = self.attributeExpr("convert")
+        return grammar.Literal(None, literal, filter=filter)
+    
     def parsedType(self):
         t = type.Bytes()
         t.copyAttributesFrom(self)
@@ -53,11 +57,9 @@ class RegExp(type.ParseableType):
     
     def fieldType(self):
         filter = self.attributeExpr("convert")
-
+        
         if filter and not isinstance(filter.type(), type.Unknown):
             return filter.type().resultType()
         else:
             return self.parsedType()
-    
-        
-    
+

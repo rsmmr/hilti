@@ -193,15 +193,20 @@ class Terminal(Production):
     assigned to the destination variable instead (and also determined the type
     of that). This can be used, e.g., into coerce the parsed value into a
     different type.
+
+    filter: ~~Expression - A function called when a value has been parsed for
+    this variable. The function's return value is then used instead of the
+    parsed value subsequently. None for no filtering. 
     
     location: ~~Location - A location object decscribing the point of definition.
     
     Todo: The functionality for *expr* is not yet implemented, and the
     parameter just stored but otherwise ignored.
     """
-    def __init__(self, name, type, expr, location=None):
+    def __init__(self, name, type, expr, filter=None, location=None):
         super(Terminal, self).__init__(name, type, symbol="terminal", location=location)
         self._expr = expr
+        self._filter = filter
 
     def expr():
         """Returns the expression associated with the production.
@@ -209,7 +214,20 @@ class Terminal(Production):
         Returns: ~~Expression - The expression.
         """
         return self._expr
+
+    def parsedType(self):
+        return self._type.parsedType()
+    
+    def type(self):
+        return self._type.fieldType()
+    
+    def filter(self):
+        """Returns the filter function.
         
+        Returns: ~~Function - The filter function, or None if none defined.
+        """
+        return self._filter
+    
 class Literal(Terminal):
     """A literal. A literal is anythig which can be directly scanned for as
     sequence of bytes. 
@@ -228,8 +246,8 @@ class Literal(Terminal):
     _counter = 1
     _all = {}
     
-    def __init__(self, name, literal, expr=None, location=None):
-        super(Literal, self).__init__(name, literal.type(), expr)
+    def __init__(self, name, literal, expr=None, filter=None, location=None):
+        super(Literal, self).__init__(name, literal.type(), expr, filter, location=location)
         self._literal = literal
         
         idx = str(literal.value()) + str(literal.type())
@@ -287,23 +305,9 @@ class Variable(Terminal):
     """
     
     def __init__(self, name, type, expr=None, filter=None, location=None):
-        super(Variable, self).__init__(name, type, expr, location=location)
+        super(Variable, self).__init__(name, type, expr, filter, location=location)
         self._type = type
-        self._filter = filter
 
-    def parsedType(self):
-        return self._type.parsedType()
-
-    def type(self):
-        return self._type.fieldType()
-        
-    def filter(self):
-        """Returns the filter function.
-        
-        Returns: ~~Function - The filter function, or None if none defined.
-        """
-        return self._filter
-    
     def _rhss(self):
         return [[self]]
         
@@ -629,7 +633,6 @@ class Grammar:
         """Returns any additionla paramaters passed into the grammar's parser.
         
         Returns: list of ~~ID - The parameters.
-        return self._params
         """
         return self._params
     

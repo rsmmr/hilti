@@ -43,6 +43,7 @@ class Type(object):
         self._params = []
         self._name = "type_%d" % Type._counter
         self._resolved = False
+        self._attrs = {}
         
         all = self.supportedParameters()
         
@@ -93,7 +94,80 @@ class Type(object):
         index in what ~~supportedParameters returns; missing parameters are
         replaced with their defaults"""
         return self._params
+
+    def hasAttribute(self, name):
+        """Returns whether an attribute has been defined. If an attribute has
+        a default expression, it is always returned as being defined.
         
+        name: string - The name of the attribute, without the leading
+        ampersand. The name must be returned by ~~supportedAttributes.
+        
+        Returns: bool - True if the attribute is defined.
+        """
+        if name in self._attrs:
+            return True
+        
+        try:
+            all = self.supportedAttributes()
+            (ty, const, default) = all[name]
+        except KeyError:
+            return None
+            
+        if default:
+            return True
+        
+        return False
+        
+    def attributeExpr(self, name):
+        """Returns the expression associated with an attribute. If the
+        attribute is not defined, or if the attribute is defined but does not
+        have an expression, *None* is returned. If the value is not defined
+        but has a default expression, the default is returned.
+
+        name: string - The name of the attribute, without the leading
+        ampersand. The name must be returned by ~~supportedAttributes.
+        
+        Returns: ~~Expr or None - The expression associated with the
+        attribute, or None as described above.
+        """
+        try:
+            all = self.supportedAttributes()
+            (ty, const, default) = all[name]
+        except KeyError:
+            return None
+            
+        if name in self._attrs:
+            return self._attrs[name]
+        
+        return default
+
+    class AttributeMismatch(Exception):
+        pass
+    
+    def addAttribute(self, name, expr):
+        """Adds an attribute to the type.
+        
+        name: string - The name of the attribute without the leading
+        ampersand, which must be among those reported by
+        ~~supportedAttributes.
+        
+        expr: ~~Expr - a constant ~~Expression giving the attribute's
+        expression, or None if the attributes doesn't have an expression. Presence
+        and type of *expr* must correspond to what ~~supportedAttributes
+        specifies.
+        """
+        self._attrs[name] = expr
+
+    def copyAttributesFrom(self, other):
+        """XXXX"""
+        
+        if builtin_id(self._attrs) == builtin_id(other._attrs):
+            return
+        
+        # self._attrs = {}
+        for (key, val) in other._attrs.items():
+            self._attrs[key] = val
+    
     def location(self):
         """Returns the location associated with the type.
         
@@ -108,6 +182,38 @@ class Type(object):
         """
         self._location = location
 
+    def resolve(self, resolver):
+        """Resolves any previously unknown types that might be
+        referenced by this type. (Think: forward references). For
+        these, the not-yet-known types will have been created as
+        ~~Unknown; later, when the type should be known, this method
+        will be called to then lookup the real type. If an error is
+        encountered (e.g., we still don't the identifier), an error
+        message will be reported via the *resolver*. 
+        
+        Derived classes should *not* call their parent's implementation.
+        
+        resolver: ~~Resolver - The current resolver to use. 
+        
+        Return: ~~Type - Returns a type equivalent to *self* with
+        all unknowns resolved; that may either be *self* itself, or
+        a newly instantiated type; the caller must then use the
+        returned type instead of *self* afterwards.
+        
+        Note: ~~Type is not derived from ~~Node and thus we are not
+        overriding ~~Node.resolve here, even though it might
+        initially look like that. This method does work similar but
+        it returns a value, which ~~Node.resolve does not. If you want to
+        resolve attributes of the class (rather than an instance of the class
+        itself), overridde ~~doResolve instead.
+        """
+        if self._resolved:
+            return self
+        
+        self._resolved = True
+        self.doResolve(resolver)
+        return self
+        
     def __ne__(self, other):
         return not self.__eq__(other)
     
@@ -148,41 +254,15 @@ class Type(object):
         return []
     
     # @node.check_recursion # Expensinve
-    def resolve(self, resolver):
-        """Resolves any previously unknown types that might be
-        referenced by this type. (Think: forward references). For
-        these, the not-yet-known types will have been created as
-        ~~Unknown; later, when the type should be known, this method
-        will be called to then lookup the real type. If an error is
-        encountered (e.g., we still don't the identifier), an error
-        message will be reported via the *resolver*. 
+
+    def validate(self, vld):
+        Type.validate(self, vld)
         
-        Derived classes should *not* call their parent's implementation.
-        
-        resolver: ~~Resolver - The current resolver to use. 
-        
-        Return: ~~Type - Returns a type equivalent to *self* with
-        all unknowns resolved; that may either be *self* itself, or
-        a newly instantiated type; the caller must then use the
-        returned type instead of *self* afterwards.
-        
-        Note: ~~Type is not derived from ~~Node and thus we are not
-        overriding ~~Node.resolve here, even though it might
-        initially look like that. This method does work similar but
-        it returns a value, which ~~Node.resolve does not. If you want to
-        resolve attributes of the class (rather than an instance of the class
-        itself), overridde ~~doResolve instead.
-        """
-        if self._resolved:
-            return self
-        
-        self._resolved = True
-        self.doResolve(resolver)
-        return self
-    
     def doResolve(self, resolver):
         """XXXX"""
-        pass
+        for expr in self._attrs.values():
+            if expr:
+                expr.resolve(resolver)
     
     def validate(self, vld):
         """Validates the semantic correctness of the type.
@@ -196,8 +276,30 @@ class Type(object):
         
         vld: ~~Validator - The validator triggering the validation.
         """
-        pass
-    
+        for (name, expr) in self._attrs.items():
+            
+            all = self.supportedAttributes()
+            if name not in all:
+                vld.error(self, "unknown type attribute &%s" % name)
+                continue
+            
+            (ty, init, default) = all[name]
+            
+            if ty and not expr:
+                vld.error(self, "attribute must have expression of type %s" % ty)
+            
+            if expr and not ty:
+                vld.error(self, "attribute cannot have an expression")
+
+            if init and not expr.isInit():
+                vld.error(self, "attribute's expression must be suitable for initializing a value")
+
+            if ty and not expr.canCoerceTo(ty) and not isinstance(ty, Any):
+                vld.error(self, "attribute's expression must be of type %s, but is %s" % (ty, expr.type()))
+            
+            if expr:
+                expr.validate(vld)
+        
     def validateCtor(self, vld, value):
         """Validates the semantic correctness of a ctor value of the type.
         
@@ -208,6 +310,30 @@ class Type(object):
         value: any - The value in type-specific type. 
         """
         util.internal_error("Type.validateCtor() not overidden for %s" % self.__class__)
+
+    def supportedAttributes(self):
+        """Returns the attributes this type supports.
+        
+        Returns: dictionary *name* -> (*type*, *init*, *default*) -
+        *name* is a string with the attribute's name (excluding the
+        leading ampersand); *type* is a ~~Type defining the type the
+        attribute's expression must have, or None if the attribute
+        doesn't take a expression; *init* is a boolean indicating
+        whether the attribute's expression must suitable for
+        intializing a HILTI variable; and *default* is a ~~Ctor
+        expression with a default expression to be used if the
+        attributes is not explicitly specified, or None if the
+        attribute is unset by default.
+
+        This method can be overridden by derived classes. The
+        default implementation returns an empty dictionary, i.e., no
+        supported attributes. 
+        
+        Note if you want to support the ``&default`` attribute, you need to
+        overwrite this method and add an entry ``{ "default": (self, True,
+        None) }``. You don't need to do anything else than that though.
+        """
+        return {}
         
     def hiltiType(self, cg):
         """Returns the corresponding HILTI type. 
@@ -305,8 +431,6 @@ class ParseableType(Type):
     """
     def __init__(self, params=None, location=None):
         super(ParseableType, self).__init__(params=params, location=location)
-
-        self._attrs = {}
         self._pgen = None
 
     def parserGen(self):
@@ -317,79 +441,6 @@ class ParseableType(Type):
         """
         return self._pgen
         
-    def hasAttribute(self, name):
-        """Returns whether an attribute has been defined. If an attribute has
-        a default expression, it is always returned as being defined.
-        
-        name: string - The name of the attribute, without the leading
-        ampersand. The name must be returned by ~~supportedAttributes.
-        
-        Returns: bool - True if the attribute is defined.
-        """
-        if name in self._attrs:
-            return True
-        
-        try:
-            all = self.supportedAttributes()
-            (ty, const, default) = all[name]
-        except KeyError:
-            return None
-            
-        if default:
-            return True
-        
-        return False
-        
-    def attributeExpr(self, name):
-        """Returns the expression associated with an attribute. If the
-        attribute is not defined, or if the attribute is defined but does not
-        have an expression, *None* is returned. If the value is not defined
-        but has a default expression, the default is returned.
-
-        name: string - The name of the attribute, without the leading
-        ampersand. The name must be returned by ~~supportedAttributes.
-        
-        Returns: ~~Expr or None - The expression associated with the
-        attribute, or None as described above.
-        """
-        try:
-            all = self.supportedAttributes()
-            (ty, const, default) = all[name]
-        except KeyError:
-            return None
-            
-        if name in self._attrs:
-            return self._attrs[name]
-        
-        return default
-
-    class AttributeMismatch(Exception):
-        pass
-    
-    def addAttribute(self, name, expr):
-        """Adds an attribute to the type.
-        
-        name: string - The name of the attribute without the leading
-        ampersand, which must be among those reported by
-        ~~supportedAttributes.
-        
-        expr: ~~Expr - a constant ~~Expression giving the attribute's
-        expression, or None if the attributes doesn't have an expression. Presence
-        and type of *expr* must correspond to what ~~supportedAttributes
-        specifies.
-        """
-        self._attrs[name] = expr
-
-    def copyAttributesFrom(self, other):
-        """XXXX"""
-        
-        if builtin_id(self._attrs) == builtin_id(other._attrs):
-            return
-        
-        # self._attrs = {}
-        for (key, val) in other._attrs.items():
-            self._attrs[key] = val
-
     def generateUnpack(self, cg, op1, op2, op3=None):
         """Generates a HILTI ``unpack`` instruction wrapped in error handling
         code. The error handling code will do "the right thing" when either a
@@ -473,38 +524,6 @@ class ParseableType(Type):
 
         cg.setBuilder(suspend)
         
-    def validate(self, vld):
-        Type.validate(self, vld)
-        
-        for (name, expr) in self._attrs.items():
-            
-            all = self.supportedAttributes()
-            if name not in all:
-                vld.error(self, "unknown type attribute &%s" % name)
-                continue
-            
-            (ty, init, default) = all[name]
-            
-            if ty and not expr:
-                vld.error(self, "attribute must have expression of type %s" % ty)
-            
-            if expr and not ty:
-                vld.error(self, "attribute cannot have an expression")
-
-            if init and not expr.isInit():
-                vld.error(self, "attribute's expression must be suitable for initializing a value")
-
-            if ty and not expr.canCoerceTo(ty) and not isinstance(ty, Any):
-                vld.error(self, "attribute's expression must be of type %s, but is %s" % (ty, expr.type()))
-            
-            if expr:
-                expr.validate(vld)
-        
-    def doResolve(self, resolver):
-        for expr in self._attrs.values():
-            if expr:
-                expr.resolve(resolver)
-                
     ### Methods for derived classes to override.    
 
     def parsedType(self):
@@ -533,30 +552,6 @@ class ParseableType(Type):
         """
         return self.parsedType()
     
-    def supportedAttributes(self):
-        """Returns the attributes this type supports.
-        
-        Returns: dictionary *name* -> (*type*, *init*, *default*) -
-        *name* is a string with the attribute's name (excluding the
-        leading ampersand); *type* is a ~~Type defining the type the
-        attribute's expression must have, or None if the attribute
-        doesn't take a expression; *init* is a boolean indicating
-        whether the attribute's expression must suitable for
-        intializing a HILTI variable; and *default* is a ~~Ctor
-        expression with a default expression to be used if the
-        attributes is not explicitly specified, or None if the
-        attribute is unset by default.
-
-        This method can be overridden by derived classes. The
-        default implementation returns an empty dictionary, i.e., no
-        supported attributes. 
-        
-        Note if you want to support the ``&default`` attribute, you need to
-        overwrite this method and add an entry ``{ "default": (self, True,
-        None) }``. You don't need to do anything else than that though.
-        """
-        return {}
-
     def validateInUnit(self, field, vld):
         """Validates the semantic correctness of the type when used inside a
         unit definition.
@@ -574,12 +569,12 @@ class ParseableType(Type):
     
     def initParser(self, field):
         """Hook into parser initialization. The method will be called at the
-        time a ~~UnitField is created that has this type as its
-        ~~UnitField.type. 
+        time a ~~UnitField has resolved all it unknown symbols but not
+        performed anything else yet. 
         
         This method can be overridden by derived classes if they need to
         perform some field-specific initialization already before *production*
-        is called. An example is setting the field's ~~FieldControlHook.  The
+        is called. An example is adding the field's ~~FieldControlHook.  The
         default implementation does nothing. 
         
         field: ~~UnitField - The newly instantiated unit field. 
@@ -597,6 +592,10 @@ class ParseableType(Type):
         the same *field* before ~~production.
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
+        
+    def productionForLiteral(self, field, literal):
+        """XXXX""" 
+        util.internal_error("Type.productionForLiteral() not overidden for %s" % self.__class__)
         
     def generateParser(self, cg, cur, dst, skipping):
         """Generate code for parsing an instance of the type. 

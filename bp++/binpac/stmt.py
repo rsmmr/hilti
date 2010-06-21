@@ -194,13 +194,12 @@ class UnitHook(Block):
         
         if self._field:
             self._field.validate(vld)
-    
+
 class FieldControlHook(UnitHook):
-    """An internal field hook that can exercise control over the parsing. A
-    field control is hook is not user-visible but internally created by types
-    that define a ``$$`` identifier for use in a field's attribute
-    expressions. It is associated with a field by calling ~~setControlHook.
-    The hook's ~~scope has the ``$$`` identifier defined. 
+    """An field hook that can exercise control over the parsing, and defines a
+    ``$$`` identifier for use in a field's attribute expressions or
+    statements. It is associated with a field by calling ~~addControlHook. The
+    hook's ~~scope has the ``$$`` identifier defined. 
     
     field: ~~Field - The field to which hook is attached. 
     
@@ -208,14 +207,18 @@ class FieldControlHook(UnitHook):
     defined for the same field, they are executed in order of decreasing
     priority.
 
-    ddtype: ~~Type - The type of the ``$$`` identifier defined by this hook.
+    ddtype: ~~Type or function - The type of the ``$$`` identifier defined by
+    this hook. If this a function, it will be called (without any arguments)
+    when the type is needed for the first time and must then return the type.
+    This can be used if the type is not yet known at the time of hook
+    instantiation.
     
     stms: list of ~~Statement - Series of statements to initalize the hook with.
-    
     """
     def __init__(self, field, prio, ddtype, stmts=None, location=None):
         super(FieldControlHook, self).__init__(field.parent(), field, prio, stmts, location=location)
         self._ddtype = ddtype
+        self.scope().addID(id.Local("__dollardollar", ddtype if ddtype else type.Unknown("unknown-$$-type")))
         
     def dollarDollarType(self):
         """Returns the type of the hook's ``$$`` identifier.
@@ -224,26 +227,82 @@ class FieldControlHook(UnitHook):
         """
         return self._ddtype
     
+    def setDollarDollarType(self, ddtype):
+        """XXXX"""
+        self._ddtype = ddtype
+        self.scope().addID(id.Local("__dollardollar", ddtype))
+    
     ### Overidden from node.Node.
     
     def resolve(self, resolver):
         UnitHook.resolve(self, resolver)
         self._ddtype = self._ddtype.resolve(resolver)
-    
-    def validate(self, vld):
-        UnitHook.validate(self, resolver)
-        self._ddtype.validate(resolver)
-        
-    ### Overidden from Block.
-    
-    def scope(self):
-        # Add the $$ identifier. Can't do that in the ctor because types might
-        # not be resolved at that time.
-        scope = super(UnitHook, self).scope()
-        if not scope.lookupID("__dollardollar") and self._ddtype and not isinstance(self._ddtype, type.Unknown):
-            scope.addID(id.Local("__dollardollar", self._ddtype))
             
-        return scope
+    def validate(self, vld):
+        UnitHook.validate(self, vld)
+        
+        if isinstance(self._ddtype, type.Type):
+            self._ddtype.validate(vld)
+            
+    ### Overidden from Block.
+
+class InternalControlHook(FieldControlHook):
+    """An implicitly defined, non user-visble control hook.
+    
+    field: ~~Field - The field to which hook is attached. 
+    
+    prio: int - The priority of the statement. If multiple statements are
+    defined for the same field, they are executed in order of decreasing
+    priority.
+
+    ddtype: ~~Type or function - The type of the ``$$`` identifier defined by
+    this hook. If this a function, it will be called (without any arguments)
+    when the type is needed for the first time and must then return the type.
+    This can be used if the type is not yet known at the time of hook
+    instantiation.
+    
+    stms: list of ~~Statement - Series of statements to initalize the hook with.
+    """
+    def __init__(self, field, prio, ddtype, stmts=None, location=None):
+        super(InternalControlHook, self).__init__(field, prio, ddtype, stmts, location)
+
+    def validate(self, vld):
+        FieldControlHook.validate(self, vld)
+        
+        # FIXME: Currently, list is our only container type. We should however
+        # add Container trait eventually and then check for that.
+        if not isinstance(self.field().type(), type.List):
+            vld.error(self, "foreach can only be used with containter types")
+    
+class ForEachHook(FieldControlHook):
+    """A user-defined control hook that is triggered for each new element
+    parsed into a container. This hook must only be added to unit fields of a
+    container type.
+    
+    field: ~~Field - The field to which hook is attached. 
+    
+    prio: int - The priority of the statement. If multiple statements are
+    defined for the same field, they are executed in order of decreasing
+    priority.
+
+    ddtype: ~~Type or function - The type of the ``$$`` identifier defined by
+    this hook. If this a function, it will be called (without any arguments)
+    when the type is needed for the first time and must then return the type.
+    This can be used if the type is not yet known at the time of hook
+    instantiation.
+    
+    stms: list of ~~Statement - Series of statements to initalize the hook with.
+    """
+    def __init__(self, field, prio, ddtype, stmts=None, location=None):
+        super(ForEachHook, self).__init__(field, prio, ddtype, stmts, location)
+
+    def validate(self, vld):
+        FieldControlHook.validate(self, vld)
+        
+        # FIXME: Currently, list is our only container type. We should however
+        # add Container trait eventually and then check for that.
+        if not isinstance(self.field().type(), type.List):
+            vld.error(self, "foreach can only be used with containter types")
     
 class Print(Statement):
     """The ``print`` statement.

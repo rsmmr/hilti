@@ -349,6 +349,11 @@ class ParserGen:
         done.bytes_sub(token, args.lahstart, args.cur)
         
         self.cg().setBuilder(done)
+
+        # Run the value through any potential filter function. 
+        filter = lit.filter()
+        if filter:
+            token = operator.evaluate(operator.Operator.Call, self.cg(), [filter, [expr.Hilti(token, lit.parsedType())]])
         
         self._finishedProduction(args.obj, lit, token)
         
@@ -666,6 +671,9 @@ class ParserGen:
         builder = cg.builder()
         fbuilder = cg.functionBuilder()
         
+        done = fbuilder.newBuilder("hook-done")
+        rc = fbuilder.addTmp("__hookrc", hilti.type.Bool(), builder.constOp(True))
+        
         for hook in hooks:
             
             if cg.inHook(hook):
@@ -676,15 +684,22 @@ class ParserGen:
             
             params = []
             for p in self._grammar.params():
-                params += [builder.idOp(p.name())]
+                params += [cg.builder().idOp(p.name())]
 
             if isinstance(hook, stmt.FieldControlHook):
                 # Add the implicit '$$' argument. 
                 assert value
                 params += [value]
                 
-            rc = fbuilder.addTmp("__hookrc", hilti.type.Bool())
-            builder.call(rc, builder.idOp(hookf.name()), builder.tupleOp([obj] + params))
+            cg.builder().call(rc, builder.idOp(hookf.name()), builder.tupleOp([obj] + params))
+            
+            # First returning false stops hook execution.
+            next = fbuilder.newBuilder("hook-next")
+            cg.builder().if_else(rc, next.labelOp(), done.labelOp())
+            cg.setBuilder(next)
+    
+        cg.builder().jump(done.labelOp())
+        cg.setBuilder(done)
             
     ### Methods defining types. 
     

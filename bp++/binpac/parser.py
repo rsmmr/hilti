@@ -7,6 +7,7 @@ builtin_id = id
 import os.path
 import warnings
 import sys
+import copy
 
 import ply
 
@@ -61,6 +62,7 @@ def p_instantiate_module(p):
     p.parser.state.module = module.Module(p[-1], location=_loc(p, -1))
     p.parser.state.scopes = [None]
     p.parser.state.blocks = [None]
+    p.parser.state.typename = None
     _pushScope(p, p.parser.state.module.scope())
     
 def p_module_global_list(p):
@@ -122,15 +124,21 @@ def p_global_or_const(p):
     p[0] = p[1]                   
     
 def p_type_decl(p):
-    """type_decl : opt_linkage TYPE IDENT '=' type ';'"""
+    """type_decl : opt_linkage TYPE IDENT _set_typename '=' type ';'"""
     name = p[3]
-    type = p[5]
+    type = p[6]
     
     i = id.Type(name, type, linkage=p[1], location=_loc(p, 2))
     type.setName(name)
     
     _currentScope(p).addID(i)
-
+    
+    p.parser.state.typename = None
+    
+def p_set_typename(p):
+    """_set_typename : """
+    p.parser.state.typename = p[-1]
+    
 def p_def_opt_linkage(p):
     """opt_linkage : EXPORT
                    | """
@@ -229,15 +237,29 @@ def p_type_pac(p):
     """builtin_type : PACTYPE"""
     p[0] = p[1]
 
-    
  # Container types.
 
 def p_list(p):
-    """builtin_type : LIST '<' type opt_unit_field_params '>'"""
-    p[0] = type.List(p[3], itemparams=p[4], location=_loc(p, 1))
+    """builtin_type : LIST '<' unit_field_type '>'"""
+    ((val, ty), args) = p[3]
+    p[0] = type.List(ty, value=val, item_args=args, location=_loc(p, 1))
     
  # More complex types.
-
+   
+   # Enum type.
+def p_enum_type(p):
+    """builtin_type : ENUM '{' id_list '}'"""
+    assert p.parser.state.typename
+    p[0] = type.Enum(p[3], _currentScope(p), p.parser.state.typename)
+ 
+def p_id_list(p):                                                                                                                                                           
+    """id_list : IDENT "," id_list                                        
+               | IDENT"""                                                                                                                                                  
+    if len(p) == 2:                                                                                                                                                         
+        p[0] = [p[1]]                                                                                                                                                       
+    else:                                                                                                                                                                   
+        p[0] = [p[1]] + p[3]            
+    
    # Unit type.
 def p_type_unit(p):
     """builtin_type : UNIT opt_unit_param_list _instantiate_unit '{' _enter_unit_hook unit_item_list _leave_unit_hook  '}' """
@@ -246,7 +268,7 @@ def p_type_unit(p):
 
 def p_instantiate_unit(p):
     """_instantiate_unit :"""
-    p.parser.state.unit = type.Unit(_currentScope(p), params=p[-1])
+    p.parser.state.unit = type.Unit(_currentScope(p), args=p[-1])
     p.parser.state.in_switch = None 
 
 def p_enter_unit_hook(p):
@@ -322,18 +344,29 @@ def p_unit_field(p):
     p[0] = p.parser.state.field
 
 def p_unit_field_with_hook(p):
-    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond stmt_block _leave_unit_field"""
-    hook = stmt.UnitHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[7].statements())
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond opt_foreach stmt_block _leave_unit_field"""
+    if not p[7]:
+        hook = stmt.UnitHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[8].statements())
+        p.parser.state.field.addHook(hook)
+    else:
+        hook = stmt.ForEachHook(p.parser.state.field, 0, None, stmts=p[8].statements())
+        p.parser.state.field.addControlHook(hook)
+        
     _addAttrs(p, p.parser.state.field.type(), p[5])
-    p.parser.state.field.addHook(hook)
     p[0] = p.parser.state.field
 
+def p_opt_foreach(p):
+    """opt_foreach : FOREACH
+                   |
+    """
+    p[0] = len(p) > 1
+    
 def p_enter_unit_field(p):
     """_enter_unit_field : """
     # If the field has a control hook, we push it's scope.
-    hook = p.parser.state.field.controlHook()
-    if hook:
-        _pushScope(p, hook.scope())
+    hooks = p.parser.state.field.controlHooks()
+    if hooks:
+        _pushScope(p, hooks[0].scope())
     else:
         # Push a dummy scope so that we can pop in any case.
         _pushScope(p, scope.Scope(None, _currentScope(p)))
@@ -347,10 +380,9 @@ def p_instantiate_field(p):
     loc = location.Location(p.lexer.parser.state._filename, p.lexer.lineno)
     
     if not p.parser.state.in_switch:
-        p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=loc)
+        p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, args=p[-1][1], location=loc)
     else:
-        p.parser.state.field = unit.SwitchFieldCase(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, params=p[-1][1], location=loc)
-
+        p.parser.state.field = unit.SwitchFieldCase(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, args=p[-1][1], location=loc)
 
 def p_unit_field_type_const(p):
     """unit_field_type : CONSTANT opt_unit_field_params"""

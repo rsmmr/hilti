@@ -75,6 +75,10 @@ class Bytes(type.ParseableType):
         filter = self.attributeExpr("convert")
         return grammar.Variable(None, self, filter=filter, location=self.location())
 
+    def productionForLiteral(self, field, literal):
+        filter = self.attributeExpr("convert")
+        return grammar.Literal(None, literal, filter=filter)
+    
     def fieldType(self):
         filter = self.attributeExpr("convert")
         if filter:
@@ -128,7 +132,11 @@ class Bytes(type.ParseableType):
             
             return end
 
-        result = self.generateUnpack(cg, op1, op2, op3)
+        # FIXME: HILTI should have int64 lengths.
+        op3_32= fbuilder.addTmp("__op32", hilti.type.Integer(32))
+        cg.builder().int_trunc(op3_32, op3)
+        
+        result = self.generateUnpack(cg, op1, op2, op3_32)
         
         builder = cg.builder()
         

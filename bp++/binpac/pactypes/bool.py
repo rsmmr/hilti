@@ -84,9 +84,34 @@ class _:
         return expr.Ctor(result, type.Bool())
         
     def evaluate(cg, e1, e2):
-        tmp = cg.functionBuilder().addLocal("__and", hilti.type.Bool())
-        cg.builder().bool_and(tmp, e1.evaluate(cg), e2.evaluate(cg))
-        return tmp    
+        fbuilder = cg.functionBuilder()
+        
+        result = fbuilder.addLocal("__and", hilti.type.Bool())
+        op = fbuilder.addLocal("__op", hilti.type.Bool())
+        
+        # We (must) short-cut the evaluation if the first operand already
+        # returns false.
+        
+        eval_op2 = fbuilder.newBuilder("and_eval_op2")
+        true = fbuilder.newBuilder("and_true")
+        false = fbuilder.newBuilder("and_false")
+        cont = fbuilder.newBuilder("and_cont")
+        
+        op = e1.evaluate(cg)
+        cg.builder().if_else(op, eval_op2.labelOp(), false.labelOp())
+        
+        cg.setBuilder(eval_op2)
+        op = e2.evaluate(cg)
+        cg.builder().if_else(op, true.labelOp(), false.labelOp())
+        
+        true.assign(result, true.constOp(True))
+        true.jump(cont.labelOp())
+        
+        false.assign(result, false.constOp(False))
+        false.jump(cont.labelOp())
+        
+        cg.setBuilder(cont)
+        return result
     
     
         

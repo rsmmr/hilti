@@ -205,7 +205,7 @@ class Constant(ID):
     ### Overidden from ID.
     
     def evaluate(self, cg):
-        return self.type().hiltiConstant(cg, self._const)
+        return self._expr.hiltiInit(cg)
         
 class Local(ID):
     """An ID representing a local function variable. See ~~ID for arguments.
@@ -294,10 +294,10 @@ class Global(ID):
         ID.validate(self, vld)
         
         if self._expr and self._expr.type() != self.type():
-            vld.error("type of initializer expression does not match")
+            vld.error(self, "type of initializer expression does not match")
             
         if self._expr and not self._expr.isInit():
-            vld.error("expression cannot be used as initializer")
+            vld.error(self, "expression cannot be used as initializer")
 
     def pac(self, printer):
         printer.output("global %s: " % self.name())

@@ -38,14 +38,14 @@ class Field(node.Node):
     
     parent: ~~Unit - The unit type this field is part of.
     
-    params: list of ~~Expr - If *type* is a unit type, the parameters passed to
+    args: list of ~~Expr - If *type* is a unit type, the parameters passed to
     that on construction; if not (or if the unit type doesn't take any
     parameters), an empty list.
     
     Todo: Only ~~Bytes constant are supported at the moment. Which other's do
     we want? (Regular expressions for sure.)
     """
-    def __init__(self, name, value, ty, parent, params=None, location=None):
+    def __init__(self, name, value, ty, parent, args=None, location=None):
         if value:
             assert isinstance(value, expr.Expression)
             
@@ -55,14 +55,14 @@ class Field(node.Node):
         self._parent = parent
         self._location = location
         self._hooks = []
-        self._ctlhook = None
+        self._ctlhooks = []
         self._cond = None
-        self._params = params if params else []
+        self._args = args if args else []
         self._noid = False
 
         if isinstance(ty, type.ParseableType):
             ty.initParser(self)
-
+        
     def location(self):
         """Returns the location associated with the constant.
         
@@ -116,14 +116,14 @@ class Field(node.Node):
         """
         return self._value
 
-    def params(self):
+    def args(self):
         """Returns the parameters passed to the sub-type. Only relevant if
         *type* is also a ~~Unit type. 
         
         Returns: list of ~~Expr - The parameters; empty list for no
         parameters.
         """
-        return self._params
+        return self._args
     
     def hooks(self):
         """Returns the hook statements associated with the field.
@@ -143,26 +143,31 @@ class Field(node.Node):
         """
         self._hooks += [hook]
 
-    def setControlHook(self, hook):
-        """Sets the control hook for the field. The hook will be exectuted
-        when the field has been fully parsed. Different from \"normal\" hooks,
-        the control hook defines the ``$$`` identifier for the field's
+    def addControlHook(self, hook):
+        """Adds a control hook to the field. The hook will be
+        exectuted when the field has been fully parsed (for atomic
+        types), or when one subelement has been fully parsed (for
+        container types). Different from \"normal\" hooks, the
+        control hook defines the ``$$`` identifier for the field's
         attribute expressions.
         
         hook: ~~FieldControlHook - The hook.
+        
+        Todo: Not sure if it's actually called for atomic types
+        and/or what the semantics are in that case.
         """
         assert isinstance(hook, stmt.FieldControlHook)
-        self._ctlhook = hook
+        self._ctlhooks += [hook]
 
-    def controlHook(self):
-        """Returns the field's control hook. The hook will be exectuted when
+    def controlHooks(self):
+        """Returns the field's control hooks. The hook will be exectuted when
         the field has been fully parsed. Different from \"normal\" hooks, the
         control hook defines the ``$$`` identifier for the field's attribute
         expressions.
         
-        Returns:  ~~FieldControlHook - The hook.
+        Returns:  list of ~~FieldControlHook - The hooks.
         """
-        return self._ctlhook
+        return self._ctlhooks
 
     def condition(self, cond):
         """Returns any boolean condidition associated with the field.
@@ -205,7 +210,7 @@ class Field(node.Node):
         if self._value:
             for t in _AllowedConstantTypes:
                 if isinstance(self._type, t):
-                    prod = grammar.Literal(self._name, self._value, location=self._location)
+                    prod = self._type.productionForLiteral(self, self._value)
                     break
             else:
                 util.internal_error("unexpected constant type for literal")
@@ -213,16 +218,17 @@ class Field(node.Node):
         else:
             prod = self._type.production(self)
             assert prod
-            prod.setName(self._name)
-            prod.setType(self._type)
             
             if self._noid:
                 prod.setNoID()
             
-            if self._params:
+            if self._args:
                 assert isinstance(prod, grammar.ChildGrammar)
-                prod.setParams(self._params)
+                prod.setParams(self._args)
 
+        prod.setName(self._name)
+        prod.setType(self._type)
+        
         assert prod
         
         # We add the hooks to a concatened epsilon production. If we woudl add
@@ -232,7 +238,8 @@ class Field(node.Node):
         prod = grammar.Sequence(seq=[prod, eps])
                 
         for hook in self._hooks:
-            eps.addHook(hook)
+            if not isinstance(hook, stmt.ForEachHook):
+                eps.addHook(hook)
             
         if self._cond:
             prod = grammar.Boolean(self._cond, prod, grammar.Epsilon())
@@ -247,7 +254,6 @@ class Field(node.Node):
 
     def resolve(self, resolver):
         if self._type:
-
             old_type = self._type
 
             # Before we resolve the type, let's see if it's actually refering
@@ -263,22 +269,28 @@ class Field(node.Node):
                     
             else:
                 self._type = self._type.resolve(resolver)
+
+            if self._type and self._type.attributeExpr("until"):
+                self._type.attributeExpr("until").resolve(resolver)
                 
             self._type.copyAttributesFrom(old_type)
-
+            
+        for ctlhook in self._ctlhooks:
+            ctlhook.resolve(resolver)
+            
         if self._cond:
             self._cond.resolve(resolver)
-        
-        if self._ctlhook:
-            self._ctlhook.resolve(resolver)
-            
+
     def validate(self, vld):
         if self._value:
             util.check_class(self._value, expr.Expression, "Field.validate")
         
         for hook in self._hooks:
             hook.validate(vld)
-        
+
+        for ctlhook in self._ctlhooks:
+            ctlhook.validate(vld)
+            
         if self._type:
             if not isinstance(self._type, type.ParseableType):
                 # If the production function has not been overridden, we can't
@@ -297,17 +309,17 @@ class Field(node.Node):
                 vld.error(self, "type %s cannot be used in a constant unit field" % self.type())
 
         if isinstance(self._type, Unit):
-            if len(self._params) != len(self._type.params()):
-                vld.error(self, "number of unit parameters do not match (have %d, but expected %d)" % (len(self._params), len(self._type.params())))
+            if len(self._args) != len(self._type.args()):
+                vld.error(self, "number of unit parameters do not match (have %d, but expected %d)" % (len(self._args), len(self._type.args())))
 
             i = 0
-            for (have, want) in zip(self._params, self._type.params()):
+            for (have, want) in zip(self._args, self._type.args()):
                 i += 1
                 if have.type() != want.type():
                     vld.error(self, "unit parameter %d mismatch: is %s but need %s" % (have.type(), want.type()))
 
         else:
-            if len(self._params):
+            if len(self._args):
                 vld.error(self, "type does not receive any parameters")
             
         if self._cond and not isinstance(self._cond.type(), type.Bool):
@@ -444,8 +456,8 @@ class SwitchFieldCase(SubField):
     
     See ~~Field for parameters.
     """
-    def __init__(self, name, value, ty, parent, params=None, location=None):
-        super(SwitchFieldCase, self).__init__(name, value, ty, parent, params=params, location=location)
+    def __init__(self, name, value, ty, parent, args=None, location=None):
+        super(SwitchFieldCase, self).__init__(name, value, ty, parent, args=args, location=location)
         self._default = False
         self._expr = None
 
@@ -508,7 +520,7 @@ class Unit(type.ParseableType):
 
     pscope: ~~Scope - The parent scope for this unit. 
 
-    params: list of ~~ID - Optional parameters for the unit type. 
+    args: list of ~~ID - Optional parameters for the unit type. 
     
     location: ~~Location - A location object describing the point of definition.
     
@@ -517,7 +529,7 @@ class Unit(type.ParseableType):
 
     _valid_hooks = ("%ctor", "%dtor", "%error")
 
-    def __init__(self, pscope, params=None, location=None):
+    def __init__(self, pscope, args=None, location=None):
         Unit._counter += 1
         super(Unit, self).__init__(location=location)
         self._props = {}
@@ -527,11 +539,12 @@ class Unit(type.ParseableType):
         self._hooks = {}
         self._prod = None 
         self._grammar = None
-        self._params = params if params else []
+        self._args = args if args else []
         self._scope = scope.Scope(None, pscope)
         
         self._scope.addID(id.Parameter("self", self, location=location))
-        for p in params:
+        
+        for p in self._args:
             self._scope.addID(p)
         
     def name(self):
@@ -574,12 +587,12 @@ class Unit(type.ParseableType):
         except KeyError:
             return []
 
-    def params(self):
+    def args(self):
         """Returns the unit's parameters.
         
         Returns: list of ~~ID - The parameter; empty list for no parameters.
         """
-        return self._params
+        return self._args
     
     def addField(self, field):
         """Adds a field to the unit type.
@@ -716,7 +729,7 @@ class Unit(type.ParseableType):
         if not self._grammar:
             seq = [f.production() for f in self._fields_ordered if not isinstance(f, SubField)]
             seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
-            self._grammar = grammar.Grammar(self.name(), seq, self._params, addl_ids=self._vars.values(), location=self.location())
+            self._grammar = grammar.Grammar(self.name(), seq, self._args, addl_ids=self._vars.values(), location=self.location())
             
         return self._grammar
 
@@ -735,9 +748,9 @@ class Unit(type.ParseableType):
     def doResolve(self, resolver):
         super(Unit, self).doResolve(resolver)
         
-        for param in self._params:
+        for param in self._args:
             param.resolve(resolver)
-
+        
         for fields in self._fields.values():
             for f in fields:
                 f.resolve(resolver)
@@ -809,6 +822,9 @@ class Unit(type.ParseableType):
                 if cnt_ids > 1:
                     vld.error(self, "field name defined more than once with different types")
 
+        for param in self._args:
+            param.validate(vld)
+                    
     def pac(self, printer):
         printer.output("<unit type - TODO>")
 
@@ -842,7 +858,7 @@ class Attribute:
     
     def validate(vld, lhs, ident):
         name = ident.name()
-        if not name in lhs.type().variables() and not lhs.type().field(name):
+        if name and not name in lhs.type().variables() and not lhs.type().field(name):
             vld.error(lhs, "unknown unit attribute '%s'" % name)
         
     def type(lhs, ident):
