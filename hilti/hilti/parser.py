@@ -92,8 +92,8 @@ def p_def_global(p):
     
     op = p[4] if len(p) > 4 else None
                   
-    if op and not (isinstance(p[4], operand.Constant) or isinstance(p[4], operand.Ctor)):
-        util.parser_error(p, "value must be an initializer")
+    if op and not (isinstance(p[4], operand.Constant) or isinstance(p[4], operand.Ctor) or isinstance(p[4], operand.ID)):
+        util.parser_error(p, "value must be an initializer X")
         raise SyntaxError
     
     (type, name) = p[2]

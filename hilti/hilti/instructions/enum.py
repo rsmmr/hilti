@@ -45,7 +45,7 @@ class Enum(type.ValueType, type.Constable):
     ### Overridden from Type.
     
     def name(self):
-        labels = [l for l in sorted(self._labels.keys()) if l != "Unknown"]
+        labels = [l for l in sorted(self._labels.keys()) if l != "Undef"]
         return "enum { %s }" % ", ".join(labels)
     
     ### Overridden from HiltiType.
@@ -98,8 +98,15 @@ class Enum(type.ValueType, type.Constable):
         return cg.llvmConstInt(self._labels[const.value()], 8)
 
     def outputConstant(self, printer, const):
-        printer.output(const.value())    
+        
+        for i in printer.currentModule().scope().IDs():
+            if not isinstance(i, id.Type):
+                continue
 
+            if i.type() == self:
+                namespace = i.name()
+        
+        printer.output(namespace + "::" + const.value())
 
 @hlt.overload(Equal, op1=cEnum, op2=cSameTypeAsOp(1), target=cBool)
 class Equal(Operator):

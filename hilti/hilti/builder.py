@@ -189,6 +189,26 @@ class ModuleBuilder(OperandBuilder):
         i = id.Type(name, ty)
         self._module.scope().add(i)        
         return self.typeOp(ty)
+
+    def addEnumType(self, name, labels):
+        """Adds a new enum type declaration to the module's scope.
+        
+        name: string - The type name of the enum.
+        
+        labels: list of string - The labels, without any namespace.
+        
+        Returns: ~~Type - The new type, which has been added to the module.
+        """
+        t = type.Enum(labels)
+        self._module.scope().add(id.Type(name, t))
+        
+        # Add  the labels to the module's scope.
+        for (label, value) in t.labels().items():
+            c = constant.Constant(label, t)
+            eid = id.Constant(name + "::" + label, operand.Constant(c), linkage=id.Linkage.EXPORTED)
+            self._module.scope().add(eid)
+        
+        return t
     
 class FunctionBuilder(OperandBuilder):
     """A class for building functions. 
@@ -330,7 +350,7 @@ class FunctionBuilder(OperandBuilder):
         
         return op
         
-    def addTmp(self, name, ty):
+    def addTmp(self, name, ty, value = None):
         """Creates a temporary local variable. The variable can then be used
         for storing intermediary results until this method is called the next
         time with the same name and type; in that case, the existing local
@@ -342,6 +362,9 @@ class FunctionBuilder(OperandBuilder):
         name: string - The name of the temporary.
         
         ty: ~~Type - The type of the temporary.
+        
+        value: ~~Constant - Optional initialization of the tmp.  Note that if
+        the local already exists, it's current value will be overridden.
         
         Returns: ~~hilti.operand.ID - An ID
         referencing the temporary.
@@ -357,7 +380,7 @@ class FunctionBuilder(OperandBuilder):
         except KeyError:
             pass
         
-        tmp = self.addLocal(name, ty, force=True)
+        tmp = self.addLocal(name, ty, value, force=True)
         
         self._tmps[idx] = tmp
         return tmp

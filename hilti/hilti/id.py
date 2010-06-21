@@ -326,6 +326,11 @@ class Local(ID):
         
     ### Overidden from node.Node.
 
+    def resolve(self, resolver):
+        ID.resolve(self, resolver)
+        if self._init:
+            self._init.resolve(resolver)
+    
     def validate(self, vld):
         ID.validate(self, vld)
 
@@ -417,6 +422,11 @@ class Global(ID):
     
     ### Overidden from node.Node.
 
+    def resolve(self, resolver):
+        ID.resolve(self, resolver)
+        if self._init:
+            self._init.resolve(resolver)
+    
     def validate(self, vld):
         ID.validate(self, vld)
 
@@ -482,6 +492,7 @@ class Function(ID):
     ### Overidden from node.Node.
 
     def resolve(self, resolver):
+        ID.resolve(self, resolver)
         self._func.resolve(resolver)
         self._type = self._type.resolve(resolver)
         

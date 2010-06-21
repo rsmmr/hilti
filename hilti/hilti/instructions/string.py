@@ -32,6 +32,7 @@ def _makeLLVMString(cg, s):
         return llvm.core.Constant.null(_llvmStringTypePtr(0))
     
     s = s.encode("utf-8")
+    
     size = llvm.core.Constant.int(llvm.core.Type.int(32), len(s))
     bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in s]
     struct = llvm.core.Constant.packed_struct([size, llvm.core.Constant.array(llvm.core.Type.int(8), bytes)])
