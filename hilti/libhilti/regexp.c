@@ -155,7 +155,7 @@ struct match_state {
 static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms, 
                                      const hlt_bytes_pos begin, const hlt_bytes_pos end, 
                                      jrx_offset* so, jrx_offset* eo, hlt_exception** excpt,
-                                     int do_anchor)
+                                     int do_anchor, int find_partial_matches)
 {
     // We follow one of two strategies here:
     // 
@@ -171,6 +171,11 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
     // positions. (Setting do_anchor to 1 prevents the iteration and will
     // only match right from the beginning. Note that this flag only works
     // with REG_NOSUB).
+    // 
+    // If find_partial_matches is 0, we don't report a match as long as more
+    // input could still change the result (i.e., there are still DFA
+    // transitions possible after processing the last bytes). In this case,
+    // the function returns -1 as if there wasn't any match yet.
     
     // FIXME: In (2), we might be doing a bit more comparisions than with an
     // implicit .*, and the manual loop also adds a bit overhead. That seems
@@ -184,6 +189,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
     int8_t need_msdone = 0;
     hlt_bytes_size offset = 0;
     hlt_bytes_pos cur = begin;
+    int block_len = 0;
     
     int8_t stdmatcher = ! (re->regexp.cflags & REG_NOSUB);
 
@@ -211,12 +217,13 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
                 // Final chunk.
                 last |= JRX_ASSERTION_EOL | JRX_ASSERTION_EOD;
             
-            int len = block.end - block.start;
-            jrx_accept_id rc = jrx_regexec_partial(&re->regexp, (const char*)block.start, len, first, last, ms);
-            
+            block_len = block.end - block.start;
+            int fpm = (! cookie) && find_partial_matches;
+            jrx_accept_id rc = jrx_regexec_partial(&re->regexp, (const char*)block.start, block_len, first, last, ms, fpm);
+
             if ( rc == 0 )
-                // No match.
-                break;
+                // No further match.
+                return acc;
             
             if ( rc > 0 ) {
                 // Match.
@@ -238,8 +245,10 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
                     if ( eo )
                         *eo = pmatch.rm_eo;
                 }
+                
+                return acc;
             }
-            
+
             if ( ! cookie ) {
                 if ( rc < 0 && acc == 0 )
                     // At least one could match with more data.
@@ -256,7 +265,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
         offset++;
         first = 0;
     }
-    
+
     return acc;
 }
     
@@ -268,7 +277,7 @@ int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const h
     }
     
     jrx_match_state ms;
-    jrx_accept_id acc = _search_pattern(re, &ms, begin, end, 0, 0, excpt, 0);
+    jrx_accept_id acc = _search_pattern(re, &ms, begin, end, 0, 0, excpt, 0, 1);
     jrx_match_state_done(&ms);
     return acc;
 }
@@ -285,7 +294,7 @@ hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos
     jrx_offset so = -1;
     jrx_offset eo = -1;
     jrx_match_state ms;
-    result.rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt, 0);
+    result.rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt, 0, 1);
     jrx_match_state_done(&ms);
     
     if ( result.rc > 0 ) {
@@ -325,7 +334,7 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, c
     jrx_offset so = -1;
     jrx_offset eo = -1;
     jrx_match_state ms;
-    int8_t rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt, 0);
+    int8_t rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt, 0, 1);
 
     if ( rc > 0 ) {
         _set_group(vec, begin, 0, so, eo, excpt);
@@ -364,7 +373,7 @@ hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const
 
     jrx_match_state ms;
     jrx_offset eo;
-    jrx_accept_id rc = _search_pattern(re, &ms, begin, end, 0, &eo, excpt, 1);
+    jrx_accept_id rc = _search_pattern(re, &ms, begin, end, 0, &eo, excpt, 1, 0);
     jrx_match_state_done(&ms);
     
     hlt_regexp_match_token_result result = { rc, (rc > 0 ? hlt_bytes_pos_incr_by(begin, eo, excpt) : begin) };        
