@@ -79,7 +79,7 @@ static inline jrx_match_accept _pick_accept(set_match_accept* accepts)
 // 0: matching failed and can't be resumed.
 // >0: accept with this ID (if multiple, it's undefined which).
 // -1: partial but not full match yet.
-static int _regexec_partial_std(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms)
+static int _regexec_partial_std(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms, int find_partial_matches)
 {
     for ( const char* p = buffer; len; len-- ) {
 
@@ -97,6 +97,9 @@ static int _regexec_partial_std(const jrx_regex_t *preg, const char *buffer, uns
         }
         
     }
+
+    if ( ! find_partial_matches && jrx_can_transition(ms) )
+        return -1;
     
     jrx_match_accept acc = _pick_accept(ms->accepts);
     return acc.aid ? acc.aid : -1;
@@ -107,9 +110,8 @@ static int _regexec_partial_std(const jrx_regex_t *preg, const char *buffer, uns
 // 0: matching failed and can't be resumed.
 // >0: accept with this ID (if multiple, it's undefined which).
 // -1: partial but not full match yet.
-static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms)
+static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms, int find_partial_matches)
 {
-    jrx_accept_id acc = -1;
     jrx_offset eo = 0;
     
     for ( const char* p = buffer; len; --len ) {
@@ -122,20 +124,24 @@ static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, uns
             assertions |= last;
         
         jrx_accept_id rc = jrx_match_state_advance_min(ms, *p++, assertions);
-
+        
         if ( ! rc ) {
             ms->offset = eo;
-            return acc > 0 ? acc : 0;
+            return ms->acc > 0 ? ms->acc : 0;
         }
         
         if ( rc > 0 ) {
-            acc = rc;
+            ms->acc = rc;
             eo = ms->offset;
         }
     }
     
     ms->offset = eo;
-    return acc;
+
+    if ( ! find_partial_matches && jrx_can_transition(ms) )
+        return -1;
+    
+    return ms->acc;
 }
 
 void jrx_regset_init(jrx_regex_t *preg, int nmatch, int cflags)
@@ -199,14 +205,14 @@ int jrx_regcomp(jrx_regex_t *preg, const char *pattern, int cflags)
 // 0: matching failed and can't be resumed.
 // >0: accept with this ID (if multiple, it's undefined which).
 // -1: partial but not full match yet.
-int jrx_regexec_partial(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms)
+int jrx_regexec_partial(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms, int find_partial_matches)
 {
     int rc = 0;
     
     if ( preg->cflags & REG_STD_MATCHER ) 
-        rc = _regexec_partial_std(preg, buffer, len, first, last, ms);
+        rc = _regexec_partial_std(preg, buffer, len, first, last, ms, find_partial_matches);
     else
-        rc = _regexec_partial_min(preg, buffer, len, first, last, ms);
+        rc = _regexec_partial_min(preg, buffer, len, first, last, ms, find_partial_matches);
     
     return rc;
 }
@@ -255,7 +261,7 @@ int jrx_regexec(const jrx_regex_t *preg, const char *string, size_t nmatch, jrx_
     jrx_assertion first = JRX_ASSERTION_BOL | JRX_ASSERTION_BOD;
     jrx_assertion last = JRX_ASSERTION_EOL | JRX_ASSERTION_EOD;
         
-    int rc = jrx_regexec_partial(preg, string, strlen(string), first, last, &ms);
+    int rc = jrx_regexec_partial(preg, string, strlen(string), first, last, &ms, 1);
 
     if ( rc <= 0 ) {
         jrx_match_state_done(&ms);
@@ -315,4 +321,23 @@ int jrx_num_groups(jrx_regex_t *preg)
 {
     return preg->dfa->max_capture + 1;
 }
+
+int jrx_can_transition(jrx_match_state* ms)
+{
+    jrx_dfa_state* state = vec_dfa_state_get(ms->dfa->states, ms->state);
+    
+    if ( ! state ) {
+        if ( ms->dfa->options & JRX_OPTION_DEBUG )
+            fprintf(stderr, "> can_transition: 0\n");
+        
+        return 0;
+    }
+    
+    int can = vec_dfa_transition_size(state->trans);
+    if ( ms->dfa->options & JRX_OPTION_DEBUG )
+        fprintf(stderr, "> can_transition: %d (%d)\n", (can != 0), can);
+    
+    return can;
+}
+
 

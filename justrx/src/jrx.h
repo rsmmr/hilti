@@ -48,6 +48,8 @@ struct jrx_match_state {
     jrx_offset* tags1;                 // 1st & 2nd set of position of tags; (we use
     jrx_offset* tags2;                 // a double-bufferinf scheme here).
     
+    // The following are only used with the minimal matcher.
+    jrx_accept_id acc;
 };
 
 typedef struct {
@@ -126,10 +128,10 @@ extern void jrx_regset_init(jrx_regex_t *preg, int nmatch, int cflags);
 extern void jrx_regset_done(jrx_regex_t *preg, int cflags);
 extern int jrx_regset_add(jrx_regex_t *preg, const char *pattern, unsigned int len);
 extern int jrx_regset_finalize(jrx_regex_t *preg);
-extern int jrx_regexec_partial(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms);
+extern int jrx_regexec_partial(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms, int find_partial_matches);
 extern int jrx_reggroups(const jrx_regex_t *preg, jrx_match_state* ms, size_t nmatch, jrx_regmatch_t pmatch[]);
 extern int jrx_num_groups(jrx_regex_t *preg);
-
+extern int jrx_can_transition(jrx_match_state* ms);
 extern jrx_match_state* jrx_match_state_init(const jrx_regex_t *preg, jrx_offset begin, jrx_match_state* ms);
 extern void jrx_match_state_done(jrx_match_state* ms);
 
