@@ -1,0 +1,21 @@
+Foo*
+Foo
+==> -1
+==> 
+
+Foo
+==> -1
+==> 
+
+Fooooo
+==> -1
+==> 
+
+Fooooo
+==> -1
+==> 
+
+Fooooobar
+==> 1
+==> Fooooo
+

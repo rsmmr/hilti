@@ -25,7 +25,7 @@ void hilti_wait_for_threads()
     hlt_thread_mgr_set_state(__hlt_global_thread_mgr, HLT_THREAD_MGR_FINISH);
 }
 
-int64_t hilti_bytes_to_int(hlt_bytes* b, hlt_exception** excpt)
+int64_t hilti_bytes_to_int(hlt_bytes* b, int64_t base, hlt_exception** excpt)
 {
     hlt_bytes_size len = hlt_bytes_len(b, excpt);
     int8_t* tmp = hlt_gc_malloc_atomic(len);
@@ -35,14 +35,17 @@ int64_t hilti_bytes_to_int(hlt_bytes* b, hlt_exception** excpt)
     hlt_bytes_pos end = hlt_bytes_end(b, excpt);
 
     int64_t value = 0;
+    int64_t t = 0;
     int8_t first = 1;
     int8_t negate = 0;
     
     while ( ! hlt_bytes_pos_eq(cur, end, excpt) ) {
         int8_t ch = __hlt_bytes_extract_one(&cur, end, excpt);
-        
+
         if ( isdigit(ch) )
-            value = (value * 10) + (ch - '0');
+            t = ch - '0';
+        else if ( isalpha(ch) )
+            t = 10 + tolower(ch) - 'a';
         
         else if ( first && ch == '-' )
             negate = 1;
@@ -51,7 +54,8 @@ int64_t hilti_bytes_to_int(hlt_bytes* b, hlt_exception** excpt)
             hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
-    
+        
+        value = (value * base) + t;
         first = 0;
     }
     

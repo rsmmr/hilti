@@ -87,7 +87,7 @@ type IOSrc = enum { PcapLive, PcapOffline }
 
 
 # Bytes functions.
-declare "C-HILTI" int<64> bytes_to_int(ref<bytes> b)
+declare "C-HILTI" int<64> bytes_to_int(ref<bytes> b, int<64> base=10)
 declare "C-HILTI" ref<bytes> bytes_to_lower(ref<bytes> b)
 declare "C-HILTI" bool bytes_starts_with(ref<bytes> b, ref<bytes> s)
 

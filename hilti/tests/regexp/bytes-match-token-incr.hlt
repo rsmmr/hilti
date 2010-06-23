@@ -1,0 +1,57 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+global ref<regexp<&nosub>> re = /Foo*/ 
+
+void do_match(ref<bytes> b) {
+    local iterator<bytes> start
+    local int32 rc
+    local tuple<int32, iterator<bytes>> result
+    local iterator<bytes> eo
+    local ref<bytes> token
+
+    call Hilti::print(b)
+    
+    start = begin b
+
+    result = regexp.match_token re start
+    
+    rc = tuple.index result 0
+    eo = tuple.index result 1
+    token = bytes.sub start eo 
+    
+    call Hilti::print("==> ", False)
+    call Hilti::print(rc)
+    call Hilti::print("==> ", False)
+    call Hilti::print(token)
+    call Hilti::print("")
+}     
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> start
+    
+    call Hilti::print(re)
+    
+    b = b"Foo"
+    call do_match(b)
+
+    bytes.freeze b
+    call do_match(b)
+
+    b = b"Fooooo"
+    call do_match(b)
+    
+    bytes.freeze b
+    call do_match(b)
+    
+    b = b"Fooooobar"
+    call do_match(b)
+}

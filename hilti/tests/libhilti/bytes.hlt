@@ -39,6 +39,15 @@ void run() {
      i = call Hilti::bytes_to_int(b"001")
      call Hilti::print(i)
      
+     i = call Hilti::bytes_to_int(b"a", 16)
+     call Hilti::print(i)
+     
+     i = call Hilti::bytes_to_int(b"ff", 16)
+     call Hilti::print(i)
+     
+     i = call Hilti::bytes_to_int(b"1A", 16)
+     call Hilti::print(i)
+     
      ####
      
      x = call Hilti::bytes_starts_with(b"abcdef", b"abc")

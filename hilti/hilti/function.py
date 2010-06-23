@@ -184,7 +184,7 @@ class Function(node.Node):
 
         self._scope = scope.Scope(parent)
         for i in ty.args():
-            self._scope.add(copy.deepcopy(i))
+            self._scope.add(copy.copy(i))
         
     def name(self):
         """Returns the function's name.

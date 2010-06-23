@@ -180,17 +180,17 @@ static hlt_bytes_pos GenericEndPos = { 0, 0 };
 
 static inline int8_t is_end(hlt_bytes_pos pos)
 {
-    return pos.chunk == 0 || pos.cur >= pos.chunk->end;
+    return pos.chunk == 0 || (!pos.cur) || pos.cur >= pos.chunk->end;
 }
 
 static inline void normalize_pos(hlt_bytes_pos* pos)
 {
-    if ( ! pos->cur )
+    if ( ! pos->chunk) 
         return;
     
     // If the pos was previously an end position, but now new data has been
     // added, adjust it so that it's pointing to the next byte.
-    if ( pos->cur >= pos->chunk->end && pos->chunk->next ) {
+    if ( (! pos->cur || pos->cur >= pos->chunk->end) && pos->chunk->next ) {
         pos->chunk = pos->chunk->next;
         pos->cur = pos->chunk->start;
     }
@@ -426,7 +426,7 @@ hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt)
         hlt_bytes_pos p;
         return p;
     }
-    
+
     if ( hlt_bytes_len(b, excpt) == 0 )
         return hlt_bytes_end(b, excpt);
 
@@ -446,7 +446,7 @@ hlt_bytes_pos hlt_bytes_end(const hlt_bytes* b, hlt_exception** excpt)
     
     hlt_bytes_pos p;
     p.chunk = b->tail;
-    p.cur = b->tail->end;
+    p.cur = b->tail ? b->tail->end : 0;
     return p;
 }
 
