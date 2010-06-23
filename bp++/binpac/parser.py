@@ -734,7 +734,8 @@ def _parse(filename, import_paths=["."]):
     try:
         lines = open(filename).read()
     except IOError, e:
-        util.parser_error("cannot open file %s: %s" % (filename, e))
+        util.parser_error(None, "cannot open input file: %s" % filename)
+        return (1, None, None)
 
     try:
         ast = parser.parse(lines, lexer=lex, debug=0)
