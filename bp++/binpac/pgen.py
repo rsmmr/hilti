@@ -715,7 +715,7 @@ class ParserGen:
                 if default:
                     hlt_default = default.hiltiInit(self.cg())
                 else:
-                    hlt_default = f.type().hiltiDefault(self.cg(), False)
+                    hlt_default = f.type().hiltiDefault(self.cg(), True)
                 
                 ids += [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), hlt_default)]
                 

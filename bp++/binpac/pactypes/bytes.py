@@ -39,8 +39,8 @@ class Bytes(type.ParseableType):
             vld.error(field, "bytes type accepts exactly one termination attribute")
 
     def validateCtor(self, vld, value):
-        if not isinstance(value, str):
-            vld.error(const, "bytes: ctor of wrong internal type")
+        if not isinstance(value, str) and not isinstance(value, unicode):
+            vld.error(self, "bytes: ctor of wrong internal type %s" % repr(value))
 
     def hiltiCtor(self, cg, val):
         return hilti.operand.Ctor(val, hilti.type.Reference(hilti.type.Bytes()))
@@ -161,7 +161,7 @@ class _:
             return None
         
     def evaluate(cg, e):
-        tmp = cg.functionBuilder().addLocal("__size", hilti.type.Integer(64))
+        tmp = cg.functionBuilder().addLocal("__size", hilti.type.Integer(32))
         cg.builder().bytes_length(tmp, e.evaluate(cg))
         return tmp
     

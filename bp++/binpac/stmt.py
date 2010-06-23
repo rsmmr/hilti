@@ -133,20 +133,27 @@ class UnitHook(Block):
     defined for the same field, they are executed in order of decreasing
     priority.
     
-    stms: list of ~~Statement - Series of statements to initalize the hook with.
+    stms: ~~Block - Block with statements and locals for the hook.
     """
     def __init__(self, unit, field, prio, stmts=None, location=None):
         self._unit = unit
         self._field = field
         self._prio = prio
         
+        if stmts:
+            assert isinstance(stmts, Block)
+        
         super(UnitHook, self).__init__(unit.scope(), location=location)
         super(UnitHook, self).scope().addID(id.Local("__hookrc", type.Bool()))
         
         if stmts:
-            for stmt in stmts:
+            for stmt in stmts.statements():
                 self.addStatement(stmt)
-
+                
+            for lid in stmts.scope().IDs():
+                if isinstance(lid, id.Local):
+                    self._scope.addID(lid)
+                    
     def unit(self):
         """Returns the unit associated with the hook.
         
@@ -461,18 +468,18 @@ class IfElse(Statement):
         no = fbuilder.newBuilder("__false") if self._no else None
         cont = fbuilder.newBuilder("__cont")
         
-        cond = self._cond.simplify().evaluate(cg)
+        cond = self._cond.simplify().coerceTo(type.Bool(), cg).evaluate(cg)
         
         cg.builder().if_else(cond, yes.labelOp(), no.labelOp() if no else cont.labelOp())
         
         cg.setBuilder(yes)
         self._yes.execute(cg)
-        yes.jump(cont.labelOp())
+        cg.builder().jump(cont.labelOp())
         
         if no:
             cg.setBuilder(no)
             self._no.execute(cg)
-            no.jump(cont.labelOp())
+            cg.builder().jump(cont.labelOp())
             
         cg.setBuilder(cont)
         

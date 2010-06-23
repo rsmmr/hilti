@@ -212,6 +212,59 @@ class Overloaded(Expression):
     
     def __str__(self):
         return "(%s %s)" % (self._op, " ".join([str(e) for e in self._exprs]))
+    
+class Not(Expression):
+    """Class for expressions inverting a boolean value. 
+
+    expr: ~~Expression - The operand expression.
+    
+    location: ~~Location - The location where the expression was defined. 
+    """
+    
+    def __init__(self, expr, location=None):
+        super(Not, self).__init__(location=location)
+        self._expr = expr
+
+    def expr(self):
+        """Returns the expression's operand.
+        
+        Returns: ~~Expression - The operand.
+        """
+        return self._expr
+
+    ### Overidden from node.Node.
+
+    def resolve(self, resolver):
+        Expression.resolve(self, resolver)
+        self._expr.resolve(resolver)
+            
+    def validate(self, vld):
+        Expression.validate(self, vld)
+        self._expr.validate(vld)
+        
+        if not self._expr.canCoerceTo(type.Bool()):
+            vld.error("expression must be a boolean")
+
+    def pac(self, printer):
+        pass
+
+    ### Overidden from Expression.
+
+    def type(self):
+        return type.Bool()
+
+    def simplify(self):
+        self._expr = self._expr.simplify()
+        return self
+        
+    def evaluate(self, cg):
+        e = self._expr.coerceTo(type.Bool(), cg).evaluate(cg)
+        b = cg.builder().addLocal("__bool", hilti.type.Bool())
+        cg.builder().select(b, e, cg.builder().constOp(False), cg.builder().constOp(True))
+        return b
+    
+    def __str__(self):
+        return "(not %s)" % self._expr
 
 class Ctor(Expression):
     """A constructor expression.

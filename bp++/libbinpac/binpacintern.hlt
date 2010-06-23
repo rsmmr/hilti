@@ -67,6 +67,7 @@ ref<bytes> bytes_match(ref<bytes> b, ref<regexp> re, int<64> group = 0) {
     
 @finish:    
     b = bytes.sub i1 i2
+    
     return.result b
 }
 

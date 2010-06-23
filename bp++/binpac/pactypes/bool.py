@@ -54,23 +54,6 @@ class Bool(type.ParseableType):
     def generateParser(self, cg, cur, dst, skipping):
         util.internal_error("bool parsing not implemented")
         
-@operator.Not(Bool)
-class _:
-    def type(e):
-        return type.Bool()
-    
-    def simplify(e):
-        if not isinstance(e, expr.Ctor):
-            return None
-        
-        inverse = not e.value()
-        return expr.Ctor(inverse, type.Bool())
-        
-    def evaluate(cg, e):
-        tmp = cg.functionBuilder().addLocal("__not", hilti.type.Bool())
-        cg.builder().bool_not(tmp, e.evaluate(cg))
-        return tmp
-        
 @operator.And(Bool, Bool)
 class _:
     def type(e1, e2):

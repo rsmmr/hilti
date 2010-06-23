@@ -16,3 +16,8 @@ print b.match(/XXX/);
 print b.match(/XXX/, 0);
 print b.match(/.*A(.*)C.*/, 10);
 
+b = b"Content-Type: multipart/mixed; boundary=\x22frontier\x22";
+
+print b;
+
+print b.match(/boundary=("[^"]*"|[ ;]+)/, 1);

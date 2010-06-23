@@ -46,6 +46,9 @@ class SignedInteger(type.Integer):
 @operator.Coerce(type.SignedInteger)
 class Coerce:
     def coerceCtorTo(ctor, dsttype):
+        if isinstance(dsttype, type.Bool):
+            return ctor != 0
+        
         if isinstance(dsttype, type.UnsignedInteger) and ctor >= 0:
             return ctor 
         
@@ -55,9 +58,18 @@ class Coerce:
         if isinstance(dsttype, type.Integer):
             return True
         
+        if isinstance(dsttype, type.Bool):
+            return True
+        
         return False
         
     def coerceExprTo(cg, e, dsttype):
+        if isinstance(dsttype, type.Bool):
+            tmp = cg.builder().addLocal("__nonempty", hilti.type.Bool())
+            cg.builder().equal(tmp, e.evaluate(cg), cg.builder().constOp(0))
+            cg.builder().bool_not(tmp, tmp)
+            return expr.Hilti(tmp, type.Bool())
+        
         if dsttype.width() >= e.type().width():
             return e
         

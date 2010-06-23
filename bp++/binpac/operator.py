@@ -233,7 +233,6 @@ _Operators = {
     "MethodCall": (3, "Method call. (`a.b()`)", _pacMethodCall),
     "Size": (1, "The size of an expression's value, with type-defined definition of \"size\" (`|a|`)", _pacUnary("|")),
     "Equal": (2, "Compares two values whether they are equal. (``a == b``)", _pacBinary(" + ")),
-    "Not": (1, "Inverts a boolean value. (``! a``)", _pacUnary("!")),
     "And": (2, "Logical 'and' of boolean values. (``a && b``)", _pacBinary("&&")),
     "AddAssign": (2, "Adds to an operand in place (`` a += b``)", _pacBinary("+="))
     }
