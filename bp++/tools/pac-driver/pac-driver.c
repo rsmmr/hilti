@@ -9,6 +9,8 @@
 #include <hilti.h>
 #include <binpac.h>
 
+int debug = 0;
+
 static void check_exception(hlt_exception* excpt)
 {
     if ( excpt ) {
@@ -162,7 +164,9 @@ void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
         check_exception(excpt);
         
         if ( ! resume ) {
-            fprintf(stderr, "--- pac-driver: starting parsing.\n");
+            if ( debug )
+                fprintf(stderr, "--- pac-driver: starting parsing.\n");
+            
             hlt_bytes_pos s = hlt_bytes_begin(input, &excpt);
             check_exception(excpt);
             
@@ -170,13 +174,17 @@ void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
         }
         
         else {
-            fprintf(stderr, "--- pac-driver: resuming parsing.\n");
+            if ( debug )
+                fprintf(stderr, "--- pac-driver: resuming parsing.\n");
+            
             (*p->resume_func)(resume, &excpt);
         }
 
         if ( excpt ) {
             if ( excpt->type == &hlt_exception_yield ) {
-                fprintf(stderr, "--- pac-driver: parsing yielded.\n");
+                if ( debug )
+                    fprintf(stderr, "--- pac-driver: parsing yielded.\n");
+                
                 resume = excpt;
                 excpt = 0;
             }
@@ -185,8 +193,12 @@ void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
                 check_exception(excpt);
         }
         
-        else if ( ! done )
-            fprintf(stderr, "End of input reached even though more could be parsed.");
+        else if ( ! done ) {
+            if ( debug )
+                fprintf(stderr, "pac-driver: end of input reached even though more could be parsed.");
+            
+            break;
+        }
         
         cur = cur_end;
     }
@@ -194,7 +206,6 @@ void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
 
 int main(int argc, char** argv)
 {
-    int debug = 0;
     int verbose = 0;
     int chunk_size = 0;
     const char* parser = 0;
