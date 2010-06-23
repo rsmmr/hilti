@@ -1,0 +1,36 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build ${LIBBINPAC}/protocols/http.pac2 ${PAC_DRIVER} -d -m -o a.out 
+# @TEST-EXEC:  echo ======== Request >>output
+# @TEST-EXEC:  cat %DIR/request.dat | ./a.out -p Request >>output
+# @TEST-EXEC:  echo ======== Reply Chunked >>output
+# @TEST-EXEC:  cat %DIR/reply-chunked.dat | ./a.out -p Reply >>output
+# @TEST-EXEC:  echo ======== Reply Content Length >>output
+# @TEST-EXEC:  cat %DIR/reply-content-length.dat | ./a.out -p Reply >>output
+# @TEST-EXEC:  echo ======== Reply Eod >>output
+# @TEST-EXEC:  cat %DIR/reply-eod.dat | ./a.out -p Reply >>output
+# @TEST-EXEC:  echo ======== Reply Multipart >>output
+# @TEST-EXEC:  cat %DIR/reply-multipart.dat | ./a.out -p Reply >>output
+# @TEST-EXEC:  echo ======== >>output
+# @TEST-EXEC:  echo === Incremental >>output
+# @TEST-EXEC:  echo ======== >>output
+# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  echo ======== Request >>output
+# @TEST-EXEC:  cat %DIR/request.dat | ./a.out -i 1 -p Request >>output
+# @TEST-EXEC:  echo ======== Reply Chunked >>output
+# @TEST-EXEC:  cat %DIR/reply-chunked.dat | ./a.out -i 1 -p Reply >>output
+# @TEST-EXEC:  echo ======== Reply Content Length >>output
+# @TEST-EXEC:  cat %DIR/reply-content-length.dat | ./a.out -i 1 -p Reply >>output
+# @TEST-EXEC:  echo ======== Reply Eod >>output
+# @TEST-EXEC:  cat %DIR/reply-eod.dat | ./a.out -i 1 -p Reply >>output
+# @TEST-EXEC:  echo ======== Reply Multipart >>output
+# @TEST-EXEC:  cat %DIR/reply-multipart.dat | ./a.out -i 1 -p Reply >>output
+# @TEST-EXEC:  echo ======== >>output
+# @TEST-EXEC:  test-diff output
+#
+#
+# TODO: Once we have an import-and-extend mechanism, we won't need
+# to compile http2.pac directly anymore. 
+#
+# TODO: We should then also pretty-fy the output. 
+
