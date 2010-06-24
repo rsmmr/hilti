@@ -1,4 +1,5 @@
 # $Id$
+
 module main
 
 import hilti
@@ -22,11 +23,14 @@ ref<A> foo(ref<B> b) {
     return.result a
     }
 
+
 type myException = exception<ref<A>>
 
 void run() {
 @__b2:
     }
+
+export run
 
 global tuple<ref<A>,ref<B>> t
 global ref<list<ref<A>>> v

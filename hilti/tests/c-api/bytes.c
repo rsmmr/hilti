@@ -7,6 +7,7 @@
 */
 
 #include <stdio.h>
+#include <ctype.h>
 
 #include <hilti.h>
 
@@ -43,7 +44,7 @@ const char* myexp(const hlt_exception* e)
 
 int main()
 {
-    const LEN = 2048;
+    const int LEN = 2048;
     int i = 0;
     int8_t* large = malloc(LEN);
     
@@ -108,13 +109,13 @@ int main()
     
     printf("-----\n");
     
-    sub = hlt_bytes_sub(p2, hlt_bytes_end(&e), &e);
+    sub = hlt_bytes_sub(p2, hlt_bytes_end(b, &e), &e);
     printb(sub);
     printf("C len = %d (2051) %s\n", hlt_bytes_len(sub, &e), myexp(e));
     
     printf("-----\n");
 
-    sub = hlt_bytes_sub(hlt_bytes_begin(b, &e), hlt_bytes_end(&e), &e);
+    sub = hlt_bytes_sub(hlt_bytes_begin(b, &e), hlt_bytes_end(b, &e), &e);
     printb(sub);
     printf("D len = %d (%d) %s\n", hlt_bytes_len(sub, &e), hlt_bytes_len(b, &e), myexp(e));
 
@@ -146,16 +147,16 @@ int main()
     
     printf("-----\n");
     
-    rsub = hlt_bytes_sub_raw(p2, hlt_bytes_end(&e), &e);
-    d = hlt_bytes_pos_diff(p2, hlt_bytes_end(&e), &e);
+    rsub = hlt_bytes_sub_raw(p2, hlt_bytes_end(b, &e), &e);
+    d = hlt_bytes_pos_diff(p2, hlt_bytes_end(b, &e), &e);
     printc(rsub, d);
     printf("C len = %d (2051) %s\n", d, myexp(e));
     
     printf("-----\n");
     
 
-    rsub = hlt_bytes_sub_raw(hlt_bytes_begin(b, &e), hlt_bytes_end(&e), &e);
-    d = hlt_bytes_pos_diff(hlt_bytes_begin(b, &e), hlt_bytes_end(&e), &e);
+    rsub = hlt_bytes_sub_raw(hlt_bytes_begin(b, &e), hlt_bytes_end(b, &e), &e);
+    d = hlt_bytes_pos_diff(hlt_bytes_begin(b, &e), hlt_bytes_end(b, &e), &e);
     printc(rsub, d);
     printf("D len = %d (%d) %s\n", d, hlt_bytes_len(b, &e), myexp(e));
 
@@ -180,7 +181,7 @@ int main()
         hlt_bytes_append_raw(b, large + i, 1, &e);
 
     p = hlt_bytes_begin(b, &e);
-    for ( ; ! hlt_bytes_pos_eq(p, hlt_bytes_end(&e), &e); p = hlt_bytes_pos_incr(p, &e) ) {
+    for ( ; ! hlt_bytes_pos_eq(p, hlt_bytes_end(b, &e), &e); p = hlt_bytes_pos_incr(p, &e) ) {
         int8_t u = hlt_bytes_pos_deref(p, &e);
         sum2 += u;
     }
@@ -201,7 +202,7 @@ int main()
         hlt_bytes_append_raw(b, large, LEN, &e);
 
     p = hlt_bytes_begin(b, &e);
-    for ( ; ! hlt_bytes_pos_eq(p, hlt_bytes_end(&e), &e); p = hlt_bytes_pos_incr(p, &e) ) {
+    for ( ; ! hlt_bytes_pos_eq(p, hlt_bytes_end(b, &e), &e); p = hlt_bytes_pos_incr(p, &e) ) {
         int8_t u = hlt_bytes_pos_deref(p, &e);
         sum2 += u;
     }
@@ -216,20 +217,20 @@ int main()
     
     p = hlt_bytes_begin(b, &e);
     printf("eq = %d (1) %s\n", hlt_bytes_pos_eq(p, hlt_bytes_begin(b, &e), &e), myexp(e));
-    printf("eq = %d (0) %s\n", hlt_bytes_pos_eq(p, hlt_bytes_end(&e), &e), myexp(e));
+    printf("eq = %d (0) %s\n", hlt_bytes_pos_eq(p, hlt_bytes_end(b, &e), &e), myexp(e));
     p = hlt_bytes_pos_incr(p, &e);
     printf("eq = %d (0) %s\n", hlt_bytes_pos_eq(p, hlt_bytes_begin(b, &e), &e), myexp(e));
     
-    p2 = hlt_bytes_end(&e);
+    p2 = hlt_bytes_end(b, &e);
     printf("eq = %d (0) %s\n", hlt_bytes_pos_eq(p2, hlt_bytes_begin(b, &e), &e), myexp(e));
-    printf("eq = %d (1) %s\n", hlt_bytes_pos_eq(p2, hlt_bytes_end(&e), &e), myexp(e));
+    printf("eq = %d (1) %s\n", hlt_bytes_pos_eq(p2, hlt_bytes_end(b, &e), &e), myexp(e));
 
     p = hlt_bytes_offset(b, 0, &e);
     printf("eq = %d (1) %s\n", hlt_bytes_pos_eq(p, hlt_bytes_begin(b, &e), &e), myexp(e));
 
     p = hlt_bytes_offset(b, -1, &e);
     p = hlt_bytes_pos_incr(p, &e);
-    printf("eq = %d (1) %s\n", hlt_bytes_pos_eq(p, hlt_bytes_end(&e), &e), myexp(e));
+    printf("eq = %d (1) %s\n", hlt_bytes_pos_eq(p, hlt_bytes_end(b, &e), &e), myexp(e));
 
     return 0;
     
