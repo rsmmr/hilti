@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-GC_CONF="-DCMAKE_C_COMPILER=clang -Denable_threads=YES -Denable_parallel_mark=YES"
+GC_CONF="-Denable_threads=YES -Denable_parallel_mark=YES"
 
 function build {
     base=`pwd`/$1
@@ -26,5 +26,5 @@ function build {
 }
 
 build build-llvm   "-DENABLE_LLVM=1"
-build build-native "-DENABLE_LLVM=0"
+# build build-native "-DENABLE_LLVM=0"
 

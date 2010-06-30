@@ -2,6 +2,7 @@
 #
 # [Robin] NOTE: This is adapted from http://code.roadsend.com/pcc/export/796/trunk/rphp/cmake/modules/FindLLVM.cmake
 # [Robin] We also switch the C compiler to clang if we find it. 
+# [Robin] Removed messages outputting the variables; added that to EnableLLVM.cmake instead.
 #
 # NOTE: This is a modified version of the module originally found in the OpenGTL project
 # at www.opengtl.org
@@ -46,7 +47,7 @@ else (LLVM_INCLUDE_DIR)
   endif(LLVM_GXX_EXECUTABLE)
 
   if (LLVM_CLANG_EXECUTABLE)
-      MESSAGE(STATUS "clang found at: ${LLVM_GXX_EXECUTABLE}")
+      MESSAGE(STATUS "clang found at: ${LLVM_CLANG_EXECUTABLE}")
       set(CMAKE_C_COMPILER "clang")
   endif(LLVM_CLANG_EXECUTABLE)
 
@@ -65,17 +66,11 @@ else (LLVM_INCLUDE_DIR)
   
   
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --cxxflags OUTPUT_VARIABLE LLVM_CXX_COMPILE_FLAGS )
-  MESSAGE(STATUS "LLVM CXX flags: " ${LLVM_CXX_COMPILE_FLAGS})
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --cflags OUTPUT_VARIABLE LLVM_C_COMPILE_FLAGS )
-  MESSAGE(STATUS "LLVM flags: " ${LLVM_C_COMPILE_FLAGS})
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --ldflags   OUTPUT_VARIABLE LLVM_LDFLAGS )
-  MESSAGE(STATUS "LLVM LD flags: " ${LLVM_LDFLAGS})
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --libs core bitreader bitwriter linker OUTPUT_VARIABLE LLVM_LIBS_CORE )
-  MESSAGE(STATUS "LLVM core libs: " ${LLVM_LIBS_CORE})
   FIND_LLVM_LIBS( ${LLVM_CONFIG_EXECUTABLE} "jit native" LLVM_LIBS_JIT LLVM_LIBS_JIT_OBJECTS )
   #STRING(REPLACE " -lLLVMCore -lLLVMSupport -lLLVMSystem" "" LLVM_LIBS_JIT ${LLVM_LIBS_JIT_RAW})
-  MESSAGE(STATUS "LLVM JIT libs: " ${LLVM_LIBS_JIT})
-  MESSAGE(STATUS "LLVM JIT objs: " ${LLVM_LIBS_JIT_OBJECTS})
   
   if(LLVM_INCLUDE_DIR)
     set(LLVM_FOUND TRUE)

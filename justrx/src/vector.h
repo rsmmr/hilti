@@ -130,8 +130,9 @@ static inline vec_elem_t vec_##name##_get(vec_##name* vec, vec_size_t idx)     \
 
 #define vec_for_each(name, vec, var)                                           \
     vec_##name##_elem_t var;                                                   \
+    vec_##name##_size_t __j##var;                                                   \
     if ( (vec)->size )                                                         \
         var = (vec)->elems[0];                                                 \
-    for ( vec_##name##_size_t __i = 0; __i < (vec)->size; __i++, var = (vec)->elems[ __i < (vec)->size ? __i : 0] )
+    for ( __j##var = 0; __j##var < (vec)->size; __j##var++, var = (vec)->elems[ __j##var < (vec)->size ? __j##var : 0] )
 
 #endif                                                                         

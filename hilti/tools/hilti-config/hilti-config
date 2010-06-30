@@ -19,6 +19,7 @@ Usage: hilti-config <options>
     --libs-bc-main Print bitcode libaries for llvm-ld, including a main() routine.
     --libs-c       Print native libaries for system linker.
     --pythonpath   Print PYTHONPATH for HILTI module.
+    --path         Print PATH for HILTI tools. 
     
     --debug        Print all output suitable for building debugging versions.
                    Note: this options must come first currently.
@@ -119,6 +120,10 @@ while [ "$1" != "" ]; do
             
         --pythonpath)
             echo "$base"
+            shift;;
+            
+        --path)
+            echo "$base/tools/hiltic:$base/tools/hilti-build"
             shift;;
             
         --debug)

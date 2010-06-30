@@ -409,10 +409,10 @@ void dfa_print(jrx_dfa* dfa, FILE* file)
     fprintf(file, "\n");
     
     vec_for_each(dfa_state, dfa->states, dstate) {
-        fprintf(file, "state %d\n", __i);
+        fprintf(file, "state %d\n", __jdstate);
         _dfa_state_print(dfa, dstate, file);
         
-        if ( __i == dfa->initial )
+        if ( __jdstate == dfa->initial )
             fputs(" -> initial state\n", file);
         
         fputs("\n", file);

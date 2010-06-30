@@ -19,6 +19,7 @@ README
       llvm-py 0.6/svn  http://code.google.com/p/llvm-py/downloads/list
       PLY 3.3          http://www.dabeaz.com/ply
       CMake 2.6.4      http://www.cmake.org
+      Flex 2.5.35      http://flex.sourceforge.net/#downloads
 
       If you want to generate the documentation (optional):
       

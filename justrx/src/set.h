@@ -256,7 +256,8 @@ static inline set_elem_t set_##name##_iter_deref(set_##name* set, set_size_t ite
 
 #define set_for_each(name, set, var)                                           \
     set_##name##_elem_t var;                                                   \
+    set_##name##_size_t __i##var;                                              \
     if ( (set)->size )                                                         \
         var = (set)->elems[0];                                                 \
-    for ( set_##name##_size_t __i = 0; __i < (set)->size; __i++, var = (set)->elems[ __i < (set)->size ? __i : 0] )
+    for ( __i##var = 0; __i##var < (set)->size; __i##var++, var = (set)->elems[ __i##var < (set)->size ? __i##var : 0] )
 #endif                                                                         

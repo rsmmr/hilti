@@ -19,7 +19,7 @@ set(PROJECT_VERSION "0.1")
     # Build-directory version.
 set(CONFIG_LIBS "-ljrx")
 set(CONFIG_LDFLAGS "-L${CMAKE_BINARY_DIR}/src ${CONFIG_LIBS}")
-set(CONFIG_CFLAGS "-I${CMAKE_BINARY_DIR}/src")
+set(CONFIG_CFLAGS "-D_GNU_SOURCE -I${CMAKE_BINARY_DIR}/src")
 set(CONFIG_CXXFLAGS "${CONFIG_CFLAGS}")
 configure_file("bin/jrx-config.in" "bin/jrx-config-build")
     

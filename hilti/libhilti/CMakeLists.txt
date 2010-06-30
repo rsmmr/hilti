@@ -13,7 +13,7 @@ set(PROJECT_VERSION "0.1")
 
 add_subdirectory(justrx) # must come before EnableLLVM.
 
-set(CMAKE_C_FLAGS "-g -std=c99 -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src -I{PCAP_CFLAGS}")
+set(CMAKE_C_FLAGS "-g -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src ${PCAP_CFLAGS}")
 
 include(EnableLLVM)
 

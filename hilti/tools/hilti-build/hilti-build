@@ -118,7 +118,7 @@ function compile_c {
 
     bc=$base.tmp.bc
     tmpfiles="$tmpfiles $bc"
-    execute "clang -c -emit-llvm $opt $cflags -o $bc $input"
+    execute "clang -c -emit-llvm -D_GNU_SOURCE $opt $cflags -o $bc $input"
     result=$bc
 }
 
@@ -299,6 +299,7 @@ if [ "$have_pac2" == "1" ]; then
    libsbc="`$binpacconfig --libs-bc` $libsbc" # Order is important!
 fi   
 
+export PATH=`$hilticonfig --path`:$PATH
 export PYTHONPATH=`$hilticonfig --pythonpath`:$PYTHONPATH
 
 input=$@
