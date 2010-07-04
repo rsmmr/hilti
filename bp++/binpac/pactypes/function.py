@@ -8,7 +8,6 @@ import binpac.expr as expr
 import binpac.id as id
 import binpac.util as util
 import binpac.operator as operator
-import binpac.constant as constant
 
 import hilti.type
 

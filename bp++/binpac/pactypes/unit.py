@@ -14,7 +14,6 @@ import binpac.pgen as pgen
 import binpac.operator as operator
 import binpac.id as id 
 import binpac.scope as scope
-import binpac.constant as constant
 import binpac.node as node
 
 import binpac.util as util

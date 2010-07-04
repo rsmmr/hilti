@@ -1,7 +1,7 @@
 # Detect LLVM and set various variable to link against the different component of LLVM
 #
 # [Robin] NOTE: This is adapted from http://code.roadsend.com/pcc/export/796/trunk/rphp/cmake/modules/FindLLVM.cmake
-# [Robin] We also switch the C compiler to clang if we find it. 
+# [Robin] We also search for clang.
 # [Robin] Removed messages outputting the variables; added that to EnableLLVM.cmake instead.
 #
 # NOTE: This is a modified version of the module originally found in the OpenGTL project
@@ -48,7 +48,7 @@ else (LLVM_INCLUDE_DIR)
 
   if (LLVM_CLANG_EXECUTABLE)
       MESSAGE(STATUS "clang found at: ${LLVM_CLANG_EXECUTABLE}")
-      set(CMAKE_C_COMPILER "clang")
+#      set(CMAKE_C_COMPILER "clang")
   endif(LLVM_CLANG_EXECUTABLE)
 
   MACRO(FIND_LLVM_LIBS LLVM_CONFIG_EXECUTABLE _libname_ LIB_VAR OBJECT_VAR)

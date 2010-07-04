@@ -4,7 +4,6 @@
 
 import binpac.type as type
 import binpac.expr as expr
-import binpac.constant as constant
 import binpac.grammar as grammar
 import binpac.operator as operator
 

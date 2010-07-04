@@ -2,7 +2,6 @@
 #
 # The lexer. 
 
-import binpac.constant as constant
 import binpac.type as type
 import binpac.location as location
 import binpac.util as util

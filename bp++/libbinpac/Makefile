@@ -4,7 +4,7 @@
 
 -include ${HILTIDEPS}/bin/setup-paths.mk
 
-all: do-build-llvm do-build-native
+all: do-build-llvm
 
 do-build-llvm:
 	test -e build-llvm || mkdir build-llvm

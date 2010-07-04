@@ -15,7 +15,6 @@ import binpac.id as id
 import binpac.type as type
 import binpac.module as module
 import binpac.expr as expr
-import binpac.constant as constant
 import binpac.operator as operator
 import binpac.location as location
 import binpac.stmt as stmt

@@ -25,10 +25,6 @@ PROJECT(gc)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH}) 
-find_package(LLVM)
-include(EnableLLVM)
-
 ADD_DEFINITIONS("-D_CRT_SECURE_NO_DEPRECATE
                  -DALL_INTERIOR_POINTERS
                  -DGC_BUILD
@@ -230,6 +226,10 @@ IF(WIN32)
                       COMPILE_DEFINITIONS GC_NOT_DLL)
   TARGET_LINK_LIBRARIES(cord gc-lib)
 ENDIF(WIN32)
+
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH}) 
+find_package(LLVM)
+include(EnableLLVM)
 
 if ( ENABLE_LLVM )
    message("Not building gctest in LLVM build")

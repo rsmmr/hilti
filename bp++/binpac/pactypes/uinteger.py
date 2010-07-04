@@ -6,7 +6,6 @@ import integer
 
 import binpac.type as type
 import binpac.expr as expr
-import binpac.constant as constant
 import binpac.operator as operator
 
 import hilti.type

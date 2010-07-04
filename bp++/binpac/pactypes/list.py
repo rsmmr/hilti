@@ -6,7 +6,6 @@ import binpac.type as type
 import binpac.expr as expr
 import binpac.stmt as stmt
 import binpac.id as id
-import binpac.constant as constant
 import binpac.printer as printer
 
 import binpac.operator as operator

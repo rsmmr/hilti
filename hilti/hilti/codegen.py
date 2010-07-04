@@ -2802,6 +2802,7 @@ class CodeGen(objcache.Cache):
                     
                 ft = llvm.core.Type.function(rtype, args)
                 llvm_func = self._llvm.module.add_function(ft, name)
+                llvm_func.linkage = llvm.core.LINKAGE_LINKONCE_ANY
                 llvm_func.calling_convention = llvm.core.CC_FASTCALL
         
                 if f.id().linkage() != id.Linkage.EXPORTED or not is_first:
@@ -3341,6 +3342,7 @@ class CodeGen(objcache.Cache):
             # We recreate the function with linkage C-HILTI.
             cfunc = function.Function(func.type(), func.id(), func.scope(), cc=function.CallingConvention.C_HILTI, location=func.location())
             stub_func = self.llvmFunction(cfunc)
+            stub_func.linkage = llvm.core.LINKAGE_LINKONCE_ANY
 
             ### The resume function. 
             
@@ -3350,6 +3352,7 @@ class CodeGen(objcache.Cache):
             rid = id.Global(cfunc.name() + "_resume", ft, None, namespace=cfunc.id().namespace(), linkage=id.Linkage.EXPORTED)
             rfunc = function.Function(ft, rid, None, cc=function.CallingConvention.C_HILTI)
             resume_func = self.llvmFunction(rfunc)
+            resume_func.linkage = llvm.core.LINKAGE_LINKONCE_ANY
 
             return (cfunc, stub_func, rfunc, resume_func)
             
