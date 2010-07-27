@@ -36,6 +36,7 @@ class Instruction(node.Node):
         self._op3 = op3
         self._target = target
         self._location = location
+        self._internal = False
     
         cb = self.signature().callback() if self.signature() else None
         if cb:
@@ -112,6 +113,15 @@ class Instruction(node.Node):
         """
         assert not target or isinstance(target, operand.ID)
         self._target = target
+
+    def setInternal(self):
+        """Marks the instruction as internally generated."""
+        self._internal = True
+        
+    def internal(self):
+        """Returns whether the instruction has been marked as internally
+        generated."""
+        return self._internal
         
     def __str__(self):
         target = "(%s) = " % self._target if self._target else ""

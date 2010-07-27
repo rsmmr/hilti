@@ -31,3 +31,4 @@ import set
 import iosrc
 import thread
 import select
+import hook

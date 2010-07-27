@@ -41,6 +41,8 @@ keywords = {
     "done": "DONE",
     "try": "TRY",
     "catch": "CATCH",
+    "hook": "HOOK",
+    
     "@internal": "INTERNAL",
     }
 
@@ -53,6 +55,8 @@ tokens = [
    'COMMENTLINE',
    'ATTR_DEFAULT',
    'ATTR_NOSUB',
+   'ATTR_PRIORITY',
+   'ATTR_GROUP',
 
    # Constants.
    'CLABEL',
@@ -146,6 +150,12 @@ def t_ATTRIBUTE(t):
         
     elif t.value == "&nosub":
         t.type = "ATTR_NOSUB"
+        
+    elif t.value == "&priority":
+        t.type = t.value = "ATTR_PRIORITY"
+
+    elif t.value == "&group":
+        t.type = t.value = "ATTR_GROUP"
         
     else:
         util.parser_error(None, "unknown attribute %s" % t.value)

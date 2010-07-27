@@ -46,6 +46,7 @@
 #include "debug.h"
 #include "double.h"
 #include "enum.h"
+#include "hook.h"
 #include "exceptions.h"
 #include "hilti.h"
 #include "init.h"

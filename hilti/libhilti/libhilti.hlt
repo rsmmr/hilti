@@ -198,5 +198,10 @@ declare "C-HILTI" void register_init_function(caddr func)
 
 ##
 
+declare "C-HILTI" void hook_group_enable(int<64> group, bool enabled)
+declare "C-HILTI" bool hook_group_is_enabled(int<64> group)
+
+##
+
 declare "C" void abort()
 

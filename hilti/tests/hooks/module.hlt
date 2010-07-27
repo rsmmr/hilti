@@ -1,0 +1,42 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+import TestModule
+
+hook void Test::my_hook() {
+    call Hilti::print("1st hook function.")
+    return.void
+}
+
+hook void Test::my_hook() {
+    call Hilti::print("2nd hook function.")
+    return.void
+}
+
+void run() {
+    call Test::do_work ()
+    return.void
+}     
+
+@TEST-START-FILE TestModule.hlt
+module Test
+
+import Hilti
+
+declare hook void my_hook()
+
+void do_work() {
+    call Hilti::print("Before hook.run.")
+    hook.run my_hook ()
+    call Hilti::print("After hook.run.")
+}
+
+export do_work
+export my_hook
+@TEST-END-FILE

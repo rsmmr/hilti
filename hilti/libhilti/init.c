@@ -35,7 +35,7 @@ void hlt_init()
     
     // Intialize the file management. 
     // __hlt_init_files();    
-    
+
     // Initialize debug streams from environment. 
     const char* dbg = getenv("HILTI_DEBUG");
     if ( dbg ) {

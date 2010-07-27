@@ -11,6 +11,7 @@ import operand
 import scope
 import type
 import util
+import constant
 
 import hilti.instructions.debug
 import hilti.instructions.flow
@@ -112,6 +113,13 @@ class Function(type.HiltiType):
         """
         return self._result
 
+    def setResultType(self, rt):
+        """Sets the function's result type.
+        
+        rt: ~~Type - The new result type.
+        """
+        self._result = rt
+    
     ### Overridden from Type.
 
     def name(self):
@@ -152,6 +160,26 @@ class Function(type.HiltiType):
         assert self.canCoerceTo(dsttype)
         return value
 
+    ### Overidden from node.Node.
+
+    def output(self, printer):
+        printer.printType(self.resultType())
+        printer.output(" %s(" % self._name)
+        
+        first = True
+        for (arg, default) in self.argsWithDefaults():
+            if not first:
+                printer.output(", ")
+            
+            arg.output(printer)
+            
+            if default:
+                printer.output(" = ")
+                default.output(printer)
+            
+            first = False
+                
+        printer.output(")", nl=False)
     
 class Function(node.Node):
     """A HILTI function declared or defined inside a module.
@@ -181,6 +209,8 @@ class Function(node.Node):
         self._id = ident
         self._handlers_cnt = 1
         self._handlers = []
+        self._output_name = None
+        self._hook = False
 
         self._scope = scope.Scope(parent)
         for i in ty.args():
@@ -233,7 +263,27 @@ class Function(node.Node):
         id: ~~ID - The ID.
         """
         self._id = i
-    
+        
+    def setHookFunction(self):
+        """Marks the function as being associated with a hook as one of its
+        functions."""
+        self._hook = True
+        
+    def hookFunction(self):
+        """Return whether the function is associated with a hook as one its
+        hook functions.
+        
+        Return: bool - True if a hook function."""
+        return self._hook
+        
+    def setOutputName(self, name):
+        """Sets an alternate name for the function to be used when printing it
+        as HILTI source code.
+        
+        name: string - The alternative name.
+        """
+        self._output_name = name
+        
     def callingConvention(self):
         """Returns the calling convention used by the function.
         
@@ -497,27 +547,17 @@ class Function(node.Node):
             cc += "\"C-HILTI\" "
 
         printer.output(cc)
-        printer.printType(ftype.resultType())
-        printer.output(" %s(" % self._id.name())
         
-        first = True
-        for (arg, default) in ftype.argsWithDefaults():
-            if not first:
-                printer.output(", ")
-            
-            arg.output(printer)
-            
-            if default:
-                printer.output(" = ")
-                default.output(printer)
-            
-            first = False
-                
+        ftype._name = self._id.name() if not self._output_name else self._output_name
+        ftype.output(printer)
+
+        self._outputAttrs(printer)
+        
         if not self.blocks():
-            printer.output(")", nl=True)
+            printer.output("", nl=True)
             return
         
-        printer.output(") {", nl=True)
+        printer.output(" {", nl=True)
         printer.push()
         
         locals = False
@@ -542,6 +582,10 @@ class Function(node.Node):
         printer.output("}", nl=True)        
         printer.output("", nl=True)        
         printer.pop()
+
+    def _outputAttrs(self, printer):
+        # Overwritten by derived classes to print out attributes.
+        pass
         
     def canonify(self, canonifier):
         """
@@ -654,6 +698,11 @@ def _unifyBlock(canonifier, block):
                 dbg = hilti.instructions.debug.message("hilti-flow", "leaving %s" % canonifier.currentFunctionName())
                 block.addInstruction(dbg)
 
-            newins = hilti.instructions.flow.ReturnVoid(None, location=loc)
+            import hilti.instructions.hook
+            if isinstance(canonifier.currentFunction(), hilti.instructions.hook.HookFunction):
+                newins = hilti.instructions.flow.ReturnResult(operand.Constant(constant.Constant(0, type.Bool())), location=loc)
+                newins.setInternal()
+            else:
+                newins = hilti.instructions.flow.ReturnVoid(None, location=loc)
 
         block.addInstruction(newins)

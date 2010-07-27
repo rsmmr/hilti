@@ -14,3 +14,11 @@ extern hlt_execution_context* __hlt_global_execution_context;
 /// The thread manager if threading has been started, or 0 otherwise. This
 /// will be initialized by ~~hlt_threading_start.
 extern hlt_thread_mgr* __hlt_global_thread_mgr;
+
+/// The current hook state. This must only modified by
+/// ~~__hlt_hook_group_enable, which protects accesses via the lock.
+extern hlt_hook_state* __hlt_global_hook_state;
+extern pthread_mutex_t __hlt_global_hook_state_lock;
+
+
+

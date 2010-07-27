@@ -43,7 +43,7 @@ class Scope(node.Node):
             
         return "%s~%s" % (namespace, name)
     
-    def add(self, id):
+    def add(self, i):
         """Adds an ID to the scope.
         
         An ~~ID defined elsewhere can be imported into a scope by adding it
@@ -56,12 +56,15 @@ class Scope(node.Node):
         If the ID does not have a namespace, we set its namespace to the name
         of the scope itself.
         
-        id: ~~ID - The ID to add to the module's scope.
+        i: ~~ID - The ID to add to the module's scope.
         """
-        idx = self._canonName(id.namespace(), id.name())
-        self._ids[idx] = (id, True)
+        if isinstance(i, id.Hook):
+            util.internal_error("scope.Scope: Cannot add id.Hook to a scope. Use Module.addHook instead.")
         
-        id.setScope(self)
+        idx = self._canonName(i.namespace(), i.name())
+        self._ids[idx] = (i, True)
+        
+        i.setScope(self)
 
     def _lookupID(self, i, return_val):
         if isinstance(i, str):
@@ -155,7 +158,6 @@ class Scope(node.Node):
                (isinstance(i.type(), type.Bitset) or isinstance(i.type(), type.Enum)):
                    continue
             
-
             if last and last != i.__class__:
                 printer.output()
             
@@ -166,7 +168,7 @@ class Scope(node.Node):
                     printer.output()
                     
                 if i.linkage() == id.Linkage.EXPORTED:
-                    printer.output("export %s" % i.name(), nl=True)
+                    printer.output("export %s\n" % i.name(), nl=True)
 
             last = i.__class__
                     

@@ -1,0 +1,5 @@
+-- Starting.
+1st hook function.
+2nd hook function.
+3rd hook function.
+hilti: uncaught exception, HookNoResult with argument my_hook (from None)

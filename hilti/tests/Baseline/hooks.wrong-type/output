@@ -1,0 +1,8 @@
+>>> In function __my_hook_1:
+wrong-type.hlt:15: error, hook's number of arguments does not match
+
+>>> In function __my_hook_2:
+wrong-type.hlt:20: error, hook's return type does not match
+
+
+2 errors found

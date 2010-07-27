@@ -1,0 +1,21 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+declare hook string my_hook()
+
+void run() {
+    local string s
+    call Hilti::print("-- Starting.")
+    s = hook.run my_hook ()
+    call Hilti::print("-- Done. Result is:")
+    call Hilti::print(s)
+    return.void
+}     
+

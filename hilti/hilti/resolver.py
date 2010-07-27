@@ -15,6 +15,7 @@ class Resolver(object):
         self._errors = 0
         self._scope = mod.scope()
         self._functions = []
+        self._modules = []
         mod.resolve(self)
         self._scope = None
         
@@ -28,6 +29,24 @@ class Resolver(object):
         """
         return self._scope
 
+    def startModule(self, m):
+        """Indicates the start of resolving a module.
+        
+        m: ~~Module - The module.
+        """
+        self._modules += [m]
+        
+    def endModule(self):
+        """Indicates the end of resolving a module."""
+        self._module = self._modules[:-1]    
+    
+    def currentModule(self): 
+        """Returns the current module.
+        
+        Returns: ~~Module - The current module.
+        """
+        return self._modules[-1]
+    
     def startFunction(self, f):
         """Indicates that resolving starts for a new function.
         

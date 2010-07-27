@@ -651,7 +651,10 @@ class CodeGen(objcache.Cache):
         Returns: string - The mangled name.
         """
 
-        name = func.name()
+        try:
+            (ns, name) = func.name().split("::")
+        except ValueError:
+            name = func.name()
         
         if func.callingConvention() == function.CallingConvention.C:
             # Don't mess with the names of C functions.

@@ -16,6 +16,7 @@ declare "C-HILTI" void wait_for_threads()
 # FIXME: Add the other internal exceptions here as well.
 type DivisionByZero = exception<string> @internal("hlt_exception_division_by_zero")
 type WouldBlock = exception<string> @internal("hlt_exception_would_block")
+type NoHookResult = exception<string> @internal("hlt_exception_no_hook_result")
 
 type Packed = enum {
 

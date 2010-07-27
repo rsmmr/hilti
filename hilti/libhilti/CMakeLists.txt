@@ -22,7 +22,7 @@ set(SRCS
     bool.c tuple.c channel.c enum.c bytes.c config.c threading.c 
     addr.c port.c vector.c list.c net.c regexp.c debug.c bitset.c
     context.c caddr.c struct.c timer.c map_set.c iosrc-pcap.c
-    continuation.c globals.c
+    continuation.c globals.c hook.c
     
     module/fmt.c module/print.c module/misc.c
     

@@ -15,6 +15,7 @@ import llvm.core
 import hilti.block as block
 import hilti.function as function
 import hilti.operand as operand
+import hilti.instructions.hook as hook
 
 import operators
 
@@ -42,6 +43,10 @@ class ReturnVoid(Instruction):
     """
     def validate(self, vld):
         Instruction.validate(self, vld)
+
+        if self.internal():
+            # Added by hook.stop. 
+            return 
         
         rt = vld.currentFunction().type().resultType()
         if rt != type.Void:
@@ -49,17 +54,25 @@ class ReturnVoid(Instruction):
 
     def canonify(self, canonifier):
         Instruction.canonify(self, canonifier)
-        canonifier.splitBlock(self, add_flow_dbg=True)
+        
+        if isinstance(canonifier.currentFunction(), hook.HookFunction):
+            no = constant.Constant(0, type.Bool())
+            ret = ReturnResult(op1=operand.Constant(no))
+            canonifier.splitBlock(ret)
+            ret.setInternal()
+        
+        else:
+            canonifier.splitBlock(self, add_flow_dbg=True)
             
     def codegen(self, cg):
         Instruction.codegen(self, cg)
+        
         if cg.currentFunction().callingConvention() == function.CallingConvention.HILTI:
             succ = cg.llvmFrameNormalSucc()
             frame = cg.llvmFrameNormalFrame()
             cg.llvmTailCall(succ, frame=frame)
         else:
             cg.builder().ret_void()
-            
 
 @hlt.instruction("return.result", op1=cOptional(cAny), terminator=True)
 class ReturnResult(Instruction):
@@ -69,6 +82,13 @@ class ReturnResult(Instruction):
     """
     def validate(self, vld):
         Instruction.validate(self, vld)
+
+        if self.internal():
+            # Added by hook.stop. 
+            return 
+        
+        if isinstance(vld.currentFunction(), hook.HookFunction):
+            vld.error(self, "return not allowed in hook functions; use hook.stop instead")
         
         rt = vld.currentFunction().type().resultType()
         if isinstance(rt, type.Void):
@@ -160,7 +180,7 @@ class Call(Instruction):
             vld.error(self, "called function returns a value")
             return
     
-        _checkArgs(vld, self, func, self.op2())
+        _checkArgs(vld, self, func.type(), self.op2())
 
     def canonify(self, canonifier):
         """
@@ -229,7 +249,7 @@ class CallC(Instruction):
         if not self.target() and rt != type.Void:
             vld.error(self, "C function returns a value")
         
-        _checkArgs(vld, self, func, self.op2())
+        _checkArgs(vld, self, func.type(), self.op2())
     
     def codegen(self, cg):
         func = cg.lookupFunction(self.op1())
@@ -266,7 +286,7 @@ class CallTailVoid(Instruction):
         if rt != type.Void:
             vld.error(self, "call.tail.void calls a function returning a value")
             
-        _checkArgs(vld, self, func, self.op2())
+        _checkArgs(vld, self, func.type(), self.op2())
     
     def codegen(self, cg):
         func = cg.lookupFunction(self.op1())
@@ -306,7 +326,7 @@ class CallTailResult(Instruction):
         if rt == type.Void:
             vld.error(self, "call.tail.result calls a function that does not return a value")
         
-        _checkArgs(vld, self, func, self.op2())
+        _checkArgs(vld, self, func.type(), self.op2())
     
     def codegen(self, cg):
         func = cg.lookupFunction(self.op1())
@@ -494,10 +514,6 @@ def _checkFunc(vld, i, func, cc):
         vld.error(i, "not a function name")
         return False
 
-    if func.name().startswith("__"):
-        vld.error(i, "unknown function")
-        return False
-
     if cc and not func.callingConvention() in cc:
         vld.error(i, "call to function with incompatible calling convention")
 
@@ -507,17 +523,17 @@ def _checkFunc(vld, i, func, cc):
         
     return True
 
-def _checkArgs(vld, i, func, op):
+def _checkArgs(vld, i, ftype, op, txt="function"):
     try:
         if not isinstance(op.type(), type.Type):
-            vld.error(i, "function arguments must be a tuple")
+            vld.error(i, "%s arguments must be a tuple" % txt)
             return
     
         args = op.value().value()
-        ids = func.type().args()
+        ids = ftype().args()
         
         if len(args) != len(ids):
-            vld.error(i, "wrong number of arguments for function")
+            vld.error(i, "wrong number of arguments for %s" % txt)
             return
         
         #print "proto: ", [i.type() for i in ids]
@@ -525,7 +541,7 @@ def _checkArgs(vld, i, func, op):
         
         for j in range(len(args)):
             if not args[j].canCoerceTo(ids[j].type()):
-                vld.error(i, "wrong type for function argument %d in call (is %s, expected %s)" % (j+1, args[j].type(), ids[j].type()))
+                vld.error(i, "wrong type for %s argument %d in call (is %s, expected %s)" % (txt, j+1, args[j].type(), ids[j].type()))
                 
     except:
         # Reported somewhere else.

@@ -79,10 +79,10 @@ void __hlt_debug_printf_internal(const char* s, const char* fmt, ...)
     hlt_exception* excpt = 0;
     
     hlt_string stream = hlt_string_from_asciiz(s, &excpt);
-    
+
     if ( ! _want_stream(stream, &excpt) )
         return;
-
+    
     char buffer[512];
     _make_prefix(stream, buffer, sizeof(buffer), &excpt);
 

@@ -76,6 +76,14 @@
 ; This must match with what LLVM expects for the llvm.global_ctorsarray.
 %__hlt_global_ctor = type { i32, void() * }
 
+; A hook. 
+; This must match with hook.c defines as hlt_hook.
+%__hlt_hook = type { i8*, i64, %__hlt_hook_func** }
+
+; A hook function. 
+; This must match with hook.c defines as hlt_hook_func.
+%__hlt_hook_func = type { i8*, i64, i64 }
+
 ;;; The following libhilti functions do not fit normal C_HILTI calling
 ;;; conventions and thus declared here directly.  
 %__hlt_bytes_pos = type {i8*, i8*}
@@ -98,6 +106,7 @@ declare i1 @__hlt_exception_match_type(%__hlt_exception*, %__hlt_exception_type*
 @hlt_exception_iosrc_exhausted = external constant %__hlt_exception_type
 @hlt_exception_yield = external constant %__hlt_exception_type
 @hlt_exception_would_block = external constant %__hlt_exception_type
+@hlt_exception_no_hook_result = external constant %__hlt_exception_type
 
 ;;; Memory management.
 declare void @__hlt_init_gc()
@@ -114,6 +123,10 @@ declare %__hlt_void* @__hlt_timer_new_function(%__hlt_continuation*, %__hlt_exce
 
 ;;; Threads
 declare void @__hlt_thread_mgr_schedule(%__hlt_void*, %__hlt_vthread_id, %__hlt_continuation*, %__hlt_execution_context*, %__hlt_exception**)
+
+;;; Hooks
+declare void @__hlt_hook_register_function(i8*, i8*, i64, i64, %__hlt_exception**)
+declare %__hlt_hook* @__hlt_hook_find(i8 *)
 
 ;;; A function with the standard header that simply aborts. 
 declare void @__hlt_abort(%__hlt_bframe*, %__hlt_eoss*, %__hlt_execution_context*)

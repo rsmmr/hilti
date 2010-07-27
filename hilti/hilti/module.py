@@ -1,5 +1,7 @@
 # $Id$
 
+builtin_id = id
+
 import llvm.core
 
 import function
@@ -12,6 +14,9 @@ import type
 import resolver
 
 class Module(node.Node):
+    
+    _hooks = {}
+    
     """Represents a single HILTI link-time unit. A module has its
     own identifier scope defining which ~~ID objects are visibile
     inside its namespace.  
@@ -88,6 +93,42 @@ class Module(node.Node):
         id: ~~ID - The ID to export.
         """
         self._exported += [id]
+
+    def _hookidx(self, hid):
+        if isinstance(hid, id.ID):
+            hid = hid.name()
+
+        if hid.find("::") >= 0:
+            (ns, name) = hid.split("::")
+            return "%s::%s" % (ns.lower(), name)
+        else:
+            return "%s::%s" % (self.name().lower(), hid)
+            
+    def addHook(self, hid):
+        """Adds a hook ID. Hooks are not part of the normal module namespace,
+        but kept globally across all loaded modules so that functions can be
+        added to externally declared hooks.
+        
+        hid: ~~id.Hook - The hook to add. If it already exists, the existing
+        hook is replaced. 
+        """
+        Module._hooks[self._hookidx(hid)] = hid
+
+    def lookupHook(self, name):
+        """Lookups a hook by its name. Hooks are not part of the normal module namespace,
+        but kept globally across all loaded modules so that functions can be
+        added to externally declared hooks. This method returns a hook if
+        *any* other module has added it via ~~addHook.
+        
+        name: ~~ID or string - The hook identifier to look up. If a string, it
+        can be fully qualified to specify an external module's hook.
+        
+        Returns: ~~id.Hook or None - The hook, or None if not yet added.
+        """
+        try:
+            return Module._hooks[self._hookidx(name)]
+        except KeyError:
+            return None
         
     def __str__(self):
         return "module %s" % self._name
@@ -95,7 +136,11 @@ class Module(node.Node):
     ### Overridden from Node.
     
     def resolve(self, resolver):
+        resolver.startModule(self)
         self._scope.resolve(resolver)
+        
+        for hid in self._hooks.values():
+            hid.resolve(resolver)
 
         new_exported = []
         for i in self._exported:
@@ -105,11 +150,15 @@ class Module(node.Node):
             new_exported += [nid]
                 
         self._exported = new_exported
-
+        resolver.endModule()
+        
     def validate(self, vld):
         vld.startModule(self)
         self._scope.validate(vld)
 
+        for hid in self._hooks.values():
+            hid.validate(vld)
+        
         if self.name().lower() == "main":
             run = self._scope.lookup("run")
             if not run:
@@ -131,15 +180,16 @@ class Module(node.Node):
     
     def canonify(self, canonifier):
         canonifier.startModule(self)
-        
-        for i in self._scope.IDs():
+        cmod = canonifier.currentModule()
+
+        for i in self._scope.IDs() + self._hooks.values():
             i.canonify(canonifier)
             
             # id.Function does not canonify its value to avoid getting into
             # functions recursively.
             if isinstance(i, id.Function): 
                 i.function().canonify(canonifier)
-            
+
         canonifier.endModule()
             
     def codegen(self, cg):
@@ -150,7 +200,7 @@ class Module(node.Node):
             if isinstance(ty, id.Type):
                 cg.llvmTypeInfoPtr(ty.type())
 
-        for i in self._scope.IDs():
+        for i in self._scope.IDs() + self._hooks.values():
             # Need to do globals first so that they are defined when functions
             # want to access them.
             if isinstance(i, id.Global):

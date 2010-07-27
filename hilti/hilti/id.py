@@ -516,6 +516,105 @@ class Function(ID):
     def visit(self, visitor):
         self._func.visit(visitor)
         
+class Hook(ID):        
+    """An ID representing a hook with its functions.
+    
+    fname: string - The name of the hook.
+    
+    htype: ~~type.Hook - The hooks's type.
+    
+    See ~~ID for the other arguments.
+    """
+    def __init__(self, fname, ftype, imported=False, namespace=None, location=None):
+        super(Hook, self).__init__(fname, ftype, Linkage.LOCAL, imported, namespace, location=location)
+        self._funcs = []
+
+    def addFunction(self, func):
+        """Adds a new function to the hook. When the hook is run, all
+        functions will be executed.
+        
+        func: ~~Hook - The function.
+        """
+        func.setOutputName(func.name())
+        func.id().setName("__%s_%d" % (func.name(), len(self._funcs)))
+        func.setHookFunction()
+        self._funcs += [func]
+        
+        func.scope().parent().add(Function(func.name(), func.type(), func))
+        
+    def functions(self):
+        """Returns the hook's functions.
+        
+        Returns: list of ~~Hook - The hook function.
+        """
+        return self._funcs
+        
+    ### Overidden from ID.
+
+    def llvmLoad(self, cg):
+        util.internal_error("llvmLoad called for id.Hook")
+        
+    def llvmStore(self, cg, val):
+        util.internal_error("llvmStore called for id.Hook")
+
+    def clone(self):
+        copy = Hook(self.name(), self.type(), self.imported(), self.namespace(), location=self.location())
+        copy.funcs = self._funcs
+        return copy
+
+    ### Overidden from node.Node.
+
+    def resolve(self, resolver):
+        ID.resolve(self, resolver)
+        for func in self._funcs:
+            func.resolve(resolver)
+
+    def validate(self, vld):
+        ID.validate(self, vld)
+        
+        if not self._funcs:
+            return
+        
+        htype = self._funcs[0].type()
+        
+        for func in self._funcs[1:]:
+            if htype.resultType() != func.type().resultType():
+                vld.error(func, "hook's return type does not match")
+                
+            if len(htype.args()) != len(func.type().args()):
+                vld.error(func, "hook's number of arguments does not match")
+                
+            for (t1, t2) in zip(htype.args(), func.type().args()):
+                if t1.type() != t2.type():
+                    vld.error(func, "hook's arguments do not match")
+                
+            func.validate(vld)
+        
+    def canonify(self, canonifier):
+        # If tha hook returns a value, convert all return type into (bool,
+        # value). If not, convert the return valye to bool.
+        if self.type().resultType() != type.Void():
+            rtype = type.Tuple([type.Bool(), self.type().resultType()])
+            self.type().setResultType(rtype)
+        else:
+            rtype = type.Bool()
+        
+        for func in self._funcs:
+            func.setOutputName(func.name())
+            func.type().setResultType(rtype)
+            func.canonify(canonifier)
+
+    def codegen(self, cg):
+        for func in self._funcs:
+            func.codegen(cg)
+
+    def output(self, printer):
+        printer.output("declare hook ")
+        self.type()._name = self.name()
+        self.type().output(printer)
+        ID.output(self, printer)
+        printer.output("", nl=True)
+        
 class Type(ID):
     """An ID representing a type-declaration. 
     

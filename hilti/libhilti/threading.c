@@ -434,6 +434,7 @@ void hlt_threading_start()
     
     //__hlt_cmd_queue_start();    
     //__hlt_files_start();
+    __hlt_hooks_start();
 }
 
 void hlt_threading_stop(hlt_exception** excpt)
@@ -445,6 +446,7 @@ void hlt_threading_stop(hlt_exception** excpt)
 
     //__hlt_files_stop();
     //__hlt_cmd_queue_stop();    
+    __hlt_hooks_stop();
     
     hlt_thread_mgr* mgr = __hlt_global_thread_mgr;
 

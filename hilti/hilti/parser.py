@@ -2,6 +2,8 @@
 #
 # The parser.
 
+builtin_id = id
+
 import os.path
 import sys
 
@@ -18,6 +20,7 @@ import util
 
 import instructions.foreach
 import instructions.trycatch
+import instructions.hook as hook 
 
 from lexer import tokens
 
@@ -26,8 +29,6 @@ import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import ply.yacc
-
-builtin_id = id
 
 def p_module(p):
     """module : _eat_newlines MODULE IDENT _instantiate_module _clear_comment NL module_decl_list"""
@@ -76,6 +77,7 @@ def p_module_decl(p):
                    | def_import
                    | def_function
                    | def_export
+                   | def_hook_function
                    """
                    
     if p[1]:
@@ -233,10 +235,30 @@ def p_def_import(p):
     if not _importFile(p.parser, p[2], _loc(p, 1)):
         raise SyntaxError
 
-def p_def_declare(p):
+def p_def_declare_func(p):
     """def_declare : DECLARE function_head"""
     p[2].id().setLinkage(id.Linkage.EXPORTED)
 
+def _declare_hook(p, name, args, result, location):
+    hook = p.parser.state.module.lookupHook(name)
+    
+    if not hook:
+        
+        if name.find("::") >= 0:
+            # Can't have a namespace if it's not declared.
+            util.parser_error(p, "hook was not declared")
+            raise SyntaxError
+        
+        htype = type.Hook(args, result, location=location)
+        hook = id.Hook(name, htype, namespace=p.parser.state.module.name(), location=location)
+        p.parser.state.module.addHook(hook)
+        
+    return hook
+    
+def p_def_declare_hook(p):
+    """def_declare : DECLARE HOOK type IDENT '(' param_list ')'"""
+    _declare_hook(p, p[4], p[6], p[3], _loc(p, 4))
+    
 def p_def_export_ident(p):
     """def_export : EXPORT IDENT"""
     ident = id.Unknown(p[2], _currentScope(p), location=_loc(p, 1))
@@ -248,11 +270,17 @@ def p_def_export_type(p):
     p.parser.state.module.exportIdent(ident)
     
 def p_def_function_head(p):
-    """function_head : opt_linkage opt_cc type IDENT '(' param_list ')'"""
+    """function_head : opt_linkage opt_cc type IDENT '(' param_list ')' opt_hook_attrs"""
     ftype = type.Function(p[6], p[3], location=_loc(p, 4))
+    namespace = p.parser.state.module.name()
+    ident = p[4]
     
     if p[2] == function.CallingConvention.HILTI:
-        func = function.Function(ftype, None, p.parser.state.module.scope(), location=_loc(p, 4))
+        if not p.parser.state.in_hook:
+            func = function.Function(ftype, None, p.parser.state.module.scope(), location=_loc(p, 4))
+        else:
+            func = hook.HookFunction(ftype, None, p.parser.state.module.scope(), location=_loc(p, 4))
+            
     elif p[2] in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
         # FIXME: We need some way to declare C function which are not part of
         # a module. In function.Function, we already allow module==None in the
@@ -261,9 +289,25 @@ def p_def_function_head(p):
     else:
         # Unknown calling convention
         assert False
-
-    i = id.Function(p[4], ftype, func, namespace=p.parser.state.module.name(), location=_loc(p, 4))
-    p.parser.state.module.scope().add(i)
+        
+    for (key, val) in p[8]:
+        if not p.parser.state.in_hook:
+            util.parser_error(p, "hook attributes not allowed for function")
+            raise SyntaxError
+    
+        if key == "ATTR_PRIORITY":
+            func.setPriority(val)
+        
+        elif key == "ATTR_GROUP":
+            func.setGroup(val)
+        
+        else:
+            util.internal_error("unexpected attribute in p_def_opt_hook_attrs: %s" % key)
+        
+    i = id.Function(ident, ftype, func, namespace=namespace, location=_loc(p, 4))
+    
+    if not p.parser.state.in_hook:
+        p.parser.state.module.scope().add(i)
 
     func.setID(i)
     func.id().setLinkage(p[1])
@@ -306,6 +350,16 @@ def p_def_opt_linkage(p):
             p[0] = id.Linkage.INIT
         else:
             util.internal_error("unexpected state in p_def_opt_linkage")
+
+def p_def_opt_hook_attrs(p):
+    """opt_hook_attrs : ATTR_PRIORITY '=' CINTEGER opt_hook_attrs
+                      | ATTR_GROUP '=' CINTEGER opt_hook_attrs
+                      |
+    """
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = [(p[1], p[3])] + p[4]
             
 def p_def_function(p):
     """def_function : function_head _begin_nolines '{' _instantiate_function _end_nolines instruction_list _begin_nolines _pop_scope '}' _finish_function _end_nolines """
@@ -327,6 +381,20 @@ def p_finish_function(p):
     blocks = _popBlockList(p)
     for b in blocks:
         p.parser.state.function.addBlock(b)
+
+def p_def_hook_function(p):
+    """def_hook_function : HOOK _begin_hook_func def_function _end_hook_func"""
+    func = p.parser.state.function
+    hook = _declare_hook(p, func.name(), func.type().args(), func.type().resultType(), _loc(p, 0))
+    hook.addFunction(func)
+    
+def p_begin_hook_func(p):
+    """_begin_hook_func :"""
+    p.parser.state.in_hook = True
+    
+def p_end_hook_func(p):
+    """_end_hook_func :"""
+    p.parser.state.in_hook = False
     
 def p_pop_scope(p):
     """_pop_scope :"""    
@@ -864,6 +932,7 @@ class HILTIState(util.State):
         self.comment = []   
         self.scopes = []
         self.blocklists = []
+        self.in_hook = False
         
 _loc = util.loc
 

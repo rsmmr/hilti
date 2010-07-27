@@ -344,6 +344,7 @@ cIOSrc = _hasType("IOSrc")
 cIteratorIOSrc = _hasType("IteratorIOSrc", "iterator<iosrc>")
 
 cFunction = _hasType("Function")
+cHook = _hasType("Hook")
 cLabel = _hasType("Label")
 cHiltiType = _hasType("HiltiType")
 cHeapType = _hasType("HeapType", "heap type")
