@@ -32,3 +32,5 @@ import iosrc
 import thread
 import select
 import hook
+import bytes
+import file

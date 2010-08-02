@@ -119,6 +119,9 @@ extern hlt_exception_type hlt_exception_iosrc_exhausted;
 // Raised when a packet source encounters an error condition.
 extern hlt_exception_type hlt_exception_iosrc_error;
 
+// Raised when an I/O operation failed.
+extern hlt_exception_type hlt_exception_io_error;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Exception-related functions.
 ///////////////////////////////////////////////////////////////////////////////

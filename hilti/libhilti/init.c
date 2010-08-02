@@ -30,12 +30,6 @@ void hlt_init()
     // Initialize the garbage collector.
     __hlt_init_gc();
 
-    // Initialize the command queue. 
-    // __hlt_init_cmd_queue();
-    
-    // Intialize the file management. 
-    // __hlt_init_files();    
-
     // Initialize debug streams from environment. 
     const char* dbg = getenv("HILTI_DEBUG");
     if ( dbg ) {

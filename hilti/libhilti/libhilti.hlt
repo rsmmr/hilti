@@ -203,5 +203,14 @@ declare "C-HILTI" bool hook_group_is_enabled(int<64> group)
 
 ##
 
+declare "C-HILTI" ref<file> file_new()
+declare "C-HILTI" void file_open(ref<file> f, string path, int<16> mode, string charset)
+declare "C-HILTI" void file_open(ref<file> f, string path, Hilti::FileType ty, Hilti::FileMode mode, string charset)
+declare "C-HILTI" void file_close(ref<file> f)
+declare "C-HILTI" void file_write_string(ref<file> f, string str)
+declare "C-HILTI" void file_write_bytes(ref<file> f, ref<bytes> b)
+
+##
+
 declare "C" void abort()
 

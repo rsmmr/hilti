@@ -342,6 +342,7 @@ cIteratorMap = _hasType("IteratorMap", "iterator<map>")
 cIteratorSet = _hasType("IteratorSet", "iterator<set>")
 cIOSrc = _hasType("IOSrc")
 cIteratorIOSrc = _hasType("IteratorIOSrc", "iterator<iosrc>")
+cFile = _hasType("File")
 
 cFunction = _hasType("Function")
 cHook = _hasType("Hook")

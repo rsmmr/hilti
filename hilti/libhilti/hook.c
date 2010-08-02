@@ -29,13 +29,13 @@ void __hlt_hooks_start()
     __hlt_global_hook_state->state = 0;
     __hlt_global_hook_state->size = 0;
     
-    if ( pthread_mutex_init(&__hlt_global_hook_state_lock, 0) != 0 )
+    if ( hlt_is_multi_threaded() && pthread_mutex_init(&__hlt_global_hook_state_lock, 0) != 0 )
         _fatal_error("cannot initialize worker's lock");
 }
 
 void __hlt_hooks_stop()
 {
-    if ( pthread_mutex_destroy(&__hlt_global_hook_state_lock) != 0 )
+    if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&__hlt_global_hook_state_lock) != 0 )
         _fatal_error("could not destroy lock");
     
     __hlt_global_hook_state = 0;
@@ -46,7 +46,7 @@ void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception** excpt)
     assert(group >= 0);
     assert(__hlt_global_hook_state);
 
-    if ( pthread_mutex_lock(&__hlt_global_hook_state_lock) != 0 )
+    if ( hlt_is_multi_threaded() && pthread_mutex_lock(&__hlt_global_hook_state_lock) != 0 )
         _fatal_error("cannot acquire lock");
     
     int64_t n = group / 32;
@@ -74,7 +74,7 @@ void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception** excpt)
         __hlt_global_hook_state->state[n] &= ~bit;
     
 exit:
-    if ( pthread_mutex_unlock(&__hlt_global_hook_state_lock) != 0 )
+    if ( hlt_is_multi_threaded() && pthread_mutex_unlock(&__hlt_global_hook_state_lock) != 0 )
         _fatal_error("cannot release lock");
 }
 

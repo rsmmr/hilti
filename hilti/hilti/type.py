@@ -1258,7 +1258,7 @@ def coerceConstantTo(cg, const, dst):
     if dst.canCoerceConstantFrom(const, const.type()):
         return dst.coerceConstantFrom(cg, const, const.type())
     
-    util.internal_error("cannot coerce value of type %s to type %s" % (src, dst))
+    util.internal_error("cannot coerce value of type %s to type %s" % (const.type(), dst))
     
     
 

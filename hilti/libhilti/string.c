@@ -244,7 +244,7 @@ static enum Charset get_charset(hlt_string charset, hlt_exception** excpt)
     return ERROR;
 }
 
-hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** excpt)
+struct hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** excpt)
 {
     const int8_t* p;
     const int8_t* e;

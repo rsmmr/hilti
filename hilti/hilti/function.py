@@ -694,11 +694,12 @@ def _unifyBlock(canonifier, block):
         if block.next():
             newins = hilti.instructions.flow.Jump(operand.ID(id.Local(block.next(), type.Label(), location=loc)), location=loc)
         else:
+            import hilti.instructions.hook
+            
             if canonifier.debugMode():
                 dbg = hilti.instructions.debug.message("hilti-flow", "leaving %s" % canonifier.currentFunctionName())
                 block.addInstruction(dbg)
 
-            import hilti.instructions.hook
             if isinstance(canonifier.currentFunction(), hilti.instructions.hook.HookFunction):
                 newins = hilti.instructions.flow.ReturnResult(operand.Constant(constant.Constant(0, type.Bool())), location=loc)
                 newins.setInternal()

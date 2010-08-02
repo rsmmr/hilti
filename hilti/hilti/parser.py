@@ -757,6 +757,10 @@ def p_type_timer_mgr(p):
     """type : TIMER_MGR"""
     p[0] = type.TimerMgr()
     
+def p_type_file(p):
+    """type : FILE"""
+    p[0] = type.File()
+    
     
 #
     

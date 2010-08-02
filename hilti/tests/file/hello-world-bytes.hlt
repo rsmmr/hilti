@@ -1,0 +1,23 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+
+    local ref<file> f
+    
+    f = new file
+    
+    file.open f "/dev/stderr" 
+    file.write f b"Hello, world!"
+    file.close f
+    
+    return.void
+}     
+

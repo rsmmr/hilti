@@ -6,10 +6,11 @@
 #define HILTI_STRING_H
 
 #include "exceptions.h"
-#include "bytes.h"
 #include "rtti.h"
 
 typedef int32_t hlt_string_size;
+
+struct hlt_bytes;
 
 typedef struct __hlt_string hlt_string_constant;
 
@@ -25,8 +26,8 @@ extern hlt_string hlt_string_substr(hlt_string s1, hlt_string_size pos, hlt_stri
 extern hlt_string_size hlt_string_find(hlt_string s, hlt_string pattern, hlt_exception** excpt);
 extern int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception** excpt);
 extern hlt_string hlt_string_sprintf(hlt_string fmt, const hlt_type_info* type, void* (*tuple[]), hlt_exception** excpt);
-extern hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** excpt);
-extern hlt_string hlt_string_decode(hlt_bytes*, hlt_string charset, hlt_exception** excpt);
+extern struct hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** excpt);
+extern hlt_string hlt_string_decode(struct hlt_bytes*, hlt_string charset, hlt_exception** excpt);
 
 extern hlt_string hlt_string_empty(hlt_exception** excpt);
 extern hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt);

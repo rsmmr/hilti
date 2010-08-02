@@ -5,7 +5,9 @@
 #ifndef HILTI_RTTI_H
 #define HILTI_RTTI_H
 
+#include "types.h"
 #include "exceptions.h"
+#include "rtti.h"
 
    // HILTI_%doc-__HLT_TYPE-start
 // Unique id values to identify a type. These numbers must match the type's
@@ -40,6 +42,7 @@
 #define HLT_TYPE_PKTSRC 27
 #define HLT_TYPE_HOOK 28
 #define HLT_TYPE_CAPTURED_HOOK 29
+#define HLT_TYPE_FILE 30
 
 #define HLT_TYPE_ITERATOR_BYTES  100
 #define HLT_TYPE_ITERATOR_VECTOR 101

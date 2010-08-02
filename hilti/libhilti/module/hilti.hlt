@@ -85,7 +85,8 @@ type AddrFamily = enum { IPv4, IPv6 }
 type Protocol = enum { TCP, UDP }
 type ExpireStrategy = enum { Create, Access }
 type IOSrc = enum { PcapLive, PcapOffline }
-
+type FileMode = enum { Create, Append }
+type FileType = enum { Text, Binary }
 
 # Bytes functions.
 declare "C-HILTI" int<64> bytes_to_int(ref<bytes> b, int<64> base=10)

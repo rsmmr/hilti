@@ -69,6 +69,8 @@
 #include "iosrc.h"
 #include "context.h"
 #include "globals.h"
+#include "cmdqueue.h"
+#include "file.h"
 
 #include "module/module.h"
 
