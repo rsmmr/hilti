@@ -1709,8 +1709,8 @@ class CodeGen(objcache.Cache):
         
         def _llvmCallContinuationFunction():
             args = [self.llvmTypeContinuationPtr()]
-            args += [self.llvmTypeExecutionContextPtr()]
             args += [llvm.core.Type.pointer(self.llvmTypeExceptionPtr())]
+            args += [self.llvmTypeExecutionContextPtr()]
             
             ft = llvm.core.Type.function(llvm.core.Type.void(), args)
             func = self._llvm.module.add_function(ft, "hlt_call_continuation")

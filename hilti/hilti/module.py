@@ -211,7 +211,7 @@ class Module(node.Node):
             # generate it here directly. This is for libhilti to include it into
             # the library. However, we should build a nicer general mechanism
             # for static auto-generated functions.
-            if i.name() == "hlt_call_bound_function":
+            if i.name() == "hlt_call_continuation":
                 cg._llvmFunctionCallContinuationFunction()
                 continue
             

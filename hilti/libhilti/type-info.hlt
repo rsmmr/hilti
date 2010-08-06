@@ -11,4 +11,4 @@ export tuple<iterator<bytes>,iterator<bytes>>
 # really matter.
 # Todo: Need to find a nicer mechanism for this. See also codegen()
 # in module.py
-declare "C" void hlt_call_bound_function()
+declare "C" void hlt_call_continuation()
