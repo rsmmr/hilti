@@ -50,6 +50,6 @@ void __hlt_cmdqueue_init_cmd(__hlt_cmd *cmd, uint16_t type);
 // 
 // Note that in a non-threaded configuration, this will directly execute the
 // command and return only after it has finished.
-extern void __hlt_cmdqueue_push(__hlt_cmd *cmd, hlt_exception** excpt);
+extern void __hlt_cmdqueue_push(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

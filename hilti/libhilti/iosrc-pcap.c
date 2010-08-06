@@ -9,18 +9,18 @@ extern const hlt_type_info hlt_type_info_tuple_double_ref_bytes;
 static hlt_string_constant PREFIX = { 11, "error with " };
 static hlt_string_constant COLON = { 3, ": " };
 
-static void _raise_error(hlt_iosrc_pcap* src, const char* errbuf, hlt_exception** excpt)
+static void _raise_error(hlt_iosrc_pcap* src, const char* errbuf, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const char* err = errbuf ? errbuf : pcap_geterr(src->handle);
     
-    hlt_string msg = hlt_string_concat(&PREFIX, src->iface, excpt);
-    msg = hlt_string_concat(msg, &COLON, excpt);
-    msg = hlt_string_concat(msg, hlt_string_from_asciiz(err, excpt), excpt);
+    hlt_string msg = hlt_string_concat(&PREFIX, src->iface, excpt, ctx);
+    msg = hlt_string_concat(msg, &COLON, excpt, ctx);
+    msg = hlt_string_concat(msg, hlt_string_from_asciiz(err, excpt, ctx), excpt, ctx);
                             
     hlt_set_exception(excpt, &hlt_exception_iosrc_error, msg);
 }
 
-static void _strip_link_layer(hlt_iosrc_pcap* src, const char** pkt, int* caplen, int datalink, hlt_exception** excpt)
+static void _strip_link_layer(hlt_iosrc_pcap* src, const char** pkt, int* caplen, int datalink, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     int hdr_size = 0;
     
@@ -46,12 +46,12 @@ static void _strip_link_layer(hlt_iosrc_pcap* src, const char** pkt, int* caplen
         break;
         
       default:
-        _raise_error(src, "unsupported link layer type", excpt);
+        _raise_error(src, "unsupported link layer type", excpt, ctx);
         return;
     }
      
     if ( *caplen < hdr_size ) {
-        _raise_error(src, "partially captured packet", excpt);
+        _raise_error(src, "partially captured packet", excpt, ctx);
         return;
     }
     
@@ -62,15 +62,15 @@ static void _strip_link_layer(hlt_iosrc_pcap* src, const char** pkt, int* caplen
 static hlt_string_constant STR_PREFIX = { 8, "<pcap source " };
 static hlt_string_constant STR_POSTFIX = { 8, ">" };
 
-hlt_string hlt_iosrc_pcap_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_iosrc_pcap_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_iosrc_pcap* src = *((const hlt_iosrc_pcap**)obj);
 
-    hlt_string str = hlt_string_concat(&STR_PREFIX, src->iface, excpt);
-    return hlt_string_concat(str, &STR_POSTFIX, excpt);
+    hlt_string str = hlt_string_concat(&STR_PREFIX, src->iface, excpt, ctx);
+    return hlt_string_concat(str, &STR_POSTFIX, excpt, ctx);
 }
 
-hlt_iosrc_pcap* hlt_iosrc_pcap_new_live(hlt_string interface, hlt_exception** excpt)
+hlt_iosrc_pcap* hlt_iosrc_pcap_new_live(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iosrc_pcap* src = (hlt_iosrc_pcap*) hlt_gc_malloc_non_atomic(sizeof(hlt_iosrc_pcap));
     if ( ! src ) {
@@ -81,14 +81,14 @@ hlt_iosrc_pcap* hlt_iosrc_pcap_new_live(hlt_string interface, hlt_exception** ex
     src->type = Hilti_IOSrc_PcapLive;
     src->iface = interface;
     
-    const char* iface = hlt_string_to_native(interface, excpt);
+    const char* iface = hlt_string_to_native(interface, excpt, ctx);
     if ( *excpt )
         return 0;
     
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *p = pcap_create(iface, errbuf);
     if ( ! p ) {
-        _raise_error(src, errbuf, excpt);
+        _raise_error(src, errbuf, excpt, ctx);
         return 0;
     }
 
@@ -110,12 +110,12 @@ hlt_iosrc_pcap* hlt_iosrc_pcap_new_live(hlt_string interface, hlt_exception** ex
     return src;
     
 error:    
-    _raise_error(src, 0, excpt);
+    _raise_error(src, 0, excpt, ctx);
     pcap_close(src->handle);
     return 0;
 }
 
-hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exception** excpt)
+hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iosrc_pcap* src = (hlt_iosrc_pcap*) hlt_gc_malloc_non_atomic(sizeof(hlt_iosrc_pcap));
     if ( ! src ) {
@@ -126,14 +126,14 @@ hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exception**
     src->type = Hilti_IOSrc_PcapOffline;
     src->iface = interface;
     
-    const char* iface = hlt_string_to_native(interface, excpt);
+    const char* iface = hlt_string_to_native(interface, excpt, ctx);
     if ( *excpt )
         return 0;
     
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *p = pcap_open_offline(iface, errbuf);
     if ( ! p ) {
-        _raise_error(src, errbuf, excpt);
+        _raise_error(src, errbuf, excpt, ctx);
         return 0;
     }
 
@@ -141,12 +141,12 @@ hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exception**
     return src;
 }
 
-hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, hlt_exception** excpt)
+hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_packet result = { 0.0, NULL };
     
     if ( ! src->handle ) {
-        _raise_error(src, "already closed", excpt);
+        _raise_error(src, "already closed", excpt, ctx);
         return result;
     }
     
@@ -159,7 +159,7 @@ hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, 
     if ( rc > 0 ) {
         // Got a packet. 
         if ( ! keep_link_layer ) {
-            _strip_link_layer(src, (const char**)&data, &caplen, pcap_datalink(src->handle), excpt);
+            _strip_link_layer(src, (const char**)&data, &caplen, pcap_datalink(src->handle), excpt, ctx);
             if ( *excpt )
                 return result;
         }
@@ -167,7 +167,7 @@ hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, 
         // We need to copy it to make sure it remains valid. 
         void *copy = hlt_gc_malloc_atomic(caplen);
         memcpy(copy, data, caplen);
-        hlt_bytes* pkt = hlt_bytes_new_from_data(copy, caplen, excpt);
+        hlt_bytes* pkt = hlt_bytes_new_from_data(copy, caplen, excpt, ctx);
         if ( *excpt )
             return result;
         
@@ -184,7 +184,7 @@ hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, 
     
     if ( rc < 0 ) {
         // Error.
-        _raise_error(src, 0, excpt);
+        _raise_error(src, 0, excpt, ctx);
         pcap_close(src->handle);
         src->handle = 0;
         return result;
@@ -198,7 +198,7 @@ hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, 
     return result;
 }
 
-void hlt_iosrc_pcap_close(hlt_iosrc_pcap* src, hlt_exception** excpt)
+void hlt_iosrc_pcap_close(hlt_iosrc_pcap* src, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     pcap_close(src->handle);
     src->handle = 0;

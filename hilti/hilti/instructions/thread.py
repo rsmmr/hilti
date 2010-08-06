@@ -46,7 +46,7 @@ class ThreadSchedule(Instruction):
         
         mgr = cg.llvmGlobalThreadMgrPtr()
         ctx = cg.llvmCurrentExecutionContextPtr()
-        cg.llvmCallCInternal("__hlt_thread_mgr_schedule", [mgr, vid, cont, ctx, cg.llvmFrameExceptionAddr()])
+        cg.llvmCallCInternal("__hlt_thread_mgr_schedule", [mgr, vid, cont, cg.llvmFrameExceptionAddr(), ctx])
         cg.llvmExceptionTest()
         
 @hlt.instruction("thread.id", target=cIntegerOfWidth(64))

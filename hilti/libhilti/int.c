@@ -31,7 +31,7 @@ static int64_t _makeInt64(const hlt_type_info* type, const void *obj)
     return val;
 }
 
-hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception)
+hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_INTEGER);
     
@@ -47,7 +47,7 @@ hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t
     return s;
 }
 
-int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, hlt_exception** expt)
+int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_INTEGER);
     return _makeInt64(type, obj);

@@ -284,7 +284,7 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
     
     hlt_exception* excpt = 0;
     
-    hlt_call_continuation(job->func, ctx, &excpt);
+    hlt_call_continuation(job->func, &excpt, ctx);
 
     DBG_LOG(DBG_STREAM, "done with job %p", job);
 
@@ -294,7 +294,7 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
 
     DBG_LOG(DBG_STREAM, "uncaught exception in worker thread");
     
-    hlt_exception_print_uncaught_in_thread(excpt, job->vid);
+    hlt_exception_print_uncaught_in_thread(excpt, ctx);
     _atomic_increase(&thread->mgr->num_excpts);
     
     // We shutdown all threads. 
@@ -457,7 +457,7 @@ void hlt_threading_stop(hlt_exception** excpt)
     // Now that all threads have terminated, we can check for any uncaught
     // exceptions and then destroy the thread manager.
     if ( ! *excpt )
-        hlt_thread_mgr_check_exceptions(__hlt_global_thread_mgr, excpt);
+        hlt_thread_mgr_check_exceptions(__hlt_global_thread_mgr, excpt, __hlt_global_execution_context);
     
     hlt_thread_mgr_destroy(__hlt_global_thread_mgr);
 
@@ -571,7 +571,7 @@ uint32_t hlt_thread_mgr_num_threads(hlt_thread_mgr* mgr)
     return mgr->num_workers;
 }
 
-void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_continuation* func, hlt_execution_context* ctx, hlt_exception** excpt)
+void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_continuation* func, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! hlt_is_multi_threaded() ) {
         hlt_set_exception(excpt, &hlt_exception_no_threading, 0);
@@ -582,7 +582,7 @@ void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_cont
     _worker_schedule(thread, vid, func);
 }
 
-void hlt_thread_mgr_check_exceptions(hlt_thread_mgr* mgr, hlt_exception** excpt)
+void hlt_thread_mgr_check_exceptions(hlt_thread_mgr* mgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! hlt_is_multi_threaded() ) {
         hlt_set_exception(excpt, &hlt_exception_no_threading, 0);

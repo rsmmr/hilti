@@ -25,11 +25,11 @@ static void _add_char(int8_t c, int8_t* buffer, __hlt_string_size* bpos, __hlt_s
     
     else {
         // Copy buffer to destination string and start over.
-        __hlt_string new_dst = __hlt_string_from_data(buffer, *bpos, excpt);
+        __hlt_string new_dst = __hlt_string_from_data(buffer, *bpos, excpt, ctx);
         if ( *excpt )
             return;
             
-        new_dst = __hlt_string_concat(*dst, new_dst, excpt);
+        new_dst = __hlt_string_concat(*dst, new_dst, excpt, ctx);
         buffer[0] = c;
         *bpos = 1;
         *dst = new_dst;
@@ -39,7 +39,7 @@ static void _add_char(int8_t c, int8_t* buffer, __hlt_string_size* bpos, __hlt_s
 static void _add_chars(const int8_t* data, __hlt_string_size len, int8_t* buffer, __hlt_string_size* bpos, __hlt_string* dst, __hlt_exception** excpt)
 {
     while ( len-- ) {
-        _add_char(*data++, buffer, bpos, dst, excpt);
+        _add_char(*data++, buffer, bpos, dst, excpt, ctx);
         if ( *excpt )
             return;
     }
@@ -48,7 +48,7 @@ static void _add_chars(const int8_t* data, __hlt_string_size len, int8_t* buffer
 static void _add_asciiz(const char* asciiz, int8_t* buffer, __hlt_string_size* bpos, __hlt_string* dst, __hlt_exception** excpt)
 {
     while ( *asciiz ) {
-        _add_char(*asciiz++, buffer, bpos, dst, excpt);
+        _add_char(*asciiz++, buffer, bpos, dst, excpt, ctx);
         if ( *excpt )
             return;
     }
@@ -71,12 +71,12 @@ static void _do_fmt(__hlt_string fmt, const __hlt_type_info* type, const void* t
         
       case 'd': 
         if ( fmt_type->to_int64 ) {
-            int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, excpt);
+            int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, excpt, ctx);
             if ( *excpt )
                 return;
             
             snprintf(tmp, tmp_size, "%lld", i);
-            _add_asciiz(tmp, buffer, bpos, dst, excpt);
+            _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else {
             hlt_set_exception(excpt, &__hlt_exception_value_error, 0);
@@ -87,12 +87,12 @@ static void _do_fmt(__hlt_string fmt, const __hlt_type_info* type, const void* t
 
       case 'x': 
         if ( fmt_type->to_int64 ) {
-            int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, excpt);
+            int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, excpt, ctx);
             if ( *excpt )
                 return;
             
             snprintf(tmp, tmp_size, "%llx", i);
-            _add_asciiz(tmp, buffer, bpos, dst, excpt);
+            _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else {
             hlt_set_exception(excpt, &__hlt_exception_value_error, 0);
@@ -103,12 +103,12 @@ static void _do_fmt(__hlt_string fmt, const __hlt_type_info* type, const void* t
         
       case 'f': 
         if ( fmt_type->to_double ) {
-            double d = (*fmt_type->to_double)(fmt_type, fmt_arg, excpt);
+            double d = (*fmt_type->to_double)(fmt_type, fmt_arg, excpt, ctx);
             if ( *excpt )
                 return;
             
             snprintf(tmp, tmp_size, "%f", d);
-            _add_asciiz(tmp, buffer, bpos, dst, excpt);
+            _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else {
             hlt_set_exception(excpt, &__hlt_exception_value_error, 0);
@@ -120,27 +120,27 @@ static void _do_fmt(__hlt_string fmt, const __hlt_type_info* type, const void* t
       case 'p': 
         if ( * (void **)fmt_arg ) {
             snprintf(tmp, tmp_size, "%p", * (void **)fmt_arg);
-            _add_asciiz(tmp, buffer, bpos, dst, excpt);
+            _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else 
             // Printing null pointers yield different output with differenet
             // libs.  Canonicalize the output.
-            _add_asciiz("0x0", buffer, bpos, dst, excpt);
+            _add_asciiz("0x0", buffer, bpos, dst, excpt, ctx);
         
         break;
         
       case 's': 
         if ( fmt_type->to_string ) {
-            __hlt_string str = (*fmt_type->to_string)(fmt_type, fmt_arg, 0, excpt);
+            __hlt_string str = (*fmt_type->to_string)(fmt_type, fmt_arg, 0, excpt, ctx);
             if ( *excpt )
                 return;
             
             if ( str )
-                _add_chars(str->bytes, str->len, buffer, bpos, dst, excpt);
+                _add_chars(str->bytes, str->len, buffer, bpos, dst, excpt, ctx);
         }
         
         else 
-            _add_asciiz(fmt_type->tag, buffer, bpos, dst, excpt);
+            _add_asciiz(fmt_type->tag, buffer, bpos, dst, excpt, ctx);
         
         break;
         
@@ -151,7 +151,7 @@ static void _do_fmt(__hlt_string fmt, const __hlt_type_info* type, const void* t
     
 }
 
-__hlt_string hilti_fmt(__hlt_string fmt, const __hlt_type_info* type, const void* tuple, __hlt_exception** excpt)
+__hlt_string hilti_fmt(__hlt_string fmt, const __hlt_type_info* type, const void* tuple, __hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == __HLT_TYPE_TUPLE);
 
@@ -173,7 +173,7 @@ __hlt_string hilti_fmt(__hlt_string fmt, const __hlt_type_info* type, const void
             
             // Control character.
             if ( p[i] != '%' ) {
-                _do_fmt(fmt, type, tuple, &type_param, &i, buffer, &bpos, &dst, excpt);
+                _do_fmt(fmt, type, tuple, &type_param, &i, buffer, &bpos, &dst, excpt, ctx);
                 if ( *excpt )
                     return 0;
                 
@@ -183,17 +183,17 @@ __hlt_string hilti_fmt(__hlt_string fmt, const __hlt_type_info* type, const void
             // Fall-through with quoted '%'.
         }
         
-        _add_char(p[i++], buffer, &bpos, &dst, excpt);
+        _add_char(p[i++], buffer, &bpos, &dst, excpt, ctx);
         if ( *excpt )
             return 0;
     }
     
-    result = __hlt_string_from_data(buffer, bpos, excpt);
+    result = __hlt_string_from_data(buffer, bpos, excpt, ctx);
     if ( *excpt )
         return 0;
     
     if ( dst )
-        result = __hlt_string_concat(dst, result, excpt);
+        result = __hlt_string_concat(dst, result, excpt, ctx);
 
     return result;
 }

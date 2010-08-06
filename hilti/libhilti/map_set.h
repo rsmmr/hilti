@@ -43,7 +43,7 @@ typedef struct {
 /// 
 /// excpt: &
 struct __hlt_timer_mgr;
-extern hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt);
+extern hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Gets the value associated with a key in map.
 /// 
@@ -56,7 +56,7 @@ extern hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value
 /// Returns: The value. 
 /// 
 /// Raises: IndexError - If the key does not exist.
-extern void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt);
+extern void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Gets the value associated with a key in map if it exists, and returns a
 /// default value otherwise.
@@ -72,7 +72,7 @@ extern void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_e
 /// Returns: The value, or the default if key does not exist.
 /// 
 /// Raises: KeyError - If the key does not exist and not default has been set via ~~hlt_map_default.
-extern void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tdef, void* def, hlt_exception** excpt);
+extern void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Inserts a key with a value into a map. If the key already exisits, the
 /// old value is overwritten.
@@ -84,7 +84,7 @@ extern void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* ke
 /// value: The value to store for the key.
 /// 
 /// excpt: &
-extern void  hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tval, void* value, hlt_exception** excpt);
+extern void  hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tval, void* value, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Checks whether a key exists in a map.
 /// 
@@ -95,7 +95,7 @@ extern void  hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, co
 /// excpt: &
 /// 
 /// Returns: True if the key exists.
-extern int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt);
+extern int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Remove a key from a map. If the key does not exists, the function call has not effect. 
 /// 
@@ -104,7 +104,7 @@ extern int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, h
 /// key: The key.
 /// 
 /// excpt: &
-extern void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt);
+extern void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Called by an expiring timer to remove an element from the map.
 /// 
@@ -118,14 +118,14 @@ extern void hlt_list_map_expire(__hlt_map_timer_cookie cookie);
 /// excpt: &
 /// 
 /// Returns: The size of the map.
-extern int32_t hlt_map_size(hlt_map* m, hlt_exception** excpt);
+extern int32_t hlt_map_size(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Remove all keys from a map.
 ///
 /// m: The map.
 /// 
 /// excpt: &
-extern void hlt_map_clear(hlt_map* m, hlt_exception** excpt);
+extern void hlt_map_clear(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Sets a default to return when a key does not exist. 
 /// 
@@ -134,7 +134,7 @@ extern void hlt_map_clear(hlt_map* m, hlt_exception** excpt);
 /// def: The default value.
 /// 
 /// excpt: &
-extern void  hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt);
+extern void  hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Actives automatic expiration of map entries. Subsequently added entries
 /// will be expired after a timeout expires.
@@ -148,7 +148,7 @@ extern void  hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, h
 /// excpt: &
 /// 
 /// Raises: NoTimerManager if not timer manager has been associated with the map.
-extern void hlt_map_timeout(hlt_map* m, int8_t strategy, double timeout, hlt_exception** excpt);
+extern void hlt_map_timeout(hlt_map* m, int8_t strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns an iterator pointing the first map element.
 ///
@@ -157,7 +157,7 @@ extern void hlt_map_timeout(hlt_map* m, int8_t strategy, double timeout, hlt_exc
 /// excpt: &
 /// 
 /// Returns: The start of the map.
-extern hlt_map_iter hlt_map_begin(hlt_map* v, hlt_exception** excpt);
+extern hlt_map_iter hlt_map_begin(hlt_map* v, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns an iterator pointing the last element of any map.
 ///
@@ -166,7 +166,7 @@ extern hlt_map_iter hlt_map_begin(hlt_map* v, hlt_exception** excpt);
 /// excpt: &
 /// 
 /// Returns: The end of a map.
-extern hlt_map_iter hlt_map_end(hlt_exception** excpt);
+extern hlt_map_iter hlt_map_end(hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Advances a map iterator to the next position. Note that the order in
 /// which elements are visited is undefined.
@@ -178,7 +178,7 @@ extern hlt_map_iter hlt_map_end(hlt_exception** excpt);
 /// excpt: &
 /// 
 /// Returns: An iterator advanced by one element.
-extern hlt_map_iter hlt_map_iter_incr(hlt_map_iter i, hlt_exception** excpt);
+extern hlt_map_iter hlt_map_iter_incr(hlt_map_iter i, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Dereferences a map iterator.
 /// 
@@ -197,7 +197,7 @@ extern hlt_map_iter hlt_map_iter_incr(hlt_map_iter i, hlt_exception** excpt);
 /// 
 /// Note: Dereferencing an iterator does not count as an access to the entry
 /// for restarting its expiration timer.
-extern void* hlt_map_iter_deref(const hlt_type_info* tuple, hlt_map_iter i, hlt_exception** excpt);
+extern void* hlt_map_iter_deref(const hlt_type_info* tuple, hlt_map_iter i, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Compares two map iterators whether they are refering to the same element.
 /// 
@@ -208,7 +208,7 @@ extern void* hlt_map_iter_deref(const hlt_type_info* tuple, hlt_map_iter i, hlt_
 /// excpt: &
 /// 
 /// Returns: True if both iterators are equal.
-extern int8_t hlt_map_iter_eq(hlt_map_iter i1, hlt_map_iter i2, hlt_exception** excpt);
+extern int8_t hlt_map_iter_eq(hlt_map_iter i1, hlt_map_iter i2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 ////////// Sets.
 
@@ -220,7 +220,7 @@ extern int8_t hlt_map_iter_eq(hlt_map_iter i1, hlt_map_iter i2, hlt_exception** 
 /// expiration is not going to be used.
 /// 
 /// excpt: &
-extern hlt_set* hlt_set_new(const hlt_type_info* key, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt);
+extern hlt_set* hlt_set_new(const hlt_type_info* key, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Inserts a key with a value into a set. If the key already exisits, the
 /// old value is overwritten.
@@ -230,7 +230,7 @@ extern hlt_set* hlt_set_new(const hlt_type_info* key, struct __hlt_timer_mgr* tm
 /// key: The key.
 /// 
 /// excpt: &
-extern void  hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_exception** excpt);
+extern void  hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Checks whether a key exists in a set.
 /// 
@@ -241,7 +241,7 @@ extern void  hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hl
 /// excpt: &
 /// 
 /// Returns: True if the key exists.
-extern int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt);
+extern int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Remove a key from a set. If the key does not exists, the function call has not effect. 
 /// 
@@ -250,7 +250,7 @@ extern int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, h
 /// key: The key.
 /// 
 /// excpt: &
-extern void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt);
+extern void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Called by an expiring timer to remove an element from the set.
 /// 
@@ -264,14 +264,14 @@ extern void hlt_list_set_expire(__hlt_set_timer_cookie cookie);
 /// excpt: &
 /// 
 /// Returns: The size of the set.
-extern int32_t hlt_set_size(hlt_set* m, hlt_exception** excpt);
+extern int32_t hlt_set_size(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Remove all keys from a set.
 ///
 /// m: The set.
 /// 
 /// excpt: &
-extern void hlt_set_clear(hlt_set* m, hlt_exception** excpt);
+extern void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Actives automatic expiration of set entries. Subsequently added entries
 /// will be expired after a timeout expires.
@@ -285,7 +285,7 @@ extern void hlt_set_clear(hlt_set* m, hlt_exception** excpt);
 /// excpt: &
 /// 
 /// Raises: NoTimerManager if not timer manager has been associated with the set.
-extern void hlt_set_timeout(hlt_set* m, int8_t strategy, double timeout, hlt_exception** excpt);
+extern void hlt_set_timeout(hlt_set* m, int8_t strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns an iterator pointing the first set element.
 ///
@@ -294,7 +294,7 @@ extern void hlt_set_timeout(hlt_set* m, int8_t strategy, double timeout, hlt_exc
 /// excpt: &
 /// 
 /// Returns: The start of the set.
-extern hlt_set_iter hlt_set_begin(hlt_set* v, hlt_exception** excpt);
+extern hlt_set_iter hlt_set_begin(hlt_set* v, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns an iterator pointing the last element of any set.
 ///
@@ -303,7 +303,7 @@ extern hlt_set_iter hlt_set_begin(hlt_set* v, hlt_exception** excpt);
 /// excpt: &
 /// 
 /// Returns: The end of a set.
-extern hlt_set_iter hlt_set_end(hlt_exception** excpt);
+extern hlt_set_iter hlt_set_end(hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Advances a set iterator to the next position. Note that the order in
 /// which elements are visited is undefined.
@@ -315,7 +315,7 @@ extern hlt_set_iter hlt_set_end(hlt_exception** excpt);
 /// excpt: &
 /// 
 /// Returns: An iterator advanced by one element.
-extern hlt_set_iter hlt_set_iter_incr(hlt_set_iter i, hlt_exception** excpt);
+extern hlt_set_iter hlt_set_iter_incr(hlt_set_iter i, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Dereferences a set iterator.
 /// 
@@ -334,7 +334,7 @@ extern hlt_set_iter hlt_set_iter_incr(hlt_set_iter i, hlt_exception** excpt);
 /// 
 /// Note: Dereferencing an iterator does not count as an access to the entry
 /// for restarting its expiration timer.
-extern void* hlt_set_iter_deref(hlt_set_iter i, hlt_exception** excpt);
+extern void* hlt_set_iter_deref(hlt_set_iter i, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Compares two set iterators whether they are refering to the same element.
 /// 
@@ -345,7 +345,7 @@ extern void* hlt_set_iter_deref(hlt_set_iter i, hlt_exception** excpt);
 /// excpt: &
 /// 
 /// Returns: True if both iterators are equal.
-extern int8_t hlt_set_iter_eq(hlt_set_iter i1, hlt_set_iter i2, hlt_exception** excpt);
+extern int8_t hlt_set_iter_eq(hlt_set_iter i1, hlt_set_iter i2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 ////////// Other helpers.
 

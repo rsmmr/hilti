@@ -691,10 +691,11 @@ def _unifyBlock(canonifier, block):
         add_terminator = True
         
     if add_terminator:
+        import hilti.instructions.hook
+        import hilti.instructions.flow
         if block.next():
             newins = hilti.instructions.flow.Jump(operand.ID(id.Local(block.next(), type.Label(), location=loc)), location=loc)
         else:
-            import hilti.instructions.hook
             
             if canonifier.debugMode():
                 dbg = hilti.instructions.debug.message("hilti-flow", "leaving %s" % canonifier.currentFunctionName())

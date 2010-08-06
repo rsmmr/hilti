@@ -186,9 +186,10 @@ class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameteriza
                 
                 # Function is defined in hilti_intern.ll
                 exception = cg.llvmFrameExceptionAddr()
+                ctx = cg.llvmCurrentExecutionContextPtr()
             
                 for i in range(len(bytes)):
-                    byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception])
+                    byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception, ctx])
                     byte.calling_convention = llvm.core.CC_C
                     byte = builder.zext(byte, itype)
                     if bytes[i]:

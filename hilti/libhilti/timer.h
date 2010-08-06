@@ -61,7 +61,7 @@ struct __hlt_timer {
 /// excpt: &
 /// 
 /// Raises: NotScheduled - If the timer has not been scheduled yet. 
-extern void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt);
+extern void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Cancels a timer without triggering it. This also detaches the timer from
 /// the timer manager, and it can be rescheduled afterwards. 
@@ -69,25 +69,25 @@ extern void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt
 /// timer: The timer to cancel.
 /// 
 /// excpt: &
-extern void hlt_timer_cancel(hlt_timer* timer, hlt_exception** excpt);
+extern void hlt_timer_cancel(hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts a timer to a string representian. 
 /// 
 /// This function has the standard RTTI signature.
-extern hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception);
+extern hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Converts a timer to a double. The returned double is the timer's
 /// expiration time, or HLT_TIME_NONE if none has been set. 
 /// 
 /// This function has the standard RTTI signature.
-extern double hlt_timer_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception);
+extern double hlt_timer_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Instantiates a new timer manager object. It's current time well initially be set to zero.
 /// 
 /// excpt: &
 /// 
 /// Returns: The new timer manager object. 
-extern hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt);
+extern hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Schedules a timer with the timer manager. A timer can only be scheduled
 /// with one timer manager at a time. It needs to be canceled before it can
@@ -104,7 +104,7 @@ extern hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt);
 /// 
 /// Raises: TimerAlreadyScheduled - The timer is already associated with
 /// another timer manager.
-extern void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hlt_exception** excpt);
+extern void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Advances a timer manager's notion of time. All timers scheduled for a
 /// time smaller or equal the new time will fire. 
@@ -117,7 +117,7 @@ extern void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* ti
 /// excpt: &
 /// 
 /// Returns: The number of timers which have fired. 
-extern int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** excpt);
+extern int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the timer managers current time.
 /// 
@@ -126,7 +126,7 @@ extern int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_excepti
 /// excpt: &
 /// 
 /// Returns: The current time.
-extern hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt);
+extern hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Cancels all scheduled timer, optionally firing them all. 
 /// 
@@ -135,18 +135,18 @@ extern hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt)
 /// fire: If true, all timers are executed. 
 /// 
 /// excpt: &
-extern void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception** excpt);
+extern void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Converts a timer manager to string representian. 
 /// 
 /// This function has the standard RTTI signature.
-extern hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception);
+extern hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Converts a timer manager to a double. The returned double is the
 /// manager's current time.
 /// 
 /// This function has the standard RTTI signature.
-extern double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception);
+extern double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Instantiates a new timer object that will execute a bound function when it
 /// fires.
@@ -156,7 +156,7 @@ extern double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj
 /// excpt: &
 /// 
 /// Returns: The new timer object. 
-extern hlt_timer* __hlt_timer_new_function(hlt_continuation* func, hlt_exception** excpt);
+extern hlt_timer* __hlt_timer_new_function(hlt_continuation* func, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #if 0
 /// Instantiates a new timer object that will expire a list entry when it
@@ -167,7 +167,7 @@ extern hlt_timer* __hlt_timer_new_function(hlt_continuation* func, hlt_exception
 /// excpt: &
 /// 
 /// Returns: The new timer object. 
-extern hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** excpt);
+extern hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 #endif
 
 /// Instantiates a new timer object that will expire a map entry when it
@@ -178,7 +178,7 @@ extern hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_excep
 /// excpt: &
 /// 
 /// Returns: The new timer object. 
-extern hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_exception** excpt);
+extern hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Instantiates a new timer object that will expire a map entry when it
 /// fires. 
@@ -188,6 +188,6 @@ extern hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_excepti
 /// excpt: &
 /// 
 /// Returns: The new timer object. 
-extern hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** excpt);
+extern hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

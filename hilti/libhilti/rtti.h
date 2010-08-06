@@ -81,19 +81,19 @@ struct __hlt_type_info {
     // type. 'options' is currently unused and will be always zero for now.
     // In the future, we might use 'options' to pass in hints about the
     // prefered format. 'expt' can be set to raise an exception.
-    struct __hlt_string* (*to_string)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt);
-    int64_t (*to_int64)(const hlt_type_info* type, const void* obj, hlt_exception** expt);
-    double (*to_double)(const hlt_type_info* type, const void* obj, hlt_exception** expt);
+    struct __hlt_string* (*to_string)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
+    int64_t (*to_int64)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
+    double (*to_double)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
 
     // Calculates a hash of the value. If not given, the default is hash as
-    // many bytes as size specifies. Note that the excpt argument will not be
-    // used and will always be null.
-    hlt_hash (*hash)(const hlt_type_info* type, const void* obj, hlt_exception** expt);
+    // many bytes as size specifies. Note that the excpt and ctx arguments
+    // will not be used and will always be null.
+    hlt_hash (*hash)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
     
     // Compares to values for equality. If not given, the default is to
-    // compare as many bytes as size specified.  Note that the excpt argument
-    // will not be used and will always be null.
-    int8_t (*equal)(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** expt);
+    // compare as many bytes as size specified.  Note that the excpt and ctx
+    // argument will not be used and will always be null.
+    int8_t (*equal)(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** expt, hlt_execution_context* ctx);
     
     // Type-parameters start here. The format is type-specific.
     char type_params[];

@@ -26,13 +26,13 @@ static void fatal_error(const char* msg)
 }
 
 // Executes a single command. 
-static void execute_cmd(__hlt_cmd *cmd, hlt_exception** excpt)
+static void execute_cmd(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     DBG_LOG(DBG_STREAM_QUEUE, "executing cmd %p of type %d", cmd, cmd->type);
     
     switch ( cmd->type ) {
       case __HLT_CMD_FILE:
-        __hlt_file_cmd_internal(cmd, excpt);
+        __hlt_file_cmd_internal(cmd, excpt, ctx);
         break;
         
       default:
@@ -50,6 +50,8 @@ static void* _manager(void *arg)
     if ( pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0) != 0 )
         fatal_error("cannot set cancel state");
 
+    hlt_execution_context* ctx = hlt_execution_context_new(HLT_VID_QUEUE, 0);
+    
     // We terminate iff termination has been requested and the queue is
     // empty.
     while ( queue_head || ! queue_canceled ) {
@@ -78,9 +80,9 @@ static void* _manager(void *arg)
         
         if ( cmd ) {
             hlt_exception* excpt = 0;
-            execute_cmd(cmd, &excpt);
+            execute_cmd(cmd, &excpt, ctx);
             if ( excpt )
-                __hlt_exception_print_uncaught_abort(excpt);
+                __hlt_exception_print_uncaught_abort(excpt, ctx);
         }
     }
     
@@ -141,10 +143,10 @@ void __hlt_cmdqueue_init_cmd(__hlt_cmd *cmd, uint16_t type)
     cmd->next = 0;
 }
     
-void __hlt_cmdqueue_push(__hlt_cmd *cmd, hlt_exception** excpt)
+void __hlt_cmdqueue_push(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! hlt_is_multi_threaded() ) {
-        execute_cmd(cmd, excpt);
+        execute_cmd(cmd, excpt, ctx);
         return;
     }
 

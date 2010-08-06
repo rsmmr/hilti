@@ -78,7 +78,7 @@ class NewTimer(Operator):
         args = self.op3()
         cont = cg.llvmBindFunction(func, args)
         
-        result = cg.llvmCallCInternal("__hlt_timer_new_function", [cont, cg.llvmFrameExceptionAddr()])
+        result = cg.llvmCallCInternal("__hlt_timer_new_function", [cont, cg.llvmFrameExceptionAddr(), cg.llvmCurrentExecutionContextPtr()])
         cg.llvmExceptionTest()
         cg.llvmStoreInTarget(self, result)
     

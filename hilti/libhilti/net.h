@@ -13,7 +13,7 @@ struct __hlt_net {
     uint8_t len; // The length of the mask. 
 };
 
-extern hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt);
+extern hlt_string hlt_net_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif
     

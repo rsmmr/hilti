@@ -14,7 +14,7 @@
 
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't 
  * convert to the locale encoding yet. We just print them in \u syntax. */
-void __hlt_print_str(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt)
+void __hlt_print_str(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! s )
         // Empty string.

@@ -20,7 +20,7 @@ struct hlt_vector {
     void* def;                   // Default element for not yet initialized fields. 
 };
 
-hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, hlt_exception** excpt)
+hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_vector* v = hlt_gc_malloc_non_atomic(sizeof(hlt_vector));
     if ( ! v ) {
@@ -51,7 +51,7 @@ hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, hlt_e
     return v;
 }
 
-void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt)
+void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( i > v->last ) {
         hlt_set_exception(excpt, &hlt_exception_index_error, 0);
@@ -63,7 +63,7 @@ void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt)
 
 #include <stdio.h>
 
-void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemtype, void* val, hlt_exception** excpt)
+void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(elemtype == v->type);
     
@@ -73,7 +73,7 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
         while ( i >= c )
             c *= (c+1) * GrowthFactor; 
         
-        hlt_vector_reserve(v, c, excpt);
+        hlt_vector_reserve(v, c, excpt, ctx);
         if ( *excpt )
             return;
     }
@@ -92,12 +92,12 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
     memcpy(dst, val, v->type->size);
 }
 
-hlt_vector_idx hlt_vector_size(hlt_vector* v, hlt_exception** excpt)
+hlt_vector_idx hlt_vector_size(hlt_vector* v, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return v->last + 1;
 }
 
-void hlt_vector_reserve(hlt_vector* v, hlt_vector_idx n, hlt_exception** excpt)
+void hlt_vector_reserve(hlt_vector* v, hlt_vector_idx n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( v->capacity >= n )
         return;
@@ -111,7 +111,7 @@ void hlt_vector_reserve(hlt_vector* v, hlt_vector_idx n, hlt_exception** excpt)
     v->capacity = n;
 }
 
-hlt_vector_iter hlt_vector_begin(const hlt_vector* v, hlt_exception** excpt)
+hlt_vector_iter hlt_vector_begin(const hlt_vector* v, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_vector_iter i;
     i.vec = v->last >= 0 ? v : 0;
@@ -119,7 +119,7 @@ hlt_vector_iter hlt_vector_begin(const hlt_vector* v, hlt_exception** excpt)
     return i;
 }
 
-hlt_vector_iter hlt_vector_end(const hlt_vector* v, hlt_exception** excpt)
+hlt_vector_iter hlt_vector_end(const hlt_vector* v, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_vector_iter i;
     i.vec = 0;
@@ -127,7 +127,7 @@ hlt_vector_iter hlt_vector_end(const hlt_vector* v, hlt_exception** excpt)
     return i;
 }
 
-hlt_vector_iter hlt_vector_iter_incr(const hlt_vector_iter i, hlt_exception** excpt)
+hlt_vector_iter hlt_vector_iter_incr(const hlt_vector_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.vec )
         return i;
@@ -143,7 +143,7 @@ hlt_vector_iter hlt_vector_iter_incr(const hlt_vector_iter i, hlt_exception** ex
     return j;
 }
 
-void* hlt_vector_iter_deref(const hlt_vector_iter i, hlt_exception** excpt)
+void* hlt_vector_iter_deref(const hlt_vector_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.vec ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
@@ -153,7 +153,7 @@ void* hlt_vector_iter_deref(const hlt_vector_iter i, hlt_exception** excpt)
     return i.vec->elems + i.idx * i.vec->type->size;
 }
 
-int8_t hlt_vector_iter_eq(const hlt_vector_iter i1, const hlt_vector_iter i2, hlt_exception** excpt)
+int8_t hlt_vector_iter_eq(const hlt_vector_iter i1, const hlt_vector_iter i2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return i1.vec == i2.vec && i1.idx == i2.idx;
 }

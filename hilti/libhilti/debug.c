@@ -9,7 +9,7 @@
 extern const hlt_type_info hlt_type_info_string;
 extern const hlt_type_info hlt_type_info_tuple_string;
 
-static int _want_stream(hlt_string stream, hlt_exception** excpt)
+static int _want_stream(hlt_string stream, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // FIXME: It's not very efficient to go through the stream-list every
     // time. Let's see if it's worth optimizing this even for the debug mode.
@@ -20,18 +20,18 @@ static int _want_stream(hlt_string stream, hlt_exception** excpt)
     if ( ! streams )
         return 0;
     
-    hlt_list_iter i = hlt_list_begin(streams, excpt);
-    hlt_list_iter end = hlt_list_end(streams, excpt);
+    hlt_list_iter i = hlt_list_begin(streams, excpt, ctx);
+    hlt_list_iter end = hlt_list_end(streams, excpt, ctx);
     
     int found = 0;
-    while ( ! hlt_list_iter_eq(i, end, excpt) ) {
-        hlt_string* s = hlt_list_iter_deref(i, excpt);
-        if ( hlt_string_cmp(stream, *s, excpt) == 0) {
+    while ( ! hlt_list_iter_eq(i, end, excpt, ctx) ) {
+        hlt_string* s = hlt_list_iter_deref(i, excpt, ctx);
+        if ( hlt_string_cmp(stream, *s, excpt, ctx) == 0) {
             found = 1;
             break;
         }
         
-        i = hlt_list_iter_incr(i, excpt);
+        i = hlt_list_iter_incr(i, excpt, ctx);
     }
 
     if ( *excpt )
@@ -40,9 +40,9 @@ static int _want_stream(hlt_string stream, hlt_exception** excpt)
     return found;
 }
 
-static void _make_prefix(hlt_string stream, char* dst, int len, hlt_exception** excpt)
+static void _make_prefix(hlt_string stream, char* dst, int len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    const char* s = hlt_string_to_native(stream, excpt);
+    const char* s = hlt_string_to_native(stream, excpt, ctx);
     
     if ( hlt_is_multi_threaded() ) {
         const char* t = hlt_thread_mgr_current_native_thread(__hlt_global_thread_mgr);
@@ -52,15 +52,15 @@ static void _make_prefix(hlt_string stream, char* dst, int len, hlt_exception** 
         snprintf(dst, len, "[%s] ", s);
 }
 
-void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception** excpt)
+void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! _want_stream(stream, excpt) )
+    if ( ! _want_stream(stream, excpt, ctx) )
         return;
 
     char prefix[128];
-    _make_prefix(stream, prefix, sizeof(prefix), excpt);
+    _make_prefix(stream, prefix, sizeof(prefix), excpt, ctx);
     
-    hlt_string usr = hilti_fmt(fmt, type, tuple, excpt);
+    hlt_string usr = hilti_fmt(fmt, type, tuple, excpt, ctx);
 
     if ( *excpt )
         return;
@@ -68,7 +68,7 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     FILE* out = hlt_config_get()->debug_out;
     flockfile(out);
     
-    hlt_string_print(out, hlt_string_concat(hlt_string_from_asciiz(prefix, excpt), usr, excpt), 1, excpt);
+    hlt_string_print(out, hlt_string_concat(hlt_string_from_asciiz(prefix, excpt, ctx), usr, excpt, ctx), 1, excpt, ctx);
     
     fflush(out);
     funlockfile(out);
@@ -78,13 +78,13 @@ void __hlt_debug_printf_internal(const char* s, const char* fmt, ...)
 {
     hlt_exception* excpt = 0;
     
-    hlt_string stream = hlt_string_from_asciiz(s, &excpt);
+    hlt_string stream = hlt_string_from_asciiz(s, &excpt, __hlt_global_execution_context);
 
-    if ( ! _want_stream(stream, &excpt) )
+    if ( ! _want_stream(stream, &excpt, __hlt_global_execution_context) )
         return;
     
     char buffer[512];
-    _make_prefix(stream, buffer, sizeof(buffer), &excpt);
+    _make_prefix(stream, buffer, sizeof(buffer), &excpt, __hlt_global_execution_context);
 
     if ( excpt ) {
         fprintf(stderr, "exception in __hlt_debug_printf_internal\n");
@@ -110,9 +110,9 @@ void __hlt_debug_printf_internal(const char* s, const char* fmt, ...)
 }
 
 
-hlt_list* hlt_debug_parse_streams(const char* streams, hlt_exception** excpt)
+hlt_list* hlt_debug_parse_streams(const char* streams, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_list* l = hlt_list_new(&hlt_type_info_string, excpt);
+    hlt_list* l = hlt_list_new(&hlt_type_info_string, excpt, ctx);
     if ( *excpt )
         return 0;
     
@@ -124,8 +124,8 @@ hlt_list* hlt_debug_parse_streams(const char* streams, hlt_exception** excpt)
     strcpy(copy, streams);
 
     while ( (t = strtok_r(c, ":", &saveptr)) ) {
-        hlt_string s = hlt_string_from_asciiz(t, excpt);
-        hlt_list_push_back(l, &hlt_type_info_string, &s, excpt);
+        hlt_string s = hlt_string_from_asciiz(t, excpt, ctx);
+        hlt_list_push_back(l, &hlt_type_info_string, &s, excpt, ctx);
         if ( *excpt ) 
             return 0;
         

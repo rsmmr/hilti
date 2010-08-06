@@ -24,7 +24,7 @@ static inline int is_v4(const hlt_addr addr)
     (((x) & 0x000000000000ff00LL) << 40) | \
     (((x) & 0x00000000000000ffLL) << 56))
 
-hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_ADDR);
     
@@ -57,6 +57,6 @@ hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_
         }
     }
     
-    return hlt_string_from_asciiz(buffer, excpt);
+    return hlt_string_from_asciiz(buffer, excpt, ctx);
 }
         

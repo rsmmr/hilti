@@ -41,7 +41,7 @@ void __hlt_hooks_stop()
     __hlt_global_hook_state = 0;
 }
 
-void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception** excpt)
+void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(group >= 0);
     assert(__hlt_global_hook_state);
@@ -78,7 +78,7 @@ exit:
         _fatal_error("cannot release lock");
 }
 
-int8_t hlt_hook_group_is_enabled(int64_t group, hlt_exception** excpt)
+int8_t hlt_hook_group_is_enabled(int64_t group, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // We don't lock here. Thanks to GC and us never shrinking the state
     // memory, the worst that can happen is that we're reading an outdated

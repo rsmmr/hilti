@@ -57,7 +57,7 @@ struct __hlt_set_iter {
 };
 
 
-hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt)
+hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( type->size <= sizeof(__khkey_t) )
         return (khint_t)(*(void**)obj);
@@ -65,7 +65,7 @@ hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_except
         return hlt_hash_bytes(obj, type->size);
 }
 
-int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt)
+int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( type1->size <= sizeof(__khkey_t) )
         return (*(void**)obj1) == (*(void**)obj2);
@@ -75,12 +75,12 @@ int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt
 
 static inline hlt_hash _kh_hash_func(const void* obj, const hlt_type_info* type)
 {
-    return (*type->hash)(type, obj, 0);
+    return (*type->hash)(type, obj, 0, 0);
 }
 
 static inline int8_t _kh_hash_equal(const void* obj1, const void* obj2, const hlt_type_info* type)
 {
-    return (*type->equal)(type, obj1, type, obj2, 0);
+    return (*type->equal)(type, obj1, type, obj2, 0, 0);
 }
 
 static inline void* _to_voidp(const hlt_type_info* type, void* data)
@@ -95,7 +95,7 @@ static inline void* _to_voidp(const hlt_type_info* type, void* data)
     }
 }
 
-static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt)
+static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m->tmgr || m->strategy != Hilti_ExpireStrategy_Access || m->timeout == 0 )
         return;
@@ -103,11 +103,11 @@ static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt)
     if ( ! kh_value(m, i).timer )
         return;
     
-    double t = hlt_timer_mgr_current(m->tmgr, excpt) + m->timeout;
-    hlt_timer_update(kh_value(m, i).timer, t, excpt);
+    double t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
+    hlt_timer_update(kh_value(m, i).timer, t, excpt, ctx);
 }
 
-static inline void _access_set(hlt_set* m, khiter_t i, hlt_exception** excpt)
+static inline void _access_set(hlt_set* m, khiter_t i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m->tmgr || m->strategy != Hilti_ExpireStrategy_Access || m->timeout == 0 )
         return;
@@ -115,15 +115,15 @@ static inline void _access_set(hlt_set* m, khiter_t i, hlt_exception** excpt)
     if ( ! kh_value(m, i) )
         return;
     
-    double t = hlt_timer_mgr_current(m->tmgr, excpt) + m->timeout;
-    hlt_timer_update(kh_value(m, i), t, excpt);
+    double t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
+    hlt_timer_update(kh_value(m, i), t, excpt, ctx);
 }
 
 //////////// Maps.
 
 KHASH_INIT(map, __khkey_t, __khval_map_t, 1, _kh_hash_func, _kh_hash_equal)
 
-hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_timer_mgr* tmgr, hlt_exception** excpt)
+hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_map* m = kh_init(map);
     if ( ! m ) {
@@ -141,7 +141,7 @@ hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_t
     return m;
 }
 
-void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt)
+void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -159,7 +159,7 @@ void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exceptio
         return 0;
     }
 
-    _access_map(m, i, excpt);
+    _access_map(m, i, excpt, ctx);
     
     // It's unfortunate that we have look into the map here to get the size
     // of the value type because that's something the compiler can't optimize
@@ -168,7 +168,7 @@ void* hlt_map_get(hlt_map* m, const hlt_type_info* type, void* key, hlt_exceptio
     return kh_value(m, i).val;
 }
 
-void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tdef, void* def, hlt_exception** excpt)
+void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -180,12 +180,12 @@ void* hlt_map_get_default(hlt_map* m, const hlt_type_info* tkey, void* key, cons
     if ( i == kh_end(m) )
         return def;
 
-    _access_map(m, i, excpt);
+    _access_map(m, i, excpt, ctx);
     
     return kh_value(m, i).val;
 }
 
-void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tval, void* value, hlt_exception** excpt)
+void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_type_info* tval, void* value, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -199,16 +199,16 @@ void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_
 	khiter_t i = kh_put_map(m, keytmp, &ret, tkey);
     if ( ! ret )
         // Already exists, update timer.
-        _access_map(m, i, excpt);
+        _access_map(m, i, excpt, ctx);
     
     else {
         // New entry.
         if ( m->tmgr && m->timeout ) {
             // Create timer.
             __hlt_map_timer_cookie cookie = { m, keytmp };
-            kh_value(m, i).timer = __hlt_timer_new_map(cookie, excpt);
-            double t = hlt_timer_mgr_current(m->tmgr, excpt) + m->timeout;
-            hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i).timer, excpt);
+            kh_value(m, i).timer = __hlt_timer_new_map(cookie, excpt, ctx);
+            double t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
+            hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i).timer, excpt, ctx);
         }
         else
             kh_value(m, i).timer = 0;
@@ -217,7 +217,7 @@ void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_
     kh_value(m, i).val = valtmp;
 }
 
-int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt)
+int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -228,11 +228,11 @@ int8_t hlt_map_exists(hlt_map* m, const hlt_type_info* type, void* key, hlt_exce
     if ( i == kh_end(m) )
         return 0;
     
-    _access_map(m, i, excpt);
+    _access_map(m, i, excpt, ctx);
     return 1;
 }
 
-void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt)
+void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -243,7 +243,7 @@ void hlt_map_remove(hlt_map* m, const hlt_type_info* type, void* key, hlt_except
     
     if ( i != kh_end(m) ) {
         if ( kh_value(m, i).timer ) {
-            hlt_timer_cancel(kh_value(m, i).timer, excpt);
+            hlt_timer_cancel(kh_value(m, i).timer, excpt, ctx);
             kh_value(m, i).timer = 0;
         }
         
@@ -265,7 +265,7 @@ void hlt_list_map_expire(__hlt_map_timer_cookie cookie)
     kh_del_map(cookie.map, i);
 }
 
-int32_t hlt_map_size(hlt_map* m, hlt_exception** excpt)
+int32_t hlt_map_size(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -275,7 +275,7 @@ int32_t hlt_map_size(hlt_map* m, hlt_exception** excpt)
     return kh_size(m);
 }
 
-void hlt_map_clear(hlt_map* m, hlt_exception** excpt)
+void hlt_map_clear(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -284,7 +284,7 @@ void hlt_map_clear(hlt_map* m, hlt_exception** excpt)
     
     for ( khiter_t i = kh_begin(m); i != kh_end(m); i++ ) {
         if ( kh_exist(m, i) && kh_value(m, i).timer ) {
-            hlt_timer_cancel(kh_value(m, i).timer, excpt);
+            hlt_timer_cancel(kh_value(m, i).timer, excpt, ctx);
             kh_value(m, i).timer = 0;
         }
     }
@@ -292,13 +292,13 @@ void hlt_map_clear(hlt_map* m, hlt_exception** excpt)
     kh_clear_map(m);
 }
 
-void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt)
+void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     m->have_def = 1;
     m->def = _to_voidp(tdef, def);
 }
 
-void hlt_map_timeout(hlt_map* m, int8_t strategy, double timeout, hlt_exception** excpt)
+void hlt_map_timeout(hlt_map* m, int8_t strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m->tmgr ) {
         hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);
@@ -309,11 +309,11 @@ void hlt_map_timeout(hlt_map* m, int8_t strategy, double timeout, hlt_exception*
     m->strategy = strategy;
 }
 
-hlt_map_iter hlt_map_begin(hlt_map* m, hlt_exception** excpt)
+hlt_map_iter hlt_map_begin(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return hlt_map_end(excpt);
+        return hlt_map_end(excpt, ctx);
     }
 
     hlt_map_iter i;
@@ -324,16 +324,16 @@ hlt_map_iter hlt_map_begin(hlt_map* m, hlt_exception** excpt)
             return i;
     }
             
-    return hlt_map_end(excpt);
+    return hlt_map_end(excpt, ctx);
 }
 
-hlt_map_iter hlt_map_end(hlt_exception** excpt)
+hlt_map_iter hlt_map_end(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_map_iter i = { 0, 0 };
     return i;
 }
 
-hlt_map_iter hlt_map_iter_incr(hlt_map_iter i, hlt_exception** excpt)
+hlt_map_iter hlt_map_iter_incr(hlt_map_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.map )
         // End already reached.
@@ -345,10 +345,10 @@ hlt_map_iter hlt_map_iter_incr(hlt_map_iter i, hlt_exception** excpt)
             return i;
     }
             
-    return hlt_map_end(excpt);
+    return hlt_map_end(excpt, ctx);
 }
 
-void* hlt_map_iter_deref(const hlt_type_info* tuple, hlt_map_iter i, hlt_exception** excpt)
+void* hlt_map_iter_deref(const hlt_type_info* tuple, hlt_map_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.map ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
@@ -373,7 +373,7 @@ void* hlt_map_iter_deref(const hlt_type_info* tuple, hlt_map_iter i, hlt_excepti
     return result;
 }
 
-int8_t hlt_map_iter_eq(hlt_map_iter i1, hlt_map_iter i2, hlt_exception** excpt)
+int8_t hlt_map_iter_eq(hlt_map_iter i1, hlt_map_iter i2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return i1.map == i2.map && i1.iter == i2.iter;
 }
@@ -383,7 +383,7 @@ static hlt_string_constant postfix = { 2, " }" };
 static hlt_string_constant colon = { 2, ": " };
 static hlt_string_constant separator = { 2, ", " };
 
-hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_map* m = *((const hlt_map**)obj);
     hlt_string s = &prefix; 
@@ -394,29 +394,29 @@ hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t
             continue;
         
         if ( ! first )
-            s = hlt_string_concat(s, &separator, excpt);
+            s = hlt_string_concat(s, &separator, excpt, ctx);
         
         hlt_string key;
         hlt_string value;
 
         if ( m->tkey->to_string ) 
-            key = (m->tkey->to_string)(m->tkey, kh_key(m, i), options, excpt);
+            key = (m->tkey->to_string)(m->tkey, kh_key(m, i), options, excpt, ctx);
         else
             // No format function.
-            key = hlt_string_from_asciiz(m->tkey->tag, excpt);
+            key = hlt_string_from_asciiz(m->tkey->tag, excpt, ctx);
 
         if ( m->tvalue->to_string ) 
-            value = (m->tvalue->to_string)(m->tvalue, kh_value(m, i).val, options, excpt);
+            value = (m->tvalue->to_string)(m->tvalue, kh_value(m, i).val, options, excpt, ctx);
         else
             // No format function.
-            value = hlt_string_from_asciiz(m->tvalue->tag, excpt);
+            value = hlt_string_from_asciiz(m->tvalue->tag, excpt, ctx);
         
         if ( *excpt )
             return 0;
             
-        s = hlt_string_concat(s, key, excpt);
-        s = hlt_string_concat(s, &colon, excpt);
-        s = hlt_string_concat(s, value, excpt);
+        s = hlt_string_concat(s, key, excpt, ctx);
+        s = hlt_string_concat(s, &colon, excpt, ctx);
+        s = hlt_string_concat(s, value, excpt, ctx);
         
         
         if ( *excpt )
@@ -425,14 +425,14 @@ hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t
         first = 0;
     }
 
-    return hlt_string_concat(s, &postfix, excpt);
+    return hlt_string_concat(s, &postfix, excpt, ctx);
     
 }
 //////////// Sets.
 
 KHASH_INIT(set, __khkey_t, __khval_set_t, 1, _kh_hash_func, _kh_hash_equal)
 
-hlt_set* hlt_set_new(const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exception** excpt)
+hlt_set* hlt_set_new(const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_set* m = kh_init(set);
     if ( ! m ) {
@@ -447,7 +447,7 @@ hlt_set* hlt_set_new(const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exceptio
     return m;
 }
 
-void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_exception** excpt)
+void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -460,23 +460,23 @@ void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_except
 	khiter_t i = kh_put_set(m, keytmp, &ret, tkey);
     if ( ! ret )
         // Already exists, update timer.
-        _access_set(m, i, excpt);
+        _access_set(m, i, excpt, ctx);
     
     else {
         // New entry.
         if ( m->tmgr && m->timeout ) {
             // Create timer.
             __hlt_set_timer_cookie cookie = { m, keytmp };
-            kh_value(m, i) = __hlt_timer_new_set(cookie, excpt);
-            double t = hlt_timer_mgr_current(m->tmgr, excpt) + m->timeout;
-            hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i), excpt);
+            kh_value(m, i) = __hlt_timer_new_set(cookie, excpt, ctx);
+            double t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
+            hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i), excpt, ctx);
         }
         else
             kh_value(m, i) = 0;
     }
 }
 
-int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt)
+int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -487,11 +487,11 @@ int8_t hlt_set_exists(hlt_set* m, const hlt_type_info* type, void* key, hlt_exce
     if ( i == kh_end(m) )
         return 0;
     
-    _access_set(m, i, excpt);
+    _access_set(m, i, excpt, ctx);
     return 1;
 }
 
-void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt)
+void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -502,7 +502,7 @@ void hlt_set_remove(hlt_set* m, const hlt_type_info* type, void* key, hlt_except
     
     if ( i != kh_end(m) ) {
         if ( kh_value(m, i) ) {
-            hlt_timer_cancel(kh_value(m, i), excpt);
+            hlt_timer_cancel(kh_value(m, i), excpt, ctx);
             kh_value(m, i) = 0;
         }
         
@@ -524,7 +524,7 @@ void hlt_list_set_expire(__hlt_set_timer_cookie cookie)
     kh_del_set(cookie.set, i);
 }
 
-int32_t hlt_set_size(hlt_set* m, hlt_exception** excpt)
+int32_t hlt_set_size(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -534,7 +534,7 @@ int32_t hlt_set_size(hlt_set* m, hlt_exception** excpt)
     return kh_size(m);
 }
 
-void hlt_set_clear(hlt_set* m, hlt_exception** excpt)
+void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -543,7 +543,7 @@ void hlt_set_clear(hlt_set* m, hlt_exception** excpt)
     
     for ( khiter_t i = kh_begin(m); i != kh_end(m); i++ ) {
         if ( kh_exist(m, i) && kh_value(m, i) ) {
-            hlt_timer_cancel(kh_value(m, i), excpt);
+            hlt_timer_cancel(kh_value(m, i), excpt, ctx);
             kh_value(m, i) = 0;
         }
     }
@@ -551,7 +551,7 @@ void hlt_set_clear(hlt_set* m, hlt_exception** excpt)
     kh_clear_set(m);
 }
 
-void hlt_set_timeout(hlt_set* m, int8_t strategy, double timeout, hlt_exception** excpt)
+void hlt_set_timeout(hlt_set* m, int8_t strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m->tmgr ) {
         hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);
@@ -562,11 +562,11 @@ void hlt_set_timeout(hlt_set* m, int8_t strategy, double timeout, hlt_exception*
     m->strategy = strategy;
 }
 
-hlt_set_iter hlt_set_begin(hlt_set* m, hlt_exception** excpt)
+hlt_set_iter hlt_set_begin(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return hlt_set_end(excpt);
+        return hlt_set_end(excpt, ctx);
     }
 
     hlt_set_iter i;
@@ -577,16 +577,16 @@ hlt_set_iter hlt_set_begin(hlt_set* m, hlt_exception** excpt)
             return i;
     }
             
-    return hlt_set_end(excpt);
+    return hlt_set_end(excpt, ctx);
 }
 
-hlt_set_iter hlt_set_end(hlt_exception** excpt)
+hlt_set_iter hlt_set_end(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_set_iter i = { 0, 0 };
     return i;
 }
 
-hlt_set_iter hlt_set_iter_incr(hlt_set_iter i, hlt_exception** excpt)
+hlt_set_iter hlt_set_iter_incr(hlt_set_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.set )
         // End already reached.
@@ -598,10 +598,10 @@ hlt_set_iter hlt_set_iter_incr(hlt_set_iter i, hlt_exception** excpt)
             return i;
     }
             
-    return hlt_set_end(excpt);
+    return hlt_set_end(excpt, ctx);
 }
 
-void* hlt_set_iter_deref(hlt_set_iter i, hlt_exception** excpt)
+void* hlt_set_iter_deref(hlt_set_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.set ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
@@ -611,12 +611,12 @@ void* hlt_set_iter_deref(hlt_set_iter i, hlt_exception** excpt)
     return kh_key(i.set, i.iter);
 }
 
-int8_t hlt_set_iter_eq(hlt_set_iter i1, hlt_set_iter i2, hlt_exception** excpt)
+int8_t hlt_set_iter_eq(hlt_set_iter i1, hlt_set_iter i2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return i1.set == i2.set && i1.iter == i2.iter;
 }
 
-hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_set* m = *((const hlt_set**)obj);
     hlt_string s = &prefix; 
@@ -627,17 +627,17 @@ hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t
             continue;
         
         if ( ! first )
-            s = hlt_string_concat(s, &separator, excpt);
+            s = hlt_string_concat(s, &separator, excpt, ctx);
         
         hlt_string key;
 
         if ( m->tkey->to_string ) 
-            key = (m->tkey->to_string)(m->tkey, kh_key(m, i), options, excpt);
+            key = (m->tkey->to_string)(m->tkey, kh_key(m, i), options, excpt, ctx);
         else
             // No format function.
-            key = hlt_string_from_asciiz(m->tkey->tag, excpt);
+            key = hlt_string_from_asciiz(m->tkey->tag, excpt, ctx);
 
-        s = hlt_string_concat(s, key, excpt);
+        s = hlt_string_concat(s, key, excpt, ctx);
         
         if ( *excpt )
             return 0;
@@ -645,5 +645,5 @@ hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t
         first = 0;
     }
 
-    return hlt_string_concat(s, &postfix, excpt);
+    return hlt_string_concat(s, &postfix, excpt, ctx);
 }

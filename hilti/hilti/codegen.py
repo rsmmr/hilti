@@ -1554,7 +1554,7 @@ class CodeGen(objcache.Cache):
             self.llvmRaiseException(excpt)
         else:
             abort = self.llvmCFunctionInternal("__hlt_exception_print_uncaught_abort")
-            self.llvmSafeCall(abort, [excpt])
+            self.llvmSafeCall(abort, [excpt, self.llvmCurrentExecutionContextPtr()])
             self.builder().unreachable()
 
         self.popBuilder()
@@ -1718,11 +1718,11 @@ class CodeGen(objcache.Cache):
             func.linkage = llvm.core.LINKAGE_LINKONCE_ODR
             
             cont = func.args[0]
-            ctx = func.args[1]
-            excpt = func.args[2]
+            excpt = func.args[1]
+            ctx = func.args[2]
             cont.name = "cont"
-            ctx.name = "ctx"
             excpt.name = "excpt"
+            ctx.name = "ctx"
             
             b = func.append_basic_block("")
             self.pushBuilder(b)
@@ -2838,6 +2838,7 @@ class CodeGen(objcache.Cache):
                         args += [(arg.name(), self.llvmType(ty))]
                     
                 args += [("__excpt", llvm.core.Type.pointer(self.llvmTypeExceptionPtr()))]
+                args += [("__ctx", self.llvmTypeExecutionContextPtr())]
                 
             else:
                 util.internal_error("unknown calling convention %s" % cc)
@@ -3071,8 +3072,11 @@ class CodeGen(objcache.Cache):
                 # exception information.
                 excpt = self.llvmAlloca(self.llvmTypeExceptionPtr())
                 self.llvmAssign(self.llvmConstNoException(), excpt)
-            
-            llvm_args = llvm_args + [excpt]
+
+            # Add context argument.
+            ctx = self.llvmCurrentExecutionContextPtr()
+                
+            llvm_args = llvm_args + [excpt, ctx]
             
         elif cc == function.CallingConvention.C:
             # Don't mess further with the arguments. 
@@ -3380,7 +3384,7 @@ class CodeGen(objcache.Cache):
             # be whatever the callee raised.  Save it in our caller's
             # argument. 
             excpt = self.llvmFrameException(frame) 
-            self.builder().store(excpt, llvm_func.args[-1])
+            self.builder().store(excpt, llvm_func.args[-2])
             
             # If an exception was raised, save our frame in there in case we
             # want to resume later.            

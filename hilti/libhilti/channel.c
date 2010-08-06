@@ -50,7 +50,7 @@ struct hlt_channel {
     pthread_cond_t full_cv;         /* Condition variable for a full channel. */
 };
 
-static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, hlt_exception** excpt)
+static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_channel_chunk *chunk = hlt_gc_malloc_non_atomic(sizeof(hlt_channel_chunk));
     if ( ! chunk ) {
@@ -92,7 +92,7 @@ static inline void* _hlt_channel_read_item(hlt_channel* ch)
 }
 
 // Internal helper function performing a write operation.
-static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_exception** excpt)
+static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ch->wc->wcnt == ch->wc->capacity ) {
         if ( ch->capacity )
@@ -101,7 +101,7 @@ static inline int _hlt_channel_write_item(hlt_channel* ch, void* data, hlt_excep
         else if ( ch->chunk_cap < MAX_CHUNK_SIZE )
             ch->chunk_cap *= 2;
 
-        ch->wc->next = _hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt);
+        ch->wc->next = _hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt, ctx);
         if ( ! ch->wc->next ) {
             hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
             return 1;
@@ -128,7 +128,7 @@ void _hlt_channel_finalizer(void* ch_ptr)
     pthread_cond_destroy(&ch->full_cv);
 }
 
-hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt)
+hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_channel *ch = hlt_gc_malloc_non_atomic(sizeof(hlt_channel));
     if ( ! ch ) {
@@ -141,7 +141,7 @@ hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacit
     ch->size = 0;
 
     ch->chunk_cap = INITIAL_CHUNK_SIZE;
-    ch->rc = ch->wc = _hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt);
+    ch->rc = ch->wc = _hlt_chunk_create(ch->chunk_cap, ch->type->size, excpt, ctx);
     if ( ! ch->rc ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return 0;
@@ -158,11 +158,11 @@ hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacit
     return ch;
 }
 
-void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt)
+void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt, hlt_execution_context* ctx)
 { 
     pthread_mutex_lock(&ch->mutex);
 
-    if ( _hlt_channel_write_item(ch, data, excpt) )
+    if ( _hlt_channel_write_item(ch, data, excpt, ctx) )
         goto unlock_exit;
 
     pthread_cond_signal(&ch->empty_cv);
@@ -172,7 +172,7 @@ unlock_exit:
     return;
 }
 
-void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt)
+void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt, hlt_execution_context* ctx)
 { 
     pthread_mutex_lock(&ch->mutex);
 
@@ -181,7 +181,7 @@ void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, void* dat
         goto unlock_exit;
     }
 
-    if ( _hlt_channel_write_item(ch, data, excpt) )
+    if ( _hlt_channel_write_item(ch, data, excpt, ctx) )
         goto unlock_exit;
 
     pthread_cond_signal(&ch->empty_cv);
@@ -191,7 +191,7 @@ unlock_exit:
     return;
 }
 
-void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt)
+void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     pthread_mutex_lock(&ch->mutex);
 
@@ -206,7 +206,7 @@ void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt)
     return item;
 }
 
-void* hlt_channel_read_try(hlt_channel* ch, hlt_exception** excpt)
+void* hlt_channel_read_try(hlt_channel* ch, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     pthread_mutex_lock(&ch->mutex);
 
@@ -226,18 +226,18 @@ unlock_exit:
     return item;
 }
 
-hlt_channel_capacity hlt_channel_size(hlt_channel* ch, hlt_exception** excpt)
+hlt_channel_capacity hlt_channel_size(hlt_channel* ch, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return ch->size;
 }
 
-hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_CHANNEL);
     assert(type->num_params == 2);
 
-    hlt_string s = hlt_string_from_asciiz(channel_name, excpt);
-    s = hlt_string_concat(s, &prefix, excpt);
+    hlt_string s = hlt_string_from_asciiz(channel_name, excpt, ctx);
+    s = hlt_string_concat(s, &prefix, excpt, ctx);
     if ( *excpt )
         return 0;
 
@@ -247,24 +247,24 @@ hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t o
         hlt_string t;
 
         if ( types[i]->to_string ) {
-            t = (types[i]->to_string)(types[i], obj, 0, excpt);
+            t = (types[i]->to_string)(types[i], obj, 0, excpt, ctx);
             if ( *excpt )
                 return 0;
         }
         else
-            t = hlt_string_from_asciiz(types[i]->tag, excpt);
+            t = hlt_string_from_asciiz(types[i]->tag, excpt, ctx);
         
-        s = hlt_string_concat(s, t, excpt);
+        s = hlt_string_concat(s, t, excpt, ctx);
         if ( *excpt )
             return 0;
         
         if ( i < type->num_params - 1 ) {
-            s = hlt_string_concat(s, &separator, excpt);
+            s = hlt_string_concat(s, &separator, excpt, ctx);
             if ( *excpt )
                 return 0;
         }
         
     }
 
-    return hlt_string_concat(s, &postfix, excpt);
+    return hlt_string_concat(s, &postfix, excpt, ctx);
 }

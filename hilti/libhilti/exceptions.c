@@ -91,7 +91,7 @@ int8_t __hlt_exception_match_type(hlt_exception* excpt, hlt_exception_type* type
     return 0;
 }
 
-static void __exception_print(const char* prefix, hlt_exception* exception)
+static void __exception_print(const char* prefix, hlt_exception* exception, hlt_execution_context* ctx)
 {
     hlt_exception* excpt = 0;
 
@@ -99,9 +99,9 @@ static void __exception_print(const char* prefix, hlt_exception* exception)
     fprintf(stderr, "%s%s", prefix, exception->type->name);
     
     if ( exception->arg ) {
-        hlt_string arg = hlt_string_from_object(exception->type->argtype, &exception->arg, &excpt);
+        hlt_string arg = hlt_string_from_object(exception->type->argtype, &exception->arg, &excpt, ctx);
         fprintf(stderr, " with argument ");
-        hlt_string_print(stderr, arg, 0, &excpt);
+        hlt_string_print(stderr, arg, 0, &excpt, ctx);
     }
 
     if ( exception->cont )
@@ -119,24 +119,24 @@ static void __exception_print(const char* prefix, hlt_exception* exception)
     funlockfile(stderr);
 }
 
-void hlt_exception_print(hlt_exception* exception) 
+void hlt_exception_print(hlt_exception* exception, hlt_execution_context* ctx) 
 {
-    __exception_print("", exception);
+    __exception_print("", exception, ctx);
 }
 
-void hlt_exception_print_uncaught(hlt_exception* exception) 
+void hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution_context* ctx) 
 {
-    __exception_print("hilti: uncaught exception, ", exception);
+    __exception_print("hilti: uncaught exception, ", exception, ctx);
 }
 
-void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_vthread_id vid) 
+void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_execution_context* ctx) 
 {
-    __exception_print("hilti: uncaught exception in worker thread, ", exception);
+    __exception_print("hilti: uncaught exception in worker thread, ", exception, ctx);
 }
 
-void __hlt_exception_print_uncaught_abort(hlt_exception* exception) 
+void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx) 
 {
-    __exception_print("hilti: uncaught exception, ", exception);
+    __exception_print("hilti: uncaught exception, ", exception, ctx);
     abort();
 }
 

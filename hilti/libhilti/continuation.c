@@ -2,7 +2,7 @@
 
 #include "hilti.h"
 
-hlt_stack* hlt_stack_new(int size, hlt_exception** excpt)
+hlt_stack* hlt_stack_new(int size, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! size )
         size = HLT_BOUND_FUNCTION_STACK_SIZE;

@@ -35,9 +35,9 @@ void hlt_init()
     if ( dbg ) {
         hlt_exception* excpt = 0;
         hlt_config cfg = *hlt_config_get();
-        cfg.debug_streams = hlt_debug_parse_streams(dbg, &excpt);
+        cfg.debug_streams = hlt_debug_parse_streams(dbg, &excpt, __hlt_global_execution_context);
         if ( excpt ) {
-            hlt_exception_print(excpt);
+            hlt_exception_print(excpt, __hlt_global_execution_context);
             fprintf(stderr, "cannot parse HILTI_DEBUG environment variable");
             exit(1);
         }

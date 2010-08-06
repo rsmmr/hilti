@@ -18,7 +18,7 @@ static hlt_string_constant ASCII = { 5, "ascii" };
 static hlt_string_constant EMPTY = { 12, "<no-pattern>" };
 static hlt_string_constant PIPE = { 4, " | " };
 
-hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt)
+hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_REGEXP);
     assert(type->num_params == 1);
@@ -41,15 +41,15 @@ static inline int _cflags(hlt_regexp_flags flags)
     return cflags | ((cflags & REG_NOSUB) ? REG_ANCHOR : 0);
 }
 
-static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_exception** excpt)
+static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // FIXME: For now, the pattern must contain only ASCII characters.
-    hlt_bytes* p = hlt_string_encode(pattern, &ASCII, excpt);
+    hlt_bytes* p = hlt_string_encode(pattern, &ASCII, excpt, ctx);
     if ( *excpt )
         return;
 
-    hlt_bytes_size plen = hlt_bytes_len(p, excpt);
-    const int8_t* praw = hlt_bytes_to_raw(p, excpt);
+    hlt_bytes_size plen = hlt_bytes_len(p, excpt, ctx);
+    const int8_t* praw = hlt_bytes_to_raw(p, excpt, ctx);
     
     if ( jrx_regset_add(&re->regexp, (const char*)praw, plen) != 0 ) {
         hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
@@ -59,7 +59,7 @@ static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_except
     re->patterns[idx] = pattern;
 }
 
-void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception** excpt)
+void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( re->num != 0 ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0);
@@ -69,40 +69,40 @@ void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception*
     re->num = 1;
     re->patterns = hlt_gc_malloc_non_atomic(sizeof(hlt_string));
     jrx_regset_init(&re->regexp, -1, _cflags(re->flags));
-    _compile_one(re, pattern, 0, excpt);
+    _compile_one(re, pattern, 0, excpt, ctx);
     jrx_regset_finalize(&re->regexp);
 }
 
-void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception** excpt)
+void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( re->num != 0 ) {
         hlt_set_exception(excpt, &hlt_exception_value_error, 0);
         return;
     }
     
-    re->num = hlt_list_size(patterns, excpt);
+    re->num = hlt_list_size(patterns, excpt, ctx);
     re->patterns = hlt_gc_malloc_non_atomic(re->num * sizeof(hlt_string));
     jrx_regset_init(&re->regexp, -1, _cflags(re->flags));
 
-    hlt_list_iter i = hlt_list_begin(patterns, excpt);
-    hlt_list_iter end = hlt_list_end(patterns, excpt);
+    hlt_list_iter i = hlt_list_begin(patterns, excpt, ctx);
+    hlt_list_iter end = hlt_list_end(patterns, excpt, ctx);
     int idx = 0;
     
-    while ( ! hlt_list_iter_eq(i, end, excpt) ) {
-        hlt_string* pattern = hlt_list_iter_deref(i, excpt);
-        _compile_one(re, *pattern, idx, excpt);
+    while ( ! hlt_list_iter_eq(i, end, excpt, ctx) ) {
+        hlt_string* pattern = hlt_list_iter_deref(i, excpt, ctx);
+        _compile_one(re, *pattern, idx, excpt, ctx);
         
          if ( *excpt )
             return;
         
-        i = hlt_list_iter_incr(i, excpt);
+        i = hlt_list_iter_incr(i, excpt, ctx);
         idx++;
     }
     
     jrx_regset_finalize(&re->regexp);
 }
 
-hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_regexp* re = *((const hlt_regexp**)obj);
     
@@ -112,12 +112,12 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
     if ( re->num == 1 )
         return re->patterns[0];
     
-    hlt_string s = hlt_string_from_asciiz("", excpt);
+    hlt_string s = hlt_string_from_asciiz("", excpt, ctx);
     
     for ( int32_t idx = 0; idx < re->num; idx++ ) {
         if ( idx > 0 )
-            s = hlt_string_concat(s, &PIPE, excpt);
-        s = hlt_string_concat(s, re->patterns[idx], excpt);
+            s = hlt_string_concat(s, &PIPE, excpt, ctx);
+        s = hlt_string_concat(s, re->patterns[idx], excpt, ctx);
     }
     
     return s;
@@ -125,19 +125,19 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
 
 // String versions (not implemented yet).
 
-int32_t hlt_regexp_string_find(hlt_regexp* re, const hlt_string s, hlt_exception** excpt)
+int32_t hlt_regexp_string_find(hlt_regexp* re, const hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_set_exception(excpt, &hlt_exception_not_implemented, 0);
     return 0;
 }
 
-hlt_string hlt_regexp_string_span(hlt_regexp* re, const hlt_string s, hlt_exception** excpt)
+hlt_string hlt_regexp_string_span(hlt_regexp* re, const hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_set_exception(excpt, &hlt_exception_not_implemented, 0);
-    return hlt_string_from_asciiz("", excpt);
+    return hlt_string_from_asciiz("", excpt, ctx);
 }
 
-hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, const hlt_string s, hlt_exception** excpt)
+hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, const hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_set_exception(excpt, &hlt_exception_not_implemented, 0);
     return 0;
@@ -154,8 +154,9 @@ struct match_state {
 // first match. 
 static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms, 
                                      const hlt_bytes_pos begin, const hlt_bytes_pos end, 
-                                     jrx_offset* so, jrx_offset* eo, hlt_exception** excpt,
-                                     int do_anchor, int find_partial_matches)
+                                     jrx_offset* so, jrx_offset* eo,
+                                     int do_anchor, int find_partial_matches,
+                                      hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // We follow one of two strategies here:
     // 
@@ -195,13 +196,13 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
 
     assert( (! do_anchor) || (re->regexp.cflags & REG_NOSUB));
     
-    if ( hlt_bytes_pos_eq(cur, end, excpt) ) { 
+    if ( hlt_bytes_pos_eq(cur, end, excpt, ctx) ) { 
         // Nothing to do, but still need to init the match state.
         jrx_match_state_init(&re->regexp, offset, ms);
         return -1;
     }
     
-    while ( acc <= 0 && ! hlt_bytes_pos_eq(cur, end, excpt) ) {
+    while ( acc <= 0 && ! hlt_bytes_pos_eq(cur, end, excpt, ctx) ) {
 
         if ( need_msdone )
             jrx_match_state_done(ms);
@@ -211,7 +212,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
         jrx_match_state_init(&re->regexp, offset, ms);
         
         while ( true ) {
-            cookie = hlt_bytes_iterate_raw(&block, cookie, cur, end, excpt);
+            cookie = hlt_bytes_iterate_raw(&block, cookie, cur, end, excpt, ctx);
             
             if ( ! cookie )
                 // Final chunk.
@@ -261,7 +262,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
             // We compiled with an implicit ".*", or are asked to anchor.
             break;
         
-        cur = hlt_bytes_pos_incr(cur, excpt);
+        cur = hlt_bytes_pos_incr(cur, excpt, ctx);
         offset++;
         first = 0;
     }
@@ -269,7 +270,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
     return acc;
 }
     
-int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt)
+int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! re->num ) {
         hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
@@ -277,12 +278,12 @@ int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const h
     }
     
     jrx_match_state ms;
-    jrx_accept_id acc = _search_pattern(re, &ms, begin, end, 0, 0, excpt, 0, 1);
+    jrx_accept_id acc = _search_pattern(re, &ms, begin, end, 0, 0, 0, 1, excpt, ctx);
     jrx_match_state_done(&ms);
     return acc;
 }
     
-hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt)
+hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_regexp_span_result result;
     
@@ -294,31 +295,31 @@ hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos
     jrx_offset so = -1;
     jrx_offset eo = -1;
     jrx_match_state ms;
-    result.rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt, 0, 1);
+    result.rc = _search_pattern(re, &ms, begin, end, &so, &eo, 0, 1, excpt, ctx);
     jrx_match_state_done(&ms);
     
     if ( result.rc > 0 ) {
-        result.span.begin = hlt_bytes_pos_incr_by(begin, so, excpt);
-        result.span.end = hlt_bytes_pos_incr_by(result.span.begin, eo - so, excpt);
+        result.span.begin = hlt_bytes_pos_incr_by(begin, so, excpt, ctx);
+        result.span.end = hlt_bytes_pos_incr_by(result.span.begin, eo - so, excpt, ctx);
     }
     
     else
-        result.span.begin = result.span.end = hlt_bytes_generic_end(excpt);
+        result.span.begin = result.span.end = hlt_bytes_generic_end(excpt, ctx);
     
     return result;
 }
 
 extern const hlt_type_info hlt_type_info_tuple_iterator_bytes_iterator_bytes;
 
-static inline void _set_group(hlt_vector* vec, hlt_bytes_pos begin, int i, jrx_offset so, jrx_offset eo, hlt_exception** excpt)
+static inline void _set_group(hlt_vector* vec, hlt_bytes_pos begin, int i, jrx_offset so, jrx_offset eo, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_regexp_range span;    
-    span.begin = hlt_bytes_pos_incr_by(begin, so, excpt);
-    span.end = hlt_bytes_pos_incr_by(begin, eo, excpt);
-    hlt_vector_set(vec, i, &hlt_type_info_tuple_iterator_bytes_iterator_bytes, &span, excpt);
+    span.begin = hlt_bytes_pos_incr_by(begin, so, excpt, ctx);
+    span.end = hlt_bytes_pos_incr_by(begin, eo, excpt, ctx);
+    hlt_vector_set(vec, i, &hlt_type_info_tuple_iterator_bytes_iterator_bytes, &span, excpt, ctx);
 }
 
-hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt)
+hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( re->num != 1 ) {
         // No support for sets.
@@ -327,17 +328,17 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, c
     }
 
     hlt_regexp_range def_span;
-    def_span.begin = def_span.end = hlt_bytes_generic_end(excpt);
+    def_span.begin = def_span.end = hlt_bytes_generic_end(excpt, ctx);
 
-    hlt_vector* vec = hlt_vector_new(&hlt_type_info_tuple_iterator_bytes_iterator_bytes, &def_span, excpt);
+    hlt_vector* vec = hlt_vector_new(&hlt_type_info_tuple_iterator_bytes_iterator_bytes, &def_span, excpt, ctx);
 
     jrx_offset so = -1;
     jrx_offset eo = -1;
     jrx_match_state ms;
-    int8_t rc = _search_pattern(re, &ms, begin, end, &so, &eo, excpt, 0, 1);
+    int8_t rc = _search_pattern(re, &ms, begin, end, &so, &eo, 0, 1, excpt, ctx);
 
     if ( rc > 0 ) {
-        _set_group(vec, begin, 0, so, eo, excpt);
+        _set_group(vec, begin, 0, so, eo, excpt, ctx);
         
         int num_groups = jrx_num_groups(&re->regexp);
         if ( num_groups < 1 )
@@ -348,7 +349,7 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, c
         
         for ( int i = 1; i < num_groups; i++ ) {
             if ( pmatch[i].rm_so >= 0 )
-                _set_group(vec, begin, i, pmatch[i].rm_so, pmatch[i].rm_eo, excpt);
+                _set_group(vec, begin, i, pmatch[i].rm_so, pmatch[i].rm_eo, excpt, ctx);
         }
     }
     
@@ -356,7 +357,7 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, c
     return vec;
 }
 
-hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt)
+hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! re->num ) {
         hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
@@ -373,9 +374,9 @@ hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const
 
     jrx_match_state ms;
     jrx_offset eo;
-    jrx_accept_id rc = _search_pattern(re, &ms, begin, end, 0, &eo, excpt, 1, 0);
+    jrx_accept_id rc = _search_pattern(re, &ms, begin, end, 0, &eo, 1, 0, excpt, ctx);
     jrx_match_state_done(&ms);
     
-    hlt_regexp_match_token_result result = { rc, (rc > 0 ? hlt_bytes_pos_incr_by(begin, eo, excpt) : begin) };        
+    hlt_regexp_match_token_result result = { rc, (rc > 0 ? hlt_bytes_pos_incr_by(begin, eo, excpt, ctx) : begin) };        
     return result;
 }

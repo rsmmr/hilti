@@ -31,14 +31,14 @@ typedef struct __hlt_iosrc_pcap hlt_iosrc_pcap;
 /// promiscious mode. 
 /// 
 /// Raises: IOSrcError if there is a problem opening the the interface for monitoring. 
-extern hlt_iosrc_pcap* hlt_iosrc_pcap_new_live(hlt_string interface, hlt_exception** excpt);
+extern hlt_iosrc_pcap* hlt_iosrc_pcap_new_live(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Creates a new PCAP packet source for offline input.
 /// 
 /// interface: The name of the trace file.
 /// 
 /// Raises: IOSrcError if there is a problem opening the the interface for monitoring. 
-extern hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exception** excpt);
+extern hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Attempts to reads a packet from a PCAP source. If no packet is currently
 /// available, raises a WouldBlock exception if there might be one at a later
@@ -56,13 +56,13 @@ extern hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exce
 /// Raises: IOSrcError if there are any errors other than those described
 /// above, including encountering an unsupported link-layer header if
 /// *keep_link_layer* is disabled. 
-extern hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, hlt_exception** excpt);
+extern hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Closes a live PCAP packet source. Any attempt to read further packets
 /// will result in an IOSrcError exception. 
 /// 
 /// src: The packet source to close. 
-extern void hlt_iosrc_pcap_close(hlt_iosrc_pcap* src, hlt_exception** excpt);
+extern void hlt_iosrc_pcap_close(hlt_iosrc_pcap* src, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif
 

@@ -16,19 +16,19 @@
 
 static hlt_string_constant EmptyString = { 0, "" };
 
-hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s = *((hlt_string*)obj);
     return s ? s : &EmptyString;
 }
 
-hlt_hash hlt_string_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt)
+hlt_hash hlt_string_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s = *((hlt_string*)obj);
     return s ? hlt_hash_bytes(s->bytes, s->len) : 0;
 }
 
-int8_t hlt_string_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt)
+int8_t hlt_string_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s1 = *((hlt_string*)obj1);
     hlt_string s2 = *((hlt_string*)obj2);
@@ -42,7 +42,7 @@ int8_t hlt_string_equal(const hlt_type_info* type1, const void* obj1, const hlt_
     return memcmp(s1->bytes, s2->bytes, s1->len) == 0;
 }
 
-hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt)
+hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     int32_t dummy;
     const int8_t* p;
@@ -80,7 +80,7 @@ hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt)
 
 #include <stdio.h>
 
-hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt)
+hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string_size len1;
     hlt_string_size len2;; 
@@ -114,7 +114,7 @@ hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt
     return dst;
 }
 
-hlt_string hlt_string_substr(hlt_string s1, hlt_string_size pos, hlt_string_size len, hlt_exception** excpt)
+hlt_string hlt_string_substr(hlt_string s1, hlt_string_size pos, hlt_string_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! s1 )
         s1 = &EmptyString;
@@ -122,7 +122,7 @@ hlt_string hlt_string_substr(hlt_string s1, hlt_string_size pos, hlt_string_size
     return 0;
 }
 
-hlt_string_size hlt_string_find(hlt_string s, hlt_string pattern, hlt_exception** excpt)
+hlt_string_size hlt_string_find(hlt_string s, hlt_string pattern, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! s )
         s = &EmptyString;
@@ -133,7 +133,7 @@ hlt_string_size hlt_string_find(hlt_string s, hlt_string pattern, hlt_exception*
     return 0;
 }
 
-int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception** excpt)
+int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const int8_t* p1;
     const int8_t* p2;
@@ -197,12 +197,12 @@ int8_t hlt_string_cmp(hlt_string s1, hlt_string s2, hlt_exception** excpt)
     return 0;
 }
 
-hlt_string hlt_string_empty(hlt_exception** excpt)
+hlt_string hlt_string_empty(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return &EmptyString;
 }
 
-hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt)
+hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string_size len = strlen(asciiz);
     hlt_string dst = hlt_gc_malloc_atomic(sizeof(hlt_string) + len);
@@ -211,7 +211,7 @@ hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt)
     return dst;
 }
 
-hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exception** excpt)
+hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string dst = hlt_gc_malloc_atomic(sizeof(hlt_string) + len);
     dst->len = len;
@@ -219,12 +219,12 @@ hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exc
     return dst;
 }
 
-hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, hlt_exception** excpt)
+hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( type->to_string )
-        return (*type->to_string)(type, obj, 0, excpt);
+        return (*type->to_string)(type, obj, 0, excpt, ctx);
     else
-        return hlt_string_from_asciiz(type->tag, excpt);
+        return hlt_string_from_asciiz(type->tag, excpt, ctx);
 }
 
 
@@ -232,25 +232,25 @@ static hlt_string_constant UTF8_STRING = { 4, "utf8" };
 static hlt_string_constant ASCII_STRING = { 5, "ascii" };
 enum Charset { ERROR, UTF8, ASCII };
 
-static enum Charset get_charset(hlt_string charset, hlt_exception** excpt)
+static enum Charset get_charset(hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( hlt_string_cmp(charset, &UTF8_STRING, excpt) == 0 )
+    if ( hlt_string_cmp(charset, &UTF8_STRING, excpt, ctx) == 0 )
         return UTF8;
     
-    if ( hlt_string_cmp(charset, &ASCII_STRING, excpt) == 0 )
+    if ( hlt_string_cmp(charset, &ASCII_STRING, excpt, ctx) == 0 )
         return ASCII;
     
     hlt_set_exception(excpt, &hlt_exception_value_error, 0);
     return ERROR;
 }
 
-struct hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** excpt)
+struct hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const int8_t* p;
     const int8_t* e;
-    hlt_bytes* dst = hlt_bytes_new(excpt);
+    hlt_bytes* dst = hlt_bytes_new(excpt, ctx);
     
-    enum Charset ch = get_charset(charset, excpt);
+    enum Charset ch = get_charset(charset, excpt, ctx);
     if ( ch == ERROR )
         return 0;
     
@@ -262,7 +262,7 @@ struct hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_except
 
     if ( ch == UTF8 ) {
         // Caller wants UTF-8 so we just need append it literally. 
-        hlt_bytes_append_raw(dst, s->bytes, s->len, excpt);
+        hlt_bytes_append_raw(dst, s->bytes, s->len, excpt, ctx);
         return dst;
     }
     
@@ -280,7 +280,7 @@ struct hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_except
           case ASCII: {
               // Replace non-ASCII characters with '?'.
               int8_t c = uc < 128 ? (int8_t)uc : '?';
-              hlt_bytes_append_raw(dst, &c, 1, excpt);
+              hlt_bytes_append_raw(dst, &c, 1, excpt, ctx);
               break;
           }
             
@@ -294,36 +294,36 @@ struct hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_except
     return dst;
 }
 
-hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** excpt)
+hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    enum Charset ch = get_charset(charset, excpt);
+    enum Charset ch = get_charset(charset, excpt, ctx);
     if ( ch == ERROR )
         return 0;
     
-    if ( hlt_bytes_empty(b, excpt) )
+    if ( hlt_bytes_empty(b, excpt, ctx) )
         return &EmptyString;
         
     if ( ch == UTF8 ) {
         // Data is already in UTF-8, just need to copy it into a string.
-        hlt_bytes_pos begin = hlt_bytes_begin(b, excpt);
-        const hlt_bytes_pos end = hlt_bytes_end(b, excpt);
-        const int8_t* raw = hlt_bytes_sub_raw(begin, end, excpt);
-        const hlt_string dst = hlt_string_from_data(raw, hlt_bytes_len(b, excpt), excpt);
+        hlt_bytes_pos begin = hlt_bytes_begin(b, excpt, ctx);
+        const hlt_bytes_pos end = hlt_bytes_end(b, excpt, ctx);
+        const int8_t* raw = hlt_bytes_sub_raw(begin, end, excpt, ctx);
+        const hlt_string dst = hlt_string_from_data(raw, hlt_bytes_len(b, excpt, ctx), excpt, ctx);
         return dst;
     }
     
     if ( ch == ASCII ) {
         // Convert all bytes to 7-bit codepoints.
-        hlt_bytes_size len = hlt_bytes_len(b, excpt);
-        hlt_string dst = hlt_gc_malloc_atomic(sizeof(hlt_string) + hlt_bytes_len(b, excpt));
+        hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
+        hlt_string dst = hlt_gc_malloc_atomic(sizeof(hlt_string) + hlt_bytes_len(b, excpt, ctx));
         dst->len = len;
         int8_t* p = dst->bytes;
         
-        hlt_bytes_pos i = hlt_bytes_begin(b, excpt);
-        while ( ! hlt_bytes_pos_eq(i, hlt_bytes_end(b, excpt), excpt) ) {
-            char c = hlt_bytes_pos_deref(i, excpt);
+        hlt_bytes_pos i = hlt_bytes_begin(b, excpt, ctx);
+        while ( ! hlt_bytes_pos_eq(i, hlt_bytes_end(b, excpt, ctx), excpt, ctx) ) {
+            char c = hlt_bytes_pos_deref(i, excpt, ctx);
             *p++ = (c & 0x7f) == c ? c : '?';
-            i = hlt_bytes_pos_incr(i, excpt);
+            i = hlt_bytes_pos_incr(i, excpt, ctx);
         }
         
         return dst;
@@ -335,7 +335,7 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** e
 
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't 
  * convert to the locale encoding yet. We just print them in \u syntax. */
-void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt)
+void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! s )
         // Empty string.
@@ -372,17 +372,17 @@ void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** 
 }
 
 /* FIXME: We don't really do "to native" yet, but just to ASCII ... */
-const char* hlt_string_to_native(hlt_string s, hlt_exception** excpt)
+const char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_bytes* b = hlt_string_encode(s, &ASCII_STRING, excpt);
+    hlt_bytes* b = hlt_string_encode(s, &ASCII_STRING, excpt, ctx);
     if ( *excpt )
         return 0;
 
-    const int8_t* raw = hlt_bytes_to_raw(b, excpt);    
+    const int8_t* raw = hlt_bytes_to_raw(b, excpt, ctx);    
     if ( *excpt )
         return 0;
     
-    int64_t len = hlt_bytes_len(b, excpt);
+    int64_t len = hlt_bytes_len(b, excpt, ctx);
     char* buffer = hlt_gc_malloc_atomic(len + 1);
     memcpy(buffer, raw, len);
     buffer[len] = '\0';

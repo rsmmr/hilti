@@ -87,12 +87,12 @@
 ;;; The following libhilti functions do not fit normal C_HILTI calling
 ;;; conventions and thus declared here directly.  
 %__hlt_bytes_pos = type {i8*, i8*}
-declare i8 @__hlt_bytes_extract_one(%__hlt_bytes_pos*, %__hlt_bytes_pos, %__hlt_exception**)
+declare i8 @__hlt_bytes_extract_one(%__hlt_bytes_pos*, %__hlt_bytes_pos, %__hlt_exception**, %__hlt_execution_context*)
 
 ;;; Exception management.
 declare %__hlt_exception* @__hlt_exception_new(%__hlt_exception_type*, %__hlt_void*, %__hlt_cchar*)
 declare %__hlt_exception* @__hlt_exception_new_yield(%__hlt_continuation*, i32, i8*)
-declare void @__hlt_exception_print_uncaught_abort(%__hlt_exception*)
+declare void @__hlt_exception_print_uncaught_abort(%__hlt_exception*, %__hlt_execution_context*)
 declare i1 @__hlt_exception_match_type(%__hlt_exception*, %__hlt_exception_type*)
 
 ;;; Predefined exceptions.
@@ -116,17 +116,13 @@ declare %__hlt_void* @hlt_gc_calloc_non_atomic(i64, i64)
 ;;; Bytes.
 ; This functions takes an int8_t parameter, which does not fit normal C_HILTI
 ; calling convention.
-declare i8* @hlt_bytes_new_from_data(i8*, i32, %__hlt_exception**)
+declare i8* @hlt_bytes_new_from_data(i8*, i32, %__hlt_exception**, %__hlt_execution_context*)
 
 ;;; Timers
-declare %__hlt_void* @__hlt_timer_new_function(%__hlt_continuation*, %__hlt_exception**)
+declare %__hlt_void* @__hlt_timer_new_function(%__hlt_continuation*, %__hlt_exception**, %__hlt_execution_context*)
 
 ;;; Threads
-declare void @__hlt_thread_mgr_schedule(%__hlt_void*, %__hlt_vthread_id, %__hlt_continuation*, %__hlt_execution_context*, %__hlt_exception**)
-
-;;; Hooks
-declare void @__hlt_hook_register_function(i8*, i8*, i64, i64, %__hlt_exception**)
-declare %__hlt_hook* @__hlt_hook_find(i8 *)
+declare void @__hlt_thread_mgr_schedule(%__hlt_void*, %__hlt_vthread_id, %__hlt_continuation*, %__hlt_exception**, %__hlt_execution_context*)
 
 ;;; A function with the standard header that simply aborts. 
 declare void @__hlt_abort(%__hlt_bframe*, %__hlt_eoss*, %__hlt_execution_context*)
@@ -140,13 +136,3 @@ declare void @__hlt_debug_pop_indent()
 ;;; Globals defined in globals.h
 @__hlt_global_execution_context = external global %__hlt_execution_context*
 @__hlt_global_thread_mgr = external global %__hlt_void*
-
-;;;;;;;;;;;;;;;;;; OLD - Need to update.
-; Thread scheduling functions.
-;declare void @__hlt_global_schedule_job(i32, %__hlt_func*, i8*)
-;declare void @__hlt_local_schedule_job(i8*, i8*)
-
-; Standard handlers for normal execution and exception handling; used when
-; constructing the frame for a scheduled job.
-;declare fastcc void @__hlt_standard_cont_normal(i8*)
-;declare fastcc void @__hlt_standard_cont_except(i8*)

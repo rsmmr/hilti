@@ -82,7 +82,7 @@ void __hlt_files_stop()
     // safely destroy it?
 }
 
-hlt_file* hlt_file_new(hlt_exception** excpt)
+hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_file* file = hlt_gc_malloc_non_atomic(sizeof(hlt_file));
     if ( ! file ) {
@@ -95,10 +95,10 @@ hlt_file* hlt_file_new(hlt_exception** excpt)
     return file;
 }
 
-void hlt_file_open(hlt_file* file, hlt_string path, int8_t type, int8_t mode, hlt_string charset, hlt_exception** excpt)
+void hlt_file_open(hlt_file* file, hlt_string path, int8_t type, int8_t mode, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( file->open ) {
-        hlt_string err = hlt_string_from_asciiz("file already open", excpt);
+        hlt_string err = hlt_string_from_asciiz("file already open", excpt, ctx);
         hlt_set_exception(excpt, &hlt_exception_io_error, err);
         return;
     }
@@ -112,7 +112,7 @@ void hlt_file_open(hlt_file* file, hlt_string path, int8_t type, int8_t mode, hl
 
     __hlt_file_info* info;
     for ( info = files; info; info = info->next ) {
-        if ( hlt_string_cmp(path, info->path, excpt) == 0 ) {
+        if ( hlt_string_cmp(path, info->path, excpt, ctx) == 0 ) {
             // Already open.
             ++info->writers;
             goto init_instance;
@@ -121,7 +121,7 @@ void hlt_file_open(hlt_file* file, hlt_string path, int8_t type, int8_t mode, hl
     
     // Not open yet. 
 
-    const char* fn = hlt_string_to_native(path, excpt);
+    const char* fn = hlt_string_to_native(path, excpt, ctx);
     if ( *excpt )
         return;
     
@@ -129,7 +129,7 @@ void hlt_file_open(hlt_file* file, hlt_string path, int8_t type, int8_t mode, hl
     int fd = open(fn, oflags, 0777);
     
     if ( fd < 0 ) {
-        hlt_string err = hlt_string_from_asciiz(strerror(errno), excpt);
+        hlt_string err = hlt_string_from_asciiz(strerror(errno), excpt, ctx);
         hlt_set_exception(excpt, &hlt_exception_io_error, err);
         goto error;
     }
@@ -170,10 +170,10 @@ done:
     release_lock();    
 }
 
-void hlt_file_close(hlt_file* file, hlt_exception** excpt)
+void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! file->open ) {
-        hlt_string err = hlt_string_from_asciiz("file not open", excpt);
+        hlt_string err = hlt_string_from_asciiz("file not open", excpt, ctx);
         hlt_set_exception(excpt, &hlt_exception_io_error, err);
         return;
     }
@@ -187,15 +187,15 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt)
     __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
     cmd->file = file;
     cmd->type = 2; // Close.
-    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt);
+    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
     
     file->open = 0;
 }
 
-void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt)
+void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! file->open ) {
-        hlt_string err = hlt_string_from_asciiz("file not open", excpt);
+        hlt_string err = hlt_string_from_asciiz("file not open", excpt, ctx);
         hlt_set_exception(excpt, &hlt_exception_io_error, err);
         return;
     }
@@ -211,19 +211,19 @@ void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt
     cmd->type = 1; // String.
     // Don't need to copy the string because it's not mutable.
     cmd->data.string = str;
-    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt);
+    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 }
 
-void hlt_file_write_bytes(hlt_file* file, hlt_bytes* bytes, hlt_exception** excpt)
+void hlt_file_write_bytes(hlt_file* file, hlt_bytes* bytes, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! file->open ) {
-        hlt_string err = hlt_string_from_asciiz("file not open", excpt);
+        hlt_string err = hlt_string_from_asciiz("file not open", excpt, ctx);
         hlt_set_exception(excpt, &hlt_exception_io_error, err);
         return;
     }
     
     // Need to copy the bytes because it's mutable.
-    hlt_bytes* copy = hlt_bytes_copy(bytes, excpt);
+    hlt_bytes* copy = hlt_bytes_copy(bytes, excpt, ctx);
     if ( *excpt )
         return;
     
@@ -237,20 +237,20 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* bytes, hlt_exception** excp
     cmd->file = file;
     cmd->type = 0; // Bytes.
     cmd->data.bytes = copy;
-    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt);
+    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 }
 
-static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt)
+static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes_block block;
-    hlt_bytes_pos start = hlt_bytes_begin(data, excpt);
-    hlt_bytes_pos end = hlt_bytes_end(data, excpt);
+    hlt_bytes_pos start = hlt_bytes_begin(data, excpt, ctx);
+    hlt_bytes_pos end = hlt_bytes_end(data, excpt, ctx);
     void* cookie = 0;
     
     assert(file->info);
     
     while ( true ) {
-        cookie = hlt_bytes_iterate_raw(&block, cookie, start, end, excpt);
+        cookie = hlt_bytes_iterate_raw(&block, cookie, start, end, excpt, ctx);
         
         if ( block.start == block.end )
             break;
@@ -286,7 +286,7 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt)
         
 }
 
-void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt)
+void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __hlt_cmd_file* cmd = (__hlt_cmd_file*) c;
     
@@ -295,17 +295,17 @@ void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt)
         
       case 0: {
           // Bytes.
-          _write_bytes(cmd->file, cmd->data.bytes, excpt);
+          _write_bytes(cmd->file, cmd->data.bytes, excpt, ctx);
           break;
       }
         
       case 1: {
           // String.
-          hlt_bytes* b = hlt_string_encode(cmd->data.string, cmd->file->charset, excpt);
+          hlt_bytes* b = hlt_string_encode(cmd->data.string, cmd->file->charset, excpt, ctx);
           if ( *excpt )
               return;
           
-          _write_bytes(cmd->file, b, excpt);
+          _write_bytes(cmd->file, b, excpt, ctx);
           break;
       }
         

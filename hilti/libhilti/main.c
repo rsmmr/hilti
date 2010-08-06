@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     hlt_threading_stop(&excpt);
 
     if ( excpt )
-        hlt_exception_print_uncaught(excpt);
+        hlt_exception_print_uncaught(excpt, __hlt_global_execution_context);
 
     return 0;
 }

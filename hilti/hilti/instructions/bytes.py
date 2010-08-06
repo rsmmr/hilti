@@ -102,7 +102,8 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
         datac = cg.builder().bitcast(data, self.llvmType(cg))
     
         exception = cg.llvmAlloca(cg.llvmTypeExceptionPtr())
-        newobj = cg.llvmCallCInternal("hlt_bytes_new_from_data", [datac, cg.llvmConstInt(size, 32), exception])
+        ctx = cg.llvmCurrentExecutionContextPtr()
+        newobj = cg.llvmCallCInternal("hlt_bytes_new_from_data", [datac, cg.llvmConstInt(size, 32), exception, ctx])
         
         return newobj
         
@@ -155,6 +156,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
         bytes = cg.llvmAlloca(self)
         iter = cg.llvmAlloca(type.IteratorBytes())
         exception = cg.llvmFrameExceptionAddr()
+        ctx = cg.llvmCurrentExecutionContextPtr()
         
         def unpackFixed(n, skip, begin):
             def _unpackFixed(case):
@@ -188,7 +190,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
                 # Loop body.
                 builder = cg.pushBuilder(block_body)
                 
-                byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception])
+                byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception, ctx])
                 cur = builder.sub(builder.load(j), one)
                 builder.store(cur, j)
                 done = builder.icmp(llvm.core.IPRED_ULE, cur, zero)
@@ -261,7 +263,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
     
                         # Check whether we found the delimiter
                     builder = cg.pushBuilder(block_cmp)
-                    byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception])
+                    byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception, ctx])
                     done = builder.icmp(llvm.core.IPRED_EQ, byte, delim)
                     builder.cbranch(done, block_exit, block_body)
                     cg.popBuilder()

@@ -5,6 +5,7 @@
 
 #include "continuation.h"
 #include "threading.h"
+#include "context.h"
 
 struct __hlt_type_info;
 
@@ -129,11 +130,11 @@ extern hlt_exception_type hlt_exception_io_error;
 extern hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const char* location);
 extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location);
 
-extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception); 
+extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx); 
 
-extern void hlt_exception_print(hlt_exception* exception); 
-extern void hlt_exception_print_uncaught(hlt_exception* exception); 
-extern void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_vthread_id vid);
+extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context* ctx); 
+extern void hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution_context* ctx); 
+extern void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_execution_context* ctx);
 
 #define __hlt_stringify2(arg) #arg
 #define __hlt_stringify(arg) __hlt_stringify2(arg)

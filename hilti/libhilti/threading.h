@@ -25,6 +25,7 @@ struct hlt_continuation;
 /// Type for representing the ID of a virtual thread.
 typedef int64_t hlt_vthread_id;
 #define HLT_VID_MAIN -1
+#define HLT_VID_QUEUE -2
 
 /// The enumeration lists the possible states for a thread manager.
 ///
@@ -144,7 +145,7 @@ extern hlt_thread_mgr_state hlt_thread_mgr_get_state(const hlt_thread_mgr* mgr);
 /// ctx: The caller's execution context.
 /// 
 /// excpt: &
-extern void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, struct hlt_continuation* func, struct hlt_execution_context* ctx, struct hlt_exception** excpt);
+extern void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, struct hlt_continuation* func, struct hlt_exception** excpt, struct hlt_execution_context* ctx);
 
 /// Checks whether any worker thread has raised an uncaught exception. In
 /// that case, all worker threads will have been terminated, and this
@@ -153,7 +154,7 @@ extern void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, s
 /// mgr: The thread manager to use.
 /// 
 /// excpt: &
-extern void hlt_thread_mgr_check_exceptions(hlt_thread_mgr* mgr, struct hlt_exception** excpt);
+extern void hlt_thread_mgr_check_exceptions(hlt_thread_mgr* mgr, struct hlt_exception** excpt, struct hlt_execution_context* ctx);
 
 /// Returns a string identifying the currently running native thread. 
 /// 

@@ -16,16 +16,16 @@ struct __hlt_timer_mgr {
     pqueue_t* timers;   // Priority list of all timers.
 };
 
-static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt)
+static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     switch (timer->type) {
       case HLT_TIMER_FUNCTION:
-        hlt_call_continuation(timer->cookie.function, 0, excpt);
+        hlt_call_continuation(timer->cookie.function, excpt, ctx);
         break;
         
 #if 0        
       case HLT_TIMER_LIST:
-        hlt_list_iter_expire(timer->cookie.list, excpt);
+        hlt_list_iter_expire(timer->cookie.list, excpt, ctx);
         break;
 #endif        
         
@@ -42,7 +42,7 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt)
     }
 }
 
-hlt_timer* __hlt_timer_new_function(hlt_continuation* func, hlt_exception** excpt)
+hlt_timer* __hlt_timer_new_function(hlt_continuation* func, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_timer* timer = (hlt_timer*) hlt_gc_malloc_non_atomic(sizeof(hlt_timer));
     if ( ! timer ) {
@@ -59,7 +59,7 @@ hlt_timer* __hlt_timer_new_function(hlt_continuation* func, hlt_exception** excp
 
 
 #if 0
-hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** excpt)
+hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_timer* timer = (hlt_timer*) hlt_gc_malloc_non_atomic(sizeof(hlt_timer));
     if ( ! timer ) {
@@ -75,7 +75,7 @@ hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** 
 }
 #endif
 
-hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_exception** excpt)
+hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_timer* timer = (hlt_timer*) hlt_gc_malloc_non_atomic(sizeof(hlt_timer));
     if ( ! timer ) {
@@ -90,7 +90,7 @@ hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_exception** ex
     return timer;
 }
 
-hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** excpt)
+hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_timer* timer = (hlt_timer*) hlt_gc_malloc_non_atomic(sizeof(hlt_timer));
     if ( ! timer ) {
@@ -105,7 +105,7 @@ hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** ex
     return timer;
 }
 
-void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt)
+void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! timer ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -121,12 +121,12 @@ void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt)
         pqueue_change_priority(timer->mgr->timers, t, timer);
     
     else {
-        hlt_timer_cancel(timer, excpt);
-        __hlt_timer_fire(timer, excpt);
+        hlt_timer_cancel(timer, excpt, ctx);
+        __hlt_timer_fire(timer, excpt, ctx);
     }
 }
 
-void hlt_timer_cancel(hlt_timer* timer, hlt_exception** excpt)
+void hlt_timer_cancel(hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! timer ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -138,7 +138,7 @@ void hlt_timer_cancel(hlt_timer* timer, hlt_exception** excpt)
     timer->time = 0;
 }
 
-hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER);
     hlt_timer* t = *((hlt_timer **)obj);
@@ -149,17 +149,17 @@ hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32
     else
         strcpy(buffer, "<unscheduled timer>");
         
-    return hlt_string_from_asciiz(buffer, excpt);
+    return hlt_string_from_asciiz(buffer, excpt, ctx);
 }
 
-double hlt_timer_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+double hlt_timer_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER);
     hlt_timer* t = *((hlt_timer **)obj);
     return t->time;
 }
 
-hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt)
+hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_timer_mgr* mgr = (hlt_timer_mgr*) hlt_gc_malloc_non_atomic(sizeof(hlt_timer_mgr));
     if ( ! mgr ) {
@@ -177,7 +177,7 @@ hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt)
     return mgr;
 }
 
-void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hlt_exception** excpt)
+void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! mgr ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -190,7 +190,7 @@ void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hl
     }
     
     if ( t <= mgr->time ) {
-        __hlt_timer_fire(timer, excpt);
+        __hlt_timer_fire(timer, excpt, ctx);
         return;
     }
     
@@ -203,7 +203,7 @@ void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hl
     }
 }
 
-int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** excpt)
+int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! mgr ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -219,7 +219,7 @@ int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** ex
         if ( ! timer || timer->time > t )
             break;
 
-        __hlt_timer_fire(timer, excpt);
+        __hlt_timer_fire(timer, excpt, ctx);
         pqueue_pop(mgr->timers);
         ++count;
     }
@@ -227,7 +227,7 @@ int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** ex
     return count;        
 }
 
-hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt)
+hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! mgr ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -237,7 +237,7 @@ hlt_time hlt_timer_mgr_current(hlt_timer_mgr* mgr, hlt_exception** excpt)
     return mgr->time;
 }
 
-void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception** excpt)
+void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! mgr ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -255,21 +255,21 @@ void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception** excpt
         if ( ! timer )
             break;
         
-        __hlt_timer_fire(timer, excpt);
+        __hlt_timer_fire(timer, excpt, ctx);
     }
 }
 
-hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER_MGR);
     hlt_timer_mgr* mgr = *((hlt_timer_mgr **)obj);
     
     char buffer[128];
     snprintf(buffer, sizeof(buffer), "<timer_mgr at time %.6f / %d active timers>", mgr->time, pqueue_size(mgr->timers));
-    return hlt_string_from_asciiz(buffer, excpt);
+    return hlt_string_from_asciiz(buffer, excpt, ctx);
 }
 
-double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt)
+double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER_MGR);
     hlt_timer_mgr* mgr = *((hlt_timer_mgr **)obj);
