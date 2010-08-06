@@ -55,7 +55,7 @@ class RegExp(type.HeapType, type.Constructable, type.Parameterizable):
     def name(self):
         return "regexp<%s>" % ",".join(self._attrs)
 
-    def validate(self, vld):
+    def _validate(self, vld):
         for attr in self._attrs:
             if not attr in RegExp._attrs:
                 vld.error(self, "unknown regexp attribute %s" % attr)
@@ -205,7 +205,7 @@ class New(Operator):
     Instantiates a new *regexp* instance. Before any of the matching
     functionality can be used, ~~Compile must be used to compile a pattern.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         top = operand.Type(self.op1().value())
         result = cg.llvmCallC("hlt::regexp_new", [top])
         cg.llvmStoreInTarget(self, result)
@@ -223,7 +223,7 @@ class Compile(Instruction):
     Todo: We should support other than ASCII characters too but need the
     notion of a local character set first.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if isinstance(self.op2().type(), type.String):
             cg.llvmCallC("hlt::regexp_compile", [self.op1(), self.op2()])
         else:
@@ -244,7 +244,7 @@ class Find(Instruction):
     
     Todo: The string variant is not yet implemented.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if isinstance(self.op2().type(), type.String):
             # String version.
             result = cg.llvmCallC("hlt::regexp_string_find", [self.op1(), self.op2()])
@@ -275,7 +275,7 @@ class MatchToken(Instruction):
     Todo: The string variant is not yet implemented. The bytes implementation
     should be further optimized. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if isinstance(self.op2().type(), type.String):
             # String version.
             result = cg.llvmCallC("hlt::regexp_string_match_token", [self.op1(), self.op2()])
@@ -300,7 +300,7 @@ class Span(Instruction):
     
     Todo: The string variant is not yet implemented.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if isinstance(self.op2().type(), type.String):
             # String version.
             result = cg.llvmCallC("hlt::regexp_string_span", [self.op1(), self.op2()])
@@ -328,7 +328,7 @@ class Groups(Instruction):
     
     Todo: The string variant is not yet implemented.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if isinstance(self.op2().type(), type.String):
             # String version.
             result = cg.llvmCallC("hlt::regexp_string_groups", [self.op1(), self.op2()])

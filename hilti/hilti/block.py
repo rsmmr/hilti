@@ -141,11 +141,11 @@ class Block(node.Node):
 
     ### Overridden from Node.
 
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         for i in self._ins:
             i.resolve(resolver)
     
-    def validate(self, vld):
+    def _validate(self, vld):
         for i in self._ins:
             i.validate(vld)
     
@@ -167,7 +167,7 @@ class Block(node.Node):
 
     ### Overridden from Node.
         
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         # If we are in debug mode, first add message instructions. 
         if canonifier.debugMode():
             b = Block(canonifier.currentFunction(), instructions=[], name=self._name, location=self.location())
@@ -198,7 +198,7 @@ class Block(node.Node):
             if ni:
                 canonifier.currentTransformedBlock().addInstruction(ni)
                 
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.startBlock(self)
             
         for i in self._ins:

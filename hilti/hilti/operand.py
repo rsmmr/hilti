@@ -128,16 +128,16 @@ class Operand(node.Node):
         
     ### Overridden from Node.
     
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         self._type = self._type.resolve(resolver)
     
-    def validate(self, vld):
-        self._type.validate(vld)
+    def _validate(self, vld):
+        self._type._validate(vld)
     
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         pass
     
-    def codegen(self, codegen):
+    def _codegen(self, codegen):
         # Don't overide in derived classes.
         util.internal_error("Operands do not implement codegen. Use llvmLoad/Store.")
 
@@ -215,20 +215,20 @@ class Constant(Operand):
 
     ### Overridden from Node.
     
-    def resolve(self, resolver):
-        super(Constant, self).resolve(resolver)
+    def _resolve(self, resolver):
+        super(Constant, self)._resolve(resolver)
         self._constant.resolve(resolver)
         self.setValue(self._constant)
     
-    def validate(self, vld):
-        super(Constant, self).validate(vld)
+    def _validate(self, vld):
+        super(Constant, self)._validate(vld)
         self._constant.validate(vld)
     
     def output(self, printer):
         self._constant.output(printer)
 
-    def canonify(self, canonifier):
-        super(Constant, self).canonify(canonifier)
+    def _canonify(self, canonifier):
+        super(Constant, self)._canonify(canonifier)
         self._constant.canonify(canonifier)
         
         
@@ -293,8 +293,8 @@ class Ctor(Operand):
 
     ### Overridden from Node.
     
-    def validate(self, vld):
-        super(Ctor, self).validate(vld)
+    def _validate(self, vld):
+        super(Ctor, self)._validate(vld)
         self.type().validateCtor(vld, self._value)
     
     def output(self, printer):
@@ -364,8 +364,8 @@ class ID(Operand):
             
     ### Overridden from Node.
     
-    def resolve(self, resolver):
-        super(ID, self).resolve(resolver)
+    def _resolve(self, resolver):
+        super(ID, self)._resolve(resolver)
         if isinstance(self._id, id.Unknown):
             i = self._id.scope().lookup(self._id.name())
             if i:
@@ -378,8 +378,8 @@ class ID(Operand):
         self._id.resolve(resolver)
         self.setValue(self._id)
     
-    def validate(self, vld):
-        super(ID, self).validate(vld)
+    def _validate(self, vld):
+        super(ID, self)._validate(vld)
         if isinstance(self._id, id.Unknown):
             if not self._id.scope().lookup(self._id.name()):
                 vld.error(self, "unknown identifier %s" % self._id.name())
@@ -393,7 +393,7 @@ class ID(Operand):
         else:
             printer.output(self._id.name())
     
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         self._id.canonify(canonifier)
 
 

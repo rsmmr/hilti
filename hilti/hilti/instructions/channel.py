@@ -51,7 +51,7 @@ class New(Operator):
     can store. The capacity defaults to zero, which creates a channel of
     unbounded capacity.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         t = operand.Type(self.op1().value().itemType())
         cap = self.op2() if self.op2() else operand.Constant(constant.Constant(0, type.Integer(64)))
         result = cg.llvmCallC("hlt::channel_new", [t, cap])
@@ -71,7 +71,7 @@ class WriteTry(Instruction):
     """Writes an item into the channel referenced by *op1*. If the channel is
     full, the instruction raises a ``WouldBlock`` exception.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op2 = self.op2().coerceTo(cg, self.op1().type().refType().itemType())
         cg.llvmCallC("hlt::channel_write_try", [self.op1(), op2])
 
@@ -94,7 +94,7 @@ class ReadTry(Instruction):
     """Returns the next channel item from the channel referenced by *op1*. If
     the channel is empty, the instruction raises a ``WouldBlock`` exception.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         voidp = cg.llvmCallC("hlt::channel_read_try", [self.op1()])
         item_type = self.target().type()
         nodep = cg.builder().bitcast(voidp, llvm.core.Type.pointer(cg.llvmType(item_type)))
@@ -104,6 +104,6 @@ class ReadTry(Instruction):
 class Size(Instruction):
     """Returns the current number of items in the channel referenced by *op1*.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::channel_size", [self.op1()])
         cg.llvmStoreInTarget(self, result)

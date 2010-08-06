@@ -130,11 +130,11 @@ class Scope(node.Node):
     
     # Overridden from Node.
     
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         for (i, val) in self._ids.values():
             i.resolve(resolver)
             
-    def validate(self, vld):
+    def _validate(self, vld):
         for (i, val) in self._ids.values():
             i.validate(vld)
     

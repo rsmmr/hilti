@@ -89,7 +89,7 @@ class Vector(type.Container, type.Iterable):
 @hlt.overload(New, op1=cType(cVector), target=cReferenceOfOp(1))
 class New(Operator):
     """Allocates a new instance of a vector of type *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         t = self.op1().value().itemType()
         default = operand.LLVM(cg.llvmConstDefaultValue(t), t)
         result = cg.llvmCallC("hlt::vector_new", [default])
@@ -98,7 +98,7 @@ class New(Operator):
 @hlt.instruction("vector.get", op1=cReferenceOf(cVector), op2=cIntegerOfWidth(64), target=cItemTypeOfOp(1))
 class Get(Instruction):
     """Returns the element at index *op2* in vector *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         t = self.op1().type().refType().itemType()
         op2 = self.op2().coerceTo(cg, type.Integer(64))
         voidp = cg.llvmCallC("hlt::vector_get", [self.op1(), op2])
@@ -108,7 +108,7 @@ class Get(Instruction):
 @hlt.instruction("vector.set", op1=cReferenceOf(cVector), op2=cIntegerOfWidth(64), op3=cItemTypeOfOp(1))
 class Set(Instruction):
     """Sets the element at index *op2* in vector *op1* to *op3."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op2 = self.op2().coerceTo(cg, type.Integer(64))
         op3 = self.op3().coerceTo(cg, self.op1().type().refType().itemType())
         cg.llvmCallC("hlt::vector_set", [self.op1(), op2, op3])
@@ -117,7 +117,7 @@ class Set(Instruction):
 class Size(Instruction):
     """Returns the current size of the vector *op1*, which is the largest
     accessible index plus one."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::vector_size", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -129,21 +129,21 @@ class Reserve(Instruction):
     implemenation may use this information to avoid unnecessary memory
     allocations.
     """ 
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op2 = self.op2().coerceTo(cg, type.Integer(64))
         cg.llvmCallC("hlt::vector_reserve", [self.op1(), op2])
 
 @hlt.overload(Begin, op1=cReferenceOf(cVector), target=cIteratorVector)
 class Begin(Operator):
     """Returns an iterator representing the first element of *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::vector_begin", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
 @hlt.overload(End, op1=cReferenceOf(cVector), target=cIteratorVector)
 class End(Operator):
     """Returns an iterator representing the position one after the last element of *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::vector_end", [self.op1()])
         cg.llvmStoreInTarget(self, result)
     
@@ -153,7 +153,7 @@ class IterIncr(Operator):
     Advances the iterator to the next element, or the end position
     if already at the last.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::vector_iter_incr", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -162,7 +162,7 @@ class IterDeref(Operator):
     """
     Returns the element the iterator is pointing at. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         t = self.target().type()
         voidp = cg.llvmCallC("hlt::vector_iter_deref", [self.op1()])
         casted = cg.builder().bitcast(voidp, llvm.core.Type.pointer(cg.llvmType(t)))
@@ -173,6 +173,6 @@ class IterEqual(Operator):
     """
     Returns true if *op1* and *op2* specify the same position.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::vector_iter_eq", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)

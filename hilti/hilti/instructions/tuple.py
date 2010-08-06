@@ -53,11 +53,11 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
         else:
             return "tuple<*>"
 
-    def validate(self, vld):
+    def _validate(self, vld):
         for t in self._types:
             t.validate(vld)
         
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         self._types = [t.resolve(resolver) for t in self._types]
         return self
 
@@ -298,8 +298,7 @@ class Index(Instruction):
     """ Returns the tuple's value with index *op2*. The index is zero-based.
     *op2* must be an integer *constant*.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2(), coerce_to=type.Integer(32))
         result = cg.llvmExtractValue(op1, op2)

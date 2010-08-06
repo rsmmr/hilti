@@ -104,8 +104,7 @@ class Equal(Operator):
     Returns True if *op1* equals *op2*.
     """
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         cmp = cg.llvmCallC("hlt::string_cmp", [self.op1(), self.op2()])
         result = cg.builder().icmp(llvm.core.IPRED_EQ, cmp, cg.llvmConstInt(0, 8))
         cg.llvmStoreInTarget(self, result)
@@ -115,8 +114,7 @@ class Equal(Operator):
 class Length(Instruction):
     """Returns the number of characters in the string *op1*."""
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::string_len", [self.op1()], [self.op1().type()])
         cg.llvmStoreInTarget(self, result)
 
@@ -124,8 +122,7 @@ class Length(Instruction):
 class Concat(Instruction):
     """Concatenates *op1* with *op2* and returns the result."""
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::string_concat", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
 
@@ -134,8 +131,7 @@ class Substr(Instruction):
     """Extracts the substring of length *op3* from *op1* that starts at
     position *op2*."""
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         util.internal_error("string.substr not implemented")
 
 @hlt.instruction("string.find", op1=cString, op2=cString, target=cIntegerOfWidth(32))
@@ -143,8 +139,7 @@ class Find(Instruction):
     """Searches *op2* in *op1*, returning the start index if it find it.
     Returns -1 if it does not find *op2* in *op1*."""
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         util.internal_error("string.find not implemented")
 
 @hlt.instruction("string.cmp", op1=cString, op2=cString, target=cBool)
@@ -152,8 +147,7 @@ class Cmp(Instruction):
     """Compares *op1* with *op2* and returns True if their characters match.
     Returns False otherwise."""
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::string_cmp", [self.op1(), self.op2()])
         boolean = cg.builder().icmp(llvm.core.IPRED_EQ, result, cg.llvmConstInt(0, 8))
         cg.llvmStoreInTarget(self, boolean)
@@ -163,8 +157,7 @@ class Lt(Instruction):
     """Compares *op1* with *op2* and returns True if *op1* is
     lexicographically smaller than *op2*. Returns False otherwise."""
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::string_cmp", [self.op1(), self.op2()])
         boolean = cg.builder().icmp(llvm.core.IPRED_SLT, result, cg.llvmConstInt(0, 8))
         cg.llvmStoreInTarget(self, boolean)
@@ -182,8 +175,7 @@ class Decode(Instruction):
     
     Todo: We need to figure out how to support more character sets.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::string_decode", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
         
@@ -199,8 +191,7 @@ class Encode(Instruction):
     Todo: We need to figure out how to support more character sets.
     """
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::string_encode", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
     

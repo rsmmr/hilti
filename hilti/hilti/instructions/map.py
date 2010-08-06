@@ -129,7 +129,7 @@ class New(Operator):
     """Allocates a new instance of a map. If automatic item expiration is to
     be used, a timer manager must be given as *op2*.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = operand.Type(self.op1().value().keyType())
         value = operand.Type(self.op1().value().valueType())
         
@@ -145,7 +145,7 @@ class New(Operator):
 class Get(Instruction):
     """Returns the element with key *op2* in map *op1*. Throws IndexError if
     the key does not exists and no default has been set via *map.default*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         value = self.op1().type().refType().valueType()
         voidp = cg.llvmCallC("hlt::map_get", [self.op1(), self.op2().coerceTo(cg, key)])
@@ -156,7 +156,7 @@ class Get(Instruction):
 class GetDefault(Instruction):
     """Returns the element with key *op2* in map *op1* if it exists. If the
     key does not exists, returns *op3*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         value = self.op1().type().refType().valueType()
         voidp = cg.llvmCallC("hlt::map_get_default", [self.op1(), self.op2().coerceTo(cg, key), self.op3().coerceTo(cg, value)])
@@ -167,7 +167,7 @@ class GetDefault(Instruction):
 class Insert(Instruction):
     """Sets the element at index *op2* in map *op1* to *op3. If the key
     already exists, the previous entry is replaced."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         value = self.op1().type().refType().valueType()
         cg.llvmCallC("hlt::map_insert", [self.op1(), self.op2().coerceTo(cg, key), self.op3().coerceTo(cg, value)])
@@ -176,7 +176,7 @@ class Insert(Instruction):
 class Default(Instruction):
     """Sets a default value *op2* for map *op1* to be returned by *map.get* if
     a key does not exist."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         value = self.op1().type().refType().valueType()
         cg.llvmCallC("hlt::map_default", [self.op1(), self.op2().coerceTo(cg, value)])
@@ -189,14 +189,14 @@ class Timeout(Instruction):
     *Expire::Access). Expiration is disable if *op3* is zero. Throws
     NoTimerManager if no timer manager has been associated with the map at
     construction.""" 
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::map_timeout", [self.op1(), self.op2(), self.op3()])
         
 @hlt.instruction("map.exists", op1=cReferenceOf(cMap), op2=_cKeyTypeOfOp1(), target=cBool)
 class Exists(Instruction):
     """Checks whether the key *op2* exists in map *op1*. If so, the
     instruction returns True, and False otherwise."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         result = cg.llvmCallC("hlt::map_exists", [self.op1(), self.op2().coerceTo(cg, key)])
         cg.llvmStoreInTarget(self, result)
@@ -205,27 +205,27 @@ class Exists(Instruction):
 class Remove(Instruction):
     """Removes the key *op2* from the map *op1*. If the key does not exists,
     the instruction has no effect."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         cg.llvmCallC("hlt::map_remove", [self.op1(), self.op2().coerceTo(cg, key)])
     
 @hlt.instruction("map.size", op1=cReferenceOf(cMap), target=cIntegerOfWidth(64))
 class Size(Instruction):
     """Returns the current number of entries in map *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::map_size", [self.op1()])
         cg.llvmStoreInTarget(self, result)
         
 @hlt.instruction("map.clear", op1=cReferenceOf(cMap))
 class Clear(Instruction):
     """Removes all entries from map *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::map_clear", [self.op1()])
 
 @hlt.overload(Begin, op1=cReferenceOf(cMap), target=cIteratorMap)
 class Begin(Operator):
     """Returns an iterator representing the first element of *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::map_begin", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -233,7 +233,7 @@ class Begin(Operator):
 class End(Operator):
     """Returns an iterator representing the position one after the last
     element of *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::map_end")
         cg.llvmStoreInTarget(self, result)
 
@@ -243,7 +243,7 @@ class IterIncr(Operator):
     Advances the iterator to the next element, or the end position
     if already at the last.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::map_iter_incr", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -255,7 +255,7 @@ class IterDeref(Operator):
     Note: Dereferencing an iterator does not count as an access to the element
     for restarting its expiration timer. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         t = self.target().type()
         returnt = operand.Type(self.op1().type().derefType())
         voidp = cg.llvmCallC("hlt::map_iter_deref", [returnt, self.op1()])
@@ -267,6 +267,6 @@ class IterEqual(Operator):
     """
     Returns true if *op1* and *op2* specify the same position.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::map_iter_eq", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)

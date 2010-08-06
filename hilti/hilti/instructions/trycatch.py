@@ -28,14 +28,14 @@ class TryCatch(instruction.Instruction):
         
     ### Overridden from Node.
     
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         self._excpts = [e.resolve(resolver) for e in self._excpts]
         
         for s in [self._try] + self._catch:
             for b in s:
                 b.resolve(resolver)
                 
-    def validate(self, vld):
+    def _validate(self, vld):
         
         for e in self._excpts:
             e.validate(vld)
@@ -65,7 +65,7 @@ class TryCatch(instruction.Instruction):
                 printer.pop()
             printer.output("}", nl=True)
                 
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         canonifier.deleteCurrentInstruction()
         
         func = canonifier.currentFunction()        
@@ -126,7 +126,7 @@ class TryCatch(instruction.Instruction):
         bcont = block.Block(func, name=cont_name)
         canonifier.addTransformedBlock(bcont)
         
-    def codegen(self, cg):
+    def _codegen(self, cg):
         # We canonify this instruction away.
         util.internal_error("cannot be reached")
         

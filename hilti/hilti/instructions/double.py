@@ -54,7 +54,7 @@ class Add(Instruction):
     Calculates the sum of the two operands. If the sum overflows the range of
     the double type, the result in undefined. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().add(op1, op2)
@@ -66,7 +66,7 @@ class Sub(Instruction):
     Subtracts *op1* one from *op2*. If the difference underflows the range of
     the double type, the result in undefined. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().sub(op1, op2)
@@ -78,7 +78,7 @@ class Mul(Instruction):
     Multiplies *op1* with *op2*. If the product overflows the range of the
     double type, the result in undefined. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().mul(op1, op2)
@@ -90,7 +90,7 @@ class Div(Instruction):
     Divides *op1* by *op2*, flooring the result.     
     Throws :exc:`DivisionByZero` if *op2* is zero.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
     
@@ -115,7 +115,7 @@ class Eq(Instruction):
     """
     Returns true iff *op1* equals *op2*. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().fcmp(llvm.core.RPRED_OEQ, op1, op2)
@@ -126,7 +126,7 @@ class Lt(Instruction):
     """
     Returns true iff *op1* is less than *op2*.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().fcmp(llvm.core.RPRED_OLT, op1, op2)

@@ -209,15 +209,15 @@ class HookFunction(function.Function):
 class Run(Instruction):
     """Executes the hook *op1* with arguments *op2*, storing the hook's return
     value in *target*."""
-    def resolve(self, resolver):
-        Instruction.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Run, self)._resolve(resolver)
         
         if self.op2():
             op2 = flow._applyDefaultParams(self.op1().value(), self.op2())
             self.setOp2(op2)
         
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(Run, self)._validate(vld)
 
         if not isinstance(self.op1().value(), id.Hook):
             vld.error(self, "argument is not a hook")
@@ -304,8 +304,8 @@ class Run(Instruction):
         b = block.Block(canonifier.currentFunction(), name=label)
         return b
     
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(Run, self)._canonify(canonifier)
         
         no_hook = canonifier.currentModule().scope().lookup("Hilti::NoHookResult")
         assert no_hook
@@ -383,7 +383,7 @@ class Run(Instruction):
             
             canonifier.addTransformedBlock(done)
 
-    def codegen(self, cg):
+    def _codegen(self, cg):
         # This is canonified away.
         assert False
 
@@ -391,8 +391,8 @@ class Run(Instruction):
 class Stop(Instruction):
     """Stops the execution of the current hook and returns *op1* as the hooks
     value (if one is needed)."""
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(Stop, self)._validate(vld)
         
         if not isinstance(vld.currentFunction(), HookFunction):
             vld.error(self, "hook.stop can only be used inside a hook function")
@@ -410,8 +410,8 @@ class Stop(Instruction):
         if self.op1() and not self.op1().canCoerceTo(rt):
             vld.error(self, "return type does not match hook function definition (is %s, expected %s)" % (self.op1().type(), rt))
             
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(Stop, self)._canonify(canonifier)
         
         rt = canonifier.currentFunction().type().resultType()
         
@@ -426,20 +426,20 @@ class Stop(Instruction):
         
         canonifier.splitBlock(ret)
             
-    def codegen(self, cg):
+    def _codegen(self, cg):
         # Canonfied away.
         assert False
         
 @hlt.instruction("hook.enable_group", op1=cIntegerOfWidth(64))
 class EnableGroup(Instruction):
     """Enables the hook group given by *op1* globally."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::hook_group_enable", [self.op1(), operand.Constant(constant.Constant(1, type.Bool()))])
         
 @hlt.instruction("hook.disable_group", op1=cIntegerOfWidth(64))
 class DisableGroup(Instruction):
     """Disables the hook group given by *op1* globally."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::hook_group_enable", [self.op1(), operand.Constant(constant.Constant(0, type.Bool()))])
 
 @hlt.instruction("hook.group_enabled", op1=cIntegerOfWidth(64), target=cBool)
@@ -447,7 +447,7 @@ class GroupEnabled(Instruction):
     """Sets *target* to ``True`` if hook group *op1* is enabled, and to *False*
     otherwise.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::hook_group_is_enabled", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 

@@ -110,7 +110,7 @@ class New(Operator):
     """Allocates a new instance of a set. If automatic item expiration is to
     be used, a timer manager must be given as *op2*.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = operand.Type(self.op1().value().keyType())
         
         if self.op2():
@@ -125,7 +125,7 @@ class New(Operator):
 class Insert(Instruction):
     """Sets the element at index *op2* in set *op1* to *op3. If the key
     already exists, the previous entry is replaced."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         cg.llvmCallC("hlt::set_insert", [self.op1(), self.op2().coerceTo(cg, key)])
         
@@ -137,14 +137,14 @@ class Timeout(Instruction):
     *Expire::Access). Expiration is disable if *op3* is zero. Throws
     NoTimerManager if no timer manager has been associated with the set at
     construction.""" 
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::set_timeout", [self.op1(), self.op2(), self.op3()])
         
 @hlt.instruction("set.exists", op1=cReferenceOf(cSet), op2=_cKeyTypeOfOp1(), target=cBool)
 class Exists(Instruction):
     """Checks whether the key *op2* exists in set *op1*. If so, the
     instruction returns True, and False otherwise."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         result = cg.llvmCallC("hlt::set_exists", [self.op1(), self.op2().coerceTo(cg, key)])
         cg.llvmStoreInTarget(self, result)
@@ -153,27 +153,27 @@ class Exists(Instruction):
 class Remove(Instruction):
     """Removes the key *op2* from the set *op1*. If the key does not exists,
     the instruction has no effect."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         cg.llvmCallC("hlt::set_remove", [self.op1(), self.op2().coerceTo(cg, key)])
     
 @hlt.instruction("set.size", op1=cReferenceOf(cSet), target=cIntegerOfWidth(64))
 class Size(Instruction):
     """Returns the current number of entries in set *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::set_size", [self.op1()])
         cg.llvmStoreInTarget(self, result)
         
 @hlt.instruction("set.clear", op1=cReferenceOf(cSet))
 class Clear(Instruction):
     """Removes all entries from set *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::set_clear", [self.op1()])
 
 @hlt.overload(Begin, op1=cReferenceOf(cSet), target=cIteratorSet)
 class Begin(Operator):
     """Returns an iterator representing the first element of *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::set_begin", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -181,7 +181,7 @@ class Begin(Operator):
 class End(Operator):
     """Returns an iterator representing the position one after the last
     element of *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::set_end")
         cg.llvmStoreInTarget(self, result)
 
@@ -191,7 +191,7 @@ class IterIncr(Operator):
     Advances the iterator to the next element, or the end position
     if already at the last.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::set_iter_incr", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -203,7 +203,7 @@ class IterDeref(Operator):
     Note: Dereferencing an iterator does not count as an access to the element
     for restarting its expiration timer. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         t = self.target().type()
         voidp = cg.llvmCallC("hlt::set_iter_deref", [self.op1()])
         casted = cg.builder().bitcast(voidp, llvm.core.Type.pointer(cg.llvmType(t)))
@@ -214,6 +214,6 @@ class IterEqual(Operator):
     """
     Returns true if *op1* and *op2* specify the same position.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::set_iter_eq", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)

@@ -92,8 +92,8 @@ class Unpack(Instruction):
     Note: We should define error semantics more crisply. Ideally, a
     single UnpackError should be raised in all error cases. 
     """
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(Unpack, self)._validate(vld)
 
         try:
             kind = self.op2().value().value()
@@ -151,9 +151,7 @@ class Unpack(Instruction):
         if not found:
             vld.error(self, "unpack type %s not supported by type %s" % (kind, ttype))
         
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
-
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         
         begin = cg.llvmExtractValue(op1, 0)
@@ -180,8 +178,7 @@ class Assign(Instruction):
     types. Different from most other operators, it's implementation is not
     overloaded on a per-type based. 
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         op = cg.llvmOp(self.op1(), self.target().type())
         cg.llvmStoreInTarget(self, op)
     

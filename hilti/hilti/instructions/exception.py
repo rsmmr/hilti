@@ -86,7 +86,7 @@ class Exception(type.HeapType, type.Parameterizable):
         else:
             return "exception"
 
-    def validate(self, vld):
+    def _validate(self, vld):
         if not self._baseclass:
             # The base class.
             return 
@@ -135,7 +135,7 @@ class Exception(type.HeapType, type.Parameterizable):
             seen += [parent]
             
             
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         if self._circular():
             # Report in validate.
             return self
@@ -210,7 +210,7 @@ class New(Operator):
     """Allocates a new exception instance. If the exception type given in
     *op1* requires an argument, that must be passed in *op2*.
     """
-    def validate(self, vld):
+    def _validate(self, vld):
         argt = self.op1().type().argType()
         ty = self.op2().type() if self.op2() else None
         
@@ -223,7 +223,7 @@ class New(Operator):
         if argt and ty and argt != ty:
             vld.error(self, "exception argument must be of type %s" % argt)
     
-    def codegen(self, cg):
+    def _codegen(self, cg):
         arg = cg.llvmOp(self.op2()) if self.op2() else None
         excpt = cg.llvmNewException(self.op1().type(), arg, self.location())
         cg.llvmStoreInTarget(self, excpt)
@@ -234,10 +234,10 @@ class Throw(Instruction):
     Throws an exception, diverting control-flow up the stack to the closest
     handler.
     """
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         canonifier.splitBlock(self)
     
-    def codegen(self, cg):
+    def _codegen(self, cg):
         exception = cg.llvmOp(self.op1())
         cg.llvmRaiseException(exception)
         
@@ -247,11 +247,11 @@ class PushHandler(Instruction):
     derived from that type. If such an exception is thrown subsequently,
     control is transfered to *op2*.
     """
-    def validate(self, vld):
+    def _validate(self, vld):
         if not vld.currentFunction():
             vld.error(self, "cannot catch exceptions here")
     
-    def codegen(self, cg):
+    def _codegen(self, cg):
         handler = cg.lookupBlock(self.op1())
         excpt = self.op2().value() if self.op2() else type.Exception.root()
         cg.currentFunction().pushExceptionHandler(excpt, handler)
@@ -261,11 +261,11 @@ class PopHandler(Instruction):
     """Uninstalls the most recently installed exception handler. Exceptions of
     its type are no longer caught in subsequent code.
     """
-    def validate(self, vld):
+    def _validate(self, vld):
         if not vld.currentFunction():
             vld.error(self, "cannot catch exceptions here")
             
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.currentFunction().popExceptionHandler()
         
                 

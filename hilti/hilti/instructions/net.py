@@ -82,7 +82,7 @@ class EqualNet(Operator):
     Todo: Are the v6 vs v4 matching semantics right? Should it be
     ``::ffff:a.b.c.d``? Should v4 never match a v6 address?``
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         
@@ -110,7 +110,7 @@ class EqualNet(Operator):
 @hlt.overload(Equal, op1=cNet, op2=cAddr, target=cBool)
 class EqualAddr(Operator):
     """Returns True if the addr *op2* is part of the network *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         net = cg.llvmOp(self.op1())
         len = cg.llvmExtractValue(net, 2)
         addr = _maskAddr(cg, cg.llvmOp(self.op2()), len)
@@ -133,7 +133,7 @@ class Family(Instruction):
     Returns the address family of *op1*, which can currently be either
     ``AddrFamily::IPv4`` or ``AddrFamiliy::IPv6``. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         v4 = cg.llvmEnumLabel("Hilti::AddrFamily::IPv4")
         v6 = cg.llvmEnumLabel("Hilti::AddrFamily::IPv6")
@@ -145,7 +145,7 @@ class Prefix(Instruction):
     """
     Returns the network prefix as a masked IP addr.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         a = llvm.core.Constant.struct([cg.llvmConstInt(255, 64)] * 2)
         a = cg.llvmInsertValue(a, 0, cg.llvmExtractValue(op1, 0))
@@ -158,7 +158,7 @@ class Length(Instruction):
     """
     Returns the length of the network prefix.
     """    
-    def codegen(self, cg):
+    def _codegen(self, cg):
         # For IPv4, we need to subtract 96.
         op1 = cg.llvmOp(self.op1())
         len = cg.llvmExtractValue(op1, 2)

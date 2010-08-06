@@ -109,7 +109,7 @@ class Equal(Operator):
     """Returns True if the port in *op1* equals the port in *op2*. Note that
     a TCP port will *not* match the UDP port of the same value.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         
@@ -132,7 +132,7 @@ class Protocol(Instruction):
     Returns the protocol of *op1*, which can currently be either
     ``Port::TCP`` or ``Port::UDP``. 
     """        
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         
         builder = cg.builder()

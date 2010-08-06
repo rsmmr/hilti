@@ -201,7 +201,7 @@ class New(Operator):
     
     Raises: ~~IOSrcError if the packet source cannot be opened. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = _makeSwitch(cg, self.op1().value(), "new", [self.op2()], True, ctor=True)
         assert result
         cg.llvmStoreInTarget(self, result)
@@ -230,7 +230,7 @@ class Close(Instruction):
     """Closes the packet source *op1*. No further packets can then be read (if
     tried, ``pkrsrc.read`` will raise a ~~IOSrcError exception). 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         _makeSwitch(cg, self.op1().type().refType(), "close", [self.op1()], False)
         
 @hlt.overload(Begin, op1=cReferenceOf(cIOSrc), target=cIteratorIOSrc)
@@ -239,11 +239,11 @@ class Begin(BlockingOperator):
     *op1*. The instruction will block until the first element becomes
     available."""
     
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(Begin, self)._canonify(canonifier)
         self.blockingCanonify(canonifier)
         
-    def codegen(self, cg):
+    def _codegen(self, cg):
         self.blockingCodegen(cg)
 
     def cCall(self, cg):
@@ -258,7 +258,7 @@ class Begin(BlockingOperator):
 @hlt.overload(End, op1=cReferenceOf(cIOSrc), target=cIteratorIOSrc)
 class End(Operator):
     """Returns an iterator representing an exhausted packet source *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         ty = self.op1().type().refType()
         result = _makeIterator(cg, ty, None, None)
         cg.llvmStoreInTarget(self, result)
@@ -269,11 +269,11 @@ class Incr(BlockingOperator):
     already exhausted. The instruction will block until the next element
     becomes available.
     """
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(Incr, self)._canonify(canonifier)
         self.blockingCanonify(canonifier)
         
-    def codegen(self, cg):
+    def _codegen(self, cg):
         self.blockingCodegen(cg)
     
     def cCall(self, cg):
@@ -294,7 +294,7 @@ class Deref(Operator):
     """Returns the element the iterator is pointing at as a tuple ``(double,
     ref<bytes>)``.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         elem = cg.llvmExtractValue(cg.llvmOp(self.op1()), 1)
         cg.llvmStoreInTarget(self, elem)
 
@@ -302,7 +302,7 @@ class Deref(Operator):
 class Equal(Operator):
     """Returns true if *op1* and *op2* refer to the same element.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         elem1 = cg.llvmExtractValue(cg.llvmOp(self.op1()), 1)
         payload1 = cg.llvmExtractValue(elem1, 1)
         elem2 = cg.llvmExtractValue(cg.llvmOp(self.op2()), 1)

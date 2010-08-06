@@ -47,13 +47,13 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
     def name(self):
         return "ref<%s>" % (self._type if self._type else "*")
     
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         if self._type:
             self._type = self._type.resolve(resolver)
             
         return self
         
-    def validate(self, vld):
+    def _validate(self, vld):
         if self._type:
             self._type.validate(vld)
 
@@ -228,7 +228,7 @@ class CastBool(Instruction):
     Converts *op1* into a boolean. The boolean's value will be True if *op1*
     references a valid object, and False otherwise. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         voidp = cg.builder().bitcast(op1, cg.llvmTypeGenericPointer())
         null = llvm.core.Constant.null(cg.llvmTypeGenericPointer())

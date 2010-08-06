@@ -135,7 +135,7 @@ class Module(node.Node):
 
     ### Overridden from Node.
     
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         resolver.startModule(self)
         self._scope.resolve(resolver)
         
@@ -152,7 +152,7 @@ class Module(node.Node):
         self._exported = new_exported
         resolver.endModule()
         
-    def validate(self, vld):
+    def _validate(self, vld):
         vld.startModule(self)
         self._scope.validate(vld)
 
@@ -178,7 +178,7 @@ class Module(node.Node):
 
         vld.endModule()
     
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         canonifier.startModule(self)
         cmod = canonifier.currentModule()
 
@@ -192,7 +192,7 @@ class Module(node.Node):
 
         canonifier.endModule()
             
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.startModule(self)
         
         for ty in self._exported:

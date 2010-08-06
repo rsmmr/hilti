@@ -20,7 +20,7 @@ class Msg(Instruction):
     message is only printed of the debug stream *op1* has been activated.
     *op2* is printf-style format string and *op3* the correponding arguments.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if cg.debugLevel() == 0:
             return
         
@@ -31,7 +31,7 @@ class Assert(Instruction):
     """If compiled in debug mode, verifies that *op1* is true. If not, throws
     an ~~AssertionError exception with *op2* as its value if given.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if cg.debugLevel() == 0:
             return
         
@@ -56,10 +56,10 @@ class InternalError(Instruction):
     Note: This is just a convenience instruction; one can also raise the
     exception directly. 
     """
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         canonifier.splitBlock(self)
     
-    def codegen(self, cg):
+    def _codegen(self, cg):
         arg = cg.llvmOp(self.op1())
         cg.llvmRaiseExceptionByName("hlt_exception_internal_error", self.location(), arg)
     

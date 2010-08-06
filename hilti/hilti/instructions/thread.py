@@ -21,8 +21,8 @@ class ThreadSchedule(Instruction):
     """
     Schedules a function call onto a virtual thread.
     """
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(ThreadSchedule, self)._validate(vld)
         
         func = self.op2().value().function()
         if not flow._checkFunc(vld, self, func, [function.CallingConvention.HILTI]):
@@ -35,9 +35,7 @@ class ThreadSchedule(Instruction):
         
         flow._checkArgs(vld, self, func, self.op3())
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
-        
+    def _codegen(self, cg):
         op1 = self.op1().coerceTo(cg, type.Integer(64))
         vid = cg.llvmOp(op1)
         func = cg.lookupFunction(self.op2())
@@ -50,10 +48,9 @@ class ThreadSchedule(Instruction):
         cg.llvmExceptionTest()
         
 @hlt.instruction("thread.id", target=cIntegerOfWidth(64))
-class ThreadSchedule(Instruction):
+class ThreadID(Instruction):
     """Returns the ID of the current virtual thread. Returns -1 if executed in
     the primary thread. 
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         cg.llvmStoreInTarget(self, cg.llvmExecutionContextVThreadID())

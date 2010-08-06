@@ -89,7 +89,7 @@ class Bitset(type.ValueType, type.Constable):
         value corresponding to each defined label."""
         return llvm.core.Type.int(64)
 
-    def validate(self, vld):
+    def _validate(self, vld):
         for bit in self._labels.values():
             if bit >= 64:
                 vld.error(self, "bitset can only store bits in the range 0..63")
@@ -130,7 +130,7 @@ class Equal(Operator):
     """
     Returns True if *op1* equals *op2*.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().icmp(llvm.core.IPRED_EQ, op1, op2)
@@ -141,7 +141,7 @@ class Set(Instruction):
     """
     Adds the bits set in *op2* to those set in *op1* and returns the result.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().or_(op1, op2)
@@ -152,7 +152,7 @@ class Clear(Instruction):
     """
     Removes the bits set in *op2* from those set in *op1* and returns the result.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         op2 = cg.builder().xor(op2, cg.llvmConstInt(-1, 64))
@@ -164,7 +164,7 @@ class Has(Instruction):
     """
     Returns true if all bits in *op2* are set in *op1*.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         tmp = cg.builder().and_(op1, op2)

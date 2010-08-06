@@ -23,7 +23,7 @@ class ForEach(instruction.Instruction):
         
     ### Overridden from Node.
     
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         self._container.resolve(resolver)
         
         # Need to add the loop variable to the function's scope here so that
@@ -35,7 +35,7 @@ class ForEach(instruction.Instruction):
         for b in self._blocks:
             b.resolve(resolver)
                 
-    def validate(self, vld):
+    def _validate(self, vld):
         self._container.validate(vld)
 
         for b in self._blocks:
@@ -56,7 +56,7 @@ class ForEach(instruction.Instruction):
 
         printer.output("end", nl=True)
                 
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         self._container.canonify(canonifier)
 
         canonifier.deleteCurrentInstruction()
@@ -121,7 +121,7 @@ class ForEach(instruction.Instruction):
         # Exit block must be last so that subsequent instructions will be added
         # there. 
         
-    def codegen(self, cg):
+    def _codegen(self, cg):
         # We canonify this instruction away.
         util.internal_error("cannot be reached")
         

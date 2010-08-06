@@ -82,8 +82,8 @@ class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameteriza
         """
         return llvm.core.Type.int(self.width())
 
-    def validate(self, vld):
-        type.ValueType.validate(self, vld)
+    def _validate(self, vld):
+        super(Integer, self)._validate(vld)
         if self._width == 0:
             vld.error(self, "integer type cannot have zero width ")
 
@@ -283,8 +283,7 @@ class Incr(Operator):
     Returns the result of ``op1 + 1``. The result is undefined if an
     overflow occurs.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1(), self.target().type())
         op2 = cg.llvmConstInt(1, self.target().type().width())
         result = cg.builder().add(op1, op2)
@@ -295,8 +294,7 @@ class Equal(Operator):
     """
     Returns True if *op1* equals *op2*.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = operand.coerceTypes(self.op1(), self.op2())
         assert t
         op1 = cg.llvmOp(self.op1(), t)
@@ -311,8 +309,7 @@ class Add(Instruction):
     Calculates the sum of the two operands. Operands and target must be of
     same width. The result is calculated modulo 2^{width}. 
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = self.target().type()
         op1 = cg.llvmOp(self.op1(), t)
         op2 = cg.llvmOp(self.op2(), t)
@@ -325,8 +322,7 @@ class Sub(Instruction):
     Subtracts *op2* from *op1*. Operands and target must be of same width.
     The result is calculated modulo 2^{width}.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = self.target().type()
         op1 = cg.llvmOp(self.op1(), t)
         op2 = cg.llvmOp(self.op2(), t)
@@ -339,8 +335,7 @@ class Mul(Instruction):
     Multiplies *op1* with *op2*. Operands and target must be of same width.
     The result is calculated modulo 2^{width}.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = self.target().type()
         op1 = cg.llvmOp(self.op1(), t)
         op2 = cg.llvmOp(self.op2(), t)
@@ -356,8 +351,7 @@ class Div(Instruction):
     
     Throws :exc:`DivisionByZero` if *op2* is zero.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = self.target().type()
         op1 = cg.llvmOp(self.op1(), t)
         op2 = cg.llvmOp(self.op2(), t)
@@ -386,8 +380,7 @@ class Mod(Instruction):
 
     Throws :exc:`DivisionByZero` if *op2* is zero.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = self.target().type()
         op1 = cg.llvmOp(self.op1(), t)
         op2 = cg.llvmOp(self.op2(), t)
@@ -413,8 +406,7 @@ class Eq(Instruction):
     """
     Returns true iff *op1* equals *op2*. 
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = operand.coerceTypes(self.op1(), self.op2())
         assert t
         op1 = cg.llvmOp(self.op1(), t)
@@ -427,8 +419,7 @@ class Lt(Instruction):
     """
     Returns true iff *op1* is less than *op2*.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = operand.coerceTypes(self.op1(), self.op2())
         assert t
         op1 = cg.llvmOp(self.op1(), t)
@@ -442,14 +433,13 @@ class Ext(Instruction):
     Zero-extends *op1* into an integer of the same width as the *target*. The
     width of *op1* must be smaller or equal that of the *target*. 
     """
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(Ext, self)._validate(vld)
         
         if self.op1().type().width() > self.target().type().width():
             vld.error(self, "width of integer operand too large")
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         width = self.target().type().width()
         assert width >= self.op1().type().width()
         
@@ -464,14 +454,13 @@ class Trunc(Instruction):
     Bit-truncates *op1* into an integer of the same width as the *target*. The
     width of *op1* must be larger or equal that of the *target*. 
     """
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(Trunc, self)._validate(vld)
         
         if self.op1().type().width() < self.target().type().width():
             vld.error(self, "width of integer operand too small")
     
-    def codegen(self, cg): 
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg): 
         width = self.target().type().width()
         assert width <= self.op1().type().width()
         
@@ -485,8 +474,7 @@ class And(Instruction):
     """Calculates the binary *and* of the two operands. Operands and target
     must be of same width.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = self.target().type()
         op1 = cg.llvmOp(self.op1(), t)
         op2 = cg.llvmOp(self.op2(), t)
@@ -494,12 +482,11 @@ class And(Instruction):
         cg.llvmStoreInTarget(self, result)
         
 @hlt.instruction("int.or", op1=cIntegerOfWidthAsOp(0), op2=cIntegerOfWidthAsOp(0), target=cInteger)
-class And(Instruction):
+class Or(Instruction):
     """Calculates the binary *or* of the two operands. Operands and target
     must be of same width.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = self.target().type()
         op1 = cg.llvmOp(self.op1(), t)
         op2 = cg.llvmOp(self.op2(), t)
@@ -507,12 +494,11 @@ class And(Instruction):
         cg.llvmStoreInTarget(self, result)
         
 @hlt.instruction("int.xor", op1=cIntegerOfWidthAsOp(0), op2=cIntegerOfWidthAsOp(0), target=cInteger)
-class And(Instruction):
+class Xor(Instruction):
     """Calculates the binary *xor* of the two operands. Operands and target
     must be of same width.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         t = self.target().type()
         op1 = cg.llvmOp(self.op1(), t)
         op2 = cg.llvmOp(self.op2(), t)

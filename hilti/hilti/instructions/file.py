@@ -41,7 +41,7 @@ class New(Operator):
     """Instantiates a new ``file`` instance, which will initially be closed
     and not associated with any actual file.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         top = operand.Type(self.op1().value())
         result = cg.llvmCallC("hlt::file_new", [])
         cg.llvmStoreInTarget(self, result)
@@ -59,7 +59,7 @@ class Open(Instruction):
     
     Raises ~~IOError if there was a problem opening the file. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if self.op3():
             (ty, mode, charset) = self.op3().value().value()
         else:
@@ -75,7 +75,7 @@ class Close(Instruction):
     """Closes the file *op1*. Further write operations will not be possible
     (unless reopened.  Other file objects still referencing the same physical
     file will be able to continue writing."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::file_close", [self.op1()])
 
 @hlt.constraint("string | ref<bytes>")
@@ -100,7 +100,7 @@ class Write(Instruction):
     performing writes to the same file concurrently.  Multiple independent
     write call may however be interleaved with calls from other threads. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if isinstance(self.op2().type(), type.String):
             # String version.
             cg.llvmCallC("hlt::file_write_string", [self.op1(), self.op2()])

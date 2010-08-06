@@ -69,11 +69,11 @@ class NewTimer(Operator):
     schedule instruction is executed. The called function must not return a
     value."""
     
-    def validate(self, vld):
+    def _validate(self, vld):
         if self.op2() and not isinstance(self.op2().type().resultType(), type.Void):
             vld.error(self, "function for schedule must not return a value")
     
-    def codegen(self, cg):
+    def _codegen(self, cg):
         func = cg.lookupFunction(self.op2())
         args = self.op3()
         cont = cg.llvmBindFunction(func, args)
@@ -89,20 +89,20 @@ class Update(Instruction):
     Raises ``TimerNotScheduled`` if the timer is not scheduled with a timer
     manager. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::timer_update", [self.op1(), self.op2()])
         
 @hlt.instruction("timer.cancel", op1=cReferenceOf(cTimer))
 class Cancel(Instruction):
     """Cancels the timer *op1*. This also detaches the timer from its manager,
     and allows it to be rescheduled subsequently."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::timer_cancel", [self.op1()])
     
 @hlt.overload(New, op1=cType(cTimerMgr), target=cReferenceOfOp(1))
 class NewTimerMgr(Operator):
     """Instantiates a new timer manager."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::timer_mgr_new", [])
         cg.llvmStoreInTarget(self, result)
         
@@ -111,13 +111,13 @@ class Advance(Instruction):
     """Advances *op1*'s notion of time to *op2*. Time can never go backwards,
     and thus the instruction has no effect if *op2* is smaller than the timer
     manager's current time."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::timer_mgr_advance", [self.op1(), self.op2()])
         
 @hlt.instruction("timer_mgr.current", op1=cReferenceOf(cTimerMgr), target=cDouble)
 class Current(Instruction):
     """Returns *op1*'s current time."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::timer_mgr_current", [self.op1()])
         cg.llvmStoreInTarget(self, result)
         
@@ -126,7 +126,7 @@ class Expire(Instruction):
     """Expires all timers currently associated with *op1*. If *op2* is True,
     all their actions will be executed immediately; if it's False, all the
     timers will simply be canceled."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::timer_mgr_expire", [self.op1(), self.op2()])
     
 @hlt.instruction("timer_mgr.schedule", op1=cReferenceOf(cTimerMgr), op2=cDouble, op3=cReferenceOf(cTimer))
@@ -140,7 +140,7 @@ class Schedule(Instruction):
     Raises ``TimerAlreadyScheduled`` if the timer is already scheduled with a
     timer manager. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::timer_mgr_schedule", [self.op1(), self.op2(), self.op3()])
     
         

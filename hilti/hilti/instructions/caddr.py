@@ -65,7 +65,7 @@ class Function(Instruction):
     first element of the target tuple is used, and the second is undefined.
     *op1* must be a constant. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         
         fid = self.op1().value()
         func = cg.lookupFunction(fid)

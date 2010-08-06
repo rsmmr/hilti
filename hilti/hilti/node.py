@@ -3,19 +3,6 @@
 import visitor
 import util
 
-_recursives = set()
-
-def check_recursion(m):
-    """Decorator for ~~Node methods that automatically avoids infinite
-    recursions. Decorated methods must have a single *driver* argument that is
-    passed on to all recursive calls. Each time the method is called, it will
-    be checked whether it has already by called for the current object with
-    the same driver instance. If yes, the method call will not be executed.
-    """
-    global _recursives
-    _recursives.add(m.__name__)
-    return m
-
 class Node(visitor.Visitable):
     """Base class for all classes that can be nodes in an |ast|.
     """
@@ -61,12 +48,73 @@ class Node(visitor.Visitable):
         comment, the list will have only a single entry.
         """
         return self._comment
-    
-    ### Method that can be overridden by derived classes.
 
-    @check_recursion
     def resolve(self, resolver):
         """Resolves any unknown types the node may have. 
+        
+        resolver: ~~Resolver - The resolver to use. 
+        
+        Note: To implement resolving for derived classes, you must
+        not override this method but instead ~~_resolve.
+        """
+        if self._already(resolver, "resolve"):
+            return 
+        
+        self._resolve(resolver)
+
+    def validate(self, vld):
+        """Validates the semantic correctness of the node.
+        
+        vld: ~~Validator - The validator triggering the validation.
+        
+        Note: To implement validation for derived classes, you must
+        not override this method but instead ~~_validate.
+        """
+        if self._already(vld, "validate"):
+            return 
+        
+        self._validate(vld)
+    
+    def canonify(self, canonifier):
+        """Transform the node into canonified state before code generation.
+        
+        The method must only be called if ~~validate has not reported any
+        errors.
+        
+        canonifier: ~~Canonifier - The canonfier to use. 
+        
+        Returns: ~~Node - Returns a node equivalent to *self* with all
+        canonifications carried out; that may either be *self* itself, or a
+        newly instantiated type; the caller must then use the returned node
+        instead of *self* afterwards.
+        
+        Note: To implement canonification for derived classes, you must
+        not override this method but instead ~~_canonify.
+        """
+        if self._already(canonifier, "canonify"):
+            return 
+        
+        return self._canonify(canonifier)
+    
+    def codegen(self, cg):
+        """Generates code for the node. 
+        
+        cg: ~~CodeGen - The code generator to use. 
+        
+        Note: To implement code generation for derived classes, you must
+        not override this method but instead ~~_codegen.
+        """
+        if self._already(cg, "codegen"):
+            return 
+        
+        cg.trace("%s" % self)
+        
+        self._codegen(cg)
+        
+    ### Method that can be overridden by derived classes.
+
+    def _resolve(self, resolver):
+        """Implements resolving for derived classes.
         
         Can be overridden by derived classes; the default implementation does
         nothing. If overridden, the parent's implementation should be called.
@@ -76,34 +124,53 @@ class Node(visitor.Visitable):
         The method is called before ~~validate, and thus needs to deal
         robustly with unexpected situations. It should however leave any error
         reporting to ~~validate and just return if it can't resolve something.
-        
-        resolver: ~~Resolver - The resolver to use. 
-        
-        Note: The method is decorated with ~~check_recursion. That means
-        recursion cycles will be avoided automatically. However, that also
-        means that one can't use ``super`` to call the parent's
-        implementation. Instead use ``ParentClass.resolve(self, resolver)``.
         """
-        pass
+        return
     
-    @check_recursion
-    def validate(self, vld):
-        """Validates the semantic correctness of the node.
-        
+    def _validate(self, vld):
+        """Implements validation for derived classes.
+
+        vld: ~~Validator - The validator triggering the validation.
+
         Can be overridden by derived classes; the default implementation does
         nothing.  If overridden, the parent's implementation should be called.
         If there are any errors encountered during validation, the method must
         call ~~Validator.error. If there are any sub-nodes that also need to
         be checked, the method needs to do that recursively.
-        
-        vld: ~~Validator - The validator triggering the validation.
-        
-        Note: The method is decorated with ~~check_recursion. That means
-        recursion cycles will be avoided automatically. However, that also
-        means that one can't use ``super`` to call the parent's
-        implementation. Instead use ``ParentClass.validate(self, vld)``.
         """
-        pass
+        return
+        
+    def _canonify(self, canonifier):
+        """Implements canonification for derived classes.
+        
+        Can be overridden by derived classes; the default implementation just
+        returns *self*. If overridden, the parent's implementation should be
+        called first, and then the object *returned* canonified. 
+        
+        The method will only be called if ~~validate has not reported any
+        errors.
+        
+        canonifier: ~~Canonifier - The canonfier to use. 
+        
+        Returns: ~~Node - Returns a node equivalent to *self* with all
+        canonifications carried out; that may either be *self* itself, or a
+        newly instantiated type; the caller must then use the returned node
+        instead of *self* afterwards.
+
+        Todo: I think no class does this "canonify what the parent returns"
+        yet. But they all should ...
+        """
+        return self
+        
+    def _codegen(self, cg):
+        """Implements code generation for derived classes.
+        
+        cg: ~~CodeGen - The code generator to use. 
+        
+        Must be overriden by derived classes. Derived classes should *not*
+        call the parent's implementation.
+        """
+        util.internal_error("Node._codegen() not overidden by %s" % self.__class__)
         
     def output(self, printer):
         """Converts the node back into parseable source code.
@@ -114,85 +181,19 @@ class Node(visitor.Visitable):
         """
         util.internal_error("Node.srcCode() not overidden by %s" % self.__class__)
 
-    @check_recursion
-    def canonify(self, canonifier):
-        """Transform the node into canonified state before code generation.
-        
-        Can be overridden by derived classes; the default implementation just
-        returns *self*. If overridden, the parent's implementation should be
-        called first, and then the object *returned* canonified. 
-        
-        The method must only be called if ~~validate has not reported any
-        errors.
-        
-        canonifier: ~~Canonifier - The canonfier to use. 
-        
-        Return: ~~Node - Returns a node equivalent to *self* with all
-        canonifications carried out; that may either be *self* itself, or a
-        newly instantiated type; the caller must then use the returned node
-        instead of *self* afterwards.
-
-        Note: The method is decorated with ~~check_recursion. That means
-        recursion cycles will be avoided automatically. However, that also
-        means that one can't use ``super`` to call the parent's
-        implementation. Instead use ``ParentClass.canonify(self, vld)``.
-        
-        Todo: I think no class does this "canonify what the parent returns"
-        yet. But they all should.
-        """
-        return self
-    
-    @check_recursion
-    def codegen(self, cg):
-        """Generates code for the node. 
-        
-        Must be overriden by derived classes. Derived classes should *not*
-        call the parent's implementation.
-        
-        cg: ~~CodeGen - The code generator to use. 
-        
-        Note: The method is decorated with ~~check_recursion. That means
-        recursion cycles will be avoided automatically. 
-        """
-        util.internal_error("Node.codegen() not overidden by %s" % self.__class__)
-        
-    def __getattribute__(self, name):
-        """Implements the ~~check_recursion checking."""
-        
-        method = object.__getattribute__(self, name)
-
-        # FIXME: Not quite clear why need name here. 
-        # Without it, sometimes methods aren't called. Might that be a GC
-        # effect when an object gets recycled? If so, howver, adding the name
-        # will probably reduce the chance of running into the problem, but not
-        # elmininate it ...
+    def _already(self, driver, name):
         
         idx = str(id(self))
-        def _checkRecursion(driver):
-            try:
-                if idx in driver._already:
-                    return 
-                
-            except AttributeError:
-                driver._already = {}
-                
-            # We store the object itself to prevent GC from deleting it; that
-            # would mess up our tracking because new objects may get the same
-            # ID. 
-            driver._already[idx] = self
-            method(driver)
 
-        if name in _recursives:
-            return _checkRecursion
-        
-        if name == "reset":
-            # Clear memory.
-            driver._already = {}
-
-        if name == "codegen":
-            import sys
-            print >>sys.stderr, "### %s" % self.__class__.__name__
+        try:
+            if idx in driver._already:
+                return True
             
-        return method
-
-    
+        except AttributeError:
+            driver._already = {}
+        
+        # We store the object itself to prevent GC from deleting it; that would
+        # mess up our tracking because new objects may get the same ID. 
+        driver._already[idx] = self
+        return False
+        

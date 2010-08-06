@@ -84,6 +84,44 @@ class Type(object):
         Returns: string or None - The name, or None if none has been set. 
         """
         return self._internal_name
+
+    def resolve(self, resolver):
+        """Resolves any previously unknown types that might be referenced by
+        this type. (Think: forward references). For these, the not-yet-known
+        types will have been created as ~~Unknown; later, when the type should
+        be known, this method will be called to then lookup the real type. If
+        an error is encountered (e.g., we still don't the identifier), an
+        error message will be reported via the *resolver*. 
+
+        resolver: ~~Resolver - The current resolver to use. 
+        
+        Returns: ~~Type - Returns a type equivalent to *self* with all unknowns
+        resolved; that may either be *self* itself, or a newly instantiated
+        type; the caller must then use the returned type instead of *self*
+        afterwards.
+        
+        Note: ~~Type is not derived from ~~Node and thus we are not overriding
+        ~~Node.resolve here, even though it might initially look like that.
+        This method does work similar but it returns a value, which
+        ~~Node.resolve does not. 
+        
+        Note: To implement resolving for derived classes, do not
+        override this method but ~~_resolve.
+        """
+        return self._resolve(resolver)
+    
+    def validate(self, vld):
+        """Validates the semantic correctness of the type.
+        
+        vld: ~~Validator - The validator triggering the validation.
+        
+        Note: ~~Type is not derived from ~~Node and thus we are not overriding
+        ~~Node.validate here, even though it might initially look like that.
+        
+        Note: To implement validation for derived classes, do not
+        override this method but ~~_validate.
+        """
+        return self._validate(vld)
     
     @classmethod
     def token(cls):
@@ -145,32 +183,23 @@ class Type(object):
         """
         return self.name()
 
-    def resolve(self, resolver):
-        """Resolves any previously unknown types that might be referenced by
-        this type. (Think: forward references). For these, the not-yet-known
-        types will have been created as ~~Unknown; later, when the type should
-        be known, this method will be called to then lookup the real type. If
-        an error is encountered (e.g., we still don't the identifier), an
-        error message will be reported via the *resolver*. 
+    def _resolve(self, resolver):
+        """Implements resolving for derived classes.
 
-        Derived classes should *not* call their parent's method.
+        Can be overridden by derived classes; the default implementation just
+        returns self. Derived classes should *not* call their parent's method.
         
         resolver: ~~Resolver - The current resolver to use. 
         
-        Return: ~~Type - Returns a type equivalent to *self* with all unknowns
+        Returns: ~~Type - Returns a type equivalent to *self* with all unknowns
         resolved; that may either be *self* itself, or a newly instantiated
         type; the caller must then use the returned type instead of *self*
         afterwards.
-        
-        Note: ~~Type is not derived from ~~Node and thus we are not overriding
-        ~~Node.resolve here, even though it might initially look like that.
-        This method does work similar but it returns a value, which
-        ~~Node.resolve does not. 
         """
         return self
     
-    def validate(self, vld):
-        """Validates the semantic correctness of the type.
+    def _validate(self, vld):
+        """Implements validation for derived classes.
         
         Can be overridden by derived classes; the default implementation does
         nothing. If there are any errors encountered during validation, the
@@ -181,7 +210,7 @@ class Type(object):
         
         vld: ~~Validator - The validator triggering the validation.
         """
-        pass
+        return
 
     def output(self, printer):
         """Converts the type into parseable HILTI code.
@@ -879,13 +908,13 @@ class Container(HeapType, Iterable, Parameterizable):
     def name(self):
         return "%s<%s>" % (self._token, self._type if self._type else "*")
 
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         if self._type:
             self._type = self._type.resolve(resolver)
             
         return self
 
-    def validate(self, vld):
+    def _validate(self, vld):
         if self._type:
             self._type.validate(vld)
             
@@ -957,11 +986,11 @@ class Iterator(ValueType, Parameterizable):
     def name(self):
         return "iterator<%s>" % self._type
     
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         self._type = self._type.resolve(resolver)
         return self
     
-    def validate(self, vld):
+    def _validate(self, vld):
         self._type.validate(vld)
         
         if not isinstance(self._type, HiltiType):
@@ -1096,10 +1125,10 @@ class Unknown(Type):
         # Never match another unknown.
         return False
 
-    def validate(self, vld):
+    def _validate(self, vld):
         vld.error(self, "unknown identifier %s" % self._id)
         
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         i = resolver.scope().lookup(self._id)
         if isinstance(i, id.Type):
             return i.type()

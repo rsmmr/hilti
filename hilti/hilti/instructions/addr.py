@@ -128,7 +128,7 @@ class Equal(Operator):
     Todo: Are the v6 vs v4 matching semantics right? Should it be
     ``::ffff:a.b.c.d``? Should v4 never match a v6 address?``
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         
@@ -151,7 +151,7 @@ class Family(Instruction):
     Returns the address family of *op1*, which can currently be either
     ``AddrFamily::IPv4`` or ``AddrFamiliy::IPv6``. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         
         builder = cg.builder()

@@ -132,12 +132,12 @@ class Instruction(node.Node):
 
     ### Overridden from Node.
     
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         for op in (self._op1, self._op2, self._op3, self._target):
             if op:
                 op.resolve(resolver)
                 
-    def validate(self, vld):
+    def _validate(self, vld):
         errors = vld.errors()
         
         for op in (self._op1, self._op2, self._op3, self._target):
@@ -168,14 +168,11 @@ class Instruction(node.Node):
 
         printer.output("", nl=True)
                 
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         for op in (self._op1, self._op2, self._op3, self._target):
             if op:
                 op.canonify(canonifier)
             
-    def codegen(self, cg):
-        cg.trace("%s" % self)
-    
     # Visitor support.
     def visit(self, visitor):
         visitor.visitPre(self)
@@ -265,11 +262,11 @@ class BlockingInstruction(Instruction, BlockingBase):
     
     See ~~Instruction for arguments. 
     """
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(BlockingInstruction, self)._canonify(canonifier)
         self.blockingCanonify(canonifier)
         
-    def codegen(self, cg):
+    def _codegen(self, cg):
         self.blockingCodegen(cg)
         
 class Operator(Instruction):
@@ -291,8 +288,8 @@ class Operator(Instruction):
 
     ### Overridden from Node.
 
-    def validate(self, vld):    
-        Instruction.validate(self, vld)
+    def _validate(self, vld):    
+        super(Operator, self)._validate(vld)
         
         ops = _findOverloadedOperator(self)
         
@@ -302,25 +299,24 @@ class Operator(Instruction):
         if len(ops) > 1:
             vld.error(self,  "use of overloaded operator is ambigious, multiple matching implementations found:")
         
-        self._callOps(ops, "validate", vld)
+        self._callOps(ops, "_validate", vld)
                 
-    def resolve(self, resolver):
-        Instruction.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Operator, self)._resolve(resolver)
         ops = _findOverloadedOperator(self)
         if ops:
-            self._callOps(ops, "resolve", resolver)
+            self._callOps(ops, "_resolve", resolver)
 
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(Operator, self)._canonify(canonifier)
         ops = _findOverloadedOperator(self)
         assert ops
-        self._callOps(ops, "canonify", canonifier)
+        self._callOps(ops, "_canonify", canonifier)
                 
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         ops = _findOverloadedOperator(self)
         assert ops
-        self._callOps(ops, "codegen", cg)
+        self._callOps(ops, "_codegen", cg)
         
     ### Private.
     

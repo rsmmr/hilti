@@ -212,10 +212,10 @@ class ID(node.Node):
 
     ### Overidden from node.Node.
 
-    def validate(self, vld):
+    def _validate(self, vld):
         self._type.validate(vld)
         
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         self._type = self._type.resolve(resolver)
 
     def output(self, printer):
@@ -271,8 +271,8 @@ class Constant(ID):
     
     ### Overidden from node.Node.
 
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Constant, self)._validate(vld)
         self._const.validate(vld)
 
         if not isinstance(self.type(), type.ValueType):
@@ -291,7 +291,7 @@ class Constant(ID):
         self._const.output(printer)
         printer.output(nl=True)
         
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         self._const.canonify(canonifier)
         
 class Local(ID):
@@ -326,13 +326,13 @@ class Local(ID):
         
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        ID.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Local, self)._resolve(resolver)
         if self._init:
             self._init.resolve(resolver)
     
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Local, self)._validate(vld)
 
         if not isinstance(self.type(), type.ValueType):
             vld.error(self, "type of local must be a value type")
@@ -379,8 +379,8 @@ class Parameter(ID):
     
     ### Overidden from node.Node.
 
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Parameter, self)._validate(vld)
     
         if not isinstance(self._type, type.ValueType):
             vld.error(self, "parameter type must be a value type")
@@ -422,13 +422,13 @@ class Global(ID):
     
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        ID.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Global, self)._resolve(resolver)
         if self._init:
             self._init.resolve(resolver)
     
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Global, self)._validate(vld)
 
         if not isinstance(self.type(), type.ValueType):
             vld.error(self, "type of global must be a value type")
@@ -453,7 +453,7 @@ class Global(ID):
             self._init.output(printer)
         printer.output()
 
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmNewGlobalVar(self)
     
 class Function(ID):        
@@ -491,13 +491,13 @@ class Function(ID):
         
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        ID.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Function, self)._resolve(resolver)
         self._func.resolve(resolver)
         self._type = self._type.resolve(resolver)
         
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Function, self)._validate(vld)
         self._func.validate(vld)
         self._type.validate(vld)
         
@@ -505,11 +505,11 @@ class Function(ID):
         ID.output(self, printer)
         self._func.output(printer)
     
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         pass
         #self._func.canonify(canonifier)
 
-    def codegen(self, cg):
+    def _codegen(self, cg):
         self._func.codegen(cg)
         
     # Visitor support
@@ -564,13 +564,13 @@ class Hook(ID):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        ID.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Hook, self)._resolve(resolver)
         for func in self._funcs:
             func.resolve(resolver)
 
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Hook, self)._validate(vld)
         
         if not self._funcs:
             return
@@ -590,7 +590,7 @@ class Hook(ID):
                 
             func.validate(vld)
         
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         # If tha hook returns a value, convert all return type into (bool,
         # value). If not, convert the return valye to bool.
         if self.type().resultType() != type.Void():
@@ -604,7 +604,7 @@ class Hook(ID):
             func.type().setResultType(rtype)
             func.canonify(canonifier)
 
-    def codegen(self, cg):
+    def _codegen(self, cg):
         for func in self._funcs:
             func.codegen(cg)
 
@@ -636,8 +636,8 @@ class Type(ID):
         
     ### Overidden from node.Node.
 
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Type, self)._validate(vld)
         self.type().validate(vld)
 
     def output(self, printer):
@@ -677,7 +677,7 @@ class Unknown(ID):
         
     ### Overidden from node.Node.
 
-    def validate(self, vld):
+    def _validate(self, vld):
         vld.error(self, "unknown identifier %s" % self.name())
 
     def output(self, printer):

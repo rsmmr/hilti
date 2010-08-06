@@ -113,7 +113,7 @@ class Equal(Operator):
     """
     Returns True if *op1* equals *op2*.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().icmp(llvm.core.IPRED_EQ, op1, op2)

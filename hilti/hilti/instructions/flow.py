@@ -27,12 +27,11 @@ class Jump(Instruction):
     """
     Jumps unconditionally to label *op2*.
     """
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(Jump, self)._canonify(canonifier)
         canonifier.splitBlock(self)
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         cg.llvmTailCall(cg.lookupBlock(self.op1()))
 
 @hlt.instruction("return.void", terminator=True)
@@ -41,8 +40,8 @@ class ReturnVoid(Instruction):
     Returns from the current function without returning any value.
     The function's signature must not specifiy a return value. 
     """
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(ReturnVoid, self)._validate(vld)
 
         if self.internal():
             # Added by hook.stop. 
@@ -52,8 +51,8 @@ class ReturnVoid(Instruction):
         if rt != type.Void:
             vld.error(self, "function must return a value")
 
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(ReturnVoid, self)._canonify(canonifier)
         
         if isinstance(canonifier.currentFunction(), hook.HookFunction):
             no = constant.Constant(0, type.Bool())
@@ -64,9 +63,7 @@ class ReturnVoid(Instruction):
         else:
             canonifier.splitBlock(self, add_flow_dbg=True)
             
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
-        
+    def _codegen(self, cg):
         if cg.currentFunction().callingConvention() == function.CallingConvention.HILTI:
             succ = cg.llvmFrameNormalSucc()
             frame = cg.llvmFrameNormalFrame()
@@ -80,8 +77,8 @@ class ReturnResult(Instruction):
     Returns from the current function with the given value.
     The type of the value must match the function's signature. 
     """
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(ReturnResult, self)._validate(vld)
 
         if self.internal():
             # Added by hook.stop. 
@@ -98,13 +95,11 @@ class ReturnResult(Instruction):
         if not self.op1().canCoerceTo(rt):
             vld.error(self, "return type does not match function definition (is %s, expected %s)" % (self.op1().type(), rt))        
 
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(ReturnResult, self)._canonify(canonifier)
         canonifier.splitBlock(self, add_flow_dbg=True)
             
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
-        
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         
         if cg.currentFunction().callingConvention() == function.CallingConvention.HILTI:
@@ -122,12 +117,11 @@ class IfElse(Instruction):
     """
     Transfers control label *op2* if *op1* is true, and to *op3* otherwise. 
     """
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(IfElse, self)._canonify(canonifier)
         canonifier.splitBlock(self)
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1(), type.Bool())
         true = cg.lookupBlock(self.op2())
         false = cg.lookupBlock(self.op3())
@@ -154,13 +148,13 @@ class Call(Instruction):
     match the function's signature.
     """
     
-    def resolve(self, resolver):
-        Instruction.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Call, self)._resolve(resolver)
         op2 = _applyDefaultParams(self.op1().value(), self.op2())
         self.setOp2(op2)
         
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(Call, self)._validate(vld)
 
         if not isinstance(self.op1().value(), id.Function):
             vld.error(self, "call argument is not a function")
@@ -182,7 +176,7 @@ class Call(Instruction):
     
         _checkArgs(vld, self, func.type(), self.op2())
 
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         """
         * All ~~Call instructions are replaced with either:
   
@@ -195,7 +189,7 @@ class Call(Instruction):
          3. ~~CallC if the callee function is a function with C calling convention.
          """
 
-        Instruction.canonify(self, canonifier)
+        super(Call, self)._canonify(canonifier)
         
         canonifier.deleteCurrentInstruction()
         
@@ -220,7 +214,7 @@ class Call(Instruction):
         tc.setOp3(label)
         new_block.setMayRemove(False)
         
-    def codegen(self, cg):
+    def _codegen(self, cg):
         # Can't be called because canonicalization will transform these into
         # other calls. 
         assert False
@@ -234,8 +228,8 @@ class CallC(Instruction):
     The argument types as well as the target's type must match the function's
     signature.
     """
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(CallC, self)._validate(vld)
         
         func = self.op1().value().function()
         if not _checkFunc(vld, self, func, [function.CallingConvention.C, function.CallingConvention.C_HILTI]):
@@ -251,7 +245,7 @@ class CallC(Instruction):
         
         _checkArgs(vld, self, func.type(), self.op2())
     
-    def codegen(self, cg):
+    def _codegen(self, cg):
         func = cg.lookupFunction(self.op1())
         result = cg.llvmCallC(func, self.op2())
         if self.target():
@@ -274,8 +268,8 @@ class CallTailVoid(Instruction):
     *CallTailVoid* or *CallTailResult* instructions. 
     """
     
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(CallTailVoid, self)._validate(vld)
         
         func = self.op1().value().function()
         if not _checkFunc(vld, self, func, [function.CallingConvention.HILTI]):
@@ -288,7 +282,7 @@ class CallTailVoid(Instruction):
             
         _checkArgs(vld, self, func.type(), self.op2())
     
-    def codegen(self, cg):
+    def _codegen(self, cg):
         func = cg.lookupFunction(self.op1())
         args = self.op2()
         succ = cg.lookupBlock(self.op3())
@@ -314,8 +308,8 @@ class CallTailResult(Instruction):
     generation, all *Call* instructions are converted into either
     *CallTailVoid* or *CallTailResult* instructions. 
     """
-    def validate(self, vld):
-        Instruction.validate(self, vld)
+    def _validate(self, vld):
+        super(CallTailResult, self)._validate(vld)
         
         func = self.op1().value().function()
         if not _checkFunc(vld, self, func, [function.CallingConvention.HILTI]):
@@ -328,7 +322,7 @@ class CallTailResult(Instruction):
         
         _checkArgs(vld, self, func.type(), self.op2())
     
-    def codegen(self, cg):
+    def _codegen(self, cg):
         func = cg.lookupFunction(self.op1())
         args = self.op2()
         succ = cg.lookupBlock(self.op3())
@@ -361,13 +355,11 @@ class Yield(Instruction):
     in virtual thread zero (or in non-threading mode), returns execution back
     to the calling C function (see interfacing with C). 
     """
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(Yield, self)._canonify(canonifier)
         canonifier.splitBlock(self, add_flow_dbg=True)
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
-        
+    def _codegen(self, cg):
         next = cg.currentBlock().next()
         next = cg.currentFunction().lookupBlock(next)
         assert next
@@ -410,13 +402,11 @@ class Switch(Instruction):
     match *op1*, one of them is taken but it's undefined which one. If no
     alternative matches, control is transfered to block *op2*.
     """
-    def canonify(self, canonifier):
-        Instruction.canonify(self, canonifier)
+    def _canonify(self, canonifier):
+        super(Switch, self)._canonify(canonifier)
         canonifier.splitBlock(self)
     
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
-        
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         optype = self.op1().type()
         default = cg.currentFunction().lookupBlock(self.op2().value().name())
@@ -530,7 +520,7 @@ def _checkArgs(vld, i, ftype, op, txt="function"):
             return
     
         args = op.value().value()
-        ids = ftype().args()
+        ids = ftype.args()
         
         if len(args) != len(ids):
             vld.error(i, "wrong number of arguments for %s" % txt)

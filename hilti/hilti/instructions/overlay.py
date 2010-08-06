@@ -231,13 +231,13 @@ class Overlay(type.ValueType):
     def name(self):
         return "overlay { %s }" % ", ".join([str(f) for f in self._fields.values()])
 
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         for f in self._fields.values():
             f.resolve(resolver)
         
         return self
                 
-    def validate(self, vld):
+    def _validate(self, vld):
         for f in self._fields.values():
             f.validate(vld)
 
@@ -301,7 +301,7 @@ class Attach(Instruction):
     operation must be performed before any other ``overlay`` instruction is
     used on *op1*.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         overlayt = self.op1().type()
         
         # Save the starting offset.
@@ -327,7 +327,7 @@ class Get(Instruction):
     The instruction throws an OverlayNotAttached exception if
     ``overlay.attach`` has not been executed for *op1* yet.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         overlayt = self.op1().type()
         ov = cg.llvmOp(self.op1())
         offset0 = cg.llvmExtractValue(ov, 0)

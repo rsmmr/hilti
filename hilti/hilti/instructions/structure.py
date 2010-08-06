@@ -68,7 +68,7 @@ class Struct(type.HeapType):
         
         return name
 
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         for (i, op) in self._ids:
             i.resolve(resolver)
             if op:
@@ -76,7 +76,7 @@ class Struct(type.HeapType):
         
         return self
                 
-    def validate(self, vld):
+    def _validate(self, vld):
         for (i, op) in self._ids:
             i.validate(vld);
             if op:
@@ -183,7 +183,7 @@ class New(Operator):
     """Allocates a new instance of the structure given as *op1*. All fields
     will initially be unset. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         # Allocate memory for struct. 
         structt = self.op1().type()
         s = cg.llvmMalloc(structt.llvmType(cg).pointee)
@@ -220,7 +220,7 @@ class Get(Instruction):
     value is returned if it has any defined. If it has not, an
     ``UndefinedValue`` exception is raised. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         (idx, ftype) = _getIndex(self)
         assert idx >= 0
         
@@ -258,7 +258,7 @@ class Set(Instruction):
     Sets the field named *op2* in the struct referenced by *op1* to the value
     *op3*. The type of the *op3* must match the type of the field.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         (idx, ftype) = _getIndex(self)
         assert idx >= 0
     
@@ -283,7 +283,7 @@ class Unset(Instruction):
     unset field appears just as if it had never been assigned an value; in
     particular, it will be reset to its default value if has been one assigned. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         (idx, ftype) = _getIndex(self)
         assert idx >= 0
     
@@ -303,7 +303,7 @@ class IsSet(Instruction):
     *False otherwise. If the instruction returns *True*, a subsequent call to
     ~~Get will not raise an exception. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         (idx, ftype) = _getIndex(self)
         assert idx >= 0
     

@@ -90,8 +90,7 @@ class And(Instruction):
     """
     Computes the logical 'and' of *op1* and *op2*.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().and_(op1, op2)
@@ -102,8 +101,7 @@ class Or(Instruction):
     """
     Computes the logical 'or' of *op1* and *op2*.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().or_(op1, op2)
@@ -114,8 +112,7 @@ class Not(Instruction):
     """
     Computes the logical 'not' of *op1*.
     """
-    def codegen(self, cg):
-        Instruction.codegen(self, cg)
+    def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         result = cg.builder().xor(op1, cg.llvmConstInt(1, 1))
         cg.llvmStoreInTarget(self, result)

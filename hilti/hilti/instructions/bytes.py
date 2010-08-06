@@ -315,7 +315,7 @@ class New(Operator):
     """
     Allocates a new *bytes* instancem, which will be initially empty.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_new", [])
         cg.llvmStoreInTarget(self, result)
 
@@ -325,7 +325,7 @@ class IterIncr(Operator):
     Advances the iterator to the next element, or the end position
     if already at the last.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_pos_incr", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -334,7 +334,7 @@ class IterDeref(Operator):
     """
     Returns the element the iterator is pointing at. 
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_pos_deref", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -343,7 +343,7 @@ class IterEqual(Operator):
     """
     Returns true if *op1* and *op2* specify the same position.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_pos_eq", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
 
@@ -351,7 +351,7 @@ class IterEqual(Operator):
 class Equal(Operator):
     """Returns True if the content of the two bytes objects are equal.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cmp = cg.llvmCallC("hlt::bytes_cmp", [self.op1(), self.op2()])
         zero = cg.llvmConstInt(0, 8)
         result = cg.builder().icmp(llvm.core.IPRED_EQ, cmp, zero)
@@ -360,7 +360,7 @@ class Equal(Operator):
 @hlt.instruction("bytes.length", op1=cReferenceOf(cBytes), target=cIntegerOfWidth(32))
 class Length(Instruction):
     """Returns the number of bytes stored in *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_len", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -368,7 +368,7 @@ class Length(Instruction):
 class Empty(Instruction):
     """Returns true if *op1* is empty. Note that using this instruction is
     more efficient than comparing the result of ``bytes.length`` to zero."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_empty", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
@@ -380,7 +380,7 @@ class Append(Instruction):
     Raises ValueError if *op1* has been frozen, or if *op1* is the same as
     *op2*.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.llvmCallC("hlt::bytes_append", [self.op1(), self.op2()])
 
 @hlt.instruction("bytes.sub", op1=cIteratorBytes, op2=cIteratorBytes, target=cReferenceOf(cBytes))
@@ -388,42 +388,42 @@ class Sub(Instruction):
     """Extracts the subsequence between *op1* and *op2* from an existing
     *bytes* instance and returns it in a new ``bytes`` instance. The element
     at *op2* is not included."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_sub", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
         
 @hlt.instruction("bytes.copy", op1=cReferenceOf(cBytes), target=cReferenceOf(cBytes))
 class Copy(Instruction):
     """Copy the contents of *op1* into a new byte instance."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_copy", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
 @hlt.instruction("bytes.offset", op1=cReferenceOf(cBytes), op2=cIntegerOfWidth(32), target=cIteratorBytes)
 class Offset(Instruction):
     """Returns an iterator representing the offset *op2* in *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_offset", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
 
 @hlt.overload(Begin, op1=cReferenceOf(cBytes), target=cIteratorBytes)
 class Begin(Operator):
     """Returns an iterator representing the first element of *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_begin", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
 @hlt.overload(End, op1=cReferenceOf(cBytes), target=cIteratorBytes)
 class End(Operator):
     """Returns an iterator representing the position one after the last element of *op1*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_end", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
 @hlt.instruction("bytes.diff", op1=cIteratorBytes, op2=cIteratorBytes, target=cIntegerOfWidth(32))
 class Diff(Instruction):
     """Returns the number of bytes between *op1* and *op2*."""
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_pos_diff", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
 
@@ -439,7 +439,7 @@ class Cmp(Instruction):
     """Compares *op1* with *op2* lexicographically. If *op1* is larger,
     returns -1. If both are equal, returns 0. If *op2* is larger, returns 1.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_cmp", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
 
@@ -449,7 +449,7 @@ class Freeze(Instruction):
     modified until unfrozen. If the object is already frozen, the instruction
     is ignored.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         freeze = constant.Constant(1, type.Bool())
         cg.llvmCallC("hlt::bytes_freeze", [self.op1(), operand.Constant(freeze)])
         
@@ -459,7 +459,7 @@ class Unfreeze(Instruction):
     further modified. If the object is already unfrozen (which is the
     default), the instruction is ignored.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         freeze = constant.Constant(0, type.Bool())
         cg.llvmCallC("hlt::bytes_freeze", [self.op1(), operand.Constant(freeze)])
     
@@ -474,7 +474,7 @@ class IsFrozen(Instruction):
     """Returns whether the bytes object *op1* (or the bytes objects referred
     to be the iterator *op1*) has been frozen.
     """
-    def codegen(self, cg):
+    def _codegen(self, cg):
         if isinstance(self.op1().type(), type.Reference):
             result = cg.llvmCallC("hlt::bytes_is_frozen", [self.op1()])
         else:

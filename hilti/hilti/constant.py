@@ -60,7 +60,7 @@ class Constant(node.Node):
         return " %s %s" % (self._type, self._value)
 
     # Overridden from Node.
-    def validate(self, vld):
+    def _validate(self, vld):
         if not isinstance(self.type(), type.Constable):
             vld.error(self, "cannot create constants of type %s" % self.type())
             return False
@@ -68,7 +68,7 @@ class Constant(node.Node):
         self._type.validate(vld)
         self._type.validateConstant(vld, self)
 
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         self._type = self._type.resolve(resolver)
         self._type.resolveConstant(resolver, self)
        

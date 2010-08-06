@@ -126,7 +126,7 @@ class Function(type.HiltiType):
         args = ", ".join([str(i.type()) for (i, default) in zip(self._ids, self._defaults)])
         return "function (%s) -> %s" % (args, self._result)
         
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         for i in self._ids:
             i.resolve(resolver)
             
@@ -139,7 +139,7 @@ class Function(type.HiltiType):
                 
         return self
             
-    def validate(self, vld):
+    def _validate(self, vld):
         for i in self._ids:
             i.validate(vld)
             
@@ -495,7 +495,7 @@ class Function(node.Node):
 
     ### Overridden from Node.
     
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
         resolver.startFunction(self)
         
         if self._type:
@@ -508,7 +508,7 @@ class Function(node.Node):
 
         resolver.endFunction()
             
-    def validate(self, vld):
+    def _validate(self, vld):
         vld.startFunction(self)
         self._type.validate(vld)
         self._scope.validate(vld)
@@ -587,7 +587,7 @@ class Function(node.Node):
         # Overwritten by derived classes to print out attributes.
         pass
         
-    def canonify(self, canonifier):
+    def _canonify(self, canonifier):
         """
         * Blocks that don't have a successor are linked to the block following them
           within their function's list of ~~Block objects, if any.
@@ -651,7 +651,7 @@ class Function(node.Node):
                 
         canonifier.endFunction()
         
-    def codegen(self, cg):
+    def _codegen(self, cg):
         cg.startFunction(self)
         
         if self.id().linkage() == id.Linkage.EXPORTED and self.callingConvention() == CallingConvention.HILTI:
