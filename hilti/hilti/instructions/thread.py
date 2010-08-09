@@ -40,7 +40,7 @@ class ThreadSchedule(Instruction):
         vid = cg.llvmOp(op1)
         func = cg.lookupFunction(self.op2())
         args = self.op3()
-        cont = cg.llvmBindFunction(func, args)
+        cont = cg.llvmMakeCallable(func, args)
         
         mgr = cg.llvmGlobalThreadMgrPtr()
         ctx = cg.llvmCurrentExecutionContextPtr()

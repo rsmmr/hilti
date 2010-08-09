@@ -232,5 +232,5 @@ class CastBool(Instruction):
         op1 = cg.llvmOp(self.op1())
         voidp = cg.builder().bitcast(op1, cg.llvmTypeGenericPointer())
         null = llvm.core.Constant.null(cg.llvmTypeGenericPointer())
-        result = cg.builder().icmp(llvm.core.IPRED_EQ, voidp, null)
+        result = cg.builder().icmp(llvm.core.IPRED_NE, voidp, null)
         cg.llvmStoreInTarget(self, result)

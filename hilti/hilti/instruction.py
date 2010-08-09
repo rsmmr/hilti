@@ -10,6 +10,8 @@ import type
 import block
 import util
 
+import instructions.flow 
+
 import llvm.core
 
 class Instruction(node.Node):
@@ -269,6 +271,46 @@ class BlockingInstruction(Instruction, BlockingBase):
     def _codegen(self, cg):
         self.blockingCodegen(cg)
         
+class InstructionWithCallables(Instruction):
+    """Class for instructions that can potentially add callables to the
+    internal queue via the C run-time.
+    
+    See ~~Instruction for arguments. 
+    
+    Note: The instruction must not be a terminator at the moment. 
+    """
+    def canonify(self, canonifier):
+        assert not self.signature().terminator()
+        Instruction.canonify(self, canonifier)
+        
+        # We rewrite the instruction into the form
+        #
+        #    <instruction>
+        #    call hlt::call_saved_callables()
+        #
+        #  newblock:
+        #    <...>
+        #
+        # This ensures that we can capture a continuation at newblock. 
+        canonifier.deleteCurrentInstruction()
+        
+        current_block = canonifier.currentTransformedBlock()
+        current_block.addInstruction(self)
+
+        new_block = block.Block(canonifier.currentFunction(), name=canonifier.makeUniqueLabel())
+        new_block.setNext(current_block.next())
+        current_block.setNext(new_block.name())
+        canonifier.addTransformedBlock(new_block)
+        
+        csc = canonifier.currentModule().scope().lookup("hlt::call_saved_callables")
+        assert csc
+        op1 = operand.ID(csc)
+        op2 = operand.Constant(constant.Constant([], type.Tuple([])))
+        op3 = operand.ID(id.Local(new_block.name(), type.Label()))
+        
+        call = instructions.flow.CallTailVoid(op1=op1, op2=op2, op3=op3)
+        current_block.addInstruction(call)
+        
 class Operator(Instruction):
     """Class for instructions that are overloaded by their operands' types.
     While most HILTI instructions are tied to a particular type, *operators*
@@ -348,7 +390,7 @@ class BlockingOperator(Operator, BlockingBase):
     solution. 
     """
     pass
-            
+        
 from signature import *
     
 def _make_ins_init(myclass):

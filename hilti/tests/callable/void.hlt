@@ -1,0 +1,27 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+void foo() {
+    call Hilti::print("Foo!")
+    }
+     
+void run() {
+
+    local ref<callable<void>> c
+    
+    c = new callable<void> 
+    
+    callable.bind c foo ()
+    
+    call c
+    
+    return.void
+}     
+

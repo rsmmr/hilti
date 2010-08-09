@@ -123,7 +123,7 @@ def t_CBYTES(t):
     return t
 
 def t_IDENT(t): # must come before ADDR6.
-    r'@?[_a-zA-Z]([a-zA-Z0-9._]|::)*(?=([^a-zA-Z0-9._:]|:[^a-zA-Z0-9._]))'
+    r'@?[._a-zA-Z]([a-zA-Z0-9._]|::)*(?=([^a-zA-Z0-9._:]|:[^a-zA-Z0-9._]))'
 
     if t.value in instructions:
         t.type = "INSTRUCTION"

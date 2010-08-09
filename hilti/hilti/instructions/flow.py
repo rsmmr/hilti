@@ -10,6 +10,9 @@ Flow Control
 #   location and a new ~~Block is opened.
 
 
+# Todo: Should be split the overloaded call.* instruction into individual
+# instructions?
+
 import llvm.core
 
 import hilti.block as block
@@ -140,7 +143,40 @@ class IfElse(Instruction):
         
         cg.builder().cbranch(op1, block_true, block_false)
 
-@hlt.instruction("call", op1=cFunction, op2=cTuple, target=cOptional(cAny))
+@hlt.constraint("function")
+def funcOrCallable(ty, op, i):
+    (callable, err) = (cReferenceOf(cCallable))(ty, op, i)
+    if callable:
+        return (True, "")
+    
+    return cFunction(ty, op, i)
+
+@hlt.constraint("(arguments)")
+def tupleIfFunc(ty, op, i):
+    if isinstance(i.op1().type(), type.Reference):
+        return (op == None, "superflous operand 2")
+    else:
+        return cTuple(ty, op, i)
+        
+tupleIfFunc._optional = True
+
+@hlt.constraint("XXX")
+def tupleOrLabel(ty, op, i):
+    if isinstance(i.op1().type(), type.Reference):
+        return cLabel(ty, op, i)
+    else:
+        return cTuple(ty, op, i)
+
+@hlt.constraint("XXX")
+def labelOrNothing(ty, op, i):
+    if isinstance(i.op1().type(), type.Reference):
+        return cLabel(ty, op, i)
+    else:
+        return (op != None, "superflous argument")
+        
+labelOrNothing._optional = True
+    
+@hlt.instruction("call", op1=funcOrCallable, op2=tupleIfFunc, target=cOptional(cAny))
 class Call(Instruction):
     """
     Calls *function* using the tuple in *op2* as 
@@ -150,21 +186,28 @@ class Call(Instruction):
     
     def _resolve(self, resolver):
         super(Call, self)._resolve(resolver)
-        op2 = _applyDefaultParams(self.op1().value(), self.op2())
-        self.setOp2(op2)
+        
+        if self.op2():
+            op2 = _applyDefaultParams(self.op1().value(), self.op2())
+            self.setOp2(op2)
         
     def _validate(self, vld):
         super(Call, self)._validate(vld)
-
-        if not isinstance(self.op1().value(), id.Function):
-            vld.error(self, "call argument is not a function")
-            return
         
-        func = self.op1().value().function()
-        if not _checkFunc(vld, self, func, None):
+        if isinstance(self.op1().value(), id.Function):
+            func = self.op1().value().function()
+            if not _checkFunc(vld, self, func, None):
+                return
+        
+            _checkArgs(vld, self, func.type(), self.op2())
+            
+            rt = func.type().resultType()
+            
+        elif isinstance(self.op1().type(), type.Reference):
+            rt = self.op1().type().refType().resultType()
+        else:
+            # Error will have been caught already.
             return
-    
-        rt = func.type().resultType()
         
         if self.target() and rt == type.Void:
             vld.error(self, "called function does not return a value")
@@ -173,8 +216,6 @@ class Call(Instruction):
         if not self.target() and rt != type.Void:
             vld.error(self, "called function returns a value")
             return
-    
-        _checkArgs(vld, self, func.type(), self.op2())
 
     def _canonify(self, canonifier):
         """
@@ -193,16 +234,23 @@ class Call(Instruction):
         
         canonifier.deleteCurrentInstruction()
         
-        func = self.op1().value().function()
-        assert func and isinstance(func.type(), type.Function)
+        if isinstance(self.op1().value(), id.Function):
+            
+            result_type = self.op1().type().resultType()
+            
+            func = self.op1().value().function()
+            assert func and isinstance(func.type(), type.Function)
         
-        if func.callingConvention() in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
-            callc = CallC(op1=self.op1(), op2=self.op2(), op3=None, target=self.target(), location=self.location())
-            current_block = canonifier.currentTransformedBlock()
-            current_block.addInstruction(callc)
-            return
-        
-        if self.op1().type().resultType() == type.Void:
+            if func.callingConvention() in (function.CallingConvention.C, function.CallingConvention.C_HILTI):
+                callc = CallC(op1=self.op1(), op2=self.op2(), op3=None, target=self.target(), location=self.location())
+                current_block = canonifier.currentTransformedBlock()
+                current_block.addInstruction(callc)
+                return
+            
+        else:
+            result_type = self.op1().type().refType().resultType()
+                
+        if result_type == type.Void:
             tc = CallTailVoid(op1=self.op1(), op2=self.op2(), op3=None, location=self.location())
         else:
             tc = CallTailResult(op1=self.op1(), op2=self.op2(), op3=None, target=self.target(), location=self.location())
@@ -211,8 +259,12 @@ class Call(Instruction):
         
         i = id.Local(new_block.name(), type.Label(), location=self.location())
         label = operand.ID(i, location=self.location())
-        tc.setOp3(label)
         new_block.setMayRemove(False)
+
+        if isinstance(self.op1().value(), id.Function):
+            tc.setOp3(label)
+        else:
+            tc.setOp2(label)
         
     def _codegen(self, cg):
         # Can't be called because canonicalization will transform these into
@@ -251,7 +303,7 @@ class CallC(Instruction):
         if self.target():
             cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("call.tail.void", op1=cFunction, op2=cTuple, op3=cLabel, terminator=True)
+@hlt.instruction("call.tail.void", op1=funcOrCallable, op2=tupleOrLabel, op3=labelOrNothing, terminator=True)
 class CallTailVoid(Instruction):
     """
     For internal use only.
@@ -271,27 +323,39 @@ class CallTailVoid(Instruction):
     def _validate(self, vld):
         super(CallTailVoid, self)._validate(vld)
         
-        func = self.op1().value().function()
-        if not _checkFunc(vld, self, func, [function.CallingConvention.HILTI]):
-            return
-        
-        rt = func.type().resultType()
+        if isinstance(self.op1().value(), id.Function):
+            func = self.op1().value().function()
+            if not _checkFunc(vld, self, func, [function.CallingConvention.HILTI]):
+                return
+
+            _checkArgs(vld, self, func.type(), self.op2())
+            
+            rt = func.type().resultType()
+        else:
+            rt = self.op1().type().refType().resultType()
         
         if rt != type.Void:
             vld.error(self, "call.tail.void calls a function returning a value")
-            
-        _checkArgs(vld, self, func.type(), self.op2())
     
     def _codegen(self, cg):
-        func = cg.lookupFunction(self.op1())
-        args = self.op2()
-        succ = cg.lookupBlock(self.op3())
-        llvm_succ = cg.llvmFunctionForBlock(succ)
-        
-        frame = cg.llvmMakeFunctionFrame(func, args, llvm_succ)
-        cg.llvmTailCall(func, frame=frame)
+        if isinstance(self.op1().value(), id.Function):
+            func = cg.lookupFunction(self.op1())
+            args = self.op2()
 
-@hlt.instruction("call.tail.result", op1=cFunction, op2=cTuple, op3=cLabel, target=cOptional(cAny), terminator=True)
+            succ = cg.lookupBlock(self.op3())
+            llvm_succ = cg.llvmFunctionForBlock(succ)
+            
+            frame = cg.llvmMakeFunctionFrame(func, args, llvm_succ)
+            cg.llvmTailCall(func, frame=frame)
+            
+        else:
+            succ = cg.lookupBlock(self.op2())
+            llvm_succ = cg.llvmFunctionForBlock(succ)
+            
+            ptr = cg.llvmOp(self.op1())
+            cg.llvmCallCallable(cg.builder().load(ptr), llvm_succ)
+
+@hlt.instruction("call.tail.result", op1=funcOrCallable, op2=tupleOrLabel, op3=labelOrNothing, target=cOptional(cAny), terminator=True)
 class CallTailResult(Instruction):
     """
     For internal use only.
@@ -299,7 +363,7 @@ class CallTailResult(Instruction):
     Like *Call()*, calls *function* using the tuple in *op2* as 
     arguments. The argument types must match the function's
     signature. The function must return a result value and it's type
-    must likewise match the function's signature. Different than
+     must likewise match the function's signature. Different than
     *Call()*, *CallTailVoid* must be the *last instruction* of a
     *Block*.  After the called function returns, control is passed
     to block *op3*.
@@ -311,26 +375,38 @@ class CallTailResult(Instruction):
     def _validate(self, vld):
         super(CallTailResult, self)._validate(vld)
         
-        func = self.op1().value().function()
-        if not _checkFunc(vld, self, func, [function.CallingConvention.HILTI]):
-            return
-        
-        rt = func.type().resultType()
+        if isinstance(self.op1().value(), id.Function):
+            func = self.op1().value().function()
+            if not _checkFunc(vld, self, func, [function.CallingConvention.HILTI]):
+                return
+            
+            _checkArgs(vld, self, func.type(), self.op2())
+            
+            rt = func.type().resultType()
+        else:
+            rt = self.op1().type().refType().resultType()
         
         if rt == type.Void:
             vld.error(self, "call.tail.result calls a function that does not return a value")
-        
-        _checkArgs(vld, self, func.type(), self.op2())
     
     def _codegen(self, cg):
-        func = cg.lookupFunction(self.op1())
         args = self.op2()
-        succ = cg.lookupBlock(self.op3())
-        llvm_succ = cg.llvmFunctionForBlock(succ)
 
         # Build a helper function that receives the result.
         result_name = cg.nameFunctionForBlock(cg.currentBlock()) + "_result"
-        result_type = cg.llvmType(func.type().resultType())
+        
+        if isinstance(self.op1().value(), id.Function):
+            func = cg.lookupFunction(self.op1())
+            result_type = cg.llvmType(func.type().resultType())
+            
+            succ = cg.lookupBlock(self.op3())
+            llvm_succ = cg.llvmFunctionForBlock(succ)
+        else:
+            result_type = cg.llvmType(self.op1().type().refType().resultType())
+
+            succ = cg.lookupBlock(self.op2())
+            llvm_succ = cg.llvmFunctionForBlock(succ)
+            
         result_func = cg.llvmNewHILTIFunction(cg.currentFunction(), result_name, [("__result", result_type)])
         result_block = result_func.append_basic_block("")
 
@@ -341,12 +417,15 @@ class CallTailResult(Instruction):
         cg.llvmTailCall(llvm_succ, frame=fdesc, ctx=result_func.args[2]) # XXX
         cg.builder().ret_void()
         cg.popBuilder()
-
-        frame = cg.llvmMakeFunctionFrame(func, args, result_func)
         
-        cg.llvmTailCall(func, frame=frame)
-        
-        
+        if isinstance(self.op1().value(), id.Function):
+            func = cg.lookupFunction(self.op1())
+            frame = cg.llvmMakeFunctionFrame(func, args, result_func)
+            cg.llvmTailCall(func, frame=frame)
+        else:
+            ptr = cg.llvmOp(self.op1())
+            cg.llvmCallCallable(cg.builder().load(ptr), result_func)
+            
 @hlt.instruction("yield", terminator=True)
 class Yield(Instruction):
     """Yields processing back to the current scheduler, to be resumed later.
@@ -372,7 +451,6 @@ def _switchTuple(ty, op, i):
 
     if not isinstance(ty, type.Tuple):
         return (False, "operand 3 must be a tuple")
-
     
     ops = op.value().value()
     

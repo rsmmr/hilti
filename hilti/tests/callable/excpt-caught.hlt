@@ -1,0 +1,48 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  test-diff output
+
+module Main
+
+import Hilti
+
+type myException = exception
+
+string foo(string s) {
+    local ref<myException> e
+    local string tmp
+    
+    e = new myException
+    exception.throw e
+
+    call Hilti::print("not reached")
+    
+    return.result tmp
+    }
+     
+void run() {
+
+    local ref<callable<string>> c
+    local string result
+    
+    result = "init"
+    
+    c = new callable<string> 
+    
+    callable.bind c foo ("ICSI")
+    
+    try {
+        result = call c
+    }    
+    
+    catch myException {
+       call Hilti::print ("Caught it!")
+    }
+    
+    call hilti::print (result)
+    
+    return.void
+}     
+

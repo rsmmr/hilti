@@ -848,7 +848,11 @@ def p_type_regexp(p):
         p[0] = type.RegExp([])
     else:
         p[0] = type.RegExp([p[3]])
-    
+
+def p_type_callable(p):
+    """type : CALLABLE '<' type '>'"""
+    p[0] = type.Callable(p[3])
+        
 def p_type_ident(p):
     """type : IDENT"""
     # Must be a type name.
@@ -946,7 +950,7 @@ def parse(filename, import_paths=["."], internal_module=False):
     return (errors, parser.state.module)
         
 def _parse(filename, import_paths=["."], internal_module=False):
-    parser = ply.yacc.yacc(optimize=1, debug=0, write_tables=1, picklefile="/tmp/hiltic_yacc_cache.dat")
+    parser = ply.yacc.yacc(optimize=1, debug=0, write_tables=0, picklefile="/tmp/hiltic_yacc_cache.dat")
     lex = ply.lex.lex(optimize=1, debug=0, module=lexer, lextab=None)
     state = HILTIState(filename, import_paths, internal_module)
     util.initParser(parser, lex, state)

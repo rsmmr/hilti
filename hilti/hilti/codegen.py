@@ -933,9 +933,10 @@ class CodeGen(objcache.Cache):
                 arg_vals += [llvm.core.Constant.int(at, arg)]
                
             elif isinstance(arg, type.HiltiType):
-                other_ti = self.llvmTypeInfoPtr(arg)
-                arg_types += [other_ti.type]
-                arg_vals += [other_ti]
+                if arg != type.Void():
+                    other_ti = self.llvmTypeInfoPtr(arg)
+                    arg_types += [other_ti.type]
+                    arg_vals += [other_ti]
                 
             elif isinstance(arg, str):
                 arg = self.llvmEnumLabel(arg)
@@ -1628,14 +1629,66 @@ class CodeGen(objcache.Cache):
         
         self.llvmTailCall(succ, frame=self.makeFrameDescriptor(fptr, eoss), ctx=ctx)
 
-    def _llvmBoundFunctionReturnFunc(self):
+    def llvmMakeCallable(self, func, args):
+        """Create a new contintiuation instance representing a function call
+        with arguments already bound. 
+        
+        func: ~~Function - The function to call.
+        args: ~~Operand - A tuple operand with the call's argument.
+
+        Returns: llvm.core.Value - A pointer to the continuation. 
+        
+        Note: The continuation can't be called directly as it's frame is only
+        partially initialized. Use ~~llvmCallCallable instead.
+        """
+        # We need to store a copy of the preinitialized frame outside of the
+        # current stack, so we just allocate a new stack segment of minimal
+        # size. When executing, this segment will become the current stack. 
+        size = self.llvmSizeOf(self.llvmTypeFunctionFrame(func))
+        stack = self.llvmNewStackSegment(size)
+        
+        no_frame = self.makeFrameDescriptor(None, None)
+        no_func = llvm.core.Constant.null(self.llvmTypeBasicFunctionPtr())
+        frame = self.llvmMakeFunctionFrame(func, args, no_func, no_frame, no_func, no_frame, stack=stack)
+
+        llvm_func = self.llvmFunctionForBlock(func)
+        cont = self.llvmNewContinuation(llvm_func, frame)        
+        
+        return cont
+    
+    def llvmCallCallable(self, cont, llvm_succ):
+        """Executes a continuation representing a function call with already
+        bound arguments. This continuation must have been created by
+        ~~llvmMakeCallable.
+
+        cont: llvm.core.Value - The closure continuation.
+        
+        llvm_succ: llmm.core.Function - The LLVM function to continue
+        processing. 
+        
+        TODO: This can't deal with return values yet. 
+        """
+        
+        func = self.llvmContinuationSucc(cont)
+        llvm_succ = self.builder().bitcast(llvm_succ, self.llvmTypeBasicFunctionPtr())
+        
+        frame = self.llvmContinuationFrame(cont)
+
+        self.llvmFrameSetNormalSucc(llvm_succ, frame=frame)
+        self.llvmFrameSetNormalFrame(self.llvmCurrentFrameDescriptor(), frame=frame)
+        self.llvmFrameSetExcptSucc(self.currentFunction().llvmExceptionHandler(self), frame=frame)
+        self.llvmFrameSetExcptFrame(self.llvmFrameExcptFrame(), frame=frame)
+        
+        self.llvmTailCall(func, frame=frame)
+
+    def _llvmRunCallableReturnFunc(self):
         # Creates an empty return function for bound functions. Note that this
         # works only for bound functions not returning any value, which is all
         # we support at the moment. 
         def makeReturnFunc():
             args = self.llvmTypeBasicFunctionPtr().pointee.args
             ft = llvm.core.Type.function(llvm.core.Type.void(), args)
-            return_func = self._llvm.module.add_function(ft, "__hlt_call_bound_function_return")
+            return_func = self._llvm.module.add_function(ft, "__hlt_thread_mgr_run_callable_return_func")
             return_func.calling_convention = llvm.core.CC_C
             return_func.linkage = llvm.core.LINKAGE_LINKONCE_ODR
             return_func.args[0].name = "__frame"
@@ -1648,72 +1701,25 @@ class CodeGen(objcache.Cache):
             
             return return_func
             
-        return self.cache("bound-function-return-func", makeReturnFunc)
+        return self.cache("thread-mgr-run-callable-return-func", makeReturnFunc)
         
-    def llvmBindFunction(self, func, args):
-        """Create a new continuation object representing a function call with
-        arguments already bound. The returned object can be executed with
-        ~~llvmCallBoundFunction.
+    def _llvmFunctionThreadMgrRunCallable(self):
+        """Generates a C function for running a callable (as returned by
+        ~~llvmMakeCallable) by the C threading run-time. run-time. The C
+        function will be called ``__hlt_thread_mgr_run_callable`` and is
+        prototyped in ``libhilti/continuation.h``. 
         
-        A bound function can be called only once.
-        
-        func: ~~Function - The function to call.
-        args: ~~Operand - A tuple operand with the call's argument.
-
-        Returns: llvm.core.Value - A continuation object.
-        
-        Note: You can't run the continuation directly; you must use
-        ~~llvmCallBoundFunction.
-
-        Todo: Currently we do not support functions with return values. Doing
-        so will not change much here, but we can't as easily call the code
-        from C anymore (see ~~__llvmFunctionRunClosure). Perhaps we don't need
-        these, but if we do, we'll need code simialr to CStubs (and can
-        probably reuse that). 
-        """
-        assert isinstance(func.type().resultType(), type.Void)
-
-        # We need to allocate a new stack segment here, but we allocate one of
-        # minimal size to not waste any memory before the function is actually
-        # called. 
-        size = self.llvmSizeOf(self.llvmTypeFunctionFrame(func))
-        stack = self.llvmNewStackSegment(size)
-        
-        no_frame = self.makeFrameDescriptor(None, None)
-        return_func = self._llvmBoundFunctionReturnFunc() # Always returns to our own function.
-    
-        frame = self.llvmMakeFunctionFrame(func, args, return_func, no_frame, return_func, no_frame, stack=stack)
-
-        # We set the exception handler's frame to the frame itself so that we
-        # get access to the exception field without the next to create another
-        # frame. 
-        self.llvmFrameSetExcptFrame(frame, frame)
-
-        llvm_func = self.llvmFunctionForBlock(func)
-        return self.llvmNewContinuation(llvm_func, frame)        
-
-    def _llvmFunctionCallContinuationFunction(self):
-        """Generates a C function for calling a continuation, as returned by
-        ~~llvmBindFunction or ~llvmNewContiuation. The generated function can
-        be called from C. The C function will be called 
-        ``hlt_call_continuation`` and is prototyped in
-        ``libhilti/continuation.h``.
-        
-        Note: We could hard-code this function in libhilti, but it's actually
-        easier doing ot here with Python code as we already have all the
-        machinery in place.
-        
-        Todo: This can't deal with bound functions returning values at the
-        moment. See ~~llvmBindFunction.
+        Note: This function is only for internal purposes, not part of the
+        public HILTI API.
         """
         
-        def _llvmCallContinuationFunction():
+        def _llvmFunctionThreadMgrRunCallable():
             args = [self.llvmTypeContinuationPtr()]
             args += [llvm.core.Type.pointer(self.llvmTypeExceptionPtr())]
             args += [self.llvmTypeExecutionContextPtr()]
             
             ft = llvm.core.Type.function(llvm.core.Type.void(), args)
-            func = self._llvm.module.add_function(ft, "hlt_call_continuation")
+            func = self._llvm.module.add_function(ft, "__hlt_thread_mgr_run_callable")
             func.calling_convention = llvm.core.CC_C
             func.linkage = llvm.core.LINKAGE_LINKONCE_ODR
             
@@ -1728,8 +1734,15 @@ class CodeGen(objcache.Cache):
             self.pushBuilder(b)
             
             # Call the continuation.
+            
             llvm_func = self.llvmContinuationSucc(cont)
+            return_func = self._llvmRunCallableReturnFunc()
+        
             frame = self.llvmContinuationFrame(cont)
+            self.llvmFrameSetExcptFrame(frame, frame)            
+            self.llvmFrameSetNormalSucc(return_func, frame=frame)
+            self.llvmFrameSetExcptSucc(return_func, frame=frame)
+
             call = self.llvmSafeCall(llvm_func, [frame.fptr(), frame.eoss(), ctx])
             call.calling_convention = llvm.core.CC_FASTCALL
             
@@ -1742,21 +1755,8 @@ class CodeGen(objcache.Cache):
             
             return func
         
-        return self.cache("call-continuation-function", _llvmCallContinuationFunction)
-    
-    def llvmCallBoundFunction(self, cont):
-        """Executes a continuation representing a closure. The closure must
-        have been created by ~~llvmBindFunction.
+        return self.cache("call-continuation-function", _llvmFunctionThreadMgrRunCallable)
 
-        Each bound function can be called only once.
-    
-        closure: llvm.core.Value - The closure continuation.
-        
-        Todo: This function is currently not implemented.  There is however a
-        C function in libhilti for this purpose.
-        """
-        util.internal_error("llvmCallBoundFunction not implemented")
-    
     def llvmContinuationSucc(self, cont):        
         """Returns the successor stored in an continuation. 
         
@@ -2127,9 +2127,15 @@ class CodeGen(objcache.Cache):
         one = self.llvmGEPIdx(1)
         two = self.llvmGEPIdx(2)
         three = self.llvmGEPIdx(3)
-        null = llvm.core.Constant.null(self.llvmTypeGenericPointer())
+        four = self.llvmGEPIdx(4)
+        five = self.llvmGEPIdx(5)
+        six = self.llvmGEPIdx(6)
+        seven = self.llvmGEPIdx(7)
         
-        self.llvmAssign(func.args[0], self.builder().gep(rec, [zero, zero, zero])) 
+        null = llvm.core.Constant.null(self.llvmTypeGenericPointer())
+        zero64 = self.llvmConstInt(0, 64)
+        
+        self.llvmAssign(func.args[0], self.builder().gep(rec, [zero, zero, zero])) # Vid.
         self.llvmAssign(null, self.builder().gep(rec, [zero, zero, one])) # Thread pointer. 
         
         # Preset the yield/resume continuation to abort handlers. They will be
@@ -2138,8 +2144,15 @@ class CodeGen(objcache.Cache):
         assert abort
         abort = self.llvmNewContinuation(abort, self.makeFrameDescriptor(None, None))
         
-        self.llvmAssign(abort, self.builder().gep(rec, [zero, zero, two]))
-        self.llvmAssign(abort, self.builder().gep(rec, [zero, zero, three]))
+        self.llvmAssign(abort, self.builder().gep(rec, [zero, zero, two])) # yield
+        self.llvmAssign(abort, self.builder().gep(rec, [zero, zero, three])) # resume
+        
+        self.llvmAssign(zero64, self.builder().gep(rec, [zero, zero, four])) # calls_num
+        self.llvmAssign(zero64, self.builder().gep(rec, [zero, zero, five])) # calls_alloced
+        self.llvmAssign(zero64, self.builder().gep(rec, [zero, zero, six])) # calls_first
+        
+        calls = self.builder().gep(rec, [zero, zero, seven])
+        self.llvmAssign(llvm.core.Constant.null(calls.type.pointee), calls) # calls
        
         # Initialize the globals.
         
@@ -2586,6 +2599,21 @@ class CodeGen(objcache.Cache):
         
         return self.builder().load(self._llvmAddrInBasicFrame(fptr, 0, 0))
     
+    def llvmFrameSetNormalSucc(self, succ, frame=None):
+        """Sets the normal successor function stored in a frame.  
+        
+        succ: llvm.core.Value - The new value.
+        
+        frame: ~~FrameDescriptor - The frame descriptor to use. If not given,
+        ~~llvmCurrentFrameDescriptor is used. 
+        """
+        if not frame:
+            fptr = self._llvm.frameptr
+        else:
+            fptr = frame.fptr()
+        
+        self.builder().store(succ, self._llvmAddrInBasicFrame(fptr, 0, 0))
+    
     def llvmFrameNormalFrame(self, frame=None):
         """Returns the normal successor frame stored in a frame.  
         
@@ -2603,6 +2631,24 @@ class CodeGen(objcache.Cache):
         neoss = self.builder().load(self._llvmAddrInBasicFrame(fptr, 0, 2))
         return self.makeFrameDescriptor(nfptr, neoss)
     
+    def llvmFrameSetNormalFrame(self, nframe, frame=None):
+        """Sets the normal successor frame stored in a frame.  
+        
+        nframe: ~~FrameDescriptor - The frame descriptior to set the successor frame to. 
+
+        frame: ~~FrameDescriptor - The frame descriptor to use for writing to.
+        If not given, ~~llvmCurrentFrameDescriptor is used. 
+        
+        Returns: llvm.core.Value - The extracted value.
+        """
+        if not frame:
+            fptr = self._llvm.frameptr
+        else:
+            fptr = frame.fptr()
+
+        self.llvmAssign(nframe.fptr(), self._llvmAddrInBasicFrame(fptr, 0, 1))
+        self.llvmAssign(nframe.eoss(), self._llvmAddrInBasicFrame(fptr, 0, 2))
+    
     def llvmFrameExcptSucc(self, frame=None):
         """Returns the exceptional successor function stored in a frame.  
         
@@ -2617,6 +2663,21 @@ class CodeGen(objcache.Cache):
             fptr = frame.fptr()
             
         return self.builder().load(self._llvmAddrInBasicFrame(fptr, 1, 0))
+    
+    def llvmFrameSetExcptSucc(self, succ, frame=None):
+        """Sets the exception successor function stored in a frame.  
+        
+        succ: llvm.core.Value - The new value.
+        
+        frame: ~~FrameDescriptor - The frame descriptor to use. If not given,
+        ~~llvmCurrentFrameDescriptor is used. 
+        """
+        if not frame:
+            fptr = self._llvm.frameptr
+        else:
+            fptr = frame.fptr()
+        
+        self.builder().store(succ, self._llvmAddrInBasicFrame(fptr, 1, 0))
     
     def llvmFrameExcptFrame(self, frame=None):
         """Returns the frame descriptor for the execptional successor stored
@@ -2635,21 +2696,25 @@ class CodeGen(objcache.Cache):
         nfptr = self.builder().load(self._llvmAddrInBasicFrame(fptr, 1, 1))
         neoss = self.builder().load(self._llvmAddrInBasicFrame(fptr, 1, 2))
         return self.makeFrameDescriptor(nfptr, neoss)
-    
-    def llvmFrameSetExcptFrame(self, frame, val):
-        """Sets the frame descriptor for the exeptional successor stored in a
-        frame.  
+
+    def llvmFrameSetExcptFrame(self, nframe, frame=None):
+        """Sets the expception successor frame stored in a frame.  
         
-        frame: ~~FrameDescriptor - The frame descriptor to update. 
+        nframe: ~~FrameDescriptor - The frame descriptior to set the exception frame to. 
+
+        frame: ~~FrameDescriptor - The frame descriptor to use for writing to.
+        If not given, ~~llvmCurrentFrameDescriptor is used. 
         
-        val: ~~FrameDescriptor - The frame descriptor to write into the
-        exeception handler's frame field. 
+        Returns: llvm.core.Value - The extracted value.
         """
-        
-        fptr = frame.fptr()
-        self.llvmAssign(val.fptr(), self._llvmAddrInBasicFrame(fptr, 1, 1))
-        self.llvmAssign(val.eoss(), self._llvmAddrInBasicFrame(fptr, 1, 2))
-        
+        if not frame:
+            fptr = self._llvm.frameptr
+        else:
+            fptr = frame.fptr()
+
+        self.llvmAssign(nframe.fptr(), self._llvmAddrInBasicFrame(fptr, 1, 1))
+        self.llvmAssign(nframe.eoss(), self._llvmAddrInBasicFrame(fptr, 1, 2))
+    
     def llvmFrameException(self, frame=None):
         """Returns the exception field stored in a frame.  
         
@@ -2706,7 +2771,7 @@ class CodeGen(objcache.Cache):
             frame = self.llvmCurrentFrameDescriptor()
             
         self.llvmFrameSetException(self.llvmConstNoException(), frame)
-    
+
     def _llvmAddrInBasicFrame(self, frame, index1, index2, cast_to=None, tag=""):
         # Helper to get a field in a basic frame struct.
         zero = self.llvmGEPIdx(0)

@@ -72,18 +72,18 @@ class NewTimer(Operator):
     def _validate(self, vld):
         if self.op2() and not isinstance(self.op2().type().resultType(), type.Void):
             vld.error(self, "function for schedule must not return a value")
-    
+            
     def _codegen(self, cg):
         func = cg.lookupFunction(self.op2())
         args = self.op3()
-        cont = cg.llvmBindFunction(func, args)
-        
+        cont = cg.llvmMakeCallable(func, args)
+
         result = cg.llvmCallCInternal("__hlt_timer_new_function", [cont, cg.llvmFrameExceptionAddr(), cg.llvmCurrentExecutionContextPtr()])
         cg.llvmExceptionTest()
         cg.llvmStoreInTarget(self, result)
     
 @hlt.instruction("timer.update", op1=cReferenceOf(cTimer), op2=cDouble)
-class Update(Instruction):
+class Update(InstructionWithCallables):
     """Adjusts *op1*'s expiration time to *op2*.
     
     Raises ``TimerNotScheduled`` if the timer is not scheduled with a timer
@@ -107,7 +107,7 @@ class NewTimerMgr(Operator):
         cg.llvmStoreInTarget(self, result)
         
 @hlt.instruction("timer_mgr.advance", op1=cReferenceOf(cTimerMgr), op2=cDouble)
-class Advance(Instruction):
+class Advance(InstructionWithCallables):
     """Advances *op1*'s notion of time to *op2*. Time can never go backwards,
     and thus the instruction has no effect if *op2* is smaller than the timer
     manager's current time."""
@@ -122,7 +122,7 @@ class Current(Instruction):
         cg.llvmStoreInTarget(self, result)
         
 @hlt.instruction("timer_mgr.expire", op1=cReferenceOf(cTimerMgr), op2=cBool)
-class Expire(Instruction):
+class Expire(InstructionWithCallables):
     """Expires all timers currently associated with *op1*. If *op2* is True,
     all their actions will be executed immediately; if it's False, all the
     timers will simply be canceled."""
@@ -130,7 +130,7 @@ class Expire(Instruction):
         cg.llvmCallC("hlt::timer_mgr_expire", [self.op1(), self.op2()])
     
 @hlt.instruction("timer_mgr.schedule", op1=cReferenceOf(cTimerMgr), op2=cDouble, op3=cReferenceOf(cTimer))
-class Schedule(Instruction):
+class Schedule(InstructionWithCallables):
     """Schedules *op2* with the timer manager *op1* to be executed at time
     *op2*. If *op2* is smaller or equal to the manager's current time, the
     timer fires immediately. Each timer can only be scheduled with a single

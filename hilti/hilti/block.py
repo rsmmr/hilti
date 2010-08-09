@@ -265,4 +265,3 @@ def _addDebugPostInstruction(canonifier, b, i):
     
     dbg = hilti.instructions.debug.message("hilti-trace", "%s -> %%s" % i.location(), [i.target()])
     b.addInstruction(dbg)
-

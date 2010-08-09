@@ -238,14 +238,13 @@ class Begin(BlockingOperator):
     """Returns an iterator for iterating over all elements of a packet source
     *op1*. The instruction will block until the first element becomes
     available."""
-    
     def _canonify(self, canonifier):
-        super(Begin, self)._canonify(canonifier)
+        Instruction._canonify(self, canonifier)
         self.blockingCanonify(canonifier)
         
     def _codegen(self, cg):
         self.blockingCodegen(cg)
-
+    
     def cCall(self, cg):
         func = _funcName("read_try", self.op1().type().refType().kind())
         args = [self.op1(), operand.Constant(constant.Constant(0, type.Bool()))]
@@ -270,7 +269,7 @@ class Incr(BlockingOperator):
     becomes available.
     """
     def _canonify(self, canonifier):
-        super(Incr, self)._canonify(canonifier)
+        Instruction._canonify(self, canonifier)
         self.blockingCanonify(canonifier)
         
     def _codegen(self, cg):

@@ -15,6 +15,14 @@ typedef struct hlt_execution_context {
     hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread. 
     hlt_continuation* yield;   /// A continuation to call when a ``yield`` statement is executed.
     hlt_continuation* resume;  /// A continuation to call when resuming after a ``yield`` statement. Is set by the ``yield``.
+    
+    /// We keep an array of callable registered for execution but not
+    /// processed yet.
+    uint64_t       calls_num;     /// Number of callables in array.
+    uint64_t       calls_alloced; /// Number of slots allocated.
+    uint64_t       calls_first;   /// Index of first non-yet processed element.
+    hlt_callable** calls;         /// First element of array, or 0 if empty.
+    
 } hlt_execution_context;
 
 typedef void yield_func(void* frame, void* eoss, hlt_execution_context* ctx);

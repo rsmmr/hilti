@@ -19,7 +19,7 @@ global ref<A> a
 global ref<B> b
 
 ref<A> foo(ref<B> b) {
-@__b1:
+@__b3:
     return.result a
     }
 
@@ -27,7 +27,7 @@ ref<A> foo(ref<B> b) {
 type myException = exception<ref<A>>
 
 void run() {
-@__b2:
+@__b4:
     }
 
 export run

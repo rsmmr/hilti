@@ -343,6 +343,7 @@ cIteratorSet = _hasType("IteratorSet", "iterator<set>")
 cIOSrc = _hasType("IOSrc")
 cIteratorIOSrc = _hasType("IteratorIOSrc", "iterator<iosrc>")
 cFile = _hasType("File")
+cCallable = _hasType("Callable")
 
 cFunction = _hasType("Function")
 cHook = _hasType("Hook")

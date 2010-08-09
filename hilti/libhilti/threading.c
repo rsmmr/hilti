@@ -284,7 +284,7 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
     
     hlt_exception* excpt = 0;
     
-    hlt_call_continuation(job->func, &excpt, ctx);
+    __hlt_thread_mgr_run_callable(job->func, &excpt, ctx);
 
     DBG_LOG(DBG_STREAM, "done with job %p", job);
 

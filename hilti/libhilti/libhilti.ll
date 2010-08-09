@@ -24,6 +24,9 @@
     %__hlt_eoss*
 }
 
+; A callable is just a (partially initaliazed) continuation.
+%__hlt_callable = type %__hlt_continuation
+
 ; Run-time type information. 
 ; Must match __hlt_type_info in rtti.h. See there for fields.
 %__hlt_type_info = type { 
@@ -69,7 +72,11 @@
     %__hlt_vthread_id,
     %__hlt_void*,
     %__hlt_continuation*,
-    %__hlt_continuation*
+    %__hlt_continuation*,
+    i64,
+    i64,
+    i64,
+    %__hlt_callable**
 }
 
 ; A global function to be run at startup.
@@ -132,6 +139,9 @@ declare void @__hlt_debug_print_str(i8*)
 declare void @__hlt_debug_print_ptr(i8*, i8*)
 declare void @__hlt_debug_push_indent()
 declare void @__hlt_debug_pop_indent()
+
+;;; Callables. 
+declare %__hlt_callable** @__hlt_callable_next(%__hlt_execution_context*, %__hlt_exception**)
 
 ;;; Globals defined in globals.h
 @__hlt_global_execution_context = external global %__hlt_execution_context*

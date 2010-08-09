@@ -35,7 +35,6 @@
 
 #include "3rdparty/bdwgc/include/gc.h"
 
-#include "module/_hilti.h"
 #include "types.h"
 
 #include "addr.h"
@@ -73,5 +72,6 @@
 #include "file.h"
 
 #include "module/module.h"
+#include "module/_hilti.h"
 
 #endif    

@@ -468,7 +468,7 @@ class HiltiType(Type):
 class Constructable:
     """Trait class for ~~HiltiTypes that allow the creation of *non-const*
     instances with a constructor expression."""
-    
+
     def validateCtor(self, vld, value):
         """Validates the semantic correctness of the ctor expressions.
         

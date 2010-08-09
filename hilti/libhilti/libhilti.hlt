@@ -214,3 +214,26 @@ declare "C-HILTI" void file_write_bytes(ref<file> f, ref<bytes> b)
 
 declare "C" void abort()
 
+##
+
+# This function calls all callables that the C runtime has registered via __hlt_callable_register().
+
+void call_saved_callables() {
+    local ref<callable<void>> c
+    local bool have
+    
+@loop:
+    c = .callable.next
+    have = ref.cast.bool c
+    if.else have @do_call @exit
+    
+@do_call:    
+    call.tail.void c @loop
+    
+@exit:
+   return.void
+}
+
+export call_saved_callables
+
+

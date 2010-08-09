@@ -20,7 +20,7 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
 {
     switch (timer->type) {
       case HLT_TIMER_FUNCTION:
-        hlt_call_continuation(timer->cookie.function, excpt, ctx);
+        hlt_callable_register(timer->cookie.function, excpt, ctx);
         break;
         
 #if 0        
@@ -42,7 +42,7 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
     }
 }
 
-hlt_timer* __hlt_timer_new_function(hlt_continuation* func, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_timer* __hlt_timer_new_function(hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_timer* timer = (hlt_timer*) hlt_gc_malloc_non_atomic(sizeof(hlt_timer));
     if ( ! timer ) {

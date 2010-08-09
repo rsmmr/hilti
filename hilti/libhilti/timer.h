@@ -42,7 +42,7 @@ struct __hlt_timer {
     size_t queue_pos;   // Used by priority queue. 
     int16_t type;       // One of HLT_TIMER_* indicating the timer's type. 
     union {             // The timer's payload cookie corresponding to its type.
-        hlt_continuation* function;
+        hlt_callable* function;
 #if 0        
         __hlt_list_timer_cookie list;
 #endif        
@@ -156,7 +156,7 @@ extern double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj
 /// excpt: &
 /// 
 /// Returns: The new timer object. 
-extern hlt_timer* __hlt_timer_new_function(hlt_continuation* func, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_timer* __hlt_timer_new_function(hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #if 0
 /// Instantiates a new timer object that will expire a list entry when it

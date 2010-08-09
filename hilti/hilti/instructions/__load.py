@@ -34,3 +34,4 @@ import select
 import hook
 import bytes
 import file
+import callable

@@ -211,8 +211,8 @@ class Module(node.Node):
             # generate it here directly. This is for libhilti to include it into
             # the library. However, we should build a nicer general mechanism
             # for static auto-generated functions.
-            if i.name() == "hlt_call_continuation":
-                cg._llvmFunctionCallContinuationFunction()
+            if i.name() == "__hlt_thread_mgr_run_callable":
+                cg._llvmFunctionThreadMgrRunCallable()
                 continue
             
             if isinstance(i, id.Function):
