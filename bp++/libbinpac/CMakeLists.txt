@@ -15,7 +15,7 @@ include(EnableLLVM)
 
 set(OBJS ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o)
 
-set(SRCS binpac-intern.c)
+set(SRCS binpac-intern.c binpac.c)
 
 # Generate type information for libbinpac.
 add_custom_command(

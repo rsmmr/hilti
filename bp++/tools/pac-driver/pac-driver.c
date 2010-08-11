@@ -10,11 +10,13 @@
 #include <binpac.h>
 
 int debug = 0;
+int debug_hooks = 0;
 
 static void check_exception(hlt_exception* excpt)
 {
     if ( excpt ) {
-        hlt_exception_print_uncaught(excpt);
+        hlt_execution_context* ctx = hlt_global_execution_context();
+        hlt_exception_print_uncaught(excpt, ctx);
         exit(1);
     }
 }
@@ -27,39 +29,42 @@ static void usage(const char* prog)
     fprintf(stderr, "\n");
     fprintf(stderr, "    -d            Enable basic BinPAC++ debug output\n");
     fprintf(stderr, "    -dd           Enable detailed BinPAC++ debug output\n");
+    fprintf(stderr, "    -B            Enable BinPAC++ debugging hooks\n");
     fprintf(stderr, "    -i  <n>       Feed input incrementally in chunks of size <n>\n");
     fprintf(stderr, "    -v            Enable verbose output\n");
     fprintf(stderr, "\n");
 
     hlt_exception* excpt = 0;
-    hlt_list* parsers = binpac_parsers(&excpt);
+    hlt_execution_context* ctx = hlt_global_execution_context();
+    
+    hlt_list* parsers = binpac_parsers(&excpt, ctx);
 
-    if ( hlt_list_size(parsers, &excpt) == 0 ) {
+    if ( hlt_list_size(parsers, &excpt, ctx) == 0 ) {
         fprintf(stderr, "  No parsers defined.\n\n");
         exit(1);
     }
     
     fprintf(stderr, "  Available parsers: \n\n");
 
-    hlt_list_iter i = hlt_list_begin(parsers, &excpt);
-    hlt_list_iter end = hlt_list_end(parsers, &excpt);
+    hlt_list_iter i = hlt_list_begin(parsers, &excpt, ctx);
+    hlt_list_iter end = hlt_list_end(parsers, &excpt, ctx);
 
     int count = 0;
     
-    while ( ! (hlt_list_iter_eq(i, end, &excpt) || excpt) ) {
+    while ( ! (hlt_list_iter_eq(i, end, &excpt, ctx) || excpt) ) {
         ++count;
-        binpac_parser* p = *(binpac_parser**) hlt_list_iter_deref(i, &excpt);
+        binpac_parser* p = *(binpac_parser**) hlt_list_iter_deref(i, &excpt, ctx);
 
         fputs("    ", stderr);
         
-        hlt_string_print(stderr, p->name, 0, &excpt);
+        hlt_string_print(stderr, p->name, 0, &excpt, ctx);
         
-        for ( int n = 14 - hlt_string_len(p->name, &excpt); n; n-- )
+        for ( int n = 14 - hlt_string_len(p->name, &excpt, ctx); n; n-- )
             fputc(' ', stderr);
         
-        hlt_string_print(stderr, p->description, 1, &excpt);
+        hlt_string_print(stderr, p->description, 1, &excpt, ctx);
         
-        i = hlt_list_iter_incr(i, &excpt);
+        i = hlt_list_iter_incr(i, &excpt, ctx);
     }
 
     check_exception(excpt);
@@ -74,22 +79,23 @@ static void usage(const char* prog)
 
 static binpac_parser* findParser(const char* name)
 {
+    hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
     
-    hlt_list* parsers = binpac_parsers(&excpt);
+    hlt_list* parsers = binpac_parsers(&excpt, ctx);
     
-    hlt_string hname = hlt_string_from_asciiz(name, &excpt);
+    hlt_string hname = hlt_string_from_asciiz(name, &excpt, ctx);
     
-    hlt_list_iter i = hlt_list_begin(parsers, &excpt);
-    hlt_list_iter end = hlt_list_end(parsers, &excpt);
+    hlt_list_iter i = hlt_list_begin(parsers, &excpt, ctx);
+    hlt_list_iter end = hlt_list_end(parsers, &excpt, ctx);
 
-    while ( ! (hlt_list_iter_eq(i, end, &excpt) || excpt) ) {
-        binpac_parser* p = *(binpac_parser**) hlt_list_iter_deref(i, &excpt);
+    while ( ! (hlt_list_iter_eq(i, end, &excpt, ctx) || excpt) ) {
+        binpac_parser* p = *(binpac_parser**) hlt_list_iter_deref(i, &excpt, ctx);
         
-        if ( hlt_string_cmp(hname, p->name, &excpt) == 0 )
+        if ( hlt_string_cmp(hname, p->name, &excpt, ctx) == 0 )
             return p;
         
-        i = hlt_list_iter_incr(i, &excpt);
+        i = hlt_list_iter_incr(i, &excpt, ctx);
     }
     
     check_exception(excpt);
@@ -98,8 +104,9 @@ static binpac_parser* findParser(const char* name)
 
 hlt_bytes* readInput()
 {
+    hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
-    hlt_bytes* input = hlt_bytes_new(&excpt);
+    hlt_bytes* input = hlt_bytes_new(&excpt, ctx);
     check_exception(excpt);
     
     int8_t buffer[256];
@@ -109,7 +116,7 @@ hlt_bytes* readInput()
         
         int8_t* copy = hlt_gc_malloc_atomic(n);
         memcpy(copy, buffer, n);
-        hlt_bytes_append_raw(input, copy, n, &excpt);
+        hlt_bytes_append_raw(input, copy, n, &excpt, ctx);
         
         if ( feof(stdin) )
             break;
@@ -128,15 +135,16 @@ hlt_bytes* readInput()
 
 void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
 {
+    hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
-    hlt_bytes_pos cur = hlt_bytes_begin(input, &excpt);
+    hlt_bytes_pos cur = hlt_bytes_begin(input, &excpt, ctx);
     
     check_exception(excpt);
 
     if ( ! chunk_size ) {
         // Feed all input at once.
-        hlt_bytes_freeze(input, 1, &excpt);
-        (*p->parse_func)(cur, 0, &excpt);
+        hlt_bytes_freeze(input, 1, &excpt, ctx);
+        (*p->parse_func)(cur, 0, &excpt, ctx);
         check_exception(excpt);
         return;
     }
@@ -144,22 +152,22 @@ void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
     // Feed incrementally.
     
     hlt_bytes* chunk;
-    hlt_bytes_pos end = hlt_bytes_end(input, &excpt);
+    hlt_bytes_pos end = hlt_bytes_end(input, &excpt, ctx);
     hlt_bytes_pos cur_end;
     int8_t done = 0;
     hlt_exception* resume = 0;
     
-    input = hlt_bytes_new(&excpt);
+    input = hlt_bytes_new(&excpt, ctx);
     
     while ( ! done ) {
-        cur_end = hlt_bytes_pos_incr_by(cur, chunk_size, &excpt);
-        done = hlt_bytes_pos_eq(cur_end, end, &excpt);
+        cur_end = hlt_bytes_pos_incr_by(cur, chunk_size, &excpt, ctx);
+        done = hlt_bytes_pos_eq(cur_end, end, &excpt, ctx);
         
-        chunk = hlt_bytes_sub(cur, cur_end, &excpt);
-        hlt_bytes_append(input, chunk, &excpt);
+        chunk = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
+        hlt_bytes_append(input, chunk, &excpt, ctx);
         
         if ( done )
-            hlt_bytes_freeze(input, 1, &excpt);
+            hlt_bytes_freeze(input, 1, &excpt, ctx);
 
         check_exception(excpt);
         
@@ -167,17 +175,17 @@ void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
             if ( debug )
                 fprintf(stderr, "--- pac-driver: starting parsing.\n");
             
-            hlt_bytes_pos s = hlt_bytes_begin(input, &excpt);
+            hlt_bytes_pos s = hlt_bytes_begin(input, &excpt, ctx);
             check_exception(excpt);
             
-            (*p->parse_func)(s, 0, &excpt);
+            (*p->parse_func)(s, 0, &excpt, ctx);
         }
         
         else {
             if ( debug )
                 fprintf(stderr, "--- pac-driver: resuming parsing.\n");
             
-            (*p->resume_func)(resume, &excpt);
+            (*p->resume_func)(resume, &excpt, ctx);
         }
 
         if ( excpt ) {
@@ -211,9 +219,11 @@ int main(int argc, char** argv)
     const char* parser = 0;
 
     hlt_init();
+
+    hlt_execution_context* ctx = hlt_global_execution_context();
     
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:vdh")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:vdBh")) != -1) {
         
         switch (ch) {
             
@@ -233,6 +243,10 @@ int main(int argc, char** argv)
             ++debug;
             break;
             
+          case 'B':
+            debug_hooks = 1;
+            break;
+            
           case 'h':
             // Fall-through.
           default:
@@ -245,24 +259,26 @@ int main(int argc, char** argv)
     
     if ( argc != 0 )
         usage(argv[0]);
-
+    
+    binpac_enable_debugging(debug_hooks);
+    
     binpac_parser* p = 0;
     
     if ( ! parser ) {
         hlt_exception* excpt = 0;
-        hlt_list* parsers = binpac_parsers(&excpt);
+        hlt_list* parsers = binpac_parsers(&excpt, ctx);
     
         // If we have exactly one parser, that's the one we'll use.
-        if ( hlt_list_size(parsers, &excpt) == 1 ) {
-            hlt_list_iter i = hlt_list_begin(parsers, &excpt);
-            p = *(binpac_parser**) hlt_list_iter_deref(i, &excpt);
+        if ( hlt_list_size(parsers, &excpt, ctx) == 1 ) {
+            hlt_list_iter i = hlt_list_begin(parsers, &excpt, ctx);
+            p = *(binpac_parser**) hlt_list_iter_deref(i, &excpt, ctx);
             assert(p);
         }
         
         else { 
             // If we don't have any parsers, we do nothing and just exit
             // normally.
-            if ( hlt_list_size(parsers, &excpt) == 0 )
+            if ( hlt_list_size(parsers, &excpt, ctx) == 0 )
                 exit(0);
         
             fprintf(stderr, "no parser specified; see usage for list.\n");

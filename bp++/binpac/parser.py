@@ -84,7 +84,16 @@ def p_module_global_function(p):
 def p_module_global_stmt(p):
     """module_global : stmt"""
     p.parser.state.module.addStatement(p[1])
+    
+def p_module_global_hook(p):
+    """module_global : opt_debug ON hook_ident stmt_block"""
+    p.parser.state.module.addExternalHook(p[3], p[4], p[1])
 
+def p_module_global_import(p):
+    """module_global : IMPORT IDENT ';'"""
+    if not _importFile(p.parser, p[2], _loc(p, 1)):
+        raise SyntaxError
+    
 def p_global_decl(p):
     """global_decl : opt_linkage global_or_const IDENT ':' type ';'
                    | opt_linkage global_or_const IDENT '=' expr ';'
@@ -319,19 +328,31 @@ def p_unit_field_property(p):
 
 def p_unit_var(p):
     """unit_var : IDENT ':' type ';'
-                | IDENT ':' type stmt_block
+                | IDENT ':' type opt_debug stmt_block
     """
     i = id.Variable(p[1], p[3])
     p.parser.state.unit.addVariable(i)
     
     if p[4] != ';':
-        hook = stmt.UnitHook(p.parser.state.unit, None, 0, stmts=p[4])
+        hook = stmt.UnitHook(p.parser.state.unit, None, 0, stmts=p[5], debug=p[4])
         i.addHook(hook)
 
 def p_unit_hook(p):
-    """unit_hook : ON IDENT stmt_block"""
-    hook = stmt.UnitHook(p.parser.state.unit, None, 0, stmts=p[3])
-    p.parser.state.unit.addHook(p[2], hook, 0)
+    """unit_hook : opt_debug ON hook_ident stmt_block"""
+    hook = stmt.UnitHook(p.parser.state.unit, None, 0, stmts=p[4], debug=p[1])
+    p.parser.state.unit.addHook(p[3], hook, 0)
+    
+def p_opt_debug(p):
+    """opt_debug : DEBUG 
+                 | 
+    """
+    p[0] = len(p) > 1
+    
+def p_opt_hook_ident(p):
+    """hook_ident : IDENT
+                  | CTOR
+    """
+    p[0] = p[1]
     
 def _addAttrs(p, t, attrs):
     for attr in attrs:
@@ -343,9 +364,9 @@ def p_unit_field(p):
     p[0] = p.parser.state.field
 
 def p_unit_field_with_hook(p):
-    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond opt_foreach stmt_block _leave_unit_field"""
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond opt_foreach opt_debug stmt_block _leave_unit_field"""
     if not p[7]:
-        hook = stmt.UnitHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[8])
+        hook = stmt.UnitHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
         p.parser.state.field.addHook(hook)
     else:
         hook = stmt.ForEachHook(p.parser.state.field, 0, None, stmts=p[8])
@@ -753,14 +774,19 @@ def _parse(filename, import_paths=["."]):
     
     return (errors, ast, parser)    
 
-def _importFile(parser, filename, location, _parse):
-    fullpath = util.checkImport(parser, filename, "hlt", location)
-        
+def _importFile(parser, filename, location, internal_module=False):
+    fullpath = util.checkImport(parser, filename, "pac2", location)
+    
     if not fullpath:
+        # Already imported.
+        return True
+
+    (errors, ast, subparser) = _parse(fullpath, parser.state.importPaths())
+
+    if errors > 0:
+        parser.state.increaseErrors(subparser.state.errors())
         return False
     
-    (errors, ast, subparser) = _parse(fullpath, parser.state.importPaths())
-    
-    ## Do something with the parsed file here.
-    
-    return (errors == 0, ast)
+    parser.state.module.importIDs(subparser.state.module)
+
+    return True

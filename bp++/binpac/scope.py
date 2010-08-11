@@ -36,6 +36,13 @@ class Scope(visitor.Visitable):
         Returns: ~~Scope - The parent scope, or None if none.
         """
         return self._parent
+
+    def setParent(self, pscope):
+        """Sets a new parent scope.
+        
+        pscope: ~~Scope - The new parent scope.
+        """
+        self._parent = pscope
     
     def _canonName(self, namespace, name):
         if not namespace:

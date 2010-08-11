@@ -17,7 +17,7 @@ class Production(object):
     productions.
     
     type: ~~Type - A type for storing the result of parsing this ~~Production.
-    Must be given iff *name* is given.
+    Must be given if *name* is given.
     
     location: ~~Location - A location object decscribing the point of definition.
     """
@@ -366,7 +366,7 @@ class ChildGrammar(NonTerminal):
         params: list of ~~Expr - Parameters to pass to the child grammar.
         """
         self._params = params
-    
+        
     def _rhss(self):
         return [[self.type().grammar().startSymbol()]]
 
@@ -584,13 +584,14 @@ class Switch(Conditional):
         return self._default
         
 class Grammar:
-    def __init__(self, name, root, params=None, addl_ids=None, location=None):
+    def __init__(self, name, root, params=None, hooks=None, addl_ids=None, location=None):
         """Instantiates a grammar given its root production.
         
         name: string - A name which uniquely identifies this grammar.
         root: ~~Production - The grammar's root production.
         params: list of ~~ID - Additional parameters passed into the
         grammar's parser. 
+        hooks: dict string -> ~~Hook - Hooks for this grammar, mapped by names (e.g., "%ctor")
         addl_ids: list of ~~ID - Additional IDs that should become part of the
         generated parser object. 
         """
@@ -602,6 +603,7 @@ class Grammar:
         self._nullable = {}
         self._first = {}
         self._follow = {}
+        self._hooks = hooks if hooks != None else {}
         self._params = params if params else []
         
         self._addProduction(root)
@@ -712,6 +714,23 @@ class Grammar:
         Returns: Productions - The starting instruction.
         """
         return self._start
+
+    def hooks(self, name):
+        """Returns global hooks registered for the grammar's unit type under a
+        given name.
+        
+        name: string - The name of the hooks to retrieve the hooks for.
+        
+        Returns: list of ~~UnitHook - The hooks with their priorities. The
+        list will be empty if no hooks have been registered for that name. 
+        
+        Note: If there are multiple fields with the same name, the returned
+        list will contains the hooks for all of them.
+        """
+        try:
+            return self._hooks[name]
+        except KeyError:
+            return []
     
     def _addProduction(self, p):
         if p.symbol() in self._productions:

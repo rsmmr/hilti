@@ -667,7 +667,6 @@ class ParserGen:
             
     def runHooks(self, cg, obj, hooks, value=None):
         """XXXX"""
-
         builder = cg.builder()
         fbuilder = cg.functionBuilder()
         
@@ -734,8 +733,8 @@ class ParserGen:
         
         obj: hilti.operand.Operand - The operand to the new object in.
         """
-        
         self.builder().new(obj, self.builder().typeOp(self._typeParseObject()))
+        self.runHooks(self._cg, obj, self._grammar.hooks("%ctor"), None)
         
     ### Helper methods.
 

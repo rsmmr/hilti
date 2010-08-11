@@ -526,7 +526,7 @@ class Unit(type.ParseableType):
     Todo: We need to document the available hooks.
     """
 
-    _valid_hooks = ("%ctor", "%dtor", "%error")
+    _valid_hooks = ("%ctor", "%error")
 
     def __init__(self, pscope, args=None, location=None):
         Unit._counter += 1
@@ -536,6 +536,7 @@ class Unit(type.ParseableType):
         self._fields_ordered = []
         self._vars = {}
         self._hooks = {}
+        self._unit_hooks = {}
         self._prod = None 
         self._grammar = None
         self._args = args if args else []
@@ -728,7 +729,7 @@ class Unit(type.ParseableType):
         if not self._grammar:
             seq = [f.production() for f in self._fields_ordered if not isinstance(f, SubField)]
             seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
-            self._grammar = grammar.Grammar(self.name(), seq, self._args, addl_ids=self._vars.values(), location=self.location())
+            self._grammar = grammar.Grammar(self.name(), seq, self._args, addl_ids=self._vars.values(), hooks=self._unit_hooks, location=self.location())
             
         return self._grammar
 
@@ -783,7 +784,8 @@ class Unit(type.ParseableType):
                 
             else:
                 # Unit-global hook, not attached to field.
-                assert name in _valid_hooks
+                assert name in Unit._valid_hooks
+                self._unit_hooks[name] = hooks
 
     def validate(self, vld):
         type.ParseableType.validate(self, vld)
@@ -801,7 +803,7 @@ class Unit(type.ParseableType):
         for var in self._vars.values():
             var.validate(vld)
             
-        for (name, hooks) in self._hooks:
+        for (name, hooks) in self._hooks.items():
             for h in hooks:
                 h.validate(vld)
                 

@@ -9,9 +9,12 @@ import binpac.expr as expr
 
 # Language keywords. They will be turned into the corresponding all-uppercase
 # token. 
-keywords = ["module", "type", "export", "unit", "print", "list",
+keywords = ["module", "type", "import", "export", "unit", "print", "list",
             "global", "const", "if", "else", "var", "on", "switch", 
-            "extern", "local", "return", "foreach", "enum"]
+            "extern", "local", "return", "foreach", "enum"
+            ]
+            
+control_props = ["%debug", "%ctor"]
 
 # Keywords for simple types, and what we turn them into.
 types = {
@@ -31,7 +34,8 @@ def _loc(t):
 tokens = [
     "IDENT", "CONSTANT", "BYTES", "REGEXP", "PACTYPE", "ATTRIBUTE", "PROPERTY",
     "EQUAL", "UNEQUAL", "HASATTR", "ARROW", "AND", "PLUSEQUAL", 
-    ] + [k.upper() for k in keywords]
+    ] + [k.upper() for k in keywords] \
+      + [k.upper()[1:] for k in control_props]
 
 # Operators with more than one character.
 
@@ -141,25 +145,31 @@ def t_CTOR_REGEXP(t):
 
 # Identifiers.
 def t_IDENT(t):
-    r'[%&]?[_a-zA-Z]([a-zA-Z0-9_]|::)*'
+    r'[%&]?[_a-zA-Z]([a-zA-Z0-9_]|::%?)*'
     
     if t.value.startswith("&"):
         t.value = t.value[1:]
         t.type = "ATTRIBUTE"
         
     elif t.value.startswith("%"):
-        t.value = t.value[1:]
-        t.type = "PROPERTY"
+        
+        if t.value in control_props:
+            token = t.value[1:].upper()
+            t.type = token
+        
+        else:
+            t.value = t.value[1:]
+            t.type = "PROPERTY"
     
     elif t.value in types:
         t.value = types[t.value]()
         t.type = "PACTYPE"
-    
+        
     elif t.value in keywords or t.value in types:
         token = t.value.upper()
         assert token in tokens
         t.type = token
-        
+    
     return t    
 
 def t_DOLLARDOLLAR(t):

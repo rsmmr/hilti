@@ -5,3 +5,6 @@
 module BinPAC
 
 type ParseError = exception<string>
+
+declare "C-HILTI" void enable_debugging(bool enabled)
+declare "C-HILTI" bool debugging_enabled()

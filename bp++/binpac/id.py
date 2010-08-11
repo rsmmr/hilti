@@ -110,7 +110,7 @@ class ID(node.Node):
         """
         return self._imported
 
-    def setImportant(self):
+    def setImported(self):
         """Marks the ID as being imported from another module."""
         self._imported = True
 
@@ -119,7 +119,7 @@ class ID(node.Node):
         
         Returns: ~~ID - The deep-copy.
         """
-        return copy.deep_copy(self)
+        return copy.deepcopy(self)
 
     def _internalName(self):
         """Returns the internal HILTI name of this ID.

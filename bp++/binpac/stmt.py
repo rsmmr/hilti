@@ -134,11 +134,17 @@ class UnitHook(Block):
     priority.
     
     stms: ~~Block - Block with statements and locals for the hook.
+    
+    debug: bool - If True, this hook will only compiled in if
+    the code generator is including debug code, and it will only be executed
+    if at run-time, debug mode is enabled (via the C function
+    ~~binpac_enable_debug).
     """
-    def __init__(self, unit, field, prio, stmts=None, location=None):
+    def __init__(self, unit, field, prio, stmts=None, debug=False, location=None):
         self._unit = unit
         self._field = field
         self._prio = prio
+        self._debug = debug
         
         if stmts:
             assert isinstance(stmts, Block)
@@ -147,6 +153,8 @@ class UnitHook(Block):
         super(UnitHook, self).scope().addID(id.Local("__hookrc", type.Bool()))
         
         if stmts:
+            stmts.scope().setParent(unit.scope())
+            
             for stmt in stmts.statements():
                 self.addStatement(stmt)
                 
@@ -185,6 +193,13 @@ class UnitHook(Block):
         """
         return self._prio
 
+    def debug(self):
+        """Returns whether debugging hooks are enabled.
+        
+        Returns: bool - True if debuggng hooks are enabled. 
+        """
+        return self._debug
+    
     ### Overidden from node.Node.
 
     def resolve(self, resolver):
@@ -202,6 +217,33 @@ class UnitHook(Block):
         if self._field:
             self._field.validate(vld)
 
+    def execute(self, cg):
+        if not self.debug():
+            # Standard hook.
+            return Block.execute(self, cg)
+        
+        if not cg.debug():
+            # Don't compile debug hook.
+            return
+            
+        # Add guard code to check whether debug output has been enabled at
+        # run-time.
+        fbuilder = cg.builder().functionBuilder()
+        hook = fbuilder.newBuilder("__debug_hook")
+        cont = fbuilder.newBuilder("__debug_cont")
+        
+        builder = cg.builder()
+        dbg = fbuilder.addTmp("__dbg", hilti.type.Bool())
+        builder.call(dbg, builder.idOp("BinPAC::debugging_enabled"), builder.tupleOp([]))
+            
+        cg.builder().if_else(dbg, hook.labelOp(), cont.labelOp())
+            
+        cg.setBuilder(hook)
+        Block.execute(self, cg)
+        cg.builder().jump(cont.labelOp())
+        cg.setBuilder(cont)
+            
+            
 class FieldControlHook(UnitHook):
     """An field hook that can exercise control over the parsing, and defines a
     ``$$`` identifier for use in a field's attribute expressions or

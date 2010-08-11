@@ -12,7 +12,7 @@ Usage: binpac-config <options>
     --cflags        Print flags for C compiler.
     --cxxflags      Print flags for C++ compiler.
     --distbase      Print path of the BinPAC source distribution.
-    --bpflags       Print flags for bp++.
+    --bppflags       Print flags for bp++.
     --hiltic        Print flags for hiltic.
     --ldflags       Print flags for linker.
     --libs-bc       Print bitcode libaries LLVM linker.
@@ -80,12 +80,14 @@ while [ "$1" != "" ]; do
             echo "-lbinpac"
             shift;;
             
-        --bpflags)
-            #if [ "$debug" == "" ]; then
-            #    echo "-I$base/libbinpac"    
-            #else
-            #    echo "-I$base/libbinpac -d"    
-            #fi
+        --bppflags)
+            if [ "$debug" == "" ]; then
+                echo ""    
+                #echo "-I$base/libbinpac"    
+            else
+                echo "-d"    
+                #echo "-I$base/libbinpac -d"    
+            fi
             shift;;
             
         --hiltic)

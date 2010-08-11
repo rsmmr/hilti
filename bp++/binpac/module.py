@@ -6,6 +6,7 @@ import node
 import id
 import scope
 import type
+import stmt
 import location
 import binpac.visitor as visitor
 
@@ -28,7 +29,8 @@ class Module(node.Node):
         self._location = location
         self._scope = scope.Scope(name, None)
         self._stmts = []
-        self._imported_modules = [] # Set by the parser.
+        self._hooks = []
+        self._imported_modules = []
 
     def name(self):
         """Returns the name of the module. The module's name will
@@ -67,16 +69,13 @@ class Module(node.Node):
                 # Don't import IDs recursively.
                 continue
             
-            t = i.type()
-            
-            if i.linkage() == id.Linkage.EXPORTED:
-                newid = id.clone()
-                newid.setImported()
-                self._scope.addID(newid)
-                continue
-            
-            # Cannot export types other than those above at the moment. 
-            util.internal_error("can't handle IDs of type %s in import" % (repr(t)))
+            newid = i.clone()
+            newid.setLocation(i.location())
+            newid.setImported()
+            newid.setNamespace(other.name())
+            self.scope().addID(newid)
+                
+        self._imported_modules += [(other, "<need to set path>")]
 
     def addStatement(self, stmt):
         """Adds a global statements to the module. Global statements will
@@ -85,7 +84,7 @@ class Module(node.Node):
         stmt: ~~Statement - The statement.
         """
         self._stmts += [stmt]
-
+        
     def statements(self):
         """Returns the module-global statements. These will be execute at
         module initialization time.
@@ -93,26 +92,83 @@ class Module(node.Node):
         Returns : list of ~~Statement - The statements.
         """
         return self._stmts
+    
+    def addExternalHook(self, ident, stmts, debug=False):
+        """Adds an external hook to an existing unit. 
+        
+        ident: string - A string referencing the hook. The must be suitably
+        qualified, e.g., ``MyUnit::my_hook`` or ``MyModule::MyUnit::my_hook``.
+        
+        stmts: ~~Block - The hook's body.
+
+        debug: bool - If True, this hook will only compiled in if
+        the code generator is including debug code, and it will only be executed
+        if at run-time, debug mode is enabled (via the C function
+        ~~binpac_enable_debug).
+        """
+        self._hooks += [(ident, stmts, debug)]
+        
+    def findUnitForHook(self, ident):
+        """Locates the unit that an external hook identfier refers to. 
+        
+        ident: string - The suitably qualified name of hook.
+        
+        Returns: tuple (~~Unit, string) - If the identifier references a valid
+        hook, the first element is the unit and the second the name of the
+        field. If not, returns ``(None, None)``.
+        """
+        
+        try:
+            (unit, field) = ident.rsplit("::", 1)
+        except ValueError:
+            return (None, None)
+        
+        unit = self.scope().lookupID(unit)
+        
+        if not unit:
+            return (None, None)
+        
+        if not isinstance(unit.type(), type.Unit):
+            return (None, None)
+        
+        return (unit.type(), field)
         
     def __str__(self):
         return "module %s" % self._name
 
     ### Overidden from node.Node.
 
+    def resolve(self, resolver):
+        for id in self._scope.IDs():
+            id.resolve(resolver)
+            
+        for s in self.statements():
+            s.resolve(resolver)
+            
+        for (ident, stmts, debug) in self._hooks:
+            stmts.resolve(resolver)
+            
+            (unit, field) = self.findUnitForHook(ident)
+            if not unit:
+                vld.error("%s does not reference a valid unit field/hook" % ident)
+                continue
+            
+            # Add the hook to the unit, which will also take care of
+            # validating it.
+            hook = stmt.UnitHook(unit, None, 0, stmts=stmts, debug=debug)
+            unit.addHook(field, hook, 0)
+            # Trigger update of unit internal hook tracking.
+            unit.doResolve(resolver)
+
+            stmts.resolve(resolver)
+            
     def validate(self, vld):
         for id in self._scope.IDs():
             id.validate(vld)
             
         for stmt in self.statements():
             stmt.validate(vld)
-
-    def resolve(self, resolver):
-        for id in self._scope.IDs():
-            id.resolve(resolver)
             
-        for stmt in self.statements():
-            stmt.resolve(resolver)
-
     def pac(self, printer):
         printer.output("module %s\n" % self._name, nl=True)
         
