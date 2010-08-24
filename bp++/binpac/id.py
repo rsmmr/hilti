@@ -96,6 +96,10 @@ class ID(node.Node):
         """
         return self._type
 
+    def setType(self, ty):
+        """Sets the ID's type."""
+        self._type = ty
+        
     def linkage(self):
         """Returns the ID's linkage.
         
@@ -350,23 +354,7 @@ class Variable(ID):
     """
     def __init__(self, name, type, location=None):
         super(Variable, self).__init__(name, type, location=location)
-        self._hooks = []
 
-    def hooks(self):
-        """Returns the hook statements associated with the variable.
-        
-        Returns: list of ~~UnitHook - The hooks. 
-        """
-        return self._hooks
-        
-    def addHook(self, hook):
-        """Adds a hook statement to the variable. The statement will be executed
-        when the variable is assigned to.
-        
-        hook: ~~UnitHook - The hook.
-        """
-        self._hooks += [hook]
-        
     ### Overidden from node.Node.
 
     def validate(self, vld):
@@ -375,15 +363,9 @@ class Variable(ID):
     def resolve(self, resolver):
         ID.resolve(self, resolver)
         
-        for h in self._hooks:
-            h.resolve(resolver)
-        
     def validate(self, vld):
         ID.validate(self, vld)
         
-        for h in self._hooks:
-            h.validate(vld)
-
     def pac(self, printer):
         printer.output("var %s" % self.name())
         

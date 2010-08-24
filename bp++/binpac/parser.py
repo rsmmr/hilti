@@ -87,7 +87,7 @@ def p_module_global_stmt(p):
     
 def p_module_global_hook(p):
     """module_global : opt_debug ON hook_ident stmt_block"""
-    p.parser.state.module.addExternalHook(p[3], p[4], p[1])
+    p.parser.state.module.addExternalHook(None, p[3], p[4], p[1])
 
 def p_module_global_import(p):
     """module_global : IMPORT IDENT ';'"""
@@ -276,7 +276,7 @@ def p_type_unit(p):
 
 def p_instantiate_unit(p):
     """_instantiate_unit :"""
-    p.parser.state.unit = type.Unit(_currentScope(p), args=p[-1])
+    p.parser.state.unit = type.Unit(p.parser.state.module, args=p[-1])
     p.parser.state.in_switch = None 
 
 def p_enter_unit_hook(p):
@@ -334,13 +334,12 @@ def p_unit_var(p):
     p.parser.state.unit.addVariable(i)
     
     if p[4] != ';':
-        hook = stmt.UnitHook(p.parser.state.unit, None, 0, stmts=p[5], debug=p[4])
-        i.addHook(hook)
+        hook = stmt.VarHook(p.parser.state.unit, p[1], 0, stmts=p[5], debug=p[4])
+        p.parser.state.module.addHook(hook)
 
 def p_unit_hook(p):
     """unit_hook : opt_debug ON hook_ident stmt_block"""
-    hook = stmt.UnitHook(p.parser.state.unit, None, 0, stmts=p[4], debug=p[1])
-    p.parser.state.unit.addHook(p[3], hook, 0)
+    p.parser.state.module.addExternalHook(p.parser.state.unit, p[3], p[4], p[1])
     
 def p_opt_debug(p):
     """opt_debug : DEBUG 
@@ -366,11 +365,15 @@ def p_unit_field(p):
 def p_unit_field_with_hook(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond opt_foreach opt_debug stmt_block _leave_unit_field"""
     if not p[7]:
-        hook = stmt.UnitHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
-        p.parser.state.field.addHook(hook)
+        if p.parser.state.in_switch:
+            hook = stmt.SubFieldHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
+        else:
+            hook = stmt.FieldHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
+            
+        p.parser.state.module.addHook(hook)
     else:
-        hook = stmt.ForEachHook(p.parser.state.field, 0, None, stmts=p[8])
-        p.parser.state.field.addControlHook(hook)
+        hook = stmt.FieldForEachHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
+        p.parser.state.module.addHook(hook)
         
     _addAttrs(p, p.parser.state.field.type(), p[5])
     p[0] = p.parser.state.field
@@ -383,13 +386,7 @@ def p_opt_foreach(p):
     
 def p_enter_unit_field(p):
     """_enter_unit_field : """
-    # If the field has a control hook, we push it's scope.
-    hooks = p.parser.state.field.controlHooks()
-    if hooks:
-        _pushScope(p, hooks[0].scope())
-    else:
-        # Push a dummy scope so that we can pop in any case.
-        _pushScope(p, scope.Scope(None, _currentScope(p)))
+    _pushScope(p, p.parser.state.field.scope())
 
 def p_leave_unit_field(p):
     """_leave_unit_field : """

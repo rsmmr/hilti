@@ -1,15 +1,15 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
 # @TEST-EXEC:  echo 1234567890 | ./a.out -p test >output 2>&1
 # @TEST-EXEC:  test-diff output
 
 module Mini;
 
 export type test = unit {
-       %export True;
        a: bytes &length=4
           { self.a = b"Overwritten!"; }
+          
        b: bytes &length=6
           { print self.a; }
 };

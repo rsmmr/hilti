@@ -1,6 +1,8 @@
 # $Id$
 """Compiles a BinPAC++ module into a HILTI module."""
 
+builtin_id = id
+
 import node
 import type
 import id
@@ -51,7 +53,7 @@ class CodeGen(object):
         self._builders = [None]
         self._pgens = [None]
         self._hooks = [None]
-
+        
     def debug(self):
         """Returns true if compiling in debugging mode. 
         
@@ -66,14 +68,16 @@ class CodeGen(object):
         """
         return self._module
     
-    def beginFunction(self, name, ftype):
+    def beginFunction(self, name, ftype, hook=False):
         """Starts a new function. The method creates the function builder as
         well as the initial block builder (which will be returned by
         subsequent calls to ~~builder). 
         
         When done building this function, ~~endFunction must be called.
         
-        name: string - The name of the function.
+        name: string - The name of the function; *may* be none for
+        anonymous function like those added to a HILTI hook.
+        
         ftype: hilti.type.Function - The HILTI type of the
         function.
         
@@ -81,7 +85,7 @@ class CodeGen(object):
         ~~hilti.builder.BlockBuilder) - The builders created
         for the new function.
         """
-        fbuilder = hilti.builder.FunctionBuilder(self._mbuilder, name, ftype)
+        fbuilder = hilti.builder.FunctionBuilder(self._mbuilder, name if name else "<no name>", ftype, dontadd=(name == None))
         self._builders += [fbuilder.newBuilder(None)]
         
         return (fbuilder, self._builders[-1])
@@ -162,8 +166,12 @@ class CodeGen(object):
         
         Returns: True if the hook is currently bein compiled.
         """
-        return hook in self._hooks
-        
+        for h in self._hooks:
+            if h and h.hiltiName(self) == hook.name():
+                return True
+            
+        return False
+
     def parserGen(self):
         """Returns the parser generator for grammar currently being compiled.
         
@@ -227,7 +235,9 @@ class CodeGen(object):
                 i.function().evaluate(self)
 
         self._initFunction()
-                
+        
+        self._module.execute(self)
+        
         self._errors += self._mbuilder.finish(validate=False)
 
         return self._errors == 0
@@ -268,5 +278,102 @@ class CodeGen(object):
         
         self.endFunction()
         
+    def hookName(self, unit, field, ddarg=False, addl=None):
+        """Returns the internal name of a HILTI hook function. The
+        name is constructed based on the unit/field the hook belongs
+        too.
         
+        unit: ~~Unit - The unit type the hook belongs to.
+        
+        field: ~~Field or string - The unit field/variable/hook the hook
+        belongs to. If a ~~Field, the hook is associated with that field. If a
+        string, it must be either the name of one of the unit's variables, or
+        the name of a global unit hook (e.g., ``%ctor``).
+        
+        ddarg: Bool - If true, the hook received an additional ``$$``
+        argument. If so, the name is changed accordingly to avoid name
+        conflicts.
+        
+        addl: string - If given, an additional string postfix that will be
+        added to the generated hook name. 
+        
+        Returns: string - The name of the internal hook functin.
+        """
+        ext = "_dollardollar" if ddarg else ""
+
+        if addl:
+            ext = ext + "_%s" % addl
+        
+        if isinstance(field, str):
+            name = field
+        
+        else:
+            name = field.name() if field.name() else "anon_%s" % builtin_id(field)
+        
+        name = name.replace("%", "__")
+            
+        return "hook_on_%s_%s%s" % (unit.name(), name, ext)
     
+    def runFieldHook(self, field, obj, value=None, result=None, addl=None):
+        """Runs a hook associated with a unit field. 
+        
+        field: ~~Field - The unit field.
+        
+        obj: ~~hilti.operand.Operand - An operand with the hook's ``self``
+        argument. 
+        
+        value: ~~hilti.operand.Operand - An operand wit the hook;s ``$$``
+        argument. Must be given if hooks expects such. 
+        
+        result: ~~hilti.operand.Operand - An operand receiving the hook's
+        result. Must be given if hook returns a value.
+        
+        addl: string - If given, an additional string postfix to be added to
+        the generated hook name. 
+        """
+        builder = self.builder()
+        name = self.hookName(field.parent(), field, value != None, addl=addl)
+        op1 = builder.idOp(hilti.id.Unknown(name, self.moduleBuilder().module().scope()))
+        
+        args_proto = [(hilti.id.Parameter("__self", obj.type()), None)]
+        
+        if value:
+            args = [obj, value]
+            args_proto += [(hilti.id.Parameter("__dollardollar", value.type()), None)]
+        else:
+            args = [obj]
+            
+        for arg in field.parent().args():
+            i = hilti.id.Parameter(arg.name(), arg.type().hiltiType(self))
+            args += [hilti.operand.ID(i)]
+            args_proto += [(i, None)]
+            
+        self._mbuilder.declareHook(name, args_proto, result.type() if result else hilti.type.Void())
+        builder.hook_run(result, op1, builder.tupleOp(args))
+
+    def declareHook(self, unit, field, objtype, ddtype=None):
+        """Adds a hook to the namespace of the current HILTI module. Returns
+        the existing declaration if it already exists.
+        
+        unit: ~~Unit - The unit type the hook belongs to.
+        
+        field: ~~Field or string - The unit field/variable/hook the hook
+        belongs to. If a ~~Field, the hook is associated with that field. If a
+        string, it must be either the name of one of the unit's variables, or
+        the name of a global unit hook (e.g., ``%ctor``).
+        
+        objtype: ~~hilti.Type - The type of the hook's ``self`` parameter.
+        
+        ddtype: ~~Type - The type of the hook's ``$$`` parameter, if any.
+        
+        Returns: ~~hilti.operand.ID - The ID referencing the hook.
+        """
+        name = self.hookName(unit, field, ddtype != None)
+        args = [(hilti.id.Parameter("__self", objtype, None))]
+        
+        if ddtype:
+            args += [(hilti.id.Parameter("__dollardollar", ddtype.hiltiType(self.cg()), None))]
+            
+        hid = self._mbuilder.declareHook(name, args, hilti.type.Void())
+            
+        return hilti.operand.ID(hid)

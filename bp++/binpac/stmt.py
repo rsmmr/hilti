@@ -58,9 +58,9 @@ class Block(Statement):
     pscope: ~~Scope - The parent scope for this block.
     location: ~~Location - The location where the expression was defined. 
     """
-    def __init__(self, pscope, location=None):
+    def __init__(self, pscope, stmts=None, location=None):
         super(Block, self).__init__(location=location)
-        self._stmts = []
+        self._stmts = stmts if stmts != None else []
         self._scope = scope.Scope(None, pscope)
 
     def scope(self):
@@ -126,42 +126,52 @@ class UnitHook(Block):
 
     unit: ~~Unit - The unit this hook is part of.
     
-    field: ~~Field - The field to which hook is attached, or None if
-    not attached a specific field.
+    name: string - The name of the hook. For fields, this is the field name;
+    for unit hooks, it's the name of that (e.g., ``%ctor``). 
     
     prio: int - The priority of the statement. If multiple statements are
     defined for the same field, they are executed in order of decreasing
     priority.
     
-    stms: ~~Block - Block with statements and locals for the hook.
+    stmts: ~~Block - Block with statements and locals for the hook.
     
     debug: bool - If True, this hook will only compiled in if
     the code generator is including debug code, and it will only be executed
     if at run-time, debug mode is enabled (via the C function
     ~~binpac_enable_debug).
-    """
-    def __init__(self, unit, field, prio, stmts=None, debug=False, location=None):
+    """        
+    def __init__(self, unit, name, prio, stmts=None, debug=False, location=None):
         self._unit = unit
-        self._field = field
+        self._name = name
         self._prio = prio
         self._debug = debug
         
         if stmts:
             assert isinstance(stmts, Block)
-        
-        super(UnitHook, self).__init__(unit.scope(), location=location)
-        super(UnitHook, self).scope().addID(id.Local("__hookrc", type.Bool()))
+            
+        hscope = scope.Scope(None, unit.scope())
+        hscope.addID(id.Parameter("__self", unit))
+
+        super(UnitHook, self).__init__(hscope, location=location)
         
         if stmts:
-            stmts.scope().setParent(unit.scope())
-            
-            for stmt in stmts.statements():
-                self.addStatement(stmt)
-                
-            for lid in stmts.scope().IDs():
-                if isinstance(lid, id.Local):
-                    self._scope.addID(lid)
+            self.setStmts(stmts)
                     
+    def setStmts(self, stmts):
+        """Sets the statements associated with this hook.
+        
+        stmts: ~~Block - The statement block.
+        """
+        stmts.scope().setParent(self.scope())
+        
+        for stmt in stmts.statements():
+            self.addStatement(stmt)
+            
+        for lid in stmts.scope().IDs():
+            if isinstance(lid, id.Local):
+                self._scope.addID(lid)
+                
+            
     def unit(self):
         """Returns the unit associated with the hook.
         
@@ -170,20 +180,13 @@ class UnitHook(Block):
         return self._unit
             
     def field(self):
-        """Returns the field associated with the hook.
-        
-        Returns: ~~Field - The field, or None if no field is
-        associated with the hook.
-        """
-        return self._field
+        """Returns the name associated with the hook. For fields, this is the
+        field name; for unit hooks, it's the name of that (e.g., ``%ctor``). 
 
-    def setField(self, field):
-        """Associates a unit field with this hook.
-        
-        field: ~~Field - The field.
+        Returns: ~~string - The name. 
         """
-        self._field = field
-    
+        return self._name
+
     def priority(self):
         """Returns the priority associated with the hook.  If multiple statements are
         defined for the same field, they are executed in order of decreasing
@@ -199,6 +202,29 @@ class UnitHook(Block):
         Returns: bool - True if debuggng hooks are enabled. 
         """
         return self._debug
+
+    ### Methods for derived classes to override.
+    
+    def hiltiName(self, cg):
+        """Returns the internal HILTI name for the hook.
+        
+        Returns: string - The name.
+        """
+        return cg.hookName(self.unit(), self._name)
+
+    def hiltiFunctionType(self, cg):
+        """Returns the internal HILTI type for the hook.
+        
+        Returns: hilti.type.Hook - The type.
+        """
+        arg1 = (hilti.id.Parameter("__self", self.unit().hiltiType(cg)), None)
+        
+        params = []
+        for arg in self._unit.args():
+            i = hilti.id.Parameter(arg.name(), arg.type().hiltiType(cg))
+            params += [(i, None)]
+            
+        return hilti.type.Hook([arg1] + params, hilti.type.Void())
     
     ### Overidden from node.Node.
 
@@ -206,152 +232,136 @@ class UnitHook(Block):
         Block.resolve(self, resolver)
         self._unit.resolve(resolver)
         
-        if self._field:
-            self._field.resolve(resolver)
+        for arg in self._unit.args():
+            arg.resolve(resolver)
+            self._scope.addID(id.Parameter(arg.name(), arg.type())) 
             
     def validate(self, vld):
         Block.validate(self, vld)
-
         self._unit.validate(vld)
         
-        if self._field:
-            self._field.validate(vld)
-
     def execute(self, cg):
-        if not self.debug():
-            # Standard hook.
-            return Block.execute(self, cg)
-        
-        if not cg.debug():
+        if self.debug() and not cg.debug():
             # Don't compile debug hook.
             return
-            
-        # Add guard code to check whether debug output has been enabled at
-        # run-time.
-        fbuilder = cg.builder().functionBuilder()
-        hook = fbuilder.newBuilder("__debug_hook")
-        cont = fbuilder.newBuilder("__debug_cont")
         
-        builder = cg.builder()
-        dbg = fbuilder.addTmp("__dbg", hilti.type.Bool())
-        builder.call(dbg, builder.idOp("BinPAC::debugging_enabled"), builder.tupleOp([]))
+        if self.debug():
+            # Add guard code to check whether debug output has been enabled at
+            # run-time.
+            fbuilder = cg.builder().functionBuilder()
+            hook = fbuilder.newBuilder("__debug_hook")
+            cont = fbuilder.newBuilder("__debug_cont")
             
-        cg.builder().if_else(dbg, hook.labelOp(), cont.labelOp())
+            builder = cg.builder()
+            dbg = fbuilder.addTmp("__dbg", hilti.type.Bool())
+            builder.call(dbg, builder.idOp("BinPAC::debugging_enabled"), builder.tupleOp([]))
             
-        cg.setBuilder(hook)
+            cg.builder().if_else(dbg, hook.labelOp(), cont.labelOp())
+            
+            cg.setBuilder(hook)
+            
         Block.execute(self, cg)
-        cg.builder().jump(cont.labelOp())
-        cg.setBuilder(cont)
-            
-            
-class FieldControlHook(UnitHook):
-    """An field hook that can exercise control over the parsing, and defines a
-    ``$$`` identifier for use in a field's attribute expressions or
-    statements. It is associated with a field by calling ~~addControlHook. The
-    hook's ~~scope has the ``$$`` identifier defined. 
-    
-    field: ~~Field - The field to which hook is attached. 
-    
-    prio: int - The priority of the statement. If multiple statements are
-    defined for the same field, they are executed in order of decreasing
-    priority.
+        
+        if self.debug():
+            cg.builder().jump(cont.labelOp())
+            cg.setBuilder(cont)
 
-    ddtype: ~~Type or function - The type of the ``$$`` identifier defined by
-    this hook. If this a function, it will be called (without any arguments)
-    when the type is needed for the first time and must then return the type.
-    This can be used if the type is not yet known at the time of hook
-    instantiation.
+class VarHook(UnitHook):
+    """A hook associated with a unit variable.
     
-    stms: list of ~~Statement - Series of statements to initalize the hook with.
+    *name*: string - The name of the variable.
+    
+    See ~~UnitHook for the other parameters.
     """
-    def __init__(self, field, prio, ddtype, stmts=None, location=None):
-        super(FieldControlHook, self).__init__(field.parent(), field, prio, stmts, location=location)
-        self._ddtype = ddtype
-        self.scope().addID(id.Local("__dollardollar", ddtype if ddtype else type.Unknown("unknown-$$-type")))
+    def __init__(self, unit, name, prio, stmts=None, debug=False, location=None):
+        super(VarHook, self).__init__(unit, name, prio, stmts, debug, location=location)
+    
+class FieldHook(UnitHook):
+    """A hook associated with a unit field.
+    
+    *field*: ~~Field - The field.
+    
+    See ~~UnitHook for the other parameters.
+    """
+    def __init__(self, unit, field, prio, stmts=None, debug=False, location=None):
+        super(FieldHook, self).__init__(unit, field.name(), prio, stmts, debug, location)
+        self._field = field
         
-    def dollarDollarType(self):
-        """Returns the type of the hook's ``$$`` identifier.
+    def field(self):
+        """Returns the field associated with the hook.
         
-        Returns: ~~Type - The type.
+        Returns: ~~Field - The field, or None if no field is
+        associated with the hook.
         """
-        return self._ddtype
-    
-    def setDollarDollarType(self, ddtype):
-        """XXXX"""
-        self._ddtype = ddtype
-        self.scope().addID(id.Local("__dollardollar", ddtype))
-    
-    ### Overidden from node.Node.
-    
+        return self._field
+
+    def setField(self, field):
+        """Associates a unit field with this hook.
+        
+        field: ~~Field - The field.
+        """
+        self._field = field    
+
     def resolve(self, resolver):
         UnitHook.resolve(self, resolver)
-        self._ddtype = self._ddtype.resolve(resolver)
+        self._field.resolve(resolver)
             
     def validate(self, vld):
         UnitHook.validate(self, vld)
+        self._field.validate(vld)
+
+    ### Overidden from UnitHook.
+    
+    def hiltiName(self, cg):
+        return cg.hookName(self.unit(), self._field)
+
+class SubFieldHook(FieldHook):
+    """A hook associated with a unit field for which multiple separately
+    triggered hooks may exist. 
         
-        if isinstance(self._ddtype, type.Type):
-            self._ddtype.validate(vld)
-            
-    ### Overidden from Block.
-
-class InternalControlHook(FieldControlHook):
-    """An implicitly defined, non user-visble control hook.
+    See ~~FieldHook for parameters. Note that *field* must be of type
+    ~~Container. 
     
-    field: ~~Field - The field to which hook is attached. 
-    
-    prio: int - The priority of the statement. If multiple statements are
-    defined for the same field, they are executed in order of decreasing
-    priority.
-
-    ddtype: ~~Type or function - The type of the ``$$`` identifier defined by
-    this hook. If this a function, it will be called (without any arguments)
-    when the type is needed for the first time and must then return the type.
-    This can be used if the type is not yet known at the time of hook
-    instantiation.
-    
-    stms: list of ~~Statement - Series of statements to initalize the hook with.
+    Note: We use this for hooks of switch-clauses.
     """
-    def __init__(self, field, prio, ddtype, stmts=None, location=None):
-        super(InternalControlHook, self).__init__(field, prio, ddtype, stmts, location)
-
-    def validate(self, vld):
-        FieldControlHook.validate(self, vld)
+    
+    ### Overidden from UnitHook.
+    
+    def hiltiName(self, cg):
+        return cg.hookName(self.unit(), self._field, addl=self._field.caseNumber())
+    
+class FieldForEachHook(FieldHook):
+    def __init__(self, unit, field, prio, stmts=None, debug=False, location=None):
+        """A for-each hook associated with a unit field.
+    
+        See ~~FieldHook for parameters. Note that *field* must be of type
+        ~~Container. 
+        """
+        assert isinstance(field.type(), type.Container)
+        super(FieldForEachHook, self).__init__(unit, field, prio, stmts, debug, location)
+        self.scope().addID(id.Parameter("__dollardollar", self.itemType()))
         
-        # FIXME: Currently, list is our only container type. We should however
-        # add Container trait eventually and then check for that.
-        if not isinstance(self.field().type(), type.List):
-            vld.error(self, "foreach can only be used with containter types")
-    
-class ForEachHook(FieldControlHook):
-    """A user-defined control hook that is triggered for each new element
-    parsed into a container. This hook must only be added to unit fields of a
-    container type.
-    
-    field: ~~Field - The field to which hook is attached. 
-    
-    prio: int - The priority of the statement. If multiple statements are
-    defined for the same field, they are executed in order of decreasing
-    priority.
-
-    ddtype: ~~Type or function - The type of the ``$$`` identifier defined by
-    this hook. If this a function, it will be called (without any arguments)
-    when the type is needed for the first time and must then return the type.
-    This can be used if the type is not yet known at the time of hook
-    instantiation.
-    
-    stms: list of ~~Statement - Series of statements to initalize the hook with.
-    """
-    def __init__(self, field, prio, ddtype, stmts=None, location=None):
-        super(ForEachHook, self).__init__(field, prio, ddtype, stmts, location)
-
-    def validate(self, vld):
-        FieldControlHook.validate(self, vld)
+    def itemType(self):
+        """Returns the type of the field's container items.
         
-        # FIXME: Currently, list is our only container type. We should however
-        # add Container trait eventually and then check for that.
-        if not isinstance(self.field().type(), type.List):
-            vld.error(self, "foreach can only be used with containter types")
+        Returns: ~~Type - The type of items.
+        """
+        return self._field.type().itemType()
+
+    ### Overidden from UnitHook.
+
+    def hiltiFunctionType(self, cg):
+        arg1 = (hilti.id.Parameter("__self", self.unit().hiltiType(cg)), None)
+        arg2 = (hilti.id.Parameter("__dollardollar", self.itemType().hiltiType(cg)), None)
+        
+        params = []
+        for arg in self._unit.args():
+            i = hilti.id.Parameter(arg.name(), arg.type().hiltiType(cg))
+            params += [(hilti.operand.ID(i), None)]
+        return hilti.type.Hook([arg1, arg2] + params, hilti.type.Bool())
+
+    def hiltiName(self, cg):
+        return cg.hookName(self.unit(), self.field(), True)
     
 class Print(Statement):
     """The ``print`` statement.
@@ -516,12 +526,16 @@ class IfElse(Statement):
         
         cg.setBuilder(yes)
         self._yes.execute(cg)
-        cg.builder().jump(cont.labelOp())
+        
+        if not cg.builder().terminated():
+            cg.builder().jump(cont.labelOp())
         
         if no:
             cg.setBuilder(no)
             self._no.execute(cg)
-            cg.builder().jump(cont.labelOp())
+            
+            if not cg.builder().terminated():
+                cg.builder().jump(cont.labelOp())
             
         cg.setBuilder(cont)
         
@@ -536,9 +550,10 @@ class Return(Statement):
     
     location: ~~Location - The location where the expression was defined. 
     """
-    def __init__(self, expr, location=None):
+    def __init__(self, expr, location=None, _hook=False):
         super(Return, self).__init__(location=location)
         self._expr = expr
+        self._hook = _hook
         
     ### Overidden from node.Node.
 
@@ -554,6 +569,9 @@ class Return(Statement):
         if self._expr:
             self._expr.validate(vld)
         
+        if self._hook:
+            return
+            
         if not vld.currentFunction():
             vld.error(self, "return outside of function")
             return
@@ -573,9 +591,14 @@ class Return(Statement):
 
     def execute(self, cg):
         if self._expr:
-            cg.builder().return_result(self._expr.simplify().evaluate(cg))
+            val = self._expr.simplify().evaluate(cg)
+            if not self._hook:
+                cg.builder().return_result(val)
+            else:
+                cg.builder().hook_stop(val)
         else:
             cg.builder().return_void()
         
     def __str__(self):
         return "<return statement>"
+    

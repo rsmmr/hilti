@@ -509,11 +509,11 @@ class ParseableType(Type):
         fbuilder = cg.functionBuilder()
         
         error = fbuilder.newBuilder("error")
-        error.makeDebugMsg("binpac", "parse error, insufficient input")
+        error.makeDebugMsg("binpac-verbose", "parse error, insufficient input")
         error.makeRaiseException("BinPAC::ParseError", error.constOp("insufficient input"))
         
         suspend = fbuilder.newBuilder("suspend")
-        suspend.makeDebugMsg("binpac", "out of input, yielding ...")
+        suspend.makeDebugMsg("binpac-verbose", "out of input, yielding ...")
         suspend.yield_()
 
         cont = fbuilder.addTmp("__cont", hilti.type.Bool())
@@ -572,10 +572,10 @@ class ParseableType(Type):
         time a ~~UnitField has resolved all it unknown symbols but not
         performed anything else yet. 
         
-        This method can be overridden by derived classes if they need to
-        perform some field-specific initialization already before *production*
-        is called. An example is adding the field's ~~FieldControlHook.  The
-        default implementation does nothing. 
+        This method can be overridden by derived classes if they
+        need to perform some field-specific initialization already
+        before *production* is called. An example is adding a hook
+        to the field.  The default implementation does nothing. 
         
         field: ~~UnitField - The newly instantiated unit field. 
         """
@@ -623,6 +623,17 @@ class ParseableType(Type):
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
 
+class Container(ParseableType):
+    """A parseable type that is a container, i.e., a collection of items of a
+    particular type. 
+    
+    Todo: Currently, there are no method in this class, we just use it as a
+    trait to idenify containers. ~~List is the only container we have
+    currently, but once we have more, we should move their shared methods
+    (e.g., ~~itemType) to here.
+    """
+    pass
+        
 class Unknown(ParseableType):
     """Type for an identifier that has not yet been resolved. This is used
     initially for forward references, and then later replaced the actual type.

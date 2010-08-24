@@ -1,0 +1,7 @@
+[binpac] Request
+[binpac]    RequestLine
+[binpac]       method = 'GET'
+[binpac]       uri = 'index.html'
+[binpac]       version = 'HTTP/1.0'
+[binpac]    Message
+[binpac]       msg = 'Message'

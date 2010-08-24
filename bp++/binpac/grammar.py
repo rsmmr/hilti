@@ -32,10 +32,14 @@ class Production(object):
         self._pred = None
         self._pre = []
         self._post = []
-        self._hooks = []
         self._location = location
         self._noid = False
-
+        self._field = None
+        self._foreach = None
+        self._until = None
+        self._run_hook = False
+        self._aux_hook = None
+        
         if not symbol:
             # Internal production name.
             Production._counter += 1
@@ -84,6 +88,21 @@ class Production(object):
         """
         return self._name
 
+    def setField(self, f):
+        """Associates a field with the production.
+        
+        f: ~~Field - The field.
+        """
+        self._field = f
+        
+    def field(self):
+        """Returns the field associated with the production.
+        
+        Returns: ~~Field - The field, or None if none has been
+        associated.
+        """
+        return self._field
+        
     def setNoID(self):
         """Sets a flags indicating the HILTI struct using this production
         should not contain an item for its name. 
@@ -124,22 +143,39 @@ class Production(object):
         Returns: ~~Type - The type.
         """
         return self.type()
-    
-    def hooks(self):
-        """Returns the hooks associated with the production.
+
+    def forEachField(self):
+        """Returns the field for which this production corresponds to one of
+        its ``foreach`` hook, or None if no such has been set.
         
-        Returns: list of ~~UnitHook - The hooks.
+        Returns: ~~Field - The field. 
         """
-        return self._hooks
-        
-    def addHook(self, hook):
-        """Adds a hook to the production. The hook will be executed when the
-        production has been fully parsed.
-        
-        hook: ~~UnitHook - The hook.
-        """
-        self._hooks += [hook]
+        return self._foreach
     
+    def setForEachField(self, f):
+        """Sets a field for which this production corresponds to a ``foreach``
+        hook.
+        
+        f: ~~Field - The field. 
+        """
+        self._foreach = f
+        
+    def untilField(self):
+        """Returns the field for which this production corresponds to its
+        ``until`` condition, or None if no such has been set.
+        
+        Returns: ~~Field - The field. 
+        """
+        return self._until
+    
+    def setUntilField(self, f):
+        """Sets a field for which this production corresponds to a ``until``
+        condition.
+        
+        f: ~~Field - The field. 
+        """
+        self._until = f
+
     def __str__(self):
         return "%s%s" % (self._fmtLong(), self._fmtName())
     
@@ -227,7 +263,7 @@ class Terminal(Production):
         Returns: ~~Function - The filter function, or None if none defined.
         """
         return self._filter
-    
+
 class Literal(Terminal):
     """A literal. A literal is anythig which can be directly scanned for as
     sequence of bytes. 
@@ -540,7 +576,8 @@ class Boolean(Conditional):
         Returns: 2-tuple of ~~Production - The *true* and *false* branches.
         """
         return (self._alt1, self._alt2)
-        
+
+    
 class Switch(Conditional):
     """Alternatives between which we decide based on which value out of a set
     of options is matched; plus a default if none.
@@ -584,14 +621,13 @@ class Switch(Conditional):
         return self._default
         
 class Grammar:
-    def __init__(self, name, root, params=None, hooks=None, addl_ids=None, location=None):
+    def __init__(self, name, root, params=None, addl_ids=None, location=None):
         """Instantiates a grammar given its root production.
         
         name: string - A name which uniquely identifies this grammar.
         root: ~~Production - The grammar's root production.
         params: list of ~~ID - Additional parameters passed into the
         grammar's parser. 
-        hooks: dict string -> ~~Hook - Hooks for this grammar, mapped by names (e.g., "%ctor")
         addl_ids: list of ~~ID - Additional IDs that should become part of the
         generated parser object. 
         """
@@ -603,7 +639,6 @@ class Grammar:
         self._nullable = {}
         self._first = {}
         self._follow = {}
-        self._hooks = hooks if hooks != None else {}
         self._params = params if params else []
         
         self._addProduction(root)
@@ -611,6 +646,7 @@ class Grammar:
         self._simplify()
         self._computeTables()
         self._location = location
+        self._pobjtype = None
         
         if addl_ids:
             for id in addl_ids:
@@ -715,22 +751,16 @@ class Grammar:
         """
         return self._start
 
-    def hooks(self, name):
-        """Returns global hooks registered for the grammar's unit type under a
-        given name.
+    def hiltiParseObjectType(self):
+        """Returns the type of the destination struct generated for a grammar.
+        This function must only be called after the grammar has been compiled
+        by a ~~ParserGen.
         
-        name: string - The name of the hooks to retrieve the hooks for.
-        
-        Returns: list of ~~UnitHook - The hooks with their priorities. The
-        list will be empty if no hooks have been registered for that name. 
-        
-        Note: If there are multiple fields with the same name, the returned
-        list will contains the hooks for all of them.
+        Returns: hilti.Type.Reference - A reference type for struct generated
+        for parsing this grammar. 
         """
-        try:
-            return self._hooks[name]
-        except KeyError:
-            return []
+        assert self._pobjtype
+        return self._pobjtype
     
     def _addProduction(self, p):
         if p.symbol() in self._productions:

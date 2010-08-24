@@ -335,7 +335,6 @@ def evaluate(op, cg, exprs):
     
     if not func:
         print [str(e) for e in exprs]
-        print str(exprs[2][0]), exprs[2][0].type()
         util.error("no evaluate implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
     
     return func(cg, *exprs)

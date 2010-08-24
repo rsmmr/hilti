@@ -30,6 +30,7 @@ class Module(node.Node):
         self._scope = scope.Scope(name, None)
         self._stmts = []
         self._hooks = []
+        self._external_hooks = []
         self._imported_modules = []
 
     def name(self):
@@ -92,12 +93,19 @@ class Module(node.Node):
         Returns : list of ~~Statement - The statements.
         """
         return self._stmts
-    
-    def addExternalHook(self, ident, stmts, debug=False):
+
+    def addExternalHook(self, unit, ident, stmts, debug=False):
         """Adds an external hook to an existing unit. 
         
-        ident: string - A string referencing the hook. The must be suitably
-        qualified, e.g., ``MyUnit::my_hook`` or ``MyModule::MyUnit::my_hook``.
+        unit: ~~Unit - The unit to add a hook to. Can be None if
+        *ident* is fully qualified.
+        
+        ident: string - A string referencing the hook. If *unit* is
+        given, this must be only the unit-internal name of the hook
+        (i.e., either a field name, a variable name, or a global
+        hook name such as ``%ctor``). If *unit* is not given, this
+        must suitably qualified, e.g., ``MyUnit::my_hook`` or
+        ``MyModule::MyUnit::my_hook``.
         
         stmts: ~~Block - The hook's body.
 
@@ -106,32 +114,10 @@ class Module(node.Node):
         if at run-time, debug mode is enabled (via the C function
         ~~binpac_enable_debug).
         """
-        self._hooks += [(ident, stmts, debug)]
+        self._external_hooks += [(unit, ident, stmts, debug)]
         
-    def findUnitForHook(self, ident):
-        """Locates the unit that an external hook identfier refers to. 
-        
-        ident: string - The suitably qualified name of hook.
-        
-        Returns: tuple (~~Unit, string) - If the identifier references a valid
-        hook, the first element is the unit and the second the name of the
-        field. If not, returns ``(None, None)``.
-        """
-        
-        try:
-            (unit, field) = ident.rsplit("::", 1)
-        except ValueError:
-            return (None, None)
-        
-        unit = self.scope().lookupID(unit)
-        
-        if not unit:
-            return (None, None)
-        
-        if not isinstance(unit.type(), type.Unit):
-            return (None, None)
-        
-        return (unit.type(), field)
+    def addHook(self, hook):
+        self._hooks += [hook]
         
     def __str__(self):
         return "module %s" % self._name
@@ -145,22 +131,18 @@ class Module(node.Node):
         for s in self.statements():
             s.resolve(resolver)
             
-        for (ident, stmts, debug) in self._hooks:
+        for (unit, ident, stmts, debug) in self._external_hooks:
             stmts.resolve(resolver)
             
-            (unit, field) = self.findUnitForHook(ident)
-            if not unit:
+            hook = self._makeHook(unit, ident, stmts, debug)
+            if not hook:
                 vld.error("%s does not reference a valid unit field/hook" % ident)
                 continue
             
-            # Add the hook to the unit, which will also take care of
-            # validating it.
-            hook = stmt.UnitHook(unit, None, 0, stmts=stmts, debug=debug)
-            unit.addHook(field, hook, 0)
-            # Trigger update of unit internal hook tracking.
-            unit.doResolve(resolver)
+            self._hooks += [hook]
 
-            stmts.resolve(resolver)
+        for h in self._hooks:
+            h.resolve(resolver)
             
     def validate(self, vld):
         for id in self._scope.IDs():
@@ -168,6 +150,13 @@ class Module(node.Node):
             
         for stmt in self.statements():
             stmt.validate(vld)
+
+        for h in self._hooks:
+            h.validate(vld)
+
+    def execute(self, cg):
+        for hook in self._hooks:
+            self._compileHook(cg, hook)
             
     def pac(self, printer):
         printer.output("module %s\n" % self._name, nl=True)
@@ -177,10 +166,60 @@ class Module(node.Node):
             
         for stmt in self.statements():
             stmt.pac(printer)
+            
+        for h in self._hooks:
+            h.pac(vld)
         
     # Visitor support.
     def visit(self, v):
         v.visit(self._scope)
-    
         
+    def _makeHook(self, unit, ident, stmts, debug):
+        """Instantiates a hook previously added via ~~addExternalHook."""
+        if not unit:
+            try:
+                (unit, name) = ident.rsplit("::", 1)
+                unit = self.scope().lookupID(unit)
+                
+                if not unit:
+                    return None
+                
+                unit = unit.type()
+
+                if not isinstance(unit, type.Unit):
+                    return None
+                
+            except ValueError:
+                return None
+        else:
+            name = ident
+
+        assert isinstance(unit, type.Unit)
+            
+        f = unit.field(name)
+        if f:
+            return stmt.FieldHook(unit, f[0], 0, stmts=stmts, debug=debug, location=unit.location())
+        
+        v = unit.variable(name)
+        if v:
+            return stmt.VarHook(unit, v, 0, stmts=stmts, debug=debug, location=unit.location())
+        
+        return stmt.UnitHook(unit, name, 0, stmts=stmts, debug=debug, location=unit.location())
     
+    def _compileHook(self, cg, hook):
+        """Compiles a hook into HILTI code."""
+        
+        ftype = hook.hiltiFunctionType(cg)
+        hid = cg.moduleBuilder().declareHook(hook.hiltiName(cg), ftype.args(), ftype.resultType())
+        
+        (fbuilder, builder) = cg.beginFunction(None, ftype, hook=True)
+        func = fbuilder.function()
+        func.setPriority(hook.priority())
+        
+        hid.addFunction(func)
+        
+        cg.beginHook(hook)
+        hook.execute(cg)
+        cg.endHook()
+        
+        cg.endFunction()

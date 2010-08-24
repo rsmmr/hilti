@@ -2,6 +2,8 @@
 #
 # The list type.
 
+builtin_id = id
+
 import binpac.type as type
 import binpac.expr as expr
 import binpac.stmt as stmt
@@ -13,6 +15,7 @@ import binpac.grammar as grammar
 import binpac.util as util
 
 import unit
+import function
 
 import hilti.type
 import hilti.operand
@@ -20,7 +23,7 @@ import hilti.operand
 import copy
 
 @type.pac("list")
-class List(type.ParseableType):
+class List(type.Container):
     """Type for list objects.  
     
     itemty: ~~Type - The type of the list elements. 
@@ -77,10 +80,6 @@ class List(type.ParseableType):
             for p in self._item_args:
                 p.resolve(resolver)
                 
-        if self._field:
-            for ch in self._field.controlHooks():
-                ch.setDollarDollarType(self.itemType())
-        
     def validate(self, vld):
         type.ParseableType.validate(self, vld)
         self._item.validate(vld)
@@ -141,9 +140,6 @@ class List(type.ParseableType):
         return { "until": (type.Bool(), False, None) }
 
     def initParser(self, field):
-        ctlhook = stmt.InternalControlHook(field, 255, None)
-        field.addControlHook(ctlhook)
-        
         self._field = field
         
     def _itemProduction(self, field):
@@ -172,55 +168,53 @@ class List(type.ParseableType):
             return self._prod
         
         loc = self.location()
-        until = self.attributeExpr("until")
+        item = self._itemProduction(field)
+        item.setForEachField(field)
+        unit = field.parent()
 
-        internal_hook = None
-        foreach_hooks = []
-        
-        for hook in field.controlHooks():
-            if isinstance(hook, stmt.InternalControlHook):
-                internal_hook = hook
-                
-            if isinstance(hook, stmt.ForEachHook):
-                foreach_hooks += [hook]
-                
-        assert internal_hook
-        
         if field.name():
+            # Create a high-priority hook that pushes each element into the list
+            # as it is parsed.
+            hook = stmt.FieldForEachHook(unit, field, 254)
+            
             # Create a "list.push_back($$)" statement for the internal_hook.
-            dollar = expr.Name("__dollardollar", internal_hook.scope(), location=loc)
-            slf = expr.Name("self", internal_hook.scope(), location=loc)
+            loc = None
+            dollar = expr.Name("__dollardollar", hook.scope(), location=loc)
+            slf = expr.Name("__self", hook.scope(), location=loc)
             list = expr.Attribute(field.name(), location=loc)
             method = expr.Attribute("push_back", location=loc)
             attr = expr.Overloaded(operator.Operator.Attribute, (slf, list), location=loc)
             push_back = expr.Overloaded(operator.Operator.MethodCall, (attr, method, [dollar]), location=loc)
             push_back = stmt.Expression(push_back, location=loc)
-        else:
-            push_back = None
-        
-        item = self._itemProduction(field)
-        
+
+            hook.setStmts(stmt.Block(None, stmts=[push_back]))
+            unit.module().addHook(hook)
+
+        until = self.attributeExpr("until")
+            
         if until:
-            # &until(expr)
-             
+            # Create a even higer priority hook that checks whether the &until
+            # condition has been reached.
+            hook = stmt.FieldForEachHook(unit, field, 255)
+            
+            stop = stmt.Return(expr.Ctor(False, type.Bool()), _hook=True)
+            ifelse = stmt.IfElse(until, stop, None)
+            
+            hook.setStmts(stmt.Block(None, stmts=[ifelse]))
+            unit.module().addHook(hook)
+            
+            # Add a boolean production checking the condition. 
+            #
             # List1 -> Item Alt
             # List2 -> Epsilon
-            hookrc = expr.Name("__hookrc", internal_hook.scope())
+            hookrc = expr.Hilti(hilti.operand.ID(hilti.id.ID("__hookrc", hilti.type.Bool())), type.Bool())
             l1 = grammar.Sequence(location=loc)
             eps = grammar.Epsilon(location=loc)
             alt = grammar.Boolean(hookrc, l1, eps, location=loc)
             l1.addProduction(item)
             l1.addProduction(alt)
             
-            # if ( <until-expr> ) 
-            #     __hookrc = False
-            # else
-            #     list.push_back($$)
-            
-            stop = stmt.Expression(expr.Assign(hookrc, expr.Ctor(False, type.Bool())))
-            ifelse = stmt.IfElse(until, stop, push_back, location=loc)
-            
-            internal_hook.addStatement(ifelse)
+            item.setUntilField(field)
             
         else:
             # No attributes, use look-ahead to figure out when to stop parsing. 
@@ -234,15 +228,6 @@ class List(type.ParseableType):
             l1.addProduction(item)
             l1.addProduction(l2) 
             
-            # list.push_back($$)
-            if push_back:
-                internal_hook.addStatement(push_back)        
-            
-        item.addHook(internal_hook)
-        
-        for hook in foreach_hooks:
-            item.addHook(hook)
-        
         self._prod = l1
         return self._prod
             

@@ -11,6 +11,7 @@ import id
 import stmt
 import operator
 import expr
+import type
 
 import binpac.util as util
 
@@ -40,6 +41,7 @@ class ParserGen:
         self._rhs_names = {}
         
         self._grammar = ty.grammar()
+        self._type = ty
         ty._pgen = self
 
     def export(self):
@@ -68,6 +70,7 @@ class ParserGen:
             self._cg.beginCompile(self)
             self._functionHostApplication()
             self._cg.endCompile()
+            self._grammar._pobjtype = self.objectType()
             return True
     
         self._mbuilder.cache(self._grammar.name(), _doCompile)
@@ -207,59 +210,12 @@ class ParserGen:
 
         self.cg().endFunction()
 
-    def functionHook(self, cg, hook):
-        """Generates the function to execute a hook statement.
-        
-        Todo: We currently create "normal" functions; once HILTI's hook data
-        type is implemented, we'll switch over to using that.
-        """
-        
-        fname = "on_%s" % "anon_%s" % builtin_id(hook)
-        
-        def makeFunc():
-            cg.beginHook(hook)
-            
-            args = []
-            args += [hilti.id.Parameter("__self", self._typeParseObjectRef())]
-            
-            for p in self._grammar.params():
-                args += [hilti.id.Parameter(p.name(), p.type().hiltiType(cg))]
-
-            if isinstance(hook, stmt.FieldControlHook):
-                args += [hilti.id.Parameter("__dollardollar", hook.dollarDollarType().hiltiType(cg))]
-                
-            ftype = hilti.type.Function(args, hilti.type.Bool())
-            
-            name = self._name("hook", fname)
-            
-            (fbuilder, builder) = cg.beginFunction(name, ftype)        
-            
-            func = fbuilder.function()
-            cg.moduleBuilder().setCacheEntry(hook, func)
-            
-            rc = hilti.id.Local("__hookrc", hilti.type.Bool())
-            oprc = cg.builder().idOp(rc)
-            
-            func.scope().add(rc)
-            cg.builder().assign(oprc, builder.constOp(True))
-            
-            hook.execute(cg)
-            
-            cg.builder().return_result(oprc)
-            
-            cg.endFunction()
-            
-            cg.endHook()
-            return func
-        
-        return cg.moduleBuilder().cache(hook, makeFunc())
-        
     ### Methods generating parsing code for Productions.
 
     def _parseProduction(self, prod, args):
         pname = prod.__class__.__name__.lower()
         
-        self.builder().makeDebugMsg("binpac", "bgn %s '%s'" % (pname, prod))
+        self.builder().makeDebugMsg("binpac-verbose", "bgn %s '%s'" % (pname, prod))
 
         self._debugShowInput("input", args.cur)
         self._debugShowInput("lahead start", args.lahstart)
@@ -275,6 +231,7 @@ class ParserGen:
             
         elif isinstance(prod, grammar.Epsilon):
             # Nothing else to do.
+            self._startingProduction(args.obj, prod)            
             self._finishedProduction(args.obj, prod, None)
             pass
         
@@ -293,7 +250,7 @@ class ParserGen:
         else:
             util.internal_error("unexpected non-terminal type %s" % repr(prod))
 
-        self.builder().makeDebugMsg("binpac", "end %s '%s'" % (pname, prod))
+        self.builder().makeDebugMsg("binpac-verbose", "end %s '%s'" % (pname, prod))
 
     def _parseStartSymbol(self, args, params):
         prod = self._grammar.startSymbol()
@@ -301,16 +258,26 @@ class ParserGen:
         
         # The start symbol is always a sequence.
         assert isinstance(prod, grammar.Sequence)
-        self.builder().makeDebugMsg("binpac", "bgn start-sym %s '%s' with flags %%d" % (pname, prod), [args.flags])
+        
+        builder = self.builder()
+        builder.makeDebugMsg("binpac-verbose", "bgn start-sym %s '%s' with flags %%d" % (pname, prod), [args.flags])
+        
+        builder.makeDebugMsg("binpac", "%s" % prod.type().name())
+        builder.debug_push_indent()
         
         self._parseSequence(prod, args, params)
         
-        self.builder().makeDebugMsg("binpac", "end start-sym %s '%s'" % (pname, prod))
+        builder = self.builder()
+        builder.makeDebugMsg("binpac-verbose", "end start-sym %s '%s'" % (pname, prod))
+        builder.debug_pop_indent()
         
     def _parseLiteral(self, lit, args):
         """Generates code to parse a literal."""
+        self.builder().setNextComment("Parsing literal '%s'" % lit.literal().value())
+        
+        self._startingProduction(args.obj, lit)
+        
         builder = self.builder()
-        builder.setNextComment("Parsing literal '%s'" % lit.literal().value())
         
         # See if we have a look-ahead symbol. 
         cond = builder.addTmp("__cond", hilti.type.Bool())
@@ -360,25 +327,23 @@ class ParserGen:
     def _parseVariable(self, var, args):
         """Generates code to parse a variable."""
         type = var.type()
+        
+        # Do we actually need the parsed value? We do if (1) we're storing it
+        # in the destination struct, or (2) we a hook that has a '$$'
+        # parameter.
+        need_val = (var.name() != None) or var.forEachHook()
+        
+        self.builder().setNextComment("Parsing variable %s" % var)
 
+        self._startingProduction(args.obj, var)
+        
         builder = self.builder()
-        builder.setNextComment("Parsing variable %s" % var)
         
         # We must not have a pending look-ahead symbol at this point. 
         cond = builder.addTmp("__cond", hilti.type.Bool())
         builder.equal(cond, args.lahead, _LookAheadNone)
         builder.debug_assert(cond)
 
-        # Do we actually need the parsed value? We do if (1) we're storing it
-        # in the destination struct, or (2) the variable's type defines a '$$'
-        # parameter (i.e., there is a control hook) that we need to set. 
-        
-        need_val = (var.name() != None)
-        
-        for h in var.hooks():
-            if isinstance(h, stmt.FieldControlHook):
-                need_val = True
-        
         # Call the type's parse function.
         name = var.name() if var.name() else "__tmp"
         dst = self.builder().addTmp(name , var.parsedType().hiltiType(self.cg()))
@@ -397,9 +362,12 @@ class ParserGen:
         
         utype = child.type()
 
-        builder = self.builder()
-        builder.setNextComment("Parsing child grammar %s" % child.type().name())
+        self.builder().setNextComment("Parsing child grammar %s" % child.type().name())
 
+        self._startingProduction(args.obj, child)
+        
+        builder = self.builder()
+        
         # Generate the parsing code for the child grammar. 
         cpgen = ParserGen(self._cg, child.type())
         cpgen.compile()
@@ -424,12 +392,14 @@ class ParserGen:
         builder.assign(args.lahstart, cargs.lahstart)
             
         self._finishedProduction(args.obj, child, cobj)
-        
+
     def _parseSequence(self, prod, args, params):
         def _makeFunction():
             (func, args) = self._createParseFunction("sequence", prod)
             
             self.builder().setNextComment("Parse function for production '%s'" % prod)
+            
+            self._startingProduction(args.obj, prod)
             
             # Initialize cache entry already here so that we can work
             # recursively.
@@ -449,9 +419,12 @@ class ParserGen:
         
         func = self.moduleBuilder().cache(prod.symbol(), _makeFunction)
         
-        builder = self.builder()
-        builder.setNextComment("Parsing non-terminal %s" % prod.symbol())
+        self.builder().setNextComment("Parsing non-terminal %s" % prod.symbol())
 
+        self._startingProduction(args.obj, prod)
+        
+        builder = self.builder()
+         
         result = builder.addTmp("__presult", _ParseFunctionResultType)
 
         if not params:
@@ -500,6 +473,7 @@ class ParserGen:
                 branch.setComment("For look-ahead set {%s}" % ", ".join(['"%s"' % l.literal().value() for l in literals[i]]))
                 branch.tuple_index(args.cur, match, builder.constOp(1)) # Update current position.
                 self.cg().setBuilder(branch)
+                self._startingProduction(args.obj, alts[i])
                 self._parseProduction(alts[i], args)
                 self._finishedProduction(args.obj, alts[i], None)
                 self.builder().jump(done.labelOp())
@@ -556,6 +530,7 @@ class ParserGen:
             branches[i] = self.functionBuilder().newBuilder("if-%s" % tag)
             branches[i].setComment("Branch for %s" % tag)
             self.cg().setBuilder(branches[i])
+            self._startingProduction(args.obj, alts[i])
             self._parseProduction(alts[i], args)
             self._finishedProduction(args.obj, alts[i], None)
             self.builder().jump(done.labelOp())
@@ -580,6 +555,7 @@ class ParserGen:
         
         for (case_prod, builder) in zip(prods, case_builders):
             cg.setBuilder(builder)
+            self._startingProduction(args.obj, case_prod)
             self._parseProduction(case_prod, args)
             self._finishedProduction(args.obj, case_prod, None)
             self.builder().jump(done.labelOp())
@@ -646,8 +622,29 @@ class ParserGen:
         builder.bytes_sub(str, cur, next5)
         
         msg = "- %s is " % tag
-        builder.makeDebugMsg("binpac", msg + "%s ...", [str])
-    
+        builder.makeDebugMsg("binpac-verbose", msg + "%s ...", [str])
+
+    def _startingProduction(self, obj, prod):
+        """Called whenever a production is about to be parsed."""
+        if not prod.name():
+            return
+        
+        default = prod.type().hiltiDefault(self.cg(), False)
+        
+        if not default:
+            return 
+        
+        # Initalize the struct field with its default value if not already set.
+        not_set = self.cg().functionBuilder().addTmp("__not_set", hilti.type.Bool())
+        name = self.cg().builder().constOp(prod.name())
+        self.cg().builder().struct_is_set(not_set, obj, name)
+        self.cg().builder().bool_not(not_set, not_set)
+        (set, cont) = self.cg().builder().makeIf(not_set)
+        self.cg().setBuilder(set)
+        self.cg().builder().struct_set(obj, name, default)
+        self.cg().builder().jump(cont.labelOp())
+        self.cg().setBuilder(cont)
+        
     def _finishedProduction(self, obj, prod, value):
         """Called whenever a production has sucessfully parsed value."""
         
@@ -655,50 +652,41 @@ class ParserGen:
         fbuilder = self.functionBuilder()
         
         if isinstance(prod, grammar.Terminal):
+            
             if value:
-                builder.makeDebugMsg("binpac", "- matched '%s' to '%%s'" % prod, [value])
+                if prod.name():
+                    builder.makeDebugMsg("binpac", "%s = '%%s'" % prod.name(), [value])
+                builder.makeDebugMsg("binpac-verbose", "- matched '%s' to '%%s'" % prod, [value])
             else:
-                builder.makeDebugMsg("binpac", "- matched '%s'" % prod)
-
+                builder.makeDebugMsg("binpac-verbose", "- matched '%s'" % prod)
+                
         if prod.name() and value:
             builder.struct_set(obj, builder.constOp(prod.name()), value)
-        
-        self.runHooks(self._cg, obj, prod.hooks(), value)
-            
-    def runHooks(self, cg, obj, hooks, value=None):
-        """XXXX"""
-        builder = cg.builder()
-        fbuilder = cg.functionBuilder()
-        
-        done = fbuilder.newBuilder("hook-done")
-        rc = fbuilder.addTmp("__hookrc", hilti.type.Bool(), builder.constOp(True))
-        
-        for hook in hooks:
-            
-            if cg.inHook(hook):
-                # Avoid recursion.
-                continue
-            
-            hookf = self.functionHook(cg, hook)
-            
-            params = []
-            for p in self._grammar.params():
-                params += [cg.builder().idOp(p.name())]
 
-            if isinstance(hook, stmt.FieldControlHook):
-                # Add the implicit '$$' argument. 
-                assert value
-                params += [value]
-                
-            cg.builder().call(rc, builder.idOp(hookf.name()), builder.tupleOp([obj] + params))
+        foreach = prod.forEachField()
             
-            # First returning false stops hook execution.
-            next = fbuilder.newBuilder("hook-next")
-            cg.builder().if_else(rc, next.labelOp(), done.labelOp())
-            cg.setBuilder(next)
-    
-        cg.builder().jump(done.labelOp())
-        cg.setBuilder(done)
+        if foreach and value:
+            # Foreach field hook.
+            result = fbuilder.addTmp("__hookrc", hilti.type.Bool(), builder.constOp(True))
+            self.cg().runFieldHook(foreach, obj, value, result=result)
+            (true, cont) = self.builder().makeIf(result)
+            self.cg().setBuilder(true)
+            
+        else:
+            cont = None
+            
+        if prod.field():
+            # Additional hook with extended name.
+            import pactypes.unit
+            if isinstance(prod.field(), pactypes.unit.SwitchFieldCase):
+                self.cg().runFieldHook(prod.field(), obj, addl=prod.field().caseNumber())
+            
+            # Standard field hook.
+            self.cg().runFieldHook(prod.field(), obj)
+
+        if cont:
+            true.jump(cont.labelOp())
+            self.cg().setBuilder(cont)
             
     ### Methods defining types. 
     
@@ -714,7 +702,8 @@ class ParserGen:
                 if default:
                     hlt_default = default.hiltiInit(self.cg())
                 else:
-                    hlt_default = f.type().hiltiDefault(self.cg(), True)
+                    hlt_default = None
+                #   hlt_default = f.type().hiltiDefault(self.cg(), True)
                 
                 ids += [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), hlt_default)]
                 
@@ -733,17 +722,24 @@ class ParserGen:
         
         obj: hilti.operand.Operand - The operand to the new object in.
         """
+        builder = self.cg().builder()
         self.builder().new(obj, self.builder().typeOp(self._typeParseObject()))
-        self.runHooks(self._cg, obj, self._grammar.hooks("%ctor"), None)
+        
+        op1 = self.cg().declareHook(self._type, "%ctor", self.objectType())
+        op2 = builder.tupleOp([obj])
+        builder.hook_run(None, op1, op2)
         
     ### Helper methods.
 
-    def _name(self, tag1, tag2 = None):
+    def _name(self, tag1, tag2 = None, prefix=None):
         """Combines two tags to an canonicalized ID name."""
         name = "%s_%s" % (self._grammar.name(), tag1)
         if tag2:
             name += "_%s" % tag2
         
+        if prefix:
+            name = "%s_%s" % (prefix, name)
+            
         # Makes sure the name contains only valid characters. 
         chars = [c if (c.isalnum() or c in "_") else "_0x%x_" % ord(c) for c in name]
         return "".join(chars).lower()
