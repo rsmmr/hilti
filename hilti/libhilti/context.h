@@ -22,6 +22,9 @@ typedef struct hlt_execution_context {
     uint64_t       calls_alloced; /// Number of slots allocated.
     uint64_t       calls_first;   /// Index of first non-yet processed element.
     hlt_callable** calls;         /// First element of array, or 0 if empty.
+
+    // TODO; We should not compile this in in non-debug mode. 
+    uint64_t debug_indent;        /// Current indent level for debug messages.
     
 } hlt_execution_context;
 

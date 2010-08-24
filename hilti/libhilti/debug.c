@@ -52,22 +52,28 @@ static void _make_prefix(hlt_string stream, char* dst, int len, hlt_exception** 
         snprintf(dst, len, "[%s] ", s);
 }
 
+static hlt_string_constant INDENT = { 3, "   " };
+
 void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! _want_stream(stream, excpt, ctx) )
         return;
 
     char prefix[128];
+    
     _make_prefix(stream, prefix, sizeof(prefix), excpt, ctx);
     
     hlt_string usr = hilti_fmt(fmt, type, tuple, excpt, ctx);
 
+    for ( int i = ctx->debug_indent; i; --i )
+        usr = hlt_string_concat(&INDENT, usr, excpt, ctx);
+    
     if ( *excpt )
         return;
 
     FILE* out = hlt_config_get()->debug_out;
     flockfile(out);
-    
+
     hlt_string_print(out, hlt_string_concat(hlt_string_from_asciiz(prefix, excpt, ctx), usr, excpt, ctx), 1, excpt, ctx);
     
     fflush(out);
@@ -135,34 +141,34 @@ hlt_list* hlt_debug_parse_streams(const char* streams, hlt_exception** excpt, hl
     return l;
 }
 
-static int indent = 0;
-
-void __hlt_debug_print_str(const char* msg)
+void __hlt_debug_print_str(const char* msg, hlt_execution_context* ctx)
 {
-    fprintf(stderr, "debug: %3d ", indent);
+    fprintf(stderr, "debug: %3d ", ctx->debug_indent);
    
-    for ( int i = indent * 4; i; --i )
+    for ( int i = ctx->debug_indent * 4; i; --i )
         fputc(' ', stderr);
     
     fprintf(stderr, "%s\n", msg);
 }
 
-void __hlt_debug_print_ptr(const char* s, void* ptr)
+void __hlt_debug_print_ptr(const char* s, void* ptr, hlt_execution_context* ctx)
 {
-    fprintf(stderr, "debug: %3d ", indent);
+    fprintf(stderr, "debug: %3d ", ctx->debug_indent);
     
-    for ( int i = indent * 4; i; --i )
+    for ( int i = ctx->debug_indent * 4; i; --i )
         fputc(' ', stderr);
     
     fprintf(stderr, "%s %p\n", s, ptr);
 }
 
-void __hlt_debug_push_indent()
+void __hlt_debug_push_indent(hlt_execution_context* ctx)
 {
-    ++indent;
+    ++ctx->debug_indent;
 }
-void __hlt_debug_pop_indent()
+
+void __hlt_debug_pop_indent(hlt_execution_context* ctx)
 {
-    --indent;
+    if ( ctx->debug_indent > 0 )
+        --ctx->debug_indent;
 }
 

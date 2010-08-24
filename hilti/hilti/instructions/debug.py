@@ -62,7 +62,27 @@ class InternalError(Instruction):
     def _codegen(self, cg):
         arg = cg.llvmOp(self.op1())
         cg.llvmRaiseExceptionByName("hlt_exception_internal_error", self.location(), arg)
+        
+@hlt.instruction("debug.push_indent")
+class InternalError(Instruction):
+    """Increases the indentation in debugging output by one level.
     
+    Note: The indentation level is global across all debug streams, but
+    separately tracked for each thread.
+    """
+    def _codegen(self, cg):
+        cg.llvmDebugPushIndent()
+        
+@hlt.instruction("debug.pop_indent")
+class InternalError(Instruction):
+    """Decreases the indentation in debugging output by one level.
+    
+    Note: The indentation level is global across all debug streams, but
+    separately tracked for each thread.
+    """
+    def _codegen(self, cg):
+        cg.llvmDebugPopIndent()
+        
 def message(stream, fmt, args = []):
     """Helpers function to create a ~~Msg instruction.
     

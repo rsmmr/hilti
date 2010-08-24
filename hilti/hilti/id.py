@@ -535,12 +535,10 @@ class Hook(ID):
         
         func: ~~Hook - The function.
         """
-        func.setOutputName(func.name())
+        func.setOutputName(self.name())
         func.id().setName("__%s_%d" % (func.name(), len(self._funcs)))
         func.setHookFunction()
         self._funcs += [func]
-        
-        func.scope().parent().add(Function(func.name(), func.type(), func))
         
     def functions(self):
         """Returns the hook's functions.
@@ -559,7 +557,7 @@ class Hook(ID):
 
     def clone(self):
         copy = Hook(self.name(), self.type(), self.imported(), self.namespace(), location=self.location())
-        copy.funcs = self._funcs
+        copy._funcs = self._funcs
         return copy
 
     ### Overidden from node.Node.
@@ -609,11 +607,18 @@ class Hook(ID):
             func.codegen(cg)
 
     def output(self, printer):
-        printer.output("declare hook ")
-        self.type()._name = self.name()
-        self.type().output(printer)
-        ID.output(self, printer)
-        printer.output("", nl=True)
+        if not self._funcs:
+            printer.output("declare hook ")
+            self.type()._name = self.name()
+            self.type().output(printer)
+            ID.output(self, printer)
+            printer.output("", nl=True)
+            
+        else:
+            for func in self._funcs:
+                printer.output("hook ")
+                func.output(printer)
+            
         
 class Type(ID):
     """An ID representing a type-declaration. 

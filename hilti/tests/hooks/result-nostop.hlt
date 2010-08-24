@@ -21,7 +21,7 @@ hook string my_hook() &priority=1 {
 }
 
 void run() {
-    local string s
+    local string s = "initial value"
     call Hilti::print("-- Starting.")
     s = hook.run my_hook ()
     call Hilti::print("-- Done. Result is:")

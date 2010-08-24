@@ -168,6 +168,7 @@ class Function(type.HiltiType):
         
         first = True
         for (arg, default) in self.argsWithDefaults():
+            
             if not first:
                 printer.output(", ")
             

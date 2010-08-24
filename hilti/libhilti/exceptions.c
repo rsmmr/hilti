@@ -42,7 +42,6 @@ hlt_exception_type hlt_exception_timer_not_scheduled = { "TimerNotScheduled", &h
 hlt_exception_type hlt_exception_no_timer_manager = { "NoTimerManager", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_iosrc_exhausted = { "IOSrcExhausted", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_iosrc_error = { "IOSrcError", &hlt_exception_unspecified, &hlt_type_info_string };
-hlt_exception_type hlt_exception_no_hook_result = { "HookNoResult", &hlt_exception_unspecified, &hlt_type_info_string };
 hlt_exception_type hlt_exception_io_error = { "IOError", &hlt_exception_unspecified, &hlt_type_info_string };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };

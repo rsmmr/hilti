@@ -76,7 +76,8 @@
     i64,
     i64,
     i64,
-    %__hlt_callable**
+    %__hlt_callable**,
+    i64
 }
 
 ; A global function to be run at startup.
@@ -113,7 +114,6 @@ declare i1 @__hlt_exception_match_type(%__hlt_exception*, %__hlt_exception_type*
 @hlt_exception_iosrc_exhausted = external constant %__hlt_exception_type
 @hlt_exception_yield = external constant %__hlt_exception_type
 @hlt_exception_would_block = external constant %__hlt_exception_type
-@hlt_exception_no_hook_result = external constant %__hlt_exception_type
 
 ;;; Memory management.
 declare void @__hlt_init_gc()
@@ -135,10 +135,10 @@ declare void @__hlt_thread_mgr_schedule(%__hlt_void*, %__hlt_vthread_id, %__hlt_
 declare void @__hlt_abort(%__hlt_bframe*, %__hlt_eoss*, %__hlt_execution_context*)
 
 ;;; Debugging.
-declare void @__hlt_debug_print_str(i8*)
-declare void @__hlt_debug_print_ptr(i8*, i8*)
-declare void @__hlt_debug_push_indent()
-declare void @__hlt_debug_pop_indent()
+declare void @__hlt_debug_print_str(i8*, %__hlt_execution_context*)
+declare void @__hlt_debug_print_ptr(i8*, i8*, %__hlt_execution_context*)
+declare void @__hlt_debug_push_indent(%__hlt_execution_context*)
+declare void @__hlt_debug_pop_indent(%__hlt_execution_context*)
 
 ;;; Callables. 
 declare %__hlt_callable** @__hlt_callable_next(%__hlt_execution_context*, %__hlt_exception**)

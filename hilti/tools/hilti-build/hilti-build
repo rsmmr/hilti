@@ -37,8 +37,8 @@ function usage {
    echo "    -P         Generate only C prototypes for *.hlt files; does nothing else."
    echo "    -c         Produce a native, linkable object file, not an executable."
    echo "    -b         Produce a bitcode file for JITing."
-   echo "    -d         Compile HILTI files with debugging support (level 1)."
-   echo "    -D         Compile HILTI files with debugging support (level 2)."
+   echo "    -d         Compile BinPAC++ and HILTI files with debugging support (HILTI level 1)."
+   echo "    -D         Compile BinPAC++ and HILTI files with debugging support (HILTI level 2)."
    echo "    -a         Set flags for compiling BinPAC++ sources even if not given"
    echo "    -S <size>  Default stack segment size to pass to hiltic"
    echo
@@ -106,7 +106,7 @@ function compile_pac {
 
     hlt=$base.tmp.hlt
     tmpfiles="$tmpfiles $hlt"
-    execute "binpac++ $binpacflags $input -o $hlt"
+    execute "binpac++ $bppflags $input -o $hlt"
     result=$hlt
 }
 
@@ -298,6 +298,7 @@ if [ "$have_pac2" == "1" ]; then
    hilticflags="$hilticflags `$binpacconfig --hiltic`"
    llvmldflags="$llvmldflags `$binpacconfig --ldflags`"
    libsbc="`$binpacconfig --libs-bc` $libsbc" # Order is important!
+   bppflags="`$binpacconfig $debug --bppflags`"
 fi   
 
 export PATH=`$hilticonfig --path`:$PATH

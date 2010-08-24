@@ -96,7 +96,7 @@ This will print:
    42
 
 If a hook is declared to return a value, but no hook function
-executes ``hook.stop``, a ``NoHookStop`` exception is raised.
+executes ``hook.stop``, the target operand will be left unchanged. 
 
 There is also a numerical, non-negative ``group` associated with
 each hook function:
@@ -227,11 +227,11 @@ class Run(Instruction):
         
         rt = htype.resultType()
         
-        if self.target() and rt == type.Void:
+        if self.target() and rt == type.Void():
             vld.error(self, "hook does not return a value")
             return
             
-        if not self.target() and rt != type.Void:
+        if not self.target() and rt != type.Void():
             vld.error(self, "hook returns a value")
             return
     
@@ -307,10 +307,6 @@ class Run(Instruction):
     def _canonify(self, canonifier):
         super(Run, self)._canonify(canonifier)
         
-        no_hook = canonifier.currentModule().scope().lookup("Hilti::NoHookResult")
-        assert no_hook
-        no_hook = operand.ID(no_hook)
-        
         hook = self.op1().value()
         
         canonifier.deleteCurrentInstruction()
@@ -325,10 +321,10 @@ class Run(Instruction):
             rtype = type.Tuple([type.Bool(), hook.type().origResultType()])
             tmp_tuple = operand.ID(id.Local("__hook_tuple", rtype))
             tmp_result = operand.ID(id.Local("__hook_result", hook.type().origResultType()))
-            tmp_excpt = operand.ID(id.Local("__hook_excpt", type.Reference(no_hook.type())))
+#            tmp_excpt = operand.ID(id.Local("__hook_excpt", type.Reference(no_hook.type())))
             canonifier.currentFunction().scope().add(tmp_tuple.value())
             canonifier.currentFunction().scope().add(tmp_result.value())
-            canonifier.currentFunction().scope().add(tmp_excpt.value())
+#            canonifier.currentFunction().scope().add(tmp_excpt.value())
             
         else:
             # Hook does not return a result.
@@ -372,14 +368,16 @@ class Run(Instruction):
             assign = Assign(target=self.target(), op1=tmp_result)
             block_have_result.addInstruction(assign)
             
-            excpt = New(target=tmp_excpt, op1=no_hook, op2=operand.Constant(constant.Constant(hook.name(), type.String())))
-            block_no_result.addInstruction(excpt)
-            throw = exception.Throw(op1=tmp_excpt)
-            block_no_result.addInstruction(throw)
-            
+#            excpt = New(target=tmp_excpt, op1=no_hook, op2=operand.Constant(constant.Constant(hook.name(), type.String())))
+#            block_no_result.addInstruction(excpt)
+#            throw = exception.Throw(op1=tmp_excpt)
+#            block_no_result.addInstruction(throw)
+
             done = self._newBlock(canonifier, "done")
-            jump = flow.Jump(op1=operand.ID(id.ID(done.name(), type.Label())))
-            block_have_result.addInstruction(jump)
+            jump1 = flow.Jump(op1=operand.ID(id.ID(done.name(), type.Label())))
+            jump2 = flow.Jump(op1=operand.ID(id.ID(done.name(), type.Label())))
+            block_have_result.addInstruction(jump1)
+            block_no_result.addInstruction(jump2)
             
             canonifier.addTransformedBlock(done)
 

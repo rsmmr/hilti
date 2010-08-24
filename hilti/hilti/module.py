@@ -112,8 +112,8 @@ class Module(node.Node):
         hid: ~~id.Hook - The hook to add. If it already exists, the existing
         hook is replaced. 
         """
-        Module._hooks[self._hookidx(hid)] = hid
-
+        Module._hooks[self._hookidx(hid)] = (hid, self)
+        
     def lookupHook(self, name):
         """Lookups a hook by its name. Hooks are not part of the normal module namespace,
         but kept globally across all loaded modules so that functions can be
@@ -126,7 +126,7 @@ class Module(node.Node):
         Returns: ~~id.Hook or None - The hook, or None if not yet added.
         """
         try:
-            return Module._hooks[self._hookidx(name)]
+            return Module._hooks[self._hookidx(name)][0]
         except KeyError:
             return None
         
@@ -139,8 +139,9 @@ class Module(node.Node):
         resolver.startModule(self)
         self._scope.resolve(resolver)
         
-        for hid in self._hooks.values():
-            hid.resolve(resolver)
+        for (hook, mod) in Module._hooks.values():
+            if builtin_id(mod) == builtin_id(self):
+                hook.resolve(resolver)
 
         new_exported = []
         for i in self._exported:
@@ -156,8 +157,9 @@ class Module(node.Node):
         vld.startModule(self)
         self._scope.validate(vld)
 
-        for hid in self._hooks.values():
-            hid.validate(vld)
+        for (hook, mod) in Module._hooks.values():
+            if builtin_id(mod) == builtin_id(self):
+                hook.validate(vld)
         
         if self.name().lower() == "main":
             run = self._scope.lookup("run")
@@ -182,7 +184,7 @@ class Module(node.Node):
         canonifier.startModule(self)
         cmod = canonifier.currentModule()
 
-        for i in self._scope.IDs() + self._hooks.values():
+        for i in self._scope.IDs():
             i.canonify(canonifier)
             
             # id.Function does not canonify its value to avoid getting into
@@ -190,6 +192,10 @@ class Module(node.Node):
             if isinstance(i, id.Function): 
                 i.function().canonify(canonifier)
 
+        for (hook, mod) in Module._hooks.values():
+            if builtin_id(mod) == builtin_id(self):
+                hook.canonify(canonifier)
+                
         canonifier.endModule()
             
     def _codegen(self, cg):
@@ -199,8 +205,8 @@ class Module(node.Node):
             # Add the type information for the exported types to the module.
             if isinstance(ty, id.Type):
                 cg.llvmTypeInfoPtr(ty.type())
-
-        for i in self._scope.IDs() + self._hooks.values():
+                
+        for i in self._scope.IDs():
             # Need to do globals first so that they are defined when functions
             # want to access them.
             if isinstance(i, id.Global):
@@ -217,9 +223,13 @@ class Module(node.Node):
             
             if isinstance(i, id.Function):
                 i.codegen(cg)
-
+                
         cg.endModule()
 
+    def codegenHooks(self, cg):
+        for (hook, mod) in Module._hooks.values():
+            hook.codegen(cg)
+        
     def output(self, printer):
         
         printer.startModule(self)
@@ -242,7 +252,11 @@ class Module(node.Node):
             printer.output("", nl=True)        
             
         self._scope.output(printer)
-            
+
+        for (hook, mod) in Module._hooks.values():
+            if builtin_id(mod) == builtin_id(self):
+                hook.output(printer)
+        
         printer.endModule()
             
     # Visitor support.

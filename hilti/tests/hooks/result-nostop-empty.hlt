@@ -11,7 +11,7 @@ import Hilti
 declare hook string my_hook()
 
 void run() {
-    local string s
+    local string s = "initial value"
     call Hilti::print("-- Starting.")
     s = hook.run my_hook ()
     call Hilti::print("-- Done. Result is:")

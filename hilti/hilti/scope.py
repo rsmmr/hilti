@@ -141,7 +141,7 @@ class Scope(node.Node):
     def output(self, printer):
         last = None
         for (i, val) in sorted(self._ids.values(), key=lambda (i, val): i.name()):
-            
+
             # Do not print any internal IDs defined implicitly by the run-time
             # environment. 
             if i.location() and i.location().internal():
@@ -171,7 +171,7 @@ class Scope(node.Node):
                     printer.output("export %s\n" % i.name(), nl=True)
 
             last = i.__class__
-                    
+            
     ### Overridden from Visitable.
     
     def visit(self, v):

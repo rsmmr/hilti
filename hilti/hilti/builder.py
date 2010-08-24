@@ -14,6 +14,8 @@ import type
 import util
 import operand
 
+import instructions.hook as hook
+
 import hilti
 
 class OperandBuilder(objcache.Cache):
@@ -189,6 +191,20 @@ class ModuleBuilder(OperandBuilder):
         i = id.Type(name, ty)
         self._module.scope().add(i)        
         return self.typeOp(ty)
+    
+    def declareHook(self, name, args, result):
+        """XXX"""
+        
+        hook = self._module.lookupHook(name)
+        if hook:
+            # TODO: Check assert that types match.
+            return hook
+        
+        htype = type.Hook(args, result)
+        hook = id.Hook(name, htype, namespace=self._module.name())
+        self._module.addHook(hook)
+        
+        return hook
 
     def addEnumType(self, name, labels):
         """Adds a new enum type declaration to the module's scope.
@@ -219,15 +235,21 @@ class FunctionBuilder(OperandBuilder):
     cc: function.CallingConvention - The function's calling convention.
     location: Location - The location to be associated with the function.
     """
-    def __init__(self, mbuilder, name, ftype, cc=function.CallingConvention.HILTI, location=None):
+    def __init__(self, mbuilder, name, ftype, cc=function.CallingConvention.HILTI, dontadd=False, location=None):
         super(FunctionBuilder, self).__init__()
         
-        self._func = function.Function(ftype, None, mbuilder.module().scope(), cc, location)
+        if not isinstance(ftype, type.Hook):
+            self._func = function.Function(ftype, None, mbuilder.module().scope(), cc, location)
+        else:
+            self._func = hook.HookFunction(ftype, None, mbuilder.module().scope(), location)
+            
         i = id.Function(name, ftype, self._func)
         self._func.setID(i)
         self._mbuilder = mbuilder
         self._tmps = {}
-        mbuilder.module().scope().add(i)
+        
+        if not dontadd:
+            mbuilder.module().scope().add(i)
         
     def function(self):
         """Returns the HILTI function being build.
@@ -721,6 +743,15 @@ class BlockBuilder(OperandBuilder):
         
         self.new(local, etype, arg)
         self.exception_throw(local)
+
+    def terminated(self):
+        """Returns whether the currently build block end with a
+        terminator instruction.
+        
+        Returns: Bool - True if terminated.
+        """
+        ins = self._block.instructions()
+        return ins[-1].signature().terminator() if ins else False
         
 def _init_builder_instructions():
     # Adds all instructions as methods to the Builder class.

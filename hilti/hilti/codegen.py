@@ -183,6 +183,7 @@ class CodeGen(objcache.Cache):
         self._llvm.global_ctors = [] # List of registered ctors to run a startup.
         
         mod.codegen(self)
+        mod.codegenHooks(self)
         
         self._llvmGenerateExecutionContextFunc()
         self._llvmGenerateCtors()
@@ -2131,6 +2132,7 @@ class CodeGen(objcache.Cache):
         five = self.llvmGEPIdx(5)
         six = self.llvmGEPIdx(6)
         seven = self.llvmGEPIdx(7)
+        eight = self.llvmGEPIdx(8)
         
         null = llvm.core.Constant.null(self.llvmTypeGenericPointer())
         zero64 = self.llvmConstInt(0, 64)
@@ -2153,7 +2155,9 @@ class CodeGen(objcache.Cache):
         
         calls = self.builder().gep(rec, [zero, zero, seven])
         self.llvmAssign(llvm.core.Constant.null(calls.type.pointee), calls) # calls
-       
+
+        self.llvmAssign(zero64, self.builder().gep(rec, [zero, zero, eight])) # debug_indent
+        
         # Initialize the globals.
         
         for (i, idx) in self._globals.values():
@@ -3779,19 +3783,19 @@ class CodeGen(objcache.Cache):
         CodeGen._DbgCnt += 1
         const = self.llvmNewGlobalStringConst("debug-string-%d" % CodeGen._DbgCnt, s + loc)
         func = self.llvmCFunctionInternal("__hlt_debug_print_str")
-        builder.call(func, [const.bitcast(self.llvmTypeGenericPointer())])
+        builder.call(func, [const.bitcast(self.llvmTypeGenericPointer()), self.llvmCurrentExecutionContextPtr()])
 
     def llvmDebugPrintPtr(self, s, ptr):
         CodeGen._DbgCnt += 1
         const = self.llvmNewGlobalStringConst("debug-string-%d" % CodeGen._DbgCnt, s)
         ptr = self.builder().bitcast(ptr, self.llvmTypeGenericPointer())
-        self.llvmCallCInternal("__hlt_debug_print_ptr", [const.bitcast(self.llvmTypeGenericPointer()), ptr])
+        self.llvmCallCInternal("__hlt_debug_print_ptr", [const.bitcast(self.llvmTypeGenericPointer()), ptr, self.llvmCurrentExecutionContextPtr()])
         
     def llvmDebugPushIndent(self):
-        self.llvmCallCInternal("__hlt_debug_push_indent", [])
+        self.llvmCallCInternal("__hlt_debug_push_indent", [self.llvmCurrentExecutionContextPtr()])
         
     def llvmDebugPopIndent(self):
-        self.llvmCallCInternal("__hlt_debug_pop_indent", [])
+        self.llvmCallCInternal("__hlt_debug_pop_indent", [self.llvmCurrentExecutionContextPtr()])
 
     def llvmDebugPrintFrame(s, frame):
         s = "   | " + s
