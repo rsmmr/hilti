@@ -18,6 +18,7 @@ Usage: binpac-config <options>
     --libs-bc       Print bitcode libaries LLVM linker.
     --libs-c        Print native libaries for system linker.
     --pythonpath    Print PYTHONPATH for BinPAC module.
+    --path          Print PATH for BinPAC tools.
     
     --debug         Print all output suitable for building debugging versions.
                     Note: this options must come first currently.
@@ -82,11 +83,11 @@ while [ "$1" != "" ]; do
             
         --bppflags)
             if [ "$debug" == "" ]; then
-                echo ""    
-                #echo "-I$base/libbinpac"    
+                #echo ""    
+                echo "-I$base/libbinpac"    
             else
-                echo "-d"    
-                #echo "-I$base/libbinpac -d"    
+                #echo "-d"    
+                echo "-I$base/libbinpac -d"    
             fi
             shift;;
             
@@ -112,6 +113,10 @@ while [ "$1" != "" ]; do
             
         --pythonpath)
             echo "$base"
+            shift;;
+            
+        --path)
+            echo "$base/tools/binpac++"
             shift;;
             
         --debug)

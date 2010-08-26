@@ -293,12 +293,22 @@ libsbc=`$hilticonfig $libsbcflag`
 libsc=`$hilticonfig --libs-c`
 
 if [ "$have_pac2" == "1" ]; then
+
+   if [ ! -x "$binpacconfig" ]; then
+      echo "cannot find binpac-config; try setting BINPAC_CONFIG." >&2
+      exit 1
+   fi
+
    # Need binpac++ flags.
    cflags="$cflags `$binpacconfig --cflags`"
    hilticflags="$hilticflags `$binpacconfig --hiltic`"
    llvmldflags="$llvmldflags `$binpacconfig --ldflags`"
    libsbc="`$binpacconfig --libs-bc` $libsbc" # Order is important!
-   bppflags="`$binpacconfig $debug --bppflags`"
+   bppflags="`$binpacconfig $debug --bppflags` `$hilticonfig --hilticflags`"
+   
+   export PATH=`$binpacconfig --path`:$PATH
+   export PYTHONPATH=`$binpacconfig --pythonpath`:$PYTHONPATH
+   
 fi   
 
 export PATH=`$hilticonfig --path`:$PATH

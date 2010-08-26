@@ -1,7 +1,10 @@
 #! /usr/bin/env bash
 
-tools=`hilti-config --distbase`/tools
-hiltic=`binpac-config --hiltic`
+hilticonfig="../../../hilti/tools/hilti-config/hilti-config"
+binpacconfig="../../tools/binpac-config/binpac-config"
+
+tools=`$hilticonfig --distbase`/tools
+hiltic=`$binpacconfig --hiltic`
 
 export PATH=$tools/hilti-config:$PATH
 

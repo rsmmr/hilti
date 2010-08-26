@@ -6,7 +6,7 @@
 find_program(HILTI_CONFIG_EXECUTABLE
       NAMES hilti-config
       PATHS
-      /opt/local/bin
+      /opt/local/bin ../../hilti/tools/hilti-config
   )
 
 exec_program(${HILTI_CONFIG_EXECUTABLE} ARGS --cflags  OUTPUT_VARIABLE HILTI_CFLAGS)
