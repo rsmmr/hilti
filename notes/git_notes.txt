@@ -4,3 +4,13 @@ Branches
 
 git push origin <BRANCHNAME>
 updates just the branch
+
+likewise
+
+git pull origin <BRANCHNAME>
+fetches.
+
+
+So can work in a branch fine and thats effective.
+
+
