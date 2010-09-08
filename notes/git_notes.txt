@@ -1,3 +1,6 @@
 Notes on using git:
 
 Branches
+
+git push origin <BRANCHNAME>
+updates just the branch
