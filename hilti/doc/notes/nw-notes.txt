@@ -27,11 +27,11 @@ Creating lambdas.  There are actually two types:
 
   OPERAND = lambda return_type(args) {
       FUNCTION BODY
-   }
+  }
 
   OPERAND = down-lambda return_type(args) {
       FUNCTION BODY
-   }
+  }
 
 
 
@@ -53,8 +53,7 @@ Internal variables and lexical scope:
 
   But both of these types of lambdas don't have the problem: A
   down-lambda just maintains a pointer to the stack frame of the
-  enclosing scope, and access the variables normally
+  enclosing scope, and access the variables normally, while a
+  copy-only lambda just has a hidden tuple of non-local variables it
+  accesses.
 
-
-both of the two lambad types are efficient, but you can
-  convert a full lambda into
