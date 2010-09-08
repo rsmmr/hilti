@@ -13,5 +13,6 @@ fetches.
 
 So can work in a branch fine and thats effective.
 
+But lets see how merging works
 
 However, commit messages do go regardless of branch
