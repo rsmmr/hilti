@@ -14,3 +14,4 @@ fetches.
 So can work in a branch fine and thats effective.
 
 
+However, commit messages do go regardless of branch
