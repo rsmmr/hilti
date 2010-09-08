@@ -17,5 +17,7 @@ However, commit messages do go regardless of branch
 
 Merging sort of works: It actually auto-merged the test bit fine, but
 it really should have complained because the merge was ambiguous in
-option.
+option.  But not too bad.  In any case, this does seem to work, and
+does give a separate branch on the master for my work.
+
 
