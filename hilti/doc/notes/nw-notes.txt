@@ -1,0 +1,60 @@
+Notes on Lambda:
+
+
+
+
+Syntax thoughts:
+
+Type declaration:
+
+ callable<type_list>
+
+	Basically, extend the callable type declaration to be like a
+	tuple type declaration, with the additional parameters being
+	arguments
+
+
+Invoking callables:
+
+ Just as before, but with mandatory arguments if there are arguments
+ in the type signature.
+
+
+
+Creating lambdas.  There are actually two types:
+
+  Lambdas are an expression type:
+
+  OPERAND = lambda return_type(args) {
+      FUNCTION BODY
+   }
+
+  OPERAND = down-lambda return_type(args) {
+      FUNCTION BODY
+   }
+
+
+
+Internal variables and lexical scope:
+
+  Lambdas can access variables in the enclosing scopes, BUT with a big
+  exception: it can only access a COPY of the variables which are
+  created when the lambda is invoked.
+
+  down-lambdas can perform full mutation on the enclosing scope, BUT
+  can not escape: returning a down-lambda is a run-time error.
+
+
+  Why the two different types?  Without this, you have an efficiency
+  problem: either stack frames need to be heap-allocated (ick) or all
+  variable which are accessed within the scope on a potentially
+  escaping lambda need to be replaced under the hood with pointers
+  (ick).
+
+  But both of these types of lambdas don't have the problem: A
+  down-lambda just maintains a pointer to the stack frame of the
+  enclosing scope, and access the variables normally
+
+
+both of the two lambad types are efficient, but you can
+  convert a full lambda into
