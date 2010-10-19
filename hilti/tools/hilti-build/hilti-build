@@ -156,8 +156,8 @@ function link_all {
     tmpfiles="$tmpfiles $output.bc.S"
 
     # Compile into native assembler.
-    execute "llc -march=x86-64 -f -o=$output.bc.S $output.bc" || exit 1
-#    execute "llc -f -o=$output.bc.S $output.bc" || exit 1
+#    execute "llc -march=x86-64 -o=$output.bc.S $output.bc" || exit 1
+    execute "llc -o=$output.bc.S $output.bc" || exit 1
     
     # Assemble into executable code. Seems using the compiler driver is the way to go here ...
     if [ "$noexec" != "" ]; then

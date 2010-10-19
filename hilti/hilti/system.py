@@ -92,8 +92,7 @@ def returnStructByValue(type):
         builder = llvm.core.Builder.new(block)
         builder.ret(llvm.core.Constant.sizeof(type))
 
-        mp = llvm.core.ModuleProvider.new(module)
-        ee = llvm.ee.ExecutionEngine.new(mp)
+        ee = llvm.ee.ExecutionEngine.new(module)
         sizeof = ee.run_function(func, []).as_int()
 
         _structSizeCache[str(type)] = sizeof

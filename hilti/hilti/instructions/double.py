@@ -57,7 +57,7 @@ class Add(Instruction):
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
-        result = cg.builder().add(op1, op2)
+        result = cg.builder().fadd(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
 @hlt.instruction("double.sub", op1=cDouble, op2=cDouble, target=cDouble)
@@ -69,7 +69,7 @@ class Sub(Instruction):
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
-        result = cg.builder().sub(op1, op2)
+        result = cg.builder().fsub(op1, op2)
         cg.llvmStoreInTarget(self, result)
     
 @hlt.instruction("double.mul", op1=cDouble, op2=cDouble, target=cDouble)
@@ -81,7 +81,7 @@ class Mul(Instruction):
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
-        result = cg.builder().mul(op1, op2)
+        result = cg.builder().fmul(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
 @hlt.instruction("double.div", op1=cDouble, op2=cNonZero(cDouble), target=cDouble)

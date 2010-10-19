@@ -17,14 +17,24 @@ def initPaths():
             return subprocess.Popen([tool, option], stdout=subprocess.PIPE).communicate()[0].strip()
         except:
             return ""
+
+    try:
+        hilti_config = os.environ["HILTI_CONFIG"]
+    except:
+        hilti_config = "hilti-config"
         
-    sys.path = run_config("hilti-config", "--pythonpath").split(":") + sys.path
-    sys.path = run_config("binpac-config", "--pythonpath").split(":") + sys.path
+    try:
+        binpac_config = os.environ["BINPAC_CONFIG"]
+    except:
+        binpac_config = "binpac-config"
+
+    sys.path = run_config(hilti_config, "--pythonpath").split(":") + sys.path
+    sys.path = run_config(binpac_config, "--pythonpath").split(":") + sys.path
     
     global import_paths
     import_paths = []
-    import_paths += run_config("hilti-config", "--libhilti").split()
-    import_paths += run_config("binpac-config", "--libbinpac").split()
+    import_paths += run_config(hilti_config, "--libhilti").split()
+    import_paths += run_config(binpac_config, "--libbinpac").split()
 
 # Collect -I arguments. 
 def import_path_callback(option, opt, value, parser):
