@@ -103,33 +103,48 @@ class Struct(type.HeapType):
     
     def typeInfo(self, cg):
         """Type information for a ``struct`` includes the fields' offsets in
-        the ``aux`` entry as an array of ``uint16`` values.
+        the ``aux`` entry as a concatenation of pairs (ASCIIZ*, offset), where
+        ASCIIZ is a field's name, and offset its offset in the value.
         """
         typeinfo = cg.TypeInfo(self)
         typeinfo.to_string = "hlt::struct_to_string";
         typeinfo.args = [id.type() for (id, op) in self.fields()]
         
-        # Calculate the offset array. 
         zero = cg.llvmGEPIdx(0)
         null = llvm.core.Constant.null(self.llvmType(cg))
         
-        offsets = []
+        array = []
         for i in range(len(self.fields())):
-            # Note that we skip the bitmask here. 
+            
+            # Make the field name. 
+            str = cg.llvmNewGlobalStringConst(cg.nameNewGlobal("struct-field"), self.fields()[i][0].name())
+            
+            # Calculate the offset. 
+            
+                # We skip the bitmask here. 
             idx = cg.llvmGEPIdx(i + 1)
-            # This is a pretty awful hack but I can't find a nicer way to
-            # calculate the offsets as *constants*, and this hack is actually also
-            # used by LLVM internaly to do sizeof() for constants so it can't be
-            # totally disgusting. :-)
+            
+                # This is a pretty awful hack but I can't find a nicer way to
+                # calculate the offsets as *constants*, and this hack is actually also
+                # used by LLVM internaly to do sizeof() for constants so it can't be
+                # totally disgusting. :-)
             offset = null.gep([zero, idx]).ptrtoint(llvm.core.Type.int(16))
-            offsets += [offset]
+            struct = llvm.core.Constant.struct([str, offset])
+            
+            array += [llvm.core.Constant.struct([str, offset])]
+            
+        if array:
+            
+            name = cg.nameTypeInfo(self) + "-fields"
+        
+            const = llvm.core.Constant.array(array[0].type, array)
+            glob = cg.llvmNewGlobalConst(name, const)
+            glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
     
-        name = cg.nameTypeInfo(self) + "_offsets"
-        const = llvm.core.Constant.array(llvm.core.Type.int(16), offsets)
-        glob = cg.llvmNewGlobalConst(name, const)
-        glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
-    
-        typeinfo.aux = glob
+            typeinfo.aux = glob
+            
+        else:
+            typeinfo.aux = None
         
         return typeinfo
     

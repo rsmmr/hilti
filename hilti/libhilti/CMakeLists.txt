@@ -13,7 +13,7 @@ set(PROJECT_VERSION "0.1")
 
 add_subdirectory(justrx) # must come before EnableLLVM.
 
-set(CMAKE_C_FLAGS "-g -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src ${PCAP_CFLAGS}")
+set(CMAKE_C_FLAGS "-fno-color-diagnostics -g -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src ${PCAP_CFLAGS}")
 
 include(EnableLLVM)
 

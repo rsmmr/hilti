@@ -62,7 +62,7 @@ class Bitset(type.ValueType, type.Constable):
     def typeInfo(self, cg):
         """An ``bitset``'s type information keeps additional information in
         the ``aux`` field: ``aux`` points to a concatenation of ASCIIZ strings
-        containing the label names followed by the bit number.
+        containing the label names. 
         """
         typeinfo = cg.TypeInfo(self)
         typeinfo.c_prototype = "int64_t"
