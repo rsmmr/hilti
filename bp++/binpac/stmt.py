@@ -266,6 +266,8 @@ class UnitHook(Block):
             cg.builder().jump(cont.labelOp())
             cg.setBuilder(cont)
 
+        cg.builder().return_void()
+            
 class VarHook(UnitHook):
     """A hook associated with a unit variable.
     

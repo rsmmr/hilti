@@ -199,8 +199,12 @@ class ParserGen:
         lahstart = builder.addLocal("__lahstart", _BytesIterType)
         
         builder.assign(lahead, _LookAheadNone)
+        
+        params = []
+        for p in self._grammar.params():
+            params += [builder.idOp(p.name())]
 
-        self._newParseObject(pobj)
+        self._newParseObject(pobj, params)
         
         args = ParserGen._Args(fbuilder, ["__cur", "__pobj", "__lahead", "__lahstart", "__flags"])
         self._parseStartSymbol(args, [])
@@ -375,11 +379,10 @@ class ParserGen:
         result = builder.addTmp("__presult", _ParseFunctionResultType)
         cobj = builder.addTmp("__cobj_%s" % utype.name(), utype.hiltiType(self._cg))
 
-        cpgen._newParseObject(cobj)
-        
         cargs = ParserGen._Args(self.functionBuilder(), (args.cur, cobj, args.lahead, args.lahstart, args.flags))
-        
         params = [p.evaluate(self._cg) for p in child.params()]
+        
+        cpgen._newParseObject(cobj, params)
         
         cpgen._parseStartSymbol(cargs, params)
 
@@ -717,17 +720,22 @@ class ParserGen:
         #return hilti.type.Reference(self._typeParseObject())
         return hilti.type.Reference(hilti.type.Unknown(self._name("object")))
 
-    def _newParseObject(self, obj):
+    def _runUnitHook(self, obj, hook, params):
+        builder = self.cg().builder()
+        
+        op1 = self.cg().declareHook(self._type, hook, self.objectType())
+        op2 = builder.tupleOp([obj] + params)
+        
+        builder.hook_run(None, op1, op2)
+    
+    def _newParseObject(self, obj, params):
         """Allocates and initializes a struct type for the parsed grammar.
         
         obj: hilti.operand.Operand - The operand to the new object in.
         """
         builder = self.cg().builder()
         self.builder().new(obj, self.builder().typeOp(self._typeParseObject()))
-        
-        op1 = self.cg().declareHook(self._type, "%ctor", self.objectType())
-        op2 = builder.tupleOp([obj])
-        builder.hook_run(None, op1, op2)
+        self._runUnitHook(obj, "%ctor", params)
         
     ### Helper methods.
 
