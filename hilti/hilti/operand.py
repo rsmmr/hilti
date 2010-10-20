@@ -374,7 +374,7 @@ class ID(Operand):
             i = resolver.currentModule().lookupHook(self._id.name())
             if i:
                 self._id = i
-            
+        
         self._id.resolve(resolver)
         self.setValue(self._id)
     

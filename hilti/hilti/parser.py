@@ -427,15 +427,19 @@ def p_set_block_name(p):
     """_set_block_name : """
 
     name = p[-1]
-        
-    if len(p.parser.state.block.instructions()):
+    
+    if len(p.parser.state.block.instructions()) or p.parser.state.block._name_set:
         if name and p.parser.state.function.scope().lookup(name):
             util.parser_error(p, "block name %s already defined" % name, lineno=p.lexer.lineno)
             raise SyntaxError
-        
+    
         # Start a new block.
         b = block.Block(p.parser.state.function, name=name, location=_loc(p, 0))
         _addBlock(p, b)
+        
+        if name: 
+            p.parser.state.block._name_set = True
+        
     else:
         # Current block still empty so just set its name.
         if name and p.parser.state.function.scope().lookup(name) and name != p.parser.state.block.name():
@@ -443,6 +447,7 @@ def p_set_block_name(p):
             raise SyntaxError
         
         p.parser.state.block.setName(name)
+        p.parser.state.block._name_set = True
 
 def p_instruction(p):
     """instruction : operand '=' INSTRUCTION operand operand operand NL

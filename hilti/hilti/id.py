@@ -330,7 +330,7 @@ class Local(ID):
         super(Local, self)._resolve(resolver)
         if self._init:
             self._init.resolve(resolver)
-    
+            
     def _validate(self, vld):
         super(Local, self)._validate(vld)
 

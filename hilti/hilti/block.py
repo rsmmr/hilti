@@ -38,6 +38,7 @@ class Block(node.Node):
         self._ins = instructions if instructions else []
         self._next = None
         self._may_remove = may_remove
+        self._name_set = False
 
         if name:
             self._name = name
