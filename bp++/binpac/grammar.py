@@ -646,7 +646,6 @@ class Grammar:
         self._simplify()
         self._computeTables()
         self._location = location
-        self._pobjtype = None
         
         if addl_ids:
             for id in addl_ids:
@@ -750,17 +749,6 @@ class Grammar:
         Returns: Productions - The starting instruction.
         """
         return self._start
-
-    def hiltiParseObjectType(self):
-        """Returns the type of the destination struct generated for a grammar.
-        This function must only be called after the grammar has been compiled
-        by a ~~ParserGen.
-        
-        Returns: hilti.Type.Reference - A reference type for struct generated
-        for parsing this grammar. 
-        """
-        assert self._pobjtype
-        return self._pobjtype
     
     def _addProduction(self, p):
         if p.symbol() in self._productions:

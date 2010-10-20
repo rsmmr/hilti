@@ -56,7 +56,6 @@ class Field(node.Node):
         self._cond = None
         self._args = args if args else []
         self._noid = False
-        self._foreaches = []
         self._scope = scope.Scope(None, parent.scope())
         
         if isinstance(ty, type.Container):
@@ -681,7 +680,7 @@ class Unit(type.ParseableType):
         
         Returns: hilti.type.Type - The HILTI type.
         """
-        return self._grammar.hiltiParseObjectType()
+        return self._pgen.objectType()
 
     # Overridden from Type.
 

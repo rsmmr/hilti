@@ -348,6 +348,12 @@ class FieldForEachHook(FieldHook):
         """
         return self._field.type().itemType()
 
+    def resolve(self, resolver):
+        super(FieldForEachHook, self).resolve(resolver)
+
+        # It may not have been resolved earlier.
+        self.scope().lookupID("__dollardollar").setType(self.itemType())
+    
     ### Overidden from UnitHook.
 
     def hiltiFunctionType(self, cg):
@@ -357,7 +363,7 @@ class FieldForEachHook(FieldHook):
         params = []
         for arg in self._unit.args():
             i = hilti.id.Parameter(arg.name(), arg.type().hiltiType(cg))
-            params += [(hilti.operand.ID(i), None)]
+            params += [(i, None)]
         return hilti.type.Hook([arg1, arg2] + params, hilti.type.Bool())
 
     def hiltiName(self, cg):

@@ -70,7 +70,6 @@ class ParserGen:
             self._cg.beginCompile(self)
             self._functionHostApplication()
             self._cg.endCompile()
-            self._grammar._pobjtype = self.objectType()
             return True
     
         self._mbuilder.cache(self._grammar.name(), _doCompile)
@@ -715,7 +714,8 @@ class ParserGen:
 
     def _typeParseObjectRef(self):
         """Returns a reference to the struct type for the parsed grammar."""
-        return hilti.type.Reference(self._typeParseObject())
+        #return hilti.type.Reference(self._typeParseObject())
+        return hilti.type.Reference(hilti.type.Unknown(self._name("object")))
 
     def _newParseObject(self, obj):
         """Allocates and initializes a struct type for the parsed grammar.
