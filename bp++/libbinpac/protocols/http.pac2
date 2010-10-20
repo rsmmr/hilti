@@ -126,6 +126,10 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
                                    foreach { self.data += $$.data; }
        
     }
+    
+    on %ctor {
+        self.data = b"";
+        }
 };
 
 type Chunk = unit {
