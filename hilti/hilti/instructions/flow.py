@@ -51,7 +51,7 @@ class ReturnVoid(Instruction):
             return 
         
         rt = vld.currentFunction().type().resultType()
-        if rt != type.Void:
+        if rt != type.Void and not isinstance(vld.currentFunction(), hook.HookFunction):
             vld.error(self, "function must return a value")
 
     def _canonify(self, canonifier):
