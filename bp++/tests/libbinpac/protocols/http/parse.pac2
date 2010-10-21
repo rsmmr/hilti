@@ -12,9 +12,8 @@
 # @TEST-EXEC:  echo ======== Reply Multipart >>output
 # @TEST-EXEC:  cat %DIR/reply-multipart.dat | ./a.out -p Reply >>output
 # @TEST-EXEC:  echo ======== >>output
-# @TEST-EXEC:  echo === Incremental >>output
+# @TEST-EXEC:  echo ==> Incremental >>output
 # @TEST-EXEC:  echo ======== >>output
-# @TEST-EXEC:  test-diff output
 # @TEST-EXEC:  echo ======== Request >>output
 # @TEST-EXEC:  cat %DIR/request.dat | ./a.out -i 1 -p Request >>output
 # @TEST-EXEC:  echo ======== Reply Chunked >>output
