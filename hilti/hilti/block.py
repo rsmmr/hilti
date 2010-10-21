@@ -198,6 +198,11 @@ class Block(node.Node):
             ni = canonifier.currentInstruction()
             if ni:
                 canonifier.currentTransformedBlock().addInstruction(ni)
+    
+        # If the original block was linked to a successor, but the last addedd
+        # transformed is not, copy that link over. 
+        if b.next() and not canonifier.currentTransformedBlock().next():
+            canonifier.currentTransformedBlock().setNext(b.next())
                 
     def _codegen(self, cg):
         cg.startBlock(self)

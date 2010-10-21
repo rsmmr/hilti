@@ -132,6 +132,7 @@ import hilti.function as function
 import flow
 import tuple
 import exception
+import misc
 
 from hilti.constraints import *
 from hilti.instructions.operators import *
@@ -205,7 +206,7 @@ class HookFunction(function.Function):
         if self._prio:
             printer.output(" &priority=%d " % self._prio)
         
-@hlt.instruction("hook.run", op1=cHook, op2=cTuple, target=cOptional(cAny), terminator=True)
+@hlt.instruction("hook.run", op1=cHook, op2=cTuple, target=cOptional(cAny), terminator=False)
 class Run(Instruction):
     """Executes the hook *op1* with arguments *op2*, storing the hook's return
     value in *target*."""
@@ -380,7 +381,7 @@ class Run(Instruction):
             block_no_result.addInstruction(jump2)
             
             canonifier.addTransformedBlock(done)
-
+            
     def _codegen(self, cg):
         # This is canonified away.
         assert False
