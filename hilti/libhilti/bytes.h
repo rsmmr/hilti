@@ -303,7 +303,7 @@ extern hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos pos, hlt_exception** excpt
 /// pos: The position to increase.
 /// n: The number of bytes to skip.
 /// excpt: &
-extern hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos pos, int32_t n, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos pos, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Compares two positions whether they refer to the same offset within a bytes object. 
 ///

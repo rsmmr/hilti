@@ -535,7 +535,7 @@ hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception** excpt, hlt_e
     return pos;
 }
 
-hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int32_t n, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&old);
     

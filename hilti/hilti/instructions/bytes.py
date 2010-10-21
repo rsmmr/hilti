@@ -328,6 +328,16 @@ class IterIncr(Operator):
     def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_pos_incr", [self.op1()])
         cg.llvmStoreInTarget(self, result)
+        
+@hlt.overload(IncrBy, op1=cIteratorBytes, op2=cIntegerOfWidth(64), target=cIteratorBytes)
+class IterIncrBy(Operator):
+    """
+    Advances the iterator by *op2* elements, or to the end position
+    if that is reached during the process.
+    """
+    def _codegen(self, cg):
+        result = cg.llvmCallC("hlt::bytes_pos_incr_by", [self.op1(), self.op2()])
+        cg.llvmStoreInTarget(self, result)
 
 @hlt.overload(Deref, op1=cIteratorBytes, target=cIntegerOfWidth(8))
 class IterDeref(Operator):

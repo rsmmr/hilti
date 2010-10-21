@@ -30,6 +30,15 @@ class Incr(Operator):
     """
     pass
 
+@operator("incr_by", op1=cHiltiType, op2=cIntegerOfWidth(64), target=cSameTypeAsOp(1))
+class IncrBy(Operator):
+    """
+    Increments *op1* by *op2* and returns the result. *op1* is not
+    modified. Note that not all types supporting *incr* also support
+    *incr_by*.
+    """
+    pass
+
 @operator("deref", op1=cHiltiType, target=cHiltiType)
 class Deref(Operator):
     """

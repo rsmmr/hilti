@@ -688,7 +688,7 @@ class BlockBuilder(OperandBuilder):
             branches = []
             for i in range(len(values)):
                 b = BlockBuilder(self._label(tag, "case_%d" % i), self._fbuilder)
-                b.setComment("Case: %s" % values[i])
+                b.setComment("Case: %s" % str(values[i]))
                 branches += [b]
                 
         assert len(values) == len(branches)
