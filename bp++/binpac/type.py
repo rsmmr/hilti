@@ -86,7 +86,21 @@ class Type(object):
         name: string - The name.
         """
         self._name = name
-            
+
+    def namespace(self):
+        """Returns the namespace in which the type was defined, if specified.
+        
+        Returns: string - The namespace, or None.
+        """
+        return self._namespace
+    
+    def setNamespace(self, namespace):
+        """Sets the namespace the type is defined in.
+        
+        namespace: string - The namespace.
+        """
+        self._namespace = namespace
+        
     def parameters(self):
         """Returns the types parameters.
         

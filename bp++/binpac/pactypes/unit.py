@@ -669,7 +669,13 @@ class Unit(type.ParseableType):
         if not self._grammar:
             seq = [f.production() for f in self._fields_ordered if not isinstance(f, SubField)]
             seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
-            self._grammar = grammar.Grammar(self.name(), seq, self._args, addl_ids=self._vars.values(), location=self.location())
+            
+            if self.namespace():
+                name = "%s::%s" % (self.namespace(), self.name())
+            else:
+                name = self.name()
+                
+            self._grammar = grammar.Grammar(name, seq, self._args, addl_ids=self._vars.values(), location=self.location())
 
         return self._grammar
 

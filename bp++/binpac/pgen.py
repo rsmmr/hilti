@@ -742,12 +742,15 @@ class ParserGen:
     def _name(self, tag1, tag2 = None, prefix=None):
         """Combines two tags to an canonicalized ID name."""
         name = "%s_%s" % (self._grammar.name(), tag1)
+        
+        name = name.replace("::", "_")
+        
         if tag2:
             name += "_%s" % tag2
         
         if prefix:
             name = "%s_%s" % (prefix, name)
-            
+        
         # Makes sure the name contains only valid characters. 
         chars = [c if (c.isalnum() or c in "_") else "_0x%x_" % ord(c) for c in name]
         return "".join(chars).lower()

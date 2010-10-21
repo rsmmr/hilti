@@ -26,6 +26,7 @@ class Module(node.Node):
     def __init__(self, name, location=None):
         super(Module, self).__init__(location)
         self._name = name.lower()
+        self._orgname = name
         self._location = location
         self._scope = scope.Scope(name, None)
         self._stmts = []
@@ -33,14 +34,16 @@ class Module(node.Node):
         self._external_hooks = []
         self._imported_modules = []
 
-    def name(self):
+    def name(self, org=False):
         """Returns the name of the module. The module's name will
         have been converted to all lower-case in accordance with the
         policy to treat it case-independent.
         
+        org: bool - If true, the name is returned in its original spelling. 
+        
         Returns: string - The name.
         """
-        return self._name
+        return self._name if not org else self._orgname
 
     def scope(self):
         """Returns the module's scope. 

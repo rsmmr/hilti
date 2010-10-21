@@ -277,6 +277,7 @@ def p_type_unit(p):
 def p_instantiate_unit(p):
     """_instantiate_unit :"""
     p.parser.state.unit = type.Unit(p.parser.state.module, args=p[-1])
+    p.parser.state.unit.setNamespace(p.parser.state.module.name(True))
     p.parser.state.in_switch = None 
 
 def p_enter_unit_hook(p):
