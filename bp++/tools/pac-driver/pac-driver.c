@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdio.h>
 #include <getopt.h>
+#include <errno.h>
 
 #include <hilti.h>
 #include <binpac.h>
@@ -25,13 +26,12 @@ static void usage(const char* prog)
 {
     fprintf(stderr, "%s [options]\n\n", prog);
     fprintf(stderr, "  Options:\n\n");
-    fprintf(stderr, "    -p <parser>   Use given parser\n");
+    fprintf(stderr, "    -p <parser>[/<reply-parsers>]  Use given parser(s)\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "    -d            Enable basic BinPAC++ debug output\n");
-    fprintf(stderr, "    -dd           Enable detailed BinPAC++ debug output\n");
+    fprintf(stderr, "    -d            Enable pac-driver's debug output\n");
     fprintf(stderr, "    -B            Enable BinPAC++ debugging hooks\n");
     fprintf(stderr, "    -i  <n>       Feed input incrementally in chunks of size <n>\n");
-    fprintf(stderr, "    -v            Enable verbose output\n");
+    fprintf(stderr, "    -U            Enable bulk input mode\n");
     fprintf(stderr, "\n");
 
     hlt_exception* excpt = 0;
@@ -102,7 +102,7 @@ static binpac_parser* findParser(const char* name)
     return 0;
 }
 
-hlt_bytes* readInput()
+hlt_bytes* readAllInput()
 {
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
@@ -133,8 +133,10 @@ hlt_bytes* readInput()
         
 }
 
-void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
+void parseSingleInput(binpac_parser* p, int chunk_size)
 {
+    hlt_bytes* input = readAllInput();
+    
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
     hlt_bytes_pos cur = hlt_bytes_begin(input, &excpt, ctx);
@@ -212,10 +214,205 @@ void parseInput(binpac_parser* p, hlt_bytes* input, int chunk_size)
     }
 }
 
+static void input_error(const char* line)
+{
+    fprintf(stderr, "error reading input header: not in expected format.\n");
+    exit(1);
+}
+
+#include "khash.h"
+
+typedef struct {
+    hlt_bytes* input;    
+    hlt_exception* resume;
+} Flow;
+
+KHASH_MAP_INIT_STR(Flow, Flow*)
+
+Flow* bulk_feed_piece(binpac_parser* parser, Flow* flow, int eof, const char* data, int size, const char* fid, const char* t)
+{
+    hlt_execution_context* ctx = hlt_global_execution_context();
+    hlt_exception* excpt = 0;
+    
+    // Make a copy of the data.
+    int8_t* tmp = hlt_gc_malloc_atomic(size);
+    assert(tmp);
+    memcpy(tmp, data, size);
+    
+    hlt_bytes* input = hlt_bytes_new_from_data(tmp, size, &excpt, ctx);
+
+    check_exception(excpt);
+    
+    Flow* result = 0;
+    
+    if ( ! flow ) {
+        flow = hlt_gc_malloc_non_atomic(sizeof(Flow));
+        flow->input = input;
+        flow->resume = 0;
+        result = flow;
+    }
+    else {
+        assert(flow->input);
+        assert(flow->resume);
+        hlt_bytes_append(flow->input, input, &excpt, ctx);
+    }
+
+    if ( eof )
+        hlt_bytes_freeze(flow->input, 1, &excpt, ctx);
+    
+    check_exception(excpt);
+    
+    if ( ! flow->resume ) {
+        if ( debug ) 
+            fprintf(stderr, "--- pac-driver: starting parsing flow %s at %s.\n", fid, t);
+        
+        hlt_bytes_pos begin = hlt_bytes_begin(input, &excpt, ctx);
+        (*parser->parse_func)(begin, 0, &excpt, ctx);
+    }
+        
+    else {
+        if ( debug )
+            fprintf(stderr, "--- pac-driver: resuming parsing flow %s at %s.\n", fid, t);
+        
+        (*parser->resume_func)(flow->resume, &excpt, ctx);
+    }
+    
+    if ( excpt && excpt->type == &hlt_exception_yield ) {
+        if ( debug )
+            fprintf(stderr, "--- pac-driver: parsing yielded for flow %s at %s.\n", fid, t);
+        
+        flow->resume = excpt;
+        excpt = 0;
+    }
+    
+    if ( excpt ) {
+        hlt_execution_context* ctx = hlt_global_execution_context();
+        hlt_exception_print_uncaught(excpt, ctx);
+        exit(1);
+    }
+    
+    return result;
+}
+    
+void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
+{
+    static char buffer[65536];
+    static char fid[256];
+    static char ts[256];
+    
+    khash_t(Flow) *hash = kh_init(Flow);
+    
+    while ( true ) {
+        char* p = fgets(buffer, sizeof(buffer), stdin);
+        char* e = p + strlen(buffer);
+        
+        if ( feof(stdin) )
+            return;
+            
+        if ( ! p ) {
+            fprintf(stderr, "error reading input header: %s\n", strerror(errno));
+            exit(1);
+        }
+
+        if ( e > p )
+            *(e-1) = '\0'; // Kill the NL.
+        
+        if ( p[0] != '#' )
+            input_error(buffer);
+        
+        // Format is 
+        // 
+        //    # <kind> <dir> <len> <fid> <time> 
+        
+        char kind = p[2];
+        char dir = p[4];
+        
+        int size = atoi(&p[6]);
+        
+        char* f = &p[6];
+        while ( *f++ != ' ' );
+
+        char* t = f;
+        while ( *t++ != ' ' );
+        *(t-1) = '\0';
+        
+        if ( t > e )
+            input_error(buffer);
+        
+        strncpy(fid, f, sizeof(fid) - 3);
+        fid[sizeof(fid)-1] = '0';
+        
+        strncpy(ts, t, sizeof(ts) - 3);
+        ts[sizeof(ts)-1] = '0';
+        
+        // Make the flow ID uni-directional and look it up in the state table. 
+        int len = strlen(fid);
+        fid[len] = '-';
+        fid[len+1] = dir;
+        fid[len+2] = '\0';
+        khiter_t i = kh_get(Flow, hash, fid);
+        
+        int ignore = 0;
+        int eof = 0;
+        int known_flow = (i != kh_end(hash));
+        
+        if ( debug )
+            fprintf(stderr, "kind: %c   dir: %c   size: %d   fid: |%s|   t: |%s|   known: %d\n", kind, dir, size, fid, ts, known_flow);
+
+        if ( kind == 'G' ) { 
+            // Can't handle gaps yet. Mark flow as to be ignored by setting parser to null. 
+            kh_value(hash, i) = 0;
+            continue;
+        }
+
+        if ( known_flow && ! kh_value(hash, i) )
+            ignore = 1;
+        
+        if ( kind == 'T' ) {
+            size = 0;
+            eof = 1;
+        }
+
+        if ( kind == 'D' ) {
+            if ( size > sizeof(buffer) ) {
+                fprintf(stderr, "error reading input: data chunk unexpected large (%d)\n", size);
+                exit(1);
+            }
+        
+            if ( fread(buffer, size, 1, stdin) != 1 ) {
+                fprintf(stderr, "error reading input chunk: %s\n", strerror(errno));
+                exit(1);
+            }
+        }
+            
+        if ( ! known_flow ) {
+            int ret;
+            i = kh_put(Flow, hash, strdup(fid), &ret);
+            kh_value(hash, i) = 0;
+        }
+
+        if ( ! ignore ) {
+            binpac_parser* p = (dir == '>') ? request_parser : reply_parser;
+            void* result = bulk_feed_piece(p, kh_value(hash, i), eof, buffer, size, fid, ts);
+            
+            if ( result )
+                kh_value(hash, i) = result;
+            
+            assert(kh_value(hash, i));
+        }
+                
+        if ( eof && kh_value(hash, i) ) {
+            // Delete state we allocated. BinPAC state is cleanup via GC. 
+            free(kh_value(hash, i));
+            kh_del(Flow, hash, i);
+        }
+    }
+}
+
 int main(int argc, char** argv)
 {
-    int verbose = 0;
     int chunk_size = 0;
+    int bulk = 0;
     const char* parser = 0;
 
     hlt_init();
@@ -223,7 +420,7 @@ int main(int argc, char** argv)
     hlt_execution_context* ctx = hlt_global_execution_context();
     
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:vdBh")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:vdBhU")) != -1) {
         
         switch (ch) {
             
@@ -235,16 +432,16 @@ int main(int argc, char** argv)
             parser = optarg;
             break;
             
-          case 'v':
-            verbose = 1;
-            break;
-            
           case 'd':
             ++debug;
             break;
             
           case 'B':
             debug_hooks = 1;
+            break;
+            
+          case 'U':
+            bulk = 1;
             break;
             
           case 'h':
@@ -259,10 +456,14 @@ int main(int argc, char** argv)
     
     if ( argc != 0 )
         usage(argv[0]);
+
+    if ( chunk_size && bulk )
+        fprintf(stderr, "warning: chunk size ignored in bulk mode\n");
     
     binpac_enable_debugging(debug_hooks);
-    
-    binpac_parser* p = 0;
+   
+    binpac_parser* request = 0;
+    binpac_parser* reply = 0;
     
     if ( ! parser ) {
         hlt_exception* excpt = 0;
@@ -271,8 +472,8 @@ int main(int argc, char** argv)
         // If we have exactly one parser, that's the one we'll use.
         if ( hlt_list_size(parsers, &excpt, ctx) == 1 ) {
             hlt_list_iter i = hlt_list_begin(parsers, &excpt, ctx);
-            p = *(binpac_parser**) hlt_list_iter_deref(i, &excpt, ctx);
-            assert(p);
+            request = reply = *(binpac_parser**) hlt_list_iter_deref(i, &excpt, ctx);
+            assert(request);
         }
         
         else { 
@@ -287,19 +488,36 @@ int main(int argc, char** argv)
     }
  
     else {
-        p = findParser(parser);
-        if ( ! p ) {
+        char* reply_parser = strchr(parser, '/');
+        if ( reply_parser )
+            *reply_parser++ = '\0';
+        
+        request = findParser(parser);
+        
+        if ( ! request ) {
             fprintf(stderr, "unknown parser '%s'. See usage for list.\n", parser);
             exit(1);
+        }
+        
+        if ( reply_parser ) {
+            reply = findParser(reply_parser);
+            
+            if ( ! reply ) {
+                fprintf(stderr, "unknown reply parser '%s'. See usage for list.\n", reply_parser);
+                exit(1);
             }
+        }
+        
+        else
+            reply = request;
     }
-
-    assert(p);
-
-    hlt_bytes* input = readInput();
-
-    parseInput(p, input, chunk_size);
+    
+    assert(request && reply);
+    
+    if ( ! bulk )
+        parseSingleInput(request, chunk_size);
+    else
+        parseBulkInput(request, reply);
     
     exit(0);
-    
 }

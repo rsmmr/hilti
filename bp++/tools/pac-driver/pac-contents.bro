@@ -9,7 +9,7 @@
 redef tcp_content_deliver_all_orig = T;
 redef tcp_content_deliver_all_resp = T;
 
-global pac_out = open("pac-contents.dat") &raw_output;
+global pac_out = open("pac-contents.dat");
 
 # kind:
 #
@@ -25,8 +25,7 @@ function output(c: connection, is_orig: bool, contents: string, len: int, kind: 
     print pac_out, fmt("# %s %s %d %s %.6f", kind, dir, len, fid, network_time());
 
     if ( kind == "D" && len > 0 )
-        print pac_out, contents;
-    
+        write_file(pac_out, contents);
 }
 
 global established : set[conn_id];

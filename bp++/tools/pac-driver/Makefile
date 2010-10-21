@@ -1,3 +1,3 @@
 
 all:
-	clang -c99 -I ../../../hilti/libhilti/ -I ../../libbinpac/ pac-driver.c
+	clang  -I ../../../hilti/libhilti/ -I ../../libbinpac/ -fno-color-diagnostics pac-driver.c
