@@ -615,12 +615,7 @@ class ParserGen:
         
         next5 = fbuilder.addTmp("__next5", _BytesIterType)
         str = fbuilder.addTmp("__str", hilti.type.Reference(hilti.type.Bytes()))
-        builder.assign(next5, cur)
-        builder.incr(next5, next5)
-        builder.incr(next5, next5)
-        builder.incr(next5, next5)
-        builder.incr(next5, next5)
-        builder.incr(next5, next5)
+        builder.incr_by(next5, cur, builder.constOp(5))
         builder.bytes_sub(str, cur, next5)
         
         msg = "- %s is " % tag

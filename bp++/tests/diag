@@ -1,0 +1,149 @@
+unit.print-id ... failed
+  % 'test-diff output' failed unexpectedly (exit code 1)
+  % cat .diag
+  == File ===============================
+  <b=(not set), a=1234>
+  <b=567890, a=1234>
+  == Diff ===============================
+  --- /da/home/robin/work/binpacpp/bp++/tests/Baseline/unit.print-id/output	2010-08-24 20:55:18.000000000 -0700
+  +++ output	2010-10-20 20:01:30.000000000 -0700
+  @@ -1,2 +1,2 @@
+  -<(not set), 1234>
+  -<567890, 1234>
+  +<b=(not set), a=1234>
+  +<b=567890, a=1234>
+  =======================================
+
+  % cat .stderr
+
+unit.tokens-newline ... failed
+  % 'printf "FooBar\r\nFoo123BarBar" | HILTI_DEBUG=binpac ./a.out >output 2>&1' failed unexpectedly (exit code 1)
+  % cat .stderr
+
+bytes.match ... failed
+  % 'test-diff output' failed unexpectedly (exit code 1)
+  % cat .diag
+  == File ===============================
+  12345ABBBBC67890
+  ABBBBC
+  BBBB
+  
+  
+  
+  Content-Type: multipart/mixed; boundary="frontier"
+  "frontier"
+  == Diff ===============================
+  --- /da/home/robin/work/binpacpp/bp++/tests/Baseline/bytes.match/output	2010-08-24 20:55:18.000000000 -0700
+  +++ output	2010-10-20 20:03:32.000000000 -0700
+  @@ -4,3 +4,5 @@
+  
+  
+  
+  +Content-Type: multipart/mixed; boundary="frontier"
+  +"frontier"
+  =======================================
+
+  % cat .stderr
+
+list.ambigious ... failed
+  % 'binpac++ /da/home/robin/work/binpacpp/bp++/tests/.tmp/list.ambigious/ambigious.pac2 >output 2>&1' succeeded unexpectedly (exit code 0)
+  % cat .stderr
+
+list.parse-foreach ... failed
+  % 'test-diff output' failed unexpectedly (exit code 1)
+  % cat .diag
+  == File ===============================
+  <line=AAA\x0a>
+  <line=BBB\x0a>
+  <line=CCC\x0a>
+  <line=DDD\x0a>
+  <line=EEE\x0a>
+  == Diff ===============================
+  --- /da/home/robin/work/binpacpp/bp++/tests/Baseline/list.parse-foreach/output	2010-08-24 20:55:18.000000000 -0700
+  +++ output	2010-10-20 20:04:36.000000000 -0700
+  @@ -1,5 +1,5 @@
+  -<AAA\x0a>
+  -<BBB\x0a>
+  -<CCC\x0a>
+  -<DDD\x0a>
+  -<EEE\x0a>
+  +<line=AAA\x0a>
+  +<line=BBB\x0a>
+  +<line=CCC\x0a>
+  +<line=DDD\x0a>
+  +<line=EEE\x0a>
+  =======================================
+
+  % cat .stderr
+
+list.parse-lahead-two ... failed
+  % 'test-diff output' failed unexpectedly (exit code 1)
+  % cat .diag
+  == File ===============================
+  [<>, <>, <>, <>]
+  [<>, <>, <>, <>]
+  == Error===============================
+  test-diff: no baseline found.
+  =======================================
+
+  % cat .stderr
+
+list.parse-lahead ... failed
+  % 'test-diff output' failed unexpectedly (exit code 1)
+  % cat .diag
+  == File ===============================
+  [<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>, <line=EEE\x0a>]
+  == Diff ===============================
+  --- /da/home/robin/work/binpacpp/bp++/tests/Baseline/list.parse-lahead/output	2010-08-24 20:55:18.000000000 -0700
+  +++ output	2010-10-20 20:05:20.000000000 -0700
+  @@ -1 +1 @@
+  -[<AAA\x0a>, <BBB\x0a>, <CCC\x0a>, <DDD\x0a>, <EEE\x0a>]
+  +[<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>, <line=EEE\x0a>]
+  =======================================
+
+  % cat .stderr
+
+list.parse-param ... failed
+  % 'test-diff output' failed unexpectedly (exit code 1)
+  % cat .diag
+  == File ===============================
+  []
+  [<line=AAA\x0a>]
+  [<line=AAA\x0a>, <line=BBB\x0a>]
+  [<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>]
+  [<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>]
+  [<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>, <line=EEE\x0a>]
+  == Diff ===============================
+  --- /da/home/robin/work/binpacpp/bp++/tests/Baseline/list.parse-param/output	2010-08-24 20:55:18.000000000 -0700
+  +++ output	2010-10-20 20:05:37.000000000 -0700
+  @@ -1,6 +1,6 @@
+  []
+  -[<AAA\x0a>]
+  -[<AAA\x0a>, <BBB\x0a>]
+  -[<AAA\x0a>, <BBB\x0a>, <CCC\x0a>]
+  -[<AAA\x0a>, <BBB\x0a>, <CCC\x0a>, <DDD\x0a>]
+  -[<AAA\x0a>, <BBB\x0a>, <CCC\x0a>, <DDD\x0a>, <EEE\x0a>]
+  +[<line=AAA\x0a>]
+  +[<line=AAA\x0a>, <line=BBB\x0a>]
+  +[<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>]
+  +[<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>]
+  +[<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>, <line=EEE\x0a>]
+  =======================================
+
+  % cat .stderr
+
+list.parse-until ... failed
+  % 'test-diff output' failed unexpectedly (exit code 1)
+  % cat .diag
+  == File ===============================
+  [<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>, <line=EEE\x0a>]
+  == Diff ===============================
+  --- /da/home/robin/work/binpacpp/bp++/tests/Baseline/list.parse-until/output	2010-08-24 20:55:18.000000000 -0700
+  +++ output	2010-10-20 20:05:54.000000000 -0700
+  @@ -1 +1 @@
+  -[<AAA\x0a>, <BBB\x0a>, <CCC\x0a>, <DDD\x0a>, <EEE\x0a>]
+  +[<line=AAA\x0a>, <line=BBB\x0a>, <line=CCC\x0a>, <line=DDD\x0a>, <line=EEE\x0a>]
+  =======================================
+
+  % cat .stderr
+
