@@ -1,8 +1,11 @@
 # $Id$
 #
 
-CXXFLAGS = -I include -I binpac/lib -I pac
-LDFLAGS  = -Lpac -lanalyzers
+BRO=$(HOME)/bro/trunk
+
+CXXFLAGS = -I include -I$(BRO)/aux/binpac/lib -I pac
+LDFLAGS  = -Lpac -L$(BRO)/aux/binpac/lib
+LIBS = pac/libanalyzers.a $(BRO)/aux/binpac/lib/libbinpac.a -lpcre
 
 all: pac bptool
 
@@ -15,7 +18,7 @@ pac:
 	$(MAKE) -C pac
     
 bptool: bptool.cc pac/libanalyzers.a
-	g++ -g bptool.cc $(LDFLAGS) $(CXXFLAGS) -o bptool 
+	g++ -g bptool.cc $(LDFLAGS) $(CXXFLAGS) -o bptool  $(LIBS)
     
 tar: clean 
 	$(MAKE) -C binpac clean

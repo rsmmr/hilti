@@ -5,6 +5,8 @@
 #include <iostream>
 #include <iomanip>
 
+extern int bptool_verbose;
+
 inline 
 std::ostream& operator << (std::ostream& os, vector<binpac::uint8>* v)
 {        

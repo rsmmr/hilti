@@ -1,13 +1,17 @@
 
 # Needs GNU make.
 
-BINPAC=../binpac/src/binpac
-CXXFLAGS=-I../binpac/lib -I../include
+BRO=$(HOME)/bro/trunk
 
-PAC=$(wildcard *.pac)
+BINPAC=$(BRO)/aux/binpac/src/binpac
+CXXFLAGS=-I$(BRO)/aux/binpac/lib -I../include
+
+#PAC=$(wildcard *.pac)
+PAC=binpac.pac binpac-lib.pac test.pac http.pac
 CCSRCS=$(patsubst %.pac,%_pac.cc,$(PAC))
 HDRS=$(patsubst %.cc,%.h,$(CCSRCS))
-OBJS=$(patsubst %.cc,%.o,$(CCSRCS)) megad_obfuscation_function.o
+# OBJS=$(patsubst %.cc,%.o,$(CCSRCS)) megad_obfuscation_function.o
+OBJS=$(patsubst %.cc,%.o,$(CCSRCS))
 TARGET=libanalyzers.a
 
 all: $(TARGET)
