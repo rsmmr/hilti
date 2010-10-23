@@ -1,0 +1,363 @@
+#! /usr/bin/env python2.6
+#
+# Command-line compiler for HILTI and BinPAC++ programs. 
+
+import sys
+import os.path
+import optparse
+import subprocess
+import time
+
+Version = 0.1
+
+Target = "<unknown>"
+Options = None
+ImportPaths = [ "." ]
+
+try:
+    HiltiConfig= os.environ["HILTI_CONFIG"]
+except:
+    HiltiConfig = "hilti-config"
+    
+try:
+    BinpacConfig = os.environ["BINPAC_CONFIG"]
+except:
+    BinpacConfig = "binpac-config"
+
+# Run one of the *-config tools to get an option.    
+def runConfig(tool, option):
+    try:
+        options = [option]
+        if Options and Options.debug > 0:
+            options = "--debug " + options
+            
+        return subprocess.Popen([tool] + options, stdout=subprocess.PIPE).communicate()[0].strip()
+    except:
+        return ""
+
+# Determine paths and flags.     
+def setupEnvironment():
+
+    # Extend Python path. 
+    sys.path = runConfig(HiltiConfig, "--pythonpath").split(":") + sys.path
+    sys.path = runConfig(BinpacConfig, "--pythonpath").split(":") + sys.path
+
+    # Determine paths for importing libraries.
+    global ImportPaths
+    ImportPaths += runConfig(HiltiConfig, "--libhilti").split()
+    ImportPaths += runConfig(BinpacConfig, "--libbinpac").split()    
+    
+    # Get the target architecture.
+    global Target
+    import llvm.core
+    Target = llvm.core.getHostTriple()
+
+def verbose(msg):
+    if Options.verbose:
+        print >>sys.stderr, msg
+
+def timeStart(phase):
+    if Options.verbose:
+        print >>sys.stderr, "  >", phase,
+
+        if Options.time:
+            global TimerStart 
+            TimerStart = time.time()
+        
+        else:
+            print >>sys.stderr
+        
+def timeStop():
+    if Options.time:
+        print >>sys.stderr, "(%.2fs)" % (time.time() - TimerStart)
+
+Tmps = []
+
+def registerTmp(tmp):
+    global Tmps
+    Tmps += [tmp]
+
+def removeTmps():
+    if Options.tmps:
+        return
+    
+    for output in Tmps:
+        try:
+            os.unlink(output)
+        except OSError:
+            pass
+        
+def check_errors(num, file, phase):
+    if num > 0:
+        print >>sys.stderr, "%s: %d error%s found during %s" % (os.path.basename(file), num, "s" if num > 1 else "", phase)
+        sys.exit(1)
+        
+    if num < 0:
+        print >>sys.stderr, "%s: errors found during %s" % (file, phase)
+        sys.exit(1)
+
+def readPac2(input):
+    pass
+
+def readHlt(input):        
+    timeStart("parsing")
+    (errors, hlt) = hilti.parseModule(input, ImportPaths)
+    timeStop()
+    
+    check_errors(errors, input, "parsing")
+
+    timeStart("resolving")
+    hilti.resolveModule(hlt)
+    timeStop()
+    
+    timeStart("validating")
+    errors = hilti.validateModule(hlt)
+    timeStop()
+    
+    check_errors(errors, input, "validating")
+    
+    return hlt
+
+def writeHlt(hlt, output):
+    timeStart("writing hlt")
+    hilti.printModule(hlt, output)
+    timeStop()
+
+def readLl(ll, input):
+    pass
+    
+def writeLl(bc, output):    
+    try:
+        out = open(output, "w")
+        timeStart("writing ll")
+        print >>out, bc
+        timeStop()
+        out.close()
+    except IOError, e:
+        print "error writing %s: %s" % (output, e)
+
+def writeBc(bc, output):
+    try:
+        out = open(output, "w")
+        timeStart("writing bc")
+        bc.to_bitcode(out)
+        timeStop()
+        out.close()
+    except IOError, e:
+        print "error writing %s: %s" % (output, e)
+
+def pac2ToHlt(pac2, file):
+    pass
+
+def hltToBc(hlt, file):
+
+    timeStart("canonyfing")
+    if not hilti.canonifyModule(hlt, debug=(Options.debug > 0)):
+        check_errors(-1, file, "canonifying")
+    timeStop()
+
+    timeStart("generating code")
+    (success, bc) = hilti.codegen(hlt, ImportPaths, debug=Options.debug, stack=Options.stack)
+    timeStop()
+
+    if not success:
+        check(errors(-1, file, "code generation"))
+        
+    return bc
+
+def uniqueArgs(args):
+    t = [] 
+    [t.append(i) for i in args if not t.count(i)]
+    return " ".join(t)
+
+def cToBcFile(c, output):
+    
+    cflags = ["-c", "-emit-llvm", "-g"]
+    cflags += ["-O%d" % Options.opt]
+    cflags += [("-I" + path) for path in ImportPaths]
+    cflags += runConfig(HiltiConfig, "--cflags").split()
+    cflags += runConfig(BinpacConfig, "--cflags").split()
+    cflags = uniqueArgs(cflags)
+
+    clang = "clang %s -o %s %s" % (cflags, output, c)
+
+    execute(clang)
+
+def optimize(input, output):
+    opt = "opt -f -O%d -o=%s %s" % (Options.opt, output, input)
+    execute(opt)
+    
+def linkAll(inputs):
+    
+    ldflags = []
+    ldflags += [("-L" + path) for path in ImportPaths]
+    ldflags += runConfig(HiltiConfig, "--ldflags").split()
+    ldflags += runConfig(BinpacConfig, "--ldflags").split()
+    ldflags = uniqueArgs(ldflags)
+
+    libs = []
+    libs += runConfig(BinpacConfig, "--libs-bc").split()
+    
+    if Options.libhiltimain:
+        libs += runConfig(HiltiConfig, "--libs-bc-main").split()
+    else:
+        libs += runConfig(HiltiConfig, "--libs-bc").split()
+        
+    libs = uniqueArgs(libs)
+    
+    inputs = " ".join(inputs)
+    bc = Options.output + ".bc"
+    registerTmp(bc)
+    
+    ld = "llvm-ld -disable-opt -b=%s %s %s %s" % (bc, inputs, ldflags, libs)
+    execute(ld)
+    
+    clibs = []
+    clibs += runConfig(HiltiConfig, "--libs-c").split()
+    clibs += runConfig(BinpacConfig, "--libs-c").split()
+    clibs = uniqueArgs(clibs)
+
+    if Options.opt > 0:
+        optimize(bc, Options.output)
+    
+    clang = "clang -g -o %s %s %s" % (Options.output, bc, clibs)
+    
+    execute(clang)
+
+def makeOutput(input, ext):
+    output = "%s.hb%d.tmp.%s" % (os.path.basename(input), os.getpid(), ext)
+    registerTmp(output)
+    return output
+    
+def execute(cmd):
+    
+    timeStart(cmd)
+    result = os.system(cmd)
+    timeStop()
+    
+    if result != 0:
+        removeTmps()
+        sys.exit(1)
+        
+def parseOptions():
+    # Collect additional -I arguments. 
+    def import_path_callback(option, opt, value, parser):
+        global ImportPaths
+        ImportPaths += [value]
+
+    version = "hilti-build2 %s\ntarget: %s" % (Version, Target)
+    usage = """%prog [options] -o <output> <inputs>
+
+Input files may be end in one of the following extensions:
+
+    *.hlt     - HILTI files
+    *.ll      - LLVM assember file
+    *.bc      - LLVM bitcode files
+    *.pac2    - BinPAC++ source files (if available).
+    *.c       - C files.
+"""    
+
+    optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=version)
+
+    optparser.add_option("-o", "--output", action="store", type="string", dest="output", default=None,
+                         help="Name of destination (mandatory).", metavar="FILE")
+    optparser.add_option("-m", "--main", action="store_false", dest="libhiltimain", default=True,
+                         help="Link with libhilti instead of libhiltimain.")
+    optparser.add_option("-T", "--time", action="store_true", dest="time", default=False,
+                         help="Time individual steps (implies --verbose)")
+    optparser.add_option("-t", "--tmps", action="store_true", dest="tmps", default=False,
+                         help="Create and leave files with intermediary outputs.")
+    optparser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                         help="Output information about intermediary steps.")
+    optparser.add_option("-O", "--opt", action="store", type="int", dest="opt", default=0,
+                         help="Apply optimizations -O1/-O2/-O3.")
+    optparser.add_option("-b", "--bc", action="store_true", dest="bitcode", default=False,
+                         help="Produce a bitcode file for JITing rather than an executable. (NOT IMPLEMENTED)")
+    optparser.add_option("-d", "--debug", action="store_const", const=1, dest="debug", default=0,
+                         help="Compile with debugging support (for HILTI, level 1).")
+    optparser.add_option("-D", "--debug-more", action="store_const", const=2, dest="debug", default=0,
+                         help="Compile with debugging support (for HILTI, level 2).")
+    optparser.add_option("-S", "--stack-size", action="store", type="int", dest="stack", default=0,
+                         help="Default HILTI stack size.. (NOT IMPLEMENTED)")
+    optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
+                         help="Add DIR to search path for imports", metavar="DIR")
+                         
+    (options, args) = optparser.parse_args()
+
+    if len(args) < 1:
+        optparser.error("no input file specified")
+        
+    if not options.output:
+        optparser.error("no output file specified")
+
+    if options.time:
+        options.verbose = True
+        
+    global Options
+    Options = options
+        
+    return args
+
+
+setupEnvironment()
+inputs = parseOptions()
+
+import hilti
+import binpac
+
+all_pac2 = []
+all_hlt  = [] 
+all_ll   = [] 
+all_bc   = []
+all_c    = []
+
+for input in inputs:
+
+    (root, ext) = os.path.splitext(input)
+
+    if ext == ".pac2":
+        all_pac2 += [root]
+        
+    elif ext == ".hlt":
+        all_hlt += [root]
+
+    elif ext == ".c":
+        all_c += [root]
+        
+    elif ext == ".ll":
+        all_ll += [input]
+        
+    elif ext == ".bc":
+        all_bc += [input]
+        
+    else:
+        print >>sys.stderr, "unsupported input file", input
+        sys.exit(1)
+        
+for input in all_hlt:
+    
+    verbose("compiling %s ..." % (input + ".hlt"))
+    
+    hlt = readHlt(input + ".hlt")
+    bc = hltToBc(hlt, input + ".hlt")
+
+    if Options.tmps:
+        output = makeOutput(input, "ll")
+        writeLl(bc, output)
+    
+    output = makeOutput(input, "bc")
+    writeBc(bc, output)
+    all_bc += [output]
+
+for input in all_c:
+    verbose("compiling %s ..." % input)
+    
+    output = makeOutput(input, "bc")
+    cToBcFile(input + ".c", output)
+    all_bc += [output]
+    
+verbose("linking %s" % Options.output)
+linkAll(all_ll + all_bc)
+
+removeTmps()
+    
