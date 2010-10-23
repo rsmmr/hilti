@@ -5,11 +5,6 @@ pac=$1
 export CFLAGS=`binpac-config --cflags`
 export HILTICFLAGS=`binpac-config --hiltic`
 
-if [ "$pac" != "" ]; then
-   pac_hlt=$pac.hlt
-   binpac++ $pac -o $pac_hlt || exit 1
-fi
-
-hilti-build -a -o pac-driver pac-driver.c $pac_hlt
+hilti-build2 -T -d -o pac-driver pac-driver.c $pac
 
 

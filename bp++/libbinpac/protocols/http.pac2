@@ -18,22 +18,22 @@ const FullLine   = /[^\r\n]*\r?\n/;
 const Integer    = /[0-9]+/;
 const HexInteger = /[0-9a-zA-Z]+/;
 
-export type Request = unit {
-    request: RequestLine;
-    message: Message {
-        # This will move into dedicated debugging hooks later. 
-        print self.request;
-        print self.message;
-        }
+export type Requests = unit {
+    :  list<Request>;
 };
 
-export type Reply = unit {
+type Request = unit {
+    request: RequestLine;
+    message: Message;
+};
+
+export type Replies = unit {
+    :  list<Reply>;
+};
+
+type Reply = unit {
     reply: ReplyLine;
-    message: Message {
-        # This will move into dedicated debugging hooks later. 
-        print self.reply;
-        print self.message;
-        }
+    message: Message;
 };
 
 type RequestLine = unit {

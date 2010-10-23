@@ -67,6 +67,8 @@ class CodeGen(object):
         Returns: ~~Module - The module
         """
         return self._module
+
+    _anon_funcs = 0
     
     def beginFunction(self, name, ftype, hook=False):
         """Starts a new function. The method creates the function builder as
@@ -85,7 +87,10 @@ class CodeGen(object):
         ~~hilti.builder.BlockBuilder) - The builders created
         for the new function.
         """
-        fbuilder = hilti.builder.FunctionBuilder(self._mbuilder, name if name else "<no name>", ftype, dontadd=(name == None))
+        
+        CodeGen._anon_funcs += 1
+        
+        fbuilder = hilti.builder.FunctionBuilder(self._mbuilder, name if name else "<no-name-%d>" % CodeGen._anon_funcs, ftype, dontadd=(name == None))
         self._builders += [fbuilder.newBuilder(None)]
         
         return (fbuilder, self._builders[-1])
@@ -211,7 +216,7 @@ class CodeGen(object):
 
         paths = self.importPaths()
         
-        for mod in ["hilti", "binpac", "binpacintern"]:
+        for mod in ["libhilti", "hilti", "binpac", "binpacintern"]:
             if not hilti.importModule(self._mbuilder.module(), mod, paths):
                 self.error(hltmod, "cannot import module %s" % mod)
                 

@@ -207,7 +207,7 @@ class List(type.Container):
             #
             # List1 -> Item Alt
             # List2 -> Epsilon
-            hookrc = expr.Hilti(hilti.operand.ID(hilti.id.ID("__hookrc", hilti.type.Bool())), type.Bool())
+            hookrc = expr.Hilti(hilti.operand.ID(hilti.id.Local("__hookrc", hilti.type.Bool())), type.Bool())
             l1 = grammar.Sequence(location=loc)
             eps = grammar.Epsilon(location=loc)
             alt = grammar.Boolean(hookrc, l1, eps, location=loc)

@@ -59,7 +59,7 @@ static void usage(const char* prog)
         
         hlt_string_print(stderr, p->name, 0, &excpt, ctx);
         
-        for ( int n = 14 - hlt_string_len(p->name, &excpt, ctx); n; n-- )
+        for ( int n = 20 - hlt_string_len(p->name, &excpt, ctx); n; n-- )
             fputc(' ', stderr);
         
         hlt_string_print(stderr, p->description, 1, &excpt, ctx);
@@ -225,11 +225,12 @@ static void input_error(const char* line)
 typedef struct {
     hlt_bytes* input;    
     hlt_exception* resume;
+    int stopped; 
 } Flow;
 
 KHASH_MAP_INIT_STR(Flow, Flow*)
 
-Flow* bulk_feed_piece(binpac_parser* parser, Flow* flow, int eof, const char* data, int size, const char* fid, const char* t)
+Flow* bulkFeedPiece(binpac_parser* parser, Flow* flow, int eof, const char* data, int size, const char* fid, const char* t)
 {
     hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt = 0;
@@ -249,14 +250,27 @@ Flow* bulk_feed_piece(binpac_parser* parser, Flow* flow, int eof, const char* da
         flow = hlt_gc_malloc_non_atomic(sizeof(Flow));
         flow->input = input;
         flow->resume = 0;
+        flow->stopped = 0;
         result = flow;
     }
     else {
+
+        if ( size && ! flow->resume ) {
+            // Past parsing proceeded all the way through and we don't expect
+            // further input. 
+            fprintf(stderr, "%s: error, no further input expected\n", fid);
+            flow->stopped = 1;
+            return 0;
+        }
+        
         assert(flow->input);
-        assert(flow->resume);
         hlt_bytes_append(flow->input, input, &excpt, ctx);
     }
 
+    if ( flow->stopped )
+        // Error encountered earlier, just ignore further input. 
+        return 0;
+    
     if ( eof )
         hlt_bytes_freeze(flow->input, 1, &excpt, ctx);
     
@@ -287,8 +301,10 @@ Flow* bulk_feed_piece(binpac_parser* parser, Flow* flow, int eof, const char* da
     
     if ( excpt ) {
         hlt_execution_context* ctx = hlt_global_execution_context();
+        fprintf(stderr, "%s ", fid);
         hlt_exception_print_uncaught(excpt, ctx);
-        exit(1);
+        flow->stopped = 1;
+        return 0;
     }
     
     return result;
@@ -347,7 +363,7 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
         
         // Make the flow ID uni-directional and look it up in the state table. 
         int len = strlen(fid);
-        fid[len] = '-';
+        fid[len] = '#';
         fid[len+1] = dir;
         fid[len+2] = '\0';
         khiter_t i = kh_get(Flow, hash, fid);
@@ -357,7 +373,7 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
         int known_flow = (i != kh_end(hash));
         
         if ( debug )
-            fprintf(stderr, "kind: %c   dir: %c   size: %d   fid: |%s|   t: |%s|   known: %d\n", kind, dir, size, fid, ts, known_flow);
+            fprintf(stderr, "--- pac-driver: kind=%c dir=%c size=%d fid=|%s| t=|%s| known=%d\n", kind, dir, size, fid, ts, known_flow);
 
         if ( kind == 'G' ) { 
             // Can't handle gaps yet. Mark flow as to be ignored by setting parser to null. 
@@ -393,12 +409,10 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
 
         if ( ! ignore ) {
             binpac_parser* p = (dir == '>') ? request_parser : reply_parser;
-            void* result = bulk_feed_piece(p, kh_value(hash, i), eof, buffer, size, fid, ts);
+            void* result = bulkFeedPiece(p, kh_value(hash, i), eof, buffer, size, fid, ts);
             
             if ( result )
                 kh_value(hash, i) = result;
-            
-            assert(kh_value(hash, i));
         }
                 
         if ( eof && kh_value(hash, i) ) {
