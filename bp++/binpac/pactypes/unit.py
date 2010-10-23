@@ -589,7 +589,7 @@ class Unit(type.ParseableType):
             self._fields[idx] = [field]
 
         self._fields_ordered += [field]
-
+        
     def variables(self):
         """Returns all user-defined variables.
 

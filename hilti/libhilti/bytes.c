@@ -190,18 +190,8 @@ static inline void normalize_pos(hlt_bytes_pos* pos)
     // If the pos was previously an end position, but now new data has been
     // added, adjust it so that it's pointing to the next byte.
     if ( (! pos->cur || pos->cur >= pos->chunk->end) && pos->chunk->next ) {
-        fprintf(stderr, "\nA %p\n", pos);
-        fprintf(stderr, "1 %p\n", pos->chunk);
-        fprintf(stderr, "2 %p\n", pos->chunk->next);
-        fprintf(stderr, "3 %p\n", pos->cur);
-        fprintf(stderr, "4 %p\n", pos->chunk->end);
-        fprintf(stderr, "5 %p\n", pos->chunk->next->start);
         pos->chunk = pos->chunk->next;
         pos->cur = pos->chunk->start;
-        fprintf(stderr, "B1 %p\n", pos->chunk);
-        fprintf(stderr, "B2 %p\n", pos->cur);
-        fprintf(stderr, "B3 %p\n", pos->chunk->start);
-        fprintf(stderr, "B4 %p\n", pos->chunk->end);
     }
 }
 

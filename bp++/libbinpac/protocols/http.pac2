@@ -36,6 +36,11 @@ type Reply = unit {
     message: Message;
 };
 
+type Version = unit {
+    :        /HTTP\//;
+    number: /[0-9]+\.[0-9]+/;
+};
+
 type RequestLine = unit {
     method:  Token;
     :        WhiteSpace;
@@ -45,7 +50,9 @@ type RequestLine = unit {
     :        NewLine;
 };
 
-const Version = /HTTP\/[0-9]\.[0-9]/;
+%debug on RequestLine::version { 
+    print self.method, "|", self.uri, "|", self.version.number;
+    }
 
 type ReplyLine = unit {
     version: Version;
@@ -55,6 +62,10 @@ type ReplyLine = unit {
     reason:  RestOfLine;
     :        NewLine;
 };
+
+%debug on ReplyLine::reason { 
+    print self.version.number, "|", self.status, "|", self.reason;
+    }
 
 type Message = unit {
     headers:    list<Header(self)>;

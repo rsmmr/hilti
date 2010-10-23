@@ -1,10 +1,8 @@
 #! /usr/bin/env bash 
 
-pac=$1
-
 export CFLAGS=`binpac-config --cflags`
 export HILTICFLAGS=`binpac-config --hiltic`
 
-hilti-build2 -T -d -o pac-driver pac-driver.c $pac
+hilti-build2 -o pac-driver pac-driver.c $@
 
 

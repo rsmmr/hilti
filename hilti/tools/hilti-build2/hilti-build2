@@ -88,6 +88,9 @@ def removeTmps():
             pass
         
 def check_errors(num, file, phase):
+    
+    file = os.path.basename(file)
+    
     if num > 0:
         print >>sys.stderr, "%s: %d error%s found during %s" % (os.path.basename(file), num, "s" if num > 1 else "", phase)
         sys.exit(1)
@@ -161,12 +164,14 @@ def pac2ToHlt(pac2, file):
     (success, hlt) = binpac.codegen.compileModule(pac2, import_paths=ImportPaths, debug=Options.debug, validate=False)
     timeStop()
 
+    if not success:
+        check_errors(-1, file, "code generation")
+    
     timeStart("validating HILTI code")
     errors = hilti.validateModule(hlt)
     timeStop()
-    
-    if not success:
-        check(errors(-1, file, "code generation"))
+
+    check_errors(errors, input, "validating")
     
     return hlt
     
