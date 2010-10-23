@@ -162,6 +162,7 @@ class CodeGen(objcache.Cache):
 
         self._llvm = _llvm_data()
         self._llvm.module = llvm.core.Module.new(mod.name())
+        self._llvm.module.target = llvm.core.getHostTriple()
         
         self._llvm.prototypes = None
         self._readPrototypes()
@@ -1897,6 +1898,7 @@ class CodeGen(objcache.Cache):
         given, ~~llvmCurrentFrameDescriptor is used. 
         """
         addr = self._llvmAddrLocalVar(id.name(), func, frame)
+        
         return self.llvmAssign(val, addr)
 
     def llvmLoadGlobalVar(self, id):
@@ -2279,9 +2281,9 @@ class CodeGen(objcache.Cache):
                     idx += 1
                     
                 return frame_idx
-            
-            frame_idx = self.cache("frame-%s-%s" % (func.name(), func.callingConvention()), _makeFrameIdx)
 
+            frame_idx = self.cache("frame-%s-%s" % (func.name(), func.callingConvention()), _makeFrameIdx)
+            
             # The locals are positioned *below* the fptr so we need to
             # adjust that first. To make sure everything is aligned correclty,
             # we do it in three steps.

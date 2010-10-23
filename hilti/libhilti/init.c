@@ -47,6 +47,11 @@ void hlt_init()
 
     for ( int i = 0; i < _num_registered_funcs; i++ )
         (*(_registered_funcs[i]))();
+        
+
+    // This is easy to forget ...
+    __hlt_debug_printf_internal("hilti-trace", "Reminder: hilti-trace requires compiling with debugging level > 1.");
+    __hlt_debug_printf_internal("hilti-flow",  "Reminder: hilti-flow requires compiling with debugging level > 1.");
 }
 
 void hlt_register_init_function(init_func func, hlt_exception* expt)

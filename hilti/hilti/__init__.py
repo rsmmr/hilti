@@ -95,7 +95,7 @@ def validateModule(mod):
     """
     return validator.Validator().validate(mod)
     
-def canonifyModule(mod, debug=False):
+def canonifyModule(mod, debug=0):
     """Transforms a module into a canonified form suitable for code
     generation. The canonified form ensures a set of properties that simplify
     the code generation process, such as enforcing a fully linked block
@@ -110,8 +110,8 @@ def canonifyModule(mod, debug=False):
     mod: ~~Module - The module to canonify. The module must be well-formed as
     verified by ~~validateModule. It will be changed in place. 
     
-    debug: bool - If debug is True, the canonifier may insert additional code
-    for helping with debugging. 
+    debug: int - If debug is larger than 0, the canonifier may insert
+    additional code for helping with debugging. 
     """
     return canonifier.Canonifier().canonify(mod, debug)
 

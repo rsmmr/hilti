@@ -216,7 +216,7 @@ class Run(Instruction):
         if self.op2():
             op2 = flow._applyDefaultParams(self.op1().value(), self.op2())
             self.setOp2(op2)
-        
+
     def _validate(self, vld):
         super(Run, self)._validate(vld)
 
@@ -250,8 +250,8 @@ class Run(Instruction):
         canonifier.addTransformedBlock(block_stopped)
         
         ifelse = flow.IfElse(op1=target, 
-                             op2=operand.ID(id.ID(block_enabled.name(), type.Label())),
-                             op3=operand.ID(id.ID(block_next.name(), type.Label())))
+                             op2=operand.ID(id.Local(block_enabled.name(), type.Label())),
+                             op3=operand.ID(id.Local(block_next.name(), type.Label())))
         
         block_current.addInstruction(enabled)
         block_current.addInstruction(ifelse)
@@ -263,7 +263,7 @@ class Run(Instruction):
             
             op1 = operand.ID(id.Function(func.name(), func.type(), func))
             op2 = self.op2()
-            op3 = operand.ID(id.ID(block_parse_tuple.name(), type.Label()))
+            op3 = operand.ID(id.Local(block_parse_tuple.name(), type.Label()))
             target = tmp_tuple
             
             call = flow.CallTailResult(target=target, op1=op1, op2=op2, op3=op3)
@@ -280,22 +280,22 @@ class Run(Instruction):
             index1 = tuple.Index(target=target, op1=op1, op2=op2)
             block_parse_tuple.addInstruction(index1)
             
-            jump = flow.Jump(op1=operand.ID(id.ID(block_stopped.name(), type.Label())))
+            jump = flow.Jump(op1=operand.ID(id.Local(block_stopped.name(), type.Label())))
             block_parse_tuple.addInstruction(jump)      
             
         else:
             # Hook does not return a result.
             op1 = operand.ID(id.Function(func.name(), func.type(), func))
             op2 = self.op2()
-            op3 = operand.ID(id.ID(block_stopped.name(), type.Label()))
+            op3 = operand.ID(id.Local(block_stopped.name(), type.Label()))
             target = tmp_stop
             
             call = flow.CallTailResult(target=target, op1=op1, op2=op2, op3=op3)
             block_enabled.addInstruction(call)
 
         ifelse = flow.IfElse(op1=tmp_stop, 
-                             op2=id.ID(block_exit.name(), type.Label()),
-                             op3=id.ID(block_next.name(), type.Label()))
+                             op2=id.Local(block_exit.name(), type.Label()),
+                             op3=id.Local(block_next.name(), type.Label()))
                              
         block_stopped.addInstruction(ifelse)
                                          
@@ -313,7 +313,7 @@ class Run(Instruction):
         canonifier.deleteCurrentInstruction()
     
         b = self._newBlock(canonifier, "next")
-        jump = flow.Jump(op1=operand.ID(id.ID(b.name(), type.Label())))
+        jump = flow.Jump(op1=operand.ID(id.Local(b.name(), type.Label())))
         canonifier.currentTransformedBlock().addInstruction(jump)
         canonifier.addTransformedBlock(b)
         
@@ -348,7 +348,7 @@ class Run(Instruction):
             self._callHook(canonifier, func, b, next, exit, tmp_enabled, tmp_result, tmp_stop, tmp_tuple)
             b = next
         
-        jump = flow.Jump(op1=operand.ID(id.ID(exit.name(), type.Label())))
+        jump = flow.Jump(op1=operand.ID(id.Local(exit.name(), type.Label())))
         b.addInstruction(jump)
             
         canonifier.addTransformedBlock(exit)
@@ -361,8 +361,8 @@ class Run(Instruction):
             canonifier.addTransformedBlock(block_no_result)
             
             ifelse = flow.IfElse(op1=tmp_stop, 
-                                 op2=operand.ID(id.ID(block_have_result.name(), type.Label())),
-                                 op3=operand.ID(id.ID(block_no_result.name(), type.Label())))
+                                 op2=operand.ID(id.Local(block_have_result.name(), type.Label())),
+                                 op3=operand.ID(id.Local(block_no_result.name(), type.Label())))
             
             exit.addInstruction(ifelse)
             
@@ -375,8 +375,8 @@ class Run(Instruction):
 #            block_no_result.addInstruction(throw)
 
             done = self._newBlock(canonifier, "done")
-            jump1 = flow.Jump(op1=operand.ID(id.ID(done.name(), type.Label())))
-            jump2 = flow.Jump(op1=operand.ID(id.ID(done.name(), type.Label())))
+            jump1 = flow.Jump(op1=operand.ID(id.Local(done.name(), type.Label())))
+            jump2 = flow.Jump(op1=operand.ID(id.Local(done.name(), type.Label())))
             block_have_result.addInstruction(jump1)
             block_no_result.addInstruction(jump2)
             

@@ -8,7 +8,7 @@ class Canonifier(object):
     """Implements the canonification of a module. Canonification is mandatory
     to perform before starting the code generation. 
     """
-    def canonify(self, mod, debug=False):
+    def canonify(self, mod, debug=0):
         """Transforms a module into a canonified form suitable for code
         generation. The canonified form ensures a set of properties that simplify
         the code generation process, such as enforcing a fully linked block
@@ -18,7 +18,7 @@ class Canonifier(object):
         mod: ~~Module - The module to canonify. The module must be well-formed
         as verified by ~~validateModule. It will be changed in place. 
         
-        debug: bool - If debug is True, the canonifier may insert additional
+        debug: integer - If debug is non-zero, the canonifier may insert additional
         code for helping with debugging at run-time.
 
         Note: In the future, the canonifier will also be used to implement
@@ -44,7 +44,8 @@ class Canonifier(object):
     def debugMode(self):
         """Returns whether we are compiling with debugging support. 
         
-        Returns: bool - True if compiling with debugging support.
+        Returns: int - 0 if noto compiling with debugging support, otherwise
+        an integer indicatin the debug level.
         """
         return self._debug
 

@@ -68,7 +68,7 @@ class ID(node.Node):
         self._imported = imported
         self._namespace = namespace
         self._scope = None
-
+        
     def name(self):
         """Returns the ID's name.
         

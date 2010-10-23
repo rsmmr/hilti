@@ -170,7 +170,7 @@ class Block(node.Node):
         
     def _canonify(self, canonifier):
         # If we are in debug mode, first add message instructions. 
-        if canonifier.debugMode():
+        if canonifier.debugMode() > 1:
             b = Block(canonifier.currentFunction(), instructions=[], name=self._name, location=self.location())
             b.setMayRemove(self.mayRemove())
             b.setNext(self.next())
