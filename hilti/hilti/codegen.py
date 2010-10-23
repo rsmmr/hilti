@@ -259,7 +259,7 @@ class CodeGen(objcache.Cache):
         else:
             assert not llvm_blockbuilder
             
-        if self.debugLevel() == 2:
+        if self.debugLevel() > 2:
             builder = CodeGen._BuilderProxy(self, builder)
             
         self._llvm.builders += [builder]
