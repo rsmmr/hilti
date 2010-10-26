@@ -132,9 +132,14 @@ def readHlt(input):
     return hlt
 
 def writeHlt(hlt, output):
-    timeStart("writing HILTI code")
-    hilti.printModule(hlt, output)
-    timeStop()
+    try:
+        out = open(output, "w")
+        timeStart("writing HILTI code")
+        hilti.printModule(hlt, out)
+        timeStop()
+        out.close()
+    except IOError, e:
+        print "error writing %s: %s" % (output, e)
 
 def readLl(ll, input):
     pass
@@ -245,10 +250,10 @@ def linkAll(inputs):
     libs = uniqueArgs(libs)
     
     inputs = " ".join(inputs)
-    bc = Options.output + ".bc"
+    bc = makeOutput(Options.output, "bc")
     registerTmp(bc)
     
-    ld = "llvm-ld -disable-opt -b=%s %s %s %s" % (bc, inputs, ldflags, libs)
+    ld = "llvm-ld -disable-internalize -disable-opt -b=%s %s %s %s" % (bc, inputs, ldflags, libs)
     execute(ld)
     
     clibs = []

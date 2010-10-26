@@ -112,7 +112,7 @@ static int _regexec_partial_std(const jrx_regex_t *preg, const char *buffer, uns
 // -1: partial but not full match yet.
 static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms, int find_partial_matches)
 {
-    jrx_offset eo = 0;
+    jrx_offset eo = ms->offset;
     
     for ( const char* p = buffer; len; --len ) {
         jrx_assertion assertions = JRX_ASSERTION_NONE;
@@ -124,7 +124,7 @@ static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, uns
             assertions |= last;
         
         jrx_accept_id rc = jrx_match_state_advance_min(ms, *p++, assertions);
-        
+
         if ( ! rc ) {
             ms->offset = eo;
             return ms->acc > 0 ? ms->acc : 0;
@@ -133,6 +133,9 @@ static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, uns
         if ( rc > 0 ) {
             ms->acc = rc;
             eo = ms->offset;
+            
+            if ( ! jrx_can_transition(ms) )
+                return ms->acc;
         }
     }
     

@@ -37,6 +37,9 @@ while True:
     fid = flow + "#" + dir
     
     if kind == "G":
+        if fid in files and files[fid]:
+            files[fid].write("\n<!!!GAP!!!>")
+        files[fid] = None
         continue
     
     if kind == "D":
@@ -49,13 +52,15 @@ while True:
                 files[fid] = open(fname, "wb")
                 
                 print "Extracting", fname
-            
-            files[fid].write(chunk)
+                
+            if files[fid]:
+                files[fid].write(chunk)
         
     if kind == "T":
         
-        if  fid in files:
-            files[fid].close()
+        if fid in files:
+            if files[fid]:
+                files[fid].close()
             del files[fid]
     
         continue

@@ -200,7 +200,11 @@ class New(Operator):
     """
     def _codegen(self, cg):
         # Allocate memory for struct. 
-        structt = self.op1().value()
+        if isinstance(self.op1(), operand.Type):
+            structt = self.op1().value()
+        else:
+            structt = self.op1().value().type()
+            
         s = cg.llvmMalloc(structt.llvmType(cg).pointee)
         
         # Initialize fields

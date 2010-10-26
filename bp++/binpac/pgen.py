@@ -221,6 +221,7 @@ class ParserGen:
         self.builder().makeDebugMsg("binpac-verbose", "bgn %s '%s'" % (pname, prod))
 
         self._debugShowInput("input", args.cur)
+        self._debugShowToken("lahead symbol", args.lahead)
         self._debugShowInput("lahead start", args.lahstart)
         
         if isinstance(prod, grammar.Literal):
@@ -621,6 +622,12 @@ class ParserGen:
         msg = "- %s is " % tag
         builder.makeDebugMsg("binpac-verbose", msg + "%s ...", [str])
 
+    def _debugShowToken(self, tag, token):
+        fbuilder = self.cg().functionBuilder()
+        builder = self.cg().builder()
+        msg = "- %s is " % tag
+        builder.makeDebugMsg("binpac-verbose", msg + "%d ...", [token])
+        
     def _startingProduction(self, obj, prod):
         """Called whenever a production is about to be parsed."""
         if not prod.name():
@@ -699,7 +706,7 @@ class ParserGen:
                 if default:
                     hlt_default = default.hiltiInit(self.cg())
                 else:
-                    hlt_default = None
+                    hlt_default = f.type().hiltiUnitDefault(self.cg())
                 #   hlt_default = f.type().hiltiDefault(self.cg(), True)
                 
                 ids += [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), hlt_default)]

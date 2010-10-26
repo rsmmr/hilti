@@ -18,6 +18,8 @@
 # @TEST-EXEC:  cat %DIR/request.dat | ./a.out -i 1 -p HTTP::Request >>output
 # @TEST-EXEC:  echo ======== Reply Chunked >>output
 # @TEST-EXEC:  cat %DIR/reply-chunked.dat | ./a.out -i 1 -p HTTP::Reply >>output
+# @TEST-EXEC:  echo ======== Reply Chunked-2 >>output
+# @TEST-EXEC:  cat %DIR/reply-chunked-trailer.dat | ./a.out -i 1 -p HTTP::Reply >>output
 # @TEST-EXEC:  echo ======== Reply Content Length >>output
 # @TEST-EXEC:  cat %DIR/reply-content-length.dat | ./a.out -i 1 -p HTTP::Reply >>output
 # @TEST-EXEC:  echo ======== Reply Eod >>output

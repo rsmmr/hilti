@@ -11,12 +11,13 @@ type DeliveryMode = enum { EndOfData, Length, Multipart, Chunked };
 
 const Token      = /[^ \t\r\n]+/;
 const URI        = /[^ \t\r\n]+/;
-const WhiteSpace = /[ \t]+/;
 const NewLine    = /\r?\n/;
 const RestOfLine = /[^\r\n]*/;
 const FullLine   = /[^\r\n]*\r?\n/;
 const Integer    = /[0-9]+/;
 const HexInteger = /[0-9a-zA-Z]+/;
+const WhiteSpace = /[ \t]+/;
+const OptionalWhiteSpace = /[ \t]*/;
 
 export type Requests = unit {
     :  list<Request>;
@@ -133,21 +134,32 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
       DeliveryMode::Multipart -> : list<FullLine> &until($$ == msg.multipart_boundary)
                                    foreach { self.data += $$; }
                
-      DeliveryMode::Chunked   -> : list<Chunk> &until($$.length == 0)
-                                   foreach { self.data += $$.data; }
-       
+      DeliveryMode::Chunked   -> : Chunks(self, msg);       
     }
     
     on %ctor {
         self.data = b"";
         }
+        
+    on data { 
+        print self.data;
+        }
+};
+
+type Chunks = unit(body: Body, msg: Message) {
+    chunk:   list<Chunk> &until($$.length == 0)
+                 foreach { body.data += $$.data; }
+    trailer: list<Header(msg)>;
+    :        NewLine;
 };
 
 type Chunk = unit {
-    length:  HexInteger &convert=hex_to_int;
-    :        NewLine;
-    data:    bytes &length=self.length;
-    :        NewLine if ( self.length != 0 );
+    length:    HexInteger &convert=hex_to_int;
+    :          OptionalWhiteSpace;
+    extension: RestOfLine;
+    :          NewLine;
+    data:      bytes &length=self.length;
+    :          NewLine if ( self.length != 0 );
 };
     
 # These are implemented in libhilti.

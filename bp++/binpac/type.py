@@ -565,6 +565,17 @@ class ParseableType(Type):
         Returns: ~~Type - The type for parsed fields.
         """
         return self.parsedType()
+
+    def hiltiUnitDefault(self, cg):
+        """Returns the default value to initialize attributes of this type
+        with in a ~~Unit.
+
+        This method can be overridden by derived classes. The default
+        implementation returns None. 
+        
+        Returns: ~~hilti.operand.Ctor or None - The default value, or None if
+        per default the attributes are left to be unset. 
+        """
     
     def validateInUnit(self, field, vld):
         """Validates the semantic correctness of the type when used inside a

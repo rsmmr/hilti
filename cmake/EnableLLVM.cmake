@@ -10,7 +10,7 @@ if ( ENABLE_LLVM )
        set(CMAKE_C_OUTPUT_EXTENSION ".bc")
        set(CMAKE_STATIC_LIBRARY_SUFFIX ".bca")
        set(CMAKE_C_COMPILER "clang")
-       set(CMAKE_C_FLAGS "-std=gnu89 -emit-llvm -D_GNU_SOURCE ${CMAKE_C_FLAGS} ${LLVM_COMPILE_FLAGS}")
+       set(CMAKE_C_FLAGS "-std=gnu89 -g -emit-llvm -D_GNU_SOURCE ${CMAKE_C_FLAGS} ${LLVM_COMPILE_FLAGS}")
        set(CMAKE_AR "llvm-ar")
        set(CMAKE_RANLIB "llvm-ranlib")
 

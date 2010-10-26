@@ -803,9 +803,13 @@ class Attribute:
         unit = lhs.type()
         objt = unit.hiltiParseObjectType()
         op1 = cg.declareHook(unit, ident, objt)
+
+        params = []
+        for p in unit.args():
+            params += [p.evaluate(cg)]
         
         if not cg.inHook(op1.value()):
-            op2 = builder.tupleOp([obj])
+            op2 = builder.tupleOp([obj] + params)
             builder.hook_run(None, op1, op2)
 
 

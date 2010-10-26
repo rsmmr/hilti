@@ -121,6 +121,9 @@ class List(type.Container):
         ltype = hilti.type.List(self.itemType().hiltiType(cg))
         return hilti.operand.Ctor([], hilti.type.Reference(ltype))
 
+    def hiltiUnitDefault(self, cg):
+        return self.hiltiDefault(cg)
+    
     def pac(self, printer):
         printer.output("list<")
         self._item.pac(printer)
@@ -227,6 +230,8 @@ class List(type.Container):
             l2 = grammar.LookAhead(grammar.Epsilon(), l1, location=loc)
             l1.addProduction(item)
             l1.addProduction(l2) 
+            
+            l1 = l2
             
         self._prod = l1
         return self._prod

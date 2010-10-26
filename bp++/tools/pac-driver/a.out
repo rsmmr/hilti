@@ -1,4 +1,4 @@
 #!/bin/sh
 lli=${LLVMINTERP-lli}
 exec $lli \
-    pac-driver.bc ${1+"$@"}
+    pac-driver.hb10846.tmp.bc ${1+"$@"}

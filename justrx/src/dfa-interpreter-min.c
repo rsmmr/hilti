@@ -83,7 +83,19 @@ int jrx_match_state_advance_min(jrx_match_state* ms, jrx_char cp, jrx_assertion 
     if ( ms->dfa->options & JRX_OPTION_DEBUG ) 
         fputs("-> no transition possible", stderr);
 
-    // Matching failed.
+    // Matching failed. Check if the start state is already an accepting one.
+    if ( state->accepts ) {
+        jrx_accept_id aid = vec_dfa_accept_get(state->accepts, 0).aid;
+        
+        if ( ms->dfa->options & JRX_OPTION_DEBUG )
+            fprintf(stderr, " (accepting with ID %d)\n", aid);
+        
+        ms->state = -1; // Jam it. 
+        
+        // Accepting.
+        return aid;
+    }
+    
     return 0;
 }
 
