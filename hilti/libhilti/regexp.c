@@ -18,6 +18,13 @@ static hlt_string_constant ASCII = { 5, "ascii" };
 static hlt_string_constant EMPTY = { 12, "<no-pattern>" };
 static hlt_string_constant PIPE = { 4, " | " };
 
+//#define _DEBUG_MATCHING
+
+#ifdef _DEBUG_MATCHING
+static void print_bytes_raw(const char* b2, hlt_bytes_size size, hlt_exception** excpt, hlt_execution_context* ctx);
+static void print_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+#endif
+
 hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_REGEXP);
@@ -191,7 +198,8 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
     hlt_bytes_size offset = 0;
     hlt_bytes_pos cur = begin;
     int block_len = 0;
-    
+    int bytes_seen = 0;
+
     int8_t stdmatcher = ! (re->regexp.cflags & REG_NOSUB);
 
     assert( (! do_anchor) || (re->regexp.cflags & REG_NOSUB));
@@ -209,6 +217,8 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
         
         need_msdone = 1;
         cookie = 0;
+        bytes_seen = 0;
+        
         jrx_match_state_init(&re->regexp, offset, ms);
         
         while ( true ) {
@@ -220,8 +230,18 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
             
             block_len = block.end - block.start;
             int fpm = (! cookie) && find_partial_matches;
+            
+#ifdef _DEBUG_MATCHING
+            fprintf(stderr, "feeding |");
+            print_bytes_raw((const char*)block.start, block_len, excpt, ctx);
+            fprintf(stderr, "|\n");
+#endif
             jrx_accept_id rc = jrx_regexec_partial(&re->regexp, (const char*)block.start, block_len, first, last, ms, fpm);
-
+            
+#ifdef _DEBUG_MATCHING
+            fprintf(stderr, "rc=%d\n", rc);
+#endif
+            
             if ( rc == 0 )
                 // No further match.
                 return acc;
@@ -229,12 +249,20 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
             if ( rc > 0 ) {
                 // Match.
                 acc = rc;
+#ifdef _DEBUG_MATCHING
+                fprintf(stderr, "offset=%d ms->offset=%d bytes_seen=%d eo=%p so=%p\n", offset, ms->offset-1, bytes_seen, eo, so);
+#endif
                 
                 if ( ! stdmatcher ) {
                     if ( so )
                         *so = offset;
-                    if ( eo )
+                    if ( eo ) {
+                        // FIXME: The match_state intializes the offset with
+                        // 1. Not sure why right now but changing that would
+                        // probably break other things we adjust that here
+                        // for the calculation.
                         *eo = offset + ms->offset - 1;
+                    }
                 }
                 else if ( so || eo ) {
                     jrx_regmatch_t pmatch;
@@ -250,6 +278,8 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
                 return acc;
             }
 
+            bytes_seen += block_len;
+            
             if ( ! cookie ) {
                 if ( rc < 0 && acc == 0 )
                     // At least one could match with more data.
@@ -357,6 +387,10 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, c
     return vec;
 }
 
+#ifdef _DEBUG_MATCHING
+int YYU = 0;
+#endif
+
 hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! re->num ) {
@@ -372,11 +406,75 @@ hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const
         return dummy;
     }
 
+#ifdef _DEBUG_MATCHING
+    YYU += 1;
+    fprintf(stderr, "XXX <<< regexp.match (call %d)\n", YYU);
+#endif
+    
     jrx_match_state ms;
     jrx_offset eo;
     jrx_accept_id rc = _search_pattern(re, &ms, begin, end, 0, &eo, 1, 0, excpt, ctx);
     jrx_match_state_done(&ms);
     
     hlt_regexp_match_token_result result = { rc, (rc > 0 ? hlt_bytes_pos_incr_by(begin, eo, excpt, ctx) : begin) };        
+    
+#ifdef _DEBUG_MATCHING
+    for ( int i = 0; i < re->num; i++ ) {
+        const char* p = hlt_string_to_native(*re->patterns, excpt, ctx);
+        fprintf(stderr, " pattern[0]=|%s|\n", p);
+    }
+
+    fprintf(stderr, " input=|");
+    hlt_bytes* b = hlt_bytes_sub(begin, end, excpt, ctx);
+    print_bytes(b, excpt, ctx);
+    fprintf(stderr, "\n");
+    fprintf(stderr, " rc=%d (eo=%d)\n", rc, eo);
+    
+    if ( rc > 0 && eo >= 0 ) {
+        fprintf(stderr, " match=|");
+        hlt_bytes_pos o = hlt_bytes_pos_incr_by(begin, eo, excpt, ctx);
+        hlt_bytes* b = hlt_bytes_sub(begin, o, excpt, ctx);
+        print_bytes(b, excpt, ctx);
+        fprintf(stderr, "\n");
+    }
+    else 
+        fprintf(stderr, " match=<empty>\n");
+    
+    fprintf(stderr, "XXX >>>\n");
+#endif    
+        
     return result;
 }
+
+#ifdef _DEBUG_MATCHING
+static void print_bytes_raw(const char* b2, hlt_bytes_size size, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    int x = 0;
+    if ( size > 40 ) {
+        x = 1;
+        size = 40;
+    }
+    
+    while ( size-- ) {
+        int8_t c = *b2++;
+        
+        if ( isprint(c) )
+            fputc((char)c, stderr);
+        else
+            fprintf(stderr, "\\x%02x", (unsigned int)c);
+    }
+
+    if ( x )
+        fprintf(stderr, "...");
+        
+    fprintf(stderr, "|");
+}
+
+static void print_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    const int8_t* b2 = hlt_bytes_to_raw(b, excpt, ctx);
+    hlt_bytes_size size = hlt_bytes_len(b, excpt, ctx);
+    print_bytes_raw((const char*)b2, size, excpt, ctx);
+}
+
+#endif

@@ -536,6 +536,9 @@ hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception** excpt, hlt_e
 
 hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    if ( ! n ) 
+        return old;
+    
     normalize_pos(&old);
     
     if ( is_end(old) )

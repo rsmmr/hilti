@@ -74,7 +74,7 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     FILE* out = hlt_config_get()->debug_out;
     flockfile(out);
 
-    hlt_string_print(out, hlt_string_concat(hlt_string_from_asciiz(prefix, excpt, ctx), usr, excpt, ctx), 1, excpt, ctx);
+    hlt_string_print_n(out, hlt_string_concat(hlt_string_from_asciiz(prefix, excpt, ctx), usr, excpt, ctx), 1, 256, excpt, ctx);
     
     fflush(out);
     funlockfile(out);

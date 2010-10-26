@@ -335,15 +335,17 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** e
 
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't 
  * convert to the locale encoding yet. We just print them in \u syntax. */
-void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_string_print_n(FILE* file, hlt_string s, int8_t newline, hlt_string_size n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! s )
         // Empty string.
         return;
+
+    hlt_string_size len = s->len <= n ? s->len : n;
     
     int32_t cp;
     const int8_t* p = s->bytes;
-    const int8_t* e = p + s->len;
+    const int8_t* e = p + len;
     
     while ( p < e ) {
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &cp);
@@ -366,9 +368,17 @@ void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** 
         p += n;
     }
     
+    if ( s->len > n )
+        fprintf(stderr, "...");
+    
     if ( newline )
         fputc('\n', file);
         
+}
+
+void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_string_print_n(file, s, newline, s->len, excpt, ctx);
 }
 
 /* FIXME: We don't really do "to native" yet, but just to ASCII ... */

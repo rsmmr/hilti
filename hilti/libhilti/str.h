@@ -36,6 +36,7 @@ extern hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, 
 extern hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
 
 extern void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_string_print_n(FILE* file, hlt_string s, int8_t newline, hlt_string_size n, hlt_exception** excpt, hlt_execution_context* ctx);
 
 extern const char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
 
