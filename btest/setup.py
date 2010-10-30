@@ -1,0 +1,12 @@
+#! /usr/bin/env python
+
+from distutils.core import setup
+
+setup(name='tester',
+      version='0.1',
+      description='A simple unit testing framework',
+      author='Robin Sommer',
+      author_email='robin@icir.org',
+      url='http://www.icir.org/robin',
+      scripts=['tester', 'tester-diff'],
+     )
