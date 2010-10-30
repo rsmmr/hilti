@@ -2,7 +2,7 @@
 #
 # @TEST-EXEC:  hilti-build -v %INPUT -o a.out 
 # @TEST-EXEC:  ./a.out >output 2>&1
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 #
 # Note: This is actually expected to work because the location of
 # local's does indeed not matter. I don't see any harm in doing so

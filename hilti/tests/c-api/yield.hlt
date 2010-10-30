@@ -4,7 +4,7 @@
 # @TEST-EXEC:  ${CC} -I . -c %DIR/yield-c.c -o yield-c.bc
 # @TEST-EXEC:  hilti-build yield-c.bc %INPUT -o a.out 
 # @TEST-EXEC:  ./a.out >output 2>&1
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 #
 
 module Foo

@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC: hilti-build %INPUT -o a.out >output 2>&1 
-# @TEST-EXEC: test-diff output
+# @TEST-EXEC: btest-diff output
 #
 # Check whether int16, int32, etc. turn into the same as int<n>. 
 

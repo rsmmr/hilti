@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
-# @TEST-EXEC:      test-diff output
+# @TEST-EXEC:      btest-diff output
 #
 # Some broken assigns. All are supposed to fail.
 

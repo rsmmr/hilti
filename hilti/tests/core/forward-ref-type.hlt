@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC:  hiltic %INPUT -p -o out.ll
-# @TEST-EXEC:  test-diff out.ll
+# @TEST-EXEC:  btest-diff out.ll
 
 module Main
 

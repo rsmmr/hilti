@@ -16,7 +16,7 @@
 # @TEST-EXEC:  bash -c "echo RUN\ 5 >> output"
 # @TEST-EXEC:  ./a.out >output.tmp 2>&1
 # @TEST-EXEC:  sort output.tmp >> output
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 
 module Main
 

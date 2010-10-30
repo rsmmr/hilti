@@ -3,7 +3,7 @@
 # @TEST-EXEC:  hilti-build %INPUT -o a.out 
 # @TEST-EXEC:  echo Out of band >foo.txt
 # @TEST-EXEC:  ./a.out >output 2>&1
-# @TEST-EXEC:  test-diff foo.txt
+# @TEST-EXEC:  btest-diff foo.txt
 
 module Main
 

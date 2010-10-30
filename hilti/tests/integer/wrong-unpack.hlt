@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out 
-# @TEST-EXEC:      test-diff output
+# @TEST-EXEC:      btest-diff output
 #
 # Using an invalid unpack format.
 
