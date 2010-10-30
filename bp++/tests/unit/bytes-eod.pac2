@@ -6,7 +6,7 @@
 # @TEST-EXEC:  printf 12345      | HILTI_DEBUG=binpac-verbose ./a.out -p Mini::test >>output 2>&1
 # @TEST-EXEC:  echo ======== >>output 2>&1
 # @TEST-EXEC:  printf 1234       | HILTI_DEBUG=binpac-verbose ./a.out -p Mini::test >>output 2>&1
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 
 module Mini;
 

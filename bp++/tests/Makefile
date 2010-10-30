@@ -2,7 +2,7 @@
 # Run all the tests. 
 #
 
-TESTER=../../tester/bin/tester
+TESTER=../../btest/btest
 
 all: tests
 

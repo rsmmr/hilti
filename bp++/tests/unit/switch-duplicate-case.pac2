@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC-FAIL:  binpac++ %INPUT >output 2>&1
-# @TEST-EXEC:       test-diff output
+# @TEST-EXEC:       btest-diff output
 
 
 module Mini;
