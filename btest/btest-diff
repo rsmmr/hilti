@@ -6,8 +6,12 @@
 #
 # TEST_DIFF_CANONIFIER
 
+if [ "$TEST_DIAGNOSTICS" = "" ]; then
+    TEST_DIAGNOSTICS=/dev/stdout
+fi    
+
 if [ "$#" -lt 1 ]; then
-   echo "test-diff: wrong number of arguments" >$TEST_DIAGNOSTICS
+   echo "btest-diff: wrong number of arguments" >$TEST_DIAGNOSTICS
    exit 1
 fi
 
@@ -15,7 +19,7 @@ input=$1
 shift 
 
 if [ ! -f $input ]; then
-   echo "test-diff: input $input does not exist." >$TEST_DIAGNOSTICS
+   echo "btest-diff: input $input does not exist." >$TEST_DIAGNOSTICS
    exit 1
 fi   
 

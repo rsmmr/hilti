@@ -1,5 +1,5 @@
 # @TEST-EXEC: awk -f %INPUT <foo.dat >output
-# @TEST-EXEC: tester-diff output
+# @TEST-EXEC: btest-diff output
 
     { lines += 1; }
 END { print lines; }

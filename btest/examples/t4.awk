@@ -1,3 +1,3 @@
 # @TEST-EXEC: ls -a ~ | awk -f %INPUT >dots
-# @TEST-EXEC: tester-diff dots
+# @TEST-EXEC: btest-diff dots
 /\.*/ { print $1 }

@@ -1,10 +1,13 @@
+.. -*- mode: rst; -*-
+
 .. |date| date::
 
 ============================================
 BTest - A Simple Driver for Basic Unit Tests
 ============================================
 
-:Author: Robin Sommer
+:Author: Robin Sommer <robin@icir.org>
+:Date: |date|
 :Version: 0.2
 
 .. contents::
@@ -18,7 +21,7 @@ straight-forward driver for a suite of tests. Each test consistent
 of a set of command lines, which will executed and their exit code
 checked. In addition, their output can optionally be compared
 against a previously established baseline. 
-
+            
 Installation
 ============
 
@@ -59,8 +62,9 @@ Normally, you would run just all tests found in a directory::
   1 test failed
   
 Why do we need the ``@TEST-EXEC:`` prefixes? Because often the file
-containing the tests simultaneously acts as the *input* for something
-to run. Let's say we want to validate an ``shell`` script::
+containing the tests simultaneously acts as the *input* for
+something to run. Let's say we want to validate an ``shell``
+script::
 
   > cat examples/t3.sh 
   # @TEST-EXEC: sh %INPUT
@@ -160,10 +164,10 @@ execute. It is however possible to include certain files with the
 options:
 
   -U, --update-baseline 
-      Records a new baseline for all ``btest-diff`` commands used
-      in any of the specified tests. That is, the output they are
-      run on is considered authorative and recorded for future runs
-      as the version to compare with.
+      Records a new baseline for all ``btest-diff`` commands used in
+      any of the specified tests. That is, the output they are run
+      on is considered authorative and recorded for future runs as
+      the version to compare with.
   
   -d, --diagnostics     
       Shows diagnostics for all failed tests. The diagnostics
@@ -183,11 +187,11 @@ options:
       appended.
   
   -v, --verbose
-      Shows all test command line as they are executed.
+      Shows all test command lines as they are executed.
       
   -w, --wait
-      Interactively waits a ``<enter>`` after showing diagnostics for
-      a test.
+      Interactively waits a ``<enter>`` after showing diagnostics
+      for a test.
      
   -b, --brief     
       Does not output anything for tests which pass. If all tests
@@ -195,9 +199,9 @@ options:
   
   -c CONFIG, --config=CONFIG
       Specifies an alternative `configuration`_ file to use. The
-      default is to use a file called ``btest.cfg`` if found in the
-      current directory.
-      
+      sadasd asd asd default is to use a file called ``btest.cfg``
+      if found in the current directory.
+  
   -F FILTER, --filter=FILTER
       Activates a filter_ defined in the configuration file. 
   
@@ -215,20 +219,20 @@ options:
 Configuration
 -------------
 
-Specifics of ``btest``'s execution can be tuned with a
-configuration file, either ``btest.cfg`` by default if found in the
-current directory, or alternatively specificied by the ``--config``
-command line option. The configuration file is ``INI-style``, and an
-example template comes with the distribution as
-``btest.cfg.example`` and can be adapted as needed. The file has a
-main section ``btest`` defining most options; an optional section
-for defining `environment variables`_; and further optional sections
-for defining custom filters_.
+Specifics of ``btest``'s execution can be tuned with a configuration
+file, either ``btest.cfg`` by default if found in the current
+directory, or alternatively specificied by the ``--config`` command
+line option. The configuration file is ``INI-style``, and an example
+template comes with the distribution as ``btest.cfg.example`` and
+can be adapted as needed. The file has a main section ``btest``
+defining most options; an optional section for defining `environment
+variables`_; and further optional sections for defining custom
+filters_.
 
 Note that all paths specified in the configuration file are relative
 the the ``btest``'s *base directory*. The base directory is either
-the one where the configuration file is located if such is given,
-or the current working directory if not. When setting values for
+the one where the configuration file is located if such is given, or
+the current working directory if not. When setting values for
 configuration options, the absolute path of this directory is
 available via the macro ``%(testbase)s`` (the weird syntax is due to
 Python`'s ``ConfigParser`` module ...). 
@@ -254,9 +258,8 @@ configuration file:
     By default, this is set to ``%(testbase)s/.tmp``.
     
 ``BaselineDir`` 
-   A directory where to store the baseline files for
-   ``btest-diff``. By default, this is set to
-   ``%(testbase)s/Baseline``.
+   A directory where to store the baseline files for ``btest-diff``.
+   By default, this is set to ``%(testbase)s/Baseline``.
  
 ``IgnoreDirs``
    A space-separated lists of relative directory names to ignore
@@ -401,7 +404,6 @@ supported:
    two tests per file. 
    
 ``@TEST-START-FILE <file>``
-
    This can be used to include an additional input file for a test
    right inside the test file. All subsequent lines will be written
    into the given file (and removed from the test's `%INPUT`) until

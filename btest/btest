@@ -16,10 +16,10 @@ import glob
 import fnmatch
 import ConfigParser
 
-Name ="tester"
-Version = 0.1
+Name ="btest"
+Version = 0.2
 
-ConfigDefault = "tester.cfg"
+ConfigDefault = "btest.cfg"
 Config = None
 
 RE_INPUT = re.compile("%INPUT")
@@ -57,6 +57,12 @@ def mkdir(dir):
     else:
         if not os.path.isdir(dir):
             error("path %s exists but is not a directory" % dir)
+    
+def getOption(key, default):
+    try:
+        return Config.get("btest", key)
+    except ConfigParser.NoSectionError:
+        return default
     
 class Test(object):
     def __init__(self, file):
@@ -333,19 +339,19 @@ class Test(object):
                     output("  " + line.strip(), file=file)
                 output("", file=file)	
         
-        if Options.wait and not file:
-            output("<Enter> ...")
+        if Options.wait and not file: 
+            output("<Enter> ...") 
             try:
-                sys.stdin.readline()
-            except KeyboardInterrupt:
+                sys.stdin.readline() 
+            except KeyboardInterrupt: 
                 sys.exit(1)
             
 # Walk the given directory and return all test files.    
 def findTests(paths):    
     tests = []
 
-    ignore_files = Config.get("tester", "IgnoreFiles").split()
-    ignore_dirs = Config.get("tester", "IgnoreDirs").split()
+    ignore_files = getOption("IgnoreFiles", "").split()
+    ignore_dirs = getOption("IgnoreDirs", "").split()
     
     for path in paths:
         if os.path.isfile(path):
@@ -480,6 +486,8 @@ optparser.add_option("-t", "--tmp-keep", action="store_true", dest="tmps", defau
 
 if not basedir:
     basedir = "."
+
+os.chdir(basedir)
     
 defaults=os.environ
 defaults["testbase"] = os.path.abspath(basedir)
@@ -489,8 +497,8 @@ Config.read(Options.config)
 
 tests = args
 
-if not tests and Config.has_option("tester", "TestDirs"):
-    tests += Config.get("tester", "TestDirs").split()
+if not tests:
+    tests += getOption("TestDirs", "").split()
     
 if Options.diagfile:
     try:
@@ -507,14 +515,13 @@ addpath = os.path.abspath(os.path.dirname(sys.argv[0]))
 oldpath = os.environ["PATH"]
 os.environ["PATH"] = "%s:%s" % (addpath, oldpath) if oldpath else addpath
 
-
 tests = findTests(args)
 
 if not tests:
     error("no tests given")
 
-TmpDir = os.path.abspath(Config.get("tester", "TmpDir"))
-BaselineDir = os.path.abspath(Config.get("tester", "BaselineDir"))
+TmpDir = os.path.abspath(getOption("TmpDir", os.path.join(defaults["testbase"], ".tmp")))
+BaselineDir = os.path.abspath(getOption("BaselineDir", os.path.join(defaults["testbase"], "Baseline")))
 mkdir(BaselineDir)
 mkdir(TmpDir)
 
