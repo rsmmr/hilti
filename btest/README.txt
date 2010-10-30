@@ -21,12 +21,19 @@ straight-forward driver for a suite of tests. Each test consistent
 of a set of command lines, which will executed and their exit code
 checked. In addition, their output can optionally be compared
 against a previously established baseline. 
+
+Downloads
+=========
+
+* `btest-0.2.tar.gz <http://www.icir.org/robin/btest/btest-0.2.tar.gz>`_
             
 Installation
 ============
 
 Installation is simple and standard::
-
+    
+   > tar xzvf btest-0.2.tar.gz
+   > cd btest-0.2
    > python setup.py install
 
 This will install two scripts: ``btest``, the main driver program;
@@ -457,3 +464,7 @@ Todo List
   parsed and pretty-printed by some frontend tool (potentially
   assembling and aggregating output from different systems).
   
+License
+=======
+
+btest is open-source under a BSD licence. 

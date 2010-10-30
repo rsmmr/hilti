@@ -1,4 +1,5 @@
 *.html
 .tmp
 build
+dist
 
