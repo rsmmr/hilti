@@ -378,6 +378,10 @@ void hlt_string_print_n(FILE* file, hlt_string s, int8_t newline, hlt_string_siz
 
 void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    if ( ! s )
+        // Empty string.
+        return;
+    
     hlt_string_print_n(file, s, newline, s->len, excpt, ctx);
 }
 
