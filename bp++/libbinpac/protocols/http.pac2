@@ -57,7 +57,7 @@ type RequestLine = unit {
 };
 
 %debug on RequestLine::version { 
-    print self.method, "|", self.uri, "|", self.version.number;
+    print "request", self.method, "|", self.uri, "|", self.version.number;
     }
 
 type ReplyLine = unit {
@@ -70,8 +70,8 @@ type ReplyLine = unit {
 };
 
 %debug on ReplyLine::reason { 
-    print self.version.number, "|", self.status, "|", self.reason;
-    }
+    print "reply  ", self.version.number, "|", self.status, "|", self.reason;
+    }      
 
 type Message = unit(body_default: bool) {
     headers:    list<Header(self)>;

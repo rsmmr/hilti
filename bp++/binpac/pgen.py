@@ -299,7 +299,7 @@ class ParserGen:
 
         values = [no_lahead.constOp(lit.id())]
         branches = [found_lit]
-        (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead)
+        (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead, [lit])
         no_lahead.makeSwitch(symbol, values, default=default, branches=branches, cont=done, tag="next-sym")
         
         # If we have a look-ahead symbol, its value must match what we expect.
@@ -480,6 +480,7 @@ class ParserGen:
             
             values = []
             branches = []
+            expected = []
             cases = [_makeBranch(0, alts, literals), _makeBranch(1, alts, literals)]
 
             for i in (0, 1):
@@ -487,8 +488,9 @@ class ParserGen:
                 for lit in literals[i]:
                     values += [builder.constOp(lit.id())]
                     branches += [case]
-                
-            (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead)
+                    expected += [lit]
+                    
+            (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead, expected)
             builder.makeSwitch(args.lahead, values, default=default, branches=branches, cont=done, tag="lahead-next-sym")
             
             # Done, return the result.
@@ -611,8 +613,8 @@ class ParserGen:
         builder.incr_by(next5, cur, builder.constOp(5))
         builder.bytes_sub(str, cur, next5)
         
-        msg = "- %s is " % tag
-        builder.makeDebugMsg("binpac-verbose", msg + "%s ...", [str])
+        msg = "- %s is |" % tag
+        builder.makeDebugMsg("binpac-verbose", msg + "%s| ...", [str])
 
     def _debugShowToken(self, tag, token):
         fbuilder = self.cg().functionBuilder()
@@ -776,15 +778,17 @@ class ParserGen:
         (fbuilder, builder) = self.cg().beginFunction(name, ftype)
         return (fbuilder.function(), ParserGen._Args(fbuilder, args))
         
-    def _addMatchTokenErrorCases(self, builder, values, branches, repeat):
+    def _addMatchTokenErrorCases(self, builder, values, branches, repeat, expected_literals):
         """Build the standard error branches for the switch-statement
         following a ``match_token`` instruction."""
         
         fbuilder = builder.functionBuilder()
+
+        expected = ",".join([str(e) for e in expected_literals])
         
         # Not found.
         values += [fbuilder.constOp(0)]
-        branches += [fbuilder.cacheBuilder("not-found", lambda b: self._parseError(b, "look-ahead symbol not found"))]
+        branches += [fbuilder.cacheBuilder("not-found", lambda b: self._parseError(b, "look-ahead symbol(s) [%s] not found" % expected))]
         
         # Not enough input.
         values += [fbuilder.constOp(-1)]
