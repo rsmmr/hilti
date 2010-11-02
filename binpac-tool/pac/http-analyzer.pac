@@ -75,7 +75,7 @@ flow HTTP_Flow(is_orig: bool) {
 				vers: HTTP_Version): bool
 		%{
         if ( bptool_verbose )
-            cout << std_str(method) << " | " << std_str(uri) << " | " << std_str(vers->vers_str()) << endl;
+            cout << "request " << std_str(method) << " | " << std_str(uri) << " | " << std_str(vers->vers_str()) << endl;
             
 		http_message_begin();
 
@@ -86,7 +86,7 @@ flow HTTP_Flow(is_orig: bool) {
 				reason: const_bytestring): bool
 		%{
         if ( bptool_verbose )
-            cout << std_str(vers->vers_str()) << " | " << code << " | " << std_str(reason) << endl;
+            cout << "reply   " << std_str(vers->vers_str()) << " | " << code << " | " << std_str(reason) << endl;
         
 		http_message_begin();
 
