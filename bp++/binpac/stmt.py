@@ -217,14 +217,8 @@ class UnitHook(Block):
         
         Returns: hilti.type.Hook - The type.
         """
-        arg1 = (hilti.id.Parameter("__self", self.unit().hiltiType(cg)), None)
-        
-        params = []
-        for arg in self._unit.args():
-            i = hilti.id.Parameter(arg.name(), arg.type().hiltiType(cg))
-            params += [(i, None)]
-            
-        return hilti.type.Hook([arg1] + params, hilti.type.Void())
+        self = (hilti.id.Parameter("__self", self.unit().hiltiType(cg)), None)
+        return hilti.type.Hook([self], hilti.type.Void())
     
     ### Overidden from node.Node.
 
@@ -234,7 +228,7 @@ class UnitHook(Block):
         
         for arg in self._unit.args():
             arg.resolve(resolver)
-            self._scope.addID(id.Parameter(arg.name(), arg.type())) 
+            self._scope.addID(id.UnitParameter(arg.name(), arg.type()))
             
     def validate(self, vld):
         Block.validate(self, vld)
@@ -362,11 +356,7 @@ class FieldForEachHook(FieldHook):
         arg1 = (hilti.id.Parameter("__self", self.unit().hiltiType(cg)), None)
         arg2 = (hilti.id.Parameter("__dollardollar", self.itemType().hiltiType(cg)), None)
         
-        params = []
-        for arg in self._unit.args():
-            i = hilti.id.Parameter(arg.name(), arg.type().hiltiType(cg))
-            params += [(i, None)]
-        return hilti.type.Hook([arg1, arg2] + params, hilti.type.Bool())
+        return hilti.type.Hook([arg1, arg2], hilti.type.Bool())
 
     def hiltiName(self, cg):
         return cg.hookName(self.unit(), self.field(), True)

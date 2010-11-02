@@ -125,7 +125,7 @@ class _:
         
     def evaluate(cg, e1, e2):
         tmp = cg.functionBuilder().addLocal("__geq", hilti.type.Bool())
-        cg.builder().int_leq(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        cg.builder().int_geq(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
     
     

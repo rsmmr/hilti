@@ -269,6 +269,28 @@ class Parameter(ID):
     
     def evaluate(self, cg):
         return cg.builder().idOp(self._internalName())
+    
+class UnitParameter(Parameter):
+    """An ID representing a unit parameter. See ~~ID for arguments.
+    """
+    def __init__(self, name, type, location=None):
+        super(UnitParameter, self).__init__(name, type, None, None, location, False)
+
+    ### Overidden from node.Node.
+
+    def pac(self):
+        printer.output("%s: " % self.name())
+        self.type().pac(printer)
+        
+    ### Overidden from ID.
+    
+    def evaluate(self, cg):
+        # The value is stored in the unit's type object. 
+        builder = cg.builder()
+        tmp = builder.addLocal(self.name(), self.type().hiltiType(cg))
+        obj = builder.idOp("__self")
+        builder.struct_get(tmp, obj, builder.constOp("__param_%s" % self.name()))
+        return tmp
         
 class Global(ID):
     """An ID representing a module-global variable. See ~~ID for arguments.

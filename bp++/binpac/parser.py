@@ -62,6 +62,8 @@ def p_instantiate_module(p):
     p.parser.state.scopes = [None]
     p.parser.state.blocks = [None]
     p.parser.state.typename = None
+    p.parser.state.in_unit_param_list = False
+    
     _pushScope(p, p.parser.state.module.scope())
     
 def p_module_global_list(p):
@@ -172,7 +174,10 @@ def p_opt_param_list(p):
     
 def p_param(p):
     """param : IDENT ':' type"""
-    p[0] = id.Parameter(p[1], p[3], location=_loc(p, 1))
+    if not p.parser.state.in_unit_param_list:
+        p[0] = id.Parameter(p[1], p[3], location=_loc(p, 1))
+    else:
+        p[0] = id.UnitParameter(p[1], p[3], location=_loc(p, 1))
 
 ### Functions
 
@@ -279,7 +284,7 @@ def p_instantiate_unit(p):
     p.parser.state.unit = type.Unit(p.parser.state.module, args=p[-1])
     p.parser.state.unit.setNamespace(p.parser.state.module.name(True))
     p.parser.state.in_switch = None 
-
+    
 def p_enter_unit_hook(p):
     """_enter_unit_hook : """
     _pushScope(p, p.parser.state.unit.scope())
@@ -289,10 +294,18 @@ def p_leave_unit_hook(p):
     _popScope(p)
         
 def p_unit_param_list(p):
-    """opt_unit_param_list : '(' opt_param_list ')'
+    """opt_unit_param_list : '(' _enter_unit_param_list opt_param_list _leave_unit_param_list ')'
                            | """
-    p[0] = p[2] if len(p) > 2 else []
+    p[0] = p[3] if len(p) > 2 else []
 
+def p_enter_unit_param_list(p):
+    """_enter_unit_param_list : """
+    p.parser.state.in_unit_param_list = True
+    
+def p_leave_unit_param_list(p):
+    """_leave_unit_param_list : """
+    p.parser.state.in_unit_param_list = False
+    
 def p_unit_item_list(p):
     """unit_item_list :  unit_item unit_item_list
                        | unit_item"""

@@ -207,7 +207,7 @@ class ParserGen:
         self._newParseObject(pobj, params)
         
         args = ParserGen._Args(fbuilder, ["__cur", "__pobj", "__lahead", "__lahstart", "__flags"])
-        self._parseStartSymbol(args, [])
+        self._parseStartSymbol(args)
         
         self.builder().return_result(pobj)
 
@@ -240,7 +240,7 @@ class ParserGen:
             pass
         
         elif isinstance(prod, grammar.Sequence):
-            self._parseSequence(prod, args, [])
+            self._parseSequence(prod, args)
 
         elif isinstance(prod, grammar.LookAhead):
             self._parseLookAhead(prod, args)
@@ -256,7 +256,7 @@ class ParserGen:
 
         self.builder().makeDebugMsg("binpac-verbose", "end %s '%s'" % (pname, prod))
 
-    def _parseStartSymbol(self, args, params):
+    def _parseStartSymbol(self, args):
         prod = self._grammar.startSymbol()
         pname = prod.__class__.__name__.lower()
         
@@ -269,7 +269,7 @@ class ParserGen:
         builder.makeDebugMsg("binpac", "%s" % prod.type().name())
         builder.debug_push_indent()
         
-        self._parseSequence(prod, args, params)
+        self._parseSequence(prod, args)
         
         builder = self.builder()
         builder.makeDebugMsg("binpac-verbose", "end start-sym %s '%s'" % (pname, prod))
@@ -385,7 +385,7 @@ class ParserGen:
         
         cpgen._newParseObject(cobj, params)
         
-        cpgen._parseStartSymbol(cargs, params)
+        cpgen._parseStartSymbol(cargs)
 
         if child.name():
             builder.struct_set(args.obj, builder.constOp(child.name()), cobj)
@@ -396,7 +396,7 @@ class ParserGen:
             
         self._finishedProduction(args.obj, child, cobj)
 
-    def _parseSequence(self, prod, args, params):
+    def _parseSequence(self, prod, args):
         def _makeFunction():
             (func, args) = self._createParseFunction("sequence", prod)
             
@@ -430,11 +430,7 @@ class ParserGen:
          
         result = builder.addTmp("__presult", _ParseFunctionResultType)
 
-        if not params:
-            for p in self._grammar.params():
-                params += [builder.idOp(p.name())]
-
-        builder.call(result, builder.idOp(func.name()), args.tupleOp(params))
+        builder.call(result, builder.idOp(func.name()), args.tupleOp([]))
         builder.tuple_index(args.cur, result, builder.constOp(0))
         builder.tuple_index(args.lahead, result, builder.constOp(1))
         builder.tuple_index(args.lahstart, result, builder.constOp(2))
@@ -508,11 +504,7 @@ class ParserGen:
         
         result = builder.addTmp("__presult", _ParseFunctionResultType)
         
-        params = []
-        for p in self._grammar.params():
-            params += [builder.idOp(p.name())]
-
-        builder.call(result, builder.idOp(func.name()), args.tupleOp(params))
+        builder.call(result, builder.idOp(func.name()), args.tupleOp([]))
         builder.tuple_index(args.cur, result, builder.constOp(0))
         builder.tuple_index(args.lahead, result, builder.constOp(1))
         builder.tuple_index(args.lahstart, result, builder.constOp(2))
@@ -711,6 +703,9 @@ class ParserGen:
                 
                 ids += [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), hlt_default)]
                 
+            for p in self._grammar.params():
+                ids += [(hilti.id.Local("__param_%s" % p.name(), p.type().hiltiType(self._cg)), None)]
+                
             structty = hilti.type.Struct(ids)
             self._mbuilder.addTypeDecl(self._name("object"), structty)
             return structty
@@ -722,11 +717,11 @@ class ParserGen:
         #return hilti.type.Reference(self._typeParseObject())
         return hilti.type.Reference(hilti.type.Unknown(self._name("object")))
 
-    def _runUnitHook(self, obj, hook, params):
+    def _runUnitHook(self, obj, hook):
         builder = self.cg().builder()
         
         op1 = self.cg().declareHook(self._type, hook, self.objectType())
-        op2 = builder.tupleOp([obj] + params)
+        op2 = builder.tupleOp([obj])
         
         builder.hook_run(None, op1, op2)
     
@@ -737,7 +732,12 @@ class ParserGen:
         """
         builder = self.cg().builder()
         self.builder().new(obj, self.builder().typeOp(self._typeParseObject()))
-        self._runUnitHook(obj, "%ctor", params)
+        
+        for (f, p) in zip(self._grammar.params(), params):
+            field = self.builder().constOp("__param_%s" % f.name())
+            self.builder().struct_set(obj, field, p)
+            
+        self._runUnitHook(obj, "%ctor")
         
     ### Helper methods.
 
@@ -770,9 +770,6 @@ class ParserGen:
 
         args = [arg1, arg2, arg3, arg4, arg5]
         
-        for p in self._grammar.params():
-            args += [hilti.id.Parameter(p.name(), p.type().hiltiType(self._cg))]
-
         ftype = hilti.type.Function(args, result)
         name = self._name(prefix, prod.symbol())
         

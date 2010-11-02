@@ -348,11 +348,6 @@ class CodeGen(object):
         else:
             args = [obj]
             
-        for arg in field.parent().args():
-            i = hilti.id.Parameter(arg.name(), arg.type().hiltiType(self))
-            args += [hilti.operand.ID(i)]
-            args_proto += [(i, None)]
-            
         self._mbuilder.declareHook(name, args_proto, result.type() if result else hilti.type.Void())
         builder.hook_run(result, op1, builder.tupleOp(args))
 

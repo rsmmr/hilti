@@ -19,13 +19,18 @@ const HexInteger = /[0-9a-zA-Z]+/;
 const WhiteSpace = /[ \t]+/;
 const OptionalWhiteSpace = /[ \t]*/;
 
+bool reply_code_needs_body(status: int64)
+{ 
+   return status <= 99 || (status >= 200 && status != 204 && status != 304);
+}
+
 export type Requests = unit {
     :  list<Request>;
 };
 
 type Request = unit {
     request: RequestLine;
-    message: Message(0);
+    message: Message(False);
 };
 
 export type Replies = unit {
@@ -34,7 +39,7 @@ export type Replies = unit {
 
 type Reply = unit {
     reply: ReplyLine;
-    message: Message(self.reply.status);
+    message: Message(reply_code_needs_body(self.reply.status));
 };
 
 type Version = unit {
@@ -68,7 +73,7 @@ type ReplyLine = unit {
     print self.version.number, "|", self.status, "|", self.reason;
     }
 
-type Message = unit(reply_status: int64) {
+type Message = unit(body_default: bool) {
     headers:    list<Header(self)>;
     end_of_hdr: NewLine;
     body:       Body(self, self.delivery_mode) if ( self.has_body );
@@ -80,7 +85,11 @@ type Message = unit(reply_status: int64) {
     
     var has_body: bool;
     var delivery_mode: DeliveryMode &default=DeliveryMode::EndOfData;
-    
+
+    on %ctor {
+        self.has_body = body_default;
+        }
+
     on end_of_hdr {
         if ( self?.content_length )
             self.delivery_mode = DeliveryMode::Length;
@@ -99,11 +108,6 @@ type Message = unit(reply_status: int64) {
         
         if ( self?.transfer_encoding && self.transfer_encoding == b"chunked" )
             self.delivery_mode = DeliveryMode::Chunked;
-            
-        if ( reply_status != 0 )
-            self.has_body =   (reply_status >= 100 && reply_status <= 199)
-                            || reply_status == 204 || reply_status == 304;
-            
     }
 };
     
@@ -167,7 +171,7 @@ type Chunk = unit {
     data:      bytes &length=self.length;
     :          NewLine if ( self.length != 0 );
 };
-    
+
 # These are implemented in libhilti.
 extern int64 Hilti::bytes_to_int(b: bytes, base: uint64);
 extern bytes Hilti::bytes_to_lower(b: bytes);

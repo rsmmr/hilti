@@ -35,32 +35,39 @@ while True:
     flow = m[4]
     
     fid = flow + "#" + dir
+
+    if fid in flows:
+        if fid not in files:
+            fname = "contents.%s.%s.dat" % ("orig" if dir == ">" else "resp", flow)
+            fname = fname.replace("/", "-")
+            files[fid] = (open(fname, "wb"), open(fname + ".raw", "wb"))
+            
+            print "Extracting", fname
+    
+        files[fid][1].write(line)
     
     if kind == "G":
-        if fid in files and files[fid]:
-            files[fid].write("\n<!!!GAP!!!>")
-        files[fid] = None
+        if fid in files and files[fid][0]:
+            files[fid][0].write("\n<!!!GAP!!!>")
+            files[fid] = (None, files[fid][1])
         continue
     
     if kind == "D":
         chunk = data.read(len)
         
         if fid in flows:
-            if fid not in files:
-                fname = "contents.%s.%s.dat" % ("orig" if dir == ">" else "resp", flow)
-                fname = fname.replace("/", "-")
-                files[fid] = open(fname, "wb")
+            if files[fid][0]:
+                files[fid][0].write(chunk)
                 
-                print "Extracting", fname
-                
-            if files[fid]:
-                files[fid].write(chunk)
+            files[fid][1].write(chunk)
         
     if kind == "T":
-        
         if fid in files:
-            if files[fid]:
-                files[fid].close()
+            if files[fid][0]:
+                files[fid][0].close()
+                
+            files[fid][1].close()
+            
             del files[fid]
     
         continue
