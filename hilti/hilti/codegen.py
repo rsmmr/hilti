@@ -3615,6 +3615,12 @@ class CodeGen(objcache.Cache):
         
         self.llvmFrameClearException(frame)
 
+           # Reset the execution context's yield handler (this might have be
+           # changed by a concurrently running function). 
+        ctx = self._llvmGlobalExecutionContextPtr()
+        yield_ = self.llvmNewContinuation(stub_excpt_func, frame)
+        self.llvmExecutionContextSetYield(yield_, ctx)
+        
            # Do the call.
         ctx = self._llvmGlobalExecutionContextPtr()
         call = self.llvmSafeCall(succ, [succ_frame.fptr(), succ_frame.eoss(), ctx])
