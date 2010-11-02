@@ -900,6 +900,8 @@ class CodeGen(objcache.Cache):
         Returns: llvm.core.Value - The pointer to the type information.
         """
         
+        idx = "typtr-%s" % t.name()
+        
         def _llvmTypeInfoPtr():
             # We special case ref's here, for which we pass the type info of
             # whatever they are pointing at.
@@ -910,11 +912,11 @@ class CodeGen(objcache.Cache):
             else:
                 ty = t
             
-            return self._llvmAddTypeInfo(ty)
+            return self._llvmAddTypeInfo(idx, ty)
         
-        return self.cache("typtr-%s" % t.name(), _llvmTypeInfoPtr)
+        return self.cache(idx, _llvmTypeInfoPtr)
 
-    def _llvmAddTypeInfo(self, t):
+    def _llvmAddTypeInfo(self, cacheidx, t):
         """Adds run-time type information for a type to the current LLVM module. 
         
         t: ~~HiltiType : The type to add type information for.
@@ -922,6 +924,12 @@ class CodeGen(objcache.Cache):
         assert isinstance(t, type.HiltiType)
         
         ti = t.typeInfo(self)
+        
+        # Set cache entry first to allow for recursive types. We set the value
+        # later. 
+        th = llvm.core.TypeHandle.new(llvm.core.Type.opaque())
+        glob = self.llvmCurrentModule().add_global_variable(th.type, self.nameTypeInfo(ti.type))
+        self.setCacheEntry(cacheidx, glob)
         
         arg_types = []
         arg_vals = []
@@ -996,9 +1004,11 @@ class CodeGen(objcache.Cache):
              llvm.core.Constant.int(llvm.core.Type.int(16), len(ti.args))] # num_params
             + [aux] + hlt_func_vals + arg_vals)
 
-        glob = self.llvmNewGlobalConst(self.nameTypeInfo(ti.type), sv)
+        th.type.refine(sv.type)
+        glob.initializer = sv
+        glob.global_constant = True
         glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
-
+            
         return glob    
 
     ### Threading related.
