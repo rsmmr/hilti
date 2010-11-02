@@ -147,7 +147,7 @@ class ModuleBuilder(OperandBuilder):
         if isinstance(i, str):
             li = self._module.scope().lookup(i)
             if not li:
-                raise ValueError("ID %s does not exist in function's scope" % i)
+                raise ValueError("ID %s does not exist in scope" % i)
 
             return operand.ID(li)
             
@@ -296,7 +296,7 @@ class FunctionBuilder(OperandBuilder):
             li = self._func.scope().lookup(i)
             if li:
                 return operand.ID(li)            
-                
+            
             return self._mbuilder.idOp(i)
         
         else:

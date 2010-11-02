@@ -239,7 +239,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
             jrx_accept_id rc = jrx_regexec_partial(&re->regexp, (const char*)block.start, block_len, first, last, ms, fpm);
             
 #ifdef _DEBUG_MATCHING
-            fprintf(stderr, "rc=%d\n", rc);
+            fprintf(stderr, "rc=%d ms->offset=%d\n", rc, ms->offset);
 #endif
             
             if ( rc == 0 )

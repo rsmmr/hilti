@@ -413,6 +413,32 @@ class Eq(Instruction):
         op2 = cg.llvmOp(self.op2(), t)
         result = cg.builder().icmp(llvm.core.IPRED_EQ, op1, op2)
         cg.llvmStoreInTarget(self, result)
+        
+@hlt.instruction("int.leq", op1=cInteger, op2=cIntegerOfWidthAsOp(1), target=cBool)
+class Eq(Instruction):
+    """
+    Returns true iff *op1* is lower or equal *op2*. 
+    """
+    def _codegen(self, cg):
+        t = operand.coerceTypes(self.op1(), self.op2())
+        assert t
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().icmp(llvm.core.IPRED_SLE, op1, op2)
+        cg.llvmStoreInTarget(self, result)
+        
+@hlt.instruction("int.geq", op1=cInteger, op2=cIntegerOfWidthAsOp(1), target=cBool)
+class Eq(Instruction):
+    """
+    Returns true iff *op1* is greater or equal *op2*. 
+    """
+    def _codegen(self, cg):
+        t = operand.coerceTypes(self.op1(), self.op2())
+        assert t
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().icmp(llvm.core.IPRED_SGE, op1, op2)
+        cg.llvmStoreInTarget(self, result)
     
 @hlt.instruction("int.lt", op1=cInteger, op2=cIntegerOfWidthAsOp(1), target=cBool)
 class Lt(Instruction):
