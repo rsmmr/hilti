@@ -130,9 +130,10 @@ static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, uns
             return ms->acc > 0 ? ms->acc : 0;
         }
         
+        eo = ms->offset;
+        
         if ( rc > 0 ) {
             ms->acc = rc;
-            eo = ms->offset;
             
             if ( ! jrx_can_transition(ms) )
                 return ms->acc;
