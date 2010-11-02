@@ -287,7 +287,7 @@ Flow* bulkFeedPiece(binpac_parser* parser, Flow* flow, int eof, const char* data
     else {
         if ( debug )
             fprintf(stderr, "--- pac-driver: resuming parsing flow %s at %s.\n", fid, t);
-        
+
         (*parser->resume_func)(flow->resume, &excpt, ctx);
     }
     
@@ -296,8 +296,12 @@ Flow* bulkFeedPiece(binpac_parser* parser, Flow* flow, int eof, const char* data
             fprintf(stderr, "--- pac-driver: parsing yielded for flow %s at %s.\n", fid, t);
         
         flow->resume = excpt;
+        
         excpt = 0;
     }
+    
+    else 
+        flow->resume = 0;
     
     if ( excpt ) {
         hlt_execution_context* ctx = hlt_global_execution_context();
@@ -305,6 +309,11 @@ Flow* bulkFeedPiece(binpac_parser* parser, Flow* flow, int eof, const char* data
         hlt_exception_print_uncaught(excpt, ctx);
         flow->stopped = 1;
         return 0;
+    }
+
+    else if ( ! flow->resume ){
+        if ( debug )
+            fprintf(stderr, "--- pac-driver: parsing finished for flow %s at %s, no further input expected.\n", fid, t);
     }
     
     return result;
