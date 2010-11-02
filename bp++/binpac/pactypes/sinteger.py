@@ -93,4 +93,40 @@ class _:
         tmp = cg.functionBuilder().addLocal("__equal", hilti.type.Bool())
         cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
+    
+@operator.LowerEqual(SignedInteger, type.UnsignedInteger)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+    
+    def simplify(e1, e2):
+        if not e1.isInit() or not e2.isInit():
+            return None
+            
+        b = (e1.value() <= e2.value())
+        return expr.Ctor(b, type.Bool())
+        
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addLocal("__leq", hilti.type.Bool())
+        cg.builder().int_leq(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp
+    
+@operator.GreaterEqual(SignedInteger, type.UnsignedInteger)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+    
+    def simplify(e1, e2):
+        if not e1.isInit() or not e2.isInit():
+            return None
+            
+        b = (e1.value() >= e2.value())
+        return expr.Ctor(b, type.Bool())
+        
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addLocal("__geq", hilti.type.Bool())
+        cg.builder().int_leq(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp
+    
+    
         

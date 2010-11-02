@@ -520,6 +520,29 @@ def p_ctor_list_list(p):
     
 ### Expressions
 
+precedence = (
+    ('left', '(', ')'), 
+    ('left', 'PLUSEQUAL'), 
+    ('left', 'AND', 'OR'),
+    ('left', 'EQUAL', 'UNEQUAL', 'LEQ', 'GEQ'),
+    ('left', '+', '-'),
+    ('left', '*', '/'),
+    ('left', '!'),
+    ('left', '.', 'HASATTR'),
+)
+
+def p_expr_function_call(p):
+    """expr : expr '(' opt_expr_list ')'"""
+    p[0] = expr.Overloaded(Operator.Call, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_and(p):
+    """expr : expr AND expr"""
+    p[0] = expr.Overloaded(Operator.And, (p[1], p[3]), location=_loc(p, 1))
+    
+def p_expr_or(p):
+    """expr : expr OR expr"""
+    p[0] = expr.Overloaded(Operator.Or, (p[1], p[3]), location=_loc(p, 1))
+    
 def p_expr_constant(p):
     """expr : CONSTANT"""
     (val, type) = p[1]
@@ -542,7 +565,7 @@ def p_expr_has_attribute(p):
 #def p_expr_type(p):
 #    """expr : type"""
 #    p[0] = expr.Type(p[1], _currentScope(p), location=_loc(p, 1))
-    
+
 def p_expr_name(p):
     """expr : IDENT"""
     p[0] = expr.Name(p[1], _currentScope(p), location=_loc(p, 1))
@@ -580,18 +603,18 @@ def p_expr_unequal(p):
     eq = expr.Overloaded(Operator.Equal, (p[1], p[3]), location=_loc(p, 1))
     p[0] = expr.Not(eq, location=_loc(p, 1))
 
+def p_expr_lequal(p):
+    """expr : expr LEQ expr"""
+    p[0] = expr.Overloaded(Operator.LowerEqual, (p[1], p[3]), location=_loc(p, 1))
+    
+def p_expr_gequal(p):
+    """expr : expr GEQ expr"""
+    p[0] = expr.Overloaded(Operator.GreaterEqual, (p[1], p[3]), location=_loc(p, 1))
+    
 def p_expr_add_assign(p):
     """expr : expr PLUSEQUAL expr"""
     p[0] = expr.Overloaded(Operator.AddAssign, (p[1], p[3]), location=_loc(p, 1))
     
-def p_expr_and(p):
-    """expr : expr AND expr"""
-    p[0] = expr.Overloaded(Operator.And, (p[1], p[3]), location=_loc(p, 1))
-
-def p_expr_function_call(p):
-    """expr : expr '(' opt_expr_list ')'"""
-    p[0] = expr.Overloaded(Operator.Call, (p[1], p[3]), location=_loc(p, 1))
-
 def p_expr_method_call(p):
     """expr : expr '.' IDENT '(' expr_list ')'"""
     attr = expr.Attribute(p[3])
@@ -603,7 +626,7 @@ def p_expr_size(p):
 
 def p_expr_paren(p):
     """expr : '(' expr ')'"""
-    p[0] = p[1]
+    p[0] = p[2]
     
 def p_expr_list(p):
     """expr_list : expr ',' expr_list

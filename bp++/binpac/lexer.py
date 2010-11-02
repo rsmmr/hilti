@@ -33,7 +33,7 @@ def _loc(t):
 
 tokens = [
     "IDENT", "CONSTANT", "BYTES", "REGEXP", "PACTYPE", "ATTRIBUTE", "PROPERTY",
-    "EQUAL", "UNEQUAL", "HASATTR", "ARROW", "AND", "PLUSEQUAL", 
+    "EQUAL", "UNEQUAL", "LEQ", "GEQ", "HASATTR", "ARROW", "AND", "OR", "PLUSEQUAL", 
     ] + [k.upper() for k in keywords] \
       + [k.upper()[1:] for k in control_props]
 
@@ -47,6 +47,14 @@ def t_UNEQUAL(t):
     r'!='
     return t
 
+def t_LEQ(t):
+    r'<='
+    return t
+
+def t_GEQ(t):
+    r'>='
+    return t
+
 def t_HASATTR(t):
     r'\?.'
     return t
@@ -57,6 +65,10 @@ def t_ARROW(t):
 
 def t_AND(t):
     r'&&'
+    return t
+
+def t_OR(t):
+    r'\|\|'
     return t
 
 def t_PLUSEQUAL(t):

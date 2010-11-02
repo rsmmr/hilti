@@ -25,7 +25,7 @@ export type Requests = unit {
 
 type Request = unit {
     request: RequestLine;
-    message: Message;
+    message: Message(0);
 };
 
 export type Replies = unit {
@@ -34,7 +34,7 @@ export type Replies = unit {
 
 type Reply = unit {
     reply: ReplyLine;
-    message: Message;
+    message: Message(self.reply.status);
 };
 
 type Version = unit {
@@ -58,7 +58,7 @@ type RequestLine = unit {
 type ReplyLine = unit {
     version: Version;
     :        WhiteSpace;
-    status:  Integer;
+    status:  Integer &convert=dec_to_int;
     :        WhiteSpace;
     reason:  RestOfLine;
     :        NewLine;
@@ -68,16 +68,17 @@ type ReplyLine = unit {
     print self.version.number, "|", self.status, "|", self.reason;
     }
 
-type Message = unit {
+type Message = unit(reply_status: int64) {
     headers:    list<Header(self)>;
     end_of_hdr: NewLine;
-    body:       Body(self, self.delivery_mode);
+    body:       Body(self, self.delivery_mode) if ( self.has_body );
     
     var content_length: int64;
     var content_type: bytes;
     var transfer_encoding: bytes;
     var multipart_boundary: bytes;
     
+    var has_body: bool;
     var delivery_mode: DeliveryMode &default=DeliveryMode::EndOfData;
     
     on end_of_hdr {
@@ -98,7 +99,12 @@ type Message = unit {
         
         if ( self?.transfer_encoding && self.transfer_encoding == b"chunked" )
             self.delivery_mode = DeliveryMode::Chunked;
-    }            
+            
+        if ( reply_status != 0 )
+            self.has_body =   (reply_status >= 100 && reply_status <= 199)
+                            || reply_status == 204 || reply_status == 304;
+            
+    }
 };
     
 const HeaderName  = /[^:\r\n]+/;
@@ -112,14 +118,18 @@ type Header = unit(msg: Message) {
     :        NewLine;
     
     on content {
-        if ( self.name == b"content-length" )
+        if ( self.name == b"content-length" ) {
             msg.content_length = dec_to_int(self.content);
-                     
+            msg.has_body = True;
+            }
+                    
+        if ( self.name == b"transfer-encoding" ) {
+            msg.transfer_encoding = self.content;
+            msg.has_body = True;
+            }
+            
         if ( self.name == b"content-type" )
             msg.content_type = self.content;
-                     
-        if ( self.name == b"transfer-encoding" )
-            msg.transfer_encoding = self.content;
         }
 };
 
@@ -139,10 +149,6 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
     
     on %ctor {
         self.data = b"";
-        }
-        
-    on data { 
-        print self.data;
         }
 };
 

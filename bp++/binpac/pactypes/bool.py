@@ -94,6 +94,48 @@ class _:
         
         cg.setBuilder(cont)
         return result
+
+@operator.Or(Bool, Bool)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+    
+    def simplify(e1, e2):
+        if not (isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor)):
+            return None
+        
+        result = e1.value() or e2.value()
+        return expr.Ctor(result, type.Bool())
+        
+    def evaluate(cg, e1, e2):
+        fbuilder = cg.functionBuilder()
+        
+        result = fbuilder.addLocal("__or", hilti.type.Bool())
+        op = fbuilder.addLocal("__op", hilti.type.Bool())
+        
+        # We (must) short-cut the evaluation if the first operand already
+        # returns true.
+        
+        eval_op2 = fbuilder.newBuilder("or_eval_op2")
+        true = fbuilder.newBuilder("or_true")
+        false = fbuilder.newBuilder("or_false")
+        cont = fbuilder.newBuilder("or_cont")
+        
+        op = e1.evaluate(cg)
+        cg.builder().if_else(op, true.labelOp(), eval_op2.labelOp())
+        
+        cg.setBuilder(eval_op2)
+        op = e2.evaluate(cg)
+        cg.builder().if_else(op, true.labelOp(), false.labelOp())
+        
+        true.assign(result, true.constOp(True))
+        true.jump(cont.labelOp())
+        
+        false.assign(result, false.constOp(False))
+        false.jump(cont.labelOp())
+        
+        cg.setBuilder(cont)
+        return result    
     
     
         
