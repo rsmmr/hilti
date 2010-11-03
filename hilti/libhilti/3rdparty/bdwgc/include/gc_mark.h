@@ -211,6 +211,18 @@ GC_API void GC_CALL GC_register_describe_type_fn(int /* kind */,
 GC_API size_t GC_CALL GC_get_heap_size_inner(void);
 GC_API size_t GC_CALL GC_get_free_bytes_inner(void);
 
+/* Set and get the client notifier on collections.  The client function */
+/* is called at the start of every full GC (called with the allocation  */
+/* lock held).  May be 0.  This is a really tricky interface to use     */
+/* correctly.  Unless you really understand the collector internals,    */
+/* the callback should not, directly or indirectly, make any GC_ or     */
+/* potentially blocking calls.  In particular, it is not safe to        */
+/* allocate memory using the garbage collector from within the callback */
+/* function.                                                            */
+typedef void (GC_CALLBACK * GC_start_callback_proc)(void);
+GC_API void GC_CALL GC_set_start_callback(GC_start_callback_proc);
+GC_API GC_start_callback_proc GC_CALL GC_get_start_callback(void);
+
 #ifdef __cplusplus
   } /* end of extern "C" */
 #endif

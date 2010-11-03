@@ -52,11 +52,11 @@
 /* FIXME: Add filter support for more platforms.                        */
 STATIC GC_has_static_roots_func GC_has_static_roots = 0;
 
-#if (defined(DYNAMIC_LOADING) || defined(MSWIN32) || defined(MSWINCE)) \
-    && !defined(PCR)
+#if (defined(DYNAMIC_LOADING) || defined(MSWIN32) || defined(MSWINCE) \
+    || defined(CYGWIN32)) && !defined(PCR)
 
 #if !defined(SOLARISDL) && !defined(IRIX5) && \
-    !defined(MSWIN32) && !defined(MSWINCE) && \
+    !defined(MSWIN32) && !defined(MSWINCE) && !defined(CYGWIN32) && \
     !(defined(ALPHA) && defined(OSF1)) && \
     !defined(HPUX) && !(defined(LINUX) && defined(__ELF__)) && \
     !defined(AIX) && !defined(SCO_ELF) && !defined(DGUX) && \
@@ -399,6 +399,7 @@ GC_INNER GC_bool GC_register_main_static_data(void)
 /* On the FreeBSD system, any target system at major version 7 shall    */
 /* have dl_iterate_phdr; therefore, we need not make it weak as above.  */
 #define HAVE_DL_ITERATE_PHDR
+#define DL_ITERATE_PHDR_STRONG
 #endif
 
 #if defined(HAVE_DL_ITERATE_PHDR)
@@ -485,6 +486,14 @@ STATIC int GC_register_dynlib_callback(struct dl_phdr_info * info,
             break;
 #         ifdef PT_GNU_RELRO
             if (n_load_segs >= MAX_LOAD_SEGS) ABORT("Too many PT_LOAD segs");
+#           if CPP_WORDSZ == 64
+              /* FIXME: GC_push_all eventually does the correct         */
+              /* rounding to the next multiple of ALIGNMENT, so, most   */
+              /* probably, we should remove the corresponding assertion */
+              /* check in GC_add_roots_inner along with this code line. */
+              /* start pointer value may require aligning */
+              start = (ptr_t)((word)start & ~(sizeof(word) - 1));
+#           endif
             load_segs[n_load_segs].start = start;
             load_segs[n_load_segs].end = end;
             load_segs[n_load_segs].start2 = 0;
@@ -500,59 +509,65 @@ STATIC int GC_register_dynlib_callback(struct dl_phdr_info * info,
     }
   }
 
-  * (int *)ptr = 1;     /* Signal that we were called */
+  *(int *)ptr = 1;     /* Signal that we were called */
   return 0;
-}
-
-/* Return TRUE if we succeed, FALSE if dl_iterate_phdr wasn't there. */
-
-STATIC GC_bool GC_register_dynamic_libraries_dl_iterate_phdr(void)
-{
-  if (dl_iterate_phdr) {
-    int did_something = 0;
-
-#   ifdef PT_GNU_RELRO
-        static GC_bool excluded_segs = FALSE;
-        n_load_segs = 0;
-        if (!excluded_segs) {
-          GC_exclude_static_roots_inner((ptr_t)load_segs,
-                                        (ptr_t)load_segs + sizeof(load_segs));
-          excluded_segs = TRUE;
-        }
-#   endif
-    dl_iterate_phdr(GC_register_dynlib_callback, &did_something);
-    if (did_something) {
-#     ifdef PT_GNU_RELRO
-        size_t i;
-
-        for (i = 0; i < n_load_segs; ++i) {
-          if (load_segs[i].end > load_segs[i].start) {
-            GC_add_roots_inner(load_segs[i].start, load_segs[i].end, TRUE);
-          }
-          if (load_segs[i].end2 > load_segs[i].start2) {
-            GC_add_roots_inner(load_segs[i].start2, load_segs[i].end2, TRUE);
-          }
-        }
-#     endif
-    } else {
-        /* dl_iterate_phdr may forget the static data segment in        */
-        /* statically linked executables.                               */
-        GC_add_roots_inner(DATASTART, (char *)(DATAEND), TRUE);
-#       if defined(DATASTART2)
-          GC_add_roots_inner(DATASTART2, (char *)(DATAEND2), TRUE);
-#       endif
-    }
-
-    return TRUE;
-  } else {
-    return FALSE;
-  }
 }
 
 /* Do we need to separately register the main static data segment? */
 GC_INNER GC_bool GC_register_main_static_data(void)
 {
-  return (dl_iterate_phdr == 0);
+# ifdef DL_ITERATE_PHDR_STRONG
+    /* If dl_iterate_phdr is not a weak symbol then don't test against  */
+    /* zero (otherwise a compiler might issue a warning).               */
+    return FALSE;
+# else
+    return (dl_iterate_phdr == 0);
+# endif
+}
+
+/* Return TRUE if we succeed, FALSE if dl_iterate_phdr wasn't there. */
+STATIC GC_bool GC_register_dynamic_libraries_dl_iterate_phdr(void)
+{
+  int did_something;
+  if (GC_register_main_static_data())
+    return FALSE;
+
+# ifdef PT_GNU_RELRO
+    {
+      static GC_bool excluded_segs = FALSE;
+      n_load_segs = 0;
+      if (!excluded_segs) {
+        GC_exclude_static_roots_inner((ptr_t)load_segs,
+                                      (ptr_t)load_segs + sizeof(load_segs));
+        excluded_segs = TRUE;
+      }
+    }
+# endif
+
+  did_something = 0;
+  dl_iterate_phdr(GC_register_dynlib_callback, &did_something);
+  if (did_something) {
+#   ifdef PT_GNU_RELRO
+      size_t i;
+
+      for (i = 0; i < n_load_segs; ++i) {
+        if (load_segs[i].end > load_segs[i].start) {
+          GC_add_roots_inner(load_segs[i].start, load_segs[i].end, TRUE);
+        }
+        if (load_segs[i].end2 > load_segs[i].start2) {
+          GC_add_roots_inner(load_segs[i].start2, load_segs[i].end2, TRUE);
+        }
+      }
+#   endif
+  } else {
+      /* dl_iterate_phdr may forget the static data segment in  */
+      /* statically linked executables.                         */
+      GC_add_roots_inner(DATASTART, (char *)(DATAEND), TRUE);
+#     if defined(DATASTART2)
+        GC_add_roots_inner(DATASTART2, (char *)(DATAEND2), TRUE);
+#     endif
+  }
+  return TRUE;
 }
 
 #define HAVE_REGISTER_MAIN_STATIC_DATA
@@ -842,7 +857,7 @@ GC_INNER void GC_register_dynamic_libraries(void)
   /* GC_register_main_static_data is not needed unless DYNAMIC_LOADING. */
   GC_INNER GC_bool GC_register_main_static_data(void)
   {
-#   ifdef MSWINCE
+#   if defined(MSWINCE) || defined(CYGWIN32)
       /* Do we need to separately register the main static data segment? */
       return FALSE;
 #   else
@@ -864,7 +879,7 @@ GC_INNER void GC_register_dynamic_libraries(void)
   }
 # endif /* DEBUG_VIRTUALQUERY */
 
-# ifdef MSWINCE
+# if defined(MSWINCE) || defined(CYGWIN32)
     /* FIXME: Should we really need to scan MEM_PRIVATE sections?       */
     /* For now, we don't add MEM_PRIVATE sections to the data roots for */
     /* WinCE because otherwise SEGV fault sometimes happens to occur in */

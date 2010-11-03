@@ -1,0 +1,40 @@
+--- ../bdwgc.old/CMakeLists.orig	2010-08-24 20:55:18.000000000 -0700
++++ ../bdwgc.old/CMakeLists.txt	2010-08-24 20:55:18.000000000 -0700
+@@ -30,9 +30,9 @@
+                  -DGC_BUILD
+ ")
+ 
+-IF(APPLE)
+-    SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;x86_64" CACHE STRING "Build architectures for Mac OS X" FORCE)
+-ENDIF(APPLE)
++#IF(APPLE)
++#    SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;x86_64" CACHE STRING "Build architectures for Mac OS X" FORCE)
++#ENDIF(APPLE)
+ 
+ #LIBATOMIC #TODO
+ #ADD_LIBRARY(atomic_ops STATIC )
+@@ -217,7 +217,7 @@
+ SET_TARGET_PROPERTIES(gcmt-lib PROPERTIES
+                       COMPILE_DEFINITIONS GC_NOT_DLL)
+ 
+-ADD_LIBRARY(          gcmt-dll  SHARED     ${SRC})
++# ADD_LIBRARY(          gcmt-dll  SHARED     ${SRC})
+ 
+ IF(WIN32)
+   ADD_EXECUTABLE(cord cord/cordbscs.c cord/cordxtra.c cord/de.c cord/de_win.c)
+@@ -227,4 +227,14 @@
+   TARGET_LINK_LIBRARIES(cord gc-lib)
+ ENDIF(WIN32)
+ 
+-ADD_SUBDIRECTORY(tests)
++set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH}) 
++find_package(LLVM)
++include(EnableLLVM)
++
++if ( ENABLE_LLVM )
++   message("Not building gctest in LLVM build")
++else ( ENABLE_LLVM )
++   ADD_SUBDIRECTORY(tests)
++endif ( ENABLE_LLVM )
++
++

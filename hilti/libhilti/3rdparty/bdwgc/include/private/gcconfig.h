@@ -281,6 +281,10 @@
 #    define SH
 #    define mach_type_known
 # endif
+# if defined(LINUX) && defined(__avr32__)
+#    define AVR32
+#    define mach_type_known
+# endif
 # if defined(LINUX) && defined(__m32r__)
 #    define M32R
 #    define mach_type_known
@@ -837,7 +841,15 @@
 #     define DYNAMIC_LOADING
 #   endif
 #   ifdef FREEBSD
-#       define ALIGNMENT 4
+#       if defined(__powerpc64__)
+#           define ALIGNMENT 8
+#           define CPP_WORDSZ 64
+#           ifndef HBLKSIZE
+#               define HBLKSIZE 4096
+#           endif
+#       else
+#           define ALIGNMENT 4
+#       endif
 #       define OS_TYPE "FREEBSD"
 #       ifndef GC_FREEBSD_THREADS
 #           define MPROTECT_VDB
@@ -849,8 +861,8 @@
 #           define DYNAMIC_LOADING
 #       endif
         extern char etext[];
-        ptr_t GC_FreeBSDGetDataStart(size_t max_page_size, ptr_t etext_addr);
-#       define DATASTART GC_FreeBSDGetDataStart(0x1000, &etext)
+        ptr_t GC_FreeBSDGetDataStart(size_t, ptr_t);
+#       define DATASTART GC_FreeBSDGetDataStart(0x1000, (ptr_t)etext)
 #   endif
 #   ifdef NETBSD
 #     define ALIGNMENT 4
@@ -1965,6 +1977,19 @@
 #   define DATAEND /* not needed */
 # endif
 
+# ifdef AVR32
+#   define MACH_TYPE "AVR32"
+#   define CPP_WORDSZ 32
+#   define ALIGNMENT 4
+#   define OS_TYPE "LINUX"
+#   define DYNAMIC_LOADING
+#   define LINUX_STACKBOTTOM
+#   define USE_GENERIC_PUSH_REGS
+#   define SEARCH_FOR_DATA_START
+    extern int _end[];
+#   define DATAEND (_end)
+# endif
+
 # ifdef M32R
 #   define CPP_WORDSZ 32
 #   define MACH_TYPE "M32R"
@@ -2075,8 +2100,8 @@
 #           define DYNAMIC_LOADING
 #       endif
         extern char etext[];
-        ptr_t GC_FreeBSDGetDataStart(size_t max_page_size, ptr_t etext_addr);
-#       define DATASTART GC_FreeBSDGetDataStart(0x1000, &etext)
+        ptr_t GC_FreeBSDGetDataStart(size_t, ptr_t);
+#       define DATASTART GC_FreeBSDGetDataStart(0x1000, (ptr_t)etext)
 #   endif
 #   ifdef NETBSD
 #       define OS_TYPE "NETBSD"
@@ -2567,7 +2592,7 @@
                  (defined(SOLARIS) && !defined(USE_MMAP))
 #   define GET_MEM(bytes) HBLKPTR((size_t) calloc(1, (size_t)bytes + GC_page_size) \
                                                      + GC_page_size-1)
-# elif defined(MSWIN32)
+# elif defined(MSWIN32) || defined(CYGWIN32)
     ptr_t GC_win32_get_mem(GC_word bytes);
 #   define GET_MEM(bytes) (struct hblk *)GC_win32_get_mem(bytes)
 # elif defined(MACOS)

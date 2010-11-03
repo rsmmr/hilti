@@ -27,11 +27,7 @@
 
 struct thread_stop_info {
   mach_port_t mach_thread;
-};
-
-struct GC_mach_thread {
-  thread_act_t thread;
-  int already_suspended;
+  ptr_t stack_ptr; /* Valid only when thread is in a "blocked" state.   */
 };
 
 #endif

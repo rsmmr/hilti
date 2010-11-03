@@ -49,7 +49,7 @@ typedef struct GC_Thread_Rep {
     /* Extra bookkeeping information the stopping code uses */
     struct thread_stop_info stop_info;
 
-    short flags;
+    unsigned char flags;
 #       define FINISHED 1       /* Thread has exited.   */
 #       define DETACHED 2       /* Thread is treated as detached.       */
                                 /* Thread may really be detached, or    */
@@ -59,15 +59,32 @@ typedef struct GC_Thread_Rep {
                                 /* it unregisters itself, since it      */
                                 /* may not return a GC pointer.         */
 #       define MAIN_THREAD 4    /* True for the original thread only.   */
-    short thread_blocked;       /* Protected by GC lock.                */
+#       define DISABLED_GC 8    /* Collections are disabled while the   */
+                                /* thread is exiting.                   */
+
+    unsigned char thread_blocked;
+                                /* Protected by GC lock.                */
                                 /* Treated as a boolean value.  If set, */
                                 /* thread will acquire GC lock before   */
                                 /* doing any pointer manipulations, and */
-                                /* has set its sp value.  Thus it does  */
+                                /* has set its SP value.  Thus it does  */
                                 /* not need to be sent a signal to stop */
                                 /* it.                                  */
+
+    unsigned short finalizer_skipped;
+    unsigned char finalizer_nested;
+                                /* Used by GC_check_finalizer_nested()  */
+                                /* to minimize the level of recursion   */
+                                /* when a client finalizer allocates    */
+                                /* memory (initially both are 0).       */
+
     ptr_t stack_end;            /* Cold end of the stack (except for    */
                                 /* main thread).                        */
+#   if defined(GC_DARWIN_THREADS) && !defined(DARWIN_DONT_PARSE_STACK)
+      ptr_t topOfStack;         /* Result of GC_FindTopOfStack(0);      */
+                                /* valid only if the thread is blocked; */
+                                /* non-NULL value means already set.    */
+#   endif
 #   ifdef IA64
         ptr_t backing_store_end;
         ptr_t backing_store_ptr;
@@ -86,12 +103,6 @@ typedef struct GC_Thread_Rep {
                                 /* reason we need to intercept join     */
                                 /* and detach.                          */
 
-    unsigned finalizer_nested;
-    unsigned finalizer_skipped; /* Used by GC_check_finalizer_nested()  */
-                                /* to minimize the level of recursion   */
-                                /* when a client finalizer allocates    */
-                                /* memory (initially both are 0).       */
-
 #   ifdef THREAD_LOCAL_ALLOC
         struct thread_local_freelists tlfs;
 #   endif
@@ -103,8 +114,6 @@ GC_EXTERN volatile GC_thread GC_threads[THREAD_TABLE_SZ];
 GC_EXTERN GC_bool GC_thr_initialized;
 
 GC_INNER GC_thread GC_lookup_thread(pthread_t id);
-
-GC_INNER void GC_stop_init(void);
 
 GC_EXTERN GC_bool GC_in_thread_creation;
         /* We may currently be in thread creation or destruction.       */

@@ -172,7 +172,8 @@ NO_EXECUTE_PERMISSION   May cause some or all of the heap to not
   have execute permission, i.e. it may be impossible to execute
   code from the heap.  Currently this only affects the incremental
   collector on UNIX machines.  It may greatly improve its performance,
-  since this may avoid some expensive cache synchronization.
+  since this may avoid some expensive cache synchronization.  Alternatively,
+  GC_set_pages_executable can be called at the process initialization time.
 
 GC_NO_OPERATOR_NEW_ARRAY        Declares that the C++ compiler does not
   support the  new syntax "operator new[]" for allocating and deleting arrays.
@@ -436,8 +437,17 @@ ENABLE_TRACE    Enables the GC_TRACE=addr environment setting to do its job.
 
 DARWIN_DONT_PARSE_STACK         Causes the Darwin port to discover thread
   stack bounds in the same way as other pthread ports, without trying to
-  walk the frames onthe stack.  This is recommended only as a fallback for
+  walk the frames on the stack.  This is recommended only as a fall-back for
   applications that don't support proper stack unwinding.
+
+GC_NO_THREADS_DISCOVERY (Darwin and Win32+DLL only)     Exclude DllMain-based
+  (on Windows) and task-threads-based (on Darwin) thread registration support.
+
+GC_DISCOVER_TASK_THREADS (Darwin and Win32+DLL only)    Compile the collector
+  with the implicitly turned on task-threads-based (on Darwin) or
+  DllMain-based (on Windows) approach of threads registering.  Only for
+  compatibility and for the case when it is not possible to call
+  GC_use_threads_discovery() early (before other GC calls).
 
 USE_PROC_FOR_LIBRARIES  Causes the Linux collector to treat writable
   memory mappings (as reported by /proc) as roots, if it doesn't have
@@ -476,9 +486,6 @@ GC_PREFER_MPROTECT_VDB  Choose MPROTECT_VDB manually in case of multiple
   virtual dirty bit strategies are implemented (at present useful on Win32
   to force MPROTECT_VDB strategy instead of the default GWW_VDB one).
 
-GC_NO_DLLMAIN (Win32+DLL only)  Exclude DllMain-based thread registration
-  support.
-
 GC_IGNORE_GCJ_INFO      Disable GCJ-style type information (useful for
   debugging on WinCE).
 
@@ -511,3 +518,7 @@ UNICODE (Win32 only)    Use the Unicode variant ('W') of the Win32 API instead
   of ANSI/ASCII one ('A').  Useful for WinCE.
 
 PLATFORM_ANDROID        Compile for Android NDK platform.
+
+USE_GET_STACKBASE_FOR_MAIN (Linux only)  Use pthread_attr_getstack() instead
+of __libc_stack_end for getting the primordial thread stack base (useful if
+the client modifies the program's address space).

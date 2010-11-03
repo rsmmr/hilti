@@ -49,7 +49,7 @@ client code should include gc_cpp.h.
 For historical reasons,
 the collector test program "gctest" is linked as a GUI application,
 but does not open any windows.  Its output appears in the file
-"gc.log".  It may be started from the file manager.  The hour glass
+"gctest.gc.log".  It may be started from the file manager.  The hour glass
 cursor may appear as long as it's running.  If it is started from the
 command line, it will usually run in the background.  Wait a few
 minutes (a few seconds on a modern machine) before you check the output.
@@ -181,7 +181,7 @@ This version of the collector by default handles threads similarly
 to other platforms.  James Clark's code which tracks threads attached
 to the collector DLL still exists, but requires that both
 - the collector is built in a DLL with GC_DLL defined, and
-- GC_use_DllMain() is called before GC initialization, which
+- GC_use_threads_discovery() is called before GC initialization, which
   in turn must happen before creating additional threads.
 We generally recommend avoiding this if possible, since it seems to
 be less than 100% reliable.

@@ -46,6 +46,7 @@ include_HEADERS =
 pkginclude_HEADERS =
 dist_noinst_HEADERS =
 check_PROGRAMS =
+check_LTLIBRARIES =
 TESTS =
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -67,7 +68,7 @@ libgc_la_SOURCES = \
 # ---------------------------------
 
 if PTHREADS
-libgc_la_SOURCES += pthread_support.c pthread_stop_world.c
+libgc_la_SOURCES += pthread_start.c pthread_support.c pthread_stop_world.c
 endif
 
 if DARWIN_THREADS
@@ -173,7 +174,7 @@ EXTRA_DIST += BCC_MAKEFILE NT_MAKEFILE \
     Makefile.direct Makefile.dj	Makefile.DLLs SMakefile.amiga \
     WCC_MAKEFILE build_atomic_ops.sh build_atomic_ops.sh.cygwin \
     NT_STATIC_THREADS_MAKEFILE NT_X64_STATIC_THREADS_MAKEFILE \
-    NT_X64_THREADS_MAKEFILE
+    NT_X64_THREADS_MAKEFILE CMakeLists.txt tests/CMakeLists.txt
 
 # files used by makefiles other than Makefile.am
 #

@@ -62,7 +62,9 @@ word GC_gc_no = 0;
   GC_INNER int GC_incremental = 0;      /* By default, stop the world.  */
 #endif
 
-int GC_parallel = FALSE;   /* By default, parallel GC is off.   */
+#ifdef THREADS
+  int GC_parallel = FALSE;      /* By default, parallel GC is off.      */
+#endif
 
 #ifndef GC_FULL_FREQ
 # define GC_FULL_FREQ 19   /* Every 20th collection is a full   */
@@ -303,10 +305,28 @@ GC_INNER GC_bool GC_should_collect(void)
            || GC_heapsize >= GC_collect_at_heapsize);
 }
 
-/* STATIC */ void (*GC_start_call_back) (void) = 0;
+/* STATIC */ GC_start_callback_proc GC_start_call_back = 0;
                         /* Called at start of full collections.         */
                         /* Not called if 0.  Called with the allocation */
                         /* lock held.  Not used by GC itself.           */
+
+GC_API void GC_CALL GC_set_start_callback(GC_start_callback_proc fn)
+{
+    DCL_LOCK_STATE;
+    LOCK();
+    GC_start_call_back = fn;
+    UNLOCK();
+}
+
+GC_API GC_start_callback_proc GC_CALL GC_get_start_callback(void)
+{
+    GC_start_callback_proc fn;
+    DCL_LOCK_STATE;
+    LOCK();
+    fn = GC_start_call_back;
+    UNLOCK();
+    return fn;
+}
 
 GC_INLINE void GC_notify_full_gc(void)
 {
@@ -351,9 +371,9 @@ STATIC void GC_maybe_gc(void)
             }
             GC_promote_black_lists();
             (void)GC_reclaim_all((GC_stop_func)0, TRUE);
+            GC_notify_full_gc();
             GC_clear_marks();
             n_partial_gcs = 0;
-            GC_notify_full_gc();
             GC_is_full_gc = TRUE;
           } else {
             n_partial_gcs++;
@@ -407,7 +427,7 @@ GC_INNER GC_bool GC_try_to_collect_inner(GC_stop_func stop_func)
             GC_collect_a_little_inner(1);
         }
     }
-    if (stop_func == GC_never_stop_func) GC_notify_full_gc();
+    GC_notify_full_gc();
 #   ifndef SMALL_CONFIG
       if (GC_print_stats) {
         GET_TIME(start_time);

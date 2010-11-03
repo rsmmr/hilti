@@ -1,3 +1,49 @@
+2010-09-15  Ivan Maidanski <ivmai@mail.ru> (with input from Gregory Farnum)
+
+	* src/atomic_ops.h: Include armcc/arm_v6.h if __ARMCC__.
+	* src/atomic_ops.h: Include ibmc/powerpc.h if __IBMC__.
+	* src/atomic_ops.h: Define AO_GENERALIZE_TWICE if msftc/arm.h is
+	included.
+	* src/atomic_ops.h: Define AO_GENERALIZE_TWICE if AO_CAN_EMUL_CAS
+	is defined but emul_cas.h has not been included.
+	* src/atomic_ops/sysdeps/gcc/arm.h: Fix a typo.
+
+2010-08-14  Ivan Maidanski <ivmai@mail.ru>
+
+	* aclocal.m4: Regenerate (by autoreconf -vif using autoconf-2.67,
+	automake-1.11.1 and libtool-2.2.8).
+	* configure: Ditto.
+
+2010-08-14  Ivan Maidanski <ivmai@mail.ru>
+
+	* src/atomic_ops/sysdeps/gcc/arm.h: Replace C++ style comment
+	with ANSI C one.
+
+2010-05-30  Ivan Maidanski <ivmai@mail.ru> (really Bradley Smith)
+
+	* src/atomic_ops/sysdeps/gcc/avr32.h (AO_test_and_set): Use
+	"register long" (instead of "int") for "ret" variable.
+	* src/atomic_ops/sysdeps/gcc/avr32.h (AO_test_and_set): Replace
+	with AO_test_and_set_full (same for AO_HAVE_test_and_set).
+	* src/atomic_ops/sysdeps/gcc/avr32.h (AO_compare_and_swap_full):
+	New function implemented.
+
+2010-05-22  Ivan Maidanski <ivmai@mail.ru>
+
+	* src/atomic_ops/sysdeps/Makefile.am (nobase_sysdep_HEADERS):
+	Add "gcc/avr32.h".
+	* src/atomic_ops/sysdeps/Makefile.in: Regenerate.
+
+2010-05-21  Ivan Maidanski <ivmai@mail.ru> (really Bradley Smith)
+
+	* src/atomic_ops.h: Recognize __avr32__ (include gcc/avr32.h).
+	* src/atomic_ops/sysdeps/gcc/avr32.h: New file.
+
+2010-04-29  Ivan Maidanski <ivmai@mail.ru>
+
+	* doc/README_malloc.txt: Fix a typo.
+	* doc/README_stack.txt: Ditto.
+
 2010-02-25  Ivan Maidanski <ivmai@mail.ru> (really Bruce Mitchener)
 
 	* .cvsignore: New file.
