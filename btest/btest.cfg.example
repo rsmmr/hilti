@@ -1,0 +1,11 @@
+
+[btest]
+TestDirs    = examples 
+TmpDir      = %(testbase)s/.tmp
+BaselineDir = %(testbase)s/Baseline
+IgnoreDirs  = .svn CVS .tmp
+IgnoreFiles = *.tmp *.swp #*
+
+[environment]
+CFLAGS=-O3                                                 
+PATH=%(testbase)s/bin:%(default_path)s  

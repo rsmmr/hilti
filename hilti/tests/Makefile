@@ -2,22 +2,22 @@
 # Run all the tests. 
 #
 
-TESTER=../../tester/bin/tester
+BTEST=../../BTEST/btest
 
 all: tests
 
 tests:
-	@$(TESTER)
+	@$(BTEST)
 
 brief:
-	@$(TESTER) -b
+	@$(BTEST) -b
     
 brief-debug:
-	@$(TESTER) -b -d
+	@$(BTEST) -b -d
 
 update-baseline:
-	@$(TESTER) -U
+	@$(BTEST) -U
     
-auto-tester:
-	@$(TESTER) -b -F printer
+auto-BTEST:
+	@$(BTEST) -b -F printer
     

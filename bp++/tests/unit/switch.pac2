@@ -4,7 +4,7 @@
 # @TEST-EXEC:  echo 1234567890 | ./a.out -p Mini::test >output 2>&1
 # @TEST-EXEC:  echo 2234567890 | ./a.out -p Mini::test >>output 2>&1
 # @TEST-EXEC:  echo 3234567890 | ./a.out -p Mini::test >>output 2>&1
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 
 module Mini;
 

@@ -3,7 +3,7 @@
 # @TEST-EXEC:  hilti-build %INPUT -o a.out 
 # @TEST-EXEC:  ./a.out 
 # @TEST-EXEC:  hexdump -C foo.log >output 2>&1
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 
 module Main
 

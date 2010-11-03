@@ -2,7 +2,7 @@
 #
 # @TEST-EXEC:  hilti-build -d %INPUT -o a.out 
 # @TEST-EXEC:  HILTI_DEBUG=dummy1:test:dummy2 ./a.out >output 2>&1
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 
 module Main
 

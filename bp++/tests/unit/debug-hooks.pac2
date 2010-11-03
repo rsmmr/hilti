@@ -6,7 +6,7 @@
 # @TEST-EXEC:       echo 1234567890 | ./a.out >output 2>&1
 # @TEST-EXEC:       echo -- >>output
 # @TEST-EXEC:       echo 1234567890 | ./a.out -B >>output 2>&1
-# @TEST-EXEC:       test-diff output
+# @TEST-EXEC:       btest-diff output
 
 module Mini;
 

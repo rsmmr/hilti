@@ -2,7 +2,7 @@
 #
 # @TEST-EXEC:  hilti-build -S 0 %INPUT -o a.out 
 # @TEST-EXEC:  ./a.out >output 2>&1
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 #
 # Compiling the recursive program with non-standard default stack segment size. 
 #

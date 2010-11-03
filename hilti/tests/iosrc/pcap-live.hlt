@@ -3,7 +3,7 @@
 # @TEST-EXEC:  cp %DIR/trace.pcap .
 # @TEST-EXEC:  hilti-build %INPUT -o a.out 
 # @TEST-EXEC:  ./a.out >output 2>&1
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 #
 # Disabled because we can't do a live test when running the test-suite.
 #
