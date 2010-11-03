@@ -2,7 +2,7 @@
 # Run all the tests. 
 #
 
-BTEST=../../BTEST/btest
+BTEST=../../btest/btest
 
 all: tests
 
