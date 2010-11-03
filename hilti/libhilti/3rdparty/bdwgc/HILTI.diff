@@ -38,3 +38,14 @@
 +endif ( ENABLE_LLVM )
 +
 +
+--- ../bdwgc/libatomic_ops/src/atomic_ops/sysdeps/gcc/x86_64.h	2010-02-19 09:12:07.000000000 -0800
++++ ../bdwgc.old//libatomic_ops/src/atomic_ops/sysdeps/gcc/x86_64.h	2010-08-24 20:55:18.000000000 -0700
+@@ -111,7 +111,7 @@
+   /* Note: the "xchg" instruction does not need a "lock" prefix */
+   __asm__ __volatile__("xchgb %0, %1"
+                 : "=q"(oldval), "=m"(*addr)
+-                : "0"(0xff), "m"(*addr) : "memory");
++                : "0"((unsigned char)0xff), "m"(*addr) : "memory");
+   return (AO_TS_VAL_t)oldval;
+ }
+ 
