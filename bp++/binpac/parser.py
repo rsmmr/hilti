@@ -259,6 +259,45 @@ def p_list(p):
     
  # More complex types.
    
+   # Bitfield type. The type here must be an uint.
+def p_bitfield_type(p):
+    """builtin_type : type ARROW '{' bitfield_list '}'"""
+    
+    ty = p[1]
+    
+    if not isinstance(ty, type.UnsignedInteger):
+        util.parser_error(p, "base type must be an unsigned integer" % ty)
+        raise SyntaxError    
+    
+    bits = {}
+    for (name, lower, upper) in p[4]:
+        bits[name] = (lower[0], upper[0])
+
+    ty.setBits(bits)
+        
+    p[0] = ty
+ 
+def p_bitfield_list(p):
+    """bitfield_list : bitfield bitfield_list
+                     | bitfield"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[2]
+
+def p_bitfield(p):
+    """bitfield : IDENT ':' BITS CONSTANT ':' CONSTANT ';'
+                | IDENT ':' BIT  CONSTANT ';'"""
+
+    f = (p[1], p[4], p[6]) if len(p) == 8 else (p[1], p[4], p[4])
+    
+    if not isinstance(f[1][1], type.Integer) or not isinstance(f[2][1], type.Integer):
+        print f
+        util.parser_error(p, "invalid bit specification")
+        raise SyntaxError    
+    
+    p[0] = f
+        
    # Enum type.
 def p_enum_type(p):
     """builtin_type : ENUM '{' id_list '}'"""
@@ -324,20 +363,15 @@ def p_unit_field_top_level(p):
     p.parser.state.unit.addField(p[1])
     
 def p_unit_field_property(p):
-    """unit_property : PROPERTY expr ';'"""
+    """unit_property : PROPERTY '=' expr ';'"""
     
-    expr = p[2]
-    if not expr.isInit():
-        util.parser_error(p, "expression must be init")
-        raise SyntaxError    
+    expr = p[3]
     
     try:
         p.parser.state.unit.setProperty(p[1], expr)
+        
     except ValueError, e:
         util.parser_error(p, "unknown property %s" % p[1])
-        raise SyntaxError    
-    except TypeError, e:
-        util.parser_error(p, "expression must be of type %s" % e)
         raise SyntaxError    
 
 def p_unit_var(p):

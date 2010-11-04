@@ -15,6 +15,7 @@ import binpac.operator as operator
 import binpac.id as id 
 import binpac.scope as scope
 import binpac.node as node
+import binpac.property as property
 
 import binpac.util as util
 
@@ -57,6 +58,8 @@ class Field(node.Node):
         self._args = args if args else []
         self._noid = False
         self._scope = scope.Scope(None, parent.scope())
+
+        self._type.setField(self)
         
         if isinstance(ty, type.Container):
             self._scope.addID(id.Parameter("__dollardollar", ty.itemType()))
@@ -485,7 +488,7 @@ class SwitchFieldCase(SubField):
         printer.output("<SwitchFieldCase TODO>")
 
 @type.pac("unit")
-class Unit(type.ParseableType):
+class Unit(type.ParseableType, property.Container):
     """Type describing an individual parsing unit.
 
     A parsing unit is composed of (1) fields parsed from the traffic stream,
@@ -503,9 +506,9 @@ class Unit(type.ParseableType):
     """
 
     def __init__(self, module, args=None, location=None):
+        property.Container.__init__(self)
         Unit._counter += 1
         super(Unit, self).__init__(location=location)
-        self._props = {}
         self._fields = {}
         self._fields_ordered = []
         self._vars = {}
@@ -615,55 +618,6 @@ class Unit(type.ParseableType):
         """
         self._vars[var.name()] = var
 
-    def allProperties(self):
-        """Returns a list of all recognized properties.
-
-        Returns: dict mapping string to ~~Ctor - For each allowed
-        property, there is one entry under it's name (excluding the leading
-        dot) mapping to its default value.
-        """
-        return { "export": expr.Ctor(False, type.Bool()),
-                 "name": expr.Ctor(self._name, type.String())
-               }
-
-    def property(self, name):
-        """Returns the value of property. The property name must be one of
-        those returned by ~~allProperties.
-
-        name: string - The name of the property.
-
-        Returns: ~~Ctor - The value of the property. If not explicity
-        set, the default value is returned. The returned constant will be of
-        the same type as that of the default value returned by ~~allProperties.
-        """
-        try:
-            default = self.allProperties()[name]
-        except IndexError:
-            util.internal_error("unknown property '%s'" % name)
-
-        return self._props.get(name, default)
-
-    def setProperty(self, name, constant):
-        """Sets the value of a property. The property name must be one of
-        those returned by ~~allProperties.
-
-        name: string - The name of the property.
-        value: any - The value to set it to. The type must correspond to what
-        ~~allProperties specifies for the default value.
-
-        Raises: ValueError if ``name`` is not a valid property; and TypeError
-        if the type of *constant* is not correct.
-        """
-        try:
-            default = self.allProperties()[name]
-        except:
-            raise ValueError(name)
-
-        if not constant.type() == default.type():
-            raise TypeError(default.type())
-
-        self._props[name] = constant
-
     def grammar(self):
         """Returns the grammar for this type."""
         if not self._grammar:
@@ -688,6 +642,15 @@ class Unit(type.ParseableType):
         """
         return self._pgen.objectType()
 
+    # Overriden from property.Container 
+    
+    def allProperties(self):
+        return {
+            "export": expr.Ctor(False, type.Bool()),
+            "name": expr.Ctor(self._name, type.String()),
+            "byteorder": False,
+            }
+    
     # Overridden from Type.
 
     def hiltiType(self, cg):
@@ -709,6 +672,8 @@ class Unit(type.ParseableType):
         for fields in self._fields.values():
             for f in fields:
                 f.resolve(resolver)
+                
+        self.resolveProperties(resolver)
 
     def validate(self, vld):
         type.ParseableType.validate(self, vld)

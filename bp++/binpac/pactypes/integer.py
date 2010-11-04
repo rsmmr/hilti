@@ -64,6 +64,5 @@ class Integer(type.ParseableType):
     def supportedAttributes(self):
         return { "default": (self, True, None) }
 
-        
-        
+
         

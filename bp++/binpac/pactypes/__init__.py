@@ -1,11 +1,11 @@
 # $Id$
 
+import string
 import integer
 import uinteger
 import sinteger
 import regexp
 import bytes
-import string
 import unit
 import bool
 import list

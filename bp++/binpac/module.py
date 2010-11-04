@@ -8,9 +8,10 @@ import scope
 import type
 import stmt
 import location
+import property
 import binpac.visitor as visitor
 
-class Module(node.Node):
+class Module(node.Node, property.Container):
     """Represents a single HILTI link-time unit. A module has its
     own identifier scope defining which ~~ID objects are visibile
     inside its namespace.  
@@ -25,6 +26,7 @@ class Module(node.Node):
     """
     def __init__(self, name, location=None):
         super(Module, self).__init__(location)
+        property.Container.__init__(self)
         self._name = name.lower()
         self._orgname = name
         self._location = location
@@ -147,6 +149,8 @@ class Module(node.Node):
         for h in self._hooks:
             h.resolve(resolver)
             
+        self.resolveProperties(resolver)
+            
     def validate(self, vld):
         for id in self._scope.IDs():
             id.validate(vld)
@@ -172,7 +176,14 @@ class Module(node.Node):
             
         for h in self._hooks:
             h.pac(vld)
-        
+
+    # Overriden from property.Container 
+    
+    def allProperties(self):
+        return {
+            "byteorder": None,
+            }
+            
     # Visitor support.
     def visit(self, v):
         v.visit(self._scope)

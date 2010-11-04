@@ -342,7 +342,7 @@ class Name(Assignable):
         if not i:
             # Will be reported in validate.
             return
-    
+
         self._is_init = isinstance(i, id.Constant)
         
     def validate(self, vld):

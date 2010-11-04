@@ -446,7 +446,22 @@ class ParseableType(Type):
     def __init__(self, params=None, location=None):
         super(ParseableType, self).__init__(params=params, location=location)
         self._pgen = None
+        self._field = None
 
+    def field(self):
+        """Return the unit field if such has been associated with the type.
+        
+        Returns: ~~Field - The field or None. 
+        """
+        return self._field
+        
+    def setField(self, field):
+        """Associates a unit ~~Field with the type.
+        
+        field: ~~Field - The field.
+        """
+        self._field = field
+        
     def parserGen(self):
         """Returns the parser generator used for this type. Only valid once
         the grammar for this unit has been compiled.
