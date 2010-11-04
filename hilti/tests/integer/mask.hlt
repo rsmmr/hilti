@@ -1,0 +1,27 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> i
+    i = int.mask 255 0 3
+    call Hilti::print (i)
+    i = int.mask 255 6 7
+    call Hilti::print (i)
+
+    i = int.mask 128 0 6
+    call Hilti::print (i)
+    i = int.mask 128 7 7
+    call Hilti::print (i)
+
+    i = int.mask 32767 0 3
+    call Hilti::print (i)
+    i = int.mask 32767 6 7
+    call Hilti::print (i)
+}     

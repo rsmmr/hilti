@@ -8,7 +8,7 @@
 
 #include "hilti.h"
 
-//#define USE_GC
+#define USE_GC
 
 #ifdef USE_GC
 
@@ -48,7 +48,7 @@ void* hlt_gc_realloc_non_atomic(void* ptr, uint64_t n)
     return GC_REALLOC(ptr, n);
 }
 
-static _finalizer(GC_PTR obj, GC_PTR client_data)
+static void _finalizer(void* obj, void* client_data)
 {
     (*((hlt_gc_finalizer_func*)client_data))(obj);
 }

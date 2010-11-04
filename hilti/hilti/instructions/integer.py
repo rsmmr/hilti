@@ -36,7 +36,28 @@ class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameteriza
         this type.
         """
         return self._width
-
+    
+    @staticmethod
+    def llvmUnpackType(fmt):
+        """Static method that returns the type that ~~llvmUnpack will return
+        for constant unpack formats. 
+        
+        fmt: string - The fully qualified name of the format (e..g,
+        ``Hilti::Packed::Int16Little``).
+        
+        Return: type.Type - The type. 
+        
+        Note: Note this only applies to constant format. See ~~formats.
+        """
+        
+        key = fmt.split("::")[-1]
+        key = _makeIdx(key, False)
+        
+        try:
+            return type.Integer(_Unpacks[key[0]][2])
+        except KeyError:
+            util.error("unknown format %s in Integer.llvmUnpackType")
+    
     ### Overridden from Type.
 
     def name(self):
@@ -203,15 +224,14 @@ class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameteriza
             
                 if self._width > width: 
                     result = builder.sext(result, llvm.core.Type.int(self._width))
-                    
+
                 # It's fine to check for an exception at the end rather than after each call.
                 cg.llvmExceptionTest(exception)
     
                 if arg:
                     builder = cg.builder()
                     
-                    # Extract bits. Fortunately, LLVM has an intrinsic for that. See
-                    # below, though.
+                    # Extract bits.
                     llarg = arg.llvmLoad(cg)
                     low = cg.llvmExtractValue(llarg, 0)
                     high = cg.llvmExtractValue(llarg, 1)
@@ -240,21 +260,7 @@ class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameteriza
                         high = low
                         low = tmp
                     
-                    # Well, it has not:
-                    #
-                    # Assertion failed: (0 && "part_select intrinsic not
-                    # implemented"), function visitIntrinsicCall, file
-                    # SelectionDAGBuild.cpp, line 3787.
-                    #
-                    # result = cg.llvmCallIntrinsic(llvm.core.INTR_PART_SELECT, [result.type], [result, low, high])
-                    #
-                    # FIXME: So we build it ourselves until LLVM provides it.
-                    result = builder.lshr(result, low)
-                    bits = builder.sub(cg.llvmConstInt(width, width), high)
-                    bits = builder.add(bits, low)
-                    bits = builder.sub(bits, cg.llvmConstInt(1, width))
-                    mask = builder.lshr(cg.llvmConstInt(-1, width), bits)
-                    result = builder.and_(result, mask)
+                    result = _extractBits(cg, result, low, high)
                     
                 cg.llvmAssign(result, val)
             
@@ -530,6 +536,29 @@ class Xor(Instruction):
         op2 = cg.llvmOp(self.op2(), t)
         result = cg.builder().xor(op1, op2)
         cg.llvmStoreInTarget(self, result)
+        
+@hlt.instruction("int.mask", op1=cIntegerOfWidthAsOp(0), op2=cConstant(cIntegerOfWidth(64)), op3=cConstant(cIntegerOfWidth(64)), target=cInteger)
+class Xor(Instruction):
+    """Extracts the bits *op2* to *op3* (inclusive) from *op1* and shifts them
+    so that they align with the least significant bit in the result. 
+    """
+    def _validate(self, vld):
+        lower = self.op2().value().value()
+        upper = self.op3().value().value()
+        
+        if lower < 0 or upper > self.op1().type().width() or upper < lower:
+            vld.error("invalid bit range") 
+    
+    def _codegen(self, cg):
+        t = self.target().type()
+        width = t.width()
+        op1 = cg.llvmOp(self.op1(), t)
+        
+        low = cg.llvmConstInt(self.op2().value().value(), width)
+        high = cg.llvmConstInt(self.op3().value().value(), width)
+        
+        result = _extractBits(cg, op1, low, high)
+        cg.llvmStoreInTarget(self, result)
     
 # tag, id, width, extend, little, bytes
 _Unpacks = {  
@@ -565,3 +594,22 @@ def _makeIdx(key, scope):
         return key
     
     return [key, key[0:-len(_localSuffix)]]
+
+def _extractBits(cg, result, low, high):
+    
+    # In theory, LLVM has an intrinsic for this. It practice it doesn't:
+    #
+    # Assertion failed: (0 && "part_select intrinsic not
+    # implemented"), function visitIntrinsicCall, file
+    # SelectionDAGBuild.cpp, line 3787.
+    #
+    # return cg.llvmCallIntrinsic(llvm.core.INTR_PART_SELECT, [result.type], [result, low, high])
+    
+    builder = cg.builder()
+    width = result.type.width
+    result = builder.lshr(result, low)
+    bits = builder.sub(cg.llvmConstInt(width, width), high)
+    bits = builder.add(bits, low)
+    bits = builder.sub(bits, cg.llvmConstInt(1, width))
+    mask = builder.lshr(cg.llvmConstInt(-1, width), bits)
+    return  builder.and_(result, mask)
