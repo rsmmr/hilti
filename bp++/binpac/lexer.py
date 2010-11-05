@@ -11,7 +11,7 @@ import binpac.expr as expr
 # token. 
 keywords = ["module", "type", "import", "export", "unit", "print", "list",
             "global", "const", "if", "else", "var", "on", "switch", 
-            "extern", "local", "return", "foreach", "enum", "bit", "bits", "iter",
+            "extern", "local", "return", "foreach", "enum", "bitfield", "iter",
             ]
             
 control_props = ["%debug", "%ctor"]
@@ -34,7 +34,7 @@ def _loc(t):
 tokens = [
     "IDENT", "CONSTANT", "BYTES", "REGEXP", "PACTYPE", "ATTRIBUTE", "PROPERTY",
     "EQUAL", "UNEQUAL", "LEQ", "GEQ", "HASATTR", "ARROW", "AND", "OR", "PLUSEQUAL",
-    "PLUSPLUS", "MINUSMINUS", 
+    "PLUSPLUS", "MINUSMINUS", "DOTDOT", 
     ] + [k.upper() for k in keywords] \
       + [k.upper()[1:] for k in control_props]
 
@@ -82,6 +82,10 @@ def t_PLUSPLUS(t):
 
 def t_MINUSMINUS(t):
     r'\-\-'
+    return t
+
+def t_DOTDOT(t):
+    r'\.\.'
     return t
 
 # Type keywords not covered by types.

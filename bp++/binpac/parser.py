@@ -271,16 +271,16 @@ def p_iterator(p):
  
    # Bitfield type. The type here must be an uint.
 def p_bitfield_type(p):
-    """builtin_type : type ARROW '{' bitfield_list '}'"""
+    """builtin_type : BITFIELD '(' type ')' '{' bitfield_list '}'"""
     
-    ty = p[1]
+    ty = p[3]
     
     if not isinstance(ty, type.UnsignedInteger):
         util.parser_error(p, "base type must be an unsigned integer" % ty)
         raise SyntaxError    
     
     bits = {}
-    for (name, lower, upper) in p[4]:
+    for (name, lower, upper) in p[6]:
         bits[name] = (lower[0], upper[0])
 
     ty.setBits(bits)
@@ -296,10 +296,10 @@ def p_bitfield_list(p):
         p[0] = [p[1]] + p[2]
 
 def p_bitfield(p):
-    """bitfield : IDENT ':' BITS CONSTANT ':' CONSTANT ';'
-                | IDENT ':' BIT  CONSTANT ';'"""
+    """bitfield : IDENT ':' CONSTANT DOTDOT CONSTANT ';'
+                | IDENT ':' CONSTANT ';'"""
 
-    f = (p[1], p[4], p[6]) if len(p) == 8 else (p[1], p[4], p[4])
+    f = (p[1], p[3], p[5]) if len(p) == 8 else (p[1], p[3], p[3])
     
     if not isinstance(f[1][1], type.Integer) or not isinstance(f[2][1], type.Integer):
         print f

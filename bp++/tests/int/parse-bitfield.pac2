@@ -1,0 +1,24 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  printf '\xff\xff\xff\xff' | HILTI_DEBUG=binpac ./a.out -p Mini::test >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import BinPAC;
+
+export type test = unit {
+       
+    f1: bitfield(uint32) {
+        x1: 0;
+        x2: 1..2;
+        x3: 3..4;
+        };
+        
+    on f1 {
+        print self.f1.x1;
+        print self.f1.x2;
+        print self.f1.x3;
+        }
+};
