@@ -223,7 +223,7 @@ class CodeGen(object):
         for i in self._module.scope().IDs():
             if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
                 # FIXME: Should get rid of %export.
-                if i.type().property("export").value() or i.linkage() == id.Linkage.EXPORTED:
+                if i.linkage() == id.Linkage.EXPORTED:
                     gen = pgen.ParserGen(self, i.type())
                     gen.compile()
                     gen.export()

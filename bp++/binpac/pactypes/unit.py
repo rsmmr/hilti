@@ -646,7 +646,6 @@ class Unit(type.ParseableType, property.Container):
     
     def allProperties(self):
         return {
-            "export": expr.Ctor(False, type.Bool()),
             "name": expr.Ctor(self._name, type.String()),
             "byteorder": False,
             }
@@ -773,7 +772,6 @@ class Attribute:
             op2 = builder.tupleOp([obj])
             builder.hook_run(None, op1, op2)
 
-
 @operator.HasAttribute(Unit, type.String)
 class HasAttribute:
     def validate(vld, lhs, ident):
@@ -790,4 +788,13 @@ class HasAttribute:
         cg.builder().struct_is_set(tmp, lhs.evaluate(cg), cg.builder().constOp(name))
         return tmp
 
-
+@operator.MethodCall(type.Unit, expr.Attribute("input"), [])
+class Begin:
+    def type(obj, method, args):
+        return type.IteratorBytes()
+    
+    def evaluate(cg, obj, method, args):
+        tmp = cg.functionBuilder().addLocal("__iter", hilti.type.IteratorBytes())
+        builder = cg.builder()
+        builder.struct_get(tmp, builder.constOp("__input", builder.constOp(name)))
+        return tmp
