@@ -265,7 +265,7 @@ class Not(Expression):
     
     def __str__(self):
         return "(not %s)" % self._expr
-
+    
 class Ctor(Expression):
     """A constructor expression.
     

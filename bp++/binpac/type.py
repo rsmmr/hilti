@@ -663,17 +663,78 @@ class ParseableType(Type):
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
 
-class Container(ParseableType):
+class Iterable: 
+    """Trait class for a ~~Type that provides itertors."""
+
+    ### Methods for derived classes to override.    
+    
+    def iterType(self):
+        """Returns the type of the type's iterators.
+
+        Must be overidden by derived classes. Derived class should *not* call
+        their parent's implementation.
+        
+        Returns: ~~Iterator - The iterator type. 
+        """
+        util.internal_error("Type.iterType() not overidden for %s" % self.__class__)
+        
+class Container(ParseableType, Iterable):
     """A parseable type that is a container, i.e., a collection of items of a
     particular type. 
     
     Todo: Currently, there are no method in this class, we just use it as a
     trait to idenify containers. ~~List is the only container we have
     currently, but once we have more, we should move their shared methods
-    (e.g., ~~itemType) to here.
+    (e.g., ~~itemType) to here. We also need to provide iterType, probably
+    just be return itemType.
     """
     pass
+
+class Iterator(Type):
+    """Type for iterating over elements stored by an instance of another type. 
+    
+    t: ~~Type - The type storing the element we are iterating over. That type
+    must be an ~~Iterable.
+    
+    location: ~~Location - The location where the type was defined.
+    """
+    def __init__(self, t, location=None):
+        super(Iterator, self).__init__(location)
+        self._type = t
         
+    def parentType(self):
+        """Returns the type storing the elements being iterated over. 
+        
+        Returns: ~~Type - The type. 
+        """
+        return self._type
+    
+    # Methods for derived classes to override.
+    
+    def derefType(self):
+        """Returns the type of elements being iterated over.
+        
+        Must be overidden by derived classes. Derived class should *not* call
+        their parent's implementation.
+        
+        Returns: ~~Type - The type. 
+        """
+        util.internal_error("Iterator.derefType() not overidden for %s" % self.__class__)
+    
+    ### Overridden from Type.
+
+    def name(self):
+        return "iterator<%s>" % self._type
+    
+    def doResolve(self, resolver):
+        self._type = self._type.resolve(resolver)
+    
+    def _validate(self, vld):
+        self._type.validate(vld)
+        
+        if not isinstance(self._type, Iterable):
+            vld.error(self._type, "iterator requires an iterable tyype as parameter")
+
 class Unknown(ParseableType):
     """Type for an identifier that has not yet been resolved. This is used
     initially for forward references, and then later replaced the actual type.

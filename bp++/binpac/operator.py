@@ -175,6 +175,13 @@ def _pacUnary(op):
         exprs[0].pac(printer)
 
     return _pac    
+
+def _pacUnaryPostfix(op):
+    def _pac(printer, exprs):
+        printer.output(op)
+        exprs[0].pac(printer)
+
+    return _pac    
     
 def _pacBinary(op):
     def _pac(printer, exprs):
@@ -238,6 +245,11 @@ _Operators = {
     "AddAssign": (2, "Adds to an operand in place (`` a += b``)", _pacBinary("+=")),
     "LowerEqual": (2, "Lower or equal comparision. (``a <= b``)", _pacBinary("<=")),
     "GreaterEqual": (2, "Greater or equal comparision. (``a >= b``)", _pacBinary(">=")),
+    "IncrPrefix": (1, "Prefix increment operator (`++i`)", _pacUnary("++")),
+    "DecrPrefix": (1, "Prefix decrement operator (`--i`)", _pacUnary("--")),
+    "IncrPostfix": (1, "Postfix increment operator (`i++`)", _pacUnaryPostfix("++")),
+    "DecrPostfix": (1, "Postfix decrement operator (`i++`)", _pacUnaryPostfix("--")),
+    "Deref": (1, "Dereference operator. (`*i`)", _pacUnary("*")),
     }
 
 _Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type", 
@@ -562,6 +574,10 @@ class Any:
     pass
         
 def _matchExpr(expr, proto, all):
+    if isinstance(expr, list) and isinstance(proto, list):
+        if len(expr) == 0 and len(proto) == 0:
+            return True
+    
     if isinstance(proto, Any):
         return True
     
@@ -570,7 +586,7 @@ def _matchExpr(expr, proto, all):
             return True
         else:
             proto = proto._arg
-    
+            
     if not expr:
         return False
     
@@ -582,7 +598,7 @@ def _matchExpr(expr, proto, all):
             return False
         
         expr = expr + [None] * (len(proto) - len(expr))
-        
+
         for (e, p) in zip(expr, proto):
             if not _matchExpr(e, p, all):
                 return False

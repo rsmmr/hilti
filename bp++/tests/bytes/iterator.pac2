@@ -1,0 +1,33 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+# FIXME: We don't have loops yet. 
+
+module Test;
+
+global b = b"\x01\x02\x03\x04\x05";
+
+global cur: iter<bytes>;
+global last: iter<bytes>;
+
+cur = b.begin();
+# last = b.end();
+
+print *cur++;
+print *cur++;
+print *cur++;
+print *cur++;
+print *cur++;
+
+print "";
+
+cur = b.begin();
+print *++cur;
+print *++cur;
+print *++cur;
+print *++cur;
+
+

@@ -256,9 +256,19 @@ def p_list(p):
     """builtin_type : LIST '<' unit_field_type '>'"""
     ((val, ty), args) = p[3]
     p[0] = type.List(ty, value=val, item_args=args, location=_loc(p, 1))
+ 
+ # Iterators.
+def p_iterator(p):
+    """builtin_type : ITER '<' type '>'"""
+    
+    if not isinstance(p[3], type.Iterable):
+        util.parser_error(p, "cannot iterate over type " % p[1])
+        raise SyntaxError    
+    
+    p[0] = p[3].iterType()
     
  # More complex types.
-   
+ 
    # Bitfield type. The type here must be an uint.
 def p_bitfield_type(p):
     """builtin_type : type ARROW '{' bitfield_list '}'"""
@@ -576,6 +586,8 @@ precedence = (
     ('left', '*', '/'),
     ('left', '!'),
     ('left', '.', 'HASATTR'),
+    ('right', 'DEREF', 'PLUSPLUS_PREFIX', 'MINUSMINUS_PREFIX'),
+    ('left', 'PLUSPLUS' ),
 )
 
 def p_expr_function_call(p):
@@ -616,6 +628,26 @@ def p_expr_has_attribute(p):
 def p_expr_name(p):
     """expr : IDENT"""
     p[0] = expr.Name(p[1], _currentScope(p), location=_loc(p, 1))
+
+def p_expr_incr_postfix(p):
+    """expr : expr PLUSPLUS"""
+    p[0] = expr.Overloaded(Operator.IncrPostfix, (p[1], ), location=_loc(p, 1))
+    
+def p_expr_incr_prefix(p):
+    """expr : PLUSPLUS expr %prec PLUSPLUS_PREFIX"""
+    p[0] = expr.Overloaded(Operator.IncrPrefix, (p[2], ), location=_loc(p, 1))
+    
+def p_expr_decr_postfix(p):
+    """expr : expr MINUSMINUS"""
+    p[0] = expr.Overloaded(Operator.DecrPostfix, (p[1], ), location=_loc(p, 1))
+    
+def p_expr_decr_prefix(p):
+    """expr : MINUSMINUS expr %prec MINUSMINUS_PREFIX"""
+    p[0] = expr.Overloaded(Operator.DecrPrefix, (p[2], ), location=_loc(p, 1))
+
+def p_expr_deref(p):
+    """expr : '*' expr %prec DEREF"""
+    p[0] = expr.Overloaded(Operator.Deref, (p[2], ), location=_loc(p, 1))
     
 def p_expr_not(p):
     """expr : '!' expr"""
@@ -663,7 +695,7 @@ def p_expr_add_assign(p):
     p[0] = expr.Overloaded(Operator.AddAssign, (p[1], p[3]), location=_loc(p, 1))
     
 def p_expr_method_call(p):
-    """expr : expr '.' IDENT '(' expr_list ')'"""
+    """expr : expr '.' IDENT '(' opt_expr_list ')'"""
     attr = expr.Attribute(p[3])
     p[0] = expr.Overloaded(Operator.MethodCall, (p[1], attr, p[5]), location=_loc(p, 1))
     

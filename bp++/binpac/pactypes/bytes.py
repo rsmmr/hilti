@@ -10,8 +10,25 @@ import binpac.operator as operator
 import hilti.type
 import hilti.operand
 
+@type.pac(None)
+class IteratorBytes(type.Iterator):
+    """Type for ``iterator<bytes>``.
+    
+    location: ~~Location - The location where the type was defined.
+    """
+    def __init__(self, location=None):
+        super(IteratorBytes, self).__init__(type.Bytes())
+
+    # Overwritten from Iterator.
+        
+    def derefType(self):
+        return type.SignedInteger(8)
+    
+    def hiltiType(self, cg):
+        return hilti.type.IteratorBytes()
+        
 @type.pac("bytes")
-class Bytes(type.ParseableType):
+class Bytes(type.ParseableType, type.Iterable):
     """Type for bytes objects.  
     
     location: ~~Location - A location object describing the point of definition.
@@ -58,7 +75,12 @@ class Bytes(type.ParseableType):
         
     def pacCtor(self, printer, value):
         printer.output("b\"%s\"" % value)
+
+    ### Overridden from Iterable.
     
+    def iterType(self):
+        return IteratorBytes()
+        
     ### Overridden from ParseableType.
 
     def supportedAttributes(self):
@@ -144,7 +166,7 @@ class Bytes(type.ParseableType):
         builder.tuple_index(cur, result, builder.constOp(1))
         
         return cur
-        
+
 @operator.Size(Bytes)
 class _:
     def type(e):
@@ -229,7 +251,7 @@ class Match:
         return tmp
     
 @operator.MethodCall(type.Bytes, expr.Attribute("startswith"), [type.Bytes])
-class Match:
+class StartsWith:
     def type(obj, method, args):
         return type.Bool()
     
@@ -242,4 +264,25 @@ class Match:
         tmp = cg.functionBuilder().addLocal("__starts", hilti.type.Bool())
         cg.builder().call(tmp, func, args)
         return tmp
+    
+@operator.MethodCall(type.Bytes, expr.Attribute("begin"), [])
+class Begin:
+    def type(obj, method, args):
+        return obj.type().iterType()
+    
+    def evaluate(cg, obj, method, args):
+        tmp = cg.functionBuilder().addLocal("__iter", obj.type().iterType().hiltiType(cg))
+        cg.builder().begin(tmp, obj.evaluate(cg))
+        return tmp
+    
+@operator.MethodCall(type.Bytes, expr.Attribute("end"), [])
+class End:
+    def type(obj, method, args):
+        return obj.type().iterType()
+    
+    def evaluate(cg, obj, method, args):
+        tmp = cg.functionBuilder().addLocal("__iter", obj.type().iterType().hiltiType(cg))
+        cg.builder().end(tmp, obj.evaluate(cg))
+        return tmp
+    
     
