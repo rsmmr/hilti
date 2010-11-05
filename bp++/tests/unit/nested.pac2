@@ -25,9 +25,7 @@ type Message = unit {
     msg:     /Message/;
     };
     
-type Request = unit {
-    %export True;
-    
+export type Request = unit {
     request: RequestLine;
     message: Message
        { 

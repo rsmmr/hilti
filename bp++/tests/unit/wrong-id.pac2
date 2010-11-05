@@ -6,8 +6,6 @@
 module Mini;
 
 export type test = unit {
-       %export True;
-
        a: bytes &length=4
           { print xxx; }
 };
@@ -17,8 +15,6 @@ export type test = unit {
 module Mini;
 
 export type test = unit {
-       %export True;
-
        a: bytes &length=4
           { print self.b; }
 };
@@ -28,8 +24,6 @@ export type test = unit {
 module Mini;
 
 export type test = unit {
-       %export True;
-
        a: bytes &length=4
           { print $$; }
 };

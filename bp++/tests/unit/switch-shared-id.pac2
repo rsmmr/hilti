@@ -10,7 +10,6 @@
 module Mini;
 
 export type test = unit {
-       %export True;
        
        a: bytes &length=1;
        

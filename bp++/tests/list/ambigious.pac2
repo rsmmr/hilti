@@ -11,8 +11,7 @@ type Item = unit {
     line:   LINE;
 };
 
-type Test = unit {
-    %export True;
+export type Test = unit {
     lines: list<Item>;
     end: LINE;
     };

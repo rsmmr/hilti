@@ -8,7 +8,6 @@
 module Mini;
 
 export type test = unit {
-       %export True;
        a: bytes &length=4;
        ws: /5*/;
        b: bytes &eod;

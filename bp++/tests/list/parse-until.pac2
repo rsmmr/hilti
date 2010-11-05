@@ -14,7 +14,6 @@ type Item = unit {
 };
 
 type Test = unit {
-    %export True;
     lines: list<Item> &until($$.line == b"---\n")
         { print self.lines; }
     last: LINE;

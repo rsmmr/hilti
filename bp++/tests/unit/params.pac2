@@ -6,9 +6,7 @@
 
 module HTTP;
 
-type Foo = unit {
-    %export True;
-
+export type Foo = unit {
     : /ABC/;
     : Bar(b"XXX");
     : Bar2(b"Y1", b"Y2");

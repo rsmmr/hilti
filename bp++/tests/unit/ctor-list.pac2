@@ -16,7 +16,6 @@ type Item = unit {
 };
 
 export type Test = unit {
-    %export True;
     lines: list<Item>;
     : DASHES;
     last: LINE;

@@ -18,7 +18,6 @@ on mini::test::%ctor { print "FOO ctor"; }
 module Mini;
 
 export type test = unit {
-       %export True;
 
        a: bytes &length=4;
        b: bytes &length=6;

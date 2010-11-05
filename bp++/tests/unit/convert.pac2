@@ -21,7 +21,6 @@ int64 to_int(b: bytes)
 }
 
 export type test = unit {
-       %export True;
        a: bytes &length=4 &convert=to_lower;
        b: bytes &length=6 &convert=to_int
           { print self.a; print self.b; }
