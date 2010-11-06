@@ -17,7 +17,7 @@ export type test = unit {
 on test::a { print "FOO a", self.a; }
 on test::b { print "FOO b", self.b; self.foo = b"x"; }
 on test::foo { print "FOO foo", self.foo; }
-on test::%ctor { print "FOO ctor"; }
+on test::%init { print "FOO init"; }
 
 
 

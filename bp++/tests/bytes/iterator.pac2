@@ -30,4 +30,17 @@ print *++cur;
 print *++cur;
 print *++cur;
 
+cur = b.begin();
+print *(cur + 1);
+print *(cur + 2);
+
+cur = b.begin();
+cur += 2;
+print *cur;
+cur += 2;
+print *cur;
+
+
+
+
 

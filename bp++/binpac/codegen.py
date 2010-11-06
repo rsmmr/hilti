@@ -293,7 +293,7 @@ class CodeGen(object):
         field: ~~Field or string - The unit field/variable/hook the hook
         belongs to. If a ~~Field, the hook is associated with that field. If a
         string, it must be either the name of one of the unit's variables, or
-        the name of a global unit hook (e.g., ``%ctor``).
+        the name of a global unit hook (e.g., ``%init``).
         
         ddarg: Bool - If true, the hook received an additional ``$$``
         argument. If so, the name is changed accordingly to avoid name
@@ -360,7 +360,7 @@ class CodeGen(object):
         field: ~~Field or string - The unit field/variable/hook the hook
         belongs to. If a ~~Field, the hook is associated with that field. If a
         string, it must be either the name of one of the unit's variables, or
-        the name of a global unit hook (e.g., ``%ctor``).
+        the name of a global unit hook (e.g., ``%init``).
         
         objtype: ~~hilti.Type - The type of the hook's ``self`` parameter.
         

@@ -715,7 +715,7 @@ class Unit(type.ParseableType, property.Container):
     ### Overridden from ParseableType.
 
     def supportedAttributes(self):
-        return {}
+        return { "parse": (type.IteratorBytes(), False, None) }
 
     def production(self, field):
         #seq = [f.production() for f in self._fields_ordered]
@@ -729,7 +729,7 @@ class Unit(type.ParseableType, property.Container):
         util.internal_error("cannot be reached")
 
 @operator.Attribute(Unit, type.String)
-class Attribute:
+class _Attribute:
     @staticmethod
     def attrType(lhs, ident):
         name = ident.name()
@@ -746,11 +746,11 @@ class Attribute:
             vld.error(lhs, "unknown unit attribute '%s'" % name)
 
     def type(lhs, ident):
-        return Attribute.attrType(lhs, ident)
+        return _Attribute.attrType(lhs, ident)
 
     def evaluate(cg, lhs, ident):
         name = ident.name()
-        type = Attribute.attrType(lhs, ident)
+        type = _Attribute.attrType(lhs, ident)
         builder = cg.builder()
         tmp = builder.addLocal("__attr", type.hiltiType(cg))
         builder.struct_get(tmp, lhs.evaluate(cg), builder.constOp(name))
@@ -758,7 +758,7 @@ class Attribute:
 
     def assign(cg, lhs, ident, rhs):
         name = ident.name()
-        type = Attribute.attrType(lhs, ident)
+        type = _Attribute.attrType(lhs, ident)
         builder = cg.builder()
         obj = lhs.evaluate(cg)
         builder.struct_set(obj, builder.constOp(name), rhs)
@@ -773,7 +773,7 @@ class Attribute:
             builder.hook_run(None, op1, op2)
 
 @operator.HasAttribute(Unit, type.String)
-class HasAttribute:
+class _:
     def validate(vld, lhs, ident):
         name = ident.name()
         if not name in lhs.type().variables() and not lhs.type().field(name):
@@ -789,12 +789,16 @@ class HasAttribute:
         return tmp
 
 @operator.MethodCall(type.Unit, expr.Attribute("input"), [])
-class Begin:
+class _:
+    """Returns an ``iter<bytes>`` referencing the first byte of the raw data
+    for parsing the unit. This method must only be called while the unit is
+    being parsed, and will throw an ``UndefinedValue`` exception otherwise. 
+    """
     def type(obj, method, args):
         return type.IteratorBytes()
     
     def evaluate(cg, obj, method, args):
         tmp = cg.functionBuilder().addLocal("__iter", hilti.type.IteratorBytes())
         builder = cg.builder()
-        builder.struct_get(tmp, builder.constOp("__input", builder.constOp(name)))
+        builder.struct_get(tmp, obj.evaluate(cg), builder.constOp("__input"))
         return tmp

@@ -204,10 +204,12 @@ class ParserGen:
         for p in self._grammar.params():
             params += [builder.idOp(p.name())]
 
-        self._newParseObject(pobj, params)
-        
         args = ParserGen._Args(fbuilder, ["__cur", "__pobj", "__lahead", "__lahstart", "__flags"])
+        self._newParseObject(pobj, params, args)
+        
         self._parseStartSymbol(args)
+        
+        self._doneParseObject(args)
         
         self.builder().return_result(pobj)
 
@@ -367,7 +369,7 @@ class ParserGen:
         utype = child.type()
 
         self.builder().setNextComment("Parsing child grammar %s" % child.type().name())
-
+        
         self._startingProduction(args.obj, child)
         
         builder = self.builder()
@@ -380,22 +382,39 @@ class ParserGen:
         result = builder.addTmp("__presult", _ParseFunctionResultType)
         cobj = builder.addTmp("__cobj_%s" % utype.name(), utype.hiltiType(self._cg))
 
-        cargs = ParserGen._Args(self.functionBuilder(), (args.cur, cobj, args.lahead, args.lahstart, args.flags))
+        parse_from = child.type().attributeExpr("parse")
+
+        builder = self.builder()
+        
+        if not parse_from:
+            cur = args.cur
+            lahead = args.lahead
+            lahstart = args.laheadstart
+        else:
+            cur = parse_from.evaluate(self.cg())
+            lahead = builder.addTmp("__tmp_lhead", _LookAheadType)
+            lahstart = builder.addTmp("__tmp_lahstart", _BytesIterType)
+            builder.assign(lahead, _LookAheadNone)
+        
+        cargs = ParserGen._Args(self.functionBuilder(), (cur, cobj, lahead, lahstart, args.flags))
         params = [p.evaluate(self._cg) for p in child.params()]
         
-        cpgen._newParseObject(cobj, params)
+        cpgen._newParseObject(cobj, params, cargs)
         
         cpgen._parseStartSymbol(cargs)
 
         if child.name():
             builder.struct_set(args.obj, builder.constOp(child.name()), cobj)
 
-        builder.assign(args.cur, cargs.cur)
-        builder.assign(args.lahead, cargs.lahead)
-        builder.assign(args.lahstart, cargs.lahstart)
+        if not parse_from:
+            builder.assign(args.cur, cargs.cur)
+            builder.assign(args.lahead, cargs.lahead)
+            builder.assign(args.lahstart, cargs.lahstart)
             
         self._finishedProduction(args.obj, child, cobj)
-
+        
+        cpgen._doneParseObject(cargs)
+        
     def _parseSequence(self, prod, args):
         def _makeFunction():
             (func, args) = self._createParseFunction("sequence", prod)
@@ -695,6 +714,7 @@ class ParserGen:
             fields = self._grammar.scope().IDs()
             ids = []
 
+            # Unit fields. 
             for f in fields:
                 default = f.type().attributeExpr("default")
                 if default:
@@ -705,9 +725,13 @@ class ParserGen:
                 
                 ids += [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), hlt_default)]
                 
+            # The unit parameters.
             for p in self._grammar.params():
                 ids += [(hilti.id.Local("__param_%s" % p.name(), p.type().hiltiType(self._cg)), None)]
                 
+            # The input() reference. 
+            ids += [(hilti.id.Local("__input", hilti.type.IteratorBytes()), None)]
+            
             structty = hilti.type.Struct(ids)
             self._mbuilder.addTypeDecl(self._name("object"), structty)
             return structty
@@ -727,7 +751,7 @@ class ParserGen:
         
         builder.hook_run(None, op1, op2)
     
-    def _newParseObject(self, obj, params):
+    def _newParseObject(self, obj, params, args):
         """Allocates and initializes a struct type for the parsed grammar.
         
         obj: hilti.operand.Operand - The operand to the new object in.
@@ -738,8 +762,19 @@ class ParserGen:
         for (f, p) in zip(self._grammar.params(), params):
             field = self.builder().constOp("__param_%s" % f.name())
             self.builder().struct_set(obj, field, p)
+        
+        # Record the data we're parsing for calls to unit.input(). 
+        builder.struct_set(obj, builder.constOp("__input"), args.cur)
             
-        self._runUnitHook(obj, "%ctor")
+        self._runUnitHook(obj, "%init")
+
+    def _doneParseObject(self, args):
+        builder = self.cg().builder()
+
+        self._runUnitHook(args.obj, "%done")
+        
+        # Clear what's unit.input() is returning. 
+        builder.struct_unset(args.obj, builder.constOp("__input"))
         
     ### Helper methods.
 

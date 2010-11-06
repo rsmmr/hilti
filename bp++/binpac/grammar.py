@@ -625,9 +625,12 @@ class Grammar:
         """Instantiates a grammar given its root production.
         
         name: string - A name which uniquely identifies this grammar.
+        
         root: ~~Production - The grammar's root production.
+        
         params: list of ~~ID - Additional parameters passed into the
         grammar's parser. 
+        
         addl_ids: list of ~~ID - Additional IDs that should become part of the
         generated parser object. 
         """
@@ -749,7 +752,7 @@ class Grammar:
         Returns: Productions - The starting instruction.
         """
         return self._start
-    
+
     def _addProduction(self, p):
         if p.symbol() in self._productions:
             # Already added.

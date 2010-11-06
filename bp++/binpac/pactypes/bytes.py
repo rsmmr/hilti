@@ -220,7 +220,7 @@ class Plus:
         cg.builder().bytes_append(tmp, e2.evaluate(cg))
         return tmp
     
-@operator.AddAssign(Bytes, Bytes)
+@operator.PlusAssign(Bytes, Bytes)
 class Plus:
     def type(e1, e2):
         return type.Bytes()

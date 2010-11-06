@@ -1,0 +1,18 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  printf 1234567890 | ./a.out -p Mini::test >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type test = unit {
+       a: bytes &length=4;
+       b: bytes &length=6
+          { 
+          local i = self.input();
+          print *i++; 
+          print *i++; 
+          print *i++; 
+          }
+};

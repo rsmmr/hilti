@@ -36,6 +36,29 @@ class _:
         cg.builder().assign(tmp, op)
         cg.builder().incr(op, op)
         return tmp
+    
+@operator.PlusAssign(type.Iterator, type.UnsignedInteger)
+class _:
+    def type(iter, incr):
+        return iter.type()
+    
+    def evaluate(cg, iter, incr):
+        op1 = iter.evaluate(cg)
+        op2 = incr.evaluate(cg)
+        cg.builder().incr_by(op1, op1, op2)
+        return op1
+    
+@operator.Plus(type.Iterator, type.UnsignedInteger)
+class _:
+    def type(iter, incr):
+        return iter.type()
+    
+    def evaluate(cg, iter, incr):
+        op1 = iter.evaluate(cg)
+        op2 = incr.evaluate(cg)
+        tmp = cg.functionBuilder().addLocal("__niter", op1.type())
+        cg.builder().incr_by(tmp, op1, op2)
+        return tmp
 
 @operator.Equal(type.Iterator, type.Iterator)
 class _:

@@ -108,11 +108,25 @@ class Block(Statement):
     ### Overidden from Statement.
 
     def execute(self, cg):
+        non_const_inits = []
+        
         for i in self._scope.IDs():
             if isinstance(i, id.Local):
-                init = i.expr().hiltiInit(cg) if i.expr() else i.type().hiltiDefault(cg)
+                if i.expr():
+                    if i.expr().isInit():
+                        init = i.expr().hiltiInit(cg)
+                    else:
+                        init = None
+                        non_const_inits += [i]
+                else:
+                    init = i.type().hiltiDefault(cg)
+                
                 cg.builder().addLocal(i.name(), i.type().hiltiType(cg), init, force=False, reuse=True)
         
+        for i in non_const_inits:
+            init = i.expr().evaluate(cg)
+            cg.builder().assign(cg.builder().idOp(i._internalName()), init)
+                
         for stmt in self._stmts:
             stmt.execute(cg)
 
@@ -127,7 +141,7 @@ class UnitHook(Block):
     unit: ~~Unit - The unit this hook is part of.
     
     name: string - The name of the hook. For fields, this is the field name;
-    for unit hooks, it's the name of that (e.g., ``%ctor``). 
+    for unit hooks, it's the name of that (e.g., ``%init``). 
     
     prio: int - The priority of the statement. If multiple statements are
     defined for the same field, they are executed in order of decreasing
@@ -181,7 +195,7 @@ class UnitHook(Block):
             
     def field(self):
         """Returns the name associated with the hook. For fields, this is the
-        field name; for unit hooks, it's the name of that (e.g., ``%ctor``). 
+        field name; for unit hooks, it's the name of that (e.g., ``%init``). 
 
         Returns: ~~string - The name. 
         """

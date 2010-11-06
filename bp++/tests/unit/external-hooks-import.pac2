@@ -11,7 +11,7 @@ import mini;
 on mini::test::a { print "FOO a", self.a; }
 on mini::test::b { print "FOO b", self.b; self.foo = b"x"; }
 on mini::test::foo { print "FOO foo", self.foo; }
-on mini::test::%ctor { print "FOO ctor"; }
+on mini::test::%init { print "FOO init"; }
 
 ### @TEST-START-FILE mini.pac2
 

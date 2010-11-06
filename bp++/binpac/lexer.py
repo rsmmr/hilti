@@ -14,7 +14,7 @@ keywords = ["module", "type", "import", "export", "unit", "print", "list",
             "extern", "local", "return", "foreach", "enum", "bitfield", "iter",
             ]
             
-control_props = ["%debug", "%ctor"]
+control_props = ["%debug", "%init", "%done"]
 
 # Keywords for simple types, and what we turn them into.
 types = {

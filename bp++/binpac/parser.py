@@ -95,31 +95,37 @@ def p_module_global_import(p):
     """module_global : IMPORT IDENT ';'"""
     if not _importFile(p.parser, p[2], _loc(p, 1)):
         raise SyntaxError
-    
-def p_global_decl(p):
-    """global_decl : opt_linkage global_or_const IDENT ':' type ';'
-                   | opt_linkage global_or_const IDENT '=' expr ';'
-                   | opt_linkage global_or_const IDENT ':' type '=' expr ';'
-    """
 
-    if isinstance(p[5], type.Type):
-        ty = p[5]
+def p_var_init(p):
+    """
+    var_init : IDENT ':' type
+             | IDENT '=' expr
+             | IDENT ':' type '=' expr
+    """
+    if isinstance(p[3], type.Type):
+        ty = p[3]
         
     else:
-        ty = p[5].type() 
+        ty = p[3].type() 
     
-    linkage = p[1]
-    name = p[3]
+    name = p[1]
 
-    if len(p) > 7:
-        e = p[7]
-        
-    elif p[4] == '=':
+    if len(p) > 5:
         e = p[5]
+        
+    elif p[2] == '=':
+        e = p[3]
 
     else:
         e = None
 
+    p[0] = (name, ty, e)
+    
+def p_global_decl(p):
+    """global_decl : opt_linkage global_or_const var_init ';'"""
+    (name, ty, e) = p[3]
+    linkage = p[1]
+    
     if p[2] == "const":
         i = id.Constant(name, ty, e, linkage=linkage, location=_loc(p, 2))
     else:
@@ -407,7 +413,8 @@ def p_opt_debug(p):
     
 def p_opt_hook_ident(p):
     """hook_ident : IDENT
-                  | CTOR
+                  | INIT
+                  | DONE
     """
     p[0] = p[1]
     
@@ -692,7 +699,7 @@ def p_expr_gequal(p):
     
 def p_expr_add_assign(p):
     """expr : expr PLUSEQUAL expr"""
-    p[0] = expr.Overloaded(Operator.AddAssign, (p[1], p[3]), location=_loc(p, 1))
+    p[0] = expr.Overloaded(Operator.PlusAssign, (p[1], p[3]), location=_loc(p, 1))
     
 def p_expr_method_call(p):
     """expr : expr '.' IDENT '(' opt_expr_list ')'"""
@@ -748,14 +755,9 @@ def p_opt_local_var_list(p):
     p[0] = [p[1]] + p[2] if len(p) > 1 else []
 
 def p_local_var(p):
-    """local_var : LOCAL IDENT ':' type opt_init_expr ';'"""
-    p[0] = id.Local(p[2], p[4], p[5], location=_loc(p,1))
-
-def p_opt_init_expr(p):
-    """opt_init_expr : '=' expr
-                     | 
-    """
-    p[0] = p[2] if len(p) > 1 else None
+    """local_var : LOCAL var_init ';'"""
+    (name, ty, e) = p[2]
+    p[0] = id.Local(name, ty, e, location=_loc(p,1))
     
 ### Statements
 

@@ -12,7 +12,7 @@ const DASHES = /---\n/;
 type Item = unit {
     line:   LINE;
     
-    on %ctor { print "ctor"; }
+    on %init { print "ctor"; }
 };
 
 export type Test = unit {

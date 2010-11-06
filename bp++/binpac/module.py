@@ -108,7 +108,7 @@ class Module(node.Node, property.Container):
         ident: string - A string referencing the hook. If *unit* is
         given, this must be only the unit-internal name of the hook
         (i.e., either a field name, a variable name, or a global
-        hook name such as ``%ctor``). If *unit* is not given, this
+        hook name such as ``%init``). If *unit* is not given, this
         must suitably qualified, e.g., ``MyUnit::my_hook`` or
         ``MyModule::MyUnit::my_hook``.
         
