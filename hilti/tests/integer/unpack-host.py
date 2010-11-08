@@ -3,7 +3,7 @@
 # @TEST-EXEC:  python %INPUT >tmp.hlt
 # @TEST-EXEC:  hilti-build tmp.hlt -o a.out 
 # @TEST-EXEC:  ./a.out >output 2>&1
-# @TEST-EXEC:  test-diff output
+# @TEST-EXEC:  btest-diff output
 #
 # Dynamically generate a script for testing with host byte order.
 
