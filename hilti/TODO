@@ -2,9 +2,6 @@
 Not working
 ===========
 
-- channel.* and threads.* are broken since the recent
-reorganisation. Their tests are disabled for now.
-
 - visitor support is broken. While it's not used anymore internally,
 it will likely be useful for external code, so we should restore
 that functionality.
@@ -19,12 +16,23 @@ Instructions
 
 - The string type is still missing a number of instructions.
 
+- Add support for setting location information.
+
+Code Generation
+===============
+
+- Generate debug information.
+
 Infrastructure
 ==============
 
 - We don't ensure that instructions that modify their arguments
   don't receive any constants. 
 
+- Extending the previous point, we should add hints to the
+  signatures signaling which arguments are modified and how target
+  and operands relate to each other (for enabling optimizations).
+  
 - The parser doesn't associate line-comments correctly with global
   declarations (or better: it does not do so at all; the code
   doesn't seem to do the right thing.) It works for comments before
@@ -70,8 +78,16 @@ LLVM problems
   
   Don't know what the situation is on other ABIs.
 
-Optimizations
-=============
+- llvm-py caches objects based on their physical address; not a good
+  idea ... The cache sometimes returned objects of the wrong type.
+  We patch llvm-py to avoid that (see llvm-py-objcache.diff).
+  However, there's still a low probability that the wrong object is
+  used ...
+
+Low-level Optimizations
+=========================
+
+- Enable tail call optimization and ensure it works. 
 
 - In CodeGen.llvmGenerateCCall, when returning structs, we have to
   create a temporary on the stack just because we can't cast an
@@ -82,14 +98,10 @@ Optimizations
 
 - The addr's check for an IPv4 address could use the ctlz intrinsic.
 
-- When building strucy values, rather than alloc'ing tmp instances,
+- When building struct values, rather than alloc'ing tmp instances,
   which should use insertvalue.
 
-- llvm-py caches objects based on their physical address; not a good
-  idea ... The cache sometimes returned objects of the wrong type.
-  We patch llvm-py to avoid that (see llvm-py-objcache.diff).
-  However, there's still a low probability that the wrong object is
-  used ...
+See TODO.Optimizations for higher-level optimization ideas.
 
 Documentation
 =============

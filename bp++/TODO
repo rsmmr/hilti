@@ -1,4 +1,10 @@
 
+Code Generator
+==============
+
+- Once HILTI has support for tracking higher-level location
+information, the codegen should generate that.
+
 Code Structure
 ==============
 
@@ -20,3 +26,13 @@ as well (e.g., &convert).
 We should move all of ParseableType into the baseclass and use validate() to
 check whether features are used that only make sense within a unit field. 
 
+Cleanup
+=======
+
+- A number of those cleanup tasks applied to HILTI aren't yet done
+for BinPAC. Examples:
+
+    - The restructuring of validate into validate() and _validate
+    (same for resolve, etc.)
+    
+    - Has the automatic recursion detection been removed?
