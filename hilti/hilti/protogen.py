@@ -123,11 +123,15 @@ class ProtoGen:
         scope = scope[0].upper() + scope[1:]
         
         if isinstance(i.type(), type.Enum):
+
+            if i.type().isUndef(i.value()):
+                return
+
             value = i.type().labels()[i.value().value()]
         else:
             value = i.value().value()
         
-        self.output("static const int8_t %s_%s = %s;" % (scope, i.name().replace("::", "_"), value))
+        self.output("static const uint64_t %s_%s = %s;" % (scope, i.name().replace("::", "_"), value))
        
     
 

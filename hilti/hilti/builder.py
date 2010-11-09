@@ -211,7 +211,10 @@ class ModuleBuilder(OperandBuilder):
         
         name: string - The type name of the enum.
         
-        labels: list of string - The labels, without any namespace.
+        labels: list of string, or dict of string -> value - The labels (wo/
+        any namespace, and excluding the ``Undef`` value) defined for the enum
+        type. If a list is given, values are automatically assigned; otherwise
+        the dictionary determines the mappings.
         
         Returns: ~~Type - The new type, which has been added to the module.
         """
@@ -223,7 +226,11 @@ class ModuleBuilder(OperandBuilder):
             c = constant.Constant(label, t)
             eid = id.Constant(name + "::" + label, operand.Constant(c), linkage=id.Linkage.EXPORTED)
             self._module.scope().add(eid)
-        
+
+        # Add the Undef value.
+        undef = id.Constant(p[2] + "::Undef", operand.Constant(t.undef()), linkage=id.Linkage.EXPORTED, location=_loc(p, 1))
+        self._module.scope().add(undef)
+
         return t
     
 class FunctionBuilder(OperandBuilder):
