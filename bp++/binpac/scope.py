@@ -65,7 +65,7 @@ class Scope(visitor.Visitable):
         
         id: ~~ID - The ID to add to the module's scope.
         """
-        
+
         idx = self._canonName(id.namespace(), id.name())
         self._ids[idx] = (id, True)
         

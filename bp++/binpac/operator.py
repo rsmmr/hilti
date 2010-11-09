@@ -129,13 +129,13 @@ attribute; they are all class methods.
    Throws: ~~CoerceError if the coerce is not possible. There's no need to augment
    the exception with an explaining string as that will be added automatically.
 
-.. function:: canCoerceExprTo(expr, dsttype):
+.. function:: canCoerceExprTo(srctype, dsttype):
 
    Optional. Applies only to the ~~Coerce operator. Checks whether we can
    coerce a non-constant expression of the operator's type to another type. 
    
-   *expr*: ~~Expr - The expression to coerce. 
-   *dsttype*: ~~Type - The type to coerce the expression into.
+   *srctype*: ~~Type - The type to coerce an expression from.
+   *dsttype*: ~~Type - The type to coerce an expression into.
 
    Note: The return value of this method should match with what
    ~~coerceCtorTo and ~~coerceExprTo are able to do. If in doubt,
@@ -250,6 +250,7 @@ _Operators = {
     "IncrPostfix": (1, "Postfix increment operator (`i++`)", _pacUnaryPostfix("++")),
     "DecrPostfix": (1, "Postfix decrement operator (`i++`)", _pacUnaryPostfix("--")),
     "Deref": (1, "Dereference operator. (`*i`)", _pacUnary("*")),
+    "Index": (2, "Element at a given index (`a[i]`).", lambda p, e: p.output("<Index>")),
     }
 
 _Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type", 
@@ -404,28 +405,27 @@ def type(op, exprs):
 class CoerceError(Exception):
     pass
 
-def canCoerceExprTo(expr, dsttype):
+def canCoerceExprTo(srctype, dsttype):
     """Returns whether an expression (assumed to be non-constant) can be
     coerced to a given target type. If *dsttype* is of the same type as the
     expression, the result is always True. 
     
-    *expr*: ~~Expression - The expression to check. 
     *dstype*: ~~Type - The target type.
         
     Returns: bool - True if the expression can be coerceed. 
     """
-    if expr.type() == dsttype:
-        return expr
+    if srctype == dsttype:
+        return True
 
-    if not typecheck(Operator.Coerce, [expr]):
+    if not typecheck(Operator.Coerce, [srctype]):
         return False
     
-    func = _findOp("canCoerceExprTo", Operator.Coerce, [expr])
+    func = _findOp("canCoerceExprTo", Operator.Coerce, [srctype])
     
     if not func:
         return False
     
-    return func(expr, dsttype)
+    return func(srctype, dsttype)
     
 def coerceExprTo(cg, expr, dsttype): 
     """Coerces an expression (assumed to be non-constant) of one type into
@@ -440,7 +440,7 @@ def coerceExprTo(cg, expr, dsttype):
     coerceed expression.
     """
 
-    assert canCoerceExprTo(expr, dsttype)
+    assert canCoerceExprTo(expr.type(), dsttype)
 
     if expr.type() == dsttype:
         return expr

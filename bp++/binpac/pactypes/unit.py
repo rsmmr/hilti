@@ -59,7 +59,8 @@ class Field(node.Node):
         self._noid = False
         self._scope = scope.Scope(None, parent.scope())
 
-        self._type.setField(self)
+        if self._type:
+            self._type.setField(self)
         
         if isinstance(ty, type.Container):
             self._scope.addID(id.Parameter("__dollardollar", ty.itemType()))

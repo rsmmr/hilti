@@ -140,7 +140,10 @@ class List(type.Container):
     ### Overridden from ParseableType.
 
     def supportedAttributes(self):
-        return { "until": (type.Bool(), False, None) }
+        return {
+            "length": (type.UnsignedInteger(64), False, None),
+            "until": (type.Bool(), False, None)
+            }
 
     def initParser(self, field):
         self._field = field
@@ -194,6 +197,7 @@ class List(type.Container):
             unit.module().addHook(hook)
 
         until = self.attributeExpr("until")
+        length = self.attributeExpr("length")
             
         if until:
             # Create a even higer priority hook that checks whether the &until
@@ -219,6 +223,9 @@ class List(type.Container):
             
             item.setUntilField(field)
             
+        elif length:
+            l1 = grammar.Counter(length, item, location=loc)
+
         else:
             # No attributes, use look-ahead to figure out when to stop parsing. 
             

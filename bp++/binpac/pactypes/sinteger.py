@@ -54,7 +54,7 @@ class Coerce:
         
         raise operators.CoerceError
 
-    def canCoerceExprTo(expr, dsttype):
+    def canCoerceExprTo(srctype, dsttype):
         if isinstance(dsttype, type.Integer):
             return True
         

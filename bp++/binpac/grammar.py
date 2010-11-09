@@ -577,6 +577,35 @@ class Boolean(Conditional):
         """
         return (self._alt1, self._alt2)
 
+class Counter(NonTerminal):
+    """A productions executed a given number of times.
+
+    expr: ~~Expr : An expression of an integer type that limits the number of
+    times the production is parsed. 
+
+    body: ~~Production: The production to be repeated.
+    """
+    def __init__(self, expr, body, symbol=None, location=None):
+        super(Counter, self).__init__(name=None, type=None, symbol=symbol, location=location)
+        self._expr = expr
+        self._body = body
+
+    def expr(self):
+        """Returns the expression limiting the loop.
+
+        Returns: ~~Expression - The expression of integer type. 
+        """
+        return self._expr
+
+    def body(self):
+        """Returns production for the loop body. 
+
+        Returns: ~~Production - The production.
+        """
+        return self._body
+
+    def _rhss(self):
+        return [[self._body]]
     
 class Switch(Conditional):
     """Alternatives between which we decide based on which value out of a set

@@ -49,7 +49,7 @@ class Expression(node.Node):
                 return False # It did not.
             
         else:
-            return operator.canCoerceExprTo(self, dsttype)
+            return operator.canCoerceExprTo(self.type(), dsttype)
         
     def coerceTo(self, dsttype, cg=None):
         """Coerces the expression to a differenent type. It's ok if *dsttype* is

@@ -10,6 +10,7 @@ import id
 import type
 import binpac.util as util
 import binpac.pgen as pgen
+import binpac.operator as operator
 
 import hilti.constant
 
@@ -233,6 +234,17 @@ class Type(object):
     
     def __str__(self):
         return self.name()
+
+    def canCoerceTo(self, dsttype):
+        """Returns whether an expression of this type can be coerced to a
+        given target type. If *dsttype* is of the same type as that of the
+        current type, the result is always True. 
+        
+        *dstype*: ~~Type - The target type.
+        
+        Returns: bool - True if the expression can be coerceed. 
+        """
+        return operator.canCoerceExprTo(self, dsttype)
 
     @classmethod
     def typeName(cls):

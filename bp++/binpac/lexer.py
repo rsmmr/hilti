@@ -12,6 +12,7 @@ import binpac.expr as expr
 keywords = ["module", "type", "import", "export", "unit", "print", "list",
             "global", "const", "if", "else", "var", "on", "switch", 
             "extern", "local", "return", "foreach", "enum", "bitfield", "iter",
+            "tuple"
             ]
             
 control_props = ["%debug", "%init", "%done"]

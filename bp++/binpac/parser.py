@@ -33,11 +33,11 @@ Operator = operator.Operator
 
 def parsePAC(filename, import_paths=["."]):
     """Parses a file into an |ast|.
-    
+
     filename: string - The name of the file to parse.
     import_paths: list of strings - Search paths for ``import``
     statement.
-    
+
     Returns: tuple (int, ~~Node) - The integer is the number of
     errors found
     during parsing. If there were no errors, ~~Node is the root of
@@ -48,14 +48,14 @@ def parsePAC(filename, import_paths=["."]):
     return (errors, ast)
 
 ########## BinPAC++ Grammar.
-       
+
 ### Top-level constructs.
 
 def p_module(p):
     """module : MODULE IDENT _instantiate_module ';' module_global_list"""
     p[0] = p.parser.state.module
     _popScope(p)
-    
+
 def p_instantiate_module(p):
     """_instantiate_module :"""
     p.parser.state.module = module.Module(p[-1], location=_loc(p, -1))
@@ -63,14 +63,14 @@ def p_instantiate_module(p):
     p.parser.state.blocks = [None]
     p.parser.state.typename = None
     p.parser.state.in_unit_param_list = False
-    
+
     _pushScope(p, p.parser.state.module.scope())
-    
+
 def p_module_global_list(p):
     """module_global_list :   module_global module_global_list
                           |   """
     pass
-    
+
 def p_module_global_type(p):
     """module_global : type_decl"""
     pass
@@ -86,7 +86,7 @@ def p_module_global_function(p):
 def p_module_global_stmt(p):
     """module_global : stmt"""
     p.parser.state.module.addStatement(p[1])
-    
+
 def p_module_global_hook(p):
     """module_global : opt_debug ON hook_ident stmt_block"""
     p.parser.state.module.addExternalHook(None, p[3], p[4], p[1])
@@ -104,15 +104,15 @@ def p_var_init(p):
     """
     if isinstance(p[3], type.Type):
         ty = p[3]
-        
+
     else:
-        ty = p[3].type() 
-    
+        ty = p[3].type()
+
     name = p[1]
 
     if len(p) > 5:
         e = p[5]
-        
+
     elif p[2] == '=':
         e = p[3]
 
@@ -120,41 +120,41 @@ def p_var_init(p):
         e = None
 
     p[0] = (name, ty, e)
-    
+
 def p_global_decl(p):
     """global_decl : opt_linkage global_or_const var_init ';'"""
     (name, ty, e) = p[3]
     linkage = p[1]
-    
+
     if p[2] == "const":
         i = id.Constant(name, ty, e, linkage=linkage, location=_loc(p, 2))
     else:
         i = id.Global(name, ty, e, linkage=linkage, location=_loc(p, 2))
-        
+
     _currentScope(p).addID(i)
 
 def p_global_or_const(p):
     """global_or_const : GLOBAL
                        | CONST
     """
-    p[0] = p[1]                   
-    
+    p[0] = p[1]
+
 def p_type_decl(p):
     """type_decl : opt_linkage TYPE IDENT _set_typename '=' type ';'"""
     name = p[3]
     type = p[6]
-    
+
     i = id.Type(name, type, linkage=p[1], location=_loc(p, 2))
     type.setName(name)
-    
+
     _currentScope(p).addID(i)
-    
+
     p.parser.state.typename = None
-    
+
 def p_set_typename(p):
     """_set_typename : """
     p.parser.state.typename = p[-1]
-    
+
 def p_def_opt_linkage(p):
     """opt_linkage : EXPORT
                    | """
@@ -171,13 +171,13 @@ def p_param_list(p):
                   | param
     """
     p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
-       
+
 def p_opt_param_list(p):
     """opt_param_list : param_list
-                      | 
+                      |
     """
     p[0] = p[1] if len(p) > 1 else []
-    
+
 def p_param(p):
     """param : IDENT ':' type"""
     if not p.parser.state.in_unit_param_list:
@@ -200,7 +200,7 @@ def _getFunc(p, name, ftype):
         i = id.Function(name, func)
         func.setID(i)
         _currentScope(p).addID(i)
-        
+
     util.check_class(i, id.Function, "_getFunc")
     return i
 
@@ -213,20 +213,20 @@ def p_extern_func(p):
     i.function().addFunction(hfunc)
 
 def p_func_def(p):
-    """func_def : func_head stmt_block"""    
+    """func_def : func_head stmt_block"""
     (name, ftype) = p[1]
     i = _getFunc(p, name, ftype)
 
     pfunc = function.PacFunction(name, ftype, p[2], location=_loc(p, 1))
     i.function().addFunction(pfunc)
-    
+
 def p_func_head(p):
     """func_head : type IDENT '(' opt_param_list ')'"""
     name = p[2]
     ftype = type.Function(p[4], p[1], location=_loc(p, 1))
     p[0] = (name, ftype)
-    
-### Types 
+
+### Types
 
 def p_type(p):
     """type : builtin_type opt_type_attr_list
@@ -234,22 +234,22 @@ def p_type(p):
     """
     _addAttrs(p, p[1], p[2])
     p[0] = p[1]
-    
+
 def p_type_ident(p):
     """type_ident : IDENT"""
-    
+
     i = _currentScope(p).lookupID(p[1])
     if not i:
         # We try to resolve it later.
         p[0] = type.Unknown(p[1], location=_loc(p, 1))
         return
-    
+
     if not isinstance(i, id.Type):
         util.parser_error(p, "%s is not a type " % p[1])
-        raise SyntaxError    
-        
+        raise SyntaxError
+
     p[0] = i.type()
-    
+
  # Simple types.
 
 def p_type_pac(p):
@@ -262,37 +262,50 @@ def p_list(p):
     """builtin_type : LIST '<' unit_field_type '>'"""
     ((val, ty), args) = p[3]
     p[0] = type.List(ty, value=val, item_args=args, location=_loc(p, 1))
- 
+
  # Iterators.
 def p_iterator(p):
     """builtin_type : ITER '<' type '>'"""
-    
+
     if not isinstance(p[3], type.Iterable):
         util.parser_error(p, "cannot iterate over type " % p[1])
-        raise SyntaxError    
-    
+        raise SyntaxError
+
     p[0] = p[3].iterType()
-    
+
+ # Tuples.
+def p_tuple(p):
+    """builtin_type : TUPLE '<' type_list '>'"""
+    p[0] = type.Tuple(p[3])
+
+def p_type_list(p):
+    """type_list : type ',' type_list
+                 | type"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
+
  # More complex types.
- 
+
    # Bitfield type. The type here must be an uint.
 def p_bitfield_type(p):
     """builtin_type : BITFIELD '(' type ')' '{' bitfield_list '}'"""
-    
+
     ty = p[3]
-    
+
     if not isinstance(ty, type.UnsignedInteger):
         util.parser_error(p, "base type must be an unsigned integer" % ty)
-        raise SyntaxError    
-    
+        raise SyntaxError
+
     bits = {}
     for (name, lower, upper) in p[6]:
         bits[name] = (lower[0], upper[0])
 
     ty.setBits(bits)
-        
+
     p[0] = ty
- 
+
 def p_bitfield_list(p):
     """bitfield_list : bitfield bitfield_list
                      | bitfield"""
@@ -306,28 +319,28 @@ def p_bitfield(p):
                 | IDENT ':' CONSTANT ';'"""
 
     f = (p[1], p[3], p[5]) if len(p) == 8 else (p[1], p[3], p[3])
-    
+
     if not isinstance(f[1][1], type.Integer) or not isinstance(f[2][1], type.Integer):
         print f
         util.parser_error(p, "invalid bit specification")
-        raise SyntaxError    
-    
+        raise SyntaxError
+
     p[0] = f
-        
+
    # Enum type.
 def p_enum_type(p):
     """builtin_type : ENUM '{' id_list '}'"""
     assert p.parser.state.typename
     p[0] = type.Enum(p[3], _currentScope(p), p.parser.state.typename)
- 
-def p_id_list(p):                                                                                                                                                           
-    """id_list : IDENT "," id_list                                        
-               | IDENT"""                                                                                                                                                  
-    if len(p) == 2:                                                                                                                                                         
-        p[0] = [p[1]]                                                                                                                                                       
-    else:                                                                                                                                                                   
-        p[0] = [p[1]] + p[3]            
-    
+
+def p_id_list(p):
+    """id_list : IDENT "," id_list
+               | IDENT"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
+
    # Unit type.
 def p_type_unit(p):
     """builtin_type : UNIT opt_unit_param_list _instantiate_unit '{' _enter_unit_hook unit_item_list _leave_unit_hook  '}' """
@@ -338,16 +351,16 @@ def p_instantiate_unit(p):
     """_instantiate_unit :"""
     p.parser.state.unit = type.Unit(p.parser.state.module, args=p[-1])
     p.parser.state.unit.setNamespace(p.parser.state.module.name(True))
-    p.parser.state.in_switch = None 
-    
+    p.parser.state.in_switch = None
+
 def p_enter_unit_hook(p):
     """_enter_unit_hook : """
     _pushScope(p, p.parser.state.unit.scope())
-    
+
 def p_leave_unit_hook(p):
     """_leave_unit_hook : """
     _popScope(p)
-        
+
 def p_unit_param_list(p):
     """opt_unit_param_list : '(' _enter_unit_param_list opt_param_list _leave_unit_param_list ')'
                            | """
@@ -356,11 +369,11 @@ def p_unit_param_list(p):
 def p_enter_unit_param_list(p):
     """_enter_unit_param_list : """
     p.parser.state.in_unit_param_list = True
-    
+
 def p_leave_unit_param_list(p):
     """_leave_unit_param_list : """
     p.parser.state.in_unit_param_list = False
-    
+
 def p_unit_item_list(p):
     """unit_item_list :  unit_item unit_item_list
                        | unit_item"""
@@ -377,18 +390,18 @@ def p_unit_item(p):
 def p_unit_field_top_level(p):
     """unit_field_top_level : unit_field"""
     p.parser.state.unit.addField(p[1])
-    
+
 def p_unit_field_property(p):
     """unit_property : PROPERTY '=' expr ';'"""
-    
+
     expr = p[3]
-    
+
     try:
         p.parser.state.unit.setProperty(p[1], expr)
-        
+
     except ValueError, e:
         util.parser_error(p, "unknown property %s" % p[1])
-        raise SyntaxError    
+        raise SyntaxError
 
 def p_unit_var(p):
     """unit_var : IDENT ':' type ';'
@@ -396,7 +409,7 @@ def p_unit_var(p):
     """
     i = id.Variable(p[1], p[3])
     p.parser.state.unit.addVariable(i)
-    
+
     if p[4] != ';':
         hook = stmt.VarHook(p.parser.state.unit, p[1], 0, stmts=p[5], debug=p[4])
         p.parser.state.module.addHook(hook)
@@ -404,20 +417,20 @@ def p_unit_var(p):
 def p_unit_hook(p):
     """unit_hook : opt_debug ON hook_ident stmt_block"""
     p.parser.state.module.addExternalHook(p.parser.state.unit, p[3], p[4], p[1])
-    
+
 def p_opt_debug(p):
-    """opt_debug : DEBUG 
-                 | 
+    """opt_debug : DEBUG
+                 |
     """
     p[0] = len(p) > 1
-    
+
 def p_opt_hook_ident(p):
     """hook_ident : IDENT
                   | INIT
                   | DONE
     """
     p[0] = p[1]
-    
+
 def _addAttrs(p, t, attrs):
     for attr in attrs:
         t.addAttribute(attr[0], attr[1])
@@ -434,12 +447,12 @@ def p_unit_field_with_hook(p):
             hook = stmt.SubFieldHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
         else:
             hook = stmt.FieldHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
-            
+
         p.parser.state.module.addHook(hook)
     else:
         hook = stmt.FieldForEachHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
         p.parser.state.module.addHook(hook)
-        
+
     _addAttrs(p, p.parser.state.field.type(), p[5])
     p[0] = p.parser.state.field
 
@@ -448,7 +461,7 @@ def p_opt_foreach(p):
                    |
     """
     p[0] = len(p) > 1
-    
+
 def p_enter_unit_field(p):
     """_enter_unit_field : """
     _pushScope(p, p.parser.state.field.scope())
@@ -456,11 +469,11 @@ def p_enter_unit_field(p):
 def p_leave_unit_field(p):
     """_leave_unit_field : """
     _popScope(p)
-    
+
 def p_instantiate_field(p):
     """_instantiate_field : """
     loc = location.Location(p.lexer.parser.state._filename, p.lexer.lineno)
-    
+
     if not p.parser.state.in_switch:
         p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, args=p[-1][1], location=loc)
     else:
@@ -482,11 +495,11 @@ def p_unit_field_type_ident(p):
     # We resolve it later.
     val = (None, type.Unknown(p[1], location=_loc(p, 1)))
     p[0] = (val, p[2])
-    
+
 def p_unit_field_type_builtin_type(p):
     """unit_field_type : builtin_type opt_unit_field_params"""
     p[0] = ((None, p[1]), p[2])
-    
+
 def p_opt_unit_field_params(p):
     """opt_unit_field_params : '(' opt_expr_list ')'
                              | """
@@ -496,7 +509,7 @@ def p_opt_unit_field_name(p):
     """opt_unit_field_name : IDENT ':'
                           | ':'"""
     p[0] = p[1] if len(p) > 2 else None
-    
+
 def p_opt_unit_field_cond(p):
     """opt_unit_field_cond : IF '(' expr ')'
                            | """
@@ -504,10 +517,10 @@ def p_opt_unit_field_cond(p):
         p.parser.state.field.setCondition(p[3])
 
 def p_unit_switch(p):
-    """unit_switch : SWITCH '(' expr ')' '{' _instantiate_switch unit_switch_case_list '}'"""
+    """unit_switch : SWITCH '(' expr ')' '{' _instantiate_switch unit_switch_case_list '}' ';'"""
     p.parser.state.unit.addField(p.parser.state.in_switch)
     p.parser.state.in_switch = None
-    
+
 def p_instantiate_switch(p):
     """_instantiate_switch : """
     loc = location.Location(p.lexer.parser.state._filename, p.lexer.lineno)
@@ -518,7 +531,7 @@ def p_unit_switch_case_list(p):
                              | """
     if len(p) > 1:
         p.parser.state.in_switch.addCase(p[1])
-        
+
 def p_unit_switch_case(p):
     """unit_switch_case : expr ARROW unit_field
                         | '*'  ARROW unit_field
@@ -527,7 +540,7 @@ def p_unit_switch_case(p):
     expr = p[1] if p[1] != "*" else None
     p[3].setExpr(expr)
     p[0] = p[3]
-    
+
 ### Type attributes.
 
 def p_opt_type_attr_list(p):
@@ -536,7 +549,7 @@ def p_opt_type_attr_list(p):
     p[0] = [p[1]] + p[2] if len(p) > 1 else []
 
 def p_attr(p):
-    """attr : ATTRIBUTE '=' expr 
+    """attr : ATTRIBUTE '=' expr
             | ATTRIBUTE '(' expr ')'
             | ATTRIBUTE
     """
@@ -552,7 +565,7 @@ def p_ctor_constant(p):
 def p_ctor_bytes(p):
     """ctor : BYTES"""
     p[0] = expr.Ctor(p[1], type.Bytes(), location=_loc(p, 1))
-    
+
 def p_ctor_regexp(p):
     """ctor : REGEXP"""
     p[0] = expr.Ctor(p[1], type.RegExp(), location=_loc(p, 1))
@@ -561,32 +574,38 @@ def p_ctor_list(p):
     """ctor : '[' opt_ctor_list_list ']'
             | LIST '<' type '>' '(' ')'"""
     if len(p) > 4:
-        val = []    
+        val = []
         ty = p[3]
     else:
         if not len(p[2]):
             util.parser_error(p, "list ctors cannot be empty (use list<T>() instead)")
-            raise SyntaxError    
+            raise SyntaxError
         val = p[2]
         ty = p[2][0].type()
-        
+
     p[0] = expr.Ctor(val, type.List(ty))
 
 def p_opt_ctor_list_list(p):
     """opt_ctor_list_list : ctor_list_list
                           | """
     p[0] = p[1] if len(p) > 1 else []
-    
+
 def p_ctor_list_list(p):
     """ctor_list_list : ctor ',' ctor_list_list
                       | ctor """
     p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
-    
+
+def p_ctor_tuple(p):
+    """ctor : '(' ctor_list_list ')'"""
+    types = [c.type() for c in p[2]]
+    p[0] = expr.Ctor(p[2], type.Tuple(types))
+
 ### Expressions
 
 precedence = (
-    ('left', '(', ')'), 
-    ('left', 'PLUSEQUAL'), 
+    ('left', '[', ']'),
+    ('left', '(', ')'),
+    ('left', 'PLUSEQUAL'),
     ('left', 'AND', 'OR'),
     ('left', 'EQUAL', 'UNEQUAL', 'LEQ', 'GEQ'),
     ('left', '+', '-'),
@@ -601,19 +620,23 @@ def p_expr_function_call(p):
     """expr : expr '(' opt_expr_list ')'"""
     p[0] = expr.Overloaded(Operator.Call, (p[1], p[3]), location=_loc(p, 1))
 
+def p_expr_index(p):
+    """expr : expr '[' expr ']'"""
+    p[0] = expr.Overloaded(Operator.Index, (p[1], p[3]), location=_loc(p, 1))
+
 def p_expr_and(p):
     """expr : expr AND expr"""
     p[0] = expr.Overloaded(Operator.And, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_or(p):
     """expr : expr OR expr"""
     p[0] = expr.Overloaded(Operator.Or, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_constant(p):
     """expr : CONSTANT"""
     (val, type) = p[1]
     p[0] = expr.Ctor(val, type, location=_loc(p, 1))
-    
+
 def p_expr_ctor(p):
     """expr : ctor"""
     p[0] = p[1]
@@ -622,7 +645,7 @@ def p_expr_attribute(p):
     """expr : expr '.' IDENT"""
     attr = expr.Attribute(p[3])
     p[0] = expr.Overloaded(Operator.Attribute, (p[1], attr), location=_loc(p, 1))
-    
+
 def p_expr_has_attribute(p):
     """expr : expr HASATTR IDENT"""
     attr = expr.Attribute(p[3])
@@ -639,15 +662,15 @@ def p_expr_name(p):
 def p_expr_incr_postfix(p):
     """expr : expr PLUSPLUS"""
     p[0] = expr.Overloaded(Operator.IncrPostfix, (p[1], ), location=_loc(p, 1))
-    
+
 def p_expr_incr_prefix(p):
     """expr : PLUSPLUS expr %prec PLUSPLUS_PREFIX"""
     p[0] = expr.Overloaded(Operator.IncrPrefix, (p[2], ), location=_loc(p, 1))
-    
+
 def p_expr_decr_postfix(p):
     """expr : expr MINUSMINUS"""
     p[0] = expr.Overloaded(Operator.DecrPostfix, (p[1], ), location=_loc(p, 1))
-    
+
 def p_expr_decr_prefix(p):
     """expr : MINUSMINUS expr %prec MINUSMINUS_PREFIX"""
     p[0] = expr.Overloaded(Operator.DecrPrefix, (p[2], ), location=_loc(p, 1))
@@ -655,35 +678,35 @@ def p_expr_decr_prefix(p):
 def p_expr_deref(p):
     """expr : '*' expr %prec DEREF"""
     p[0] = expr.Overloaded(Operator.Deref, (p[2], ), location=_loc(p, 1))
-    
+
 def p_expr_not(p):
     """expr : '!' expr"""
     p[0] = expr.Not(p[2], location=_loc(p, 1))
-    
+
 def p_expr_assign(p):
     """expr : expr '=' expr"""
-    p[0] = expr.Assign(p[1], p[3], location=_loc(p, 1))    
-    
+    p[0] = expr.Assign(p[1], p[3], location=_loc(p, 1))
+
 def p_expr_add(p):
     """expr : expr '+' expr"""
     p[0] = expr.Overloaded(Operator.Plus, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_sub(p):
     """expr : expr '-' expr"""
     p[0] = expr.Overloaded(Operator.Minus, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_mult(p):
     """expr : expr '*' expr"""
     p[0] = expr.Overloaded(Operator.Mult, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_div(p):
     """expr : expr '/' expr"""
     p[0] = expr.Overloaded(Operator.Div, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_equal(p):
     """expr : expr EQUAL expr"""
     p[0] = expr.Overloaded(Operator.Equal, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_unequal(p):
     """expr : expr UNEQUAL expr"""
     eq = expr.Overloaded(Operator.Equal, (p[1], p[3]), location=_loc(p, 1))
@@ -692,20 +715,20 @@ def p_expr_unequal(p):
 def p_expr_lequal(p):
     """expr : expr LEQ expr"""
     p[0] = expr.Overloaded(Operator.LowerEqual, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_gequal(p):
     """expr : expr GEQ expr"""
     p[0] = expr.Overloaded(Operator.GreaterEqual, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_add_assign(p):
     """expr : expr PLUSEQUAL expr"""
     p[0] = expr.Overloaded(Operator.PlusAssign, (p[1], p[3]), location=_loc(p, 1))
-    
+
 def p_expr_method_call(p):
     """expr : expr '.' IDENT '(' opt_expr_list ')'"""
     attr = expr.Attribute(p[3])
     p[0] = expr.Overloaded(Operator.MethodCall, (p[1], attr, p[5]), location=_loc(p, 1))
-    
+
 def p_expr_size(p):
     """expr : '|' expr '|'"""
     p[0] = expr.Overloaded(Operator.Size, (p[2], ), location=_loc(p, 1))
@@ -713,7 +736,7 @@ def p_expr_size(p):
 def p_expr_paren(p):
     """expr : '(' expr ')'"""
     p[0] = p[2]
-    
+
 def p_expr_list(p):
     """expr_list : expr ',' expr_list
                  | expr
@@ -722,7 +745,7 @@ def p_expr_list(p):
 
 def p_opt_expr_list(p):
     """opt_expr_list : expr_list
-                     | 
+                     |
     """
     p[0] = p[1] if len(p) > 1 else []
 
@@ -731,7 +754,7 @@ def p_opt_expr(p):
                 |
     """
     p[0] = p[1] if len(p) > 1 else None
-    
+
 ### Statement blocks.
 
 def p_stmt_block(p):
@@ -741,13 +764,13 @@ def p_stmt_block(p):
 
     for local in p[3]:
         b.scope().addID(local)
-    
+
     p[0] = b
-    
+
 def p_instantiate_block(p):
     """_instantiate_block :"""
     _pushBlock(p, stmt.Block(_currentScope(p), location=_loc(p, -1)))
-    
+
 def p_opt_local_var_list(p):
     """opt_local_var_list : local_var opt_local_var_list
                           |
@@ -758,13 +781,13 @@ def p_local_var(p):
     """local_var : LOCAL var_init ';'"""
     (name, ty, e) = p[2]
     p[0] = id.Local(name, ty, e, location=_loc(p,1))
-    
+
 ### Statements
 
 def p_stmt_expr(p):
     """stmt : expr ';'"""
     p[0] = stmt.Expression(p[1], location=_loc(p,1))
-    
+
 def p_stmt_stmt_block(p):
     """stmt : stmt_block"""
     p[0] = p[1]
@@ -772,9 +795,9 @@ def p_stmt_stmt_block(p):
 def p_stmt_print(p):
     """stmt : PRINT expr_list ';'"""
     p[0] = stmt.Print(p[2], location=_loc(p,1))
-    
+
 def p_stmt_list(p):
-    """stmt_list : stmt_list stmt 
+    """stmt_list : stmt_list stmt
                  | """
     if len(p) > 1:
         _currentBlock(p).addStatement(p[2])
@@ -786,43 +809,43 @@ def p_stmt_if_else(p):
     cond = p[3]
     yes = p[5]
     no = p[7] if len(p) > 7 else None
-    
+
     p[0] = stmt.IfElse(cond, yes, no, location=_loc(p,1))
-    
+
 def p_stmt_return(p):
     """stmt : RETURN opt_expr ';'"""
     p[0] = stmt.Return(p[2], location=_loc(p,1))
-    
+
 ### Scope management.
 def _currentScope(p):
     scope = p.parser.state.scopes[-1]
     assert scope
     return scope
-    
+
 def _pushScope(p, scope):
     p.parser.state.scopes += [scope]
-    
+
 def _popScope(p):
     p.parser.state.scopes = p.parser.state.scopes[:-1]
-    
+
 def _currentBlock(p):
     b = p.parser.state.blocks[-1]
     assert b
     return b
-    
+
 def _pushBlock(p, b):
     p.parser.state.blocks += [b]
     _pushScope(p, b.scope())
-    
+
 def _popBlock(p):
     b = _currentBlock(p)
     p.parser.state.blocks = p.parser.state.blocks[:-1]
     _popScope(p)
     return b
-    
+
 ### Error handling.
 
-def p_error(p):    
+def p_error(p):
     if p:
         type = p.type.lower()
         value = p.value
@@ -832,8 +855,8 @@ def p_error(p):
             util.parser_error(p, "unexpected %s '%s'" % (type, value), lineno=p.lineno)
     else:
         util.parser_error(None, "unexpected end of file")
-        
-##########        
+
+##########
 
 class BinPACState(util.State):
     """Tracks state during parsing."""
@@ -848,11 +871,11 @@ def _parse(filename, import_paths=["."]):
     state = BinPACState(filename, import_paths)
     lex = ply.lex.lex(debug=0, module=lexer)
     parser = ply.yacc.yacc(debug=0, write_tables=0)
-    
+
     util.initParser(parser, lex, state)
-    
+
     filename = os.path.expanduser(filename)
-    
+
     try:
         lines = open(filename).read()
     except IOError, e:
@@ -861,7 +884,7 @@ def _parse(filename, import_paths=["."]):
 
     try:
         ast = parser.parse(lines, lexer=lex, debug=0)
-        
+
     except ply.lex.LexError, e:
         # Already reported.
         print e
@@ -871,14 +894,14 @@ def _parse(filename, import_paths=["."]):
         return (parser.state.errors(), None, parser)
 
     assert ast
-    
+
     errors = resolver.Resolver().resolve(ast)
-    
-    return (errors, ast, parser)    
+
+    return (errors, ast, parser)
 
 def _importFile(parser, filename, location, internal_module=False):
     fullpath = util.checkImport(parser, filename, "pac2", location)
-    
+
     if not fullpath:
         # Already imported.
         return True
@@ -888,7 +911,7 @@ def _importFile(parser, filename, location, internal_module=False):
     if errors > 0:
         parser.state.increaseErrors(subparser.state.errors())
         return False
-    
+
     parser.state.module.importIDs(subparser.state.module)
 
     return True
