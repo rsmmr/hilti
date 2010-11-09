@@ -39,6 +39,18 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, const void* obj, int3
     
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
     for ( i = 0; i < type->num_params; i++ ) {
+
+        if ( array[i].field[0] && array[i].field[1] &&
+             array[i].field[0] == '_' && array[i].field[1] == '_' )
+            // Don't print internal names. 
+            continue;
+
+        if ( i >  0 ) {
+            s = hlt_string_concat(s, &separator, excpt, ctx);
+            if ( *excpt )
+                return 0;
+        }
+        
         hlt_string t;
         
         uint32_t is_set = (mask & (1 << i));
@@ -62,12 +74,6 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, const void* obj, int3
         s = hlt_string_concat(s, t, excpt, ctx);
         if ( *excpt )
             return 0;
-        
-        if ( i < type->num_params - 1 ) {
-            s = hlt_string_concat(s, &separator, excpt, ctx);
-            if ( *excpt )
-                return 0;
-        }
         
     }
     

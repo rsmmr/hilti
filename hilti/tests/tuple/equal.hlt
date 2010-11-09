@@ -1,0 +1,26 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+   local tuple<int64,string,bool> t1
+   local tuple<int64,string,bool> t2
+   local tuple<int64,string,bool> t3
+   local bool b
+
+   t1 = (42, "foo", True)
+   t2 = (42, "foo", True)
+   t3 = (43, "foo", True)
+
+   b = equal t1 t2
+   call Hilti::print(b)
+
+   b = equal t1 t3
+   call Hilti::print(b)
+}

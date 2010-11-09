@@ -15,15 +15,16 @@ from hilti import hlt
 from hilti import type
 from hilti.constraints import *
 from hilti.instruction import *
+from hilti.instructions.operators import *
 
 @hlt.type("bool", 3)
 class Bool(type.ValueType, type.Constable, type.Unpackable):
     """Type for booleans."""
     def __init__(self, location=None):
         super(Bool, self).__init__(location=location)
-        
+
     ### Overridden from HiltiType.
-    
+
     def llvmType(self, cg):
         """A ``bool`` is mapped to an ``int8_t``, with ``True`` corresponding
         to the value ``1`` and ``False`` to value ``0``."""
@@ -37,7 +38,7 @@ class Bool(type.ValueType, type.Constable, type.Unpackable):
         typeinfo.to_string = "hlt::bool_to_string";
         typeinfo.to_int64 = "hlt::bool_to_int64";
         return typeinfo
-    
+
     def llvmDefault(self, cg):
         return cg.llvmConstInt(0, 1)
 
@@ -45,13 +46,13 @@ class Bool(type.ValueType, type.Constable, type.Unpackable):
 
     def validateConstant(self, vld, const):
         return isinstance(const.value(), bool)
-    
+
     def llvmConstant(self, cg, const):
         return cg.llvmConstInt(1 if const.value() else 0, 1)
 
     def outputConstant(self, printer, const):
         printer.output("True" if const.value() else "False")
-    
+
     ### Overridden from Unpackable.
 
     def formats(self, mod):
@@ -60,31 +61,31 @@ class Bool(type.ValueType, type.Constable, type.Unpackable):
         and ``False`` otherwise. Optionally, one can specify a particular bit
         (0-7) as additional ``unpack`` arguments and the result will then
         reflect the value of that bit.""")]
-        
+
     def llvmUnpack(self, cg, begin, end, fmt, arg):
         # FIXME: Add error checking. We don't check  the range of the bit
-        # number. 
-    
+        # number.
+
         addr = cg.llvmAlloca(cg.llvmType(self))
         iter = cg.llvmAlloca(cg.llvmType(type.IteratorBytes()))
 
         (val, i) = cg.llvmUnpack(type.Integer(8), begin, end, "Int8")
 
         builder = cg.builder()
-        
+
         if arg:
             llarg = arg.llvmLoad(cg)
-            
+
             if arg.type().width() > 8:
                 llarg = builder.trunc(llarg, llvm.core.Type.int(8))
-            
+
             mask = builder.shl(cg.llvmConstInt(1, 8), llarg)
             val = builder.and_(val, mask)
-            
+
         result = builder.icmp(llvm.core.IPRED_NE, cg.llvmConstInt(0, 8), val)
-            
+
         return (result, i)
-        
+
 @hlt.instruction("bool.and", op1=cBool, op2=cBool, target=cBool)
 class And(Instruction):
     """
@@ -95,7 +96,7 @@ class And(Instruction):
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().and_(op1, op2)
         cg.llvmStoreInTarget(self, result)
-    
+
 @hlt.instruction("bool.or", op1=cBool, op2=cBool, target=cBool)
 class Or(Instruction):
     """
@@ -106,7 +107,7 @@ class Or(Instruction):
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().or_(op1, op2)
         cg.llvmStoreInTarget(self, result)
-    
+
 @hlt.instruction("bool.not", op1=cBool, target=cBool)
 class Not(Instruction):
     """
@@ -116,5 +117,17 @@ class Not(Instruction):
         op1 = cg.llvmOp(self.op1())
         result = cg.builder().xor(op1, cg.llvmConstInt(1, 1))
         cg.llvmStoreInTarget(self, result)
-    
+
+
+@hlt.overload(Equal, op1=cBool, op2=cBool, target=cBool)
+class Equal(Operator):
+    """
+    Returns True if *op1* equals *op2*.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        op2 = cg.llvmOp(self.op2())
+        result = cg.builder().icmp(llvm.core.IPRED_EQ, op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
 

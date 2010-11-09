@@ -20,19 +20,19 @@ import hilti.type as type
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("tuple", 5)                
+@hlt.type("tuple", 5)
 class Tuple(type.ValueType, type.Constable, type.Parameterizable):
-    """A type for tuples of values. 
-    
+    """A type for tuples of values.
+
     types: list of ~~Type - The types of the individual tuple elements, or an
     empty list for ``tuple<*>``."""
     def __init__(self, args):
         super(Tuple, self).__init__()
         self._types = args
-            
+
     def types(self):
         """Returns the types of the typle elements.
-        
+
         Returns: list of ~~ValueType - The types, which may be empty for
         ``tuple<*>``.
         """
@@ -40,13 +40,13 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
 
     def setTypes(self, types):
         """Sets the types of the typle elements.
-        
+
         types: list of ~~ValueType - The types.
         """
         self._types = types
 
     ### Overridden from Type.
-    
+
     def name(self):
         if self._types:
             return "tuple<%s>" % (",".join([t.name() for t in self._types]))
@@ -56,7 +56,7 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
     def _validate(self, vld):
         for t in self._types:
             t.validate(vld)
-        
+
     def _resolve(self, resolver):
         self._types = [t.resolve(resolver) for t in self._types]
         return self
@@ -64,21 +64,21 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
     def cmpWithSameType(self, other):
         if not self._types:
             return True
-        
+
         return self._types == other._types
 
     ### Overridden from HiltiType.
-    
+
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
         typeinfo.to_string = "hlt::tuple_to_string";
         typeinfo.hash = "hlt::tuple_hash"
         typeinfo.equal = "hlt::tuple_equal"
-        
-        # Calculate the offset array. 
+
+        # Calculate the offset array.
         zero = cg.llvmGEPIdx(0)
         null = llvm.core.Constant.null(llvm.core.Type.pointer(self._tupleType(cg)))
-        
+
         offsets = []
         for i in range(len(self._types)):
             idx = cg.llvmGEPIdx(i)
@@ -88,14 +88,14 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
             # totally disgusting. :-)
             offset = null.gep([zero, idx]).ptrtoint(llvm.core.Type.int(16))
             offsets += [offset]
-    
+
         name = cg.nameTypeInfo(self) + "_offsets"
         const = llvm.core.Constant.array(llvm.core.Type.int(16), offsets)
         glob = cg.llvmNewGlobalConst(name, const)
         glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
-    
+
         typeinfo.aux = glob
-        
+
         return typeinfo
 
     def llvmType(self, cg):
@@ -103,14 +103,14 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
         A ``tuple<type1,type2,...>`` is mapped to a C struct that consists of fields of the
         corresponding type. For example, a ``tuple<int32, string>`` is mapped to a
         ``struct { int32_t f1, hlt_string* f2 }``.
-        
+
         A tuple's type-information keeps additional layout information in the ``aux``
         field: ``aux`` points to an array of ``int16_t``, one for each field. Each
         array entry gives the offset of the corresponding field from the start of the
         struct. This is useful for C functions that work with tuples of arbitrary
         types as they otherwise would not have any portable way of addressing the
-        individual fields. 
-        
+        individual fields.
+
         Values of type wildcard tuple ``tuple<*>`` will always be passed with
         type information.
         """
@@ -118,7 +118,7 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
 
     def cPassTypeInfo(self):
         return not self._types
-    
+
     def llvmDefault(self, cg):
         t = self._tupleType(cg)
         consts = [cg.llvmConstDefaultValue(t) for t in self._types]
@@ -127,35 +127,35 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
     def instantiable(self):
         # Can't do tuple<*>
         return self._types != []
-    
+
     def canCoerceTo(self, dsttype):
         if not isinstance(dsttype, Tuple):
             return False
-        
+
         if not dsttype._types:
             return True
-        
+
         if not self._types:
             return False
- 
+
         if len(self._types) != len(dsttype._types):
             return False
-            
+
         for (t1, t2) in zip(self._types, dsttype._types):
             if not type.canCoerceTo(t1, t2):
                 return False
-            
+
         return True
 
     def llvmCoerceTo(self, cg, value, dsttype):
         assert self.canCoerceTo(dsttype)
-        
+
         if isinstance(dsttype, type.Any):
             return value
 
         if self == dsttype:
             return value
-        
+
         if not dsttype._types:
             return value
 
@@ -166,11 +166,11 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
             elem = self.builder().load(ptr)
             elem = type.llvmCoerceTo(cg, elem, self._types[i], dsttype._types[i])
             new_elems += [elem]
-            
+
         return llvm.core.Constant.struct(elems)
-        
+
     ### Overridden from Constable.
-    
+
     def resolveConstant(self, resolver, const):
         types = []
         for op in const.value():
@@ -178,34 +178,34 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
             types += [op.type()]
 
         const.setType(Tuple(types))
-            
+
     def validateConstant(self, vld, const):
         for op in const.value():
             if not isinstance(op, operand.Operand):
                 return False
-            
+
         return True
-            
+
     def llvmConstant(self, cg, const):
         t = const.type()._tupleType(cg)
         struct = cg.llvmAlloca(t)
-    
+
         length = len(const.type()._types)
         vals = const.value()
-        
+
         for i in range(length):
             dst = cg.builder().gep(struct, [cg.llvmGEPIdx(0), cg.llvmGEPIdx(i)])
             cg.builder().store(cg.llvmOp(vals[i]), dst)
-            
+
         return cg.builder().load(struct)
 
     def canCoerceConstantTo(self, const, dsttype):
         if not isinstance(dsttype, Tuple):
             return False
-        
+
         if not dsttype._types:
             return True
-        
+
         if not self._types:
             return False
 
@@ -220,15 +220,15 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
             if not c:
                 # We can only coerce constants.
                 return False
-            
+
             if not type.canCoerceConstantTo(c, t):
                 return False
-            
+
         return True
-        
+
     def coerceConstantTo(self, cg, const, dsttype):
         assert self.canCoerceConstantTo(const, dsttype)
-        
+
         if isinstance(dsttype, type.Any):
             return const
 
@@ -243,10 +243,10 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
 
             c = op.constant()
             assert c
-            
+
             c = type.coerceConstantTo(cg, c, t)
             new_const += [operand.Constant(c)]
-            
+
         return constant.Constant(new_const, dsttype)
 
     def outputConstant(self, printer, const):
@@ -263,13 +263,13 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
 
     def args(self):
         return self._types
-        
+
     ### Private.
-    
+
     def _tupleType(self, cg):
         llvm_types = [cg.llvmType(t) for t in self._types]
         return llvm.core.Type.struct(llvm_types)
-    
+
 @hlt.constraint("any")
 def _isElementIndex(ty, op, i):
     if not op or not isinstance(op, operand.Constant):
@@ -277,20 +277,20 @@ def _isElementIndex(ty, op, i):
 
     if not isinstance(ty, type.Integer) or not op.canCoerceTo(type.Integer(32)):
         return (False, "must be of type int<32> but is %s" % ty)
-    
+
     idx = op.value().value()
     if idx >= 0 and idx < len(i.op1().type()._types):
         return (True, "")
-    
+
     return (False, "is out of range")
 
 @hlt.constraint("any")
 def _hasElementType(ty, op, i):
     t = i.op1().type()._types[i.op2().value().value()]
-    
+
     if t == ty:
         return (True, "")
-    
+
     return (False, "type must be %s but is %s" % (t, ty))
 
 @hlt.instruction("tuple.index", op1=cTuple, op2=_isElementIndex, target=_hasElementType)
@@ -303,6 +303,57 @@ class Index(Instruction):
         op2 = cg.llvmOp(self.op2(), coerce_to=type.Integer(32))
         result = cg.llvmExtractValue(op1, op2)
         cg.llvmStoreInTarget(self, result)
-    
-    
+
+_OpEqual = Equal
+
+@hlt.overload(Equal, op1=cTuple, op2=cTuple, target=cBool)
+class Equal(Operator):
+    """ Returns True if the tuple in *op1* equals the tuple in *op2*.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        op2 = cg.llvmOp(self.op2())
+
+        # FIXME: Check that that is indeed the case ...
+        block_no = cg.llvmNewBlock("tuple-nomatch")
+        block_cont = cg.llvmNewBlock("tuple-cont")
+
+        block_next = cg.llvmNewBlock("tuple-match-0")
+
+        tmp = cg.builder().alloca(llvm.core.Type.int(1))
+        target = operand.LLVM(tmp, type.Bool())
         
+        cg.builder().branch(block_next)
+
+        for n in range(len(self.op1().type().types())):
+            cg.pushBuilder(block_next)
+
+            idx = cg.llvmConstInt(n, 32)
+            e1 = cg.llvmExtractValue(op1, idx)
+            e2 = cg.llvmExtractValue(op2, idx)
+
+            # We build an artifical equal operator.
+
+            t1 = self.op1().type().types()[n]
+            t2 = self.op2().type().types()[n]
+
+            i = _OpEqual(target=target, op1=operand.LLVM(e1, t1).coerceTo(cg, t2), op2=operand.LLVM(e2, t2))
+            i.codegen(cg)
+            match = cg.builder().icmp(llvm.core.IPRED_EQ, cg.llvmConstInt(1, 1), cg.builder().load(tmp))
+
+            block_next = cg.llvmNewBlock("tuple-match-%d" % (n+1))
+            cg.builder().cbranch(match, block_next, block_no)
+            cg.popBuilder()
+            
+        cg.pushBuilder(block_next)
+        cg.llvmStoreInTarget(self, cg.llvmConstInt(1, 1))
+        cg.builder().branch(block_cont)
+        cg.popBuilder()
+
+        cg.pushBuilder(block_no)
+        cg.llvmStoreInTarget(self, cg.llvmConstInt(0, 1))
+        cg.builder().branch(block_cont)
+        cg.popBuilder()
+
+        cg.pushBuilder(block_cont)
+

@@ -295,6 +295,18 @@ class Incr(Operator):
         result = cg.builder().add(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
+@hlt.overload(Decr, op1=cIntegerOfWidthAsOp(0), target=cInteger)
+class Decr(Operator):
+    """
+    Returns the result of ``op1 - 1``. The result is undefined if an
+    overflow occurs.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1(), self.target().type())
+        op2 = cg.llvmConstInt(1, self.target().type().width())
+        result = cg.builder().sub(op1, op2)
+        cg.llvmStoreInTarget(self, result)        
+
 @hlt.overload(Equal, op1=cInteger, op2=cIntegerOfWidthAsOp(1), target=cBool)
 class Equal(Operator):
     """

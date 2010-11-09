@@ -39,6 +39,22 @@ class IncrBy(Operator):
     """
     pass
 
+@operator("decr", op1=cHiltiType, target=cSameTypeAsOp(1))
+class Decr(Operator):
+    """
+    Decrements *op1* by one and returns the result. *op1* is not modified.
+    """
+    pass
+
+@operator("decr_by", op1=cHiltiType, op2=cIntegerOfWidth(64), target=cSameTypeAsOp(1))
+class DecrBy(Operator):
+    """
+    Decrements *op1* by *op2* and returns the result. *op1* is not
+    modified. Note that not all types supporting *incr* also support
+    *incr_by*.
+    """
+    pass
+
 @operator("deref", op1=cHiltiType, target=cHiltiType)
 class Deref(Operator):
     """
