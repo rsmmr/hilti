@@ -28,18 +28,22 @@ class UnsignedInteger(type.Integer):
         """Sets names for indvidual bits of this integer, which can then be
         used to access subvalues.
 
-        bits: dictionary string -> (int, int) - A dictionary mapping field names
-        to the bit-range. (``(4,6)`` means bits 4 to (inclusive) 6; ``(1,1)``
-        means just bit 1).
+        bits: dictionary string -> (int, int, attrs) - A dictionary mapping
+        field names to the bit-range. (``(4,6, attrs)`` means bits 4 to
+        (inclusive) 6; ``(1,1, attrs)`` means just bit 1). ``attrs`` is an
+        optional list of (string, expr.Expr) pairs defining field attributes. 
+
         """
+        import sys
         self._bits = bits
 
     def bits(self):
         """Returns the bit fields the integer is broken down into, if set.
 
-        Returns: dictionary string -> (int, int), or None - A dictionary
-        mapping field names to the bit-range. (``(4,6)`` means bits 4 to
-        (inclusive) 6; ``(1,1)`` means just bit 1).
+        Returns: dictionary string -> (int, int, attrs), or None - A dictionary
+        mapping field names to the bit-range. (``(4,6,attrs)`` means bits 4 to
+        (inclusive) 6; ``(1,1,attrs)`` means just bit 1). ``attrs`` is an
+        optional list of (string, expr.Expr) pairs defining field attributes. 
         """
         return self._bits
 
@@ -47,9 +51,16 @@ class UnsignedInteger(type.Integer):
 
     def _validate(self, vld):
         super(UnsignedInteger, self).__init__(vld)
-        for (lower, upper) in self._bits.values():
+        for (lower, upper, attrs) in self._bits.values():
             if lower < 0 or upper >= self.width() or upper < lower:
                 vld.error("invalid bit field specification (%d:%d)" % (lower, upper))
+
+            for (attr, ex) in attrs:
+                if attr != "convert":
+                    vld.error("unsupport bitfield attribute %s" % attr)
+
+                if not operator.typecheck(operator.Operator.Call, [ex, [expr.Hilti(None, UnsignedInteger(upper-lower+1))]]):
+                    vld.error("no matching function for &convert found")
 
     ### Overridden from Type.
 
@@ -79,6 +90,7 @@ class UnsignedInteger(type.Integer):
         return {
             "default": (self, True, None),
             "byteorder": (None, False, None),
+            "convert": (type.Any(), False, None),
             }
 
     def validateInUnit(self, field, vld):
@@ -87,10 +99,18 @@ class UnsignedInteger(type.Integer):
         pass
 
     def production(self, field):
-        return grammar.Variable(None, self, location=self.location())
+        filter = self.attributeExpr("convert")
+        return grammar.Variable(None, self, filter=filter, location=self.location())
 
     def productionForLiteral(self, field, literal):
         util.internal_error("Type.productionForLiteral() not support for uint")
+
+    def fieldType(self):
+        filter = self.attributeExpr("convert")
+        if filter:
+            return filter.type()
+        else:
+            return self.parsedType()
 
     def parsedType(self):
         return self
@@ -126,15 +146,6 @@ class UnsignedInteger(type.Integer):
         builder.tuple_index(cur, result, builder.constOp(1))
 
         return cur
-
-    def bits(self):
-        """Returns the bit fields the integer is broken down into.
-
-        Returns: dictionary string -> (int, int) - A dictionary mapping field
-        names to the bit-range. (``(4,6)`` means bits 4 to (inclusive) 6;
-        ``(1,1)`` means just bit 1).
-        """
-        return self._bits
 
     # Private.
 
@@ -223,12 +234,18 @@ class Coerce:
             cg.builder().bool_not(tmp, tmp)
             return expr.Hilti(tmp, type.Bool())
 
-        if dsttype.width() >= e.type().width():
+        if dsttype.width() == e.type().width():
             return e
 
-        tmp = cg.builder().addLocal("__truncated", dsttype)
-        cg.builder().int_trunc(tmp, e.evaluate(cg))
-        return expr.Hilti(tmp, dsttype)
+        if dsttype.width() > e.type().width():
+            tmp = cg.builder().addLocal("__extended", dsttype.hiltiType(cg))
+            cg.builder().int_zext(tmp, e.evaluate(cg))
+            return expr.Hilti(tmp, dsttype)
+
+        if dsttype.width() < e.type().width():
+            tmp = cg.builder().addLocal("__truncated", dsttype.hiltiType(cg))
+            cg.builder().int_trunc(tmp, e.evaluate(cg))
+            return expr.Hilti(tmp, dsttype)
 
 @operator.Plus(UnsignedInteger, UnsignedInteger)
 class Plus:
@@ -279,9 +296,14 @@ class Attribute:
     def evaluate(cg, lhs, ident):
         name = ident.name()
         builder = cg.builder()
-        (lower, upper) = lhs.type().bits()[name]
+        (lower, upper, attrs) = lhs.type().bits()[name]
         tmp = builder.addLocal("__bits", lhs.type().hiltiType(cg))
         cg.builder().int_mask(tmp, lhs.evaluate(cg), builder.constOp(lower), builder.constOp(upper))
+
+        for (attr, ex) in attrs:
+            assert attr == "convert"
+            tmp = operator.evaluate(operator.Operator.Call, cg, [ex, [expr.Hilti(tmp, UnsignedInteger(tmp.type().width()))]])
+
         return tmp
 
     def assign(cg, lhs, ident, rhs):

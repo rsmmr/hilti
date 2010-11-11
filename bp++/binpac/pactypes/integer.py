@@ -1,6 +1,9 @@
 # $Id$
 #
 # Base class for integer types.
+#
+# TODO: Much of the functionality of SignedInteger and UnsignedInteger can be
+# merged into the base class. 
 
 import binpac.type as type
 import binpac.expr as expr
@@ -62,7 +65,9 @@ class Integer(type.ParseableType):
     ### Overridden from ParseableType.
     
     def supportedAttributes(self):
-        return { "default": (self, True, None) }
+        return {
+            "default": (self, True, None),
+            }
 
 
         

@@ -49,7 +49,7 @@ ref<bytes> bytes_match(ref<bytes> b, ref<regexp> re, int<64> group = 0) {
     results = regexp.groups re i1 i2
     
     len = vector.size results
-    cond = int.lt group len
+    cond = int.ult group len
     if.else cond @found @notfound
 
 @notfound:    

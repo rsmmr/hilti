@@ -1,0 +1,7 @@
+[binpac] test
+[binpac]    a = '10'
+[binpac]    b = 'A'
+[binpac]    c = 'Unknown-65535'
+10
+A
+Unknown-65535

@@ -26,7 +26,7 @@ export type test = unit {
            *    -> b: bytes &length=4
               { print "def"; }
               
-           }
+           };
            
        c: bytes &length=5 { 
            print "b", self.b;

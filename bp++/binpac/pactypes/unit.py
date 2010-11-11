@@ -293,17 +293,9 @@ class Field(node.Node):
             vld.error(self, "field condition must be boolean")
 
         convert = self.type().attributeExpr("convert") if self.type() else None
-        if convert:
-            fid = vld.currentModule().scope().lookupID(convert.name())
-            if fid:
-                funcs = fid.function().matchFunctions([self.parsedType()])
-                if len(funcs) == 0:
-                    vld.error("no matching function for &convert found")
 
-                if len(funcs) > 1:
-                    vld.error("&convert function is ambigious")
-            else:
-                vld.error(self, "unknown &convert function")
+        if convert and not operator.typecheck(operator.Operator.Call, [convert, [expr.Hilti(None, self.parsedType())]]):
+            vld.error("no matching function for &convert found")
 
     def pac(self, printer):
         """Converts the field into parseable BinPAC++ code.

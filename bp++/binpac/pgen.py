@@ -326,10 +326,7 @@ class ParserGen:
 
         self.cg().setBuilder(done)
 
-        # Run the value through any potential filter function.
-        filter = lit.filter()
-        if filter:
-            token = operator.evaluate(operator.Operator.Call, self.cg(), [filter, [expr.Hilti(token, lit.parsedType())]])
+        token = self._runFilter(lit, token)
 
         self._finishedProduction(args.obj, lit, token)
 
@@ -359,10 +356,7 @@ class ParserGen:
         dst = self.builder().addTmp(name , var.parsedType().hiltiType(self.cg()))
         args.cur = var.parsedType().generateParser(self.cg(), args.cur, dst, not need_val)
 
-        # Run the value through any potential filter function.
-        filter = var.filter()
-        if filter:
-            dst = operator.evaluate(operator.Operator.Call, self.cg(), [filter, [expr.Hilti(dst, var.parsedType())]])
+        dst = self._runFilter(var, dst)
 
         # We have successfully parsed a rule.
         self._finishedProduction(args.obj, var, dst if need_val else None)
@@ -741,6 +735,16 @@ class ParserGen:
         if cont:
             true.jump(cont.labelOp())
             self.cg().setBuilder(cont)
+
+    def _runFilter(self, prod, value):
+        filter = prod.filter()
+
+        if not filter:
+            return value
+
+        value = operator.evaluate(operator.Operator.Call, self.cg(), [filter, [expr.Hilti(value, prod.parsedType())]])
+
+        return value
 
     ### Methods defining types.
 

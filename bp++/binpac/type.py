@@ -603,6 +603,7 @@ class ParseableType(Type):
         Returns: ~~hilti.operand.Ctor or None - The default value, or None if
         per default the attributes are left to be unset. 
         """
+        return None
     
     def validateInUnit(self, field, vld):
         """Validates the semantic correctness of the type when used inside a

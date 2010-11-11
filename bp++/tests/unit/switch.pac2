@@ -16,7 +16,7 @@ export type test = unit {
            b"1" -> b1: bytes &length=4 &default=b"<not set>";
            b"2" -> b2: bytes &length=4 &default=b"<not set>";
            *    -> b3: bytes &length=4 &default=b"<not set>";
-           }
+           };
            
        c: bytes &length=5 
            { 

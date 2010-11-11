@@ -106,6 +106,7 @@ class Bytes(type.ParseableType, type.Iterable):
             return filter.type().resultType()
         else:
             return self.parsedType()
+
     def generateParser(self, cg, cur, dst, skipping):
         bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
         resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
