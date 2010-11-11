@@ -228,7 +228,7 @@ class ModuleBuilder(OperandBuilder):
             self._module.scope().add(eid)
 
         # Add the Undef value.
-        undef = id.Constant(p[2] + "::Undef", operand.Constant(t.undef()), linkage=id.Linkage.EXPORTED, location=_loc(p, 1))
+        undef = id.Constant(name + "::Undef", operand.Constant(t.undef()), linkage=id.Linkage.EXPORTED)
         self._module.scope().add(undef)
 
         return t

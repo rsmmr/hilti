@@ -85,8 +85,8 @@ class Enum(type.ValueType, type.Constable):
     ### Overridden from Type.
 
     def name(self):
-        labels = [l for l in sorted(self._labels.keys())]
-        return "enum { %s }" % ", ".join(labels)
+        labels = ["%s = %d" % (l, v) for (l, v) in self._labels.items()]
+        return "enum { %s }" % ", ".join(sorted(labels))
 
     ### Overridden from HiltiType.
 

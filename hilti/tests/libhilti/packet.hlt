@@ -9,15 +9,15 @@ module Main
 import Hilti
 import IP
 
-void print_i16(string tag, int<16> i) {
+void print_i8(string tag, int<8> i) {
     local string s
-    s = call Hilti::fmt("%s %d", (tag, i))
+    s = call Hilti::fmt("%s %u", (tag, i))
     call Hilti::print(s)
 }
 
-void print_i32(string tag, int<32> i) {
+void print_i16(string tag, int<16> i) {
     local string s
-    s = call Hilti::fmt("%s %d", (tag, i))
+    s = call Hilti::fmt("%s %u", (tag, i))
     call Hilti::print(s)
 }
 
@@ -31,8 +31,8 @@ void run() {
     local ref<bytes> b
     local iterator<bytes> i
     local IP::Header hdr
+    local int<8> i8
     local int<16> i16
-    local int<32> i32
     local addr a
 
     b = b"\x45\x00\x00\x4e\x49\xdb\x00\x00\x80\x11\xf9\xc1\xc0\x96\xba\xd5\xc0\x96\xba\xff\x00\x89\x00\x89\x00\x3a\x0b\x5d\x88\x89\x01\x10\x00\x01\x00\x00\x00\x00\x00\x00\x20\x46\x43\x45\x50\x46\x44\x45\x46\x46\x44\x46\x45\x46\x43\x45\x46\x45\x46\x46\x45\x43\x41\x43\x41\x43\x41\x43\x41\x43\x41\x42\x4f\x00"
@@ -40,41 +40,41 @@ void run() {
     i = begin b
     overlay.attach hdr i
 
-    i16 = overlay.get hdr "version"
-    call print_i16("version", i16)
+    i8 = overlay.get hdr "version"
+    call print_i8("version", i8)
 
-    i16 = overlay.get hdr "hdr_len"
-    call print_i16("hdr_len", i16)
+    i8 = overlay.get hdr "hdr_len"
+    call print_i8("hdr_len", i8)
 
-    i16 = overlay.get hdr "tos"
-    call print_i16("tos", i16)
+    i8 = overlay.get hdr "tos"
+    call print_i8("tos", i8)
     
-    i32 = overlay.get hdr "len"
-    call print_i32("len", i32)
+    i16 = overlay.get hdr "len"
+    call print_i16("len", i16)
 
-    i32 = overlay.get hdr "id"
-    call print_i32("id", i32)
+    i16 = overlay.get hdr "id"
+    call print_i16("id", i16)
 
-    i16 = overlay.get hdr "reserv_frag"
-    call print_i16("reserv_frag", i16)
+    i8 = overlay.get hdr "reserv_frag"
+    call print_i8("reserv_frag", i8)
     
-    i16 = overlay.get hdr "dont_frag"
-    call print_i16("dont_frag", i16)
+    i8 = overlay.get hdr "dont_frag"
+    call print_i8("dont_frag", i8)
 
-    i16 = overlay.get hdr "more_frag"
-    call print_i16("more_frag", i16)
+    i8 = overlay.get hdr "more_frag"
+    call print_i8("more_frag", i8)
 
-    i32 = overlay.get hdr "frag_offset"
-    call print_i32("frag_offset", i32)
+    i16 = overlay.get hdr "frag_offset"
+    call print_i16("frag_offset", i16)
 
-    i16 = overlay.get hdr "ttl"
-    call print_i16("ttl", i16)
+    i8 = overlay.get hdr "ttl"
+    call print_i8("ttl", i8)
     
-    i16 = overlay.get hdr "proto"
-    call print_i16("proto", i16)
+    i8 = overlay.get hdr "proto"
+    call print_i8("proto", i8)
     
-    i32 = overlay.get hdr "chksum"
-    call print_i32("chksum", i32)
+    i16 = overlay.get hdr "chksum"
+    call print_i16("chksum", i16)
     
     a = overlay.get hdr "src"
     call print_addr("src", a)
