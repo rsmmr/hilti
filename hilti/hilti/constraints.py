@@ -139,13 +139,16 @@ def cIntegerOfWidthAsOp(n):
         if not other:
             return (False, "missing")
         
-        other = other.type()
+        otype = other.type()
       
-        if not isinstance(other, type.Integer):
+        if not isinstance(otype, type.Integer):
             return (False, "must be of integer type")
-        
-        return (op.canCoerceTo(other), "can't be coerced from integer of width %d to one of width %d" % (op.type().width(), other.width()))
-        
+
+        if isinstance(other, operand.Constant):
+            return (type.canCoerceConstantTo(other.value(), otype), "can't be coerced from integer of width %d to one of width %d" % (op.type().width(), otype.width()))
+        else:
+            return(op.canCoerceTo(otype), "can't be coerced from integer of width %d to one of width %d" % (op.type().width(), otype.width()))
+
     return _isIntOfSameWidthAs
 
 def cNonZero(constr):
