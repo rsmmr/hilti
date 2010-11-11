@@ -633,6 +633,7 @@ precedence = (
     ('left', '.', 'HASATTR'),
     ('right', 'DEREF', 'PLUSPLUS_PREFIX', 'MINUSMINUS_PREFIX'),
     ('left', 'PLUSPLUS' ),
+    ('right', 'ELSE'),  # Force priority of ELSE in IF..ELSE rule. 
 )
 
 def p_expr_function_call(p):
@@ -651,10 +652,10 @@ def p_expr_or(p):
     """expr : expr OR expr"""
     p[0] = expr.Overloaded(Operator.Or, (p[1], p[3]), location=_loc(p, 1))
 
-def p_expr_constant(p):
-    """expr : CONSTANT"""
-    (val, type) = p[1]
-    p[0] = expr.Ctor(val, type, location=_loc(p, 1))
+#def p_expr_constant(p):
+#    """expr : CONSTANT"""
+#    (val, type) = p[1]
+#   p[0] = expr.Ctor(val, type, location=_loc(p, 1))
 
 def p_expr_ctor(p):
     """expr : ctor"""
