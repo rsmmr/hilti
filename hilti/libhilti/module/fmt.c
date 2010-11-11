@@ -71,11 +71,26 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
         
       case 'd': 
         if ( fmt_type->to_int64 ) {
-            int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, excpt, ctx);
+            int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, HLT_CONVERT_NONE, excpt, ctx);
             if ( *excpt )
                 return;
             
-            snprintf(tmp, tmp_size, "%lld", i);
+            snprintf(tmp, tmp_size, "%" PRId64, i);
+            _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
+        }
+        else {
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            return;
+        }
+        break;
+
+      case 'u':
+        if ( fmt_type->to_int64 ) {
+            uint64_t i = (uint64_t)(*fmt_type->to_int64)(fmt_type, fmt_arg, HLT_CONVERT_UNSIGNED, excpt, ctx);
+            if ( *excpt )
+                return;
+            
+            snprintf(tmp, tmp_size, "%" PRIu64, i);
             _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else {
@@ -87,11 +102,11 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
 
       case 'x': 
         if ( fmt_type->to_int64 ) {
-            int64_t i = (*fmt_type->to_int64)(fmt_type, fmt_arg, excpt, ctx);
+            uint64_t i = (uint64_t)(*fmt_type->to_int64)(fmt_type, fmt_arg, HLT_CONVERT_UNSIGNED, excpt, ctx);
             if ( *excpt )
                 return;
             
-            snprintf(tmp, tmp_size, "%llx", i);
+            snprintf(tmp, tmp_size, "%" PRIx64, i);
             _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }
         else {
@@ -103,7 +118,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
         
       case 'f': 
         if ( fmt_type->to_double ) {
-            double d = (*fmt_type->to_double)(fmt_type, fmt_arg, excpt, ctx);
+            double d = (*fmt_type->to_double)(fmt_type, fmt_arg, HLT_CONVERT_NONE, excpt, ctx);
             if ( *excpt )
                 return;
             
@@ -131,7 +146,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
         
       case 's': 
         if ( fmt_type->to_string ) {
-            hlt_string str = (*fmt_type->to_string)(fmt_type, fmt_arg, 0, excpt, ctx);
+            hlt_string str = (*fmt_type->to_string)(fmt_type, fmt_arg, HLT_CONVERT_NONE, excpt, ctx);
             if ( *excpt )
                 return;
             

@@ -20,7 +20,7 @@
 #include "hilti.h"
 
 /// The type of IOSource in the for of one of the Hilti::IOSrc constants.
-typedef int16_t hlt_iosrc_type;
+typedef hlt_enum hlt_iosrc_type;
 
 #include "iosrc-pcap.h"
 

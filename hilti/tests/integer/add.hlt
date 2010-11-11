@@ -41,7 +41,7 @@ void run() {
     local int<32> result
     i = int.add 255 11
     
-    result = int.ext i
+    result = int.zext i
     call Hilti::print (result)
 }     
 

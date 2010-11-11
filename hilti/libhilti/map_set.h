@@ -148,7 +148,7 @@ extern void  hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, h
 /// excpt: &
 /// 
 /// Raises: NoTimerManager if not timer manager has been associated with the map.
-extern void hlt_map_timeout(hlt_map* m, int8_t strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_map_timeout(hlt_map* m, hlt_enum strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns an iterator pointing the first map element.
 ///
@@ -285,7 +285,7 @@ extern void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_conte
 /// excpt: &
 /// 
 /// Raises: NoTimerManager if not timer manager has been associated with the set.
-extern void hlt_set_timeout(hlt_set* m, int8_t strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_set_timeout(hlt_set* m, hlt_enum strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns an iterator pointing the first set element.
 ///

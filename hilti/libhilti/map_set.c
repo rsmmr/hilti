@@ -21,7 +21,7 @@ typedef struct __hlt_map {
     const hlt_type_info* tvalue; // Value type.
     hlt_timer_mgr* tmgr;         // The timer manager or null.
     double timeout;              // The timeout value, or 0 if disabled
-    int8_t strategy;             // Expiration strategy if set; zero otherwise.
+    hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
     int8_t have_def;             // True if a default value has been set.
     __val_t def;                 // The default value if set.
     void *result;                // Cache for deref's result tuple.
@@ -42,7 +42,7 @@ typedef struct __hlt_set {
     const hlt_type_info* tkey;   // Key type.
     hlt_timer_mgr* tmgr;         // The timer manager or null.
     double timeout;              // The timeout value, or 0 if disabled
-    int8_t strategy;             // Expiration strategy if set; zero otherwise.
+    hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
     
     // These are used by khash and copied from there (see README.HILTI).
     khint_t n_buckets, size, n_occupied, upper_bound;
@@ -97,7 +97,7 @@ static inline void* _to_voidp(const hlt_type_info* type, void* data)
 
 static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! m->tmgr || m->strategy != Hilti_ExpireStrategy_Access || m->timeout == 0 )
+    if ( ! m->tmgr || ! hlt_enum_equal(m->strategy, Hilti_ExpireStrategy_Access, excpt, ctx) || m->timeout == 0 )
         return;
     
     if ( ! kh_value(m, i).timer )
@@ -109,7 +109,7 @@ static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt, hl
 
 static inline void _access_set(hlt_set* m, khiter_t i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! m->tmgr || m->strategy != Hilti_ExpireStrategy_Access || m->timeout == 0 )
+    if ( ! m->tmgr || ! hlt_enum_equal(m->strategy, Hilti_ExpireStrategy_Access, excpt, ctx) || m->timeout == 0 )
         return;
     
     if ( ! kh_value(m, i) )
@@ -135,7 +135,7 @@ hlt_map* hlt_map_new(const hlt_type_info* key, const hlt_type_info* value, hlt_t
     m->tvalue = value;
     m->tmgr = tmgr;
     m->timeout = 0.0;
-    m->strategy = Hilti_ExpireStrategy_Undef;
+    m->strategy = hlt_enum_unset(excpt, ctx);
     m->have_def = 0;
     m->result = 0;
     return m;
@@ -298,7 +298,7 @@ void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_excep
     m->def = _to_voidp(tdef, def);
 }
 
-void hlt_map_timeout(hlt_map* m, int8_t strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_map_timeout(hlt_map* m, hlt_enum strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m->tmgr ) {
         hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);
@@ -443,7 +443,7 @@ hlt_set* hlt_set_new(const hlt_type_info* key, hlt_timer_mgr* tmgr, hlt_exceptio
     m->tkey = key;
     m->tmgr = tmgr;
     m->timeout = 0.0;
-    m->strategy = Hilti_ExpireStrategy_Undef;
+    m->strategy = hlt_enum_unset(excpt, ctx);
     return m;
 }
 
@@ -551,7 +551,7 @@ void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx
     kh_clear_set(m);
 }
 
-void hlt_set_timeout(hlt_set* m, int8_t strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_set_timeout(hlt_set* m, hlt_enum strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m->tmgr ) {
         hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);

@@ -265,7 +265,7 @@ hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, i
     hlt_timer_mgr* mgr = *((hlt_timer_mgr **)obj);
     
     char buffer[128];
-    snprintf(buffer, sizeof(buffer), "<timer_mgr at time %.6f / %d active timers>", mgr->time, pqueue_size(mgr->timers));
+    snprintf(buffer, sizeof(buffer), "<timer_mgr at time %.6f / %" PRId64 " active timers>", mgr->time, pqueue_size(mgr->timers));
     return hlt_string_from_asciiz(buffer, excpt, ctx);
 }
 

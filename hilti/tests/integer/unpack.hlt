@@ -100,50 +100,50 @@ void run() {
 
     ######
 
-    t16 = unpack (p1,p2) Hilti::Packed::UInt8Little
-    i16 = tuple.index t16 0
-    p3 = tuple.index t16 1
+    t8 = unpack (p1,p2) Hilti::Packed::UInt8Little
+    i8 = tuple.index t8 0
+    p3 = tuple.index t8 1
     diff = bytes.diff p1 p3
-    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i16, i16, diff))
+    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i8, i8, diff))
     call Hilti::print(out)
     
-    t16 = unpack (p1,p2) Hilti::Packed::UInt8Big
-    i16 = tuple.index t16 0
-    p3 = tuple.index t16 1
+    t8 = unpack (p1,p2) Hilti::Packed::UInt8Big
+    i8 = tuple.index t8 0
+    p3 = tuple.index t8 1
     diff = bytes.diff p1 p3
-    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i16, i16, diff))
+    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i8, i8, diff))
     call Hilti::print(out)
     
     ## 
 
-    t32 = unpack (p1,p2) Hilti::Packed::UInt16Little
-    i32 = tuple.index t32 0
-    p3 = tuple.index t32 1
+    t16 = unpack (p1,p2) Hilti::Packed::UInt16Little
+    i16 = tuple.index t16 0
+    p3 = tuple.index t16 1
     diff = bytes.diff p1 p3
-    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i32, i32, diff))
+    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i16, i16, diff))
     call Hilti::print(out)
     
-    t32 = unpack (p1,p2) Hilti::Packed::UInt16Big
-    i32 = tuple.index t32 0
-    p3 = tuple.index t32 1
+    t16 = unpack (p1,p2) Hilti::Packed::UInt16Big
+    i16 = tuple.index t16 0
+    p3 = tuple.index t16 1
     diff = bytes.diff p1 p3
-    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i32, i32, diff))
+    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i16, i16, diff))
     call Hilti::print(out)
 
     ##
     
-    t64 = unpack (p1,p2) Hilti::Packed::UInt32Little
-    i64 = tuple.index t64 0
-    p3 = tuple.index t64 1
+    t32 = unpack (p1,p2) Hilti::Packed::UInt32Little
+    i32 = tuple.index t32 0
+    p3 = tuple.index t32 1
     diff = bytes.diff p1 p3
-    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i64, i64, diff))
+    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i32, i32, diff))
     call Hilti::print(out)
     
-    t64 = unpack (p1,p2) Hilti::Packed::UInt32Big
-    i64 = tuple.index t64 0
-    p3 = tuple.index t64 1
+    t32 = unpack (p1,p2) Hilti::Packed::UInt32Big
+    i32 = tuple.index t32 0
+    p3 = tuple.index t32 1
     diff = bytes.diff p1 p3
-    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i64, i64, diff))
+    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i32, i32, diff))
     call Hilti::print(out)
 
     ######
@@ -152,7 +152,7 @@ void run() {
 
     ######
     
-    # This is -42 in little lastian (for all bit-sizes).
+    # This is -42 in little endian (for all bit-sizes).
     b2 = b"\xd6\xff\xff\xff\xff\xff\xff\xff"   
     p1 = begin b2
     p2 = end b2
@@ -191,25 +191,25 @@ void run() {
 
     ######
     
-    t16 = unpack (p1,p2) Hilti::Packed::UInt8Little
+    t8 = unpack (p1,p2) Hilti::Packed::UInt8Little
+    i8 = tuple.index t8 0
+    p3 = tuple.index t8 1
+    diff = bytes.diff p1 p3
+    out = call Hilti::fmt ("hex=0x%x dec=%u diff=%d", (i8, i8, diff))
+    call Hilti::print(out)
+
+    t16 = unpack (p1,p2) Hilti::Packed::UInt16Little
     i16 = tuple.index t16 0
     p3 = tuple.index t16 1
     diff = bytes.diff p1 p3
-    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i16, i16, diff))
+    out = call Hilti::fmt ("hex=0x%x dec=%u diff=%d", (i16, i16, diff))
     call Hilti::print(out)
 
-    t32 = unpack (p1,p2) Hilti::Packed::UInt16Little
+    t32 = unpack (p1,p2) Hilti::Packed::UInt32Little
     i32 = tuple.index t32 0
     p3 = tuple.index t32 1
     diff = bytes.diff p1 p3
-    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i32, i32, diff))
-    call Hilti::print(out)
-
-    t64 = unpack (p1,p2) Hilti::Packed::UInt32Little
-    i64 = tuple.index t64 0
-    p3 = tuple.index t64 1
-    diff = bytes.diff p1 p3
-    out = call Hilti::fmt ("hex=0x%x dec=%d diff=%d", (i64, i64, diff))
+    out = call Hilti::fmt ("hex=0x%x dec=%u diff=%d", (i32, i32, diff))
     call Hilti::print(out)
     
 }

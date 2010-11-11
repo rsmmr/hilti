@@ -6,9 +6,9 @@
 
 #include <hilti.h>
 
-static const uint64_t Main_Foo_A = 1;
-static const uint64_t Main_Foo_BC = 2;
-static const uint64_t Main_Foo_DEF = 3;
+static const hlt_enum Main_Foo_A = { 0, 0, 1 };
+static const hlt_enum Main_Foo_BC = { 0, 0, 2 };
+static const hlt_enum Main_Foo_DEF = { 0, 0, 3 };
 void hlt_call_saved_callables(hlt_exception **);
 void hlt_call_saved_callables_resume(const hlt_exception *, hlt_exception **);
 void main_run(hlt_exception **);

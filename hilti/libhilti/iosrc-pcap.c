@@ -191,7 +191,7 @@ hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, 
     }
     
     // Don't think we can get here when reading from a trace ...
-    assert(src->type != Hilti_IOSrc_PcapOffline);
+    assert(! hlt_enum_equal(src->type, Hilti_IOSrc_PcapOffline, excpt, ctx));
     
     // No packet this time.
     hlt_set_exception(excpt, &hlt_exception_would_block, 0);

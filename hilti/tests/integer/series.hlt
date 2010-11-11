@@ -48,13 +48,13 @@ void run() {
     b = int.eq i3 1
     call print_bool (b)
     
-    b = int.lt i2 i3
+    b = int.slt i2 i3
     call print_bool (b)
     
-    b = int.lt i3 i2
+    b = int.slt i3 i2
     call print_bool (b)
     
-    b = int.lt i3 i3
+    b = int.slt i3 i3
     call print_bool (b)
 
     i3 = int.mul i1 1000
@@ -64,7 +64,7 @@ void run() {
     call Hilti::print (i3)
     
     i4 = int.trunc i3
-    i3 = int.ext i4 
+    i3 = int.zext i4 
     call Hilti::print (i3)
             
     return.void

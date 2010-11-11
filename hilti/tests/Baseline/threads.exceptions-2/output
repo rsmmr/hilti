@@ -1,12 +1,15 @@
 RUN 1
 hilti: uncaught exception in worker thread, DivisionByZero (from exceptions.hlt:15)
-hilti: uncaught exception, ThreadException (from /Users/robin/work/binpacpp/hilti/libhilti/threading.c:596)
+hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti/libhilti/threading.c:596)
 RUN 2
-Binary file output.tmp matches
+hilti: uncaught exception in worker thread, DivisionByZero (from exceptions.hlt:15)
+hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti/libhilti/threading.c:596)
 RUN 3
 hilti: uncaught exception in worker thread, DivisionByZero (from exceptions.hlt:15)
-hilti: uncaught exception, ThreadException (from /Users/robin/work/binpacpp/hilti/libhilti/threading.c:596)
+hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti/libhilti/threading.c:596)
 RUN 4
-Binary file output.tmp matches
+hilti: uncaught exception in worker thread, DivisionByZero (from exceptions.hlt:15)
+hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti/libhilti/threading.c:596)
 RUN 5
-Binary file output.tmp matches
+hilti: uncaught exception in worker thread, DivisionByZero (from exceptions.hlt:15)
+hilti: uncaught exception, ThreadException (from /home/robin/work/binpacpp/hilti/libhilti/threading.c:596)

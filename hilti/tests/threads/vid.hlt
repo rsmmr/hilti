@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-void print_num(int<32> num) {
+void print_num(int<64> num) {
     local string s
     local int<64> vid
     
@@ -19,13 +19,13 @@ void print_num(int<32> num) {
     return.void
 }
 
-int<32> make_const(int<32> num) {
+int<64> make_const(int<64> num) {
     return.result num
 }
 
 void run() {
-    local int<32> count
-    local int<32> limit
+    local int<64> count
+    local int<64> limit
     local bool eq
 
     call print_num(-1)

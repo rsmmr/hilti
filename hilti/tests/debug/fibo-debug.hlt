@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -d %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build -D %INPUT -o a.out 
 # @TEST-EXEC:  HILTI_DEBUG=hilti-flow:hilti-trace ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -13,7 +13,7 @@ int<32> fibo(int<32> n) {
     local int<32> f2
     local bool cond
 
-    cond = int.lt n 2
+    cond = int.slt n 2
     if.else cond @done @recurse
     
 @recurse:    

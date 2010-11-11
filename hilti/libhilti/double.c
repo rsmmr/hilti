@@ -25,7 +25,7 @@ hlt_string hlt_double_to_string(const hlt_type_info* type, const void* obj, int3
     return s;
 }
 
-double hlt_double_to_double(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx)
+double hlt_double_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_DOUBLE);
     double val = *((double *)obj);

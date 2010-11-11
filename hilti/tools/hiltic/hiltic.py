@@ -141,7 +141,7 @@ if options.hilti_plain:
     sys.exit(0)
 
 # Canonify the code.     
-if not hilti.canonifyModule(mod, debug=(options.debug!=0)):
+if not hilti.canonifyModule(mod, debug=options.debug):
     print >>sys.stderr, "error during canonicalization"
     sys.exit(1)
 

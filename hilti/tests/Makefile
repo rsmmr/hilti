@@ -13,7 +13,9 @@ brief:
 	@$(BTEST) -b
     
 brief-debug:
-	@$(BTEST) -b -d
+	@rm -f test.log
+	@$(BTEST) -b -d -f test.log
+	@echo Output in test.log
 
 update-baseline:
 	@$(BTEST) -U

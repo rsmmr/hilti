@@ -131,7 +131,7 @@ class ProtoGen:
         else:
             value = i.value().value()
         
-        self.output("static const uint64_t %s_%s = %s;" % (scope, i.name().replace("::", "_"), value))
+        self.output("static const hlt_enum %s_%s = { 0, 0, %s };" % (scope, i.name().replace("::", "_"), value))
        
     
 

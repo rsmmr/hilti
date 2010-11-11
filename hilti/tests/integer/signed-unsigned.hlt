@@ -1,0 +1,50 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+   local int<8> i1 = 1
+   local int<8> i2 = 255
+   local int<16> i3
+   local bool cond
+
+   cond = int.uleq i1 i2
+   call Hilti::print(cond)
+
+   cond = int.sleq i1 i2
+   call Hilti::print(cond)
+
+   call Hilti::print("")
+
+   cond = int.ult i1 i2
+   call Hilti::print(cond)
+
+   cond = int.slt i1 i2
+   call Hilti::print(cond)
+
+   call Hilti::print("")
+
+   cond = int.ugeq i1 i2
+   call Hilti::print(cond)
+
+   cond = int.sgeq i1 i2
+   call Hilti::print(cond)
+
+   call Hilti::print("######")
+
+   call Hilti::print(i2)
+
+   i3 = int.sext i2 
+   call Hilti::print(i3)
+
+   i3 = int.zext i2
+   call Hilti::print(i3)
+
+}
+

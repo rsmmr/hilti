@@ -51,6 +51,11 @@
 #define HLT_TYPE_ITERATOR_PKTSRC 103
    // HILTI_%doc-__HLT_TYPE-end
 
+#define HLT_CONVERT_NONE     0x00
+#define HLT_CONVERT_UNSIGNED 0x01  // Indicates that numeric operations should assume an unsigned context.
+                                   // If not given, signed context is the
+                                   // default.
+
    // %doc-hlt_type_info-start
 typedef struct __hlt_type_info hlt_type_info;
 
@@ -76,15 +81,14 @@ struct __hlt_type_info {
     // List of type operations defined in libhilti functions. Pointers may be
     // zero to indicate that a type does not support an operation. 
     
-    // Returns a readable representation of a value. 'type' is the type
+    // Converters for the value into different types. 'type' is the type
     // information for the type being converted. 'obj' is a pointer to the
     // value stored with the C type as HILTI uses normally for values of that
-    // type. 'options' is currently unused and will be always zero for now.
-    // In the future, we might use 'options' to pass in hints about the
-    // prefered format. 'expt' can be set to raise an exception.
+    // type. 'options' is a bitmask of HLT_CONVERT_* options. 'expt' can be
+    // set to raise an exception.
     struct __hlt_string* (*to_string)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
-    int64_t (*to_int64)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
-    double (*to_double)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
+    int64_t (*to_int64)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
+    double (*to_double)(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
 
     // Calculates a hash of the value. If not given, the default is hash as
     // many bytes as size specifies. Note that the excpt and ctx arguments

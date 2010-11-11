@@ -143,7 +143,7 @@ hlt_list* hlt_debug_parse_streams(const char* streams, hlt_exception** excpt, hl
 
 void __hlt_debug_print_str(const char* msg, hlt_execution_context* ctx)
 {
-    fprintf(stderr, "debug: %3d ", ctx->debug_indent);
+    fprintf(stderr, "debug: %3" PRId64 " ", ctx->debug_indent);
    
     for ( int i = ctx->debug_indent * 4; i; --i )
         fputc(' ', stderr);
@@ -153,7 +153,7 @@ void __hlt_debug_print_str(const char* msg, hlt_execution_context* ctx)
 
 void __hlt_debug_print_ptr(const char* s, void* ptr, hlt_execution_context* ctx)
 {
-    fprintf(stderr, "debug: %3d ", ctx->debug_indent);
+    fprintf(stderr, "debug: %3" PRId64 " ", ctx->debug_indent);
     
     for ( int i = ctx->debug_indent * 4; i; --i )
         fputc(' ', stderr);

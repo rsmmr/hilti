@@ -516,8 +516,7 @@ class CodeGen(objcache.Cache):
         if not v or not isinstance(v.type(), type.Enum):
             util.internal_error("%s is not a valid enum label" % label)
             
-        label = v.value().value()
-        return v.value().type().llvmLabel(label)
+        return v.value().type().llvmConstant(self, v.value())
         
     ### Get the LLVM type for something.
 

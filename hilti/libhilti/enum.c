@@ -8,16 +8,24 @@
 
 #include <stdio.h>
 
-struct hlt_enum {
-    int8_t undefined;
-    int8_t value_set;
-    int64_t value;
-};
-
 typedef struct {
     uint64_t value;
     hlt_string name;
 } Label;
+
+hlt_enum hlt_enum_unset(hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_enum unset = { 1, 0, 0 };
+    return unset;
+}
+
+int8_t hlt_enum_equal(hlt_enum e1, hlt_enum e2, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    if ( e1.undefined || e2.undefined )
+        return e1.undefined && e2.undefined;
+
+    return e1.value == e2.value;
+}
 
 static hlt_string_constant undefined = { 5, "Undef" };
 
@@ -52,7 +60,7 @@ hlt_string hlt_enum_to_string(const hlt_type_info* type, const void* obj, int32_
     return 0;
 }
 
-int64_t hlt_enum_to_int64(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx)
+int64_t hlt_enum_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_ENUM);
     hlt_enum i = *((hlt_enum *) obj);

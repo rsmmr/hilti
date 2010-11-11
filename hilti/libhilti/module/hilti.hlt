@@ -40,12 +40,15 @@ type Packed = enum {
     UInt8,    		#  8-bit unsigned integer in host byte order.
     UInt16,         # 16-bit unsigned integer in host byte order.
     UInt32,         # 32-bit unsigned integer in host byte order.
+    UInt64,         # 64-bit unsigned integer in host byte order.
     UInt8Big,       #  8-bit unsigned integer in big-endian byte order.
     UInt16Big,      # 16-bit unsigned integer in big-endian byte order.
     UInt32Big,      # 32-bit unsigned integer in big-endian byte order.
+    UInt64Big,      # 64-bit unsigned integer in big-endian byte order.
     UInt8Little,    #  8-bit unsigned integer in little-endian byte order.
     UInt16Little,   # 16-bit unsigned integer in little-endian byte order.
     UInt32Little,   # 32-bit unsigned integer in little-endian byte order.
+    UInt64Little,   # 64-bit unsigned integer in little-endian byte order.
     # %doc-packed-int-end 
 
     # Addr

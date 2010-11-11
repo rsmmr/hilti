@@ -15,7 +15,7 @@ void run() {
    
    i = int.sub 100 50
    
-   j = int.ext i 
+   j = int.zext i 
    call Hilti::print (j)
 }     
 

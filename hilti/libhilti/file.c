@@ -19,7 +19,7 @@ typedef struct __hlt_file_info {
 // A HILTI file object. 
 struct hlt_file {
     __hlt_file_info* info; // The internal file object. 
-    int type;              // Hilti_FileType_* constant.
+    hlt_enum type;              // Hilti_FileType_* constant.
     hlt_string charset;    // The charset for a text file.
     int8_t open;           // 1 if open, 0 if closed. 
 };
@@ -95,7 +95,7 @@ hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx)
     return file;
 }
 
-void hlt_file_open(hlt_file* file, hlt_string path, int8_t type, int8_t mode, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode, hlt_string charset, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( file->open ) {
         hlt_string err = hlt_string_from_asciiz("file already open", excpt, ctx);
@@ -124,8 +124,9 @@ void hlt_file_open(hlt_file* file, hlt_string path, int8_t type, int8_t mode, hl
     const char* fn = hlt_string_to_native(path, excpt, ctx);
     if ( *excpt )
         return;
-    
-    int oflags = O_CREAT | O_WRONLY | (mode == Hilti_FileMode_Append ? O_APPEND : O_TRUNC);
+
+    int8_t append = hlt_enum_equal(mode, Hilti_FileMode_Append, excpt, ctx);
+    int oflags = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
     int fd = open(fn, oflags, 0777);
     
     if ( fd < 0 ) {
@@ -254,8 +255,10 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
         
         if ( block.start == block.end )
             break;
-        
-        if ( file->type == Hilti_FileType_Text ) {
+
+        int8_t text = hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx);
+
+        if ( text ) {
             // Escape unprintable characters. FIXME: We don't honor the
             // charset here yet, just encode everything that is not
             // representable in our current locale.
@@ -270,7 +273,7 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
             }
         }
         
-        else if ( file->type == Hilti_FileType_Binary )
+        else if ( hlt_enum_equal(file->type, Hilti_FileType_Binary, excpt, ctx) )
             // Just write data directly. 
             write(file->info->fd, block.start, block.end - block.start);
             
@@ -281,7 +284,7 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
             break;
     }
     
-    if ( file->type == Hilti_FileType_Text )
+    if ( hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx) )
         write(file->info->fd, "\n", 1);
         
 }

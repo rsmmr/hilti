@@ -107,7 +107,7 @@ static void __exception_print(const char* prefix, hlt_exception* exception, hlt_
         fprintf(stderr, ", resumable");
     
     if ( exception->vid != HLT_VID_MAIN )
-        fprintf(stderr, " in virtual thread %d", exception->vid);
+        fprintf(stderr, " in virtual thread %" PRId64, exception->vid);
     
     if ( exception->location )
         fprintf(stderr, " (from %s)", exception->location);

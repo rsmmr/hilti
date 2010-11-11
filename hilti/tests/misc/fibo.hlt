@@ -13,7 +13,7 @@ int<32> fibo(int<32> n) {
     local int<32> f2
     local bool cond
 
-    cond = int.lt n 2
+    cond = int.slt n 2
     if.else cond @done @recurse
     
 @recurse:    
