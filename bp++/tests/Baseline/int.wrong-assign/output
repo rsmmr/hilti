@@ -1,0 +1,4 @@
+wrong-assign.pac2:11: codegen error, types do not match in assigment
+wrong-assign.pac2.tmp.hlt: parser error, unexpected end of file
+
+1 error found

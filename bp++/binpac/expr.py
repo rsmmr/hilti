@@ -40,6 +40,7 @@ class Expression(node.Node):
         
         Returns: bool - True if the expression can be coerceed. 
         """
+
         if self.isInit():
             # We just try in the case. 
             try:
@@ -49,7 +50,7 @@ class Expression(node.Node):
                 return False # It did not.
             
         else:
-            return operator.canCoerceExprTo(self.type(), dsttype)
+            return operator.canCoerceExprTo(self, dsttype)
         
     def coerceTo(self, dsttype, cg=None):
         """Coerces the expression to a differenent type. It's ok if *dsttype* is
@@ -482,7 +483,7 @@ class Assign(Expression):
         if "assign" in self._dest.__dict__:
             vld.error(self, "cannot assign to lhs expression")
         
-        if self._dest.type() != self._rhs.type():
+        if not self._rhs.type().canCoerceTo(self._dest.type()):
             vld.error(self, "types do not match in assigment")
 
         if self._dest.isInit():
@@ -499,7 +500,7 @@ class Assign(Expression):
         return self._dest.type()
 
     def evaluate(self, cg):
-        rhs = self._rhs.evaluate(cg)
+        rhs = self._rhs.coerceTo(self._dest.type(), cg).evaluate(cg)
         self._dest.assign(cg, rhs)
     
     def __str__(self):

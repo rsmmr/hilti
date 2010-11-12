@@ -414,7 +414,7 @@ class Function(ID):
         Returns: ~~OverloadedFunction - The function.
         """
         return self._func
-        
+
     ### Overidden from ID.
 
     def resolve(self, resolver):

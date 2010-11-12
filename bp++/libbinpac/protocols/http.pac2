@@ -19,7 +19,7 @@ const HexInteger = /[0-9a-zA-Z]+/;
 const WhiteSpace = /[ \t]+/;
 const OptionalWhiteSpace = /[ \t]*/;
 
-bool reply_code_needs_body(status: int64)
+bool reply_code_needs_body(status: uint64)
 { 
    return status <= 99 || (status >= 200 && status != 204 && status != 304);
 }
@@ -63,7 +63,7 @@ type RequestLine = unit {
 type ReplyLine = unit {
     version: Version;
     :        WhiteSpace;
-    status:  Integer &convert=dec_to_int;
+    status:  Integer &convert=dec_to_uint;
     :        WhiteSpace;
     reason:  RestOfLine;
     :        NewLine;
@@ -78,7 +78,7 @@ type Message = unit(body_default: bool) {
     end_of_hdr: NewLine;
     body:       Body(self, self.delivery_mode) if ( self.has_body );
     
-    var content_length: int64;
+    var content_length: uint64;
     var content_type: bytes;
     var transfer_encoding: bytes;
     var multipart_boundary: bytes;
@@ -86,7 +86,7 @@ type Message = unit(body_default: bool) {
     var has_body: bool;
     var delivery_mode: DeliveryMode &default=DeliveryMode::EndOfData;
 
-    on %ctor {
+    on %init {
         self.has_body = body_default;
         }
 
@@ -94,7 +94,7 @@ type Message = unit(body_default: bool) {
         if ( self?.content_length )
             self.delivery_mode = DeliveryMode::Length;
 
-        if ( self?.content_type && self.content_type.startswith(b"multipart/") ) {
+        if ( self?.content_type && (self.content_type).startswith(b"multipart/") ) {
             local boundary : bytes;
 
             boundary = self.content_type.match(/boundary="([^"]*)"/, 1);
@@ -123,7 +123,7 @@ type Header = unit(msg: Message) {
     
     on content {
         if ( self.name == b"content-length" ) {
-            msg.content_length = dec_to_int(self.content);
+            msg.content_length = dec_to_uint(self.content);
             msg.has_body = True;
             }
                     
@@ -149,9 +149,9 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
                                    foreach { self.data += $$; }
                
       DeliveryMode::Chunked   -> : Chunks(self, msg);       
-    }
+    };
     
-    on %ctor {
+    on %init {
         self.data = b"";
         }
 };
@@ -164,7 +164,7 @@ type Chunks = unit(body: Body, msg: Message) {
 };
 
 type Chunk = unit {
-    length:    HexInteger &convert=hex_to_int;
+    length:    HexInteger &convert=hex_to_uint;
     :          OptionalWhiteSpace;
     extension: RestOfLine;
     :          NewLine;
@@ -182,12 +182,12 @@ bytes to_lower(b: bytes)
      return Hilti::bytes_to_lower(b);
 }
 
-int64 dec_to_int(b: bytes)
+uint64 dec_to_uint(b: bytes)
 {
-     return Hilti::bytes_to_int(b, 10);
+     return Hilti::bytes_to_int(b, 10).as_uint();
 }
 
-int64 hex_to_int(b: bytes)
+uint64 hex_to_uint(b: bytes)
 {
-     return Hilti::bytes_to_int(b, 16);
+     return Hilti::bytes_to_int(b, 16).as_uint();
 }

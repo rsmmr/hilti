@@ -68,17 +68,7 @@ class UnsignedInteger(type.Integer):
         return "uint%d" % self.width()
 
     def hiltiType(self, cg):
-        # If the byte-order is predetermined, our HILTI unpack format is fixed
-        # and thus its result type matches what we're unpacking (except that
-        # we have to extend the number of bytes because we don't have unsigned
-        # values).
-        #
-        # However, if our byte-order is not fixed, HILTI will always returns
-        # an int64.
-        if self._isByteOrderConstant():
-            return hilti.type.Integer(min(64, self.width() * 2))
-        else:
-            return hilti.type.Integer(64)
+        return hilti.type.Integer(self.width())
 
     def hiltiCtor(self, cg, ctor):
         const = hilti.constant.Constant(ctor, hilti.type.Integer(self.width()))
@@ -218,11 +208,11 @@ class Coerce:
 
         raise operator.CoerceError
 
-    def canCoerceExprTo(srctype, dsttype):
-        if isinstance(dsttype, type.Integer):
+    def canCoerceTo(srctype, dsttype):
+        if isinstance(dsttype, type.Bool):
             return True
 
-        if isinstance(dsttype, type.Bool):
+        if isinstance(dsttype, type.UnsignedInteger):
             return True
 
         return False
@@ -278,6 +268,40 @@ class _:
     def evaluate(cg, e1, e2):
         tmp = cg.functionBuilder().addLocal("__equal", hilti.type.Bool())
         cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp
+
+@operator.LowerEqual(UnsignedInteger, type.UnsignedInteger)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+
+    def simplify(e1, e2):
+        if not e1.isInit() or not e2.isInit():
+            return None
+
+        b = (e1.value() <= e2.value())
+        return expr.Ctor(b, type.Bool())
+
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addLocal("__leq", hilti.type.Bool())
+        cg.builder().int_sleq(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp
+
+@operator.GreaterEqual(UnsignedInteger, type.UnsignedInteger)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+
+    def simplify(e1, e2):
+        if not e1.isInit() or not e2.isInit():
+            return None
+
+        b = (e1.value() >= e2.value())
+        return expr.Ctor(b, type.Bool())
+
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addLocal("__geq", hilti.type.Bool())
+        cg.builder().int_sgeq(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
 @operator.Attribute(UnsignedInteger, type.String)

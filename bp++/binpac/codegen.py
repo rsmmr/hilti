@@ -140,8 +140,8 @@ class CodeGen(object):
         return self._mbuilder
 
     def beginCompile(self, pgen):
-        """Starts parser generation with a new generator. 
-        
+        """Starts parser generation with a new generator.
+
         pgen: ~~ParserGen - The parser generator.
         """
         self._pgens += [pgen]

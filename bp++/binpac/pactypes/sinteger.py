@@ -54,11 +54,11 @@ class Coerce:
 
         raise operators.CoerceError
 
-    def canCoerceExprTo(srctype, dsttype):
-        if isinstance(dsttype, type.Integer):
+    def canCoerceTo(srctype, dsttype):
+        if isinstance(dsttype, type.Bool):
             return True
 
-        if isinstance(dsttype, type.Bool):
+        if isinstance(dsttype, type.SignedInteger):
             return True
 
         return False
@@ -134,5 +134,10 @@ class _:
         cg.builder().int_sgeq(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
+@operator.MethodCall(type.SignedInteger, expr.Attribute("as_uint"), [])
+class AsUint:
+    def type(i, method, args):
+        return type.UnsignedInteger(i.type().width())
 
-
+    def evaluate(cg, i, method, args):
+        return i.evaluate(cg)

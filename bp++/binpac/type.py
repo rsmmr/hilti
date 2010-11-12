@@ -244,7 +244,7 @@ class Type(object):
         
         Returns: bool - True if the expression can be coerceed. 
         """
-        return operator.canCoerceExprTo(self, dsttype)
+        return operator.canCoerceTo(self, dsttype)
 
     @classmethod
     def typeName(cls):
@@ -799,7 +799,7 @@ class Identifier(Type):
         
     def hiltiType(self, cg):
         return hilti.type.String()
-    
+
 class MetaType(Type):
     """Type for types. 
     
