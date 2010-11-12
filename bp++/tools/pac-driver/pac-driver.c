@@ -18,7 +18,11 @@ static void check_exception(hlt_exception* excpt)
     if ( excpt ) {
         hlt_execution_context* ctx = hlt_global_execution_context();
         hlt_exception_print_uncaught(excpt, ctx);
-        exit(1);
+
+        if ( excpt->type == &hlt_exception_yield )
+            exit(0);
+        else
+            exit(1);
     }
 }
 
