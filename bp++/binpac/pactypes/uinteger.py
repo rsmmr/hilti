@@ -284,7 +284,7 @@ class _:
 
     def evaluate(cg, e1, e2):
         tmp = cg.functionBuilder().addLocal("__leq", hilti.type.Bool())
-        cg.builder().int_sleq(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        cg.builder().int_uleq(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
 @operator.GreaterEqual(UnsignedInteger, type.UnsignedInteger)
@@ -301,7 +301,7 @@ class _:
 
     def evaluate(cg, e1, e2):
         tmp = cg.functionBuilder().addLocal("__geq", hilti.type.Bool())
-        cg.builder().int_sgeq(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        cg.builder().int_ugeq(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
 @operator.Attribute(UnsignedInteger, type.String)

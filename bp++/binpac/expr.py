@@ -333,7 +333,14 @@ class Name(Assignable):
     def name(self):
         """Returns the name that is referenced."""
         return self._name
-        
+
+    def scope(self):
+        """Returns the scope the name is resolved in.
+
+        Returns: ~~Scope - The scope.
+        """
+        return self._scope
+
     ### Overidden from node.Node.
 
     def resolve(self, resolver):

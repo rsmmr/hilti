@@ -45,6 +45,12 @@ class Scope(visitor.Visitable):
         self._parent = pscope
     
     def _canonName(self, namespace, name):
+        m = name.split("::")
+        assert len(m) <= 2
+
+        if len(m) == 2:
+            (namespace, name) = m
+
         if not namespace:
             namespace = self._namespace
             

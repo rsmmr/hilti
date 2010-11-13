@@ -15,24 +15,24 @@ import binpac.util as util
 def compileModule(mod, import_paths, debug=False, validate=True):
     """Compiles a BinPAC++ module into a HILTI module.  *mod* must be
     well-formed as verified by ~~validator.validateModule.
-    
-    mod: ~~Module - The module to compile. 
+
+    mod: ~~Module - The module to compile.
     import_paths: list of strings - List of paths to be searched for HILTI modules.
     validate: bool - If true, the correctness of the generated HILTI code will
     be verified via HILTI's internal validator.
     debug: bool - If true, debug code may be compiled in.
-    
+
     Returns: tuple (bool, llvm.core.Module) - If the bool is True, code
     generation (and if *validate* is True, also validation) was successful. If
     so, the second element of the tuple is the resulting HILTI module.
     """
     codegen = CodeGen(mod, import_paths, validate, debug)
-    
+
     if not codegen._compile():
         return (False, None)
-    
+
     hltmod = codegen.moduleBuilder().module()
-    
+
     if validate:
         errors = hilti.validateModule(hltmod)
         if errors > 0:
@@ -47,52 +47,52 @@ class CodeGen(object):
         self._import_paths = import_paths
         self._validate = validate
         self._debug = debug
-        
+
         self._errors = 0
         self._mbuilder = 0
         self._builders = [None]
         self._pgens = [None]
         self._hooks = [None]
-        
+
     def debug(self):
-        """Returns true if compiling in debugging mode. 
-        
-        Returns: bool - True if in debugging mode. 
+        """Returns true if compiling in debugging mode.
+
+        Returns: bool - True if in debugging mode.
         """
         return self._debug
 
     def currentModule(self):
         """Returns the module currently being validated.
-        
+
         Returns: ~~Module - The module
         """
         return self._module
 
     _anon_funcs = 0
-    
+
     def beginFunction(self, name, ftype, hook=False):
         """Starts a new function. The method creates the function builder as
         well as the initial block builder (which will be returned by
-        subsequent calls to ~~builder). 
-        
+        subsequent calls to ~~builder).
+
         When done building this function, ~~endFunction must be called.
-        
+
         name: string - The name of the function; *may* be none for
         anonymous function like those added to a HILTI hook.
-        
+
         ftype: hilti.type.Function - The HILTI type of the
         function.
-        
+
         Returns: tuple (~~hilti.builder.FunctionBuilder,
         ~~hilti.builder.BlockBuilder) - The builders created
         for the new function.
         """
-        
+
         CodeGen._anon_funcs += 1
-        
+
         fbuilder = hilti.builder.FunctionBuilder(self._mbuilder, name if name else "<no-name-%d>" % CodeGen._anon_funcs, ftype, dontadd=(name == None))
         self._builders += [fbuilder.newBuilder(None)]
-        
+
         return (fbuilder, self._builders[-1])
 
     def endFunction(self):
@@ -101,19 +101,19 @@ class CodeGen(object):
         block builder.
         """
         self._builders = self._builders[:-1]
-        
+
     def setBuilder(self, builder):
         """Sets the current builder. The set builder will then be
         returned by subsequent ~~builder calls.
-        
+
         builder: hilti.hilti.BlockBuilder: The builder to set.
         """
         assert builder
         self._builders[-1] = builder
-        
+
     def builder(self):
         """Returns the current block builder.
-        
+
         Returns: hilti.builder.BlockBuilder - The block
         builder, as set by ~~setBuilder."""
         assert self._builders[-1]
@@ -122,18 +122,18 @@ class CodeGen(object):
     def functionBuilder(self):
         """
         Returns the current function builder.
-        
+
         Returns: hilti.builder.FunctionBuilder - The function
         builder.
         """
         fbuilder = self.builder().functionBuilder()
         assert fbuilder
         return fbuilder
-    
+
     def moduleBuilder(self):
         """Returns the builder for the HILTI module currently being built.
         Must only be used after ~~compile() has been called.
-        
+
         Returns: ~~hilti.builder.ModuleBuilder - The HILTI module builder.
         """
         assert self._mbuilder
@@ -145,19 +145,19 @@ class CodeGen(object):
         pgen: ~~ParserGen - The parser generator.
         """
         self._pgens += [pgen]
-        
+
     def endCompile(self):
-        """Finishes compiling with a parser generator. 
+        """Finishes compiling with a parser generator.
         """
         self._pgens = self._pgens[:-1]
 
     def beginHook(self, hook):
         """Starts compiling a unit hook.
-        
+
         hook: ~~UnitHook - The hook.
         """
         self._hooks += [hook]
-        
+
     def endHook(self):
         """Finishes compiling a unit hook.
         """
@@ -166,47 +166,47 @@ class CodeGen(object):
     def inHook(self, hook):
         """Checks whether we are currently compiling a given hook. This can be
         used to avoid infinite recursion when one hook triggers another one.
-        
+
         hook: ~~UnitHook - The hook.
-        
+
         Returns: True if the hook is currently bein compiled.
         """
         for h in self._hooks:
             if h and h.hiltiName(self) == hook.name():
                 return True
-            
+
         return False
 
     def parserGen(self):
         """Returns the parser generator for grammar currently being compiled.
-        
+
         Returns: ~~ParserGen - The parser generator.
         """
         assert self._pgens[-1]
         return self._pgens[-1]
-    
+
     def importPaths(self):
         """Returns the HILTI library paths to search.
-        
+
         Returns: list of string - The paths.
         """
         return self._import_paths
-    
+
     def error(self, context, msg):
         """Reports an error during code generation.
-        
+
         msg: string - The error message to report.
-        
+
         context: any - Optional object with a *location* method returning a
         ~~Location suitable to include into the error message.
         """
         loc = context.location() if context else None
         util.error(msg, component="codegen", context=loc)
         self._errors += 1
-        
+
     def _compile(self):
         """Top-level driver of the compilation process.
-        
+
         Todo: Much of this implementation should move to Module.
         """
         hltmod = hilti.module.Module(self._module.name())
@@ -215,11 +215,11 @@ class CodeGen(object):
         self._errors = 0
 
         paths = self.importPaths()
-        
+
         for mod in ["libhilti", "hilti", "binpac", "binpacintern"]:
             if not hilti.importModule(self._mbuilder.module(), mod, paths):
                 self.error(hltmod, "cannot import module %s" % mod)
-                
+
         for i in self._module.scope().IDs():
             if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
                 # FIXME: Should get rid of %export.
@@ -227,36 +227,36 @@ class CodeGen(object):
                     gen = pgen.ParserGen(self, i.type())
                     gen.compile()
                     gen.export()
-            
+
             if isinstance(i, id.Global):
                 if i.expr():
                     init = i.expr().evaluate(self)
                 else:
                     init = i.type().hiltiDefault(self)
-                    
+
                 hltmod.scope().add(hilti.id.Global(i.name(), i.type().hiltiType(self), init))
-                
+
             if isinstance(i, id.Function):
                 i.function().evaluate(self)
 
         self._initFunction()
-        
+
         self._module.execute(self)
-        
+
         self._errors += self._mbuilder.finish(validate=False)
 
         return self._errors == 0
-    
+
     def _initFunction(self):
         """Generates a HILTI function initializing the module.
-        
+
         We actually generate two: one of linkage HILTI with the
         actual module-level statements, and one wrappre of linkage
-        INIT just calling the first one's stub function. 
+        INIT just calling the first one's stub function.
         """
-        
+
         # Primary function.
-        
+
         ftype = hilti.type.Function([], hilti.type.Void())
         name = "init_%s" % self._module.name()
         (fbuilder, builder) = self.beginFunction(name, ftype)
@@ -264,11 +264,11 @@ class CodeGen(object):
 
         for stmt in self._module.statements():
             stmt.execute(self)
-        
+
         self.endFunction()
 
         # Wrapper function.
-        
+
         wftype = hilti.type.Function([], hilti.type.Void())
         wname = "init_%s_wrapper" % self._module.name()
         (wfbuilder, wbuilder) = self.beginFunction(wname, wftype)
@@ -280,100 +280,143 @@ class CodeGen(object):
         wbuilder.tuple_index(f, funcs, builder.constOp(0))
 
         wbuilder.call(None, wbuilder.idOp("BinPACIntern::call_init_func"), wbuilder.tupleOp(([f])))
-        
+
         self.endFunction()
-        
+
     def hookName(self, unit, field, ddarg=False, addl=None):
         """Returns the internal name of a HILTI hook function. The
         name is constructed based on the unit/field the hook belongs
         too.
-        
+
         unit: ~~Unit - The unit type the hook belongs to.
-        
+
         field: ~~Field or string - The unit field/variable/hook the hook
         belongs to. If a ~~Field, the hook is associated with that field. If a
         string, it must be either the name of one of the unit's variables, or
         the name of a global unit hook (e.g., ``%init``).
-        
+
         ddarg: Bool - If true, the hook received an additional ``$$``
         argument. If so, the name is changed accordingly to avoid name
         conflicts.
-        
+
         addl: string - If given, an additional string postfix that will be
-        added to the generated hook name. 
-        
+        added to the generated hook name.
+
         Returns: string - The name of the internal hook functin.
         """
         ext = "_dollardollar" if ddarg else ""
 
         if addl:
             ext = ext + "_%s" % addl
-        
+
         if isinstance(field, str):
             name = field
-        
+
         else:
             name = field.name() if field.name() else "anon_%s" % builtin_id(field)
-        
+
         name = name.replace("%", "__")
-            
-        return "hook_on_%s_%s%s" % (unit.name(), name, ext)
-    
+
+        module = unit.module().name()
+
+        return "hook_on_%s_%s_%s%s" % (module, unit.name(), name, ext)
+
     def runFieldHook(self, field, obj, value=None, result=None, addl=None):
-        """Runs a hook associated with a unit field. 
-        
+        """Runs a hook associated with a unit field.
+
         field: ~~Field - The unit field.
-        
+
         obj: ~~hilti.operand.Operand - An operand with the hook's ``self``
-        argument. 
-        
+        argument.
+
         value: ~~hilti.operand.Operand - An operand wit the hook;s ``$$``
-        argument. Must be given if hooks expects such. 
-        
+        argument. Must be given if hooks expects such.
+
         result: ~~hilti.operand.Operand - An operand receiving the hook's
         result. Must be given if hook returns a value.
-        
+
         addl: string - If given, an additional string postfix to be added to
-        the generated hook name. 
+        the generated hook name.
         """
         builder = self.builder()
         name = self.hookName(field.parent(), field, value != None, addl=addl)
         op1 = builder.idOp(hilti.id.Unknown(name, self.moduleBuilder().module().scope()))
-        
+
         args_proto = [(hilti.id.Parameter("__self", obj.type()), None)]
-        
+
         if value:
             args = [obj, value]
             args_proto += [(hilti.id.Parameter("__dollardollar", value.type()), None)]
         else:
             args = [obj]
-            
+
         self._mbuilder.declareHook(name, args_proto, result.type() if result else hilti.type.Void())
         builder.hook_run(result, op1, builder.tupleOp(args))
 
     def declareHook(self, unit, field, objtype, ddtype=None):
         """Adds a hook to the namespace of the current HILTI module. Returns
         the existing declaration if it already exists.
-        
+
         unit: ~~Unit - The unit type the hook belongs to.
-        
+
         field: ~~Field or string - The unit field/variable/hook the hook
         belongs to. If a ~~Field, the hook is associated with that field. If a
         string, it must be either the name of one of the unit's variables, or
         the name of a global unit hook (e.g., ``%init``).
-        
+
         objtype: ~~hilti.Type - The type of the hook's ``self`` parameter.
-        
+
         ddtype: ~~Type - The type of the hook's ``$$`` parameter, if any.
-        
+
         Returns: ~~hilti.operand.ID - The ID referencing the hook.
         """
         name = self.hookName(unit, field, ddtype != None)
         args = [(hilti.id.Parameter("__self", objtype, None))]
-        
+
         if ddtype:
             args += [(hilti.id.Parameter("__dollardollar", ddtype.hiltiType(self.cg()), None))]
-            
+
         hid = self._mbuilder.declareHook(name, args, hilti.type.Void())
-            
+
         return hilti.operand.ID(hid)
+
+    def generateInsufficientInputHandler(self, iter, eod_ok=False):
+        """Function generating code for handling insufficient input. If
+        parsing finds insufficient input, it must execute the code generated
+        by this method and then retry the same operation afterwards. The
+        generated code handles both the case where more input may become
+        available later (in which case it will return and let the caller try
+        again), and the case where it may not (in which case it will throw an
+        exception and never return). In the latter case, if *eod_ok* is not set,
+        it will throw an ~~ParseError exception; if not it will throw an
+        ~~ParseSuccess exception. 
+
+        iter: ~~hilti.Operand - A HITLI operand with the ``iterator<bytes>``
+        from which is being parsed.
+
+        eod_ok: bool - Indicates whether running out of input is ok.
+        """
+
+        # If our flags indicate that we won't be getting more input, we throw
+        # a parse error. Otherwise, we yield and return.
+        fbuilder = self.functionBuilder()
+
+        error = fbuilder.newBuilder("error")
+        error.makeDebugMsg("binpac-verbose", "parse error, insufficient input")
+
+        if eod_ok:
+            error.makeRaiseException("BinPAC::ParseSuccess", error.constOp("end of input reached"))
+        else:
+            error.makeRaiseException("BinPAC::ParseError", error.constOp("insufficient input"))
+
+        suspend = fbuilder.newBuilder("suspend")
+        suspend.makeDebugMsg("binpac-verbose", "out of input, yielding ...")
+        suspend.yield_()
+
+        cont = fbuilder.addTmp("__cont", hilti.type.Bool())
+
+        builder = self.builder()
+        builder.bytes_is_frozen(cont, iter)
+        builder.if_else(cont, error.labelOp(), suspend.labelOp())
+
+        self.setBuilder(suspend)

@@ -92,7 +92,7 @@ def p_module_global_hook(p):
     p.parser.state.module.addExternalHook(None, p[3], p[4], p[1])
 
 def p_module_global_import(p):
-    """module_global : IMPORT IDENT ';'"""
+    """module_global : IMPORT MODULE_IDENT ';'"""
     if not _importFile(p.parser, p[2], _loc(p, 1)):
         raise SyntaxError
 
@@ -145,7 +145,7 @@ def p_type_decl(p):
     type = p[6]
 
     i = id.Type(name, type, linkage=p[1], location=_loc(p, 2))
-    type.setName(name)
+    type.setName("%s" % name)
 
     _currentScope(p).addID(i)
 
@@ -895,9 +895,16 @@ def _parse(filename, import_paths=["."]):
     util.initParser(parser, lex, state)
 
     filename = os.path.expanduser(filename)
-
+    
     try:
-        lines = open(filename).read()
+        lines = ""
+        for line in open(filename):
+            if line.startswith("#") and line.find("@TEST-START-") >= 0:
+                print >>sys.stderr, "warning: truncating input at @TEST-START-* marker"
+                break
+
+            lines += line
+
     except IOError, e:
         util.parser_error(None, "cannot open input file: %s" % filename)
         return (1, None, None)

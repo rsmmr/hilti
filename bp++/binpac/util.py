@@ -338,7 +338,7 @@ def initParser(parser, lexer, state):
     lexer.parser = parser
     parser.state = state
     
-def checkImport(parser, filename, def_ext, location):
+def checkImport(parser, filename, def_ext, dots=True, location=None):
     """Checks whether we can import a file. If it can't find the file within
     the parser's import paths, the function aborts with an error message. If
     it has already been called earlier with the same file, it returns None.
@@ -352,12 +352,19 @@ def checkImport(parser, filename, def_ext, location):
     
     def_ext: string - If *filename* doesn't have an extension, this one is
     added before it's searched.
-    
+
+    dots: bool - If true, dots in filename are replaced with slashes
+    to allow for specifying sub-directories. 
+
     location: ~~Location - A location object to be used in an error message if
     the file is not found. 
     
     Returns: string or None - As described above.
     """
+
+    if dots:
+        filename = filename.replace(".", "/")
+
     (root, ext) = os.path.splitext(filename.lower())
     if not ext:
         ext = "." + def_ext

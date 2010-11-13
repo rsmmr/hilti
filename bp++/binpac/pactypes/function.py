@@ -488,7 +488,7 @@ class Call:
         if not isinstance(name, expr.Name):
             vld.error(name, "function call must use static name")
             
-        fid = vld.currentModule().scope().lookupID(name.name())
+        fid = name.scope().lookupID(name.name())
         if not fid:
             vld.error(name, "unknown function %s" % name.name())
         
@@ -505,7 +505,7 @@ class Call:
         
     def evaluate(cg, name, args):
         assert isinstance(name, expr.Name)
-        fid = cg.currentModule().scope().lookupID(name.name())
+        fid = name.scope().lookupID(name.name())
         assert fid
         
         funcs = fid.function().matchFunctions(args)        

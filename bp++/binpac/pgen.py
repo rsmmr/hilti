@@ -304,7 +304,7 @@ class ParserGen:
 
         values = [no_lahead.constOp(lit.id())]
         branches = [found_lit]
-        (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead, [lit])
+        (default, values, branches) = self._addMatchTokenErrorCases(builder, args.cur, values, branches, no_lahead, [lit])
         no_lahead.makeSwitch(symbol, values, default=default, branches=branches, cont=done, tag="next-sym")
 
         # If we have a look-ahead symbol, its value must match what we expect.
@@ -507,7 +507,7 @@ class ParserGen:
                     branches += [case]
                     expected += [lit]
 
-            (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead, expected)
+            (default, values, branches) = self._addMatchTokenErrorCases(builder, args.lahstart, values, branches, no_lahead, expected)
             builder.makeSwitch(args.lahead, values, default=default, branches=branches, cont=done, tag="lahead-next-sym")
 
             # Done, return the result.
@@ -624,11 +624,11 @@ class ParserGen:
         """Generates code to raise an exception."""
         builder.makeRaiseException("BinPAC::ParseError", builder.constOp(msg))
 
-    def _yieldAndTryAgain(self, builder, cont):
+    def _yieldAndTryAgain(self, builder, iter, cont):
         """Generates code that yields and then jumps to a previous block to
         repeat whatever it was doing."""
-        builder.yield_()
-        builder.jump(cont.labelOp())
+        self.cg().generateInsufficientInputHandler(iter)
+        self.builder().jump(cont.labelOp())
 
     def _matchToken(self, builder, ntag1, ntag2, literals, args):
         """Generates standard code around a ``regexp.match`` token
@@ -702,8 +702,9 @@ class ParserGen:
         if isinstance(prod, grammar.Terminal):
 
             if value:
-                if prod.name():
-                    builder.makeDebugMsg("binpac", "%s = '%%s'" % prod.name(), [value])
+                if prod.debugName():
+                    builder.makeDebugMsg("binpac", "%s = '%%s'" % prod.debugName(), [value])
+
                 builder.makeDebugMsg("binpac-verbose", "- matched '%s' to '%%s'" % prod, [value])
             else:
                 builder.makeDebugMsg("binpac-verbose", "- matched '%s'" % prod)
@@ -854,7 +855,7 @@ class ParserGen:
         (fbuilder, builder) = self.cg().beginFunction(name, ftype)
         return (fbuilder.function(), ParserGen._Args(fbuilder, args))
 
-    def _addMatchTokenErrorCases(self, builder, values, branches, repeat, expected_literals):
+    def _addMatchTokenErrorCases(self, builder, iter, values, branches, repeat, expected_literals):
         """Build the standard error branches for the switch-statement
         following a ``match_token`` instruction."""
 
@@ -868,7 +869,7 @@ class ParserGen:
 
         # Not enough input.
         values += [fbuilder.constOp(-1)]
-        branches += [fbuilder.cacheBuilder("need-input", lambda b: self._yieldAndTryAgain(b, repeat))]
+        branches += [fbuilder.cacheBuilder("need-input", lambda b: self._yieldAndTryAgain(b, iter, repeat))]
 
         # Unknown case.
         default = fbuilder.cacheBuilder("unexpected-sym", lambda b: b.makeInternalError("unexpected look-ahead symbol returned"))

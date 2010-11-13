@@ -144,7 +144,7 @@ class Bytes(type.ParseableType, type.Iterable):
             loop.if_else(eod, done.labelOp(), suspend.labelOp())
 
             cg.setBuilder(suspend)
-            self.generateInsufficientInputHandler(cg, cur)
+            cg.generateInsufficientInputHandler(cur)
             cg.builder().jump(loop.labelOp())
 
             cg.setBuilder(done)

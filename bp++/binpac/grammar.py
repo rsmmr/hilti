@@ -28,6 +28,7 @@ class Production(object):
         assert not name or type
         
         self._name = name
+        self._debugname = None
         self._type = type
         self._pred = None
         self._pre = []
@@ -87,6 +88,21 @@ class Production(object):
         Returns: string - The name, or None for anonymous productions. 
         """
         return self._name
+
+    def debugName(self):
+        """Returns a name for this production that can be used in debugging
+        output. Per default, this returns the same as ~~name.
+
+        Returns: string - The name.
+        """
+        return self._debugname if self._debugname else self.name()
+
+    def setDebugName(self, name):
+        """Sets a name to be used for this production in debugging output.
+
+        name: string - The name.
+        """
+        self._debugname = name
 
     def setField(self, f):
         """Associates a field with the production.

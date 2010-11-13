@@ -9,7 +9,7 @@ import binpac.expr as expr
 
 # Language keywords. They will be turned into the corresponding all-uppercase
 # token. 
-keywords = ["module", "type", "import", "export", "unit", "print", "list",
+keywords = ["module", "type", "export", "unit", "print", "list",
             "global", "const", "if", "else", "var", "on", "switch", 
             "extern", "local", "return", "foreach", "enum", "bitfield", "iter",
             "tuple"
@@ -35,9 +35,11 @@ def _loc(t):
 tokens = [
     "IDENT", "CONSTANT", "BYTES", "REGEXP", "PACTYPE", "ATTRIBUTE", "PROPERTY",
     "EQUAL", "UNEQUAL", "LEQ", "GEQ", "HASATTR", "ARROW", "AND", "OR", "PLUSEQUAL",
-    "PLUSPLUS", "MINUSMINUS", "DOTDOT", 
+    "PLUSPLUS", "MINUSMINUS", "DOTDOT", "IMPORT", "MODULE_IDENT"
     ] + [k.upper() for k in keywords] \
       + [k.upper()[1:] for k in control_props]
+
+states = [('modulename', 'exclusive')]
 
 # Operators with more than one character.
 
@@ -87,6 +89,11 @@ def t_MINUSMINUS(t):
 
 def t_DOTDOT(t):
     r'\.\.'
+    return t
+
+def t_IMPORT(t):
+    r'import'
+    t.lexer.begin('modulename')
     return t
 
 # Type keywords not covered by types.
@@ -207,4 +214,15 @@ def t_DOLLARDOLLAR(t):
 # Error handling.
 def t_error(t):
     util.parser_error(t.lexer, "cannot parse input '%s...'" % t.value[0:10], lineno=t.lexer.lineno)
-    
+
+# Special mode for parsing module names.
+def t_modulename_MODULE_IDENT(t):
+    r'[_a-zA-Z]([.a-zA-Z0-9_])*'
+    t.lexer.begin('INITIAL')
+    return t
+
+def t_modulename_error(t):
+    util.parser_error(t.lexer, "cannot parse module name '%s...'" % t.value[0:10], lineno=t.lexer.lineno)
+
+t_modulename_ignore  = ' \t'
+
