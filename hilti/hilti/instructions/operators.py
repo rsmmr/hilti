@@ -206,4 +206,17 @@ class Assign(Instruction):
     def _codegen(self, cg):
         op = cg.llvmOp(self.op1(), self.target().type())
         cg.llvmStoreInTarget(self, op)
-    
+
+@hlt.instruction("unequal", op1=cValueType, op2=cCanCoerceToOp(1), target=cBool)
+class Assign(Instruction):
+    """Returns True if *op1* does not equal *op2*.
+
+    Note: This operator is automatically defined for all types that
+    provide an ``equaul` operator by negating its result.
+    """
+    def _codegen(self, cg):
+        eq = Equal(op1=self.op1(), op2=self.op2(), target=self.target())
+        eq.disableTarget()
+        eq.codegen(cg)
+        negated = cg.builder().xor(eq.llvmTarget(), cg.llvmConstInt(1, 1))
+        cg.llvmStoreInTarget(self, negated)

@@ -2231,17 +2231,17 @@ class CodeGen(objcache.Cache):
         
         self.builder().store(value, addr)
         
-    def llvmStoreInTarget(self, target, val, coerce_from=None):
+    def llvmStoreInTarget(self, ins, val, coerce_from=None):
         """Stores a value in a target operand.
         
-        target: ~~ID or ~~Instruction - The target operand, or an
-        instruction which target we then use.  
+        ins: ~~Instruction - An instruction into which's target operand to
+        store the value.
         
         val: llvm.core.Value or ~~Operand - The value/operand to store. If an
         operand, we perform coercion if possible. 
         """
-        if isinstance(target, instruction.Instruction):
-            target = target.target()
+        assert isinstance(ins, instruction.Instruction)
+        target = ins.target()
         
         if isinstance(val, operand.Operand):
             val = val.coerceTo(self, target.type())
@@ -2250,8 +2250,11 @@ class CodeGen(objcache.Cache):
         if coerce_from:
            assert coerce_from.canCoerceTo(self, target.type())
            coerce_from.coerceTo(self, cg, target.type())         
-        
-        return target.llvmStore(self, val)    
+
+        ins._storeLLVMResult(val)
+
+        if not ins.targetDisabled():
+            target.llvmStore(self, val)    
     
     def _llvmAddrLocalVar(self, name, func=None, fptr=None):
         """Returns the address of a local variable inside a function's frame.
