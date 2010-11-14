@@ -939,6 +939,6 @@ def _importFile(parser, filename, location, internal_module=False):
         parser.state.increaseErrors(subparser.state.errors())
         return False
 
-    parser.state.module.importIDs(subparser.state.module)
+    parser.state.module.addImport(subparser.state.module, fullpath)
 
     return True

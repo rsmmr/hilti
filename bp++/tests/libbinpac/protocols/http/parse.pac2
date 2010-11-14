@@ -1,37 +1,48 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build ${LIBBINPAC}/protocols/http.pac2 ${PAC_DRIVER} -d -m -o a.out 
-# @TEST-EXEC:  echo ======== Request >>output
-# @TEST-EXEC:  cat %DIR/request.dat | ./a.out -p HTTP::Request >>output
-# @TEST-EXEC:  echo ======== Reply Chunked >>output
-# @TEST-EXEC:  cat %DIR/reply-chunked.dat | ./a.out -p HTTP::Reply >>output
-# @TEST-EXEC:  echo ======== Reply Content Length >>output
-# @TEST-EXEC:  cat %DIR/reply-content-length.dat | ./a.out -p HTTP::Reply >>output
-# @TEST-EXEC:  echo ======== Reply Eod >>output
-# @TEST-EXEC:  cat %DIR/reply-eod.dat | ./a.out -p HTTP::Reply >>output
-# @TEST-EXEC:  echo ======== Reply Multipart >>output
-# @TEST-EXEC:  cat %DIR/reply-multipart.dat | ./a.out -p HTTP::Reply >>output
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -d -m -o a.out 
+# @TEST-EXEC:  echo ======== Requests 1 >>output
+# @TEST-EXEC:  cat %DIR/request.dat | ./a.out -p HTTP::Requests >>output
+# @TEST-EXEC:  echo ======== Requests 2 >>output
+# @TEST-EXEC:  cat %DIR/requests.dat | ./a.out -p HTTP::Requests >>output
+# @TEST-EXEC:  echo ======== Replies Chunked >>output
+# @TEST-EXEC:  cat %DIR/reply-chunked.dat | ./a.out -p HTTP::Replies >>output
+# @TEST-EXEC:  echo ======== Replies Chunked w/ trailer >>output
+# @TEST-EXEC:  cat %DIR/reply-chunked-trailer.dat | ./a.out -p HTTP::Replies >>output
+# @TEST-EXEC:  echo ======== Replies Content Length >>output
+# @TEST-EXEC:  cat %DIR/reply-content-length.dat | ./a.out -p HTTP::Replies >>output
+# @TEST-EXEC:  echo ======== Replies Eod >>output
+# @TEST-EXEC:  cat %DIR/reply-eod.dat | ./a.out -p HTTP::Replies >>output
+# @TEST-EXEC:  echo ======== Replies Multipart >>output
+# @TEST-EXEC:  cat %DIR/reply-multipart.dat | ./a.out -p HTTP::Replies >>output
 # @TEST-EXEC:  echo ======== >>output
-# @TEST-EXEC:  echo ==> Incremental >>output
-# @TEST-EXEC:  echo ======== >>output
-# @TEST-EXEC:  echo ======== Request >>output
-# @TEST-EXEC:  cat %DIR/request.dat | ./a.out -i 1 -p HTTP::Request >>output
-# @TEST-EXEC:  echo ======== Reply Chunked >>output
-# @TEST-EXEC:  cat %DIR/reply-chunked.dat | ./a.out -i 1 -p HTTP::Reply >>output
-# @TEST-EXEC:  echo ======== Reply Chunked-2 >>output
-# @TEST-EXEC:  cat %DIR/reply-chunked-trailer.dat | ./a.out -i 1 -p HTTP::Reply >>output
-# @TEST-EXEC:  echo ======== Reply Content Length >>output
-# @TEST-EXEC:  cat %DIR/reply-content-length.dat | ./a.out -i 1 -p HTTP::Reply >>output
-# @TEST-EXEC:  echo ======== Reply Eod >>output
-# @TEST-EXEC:  cat %DIR/reply-eod.dat | ./a.out -i 1 -p HTTP::Reply >>output
-# @TEST-EXEC:  echo ======== Reply Multipart >>output
-# @TEST-EXEC:  cat %DIR/reply-multipart.dat | ./a.out -i 1 -p HTTP::Reply >>output
-# @TEST-EXEC:  echo ======== >>output
-# @TEST-EXEC:  test-diff output
 #
-#
-# TODO: Once we have an import-and-extend mechanism, we won't need
-# to compile http2.pac directly anymore. 
-#
-# TODO: We should then also pretty-fy the output. 
+# @TEST-EXEC:  echo ======== Requests 1 >>output-incremental
+# @TEST-EXEC:  cat %DIR/request.dat | ./a.out -i 1 -p HTTP::Requests >>output-incremental
+# @TEST-EXEC:  echo ======== Requests 2 >>output-incremental
+# @TEST-EXEC:  cat %DIR/requests.dat | ./a.out -i 1 -p HTTP::Requests >>output-incremental
+# @TEST-EXEC:  echo ======== Replies Chunked >>output-incremental
+# @TEST-EXEC:  cat %DIR/reply-chunked.dat | ./a.out -i 1 -p HTTP::Replies >>output-incremental
+# @TEST-EXEC:  echo ======== Replies Chunked w/ trailer >>output-incremental
+# @TEST-EXEC:  cat %DIR/reply-chunked-trailer.dat | ./a.out -i 1 -p HTTP::Replies >>output-incremental
+# @TEST-EXEC:  echo ======== Replies Content Length >>output-incremental
+# @TEST-EXEC:  cat %DIR/reply-content-length.dat | ./a.out -i 1 -p HTTP::Replies >>output-incremental
+# @TEST-EXEC:  echo ======== Replies Eod >>output-incremental
+# @TEST-EXEC:  cat %DIR/reply-eod.dat | ./a.out -i 1 -p HTTP::Replies >>output-incremental
+# @TEST-EXEC:  echo ======== Replies Multipart >>output-incremental
+# @TEST-EXEC:  cat %DIR/reply-multipart.dat | ./a.out -i 1 -p HTTP::Replies >>output-incremental
+# @TEST-EXEC:  echo ======== >>output-incremental
+# @TEST-EXEC:  btest-diff output
+# @TEST-EXEC:  diff -q output output-incremental
 
+module Test;
+
+import protocols.http;
+
+on HTTP::Request::%done {
+    print self;
+    }
+
+on HTTP::Reply::%done {
+    print self;
+    }

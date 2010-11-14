@@ -63,7 +63,17 @@ class Module(node.Node, property.Container):
         is the full path of the file that got imported."""
         return self._imported_modules
 
-    def importIDs(self, other):
+    def addImport(self, other, path):
+        """Registers another module as being imported. The import's IDs will
+        be available to this module during code-generation.
+
+        other: ~~Module: The other module
+        path: string: The full path where the other module was parsed from.
+        """
+
+        self._imported_modules += [(other, "<need to set path>")]
+
+    def _importIDs(self, other):
         """Makes the IDs of another module available to the current one.
 
         other: ~~Module - The other module.
@@ -81,8 +91,6 @@ class Module(node.Node, property.Container):
             newid.setImported()
 
             self.scope().addID(newid)
-
-        self._imported_modules += [(other, "<need to set path>")]
 
     def addStatement(self, stmt):
         """Adds a global statements to the module. Global statements will
@@ -131,6 +139,13 @@ class Module(node.Node, property.Container):
     ### Overidden from node.Node.
 
     def resolve(self, resolver):
+
+        for (mod, path) in self._imported_modules:
+            mod.resolve(resolver)
+
+        for (mod, path) in self._imported_modules:
+            self._importIDs(mod)
+
         for id in self._scope.IDs():
             id.resolve(resolver)
 
@@ -147,12 +162,17 @@ class Module(node.Node, property.Container):
 
             self._hooks += [hook]
 
+        self._external_hooks = []
+
         for h in self._hooks:
             h.resolve(resolver)
 
         self.resolveProperties(resolver)
 
     def validate(self, vld):
+        for (mod, path) in self._imported_modules:
+            mod.validate(vld)
+
         for id in self._scope.IDs():
             id.validate(vld)
 

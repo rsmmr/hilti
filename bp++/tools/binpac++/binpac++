@@ -1,6 +1,6 @@
 #! /usr/bin/env python2.6
 #
-# Command-line compiler for BinPAC++ programs. 
+# Command-line compiler for BinPAC++ programs.
 
 Version = 0.1
 
@@ -13,7 +13,7 @@ import subprocess
 def initPaths():
     def run_config(tool, option):
         try:
-            # Get HILTI Python module path. 
+            # Get HILTI Python module path.
             return subprocess.Popen([tool, option], stdout=subprocess.PIPE).communicate()[0].strip()
         except:
             return ""
@@ -22,7 +22,7 @@ def initPaths():
         hilti_config = os.environ["HILTI_CONFIG"]
     except:
         hilti_config = "hilti-config"
-        
+
     try:
         binpac_config = os.environ["BINPAC_CONFIG"]
     except:
@@ -30,13 +30,13 @@ def initPaths():
 
     sys.path = run_config(hilti_config, "--pythonpath").split(":") + sys.path
     sys.path = run_config(binpac_config, "--pythonpath").split(":") + sys.path
-    
+
     global import_paths
     import_paths = []
     import_paths += run_config(hilti_config, "--libhilti").split()
     import_paths += run_config(binpac_config, "--libbinpac").split()
 
-# Collect -I arguments. 
+# Collect -I arguments.
 def import_path_callback(option, opt, value, parser):
     global import_paths
     import_paths += [value]
@@ -45,9 +45,9 @@ initPaths()
 
 import hilti
 import binpac
-    
-### Main.    
-    
+
+### Main.
+
 optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=Version)
 optparser.add_option("-n", "--hilti-no-validate", action="store_true", dest="hlt_novalidate", default=False,
                      help="Output before validating code (for debugging)")
@@ -63,7 +63,7 @@ optparser.add_option("-t", "--print-tables", action="store_true", dest="debug_ta
                      help="Output all generated parse tables to stdout; this for debugging and does not generate any code.""")
 optparser.add_option("-T", "--print-all-tables", action="store_true", dest="debug_tables_verbose", default=False,
                      help="Output all generated grammars, parse tables, and all intermediary tables; this for debugging and does not generate any code.""")
-                     
+
 (options, args) = optparser.parse_args()
 
 if not options.output:
@@ -71,18 +71,18 @@ if not options.output:
 
 if options.hlt_novalidate:
     options.hlt = True
-    
+
 if len(args) < 1:
     optparser.error("no input file specified")
 
 if len(args) > 1:
     optparser.error("more than one input file specified")
 
-# Always search in current directory.    
-import_paths += ["."]    
-    
-input = args[0]    
-dest = options.output    
+# Always search in current directory.
+import_paths += ["."]
+
+input = args[0]
+dest = options.output
 prototypes = None
 
 (root, ext) = os.path.splitext(input)
@@ -91,12 +91,12 @@ if not dest:
     dest = root + ".hlt"
 
 try:
-    output = open(dest, "w")        
+    output = open(dest, "w")
 except IOError, e:
     print >>sys.stderr, "cannot open %s for output: %s" % (dest, e)
     sys.exit(1)
-        
-# Parse input.    
+
+# Parse input.
 (errors, mod) = binpac.parser.parsePAC(input, import_paths)
 if errors:
     print >>sys.stderr, "\n%d errors in input, aborting." % errors
@@ -105,11 +105,11 @@ if errors:
 if options.debug_tables:
     binpac.printer.printGrammars(mod, sys.stdout, False)
     sys.exit(0)
-    
+
 if options.debug_tables_verbose:
     binpac.printer.printGrammars(mod, sys.stdout, True)
     sys.exit(0)
-    
+
 errors = binpac.validator.validateModule(mod)
 if errors:
     print >>sys.stderr, "\n%d errors in input, aborting." % errors
@@ -118,7 +118,7 @@ if errors:
 if options.printer:
     binpac.printer.printModule(mod, output)
     sys.exit(0)
-    
+
 (success, hltmod) = binpac.codegen.compileModule(mod, import_paths=import_paths, debug=options.debug, validate=(not options.hlt_novalidate))
 if not success:
     print >>sys.stderr, "\ncode generation failed, aborting."
@@ -128,10 +128,10 @@ if errors:
     print "\n%d errors in generated HILTI code, aborting." % errors
     sys.exit(1)
 
-# Done.     
-    
+# Done.
+
 hilti.printModule(hltmod, output=output)
 
 sys.exit(0)
 
-        
+

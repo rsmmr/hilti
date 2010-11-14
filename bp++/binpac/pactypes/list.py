@@ -110,7 +110,7 @@ class List(type.Container):
 
     def hiltiCtor(self, cg, value):
         elems = [e.evaluate(cg) for e in value]
-        ltype = hilti.type.List(self.itemType().hiltiType(cg))
+        ltype = hilti.type.Reference(hilti.type.List(self.itemType().hiltiType(cg)))
         return hilti.operand.Ctor(elems, ltype)
 
     def hiltiType(self, cg):
@@ -257,3 +257,43 @@ class PushBack:
         cg.builder().list_push_back(obj, item)
         return obj
 
+@operator.PlusAssign(List, List)
+class Plus:
+    def type(l1, l2):
+        return type.Bytes()
+
+    def validate(vld, l1, l2):
+        if l1.type().itemType() != l2.type().itemType():
+            vld.error(l1, "incompatible lists")
+
+    def evaluate(cg, l1, l2):
+        l1 = l1.evaluate(cg)
+        l2 = l2.evaluate(cg)
+
+        ty = l2.type().refType()
+
+        i = cg.functionBuilder().addLocal("__i", ty.iterType())
+        c = cg.functionBuilder().addLocal("__cond", hilti.type.Bool())
+        item = cg.functionBuilder().addLocal("__item", ty.itemType())
+        end = cg.functionBuilder().addLocal("__end", ty.iterType())
+
+        def init(builder, next):
+            builder.begin(i, l2)
+            builder.end(end, l2)
+            builder.jump(next.labelOp())
+
+        def cond(builder, next):
+            builder.unequal(c, i, end)
+            builder.jump(next.labelOp())
+            return c
+
+        def body(builder, next):
+            builder.deref(item, i)
+            builder.list_push_back(l1, item)
+            builder.incr(i, i)
+            builder.jump(next.labelOp())
+
+        next = cg.builder().makeForLoop(init, cond, body, tag="list_append")
+        cg.setBuilder(next)
+
+        return l1

@@ -53,6 +53,7 @@ class CodeGen(object):
         self._builders = [None]
         self._pgens = [None]
         self._hooks = [None]
+        self._saved_modules = []
 
     def debug(self):
         """Returns true if compiling in debugging mode.
@@ -204,23 +205,20 @@ class CodeGen(object):
         util.error(msg, component="codegen", context=loc)
         self._errors += 1
 
-    def _compile(self):
-        """Top-level driver of the compilation process.
+    def _compileOne(self, hltmod, module):
+        # The rest of the code expects to find the module currently being
+        # compiled in self._module so we set it accordingly.
+        #
+        # FIXME: Clean this up.
+        self._saved_modules += [self._module]
+        self._module = module
 
-        Todo: Much of this implementation should move to Module.
-        """
-        hltmod = hilti.module.Module(self._module.name())
-        self._mbuilder = hilti.builder.ModuleBuilder(hltmod)
+        for i in module.scope().IDs():
 
-        self._errors = 0
+            if i.imported():
+                # We'll do this once we compile the source module itself.
+                continue
 
-        paths = self.importPaths()
-
-        for mod in ["libhilti", "hilti", "binpac", "binpacintern"]:
-            if not hilti.importModule(self._mbuilder.module(), mod, paths):
-                self.error(hltmod, "cannot import module %s" % mod)
-
-        for i in self._module.scope().IDs():
             if isinstance(i, id.Type) and isinstance(i.type(), type.Unit):
                 # FIXME: Should get rid of %export.
                 if i.linkage() == id.Linkage.EXPORTED:
@@ -240,8 +238,33 @@ class CodeGen(object):
                 i.function().evaluate(self)
 
         self._initFunction()
+        module.execute(self)
 
-        self._module.execute(self)
+        self._module = self._saved_modules[-1]
+        self._saved_modules = self._saved_modules[:-1]
+
+    def _compile(self):
+        """Top-level driver of the compilation process.
+
+        Todo: This is getting kind of hackish ...
+        """
+        hltmod = hilti.module.Module(self._module.name())
+        self._mbuilder = hilti.builder.ModuleBuilder(hltmod)
+
+        paths = self.importPaths()
+        for mod in ["libhilti", "hilti", "binpac", "binpacintern"]:
+            if not hilti.importModule(self._mbuilder.module(), mod, paths):
+                self.error(hltmod, "cannot import module %s" % mod)
+
+        self._errors = 0
+
+        all_modules = [mod for (mod, path) in self._module.importedModules()]
+        all_modules += [self._module]
+
+        for mod in all_modules:
+            self._compileOne(hltmod, mod)
+            if self._errors:
+                break
 
         self._errors += self._mbuilder.finish(validate=False)
 
@@ -395,28 +418,45 @@ class CodeGen(object):
         from which is being parsed.
 
         eod_ok: bool - Indicates whether running out of input is ok.
-        """
 
+        Returns: ~~hilti.Operand - An boolean HILTI operand indicating whether
+        end-of-data has been reached. Note that this will always be true if
+        *eod_ok* is False because in that case any end-of-data will raise an
+        exception; it is safe to just ignore the return value if *eod_ok* is
+        false. If *eod_ok* is True, the calling code should first check the
+        return value to see whether end-of-data has been reached, and repeat
+        the original operation only if not. 
+        """
         # If our flags indicate that we won't be getting more input, we throw
         # a parse error. Otherwise, we yield and return.
         fbuilder = self.functionBuilder()
+        cont = fbuilder.addLocal("__cont", hilti.type.Bool())
 
-        error = fbuilder.newBuilder("error")
-        error.makeDebugMsg("binpac-verbose", "parse error, insufficient input")
-
-        if eod_ok:
-            error.makeRaiseException("BinPAC::ParseSuccess", error.constOp("end of input reached"))
-        else:
-            error.makeRaiseException("BinPAC::ParseError", error.constOp("insufficient input"))
+        resume = fbuilder.newBuilder("resume")
 
         suspend = fbuilder.newBuilder("suspend")
         suspend.makeDebugMsg("binpac-verbose", "out of input, yielding ...")
         suspend.yield_()
+        suspend.jump(resume.labelOp())
 
-        cont = fbuilder.addTmp("__cont", hilti.type.Bool())
+        error = fbuilder.newBuilder("error")
 
-        builder = self.builder()
-        builder.bytes_is_frozen(cont, iter)
-        builder.if_else(cont, error.labelOp(), suspend.labelOp())
+        self.builder().bytes_is_frozen(cont, iter)
 
-        self.setBuilder(suspend)
+        if eod_ok:
+            error.makeDebugMsg("binpac-verbose", "parse error, insufficient input (but end-of-data would be ok)")
+
+            self.builder().if_else(cont, resume.labelOp(), suspend.labelOp())
+
+            result = cont
+        else:
+            error.makeDebugMsg("binpac-verbose", "parse error, insufficient input")
+            error.makeRaiseException("BinPAC::ParseError", error.constOp("insufficient input"))
+
+            self.builder().if_else(cont, error.labelOp(), suspend.labelOp())
+
+            result = fbuilder.constOp(False)
+
+        self.setBuilder(resume)
+
+        return result

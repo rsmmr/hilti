@@ -13,7 +13,7 @@ type Item = unit {
     line:   LINE;
 };
 
-type Test = unit {
+export type Test = unit {
     lines: list<Item> &until($$.line == b"---\n")
         { print self.lines; }
     last: LINE;

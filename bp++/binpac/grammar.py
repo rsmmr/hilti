@@ -192,6 +192,37 @@ class Production(object):
         """
         self._until = f
 
+    def isNullable(self):
+        """Returns True if any of th RHSs can be derived to the ~~Epsilon
+        instruction.
+
+        Returns: True if production is nullable.
+        """
+        for rhs in self._rhss():
+            for p in rhs:
+                if isinstance(p, NonTerminal):
+                    if not p.isNullable():
+                        break
+
+                if not isinstance(p, Epsilon):
+                    break
+
+            else:
+                return True
+
+        return False
+
+    def eodOk(self):
+        """Returns true if running out of data while parsing this production
+        should not be considered an error.
+
+        Can be overridden by derived classes. The default implmentation
+        returns False if ~~isNullable returns True.
+
+        Returns: bool - True if end-of-data is ok.
+        """
+        return self.isNullable()
+
     def __str__(self):
         return "%s%s" % (self._fmtLong(), self._fmtName())
     
@@ -211,7 +242,7 @@ class Production(object):
         # alternatives for this production. Each RHS is itself a list of
         # Production instances.
         util.internal_error("Production._rhss not overridden.")
-    
+
 class Epsilon(Production):
     """An empty production.
     
@@ -593,6 +624,13 @@ class Boolean(Conditional):
         """
         return (self._alt1, self._alt2)
 
+    # Overidden from Production.
+
+    def eodOk():
+        # Always False. If one of the branches is ok with no data, it will
+        # indicate so itself.
+        return False
+
 class Counter(NonTerminal):
     """A productions executed a given number of times.
 
@@ -664,7 +702,14 @@ class Switch(Conditional):
         Returns: ~~Production - The default case.
         """
         return self._default
-        
+
+    # Overidden from Production.
+
+    def eodOk():
+        # Always False. If one of the branches is ok with no data, it will
+        # indicate so itself.
+        return False
+
 class Grammar:
     def __init__(self, name, root, params=None, addl_ids=None, location=None):
         """Instantiates a grammar given its root production.
