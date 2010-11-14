@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -18,8 +18,8 @@ void run() {
     local ref<timer> t
     local ref<timer_mgr> mgr
     local ref<timer_mgr> mgr2
-    
-    mgr = new timer_mgr 
+
+    mgr = new timer_mgr
     t = new timer foo (42)
 
     timer_mgr.schedule mgr 10.0 t
@@ -28,6 +28,6 @@ void run() {
     call Hilti::print("not reached")
 
     return.void
-}     
+}
 
 

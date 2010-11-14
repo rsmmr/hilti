@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -12,13 +12,13 @@ void run() {
     local int32 i
     local int64 s
     local ref<vector<int32>> v
-    
+
     v = new vector<int32>
-    
+
     vector.set v 0 10
     vector.set v 2 11
     vector.set v 4 12
-    
+
     i = vector.get v 0
     call Hilti::print(i)
     i = vector.get v 1
@@ -29,13 +29,13 @@ void run() {
     call Hilti::print(i)
     i = vector.get v 4
     call Hilti::print(i)
-    
+
     vector.set v 4000 4000
     i = vector.get v 3999
     call Hilti::print(i)
     i = vector.get v 4000
     call Hilti::print(i)
-    
-    s = vector.size v 
+
+    s = vector.size v
     call Hilti::print(s)
 }

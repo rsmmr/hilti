@@ -27,15 +27,15 @@ else (LLVM_INCLUDE_DIR)
       PATHS
       /opt/local/bin
   )
-  
+
   find_program(LLVM_GXX_EXECUTABLE
       NAMES llvm-g++ llvmg++
       PATHS
       /opt/local/bin
   )
-  
+
   find_program(LLVM_CLANG_EXECUTABLE
-      NAMES clang 
+      NAMES clang
       PATHS
       /opt/local/bin
   )
@@ -57,25 +57,25 @@ else (LLVM_INCLUDE_DIR)
     SEPARATE_ARGUMENTS(${OBJECT_VAR})
     STRING(REGEX REPLACE "[^ ]*[.]o[ $]" ""  ${LIB_VAR} ${${LIB_VAR}})
   ENDMACRO(FIND_LLVM_LIBS)
-  
-  
+
+
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --bindir OUTPUT_VARIABLE LLVM_BIN_DIR )
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --libdir OUTPUT_VARIABLE LLVM_LIB_DIR )
   #MESSAGE(STATUS "LLVM lib dir: " ${LLVM_LIB_DIR})
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --includedir OUTPUT_VARIABLE LLVM_INCLUDE_DIR )
-  
-  
+
+
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --cxxflags OUTPUT_VARIABLE LLVM_CXX_COMPILE_FLAGS )
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --cflags OUTPUT_VARIABLE LLVM_C_COMPILE_FLAGS )
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --ldflags   OUTPUT_VARIABLE LLVM_LDFLAGS )
   exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --libs core bitreader bitwriter linker OUTPUT_VARIABLE LLVM_LIBS_CORE )
   FIND_LLVM_LIBS( ${LLVM_CONFIG_EXECUTABLE} "jit native" LLVM_LIBS_JIT LLVM_LIBS_JIT_OBJECTS )
   #STRING(REPLACE " -lLLVMCore -lLLVMSupport -lLLVMSystem" "" LLVM_LIBS_JIT ${LLVM_LIBS_JIT_RAW})
-  
+
   if(LLVM_INCLUDE_DIR)
     set(LLVM_FOUND TRUE)
   endif(LLVM_INCLUDE_DIR)
-  
+
   if(LLVM_FOUND)
     message(STATUS "Found LLVM: ${LLVM_INCLUDE_DIR}")
   else(LLVM_FOUND)

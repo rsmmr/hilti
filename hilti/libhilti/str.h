@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Support functions for HILTI's string data type.
 
 #ifndef HILTI_STRING_H
@@ -32,7 +32,7 @@ extern hlt_string hlt_string_decode(struct hlt_bytes*, hlt_string charset, hlt_e
 extern hlt_string hlt_string_empty(hlt_exception** excpt, hlt_execution_context* ctx);
 extern hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt, hlt_execution_context* ctx);
 extern hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exception** excpt, hlt_execution_context* ctx);
-// Note that obj is a *pointer* to the object. 
+// Note that obj is a *pointer* to the object.
 extern hlt_string hlt_string_from_object(const hlt_type_info* type, void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
 
 extern void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx);

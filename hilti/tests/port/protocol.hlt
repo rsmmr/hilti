@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -18,12 +18,12 @@ void run() {
      f = port.protocol a
      call Hilti::print (a)
      call Hilti::print (f)
-     
+
      b = 53/udp
      f = port.protocol b
      call Hilti::print (b)
      call Hilti::print (f)
-     
+
      s = call Hilti::fmt ("%d %d", (a, b))
      call Hilti::print (s)
 }

@@ -9,7 +9,7 @@ allowing for fast insert operations at the expense of expensive random access.
 Lists are forward-iterable. Note that it is generally safe to modify a list
 while iterating over it. The only problematic case occurs if the very element
 get removed from the list to which an iterator is pointing. If so, accessing
-the iterator will raise an ~~InvalidIterator exception. 
+the iterator will raise an ~~InvalidIterator exception.
 """
 
 import llvm.core
@@ -22,19 +22,19 @@ from hilti.instructions.operators import *
 @hlt.type(None, 102)
 class IteratorList(type.Iterator):
     """Type for iterating over ``List``.
-    
+
     t: ~~List - The list type.
     """
     def __init__(self, t, location=None):
         super(IteratorList, self).__init__(t, location)
-        
+
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
         typeinfo.c_prototype = "hlt_list_iter"
         return typeinfo
-    
+
     def llvmType(self, cg):
         """An ``iterator<list<T>>`` is mapped to ``struct hlt_list_iter``."""
         return llvm.core.Type.struct([cg.llvmTypeGenericPointer()] * 2)
@@ -47,22 +47,22 @@ class IteratorList(type.Iterator):
         return llvm.core.Constant.struct([llvm.core.Constant.null(cg.llvmTypeGenericPointer())] * 2)
 
     ### Overridden from Iterator.
-    
+
     def derefType(self):
-        t = self.parentType().itemType() 
+        t = self.parentType().itemType()
         return t if t else type.Any()
-    
+
 @hlt.type("list", 16)
 class List(type.Container, type.Constructable, type.Iterable):
     """Type for a ``list``.
-    
+
     t: ~~Type - The element type of the list, None for ``list<*>``.
     """
     def __init__(self, t, location=None):
         super(List, self).__init__(t, location)
-        
+
     ### Overridden from HiltiType.
-    
+
     def llvmType(self, cg):
         """A ``list`` is mapped to a ``hlt_list *``."""
         return cg.llvmTypeGenericPointer()
@@ -78,20 +78,20 @@ class List(type.Container, type.Constructable, type.Iterable):
     def validateCtor(self, vld, val):
         if not isinstance(val, list):
             vld.error(self, "not a Python list")
-            
+
         for op in val:
             op.validate(vld)
             if not op.canCoerceTo(self.itemType()):
                 vld.error(self, "list element not coercable to %s" % self.itemType())
-    
+
     def llvmCtor(self, cg, val):
         list = cg.llvmCallC("hlt::list_new", [operand.Type(self.itemType())], abort_on_except=True)
         listop = operand.LLVM(list, type.Reference(self))
-        
+
         for o in val:
             o = o.coerceTo(cg, self.itemType())
             cg.llvmCallC("hlt::list_push_back", [listop, o], abort_on_except=True)
-            
+
         return list
 
     def outputCtor(self, printer, val):
@@ -101,18 +101,18 @@ class List(type.Container, type.Constructable, type.Iterable):
         for op in val:
             if not first:
                 printer.output(", ")
-            op.output(printer)    
+            op.output(printer)
             first = False
         printer.output(")")
-        
+
     ### Overriden from Iterable.
-        
+
     def iterType(self):
         return IteratorList(self, location=self.location())
 
 @hlt.overload(New, op1=cType(cList), target=cReferenceOfOp(1))
 class New(Operator):
-    """Allocates a new instance of a list of type *op1*. 
+    """Allocates a new instance of a list of type *op1*.
     """
     def _codegen(self, cg):
         t = operand.Type(self.op1().value().itemType())
@@ -134,7 +134,7 @@ class PushFront(Instruction):
         cg.llvmCallC("hlt::list_push_front", [self.op1(), op2])
 
 @hlt.instruction("list.pop_front", op1=cReferenceOf(cList), target=cItemTypeOfOp(1))
-class PopFront(Instruction): 
+class PopFront(Instruction):
     """Removes the first element from the list referenced by *op1* and returns
     it. If the list is empty, raises an ~~Underflow exception."""
     def _codegen(self, cg):
@@ -142,7 +142,7 @@ class PopFront(Instruction):
         voidp = cg.llvmCallC("hlt::list_pop_front", [self.op1()])
         casted = cg.builder().bitcast(voidp, llvm.core.Type.pointer(cg.llvmType(t)))
         cg.llvmStoreInTarget(self, cg.builder().load(casted))
-    
+
 @hlt.instruction("list.pop_back", op1=cReferenceOf(cList), target=cItemTypeOfOp(1))
 class PopBack(Instruction):
     """Removes the last element from the list referenced by *op1* and returns
@@ -172,7 +172,7 @@ class Back(Instruction):
         voidp = cg.llvmCallC("hlt::list_back", [self.op1()])
         casted = cg.builder().bitcast(voidp, llvm.core.Type.pointer(cg.llvmType(t)))
         cg.llvmStoreInTarget(self, cg.builder().load(casted))
- 
+
 @hlt.instruction("list.size", op1=cReferenceOf(cList), target=cIntegerOfWidth(64))
 class Size(Instruction):
     """Returns the current size of the list reference by *op1*."""
@@ -208,7 +208,7 @@ class End(Instruction):
     def _codegen(self, cg):
         result = cg.llvmCallC("hlt::list_end", [self.op1()])
         cg.llvmStoreInTarget(self, result)
-    
+
 @hlt.overload(Incr, op1=cIteratorList, target=cIteratorList)
 class IterIncr(Operator):
     """
@@ -222,7 +222,7 @@ class IterIncr(Operator):
 @hlt.overload(Deref, op1=cIteratorList, target=cDerefTypeOfOp(1))
 class IterDeref(Operator):
     """
-    Returns the element the iterator is pointing at. 
+    Returns the element the iterator is pointing at.
     """
     def _codegen(self, cg):
         t = self.target().type()

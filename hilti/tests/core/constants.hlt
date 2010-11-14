@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -16,15 +16,15 @@ global ref<bytes> b = b"abc"
 void run() {
 
     local int<32> sum
-    
+
     sum = int.add c1 c2
     call Hilti::print (sum, True)
-    
+
     call Hilti::print (s, True)
-    
+
     call Hilti::print (b, True)
     call Hilti::print (b"def", True)
-    
+
     return.void
-}     
+}
 

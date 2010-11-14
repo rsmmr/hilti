@@ -83,7 +83,7 @@ class Module(node.Node, property.Container):
             if i.imported():
                 # Don't import IDs recursively.
                 continue
-            
+
             newid = i.clone()
             newid.setLocation(i.location())
             if not newid.namespace():

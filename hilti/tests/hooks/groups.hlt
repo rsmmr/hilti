@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -26,25 +26,25 @@ hook void my_hook() &group=300 {
 void run() {
     hook.run my_hook ()
     call Hilti::print("------")
-    
+
     hook.disable_group 10
     hook.run my_hook ()
     call Hilti::print("------")
-    
+
     hook.disable_group 20
     hook.run my_hook ()
     call Hilti::print("------")
-    
+
     hook.disable_group 300
     hook.run my_hook ()
     call Hilti::print("------")
-    
+
     hook.enable_group 10
     hook.enable_group 20
     hook.enable_group 300
     hook.run my_hook ()
     call Hilti::print("------")
-    
+
     return.void
-}     
+}
 

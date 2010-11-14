@@ -1,6 +1,6 @@
 // $Id$
 //
-/// High-level regexp interface, partially matching POSIX functions. 
+/// High-level regexp interface, partially matching POSIX functions.
 
 #ifndef JRX_H
 #define JRX_H
@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-// Predefined types. 
-typedef uint32_t jrx_char;         ///< A single codepoint. 
+// Predefined types.
+typedef uint32_t jrx_char;         ///< A single codepoint.
 typedef int32_t jrx_offset;        ///< Offset in input stream.
 typedef int16_t  jrx_accept_id;    ///< ID for an accepting state.
 typedef uint32_t jrx_nfa_state_id; // ID for an NFA state.
@@ -41,20 +41,20 @@ struct jrx_match_state {
     struct jrx_dfa* dfa;      // The DFA we're matching with.
     jrx_dfa_state_id state;   // Current state.
     jrx_char previous;        // Previous code point seen (valid iff offset > 0)
-    
-    // The following are only used with the full matcher. 
+
+    // The following are only used with the full matcher.
     struct set_match_accept* accepts;  // Accepts we have encountered so far.
     int current_tags;                  // Current set of position of tags (0 or 1).
     jrx_offset* tags1;                 // 1st & 2nd set of position of tags; (we use
     jrx_offset* tags2;                 // a double-bufferinf scheme here).
-    
+
     // The following are only used with the minimal matcher.
     jrx_accept_id acc;
 };
 
 typedef struct {
     size_t re_nsub;            ///< Number of capture expressions in regular expression (POSIX).
-    
+
     int cflags;                // RE_* flags for compilation.
     int nmatch;                // Max. number of subexpression caller is interested in; -1 for all.
     struct jrx_nfa* nfa;       // Compiled NFA, or NULL.
@@ -63,10 +63,10 @@ typedef struct {
 } jrx_regex_t;
 
 typedef jrx_offset regoff_t;
-    
+
 typedef struct jrx_regmatch_t {
     regoff_t rm_so; //< Zero-based start offset of match (POSIX).
-    regoff_t rm_eo; //< End offset of match (POSIX). It locates the first byte after the match. (POSIX). 
+    regoff_t rm_eo; //< End offset of match (POSIX). It locates the first byte after the match. (POSIX).
     } jrx_regmatch_t;
 
 // POSIX options. We use macros here for compatibility with code using
@@ -74,19 +74,19 @@ typedef struct jrx_regmatch_t {
 #define REG_BASIC    0        // sic! (but not supported anyway)
 #define REG_EXTENDED (1 << 0) ///< "Extended" regular expression syntax (we only one we support).
 #define REG_NOSUB    (1 << 1)
-    // FIXME: The following are not implemented currently. 
-#define REG_ICASE    (1 << 2) 
+    // FIXME: The following are not implemented currently.
+#define REG_ICASE    (1 << 2)
 #define REG_NEWLINE  (1 << 3)
-#define REG_NOTBOL   (1 << 4)  
-#define REG_NOTEOL   (1 << 5)   
+#define REG_NOTBOL   (1 << 4)
+#define REG_NOTEOL   (1 << 5)
 
-// Non-standard options. 
+// Non-standard options.
 #define REG_DEBUG        (1 << 6)   //< Enable debugging output to stderr.
 #define REG_STD_MATCHER  (1 << 7)   //< Force usage of the (slower) standard matcher even with REG_NOSUB.
-#define REG_ANCHOR       (1 << 8)   //< Anchor matching at beginning. The effect is that of an implicit '^' at the beginning. 
+#define REG_ANCHOR       (1 << 8)   //< Anchor matching at beginning. The effect is that of an implicit '^' at the beginning.
 
 // Non-standard error codes..
-#define REG_OK           0       //< Everything is fine. 
+#define REG_OK           0       //< Everything is fine.
 #define REG_NOTSUPPORTED 1       //< A non-supported feature has been used.
 
     // POSIX error codes.
@@ -117,13 +117,13 @@ typedef struct jrx_regmatch_t {
 #define REG_EFLAGS      28
 #define REG_EDELIM      29
 
-// These are POSIX compatible. 
+// These are POSIX compatible.
 extern int jrx_regcomp(jrx_regex_t *preg, const char *pattern, int cflags);
 extern size_t jrx_regerror(int errcode, const jrx_regex_t *preg, char *errbuf, size_t errbuf_size);
 extern int jrx_regexec(const jrx_regex_t *preg, const char *string, size_t nmatch, jrx_regmatch_t pmatch[], int eflags);
 extern void jrx_regfree(jrx_regex_t *preg);
 
-// These are non-POSIX extensions. 
+// These are non-POSIX extensions.
 extern void jrx_regset_init(jrx_regex_t *preg, int nmatch, int cflags);
 extern void jrx_regset_done(jrx_regex_t *preg, int cflags);
 extern int jrx_regset_add(jrx_regex_t *preg, const char *pattern, unsigned int len);

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -24,7 +24,7 @@ void run() {
 
     i = bytes.cmp b1 b2
     call Hilti::print (i)
-    
+
     i = bytes.cmp b1 b3
     call Hilti::print (i)
 
@@ -33,20 +33,20 @@ void run() {
 
     i = bytes.cmp b1 b5
     call Hilti::print (i)
-    
+
     i = bytes.cmp b1 b6
     call Hilti::print (i)
-    
+
     i = bytes.cmp b6 b1
     call Hilti::print (i)
-    
+
     i = bytes.cmp b6 b7
     call Hilti::print (i)
-    
+
     b = equal b1 b2
     call Hilti::print (b)
-    
+
     b = equal b1 b3
     call Hilti::print (b)
-    
+
 }

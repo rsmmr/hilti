@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -23,23 +23,23 @@ void create(ref<timer_mgr> mgr, double t) {
     local ref<timer> tim
     tim = new timer foo (t)
     timer_mgr.schedule mgr t tim
-    
+
     call Hilti::print (tim)
-    
+
     timer.cancel tim
 }
 
 void run() {
 
     local ref<timer_mgr> mgr
-    
-    mgr = new timer_mgr 
+
+    mgr = new timer_mgr
     call create(mgr, 1.0)
     call create(mgr, 5.0)
     call create(mgr, 2.0)
     call create(mgr, 3.0)
     call create(mgr, 4.0)
-    
+
     call advance(mgr, 0.1)
     call advance(mgr, 0.2)
     call advance(mgr, 0.3)
@@ -48,8 +48,8 @@ void run() {
     call advance(mgr, 4.5)
     call advance(mgr, 5.0)
     call advance(mgr, 10.0)
-    
+
     return.void
-}     
+}
 
 

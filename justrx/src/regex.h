@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // regcomp/regexec compatible interface, as far as our capabilities allow.
 
 #ifndef JRX_REGEX_H
@@ -16,7 +16,7 @@
 
 #endif
 
-                           
-                           
-                           
+
+
+
 

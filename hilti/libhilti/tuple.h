@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Support functions for HILTI's tuple data type.
 
 #ifndef HILTI_TUPLE_H

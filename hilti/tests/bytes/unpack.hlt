@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -26,7 +26,7 @@ void run() {
     sub = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
-    
+
     out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
     call Hilti::print(out)
 
@@ -36,37 +36,37 @@ void run() {
     sub = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
-    
+
     out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
     call Hilti::print(out)
-    
+
     ####
-    
+
     t = unpack (first,last) Hilti::Packed::BytesRunLength Hilti::Packed::UInt16Big
     sub = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
-    
+
     out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
     call Hilti::print(out)
-    
+
     ####
-    
+
     t = unpack (first,last) Hilti::Packed::BytesRunLength Hilti::Packed::UInt8Big
     sub = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
-    
+
     out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
     call Hilti::print(out)
-    
+
     ####
 
     t = unpack (first,last) Hilti::Packed::BytesDelim b"\x04"
     sub = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
-    
+
     out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
     call Hilti::print(out)
 
@@ -76,10 +76,10 @@ void run() {
     sub = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
-    
+
     out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
     call Hilti::print(out)
 
-    ## Note multi-byte delimiters not supported yet. 
+    ## Note multi-byte delimiters not supported yet.
 
     }

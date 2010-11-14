@@ -28,7 +28,7 @@ static inline khint_t _jrx_hash_dfa_state_elem(set_dfa_state_elem dstate)
     khint_t hash = set_dfa_state_elem_size(&dstate);
     set_for_each(dfa_state_elem, &dstate, delem)
         hash = (((hash << 4) ^ (hash >> 28)) + (delem.nid + delem.tid));
-    
+
     return hash;
 }
 
@@ -63,7 +63,7 @@ typedef struct {
     jrx_accept_id aid;              // The ID to accept with.
     jrx_tag_group_id tid;           // The tag group to use.
     vec_tag_op* final_ops;          // Final tag operations when accepting.
-    jrx_offset* tags;               // A copy of the final tag values. 
+    jrx_offset* tags;               // A copy of the final tag values.
 } jrx_dfa_accept;
 
 DECLARE_VECTOR(dfa_accept, jrx_dfa_accept, uint32_t);
@@ -79,7 +79,7 @@ typedef struct jrx_dfa {
     jrx_option options;       // Options specified for compilation.
     int8_t nmatch;            // Max. number of captures the user is interested in.
     int8_t max_tag;           // Largest tag number used.
-    int8_t max_capture;       // Largest capture group number used. 
+    int8_t max_capture;       // Largest capture group number used.
     int32_t max_tag_groups;   // Maximum number of simultanious tag groups.
     jrx_dfa_state_id initial; // Initial state.
     vec_tag_op* initial_ops;  // Initial tag operations.

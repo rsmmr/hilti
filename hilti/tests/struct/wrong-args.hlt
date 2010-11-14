@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
 # @TEST-EXEC:      btest-diff output
 #
 # Illegal arguments. These are all supposed to fail.
@@ -17,7 +17,7 @@ type A = struct {
     }
 
 void run() {
-    local int64 i 
+    local int64 i
     local string s
     local ref<A> a
 
@@ -38,7 +38,7 @@ type A = struct {
     }
 
 void run() {
-    local int64 i 
+    local int64 i
     local string s
     local ref<A> a
 
@@ -59,7 +59,7 @@ type A = struct {
     }
 
 void run() {
-    local int64 i 
+    local int64 i
     local string s
     local ref<A> a
 
@@ -81,7 +81,7 @@ type A = struct {
     }
 
 void run() {
-    local int64 i 
+    local int64 i
     local string s
     local ref<A> a
 

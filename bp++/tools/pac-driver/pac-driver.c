@@ -339,7 +339,7 @@ Flow* bulkFeedPacket(binpac_parser* parser, Flow* flow, int eof, const char* dat
     memcpy(tmp, data, size);
 
     hlt_bytes* input = hlt_bytes_new_from_data(tmp, size, &excpt, ctx);
-    hlt_bytes_freeze(input, 1, &excpt, ctx); // Always complete. 
+    hlt_bytes_freeze(input, 1, &excpt, ctx); // Always complete.
 
     check_exception(excpt);
 
@@ -350,7 +350,7 @@ Flow* bulkFeedPacket(binpac_parser* parser, Flow* flow, int eof, const char* dat
     (*parser->parse_func)(begin, 0, &excpt, ctx);
 
     if ( excpt ) {
-        // We also don't excpect any yield. 
+        // We also don't excpect any yield.
         parser_exception(fid, excpt);
         return 0;
     }

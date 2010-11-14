@@ -1,9 +1,9 @@
-/* $Id 
- * 
+/* $Id
+ *
  * GC-based replaced functions for memory management.
- * 
- * Todo: Well, currently these are actually *not* garbage collected ... 
- * 
+ *
+ * Todo: Well, currently these are actually *not* garbage collected ...
+ *
  */
 
 #include "hilti.h"

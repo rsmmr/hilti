@@ -1,12 +1,12 @@
 # $Id$
-# 
+#
 # @TEST-EXEC:  hilti-build -P %INPUT
 # @TEST-EXEC:  ${CC} -I . -c %DIR/struct-return-c.c -o struct-return-c.bc
-# @TEST-EXEC:  hilti-build struct-return-c.bc %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build struct-return-c.bc %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
-# Tests a number of variants for returning structs by value from C to HILTI. 
+# Tests a number of variants for returning structs by value from C to HILTI.
 
 module Main
 
@@ -38,17 +38,17 @@ void run() {
     local tuple<int32,int32,int32> t323232
     local tuple<int32,int64> t3264
     local tuple<double,string> tds
-    
+
     t8 = call fa()
     call Hilti::print(t8)
-    
+
     t16 = call fb()
     call Hilti::print(t16)
     t32 = call fc()
     call Hilti::print(t32)
     t64 = call fd()
     call Hilti::print(t64)
-    
+
     t88 = call fe()
     call Hilti::print(t88)
 
@@ -58,7 +58,7 @@ void run() {
     call Hilti::print(t3232)
     t6464 = call fh()
     call Hilti::print(t6464)
-    
+
     t888 = call fi()
     call Hilti::print(t888)
     t323232 = call fj()
@@ -66,7 +66,7 @@ void run() {
 
     t3264 = call fk()
     call Hilti::print(t3264)
-    
+
     tds = call fl()
     call Hilti::print(tds)
 

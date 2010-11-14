@@ -1,5 +1,5 @@
 # $Id
-# 
+#
 # Internal BinPAC++ API supporting the generated parsers.
 
 module BinPACIntern
@@ -16,10 +16,10 @@ type Parser = struct {
 
 # Registers a parser with the HILTI runtime. Note that this function is not
 # thread-safe and must only be called during initialization before any threads
-# have been started. 
+# have been started.
 declare "C-HILTI" void register_parser(ref<Parser> parser)
 
-# Runs a module's init function passed in with it's C stub. 
+# Runs a module's init function passed in with it's C stub.
 # (This is only needed because we can't call the stub (easily) from C.
 declare "C-HILTI" void call_init_func(caddr func)
 
@@ -33,41 +33,41 @@ ref<bytes> bytes_match(ref<bytes> b, ref<regexp> re, int<64> group = 0) {
     local tuple<int32, tuple<iterator<bytes>,iterator<bytes>>> span
     local bool cond
     local int<64> len
-    
+
     i1 = begin b
     i2 = end b
-    
+
     cond = equal group 0
     if.else cond @do_span @do_groups
-    
+
 @do_span:
-    span = regexp.span re i1 i2     
+    span = regexp.span re i1 i2
     range = tuple.index span 1
     jump @done
-    
+
 @do_groups:
     results = regexp.groups re i1 i2
-    
+
     len = vector.size results
     cond = int.ult group len
     if.else cond @found @notfound
 
-@notfound:    
+@notfound:
     i1 = i2
     jump @finish
 
 @found:
     range = vector.get results group
-    jump @done    
-    
+    jump @done
+
 @done:
     i1 = tuple.index range 0
     i2 = tuple.index range 1
     jump @finish
-    
-@finish:    
+
+@finish:
     b = bytes.sub i1 i2
-    
+
     return.result b
 }
 

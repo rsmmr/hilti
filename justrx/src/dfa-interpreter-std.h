@@ -15,7 +15,7 @@ typedef struct {
 
 
 static inline int _jrx_cmp_match_accept(jrx_match_accept a, jrx_match_accept b)
-{ 
+{
     return a.aid != b.aid ? SET_STD_EQUAL(a.aid, b.aid)
                           : SET_STD_EQUAL(a.tags, b.tags); // ptr comparision ok.
 };

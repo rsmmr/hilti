@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -19,8 +19,8 @@ void run() {
 
     local ref<timer_mgr> mgr
     local double t
-    
-    mgr = new timer_mgr 
+
+    mgr = new timer_mgr
     call advance(mgr, 0.1)
     call advance(mgr, 0.2)
     call advance(mgr, 0.3)
@@ -29,11 +29,11 @@ void run() {
     call advance(mgr, 4.5)
     call advance(mgr, 5.0)
     call advance(mgr, 10.0)
-    
+
     t = timer_mgr.current mgr
     call Hilti::print(t)
-    
+
     return.void
-}     
+}
 
 

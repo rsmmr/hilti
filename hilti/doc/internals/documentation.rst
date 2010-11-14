@@ -33,53 +33,53 @@ When writing doc-strings for these, follow these conventions:
   therefore not require further context for understanding. Do not
   reference any function arguments or other details in the first
   sentence. Keep the sentence short.
-  
+
 * After the first sentence, describe the documented item in depth.
   For functions/methods, you can reference arguments where
   necessary, but you don't need to. If you reference any arguments,
   use the markup ``*foo*``. In any case, make sure that the text
   contains enough context for the following arguments summary to be
   comprehensible.
-  
+
 * For methods/function, document arguments and return value as
   follows:
-  
+
   - Document arguments in a sequence of lines of the following
     form::
-    
+
         name: type - description
-    
+
     For example::
-  
+
         foo: string - The name of foo.
-    
+
     The "type" is informal, e.g., for a list of strings just write
     "list of strings".
-  
+
   - Document the return value in this form::
-  
+
       Returns: type - description
-    
+
     For example::
-  
-      Returns: string - The name of bar.   
-    
+
+      Returns: string - The name of bar.
+
   - If the function/method raises any non-standard exceptions, use::
-  
+
       Raises: type
-      
+
     For example::
-    
+
       Raises: ~~MyNonStandardException
-      
+
 * Whenever you mention any other HILTI class or other identifier,
   add a cross-reference. In most cases, it will work to just write,
   e.g., ``~~Foo`` to reference identifier Foo.
-  
+
 * If you want to point the reader to a particular observation (like
   an implementation detail, or a current deficiency), write a
   paragraph prefixed with "Note:".
-  
+
 * If there's something still to-do for the documented item, write a
   paragraph prefixed with "To-Do:" ("Todo:" will also work).
 
@@ -100,7 +100,7 @@ corresponding ``automodule`` directive. If the package's primary
 public interface is a function right in ``init.py`` (as it's the case
 for most of HILTI's packages except ~~core), also include an
 ``autofunction`` directive for it. You can optionally provide some
-more context around the ``auto*`` directives. 
+more context around the ``auto*`` directives.
 
 Internals
 ^^^^^^^^^
@@ -122,10 +122,10 @@ containing just a section heading, e.g.::
    Flow Control
    ~~~~~~~~~~~~
    """
-  
+
 This heading will start the module's section in the
 :ref:`instructions`.
-  
+
 In addition, those submodules representing a type should also
 provide a module-level string variable ``_doc_type_description``
 containing a string describing the type and its usage suitable for
@@ -140,13 +140,13 @@ inclusion into the user manual's :ref:`types`. For example::
 Canonifier
 ^^^^^^^^^^
 
-We document all canonifications performed by the canonifier in the 
+We document all canonifications performed by the canonifier in the
 doc-string of the *module* that implements the transformation. Write
 the module's doc-string in a form suitable for stand-alone reading,
 and include a corresponding ``automodule`` directive into the the
 canonifier's description of the *public* package API. The code
 performing the canonifications doesn't need any further doc-strings;
-use Python comments where further detail is helpful. 
+use Python comments where further detail is helpful.
 
 Checker
 ^^^^^^^
@@ -195,9 +195,9 @@ flow-control model.
 
 
 
-    
-  
-  
+
+
+
 
 
 

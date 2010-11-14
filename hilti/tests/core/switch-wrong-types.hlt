@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
 # @TEST-EXEC:      btest-diff output
 #
 # A bunch of calls with signatures mismatches. These are all supposed to fail.
@@ -12,11 +12,11 @@ import Hilti
 void run() {
    local int<32> n
    switch n @default ( (1, @b1), ("bcd", @b2), (3, @b3) )
-   
+
 @b1:
    call Hilti::print (1)
    return.void
-   
+
 @b2:
    call Hilti::print (2)
    return.void
@@ -24,8 +24,8 @@ void run() {
 @b3:
    call Hilti::print (3)
    return.void
-   
-@default:   
+
+@default:
    call Hilti::print (-1)
    return.void
 }
@@ -39,11 +39,11 @@ import Hilti
 void run() {
    local int<32> n
    switch n @default ( 1, 2, 3 )
-   
+
 @b1:
    call Hilti::print (1)
    return.void
-   
+
 @b2:
    call Hilti::print (2)
    return.void
@@ -51,12 +51,12 @@ void run() {
 @b3:
    call Hilti::print (3)
    return.void
-   
-@default:   
+
+@default:
    call Hilti::print (-1)
    return.void
 }
-   
+
 
 # @TEST-START-NEXT
 
@@ -67,11 +67,11 @@ import Hilti
 void run() {
    local int<32> n
    switch n @default ( (1, @b1), (2, "xxx"), (3, @b3) )
-   
+
 @b1:
    call Hilti::print (1)
    return.void
-   
+
 @b2:
    call Hilti::print (2)
    return.void
@@ -79,12 +79,12 @@ void run() {
 @b3:
    call Hilti::print (3)
    return.void
-   
-@default:   
+
+@default:
    call Hilti::print (-1)
    return.void
 }
-   
+
 
 # @TEST-START-NEXT
 
@@ -95,11 +95,11 @@ import Hilti
 void run() {
    local int<32> n
    switch n @default "foo"
-   
+
 @b1:
    call Hilti::print (1)
    return.void
-   
+
 @b2:
    call Hilti::print (2)
    return.void
@@ -107,10 +107,10 @@ void run() {
 @b3:
    call Hilti::print (3)
    return.void
-   
-@default:   
+
+@default:
    call Hilti::print (-1)
    return.void
 }
-   
+
 

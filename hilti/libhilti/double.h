@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Support functions for HILTI's double data type.
 
 #ifndef HILTI_DOUBLE_H

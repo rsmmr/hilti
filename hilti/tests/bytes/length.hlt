@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -23,12 +23,12 @@ void run() {
     s1 = "Hallo"
     s2 = "T\u00e4\u00e4\u00e4!"
 
-    b0 = new bytes 
+    b0 = new bytes
     len = bytes.length b0
     call Hilti::print (len)
     b = bytes.empty b0
     call Hilti::print (b)
-    
+
     b1 = string.encode s1 "ascii"
     call Hilti::print (b1)
     len = bytes.length b1
@@ -39,7 +39,7 @@ void run() {
     call Hilti::print (b1)
     b = bytes.empty b1
     call Hilti::print (b)
-    
+
     b2 = string.encode s2 "utf8"
     call Hilti::print (b2)
     len = bytes.length b2
@@ -50,5 +50,5 @@ void run() {
     call Hilti::print (b2)
     b = bytes.empty b1
     call Hilti::print (b)
-    
+
 }

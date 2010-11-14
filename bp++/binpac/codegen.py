@@ -412,7 +412,7 @@ class CodeGen(object):
         again), and the case where it may not (in which case it will throw an
         exception and never return). In the latter case, if *eod_ok* is not set,
         it will throw an ~~ParseError exception; if not it will throw an
-        ~~ParseSuccess exception. 
+        ~~ParseSuccess exception.
 
         iter: ~~hilti.Operand - A HITLI operand with the ``iterator<bytes>``
         from which is being parsed.
@@ -425,7 +425,7 @@ class CodeGen(object):
         exception; it is safe to just ignore the return value if *eod_ok* is
         false. If *eod_ok* is True, the calling code should first check the
         return value to see whether end-of-data has been reached, and repeat
-        the original operation only if not. 
+        the original operation only if not.
         """
         # If our flags indicate that we won't be getting more input, we throw
         # a parse error. Otherwise, we yield and return.

@@ -3,7 +3,7 @@
 # Platform specific code is outsourced into this file.
 #
 # Documentation pointers:
-#     
+#
 #    Darwin ABI   http://developer.apple.com/documentation/DeveloperTools/Conceptual/LowLevelABI/000-Introduction/introduction.html
 #    x86_64       http://www.x86-64.org/documentation.html
 
@@ -11,7 +11,7 @@ import platform
 import sys
 
 import llvm
-import llvm.core 
+import llvm.core
 import llvm.ee
 
 _triple = llvm.core.getHostTriple().split("-")
@@ -101,7 +101,7 @@ def returnStructByValue(type):
         # Can't find documentation but looking at clang-cc, it seems to always
         # pass structs via temporary memory objects.
         return None
-    
+
     if _target.startswith("i386-darwin"):
         if sizeof in (1, 2, 4, 8):
             return llvm.core.Type.int(sizeof * 8)
@@ -129,7 +129,7 @@ def returnStructByValue(type):
                 if type.elements[0] == llvm.core.Type.double() and \
                    isinstance(type.elements[1], llvm.core.PointerType):
                        return llvm.core.Type.struct([llvm.core.Type.double(), llvm.core.Type.int(64)])
-            
+
             return llvm.core.Type.int(128)
 
         return None

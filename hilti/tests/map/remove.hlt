@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -12,13 +12,13 @@ void run() {
     local bool b
     local int32 i
     local ref<map<string, int32>> m
-    
+
     m = new map<string, int32>
     call Hilti::print(m)
 
     map.insert m "Foo" 10
     map.insert m "Bar" 20
-    
+
     i = map.size m
     call Hilti::print(i)
     call Hilti::print(m)
@@ -34,7 +34,7 @@ void run() {
     call Hilti::print(b)
     b = map.exists m "Bar"
     call Hilti::print(b)
-    
+
     map.insert m "Foo" 10
     map.insert m "Bar" 20
 
@@ -46,9 +46,9 @@ void run() {
     call Hilti::print(b)
     b = map.exists m "Bar"
     call Hilti::print(b)
-    
+
     map.clear m
-    
+
     i = map.size m
     call Hilti::print(i)
     call Hilti::print(m)

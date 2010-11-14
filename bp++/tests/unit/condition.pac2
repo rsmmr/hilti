@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  hilti-build -m %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  echo 1234567890567890 | ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -9,10 +9,10 @@ module Mini;
 export type test = unit {
 
        a: bytes &length=4;
-       
+
        t1: test2(True)
             { print self.t1.b; print self.t1.c; }
-            
+
        t2: test2(False)
             { print self.t2.b; print self.t2.c; }
 

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out | sort | uniq -c | sort -n -k 2 >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -16,20 +16,20 @@ void func_with_globals() {
 }
 
 void run() {
-    thread.schedule 1 func_with_globals() 
-    thread.schedule 2 func_with_globals() 
-    thread.schedule 3 func_with_globals() 
-    thread.schedule 4 func_with_globals() 
-    thread.schedule 5 func_with_globals() 
-    thread.schedule 1 func_with_globals() 
-    thread.schedule 2 func_with_globals() 
-    thread.schedule 3 func_with_globals() 
-    thread.schedule 4 func_with_globals() 
-    thread.schedule 5 func_with_globals() 
-    thread.schedule 1 func_with_globals() 
-    thread.schedule 2 func_with_globals() 
-    thread.schedule 3 func_with_globals() 
-    thread.schedule 4 func_with_globals() 
-    thread.schedule 5 func_with_globals() 
+    thread.schedule 1 func_with_globals()
+    thread.schedule 2 func_with_globals()
+    thread.schedule 3 func_with_globals()
+    thread.schedule 4 func_with_globals()
+    thread.schedule 5 func_with_globals()
+    thread.schedule 1 func_with_globals()
+    thread.schedule 2 func_with_globals()
+    thread.schedule 3 func_with_globals()
+    thread.schedule 4 func_with_globals()
+    thread.schedule 5 func_with_globals()
+    thread.schedule 1 func_with_globals()
+    thread.schedule 2 func_with_globals()
+    thread.schedule 3 func_with_globals()
+    thread.schedule 4 func_with_globals()
+    thread.schedule 5 func_with_globals()
 }
 

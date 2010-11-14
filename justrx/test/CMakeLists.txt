@@ -12,6 +12,6 @@ else ( ENABLE_LLVM )
 
     add_executable(testregex testregex.c)
     target_link_libraries(testregex jrx)
-    
+
 endif ( ENABLE_LLVM )
 

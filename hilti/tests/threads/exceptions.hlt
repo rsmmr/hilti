@@ -116,7 +116,7 @@ void run() {
     jump @loop
 
 @exit:
-    call Hilti::print("Done", True) 
+    call Hilti::print("Done", True)
     return.void
 }
 

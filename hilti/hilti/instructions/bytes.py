@@ -6,7 +6,7 @@ Bytes
 ``bytes`` is a data type for storing sequences of raw bytes. It is optimized
 for storing and operating on large amounts of unstructured data. In
 particular, it provides efficient subsequence and append operations. Bytes are
-forward-iterable. 
+forward-iterable.
 """
 
 import llvm.core
@@ -27,19 +27,19 @@ def llvmEnd(cg):
 @hlt.type(None, 100)
 class IteratorBytes(type.Iterator):
     """Type for iterating over ``bytes``.
-    
+
     location: ~~Location - Location information for the type.
     """
     def __init__(self, location=None):
         super(IteratorBytes, self).__init__(type.Bytes(), location=location)
-        
+
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
         typeinfo.c_prototype = "hlt_bytes_pos"
         return typeinfo
-    
+
     def llvmType(self, cg):
         """A ``bytes`` iterator is mapped to ``hlt_bytes_pos``."""
         return cg.llvmTypeInternal("__hlt_bytes_pos")
@@ -52,21 +52,21 @@ class IteratorBytes(type.Iterator):
         return llvmEnd(cg)
 
     ### Overridden from Iterator.
-    
+
     def derefType(self):
         return type.Integer(8)
-    
+
 @hlt.type("bytes", 9)
 class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
     """Type for ``bytes``.
-    
+
     location: ~~Location - Location information for the type.
     """
     def __init__(self, location=None):
         super(Bytes, self).__init__(location=location)
-        
+
     ### Overridden from HiltiType.
-    
+
     def llvmType(self, cg):
         """A ``bytes`` object is mapped to ``hlt_bytes *``."""
         return cg.llvmTypeGenericPointer()
@@ -76,12 +76,12 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
         typeinfo.c_prototype = "hlt::bytes *"
         typeinfo.to_string = "hlt::bytes_to_string"
         return typeinfo
-    
+
     ### Overridden from Constructable.
 
     def validateCtor(self, cg, val):
         return isinstance(val, str)
-    
+
     def llvmCtor(self, cg, val):
         """The constructor for ``bytes`` resembles the one for strings:
         ``b"abcdef"`` creates a new ``bytes`` object and initialized it with
@@ -92,29 +92,29 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
         # (1) one for storing the raw characters themselves.
         # (2) one for storing the bytes objects (which will point to (1))
         #
-        # Note that (2) needs to be dynamically intialized via an LLVM ctor. 
-        
+        # Note that (2) needs to be dynamically intialized via an LLVM ctor.
+
         size = len(val)
         array = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in val]
         array = llvm.core.Constant.array(llvm.core.Type.int(8), array)
-        
+
         data = cg.llvmNewGlobalConst(cg.nameNewGlobal("bytes"), array)
         datac = cg.builder().bitcast(data, self.llvmType(cg))
-    
+
         exception = cg.llvmAlloca(cg.llvmTypeExceptionPtr())
         ctx = cg.llvmCurrentExecutionContextPtr()
         newobj = cg.llvmCallCInternal("hlt_bytes_new_from_data", [datac, cg.llvmConstInt(size, 32), exception, ctx])
-        
+
         return newobj
-        
+
     def outputCtor(self, printer, val):
         printer.output('b"%s"' % util.unicode_escape(val))
-        
+
     ### Overriden from Iterable.
-        
+
     def iterType(self):
         return IteratorBytes()
-    
+
     ### Overriden from Unpackable.
 
     def formats(self, mod):
@@ -122,42 +122,42 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
         but still advance the unpacking iterator in the same way as the
         non-skip version. This can be used if the data itself is not
         uninteresting but it's end position is needed to then unpack any
-        subsequent data. 
+        subsequent data.
         """
-        
+
         packed = mod.scope().lookup("Hilti::Packed")
-        
+
         if not packed:
             util.internal_error("type Hilti::Packed is not defined")
-        
+
         packed = packed.type()
-            
+
         return [
-            ("BytesRunLength", packed, False,                   
+            ("BytesRunLength", packed, False,
               "A series of bytes preceded by an uint indicating its length."),
-              
+
             ("BytesFixed", type.Integer(32), False,
               "A series of bytes of fixed length specified by an additional integer argument"),
-              
+
             ("BytesDelim", type.Reference(type.Bytes()), False,
               "A series of bytes delimited by a final byte-sequence specified by an additional argument."),
-              
+
             ("SkipBytesRunLength", packed, False,
               "Like BytesRunLength, but does not return unpacked value."),
-              
+
             ("SkipBytesFixed", type.Integer(32), False,
               "Like BytesFixed, but does not return unpacked value."),
-              
+
             ("SkipBytesDelim", type.Reference(type.Bytes()), False,
               "Like BytesDelim, but does not return unpacked value."),
             ]
-        
+
     def llvmUnpack(self, cg, begin, end, fmt, arg):
         bytes = cg.llvmAlloca(self)
         iter = cg.llvmAlloca(type.IteratorBytes())
         exception = cg.llvmFrameExceptionAddr()
         ctx = cg.llvmCurrentExecutionContextPtr()
-        
+
         def unpackFixed(n, skip, begin):
             def _unpackFixed(case):
                 # We build a loop here even in the constant case, hoping that LLVM
@@ -166,69 +166,69 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
                 block_head = cg.llvmNewBlock("loop-head")
                 block_body = cg.llvmNewBlock("loop-body")
                 block_exit = cg.llvmNewBlock("loop-exit")
-    
+
                 width = n.type().width()
                 zero = cg.llvmConstInt(0, width)
                 one = cg.llvmConstInt(1, width)
-    
+
                 lop = cg.llvmOp(n, coerce_to=type.Integer(width))
-                
+
                 # Copy the start iterator.
                 cg.builder().store(begin, iter)
-                
-                # Make sure it's not already zero. 
+
+                # Make sure it's not already zero.
                 builder = cg.builder()
                 done = builder.icmp(llvm.core.IPRED_ULE, lop, zero)
                 builder.cbranch(done, block_exit, block_head)
-    
+
                 cg.pushBuilder(block_head)
                 j = cg.llvmAlloca(lop.type)
                 cg.llvmAssign(lop, j)
                 cg.builder().branch(block_body)
                 cg.popBuilder()
-                
+
                 # Loop body.
                 builder = cg.pushBuilder(block_body)
-                
+
                 byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception, ctx])
                 cur = builder.sub(builder.load(j), one)
                 builder.store(cur, j)
                 done = builder.icmp(llvm.core.IPRED_ULE, cur, zero)
                 builder.cbranch(done, block_exit, block_body)
                 cg.popBuilder()
-                
+
                 # Loop exit.
                 builder = cg.pushBuilder(block_exit)
-                
+
                 if not skip:
                     arg1 = operand.LLVM(begin, type.IteratorBytes())
                     arg2 = operand.LLVM(builder.load(iter), type.IteratorBytes())
                     val = cg.llvmCallC("hlt::bytes_sub", [arg1, arg2])
                 else:
                     val = llvm.core.Constant.null(cg.llvmTypeGenericPointer())
-                    
+
                 cg.llvmAssign(val, bytes)
-                    
+
                 # Leave builder on stack.
-                
+
             return _unpackFixed
-    
+
         def unpackRunLength(arg, skip):
             def _unpackRunLength(case):
                 # Note: this works only with constant arguments.  I think that's ok
-                # but: (FIXME) We should document that somewhere. 
+                # but: (FIXME) We should document that somewhere.
                 (n, iter) = cg.llvmUnpack(type.Integer(64), begin, end, arg)
                 n = operand.LLVM(n, type.Integer(n.type.width))
                 return unpackFixed(n, skip, iter)(case)
-            
+
             return _unpackRunLength
-        
+
         def unpackDelim(arg, skip):
             def _unpackDelim(case):
                 delim = ""
                 try:
                     # FIXME: This is set in llvmOp(). We should come up with a
-                    # better interface for getting the original value. 
+                    # better interface for getting the original value.
                     delim = arg._value
                 except AttributeError:
                     pass
@@ -237,21 +237,21 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
 
                 if delim and len(delim) == 1:
                     # We optimize for the case of a single, constant byte.
-                    
+
                     delim = cg.llvmConstInt(ord(delim), 8)
                     block_body = cg.llvmNewBlock("loop-body-start")
                     block_cmp = cg.llvmNewBlock("loop-body-cmp")
                     block_exit = cg.llvmNewBlock("loop-exit")
-        
+
                     # Copy the start iterator.
                     builder = cg.builder()
                     builder.store(begin, iter)
-                    
+
                     # Enter loop.
                     builder.branch(block_body)
-                    
+
                     # Loop body.
-                    
+
                         # Check whether end reached.
                     builder = cg.pushBuilder(block_body)
                     arg1 = operand.LLVM(builder.load(iter), type.IteratorBytes())
@@ -260,56 +260,56 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
                     builder = cg.builder()
                     builder.cbranch(done, block_exit, block_cmp)
                     cg.popBuilder()
-    
+
                         # Check whether we found the delimiter
                     builder = cg.pushBuilder(block_cmp)
                     byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception, ctx])
                     done = builder.icmp(llvm.core.IPRED_EQ, byte, delim)
                     builder.cbranch(done, block_exit, block_body)
                     cg.popBuilder()
-    
+
                     # Loop exit.
                     builder = cg.pushBuilder(block_exit)
-                    
+
                     if not skip:
                         arg1 = operand.LLVM(begin, type.IteratorBytes())
                         arg2 = operand.LLVM(builder.load(iter), type.IteratorBytes())
                         val = cg.llvmCallC("hlt::bytes_sub", [arg1, arg2])
                     else:
                         val = llvm.core.Constant.null(cg.llvmTypeGenericPointer())
-                        
+
                     cg.llvmAssign(val, bytes)
-                        
+
                 # Leave builder on stack.
-                    
+
                 else:
                     # Everything else we outsource to C.
                     # FIXME: Well, not yet ...
                     util.internal_error("byte unpacking with delimiters only supported for a single constant byte yet")
-                
+
             return _unpackDelim
 
         packed = cg.currentModule().scope().lookup("Hilti::Packed")
         assert packed
-        
+
         cases = [
             ("Hilti::Packed::BytesRunLength", unpackRunLength(arg, False)),
             ("Hilti::Packed::BytesFixed", unpackFixed(arg, False, begin)),
             ("Hilti::Packed::BytesDelim", unpackDelim(arg, False)),
-            
+
             ("Hilti::Packed::SkipBytesRunLength", unpackRunLength(arg, True)),
             ("Hilti::Packed::SkipBytesFixed", unpackFixed(arg, True, begin)),
             ("Hilti::Packed::SkipBytesDelim", unpackDelim(arg, True)),
             ]
 
         cg.llvmSwitch(fmt, cases)
-        
+
         # It's fine to check for an exception at the end.
         cg.llvmExceptionTest(exception)
-        
-        return (cg.builder().load(bytes), cg.builder().load(iter))            
 
-    
+        return (cg.builder().load(bytes), cg.builder().load(iter))
+
+
 @hlt.overload(New, op1=cType(cBytes), target=cReferenceOf(cBytes))
 class New(Operator):
     """
@@ -328,7 +328,7 @@ class IterIncr(Operator):
     def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_pos_incr", [self.op1()])
         cg.llvmStoreInTarget(self, result)
-        
+
 @hlt.overload(IncrBy, op1=cIteratorBytes, op2=cIntegerOfWidth(64), target=cIteratorBytes)
 class IterIncrBy(Operator):
     """
@@ -342,7 +342,7 @@ class IterIncrBy(Operator):
 @hlt.overload(Deref, op1=cIteratorBytes, target=cIntegerOfWidth(8))
 class IterDeref(Operator):
     """
-    Returns the element the iterator is pointing at. 
+    Returns the element the iterator is pointing at.
     """
     def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_pos_deref", [self.op1()])
@@ -386,7 +386,7 @@ class Empty(Instruction):
 class Append(Instruction):
     """Appends *op2* to *op1*. The two operands must not refer to the same
     object.
-    
+
     Raises ValueError if *op1* has been frozen, or if *op1* is the same as
     *op2*.
     """
@@ -401,7 +401,7 @@ class Sub(Instruction):
     def _codegen(self, cg):
         result = cg.llvmCallC("hlt::bytes_sub", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
-        
+
 @hlt.instruction("bytes.copy", op1=cReferenceOf(cBytes), target=cReferenceOf(cBytes))
 class Copy(Instruction):
     """Copy the contents of *op1* into a new byte instance."""
@@ -462,7 +462,7 @@ class Freeze(Instruction):
     def _codegen(self, cg):
         freeze = constant.Constant(1, type.Bool())
         cg.llvmCallC("hlt::bytes_freeze", [self.op1(), operand.Constant(freeze)])
-        
+
 @hlt.instruction("bytes.unfreeze", op1=cReferenceOf(cBytes))
 class Unfreeze(Instruction):
     """Unfreezes the bytes object *op1*. An unfrozen bytes object can be
@@ -472,7 +472,7 @@ class Unfreeze(Instruction):
     def _codegen(self, cg):
         freeze = constant.Constant(0, type.Bool())
         cg.llvmCallC("hlt::bytes_freeze", [self.op1(), operand.Constant(freeze)])
-    
+
 @hlt.constraint("ref<bytes> or iterator<bytes>")
 def _bytesOrIterator(ty, op, i):
     (bytes, msg) = cIteratorBytes(ty, op, i)
@@ -489,5 +489,5 @@ class IsFrozen(Instruction):
             result = cg.llvmCallC("hlt::bytes_is_frozen", [self.op1()])
         else:
             result = cg.llvmCallC("hlt::bytes_pos_is_frozen", [self.op1()])
-            
+
         cg.llvmStoreInTarget(self, result)

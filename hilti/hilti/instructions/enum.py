@@ -166,7 +166,7 @@ class Enum(type.ValueType, type.Constable):
 class Equal(Operator):
     """
     Returns True if *op1* equals *op2*. Note that two ``Undef`` value will
-    match, no matter if they have different values set. 
+    match, no matter if they have different values set.
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())

@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Support functions for HILTI's XXX data type.
 
 #ifndef HILTI_ENUM_H

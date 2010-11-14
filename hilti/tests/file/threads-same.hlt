@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC:  hilti-build %INPUT -o a.out
-# @TEST-EXEC:  ./a.out 
+# @TEST-EXEC:  ./a.out
 # @TEST-EXEC:  sort <output.log >output.log.sorted
 # @TEST-EXEC:  btest-diff output.log.sorted
 
@@ -38,7 +38,7 @@ void run() {
 
     local ref<file> f
     f = new file
-    file.open f "output.log" 
+    file.open f "output.log"
 
     thread.schedule 1 print1(f)
     thread.schedule 2 print2(f)

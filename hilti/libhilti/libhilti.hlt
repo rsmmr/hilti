@@ -6,7 +6,7 @@ module hlt
 
 import Hilti
 
-# Conversion function. Note that these must be declated with an "any" 
+# Conversion function. Note that these must be declated with an "any"
 # parameter to make their C signatures compatible. They will nevertheless get
 # only parameters of "their" type.
 
@@ -181,7 +181,7 @@ declare "C-HILTI" iterator<set<*>> set_iter_incr(iterator<set<*>> i)
 declare "C-HILTI" any set_iter_deref(iterator<set<*>> i)
 declare "C-HILTI" bool set_iter_eq(iterator<set<*>> i1, iterator<set<*>> i2)
 
-## 
+##
 
 declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_live(string interface)
 declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_offline(string interface)
@@ -221,15 +221,15 @@ declare "C" void abort()
 void call_saved_callables() {
     local ref<callable<void>> c
     local bool have
-    
+
 @loop:
     c = .callable.next
     have = ref.cast.bool c
     if.else have @do_call @exit
-    
-@do_call:    
+
+@do_call:
     call.tail.void c @loop
-    
+
 @exit:
    return.void
 }

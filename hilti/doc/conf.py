@@ -212,22 +212,22 @@ import copy
 def sigToRst(sig):
     def fmt(op, tag):
         if op:
-            return " %s" % sig.getOpDoc(op) 
+            return " %s" % sig.getOpDoc(op)
         else:
             return ""
-        
+
     op1 = fmt(sig._op1, "op1")
     op2 = fmt(sig._op2, "op2")
     op3 = fmt(sig._op3, "op3")
-    target = fmt(sig._target, "target") 
+    target = fmt(sig._target, "target")
     if target:
         target += " = "
-        
+
     doc = [".. parsed-literal::", "", "  %s**%s**%s%s%s" % (target, sig._name, op1, op2, op3), ""]
-    
+
 #        if sig._op1:
 #            doc += ["* Operand 1: %s" % type.name(sig._op1, docstring=True)]
-#        
+#
 #        if sig._op2:
 #            doc += ["* Operand 2: %s" % type.name(sig._op2, docstring=True)]
 #
@@ -239,36 +239,36 @@ def sigToRst(sig):
 #
     if doc:
         doc += [""]
-            
+
     return doc
 
 # Reformat the instruction signatures.
 def reformatSignature(app, what, name, obj, options, signature, return_annotation):
     if what != "class" or not name.startswith("hilti.instructions.") or name.endswith("__init__"):
         return (signature, return_annotation)
-    
+
     str = ""
     sig = obj._signature
-    
+
     if sig.op1():
         str += "op1, "
-    
+
     if sig.op2():
         str += "op2, "
-        
+
     if sig.op3():
         str += "op3, "
-        
+
     if sig.target():
         str += "target"
-        
+
     return ("(%s)" % str, return_annotation)
 
-# Reformat the __doc__ string to include signature. 
+# Reformat the __doc__ string to include signature.
 def addSignature(app, what, name, obj, options, lines):
-    
+
     if what != "class" or not name.startswith("hilti.instructions."):
-        return 
+        return
 
     # Prepend signature *in place*.
     tmp = copy.deepcopy(lines)
@@ -276,7 +276,7 @@ def addSignature(app, what, name, obj, options, lines):
     lines += sigToRst(obj._signature)
     lines += tmp
 
-import inspect    
+import inspect
 import re
 
 Substitutions = {}
@@ -285,7 +285,7 @@ def addSubst(name, role, path, level):
     if name in Substitutions:
         (oname, orole, opath, olevel) = Substitutions[name]
         if olevel <= level:
-            # Lowest level wins. 
+            # Lowest level wins.
             return
 
     Substitutions[name] = (name, role, path, level)
@@ -296,48 +296,48 @@ def extractSubstitutions(obj, path, level, recurse):
     # Add this module and then just climb down.
     name = obj.__name__.split(".")[-1]
     addSubst(name, "mod", path, level)
-    
+
     if "__all__" in obj.__dict__:
         # Add functions and otherwise just climb down.
         for (name, value) in inspect.getmembers(obj):
             if inspect.isfunction(value):
                 val_path = "%s.%s" % (path, name)
                 addSubst(name, "func", val_path, level + 1)
-        
-        # Just climb down, 
+
+        # Just climb down,
         for child in obj.__all__:
             extractSubstitutions(obj.__dict__[child], "%s.%s" % (path, child), level + 1, True)
-        return 
-    
+        return
+
     for (name, value) in inspect.getmembers(obj):
 
         if name.startswith("_"):
             continue
-        
+
         val_path = "%s.%s" % (path, name)
         role = None
 
         if inspect.isclass(value):
             role = "class"
-                    
+
         elif inspect.ismodule(value):
             role = "mod"
-            
+
         elif inspect.isfunction(value):
             role = "func"
-            
+
         elif inspect.ismethod(value):
             role = "meth"
-            
+
         elif isinstance(value, int) or isinstance(value, str):
             role = "const"
 
         if role:
             addSubst(name, role, val_path, level + 1)
-            
+
         if inspect.isclass(value):
             extractSubstitutions(value, val_path, level + 1, False)
-            
+
 # Expand class references of the form ~foo.
 def expandReferences(app, what, name, obj, options, lines):
 
@@ -345,35 +345,35 @@ def expandReferences(app, what, name, obj, options, lines):
         if not tag:
             tag = m.group(1)
             addl = m.group(2)
-        
+
         try:
             (name, role, path, level) = Substitutions[tag]
-            
+
             if addl:
                 role = "meth"
             else:
                 addl = ""
-            
+
             if not plural:
                 return ":%s:`~%s%s`" % (role, path, addl)
             else:
                 return ":%s:`%ss <%s%s>`" % (role, tag, path, addl)
-                
+
         except KeyError:
             if not plural and tag.endswith("s"):
                 # Lets see if we find the singular ...
                 repl = replace(None, tag[:-1], addl, True)
                 if repl:
                     return repl
-                    
+
             if not plural:
                 print >>sys.stderr, "warning: ~~%s not in substitution table (%s)" % (tag, obj)
                 return m.group(0)
             else:
                 return None
-            
+
     regexp = re.compile(r"~~(\w+)((\.\w+)+)?\b")
-    
+
     for i in range(len(lines)):
         lines[i] = regexp.sub(replace, lines[i])
 
@@ -384,7 +384,7 @@ def expandMarkup(app, what, name, obj, options, lines):
     re_raises = re.compile(r"^\s*Raises:\s*(\S+)$")
     re_note = re.compile(r"^\s*Note:\s*(.*)$")
     re_todo = re.compile(r"^\s*To-?[dD]o:\s*(.*)$")
-    
+
     # We keep a state machine
     FIRST = 1
     TEXT = 2
@@ -395,7 +395,7 @@ def expandMarkup(app, what, name, obj, options, lines):
     TODO = 7
 
     state = FIRST
-    
+
     first = []
     text = []
     args = []
@@ -405,14 +405,14 @@ def expandMarkup(app, what, name, obj, options, lines):
     todo = []
 
     newlines = []
-    
+
     for line in lines:
 
         if state == FIRST:
             i = line.find(".")
             if i < 0:
                 i = line.find(":")
-            
+
             if i < 0:
                 first += [line]
             else:
@@ -422,37 +422,37 @@ def expandMarkup(app, what, name, obj, options, lines):
             continue
 
         next_state = state
-        
+
         m = None
         for (regexp, nst) in [(re_returns, RET), (re_raises, RAISES), (re_todo, TODO), (re_note, NOTE), (re_arg, ARGS)]:
             m = regexp.match(line)
             if m:
                 next_state = nst
                 break
-            
+
         if not m:
             # Continue current section.
             if state == TEXT:
                 text += [line]
-                
+
             elif state == ARGS:
                 if line.strip():
                     args[-1] += " " + line.strip()
-                
+
             elif state == RET:
                 if line.strip():
                     ret[-1] += " " + line.strip()
-                    
+
             elif state == RAISES:
                 if line.strip():
                     raises[-1] += " " + line.strip()
-                
+
             elif state == NOTE:
                 note += [line]
-                
+
             elif state == TODO:
                 todo += [line]
-                
+
             else:
                 assert False
 
@@ -462,27 +462,27 @@ def expandMarkup(app, what, name, obj, options, lines):
                 (id, type, descr) = (m.group(1), m.group(2), m.group(3))
                 newlines = ["- %s **%s** - %s" % (type.strip(), id.strip(), descr.strip())]
                 args += newlines
-                
+
             if next_state == RET:
                 (type, descr) = (m.group(1), m.group(2))
                 newlines = ["- %s - %s" % (type.strip(), descr.strip())]
                 ret += newlines
-                
+
             if next_state == RAISES:
                 type = m.group(1)
                 newlines = ["- %s" % type.strip()]
                 raises += newlines
-                
+
             if next_state == NOTE:
                 txt = m.group(1)
                 newline = txt
                 note += [newline]
-                
+
             if next_state == TODO:
                 txt = m.group(1)
                 newline = txt
                 todo += [newline]
-            
+
             state = next_state
 
     # Copy back to lines in place.
@@ -490,7 +490,7 @@ def expandMarkup(app, what, name, obj, options, lines):
 
     for line in first:
         lines += [line]
-    
+
     for line in text:
         lines += [line]
 
@@ -520,7 +520,7 @@ def expandMarkup(app, what, name, obj, options, lines):
         for line in raises:
             lines += [line + ""]
         lines += [""]
-            
+
     if note:
         lines += [""]
         lines += [".. note::"]
@@ -528,7 +528,7 @@ def expandMarkup(app, what, name, obj, options, lines):
 
         for line in note:
             lines += ["   " + line]
-        
+
     if todo:
         lines += [""]
         lines += [".. todo::"]
@@ -536,7 +536,7 @@ def expandMarkup(app, what, name, obj, options, lines):
 
         for line in todo:
             lines += ["   " + line]
-            
+
 #    for l in lines:
 #        print l
 #    print "============================="
@@ -549,24 +549,24 @@ def processDocString(app, what, name, obj, options, lines):
 
 #    for l in lines:
 #        print l
-#    print "============================="    
-    
+#    print "============================="
+
 #    print >>sys.stderr, "<<<<<<<<<<<<<<<<<<<"
 #    for line in lines:
 #        print >>sys.stderr, line,
 #    print >>sys.stderr, ">>>>>>>>>>>>>>>>>>>"
-    
+
 def setup(app):
-    
+
     extractSubstitutions(hilti, "hilti", 1, True)
 
     app.connect('autodoc-process-docstring', processDocString)
     app.connect('autodoc-process-signature', reformatSignature)
-    
+
 #    lines = []
 #    for line in open("test.txt"):
 #        lines += [line]
-#        
+#
 #    expandMarkup(0, 0, 0, 0, 0, lines)
 #    sys.exit(1)
-        
+

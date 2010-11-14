@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -d %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
 # @TEST-EXEC:  HILTI_DEBUG=dummy1:test:dummy2 ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -11,5 +11,5 @@ import Hilti
 void run() {
     debug.msg "test" "My little test debug msg 1: %d" (42)
     debug.msg "test" "My little test debug msg 2" ()
-}     
+}
 

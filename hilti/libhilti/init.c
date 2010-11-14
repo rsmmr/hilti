@@ -1,7 +1,7 @@
 /* $Id$
- * 
+ *
  * Initialization code that needs to run once at program start.
- * 
+ *
  */
 
 #include <locale.h>
@@ -26,11 +26,11 @@ void hlt_init()
 
     // Initialize configuration to defaults.
     __hlt_config_init();
-    
+
     // Initialize the garbage collector.
     __hlt_init_gc();
 
-    // Initialize debug streams from environment. 
+    // Initialize debug streams from environment.
     const char* dbg = getenv("HILTI_DEBUG");
     if ( dbg ) {
         hlt_exception* excpt = 0;
@@ -41,13 +41,13 @@ void hlt_init()
             fprintf(stderr, "cannot parse HILTI_DEBUG environment variable");
             exit(1);
         }
-        
+
         hlt_config_set(&cfg);
     }
 
     for ( int i = 0; i < _num_registered_funcs; i++ )
         (*(_registered_funcs[i]))();
-        
+
 
     // This is easy to forget ...
     __hlt_debug_printf_internal("hilti-trace", "Reminder: hilti-trace requires compiling with debugging level > 1.");

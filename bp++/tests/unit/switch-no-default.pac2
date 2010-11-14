@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  hilti-build -m %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  echo 1234567890 | ./a.out -p Mini::test >output 2>&1
 # @TEST-EXEC:  echo 2234567890 | ./a.out -p Mini::test >>output 2>&1
 # @TEST-EXEC:  echo 3234567890 | ./a.out -p Mini::test >>output 2>&1 || true
@@ -9,16 +9,16 @@
 module Mini;
 
 export type test = unit {
-       
+
        a: bytes &length=1;
-       
+
        switch ( self.a ) {
            b"1" -> b1: bytes &length=4 &default=b"<not set>";
            b"2" -> b2: bytes &length=4 &default=b"<not set>";
            };
-           
-       c: bytes &length=5 
-           { 
+
+       c: bytes &length=5
+           {
            print "b1", self.b1;
            print "b2", self.b2;
            }

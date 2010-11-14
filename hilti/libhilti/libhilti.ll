@@ -10,15 +10,15 @@
 %__hlt_func = type void (%__hlt_bframe*, %__hlt_eoss*, %__hlt_execution_context*)
 
 ; A basic frame
-%__hlt_bframe = type { 
+%__hlt_bframe = type {
     %__hlt_continuation, ; Normal continuation.
     %__hlt_continuation, ; Exceptional continuation.
     %__hlt_exception*    ; Current exception.
 }
 
-; A continuation. 
+; A continuation.
 ; Must match hlt_continuation in continuation.h. See there for fields.
-%__hlt_continuation = type { 
+%__hlt_continuation = type {
     %__hlt_func*,
     %__hlt_bframe*,
     %__hlt_eoss*
@@ -27,9 +27,9 @@
 ; A callable is just a (partially initaliazed) continuation.
 %__hlt_callable = type %__hlt_continuation
 
-; Run-time type information. 
+; Run-time type information.
 ; Must match __hlt_type_info in rtti.h. See there for fields.
-%__hlt_type_info = type { 
+%__hlt_type_info = type {
     i16,
     i16,
     %__hlt_cchar*,
@@ -44,15 +44,15 @@
 
 ; An exception type.
 ; Must match hlt_exception_type in exceptions.h. See there for fields.
-%__hlt_exception_type = type { 
+%__hlt_exception_type = type {
     %__hlt_cchar*,
     %__hlt_exception_type*,
     %__hlt_type_info*
 }
-    
+
 ; An exception instance.
 ; Must match hlt_exception in exceptions.h. See there for fields.
-%__hlt_exception = type { 
+%__hlt_exception = type {
     %__hlt_exception_type*,
     %__hlt_continuation*,
     %__hlt_void*,
@@ -66,9 +66,9 @@
 %__hlt_vthread_id = type i64
 
 ; The common header of all per-thread execution contexts. This
-; structure is then followed with the set of all global variables. 
+; structure is then followed with the set of all global variables.
 ; Must match hlt_exception in context.h. See there for fields.
-%__hlt_execution_context = type { 
+%__hlt_execution_context = type {
     %__hlt_vthread_id,
     %__hlt_void*,
     %__hlt_continuation*,
@@ -84,16 +84,16 @@
 ; This must match with what LLVM expects for the llvm.global_ctorsarray.
 %__hlt_global_ctor = type { i32, void() * }
 
-; A hook. 
+; A hook.
 ; This must match with hook.c defines as hlt_hook.
 %__hlt_hook = type { i8*, i64, %__hlt_hook_func** }
 
-; A hook function. 
+; A hook function.
 ; This must match with hook.c defines as hlt_hook_func.
 %__hlt_hook_func = type { i8*, i64, i64 }
 
 ;;; The following libhilti functions do not fit normal C_HILTI calling
-;;; conventions and thus declared here directly.  
+;;; conventions and thus declared here directly.
 %__hlt_bytes_pos = type {i8*, i8*}
 declare i8 @__hlt_bytes_extract_one(%__hlt_bytes_pos*, %__hlt_bytes_pos, %__hlt_exception**, %__hlt_execution_context*)
 
@@ -131,7 +131,7 @@ declare %__hlt_void* @__hlt_timer_new_function(%__hlt_continuation*, %__hlt_exce
 ;;; Threads
 declare void @__hlt_thread_mgr_schedule(%__hlt_void*, %__hlt_vthread_id, %__hlt_continuation*, %__hlt_exception**, %__hlt_execution_context*)
 
-;;; A function with the standard header that simply aborts. 
+;;; A function with the standard header that simply aborts.
 declare void @__hlt_abort(%__hlt_bframe*, %__hlt_eoss*, %__hlt_execution_context*)
 
 ;;; Debugging.
@@ -140,7 +140,7 @@ declare void @__hlt_debug_print_ptr(i8*, i8*, %__hlt_execution_context*)
 declare void @__hlt_debug_push_indent(%__hlt_execution_context*)
 declare void @__hlt_debug_pop_indent(%__hlt_execution_context*)
 
-;;; Callables. 
+;;; Callables.
 declare %__hlt_callable** @__hlt_callable_next(%__hlt_execution_context*, %__hlt_exception**)
 
 ;;; Globals defined in globals.h

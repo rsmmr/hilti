@@ -1,6 +1,6 @@
 # $Id$
 #
-# The lexer. 
+# The lexer.
 
 import binpac.type as type
 import binpac.location as location
@@ -8,13 +8,13 @@ import binpac.util as util
 import binpac.expr as expr
 
 # Language keywords. They will be turned into the corresponding all-uppercase
-# token. 
+# token.
 keywords = ["module", "type", "export", "unit", "print", "list",
-            "global", "const", "if", "else", "var", "on", "switch", 
+            "global", "const", "if", "else", "var", "on", "switch",
             "extern", "local", "return", "foreach", "enum", "bitfield", "iter",
             "tuple"
             ]
-            
+
 control_props = ["%debug", "%init", "%done"]
 
 # Keywords for simple types, and what we turn them into.
@@ -103,14 +103,14 @@ def t_INT(t):
     t.type = "PACTYPE"
     t.value = type.SignedInteger(int(t.value[3:]))
     return t
-   
+
 def t_UINT(t):
     r'uint(8|16|32|64)'
     t.type = "PACTYPE"
     t.value = type.UnsignedInteger(int(t.value[4:]))
     return t
 
-# Ignore white space. 
+# Ignore white space.
 t_ignore  = ' \t'
 
 # Track line numbers.
@@ -128,25 +128,25 @@ def t_comment(t):
 def t_CONST_INT(t):
     r'[+-]\d+'
     t.type = "CONSTANT"
-    
+
     try:
         t.value = (int(t.value), type.SignedInteger(64))
     except ValueError:
         error(t, "cannot parse signed integer %s" % t.value)
         t.value = (0, type.SignedInteger(64))
-        
+
     return t
 
 def t_CONST_UINT(t):
     r'\d+'
     t.type = "CONSTANT"
-    
+
     try:
         t.value = (int(t.value), type.UnsignedInteger(64))
     except ValueError:
         error(t, "cannot parse unsigned integer %s" % t.value)
         t.value = (0, type.UnsignedInteger(64))
-        
+
     return t
 
 def t_CONST_STRING(t):
@@ -171,7 +171,7 @@ def t_CTOR_BYTES(t):
     return t
 
 def t_CTOR_REGEXP(t):
-    r'/[^\n]*?(?<!\\)/'    
+    r'/[^\n]*?(?<!\\)/'
     t.type = "REGEXP"
     t.value = t.value[1:-1]
     return t
@@ -179,31 +179,31 @@ def t_CTOR_REGEXP(t):
 # Identifiers.
 def t_IDENT(t):
     r'[%&]?[_a-zA-Z]([a-zA-Z0-9_]|::%?)*'
-    
+
     if t.value.startswith("&"):
         t.value = t.value[1:]
         t.type = "ATTRIBUTE"
-        
+
     elif t.value.startswith("%"):
-        
+
         if t.value in control_props:
             token = t.value[1:].upper()
             t.type = token
-        
+
         else:
             t.value = t.value[1:]
             t.type = "PROPERTY"
-    
+
     elif t.value in types:
         t.value = types[t.value]()
         t.type = "PACTYPE"
-        
+
     elif t.value in keywords or t.value in types:
         token = t.value.upper()
         assert token in tokens
         t.type = token
-    
-    return t    
+
+    return t
 
 def t_DOLLARDOLLAR(t):
     r'\$\$'

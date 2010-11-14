@@ -1,6 +1,6 @@
 # $Id$
 #
-# An overlay for IP headers. 
+# An overlay for IP headers.
 
 module IP
 

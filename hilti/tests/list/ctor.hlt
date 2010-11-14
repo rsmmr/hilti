@@ -1,12 +1,12 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 # FIXME
-# Note that these ctors currently don't work for integer lists 
-# as we can't infer the bit-width. Also, for the the same reason 
+# Note that these ctors currently don't work for integer lists
+# as we can't infer the bit-width. Also, for the the same reason
 # we can't do empty lists.
 
 module Main
@@ -23,7 +23,7 @@ void run() {
     local ref<list<bool>> l
     l = list<bool>(True, False, True)
     call Hilti::print(l)
-    
+
     call Hilti::print(gl)
     call Hilti::print(gl2)
     call Hilti::print(gl3)

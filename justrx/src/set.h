@@ -1,8 +1,8 @@
 // $Id$
 //
 // Simple sets of fixed-sized value types (which must be value-copyable).
-// 
-// TODO: We should use a heap structure rather than a bubbling at insertion. 
+//
+// TODO: We should use a heap structure rather than a bubbling at insertion.
 
 #ifndef JRX_SET_H
 #define JRX_SET_H
@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const int SET_DEFAULT_SIZE = 2;                                        
-static const double SET_GROWTH_FACTOR = 1.5;                                   
+static const int SET_DEFAULT_SIZE = 2;
+static const double SET_GROWTH_FACTOR = 1.5;
 
 #define SET_STD_EQUAL(a,b) ( a < b ? -1 : (a == b ? 0 : 1) )
 
@@ -260,4 +260,4 @@ static inline set_elem_t set_##name##_iter_deref(set_##name* set, set_size_t ite
     if ( (set)->size )                                                         \
         var = (set)->elems[0];                                                 \
     for ( __i##var = 0; __i##var < (set)->size; __i##var++, var = (set)->elems[ __i##var < (set)->size ? __i##var : 0] )
-#endif                                                                         
+#endif

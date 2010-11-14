@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -P %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build -P %INPUT -o a.out
 # @TEST-EXEC:  btest-diff prototypes.h
 
 module Main
@@ -10,4 +10,4 @@ import Hilti
 type Foo = enum { A, BC, DEF }
 
 void run() {
-}     
+}

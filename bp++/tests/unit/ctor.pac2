@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  echo 1234567890 | ./a.out -p Mini::test >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -9,7 +9,7 @@ module Mini;
 export type test = unit {
        a: bytes &length=4;
        b: bytes &length=6;
-       
+
        on %init {
            print "CTOR";
        }

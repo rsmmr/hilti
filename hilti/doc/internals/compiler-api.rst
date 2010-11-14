@@ -10,11 +10,11 @@ of subpackages residing in the ``hilti.*`` namespace:
 
 :ref:`hilti-core`
    A set of core classes representing mostly elements of a parsed
-   HILTI |ast|. These classes are used across all other components. 
-                  
+   HILTI |ast|. These classes are used across all other components.
+
 :ref:`hilti-parser`
    The *parser* turns HILTI programs from ASCII notation into an
-   |ast|.                   
+   |ast|.
 
 :ref:`hilti-checker`
    The *checker* validates the semantic correctness of a HILTI |ast|.
@@ -24,10 +24,10 @@ of subpackages residing in the ``hilti.*`` namespace:
 
 :ref:`hilti-canonifier`
    The *canonifier* transforms an |ast| into a form suitable for use
-   by the code-generator. 
+   by the code-generator.
 
 :ref:`hilti-codegen`
-   The *code generator* generates LLVM code from an AST. 
+   The *code generator* generates LLVM code from an AST.
 
 
 In the following, we describe the public interface of these
@@ -35,7 +35,7 @@ subpackages. For most of them, the public interface consists of a
 single function to access the package's functionality. The only
 exception is the ``core`` module, which provides a general set of
 classes and utility functions. The internals of the other subpackets
-are described in :ref:`python-internals`. 
+are described in :ref:`python-internals`.
 
 .. _hilti-core:
 
@@ -43,14 +43,14 @@ are described in :ref:`python-internals`.
 --------------
 
 The *core* package provides a number of further subpackages, which
-we list individually in the following. 
+we list individually in the following.
 
 ``ast``
 ~~~~~~~
 
 .. automodule:: hilti.core.ast
    :members:
-   
+
 ``block``
 ~~~~~~~~~
 
@@ -159,7 +159,7 @@ we list individually in the following.
 .. automodule:: hilti.canonifier
 .. autofunction:: hilti.canonifier.canonifyAST
 
-.. List the canonifications performed. 
+.. List the canonifications performed.
 .. automodule:: hilti.canonifier.module
 .. automodule:: hilti.canonifier.flow
 

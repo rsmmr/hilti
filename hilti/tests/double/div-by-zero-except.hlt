@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -10,11 +10,11 @@ import Hilti
 
 void run() {
     local double d
-    
+
     # Fancy way to produce a zero. :-)
     d = double.sub 7.77 7.77
     d = double.div 42.77 d
     call Hilti::print (d)
-}     
+}
 
 

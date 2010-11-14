@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  printf 1234567890 | HILTI_DEBUG=binpac-verbose ./a.out -p Mini::test >output 2>&1
 # @TEST-EXEC:  echo ======== >>output 2>&1
 # @TEST-EXEC:  printf 12345      | HILTI_DEBUG=binpac-verbose ./a.out -p Mini::test >>output 2>&1

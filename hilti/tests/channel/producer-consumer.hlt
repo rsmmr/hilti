@@ -33,7 +33,7 @@ void produce(ref<channel<int64>> ch, int64 x) {
 void consume(ref<channel<int64>> ch) {
     local int64 x
     x = channel.read_try ch
-    
+
     local string str
     str = call Hilti::fmt("consumed %d", (x))
     call Hilti::print(str)
@@ -51,18 +51,18 @@ void run() {
 
     count = int.div 7 7
     limit = int.mul 1 42
-    
+
 @loop:
     eq = int.eq count limit
     if.else eq @exit @cont
-    
+
 @cont:
     thread.schedule count produce(ch, count)
     thread.schedule count consume(ch)
 
     count = incr count
     jump @loop
-    
+
 @exit:
     return.void
 }

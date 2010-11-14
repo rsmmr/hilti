@@ -1,9 +1,9 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
-# 
+#
 # These are all supposed to throw exceptions.
 
 module Main
@@ -14,10 +14,10 @@ void run() {
     local int32 i
     local int64 s
     local ref<list<int32>> l
-    
+
     l = new list<int32>
     i = list.pop_front l
-}     
+}
 
 ### @TEST-START-NEXT
 
@@ -29,10 +29,10 @@ void run() {
     local int32 i
     local int64 s
     local ref<list<int32>> l
-    
+
     l = new list<int32>
     i = list.pop_back l
-}     
+}
 
 ### @TEST-START-NEXT
 
@@ -44,10 +44,10 @@ void run() {
     local int32 i
     local int64 s
     local ref<list<int32>> l
-    
+
     l = new list<int32>
     i = list.front l
-}     
+}
 
 ### @TEST-START-NEXT
 
@@ -59,8 +59,8 @@ void run() {
     local int32 i
     local int64 s
     local ref<list<int32>> l
-    
+
     l = new list<int32>
     i = list.back l
-}     
+}
 

@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Support functions for HILTI's integer data type.
 
 #ifndef HILTI_INT_H

@@ -939,7 +939,7 @@ __asm__ __volatile__ (
 }
 
 }
-    
+
 #if 0
 void usage( char *progname ) {
   fprintf (stdout,"%s <-n> <-N> <-d hex64string> <-e hex64string>\n",
@@ -986,7 +986,7 @@ int main(int argc, char **argv) {
 	break;
       default:
 	return -1;
-    }    
+    }
   }
 
   if ((!encode_flag) && (!decode_flag)) {

@@ -10,14 +10,14 @@ valid. If an index is read that has not been yet written to, type T's default
 value is returned. Read operations are fast, as are insertions as long as the
 indices of inserted elements are not larger than the vector's last index.
 Inserting can be expensive however if an index beyond the vector's current end
-is given. 
+is given.
 
 Vectors are forward-iterable. An iterator always corresponds to a specific
 index and it is therefore safe to modify the vector even while iterating over
 it. After any change, the iterator will locate the element which is now
 located at the index it is pointing at. Once an iterator has reached the
 end-position however, it will never return an element anymore (but raise an
-~~InvalidIterator exception), even if more are added to the vector. 
+~~InvalidIterator exception), even if more are added to the vector.
 """
 
 import llvm.core
@@ -30,19 +30,19 @@ from hilti.instructions.operators import *
 @hlt.type(None, 101)
 class IteratorVector(type.Iterator):
     """Type for iterating over ``vector``.
-    
+
     t: ~~Vector - The Vector type.
     """
     def __init__(self, t, location=None):
         super(IteratorVector, self).__init__(t, location)
-        
+
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
         typeinfo.c_prototype = "hlt_vector_iter"
         return typeinfo
-    
+
     def llvmType(self, cg):
         """An ``iterator<vector<T>>`` is mapped to ``struct hlt_vector_iter``."""
         return llvm.core.Type.struct([cg.llvmTypeGenericPointer(), llvm.core.Type.int(64)])
@@ -55,22 +55,22 @@ class IteratorVector(type.Iterator):
         return llvm.core.Constant.struct([llvm.core.Constant.null(cg.llvmTypeGenericPointer()), cg.llvmConstInt(0, 64)])
 
     ### Overridden from Iterator.
-    
+
     def derefType(self):
-        t = self.parentType().itemType() 
+        t = self.parentType().itemType()
         return t if t else type.Any()
-    
+
 @hlt.type("vector", 15)
 class Vector(type.Container, type.Iterable):
     """Type for a ``vector``.
-    
-    t: ~~Type - The element type of the vector. 
+
+    t: ~~Type - The element type of the vector.
     """
     def __init__(self, t, location=None):
         super(Vector, self).__init__(t, location)
-        
+
     ### Overridden from HiltiType.
-    
+
     def llvmType(self, cg):
         """A ``vector`` is mapped to a ``hlt_vector *``."""
         return cg.llvmTypeGenericPointer()
@@ -81,7 +81,7 @@ class Vector(type.Container, type.Iterable):
         return typeinfo
 
     ### Overriden from Iterable.
-        
+
     def iterType(self):
         return IteratorVector(self, location=self.location())
 
@@ -104,7 +104,7 @@ class Get(Instruction):
         voidp = cg.llvmCallC("hlt::vector_get", [self.op1(), op2])
         casted = cg.builder().bitcast(voidp, llvm.core.Type.pointer(cg.llvmType(t)))
         cg.llvmStoreInTarget(self, cg.builder().load(casted))
-    
+
 @hlt.instruction("vector.set", op1=cReferenceOf(cVector), op2=cIntegerOfWidth(64), op3=cItemTypeOfOp(1))
 class Set(Instruction):
     """Sets the element at index *op2* in vector *op1* to *op3."""
@@ -112,7 +112,7 @@ class Set(Instruction):
         op2 = self.op2().coerceTo(cg, type.Integer(64))
         op3 = self.op3().coerceTo(cg, self.op1().type().refType().itemType())
         cg.llvmCallC("hlt::vector_set", [self.op1(), op2, op3])
-    
+
 @hlt.instruction("vector.size", op1=cReferenceOf(cVector), target=cIntegerOfWidth(64))
 class Size(Instruction):
     """Returns the current size of the vector *op1*, which is the largest
@@ -128,7 +128,7 @@ class Reserve(Instruction):
     gives a hint to the implementation about the size that will be needed. The
     implemenation may use this information to avoid unnecessary memory
     allocations.
-    """ 
+    """
     def _codegen(self, cg):
         op2 = self.op2().coerceTo(cg, type.Integer(64))
         cg.llvmCallC("hlt::vector_reserve", [self.op1(), op2])
@@ -146,7 +146,7 @@ class End(Operator):
     def _codegen(self, cg):
         result = cg.llvmCallC("hlt::vector_end", [self.op1()])
         cg.llvmStoreInTarget(self, result)
-    
+
 @hlt.overload(Incr, op1=cIteratorVector, target=cIteratorVector)
 class IterIncr(Operator):
     """
@@ -160,7 +160,7 @@ class IterIncr(Operator):
 @hlt.overload(Deref, op1=cIteratorVector, target=cDerefTypeOfOp(1))
 class IterDeref(Operator):
     """
-    Returns the element the iterator is pointing at. 
+    Returns the element the iterator is pointing at.
     """
     def _codegen(self, cg):
         t = self.target().type()

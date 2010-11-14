@@ -11,9 +11,9 @@
 hlt_string hlt_port_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_PORT);
-    
+
     hlt_port port = *((hlt_port *)obj);
-    
+
     const char *proto = (port.proto == hlt_port_tcp) ? "tcp" : "udp";
     char buffer[128];
     snprintf(buffer, sizeof(buffer), "%d/%s", port.port, proto);

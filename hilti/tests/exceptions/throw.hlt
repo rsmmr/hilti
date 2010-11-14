@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -13,13 +13,13 @@ type myException = exception
 void run() {
 
      call Hilti::print ("A")
-     
+
      local ref<myException> e
      e = new myException
      exception.throw e
-     
+
      call Hilti::print ("B")
-}     
+}
 
 
 # @TEST-START-NEXT
@@ -33,13 +33,13 @@ type myException = exception<string>
 void run() {
 
      call Hilti::print ("A")
-     
+
      local ref<myException> e
      e = new myException "hallo"
      exception.throw e
-     
+
      call Hilti::print ("B")
-}     
+}
 
 # @TEST-START-NEXT
 
@@ -53,12 +53,12 @@ type myException2 = exception<string> : myException
 void run() {
 
      call Hilti::print ("A")
-     
+
      local ref<myException2> e
      e = new myException2 "hallo"
      exception.throw e
-     
+
      call Hilti::print ("B")
-}     
+}
 
 

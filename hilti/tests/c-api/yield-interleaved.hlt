@@ -1,8 +1,8 @@
 # $Id$
-# 
+#
 # @TEST-EXEC:  hilti-build -d -P %INPUT
 # @TEST-EXEC:  ${CC} -I . -c %DIR/yield-c-interleaved.c -o yield-c-interleaved.bc
-# @TEST-EXEC:  hilti-build yield-c-interleaved.bc %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build yield-c-interleaved.bc %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #

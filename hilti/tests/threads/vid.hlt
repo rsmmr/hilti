@@ -11,9 +11,9 @@ import Hilti
 void print_num(int<64> num) {
     local string s
     local int<64> vid
-    
+
     vid = thread.id
-    
+
     s = call Hilti::fmt("num %d vid %d", (num, vid))
     call Hilti::print (s)
     return.void

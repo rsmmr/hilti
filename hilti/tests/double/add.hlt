@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -12,7 +12,7 @@ void run() {
     local double d
     d = double.add 4.21 8.42
     call Hilti::print (d)
-}     
+}
 
 ### @TEST-START-NEXT
 
@@ -26,4 +26,4 @@ void run() {
     local double d
     d = double.add 8.41 -4.21
     call Hilti::print (d)
-}     
+}

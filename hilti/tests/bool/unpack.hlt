@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -12,10 +12,10 @@ void run() {
     local iterator<bytes> p1
     local iterator<bytes> p2
     local ref<bytes> b
-    
+
     local tuple<bool, iterator<bytes>> t
     local bool boo
-    
+
     b = b"\x02"
     p1 = begin b
     p2 = end b

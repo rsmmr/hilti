@@ -1,6 +1,6 @@
 #! /usr/bin/env python2.6
 #
-# Command-line compiler for HILTI programs. 
+# Command-line compiler for HILTI programs.
 
 Version = 0.1
 
@@ -22,7 +22,7 @@ except:
 
 import hilti
 
-# Collect -I arguments. 
+# Collect -I arguments.
 def import_path_callback(option, opt, value, parser):
     try:
         parser.values.import_paths += [value]
@@ -55,8 +55,8 @@ optparser.add_option("-D", "--debug-codegen", action="store_true", dest="debug_c
                      help="Print debugging information during code generation phase")
 optparser.add_option("-S", "--stack-size", action="store", dest="stack", default=16384,
                      help="Default stack segment size in bytes (default: 16384)")
-options = None                     
-                     
+options = None
+
 if addl_flags:
     (options, args) = optparser.parse_args(args=addl_flags.split())
 
@@ -64,15 +64,15 @@ if addl_flags:
 
 if options.ll_noverify:
     options.ll = True
-    
+
 if options.hilti_canon_noverify:
     options.hilti_canon = True
 
 if not "import_paths" in options.__dict__:
     options.import_paths = []
 
-# Always search in current directory.    
-options.import_paths += ["."]    
+# Always search in current directory.
+options.import_paths += ["."]
 
 protos_only = False
 
@@ -81,16 +81,16 @@ if len(args) < 1:
 
 if len(args) > 1:
     optparser.error("more than one input file specified")
-    
+
 if not (options.bitcode or options.ll or options.hilti_plain or options.hilti_canon):
     if options.protos:
         protos_only = True
-        
+
     else:
         optparser.error("no output type specified")
-    
-input = args[0]    
-dest = options.output    
+
+input = args[0]
+dest = options.output
 prototypes = None
 
 (root, ext) = os.path.splitext(input)
@@ -101,23 +101,23 @@ if not dest:
 
     if options.ll:
         dest = root + ".ll"
-        
+
     if options.ll or options.ll_noverify or options.hilti_plain or options.hilti_canon:
         dest = "/dev/stdout"
-        
+
 if options.protos:
     if protos_only:
-        prototypes = dest if dest else "/dev/stdout" 
+        prototypes = dest if dest else "/dev/stdout"
     else:
         prototypes = root + ".h"
 
 if dest:
     try:
-        output = open(dest, "w")        
+        output = open(dest, "w")
     except IOError, e:
         print >>sys.stderr, "cannot open %s: %s" % (dest, e)
-        
-# Parse input.    
+
+# Parse input.
 (errors, mod) = hilti.parseModule(input, options.import_paths)
 
 if errors > 0:
@@ -134,33 +134,33 @@ if errors == 0:
 if errors > 0:
     print >>sys.stderr, "\n%d error%s found" % (errors, "s" if errors > 1 else "")
     sys.exit(1)
-    
+
 if options.hilti_plain:
-    # Output HILTI code as it is parsed. 
+    # Output HILTI code as it is parsed.
     hilti.printModule(mod, output)
     sys.exit(0)
 
-# Canonify the code.     
+# Canonify the code.
 if not hilti.canonifyModule(mod, debug=options.debug):
     print >>sys.stderr, "error during canonicalization"
     sys.exit(1)
 
-# Make sure it's still valid code.    
+# Make sure it's still valid code.
 if not options.hilti_canon_noverify:
-   errs = hilti.validateModule(mod)  
+   errs = hilti.validateModule(mod)
 else:
-   errs = 0	
+   errs = 0
 
 if errs > 0:
     print >>sys.stderr, "%d error(s) after canonicalization" % errs
     sys.exit(1)
-        
+
 if options.hilti_canon:
     # Output canonified HILTI code.
     hilti.printModule(mod, output)
     sys.exit(0)
 
-# Generate code. 
+# Generate code.
 (success, llvm_module) = hilti.codegen(mod, options.import_paths, debug=options.debug, stack=options.stack, trace=options.debug_cg, verify=(not options.ll_noverify))
 
 if not success:
@@ -170,20 +170,20 @@ if not success:
 # Generate C prototypes.
 if prototypes:
     hilti.protogen(mod, prototypes)
-    
+
 if options.ll:
     # Output human-readable code.
     print >>output, llvm_module
     sys.exit(0)
-    
+
 if options.bitcode:
-    # Output bitcode. 
+    # Output bitcode.
     llvm_module.to_bitcode(output)
     sys.exit(0)
-    
-    
-    
 
-    
-    
-    
+
+
+
+
+
+

@@ -335,7 +335,7 @@ class ParserGen:
         # Do we actually need the parsed value? We do if (1) we're storing it
         # in the destination struct, or (2) we a hook that has a '$$'
         # parameter; or (3) it's a bitfield.
-        need_val = ( 
+        need_val = (
             var.name() != None or \
             (isinstance(var.type(), type.UnsignedInteger) and var.type().bits())
             )
@@ -584,7 +584,7 @@ class ParserGen:
         self._finishedProduction(args.obj, prod.body(), None)
         self.cg().builder().jump(cond.labelOp())
 
-        # All done. 
+        # All done.
         self.cg().setBuilder(done)
 
     def _parseSwitch(self, prod, args):

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -12,12 +12,12 @@ import Hilti
 
 void print_bool(bool b) {
      if.else b @one @zero
-     
-@one: 
+
+@one:
      call Hilti::print(1)
      return.void
-     
-@zero: 
+
+@zero:
      call Hilti::print(0)
      return.void
 }
@@ -29,31 +29,31 @@ void run() {
     local int<32> i3
     local int<8>  i4
     local bool b
-    
+
     i1 = int.add 10 20
     call Hilti::print (i1)
 
     i2 = int.sub i1 20
     call Hilti::print (i2)
-    
+
     i3 = int.mul i1 i2
     call Hilti::print (i3)
-    
+
     i3 = int.div i3 4
     call Hilti::print (i3)
-    
+
     b = int.eq i3 i3
     call print_bool (b)
-    
+
     b = int.eq i3 1
     call print_bool (b)
-    
+
     b = int.slt i2 i3
     call print_bool (b)
-    
+
     b = int.slt i3 i2
     call print_bool (b)
-    
+
     b = int.slt i3 i3
     call print_bool (b)
 
@@ -62,11 +62,11 @@ void run() {
 
     i3 = int.add i1 1
     call Hilti::print (i3)
-    
+
     i4 = int.trunc i3
-    i3 = int.zext i4 
+    i3 = int.zext i4
     call Hilti::print (i3)
-            
+
     return.void
-}     
+}
 

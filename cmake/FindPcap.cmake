@@ -6,11 +6,11 @@
 
 if (PCAP_INCLUDE_DIR)
   set(PCAP_FOUND TRUE)
-  
+
 else (PCAP_INCLUDE_DIR)
 
   find_program(PCAP_CONFIG_EXECUTABLE  NAMES pcap-config PATHS)
-  
+
   if (PCAP_CONFIG_EXECUTABLE)
       MESSAGE(STATUS "pcap-config found at: ${PCAP_CONFIG_EXECUTABLE}")
   else (PCAP_CONFIG_EXECUTABLE)
@@ -19,10 +19,10 @@ else (PCAP_INCLUDE_DIR)
 
   exec_program(${PCAP_CONFIG_EXECUTABLE} ARGS --cflags OUTPUT_VARIABLE PCAP_CFLAGS )
   exec_program(${PCAP_CONFIG_EXECUTABLE} ARGS --libs   OUTPUT_VARIABLE PCAP_LIBRARIES )
-  
+
   MESSAGE(STATUS "libpcap cflas: " ${PCAP_CFLAGS})
   MESSAGE(STATUS "libpcap libraries: " ${PCAP_LIBRARIES})
-  
+
   set(PCAP_FOUND TRUE)
-  
+
 endif (PCAP_INCLUDE_DIR)

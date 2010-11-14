@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -10,9 +10,9 @@ import Hilti
 
 void run() {
    local bool cond
-   cond = int.sleq 1 2 
+   cond = int.sleq 1 2
    if.else cond @yes @no
-   
+
 @yes:
    call Hilti::print (1)
    return.void
@@ -20,7 +20,7 @@ void run() {
 @no:
    call Hilti::print (0)
    return.void
-}     
+}
 
 ### @TEST-START-NEXT
 
@@ -32,7 +32,7 @@ void run() {
    local bool cond
    cond = int.sleq 2 2
    if.else cond @yes @no
-   
+
 @yes:
    call Hilti::print (1)
    return.void
@@ -40,7 +40,7 @@ void run() {
 @no:
    call Hilti::print (0)
    return.void
-}     
+}
 
 ### @TEST-START-NEXT
 
@@ -50,9 +50,9 @@ import Hilti
 
 void run() {
    local bool cond
-   cond = int.sleq 1 -5 
+   cond = int.sleq 1 -5
    if.else cond @yes @no
-   
+
 @yes:
    call Hilti::print (1)
    return.void
@@ -60,6 +60,6 @@ void run() {
 @no:
    call Hilti::print (0)
    return.void
-}     
+}
 
 

@@ -1,7 +1,7 @@
 /* $Id$
- * 
+ *
  * Support functions HILTI's bool data type.
- * 
+ *
  */
 
 #include "hilti.h"

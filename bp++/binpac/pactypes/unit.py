@@ -12,7 +12,7 @@ import binpac.stmt as stmt
 import binpac.grammar as grammar
 import binpac.pgen as pgen
 import binpac.operator as operator
-import binpac.id as id 
+import binpac.id as id
 import binpac.scope as scope
 import binpac.node as node
 import binpac.property as property
@@ -25,30 +25,30 @@ _AllowedConstantTypes = (type.Bytes, type.RegExp)
 
 class Field(node.Node):
     """One field within a unit data type.
-    
+
     name: string or None - The name of the fields, or None for anonymous
     fields.
-    
+
     value: ~~Expression or None - The value for constant fields.
-    
+
     ty: ~~Type or None - The type of the field; can be None if
     *constant* is given. It can also be none for 'umbrella' fields
     that never get converted into an actual parsed field themselves
     (e.g., the ~~SwitchField).
-    
+
     parent: ~~Unit - The unit type this field is part of.
-    
+
     args: list of ~~Expr - If *type* is a unit type, the parameters passed to
     that on construction; if not (or if the unit type doesn't take any
     parameters), an empty list.
-    
+
     Todo: Only ~~Bytes constant are supported at the moment. Which other's do
     we want? (Regular expressions for sure.)
     """
     def __init__(self, name, value, ty, parent, args=None, location=None):
         if value:
             assert isinstance(value, expr.Expression)
-            
+
         self._name = name
         self._type = ty if ty else (value.type() if value else None)
         self._value = value
@@ -61,68 +61,68 @@ class Field(node.Node):
 
         if self._type:
             self._type.setField(self)
-        
+
         if isinstance(ty, type.Container):
             self._scope.addID(id.Parameter("__dollardollar", ty.itemType()))
-        
+
         if isinstance(ty, type.ParseableType):
             ty.initParser(self)
-        
+
     def location(self):
         """Returns the location associated with the constant.
-        
-        Returns: ~~Location - The location. 
+
+        Returns: ~~Location - The location.
         """
-        return self._location        
+        return self._location
 
     def setLocation(self, location):
         """Set the location assocated with this constant.
-        
+
         location: ~~Location - The location.
         """
         self._location = location
 
     def scope(self):
         """Returns the field's scope.
-        
+
         ReturnsL ~~Scope - The scope.
         """
         return self._scope
-        
+
     def parent(self):
         """Returns the parent type this field is part of.
-        
+
         Returns: ~~Unit - The parent type.
         """
         return self._parent
-    
+
     def name(self):
         """Returns the name of the field.
-        
+
         Returns: string - The name.
         """
         return self._name
 
     def type(self):
         """Returns the type of the field.
-        
+
         Returns: string - The name.
         """
-        
+
         t = self._type.fieldType() if self._type else None
         return self._type.fieldType() if self._type else None
-    
+
     def parsedType(self):
         """Returns the type of values parsed by this type. Forwards simply to
         ~~Type.parsedType for the type returned by ~~type.
-        
+
         Returns: ~~Type - The type of parsed values.
         """
         return self._type.parsedType()
-    
+
     def value(self):
         """Returns the value for constant fields.
-        
+
         Returns: ~~Expression or None - The expression, or None if not a constant
         field.
         """
@@ -130,24 +130,24 @@ class Field(node.Node):
 
     def args(self):
         """Returns the parameters passed to the sub-type. Only relevant if
-        *type* is also a ~~Unit type. 
-        
+        *type* is also a ~~Unit type.
+
         Returns: list of ~~Expr - The parameters; empty list for no
         parameters.
         """
         return self._args
-    
+
     def condition(self, cond):
         """Returns any boolean condidition associated with the field.
-        
-        Returns: ~~Expression: The condition, or None if none has been set. 
+
+        Returns: ~~Expression: The condition, or None if none has been set.
         """
         return self._cond
-    
+
     def setCondition(self, cond):
         """Associates a boolean condition with the field. The field will only
         be parsed if the condition evaluates to True.
-        
+
         cond: ~~Expression: The condition, which must evaluate to a ~~Bool.
         """
         self._cond = cond
@@ -158,23 +158,23 @@ class Field(node.Node):
         another field already creates an item of the same name (and type).
         """
         self._noid = True
-        
+
     def isNoID(self):
         """Returns whether the HILTI struct for the parent union should
         contain an item for this field. The default is yes but that can be
         changed with ~~setNoID.
-        
+
         Returns: bool - True if no item should be created.
         """
         return self._noid
-        
+
     def production(self):
         """Returns a production to parse the field.
-        
-        Returns: ~~Production 
+
+        Returns: ~~Production
         """
         # FIXME: We hardcode the constant types we support here. Should do
-        # that somewhere else. 
+        # that somewhere else.
         if self._value:
             for t in _AllowedConstantTypes:
                 if isinstance(self._type, t):
@@ -186,17 +186,17 @@ class Field(node.Node):
         else:
             prod = self._type.production(self)
             assert prod
-            
+
             if self._noid:
                 prod.setNoID()
-            
+
             if self._args:
                 assert isinstance(prod, grammar.ChildGrammar)
                 prod.setParams(self._args)
 
         prod.setName(self._name)
         prod.setType(self._type)
-        
+
         # We add the hooks to a concatened epsilon production. If we woudl add
         # them to the returned production, they might end up being executed
         # multiple times if that contains some kind of loop of itself.
@@ -219,11 +219,11 @@ class Field(node.Node):
 
     def _resolveWithConstant(self, resolver, ty):
         """Helper function that resolves a type by also checking whether the
-        given ID refers to a constant and if so resolving to that's type. 
+        given ID refers to a constant and if so resolving to that's type.
         """
         if isinstance(ty, type.Unknown):
             i = resolver.scope().lookupID(ty.idName())
-            
+
             if i and isinstance(i, id.Constant):
                 nty = i.expr().type()
             else:
@@ -235,14 +235,14 @@ class Field(node.Node):
 
         else:
             return (None, ty.resolve(resolver))
-            
+
     def resolve(self, resolver):
         if self._type:
             (expr, self._type) = self._resolveWithConstant(resolver, self._type)
-            
-            if expr: 
+
+            if expr:
                 self._value = expr
-            
+
             if self._type.attributeExpr("until"):
                 self._type.attributeExpr("until").resolve(resolver)
 
@@ -253,7 +253,7 @@ class Field(node.Node):
             dd = self._scope.lookupID("__dollardollar")
             (expr, ty) = self._resolveWithConstant(resolver, dd.type())
             dd.setType(ty.parsedType())
-            
+
     def validate(self, vld):
         if self._value:
             util.check_class(self._value, expr.Expression, "Field.validate")
@@ -415,7 +415,7 @@ class SwitchFieldCase(SubField):
 
     See ~~Field for parameters.
     """
-    
+
     def __init__(self, name, value, ty, parent, args=None, location=None):
         super(SwitchFieldCase, self).__init__(name, value, ty, parent, args=args, location=location)
         self._default = False
@@ -426,12 +426,12 @@ class SwitchFieldCase(SubField):
         """Returns a case sequence number that is unique among all cases
         belonging to the same ~~SwitchField. This method must only be called
         the case has already been added to the switch via ~~addCase.
-        
+
         Returns: integer - The sequence number.
         """
         assert self._number >= 0
         return self._number
-        
+
     def isDefault(self):
         """Returns whether this field is the default branch.
 
@@ -457,7 +457,7 @@ class SwitchFieldCase(SubField):
 
         if not self._expr:
             self._default = True
-            
+
     def __str__(self):
         return "<__str__ SwitchFieldCase TODO>" + str(self.type()._attrs)
 
@@ -585,7 +585,7 @@ class Unit(type.ParseableType, property.Container):
             self._fields[idx] = [field]
 
         self._fields_ordered += [field]
-        
+
     def variables(self):
         """Returns all user-defined variables.
 
@@ -616,12 +616,12 @@ class Unit(type.ParseableType, property.Container):
         if not self._grammar:
             seq = [f.production() for f in self._fields_ordered if not isinstance(f, SubField)]
             seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
-            
+
             if self.namespace():
                 name = "%s::%s" % (self.namespace(), self.name())
             else:
                 name = self.name()
-                
+
             self._grammar = grammar.Grammar(name, seq, self._args, addl_ids=self._vars.values(), location=self.location())
 
         return self._grammar
@@ -630,19 +630,19 @@ class Unit(type.ParseableType, property.Container):
         """Returns the HILTI type of the record object the unit is being
         parsed into. This method must only be called after a ~~ParserGen has
         already compiled the unit's grammar.
-        
+
         Returns: hilti.type.Type - The HILTI type.
         """
         return self._pgen.objectType()
 
-    # Overriden from property.Container 
-    
+    # Overriden from property.Container
+
     def allProperties(self):
         return {
             "name": expr.Ctor(self._name, type.String()),
             "byteorder": False,
             }
-    
+
     # Overridden from Type.
 
     def hiltiType(self, cg):
@@ -664,7 +664,7 @@ class Unit(type.ParseableType, property.Container):
         for fields in self._fields.values():
             for f in fields:
                 f.resolve(resolver)
-                
+
         self.resolveProperties(resolver)
 
     def validate(self, vld):
@@ -785,11 +785,11 @@ class _:
 class _:
     """Returns an ``iter<bytes>`` referencing the first byte of the raw data
     for parsing the unit. This method must only be called while the unit is
-    being parsed, and will throw an ``UndefinedValue`` exception otherwise. 
+    being parsed, and will throw an ``UndefinedValue`` exception otherwise.
     """
     def type(obj, method, args):
         return type.IteratorBytes()
-    
+
     def evaluate(cg, obj, method, args):
         tmp = cg.functionBuilder().addLocal("__iter", hilti.type.IteratorBytes())
         builder = cg.builder()

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -15,7 +15,7 @@ void run() {
 
     s1 = "Foo!"
     s2 = "B\u00e4r!"
-    
+
     s3 = string.concat s1 s2
     call Hilti::print (s3)
 }

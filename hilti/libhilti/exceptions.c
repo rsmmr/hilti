@@ -1,10 +1,10 @@
 /* $Id$
- * 
- * Exception handling functions. 
- * 
- * 
+ *
+ * Exception handling functions.
+ *
+ *
  * Todo: Organize exceptions in a hierarchy.
- * 
+ *
  */
 
 #include <string.h>
@@ -81,12 +81,12 @@ int8_t __hlt_exception_match_type(hlt_exception* excpt, hlt_exception_type* type
 {
     if ( ! excpt )
         return 0;
-    
+
     for ( hlt_exception_type* t = excpt->type; t; t = t->parent ) {
         if ( t == type )
             return 1;
     }
-    
+
     return 0;
 }
 
@@ -96,7 +96,7 @@ static void __exception_print(const char* prefix, hlt_exception* exception, hlt_
 
     flockfile(stderr);
     fprintf(stderr, "%s%s", prefix, exception->type->name);
-    
+
     if ( exception->arg ) {
         hlt_string arg = hlt_string_from_object(exception->type->argtype, &exception->arg, &excpt, ctx);
         fprintf(stderr, " with argument ");
@@ -105,35 +105,35 @@ static void __exception_print(const char* prefix, hlt_exception* exception, hlt_
 
     if ( exception->cont )
         fprintf(stderr, ", resumable");
-    
+
     if ( exception->vid != HLT_VID_MAIN )
         fprintf(stderr, " in virtual thread %" PRId64, exception->vid);
-    
+
     if ( exception->location )
         fprintf(stderr, " (from %s)", exception->location);
-    
+
     fprintf(stderr, "\n");
-    
+
     fflush(stderr);
     funlockfile(stderr);
 }
 
-void hlt_exception_print(hlt_exception* exception, hlt_execution_context* ctx) 
+void hlt_exception_print(hlt_exception* exception, hlt_execution_context* ctx)
 {
     __exception_print("", exception, ctx);
 }
 
-void hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution_context* ctx) 
+void hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution_context* ctx)
 {
     __exception_print("hilti: uncaught exception, ", exception, ctx);
 }
 
-void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_execution_context* ctx) 
+void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_execution_context* ctx)
 {
     __exception_print("hilti: uncaught exception in worker thread, ", exception, ctx);
 }
 
-void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx) 
+void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx)
 {
     __exception_print("hilti: uncaught exception, ", exception, ctx);
     abort();

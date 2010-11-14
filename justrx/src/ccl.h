@@ -13,7 +13,7 @@
 #include "vector.h"
 
 // A range of characters.
-typedef struct { 
+typedef struct {
     jrx_char begin; // First element of range.
     jrx_char end;   // One after last element of range.
 } jrx_char_range;
@@ -26,12 +26,12 @@ DECLARE_VECTOR(std_ccl, struct jrx_ccl*, jrx_std_ccl)
 
 // A collection of character classes, managed jointly.
 typedef struct {
-    vec_ccl* ccls;         // Vector of all CCLs indexed by their ID. 
+    vec_ccl* ccls;         // Vector of all CCLs indexed by their ID.
     vec_std_ccl* std_ccls; // Cache for standard CCLs once computed.
 } jrx_ccl_group;
 
 static inline int _jrx_cmp_char_ranges(jrx_char_range r1, jrx_char_range r2)
-{ 
+{
     return r1.begin != r2.begin ? SET_STD_EQUAL(r1.begin, r2.begin)
                                 : SET_STD_EQUAL(r1.end, r2.end);
 };
@@ -39,11 +39,11 @@ static inline int _jrx_cmp_char_ranges(jrx_char_range r1, jrx_char_range r2)
 // A set of character ranges.
 DECLARE_SET(char_range, jrx_char_range, uint32_t, _jrx_cmp_char_ranges);
 
-// A character class. 
+// A character class.
 typedef struct jrx_ccl {
     jrx_ccl_id id;            // ID of CCL, unique within CCL group.
     jrx_ccl_group* group;     // The group this CCL is part of.
-    jrx_assertion assertions; // Assertions required for CCL to apply. 
+    jrx_assertion assertions; // Assertions required for CCL to apply.
     set_char_range* ranges;   // Ranges for this CCL; NULL for epsilon transition.
 } jrx_ccl;
 
@@ -71,5 +71,5 @@ extern void ccl_group_print(jrx_ccl_group* group, FILE* file);
 extern jrx_ccl* ccl_group_add(jrx_ccl_group* group, jrx_ccl* ccl);
 
 extern void ccl_group_disambiguate(jrx_ccl_group* group);
-    
+
 #endif

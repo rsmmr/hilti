@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Run-time information about HILTI types.
 
 #ifndef HILTI_RTTI_H
@@ -12,11 +12,11 @@
    // HILTI_%doc-__HLT_TYPE-start
 // Unique id values to identify a type. These numbers must match the type's
 // _id class member in the Python module hilti.core.Type.
-#define HLT_TYPE_ERROR     0 
-#define HLT_TYPE_INTEGER   1 
-#define HLT_TYPE_DOUBLE    2 
-#define HLT_TYPE_BOOL      3 
-#define HLT_TYPE_STRING    4 
+#define HLT_TYPE_ERROR     0
+#define HLT_TYPE_INTEGER   1
+#define HLT_TYPE_DOUBLE    2
+#define HLT_TYPE_BOOL      3
+#define HLT_TYPE_STRING    4
 #define HLT_TYPE_TUPLE     5
 #define HLT_TYPE_REF       6
 #define HLT_TYPE_STRUCT    7
@@ -64,12 +64,12 @@ struct __hlt_string;
 struct __hlt_type_info {
 
     // The type's HLT_TYPE_* id.
-    int16_t type; 
-    
+    int16_t type;
+
     // The type's size in bytes.
     int16_t size;
 
-    // A readable version of the type's name. 
+    // A readable version of the type's name.
     const char* tag;
 
     // Number of type parameters.
@@ -77,10 +77,10 @@ struct __hlt_type_info {
 
     // Type-specific information; null if not used.
     void* aux;
-    
+
     // List of type operations defined in libhilti functions. Pointers may be
-    // zero to indicate that a type does not support an operation. 
-    
+    // zero to indicate that a type does not support an operation.
+
     // Converters for the value into different types. 'type' is the type
     // information for the type being converted. 'obj' is a pointer to the
     // value stored with the C type as HILTI uses normally for values of that
@@ -94,12 +94,12 @@ struct __hlt_type_info {
     // many bytes as size specifies. Note that the excpt and ctx arguments
     // will not be used and will always be null.
     hlt_hash (*hash)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
-    
+
     // Compares to values for equality. If not given, the default is to
     // compare as many bytes as size specified.  Note that the excpt and ctx
     // argument will not be used and will always be null.
     int8_t (*equal)(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** expt, hlt_execution_context* ctx);
-    
+
     // Type-parameters start here. The format is type-specific.
     char type_params[];
 };

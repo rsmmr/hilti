@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -13,13 +13,13 @@ void run() {
     call Hilti::print ("B\u00e4r!")
     call Hilti::print (True)
     call Hilti::print (43)
-   
+
     call Hilti::print ("A", False)
     call Hilti::print ("B", False)
     call Hilti::print ("C", False)
     call Hilti::print ("")
     call Hilti::print (("XXX", True))
-}     
+}
 
 # @TEST-START-NEXT
 
@@ -28,8 +28,8 @@ module Main
 import Hilti
 
 void run() {
-    local string s 
+    local string s
     s = "Foo!"
     call Hilti::print(s)
-}     
+}
 

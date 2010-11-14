@@ -1,7 +1,7 @@
 // $Id$
-// 
-// Globals variables. 
-// 
+//
+// Globals variables.
+//
 // These should be limited to a mininum, and must be ensured that they are
 // used in a thread-safe fashion.
 

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -8,33 +8,33 @@ module Main
 
 import Hilti
 
-type myException = exception 
+type myException = exception
 
 void run() {
 
      call Hilti::print ("A")
-     
+
      try {
-     
+
        local ref<myException> e
        e = new myException
        exception.throw e
-       
+
        call Hilti::print ("Cannot be reached")
      }
-     
+
      catch myException {
        call Hilti::print ("Caught the right one!")
      }
-     
+
      catch {
        call Hilti::print ("Caught the wrong one!")
      }
-     
+
      call Hilti::print ("C")
      return.void
-     
-}     
+
+}
 
 # @TEST-START-NEXT
 
@@ -42,27 +42,27 @@ module Main
 
 import Hilti
 
-type myException = exception 
+type myException = exception
 
 void run() {
 
      call Hilti::print ("A")
-     
+
      try {
-     
+
        local ref<myException> e
        e = new myException
        exception.throw e
-       
+
        call Hilti::print ("Cannot be reached")
      }
-     
+
      catch {
        call Hilti::print ("Caught the wrong one!")
      }
-     
+
      catch myException {
        call Hilti::print ("Caught the right one!")
      }
-     
-}     
+
+}

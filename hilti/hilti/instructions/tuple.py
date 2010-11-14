@@ -322,7 +322,7 @@ class Equal(Operator):
 
         tmp = cg.builder().alloca(llvm.core.Type.int(1))
         target = operand.LLVM(tmp, type.Bool())
-        
+
         cg.builder().branch(block_next)
 
         for n in range(len(self.op1().type().types())):
@@ -344,7 +344,7 @@ class Equal(Operator):
             block_next = cg.llvmNewBlock("tuple-match-%d" % (n+1))
             cg.builder().cbranch(match, block_next, block_no)
             cg.popBuilder()
-            
+
         cg.pushBuilder(block_next)
         cg.llvmStoreInTarget(self, cg.llvmConstInt(1, 1))
         cg.builder().branch(block_cont)

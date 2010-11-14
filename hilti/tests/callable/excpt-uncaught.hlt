@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -13,28 +13,28 @@ type myException = exception
 string foo(string s) {
     local ref<myException> e
     local string tmp
-    
+
     e = new myException
     exception.throw e
 
     call Hilti::print("not reached")
-    
+
     return.result tmp
     }
-     
+
 void run() {
 
     local ref<callable<string>> c
     local string result
-    
-    c = new callable<string> 
-    
+
+    c = new callable<string>
+
     callable.bind c foo ("ICSI")
-    
+
     result = call c
-    
+
     call hilti::print (result)
-    
+
     return.void
-}     
+}
 

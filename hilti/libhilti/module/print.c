@@ -1,7 +1,7 @@
 /* $Id$
- * 
+ *
  * printf() function for libhilti.
- * 
+ *
  */
 
 #define _POSIX_SOURCE
@@ -17,12 +17,12 @@
 
 /*
  * Hilti::print(obj, newline = True)
- * 
+ *
  * Prints a textual representation of an object to stdout.
- * 
- * obj: instance of any HILTI type - The object to print. 
+ *
+ * obj: instance of any HILTI type - The object to print.
  * newline: bool - If true, a newline is added automatically.
- * 
+ *
  */
 void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -45,12 +45,12 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
             return;
         }
     }
-    
+
     else {
         /* No fmt function, just print the tag. */
         fprintf(stdout, "<%s>", type->tag);
     }
-    
+
     if ( newline )
         fputc('\n', stdout);
 

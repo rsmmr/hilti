@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Support functions for HILTI's bool data type.
 
 #ifndef HILTI_BOOL_H

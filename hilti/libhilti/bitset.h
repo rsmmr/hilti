@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Support functions for HILTI's bitset data type.
 
 #ifndef HILTI_BITSET_H

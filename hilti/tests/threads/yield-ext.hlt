@@ -1,7 +1,7 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
-# @TEST-EXEC:  ./a.out -t 1 >output 2>&1 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out -t 1 >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 module Main
@@ -10,10 +10,10 @@ import Hilti
 
 void printhello(int32 i) {
     local string s
-    
+
     s = call Hilti::fmt ("%d: Before yield.", (i))
     call Hilti::print (s, True)
-    
+
     yield
 
     s = call Hilti::fmt ("%d: After yield.", (i))

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -18,14 +18,14 @@ iterator<bytes> print_bytes(iterator<bytes> cur, iterator<bytes> last) {
 @loop:
     eq = equal cur last
     if.else eq @exit @cont
-    
+
 @cont:
     i = deref cur
     cur = incr cur
     call Hilti::print (i)
     jump @loop
-    
-@exit:     
+
+@exit:
     call Hilti::print ("---")
     return.result cur
 }
@@ -34,24 +34,24 @@ void run() {
     local ref<bytes> b
     local iterator<bytes> i
     local iterator<bytes> last
-    
+
     b = b"ABC"
     i = begin b
     last = end b
     i = call print_bytes(i, last)
-    
+
     bytes.append b b"DEF"
     last = end b
     i = call print_bytes(i, last)
-    
+
     bytes.append b b"GHI"
     last = end b
     i = call print_bytes(i, last)
-    
+
     bytes.append b b""
     last = end b
     i = call print_bytes(i, last)
-    
+
     bytes.append b b"JKL"
     last = end b
     i = call print_bytes(i, last)

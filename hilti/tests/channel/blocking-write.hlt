@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -41,9 +41,9 @@ void writer(ref<channel<int32>> ch) {
 void run() {
     local ref<channel<int32>> ch
     ch = new channel<int32> 1
-    
+
     thread.schedule 1 writer (ch)
     thread.schedule 2 reader (ch)
-    
+
     call Hilti::wait_for_threads()
 }

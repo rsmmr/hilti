@@ -1,9 +1,9 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
 # @TEST-EXEC:      btest-diff output
 #
-# A bunch of ID references using wrong types. 
+# A bunch of ID references using wrong types.
 
 module Main
 
@@ -26,8 +26,8 @@ void run() {
 
 module Main
 
-type foo = struct { 
-    int32 bar 
+type foo = struct {
+    int32 bar
     }
 
 void run() {

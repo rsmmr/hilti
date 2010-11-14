@@ -1,6 +1,6 @@
 # $Id
-# 
-# Parts of the public BinPAC++ API that are also required by the code generator. 
+#
+# Parts of the public BinPAC++ API that are also required by the code generator.
 
 module BinPAC
 

@@ -1,8 +1,8 @@
 /* $Id$
- * 
+ *
  * Implementation of main() which directly calls first hilti_init() and then
  * hilti_multithreaded_run().
- * 
+ *
  */
 
 #include <getopt.h>
@@ -20,7 +20,7 @@ static void usage(const char* prog)
            "  -h| --help           Show usage information.\n"
            "  -t| --threads <num>  Number of worker threads. [default: 2]\n"
            "\n", prog);
-    
+
     exit(1);
 }
 
@@ -32,18 +32,18 @@ static struct option long_options[] = {
 int main(int argc, char **argv)
 {
     int threads = 2;
-    
+
     while ( 1 ) {
         char c = getopt_long (argc, argv, "ht:", long_options, 0);
-        
+
         if ( c == -1 )
             break;
-        
+
         switch ( c ) {
           case 't':
             threads = atoi(optarg);
             break;
-            
+
           default:
             usage(argv[0]);
         }
@@ -53,17 +53,17 @@ int main(int argc, char **argv)
         usage(argv[0]);
 
     hlt_init();
-    
+
     hlt_config cfg = *hlt_config_get();
     cfg.num_workers = threads;
     hlt_config_set(&cfg);
-    
+
     hlt_exception* excpt = 0;
 
     hlt_threading_start();
-    
+
     main_run(&excpt);
-    
+
     hlt_threading_stop(&excpt);
 
     if ( excpt )

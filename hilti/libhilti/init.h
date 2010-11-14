@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Support functions for HILTI's integer data type.
 
 #ifndef HILTI_INIT_H
@@ -7,7 +7,7 @@
 
 #include "exceptions.h"
 
-// Initialize the HILTI run-time library. 
+// Initialize the HILTI run-time library.
 extern void hlt_init();
 
 // Registers a funtion to be executed when hilti_init() is run.

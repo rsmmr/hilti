@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -13,13 +13,13 @@ void other() {
 }
 
 void reader(ref<channel<int32>> ch) {
-     
+
      local int32 n
-     
+
      # Schedule to same thread. When we yield, this one will get
-     # executed.  
+     # executed.
      thread.schedule 1 other()
-     
+
      call Hilti::print("doing read")
      n = channel.read ch
      call Hilti::print("done with read")
@@ -32,11 +32,11 @@ void run() {
     local int32 a
     local int32 b
     local int32 c
-    
+
     thread.schedule 1 reader(ch)
 
     call Hilti::sleep(0.5)
-    
+
     call Hilti::print("doing write")
     channel.write ch 42
 }

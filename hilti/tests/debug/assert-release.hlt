@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC: hilti-build %INPUT -o a.out 
+# @TEST-EXEC: hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC: btest-diff output
 
@@ -10,7 +10,7 @@ import Hilti
 
 void run() {
      debug.assert False "Test False"
-}     
+}
 
 # @TEST-START-NEXT
 
@@ -20,6 +20,6 @@ import Hilti
 
 void run() {
      debug.assert True "Test True"
-}     
+}
 
 

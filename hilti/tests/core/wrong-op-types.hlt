@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
 # @TEST-EXEC:      btest-diff output
 #
 # Give instruction some operands of the wrong type. These are
@@ -11,7 +11,7 @@ module Main
 
 void run() {
     local int<32> sum
-    sum = int.add True 1     
+    sum = int.add True 1
 }
 
 # @TEST-START-NEXT

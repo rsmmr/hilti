@@ -1,7 +1,7 @@
 /* $Id$
- * 
+ *
  * Support functions HILTI's integer data type.
- * 
+ *
  */
 
 #include <stdio.h>
@@ -17,7 +17,7 @@ static int64_t _makeInt64Signed(const hlt_type_info* type, const void *obj)
     // The first (and only) type parameter is an int64_t with the wdith.
     int64_t *width = (int64_t*) &(type->type_params);
     int64_t val;
-    
+
     if ( *width <= 8 )
         val = *((int8_t *)obj);
     else if ( *width <= 16 )
@@ -28,7 +28,7 @@ static int64_t _makeInt64Signed(const hlt_type_info* type, const void *obj)
         assert(*width <= 64);
         val = *((int64_t *)obj);
     }
-    
+
     return val;
 }
 
@@ -39,7 +39,7 @@ static uint64_t _makeInt64Unsigned(const hlt_type_info* type, const void *obj)
     // The first (and only) type parameter is an int64_t with the wdith.
     int64_t *width = (int64_t*) &(type->type_params);
     uint64_t val;
-    
+
     if ( *width <= 8 )
         val = *((uint8_t *)obj);
     else if ( *width <= 16 )
@@ -50,7 +50,7 @@ static uint64_t _makeInt64Unsigned(const hlt_type_info* type, const void *obj)
         assert(*width <= 64);
         val = *((uint64_t *)obj);
     }
-    
+
     return val;
 }
 
@@ -62,7 +62,7 @@ hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t
     static const char *fmt_unsigned = "%" PRId64;
 
     const char *fmt;
-    int64_t val; 
+    int64_t val;
 
     if ( options & HLT_CONVERT_UNSIGNED ) {
         fmt = fmt_unsigned;
@@ -73,7 +73,7 @@ hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t
         fmt = fmt_signed;
         val = (int64_t)_makeInt64Signed(type, obj);
     }
-    
+
     // FIXME: This is just a hack for now. Rather than depending on snprintf,
     // we should code our own itoa().
     char buffer[128];

@@ -1,10 +1,10 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
-# FIXME: We don't have loops yet. 
+# FIXME: We don't have loops yet.
 
 module Test;
 

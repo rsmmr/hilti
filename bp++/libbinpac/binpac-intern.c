@@ -32,14 +32,14 @@ hlt_list* binpac_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
     return _parsers;
 }
 
-// Internal functions. 
- 
+// Internal functions.
+
 void binpac_fatal_error(const char* msg)
 {
     fprintf(stderr, "fatal binpac error: %s", msg);
 }
 
-// Note that this function can be called before binpac_init(). 
+// Note that this function can be called before binpac_init().
 void binpacintern_register_parser(binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     _ensure_parsers(excpt, ctx);
@@ -50,9 +50,9 @@ void binpacintern_call_init_func(void (*func)(hlt_exception** excpt, hlt_executi
 {
     hlt_exception* excpt = 0;
     hlt_execution_context* ctx = hlt_global_execution_context();
-    
+
     (*func)(&excpt, ctx);
-    
+
     if ( excpt )
         hlt_exception_print_uncaught(excpt, ctx);
 }

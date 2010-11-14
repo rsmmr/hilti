@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -12,18 +12,18 @@ import Hilti
 
 void run() {
     local ref<bytes> b = b"abc"
-    local bool frozen 
-    
-    frozen = bytes.is_frozen b
-    call Hilti::print (frozen)
-    
-    bytes.freeze b 
+    local bool frozen
 
     frozen = bytes.is_frozen b
     call Hilti::print (frozen)
-    
+
+    bytes.freeze b
+
+    frozen = bytes.is_frozen b
+    call Hilti::print (frozen)
+
     bytes.append b b"cde"
-    
+
     frozen = bytes.is_frozen b
     call Hilti::print (frozen)
 }

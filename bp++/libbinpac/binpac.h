@@ -1,5 +1,5 @@
 // $Id
-// 
+//
 // BinPAC++ API for host applications.
 
 #include <hilti.h>
@@ -16,9 +16,9 @@ typedef void* binpac_resume_function(hlt_exception* yield, hlt_exception** excpt
 extern hlt_exception binpac_parseerror;
 
 /// Structure defining an BinPAC generated parser.
-/// 
+///
 /// Todo: hiltic should generate the prototype for this struct.
-typedef struct { 
+typedef struct {
     int32_t internal;                    // HILTI-internal.
     hlt_string name;                     /// Short descriptive name.
     hlt_string description;              /// Longer textual description.
@@ -30,15 +30,15 @@ typedef struct {
 /// runtime.
 extern void binpac_init();
 
-/// Returns a list of all BinPAC generated parsers available. 
-/// 
+/// Returns a list of all BinPAC generated parsers available.
+///
 /// Returns: List of binpac_parser* instances - The available parsers.
-/// 
+///
 /// excpt: &
 extern hlt_list* binpac_parsers(hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Enables debugging output compiled into the BinPAC++ parsers.
-/// 
+///
 /// enabled: 1 to enable, 0 to disable.
 ///
 /// Note: The outut enabled here is only compiled in if binpac++ is run with ``-d``.
@@ -46,5 +46,5 @@ extern void binpac_enable_debugging(int8_t enabled);
 
 /// Returns whether debugging outout compiled into BinPAC++ parser is enabled.
 ///
-/// Returns: 1 if enabled, 0 otherwise. 
+/// Returns: 1 if enabled, 0 otherwise.
 extern int8_t binpac_debugging_enabled();

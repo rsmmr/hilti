@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -20,13 +20,13 @@ void run() {
     local ref<bytes> b
     local iterator<bytes> i
     local iterator<bytes> j
-    
+
     b = b"1234567890"
     i = begin b
-    
+
     j = incr_by i 5
     call print_bytes (i, j)
-    
+
     j = incr_by i 15
     call print_bytes (i, j)
  }

@@ -7,9 +7,9 @@
 module Mini;
 
 export type test = unit {
-       
+
        a: bytes &length=1;
-       
+
        switch ( 42 ) {
            1 -> b1: bytes &length=4 &default=b"<not set>";
            2 -> b2: bytes &length=4 &default=b"<not set>";
