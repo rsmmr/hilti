@@ -345,7 +345,7 @@ class Local(ID):
             self._init.validate(vld)
             
             if not self._init.canCoerceTo(self.type()):
-                vld.error(self, "initialization has incompatible type")
+                vld.error(self, "initialization has incompatible type (%s vs. %s)" % (self.type(), self._init.type()))
             
     def output(self, printer):
         printer.printComment(self)
@@ -441,7 +441,7 @@ class Global(ID):
             self._init.validate(vld)
 
             if not self._init.canCoerceTo(self.type()):
-                vld.error(self, "initialization has incompatible type")
+                vld.error(self, "initialization has incompatible type (%s vs. %s)" % (self.type(), self._init.type()))
             
     def output(self, printer):
         ID.output(self, printer)

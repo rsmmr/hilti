@@ -208,7 +208,7 @@ class Assign(Instruction):
         cg.llvmStoreInTarget(self, op)
 
 @hlt.instruction("unequal", op1=cValueType, op2=cCanCoerceToOp(1), target=cBool)
-class Assign(Instruction):
+class Unequal(Instruction):
     """Returns True if *op1* does not equal *op2*.
 
     Note: This operator is automatically defined for all types that

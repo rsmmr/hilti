@@ -1,0 +1,4 @@
+[binpac] test
+[binpac]    line1 = 'FooBar'
+[binpac]    crlf = '\x0d\x0a'
+[binpac]    line2 = 'Foo123BarBar'

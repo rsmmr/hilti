@@ -159,7 +159,6 @@ class Instruction(node.Node):
     def _storeLLVMResult(self, result):
         """Method for the code generator to store the target value returned by
         ~~llvmTarget."""
-        print "X", repr(self), result
         assert result
         self._llvm_target = result
 
