@@ -162,7 +162,7 @@ class CodeGen(objcache.Cache):
 
         self._llvm = _llvm_data()
         self._llvm.module = llvm.core.Module.new(mod.name())
-        self._llvm.module.target = llvm.core.getHostTriple()
+        self._llvm.module.target = system.targetTriple()
 
         self._llvm.prototypes = None
         self._readPrototypes()
