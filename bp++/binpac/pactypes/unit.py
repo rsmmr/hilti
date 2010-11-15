@@ -498,6 +498,8 @@ class Unit(type.ParseableType, property.Container):
     Todo: We need to document the available hooks.
     """
 
+    _cache = {}
+
     def __init__(self, module, args=None, location=None):
         property.Container.__init__(self)
         Unit._counter += 1
@@ -614,15 +616,19 @@ class Unit(type.ParseableType, property.Container):
     def grammar(self):
         """Returns the grammar for this type."""
         if not self._grammar:
-            seq = [f.production() for f in self._fields_ordered if not isinstance(f, SubField)]
-            seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
-
             if self.namespace():
                 name = "%s::%s" % (self.namespace(), self.name())
             else:
                 name = self.name()
 
-            self._grammar = grammar.Grammar(name, seq, self._args, addl_ids=self._vars.values(), location=self.location())
+            # We save the grammar we're going to  build first to avoid infinite
+            # recursions in the case of cyclic grammars.
+            self._grammar = grammar.Grammar(name, None)
+
+            seq = [f.production() for f in self._fields_ordered if not isinstance(f, SubField)]
+            seq = grammar.Sequence(seq=seq, type=self, symbol="start_%s" % self.name(), location=self.location())
+
+            self._grammar.__init__(name, seq, self._args, addl_ids=self._vars.values(), location=self.location())
 
         return self._grammar
 

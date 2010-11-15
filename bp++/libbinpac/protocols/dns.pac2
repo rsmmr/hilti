@@ -1,0 +1,73 @@
+# $Id$
+#
+# TODO:
+#
+#    * rdata (needs typles)
+#    * map integers to enums
+#    * do we want to put bitfields into the unit namespace?
+
+module DNS;
+
+export type Message = unit {
+	header:     Header;
+	question:   list<Question>       &length=self.header.qdcount;
+	answer:     list<ResourceRecord> &length=self.header.ancount;
+	authority:  list<ResourceRecord> &length=self.header.nscount;
+    additional: list<ResourceRecord> &length=self.header.arcount;
+};
+
+type Header = unit {
+    id	: uint16;
+        : bitfield(uint16) {
+            qr: 0;
+            opcode: 1..3;
+            aa: 4;
+            tc: 5;
+            rd: 6;
+            ra: 7;
+            z:  9..11;
+            rcode: 12..15;
+        };
+
+    qdcount : uint16;
+    ancount : uint16;
+    nscount : uint16;
+    arcount : uint16;
+};
+
+type Question = unit(msg: Message) {
+    qname:	Name(msg);
+	qtype:	uint16;
+	qclass:	uint16;
+};
+
+type ResourceRecord = unit(msg: Message) {
+    name: Name(msg);
+    ty: uint16;
+    class: uint16;
+    ttl: uint32;
+    rdlength: uint16;
+    rdata: bytes &length=self.rdlength;
+};
+
+#    switch ( (self.ty, self.class) {
+#        (
+#
+#        * -> ;
+
+type Name = unit(msg: Message) {
+    labels: list<Label(msg)> &until($$.length == 0);
+};
+
+type Label = unit(msg: Message) {
+    length: bitfield(uint16) {
+        compressed: 0..1;
+        offset: 2..15;
+        };
+
+    switch ( self.length.compressed ) {
+        0 ->    label: bytes &length = self.length;
+#       3 ->   name:  Name(msg) &parse(msg.begin() + self.length.offset);
+    };
+};
+

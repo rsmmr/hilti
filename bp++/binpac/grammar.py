@@ -733,12 +733,13 @@ class Grammar:
         self._first = {}
         self._follow = {}
         self._params = params if params else []
-
-        self._addProduction(root)
-        self._simplify()
-        self._simplify()
-        self._computeTables()
         self._location = location
+
+        if root:
+            self._addProduction(root)
+            self._simplify()
+            self._simplify()
+            self._computeTables()
 
         if addl_ids:
             for id in addl_ids:

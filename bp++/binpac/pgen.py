@@ -66,13 +66,16 @@ class ParserGen:
         grammar must pass ~~Grammar.check.
         """
 
+        idx = self._grammar.name()
+
         def _doCompile():
+            self._mbuilder.setCacheEntry(idx, True)
             self._cg.beginCompile(self)
             self._functionHostApplication()
             self._cg.endCompile()
             return True
 
-        self._mbuilder.cache(self._grammar.name(), _doCompile)
+        self._mbuilder.cache(idx, _doCompile)
 
     def objectType(self):
         """Returns the type of the destination struct generated for a grammar.
