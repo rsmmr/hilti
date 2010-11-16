@@ -341,7 +341,7 @@ class SwitchField(Field):
                 default = case.production()
 
             else:
-                grammar_cases += [(case.expr(), case.production())]
+                grammar_cases += [(case.exprs(), case.production())]
 
         return grammar.Switch(self._expr, grammar_cases, default, symbol="switch", location=self.location())
 
@@ -381,18 +381,19 @@ class SwitchField(Field):
                 defaults += 1
                 continue
 
-            if not case.expr():
+            if not case.exprs():
                 util.internal_error("no expression for switch case")
 
-            if not case.expr().canCoerceTo(self._expr.type()):
-                vld.error(self, "case expression is of type %s, but must be %s" % (case.expr().type(), self._expr.type()))
+            for e in case.exprs():
+                if not e.canCoerceTo(self._expr.type()):
+                    vld.error(self, "case expression is of type %s, but must be %s" % (e.type(), self._expr.type()))
 
-            if isinstance(case.expr(), expr.Ctor):
-                c = case.expr()
-                if c.value() in values:
-                    vld.error(self, "case '%s' defined more than once" % c.value())
-                else:
-                    values += [c.value()]
+            for e in case.exprs():
+                if isinstance(e, expr.Ctor):
+                    if e.value() in values:
+                        vld.error(self, "case '%s' defined more than once" % e.value())
+                    else:
+                        values += [e.value()]
 
         if defaults > 1:
             vld.error(self, "more than one default case")
@@ -419,7 +420,7 @@ class SwitchFieldCase(SubField):
     def __init__(self, name, value, ty, parent, args=None, location=None):
         super(SwitchFieldCase, self).__init__(name, value, ty, parent, args=args, location=location)
         self._default = False
-        self._expr = None
+        self._exprs = None
         self._number = -1
 
     def caseNumber(self):
@@ -439,23 +440,26 @@ class SwitchFieldCase(SubField):
         """
         return self._default
 
-    def expr(self):
-        """Returns the expression associated with the case.
+    def exprs(self):
+        """Returns the expressions associated with the case.
 
-        Returns: ~~Expression - The expression, or None for the default branch.
+        Returns: list of ~~Expression - The expressions, or None for the default branch.
         """
-        return self._expr
+        return self._exprs
 
-    def setExpr(self, expr):
+    def setExprs(self, exprs):
         """Sets the expression associated with the field. This must be called
         once for every case (including the default case).
 
-        expr: ~~Expression - The expression, or None to mark the case as the
-        default.
+        expr: ~~Expression or list of ~~Expressions - One or more expressions,
+        or None to mark the case as the default.
         """
-        self._expr = expr
+        if not isinstance(exprs, list):
+            self._exprs = [exprs]
 
-        if not self._expr:
+        self._exprs = exprs if exprs else []
+
+        if not self._exprs:
             self._default = True
 
     def __str__(self):
@@ -465,17 +469,17 @@ class SwitchFieldCase(SubField):
 
     def resolve(self, resolver):
         SubField.resolve(self, resolver)
-        if self._expr:
-            self._expr.resolve(resolver)
+        for expr in self._exprs:
+            expr.resolve(resolver)
 
     def validate(self, vld):
         SubField.validate(self, vld)
 
-        assert self._default or self._expr
+        assert self._default or self._exprs
 
         super(SwitchFieldCase, self).validate(vld)
-        if self._expr:
-            self._expr.validate(vld)
+        for expr in self._exprs:
+            expr.validate(vld)
 
     def pac(self, printer):
         printer.output("<SwitchFieldCase TODO>")

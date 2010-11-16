@@ -600,7 +600,7 @@ class ParserGen:
 
         dsttype = prod.expr().type()
 
-        values = [e.coerceTo(dsttype, cg).evaluate(cg) for (e, p) in prod.cases()]
+        values = [ [e.coerceTo(dsttype, cg).evaluate(cg) for e in exprs] for (exprs, p) in prod.cases()]
 
         (default_builder, case_builders, done) = cg.builder().makeSwitch(expr, values);
 

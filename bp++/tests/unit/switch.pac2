@@ -4,6 +4,7 @@
 # @TEST-EXEC:  echo 1234567890 | ./a.out -p Mini::test >output 2>&1
 # @TEST-EXEC:  echo 2234567890 | ./a.out -p Mini::test >>output 2>&1
 # @TEST-EXEC:  echo 3234567890 | ./a.out -p Mini::test >>output 2>&1
+# @TEST-EXEC:  echo 4234567890 | ./a.out -p Mini::test >>output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 module Mini;
@@ -13,9 +14,9 @@ export type test = unit {
        a: bytes &length=1;
 
        switch ( self.a ) {
-           b"1" -> b1: bytes &length=4 &default=b"<not set>";
-           b"2" -> b2: bytes &length=4 &default=b"<not set>";
-           *    -> b3: bytes &length=4 &default=b"<not set>";
+           b"1"       -> b1: bytes &length=4 &default=b"<not set>";
+           b"2", b"3" -> b2: bytes &length=4 &default=b"<not set>";
+           *          -> b3: bytes &length=4 &default=b"<not set>";
            };
 
        c: bytes &length=5

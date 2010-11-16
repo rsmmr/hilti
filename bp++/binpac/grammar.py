@@ -667,10 +667,10 @@ class Switch(Conditional):
 
     expr: ~~Expr : An expression.
 
-    alts: list of tuple (expr, ~~Production) - The alternatives. The value of
-    *expr* is matched against the evaluated values of the expressions given in
-    the list (which must be of the same type); if a match is found the
-    corresponding production is selected.
+    alts: list of tuple (list of ~~Expression, ~~Production) - The
+    alternatives. The value of *expr* is matched against the evaluated values
+    of the expressions given in the list (which must be of the same type); if
+    a match is found the corresponding production is selected.
 
     default: ~~Production - Default production if none of *alts* matches. If
     None, a ~~ParseError will be generated if no other alternative matches.
@@ -692,7 +692,7 @@ class Switch(Conditional):
     def cases(self):
         """Returns the possible cases.
 
-        Returns:  list of tuple (~~Expression, ~~Production) - The alternatives.
+        Returns:  list of tuple (list of ~~Expression, ~~Production) - The alternatives.
         """
         return self._cases
 

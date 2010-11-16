@@ -551,12 +551,12 @@ def p_unit_switch_case_list(p):
         p.parser.state.in_switch.addCase(p[1])
 
 def p_unit_switch_case(p):
-    """unit_switch_case : expr ARROW unit_field
+    """unit_switch_case : expr_list ARROW unit_field
                         | '*'  ARROW unit_field
     """
     assert isinstance(p[3], unit.SwitchFieldCase)
     expr = p[1] if p[1] != "*" else None
-    p[3].setExpr(expr)
+    p[3].setExprs(expr)
     p[0] = p[3]
 
 ### Type attributes.
