@@ -344,38 +344,6 @@ class CodeGen(object):
 
         return "hook_on_%s_%s_%s%s" % (module, unit.name(), name, ext)
 
-    def runFieldHook(self, field, obj, value=None, result=None, addl=None):
-        """Runs a hook associated with a unit field.
-
-        field: ~~Field - The unit field.
-
-        obj: ~~hilti.operand.Operand - An operand with the hook's ``self``
-        argument.
-
-        value: ~~hilti.operand.Operand - An operand wit the hook;s ``$$``
-        argument. Must be given if hooks expects such.
-
-        result: ~~hilti.operand.Operand - An operand receiving the hook's
-        result. Must be given if hook returns a value.
-
-        addl: string - If given, an additional string postfix to be added to
-        the generated hook name.
-        """
-        builder = self.builder()
-        name = self.hookName(field.parent(), field, value != None, addl=addl)
-        op1 = builder.idOp(hilti.id.Unknown(name, self.moduleBuilder().module().scope()))
-
-        args_proto = [(hilti.id.Parameter("__self", obj.type()), None)]
-
-        if value:
-            args = [obj, value]
-            args_proto += [(hilti.id.Parameter("__dollardollar", value.type()), None)]
-        else:
-            args = [obj]
-
-        self._mbuilder.declareHook(name, args_proto, result.type() if result else hilti.type.Void())
-        builder.hook_run(result, op1, builder.tupleOp(args))
-
     def declareHook(self, unit, field, objtype, ddtype=None):
         """Adds a hook to the namespace of the current HILTI module. Returns
         the existing declaration if it already exists.
@@ -394,7 +362,7 @@ class CodeGen(object):
         Returns: ~~hilti.operand.ID - The ID referencing the hook.
         """
         name = self.hookName(unit, field, ddtype != None)
-        args = [(hilti.id.Parameter("__self", objtype, None))]
+        args = [(hilti.id.Parameter("__self", objtype), None)]
 
         if ddtype:
             args += [(hilti.id.Parameter("__dollardollar", ddtype.hiltiType(self.cg()), None))]

@@ -801,3 +801,21 @@ class _:
         builder = cg.builder()
         builder.struct_get(tmp, obj.evaluate(cg), builder.constOp("__input"))
         return tmp
+
+@operator.MethodCall(type.Unit, expr.Attribute("set_input"), [type.IteratorBytes])
+class _:
+    """Changes the position in the input stream to continue parsing from. The
+    new position is a new ``iter<bytes>`` where subsequent parsing will
+    proceed. Note this changes the position *globally*: all subsequent field
+    will be parsed from the new position, including those of a potential
+    higher-level unit this unit is part of. Returns an ``iter<bytes>`` with
+    the old position. 
+    """
+    def type(obj, method, args):
+        return type.IteratorBytes()
+
+    def evaluate(cg, obj, method, args):
+        obj = obj.evaluate(cg)
+        pos = args[0].evaluate(cg)
+        cg.builder().struct_set(obj, cg.builder().constOp("__cur"), pos)
+        return pos

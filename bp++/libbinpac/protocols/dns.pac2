@@ -2,22 +2,46 @@
 #
 # TODO:
 #
-#    * rdata (needs typles)
+#    * rdata (needs tuples)
 #    * map integers to enums
 #    * do we want to put bitfields into the unit namespace?
 
 module DNS;
 
+type RData = enum {
+    A       = 1,
+    NS      = 2,
+    MD      = 3,
+    MF      = 4,
+    CNAME   = 5,
+    SOA     = 6,
+    MB      = 7,
+    MG      = 8,
+    MR      = 9,
+    NULL    = 10,
+    WKS     = 11,
+    PTR     = 12,
+    HINFO   = 13,
+    MINFO   = 14,
+    MX      = 15,
+    TXT     = 16,
+    AAAA    = 28,
+    NBS     = 32,
+    A6      = 38,
+    EDNS    = 41,
+};
+
+
 export type Message = unit {
-	header:     Header;
-	question:   list<Question>       &length=self.header.qdcount;
-	answer:     list<ResourceRecord> &length=self.header.ancount;
-	authority:  list<ResourceRecord> &length=self.header.nscount;
+    header:     Header;
+    question:   list<Question>       &length=self.header.qdcount;
+    answer:     list<ResourceRecord> &length=self.header.ancount;
+    authority:  list<ResourceRecord> &length=self.header.nscount;
     additional: list<ResourceRecord> &length=self.header.arcount;
 };
 
 type Header = unit {
-    id	: uint16;
+    id : uint16;
         : bitfield(uint16) {
             qr: 0;
             opcode: 1..3;
@@ -29,16 +53,16 @@ type Header = unit {
             rcode: 12..15;
         };
 
-    qdcount : uint16;
-    ancount : uint16;
-    nscount : uint16;
-    arcount : uint16;
+    qdcount: uint16;
+    ancount: uint16;
+    nscount: uint16;
+    arcount: uint16;
 };
 
 type Question = unit(msg: Message) {
-    qname:	Name(msg);
-	qtype:	uint16;
-	qclass:	uint16;
+    qname:  Name(msg);
+    qtype:  uint16;
+    qclass: uint16;
 };
 
 type ResourceRecord = unit(msg: Message) {
@@ -47,27 +71,55 @@ type ResourceRecord = unit(msg: Message) {
     class: uint16;
     ttl: uint32;
     rdlength: uint16;
-    rdata: bytes &length=self.rdlength;
+
+    switch ( self.ty ) {
+        TYPE_A     -> a:    uint32;
+	    TYPE_NS    -> name:	Name(msg);
+	    TYPE_MX    -> mx:   RDataMX(msg);
+	    TYPE_SOA   -> soa:  RDataSOA(msg);
+
+        * ->       -> rdata &length=self.rdlength;
+    };
 };
 
-#    switch ( (self.ty, self.class) {
-#        (
-#
-#        * -> ;
+#        TYPE_CNAME -> cname: DNS_name(msg);
+#        TYPE_PTR   -> ptr:   DNS_name(msg);
+#        TYPE_AAAA  -> aaaa:  uint32[4];
+
+#        TYPE_A     -> a:    addr &ipv4;
+#        TYPE_AAAA  -> a:    addr &ipv6;
+
+type RDataMX(msg: Message) = {
+    preference: uint16;
+    name:	    Name(msg);
+};
+
+type RDataSOA(msg: Message) = {
+    mname:      Name(msg);
+    rname:      Name(msg);
+    serial:     uint32;
+    refresh:    uint32;
+    retry:      uint32;
+    expire:     uint32;
+    minimum:    uint32;
+};
 
 type Name = unit(msg: Message) {
-    labels: list<Label(msg)> &until($$.length == 0);
+    : list<Label(msg)> &until($$.len == 0) {
+        if ( $$.len.compressed == 3 )
+            self.set_input(msg.input() + $$.len.offset);
+        else
+            self.labels.push_back($$.label);
+        };
+
+    var labels: list<bytes>;
 };
 
 type Label = unit(msg: Message) {
-    length: bitfield(uint16) {
+    len: bitfield(uint16) {
         compressed: 0..1;
         offset: 2..15;
         };
 
-    switch ( self.length.compressed ) {
-        0 ->    label: bytes &length = self.length;
-#       3 ->   name:  Name(msg) &parse(msg.begin() + self.length.offset);
-    };
+    label: bytes &len=self.len if ( self.len.compressed == 0 );
 };
-
