@@ -661,7 +661,9 @@ class BlockBuilder(OperandBuilder):
         cond: ~~Operand - The condition operand.
         values: list of ~~Operand - One operand for each possible alternative,
         representing the value to be match against *cond*. The type of all the
-        operands must match that of *cond*.
+        operands must match that of *cond*. Each individual entry
+        may also be a list of operands to give a set of equivalent
+        values.
         default: ~~BlockBuilder - A builder to take the role of the default branch.
         branches: list of ~~BlockBuilder - A list of builders to take the role
         of the case branches; must have same length as *values*.
@@ -686,8 +688,19 @@ class BlockBuilder(OperandBuilder):
         the end of all block.
         """
 
+        norm_values = []
+
         for v in values:
-            assert v.canCoerceTo(cond.type())
+            if not isinstance(v, list) and not isinstance(v, tuple):
+                norm_values += [[v]]
+            else:
+                norm_values += [v]
+
+        values = norm_values
+
+        for vals in values:
+            for v in vals:
+                assert v.canCoerceTo(cond.type())
 
         alts = []
 
@@ -695,11 +708,16 @@ class BlockBuilder(OperandBuilder):
             branches = []
             for i in range(len(values)):
                 b = BlockBuilder(self._label(tag, "case_%d" % i), self._fbuilder)
-                b.setComment("Case: %s" % str(values[i]))
+                comment = ",".join([str(v) for v in values[i]])
+                b.setComment("Case: %s" % comment)
                 branches += [b]
 
         assert len(values) == len(branches)
-        alts = [self.tupleOp((v, b.labelOp())) for (v, b) in zip(values, branches)]
+
+        alts = []
+        for (vals, b) in zip(values, branches):
+            for v in vals:
+                alts += [self.tupleOp((v, b.labelOp()))]
 
         # Do these last to make the blocks' output order nicer.
         default_builder = BlockBuilder(self._label(tag, "default"), self._fbuilder) if not default else default
