@@ -37,7 +37,7 @@
 #include "exceptions.h"
 #include "rtti.h"
 
-typedef int32_t hlt_bytes_size;     ///< Size of a ~~hlt_bytes instance, and also used for offsets.
+typedef int64_t hlt_bytes_size;     ///< Size of a ~~hlt_bytes instance, and also used for offsets.
 typedef struct hlt_bytes hlt_bytes; ///< Type for representing a HILTI ~~bytes object.
 typedef struct hlt_bytes_chunk hlt_bytes_chunk;
 
@@ -70,7 +70,7 @@ extern hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ct
 /// excpt: &
 ///
 /// Returns: The new bytes object.
-extern hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the number of individual bytes stored in a bytes object.
 ///

@@ -207,6 +207,9 @@ class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameteriza
 
                 for i in range(len(bytes)):
                     byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception, ctx])
+                    cg.llvmExceptionTest(exception)
+
+                    builder = cg.builder()
                     byte.calling_convention = llvm.core.CC_C
                     byte = builder.zext(byte, itype)
                     if bytes[i]:
@@ -218,9 +221,6 @@ class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameteriza
                         result = builder.sext(result, llvm.core.Type.int(self._width))
                     else:
                         result = builder.zext(result, llvm.core.Type.int(self._width))
-
-                # It's fine to check for an exception at the end rather than after each call.
-                cg.llvmExceptionTest(exception)
 
                 if arg:
                     builder = cg.builder()

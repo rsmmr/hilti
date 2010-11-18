@@ -660,13 +660,8 @@ class Function(node.Node):
 
         if self.id().linkage() == id.Linkage.INIT:
             def _makeCall(cg):
-                # We register the function to be called from hilti_init() later,
-                # rather than calling it directly here. That ensures that all the
-                # HILTI internal init stuff gets executed first.
                 llvm_func = cg.llvmFunction(self)
-                llvm_func = cg.builder().bitcast(llvm_func, cg.llvmTypeGenericPointer())
-                llvm_func = operand.LLVM(llvm_func, self.type())
-                cg.llvmCallC("hlt::register_init_function", [llvm_func], abort_on_except=True)
+                cg.builder().call(llvm_func, [])
 
             cg.llvmNewGlobalCtor(_makeCall)
 

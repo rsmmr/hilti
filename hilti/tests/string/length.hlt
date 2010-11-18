@@ -9,7 +9,7 @@ module Main
 import Hilti
 
 void run() {
-    local int32 len
+    local int64 len
     len = string.length "Foo!"
     call Hilti::print (len)
 }
@@ -21,7 +21,7 @@ module Main
 import Hilti
 
 void run() {
-    local int32 len
+    local int64 len
     len = string.length "B\u00e4r!"
     call Hilti::print (len)
 }

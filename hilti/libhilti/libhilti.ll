@@ -123,7 +123,7 @@ declare %__hlt_void* @hlt_gc_calloc_non_atomic(i64, i64)
 ;;; Bytes.
 ; This functions takes an int8_t parameter, which does not fit normal C_HILTI
 ; calling convention.
-declare i8* @hlt_bytes_new_from_data(i8*, i32, %__hlt_exception**, %__hlt_execution_context*)
+declare i8* @hlt_bytes_new_from_data(i8*, i64, %__hlt_exception**, %__hlt_execution_context*)
 
 ;;; Timers
 declare %__hlt_void* @__hlt_timer_new_function(%__hlt_continuation*, %__hlt_exception**, %__hlt_execution_context*)

@@ -1,28 +1,29 @@
 #! /usr/bin/env bash
 
-#GC_CONF="-DCMAKE_C_COMPILER=clang -Denable_threads=YES -Denable_parallel_mark=YES"
-GC_CONF="-Denable_threads=YES -Denable_parallel_mark=YES"
+#GC_CONF="-Denable_threads=NO -Denable_parallel_mark=YES"
+#
+#GC_CFLAGS="-DREDIRECT_MALLOC=GC_malloc -DIGNORE_FREE"
 
 function build {
     base=`pwd`/$1
-    
+
 	# Create directories.
     for d in $base $base/3rdparty $base/3rdparty/bdwgc; do
 		test -e $d || mkdir $d
     done
-	
+
 	cwd=`pwd`
-    
+
     # Build libgc.
     cd $base/3rdparty/bdwgc
-    test -e Makefile || cmake $GC_CONF $2 ../../../3rdparty/bdwgc
+    test -e Makefile || CFLAGS=$GC_CFLAGS cmake $GC_CONF $2 ../../../3rdparty/bdwgc
     make
-	
+
     # Build libhilti.
     cd $base
     test -e Makefile || cmake $2 ..
     make
-    
+
     cd $cwd
 }
 

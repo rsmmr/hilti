@@ -17,7 +17,7 @@ void run() {
     local string s1
     local string s2
     local string s
-    local int32 len
+    local int64 len
     local bool b
 
     s1 = "Hallo"

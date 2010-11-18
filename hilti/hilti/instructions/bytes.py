@@ -103,7 +103,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
 
         exception = cg.llvmAlloca(cg.llvmTypeExceptionPtr())
         ctx = cg.llvmCurrentExecutionContextPtr()
-        newobj = cg.llvmCallCInternal("hlt_bytes_new_from_data", [datac, cg.llvmConstInt(size, 32), exception, ctx])
+        newobj = cg.llvmCallCInternal("hlt_bytes_new_from_data", [datac, cg.llvmConstInt(size, 64), exception, ctx])
 
         return newobj
 
@@ -136,7 +136,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
             ("BytesRunLength", packed, False,
               "A series of bytes preceded by an uint indicating its length."),
 
-            ("BytesFixed", type.Integer(32), False,
+            ("BytesFixed", type.Integer(64), False,
               "A series of bytes of fixed length specified by an additional integer argument"),
 
             ("BytesDelim", type.Reference(type.Bytes()), False,
@@ -145,7 +145,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
             ("SkipBytesRunLength", packed, False,
               "Like BytesRunLength, but does not return unpacked value."),
 
-            ("SkipBytesFixed", type.Integer(32), False,
+            ("SkipBytesFixed", type.Integer(64), False,
               "Like BytesFixed, but does not return unpacked value."),
 
             ("SkipBytesDelim", type.Reference(type.Bytes()), False,
@@ -160,54 +160,42 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
 
         def unpackFixed(n, skip, begin):
             def _unpackFixed(case):
-                # We build a loop here even in the constant case, hoping that LLVM
-                # is able to do some smart loop unrolling ...
-                # FIXME: Check that that is indeed the case ...
-                block_head = cg.llvmNewBlock("loop-head")
-                block_body = cg.llvmNewBlock("loop-body")
-                block_exit = cg.llvmNewBlock("loop-exit")
+                begin_op = operand.LLVM(begin, type.IteratorBytes())
+                next = cg.llvmCallC("hlt::bytes_pos_incr_by", [begin_op, n])
+                next_op = operand.LLVM(next, type.IteratorBytes())
+                end = operand.LLVM(llvmEnd(cg), type.IteratorBytes())
 
-                width = n.type().width()
-                zero = cg.llvmConstInt(0, width)
-                one = cg.llvmConstInt(1, width)
+                is_end = cg.llvmCallC("hlt::bytes_pos_eq", [next_op, end])
 
-                lop = cg.llvmOp(n, coerce_to=type.Integer(width))
+                block_end = cg.llvmNewBlock("unpack-at-end")
+                block_done = cg.llvmNewBlock("unpack-got-it")
+                block_insufficient = cg.llvmNewBlock("unpack-out-of-input")
 
-                # Copy the start iterator.
-                cg.builder().store(begin, iter)
+                cg.builder().cbranch(is_end, block_end, block_done)
 
-                # Make sure it's not already zero.
-                builder = cg.builder()
-                done = builder.icmp(llvm.core.IPRED_ULE, lop, zero)
-                builder.cbranch(done, block_exit, block_head)
-
-                cg.pushBuilder(block_head)
-                j = cg.llvmAlloca(lop.type)
-                cg.llvmAssign(lop, j)
-                cg.builder().branch(block_body)
+                # When we've reached the end, we must check whether we still
+                # got enough bytes or not.
+                cg.pushBuilder(block_end)
+                len = cg.llvmCallC("hlt::bytes_pos_diff", [begin_op, end])
+                len = cg.builder().zext(len, llvm.core.Type.int(64))
+                enough = cg.builder().icmp(llvm.core.IPRED_ULE, len, cg.llvmOp(n))
+                cg.builder().cbranch(is_end, block_insufficient, block_done)
                 cg.popBuilder()
 
-                # Loop body.
-                builder = cg.pushBuilder(block_body)
-
-                byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception, ctx])
-                cur = builder.sub(builder.load(j), one)
-                builder.store(cur, j)
-                done = builder.icmp(llvm.core.IPRED_ULE, cur, zero)
-                builder.cbranch(done, block_exit, block_body)
+                builder = cg.pushBuilder(block_insufficient)
+                cg.llvmRaiseExceptionByName("hlt_exception_would_block", n.location())
                 cg.popBuilder()
 
-                # Loop exit.
-                builder = cg.pushBuilder(block_exit)
+                builder = cg.pushBuilder(block_done)
 
                 if not skip:
-                    arg1 = operand.LLVM(begin, type.IteratorBytes())
-                    arg2 = operand.LLVM(builder.load(iter), type.IteratorBytes())
-                    val = cg.llvmCallC("hlt::bytes_sub", [arg1, arg2])
+                    val = cg.llvmCallC("hlt::bytes_sub", [begin_op, next_op])
                 else:
                     val = llvm.core.Constant.null(cg.llvmTypeGenericPointer())
 
                 cg.llvmAssign(val, bytes)
+
+                cg.builder().store(next, iter)
 
                 # Leave builder on stack.
 
@@ -367,7 +355,7 @@ class Equal(Operator):
         result = cg.builder().icmp(llvm.core.IPRED_EQ, cmp, zero)
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("bytes.length", op1=cReferenceOf(cBytes), target=cIntegerOfWidth(32))
+@hlt.instruction("bytes.length", op1=cReferenceOf(cBytes), target=cIntegerOfWidth(64))
 class Length(Instruction):
     """Returns the number of bytes stored in *op1*."""
     def _codegen(self, cg):
@@ -409,7 +397,7 @@ class Copy(Instruction):
         result = cg.llvmCallC("hlt::bytes_copy", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("bytes.offset", op1=cReferenceOf(cBytes), op2=cIntegerOfWidth(32), target=cIteratorBytes)
+@hlt.instruction("bytes.offset", op1=cReferenceOf(cBytes), op2=cIntegerOfWidth(64), target=cIteratorBytes)
 class Offset(Instruction):
     """Returns an iterator representing the offset *op2* in *op1*."""
     def _codegen(self, cg):
@@ -430,7 +418,7 @@ class End(Operator):
         result = cg.llvmCallC("hlt::bytes_end", [self.op1()])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("bytes.diff", op1=cIteratorBytes, op2=cIteratorBytes, target=cIntegerOfWidth(32))
+@hlt.instruction("bytes.diff", op1=cIteratorBytes, op2=cIteratorBytes, target=cIntegerOfWidth(64))
 class Diff(Instruction):
     """Returns the number of bytes between *op1* and *op2*."""
     def _codegen(self, cg):

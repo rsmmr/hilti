@@ -8,7 +8,7 @@
 #include "exceptions.h"
 #include "rtti.h"
 
-typedef int32_t hlt_string_size;
+typedef int64_t hlt_string_size;
 
 struct hlt_bytes;
 

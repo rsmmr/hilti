@@ -152,7 +152,6 @@ class Instruction(node.Node):
 
         Returns: llvm.core.Value - The target value.
         """
-        print repr(self)
         assert self._llvm_target
         return self._llvm_target
 

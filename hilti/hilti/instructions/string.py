@@ -21,7 +21,7 @@ from hilti.instructions.operators import *
 
 
 def _llvmStringType(len=0):
-    return llvm.core.Type.packed_struct([llvm.core.Type.int(32), llvm.core.Type.array(llvm.core.Type.int(8), len)])
+    return llvm.core.Type.packed_struct([llvm.core.Type.int(64), llvm.core.Type.array(llvm.core.Type.int(8), len)])
 
 def _llvmStringTypePtr(len=0):
     return llvm.core.Type.pointer(_llvmStringType(len))
@@ -33,16 +33,18 @@ def _makeLLVMString(cg, s):
 
     s = s.encode("utf-8")
 
-    size = llvm.core.Constant.int(llvm.core.Type.int(32), len(s))
-    bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in s]
-    struct = llvm.core.Constant.packed_struct([size, llvm.core.Constant.array(llvm.core.Type.int(8), bytes)])
+    def makeConst():
+        size = llvm.core.Constant.int(llvm.core.Type.int(64), len(s))
+        bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in s]
+        struct = llvm.core.Constant.packed_struct([size, llvm.core.Constant.array(llvm.core.Type.int(8), bytes)])
+        
+        glob = cg.llvmNewGlobalConst(cg.nameNewGlobal("string"), struct)
 
-    glob = cg.llvmNewGlobalConst(cg.nameNewGlobal("string"), struct)
+        # We need to cast the const, which has a specific array length, to the
+        # actual string type, which has unspecified array length.
+        return glob.bitcast(_llvmStringTypePtr())
 
-    # We need to cast the const, which has a specific array length, to the
-    # actual string type, which has unspecified array length.
-    return glob.bitcast(_llvmStringTypePtr())
-
+    return cg.cache("string-const-%s" % s, makeConst)
 
 @hlt.type("string", 4)
 class String(type.ValueType, type.Constable):
@@ -110,7 +112,7 @@ class Equal(Operator):
         cg.llvmStoreInTarget(self, result)
 
 
-@hlt.instruction("string.length", op1=cString, target=cIntegerOfWidth(32))
+@hlt.instruction("string.length", op1=cString, target=cIntegerOfWidth(64))
 class Length(Instruction):
     """Returns the number of characters in the string *op1*."""
 
@@ -126,7 +128,7 @@ class Concat(Instruction):
         result = cg.llvmCallC("hlt::string_concat", [self.op1(), self.op2()])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("string.substr", op1=cString, op2=cIntegerOfWidth(32), op3=cIntegerOfWidth(32), target=cString)
+@hlt.instruction("string.substr", op1=cString, op2=cIntegerOfWidth(64), op3=cIntegerOfWidth(64), target=cString)
 class Substr(Instruction):
     """Extracts the substring of length *op3* from *op1* that starts at
     position *op2*."""
@@ -134,7 +136,7 @@ class Substr(Instruction):
     def _codegen(self, cg):
         util.internal_error("string.substr not implemented")
 
-@hlt.instruction("string.find", op1=cString, op2=cString, target=cIntegerOfWidth(32))
+@hlt.instruction("string.find", op1=cString, op2=cString, target=cIntegerOfWidth(64))
 class Find(Instruction):
     """Searches *op2* in *op1*, returning the start index if it find it.
     Returns -1 if it does not find *op2* in *op1*."""

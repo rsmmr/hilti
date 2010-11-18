@@ -53,7 +53,7 @@ hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
     return hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes));
 }
 
-hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, int32_t len, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes));
     hlt_bytes_chunk* dst = hlt_gc_malloc_non_atomic(sizeof(hlt_bytes_chunk));
