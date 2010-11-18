@@ -153,11 +153,7 @@ class Bytes(type.ParseableType, type.Iterable):
 
             return end
 
-        # FIXME: HILTI should have int64 lengths.
-        op3_32= fbuilder.addTmp("__op32", hilti.type.Integer(32))
-        cg.builder().int_trunc(op3_32, op3)
-
-        result = self.generateUnpack(cg, op1, op2, op3_32)
+        result = self.generateUnpack(cg, op1, op2, op3)
 
         builder = cg.builder()
 
@@ -182,11 +178,9 @@ class _:
             return None
 
     def evaluate(cg, e):
-        tmp = cg.functionBuilder().addLocal("__size", hilti.type.Integer(32))
-        tmp2 = cg.functionBuilder().addLocal("__size64", hilti.type.Integer(64))
+        tmp = cg.functionBuilder().addLocal("__size", hilti.type.Integer(64))
         cg.builder().bytes_length(tmp, e.evaluate(cg))
-        cg.builder().int_zext(tmp2, tmp)
-        return tmp2
+        return tmp
 
 @operator.Equal(Bytes, Bytes)
 class _:

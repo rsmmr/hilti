@@ -124,7 +124,7 @@ class UnsignedInteger(type.Integer):
         else:
             assert self.width() in (8, 16, 32, 64)
             op2 = cg.builder().idOp("Hilti::Packed::SkipBytesFixed")
-            op3 = cg.builder().constOp(self.width() / 8, hilti.type.Integer(32))
+            op3 = cg.builder().constOp(self.width() / 8, hilti.type.Integer(64))
 
         result = self.generateUnpack(cg, op1, op2, op3)
 
