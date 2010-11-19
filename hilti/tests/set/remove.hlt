@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -12,13 +12,13 @@ void run() {
     local bool b
     local int32 i
     local ref<set<string>> m
-    
+
     m = new set<string>
     call Hilti::print(m)
 
     set.insert m "Foo"
     set.insert m "Bar"
-    
+
     i = set.size m
     call Hilti::print(i)
     call Hilti::print(m)
@@ -34,7 +34,7 @@ void run() {
     call Hilti::print(b)
     b = set.exists m "Bar"
     call Hilti::print(b)
-    
+
     set.insert m "Foo"
     set.insert m "Bar"
 
@@ -46,9 +46,9 @@ void run() {
     call Hilti::print(b)
     b = set.exists m "Bar"
     call Hilti::print(b)
-    
+
     set.clear m
-    
+
     i = set.size m
     call Hilti::print(i)
     call Hilti::print(m)

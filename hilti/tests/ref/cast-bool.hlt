@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -18,10 +18,10 @@ void run() {
 
     a = new A
     b = Null
-    
+
     is = ref.cast.bool a
     call Hilti::print(is)
-    
+
     is = ref.cast.bool b
     call Hilti::print(is)
 }

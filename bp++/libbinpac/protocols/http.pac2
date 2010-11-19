@@ -1,6 +1,6 @@
 # $Id$
 #
-# TODO: 
+# TODO:
 #
 # - Continued headers
 # - b":" instead of /:/
@@ -19,8 +19,8 @@ const HexInteger = /[0-9a-zA-Z]+/;
 const WhiteSpace = /[ \t]+/;
 const OptionalWhiteSpace = /[ \t]*/;
 
-bool reply_code_needs_body(status: int64)
-{ 
+bool reply_code_needs_body(status: uint64)
+{
    return status <= 99 || (status >= 200 && status != 204 && status != 304);
 }
 
@@ -56,37 +56,37 @@ type RequestLine = unit {
     :        NewLine;
 };
 
-%debug on RequestLine::version { 
+%debug on RequestLine::version {
     print "request", self.method, "|", self.uri, "|", self.version.number;
     }
 
 type ReplyLine = unit {
     version: Version;
     :        WhiteSpace;
-    status:  Integer &convert=dec_to_int;
+    status:  Integer &convert=dec_to_uint;
     :        WhiteSpace;
     reason:  RestOfLine;
     :        NewLine;
 };
 
-%debug on ReplyLine::reason { 
+%debug on ReplyLine::reason {
     print "reply  ", self.version.number, "|", self.status, "|", self.reason;
-    }      
+    }
 
 type Message = unit(body_default: bool) {
     headers:    list<Header(self)>;
     end_of_hdr: NewLine;
     body:       Body(self, self.delivery_mode) if ( self.has_body );
-    
-    var content_length: int64;
+
+    var content_length: uint64;
     var content_type: bytes;
     var transfer_encoding: bytes;
     var multipart_boundary: bytes;
-    
+
     var has_body: bool;
     var delivery_mode: DeliveryMode &default=DeliveryMode::EndOfData;
 
-    on %ctor {
+    on %init {
         self.has_body = body_default;
         }
 
@@ -94,23 +94,23 @@ type Message = unit(body_default: bool) {
         if ( self?.content_length )
             self.delivery_mode = DeliveryMode::Length;
 
-        if ( self?.content_type && self.content_type.startswith(b"multipart/") ) {
+        if ( self?.content_type && (self.content_type).startswith(b"multipart/") ) {
             local boundary : bytes;
 
             boundary = self.content_type.match(/boundary="([^"]*)"/, 1);
-            
+
             if ( ! |boundary| )
                 boundary = self.content_type.match(/boundary=([^ ;]*)/, 1);
 
             self.delivery_mode = DeliveryMode::Multipart;
             self.multipart_boundary = b"--" + boundary + b"--\r\n";
         }
-        
+
         if ( self?.transfer_encoding && self.transfer_encoding == b"chunked" )
             self.delivery_mode = DeliveryMode::Chunked;
     }
 };
-    
+
 const HeaderName  = /[^:\r\n]+/;
 const HeaderValue = /[^\r\n]+/;
 
@@ -120,18 +120,18 @@ type Header = unit(msg: Message) {
     :        WhiteSpace;
     content: HeaderValue;
     :        NewLine;
-    
+
     on content {
         if ( self.name == b"content-length" ) {
-            msg.content_length = dec_to_int(self.content);
+            msg.content_length = dec_to_uint(self.content);
             msg.has_body = True;
             }
-                    
+
         if ( self.name == b"transfer-encoding" ) {
             msg.transfer_encoding = self.content;
             msg.has_body = True;
             }
-            
+
         if ( self.name == b"content-type" )
             msg.content_type = self.content;
         }
@@ -140,31 +140,32 @@ type Header = unit(msg: Message) {
 type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
 
     switch ( delivery_mode ) {
-    
+
       DeliveryMode::EndOfData -> data: bytes &eod;
-      
+
       DeliveryMode::Length    -> data: bytes &length=msg.content_length;
-      
+
       DeliveryMode::Multipart -> : list<FullLine> &until($$ == msg.multipart_boundary)
                                    foreach { self.data += $$; }
-               
-      DeliveryMode::Chunked   -> : Chunks(self, msg);       
-    }
-    
-    on %ctor {
+
+      DeliveryMode::Chunked   -> : Chunks(self, msg);
+    };
+
+    on %init {
         self.data = b"";
         }
 };
 
 type Chunks = unit(body: Body, msg: Message) {
     chunk:   list<Chunk> &until($$.length == 0)
-                 foreach { body.data += $$.data; }
-    trailer: list<Header(msg)>;
+                foreach { body.data += $$.data; }
+    trailer: list<Header(msg)>
+                { msg.headers += self.trailer; }
     :        NewLine;
 };
 
 type Chunk = unit {
-    length:    HexInteger &convert=hex_to_int;
+    length:    HexInteger &convert=hex_to_uint;
     :          OptionalWhiteSpace;
     extension: RestOfLine;
     :          NewLine;
@@ -182,12 +183,12 @@ bytes to_lower(b: bytes)
      return Hilti::bytes_to_lower(b);
 }
 
-int64 dec_to_int(b: bytes)
+uint64 dec_to_uint(b: bytes)
 {
-     return Hilti::bytes_to_int(b, 10);
+     return Hilti::bytes_to_int(b, 10).as_uint();
 }
 
-int64 hex_to_int(b: bytes)
+uint64 hex_to_uint(b: bytes)
 {
-     return Hilti::bytes_to_int(b, 16);
+     return Hilti::bytes_to_int(b, 16).as_uint();
 }

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -23,8 +23,8 @@ void run() {
 
     local ref<timer> t
     local ref<timer_mgr> mgr
-    
-    mgr = new timer_mgr 
+
+    mgr = new timer_mgr
     t = new timer foo (4)
     timer_mgr.schedule mgr 4.0 t
     t = new timer foo (1)
@@ -35,9 +35,9 @@ void run() {
     timer_mgr.schedule mgr 2.0 t
     t = new timer foo (3)
     timer_mgr.schedule mgr 3.0 t
-    
+
     timer.update t 10.0
-    
+
     call advance(mgr, 0.1)
     call advance(mgr, 0.2)
     call advance(mgr, 0.3)
@@ -46,8 +46,8 @@ void run() {
     call advance(mgr, 4.5)
     call advance(mgr, 5.0)
     call advance(mgr, 10.0)
-    
+
     return.void
-}     
+}
 
 

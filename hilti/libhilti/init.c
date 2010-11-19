@@ -1,7 +1,7 @@
 /* $Id$
- * 
+ *
  * Initialization code that needs to run once at program start.
- * 
+ *
  */
 
 #include <locale.h>
@@ -11,7 +11,10 @@
 #include "hilti.h"
 #include "context.h"
 
-typedef void (*init_func)();
+typedef struct {
+    int8_t prio;
+    void (*func)();
+} init_func;
 
 static init_func* _registered_funcs = 0;
 static int _num_registered_funcs = 0;
@@ -26,11 +29,11 @@ void hlt_init()
 
     // Initialize configuration to defaults.
     __hlt_config_init();
-    
+
     // Initialize the garbage collector.
     __hlt_init_gc();
 
-    // Initialize debug streams from environment. 
+    // Initialize debug streams from environment.
     const char* dbg = getenv("HILTI_DEBUG");
     if ( dbg ) {
         hlt_exception* excpt = 0;
@@ -41,22 +44,29 @@ void hlt_init()
             fprintf(stderr, "cannot parse HILTI_DEBUG environment variable");
             exit(1);
         }
-        
+
         hlt_config_set(&cfg);
     }
 
+    // Two rounds for the two priortity levels.
     for ( int i = 0; i < _num_registered_funcs; i++ )
-        (*(_registered_funcs[i]))();
-        
+        if ( _registered_funcs[i].prio > 0 )
+            (*(_registered_funcs[i].func))();
+
+    for ( i = 0; i < _num_registered_funcs; i++ )
+        if ( _registered_funcs[i].prio == 0 )
+            (*(_registered_funcs[i].func))();
 
     // This is easy to forget ...
     __hlt_debug_printf_internal("hilti-trace", "Reminder: hilti-trace requires compiling with debugging level > 1.");
     __hlt_debug_printf_internal("hilti-flow",  "Reminder: hilti-flow requires compiling with debugging level > 1.");
 }
 
-void hlt_register_init_function(init_func func, hlt_exception* expt)
+void hlt_register_init_function(void (*func)(), int8_t prio, hlt_exception* excpt, hlt_execution_context* ctx)
 {
     ++_num_registered_funcs;
     _registered_funcs = hlt_gc_realloc_atomic(_registered_funcs, _num_registered_funcs * sizeof(init_func));
-    _registered_funcs[_num_registered_funcs - 1] = func;
+
+    init_func ifunc = { prio, func };
+    _registered_funcs[_num_registered_funcs - 1] = ifunc;
 }

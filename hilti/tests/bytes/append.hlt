@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -17,16 +17,16 @@ void run() {
 
     b1 = string.encode "Hallo" "ascii"
     call Hilti::print (b1)
-    
+
     b2 = string.encode "T\u00e4\u00e4\u00e4!" "utf8"
     call Hilti::print (b2)
 
     bytes.append b1 b2
     call Hilti::print (b1)
-    
+
     s = string.decode b1 "utf8"
     call Hilti::print (s)
-    
+
     s = string.decode b1 "ascii"
     call Hilti::print (s)
 }

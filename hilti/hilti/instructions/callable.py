@@ -19,8 +19,8 @@ import flow
 
 @hlt.type("callable", 31)
 class Callable(type.HeapType, type.Parameterizable):
-    """Type for ``callable``. 
-    
+    """Type for ``callable``.
+
     rtype: ~~Type - The result type yielded by calling the callable.
     """
 
@@ -31,7 +31,7 @@ class Callable(type.HeapType, type.Parameterizable):
     def resultType(self):
         """Returns the callable's result type."""
         return self._rtype
-        
+
     ### Overridden from Type.
 
     def name(self):
@@ -40,9 +40,9 @@ class Callable(type.HeapType, type.Parameterizable):
     def _validate(self, vld):
         super(Callable, self)._validate(vld)
         self._rtype.validate(vld)
-        
+
     ### Overridden from HiltiType.
-    
+
     def llvmType(self, cg):
         """A ``callable`` object is mapped to ``hlt_callable *, where
         ``hlt_callable`` is itself a pointer. This double indirection allows
@@ -55,9 +55,9 @@ class Callable(type.HeapType, type.Parameterizable):
         typeinfo = cg.TypeInfo(self)
         typeinfo.c_prototype = "hlt_callable *"
         return typeinfo
-    
+
     ### Overridden from Parameterizable.
-    
+
     def args(self):
         return [self._rtype]
 
@@ -78,59 +78,59 @@ class Bind(Instruction):
     resulting callable."""
     def _validate(self, vld):
         super(Bind, self)._validate(vld)
-        
+
         func = self.op2().value().function()
-        
+
         ctype = self.op1().type().refType()
         rtype = ctype.resultType()
-    
+
         if not type.canCoerceTo(func.type().resultType(), rtype):
             vld.error(self, "callable's type does match function's return type")
-        
+
         if not flow._checkFunc(vld, self, func, [function.CallingConvention.HILTI]):
             return
-        
+
         flow._checkArgs(vld, self, func.type(), self.op3())
-    
+
     def _codegen(self, cg):
         func = self.op2().value().function()
         args = self.op3()
         cont = cg.llvmMakeCallable(func, args)
-        
+
         ptr = cg.llvmOp(self.op1())
         cg.builder().store(cont, ptr)
-        
+
 @hlt.constraint("ref<callable<T>>")
 def _call_target(ty, op, i):
     ctype = i.op1().type().refType()
-    
+
     if ctype == type.Void() and op:
         return (False, "callable does not return a value")
     else:
         if not op:
             return (False, "callable returns a value")
-        
+
         if not type.canCoerceTo(ctype, ty):
             return (False, "target type does not match callable's return type")
-    
+
     return (True, "")
-    
+
 @hlt.instruction(".callable.next", target=cReferenceOf(cCallable))
 class NextCallable(Instruction):
     """Internal instruction. Retrieves the next not-yet-processed
     callable registered by the C run-time.
-    
+
     Note: The returned reference will remain valid only until either the next
     time this instruction or any other instruction potentially registering new
-    callables is called. 
+    callables is called.
     """
 
     def _validate(self, vld):
         super(NextCallable, self)._validate(vld)
-        
+
         if self.target().type().refType().resultType() != type.Void():
             vld.error("target must be ref<callable<void>>")
-    
+
     def _codegen(self, cg):
         ctx = cg.llvmCurrentExecutionContextPtr()
         c = cg.llvmCallCInternal("__hlt_callable_next", [ctx, cg.llvmFrameExceptionAddr()])

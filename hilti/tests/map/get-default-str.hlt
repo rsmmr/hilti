@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -11,15 +11,15 @@ import Hilti
 void run() {
     local string v
     local ref<map<int32, string>> m
-    
+
     m = new map<int32, string>
-    
+
     map.insert m 10 "Foo"
     map.insert m 20 "Bar"
-    
+
     v = map.get_default m 10 "April April"
     call Hilti::print(v)
-    
+
     v = map.get_default m 30 "April April"
     call Hilti::print(v)
 }

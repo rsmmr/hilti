@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC:  cp %DIR/trace.pcap .
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -24,13 +24,13 @@ void run() {
 @loop:
     eq = equal cur last
     if.else eq @exit @cont
-    
+
 @cont:
     pkt = deref cur
     call Hilti::print (pkt)
     cur = incr cur
     jump @loop
-    
+
 @exit: return.void
-}     
+}
 

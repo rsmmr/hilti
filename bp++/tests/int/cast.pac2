@@ -1,0 +1,16 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -m -o a.out 
+# @TEST-EXEC:  ./a.out >output
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+global a: int32 = 1;
+global b: uint32;
+
+# Note that this will still print -1 because HILTI's print doesn't
+# differentiate between signed and unsigned.
+b = a.as_uint();
+print b;
+

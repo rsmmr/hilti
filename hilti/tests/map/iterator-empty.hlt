@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -24,12 +24,12 @@ void run() {
 @loop:
     eq = equal cur last
     if.else eq @exit @cont
-    
+
 @cont:
     i = deref cur
     call Hilti::print (i)
     cur = incr cur
     jump @loop
-    
+
 @exit: return.void
     }

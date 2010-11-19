@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -11,16 +11,16 @@ import Hilti
 void run() {
     local bool b
     local ref<set<tuple<string,int64>>> m
-    
+
     m = new set<tuple<string,int64>>
-    
+
     set.insert m ("Foo",1)
     set.insert m ("Bar",2)
     call Hilti::print(m)
 
     b = set.exists m ("Foo",1)
     call Hilti::print (b)
-    
+
     b = set.exists m ("Bar",2)
     call Hilti::print (b)
 }

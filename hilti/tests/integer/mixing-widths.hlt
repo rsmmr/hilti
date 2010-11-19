@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
 # @TEST-EXEC:      btest-diff output
 #
 # A series of checks mixing different integer types. These should
@@ -73,7 +73,7 @@ void run() {
     local bool cond
     local int<8>  i1
     local int<16> i2
-    cond = int.lt i1 i2
+    cond = int.slt i1 i2
 }
 
 # @TEST-START-NEXT
@@ -93,7 +93,7 @@ module Main
 void run() {
     local int<8>  i1
     local int<16> i2
-    i1 = int.ext i2
+    i1 = int.zext i2
 }
 
 

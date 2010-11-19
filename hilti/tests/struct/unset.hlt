@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -16,7 +16,7 @@ type A = struct {
     }
 
 void run() {
-    local int64 i 
+    local int64 i
     local string s
     local double d
     local ref<A> a
@@ -24,15 +24,15 @@ void run() {
 
     a = new A
     struct.set a "test" "Abrakadraba"
-    
+
     b = struct.is_set a "i"
     call Hilti::print(b)
     b = struct.is_set a "test"
     call Hilti::print(b)
-    
-    struct.unset a "i" 
-    struct.unset a "test" 
-    
+
+    struct.unset a "i"
+    struct.unset a "test"
+
     b = struct.is_set a "i"
     call Hilti::print(b)
     b = struct.is_set a "test"

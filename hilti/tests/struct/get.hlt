@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -16,17 +16,17 @@ type A = struct {
     }
 
 void run() {
-    local int64 i 
+    local int64 i
     local string s
     local double d
     local ref<A> a
     local bool b
 
     a = new A
-    
+
     i = struct.get a "i"
     call Hilti::print(i)
-    
+
     s = struct.get a "test"
     call Hilti::print(s)
 }

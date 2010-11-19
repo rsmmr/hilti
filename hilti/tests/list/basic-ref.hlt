@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -16,10 +16,10 @@ void run() {
     local ref<bytes> b2
     local ref<bytes> b3
     local ref<bytes> b4
-    
+
     b1 = b"A"
     b2 = b"B"
-    
+
     l = new list<ref<bytes>>
     list.push_back l b1
     list.push_back l b2

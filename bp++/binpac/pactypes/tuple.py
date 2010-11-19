@@ -90,7 +90,7 @@ class _:
         # We cheat here and rely on HILTI to do the coercion right. Otherwise,
         # we'd have to split the tuple apart, coerce each element individually,
         # and then put it back together; something which is probably always
-        # unnecessary. 
+        # unnecessary.
 
         if _canCoerceTo(e1, e2):
             cg.builder().equal(tmp, e1.coerceTo(e2.type(), cg).evaluate(cg), e2.evaluate(cg))

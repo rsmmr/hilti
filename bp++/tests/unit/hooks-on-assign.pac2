@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  hilti-build -m %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  echo 1234567890567890 | ./a.out | sort >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -10,14 +10,14 @@ export type test = unit {
 
        a: bytes &length=4
             { print "a1:", self.a; }
-           
+
        b: bytes &length=6
-            { print "b"; 
+            { print "b";
               self.a = b"HURZ";
             }
 
        on a
             { print "a2:", self.a; }
-            
+
 };
 

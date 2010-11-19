@@ -1,0 +1,22 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -m -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import BinPAC;
+
+type Foo = enum {
+    A = 10,
+    B,
+    C = 20
+    };
+
+global c : Foo;
+
+print Foo::A;
+print Foo::Undef;
+print c;
+

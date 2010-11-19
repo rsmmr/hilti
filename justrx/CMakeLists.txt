@@ -1,6 +1,6 @@
 # $Id$
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH}) 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 find_package(LLVM)
 
@@ -11,7 +11,7 @@ set(PROJECT_VERSION "0.1")
 
 # set(CMAKE_VERBOSE_MAKEFILE "on")
 
-# We create two versions of the "jrx-config" script: one for usage with 
+# We create two versions of the "jrx-config" script: one for usage with
 # installation and one without.
 #
 # TODO: Note that we can't "make install" yet.
@@ -22,7 +22,7 @@ set(CONFIG_LDFLAGS "-L${CMAKE_BINARY_DIR}/src ${CONFIG_LIBS}")
 set(CONFIG_CFLAGS "-I${CMAKE_BINARY_DIR}/src")
 set(CONFIG_CXXFLAGS "${CONFIG_CFLAGS}")
 configure_file("bin/jrx-config.in" "bin/jrx-config-build")
-    
+
     # Installation version.
 set(CONFIG_LIBS "-ljrx")
 set(CONFIG_LDFLAGS "-L${CMAKE_INSTALL_PREFIX}/lib ${CONFIG_LIBS}")

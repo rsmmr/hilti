@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -15,7 +15,7 @@ void run() {
     local ref<regexp> re
     local int32 found
     local ref<list<string>> patterns
-    
+
     re = new regexp
     call Hilti::print(re)
 
@@ -26,19 +26,19 @@ void run() {
 
     regexp.compile re patterns
     call Hilti::print(re)
-    
+
     b = b"Hello Foo!"
     i1 = begin b
     i2 = end b
     found = regexp.find re i1 i2
     call Hilti::print(found)
-    
+
     b = b"Hello Bar!"
     i1 = begin b
     i2 = end b
     found = regexp.find re i1 i2
     call Hilti::print(found)
-    
+
     b = b"Hello Hurz!"
     i1 = begin b
     i2 = end b

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -10,15 +10,15 @@ import Hilti
 
 void run() {
     local tuple<caddr,caddr> a
-    
-    a = caddr.function run
-    call Hilti::print (a)
-    
+
     a = caddr.function run
     call Hilti::print (a)
 
-#   Not supported at the moment. 
+    a = caddr.function run
+    call Hilti::print (a)
+
+#   Not supported at the moment.
 #
 #    a = caddr.function Hilti::print
 #    call Hilti::print (a)
-}     
+}

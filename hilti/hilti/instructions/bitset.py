@@ -13,8 +13,8 @@ commands::
 
    local mybits: MyBits
    mybits = bitset.set mybits MyBits::Bit2
-   
-Note: For efficiency reasons, HILTI supports only up to 64 bits per type. 
+
+Note: For efficiency reasons, HILTI supports only up to 64 bits per type.
 
 Todo: We can't create constants with multiple bits set yet.
 """
@@ -27,27 +27,27 @@ from hilti.instructions.operators import *
 @hlt.type("bitset", 19)
 class Bitset(type.ValueType, type.Constable):
     def __init__(self, labels, location=None):
-        """The ``bitset`` type. 
-        
+        """The ``bitset`` type.
+
         Returns: dictonary string -> int - The labels mappend to their values.
         If a value is given as None, it will be chosen uniqule automatically.
         """
         super(Bitset, self).__init__(location=location)
-        
+
         self._labels = {}
         next = 0
         for (label, bit) in labels:
             if bit == None:
-                bit = next 
-                
+                bit = next
+
             next = max(next, bit + 1)
             self._labels[label] = bit
 
         self._labels_sorted = labels
-            
+
     def labels(self):
         """Returns the bit labels with their corresponding bit numbers.
-        
+
         Returns: dictonary string -> int - The labels mappend to their values.
         """
         return self._labels
@@ -56,32 +56,32 @@ class Bitset(type.ValueType, type.Constable):
 
     def name(self):
         return "bitset { %s }" % ", ".join(["%s=%d" % (l, self._labels[l]) for (l, v) in self._labels_sorted])
-    
+
     ### Overridden from HiltiType.
-    
+
     def typeInfo(self, cg):
         """An ``bitset``'s type information keeps additional information in
         the ``aux`` field: ``aux`` points to a concatenation of ASCIIZ strings
-        containing the label names. 
+        containing the label names.
         """
         typeinfo = cg.TypeInfo(self)
         typeinfo.c_prototype = "int64_t"
         typeinfo.to_string = "hlt::bitset_to_string";
         typeinfo.to_int64 = "hlt::bitset_to_int64";
-        
+
         # Build the ASCIIZ strings.
         aux = []
         zero = [cg.llvmConstInt(0, 8)]
         for (label, value) in sorted(self.labels().items(), key=lambda x: x[1]):
             aux += [cg.llvmConstInt(ord(c), 8) for c in label] + zero
-    
+
         name = cg.nameTypeInfo(self) + "_labels"
         const = llvm.core.Constant.array(llvm.core.Type.int(8), aux)
         glob = cg.llvmNewGlobalConst(name, const)
         glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
-        
+
         typeinfo.aux = glob
-        
+
         return typeinfo
 
     def llvmType(self, cg):
@@ -96,9 +96,9 @@ class Bitset(type.ValueType, type.Constable):
 
     def cmpWithSameType(self, other):
         return self._labels == other._labels
-        
+
     ### Overridden from ValueType.
-    
+
     def llvmDefault(self, cg):
         """In a ``bitset``, all bits are initially unitialized."""
         return cg.llvmConstInt(0, 64)
@@ -107,9 +107,9 @@ class Bitset(type.ValueType, type.Constable):
 
     def validateConstant(self, vld, const):
         """``bitset`` constants are strings naming one of the labels."""
-        
+
         label = const.value()
-        
+
         if not isinstance(label, str):
             util.internal_error("bitset label must be a Python string")
 
@@ -121,7 +121,7 @@ class Bitset(type.ValueType, type.Constable):
 
         bit = self._labels[label]
         return cg.llvmConstInt(1, 64).shl(cg.llvmConstInt(bit, 64))
-        
+
     def outputConstant(self, printer, const):
         printer.output(const.value())
 
@@ -158,7 +158,7 @@ class Clear(Instruction):
         op2 = cg.builder().xor(op2, cg.llvmConstInt(-1, 64))
         result = cg.builder().and_(op1, op2)
         cg.llvmStoreInTarget(self, result)
-    
+
 @hlt.instruction("bitset.has", op1=cBitset, op2=cSameTypeAsOp(1), target=cBool)
 class Has(Instruction):
     """
@@ -173,5 +173,5 @@ class Has(Instruction):
 
 
 
-    
-    
+
+

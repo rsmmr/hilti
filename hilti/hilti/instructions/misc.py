@@ -15,8 +15,8 @@ from hilti.instruction import *
 @hlt.instruction("nop")
 class Nop(Instruction):
     """
-    Evaluates into nothing. 
+    Evaluates into nothing.
     """
     def _codegen(self, cg):
         pass
-    
+

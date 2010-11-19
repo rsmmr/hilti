@@ -92,7 +92,7 @@ def p_module_global_hook(p):
     p.parser.state.module.addExternalHook(None, p[3], p[4], p[1])
 
 def p_module_global_import(p):
-    """module_global : IMPORT IDENT ';'"""
+    """module_global : IMPORT MODULE_IDENT ';'"""
     if not _importFile(p.parser, p[2], _loc(p, 1)):
         raise SyntaxError
 
@@ -145,7 +145,7 @@ def p_type_decl(p):
     type = p[6]
 
     i = id.Type(name, type, linkage=p[1], location=_loc(p, 2))
-    type.setName(name)
+    type.setName("%s" % name)
 
     _currentScope(p).addID(i)
 
@@ -250,6 +250,14 @@ def p_type_ident(p):
 
     p[0] = i.type()
 
+#def p_id_list(p):
+#    """id_list : IDENT "," id_list
+#               | IDENT"""
+#    if len(p) == 2:
+#        p[0] = [p[1]]
+#    else:
+#        p[0] = [p[1]] + p[3]
+
  # Simple types.
 
 def p_type_pac(p):
@@ -299,8 +307,8 @@ def p_bitfield_type(p):
         raise SyntaxError
 
     bits = {}
-    for (name, lower, upper) in p[6]:
-        bits[name] = (lower[0], upper[0])
+    for (name, lower, upper, attrs) in p[6]:
+        bits[name] = (lower[0], upper[0], attrs)
 
     ty.setBits(bits)
 
@@ -315,31 +323,41 @@ def p_bitfield_list(p):
         p[0] = [p[1]] + p[2]
 
 def p_bitfield(p):
-    """bitfield : IDENT ':' CONSTANT DOTDOT CONSTANT ';'
-                | IDENT ':' CONSTANT ';'"""
+    """bitfield : IDENT ':' CONSTANT DOTDOT CONSTANT opt_type_attr_list ';'
+                | IDENT ':' CONSTANT opt_type_attr_list ';'"""
 
-    f = (p[1], p[3], p[5]) if len(p) == 8 else (p[1], p[3], p[3])
+    f = (p[1], p[3], p[5], p[6]) if len(p) == 8 else (p[1], p[3], p[3], p[4])
 
     if not isinstance(f[1][1], type.Integer) or not isinstance(f[2][1], type.Integer):
-        print f
         util.parser_error(p, "invalid bit specification")
         raise SyntaxError
 
     p[0] = f
 
    # Enum type.
-def p_enum_type(p):
-    """builtin_type : ENUM '{' id_list '}'"""
+def p_def_enum(p):
+    """builtin_type : ENUM '{' enum_label_list '}'"""
     assert p.parser.state.typename
     p[0] = type.Enum(p[3], _currentScope(p), p.parser.state.typename)
 
-def p_id_list(p):
-    """id_list : IDENT "," id_list
-               | IDENT"""
+def p_enum_label_list(p):
+    """enum_label_list : enum_label "," enum_label_list
+                       | enum_label"""
     if len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = [p[1]] + p[3]
+
+def p_enum_label(p):
+    """enum_label : IDENT
+                  | IDENT '=' CONSTANT
+    """
+
+    if len(p) > 2 and not isinstance(p[3][0], int):
+        util.parser_error(p, "enum value must be an integer")
+        raise SyntaxError
+
+    p[0] = (p[1], None) if len(p) == 2 else (p[1], p[3][0])
 
    # Unit type.
 def p_type_unit(p):
@@ -533,12 +551,12 @@ def p_unit_switch_case_list(p):
         p.parser.state.in_switch.addCase(p[1])
 
 def p_unit_switch_case(p):
-    """unit_switch_case : expr ARROW unit_field
+    """unit_switch_case : expr_list ARROW unit_field
                         | '*'  ARROW unit_field
     """
     assert isinstance(p[3], unit.SwitchFieldCase)
     expr = p[1] if p[1] != "*" else None
-    p[3].setExpr(expr)
+    p[3].setExprs(expr)
     p[0] = p[3]
 
 ### Type attributes.
@@ -596,9 +614,10 @@ def p_ctor_list_list(p):
     p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
 
 def p_ctor_tuple(p):
-    """ctor : '(' ctor_list_list ')'"""
-    types = [c.type() for c in p[2]]
-    p[0] = expr.Ctor(p[2], type.Tuple(types))
+    """ctor : '(' ctor ',' ctor_list_list ')'"""
+    ctors = [p[2] + p[4]]
+    types = [c.type() for c in ctors]
+    p[0] = expr.Ctor(ctors, type.Tuple(types))
 
 ### Expressions
 
@@ -614,6 +633,7 @@ precedence = (
     ('left', '.', 'HASATTR'),
     ('right', 'DEREF', 'PLUSPLUS_PREFIX', 'MINUSMINUS_PREFIX'),
     ('left', 'PLUSPLUS' ),
+    ('right', 'ELSE'),  # Force priority of ELSE in IF..ELSE rule. 
 )
 
 def p_expr_function_call(p):
@@ -632,10 +652,10 @@ def p_expr_or(p):
     """expr : expr OR expr"""
     p[0] = expr.Overloaded(Operator.Or, (p[1], p[3]), location=_loc(p, 1))
 
-def p_expr_constant(p):
-    """expr : CONSTANT"""
-    (val, type) = p[1]
-    p[0] = expr.Ctor(val, type, location=_loc(p, 1))
+#def p_expr_constant(p):
+#    """expr : CONSTANT"""
+#    (val, type) = p[1]
+#   p[0] = expr.Ctor(val, type, location=_loc(p, 1))
 
 def p_expr_ctor(p):
     """expr : ctor"""
@@ -875,9 +895,16 @@ def _parse(filename, import_paths=["."]):
     util.initParser(parser, lex, state)
 
     filename = os.path.expanduser(filename)
-
+    
     try:
-        lines = open(filename).read()
+        lines = ""
+        for line in open(filename):
+            if line.startswith("#") and line.find("@TEST-START-") >= 0:
+                print >>sys.stderr, "warning: truncating input at @TEST-START-* marker"
+                break
+
+            lines += line
+
     except IOError, e:
         util.parser_error(None, "cannot open input file: %s" % filename)
         return (1, None, None)
@@ -912,6 +939,6 @@ def _importFile(parser, filename, location, internal_module=False):
         parser.state.increaseErrors(subparser.state.errors())
         return False
 
-    parser.state.module.importIDs(subparser.state.module)
+    parser.state.module.addImport(subparser.state.module, fullpath)
 
     return True

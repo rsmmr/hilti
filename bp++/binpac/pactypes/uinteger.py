@@ -28,18 +28,22 @@ class UnsignedInteger(type.Integer):
         """Sets names for indvidual bits of this integer, which can then be
         used to access subvalues.
 
-        bits: dictionary string -> (int, int) - A dictionary mapping field names
-        to the bit-range. (``(4,6)`` means bits 4 to (inclusive) 6; ``(1,1)``
-        means just bit 1).
+        bits: dictionary string -> (int, int, attrs) - A dictionary mapping
+        field names to the bit-range. (``(4,6, attrs)`` means bits 4 to
+        (inclusive) 6; ``(1,1, attrs)`` means just bit 1). ``attrs`` is an
+        optional list of (string, expr.Expr) pairs defining field attributes. 
+
         """
+        import sys
         self._bits = bits
 
     def bits(self):
         """Returns the bit fields the integer is broken down into, if set.
 
-        Returns: dictionary string -> (int, int), or None - A dictionary
-        mapping field names to the bit-range. (``(4,6)`` means bits 4 to
-        (inclusive) 6; ``(1,1)`` means just bit 1).
+        Returns: dictionary string -> (int, int, attrs), or None - A dictionary
+        mapping field names to the bit-range. (``(4,6,attrs)`` means bits 4 to
+        (inclusive) 6; ``(1,1,attrs)`` means just bit 1). ``attrs`` is an
+        optional list of (string, expr.Expr) pairs defining field attributes. 
         """
         return self._bits
 
@@ -47,9 +51,16 @@ class UnsignedInteger(type.Integer):
 
     def _validate(self, vld):
         super(UnsignedInteger, self).__init__(vld)
-        for (lower, upper) in self._bits.values():
+        for (lower, upper, attrs) in self._bits.values():
             if lower < 0 or upper >= self.width() or upper < lower:
                 vld.error("invalid bit field specification (%d:%d)" % (lower, upper))
+
+            for (attr, ex) in attrs:
+                if attr != "convert":
+                    vld.error("unsupport bitfield attribute %s" % attr)
+
+                if not operator.typecheck(operator.Operator.Call, [ex, [expr.Hilti(None, UnsignedInteger(upper-lower+1))]]):
+                    vld.error("no matching function for &convert found")
 
     ### Overridden from Type.
 
@@ -57,17 +68,7 @@ class UnsignedInteger(type.Integer):
         return "uint%d" % self.width()
 
     def hiltiType(self, cg):
-        # If the byte-order is predetermined, our HILTI unpack format is fixed
-        # and thus its result type matches what we're unpacking (except that
-        # we have to extend the number of bytes because we don't have unsigned
-        # values).
-        #
-        # However, if our byte-order is not fixed, HILTI will always returns
-        # an int64.
-        if self._isByteOrderConstant():
-            return hilti.type.Integer(min(64, self.width() * 2))
-        else:
-            return hilti.type.Integer(64)
+        return hilti.type.Integer(self.width())
 
     def hiltiCtor(self, cg, ctor):
         const = hilti.constant.Constant(ctor, hilti.type.Integer(self.width()))
@@ -78,7 +79,8 @@ class UnsignedInteger(type.Integer):
     def supportedAttributes(self):
         return {
             "default": (self, True, None),
-            "byteorder": (None, False, None),
+            "byteorder": ("binpac::ByteOrder", False, None),
+            "convert": (type.Any(), False, None),
             }
 
     def validateInUnit(self, field, vld):
@@ -87,56 +89,21 @@ class UnsignedInteger(type.Integer):
         pass
 
     def production(self, field):
-        return grammar.Variable(None, self, location=self.location())
+        filter = self.attributeExpr("convert")
+        return grammar.Variable(None, self, filter=filter, location=self.location())
 
     def productionForLiteral(self, field, literal):
         util.internal_error("Type.productionForLiteral() not support for uint")
 
+    def fieldType(self):
+        filter = self.attributeExpr("convert")
+        if filter:
+            return filter.type()
+        else:
+            return self.parsedType()
+
     def parsedType(self):
         return self
-
-    def generateParser(self, cg, cur, dst, skipping):
-        bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
-        resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
-        fbuilder = cg.functionBuilder()
-
-        # FIXME: We trust here that bytes iterators are inialized with the
-        # generic end position. We should add a way to get that position
-        # directly (but without a bytes object).
-        end = fbuilder.addTmp("__end", bytesit)
-
-        op1 = cg.builder().tupleOp([cur, end])
-
-        if not skipping:
-            op2 = self._hiltiByteOrderOp(cg)
-            op3 = None
-            assert op2
-        else:
-            assert self.width() in (8, 16, 32, 64)
-            op2 = cg.builder().idOp("Hilti::Packed::SkipBytesFixed")
-            op3 = cg.builder().constOp(self.width() / 8, hilti.type.Integer(32))
-
-        result = self.generateUnpack(cg, op1, op2, op3)
-
-        builder = cg.builder()
-
-        if dst and not skipping:
-            builder.tuple_index(dst, result, builder.constOp(0))
-
-        builder.tuple_index(cur, result, builder.constOp(1))
-
-        return cur
-
-    def bits(self):
-        """Returns the bit fields the integer is broken down into.
-
-        Returns: dictionary string -> (int, int) - A dictionary mapping field
-        names to the bit-range. (``(4,6)`` means bits 4 to (inclusive) 6;
-        ``(1,1)`` means just bit 1).
-        """
-        return self._bits
-
-    # Private.
 
     _packeds = {
         ("little", 8): "Hilti::Packed::UInt8Little",
@@ -157,44 +124,38 @@ class UnsignedInteger(type.Integer):
         ("network", 64): "Hilti::Packed::Int64Big",
         }
 
-    def _isByteOrderConstant(self):
-        expr = self._hiltiByteOrderExpr()
-        return expr.isInit() if expr else True
+    def generateParser(self, cg, cur, dst, skipping):
+        bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
+        resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
+        fbuilder = cg.functionBuilder()
 
-    def _hiltiByteOrderExpr(self):
-        order = self.attributeExpr("byteorder")
-        if order:
-            return order
+        # FIXME: We trust here that bytes iterators are inialized with the
+        # generic end position. We should add a way to get that position
+        # directly (but without a bytes object).
+        end = fbuilder.addTmp("__end", bytesit)
 
-        if self.field():
-            prop = self.field().parent().property("byteorder", parent=self.field().parent().module())
-            if prop:
-                return prop
+        op1 = cg.builder().tupleOp([cur, end])
 
-        return None
-
-    def _hiltiByteOrderOp(self, cg):
-        e = self._hiltiByteOrderExpr()
-
-        if e and not e.isInit():
-            # TODO: We need to add code here that selects the right unpack type
-            # at run-time.
-            util.internal_error("non constant byte not yet supported")
-
-        if e:
-            assert isinstance(e, expr.Name)
-            t = e.name().split("::")[-1].lower()
-
+        if not skipping:
+            op2 = self._hiltiByteOrderOp(cg, UnsignedInteger._packeds, self.width())
+            op3 = None
+            assert op2
         else:
-            # This is our default if no byte-order is specified.
-            t = "big"
+            assert self.width() in (8, 16, 32, 64)
+            op2 = cg.builder().idOp("Hilti::Packed::SkipBytesFixed")
+            op3 = cg.builder().constOp(self.width() / 8, hilti.type.Integer(64))
 
-        try:
-            enum = UnsignedInteger._packeds[(t, self._width)]
-        except KeyError:
-            util.internal_error("unknown type/byteorder combination")
+        result = self.generateUnpack(cg, op1, op2, op3)
 
-        return cg.builder().idOp(enum)
+        builder = cg.builder()
+
+        if dst and not skipping:
+            builder.tuple_index(dst, result, builder.constOp(0))
+
+        builder.tuple_index(cur, result, builder.constOp(1))
+
+        return cur
+
 
 @operator.Coerce(type.UnsignedInteger)
 class Coerce:
@@ -207,11 +168,11 @@ class Coerce:
 
         raise operator.CoerceError
 
-    def canCoerceExprTo(srctype, dsttype):
-        if isinstance(dsttype, type.Integer):
+    def canCoerceTo(srctype, dsttype):
+        if isinstance(dsttype, type.Bool):
             return True
 
-        if isinstance(dsttype, type.Bool):
+        if isinstance(dsttype, type.UnsignedInteger):
             return True
 
         return False
@@ -223,12 +184,18 @@ class Coerce:
             cg.builder().bool_not(tmp, tmp)
             return expr.Hilti(tmp, type.Bool())
 
-        if dsttype.width() >= e.type().width():
+        if dsttype.width() == e.type().width():
             return e
 
-        tmp = cg.builder().addLocal("__truncated", dsttype)
-        cg.builder().int_trunc(tmp, e.evaluate(cg))
-        return expr.Hilti(tmp, dsttype)
+        if dsttype.width() > e.type().width():
+            tmp = cg.builder().addLocal("__extended", dsttype.hiltiType(cg))
+            cg.builder().int_zext(tmp, e.evaluate(cg))
+            return expr.Hilti(tmp, dsttype)
+
+        if dsttype.width() < e.type().width():
+            tmp = cg.builder().addLocal("__truncated", dsttype.hiltiType(cg))
+            cg.builder().int_trunc(tmp, e.evaluate(cg))
+            return expr.Hilti(tmp, dsttype)
 
 @operator.Plus(UnsignedInteger, UnsignedInteger)
 class Plus:
@@ -263,6 +230,40 @@ class _:
         cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
+@operator.LowerEqual(UnsignedInteger, type.UnsignedInteger)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+
+    def simplify(e1, e2):
+        if not e1.isInit() or not e2.isInit():
+            return None
+
+        b = (e1.value() <= e2.value())
+        return expr.Ctor(b, type.Bool())
+
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addLocal("__leq", hilti.type.Bool())
+        cg.builder().int_uleq(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp
+
+@operator.GreaterEqual(UnsignedInteger, type.UnsignedInteger)
+class _:
+    def type(e1, e2):
+        return type.Bool()
+
+    def simplify(e1, e2):
+        if not e1.isInit() or not e2.isInit():
+            return None
+
+        b = (e1.value() >= e2.value())
+        return expr.Ctor(b, type.Bool())
+
+    def evaluate(cg, e1, e2):
+        tmp = cg.functionBuilder().addLocal("__geq", hilti.type.Bool())
+        cg.builder().int_ugeq(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp
+
 @operator.Attribute(UnsignedInteger, type.String)
 class Attribute:
     def validate(vld, lhs, ident):
@@ -279,9 +280,14 @@ class Attribute:
     def evaluate(cg, lhs, ident):
         name = ident.name()
         builder = cg.builder()
-        (lower, upper) = lhs.type().bits()[name]
+        (lower, upper, attrs) = lhs.type().bits()[name]
         tmp = builder.addLocal("__bits", lhs.type().hiltiType(cg))
         cg.builder().int_mask(tmp, lhs.evaluate(cg), builder.constOp(lower), builder.constOp(upper))
+
+        for (attr, ex) in attrs:
+            assert attr == "convert"
+            tmp = operator.evaluate(operator.Operator.Call, cg, [ex, [expr.Hilti(tmp, UnsignedInteger(tmp.type().width()))]])
+
         return tmp
 
     def assign(cg, lhs, ident, rhs):

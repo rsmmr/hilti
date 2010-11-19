@@ -1,4 +1,4 @@
->>> i1 = int.ext i2
+>>> i1 = int.zext i2
 mixing-widths.hlt:7: error, width of integer operand too large
 
 

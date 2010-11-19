@@ -3,7 +3,7 @@
 # Platform specific code is outsourced into this file.
 #
 # Documentation pointers:
-#     
+#
 #    Darwin ABI   http://developer.apple.com/documentation/DeveloperTools/Conceptual/LowLevelABI/000-Introduction/introduction.html
 #    x86_64       http://www.x86-64.org/documentation.html
 
@@ -11,19 +11,35 @@ import platform
 import sys
 
 import llvm
-import llvm.core 
+import llvm.core
 import llvm.ee
 
 _triple = llvm.core.getHostTriple().split("-")
 _arch = _triple[0]
 _vendor = _triple[1]
+
+# Canonicalize form some platforms.
+
+if _vendor == "apple":
+    # getHostTriple() returns "x86_64-apple-darwin10", while clang outputs a
+    # target of "x86_64-apple-darwin10.0.0" on the same system. That would lead
+    # to a architecture mismatch at compile time.
+    if len(_triple) == 3:
+        m = _triple[2].split(".")
+        
+        if len(m) == 1:
+            _triple[2] += ".0.0"
+
+        if len(m) == 2:
+            _triple[2] += ".0"
+
 _os = "-".join(_triple[2:])
 _target = "%s-%s" % (_arch, _os)
+
 # This is a list of platform for which the code in this file has been adapted.
 # If the system we are running on is not in here, we'll likeley have a problem
 # and print a warning now and abort later if necessary. We also recognize the
 # platforms if they OS parts if followed by a version number.
-
 _knownTargets = [
     "i386-darwin",
     "x86_64-darwin",
@@ -61,6 +77,14 @@ def _targetArch():
     Returns: string - The _target _target.
     """
     return _target
+
+def targetTriple():
+    """Return the LLVM-style target triple. It will be a string like
+    ``x86_64-apple-darwin10.0.0``
+
+    Returns: string - The triple.
+    """
+    return "-".join(_triple)
 
 def returnStructByValue(type):
     """Checks whether the host platform's ABI returns a struct type by value.
@@ -101,7 +125,7 @@ def returnStructByValue(type):
         # Can't find documentation but looking at clang-cc, it seems to always
         # pass structs via temporary memory objects.
         return None
-    
+
     if _target.startswith("i386-darwin"):
         if sizeof in (1, 2, 4, 8):
             return llvm.core.Type.int(sizeof * 8)
@@ -129,7 +153,7 @@ def returnStructByValue(type):
                 if type.elements[0] == llvm.core.Type.double() and \
                    isinstance(type.elements[1], llvm.core.PointerType):
                        return llvm.core.Type.struct([llvm.core.Type.double(), llvm.core.Type.int(64)])
-            
+
             return llvm.core.Type.int(128)
 
         return None

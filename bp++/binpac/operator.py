@@ -1,11 +1,11 @@
 # $Id$
 """
-Overloading operators for BinPAC++ types. 
+Overloading operators for BinPAC++ types.
 -----------------------------------------
 
 To overload an operator, you define a new class with methods to implement the
 functionality. The class is decorated with the operator it is overloading and
-the expression types it applies to. 
+the expression types it applies to.
 
 For example, the following class overloads the plus-operator for expressions
 of integer type::
@@ -18,16 +18,16 @@ of integer type::
         def type(expr1, expr2):
             # Result type of expression.
             return type.Integer()
-    
+
         def codegen(expr1, expr2):
             [... generate HILTI code ...]
-            
+
 
 Once defined, the BinPAC++ compiler will call `codegen` to generate HILTI code
 for all sums integer expressions. Likewise, it will call ``type` when it needs
 to know the result type of evaluating the operators. While these two methods
 are mandatory, there are further optional methods can be added to the class as
-needed; see below. 
+needed; see below.
 
 The definition of the class must be located inside a submodule of the BinPAC++
 `pactypes` package, and it's recommended to group the classes by the types
@@ -42,7 +42,7 @@ The arguments for decorator are instances of ~~type.Type, corresponding to the
 types of expressions the overloaded operator applies to. The number of types
 is specific to each operator.  The matching of expression type to operators is
 performed via Python's `isinstance` and thus inheritance relatioships might be
-exploited by specifiying a base class in the decorator's arguments. 
+exploited by specifiying a base class in the decorator's arguments.
 
 The following operators are available:
 
@@ -61,7 +61,7 @@ attribute; they are all class methods.
   Optional. Adds additional type-checking supplementing the simple
   +isinstance+ test performed by default. If implemented, it is guarenteed
   that all other class methods will only be called if this check returns True.
-  
+
   Returns: bool - True if the operator applies to these expression types.
 
 .. function:: resolve(resolver, <exprs>)
@@ -70,7 +70,7 @@ attribute; they are all class methods.
   already been determined that the operator applies.
 
   resolver: ~~Resolver - The resolver to use.
-  
+
 .. function:: validate(vld, <exprs>)
 
   Optional. Adds additional validation functionality performed *after* it has
@@ -82,12 +82,12 @@ attribute; they are all class methods.
 
   Optional. Implements simplifactions of the operator, such as constant
   folding.
-  
-  The argument expressions passed will be already be simplified. 
-  
+
+  The argument expressions passed will be already be simplified.
+
   Returns: ~~expr - A new expression object representing a simplified version
   of the operator to be used instead; or None if it can't be simplified into
-  something else. 
+  something else.
 
 .. function:: type(<exprs>)
 
@@ -98,13 +98,13 @@ attribute; they are all class methods.
 .. function:: evaluate(cg, <exprs>)
 
   Mandatory. Implements evaluation of the operator, generating the
-  corresponding HILTI code. 
+  corresponding HILTI code.
 
   *cg*: ~~CodeGen - The current code generator.
 
   Returns: ~~hilti.instructin.Operand - An operand with the
-  value of the evaluated expression. 
-  
+  value of the evaluated expression.
+
 .. function:: assign(cg, <exprs>, rhs)
 
   Optional. Implements assignment, generating the corresponding HILTI code.
@@ -119,46 +119,47 @@ attribute; they are all class methods.
    Optional. Applies only to the ~~Coerce operator. Coerces a ctor of the
    operator's type to another type. This may or may not be possible; if not,
    the method must throw a ~~CoerceError.
-        
-   *ctor*: ~~expression.Ctor - The ctor expression to coerce. 
-   
+
+   *ctor*: ~~expression.Ctor - The ctor expression to coerce.
+
    *dsttype*: ~~Type - The type to coerce the constant into.
-        
+
    Returns: ~~expression.Ctor - A ctor of *dsttype* with the coerceed value.
-        
+
    Throws: ~~CoerceError if the coerce is not possible. There's no need to augment
    the exception with an explaining string as that will be added automatically.
 
-.. function:: canCoerceExprTo(srctype, dsttype):
+.. function:: canCoerceTo(srctype, dsttype):
 
    Optional. Applies only to the ~~Coerce operator. Checks whether we can
-   coerce a non-constant expression of the operator's type to another type. 
-   
+   coerce a non-constant expression of the operator's type to another type.
+
    *srctype*: ~~Type - The type to coerce an expression from.
    *dsttype*: ~~Type - The type to coerce an expression into.
 
    Note: The return value of this method should match with what
    ~~coerceCtorTo and ~~coerceExprTo are able to do. If in doubt,
    this function should accept a superset of what those methods can
-   do (with them then raising exceptions if necessary). 
-   
-   Returns: bool - True if the coerce is possible. 
-   
+   do (with them then raising exceptions if necessary).
+
+   Returns: bool - True if the coerce is possible.
+
 .. function:: coerceExprTo(cg, expr, dsttype):
-   
+
    Optional. Applies only to the ~~Coerce operator. Coerces a non-constant
    expression of the operator's type to another type. This function will only
-   be called if the corresponding ~~canCoerceExprTo indicates that the
-   coerce is possible. 
-        
+   be called if the corresponding ~~canCoerceTo indicates that the
+   coerce is possible.
+
    *cg*: ~~CodeGen - The current code generator.
-   *expr*: ~~Expression - The expression to coerce. 
+   *expr*: ~~Expression - The expression to coerce.
    *dsttype*: ~~Type - The type to coerce the expression into.
-        
+
    Returns: ~~Expression - A new expression of the target type with
    the coerceed expression.
 """
 
+import sys
 import inspect
 import functools
 
@@ -174,22 +175,22 @@ def _pacUnary(op):
         printer.output(op)
         exprs[0].pac(printer)
 
-    return _pac    
+    return _pac
 
 def _pacUnaryPostfix(op):
     def _pac(printer, exprs):
         printer.output(op)
         exprs[0].pac(printer)
 
-    return _pac    
-    
+    return _pac
+
 def _pacBinary(op):
     def _pac(printer, exprs):
         exprs[0].pac(printer)
         printer.output(op)
         exprs[1].pac(printer)
-        
-    return _pac    
+
+    return _pac
 
 def _pacEnclosed(op):
     def _pac(printer, exprs):
@@ -197,35 +198,35 @@ def _pacEnclosed(op):
         exprs[0].pac(printer)
         printer.output(op)
 
-    return _pac    
+    return _pac
 
 def _pacMethodCall(printer, exprs):
     exprs[0].pac(printer)
     printer.output(".%s" % exprs[1])
     printer.output("(")
-    
+
     args = exprs[2]
-    
+
     for i in range(len(args)):
         args[i].pac(printer)
         if i != len(args) - 1:
             printer.output(",")
-            
+
     printer.output(")")
-    
+
 def _pacCall(printer, exprs):
     exprs[0].pac(printer)
     printer.output("(")
-    
+
     args = exprs[1]
-    
+
     for i in range(len(args)):
         args[i].pac(printer)
         if i != len(args) - 1:
             printer.output(",")
-            
+
     printer.output(")")
-    
+
 _Operators = {
     # Operator name, #operands, description.
     "Plus": (2, "The sum of two expressions. (`a + b`)", _pacBinary(" + ")),
@@ -253,19 +254,19 @@ _Operators = {
     "Index": (2, "Element at a given index (`a[i]`).", lambda p, e: p.output("<Index>")),
     }
 
-_Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type", 
-            "coerceCtorTo", "canCoerceExprTo", "coerceExprTo"]
-    
-### Public functions.    
-    
+_Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type",
+            "coerceCtorTo", "canCoerceTo", "coerceExprTo"]
+
+### Public functions.
+
 def typecheck(op, exprs):
     """Checks whether an operator is compatible with a set of operand
-    expressions. 
-    
+    expressions.
+
     op: ~~Operator - The operator.
     exprs: list of ~~Expression - The expressions for the operator.
-    
-    
+
+
     """
     func = _findOp("typecheck", op, exprs)
     if not func:
@@ -273,15 +274,15 @@ def typecheck(op, exprs):
         return True
 
     result = func(*exprs)
-    
+
     if not result:
         return False
-    
+
     return True
 
 def resolve(op, resolver, exprs):
     """Resolves an operator's arguments.
-    
+
     op: ~~Operator - The operator.
     resolver: ~~Resolver - The resolver to use.
     exprs: list of ~~Expression - The expressions for the operator.
@@ -290,12 +291,12 @@ def resolve(op, resolver, exprs):
     if not func:
         # No validate function defined means ok.
         return None
-    
+
     return func(resolver, *exprs)
 
 def validate(op, vld, exprs):
     """Validates an operator's arguments.
-    
+
     op: ~~Operator - The operator.
     vld: ~~Validator - The validator to use.
     exprs: list of ~~Expression - The expressions for the operator.
@@ -304,36 +305,36 @@ def validate(op, vld, exprs):
     if not func:
         # No validate function defined means ok.
         return None
-    
+
     return func(vld, *exprs)
-    
+
 def simplify(op, exprs):
-    """Simplifies an operator. 
-    
+    """Simplifies an operator.
+
     op: ~~Operator - The operator.
     exprs: list of ~~Expression - The expressions for the operator. They are
     expected to already be simplified.
-    
+
     Returns: ~~expr - A new expression, representing the simplified operator
     to be used instead; or None if the operator could not be simplified.
-    
+
     Note: This function must only be called if ~~typecheck indicates that
-    operator and expressions are compatible. 
+    operator and expressions are compatible.
     """
     if not typecheck(op, exprs):
         return None
 
     func = _findOp("simplify", op, exprs)
     result = func(*exprs) if func else None
-    
+
     assert (not result) or isinstance(result, expr.Ctor)
     return result
 
 def evaluate(op, cg, exprs):
     """Generates HILTI code for an expression.
-    
+
     This function must only be called if ~~typecheck indicates that operator
-    and expressions are compatible. 
+    and expressions are compatible.
 
     op: string - The name of the operator.
     *cg*: ~~CodeGen - The current code generator.
@@ -341,153 +342,155 @@ def evaluate(op, cg, exprs):
     exprs: list of ~~Expression - The expressions for the operator.
 
     Returns: ~~hilti.instructin.Operand - An operand with the value of
-    the evaluated expression. 
+    the evaluated expression.
     """
-    
+
     if not typecheck(op, exprs):
         util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
 
     func = _findOp("evaluate", op, exprs)
-    
+
     if not func:
-        print [str(e) for e in exprs]
         util.error("no evaluate implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
-    
+
     return func(cg, *exprs)
 
 def assign(op, cg, exprs, rhs):
     """Generates HILTI code for an assignment.
-    
+
     This function must only be called if ~~typecheck indicates that operator
-    and expressions are compatible. 
+    and expressions are compatible.
 
     op: string - The name of the operator.
     *cg*: ~~CodeGen - The current code generator.
 
     exprs: list of ~~Expression - The expressions for the operator.
-    
+
     rhs: ~~hilti.operand.Operand - The right-hand side to assign.
     """
-    
+
     if not typecheck(op, exprs):
         util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
 
     func = _findOp("assign", op, exprs)
-    
+
     if not func:
         util.error("no assign implementation for %s operator with %s" % (op, _fmtArgTypes(exprs)))
 
     func(cg, *(exprs + [rhs]))
-        
+
 def type(op, exprs):
     """Returns the result type for an operator.
-    
+
     This function must only be called if ~~typecheck indicates that operator
     and expressions are compatible.
 
     op: string - The name of the operator.
     exprs: list of ~~Expression - The expressions for the operator.
-    
+
     Returns: ~~type.Type - The result type.
     """
     if not typecheck(op, exprs):
-        print op, [e.type() for e in exprs]
         util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
 
     func = _findOp("type", op, exprs)
-    
+
     if not func:
         args = _fmtArgTypes(exprs)
         util.error("no type implementation for %s operator with expression types %s" % (op, args), context=exprs[0].location())
-        
+
     return func(*exprs)
 
 class CoerceError(Exception):
     pass
 
-def canCoerceExprTo(srctype, dsttype):
-    """Returns whether an expression (assumed to be non-constant) can be
-    coerced to a given target type. If *dsttype* is of the same type as the
-    expression, the result is always True. 
-    
+def canCoerceExprTo(expr, dsttype):
+    return canCoerceTo(expr.type(), dsttype)
+
+def canCoerceTo(srctype, dsttype):
+    """Returns whether an expression of the given type (assumed to be
+    non-constant) can be coerced to a given target type. If *dsttype* is of
+    the same type as the expression, the result is always True.
+
+    *srctype*: ~~Type - The source type.
     *dstype*: ~~Type - The target type.
-        
-    Returns: bool - True if the expression can be coerceed. 
+
+    Returns: bool - True if the expression can be coerceed.
     """
     if srctype == dsttype:
         return True
 
     if not typecheck(Operator.Coerce, [srctype]):
         return False
-    
-    func = _findOp("canCoerceExprTo", Operator.Coerce, [srctype])
-    
+
+    func = _findOp("canCoerceTo", Operator.Coerce, [srctype])
+
     if not func:
         return False
-    
+
     return func(srctype, dsttype)
-    
-def coerceExprTo(cg, expr, dsttype): 
+
+def coerceExprTo(cg, expr, dsttype):
     """Coerces an expression (assumed to be non-constant) of one type into
     another. This operator must only be called if ~~canCoerceExprTo indicates
-    that the coerce is supported. 
-    
+    that the coerce is supported.
+
     *cg*: ~~CodeGen - The current code generator.
-    expr: ~~expr - The expression to coerce. 
-    dsttype: ~~Type - The type to coerce the expression into. 
-    
+    expr: ~~expr - The expression to coerce.
+    dsttype: ~~Type - The type to coerce the expression into.
+
     Returns: ~~Expression - A new expression of the target type with the
     coerceed expression.
     """
 
-    assert canCoerceExprTo(expr.type(), dsttype)
+    assert canCoerceExprTo(expr, dsttype)
 
     if expr.type() == dsttype:
         return expr
-    
+
     if not typecheck(Operator.Coerce, [expr]):
         return False
-    
+
     func = _findOp("coerceExprTo", Operator.Coerce, [expr])
-    
+
     if not func:
         raise CoerceError
-    
+
     return func(cg, expr, dsttype)
 
-def coerceCtorTo(e, dsttype): 
+def coerceCtorTo(e, dsttype):
     """Coerces a ctor expression of one type into another. This may or may
     not be possible; if not, a ~~CoerceError is thrown.
 
-    const: ~~expression.Ctor - The ctor expression to coerce. 
-    dsttype: ~~Type - The type to coerce the constant into. 
-    
+    const: ~~expression.Ctor - The ctor expression to coerce.
+    dsttype: ~~Type - The type to coerce the constant into.
+
     Returns: ~~expression.Ctor - A new ctor expression of the target type
     with the coerceed value.
-        
+
     Throws: ~~CoerceError if the coerce is not possible.
     """
     if e.type() == dsttype:
         return e
-    
+
     func = _findOp("coerceCtorTo", Operator.Coerce, [e])
 
     if not func:
         raise CoerceError
-    
+
     assert e.isInit()
     return expr.Ctor(func(e.value(), dsttype), dsttype)
 
 class Operator:
     """Constants defining the available operators."""
     # Note: we add the constants dynamically to this class' namespace, see
-    # below. 
+    # below.
     pass
 
 def generateDecoratorDoc(file):
     """Generates documentation for the available operator decorators. The
     documentation will be included into the developer manual.
-    
+
     file: file - The filo into which the output will be written.
     """
     for (op, vals) in _Operators.items().sorted():
@@ -509,7 +512,7 @@ def pacOperator(printer, op, exprs):
     vals = _Operators[op]
     (num, descr, pac) = vals
     pac(printer, exprs)
-        
+
 ### Internal code for keeping track of registered operators.
 
 _OverloadTable = {}
@@ -529,12 +532,12 @@ def _fmtTypes(types):
 def _fmtOneArgType(a):
     if isinstance(a, list):
         return '(' + ", ".join([_fmtOneArgType(x) for x in a]) + ')'
-    
+
     if isinstance(a.type(), mod_type.Type):
         return str(a.type())
-    
+
     return str(a)
-    
+
 def _fmtArgTypes(exprs):
     return " and ".join([_fmtOneArgType(a) for a in exprs])
 
@@ -545,18 +548,18 @@ def _makeOp(op, *exprs):
                 f = cls.__dict__[m]
                 #if len(inspect.getexprspec(f)[0]) != len(exprs):
                 #    util.internal_error("%s has wrong number of argument for %s" % (m, _fmtTypes(exprs)))
-                
+
                 _registerOperator((op, m), f, exprs)
 
         if not "typecheck" in cls.__dict__:
             # Add a "always true" typecheck if there's no other defined.
             _registerOperator((op, "typecheck"), _default_typecheck, exprs)
-                
+
         return cls
-    
+
     return __makeOp
-    
-class _Decorators:    
+
+class _Decorators:
     def __init__(self):
         for (op, vals) in _Operators.items():
             (exprs, descr, pac) = vals
@@ -572,58 +575,72 @@ class Optional:
 
 class Any:
     pass
-        
-def _matchExpr(expr, proto, all):
-    if isinstance(expr, list) and isinstance(proto, list):
-        if len(expr) == 0 and len(proto) == 0:
+
+def _matchType(arg, proto, all):
+
+    # Note: arg can be a type or and expression, or a list/tuple of those.
+
+    if isinstance(arg, list) and isinstance(proto, list):
+        if len(arg) == 0 and len(proto) == 0:
             return True
-    
+
     if isinstance(proto, Any):
         return True
-    
+
     if isinstance(proto, Optional):
-        if not expr:
+        if not arg:
             return True
         else:
             proto = proto._arg
-            
-    if not expr:
+
+    if not arg:
         return False
-    
+
     if isinstance(proto, list) or isinstance(proto, tuple):
-        if not (isinstance(expr, list) or isinstance(expr, tuple)):
+        if not (isinstance(arg, list) or isinstance(arg, tuple)):
             return False
 
-        if len(proto) < len(expr):
+        if len(proto) < len(arg):
             return False
-        
-        expr = expr + [None] * (len(proto) - len(expr))
 
-        for (e, p) in zip(expr, proto):
-            if not _matchExpr(e, p, all):
+        arg = arg + [None] * (len(proto) - len(arg))
+
+        for (e, p) in zip(arg, proto):
+            if not _matchType(e, p, all):
                 return False
-            
+
         return True
 
     if inspect.isfunction(proto):
         proto = proto(all)
 
     mutable = False
+
     if isinstance(proto, Mutable):
         mutable = True
         proto = proto._arg
 
+    if  isinstance(arg, expr.Expression) and isinstance(proto, expr.Expression):
+        return arg == proto
+
+    ty = arg if isinstance(arg, mod_type.Type) else arg.type()
+    init = arg.isInit() if isinstance(arg, expr.Expression) else False
+
+    assert isinstance(ty, mod_type.Type)
+
     if inspect.isclass(proto):
-        return isinstance(expr.type(), proto) and (not mutable or not expr.isInit())
+        return isinstance(ty, proto) and (not mutable or not init)
 
     if isinstance(proto, mod_type.Type):
-        return proto == expr.type() and (not mutable or not expr.isInit())
+        return proto == ty and (not mutable or not init)
 
-    return expr == proto
-            
-def _findOp(method, op, exprs):
+    return ty == proto
+
+def _findOp(method, op, args):
     assert method in _Methods
-    
+
+    # Args can be expressions or types here.
+
     util.check_class(op, str, "_findOp (use Operator.*)")
 
     try:
@@ -632,35 +649,37 @@ def _findOp(method, op, exprs):
         return None
 
     matches = []
-    
-    for (func, types) in ops:
-        if len(types) < len(exprs):
+
+    for (func, proto) in ops:
+
+        if len(proto) < len(args):
             continue
 
-        exprs = [e for e in exprs] + [None] * (len(types) - len(exprs))
-        
-        for (a, t) in zip(exprs, types):
-            if not _matchExpr(a, t, exprs):
+        args = [e for e in args] + [None] * (len(proto) - len(args))
+
+        for (a, t) in zip(args, proto):
+            rc = _matchType(a, t, args)
+            if not rc:
                 break
         else:
-            matches += [(func, types)]
+            matches += [(func, proto)]
 
     if not matches:
         return None
-            
+
     if len(matches) == 1:
         return matches[0][0]
 
-    msg = "ambigious operator definitions: types %s match\n" % _fmtArgTypes(exprs)
-    for (func, types) in matches:
-        msg += "    %s\n" % _fmtTypes(types)
-        
+    msg = "ambigious operator definitions: types %s match\n" % _fmtArgTypes(args)
+    for (func, proto) in matches:
+        msg += "    %s\n" % _fmtTypes(proto)
+
     util.internal_error(msg)
 
 ### Initialization code.
 
 # Create "operator" namespace.
-operator = _Decorators()            
+operator = _Decorators()
 
 # Add operator constants to class Operators.
 for (op, vals) in _Operators.items():

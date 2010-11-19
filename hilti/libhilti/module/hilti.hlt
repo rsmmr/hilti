@@ -2,8 +2,8 @@
 #
 # User-visible libhilti functions.
 #
-# Todo: We need to document these but first need to figure out how to 
-# generaly deal with C functions in the Sphinx-built docs. 
+# Todo: We need to document these but first need to figure out how to
+# generaly deal with C functions in the Sphinx-built docs.
 
 module Hilti
 
@@ -20,7 +20,7 @@ type NoHookResult = exception<string> @internal("hlt_exception_no_hook_result")
 
 type Packed = enum {
 
-    # String 
+    # String
     ASCIIZ,
 
     # Integer
@@ -40,13 +40,16 @@ type Packed = enum {
     UInt8,    		#  8-bit unsigned integer in host byte order.
     UInt16,         # 16-bit unsigned integer in host byte order.
     UInt32,         # 32-bit unsigned integer in host byte order.
+    UInt64,         # 64-bit unsigned integer in host byte order.
     UInt8Big,       #  8-bit unsigned integer in big-endian byte order.
     UInt16Big,      # 16-bit unsigned integer in big-endian byte order.
     UInt32Big,      # 32-bit unsigned integer in big-endian byte order.
+    UInt64Big,      # 64-bit unsigned integer in big-endian byte order.
     UInt8Little,    #  8-bit unsigned integer in little-endian byte order.
     UInt16Little,   # 16-bit unsigned integer in little-endian byte order.
     UInt32Little,   # 32-bit unsigned integer in little-endian byte order.
-    # %doc-packed-int-end 
+    UInt64Little,   # 64-bit unsigned integer in little-endian byte order.
+    # %doc-packed-int-end
 
     # Addr
     # %doc-packed-addr-start
@@ -55,7 +58,7 @@ type Packed = enum {
     IPv4Network,    # 32-bit IPv4 address stored in network byte order.
     IPv6Network,    # 128-bit IPv6 address stored in network byte order.
     # %doc-packed-addr-end
-    
+
     # Port
     # %doc-packed-port-start
     PortTCP,           # A 16-bit TCP port value stored in host byte order.
@@ -63,24 +66,24 @@ type Packed = enum {
     PortTCPNetwork,    # A 16-bit TCP port value stored in host byte order.
     PortUDPNetwork,    # A 16-bit UDP port value stored in network byte order.
     # %doc-packed-port-end
-    
+
     # Bool
     Bool,              # A single byte.
-    
+
     # Bytes
     # %doc-packed-bytes-start
     BytesRunLength,    # A series of bytes preceded by an uint indicating its length; the argument must be one of Packed::UInt*.
     BytesFixed,        # A series of bytes of fixed length specified by an additional integer argument
     BytesDelim,        # A series of bytes delimited by a final byte-sequence specified by an additional argument.
-    
+
     # Variants just advancing the iterator but not returning any value.
     SkipBytesRunLength, SkipBytesFixed, SkipBytesDelim
-    
+
     # %doc-packed-bytes-end
 
 
-}    
- 
+}
+
 type AddrFamily = enum { IPv4, IPv6 }
 type Protocol = enum { TCP, UDP }
 type ExpireStrategy = enum { Create, Access }

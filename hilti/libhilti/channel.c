@@ -1,10 +1,10 @@
 /* $Id$
- * 
+ *
  * Support functions HILTI's channel data type.
- * 
+ *
  */
 
-/* TODO: 
+/* TODO:
  * - Implement a fine-grained locking strategy. If reading and writing is
  *   performed on different chunks, there is no need to lock the entire channel
  *   for read and write operations.
@@ -154,12 +154,12 @@ hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacit
     pthread_cond_init(&ch->full_cv, NULL);
 
     hlt_gc_register_finalizer(ch, _hlt_channel_finalizer);
-    
+
     return ch;
 }
 
 void hlt_channel_write(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt, hlt_execution_context* ctx)
-{ 
+{
     pthread_mutex_lock(&ch->mutex);
 
     if ( _hlt_channel_write_item(ch, data, excpt, ctx) )
@@ -173,7 +173,7 @@ unlock_exit:
 }
 
 void hlt_channel_write_try(hlt_channel* ch, const hlt_type_info* type, void* data, hlt_exception** excpt, hlt_execution_context* ctx)
-{ 
+{
     pthread_mutex_lock(&ch->mutex);
 
     if ( ch->capacity && ch->size == ch->capacity ) {
@@ -199,7 +199,7 @@ void* hlt_channel_read(hlt_channel* ch, hlt_exception** excpt, hlt_execution_con
         pthread_cond_wait(&ch->empty_cv, &ch->mutex);
 
     void *item = _hlt_channel_read_item(ch);
-    
+
     pthread_cond_signal(&ch->full_cv);
 
     pthread_mutex_unlock(&ch->mutex);
@@ -218,7 +218,7 @@ void* hlt_channel_read_try(hlt_channel* ch, hlt_exception** excpt, hlt_execution
     }
 
     item = _hlt_channel_read_item(ch);
-    
+
     pthread_cond_signal(&ch->full_cv);
 
 unlock_exit:
@@ -253,17 +253,17 @@ hlt_string hlt_channel_to_string(const hlt_type_info* type, void* obj, int32_t o
         }
         else
             t = hlt_string_from_asciiz(types[i]->tag, excpt, ctx);
-        
+
         s = hlt_string_concat(s, t, excpt, ctx);
         if ( *excpt )
             return 0;
-        
+
         if ( i < type->num_params - 1 ) {
             s = hlt_string_concat(s, &separator, excpt, ctx);
             if ( *excpt )
                 return 0;
         }
-        
+
     }
 
     return hlt_string_concat(s, &postfix, excpt, ctx);

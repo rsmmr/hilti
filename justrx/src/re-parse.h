@@ -66,7 +66,7 @@ typedef union YYSTYPE
     jrx_assertion assertion;
     jrx_std_ccl dynccl;
     int count;
-    
+
     jrx_nfa* nfa;
     jrx_ccl* ccl;
 }

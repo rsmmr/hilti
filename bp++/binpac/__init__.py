@@ -15,6 +15,6 @@ import validator
 import operator
 import scope
 import stmt
-import printer    
+import printer
 import parser
-import lexer 
+import lexer

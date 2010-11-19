@@ -76,7 +76,7 @@ flow HTTP_Flow(is_orig: bool) {
 		%{
         if ( bptool_verbose )
             cout << "request " << std_str(method) << " | " << std_str(uri) << " | " << std_str(vers->vers_str()) << endl;
-            
+
 		http_message_begin();
 
 		return true;
@@ -87,7 +87,7 @@ flow HTTP_Flow(is_orig: bool) {
 		%{
         if ( bptool_verbose )
             cout << "reply   " << std_str(vers->vers_str()) << " | " << code << " | " << std_str(reason) << endl;
-        
+
 		http_message_begin();
 
 		return true;

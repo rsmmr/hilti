@@ -13,12 +13,12 @@ Table of Contents:
 
    user/user
    internals/internals
-           
+
 Index
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-           
-   
-   
+
+
+

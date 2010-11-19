@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.6)
 
 # set(CMAKE_VERBOSE_MAKEFILE "on")
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH}) 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_package(LLVM)
 find_package(Pcap)
 
@@ -19,13 +19,13 @@ include(EnableLLVM)
 
 set(SRCS
     exceptions.c utf8proc.c init.c memory.c string.c int.c double.c
-    bool.c tuple.c channel.c enum.c bytes.c config.c threading.c 
+    bool.c tuple.c channel.c enum.c bytes.c config.c threading.c
     addr.c port.c vector.c list.c net.c regexp.c debug.c bitset.c
     context.c caddr.c struct.c timer.c map_set.c iosrc-pcap.c
     continuation.c globals.c hook.c file.c cmdqueue.c
-    
+
     module/fmt.c module/print.c module/misc.c
-    
+
     3rdparty/libpqueue/src/pqueue.c
     )
 
@@ -46,7 +46,7 @@ add_custom_command(
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/type-info.hlt
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-type-info
     ARGS    ${CMAKE_CURRENT_SOURCE_DIR}/../tools ${CMAKE_CURRENT_SOURCE_DIR}/type-info.hlt ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o
-    ) 
+    )
 
 # Generate C prototypes for definitions in hilti.hlt.
 add_custom_command(
@@ -54,9 +54,9 @@ add_custom_command(
    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/module/hilti.hlt
    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/libhilti-prototypes
    ARGS    ${CMAKE_CURRENT_SOURCE_DIR}/../tools ${CMAKE_CURRENT_SOURCE_DIR}/module/hilti.hlt ${CMAKE_CURRENT_SOURCE_DIR}/module/_hilti.h
-   
+
    ${CMAKE_CURRENT_SOURCE_DIR}/libhilti.hlt
-   ) 
+   )
 
 if ( ENABLE_LLVM )
     set(OBJS
@@ -72,7 +72,7 @@ else ( ENABLE_LLVM )
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.bc.o
         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/bc-to-native
         ARGS    ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.bc.o ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.o
-        ) 
+        )
 
     # Generate type information for types defines in type-info.hlt
     add_custom_command(
@@ -80,7 +80,7 @@ else ( ENABLE_LLVM )
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o
         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/bc-to-native
         ARGS    ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o ${CMAKE_CURRENT_BINARY_DIR}/type-info.o
-        ) 
+        )
 
     set(OBJS
         ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.o
@@ -93,8 +93,8 @@ endif ( ENABLE_LLVM )
 # Get all the files which go into libgcmt-lib.a.
 FILE(GLOB_RECURSE LIBGC "${CMAKE_CURRENT_BINARY_DIR}/3rdparty/bdwgc/CMakeFiles/gcmt-lib.dir/*")
 
-add_library(hilti STATIC ${SRCS} ${OBJS} ${LIBGC})  
-add_library(hiltimain STATIC ${SRCS} ${OBJS} main.c ${LIBGC})  
+add_library(hilti STATIC ${SRCS} ${OBJS} ${LIBGC})
+add_library(hiltimain STATIC ${SRCS} ${OBJS} main.c ${LIBGC})
 
 set(DOXYGEN ${CMAKE_CURRENT_SOURCE_DIR}/Doxygen)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxygen/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)

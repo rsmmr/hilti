@@ -13,9 +13,9 @@ static const jrx_offset JRX_OFFSET_MAX = INT32_MAX; // Max. offset value.
 
 // Matching options.
 typedef uint8_t jrx_option;
-static const jrx_option JRX_OPTION_NONE = 0;  
+static const jrx_option JRX_OPTION_NONE = 0;
 static const jrx_option JRX_OPTION_CASE_INSENSITIVE = 1 << 0;    // Match case-insentive.
-static const jrx_option JRX_OPTION_LAZY = 1 << 1;                // Compute DFA lazily. 
+static const jrx_option JRX_OPTION_LAZY = 1 << 1;                // Compute DFA lazily.
 static const jrx_option JRX_OPTION_DEBUG = 1 << 2;               // Print debug information.
 static const jrx_option JRX_OPTION_NO_CAPTURE = 1 << 3;          // Do not capture subgroups.
 static const jrx_option JRX_OPTION_STD_MATCHER = 1 << 4;         // Use the standard matcher.
@@ -30,7 +30,7 @@ typedef enum {
     JRX_STD_CCL_LOWER,
     JRX_STD_CCL_UPPER,
     JRX_STD_CCL_WORD,
-        
+
     JRX_STD_CCL_NUM, // Count number of std CCLs.
 } jrx_std_ccl;
 

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -11,9 +11,9 @@ import Hilti
 void run() {
     local int32 v
     local ref<map<tuple<string,int64>, int32>> m
-    
+
     m = new map<tuple<string,int64>, int32>
-    
+
     map.insert m ("Foo",1) 10
     map.insert m ("Bar",2) 20
     map.insert m ("Foo",1) 30
@@ -21,7 +21,7 @@ void run() {
 
     v = map.get m ("Foo",1)
     call Hilti::print(v)
-    
+
     v = map.get m ("Bar",2)
     call Hilti::print(v)
 

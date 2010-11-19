@@ -13,7 +13,7 @@ struct __hlt_type_info;
 
 /// The type of an exception.
 typedef struct hlt_exception_type {
-    const char* name;                  //< Name of the exception. 
+    const char* name;                  //< Name of the exception.
     struct hlt_exception_type* parent; //< The type this one derives from.
     const struct __hlt_type_info* argtype;   //< The type of the exception's argument, or 0 if no argument.
 } hlt_exception_type;
@@ -24,8 +24,8 @@ typedef struct hlt_exception {
     void *arg;                       //< The arguments of type ``type.argtype``, or 0 if none.
     const char* location;            //< A string describing the location where the exception was raised.
     void *fptr;                      //< Saved frame pointer for resuming later.
-    void *eoss;                      //< Saved end-of-stack segment for resuming later. 
-    hlt_vthread_id vid;              //< If a virtual thread raised the exeception, it's ID. 
+    void *eoss;                      //< Saved end-of-stack segment for resuming later.
+    hlt_vthread_id vid;              //< If a virtual thread raised the exeception, it's ID.
 } hlt_exception;
 
     // %doc-hlt_exception-end
@@ -45,29 +45,29 @@ extern hlt_exception_type hlt_exception_none;
 // A division by zero has occured.
 extern hlt_exception_type hlt_exception_division_by_zero;
 
-// A value looks different than expected. 
+// A value looks different than expected.
 extern hlt_exception_type hlt_exception_value_error;
 
-// A function received different arguments than it expected. 
+// A function received different arguments than it expected.
 extern hlt_exception_type hlt_exception_wrong_arguments;
 
 // An memory allocation has failed due to resource exhaustion.
 extern hlt_exception_type hlt_exception_out_of_memory;
 
-// An undefined value has been attempted to use. 
+// An undefined value has been attempted to use.
 extern hlt_exception_type hlt_exception_undefined_value;
 
 // An internal error that indicates a bug in HILTI.
 extern hlt_exception_type hlt_exception_internal_error;
 
-// An operation could not be performed without blocking. 
+// An operation could not be performed without blocking.
 extern hlt_exception_type hlt_exception_would_block;
 
 // A worker thread threw an exception.
 extern hlt_exception_type hlt_exception_uncaught_thread_exception;
 
 // An operation that depends on having threads was attempted even though we
-// aren't configured for threading. 
+// aren't configured for threading.
 extern hlt_exception_type hlt_exception_no_threading;
 
 // A system or libc function returned an unexpected error.
@@ -79,7 +79,7 @@ extern hlt_exception_type hlt_exception_overlay_not_attached;
 // An invalid container index.
 extern hlt_exception_type hlt_exception_index_error;
 
-// A container item was attempted to read which isn't there. 
+// A container item was attempted to read which isn't there.
 extern hlt_exception_type hlt_exception_underflow;
 
 // An interator is used which is not valid for the operation.
@@ -101,12 +101,12 @@ extern hlt_exception_type hlt_exception_yield;
 // Raised when debug.assert fails.
 extern hlt_exception_type hlt_exception_assertion_error;
 
-// Raised when we encounter an unexpected null reference. 
+// Raised when we encounter an unexpected null reference.
 extern hlt_exception_type hlt_exception_null_reference;
 
-// Raised when a timer is associated with multiple timer managers. 
+// Raised when a timer is associated with multiple timer managers.
 extern hlt_exception_type hlt_exception_timer_already_scheduled;
-    
+
 // Raised when a timer is must be scheduled for an operation but is not.
 extern hlt_exception_type hlt_exception_timer_not_scheduled;
 
@@ -130,10 +130,10 @@ extern hlt_exception_type hlt_exception_io_error;
 extern hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const char* location);
 extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location);
 
-extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx); 
+extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx);
 
-extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context* ctx); 
-extern void hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution_context* ctx); 
+extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context* ctx);
+extern void hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution_context* ctx);
 extern void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_execution_context* ctx);
 
 #define __hlt_stringify2(arg) #arg

@@ -1,9 +1,9 @@
 # $Id$
 #
-# @TEST-EXEC: hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC: hilti-build %INPUT -o a.out >output 2>&1
 # @TEST-EXEC: btest-diff output
 #
-# Check whether int16, int32, etc. turn into the same as int<n>. 
+# Check whether int16, int32, etc. turn into the same as int<n>.
 
 module Main
 
@@ -11,8 +11,8 @@ void run() {
     local int8 i1
     local int8 i2
     local int<8> i3
-    
-    i1 = int.add 5 5 
+
+    i1 = int.add 5 5
     i2 = int.add 10 10
     i3 = int.add i1 i2
 }
@@ -25,8 +25,8 @@ void run() {
     local int16 i1
     local int16 i2
     local int<16> i3
-    
-    i1 = int.add 5 5 
+
+    i1 = int.add 5 5
     i2 = int.add 10 10
     i3 = int.add i1 i2
 }
@@ -39,8 +39,8 @@ void run() {
     local int32 i1
     local int32 i2
     local int<32> i3
-    
-    i1 = int.add 5 5 
+
+    i1 = int.add 5 5
     i2 = int.add 10 10
     i3 = int.add i1 i2
 }
@@ -53,8 +53,8 @@ void run() {
     local int64 i1
     local int64 i2
     local int<64> i3
-    
-    i1 = int.add 5 5 
+
+    i1 = int.add 5 5
     i2 = int.add 10 10
     i3 = int.add i1 i2
 }

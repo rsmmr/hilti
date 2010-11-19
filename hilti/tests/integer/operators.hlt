@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -10,14 +10,14 @@ import Hilti
 
 void run() {
     local int<32> i
-    
+
     i = incr i
     i = incr i
     i = incr i
     call Hilti::print (i)
-    
+
     i = decr i
     i = decr i
     i = decr i
     call Hilti::print (i)
-}     
+}

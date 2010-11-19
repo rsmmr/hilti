@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC:  hilti-build %INPUT -o a.out
-# @TEST-EXEC:  ./a.out 
+# @TEST-EXEC:  ./a.out
 # @TEST-EXEC:  sort <output.log >output.log.sorted
 # @TEST-EXEC:  btest-diff output.log.sorted
 
@@ -12,7 +12,7 @@ import Hilti
 void print1() {
     local ref<file> f
     f = new file
-    file.open f "output.log" 
+    file.open f "output.log"
     file.write f "1"
     file.close f
     return.void
@@ -21,7 +21,7 @@ void print1() {
 void print2() {
     local ref<file> f
     f = new file
-    file.open f "output.log" 
+    file.open f "output.log"
     file.write f "2"
     file.close f
     return.void
@@ -30,7 +30,7 @@ void print2() {
 void print3() {
     local ref<file> f
     f = new file
-    file.open f "output.log" 
+    file.open f "output.log"
     file.write f "3"
     file.close f
     return.void
@@ -39,7 +39,7 @@ void print3() {
 void print4() {
     local ref<file> f
     f = new file
-    file.open f "output.log" 
+    file.open f "output.log"
     file.write f "4"
     file.close f
     return.void
@@ -48,7 +48,7 @@ void print4() {
 void print5() {
     local ref<file> f
     f = new file
-    file.open f "output.log" 
+    file.open f "output.log"
     file.write f "5"
     file.close f
     return.void

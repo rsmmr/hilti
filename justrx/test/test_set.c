@@ -8,7 +8,7 @@ static void print_set(set_foo* f)
         printf("%d ", i);
     printf("\n");
 }
-    
+
 int main(int argc, char** argv)
 {
     set_foo* s = set_foo_create(0);
@@ -23,11 +23,11 @@ int main(int argc, char** argv)
     set_foo_insert(s, 45);
     print_set(s);
     printf("empty: %d (0)\n", set_foo_empty(s));
-    
+
     set_foo_insert(s, 45);
     set_foo_insert(s, 45);
     print_set(s);
-    
+
     set_foo_remove(s, 25);
     set_foo_remove(s, 5);
     set_foo_remove(s, 45);
@@ -39,14 +39,14 @@ int main(int argc, char** argv)
     set_foo_insert(o, 20);
     set_foo_insert(o, 30);
     set_foo_insert(o, 40);
-    
+
     printf("equal: %d (1)\n", set_foo_equal(s, s));
     printf("equal: %d (1)\n", set_foo_equal(s, o));
     set_foo_remove(o, 10);
     printf("equal: %d (0)\n", set_foo_equal(s, o));
     set_foo_insert(o, 1100);
     printf("equal: %d (0)\n", set_foo_equal(s, o));
-    
+
     set_foo_remove(s, 10);
     set_foo_remove(s, 20);
     set_foo_remove(s, 30);

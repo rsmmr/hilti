@@ -1,70 +1,72 @@
+[hilti-trace] Reminder: hilti-trace requires compiling with debugging level > 1.
+[hilti-flow] Reminder: hilti-flow requires compiling with debugging level > 1.
 [hilti-flow/main thread] entering main::run()
 [hilti-trace/main thread] fibo-debug.hlt:36 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(10)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 9
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(9)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 8
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(8)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 7
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(7)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 6
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(6)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 5
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(5)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -74,7 +76,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -89,7 +91,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -104,14 +106,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -121,7 +123,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -141,21 +143,21 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -165,7 +167,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -180,7 +182,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -200,28 +202,28 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -231,7 +233,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -246,7 +248,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -261,14 +263,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -278,7 +280,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -303,35 +305,35 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 5
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(5)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -341,7 +343,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -356,7 +358,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -371,14 +373,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -388,7 +390,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -408,21 +410,21 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -432,7 +434,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -447,7 +449,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -472,42 +474,42 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 6
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(6)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 5
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(5)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -517,7 +519,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -532,7 +534,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -547,14 +549,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -564,7 +566,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -584,21 +586,21 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -608,7 +610,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -623,7 +625,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -643,28 +645,28 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -674,7 +676,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -689,7 +691,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -704,14 +706,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -721,7 +723,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -751,49 +753,49 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 7
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(7)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 6
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(6)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 5
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(5)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -803,7 +805,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -818,7 +820,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -833,14 +835,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -850,7 +852,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -870,21 +872,21 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -894,7 +896,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -909,7 +911,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -929,28 +931,28 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -960,7 +962,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -975,7 +977,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -990,14 +992,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1007,7 +1009,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1032,35 +1034,35 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 5
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(5)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1070,7 +1072,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1085,7 +1087,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1100,14 +1102,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1117,7 +1119,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1137,21 +1139,21 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1161,7 +1163,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1176,7 +1178,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1206,56 +1208,56 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 8
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(8)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 7
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(7)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 6
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(6)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 5
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(5)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1265,7 +1267,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1280,7 +1282,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1295,14 +1297,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1312,7 +1314,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1332,21 +1334,21 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1356,7 +1358,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1371,7 +1373,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1391,28 +1393,28 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1422,7 +1424,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1437,7 +1439,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1452,14 +1454,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1469,7 +1471,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1494,35 +1496,35 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 5
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(5)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1532,7 +1534,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1547,7 +1549,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1562,14 +1564,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1579,7 +1581,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1599,21 +1601,21 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1623,7 +1625,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1638,7 +1640,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1663,42 +1665,42 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 6
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(6)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 5
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(5)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1708,7 +1710,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1723,7 +1725,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1738,14 +1740,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1755,7 +1757,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1775,21 +1777,21 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1799,7 +1801,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1814,7 +1816,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1834,28 +1836,28 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 4
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(4)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 3
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(3)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1865,7 +1867,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1880,7 +1882,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1895,14 +1897,14 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 2
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(2)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> False
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:20 int.sub n 1
 [hilti-trace/main thread] fibo-debug.hlt:20 -> 1
 [hilti-trace/main thread] fibo-debug.hlt:21 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(1)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n
@@ -1912,7 +1914,7 @@
 [hilti-trace/main thread] fibo-debug.hlt:23 -> 0
 [hilti-trace/main thread] fibo-debug.hlt:24 call fibo tuple
 [hilti-flow/main thread] entering main::fibo(0)
-[hilti-trace/main thread] fibo-debug.hlt:16 int.lt n 2
+[hilti-trace/main thread] fibo-debug.hlt:16 int.slt n 2
 [hilti-trace/main thread] fibo-debug.hlt:16 -> True
 [hilti-trace/main thread] fibo-debug.hlt:17 if.else cond @done @recurse
 [hilti-trace/main thread] fibo-debug.hlt:30 return.result n

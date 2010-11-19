@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  echo Out of band >foo.txt
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff foo.txt
@@ -12,11 +12,11 @@ import Hilti
 void run() {
 
     local ref<file> f
-    
+
     f = new file
     file.open f "foo.txt" (Hilti::FileType::Text, Hilti::FileMode::Append, "utf8")
     file.write f "Hello, world!"
-    
+
     return.void
-}     
+}
 

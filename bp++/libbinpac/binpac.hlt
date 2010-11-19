@@ -1,9 +1,10 @@
 # $Id
-# 
-# Parts of the public BinPAC++ API that are also required by the code generator. 
+#
+# Parts of the public BinPAC++ API that are also required by the code generator.
 
 module BinPAC
 
+type ParseSuccess = exception<string>
 type ParseError = exception<string>
 
 declare "C-HILTI" void enable_debugging(bool enabled)

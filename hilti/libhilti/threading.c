@@ -1,10 +1,10 @@
 // $Id$
 //
-// Todo: 
-// 
+// Todo:
+//
 // - We should really use lock-free queues for the jobs. Looks like we hardly
-// have any overlap between reads & writes for a busy queue. 
-// 
+// have any overlap between reads & writes for a busy queue.
+//
 // - We might want to consider a non-stack mapping of vhthreads to worker
 // threads at some point. That's a major task however.
 
@@ -25,7 +25,7 @@ struct hlt_worker_thread;
 
 // A thread manager encapsulates the global state that all threads share.
 struct hlt_thread_mgr {
-    hlt_thread_mgr_state state;  // The manager's current state. 
+    hlt_thread_mgr_state state;  // The manager's current state.
     int num_workers;             // The number of worker threads.
     int num_idle;                // Number of worker threads currently idle.
     int num_excpts;              // The number of worker's that have raised exceptions.
@@ -43,18 +43,18 @@ typedef struct hlt_job {
 // A struct that encapsulates data related to a single worker thread.
 struct hlt_worker_thread {
     // Accesses to these must only be made from the worker thread itself.
-    hlt_thread_mgr* mgr;          // The manager this thread is part of. 
+    hlt_thread_mgr* mgr;          // The manager this thread is part of.
     hlt_execution_context** ctxs; // Execution contexts indexed by virtual thread id.
     hlt_vthread_id max_vid;       // Largest vid allocated space for in ctxs.
-    
+
     // This can be *read* from different threads without further locking.
     pthread_t handle;        // The pthread handle for this thread.
 
     // Accesses to these can be made from different threads but must be
-    // coordinated via the lock (for both reads and writes). 
-    hlt_job* jobs_head;      // The next job to be executed. 
+    // coordinated via the lock (for both reads and writes).
+    hlt_job* jobs_head;      // The next job to be executed.
     hlt_job* jobs_tail;      // The last job currently scheduled.
-    
+
     pthread_mutex_t lock;   // The lock to protects accesses to these fields.
 };
 
@@ -81,17 +81,17 @@ inline static void _destroy_lock(hlt_worker_thread* thread)
 inline static void _acquire_lock(hlt_worker_thread* thread)
 {
 //    DBG_LOG(DBG_STREAM, "- attemptig to acquire lock for %p", thread);
-    
+
     if ( pthread_mutex_lock(&thread->lock) != 0 )
         _fatal_error("cannot acquire lock");
-    
+
 //    DBG_LOG(DBG_STREAM, "- got lock for %p", thread);
 }
 
 inline static void _release_lock(hlt_worker_thread* thread)
 {
 //    DBG_LOG(DBG_STREAM, "- releasing lock for %p", thread);
-    
+
     if ( pthread_mutex_unlock(&thread->lock) != 0 )
         _fatal_error("cannot release lock");
 }
@@ -123,85 +123,85 @@ void _cancel_threads(hlt_thread_mgr* mgr)
 
 // This function sleeps for a while and then kills all other workers. It will
 // be run in its own thread, as that allows us to exit immediately once all
-// workers have terminated. 
+// workers have terminated.
 static void* _termination_watchdog(void* mgr_ptr)
 {
     hlt_thread_mgr* mgr = (hlt_thread_mgr*) mgr_ptr;
 
     if ( pthread_setspecific(mgr->id, "watchdog") != 0 )
         _fatal_error("cannot set thread-local key");
-    
+
     DBG_LOG(DBG_STREAM, "processing started");
-    
+
     // Prepare the nanosleep data structure.
     double secs = hlt_config_get()->time_terminate;
     struct timespec sleep_time;
     sleep_time.tv_sec = (time_t) secs;
     sleep_time.tv_nsec = (time_t) ((secs - sleep_time.tv_sec) * 1e9);
-    
+
     // Sleep. We may be cancelled during this time if we're no longer needed.
     while ( nanosleep(&sleep_time, &sleep_time) )
         continue;
 
     DBG_LOG(DBG_STREAM, "expired");
-    
+
     DBG_LOG(DBG_STREAM, "canceling all threads");
     _cancel_threads(mgr);
     return 0;
 }
 
 // Terminates all worker threads. The specifics depend on the given state:
-// 
+//
 // FINISH: Just wait until all workers are idle, and then terminate them.
 // This may loop indefinitly if workers keep scheduling things.
-// 
+//
 // STOP: Stop workers from scheduling new jobs, and give them a bit of time
 // to finish with what they are doing at the moment. If they exceed that
-// interval, kill them. 
-// 
-// KILL: Kill them right away. 
+// interval, kill them.
+//
+// KILL: Kill them right away.
 static void _terminate_threads(hlt_thread_mgr* mgr, hlt_thread_mgr_state state)
 {
     DBG_LOG(DBG_STREAM, "terminating all threads (%d)", state);
-    
+
     pthread_t watchdog;
 
     mgr->state = state;
-    
+
     switch ( state ) {
-        
+
       case HLT_THREAD_MGR_FINISH:
         // Nothing to do, just wait for threads to finish on their own.
         DBG_LOG(DBG_STREAM, "waiting for threads to finish");
         break;
-        
+
       case HLT_THREAD_MGR_STOP:
         // Start the watchdog thread to give them a chance to stop by themselves.
         if ( pthread_create(&watchdog, 0, _termination_watchdog, (void*) mgr) != 0 )
             _fatal_error("cannot create watchdog thread");
         break;
-        
+
       case HLT_THREAD_MGR_KILL:
         DBG_LOG(DBG_STREAM, "canceling all threads");
         _cancel_threads(mgr);
         break;
-        
+
       default:
         _fatal_error("internal error: unknown state in terminate threads");
     }
 
-    // Join all the workers. 
+    // Join all the workers.
     for ( int i = 0; i < mgr->num_workers; i++ ) {
         DBG_LOG(DBG_STREAM, "joining worker %p", mgr->workers[i]);
         if ( pthread_join(mgr->workers[i]->handle, 0) != 0 )
             _fatal_error("cannot join worker thread");
     }
-    
+
     if ( state == HLT_THREAD_MGR_STOP ) {
         // Cancel the watchdog thread. No error reporting since the watchdog
         // thread may have terminated by itself by now.
         pthread_cancel(watchdog);
-        
+
         DBG_LOG(DBG_STREAM, "joining watchdog");
         if ( pthread_join(watchdog, 0) != 0 )
             _fatal_error("cannot join watchdog thread");
@@ -211,28 +211,28 @@ static void _terminate_threads(hlt_thread_mgr* mgr, hlt_thread_mgr_state state)
 // Schedules a job to a worker thread.
 static void _worker_schedule(hlt_worker_thread* target, hlt_vthread_id vid, hlt_continuation* func)
 {
-    if ( target->mgr->state != HLT_THREAD_MGR_RUN && 
+    if ( target->mgr->state != HLT_THREAD_MGR_RUN &&
          target->mgr->state != HLT_THREAD_MGR_FINISH ) {
         DBG_LOG(DBG_STREAM, "omitting scheduling of job because mgr signaled termination");
         return;
     }
-    
+
     hlt_job* job = hlt_gc_malloc_non_atomic(sizeof(hlt_job));
     job->func = func;
     job->vid = vid;
     job->next = 0;
-    
+
     DBG_LOG(DBG_STREAM, "scheduling job %p for vid %d to worker %p", job, vid, target);
-    
+
     _acquire_lock(target);
-    
+
     if ( target->jobs_tail ) {
         target->jobs_tail->next = job;
         target->jobs_tail = job;
     }
-    else 
+    else
         target->jobs_head = target->jobs_tail = job;
-    
+
     _release_lock(target);
 }
 
@@ -255,18 +255,18 @@ static hlt_execution_context* _worker_get_ctx(hlt_worker_thread* thread, hlt_vth
         hlt_vthread_id new_max = max;
         while ( new_max < vid )
             new_max *= 2;
-        
+
         thread->ctxs = hlt_gc_realloc_non_atomic(thread->ctxs, (new_max+1) * sizeof(hlt_execution_context*));
         if ( ! thread->ctxs )
             _fatal_error("cannot realloc context array");
-        
+
         memset(thread->ctxs + max + 1, 0, (new_max - max) * sizeof(hlt_execution_context*));
-        
+
         thread->max_vid = new_max;
     }
 
     hlt_execution_context* ctx = thread->ctxs[vid];
-    
+
     if ( ! ctx ) {
         // Haven't seen this thread yet, need to create new context.
         ctx = hlt_execution_context_new(vid, _worker_yield);
@@ -281,9 +281,9 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
 {
     hlt_execution_context* ctx = _worker_get_ctx(thread, job->vid);
     DBG_LOG(DBG_STREAM, "executing job %p with context %p", job, ctx);
-    
+
     hlt_exception* excpt = 0;
-    
+
     __hlt_thread_mgr_run_callable(job->func, &excpt, ctx);
 
     DBG_LOG(DBG_STREAM, "done with job %p", job);
@@ -293,11 +293,11 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
         return;
 
     DBG_LOG(DBG_STREAM, "uncaught exception in worker thread");
-    
+
     hlt_exception_print_uncaught_in_thread(excpt, ctx);
     _atomic_increase(&thread->mgr->num_excpts);
-    
-    // We shutdown all threads. 
+
+    // We shutdown all threads.
     DBG_LOG(DBG_STREAM, "canceling all threads");
     _cancel_threads(thread->mgr);
 }
@@ -313,9 +313,9 @@ static void* _worker(void* worker_thread_ptr)
     snprintf(buffer, sizeof(buffer), "worker %p", thread);
     if ( pthread_setspecific(mgr->id, buffer) != 0 )
         _fatal_error("cannot set thread-local key");
-    
+
     DBG_LOG(DBG_STREAM, "processing started", thread);
-        
+
     // Prepare the nanosleep data structure.
     double secs = hlt_config_get()->time_idle;
     struct timespec sleep_time;
@@ -324,35 +324,35 @@ static void* _worker(void* worker_thread_ptr)
 
     while ( 1 ) {
         pthread_testcancel();
-        
+
         _acquire_lock(thread);
 
         if ( thread->jobs_head ) {
             job = thread->jobs_head;
-            
+
             thread->jobs_head = job->next;
             if ( ! thread->jobs_head )
                 thread->jobs_tail = 0;
-        
+
             _release_lock(thread);
-                
+
             // Execute the job.
             _worker_run_job(thread, job);
         }
-        
+
         else {
-            // Idle. 
-           
+            // Idle.
+
             // If all other's are idle as well and we're asked to finish,
-            // we'll terminate. 
-            if ( mgr->state == HLT_THREAD_MGR_FINISH && 
+            // we'll terminate.
+            if ( mgr->state == HLT_THREAD_MGR_FINISH &&
                  mgr->num_idle == mgr->num_workers - 1 ) {
                 _release_lock(thread);
                 _atomic_increase(&mgr->num_idle); // We are now idle forever!
                 DBG_LOG(DBG_STREAM, "exiting after finish request");
                 return 0;
             }
-            
+
             if ( mgr->state != HLT_THREAD_MGR_STOP ) {
                 // Just sleep a bit.
                 _release_lock(thread);
@@ -361,7 +361,7 @@ static void* _worker(void* worker_thread_ptr)
                 _atomic_decrease(&mgr->num_idle);
                 continue;
             }
-            
+
             // Termination requested. If the job queue is empty at this
             // point, we terminate. Otherwise, we need to process the
             // remaining jobs in the queue.
@@ -370,12 +370,12 @@ static void* _worker(void* worker_thread_ptr)
                 DBG_LOG(DBG_STREAM, "exiting after stop request");
                 return 0;
             }
-            
+
             _release_lock(thread);
         }
 
     }
-    
+
     __fatal_error("cannot be reached");
     return 0;
 }
@@ -422,17 +422,17 @@ void hlt_threading_start()
 {
     if ( hlt_config_get()->num_workers == 0 ) {
         DBG_LOG(DBG_STREAM, "no worker threads configured");
-        // No threading configured. 
+        // No threading configured.
         return;
     }
 
     DBG_LOG(DBG_STREAM, "initializing threading system");
-        
+
     __hlt_global_thread_mgr = hlt_thread_mgr_new();
     if ( ! __hlt_global_thread_mgr )
         _fatal_error("cannot create threading manager");
-    
-    __hlt_cmd_queue_start();    
+
+    __hlt_cmd_queue_start();
     __hlt_files_start();
     __hlt_hooks_start();
 }
@@ -450,7 +450,7 @@ void hlt_threading_stop(hlt_exception** excpt)
         assert( mgr->state == HLT_THREAD_MGR_RUN );
         // Threads are still running so shut them down. If we don't have any
         // exceptions, we give them a chance to shutdown gracefully,
-        // otherwise we just kill the threads. 
+        // otherwise we just kill the threads.
         hlt_thread_mgr_set_state(mgr, *excpt ? HLT_THREAD_MGR_KILL : HLT_THREAD_MGR_STOP);
     }
 
@@ -458,15 +458,15 @@ void hlt_threading_stop(hlt_exception** excpt)
     // exceptions and then destroy the thread manager.
     if ( ! *excpt )
         hlt_thread_mgr_check_exceptions(__hlt_global_thread_mgr, excpt, __hlt_global_execution_context);
-    
+
     hlt_thread_mgr_destroy(__hlt_global_thread_mgr);
 
     DBG_LOG(DBG_STREAM, "threading system terminated");
 
     __hlt_hooks_stop();
     __hlt_files_stop();
-    __hlt_cmd_queue_stop();    
-    
+    __hlt_cmd_queue_stop();
+
     __hlt_global_thread_mgr = 0;
 }
 
@@ -480,12 +480,12 @@ hlt_thread_mgr* hlt_thread_mgr_new()
     int num = hlt_config_get()->num_workers;
     if ( ! num )
         _fatal_error("no worker threads configured");
-    
+
     mgr->state = HLT_THREAD_MGR_RUN;
     mgr->num_workers = num;
     mgr->num_excpts = 0;
     mgr->num_idle = 0;
-    
+
     mgr->workers = hlt_gc_malloc_non_atomic(sizeof(hlt_worker_thread*) * num);
     if ( ! mgr->workers )
         _fatal_error("cannot allocate memory for worker threads");
@@ -495,7 +495,7 @@ hlt_thread_mgr* hlt_thread_mgr_new()
 
     if ( pthread_setspecific(mgr->id, "main thread") != 0 )
         _fatal_error("cannot set thread-local key");
-    
+
     // Initialize the worker threads.
     pthread_attr_t attr;
     pthread_attr_init(&attr);
@@ -508,17 +508,17 @@ hlt_thread_mgr* hlt_thread_mgr_new()
         thread->jobs_tail = 0;
         thread->ctxs = hlt_gc_calloc_non_atomic(3, sizeof(hlt_execution_context*));
         thread->max_vid = 2;
-        
+
         mgr->workers[i] = thread;
-        
+
         _init_lock(thread);
-        
+
         if ( pthread_create(&thread->handle, &attr, _worker, (void*) thread) != 0 )
             _fatal_error("cannot create worker threads");
-        
+
         DBG_LOG(DBG_STREAM, "created worker thread %d at %p", i, thread);
     }
-    
+
     pthread_attr_destroy(&attr);
 
     return mgr;
@@ -527,18 +527,18 @@ hlt_thread_mgr* hlt_thread_mgr_new()
 void hlt_thread_mgr_destroy(hlt_thread_mgr* mgr)
 {
     DBG_LOG(DBG_STREAM, "destroying");
-    
+
     if ( mgr->state != HLT_THREAD_MGR_DEAD )
         _fatal_error("thread manager being destroyed still has running threads");
 
     if ( pthread_key_delete(mgr->id) != 0 )
         _fatal_error("cannot delete thread-local key");
-    
+
     for ( int i = 0; i < mgr->num_workers; i++ ) {
         hlt_worker_thread* thread = mgr->workers[i];
-        
+
         _destroy_lock(thread);
-        
+
         thread->jobs_head = thread->jobs_tail = 0;
     }
 }
@@ -551,13 +551,13 @@ void hlt_thread_mgr_set_state(hlt_thread_mgr* mgr, const hlt_thread_mgr_state ne
 
     if ( mgr->state == HLT_THREAD_MGR_DEAD )
         _fatal_error("hlt_set_thread_mgr_state already in dead");
-    
+
     DBG_LOG(DBG_STREAM, "transitioning from mgr state %d to %d", mgr->state, new_state);
-    
+
     _terminate_threads(mgr, new_state);
-    
+
     mgr->state = HLT_THREAD_MGR_DEAD;
-    
+
     DBG_LOG(DBG_STREAM, "mgr now in state dead, all threads terminated");
 }
 
@@ -577,7 +577,7 @@ void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_cont
         hlt_set_exception(excpt, &hlt_exception_no_threading, 0);
         return;
     }
-    
+
     hlt_worker_thread* thread = _vthread_to_worker(mgr, vid);
     _worker_schedule(thread, vid, func);
 }
@@ -588,7 +588,7 @@ void hlt_thread_mgr_check_exceptions(hlt_thread_mgr* mgr, hlt_exception** excpt,
         hlt_set_exception(excpt, &hlt_exception_no_threading, 0);
         return;
     }
-    
+
     if ( _atomic_fetch(&mgr->num_excpts) == 0 )
         return;
 
@@ -600,7 +600,7 @@ const char* hlt_thread_mgr_current_native_thread(hlt_thread_mgr* mgr)
 {
     if ( ! mgr )
         return "no threading";
-    
+
     const char* id = pthread_getspecific(mgr->id);
     return id ? id : "no threading";
 }

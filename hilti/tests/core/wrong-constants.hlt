@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
 # @TEST-EXEC:      btest-diff output
 
 module Main
@@ -10,7 +10,7 @@ import Hilti
 const int<32> c1 = "string"
 
 void run() {
-}     
+}
 
 # @TEST-START-NEXT
 
@@ -22,6 +22,6 @@ const int<32> c1 = 32
 const int<32> c2 = c1
 
 void run() {
-}     
+}
 
 

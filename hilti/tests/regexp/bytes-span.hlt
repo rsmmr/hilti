@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -17,43 +17,43 @@ void run() {
     local ref<regexp> re
     local tuple<int32, tuple<iterator<bytes>,iterator<bytes>>> span
     local tuple<iterator<bytes>,iterator<bytes>> range
-    
+
     re = new regexp
     call Hilti::print(re)
-    
+
     regexp.compile re "A.*B"
     call Hilti::print(re)
-    
+
     b = b"1234AxyxyxyB5678"
     call Hilti::print(b)
-    
+
     i1 = begin b
     i2 = end b
-    
+
     span = regexp.span re i1 i2
-    
+
     rc = tuple.index span 0
     range = tuple.index span 1
     i1 = tuple.index range 0
     i2 = tuple.index range 1
     sub = bytes.sub i1 i2
-    
+
     call Hilti::print(sub)
-    
+
     b = b"1234XYZ5678"
     call Hilti::print(b)
-    
+
     i1 = begin b
     i2 = end b
-    
+
     span = regexp.span re i1 i2
-    
+
     rc = tuple.index span 0
     range = tuple.index span 1
     i1 = tuple.index range 0
     i2 = tuple.index range 1
     sub = bytes.sub i1 i2
-    
+
     call Hilti::print(sub)
-    
+
 }

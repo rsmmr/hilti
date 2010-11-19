@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -23,5 +23,5 @@ hook void my_hook(int64 i) {
 void run() {
     hook.run my_hook (42)
     return.void
-}     
+}
 

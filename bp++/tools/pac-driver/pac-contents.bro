@@ -8,12 +8,15 @@
     
 redef tcp_content_deliver_all_orig = T;
 redef tcp_content_deliver_all_resp = T;
+redef udp_content_deliver_all_orig = T;
+redef udp_content_deliver_all_resp = T;
 
 global pac_out = open("pac-contents.dat");
 
 # kind:
 #
-#  D : data
+#  D : data chunk (TCP)
+#  U : UDP packet payload
 #  G : gap
 #  T : termination of connection.
 
@@ -24,7 +27,7 @@ function output(c: connection, is_orig: bool, contents: string, len: int, kind: 
     
     print pac_out, fmt("# %s %s %d %s %.6f", kind, dir, len, fid, network_time());
 
-    if ( kind == "D" && len > 0 )
+    if ( (kind == "D" || kind == "U") && len > 0 )
         write_file(pac_out, contents);
 }
 
@@ -53,4 +56,10 @@ event tcp_contents(c: connection, is_orig: bool, seq: count, contents: string)
 {
     if ( c$id in established )
         output(c, is_orig, contents, |contents|, "D");
+}
+
+event udp_contents(u: connection, is_orig: bool, contents: string)
+{
+    add established[u$id];
+    output(u, is_orig, contents, |contents|, "U");
 }

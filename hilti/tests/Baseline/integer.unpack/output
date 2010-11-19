@@ -14,9 +14,9 @@ hex=0x1122 dec=4386 diff=2
 hex=0x44332211 dec=1144201745 diff=4
 hex=0x11223344 dec=287454020 diff=4
 
-hex=0xffffffffffffffd6 dec=-42 diff=1
-hex=0xffffffffffffffd6 dec=-42 diff=2
-hex=0xffffffffffffffd6 dec=-42 diff=4
+hex=0xd6 dec=-42 diff=1
+hex=0xffd6 dec=-42 diff=2
+hex=0xffffffd6 dec=-42 diff=4
 hex=0xffffffffffffffd6 dec=-42 diff=8
 
 hex=0xd6 dec=214 diff=1

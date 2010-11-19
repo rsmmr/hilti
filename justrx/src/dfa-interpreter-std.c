@@ -9,7 +9,7 @@ static int _ccl_match_assertions(jrx_char cp, jrx_char *previous, jrx_assertion 
 {
     if ( want & JRX_ASSERTION_WORD_BOUNDARY )
         have |= local_word_boundary(previous, cp) ? JRX_ASSERTION_WORD_BOUNDARY : 0;
-    
+
     if ( want & JRX_ASSERTION_NOT_WORD_BOUNDARY )
         have |= local_word_boundary(previous, cp) ? 0 : JRX_ASSERTION_NOT_WORD_BOUNDARY;
 
@@ -23,13 +23,13 @@ static int _ccl_match(jrx_ccl* ccl, jrx_char cp, jrx_char *previous, jrx_asserti
 
     if ( ! _ccl_match_assertions(cp, previous, assertions, ccl->assertions) )
         return 0;
-    
+
     // Look at ranges.
     set_for_each(char_range, ccl->ranges, r) {
-        if ( cp >= r.begin && cp < r.end ) 
+        if ( cp >= r.begin && cp < r.end )
             return 1;
     }
-        
+
     return 0;
 }
 
@@ -48,55 +48,55 @@ static void _update_tags(jrx_match_state* ms, vec_tag_op* tops)
 {
     if ( ! tops )
         return;
-    
+
     int oldct = ms->current_tags;
     int newct = 1 - oldct;
-    
+
     // We first copy each old group to the new place.
     vec_for_each(tag_op, tops, top)
-        memcpy(_tag_group(ms, newct, top.tnew), 
-               _tag_group(ms, oldct, top.told), 
+        memcpy(_tag_group(ms, newct, top.tnew),
+               _tag_group(ms, oldct, top.told),
                _tag_group_size(ms));
-    
+
     // Now apply operations.
     vec_for_each(tag_op, tops, top2) {
         if ( top2.tag < 0 )
             continue;
-        
+
         jrx_offset* group = _tag_group(ms, newct, top2.tnew);
         group[top2.tag] = ms->offset;
         }
-        
-    ms->current_tags = newct; 
+
+    ms->current_tags = newct;
 }
 
 static void _update_accepts(jrx_match_state* ms, jrx_dfa_state* state, jrx_char cp, jrx_assertion assertions)
 {
     if ( ! state->accepts )
         return;
-    
+
     vec_for_each(dfa_accept, state->accepts, acc) {
 
         if ( ! _ccl_match_assertions(cp, (ms->offset ? &ms->previous : 0), assertions, acc.final_assertions) )
             // No match, final assertions don't work out.
             continue;
-        
+
         if ( ms->dfa->options & JRX_OPTION_NO_CAPTURE ) {
             jrx_match_accept nacc = { acc.aid, 0 };
             set_match_accept_insert(ms->accepts, nacc);
             return;
         }
-        
+
         jrx_offset* tags = jrx_match_state_copy_tags(ms, acc.tid);
-        
+
         if ( acc.final_ops )  {
             vec_for_each(tag_op, acc.final_ops, op) {
                 tags[op.tag] = ms->offset;
             }
         }
-        
+
         jrx_match_accept nacc = { acc.aid, tags };
-        
+
         // If we already have an entry with that acc.aid, we only keep the
         // one with the left-most longest match.
 
@@ -104,38 +104,38 @@ static void _update_accepts(jrx_match_state* ms, jrx_dfa_state* state, jrx_char 
         set_for_each(match_accept, ms->accepts, oacc) {
             if ( nacc.aid != oacc.aid )
                 continue;
-            
-            found_old = 1;            
-            
+
+            found_old = 1;
+
             int olen = oacc.tags[0] > 0 && oacc.tags[1] > 0 ? oacc.tags[1] - oacc.tags[0] : -1;
             int nlen = nacc.tags[0] > 0 && nacc.tags[1] > 0 ? nacc.tags[1] - nacc.tags[0] : -1;
-            
+
             if ( nlen < 0 )
                 goto keep_old;
-            
+
             if ( olen < 0 )
                 goto keep_new;
-            
+
             if ( oacc.tags[0] < nacc.tags[0] )
                 // Left-most.
                 goto keep_old;
-            
+
             if ( oacc.tags[0] == nacc.tags[0] && nlen > olen )
                 // Longest if same start position.
                 goto keep_new;
-            
-keep_old:            
+
+keep_old:
             break;
-            
-keep_new:            
+
+keep_new:
             if ( oacc.tags )
                 free(oacc.tags);
-            
+
             set_match_accept_remove(ms->accepts, oacc);
             set_match_accept_insert(ms->accepts, nacc);
             break;
         }
-            
+
         if ( ! found_old )
             set_match_accept_insert(ms->accepts, nacc);
     }
@@ -144,7 +144,7 @@ keep_new:
 jrx_match_state* jrx_match_state_init(const jrx_regex_t *preg, jrx_offset begin, jrx_match_state* ms)
 {
     jrx_dfa* dfa = preg->dfa;
-    
+
     ms->offset = 1;
     ms->begin = begin;
     ms->previous = 0;
@@ -152,12 +152,12 @@ jrx_match_state* jrx_match_state_init(const jrx_regex_t *preg, jrx_offset begin,
     ms->state = dfa->initial;
     ms->current_tags = 0;
     ms->acc = -1;
-    
+
     if ( (dfa->options & JRX_OPTION_STD_MATCHER) ) {
         ms->accepts = set_match_accept_create(0);
         ms->tags1 = calloc(dfa->max_tag_groups, _tag_group_size(ms));
         ms->tags2 = calloc(dfa->max_tag_groups, _tag_group_size(ms));
-        
+
         _update_tags(ms, dfa->initial_ops);
         jrx_dfa_state* state = vec_dfa_state_get(dfa->states, ms->state);
         _update_accepts(ms, state, 0, JRX_ASSERTION_BOL | JRX_ASSERTION_BOD);
@@ -168,7 +168,7 @@ jrx_match_state* jrx_match_state_init(const jrx_regex_t *preg, jrx_offset begin,
         ms->tags1 = 0;
         ms->tags2 = 0;
     }
-    
+
     return ms;
 }
 
@@ -176,14 +176,14 @@ void jrx_match_state_done(jrx_match_state* ms)
 {
     if ( ms->dfa->options & JRX_OPTION_NO_CAPTURE )
         return;
-    
+
     set_for_each(match_accept, ms->accepts, acc) {
         if ( acc.tags )
             free(acc.tags);
     }
-    
+
     set_match_accept_delete(ms->accepts);
-    
+
     free(ms->tags1);
     free(ms->tags2);
 }
@@ -191,7 +191,7 @@ void jrx_match_state_done(jrx_match_state* ms)
 static void print_accept_set(set_match_accept* s)
 {
     fputs(" (accept set is [", stderr);
-    
+
     int first = 1;
     set_for_each(match_accept, s, acc) {
         if ( ! first )
@@ -199,14 +199,14 @@ static void print_accept_set(set_match_accept* s)
         fprintf(stderr, "(%d, 0x%p)", acc.aid, acc.tags);
         first = 0;
     }
-     
+
     fputs("])\n", stderr);
 }
 
 int jrx_match_state_advance(jrx_match_state* ms, jrx_char cp, jrx_assertion assertions)
 {
     jrx_dfa_state* state = vec_dfa_state_get(ms->dfa->states, ms->state);
-    
+
     if ( ! state )
         return 0;
 
@@ -215,7 +215,7 @@ int jrx_match_state_advance(jrx_match_state* ms, jrx_char cp, jrx_assertion asse
 
     vec_for_each(dfa_transition, state->trans, trans) {
         jrx_ccl* ccl = vec_ccl_get(ms->dfa->ccls->ccls, trans.ccl);
-        
+
         if ( ! _ccl_match(ccl, cp, ms->offset ? &ms->previous : 0, assertions) )
             // Doesn't match.
             continue;
@@ -229,11 +229,11 @@ int jrx_match_state_advance(jrx_match_state* ms, jrx_char cp, jrx_assertion asse
         ms->previous = cp;
 
         _update_tags(ms, tops);
-        
+
         ++ms->offset;
 
         _update_accepts(ms, succ_state, cp, assertions);
-        
+
         if ( ms->dfa->options & JRX_OPTION_DEBUG ) {
             fprintf(stderr, "-> found transition, new state is #%d", ms->state);
             print_accept_set(ms->accepts);
@@ -241,7 +241,7 @@ int jrx_match_state_advance(jrx_match_state* ms, jrx_char cp, jrx_assertion asse
 
         return 1;
     }
-    
+
     if ( ms->dfa->options & JRX_OPTION_DEBUG ) {
         fprintf(stderr, "-> no transition possible");
         print_accept_set(ms->accepts);

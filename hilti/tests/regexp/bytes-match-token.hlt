@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-global ref<regexp<&nosub>> re = /Foo/ | /Bar/ | /Foolein/ 
+global ref<regexp<&nosub>> re = /Foo/ | /Bar/ | /Foolein/
 
 iterator<bytes> next_token(iterator<bytes> start) {
     local int32 rc
@@ -17,23 +17,23 @@ iterator<bytes> next_token(iterator<bytes> start) {
     local ref<bytes> token
 
     result = regexp.match_token re start
-    
+
     rc = tuple.index result 0
     eo = tuple.index result 1
-    token = bytes.sub start eo 
-    
+    token = bytes.sub start eo
+
     call Hilti::print(rc)
     call Hilti::print(token)
-    
+
     return.result eo
-}     
+}
 
 void run() {
     local ref<bytes> b
     local iterator<bytes> start
-    
+
     call Hilti::print(re)
-    
+
     b = b"FooBarFooleinX"
     call Hilti::print(b)
 
@@ -42,7 +42,7 @@ void run() {
     start = call next_token(start)
     start = call next_token(start)
     start = call next_token(start)
-    
+
     b = b"FooBarFooleinBa"
     call Hilti::print(b)
 
@@ -51,5 +51,5 @@ void run() {
     start = call next_token(start)
     start = call next_token(start)
     start = call next_token(start)
-    
+
 }

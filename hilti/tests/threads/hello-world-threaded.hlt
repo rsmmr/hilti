@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  bash -c "echo RUN\ 1 > output"
 # @TEST-EXEC:  ./a.out >>output 2>&1
 # @TEST-EXEC:  bash -c "echo RUN\ 2 >> output"
@@ -19,7 +19,7 @@ import Hilti
 
 void printhello() {
     call Hilti::print ("Hello threaded world!", True)
-    
+
     return.void
 }
 

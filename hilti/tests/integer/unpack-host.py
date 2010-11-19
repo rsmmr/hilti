@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC:  python %INPUT >tmp.hlt
-# @TEST-EXEC:  hilti-build tmp.hlt -o a.out 
+# @TEST-EXEC:  hilti-build tmp.hlt -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -25,9 +25,9 @@ void run() {
     local iterator<bytes> p3
     local tuple<int32, iterator<bytes>> t32
     local int32 i32
-    local int32 diff
+    local int64 diff
     local string out
-    
+
     b = b\"%s\"
     p1 = begin b
     p2 = end b
@@ -37,6 +37,6 @@ void run() {
     diff = bytes.diff p1 p3
     out = call Hilti::fmt ("hex=0x%%x dec=%%d diff=%%d", (i32, i32, diff))
     call Hilti::print(out)
-    
+
 }
 """ % packed

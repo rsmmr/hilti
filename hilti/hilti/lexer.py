@@ -1,11 +1,11 @@
 # $Id$
 #
-# The lexer. 
+# The lexer.
 
 import socket
 import struct
 import re
-import util 
+import util
 
 import ply.lex
 
@@ -24,8 +24,8 @@ keywords = {
 	"import": "IMPORT",
 	"declare": "DECLARE",
 	"export": "EXPORT",
-	"local": "LOCAL", 
-    "global" : "GLOBAL", 
+	"local": "LOCAL",
+    "global" : "GLOBAL",
     "module": "MODULE",
     "Null": "NULL",
     "at": "AT",
@@ -42,14 +42,14 @@ keywords = {
     "try": "TRY",
     "catch": "CATCH",
     "hook": "HOOK",
-    
+
     "@internal": "INTERNAL",
     }
 
 all = set([t.upper() for t in types + keywords.values()])
 
 tokens = [
-   'IDENT', 
+   'IDENT',
    'INSTRUCTION',
    'NL',
    'COMMENTLINE',
@@ -60,16 +60,16 @@ tokens = [
 
    # Constants.
    'CLABEL',
-   'CBOOL', 
+   'CBOOL',
    'CBYTES',
    'CSTRING',
    'CINTEGER',
    'CDOUBLE',
    'CADDRESS',
    'CNET',
-   'CPORT', 
-   'CREGEXP', 
-   
+   'CPORT',
+   'CREGEXP',
+
 ] + [a for a in all]
 
 literals = ['[', ']', '(',')','{','}', '<', '>', '=', ',', ':', '*', '|' ]
@@ -87,16 +87,16 @@ def t_CADDR4(t): # must come before DOUBLE.
     except ValueError:
         mask = t.value
         len = 0
-    
+
     addr = struct.unpack("!1L", socket.inet_pton(socket.AF_INET, mask))
-    
+
     if not len:
         t.type = "CADDRESS"
         t.value = (0, long(addr[0]))
     else:
         t.type = "CNET"
         t.value = (0, long(addr[0]), 96 + int(len))
-        
+
     return t
 
 def t_TRUE(t):
@@ -119,7 +119,7 @@ def t_CLABEL(t):
 def t_CBYTES(t):
     'b"([^\n"]|\\\\")*"'
     t.type = "CBYTES"
-    t.value = t.value[2:-1]    
+    t.value = t.value[2:-1]
     return t
 
 def t_IDENT(t): # must come before ADDR6.
@@ -127,39 +127,39 @@ def t_IDENT(t): # must come before ADDR6.
 
     if t.value in instructions:
         t.type = "INSTRUCTION"
-        
+
     elif t.value in keywords:
         t.type = keywords[t.value]
 
     elif t.value in types:
         t.type = t.value.upper()
-        
+
     else:
         # Real IDENT.
         if t.value.startswith("__"):
             pass
             # error(t, "Identifiers starting with '__' are reserved for internal use")
-        
+
     return t
 
-def t_ATTRIBUTE(t): 
+def t_ATTRIBUTE(t):
     r'\&[_a-zA-Z][a-zA-Z0-9._]*'
-    
+
     if t.value == "&default":
         t.type = "ATTR_DEFAULT"
-        
+
     elif t.value == "&nosub":
         t.type = "ATTR_NOSUB"
-        
+
     elif t.value == "&priority":
         t.type = t.value = "ATTR_PRIORITY"
 
     elif t.value == "&group":
         t.type = t.value = "ATTR_GROUP"
-        
+
     else:
         util.parser_error(None, "unknown attribute %s" % t.value)
-        
+
     return t
 
 def t_CADDR6(t): # must come before DOUBLE.
@@ -173,7 +173,7 @@ def t_CADDR6(t): # must come before DOUBLE.
     except ValueError:
         mask = t.value
         len = None
-    
+
     try:
         addr = struct.unpack("!2Q", socket.inet_pton(socket.AF_INET6, mask))
     except socket.error:
@@ -187,16 +187,16 @@ def t_CADDR6(t): # must come before DOUBLE.
         len = int(len)
         if len < 0 or len > 128:
             util.parser_error(None, "prefix length is out of range", lineno=t.lexer.lineno)
-        
+
         t.type = "CNET"
         t.value = (addr[0], addr[1], len)
-        
+
     return t
 
 def t_CREGEXP(t):
     #'/([^\n/]|\\/)*/'
     r'/[^\n]*?(?<!\\)/'
-    t.value = t.value[1:-1]    
+    t.value = t.value[1:-1]
     return t
 
 def t_CPORT(t):
@@ -206,29 +206,29 @@ def t_CPORT(t):
 def t_CDOUBLE(t):
     r'-?\d+\.\d+'
     try:
-        t.value = float(t.value)    
+        t.value = float(t.value)
     except ValueError:
         error(t, "cannot parse double %s" % t.value)
         t.value = 0
-        
+
     return t
 
 def t_CINTEGER(t):
     r'-?\d+'
     try:
-        t.value = int(t.value)    
+        t.value = int(t.value)
     except ValueError:
         error(t, "cannot parse integer %s" % t.value)
         t.value = 0
-        
+
     return t
 
 def t_CSTRING(t):
     '"([^\n"]|\\\\")*"'
-    t.value = t.value[1:-1]    
+    t.value = t.value[1:-1]
     return t
 
-# Pass on comments on lines of its own. 
+# Pass on comments on lines of its own.
 def t_COMMENTLINE(t):
     r'^\ *\#.*'
     t.value = t.value[t.value.find("#")+1:].strip()
@@ -248,17 +248,17 @@ def t_nolines_newline(t):
 def t_nolines_COMMENTLINE(t):
     r'\#.*'
     t.lexer.lineno += 1
-    
+
 def t_INITIAL_newline(t):
     r'\n+'
     t.type = "NL"
     t.lexer.lineno += len(t.value)
     return t
 
-# Ignore white space. 
+# Ignore white space.
 t_ignore  = ' \t'
 
 # Error handling rule
 def t_error(t):
     util.parser_error(None, "cannot parse input '%s...'" % t.value[0:10], lineno=t.lexer.lineno)
-    
+

@@ -53,9 +53,9 @@ connection Test_Conn() {
 
 flow Test_Flow(is_orig: bool) {
 	datagram = Test_Message(is_orig) withcontext(connection, this);
-    
-    function print(req: bool) : bool 
-    %{ 
+
+    function print(req: bool) : bool
+    %{
         if ( req )
             print_request(dataunit_->request());
         else

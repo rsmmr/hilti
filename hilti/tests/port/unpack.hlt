@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -12,51 +12,51 @@ void run() {
     local iterator<bytes> first
     local iterator<bytes> last
     local iterator<bytes> nfirst
-    local int32 diff
+    local int64 diff
     local string out
     local ref<bytes> b
     local tuple<port,iterator<bytes>> t
     local port p
-    
+
     b = b"\x01\x02"
-    
+
     first = begin b
     last = end b
 
     ####
-    
+
     t = unpack (first,last) Hilti::Packed::PortTCP
     p = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
     out = call Hilti::fmt ("port=%s diff=%d", (p, diff))
     call Hilti::print(out)
-    
+
     ####
-    
+
     t = unpack (first,last) Hilti::Packed::PortUDP
     p = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
     out = call Hilti::fmt ("port=%s diff=%d", (p, diff))
     call Hilti::print(out)
-    
+
     ####
-    
+
     t = unpack (first,last) Hilti::Packed::PortTCPNetwork
     p = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
     out = call Hilti::fmt ("port=%s diff=%d", (p, diff))
     call Hilti::print(out)
-    
+
     ####
-    
+
     t = unpack (first,last) Hilti::Packed::PortUDPNetwork
     p = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
     out = call Hilti::fmt ("port=%s diff=%d", (p, diff))
     call Hilti::print(out)
-    
+
     }

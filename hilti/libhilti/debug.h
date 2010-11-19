@@ -1,7 +1,7 @@
 /* $Id$
- * 
- * Debugging support. 
- * 
+ *
+ * Debugging support.
+ *
  */
 
 #ifndef HILTI_DEBUG_H

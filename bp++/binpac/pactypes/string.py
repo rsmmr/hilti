@@ -10,17 +10,17 @@ import hilti.type
 
 @type.pac("string")
 class String(type.ParseableType):
-    """Type for string objects.  
-    
+    """Type for string objects.
+
     location: ~~Location - A location object describing the point of definition.
     """
     def __init__(self, location=None):
         super(String, self).__init__(location=location)
 
     ### Overridden from Type.
-    
+
     def name(self):
-        return "string" 
+        return "string"
 
     def validate(self, vld):
         return True
@@ -28,20 +28,20 @@ class String(type.ParseableType):
     def validateCtor(self, vld, ctor):
         if not isinstance(ctor, str) and not isinstance(ctor, unicode):
             vld.error(ctor, "string: constant of wrong internal type")
-            
+
     def hiltiType(self, cg):
         return hilti.type.String()
 
     def hiltiCtor(self, cg, ctor):
         const = hilti.constant.Constant(ctor, hilti.type.String())
         return hilti.operand.Constant(const)
-    
+
     def pac(self, printer):
         printer.output("string")
-        
+
     def pacConstant(self, printer, const):
         printer.output("\"%s\"" % const.value())
-    
+
     ### Overridden from ParseableType.
 
     def supportedAttributes(self):
@@ -49,13 +49,13 @@ class String(type.ParseableType):
 
     def production(self, field):
         util.internal_error("string parsing not implemented")
-    
+
     def generateParser(self, cg, cur, dst, skipping):
         util.internal_error("string parsing not implemented")
-        
-        
-        
-    
-    
-        
-    
+
+
+
+
+
+
+

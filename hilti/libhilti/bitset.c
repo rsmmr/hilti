@@ -1,7 +1,7 @@
 /* $Id$
- * 
+ *
  * Support functions HILTI's bitset data type.
- * 
+ *
  */
 
 #include "hilti.h"
@@ -16,9 +16,9 @@ hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int3
     assert(type->type == HLT_TYPE_BITSET);
     int64_t i = *((int64_t*)obj);
 
-    // Labels are stored as concatenated ASCIIZ. 
+    // Labels are stored as concatenated ASCIIZ.
     const char *labels = (const char*) type->aux;
-    
+
     hlt_string str = 0;
     int bit = 1;
     while ( *labels ) {
@@ -34,11 +34,11 @@ hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int3
         bit <<= 1;
         while ( *labels++ );
     }
-            
+
     return str ? str : &_none;
 }
 
-int64_t hlt_bitset_to_int64(const hlt_type_info* type, const void* obj, hlt_exception** expt)
+int64_t hlt_bitset_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt)
 {
     assert(type->type == HLT_TYPE_BITSET);
     return *((int64_t*)obj);

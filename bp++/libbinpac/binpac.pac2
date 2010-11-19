@@ -3,3 +3,6 @@ module BinPAC;
 
 type ByteOrder = enum { Little, Big, Host, Network };
 
+# These values must match Hilti::AddrFamily.
+type AddrFamily = enum { IPv4 = 1, IPv6 = 2 };
+

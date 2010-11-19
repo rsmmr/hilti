@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  cat test.txt | ./a.out -p HTTP::Test >output
 # @TEST-EXEC:  btest-diff output
 
@@ -13,7 +13,7 @@ type Item = unit {
     line:   LINE;
 };
 
-type Test = unit {
+export type Test = unit {
     lines: list<Item> &until($$.line == b"---\n")
         { print self.lines; }
     last: LINE;

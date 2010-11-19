@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -20,9 +20,9 @@ type MyOverlay = overlay {
 void run() {
     local MyOverlay o
     local int<32> i
-    
+
     i = overlay.get o "f3"
 
-}     
+}
 
 

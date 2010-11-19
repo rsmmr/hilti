@@ -1,1 +1,1 @@
-switch-duplicate-case.pac2:15: codegen error, case '2' defined more than once
+switch-duplicate-case.pac2:14: codegen error, case '2' defined more than once

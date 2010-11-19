@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -14,7 +14,7 @@ void run() {
     local ref<list<int32>> l
     local iterator<list<int32>> c
     local iterator<list<int32>> c2
-    
+
     l = new list<int32>
 
     list.push_back l 100
@@ -48,11 +48,11 @@ void run() {
     c = incr c
     list.insert 950 c
     call Hilti::print(l)
-    
+
     c = incr c
     list.insert 1050 c
     call Hilti::print(l)
-    
+
     list.insert 1075 c
     call Hilti::print(l)
 
@@ -75,12 +75,12 @@ void run() {
     list.erase c
     call Hilti::print(l)
     c = c2
-    
+
     c2 = incr c
     list.erase c
     call Hilti::print(l)
     c = c2
-    
+
     c = incr c
     c = incr c
     c = incr c

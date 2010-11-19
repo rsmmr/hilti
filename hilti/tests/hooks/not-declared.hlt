@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL:  hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC-FAIL:  hilti-build %INPUT -o a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 module Main
@@ -21,7 +21,7 @@ hook void Test::my_hook() {
 void run() {
     call Test::do_work ()
     return.void
-}     
+}
 
 @TEST-START-FILE TestModule.hlt
 module Test

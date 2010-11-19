@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -20,16 +20,16 @@ void run() {
 
      b = equal x x
      call Hilti::print (b)
-     
+
      b = equal y y
      call Hilti::print (b)
-     
+
      b = equal x y
      call Hilti::print (b)
-     
+
      b = equal x z
      call Hilti::print (b)
-     
+
      b = equal y z
      call Hilti::print (b)
 

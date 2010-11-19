@@ -85,8 +85,8 @@ class Enum(type.ValueType, type.Constable):
     ### Overridden from Type.
 
     def name(self):
-        labels = [l for l in sorted(self._labels.keys())]
-        return "enum { %s }" % ", ".join(labels)
+        labels = ["%s = %d" % (l, v) for (l, v) in self._labels.items()]
+        return "enum { %s }" % ", ".join(sorted(labels))
 
     ### Overridden from HiltiType.
 
@@ -166,7 +166,7 @@ class Enum(type.ValueType, type.Constable):
 class Equal(Operator):
     """
     Returns True if *op1* equals *op2*. Note that two ``Undef`` value will
-    match, no matter if they have different values set. 
+    match, no matter if they have different values set.
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())

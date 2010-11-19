@@ -5,7 +5,7 @@ Internals
 
 .. toctree::
    :maxdepth: 2
-   
+
    compiler-api
    compiler-internals
    runtime

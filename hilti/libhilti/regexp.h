@@ -38,45 +38,45 @@ typedef struct {
 } hlt_regexp_match_token_result;
 
 /// Instantiates a new Regexp instance.
-/// 
-/// type: The type information for the regexp type. 
+///
+/// type: The type information for the regexp type.
 /// excpt: &
-/// 
+///
 /// Returns: The new Regexp instance.
 extern hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx);
 
-/// Compiles a pattern. 
-/// 
+/// Compiles a pattern.
+///
 /// re: The regexp instance to compile the pattern into. An already compiled
-/// regexp cannot be reused. 
-/// 
-/// pattern: The pattern to compile. 
-/// 
+/// regexp cannot be reused.
+///
+/// pattern: The pattern to compile.
+///
 /// excpt: &
-/// 
+///
 /// Raises: ~~hlt_exception_pattern_error - If the pattern cannot be compiled;
 /// Raises: ~~hlt_exception_value_error - If a pattern was already compiled into *re*.
 extern void hlt_regexp_compile(hlt_regexp* re, hlt_string pattern, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Compiles a set of patterns.
-/// 
+///
 /// re: The regexp instance to compile the pattern into. An already compiled
-/// regexp cannot be reused. 
-/// 
-/// patterns: The list of patterns to compile. 
-/// 
+/// regexp cannot be reused.
+///
+/// patterns: The list of patterns to compile.
+///
 /// excpt: &
-/// 
+///
 /// Raises: ~~hlt_exception_pattern_error - If the pattern cannot be compiled;
 /// Raises: ~~hlt_exception_value_error - If a pattern was already compiled into *re*.
 extern void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception** excpt, hlt_execution_context* ctx);
 
-/// Searches a regexp within a ~~string. 
-/// 
+/// Searches a regexp within a ~~string.
+///
 /// re: The compiled pattern to search.
 /// s: The string in which to search the pattern.
 /// excpt: &
-/// 
+///
 /// Returns: If the returned integer is larger than zero, the regexp was
 /// found; for sets compiled via ~~hlt_compile_set the integer value then
 /// indicates the index of the pattern that was found. If the function
@@ -86,17 +86,17 @@ extern void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_excep
 /// data could change that).
 ///
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
-/// 
+///
 /// Todo: This function is not yet implemented.
 extern int32_t hlt_regexp_string_find(hlt_regexp* re, hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
 
-/// Searches a pattern within a bytes. 
-/// 
+/// Searches a pattern within a bytes.
+///
 /// re: The compiled pattern to search.
 /// begin: The position where matching is to begin.
 /// end: The position upto which matching is performed.
 /// excpt: &
-/// 
+///
 /// Returns: If the returned integer is larger than zero, the regexp was
 /// found; for sets compiled via ~~hlt_compile_set the integer value then
 /// indicates the index of the pattern that was found. If the function
@@ -104,64 +104,64 @@ extern int32_t hlt_regexp_string_find(hlt_regexp* re, hlt_string s, hlt_exceptio
 /// data would be added to the string *s*. If the returned value is smaller
 /// than 0, a partial match was found (i.e., no match yet but adding further
 /// data could change that).
-/// 
+///
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
 extern int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns the substring matching a regexp.
-/// 
+///
 /// re: The compiled pattern to search.
 /// s: The string in which to search the pattern.
 /// excpt: &
-/// 
+///
 /// Returns: The substring matching the regexp.
-/// 
+///
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
-/// 
+///
 /// Todo: This function is not yet implemented.
 extern hlt_string hlt_regexp_string_span(hlt_regexp* re, hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns byte range matching a regexp.
-/// 
+///
 /// re: The compiled pattern to search.
 /// begin: The position where matching is to begin.
 /// end: The position upto which matching is performed.
 /// excpt: &
-/// 
+///
 /// Returns: The range matching the regexp; if no match is found, *begin* and
 /// *end* are set to ~~hlt_bytes_end.
-/// 
+///
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
 extern hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns substrings matching parenthesis expressions in a regexp.
-/// 
+///
 /// re: The compiled pattern to search.
 /// s: The string in which to search the pattern.
 /// excpt: &
-/// 
+///
 /// Returns: A vector of ~~hlt_string, containing all the substrings. The
 /// index 0 corresponds to the whole expression, index 1 to the first
 /// subexpression etc. If not match is found, the returned vector is empty.
-/// 
+///
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
-/// 
+///
 /// Todo: This function is not yet implemented.
 extern hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns byte ranges matching parenthesis expressions in a regexp.
-/// 
+///
 /// re: The compiled pattern to search.
 /// begin: The position where matching is to start.
 /// end: The position upto which matching is performed.
 /// excpt: &
-/// 
+///
 /// Returns: A vector of ~~hlt_regexp_range, containing all the byte ranges.
 /// The index 0 corresponds to the whole expression, index 1 to the first
 /// subexpression etc. If not match is found, the returned vector is empty.
-/// 
+///
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
-/// 
+///
 /// Todo: This function does not yet support sets as compiled via ~~hlt_regexp_compile_set.
 extern hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_bytes_pos begin, const hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx);
 

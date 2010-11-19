@@ -1,15 +1,15 @@
 // $Id$
 //
 // Simple auto-growing vectors. The value of elements not yet initialized is
-// set to zero. 
+// set to zero.
 
 #ifndef JRX_VECTOR_H
 #define JRX_VECTOR_H
 
 #include <assert.h>
 
-static const int VECTOR_DEFAULT_SIZE = 2;                                        
-static const double VECTOR_GROWTH_FACTOR = 1.5;                                   
+static const int VECTOR_DEFAULT_SIZE = 2;
+static const double VECTOR_GROWTH_FACTOR = 1.5;
 
 // #macro-start
 #define DECLARE_VECTOR(name, vec_elem_t, vec_size_t)                           \
@@ -135,4 +135,4 @@ static inline vec_elem_t vec_##name##_get(vec_##name* vec, vec_size_t idx)     \
         var = (vec)->elems[0];                                                 \
     for ( __j##var = 0; __j##var < (vec)->size; __j##var++, var = (vec)->elems[ __j##var < (vec)->size ? __j##var : 0] )
 
-#endif                                                                         
+#endif

@@ -5,16 +5,16 @@ Sets
 
 A ``set`` store keys of a particular type ``K``. Insertions,
 lookups, and deletes are amortized constant time. Keys must be HILTI
-*value types*, and each value can only be stored once.  
+*value types*, and each value can only be stored once.
 
 Sets are iterable, yet the order in which elements are iterated over
-is undefined. 
+is undefined.
 
 Todo: Add note on semantics when modifying the hash table while iterating over
 it.
 
 Todo: When resizig, load spikes can occur for large set. We should
-extend the hash table implementation to do resizes incrementally. 
+extend the hash table implementation to do resizes incrementally.
 """
 
 import llvm.core
@@ -27,19 +27,19 @@ from hilti.instructions.operators import *
 @hlt.type(None, 101)
 class IteratorSet(type.Iterator):
     """Type for iterating over a ``set``.
-    
+
     t: ~~Set - The set type.
     """
     def __init__(self, t, location=None):
         super(IteratorSet, self).__init__(t, location)
-        
+
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
         typeinfo.c_prototype = "hlt_set_iter"
         return typeinfo
-    
+
     def llvmType(self, cg):
         """An ``iterator<set<K>>`` is mapped to ``struct hlt_set_iter``."""
         # Must match with what the C implementation uses as iterator type.
@@ -53,19 +53,19 @@ class IteratorSet(type.Iterator):
         return llvm.core.Constant.struct([llvm.core.Constant.null(cg.llvmTypeGenericPointer()), cg.llvmConstInt(0, 64)])
 
     ### Overridden from Iterator.
-    
+
     def derefType(self):
-        t = self.parentType().itemType() 
+        t = self.parentType().itemType()
         return t if t else type.Any()
-    
+
 @hlt.type("set", 15)
 class Set(type.Container, type.Iterable):
     """Type for a ``set``.
-    
+
     key: ~~Type - The key's type.
     value: ~~Type - The value's type.
-    
-    Note: The container's item type is ``tuple<key,value>``. 
+
+    Note: The container's item type is ``tuple<key,value>``.
     """
     def __init__(self, key, location=None):
         super(Set, self).__init__(key, location)
@@ -73,13 +73,13 @@ class Set(type.Container, type.Iterable):
 
     def keyType(self):
         """Returns the type of the set's keys.
-        
+
         Returns: ~~Type - The key type.
         """
         return self._key if self._key else type.Any()
-    
+
     ### Overridden from HiltiType.
-    
+
     def llvmType(self, cg):
         """A ``set`` is mapped to a ``hlt_set *``."""
         return cg.llvmTypeGenericPointer()
@@ -91,7 +91,7 @@ class Set(type.Container, type.Iterable):
         return typeinfo
 
     ### Overriden from Iterable.
-        
+
     def iterType(self):
         return IteratorSet(self, location=self.location())
 
@@ -102,7 +102,7 @@ def _cKeyTypeOfOp1():
     def _keyTypeOf(ty, op, i):
         it = i.op1().type().refType().keyType()
         return (op.canCoerceTo(it), "must be of type %s but is %s" % (it, ty))
-    
+
     return _keyTypeOf
 
 @hlt.overload(New, op1=cType(cSet), op2=cOptional(cReferenceOf(cTimerMgr)), target=cReferenceOfOp(1))
@@ -112,12 +112,12 @@ class New(Operator):
     """
     def _codegen(self, cg):
         key = operand.Type(self.op1().value().keyType())
-        
+
         if self.op2():
             tmgr = self.op2()
-        else: 
+        else:
             tmgr = operand.LLVM(llvm.core.Constant.null(cg.llvmTypeGenericPointer()), type.Reference(type.TimerMgr()))
-            
+
         result = cg.llvmCallC("hlt::set_new", [key, tmgr])
         cg.llvmStoreInTarget(self, result)
 
@@ -128,7 +128,7 @@ class Insert(Instruction):
     def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         cg.llvmCallC("hlt::set_insert", [self.op1(), self.op2().coerceTo(cg, key)])
-        
+
 @hlt.instruction("set.timeout", op1=cReferenceOf(cSet), op2=cEnum, op3=cDouble)
 class Timeout(Instruction):
     """Activates automatic expiration of items for set *op1*. All subsequently
@@ -136,10 +136,10 @@ class Timeout(Instruction):
     (if *op2* is *Expire::Create*) or last accessed (if *op2* is
     *Expire::Access). Expiration is disable if *op3* is zero. Throws
     NoTimerManager if no timer manager has been associated with the set at
-    construction.""" 
+    construction."""
     def _codegen(self, cg):
         cg.llvmCallC("hlt::set_timeout", [self.op1(), self.op2(), self.op3()])
-        
+
 @hlt.instruction("set.exists", op1=cReferenceOf(cSet), op2=_cKeyTypeOfOp1(), target=cBool)
 class Exists(Instruction):
     """Checks whether the key *op2* exists in set *op1*. If so, the
@@ -148,7 +148,7 @@ class Exists(Instruction):
         key = self.op1().type().refType().keyType()
         result = cg.llvmCallC("hlt::set_exists", [self.op1(), self.op2().coerceTo(cg, key)])
         cg.llvmStoreInTarget(self, result)
-        
+
 @hlt.instruction("set.remove", op1=cReferenceOf(cSet), op2=_cKeyTypeOfOp1())
 class Remove(Instruction):
     """Removes the key *op2* from the set *op1*. If the key does not exists,
@@ -156,14 +156,14 @@ class Remove(Instruction):
     def _codegen(self, cg):
         key = self.op1().type().refType().keyType()
         cg.llvmCallC("hlt::set_remove", [self.op1(), self.op2().coerceTo(cg, key)])
-    
+
 @hlt.instruction("set.size", op1=cReferenceOf(cSet), target=cIntegerOfWidth(64))
 class Size(Instruction):
     """Returns the current number of entries in set *op1*."""
     def _codegen(self, cg):
         result = cg.llvmCallC("hlt::set_size", [self.op1()])
         cg.llvmStoreInTarget(self, result)
-        
+
 @hlt.instruction("set.clear", op1=cReferenceOf(cSet))
 class Clear(Instruction):
     """Removes all entries from set *op1*."""
@@ -199,9 +199,9 @@ class IterIncr(Operator):
 class IterDeref(Operator):
     """
     Returns the element the iterator is pointing at as a tuple ``(key,value)``.
-    
+
     Note: Dereferencing an iterator does not count as an access to the element
-    for restarting its expiration timer. 
+    for restarting its expiration timer.
     """
     def _codegen(self, cg):
         t = self.target().type()

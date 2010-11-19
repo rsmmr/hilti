@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
@@ -16,7 +16,7 @@ void run() {
     local iterator<bytes> cur
     local iterator<bytes> last
     local int8 i
-    
+
     b = string.encode "0123456789" "ascii"
     cur = begin b
     last = end b
@@ -24,12 +24,12 @@ void run() {
 @loop:
     eq = equal cur last
     if.else eq @exit @cont
-    
+
 @cont:
     i = deref cur
     cur = incr cur
     call Hilti::print (i)
     jump @loop
-    
+
 @exit: return.void
     }

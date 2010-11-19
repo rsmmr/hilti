@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -19,9 +19,9 @@ void run() {
      call Hilti::print(s)
      s = call Hilti::fmt("As int: %d", (f))
      call Hilti::print(s)
-     
+
      call Hilti::print(Foo::Undef)
      call Hilti::print(Foo::A)
      call Hilti::print(Foo::BC)
      call Hilti::print(Foo::DEF)
-}     
+}

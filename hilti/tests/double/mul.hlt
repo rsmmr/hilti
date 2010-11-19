@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -12,7 +12,7 @@ void run() {
     local double d
     d = double.mul 42.84 100.0
     call Hilti::print (d)
-}     
+}
 
 ### @TEST-START-NEXT
 
@@ -26,7 +26,7 @@ void run() {
     local double d
     d = double.mul -10.0 -10.0
     call Hilti::print (d)
-}     
+}
 
-# Overflow is undefined, no test. 
+# Overflow is undefined, no test.
 

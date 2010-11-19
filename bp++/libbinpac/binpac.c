@@ -12,7 +12,7 @@ void binpac_enable_debugging(int8_t enabled)
     debugging = enabled;
 }
 
-int8_t binpac_debugging_enabled()
+int8_t binpac_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return debugging;
 }

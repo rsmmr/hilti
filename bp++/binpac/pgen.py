@@ -66,13 +66,16 @@ class ParserGen:
         grammar must pass ~~Grammar.check.
         """
 
+        idx = self._grammar.name()
+
         def _doCompile():
+            self._mbuilder.setCacheEntry(idx, True)
             self._cg.beginCompile(self)
             self._functionHostApplication()
             self._cg.endCompile()
             return True
 
-        self._mbuilder.cache(self._grammar.name(), _doCompile)
+        self._mbuilder.cache(idx, _doCompile)
 
     def objectType(self):
         """Returns the type of the destination struct generated for a grammar.
@@ -205,7 +208,7 @@ class ParserGen:
             params += [builder.idOp(p.name())]
 
         args = ParserGen._Args(fbuilder, ["__cur", "__pobj", "__lahead", "__lahstart", "__flags"])
-        self._newParseObject(pobj, params, args)
+        self._newParseObject(args, params)
 
         self._parseStartSymbol(args)
 
@@ -237,8 +240,8 @@ class ParserGen:
 
         elif isinstance(prod, grammar.Epsilon):
             # Nothing else to do.
-            self._startingProduction(args.obj, prod)
-            self._finishedProduction(args.obj, prod, None)
+            self._startingProduction(args, prod)
+            self._finishedProduction(args, prod, None)
             pass
 
         elif isinstance(prod, grammar.Sequence):
@@ -284,7 +287,7 @@ class ParserGen:
         """Generates code to parse a literal."""
         self.builder().setNextComment("Parsing literal '%s'" % lit.literal().value())
 
-        self._startingProduction(args.obj, lit)
+        self._startingProduction(args, lit)
 
         builder = self.builder()
 
@@ -304,7 +307,7 @@ class ParserGen:
 
         values = [no_lahead.constOp(lit.id())]
         branches = [found_lit]
-        (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead, [lit])
+        (default, values, branches) = self._addMatchTokenErrorCases(lit, builder, args, values, branches, no_lahead, [lit])
         no_lahead.makeSwitch(symbol, values, default=default, branches=branches, cont=done, tag="next-sym")
 
         # If we have a look-ahead symbol, its value must match what we expect.
@@ -326,26 +329,23 @@ class ParserGen:
 
         self.cg().setBuilder(done)
 
-        # Run the value through any potential filter function.
-        filter = lit.filter()
-        if filter:
-            token = operator.evaluate(operator.Operator.Call, self.cg(), [filter, [expr.Hilti(token, lit.parsedType())]])
+        token = self._runFilter(lit, token)
 
-        self._finishedProduction(args.obj, lit, token)
+        self._finishedProduction(args, lit, token)
 
     def _parseVariable(self, var, args):
         """Generates code to parse a variable."""
         # Do we actually need the parsed value? We do if (1) we're storing it
         # in the destination struct, or (2) we a hook that has a '$$'
         # parameter; or (3) it's a bitfield.
-        need_val = ( 
+        need_val = (
             var.name() != None or \
             (isinstance(var.type(), type.UnsignedInteger) and var.type().bits())
             )
 
         self.builder().setNextComment("Parsing variable %s" % var)
 
-        self._startingProduction(args.obj, var)
+        self._startingProduction(args, var)
 
         builder = self.builder()
 
@@ -359,13 +359,10 @@ class ParserGen:
         dst = self.builder().addTmp(name , var.parsedType().hiltiType(self.cg()))
         args.cur = var.parsedType().generateParser(self.cg(), args.cur, dst, not need_val)
 
-        # Run the value through any potential filter function.
-        filter = var.filter()
-        if filter:
-            dst = operator.evaluate(operator.Operator.Call, self.cg(), [filter, [expr.Hilti(dst, var.parsedType())]])
+        dst = self._runFilter(var, dst)
 
         # We have successfully parsed a rule.
-        self._finishedProduction(args.obj, var, dst if need_val else None)
+        self._finishedProduction(args, var, dst if need_val else None)
 
     def _parseChildGrammar(self, child, args):
         """Generates code to parse another type represented by its own grammar."""
@@ -374,7 +371,7 @@ class ParserGen:
 
         self.builder().setNextComment("Parsing child grammar %s" % child.type().name())
 
-        self._startingProduction(args.obj, child)
+        self._startingProduction(args, child)
 
         builder = self.builder()
 
@@ -403,7 +400,7 @@ class ParserGen:
         cargs = ParserGen._Args(self.functionBuilder(), (cur, cobj, lahead, lahstart, args.flags))
         params = [p.evaluate(self._cg) for p in child.params()]
 
-        cpgen._newParseObject(cobj, params, cargs)
+        cpgen._newParseObject(cargs, params)
 
         cpgen._parseStartSymbol(cargs)
 
@@ -415,7 +412,7 @@ class ParserGen:
             builder.assign(args.lahead, cargs.lahead)
             builder.assign(args.lahstart, cargs.lahstart)
 
-        self._finishedProduction(args.obj, child, cobj)
+        self._finishedProduction(args, child, cobj)
 
         cpgen._doneParseObject(cargs)
 
@@ -425,7 +422,7 @@ class ParserGen:
 
             self.builder().setNextComment("Parse function for production '%s'" % prod)
 
-            self._startingProduction(args.obj, prod)
+            self._startingProduction(args, prod)
 
             # Initialize cache entry already here so that we can work
             # recursively.
@@ -434,7 +431,7 @@ class ParserGen:
             for p in prod.sequence():
                 self._parseProduction(p, args)
 
-            self._finishedProduction(args.obj, prod, None)
+            self._finishedProduction(args, prod, None)
 
             builder = self.builder()
             builder.return_result(builder.tupleOp([args.cur, args.lahead, args.lahstart]))
@@ -447,7 +444,7 @@ class ParserGen:
 
         self.builder().setNextComment("Parsing non-terminal %s" % prod.symbol())
 
-        self._startingProduction(args.obj, prod)
+        self._startingProduction(args, prod)
 
         builder = self.builder()
 
@@ -458,7 +455,7 @@ class ParserGen:
         builder.tuple_index(args.lahead, result, builder.constOp(1))
         builder.tuple_index(args.lahstart, result, builder.constOp(2))
 
-        self._finishedProduction(args.obj, prod, None)
+        self._finishedProduction(args, prod, None)
 
     def _parseLookAhead(self, prod, args):
 
@@ -485,6 +482,7 @@ class ParserGen:
             # Build a regular expression for all the possible symbols.
             match = self._matchToken(no_lahead, "regexp", prod.symbol(), literals[0] | literals[1], args)
             no_lahead.tuple_index(args.lahead, match, builder.constOp(0))
+            no_lahead.jump(builder.labelOp())
 
             ### Now branch according the look-ahead.
             done = self.functionBuilder().newBuilder("done")
@@ -495,9 +493,9 @@ class ParserGen:
                 branch.setComment("For look-ahead set {%s}" % ", ".join(['"%s"' % l.literal().value() for l in literals[i]]))
                 branch.tuple_index(args.cur, match, builder.constOp(1)) # Update current position.
                 self.cg().setBuilder(branch)
-                self._startingProduction(args.obj, alts[i])
+                self._startingProduction(args, alts[i])
                 self._parseProduction(alts[i], args)
-                self._finishedProduction(args.obj, alts[i], None)
+                self._finishedProduction(args, alts[i], None)
                 self.builder().jump(done.labelOp())
                 return branch
 
@@ -513,7 +511,7 @@ class ParserGen:
                     branches += [case]
                     expected += [lit]
 
-            (default, values, branches) = self._addMatchTokenErrorCases(builder, values, branches, no_lahead, expected)
+            (default, values, branches) = self._addMatchTokenErrorCases(prod, builder, args, values, branches, no_lahead, expected)
             builder.makeSwitch(args.lahead, values, default=default, branches=branches, cont=done, tag="lahead-next-sym")
 
             # Done, return the result.
@@ -550,9 +548,9 @@ class ParserGen:
             branches[i] = self.functionBuilder().newBuilder("if-%s" % tag)
             branches[i].setComment("Branch for %s" % tag)
             self.cg().setBuilder(branches[i])
-            self._startingProduction(args.obj, alts[i])
+            self._startingProduction(args, alts[i])
             self._parseProduction(alts[i], args)
-            self._finishedProduction(args.obj, alts[i], None)
+            self._finishedProduction(args, alts[i], None)
             self.builder().jump(done.labelOp())
 
         save_builder.if_else(bool, branches[0].labelOp(), branches[1].labelOp())
@@ -584,12 +582,12 @@ class ParserGen:
         body.decr(cnt, cnt)
 
         self.cg().setBuilder(body)
-        self._startingProduction(args.obj, prod.body())
+        self._startingProduction(args, prod.body())
         self._parseProduction(prod.body(), args)
-        self._finishedProduction(args.obj, prod.body(), None)
+        self._finishedProduction(args, prod.body(), None)
         self.cg().builder().jump(cond.labelOp())
 
-        # All done. 
+        # All done.
         self.cg().setBuilder(done)
 
     def _parseSwitch(self, prod, args):
@@ -602,15 +600,15 @@ class ParserGen:
 
         dsttype = prod.expr().type()
 
-        values = [e.coerceTo(dsttype, cg).evaluate(cg) for (e, p) in prod.cases()]
+        values = [ [e.coerceTo(dsttype, cg).evaluate(cg) for e in exprs] for (exprs, p) in prod.cases()]
 
         (default_builder, case_builders, done) = cg.builder().makeSwitch(expr, values);
 
         for (case_prod, builder) in zip(prods, case_builders):
             cg.setBuilder(builder)
-            self._startingProduction(args.obj, case_prod)
+            self._startingProduction(args, case_prod)
             self._parseProduction(case_prod, args)
-            self._finishedProduction(args.obj, case_prod, None)
+            self._finishedProduction(args, case_prod, None)
             self.builder().jump(done.labelOp())
 
         cg.setBuilder(default_builder)
@@ -630,11 +628,23 @@ class ParserGen:
         """Generates code to raise an exception."""
         builder.makeRaiseException("BinPAC::ParseError", builder.constOp(msg))
 
-    def _yieldAndTryAgain(self, builder, cont):
+    def _yieldAndTryAgain(self, prod, builder, args, cont):
         """Generates code that yields and then jumps to a previous block to
         repeat whatever it was doing."""
-        builder.yield_()
-        builder.jump(cont.labelOp())
+        old_builder = self.cg().builder()
+        self.cg().setBuilder(builder)
+
+        if not prod.eodOk():
+            self.cg().generateInsufficientInputHandler(args.cur)
+            self.cg().builder().jump(cont.labelOp())
+        else:
+            eod = self.functionBuilder().newBuilder("eod_ok")
+            eod.return_result(builder.tupleOp([args.cur, args.lahead, args.lahstart]))
+
+            at_eod = self.cg().generateInsufficientInputHandler(args.cur, eod_ok=True)
+            self.builder().if_else(at_eod, eod.labelOp(), cont.labelOp())
+
+        self.cg().setBuilder(old_builder)
 
     def _matchToken(self, builder, ntag1, ntag2, literals, args):
         """Generates standard code around a ``regexp.match`` token
@@ -678,7 +688,7 @@ class ParserGen:
         msg = "- %s is " % tag
         builder.makeDebugMsg("binpac-verbose", msg + "%d ...", [token])
 
-    def _startingProduction(self, obj, prod):
+    def _startingProduction(self, args, prod):
         """Called whenever a production is about to be parsed."""
         if not prod.name():
             return
@@ -691,15 +701,15 @@ class ParserGen:
         # Initalize the struct field with its default value if not already set.
         not_set = self.cg().functionBuilder().addTmp("__not_set", hilti.type.Bool())
         name = self.cg().builder().constOp(prod.name())
-        self.cg().builder().struct_is_set(not_set, obj, name)
+        self.cg().builder().struct_is_set(not_set, args.obj, name)
         self.cg().builder().bool_not(not_set, not_set)
         (set, cont) = self.cg().builder().makeIf(not_set)
         self.cg().setBuilder(set)
-        self.cg().builder().struct_set(obj, name, default)
+        self.cg().builder().struct_set(args.obj, name, default)
         self.cg().builder().jump(cont.labelOp())
         self.cg().setBuilder(cont)
 
-    def _finishedProduction(self, obj, prod, value):
+    def _finishedProduction(self, args, prod, value):
         """Called whenever a production has sucessfully parsed value."""
 
         builder = self.builder()
@@ -708,21 +718,22 @@ class ParserGen:
         if isinstance(prod, grammar.Terminal):
 
             if value:
-                if prod.name():
-                    builder.makeDebugMsg("binpac", "%s = '%%s'" % prod.name(), [value])
+                if prod.debugName():
+                    builder.makeDebugMsg("binpac", "%s = '%%s'" % prod.debugName(), [value])
+
                 builder.makeDebugMsg("binpac-verbose", "- matched '%s' to '%%s'" % prod, [value])
             else:
                 builder.makeDebugMsg("binpac-verbose", "- matched '%s'" % prod)
 
         if prod.name() and value:
-            builder.struct_set(obj, builder.constOp(prod.name()), value)
+            builder.struct_set(args.obj, builder.constOp(prod.name()), value)
 
         foreach = prod.forEachField()
 
         if foreach and value:
             # Foreach field hook.
             result = fbuilder.addTmp("__hookrc", hilti.type.Bool(), builder.constOp(True))
-            self.cg().runFieldHook(foreach, obj, value, result=result)
+            self._runFieldHook(foreach, args, value, result=result)
             (true, cont) = self.builder().makeIf(result)
             self.cg().setBuilder(true)
 
@@ -733,14 +744,24 @@ class ParserGen:
             # Additional hook with extended name.
             import pactypes.unit
             if isinstance(prod.field(), pactypes.unit.SwitchFieldCase):
-                self.cg().runFieldHook(prod.field(), obj, addl=prod.field().caseNumber())
+                self._runFieldHook(prod.field(), args, addl=prod.field().caseNumber())
 
             # Standard field hook.
-            self.cg().runFieldHook(prod.field(), obj)
+            self._runFieldHook(prod.field(), args)
 
         if cont:
             true.jump(cont.labelOp())
             self.cg().setBuilder(cont)
+
+    def _runFilter(self, prod, value):
+        filter = prod.filter()
+
+        if not filter:
+            return value
+
+        value = operator.evaluate(operator.Operator.Call, self.cg(), [filter, [expr.Hilti(value, prod.parsedType())]])
+
+        return value
 
     ### Methods defining types.
 
@@ -757,8 +778,10 @@ class ParserGen:
                 if default:
                     hlt_default = default.hiltiInit(self.cg())
                 else:
-                    hlt_default = f.type().hiltiUnitDefault(self.cg())
-                #   hlt_default = f.type().hiltiDefault(self.cg(), True)
+                    if isinstance(f, id.Variable):
+                        hlt_default = f.type().hiltiDefault(self.cg(), True)
+                    else:
+                        hlt_default = f.type().hiltiUnitDefault(self.cg())
 
                 ids += [(hilti.id.Local(f.name(), f.type().hiltiType(self._cg)), hlt_default)]
 
@@ -766,8 +789,11 @@ class ParserGen:
             for p in self._grammar.params():
                 ids += [(hilti.id.Local("__param_%s" % p.name(), p.type().hiltiType(self._cg)), None)]
 
-            # The input() reference.
+            # The input() position.
             ids += [(hilti.id.Local("__input", hilti.type.IteratorBytes()), None)]
+
+            # For passing the set_input() position back,
+            ids += [(hilti.id.Local("__cur", hilti.type.IteratorBytes()), None)]
 
             structty = hilti.type.Struct(ids)
             self._mbuilder.addTypeDecl(self._name("object"), structty)
@@ -780,35 +806,84 @@ class ParserGen:
         #return hilti.type.Reference(self._typeParseObject())
         return hilti.type.Reference(hilti.type.Unknown(self._name("object")))
 
-    def _runUnitHook(self, obj, hook):
+    def _saveInputPointer(self, args):
+        # Store the current input pointer for access by a hook. TODO: This
+        # pointer will rarely be needed so we should be able to optimize it away
+        # in most cases.
+        builder = self.cg().builder()
+        builder.struct_set(args.obj, builder.constOp("__cur"), args.cur)
+
+    def _updateInputPointer(self, args):
+        # Update the current input pointer in case a hook has changed it. TODO:
+        # This pointer will rarely be needed so we should be able to optimize it
+        # away in most cases.
+        builder = self.cg().builder()
+        builder.struct_get(args.cur, args.obj, builder.constOp("__cur"))
+
+    def _runUnitHook(self, args, hook):
         builder = self.cg().builder()
 
         op1 = self.cg().declareHook(self._type, hook, self.objectType())
-        op2 = builder.tupleOp([obj])
+        op2 = builder.tupleOp([args.obj])
 
+        self._saveInputPointer(args)
         builder.hook_run(None, op1, op2)
+        self._updateInputPointer(args)
 
-    def _newParseObject(self, obj, params, args):
-        """Allocates and initializes a struct type for the parsed grammar.
+    def _runFieldHook(self, field, args, value=None, result=None, addl=None):
+        """Runs a hook associated with a unit field.
 
-        obj: hilti.operand.Operand - The operand to the new object in.
+        field: ~~Field - The unit field.
+
+        obj: ~~hilti.operand.Operand - An operand with the hook's ``self``
+        argument.
+
+        value: ~~hilti.operand.Operand - An operand wit the hook's ``$$``
+        argument. Must be given if hooks expects such.
+
+        result: ~~hilti.operand.Operand - An operand receiving the hook's
+        result. Must be given if hook returns a value.
+
+        addl: string - If given, an additional string postfix to be added to
+        the generated hook name.
         """
         builder = self.cg().builder()
-        self.builder().new(obj, self.builder().typeOp(self._typeParseObject()))
+        name = self.cg().hookName(field.parent(), field, value != None, addl=addl)
+        op1 = builder.idOp(hilti.id.Unknown(name, self.cg().moduleBuilder().module().scope()))
+
+        pargs_proto = [(hilti.id.Parameter("__self", args.obj.type()), None)]
+
+        if value:
+            pargs = [args.obj, value]
+            pargs_proto += [(hilti.id.Parameter("__dollardollar", value.type()), None)]
+        else:
+            pargs = [args.obj]
+
+        self.cg()._mbuilder.declareHook(name, pargs_proto, result.type() if result else hilti.type.Void())
+
+        self._saveInputPointer(args)
+        builder.hook_run(result, op1, builder.tupleOp(pargs))
+        self._updateInputPointer(args)
+
+    def _newParseObject(self, args, params):
+        """Allocates and initializes a struct type for the parsed grammar.
+        """
+        builder = self.cg().builder()
+        self.builder().new(args.obj, self.builder().typeOp(self._typeParseObject()))
 
         for (f, p) in zip(self._grammar.params(), params):
             field = self.builder().constOp("__param_%s" % f.name())
-            self.builder().struct_set(obj, field, p)
+            self.builder().struct_set(args.obj, field, p)
 
         # Record the data we're parsing for calls to unit.input().
-        builder.struct_set(obj, builder.constOp("__input"), args.cur)
+        builder.struct_set(args.obj, builder.constOp("__input"), args.cur)
 
-        self._runUnitHook(obj, "%init")
+        self._runUnitHook(args, "%init")
 
     def _doneParseObject(self, args):
         builder = self.cg().builder()
 
-        self._runUnitHook(args.obj, "%done")
+        self._runUnitHook(args, "%done")
 
         # Clear what's unit.input() is returning.
         builder.struct_unset(args.obj, builder.constOp("__input"))
@@ -850,7 +925,7 @@ class ParserGen:
         (fbuilder, builder) = self.cg().beginFunction(name, ftype)
         return (fbuilder.function(), ParserGen._Args(fbuilder, args))
 
-    def _addMatchTokenErrorCases(self, builder, values, branches, repeat, expected_literals):
+    def _addMatchTokenErrorCases(self, prod, builder, args, values, branches, repeat, expected_literals):
         """Build the standard error branches for the switch-statement
         following a ``match_token`` instruction."""
 
@@ -864,7 +939,7 @@ class ParserGen:
 
         # Not enough input.
         values += [fbuilder.constOp(-1)]
-        branches += [fbuilder.cacheBuilder("need-input", lambda b: self._yieldAndTryAgain(b, repeat))]
+        branches += [fbuilder.cacheBuilder("need-input", lambda b: self._yieldAndTryAgain(prod, b, args, repeat))]
 
         # Unknown case.
         default = fbuilder.cacheBuilder("unexpected-sym", lambda b: b.makeInternalError("unexpected look-ahead symbol returned"))

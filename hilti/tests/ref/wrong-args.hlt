@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1 
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
 # @TEST-EXEC:      btest-diff output
 #
 # Illegal arguments. These are all supposed to fail.
@@ -18,7 +18,7 @@ void run() {
 
     a = new A
     b = new B
-    
+
     b = a
 }
 

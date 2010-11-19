@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -26,11 +26,11 @@ void run() {
     local ref<callable<string>> c2
     local ref<callable<string>> c3
     local string result
-    
-    c1 = new callable<string> 
-    c2 = new callable<string> 
-    c3 = new callable<string> 
-    
+
+    c1 = new callable<string>
+    c2 = new callable<string>
+    c3 = new callable<string>
+
     callable.bind c1 foo ("ICSI1")
     callable.bind c2 foo ("ICSI2")
     callable.bind c3 foo ("ICSI3")
@@ -40,5 +40,5 @@ void run() {
     call do_call(c3)
 
     return.void
-}     
+}
 

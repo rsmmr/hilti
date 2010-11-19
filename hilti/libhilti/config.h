@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Support functions for HILTI's integer data type.
 
 #ifndef HILTI_CONFIG_H
@@ -9,27 +9,27 @@
 
 struct __hlt_list;
 
-/// Configuration parameters for the HILTI run-time system. 
+/// Configuration parameters for the HILTI run-time system.
 typedef struct
 {
     /// Number of worker threads to spawn.
     unsigned num_workers;
-    
+
     /// Seconds to sleep when worker thread is idle.
     double time_idle;
-    
-    /// Secs o wait for threads to termintate after asking them to stop. 
+
+    /// Secs o wait for threads to termintate after asking them to stop.
     double time_terminate;
-    
+
     /// Stack size for worker threads.
     size_t stack_size;
 
     /// Where debug output is to be sent. Default is stderr.
     FILE* debug_out;
-    
+
     /// List of enabled debug output streams. This is of type
     /// ``list<string>``. Per default, the list is empty.
-    struct __hlt_list* debug_streams; 
+    struct __hlt_list* debug_streams;
 } hlt_config;
 
 extern const hlt_config* hlt_config_get();

@@ -6,7 +6,7 @@
 
 #include "hilti.h"
 
-// Factor by which to growth array on reallocation. 
+// Factor by which to growth array on reallocation.
 static const float GrowthFactor = 1.5;
 
 // Initial allocation size for a new vector
@@ -17,7 +17,7 @@ struct hlt_vector {
     hlt_vector_idx last;       // Largest valid index
     hlt_vector_idx capacity;   // Number of element we have physically allocated in elems.
     const hlt_type_info* type; // Type information for our elements
-    void* def;                   // Default element for not yet initialized fields. 
+    void* def;                   // Default element for not yet initialized fields.
 };
 
 hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -27,7 +27,7 @@ hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, hlt_e
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return 0;
     }
-    
+
     v->elems = hlt_gc_malloc_non_atomic(elemtype->size * InitialCapacity);
     if ( ! v->elems ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
@@ -35,19 +35,19 @@ hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, hlt_e
     }
 
     // We need to deep-copy the default element as the caller might have it
-    // on its stack. 
+    // on its stack.
     v->def = hlt_gc_malloc_non_atomic(elemtype->size);
     if ( ! v->def ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return 0;
     }
-    
+
     memcpy(v->def, def, elemtype->size);
-    
+
     v->last = -1;
     v->capacity = InitialCapacity;
     v->type = elemtype;
-    
+
     return v;
 }
 
@@ -57,7 +57,7 @@ void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt, hlt
         hlt_set_exception(excpt, &hlt_exception_index_error, 0);
         return 0;
     }
-    
+
     return v->elems + i * v->type->size;
 }
 
@@ -66,27 +66,27 @@ void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt, hlt
 void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(elemtype == v->type);
-    
+
     if ( i >= v->capacity ) {
-        // Allocate more memory. 
+        // Allocate more memory.
         hlt_vector_idx c = v->capacity;
         while ( i >= c )
-            c *= (c+1) * GrowthFactor; 
-        
+            c *= (c+1) * GrowthFactor;
+
         hlt_vector_reserve(v, c, excpt, ctx);
         if ( *excpt )
             return;
     }
-    
+
     for ( int j = v->last + 1; j < i; j++ ) {
         // Initialize element between old and new end of vector.
         void* dst = v->elems + j * v->type->size;
         memcpy(dst, v->def, v->type->size);
     }
-    
+
     if ( i > v->last )
         v->last = i;
-    
+
     // Copy new value into vector.
     void* dst = v->elems + i * v->type->size;
     memcpy(dst, val, v->type->size);
@@ -101,13 +101,13 @@ void hlt_vector_reserve(hlt_vector* v, hlt_vector_idx n, hlt_exception** excpt, 
 {
     if ( v->capacity >= n )
         return;
-    
+
     v->elems = hlt_gc_realloc_non_atomic(v->elems, v->type->size * n);
     if ( ! v->elems ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return;
     }
-    
+
     v->capacity = n;
 }
 
@@ -131,7 +131,7 @@ hlt_vector_iter hlt_vector_iter_incr(const hlt_vector_iter i, hlt_exception** ex
 {
     if ( ! i.vec )
         return i;
-    
+
     hlt_vector_iter j = i;
     ++j.idx;
     if ( j.idx > j.vec->last ) {
@@ -139,7 +139,7 @@ hlt_vector_iter hlt_vector_iter_incr(const hlt_vector_iter i, hlt_exception** ex
         j.vec = 0;
         j.idx = 0;
     }
-         
+
     return j;
 }
 
@@ -149,7 +149,7 @@ void* hlt_vector_iter_deref(const hlt_vector_iter i, hlt_exception** excpt, hlt_
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return 0;
     }
-         
+
     return i.vec->elems + i.idx * i.vec->type->size;
 }
 

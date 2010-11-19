@@ -1,5 +1,5 @@
 // $Id$
-// 
+//
 // Library function available to the user as Hilti::*.
 
 #ifndef HILTI_LIB_H

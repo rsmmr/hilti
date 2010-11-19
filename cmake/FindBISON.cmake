@@ -128,10 +128,10 @@ IF(BISON_EXECUTABLE)
       LIST(APPEND BISON_TARGET_cmdopt "-d")
       STRING(REGEX REPLACE "^(.*)(\\.[^.]*)$" "\\2" _fileext "${ARGV2}")
       STRING(REPLACE "c" "h" _fileext ${_fileext})
-      STRING(REGEX REPLACE "^(.*)(\\.[^.]*)$" "\\1${_fileext}" 
+      STRING(REGEX REPLACE "^(.*)(\\.[^.]*)$" "\\1${_fileext}"
 	BISON_${Name}_OUTPUT_HEADER "${ARGV2}")
       LIST(APPEND BISON_TARGET_outputs "${BISON_${Name}_OUTPUT_HEADER}")
-        
+
       ADD_CUSTOM_COMMAND(OUTPUT ${BISON_TARGET_outputs}
         ${BISON_TARGET_extraoutputs}
         COMMAND ${BISON_EXECUTABLE}
@@ -139,7 +139,7 @@ IF(BISON_EXECUTABLE)
         DEPENDS ${ARGV1}
         COMMENT "[BISON][${Name}] Building parser with bison ${BISON_VERSION}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    
+
       # define target variables
       SET(BISON_${Name}_DEFINED TRUE)
       SET(BISON_${Name}_INPUT ${ARGV1})

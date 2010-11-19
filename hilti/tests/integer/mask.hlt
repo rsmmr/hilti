@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -24,4 +24,4 @@ void run() {
     call Hilti::print (i)
     i = int.mask 32767 6 7
     call Hilti::print (i)
-}     
+}

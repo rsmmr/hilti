@@ -9,7 +9,7 @@
   		  (((uint64_t)(ntohl((uint32_t)(x >> 32)))) & 0xffffffffULL))
 
 #define htonll(x) ntohll(x)
-extern "C" { 
+extern "C" {
 extern uint8_t decode_key[];
 void megadfun( uint8_t *key, uint64_t *src, uint64_t *src2 );
 }
@@ -25,7 +25,7 @@ type MegaD_Message(is_orig: bool) = record {
   len : uint16; # MSG_LEN = msg_len * 8 + 2;
   encrypted_payload: bytestring &restofdata;
 } &byteorder = bigendian
-  &let { 
+  &let {
     actual_length: uint16 = len * 8; # + 2 -2 for the uint16 of len
     payload : msg_payload withinput($context.flow.decrypt(encrypted_payload));
 };
@@ -47,7 +47,7 @@ type MegaD_data(msg_type: uint16) = case msg_type of {
   0x23 -> m23: msg_0x23;
   0x24 -> m24: msg_0x24;
   0x25 -> m25: msg_0x25;
-  
+
   # There are several other message types, will add later
   default -> unknown : bytestring &restofdata;
 };
@@ -160,12 +160,12 @@ flow MegaD_Flow(is_orig: bool) {
 	datagram = MegaD_Message(is_orig) withcontext(connection, this);
 
     function check_len(msg: MegaD_Message) : bool
-    %{     
+    %{
         return msg->encrypted_payload().length() == msg->actual_length();
     %}
-    
-    function print(msg: MegaD_Message) : bool 
-    %{     
+
+    function print(msg: MegaD_Message) : bool
+    %{
         cerr << "message:" << endl;
         cerr << "  len = " << msg->len() << endl;
         cerr << "  actual length = " << msg->actual_length() << endl;
@@ -173,18 +173,18 @@ flow MegaD_Flow(is_orig: bool) {
         cerr << "  version = " << msg->payload()->version() << endl;
         cerr << "  type = " << msg->payload()->mtype() << endl;
     %}
-    
+
     function decrypt(data: const_bytestring) : const_bytestring
-    %{     
-        
+    %{
+
         if ( data.length() % 8 != 0 )
             cerr << "message length not a multiple of eight; can't decrypt" << endl;
 
         static uint8 decrypted[1024]; // FIXME
-                
+
         const binpac::uint8* i = data.begin();
         int j = 0;
-        
+
         while ( i != data.end() ) {
             uint64_t src = 0;
             src |= ((uint64_t)*i++) << 0;
@@ -202,7 +202,7 @@ flow MegaD_Flow(is_orig: bool) {
 
         return const_bytestring(decrypted, decrypted + sizeof(decrypted));
     %}
-    
+
 };
 
 refine typeattr MegaD_Message += &let {

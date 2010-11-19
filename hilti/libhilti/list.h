@@ -12,35 +12,35 @@ typedef struct __hlt_list_node __hlt_list_node;
 typedef struct __hlt_list_iter hlt_list_iter;
 
 struct __hlt_list_iter {
-    hlt_list* list;   
+    hlt_list* list;
     __hlt_list_node* node; // null if at end position.
 };
 
 // Creates a new list.
 extern hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Inserts an element at the front. 
+// Inserts an element at the front.
 extern void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Inserts an element at the end. 
+// Inserts an element at the end.
 extern void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Removes and returns an element from the front of the list. 
+// Removes and returns an element from the front of the list.
 extern void* hlt_list_pop_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Removes and returns an element from the end of the list. 
+// Removes and returns an element from the end of the list.
 extern void* hlt_list_pop_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Returns the first element of the list. 
+// Returns the first element of the list.
 extern void* hlt_list_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Returns the last element of the list. 
+// Returns the last element of the list.
 extern void* hlt_list_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Returns the number of elements in the list.
 extern int64_t hlt_list_size(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Removes the element located by the iterator. 
+// Removes the element located by the iterator.
 extern void hlt_list_erase(hlt_list_iter i, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Expires the entry the iterator references from the list.
@@ -49,19 +49,19 @@ extern void hlt_list_iter_expire(hlt_list_iter i, hlt_exception** excpt, hlt_exe
 // Inserts a new element before the element located by the iterator.
 extern void hlt_list_insert(const hlt_type_info* type, void* elem, hlt_list_iter i, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Returns an iterator positioned at the first element. 
+// Returns an iterator positioned at the first element.
 extern hlt_list_iter hlt_list_begin(hlt_list* v, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Returns an iterator positioned right after the last element. 
+// Returns an iterator positioned right after the last element.
 extern hlt_list_iter hlt_list_end(hlt_list* v, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Advances an iterator by one position. 
+// Advances an iterator by one position.
 extern hlt_list_iter hlt_list_iter_incr(const hlt_list_iter i, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Returns the element located by an iterator. 
+// Returns the element located by an iterator.
 extern void* hlt_list_iter_deref(const hlt_list_iter i, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Returns true if two iterator locate the same element. 
+// Returns true if two iterator locate the same element.
 extern int8_t hlt_list_iter_eq(const hlt_list_iter i1, const hlt_list_iter i2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Converts a list into a string.

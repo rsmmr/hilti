@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -12,11 +12,11 @@ import Hilti
 void doSwitch(int<32> n) {
 
    switch n @default ( (1, @b1), (2, @b2), (3, @b3) )
-   
+
 @b1:
    call Hilti::print (1)
    return.void
-   
+
 @b2:
    call Hilti::print (2)
    return.void
@@ -24,11 +24,11 @@ void doSwitch(int<32> n) {
 @b3:
    call Hilti::print (3)
    return.void
-   
-@default:   
+
+@default:
    call Hilti::print (-1)
    return.void
-}     
+}
 
 void run() {
    call doSwitch(3)

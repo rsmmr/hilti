@@ -137,7 +137,7 @@ typedef union YYSTYPE
     jrx_assertion assertion;
     jrx_std_ccl dynccl;
     int count;
-    
+
     jrx_nfa* nfa;
     jrx_ccl* ccl;
 }
@@ -849,7 +849,7 @@ int yydebug;
 # define YYMAXDEPTH 10000
 #endif
 
-
+
 
 #if YYERROR_VERBOSE
 
@@ -1060,7 +1060,7 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
     }
 }
 #endif /* YYERROR_VERBOSE */
-
+
 
 /*-----------------------------------------------.
 | Release the memory associated to this symbol.  |
@@ -1098,7 +1098,7 @@ yydestruct (yymsg, yytype, yyvaluep, scanner, nfactx, nfa)
 	break;
     }
 }
-
+
 
 /* Prevent warnings from -Wmissing-prototypes.  */
 
@@ -1406,13 +1406,13 @@ yyreduce:
     {
                   *nfa = (yyvsp[(1) - (2)].nfa);
                   *nfa = nfa_set_capture(*nfa, 0);
-                      
+
                   /* Add a .* if requested. */
                   if ( nfactx->options & JRX_OPTION_DONT_ANCHOR ) {
                       jrx_nfa* any = nfa_from_ccl(nfactx, ccl_any(nfactx->ccls));
-                      *nfa = nfa_concat(nfa_iterate(any, 0, -1), *nfa, 0);             
+                      *nfa = nfa_concat(nfa_iterate(any, 0, -1), *nfa, 0);
                       }
-                      
+
                   if ( (yyvsp[(2) - (2)].count) > 0 )
                       *nfa = nfa_set_accept(*nfa, (yyvsp[(2) - (2)].count));
                    ;}
@@ -1450,10 +1450,10 @@ yyreduce:
 
   case 9:
 #line 84 "re-parse.y"
-    { 
+    {
                  jrx_ccl* ccl = ccl_epsilon(nfactx->ccls);
                  ccl = ccl_add_assertions(ccl, (yyvsp[(2) - (3)].assertion));
-                 (yyval.nfa) = nfa_concat((yyvsp[(1) - (3)].nfa), (yyvsp[(3) - (3)].nfa), ccl); 
+                 (yyval.nfa) = nfa_concat((yyvsp[(1) - (3)].nfa), (yyvsp[(3) - (3)].nfa), ccl);
              ;}
     break;
 
@@ -1489,20 +1489,20 @@ yyreduce:
 
   case 16:
 #line 110 "re-parse.y"
-    { 
+    {
                 if ( (yyvsp[(3) - (6)].count) > (yyvsp[(5) - (6)].count) && (yyvsp[(5) - (6)].count) >= 0 )
                     parse_error("bad interation value");
-                else    
+                else
                     (yyval.nfa) = nfa_iterate((yyvsp[(1) - (6)].nfa), (yyvsp[(3) - (6)].count), (yyvsp[(5) - (6)].count));
             ;}
     break;
 
   case 17:
 #line 118 "re-parse.y"
-    { 
+    {
                 if ( (yyvsp[(3) - (4)].count) < 0 )
                     parse_error("bad interation value");
-                else    
+                else
                     (yyval.nfa) = nfa_iterate((yyvsp[(1) - (4)].nfa), (yyvsp[(3) - (4)].count), (yyvsp[(3) - (4)].count));
             ;}
     break;

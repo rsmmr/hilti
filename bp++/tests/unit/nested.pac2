@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out 
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  cat test.txt | ./a.out -p HTTP::Request >output
 # @TEST-EXEC:  btest-diff output
 
@@ -24,11 +24,11 @@ type RequestLine = unit {
 type Message = unit {
     msg:     /Message/;
     };
-    
+
 export type Request = unit {
     request: RequestLine;
     message: Message
-       { 
+       {
        print self.request.method;
        print self.request.uri;
        print self.request.version;

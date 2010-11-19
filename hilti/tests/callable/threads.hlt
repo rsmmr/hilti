@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out | sort >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -11,7 +11,7 @@ import Hilti
 string foo(string s) {
     local string tmp
     local int<64> vid
-    
+
     vid = thread.id
     tmp = call Hilti::fmt("vid %d - %s", (vid, s))
     return.result tmp
@@ -31,13 +31,13 @@ void run() {
     local ref<callable<string>> c4
     local ref<callable<string>> c5
     local string result
-    
-    c1 = new callable<string> 
-    c2 = new callable<string> 
-    c3 = new callable<string> 
-    c4 = new callable<string> 
-    c5 = new callable<string> 
-    
+
+    c1 = new callable<string>
+    c2 = new callable<string>
+    c3 = new callable<string>
+    c4 = new callable<string>
+    c5 = new callable<string>
+
     callable.bind c1 foo ("ICSI1")
     callable.bind c2 foo ("ICSI2")
     callable.bind c3 foo ("ICSI3")
@@ -51,5 +51,5 @@ void run() {
     thread.schedule 5 do_call(c5)
 
     return.void
-}     
+}
 

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out 
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
@@ -42,7 +42,7 @@ void run() {
      p = net.prefix a
      call Hilti::print (a)
      call Hilti::print (p)
-     
+
      a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/8
      p = net.prefix a
      call Hilti::print (a)
@@ -52,22 +52,22 @@ void run() {
      p = net.prefix a
      call Hilti::print (a)
      call Hilti::print (p)
-     
+
      a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/64
      p = net.prefix a
      call Hilti::print (a)
      call Hilti::print (p)
-     
+
      a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/72
      p = net.prefix a
      call Hilti::print (a)
      call Hilti::print (p)
-     
+
      a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/120
      p = net.prefix a
      call Hilti::print (a)
      call Hilti::print (p)
-     
+
      a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128
      p = net.prefix a
      call Hilti::print (a)

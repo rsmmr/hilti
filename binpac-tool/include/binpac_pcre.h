@@ -20,7 +20,7 @@ public:
        pcre_ = NULL;
        pextra_=NULL;
   }
-   
+
    ~RE_Matcher() {
        if ( pcre_ ) {
            pcre_free(pcre_);
@@ -39,10 +39,10 @@ public:
                    erroffset, err);
            return 0;
        }
-       
+
        return 1;
    }
-   
+
    int MatchPrefix (const binpac::uint8* s, int n) {
        const char *err=NULL;
        assert(pcre_);
@@ -56,15 +56,15 @@ public:
                            0,     // options
                            offsets,
                            MAX_NUM_OFFSETS);
-       
+
        if ( ret < 0 ) {
            return -1;
        }
-       
+
        assert(offsets[0] == 0);
        return offsets[1];
    }
-   
+
 protected:
    pcre *pcre_;
    string pattern_;

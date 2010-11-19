@@ -6,16 +6,16 @@ import util
 
 class Container:
     def __init__(self):
-        """Creates a new property container. 
+        """Creates a new property container.
         """
         self._props = {}
 
     def allProperties(self):
         """Returns a list of all recognized properties.
-        
+
         Can be overwritten by derived classes. The default implementation
-        returns an empty dictionary. 
-        
+        returns an empty dictionary.
+
         Returns: dict mapping string to ~~Ctor - For each allowed
         property, there is one entry under it's name (excluding the leading
         dot) mapping to its default value.
@@ -24,11 +24,11 @@ class Container:
 
     def property(self, name, parent=None):
         """Returns the value of property. The property name must be one of
-        those returned by ~~allProperties, or defined by the module. 
+        those returned by ~~allProperties, or defined by the module.
 
         name: string - The name of the property. It's an error to pass in a
         name that cannot be resolved to any known property.
-        
+
         parent: Container - If given, if the property is not defined by the
         unit (or it's value evaluates to False), the parent is checked.
 
@@ -41,7 +41,7 @@ class Container:
         except KeyError:
             if parent:
                 return parent.property(name, True)
-            
+
             util.internal_error("unknown property '%s'" % name)
 
         return self._props.get(name, default)
@@ -69,4 +69,4 @@ class Container:
         for e in self._props.values():
             if e:
                 e.resolve(resolver)
-            
+
