@@ -174,7 +174,7 @@ hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tupl
     hlt_string result;
     const int8_t* p = fmt->bytes;
     hlt_string dst = 0;
-    int bpos = 0;
+    int64_t bpos = 0;
     int type_param = 0;
     hlt_string_size i = 0;
 

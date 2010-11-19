@@ -7,7 +7,9 @@
 
 int main()
 {
-    hlt_exception excpt;
+    hlt_init();
+
+    hlt_exception* excpt;
 
     int i;
 

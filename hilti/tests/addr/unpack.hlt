@@ -13,7 +13,7 @@ void run() {
     local iterator<bytes> first
     local iterator<bytes> last
     local iterator<bytes> nfirst
-    local int32 diff
+    local int64 diff
     local string out
 
     local tuple<addr, iterator<bytes>> t

@@ -37,7 +37,7 @@ def _makeLLVMString(cg, s):
         size = llvm.core.Constant.int(llvm.core.Type.int(64), len(s))
         bytes = [llvm.core.Constant.int(llvm.core.Type.int(8), ord(c)) for c in s]
         struct = llvm.core.Constant.packed_struct([size, llvm.core.Constant.array(llvm.core.Type.int(8), bytes)])
-        
+
         glob = cg.llvmNewGlobalConst(cg.nameNewGlobal("string"), struct)
 
         # We need to cast the const, which has a specific array length, to the
@@ -62,7 +62,7 @@ class String(type.ValueType, type.Constable):
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "const hlt_string *"
+        typeinfo.c_prototype = "hlt_string"
         typeinfo.to_string = "hlt::string_to_string"
         typeinfo.hash = "hlt::string_hash"
         typeinfo.equal = "hlt::string_equal"

@@ -10,6 +10,8 @@
 
 int main()
 {
+    hlt_init();
+
     hlt_exception* excpt0 = 0;
     hlt_exception* excpt1 = 0;
     hlt_exception** excpt = 0;

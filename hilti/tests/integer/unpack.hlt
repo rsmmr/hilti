@@ -12,7 +12,7 @@ void run() {
     local iterator<bytes> p1
     local iterator<bytes> p2
     local iterator<bytes> p3
-    local int32 diff
+    local int64 diff
     local string out
     local ref<bytes> b
     local ref<bytes> b2

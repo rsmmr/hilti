@@ -178,8 +178,8 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
                 cg.pushBuilder(block_end)
                 len = cg.llvmCallC("hlt::bytes_pos_diff", [begin_op, end])
                 len = cg.builder().zext(len, llvm.core.Type.int(64))
-                enough = cg.builder().icmp(llvm.core.IPRED_ULE, len, cg.llvmOp(n))
-                cg.builder().cbranch(is_end, block_insufficient, block_done)
+                enough = cg.builder().icmp(llvm.core.IPRED_ULT, len, cg.llvmOp(n))
+                cg.builder().cbranch(enough, block_insufficient, block_done)
                 cg.popBuilder()
 
                 builder = cg.pushBuilder(block_insufficient)

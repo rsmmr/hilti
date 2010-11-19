@@ -25,7 +25,7 @@ void run() {
     local iterator<bytes> p3
     local tuple<int32, iterator<bytes>> t32
     local int32 i32
-    local int32 diff
+    local int64 diff
     local string out
 
     b = b\"%s\"

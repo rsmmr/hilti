@@ -315,8 +315,7 @@ class Attach(Instruction):
             ov = cg.llvmInsertValue(ov, j, end)
 
         # Need to rewrite back into the original value.
-        cg.llvmStoreInTarget(self.op1(), ov)
-
+        self.op1().llvmStore(cg, ov)
 
 @hlt.instruction("overlay.get", op1=cOverlay, op2=_fieldName, target=_fieldType)
 class Get(Instruction):

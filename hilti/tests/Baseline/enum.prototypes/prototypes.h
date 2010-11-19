@@ -1,6 +1,6 @@
 
 /* Automatically generated. Do not edit. */
-        
+
 #ifndef HILTI_PROTOTYPES_H
 #define HILTI_PROTOTYPES_H
 

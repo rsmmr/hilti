@@ -10,6 +10,8 @@
 
 int main()
 {
+    hlt_init();
+
     hlt_exception* excpt = 0;
     int32_t result = 0;
 
