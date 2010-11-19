@@ -1,0 +1,12 @@
+diff -ur llvm-py-svn-r101/llvm/__init__.py llvm-py-svn-r101-patched/llvm/__init__.py
+--- llvm-py-svn-r101/llvm/__init__.py	2010-10-17 20:08:37.000000000 -0700
++++ llvm-py-svn-r101-patched/llvm/__init__.py	2010-10-17 20:41:54.000000000 -0700
+@@ -119,7 +119,7 @@
+     def __call__(cls, ptr, *args, **kwargs):
+         objid = _core.PyCObjectVoidPtrToPyLong(ptr)
+         obj = _ObjectCache.__instances.get(objid)
+-        if obj is None:
++        if obj is None or not isinstance(obj, cls):
+             obj = super(_ObjectCache, cls).__call__(ptr, *args, **kwargs)
+             _ObjectCache.__instances[objid] = obj
+         return obj

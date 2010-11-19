@@ -1,0 +1,18 @@
+diff -ur llvm-py-svn-r101/llvm/core.py llvm-py-svn-r101-patched/llvm/core.py
+--- llvm-py-svn-r101/llvm/core.py	2010-11-16 16:48:25.000000000 -0800
++++ llvm-py-svn-r101-patched/llvm/core.py	2010-11-16 16:47:21.000000000 -0800
+@@ -1446,9 +1446,11 @@
+         _core.LLVMSetInstrParamAlignment(self.ptr, idx, align)
+ 
+     # tail call is valid only for 'call', not 'invoke'
+-    def _get_tc(self): return _core.LLVMIsTailCall(self.ptr)
+-    def _set_tc(self, value): _core.LLVMSetTailCall(self.ptr, value)
+-    tail_call = property(_get_tc, _set_tc)
++    # disabled for now
++    #def _get_tc(self): return _core.LLVMIsTailCall(self.ptr)
++    #def _set_tc(self, value): _core.LLVMSetTailCall(self.ptr, value)
++    #tail_call = property(_get_tc, _set_tc)
++
+ 
+ class PHINode(Instruction):
+ 
