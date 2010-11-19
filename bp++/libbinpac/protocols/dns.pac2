@@ -9,28 +9,9 @@
 module DNS;
 
 type RData = enum {
-    A       = 1,
-    NS      = 2,
-    MD      = 3,
-    MF      = 4,
-    CNAME   = 5,
-    SOA     = 6,
-    MB      = 7,
-    MG      = 8,
-    MR      = 9,
-    NULL    = 10,
-    WKS     = 11,
-    PTR     = 12,
-    HINFO   = 13,
-    MINFO   = 14,
-    MX      = 15,
-    TXT     = 16,
-    AAAA    = 28,
-    NBS     = 32,
-    A6      = 38,
-    EDNS    = 41,
-};
-
+    A = 1, NS = 2, MD = 3, MF = 4, CNAME = 5, SOA = 6, MB = 7, MG = 8, MR = 9,
+    NULL = 10, WKS = 11, PTR = 12, HINFO = 13, MINFO = 14, MX = 15, TXT = 16,
+    AAAA = 28, NBS = 32, A6 = 38, EDNS = 41, };
 
 export type Message = unit {
     header:     Header;
@@ -66,28 +47,23 @@ type Question = unit(msg: Message) {
 };
 
 type ResourceRecord = unit(msg: Message) {
-    name: Name(msg);
-    ty: uint16;
-    class: uint16;
-    ttl: uint32;
-    rdlength: uint16;
+    name:   Name(msg);
+    ty:     uint16 &convert=RData;
+    class:  uint16;
+    ttl:    uint32;
+    rdlen:  uint16;
 
     switch ( self.ty ) {
-        TYPE_A     -> a:    uint32;
-	    TYPE_NS    -> name:	Name(msg);
-	    TYPE_MX    -> mx:   RDataMX(msg);
-	    TYPE_SOA   -> soa:  RDataSOA(msg);
+	    RData::NS, RData::CNAME, RData::PTR
+                    -> name:    Name(msg)
+        RData::A    -> a:       addr &ipv4;
+        RData::AAAA -> a:       addr &ipv6;
+	    RData::MX   -> mx:      RDataMX(msg);
+	    RData::SOA  -> soa:     RDataSOA(msg);
 
-        * ->       -> rdata &length=self.rdlength;
+        * ->        -> rdata:   bytes &length=self.rdlength;
     };
 };
-
-#        TYPE_CNAME -> cname: DNS_name(msg);
-#        TYPE_PTR   -> ptr:   DNS_name(msg);
-#        TYPE_AAAA  -> aaaa:  uint32[4];
-
-#        TYPE_A     -> a:    addr &ipv4;
-#        TYPE_AAAA  -> a:    addr &ipv6;
 
 type RDataMX(msg: Message) = {
     preference: uint16;

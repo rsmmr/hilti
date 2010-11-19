@@ -175,8 +175,8 @@ class Overloaded(Expression):
             if isinstance(expr, Expression):
                 expr.resolve(resolver)
 
-        #if operator.typecheck(self._op, self._exprs):
-        #    operator.resolve(self._op, resolver, self._exprs)
+        if operator.typecheck(self._op, self._exprs):
+            operator.resolve(self._op, resolver, self._exprs)
 
     def validate(self, vld):
         Expression.validate(self, vld)
@@ -491,7 +491,7 @@ class Assign(Expression):
             vld.error(self, "cannot assign to lhs expression")
 
         if not self._rhs.type().canCoerceTo(self._dest.type()):
-            vld.error(self, "types do not match in assigment")
+            vld.error(self, "types do not match in assigment (%s vs. %s)" % (self._rhs.type(), self._dest.type()))
 
         if self._dest.isInit():
             vld.error(self, "cannot assign to an init expression")

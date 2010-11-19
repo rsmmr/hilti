@@ -13,7 +13,7 @@ import binpac.operator as operator
 import hilti.type
 
 @type.pac("int")
-class Integer(type.ParseableType):
+class Integer(type.ParseableWithByteOrder):
     """Base class for integers.
 
     width: integer - Specifies the bit-width of integers represented by this type.
@@ -71,3 +71,4 @@ class Integer(type.ParseableType):
 
 
 
+            

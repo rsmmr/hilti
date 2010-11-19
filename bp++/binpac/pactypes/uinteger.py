@@ -79,7 +79,7 @@ class UnsignedInteger(type.Integer):
     def supportedAttributes(self):
         return {
             "default": (self, True, None),
-            "byteorder": (None, False, None),
+            "byteorder": ("binpac::ByteOrder", False, None),
             "convert": (type.Any(), False, None),
             }
 
@@ -105,40 +105,6 @@ class UnsignedInteger(type.Integer):
     def parsedType(self):
         return self
 
-    def generateParser(self, cg, cur, dst, skipping):
-        bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
-        resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
-        fbuilder = cg.functionBuilder()
-
-        # FIXME: We trust here that bytes iterators are inialized with the
-        # generic end position. We should add a way to get that position
-        # directly (but without a bytes object).
-        end = fbuilder.addTmp("__end", bytesit)
-
-        op1 = cg.builder().tupleOp([cur, end])
-
-        if not skipping:
-            op2 = self._hiltiByteOrderOp(cg)
-            op3 = None
-            assert op2
-        else:
-            assert self.width() in (8, 16, 32, 64)
-            op2 = cg.builder().idOp("Hilti::Packed::SkipBytesFixed")
-            op3 = cg.builder().constOp(self.width() / 8, hilti.type.Integer(64))
-
-        result = self.generateUnpack(cg, op1, op2, op3)
-
-        builder = cg.builder()
-
-        if dst and not skipping:
-            builder.tuple_index(dst, result, builder.constOp(0))
-
-        builder.tuple_index(cur, result, builder.constOp(1))
-
-        return cur
-
-    # Private.
-
     _packeds = {
         ("little", 8): "Hilti::Packed::UInt8Little",
         ("little", 16): "Hilti::Packed::UInt16Little",
@@ -158,44 +124,38 @@ class UnsignedInteger(type.Integer):
         ("network", 64): "Hilti::Packed::Int64Big",
         }
 
-    def _isByteOrderConstant(self):
-        expr = self._hiltiByteOrderExpr()
-        return expr.isInit() if expr else True
+    def generateParser(self, cg, cur, dst, skipping):
+        bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
+        resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
+        fbuilder = cg.functionBuilder()
 
-    def _hiltiByteOrderExpr(self):
-        order = self.attributeExpr("byteorder")
-        if order:
-            return order
+        # FIXME: We trust here that bytes iterators are inialized with the
+        # generic end position. We should add a way to get that position
+        # directly (but without a bytes object).
+        end = fbuilder.addTmp("__end", bytesit)
 
-        if self.field():
-            prop = self.field().parent().property("byteorder", parent=self.field().parent().module())
-            if prop:
-                return prop
+        op1 = cg.builder().tupleOp([cur, end])
 
-        return None
-
-    def _hiltiByteOrderOp(self, cg):
-        e = self._hiltiByteOrderExpr()
-
-        if e and not e.isInit():
-            # TODO: We need to add code here that selects the right unpack type
-            # at run-time.
-            util.internal_error("non constant byte not yet supported")
-
-        if e:
-            assert isinstance(e, expr.Name)
-            t = e.name().split("::")[-1].lower()
-
+        if not skipping:
+            op2 = self._hiltiByteOrderOp(cg, UnsignedInteger._packeds, self.width())
+            op3 = None
+            assert op2
         else:
-            # This is our default if no byte-order is specified.
-            t = "big"
+            assert self.width() in (8, 16, 32, 64)
+            op2 = cg.builder().idOp("Hilti::Packed::SkipBytesFixed")
+            op3 = cg.builder().constOp(self.width() / 8, hilti.type.Integer(64))
 
-        try:
-            enum = UnsignedInteger._packeds[(t, self._width)]
-        except KeyError:
-            util.internal_error("unknown type/byteorder combination")
+        result = self.generateUnpack(cg, op1, op2, op3)
 
-        return cg.builder().idOp(enum)
+        builder = cg.builder()
+
+        if dst and not skipping:
+            builder.tuple_index(dst, result, builder.constOp(0))
+
+        builder.tuple_index(cur, result, builder.constOp(1))
+
+        return cur
+
 
 @operator.Coerce(type.UnsignedInteger)
 class Coerce:

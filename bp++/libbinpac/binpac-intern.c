@@ -46,7 +46,7 @@ void binpacintern_register_parser(binpac_parser* parser, hlt_exception** excpt, 
     hlt_list_push_back(_parsers, &hlt_type_info_struct_string_name_string_description_caddr_parse_func_caddr_resume_func, &parser, excpt, ctx);
 }
 
-void binpacintern_call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* ctx))
+void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* ctx))
 {
     hlt_exception* excpt = 0;
     hlt_execution_context* ctx = hlt_global_execution_context();

@@ -46,10 +46,10 @@ class Scope(visitor.Visitable):
 
     def _canonName(self, namespace, name):
         m = name.split("::")
-        assert len(m) <= 2
 
-        if len(m) == 2:
-            (namespace, name) = m
+        if len(m) >= 2:
+            namespace = m[0]
+            name = "::".join(m[1:])
 
         if not namespace:
             namespace = self._namespace

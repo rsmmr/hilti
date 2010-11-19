@@ -1,5 +1,5 @@
 [binpac] test
-[binpac]    f1 = '4294967295'
+[binpac]    f1 = '-1'
 1
 3
 3

@@ -21,7 +21,7 @@ declare "C-HILTI" void register_parser(ref<Parser> parser)
 
 # Runs a module's init function passed in with it's C stub.
 # (This is only needed because we can't call the stub (easily) from C.
-declare "C-HILTI" void call_init_func(caddr func)
+declare "C" void call_init_func(caddr func)
 
 # Matches a regexp against a bytes object and returns a given match group.
 # If not found, an empty bytes object is returned.

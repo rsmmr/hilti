@@ -10,6 +10,7 @@ import id
 import type
 import binpac.util as util
 import binpac.pgen as pgen
+import binpac.expr as expr
 import binpac.operator as operator
 
 import hilti.constant
@@ -302,6 +303,7 @@ class Type(object):
 
         vld: ~~Validator - The validator triggering the validation.
         """
+
         for (name, expr) in self._attrs.items():
 
             all = self.supportedAttributes()
@@ -310,6 +312,13 @@ class Type(object):
                 continue
 
             (ty, init, default) = all[name]
+
+            if isinstance(ty, str):
+                i = vld.currentModule().scope().lookupID(ty)
+                if i:
+                    ty = i.type()
+                else:
+                    util.internal_error("unknown type %s defined for attribute %s" % (ty, name))
 
             if ty and not expr:
                 vld.error(self, "attribute must have expression of type %s" % ty)
@@ -340,16 +349,16 @@ class Type(object):
     def supportedAttributes(self):
         """Returns the attributes this type supports.
 
-        Returns: dictionary *name* -> (*type*, *init*, *default*) -
-        *name* is a string with the attribute's name (excluding the
-        leading ampersand); *type* is a ~~Type defining the type the
-        attribute's expression must have, or None if the attribute
-        doesn't take a expression; *init* is a boolean indicating
-        whether the attribute's expression must suitable for
-        intializing a HILTI variable; and *default* is a ~~Ctor
-        expression with a default expression to be used if the
-        attributes is not explicitly specified, or None if the
-        attribute is unset by default.
+        Returns: dictionary *name* -> (*type*, *init*, *default*) - *name* is
+        a string with the attribute's name (excluding the leading ampersand);
+        *type* is a ~~Type defining the type the attribute's expression must
+        have (either as a ~~Type or string referecing a global ID which's type
+        will be taken), or None if the attribute doesn't take a expression;
+        *init* is a boolean indicating whether the attribute's expression must
+        suitable for intializing a HILTI variable; and *default* is a ~~Ctor
+        expression with a default expression to be used if the attributes is
+        not explicitly specified, or None if the attribute is unset by
+        default.
 
         This method can be overridden by derived classes. The
         default implementation returns an empty dictionary, i.e., no
@@ -640,6 +649,54 @@ class ParseableType(Type):
         *not* consumed anymore.
         """
         util.internal_error("Type.production() not overidden for %s" % self.__class__)
+
+class ParseableWithByteOrder(ParseableType):
+    """Type that can be parsed from an input stream, with a binary
+    representation that depends on byte order.
+
+    See ~~Parseable for arguments.
+
+    Note: This is primarily a helper class that provides some shared
+    functionality. 
+    """
+    def _isByteOrderConstant(self):
+        expr = self._hiltiByteOrderExpr()
+        return expr.isInit() if expr else True
+
+    def _hiltiByteOrderExpr(self):
+        order = self.attributeExpr("byteorder")
+        if order:
+            return order
+
+        if self.field():
+            prop = self.field().parent().property("byteorder", parent=self.field().parent().module())
+            if prop:
+                return prop
+
+        return None
+
+    def _hiltiByteOrderOp(self, cg, packeds, arg):
+        e = self._hiltiByteOrderExpr()
+
+        if e and not e.isInit():
+            # TODO: We need to add code here that selects the right unpack type
+            # at run-time.
+            util.internal_error("non constant byte not yet supported")
+
+        if e:
+            assert isinstance(e, expr.Name)
+            t = e.name().split("::")[-1].lower()
+
+        else:
+            # This is our default if no byte-order is specified.
+            t = "big"
+
+        try:
+            enum = packeds[(t, arg)]
+        except KeyError:
+            cg.error("unknown type/byteorder combination")
+
+        return cg.builder().idOp(enum)
 
 class Iterable:
     """Trait class for a ~~Type that provides itertors."""
