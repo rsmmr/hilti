@@ -1,0 +1,278 @@
+#! /usr/bin/env python2.6
+#
+# Generates the instruction reference.
+
+import os
+import os.path
+import sys
+import types as builtin_types
+
+import hilti
+
+def openFile(name, title, ts):
+
+    path = os.path.join(dst, name)
+
+    try:
+        current = os.path.getmtime(path)
+        if current >= ts:
+            return None
+    except OSError:
+        pass
+
+    output = open(path, "w")
+    print "Writing %s ..." % name
+    print >>output, ".. Automatically generated. Do not edit."
+    print >>output, ""
+
+    if title:
+        print >>output, title
+        print >>output, "-" * len(title)
+
+    return output
+
+def allModules(mod):
+    all = []
+    for name in sorted(mod.__dict__.keys()):
+        mod = codegen.__dict__[name]
+
+        if type(mod) == builtin_types.ModuleType:
+            all += [mod]
+
+    return all
+
+def itemize(doc):
+    nr = 1
+    output = ""
+    doc = doc.strip()
+
+    for line in doc.split("\n"):
+        if nr == 1:
+            output += "* " + line + "\n"
+        elif nr == 2:
+            indent = 0
+            while indent < len(line) and line[indent] in " ":
+                indent += 1;
+            line = line.strip()
+            output += "  " + line + "\n"
+        else:
+            line = line[indent:]
+            output += "  " + line + "\n"
+
+        nr += 1
+
+    return output + "\n"
+
+def safeAdd(dict, idx, val):
+    try:
+        dict[idx] += [val]
+    except KeyError:
+        dict[idx] = [val]
+
+def canonicalizeDoc(doc):
+    canon = []
+
+    for line in doc.strip().split("\n"):
+        line = line.strip()
+        line = "    " + line
+
+        canon += [line]
+
+    return "\n".join(canon)
+
+def fmtIns(mnemo, ins, kind):
+    ops = []
+    params = []
+
+    sig = ins._signature
+
+    if sig.target():
+        ops += ["target"]
+
+    for (num, op) in ((1, sig.op1()), (2, sig.op2()), (3, sig.op3())):
+
+        if op:
+            try:
+                if op._optional:
+                    ops += ["[op%d]" % num]
+            except AttributeError:
+                ops += ["op%d" % num]
+
+            params += ["    :Operand %d: %s" % (num, sig.getOpDoc(op))]
+
+    if sig.target():
+        params += ["    :Target: %s" % sig.getOpDoc(sig.target())]
+
+    s = ""
+    s += ".. hlt:%s:: %s %s\n" % (kind, mnemo, " ".join(ops))
+    s += "\n"
+    s += "\n".join(params) + "\n"
+    s += "\n"
+    s += canonicalizeDoc(ins.__doc__)
+    s += "\n"
+
+    return s
+
+def fmtOverload(ins):
+    params = []
+
+    sig = ins._signature
+    for (num, op) in ((1, sig.op1()), (2, sig.op2()), (3, sig.op3())):
+        if op:
+            params += [sig.getOpDoc(op)]
+
+    return "    * %s" % ", ".join(params)
+
+def startGroup(tag, title, group, ts):
+    out = openFile("hilti-%s-%s.rst" % (tag, group), None, ts)
+
+    if out and title:
+        print >>out, fmtGroup(title)
+
+    return out
+
+def fmtGroup(group, sec='-'):
+    s = ""
+    s += group + "\n"
+    s += sec * len(group) + "\n"
+
+    return s
+
+###########################################################
+
+if len(sys.argv) != 2:
+    print >>sys.stderr, "usage: gen-instr-reference <dest-dir>"
+    sys.exit(1)
+
+dst = sys.argv[1]
+
+instructions = {}
+ops_overloaded = {}
+ops_generic = []
+internal = {}
+
+timestamps = {}
+newest = 0
+
+for (mnemo, ins) in hilti.instruction.getInstructions().items():
+
+    m = mnemo.split(".")
+    prefix = m[0]
+
+    if prefix == "":
+        prefix = "internal"
+        safeAdd(internal, prefix, (mnemo, ins))
+
+    elif issubclass(ins, hilti.instruction.Operator):
+        safeAdd(ops_overloaded, prefix, (mnemo, ins))
+
+    elif issubclass(ins, hilti.instruction.Instruction):
+        if ins.__module__ == "hilti.instructions.operators":
+            prefix = "operators"
+            ops_generic += [(mnemo, ins)]
+        else:
+            safeAdd(instructions, prefix, (mnemo, ins))
+
+    if not prefix in timestamps:
+        ts = os.path.getmtime(sys.modules[ins.__module__].__file__)
+        timestamps[prefix] = ts
+        newest = max(newest, ts)
+
+#######
+
+for group in instructions:
+    out = startGroup("instructions", group, group, timestamps[group])
+    if out:
+        for (mnemo, ins) in sorted(instructions[group], key=lambda x: x[0]):
+            print >>out, fmtIns(mnemo, ins, "instruction")
+
+#######
+
+out = startGroup("operators", "Overloaded Operators", "overloaded", newest)
+
+if out:
+    for group in ops_overloaded:
+
+        for (mnemo, oper) in sorted(ops_overloaded[group], key=lambda x: x[0]):
+            print >>out, fmtIns(mnemo, oper, "operator")
+
+        print >>out, "Overloaded for:\n"
+
+        for i in hilti.instruction.getOverloads(oper):
+            print >>out, fmtOverload(i())
+
+        print >>out, "\n"
+
+#######
+
+out = startGroup("operators", "Generic Operators", "generic", timestamps["operators"])
+
+if out:
+    for (mnemo, ins) in sorted(ops_generic, key=lambda x: x[0]):
+        print >>out, fmtGroup(mnemo, sec="^")
+        print >>out, fmtIns(mnemo, ins, "operator")
+
+#######
+
+for (name, mod) in hilti.instructions.__dict__.items():
+
+    if name.startswith("_"):
+        continue
+
+    try:
+        ts = os.path.getmtime(mod.__file__)
+    except OSError:
+        ts = 0
+
+    postfix = mod.__name__.split(".")[-1]
+
+    out = startGroup("types", None, postfix, ts)
+
+    if out:
+        print >>out, mod.__doc__
+        print >>out, ""
+
+#######
+
+sys.exit(0)
+
+for name in sorted(hilti.instructions.__all__):
+
+    mod = instructions.__dict__[name]
+
+    try:
+        doc = mod._doc_type_description + "\n\n"
+        types += mod.__doc__ + "\n\n"
+        types += doc
+    except AttributeError:
+        pass
+
+    reference += """
+.. automodule:: hilti.instructions.%s
+   :members:
+   :undoc-members:
+
+""" % name
+
+sys.exit(0)
+
+output = openFile("instruction-reference.rst")
+print >>output, reference
+
+output = openFile("types.rst")
+print >>output, types
+
+### Generate docs for the mapping of LLVM types to C types.
+
+cmapping = ""
+
+for mod in allModules(codegen):
+
+    try:
+        cmapping += itemize(mod._doc_c_conversion)
+    except AttributeError:
+        pass
+
+output = openFile("cmapping.rst")
+print >>output, cmapping
+

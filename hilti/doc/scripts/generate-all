@@ -1,0 +1,17 @@
+#! /usr/bin/env bash
+
+DEST=_generated
+
+export PYTHONPATH="../:$PYTHONPATH"
+
+if [ ! -d "$DEST" ]; then
+    echo $DEST does not exit.
+    exit 1
+fi
+
+dir=`dirname $0`
+
+$dir/generate-reference $DEST
+$dir/generate-classes $DEST
+
+

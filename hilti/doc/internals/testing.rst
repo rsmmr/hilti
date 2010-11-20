@@ -1,6 +1,0 @@
-.. $Id$
-
-Regression Testing [Missing]
-============================
-
-
