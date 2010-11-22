@@ -1,8 +1,12 @@
 
-The documentation is in doc/. Run "make" there to build it, then
-point your browser at doc/_build/html.
+The HILTI documentation is in doc/. To build it, you need to install
+a few dependencies first; see doc/starting.rst.
 
-Or just see doc/starting.rst directly for installation and
-instructions on how to get started. 
+The documentation is also available online at
+
+    http://www.icir.org/robin/hilti/doc
+
+However, the online version may not always be up to to date (check
+the date). 
 
 
