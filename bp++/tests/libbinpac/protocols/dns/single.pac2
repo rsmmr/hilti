@@ -1,0 +1,25 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -d -m -o a.out
+# @TEST-EXEC:  cat %DIR/single.dat | ./a.out -p DNS::Message >output
+# @TEST-EXEC:  cat %DIR/single.dat | ./a.out -i 1 -p DNS::Message >output-incremental
+
+# @TEST-EXEC:  btest-diff output
+# @TEST-EXEC:  diff -q output output-incremental
+
+module Test;
+
+import protocols.dns;
+
+on DNS::Message::%done {
+    print self.header;
+    print "";
+    print self.question;
+    print "";
+    print self.answer;
+    print "";
+    print self.authority;
+    print "";
+    print self.additional;
+    }
+
