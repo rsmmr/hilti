@@ -26,7 +26,10 @@ import copy
 class List(type.Container):
     """Type for list objects.
 
-    itemty: ~~Type - The type of the list elements.
+    itemty: ~~Type or ~~Expr - The type of the list elements. If an
+    expression, it's type defines the item type. In the latter case,
+    determining the type is deferred to later, so that even works if the
+    expressions type is not determined yet. 
     value: ~~Expr - The value for lists of constants, or None otherwise.
     itemargs: list of ~~Expr - Optional parameters for parsing the items. Only valid
     if the type is a ~~Unit and used inside another unit's field.
@@ -45,21 +48,24 @@ class List(type.Container):
 
         Returns: ~~Type - The type of the list elements.
         """
+        if isinstance(self._item, expr.Expression):
+            self._item = self._item.type()
+
         return self._item.parsedType()
 
     ### Overridden from Type.
 
     def name(self):
-        return "list<%s>" % self._item.name()
+        return "list<%s>" % self.itemType().name()
 
     def doResolve(self, resolver):
-        if self._item:
+        if self.itemType():
             # FIXME: This block is copied from unit.Field.resolve
-            old_item = self._item
+            old_item = self.itemType()
 
             # Before we resolve the type, let's see if it's actually refering
             # to a constanst.
-            if isinstance(self._item, type.Unknown):
+            if isinstance(self.itemType(), type.Unknown):
                 i = resolver.scope().lookupID(self.itemType().idName())
 
                 if i and isinstance(i, id.Constant):
@@ -82,12 +88,12 @@ class List(type.Container):
 
     def validate(self, vld):
         type.ParseableType.validate(self, vld)
-        self._item.validate(vld)
+        self.itemType().validate(vld)
 
         if self._value:
             self._value.validate(vld)
 
-        if self._item_args and not isinstance(self._item, type.Unit):
+        if self._item_args and not isinstance(self.itemType(), type.Unit):
             vld.error(self, "parameters only allowed for unit types")
 
         if self._item_args:
@@ -103,7 +109,7 @@ class List(type.Container):
                 vld.error(self, "list: ctor value's elements of wrong internal type")
 
         for elem in value:
-            if elem.type() != self._item:
+            if elem.type() != self.itemType():
                 vld.error(self, "list: ctor value must be of type %s" % elem.type())
 
             elem.validate(vld)
@@ -126,13 +132,13 @@ class List(type.Container):
 
     def pac(self, printer):
         printer.output("list<")
-        self._item.pac(printer)
+        self.itemType().pac(printer)
         printer.output(">")
 
     def pacCtor(self, printer, elems):
         printer.output("[")
         for i in range(len(elems)):
-            self._item.pacCtor(printer, elems[i])
+            self.itemType().pacCtor(printer, elems[i])
             if i != len(elems) - 1:
                 printer.output(", ")
         printer.output("]")
@@ -154,7 +160,7 @@ class List(type.Container):
         item type directly."""
         if self._value:
             for t in unit._AllowedConstantTypes:
-                if isinstance(self._item, t):
+                if isinstance(self.itemType(), t):
                     prod = grammar.Literal(None, self._value, location=self._location)
                     break
             else:

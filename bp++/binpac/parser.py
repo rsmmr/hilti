@@ -61,6 +61,7 @@ def p_instantiate_module(p):
     p.parser.state.module = module.Module(p[-1], location=_loc(p, -1))
     p.parser.state.scopes = [None]
     p.parser.state.blocks = [None]
+    p.parser.state.units = [None]
     p.parser.state.typename = None
     p.parser.state.in_unit_param_list = False
 
@@ -362,18 +363,20 @@ def p_enum_label(p):
    # Unit type.
 def p_type_unit(p):
     """builtin_type : UNIT opt_unit_param_list _instantiate_unit '{' _enter_unit_hook unit_item_list _leave_unit_hook  '}' """
-    p.parser.state.unit.setLocation(_loc(p, 1))
-    p[0] = p.parser.state.unit
+    _currentUnit(p).setLocation(_loc(p, 1))
+    p[0] = _currentUnit(p)
+    _popUnit(p)
 
 def p_instantiate_unit(p):
     """_instantiate_unit :"""
-    p.parser.state.unit = type.Unit(p.parser.state.module, args=p[-1])
-    p.parser.state.unit.setNamespace(p.parser.state.module.name(True))
+    unit = type.Unit(p.parser.state.module, args=p[-1])
+    unit.setNamespace(p.parser.state.module.name(True))
+    _pushUnit(p, unit)
     p.parser.state.in_switch = None
 
 def p_enter_unit_hook(p):
     """_enter_unit_hook : """
-    _pushScope(p, p.parser.state.unit.scope())
+    _pushScope(p, _currentUnit(p).scope())
 
 def p_leave_unit_hook(p):
     """_leave_unit_hook : """
@@ -407,7 +410,7 @@ def p_unit_item(p):
 
 def p_unit_field_top_level(p):
     """unit_field_top_level : unit_field"""
-    p.parser.state.unit.addField(p[1])
+    _currentUnit(p).addField(p[1])
 
 def p_unit_field_property(p):
     """unit_property : PROPERTY '=' expr ';'"""
@@ -415,7 +418,7 @@ def p_unit_field_property(p):
     expr = p[3]
 
     try:
-        p.parser.state.unit.setProperty(p[1], expr)
+        _currentUnit(p).setProperty(p[1], expr)
 
     except ValueError, e:
         util.parser_error(p, "unknown property %s" % p[1])
@@ -426,15 +429,15 @@ def p_unit_var(p):
                 | IDENT ':' type opt_debug stmt_block
     """
     i = id.Variable(p[1], p[3])
-    p.parser.state.unit.addVariable(i)
+    _currentUnit(p).addVariable(i)
 
     if p[4] != ';':
-        hook = stmt.VarHook(p.parser.state.unit, p[1], 0, stmts=p[5], debug=p[4])
+        hook = stmt.VarHook(_currentUnit(p), p[1], 0, stmts=p[5], debug=p[4])
         p.parser.state.module.addHook(hook)
 
 def p_unit_hook(p):
     """unit_hook : opt_debug ON hook_ident stmt_block"""
-    p.parser.state.module.addExternalHook(p.parser.state.unit, p[3], p[4], p[1])
+    p.parser.state.module.addExternalHook(_currentUnit(p), p[3], p[4], p[1])
 
 def p_opt_debug(p):
     """opt_debug : DEBUG
@@ -462,13 +465,14 @@ def p_unit_field_with_hook(p):
     """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond opt_foreach opt_debug stmt_block _leave_unit_field"""
     if not p[7]:
         if p.parser.state.in_switch:
-            hook = stmt.SubFieldHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
+            hook = stmt.SubFieldHook(_currentUnit(p), p.parser.state.field, 0, stmts=p[9], debug=p[8])
         else:
-            hook = stmt.FieldHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
+            hook = stmt.FieldHook(_currentUnit(p), p.parser.state.field, 0, stmts=p[9], debug=p[8])
 
         p.parser.state.module.addHook(hook)
+
     else:
-        hook = stmt.FieldForEachHook(p.parser.state.unit, p.parser.state.field, 0, stmts=p[9], debug=p[8])
+        hook = stmt.FieldForEachHook(_currentUnit(p), p.parser.state.field, 0, stmts=p[9], debug=p[8])
         p.parser.state.module.addHook(hook)
 
     _addAttrs(p, p.parser.state.field.type(), p[5])
@@ -493,9 +497,9 @@ def p_instantiate_field(p):
     loc = location.Location(p.lexer.parser.state._filename, p.lexer.lineno)
 
     if not p.parser.state.in_switch:
-        p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, args=p[-1][1], location=loc)
+        p.parser.state.field = unit.Field(p[-2], p[-1][0][0], p[-1][0][1], _currentUnit(p), args=p[-1][1], location=loc)
     else:
-        p.parser.state.field = unit.SwitchFieldCase(p[-2], p[-1][0][0], p[-1][0][1], p.parser.state.unit, args=p[-1][1], location=loc)
+        p.parser.state.field = unit.SwitchFieldCase(p[-2], p[-1][0][0], p[-1][0][1], _currentUnit(p), args=p[-1][1], location=loc)
 
 def p_unit_field_type_const(p):
     """unit_field_type : CONSTANT opt_unit_field_params"""
@@ -536,13 +540,13 @@ def p_opt_unit_field_cond(p):
 
 def p_unit_switch(p):
     """unit_switch : SWITCH '(' expr ')' '{' _instantiate_switch unit_switch_case_list '}' ';'"""
-    p.parser.state.unit.addField(p.parser.state.in_switch)
+    _currentUnit(p).addField(p.parser.state.in_switch)
     p.parser.state.in_switch = None
 
 def p_instantiate_switch(p):
     """_instantiate_switch : """
     loc = location.Location(p.lexer.parser.state._filename, p.lexer.lineno)
-    p.parser.state.in_switch = unit.SwitchField(p[-3], p.parser.state.unit, location=loc)
+    p.parser.state.in_switch = unit.SwitchField(p[-3], _currentUnit(p), location=loc)
 
 def p_unit_switch_case_list(p):
     """unit_switch_case_list : unit_switch_case unit_switch_case_list
@@ -599,7 +603,7 @@ def p_ctor_list(p):
             util.parser_error(p, "list ctors cannot be empty (use list<T>() instead)")
             raise SyntaxError
         val = p[2]
-        ty = p[2][0].type()
+        ty = p[2][0]
 
     p[0] = expr.Ctor(val, type.List(ty))
 
@@ -609,9 +613,14 @@ def p_opt_ctor_list_list(p):
     p[0] = p[1] if len(p) > 1 else []
 
 def p_ctor_list_list(p):
-    """ctor_list_list : ctor ',' ctor_list_list
-                      | ctor """
+    """ctor_list_list : ctor_or_expr ',' ctor_list_list
+                      | ctor_or_expr """
     p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
+
+def p_ctor_or_expr(p):
+    """ctor_or_expr : ctor
+                    | expr"""
+    p[0] = p[1]
 
 def p_ctor_tuple(p):
     """ctor : '(' ctor ',' ctor_list_list ')'"""
@@ -862,6 +871,17 @@ def _popBlock(p):
     p.parser.state.blocks = p.parser.state.blocks[:-1]
     _popScope(p)
     return b
+
+def _currentUnit(p):
+    unit = p.parser.state.units[-1]
+    assert unit
+    return unit
+
+def _pushUnit(p, unit):
+    p.parser.state.units += [unit]
+
+def _popUnit(p):
+    p.parser.state.units = p.parser.state.units[:-1]
 
 ### Error handling.
 

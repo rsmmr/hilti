@@ -16,5 +16,6 @@ export type test = unit {
     on %done {
         print self.f1;
         print self.f2;
+        print self.f3;
         }
 };

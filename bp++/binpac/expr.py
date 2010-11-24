@@ -175,8 +175,7 @@ class Overloaded(Expression):
             if isinstance(expr, Expression):
                 expr.resolve(resolver)
 
-        if operator.typecheck(self._op, self._exprs):
-            operator.resolve(self._op, resolver, self._exprs)
+        operator.resolve(self._op, resolver, self._exprs)
 
     def validate(self, vld):
         Expression.validate(self, vld)
