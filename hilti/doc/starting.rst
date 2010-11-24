@@ -101,7 +101,7 @@ Installation
 
 * Next, you should see if the test-suite passes::
 
-     > cd binpacpp/hilti/libhilti
+     > cd binpacpp/hilti/tests
      > make
 
   All tests are supposed to succeed. Occasionally, a few
