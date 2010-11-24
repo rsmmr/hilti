@@ -844,15 +844,18 @@ class Grammar:
         """
         return self._start
 
-    def _addProduction(self, p):
+    def _addProduction(self, p, add_ids=True):
         if p.symbol() in self._productions:
             # Already added.
             return
 
-        if p.name() and not p.isNoID():
+        if p.name() and not p.isNoID() and add_ids:
             assert p.type()
             i = id.Attribute(p.name(), p.type())
             self._scope.addID(i)
+
+        if isinstance(p, ChildGrammar):
+            add_ids = False
 
         self._productions[p.symbol()] = p
 
@@ -862,7 +865,7 @@ class Grammar:
             for rhs in p._rhss():
                 for p in rhs:
                     # Add productions recursive.y.
-                    self._addProduction(p)
+                    self._addProduction(p, add_ids)
 
     def _simplify(self):
         # Remove unused productions.

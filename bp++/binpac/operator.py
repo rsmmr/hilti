@@ -259,6 +259,17 @@ _Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign"
 
 ### Public functions.
 
+def hasOperator(op, exprs):
+    """Returns True if there's an overloaded operator for a set of operands.
+
+    op: ~~Operator - The operator.
+    exprs: list of ~~Expression - The expressions for the operator.
+
+    Returns: bool - True if there's an operator found.
+    """
+    func = _findOp("typecheck", op, exprs)
+    return func != None
+
 def typecheck(op, exprs):
     """Checks whether an operator is compatible with a set of operand
     expressions.

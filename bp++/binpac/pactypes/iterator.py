@@ -55,7 +55,7 @@ class _:
 
     def evaluate(cg, iter, incr):
         op1 = iter.evaluate(cg)
-        op2 = incr.evaluate(cg)
+        op2 = incr.coerceTo(type.UnsignedInteger(64), cg).evaluate(cg)
         tmp = cg.functionBuilder().addLocal("__niter", op1.type())
         cg.builder().incr_by(tmp, op1, op2)
         return tmp
