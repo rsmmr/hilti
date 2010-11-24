@@ -1,0 +1,12 @@
+
+The BinPAC++ documentation is in doc/. To build it, you need to
+install a few dependencies first; see doc/starting.rst.
+
+The documentation is also available online at
+
+    http://www.icir.org/robin/binpac++/doc
+
+However, the online version may not always be up to to date (check
+the date). 
+
+

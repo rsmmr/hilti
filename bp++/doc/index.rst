@@ -13,6 +13,7 @@ Table of Contents:
    starting
    overview
    reference
+   c-api
    internals
    todo
 

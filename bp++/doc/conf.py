@@ -16,7 +16,11 @@ import sys, os
 rst_epilog = """
 .. |hc| replace:: ``hiltic``
 .. |hb| replace:: ``hilti-build2``
-.. |bp| replace:: ``binpac++``
+.. |bb| replace:: ``hilti-build2``
+.. |pd| replace:: ``pac-driver``
+.. |pdc| replace:: ``pac-driver.c``
+.. |bppp| replace:: ``binpac++``
+.. |binpac| replace:: BinPAC++
 """
 
 sys.path.insert(0, os.path.abspath('scripts'))

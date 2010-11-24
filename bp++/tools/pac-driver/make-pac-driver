@@ -1,8 +1,11 @@
 #! /usr/bin/env bash 
 
+driver=`binpac-config --distbase`/tools/pac-driver
+
 export CFLAGS=`binpac-config --cflags`
+export CFLAHS="$CFLAGS -I $driver"
 export HILTICFLAGS=`binpac-config --hiltic`
 
-hilti-build2 -o pac-driver pac-driver.c $@
+hilti-build2 $driver/pac-driver.c $@
 
 

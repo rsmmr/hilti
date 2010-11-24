@@ -63,7 +63,7 @@ static void usage(const char* prog)
 
         hlt_string_print(stderr, p->name, 0, &excpt, ctx);
 
-        for ( int n = 20 - hlt_string_len(p->name, &excpt, ctx); n; n-- )
+        for ( int n = 25 - hlt_string_len(p->name, &excpt, ctx); n; n-- )
             fputc(' ', stderr);
 
         hlt_string_print(stderr, p->description, 1, &excpt, ctx);
