@@ -1,0 +1,32 @@
+#! /usr/bin/env bash
+#
+# Generate pages for all Python modules.
+
+if [ $# != 1 ]; then
+    echo usage: $0 "<dst-dir>"
+    exit 1
+fi
+
+DEST=$1
+
+modules=`ls ../hilti/*.py  | grep -v '_'`
+
+install -d $DEST/python
+
+for path in $modules; do
+
+    mod=`echo $path | sed 's#\../##g' | sed 's#/#.#g' | sed 's/\.py//g'`
+    out=$DEST/python/$mod.rst
+
+    if [ -e $out -a $path -ot $out ]; then
+        continue;
+    fi
+
+    echo Writing `basename $out` ...
+
+    echo "$mod" >$out
+    python -c "print '-' * `echo $mod | wc -c`" >>$out
+    echo >>$out
+    echo ".. automodule:: $mod" >>$out
+    echo >>$out
+done

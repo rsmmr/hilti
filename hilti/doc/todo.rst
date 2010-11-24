@@ -1,16 +1,16 @@
 
-Not working
-===========
+ToDo
+====
 
-- channel.* and threads.* are broken since the recent
-reorganisation. Their tests are disabled for now.
+Not working
+-----------
 
 - visitor support is broken. While it's not used anymore internally,
 it will likely be useful for external code, so we should restore
 that functionality.
 
 Instructions
-============
+------------
 
 - Single return statement independent of whether we're returning a
   value or not. 
@@ -19,12 +19,23 @@ Instructions
 
 - The string type is still missing a number of instructions.
 
+- Add support for setting location information.
+
+Code Generation
+---------------
+
+- Generate debug information.
+
 Infrastructure
-==============
+--------------
 
 - We don't ensure that instructions that modify their arguments
   don't receive any constants. 
 
+- Extending the previous point, we should add hints to the
+  signatures signaling which arguments are modified and how target
+  and operands relate to each other (for enabling optimizations).
+  
 - The parser doesn't associate line-comments correctly with global
   declarations (or better: it does not do so at all; the code
   doesn't seem to do the right thing.) It works for comments before
@@ -36,7 +47,7 @@ Infrastructure
   are exactly equivalent (i.e., without coercion). 
 
 Cleanup
-=======
+-------
 
 - Need to revisit type.__equal__. See todo there. 
 
@@ -59,9 +70,10 @@ Cleanup
   separate them from other locals.
 
 LLVM problems
-=============
+-------------
 
-- Can't add the tailcall attribute in llvm-py currently.
+- Can't add the tailcall attribute in llvm-py currently (fixed by
+  patching llvm-py).
 
 - At least for X86_64, our struct-return heuristic isn't sufficient.
   It does for example not return tuple<double,string> correctly.
@@ -70,8 +82,14 @@ LLVM problems
   
   Don't know what the situation is on other ABIs.
 
-Optimizations
-=============
+- llvm-py caches objects based on their physical address; not a good
+  idea ... The cache sometimes returned objects of the wrong type.
+  We patch llvm-py to avoid that (see llvm-py-objcache.diff).
+  However, there's still a low probability that the wrong object is
+  used ...
+
+Low-level CodeGen Optimizations
+-------------------------------
 
 - In CodeGen.llvmGenerateCCall, when returning structs, we have to
   create a temporary on the stack just because we can't cast an
@@ -82,17 +100,13 @@ Optimizations
 
 - The addr's check for an IPv4 address could use the ctlz intrinsic.
 
-- When building strucy values, rather than alloc'ing tmp instances,
+- When building struct values, rather than alloc'ing tmp instances,
   which should use insertvalue.
 
-- llvm-py caches objects based on their physical address; not a good
-  idea ... The cache sometimes returned objects of the wrong type.
-  We patch llvm-py to avoid that (see llvm-py-objcache.diff).
-  However, there's still a low probability that the wrong object is
-  used ...
+See below for higher-level / more extensive optimization ideas.
 
 Documentation
-=============
+-------------
 
 - Generating the documentation is currently broken. Need to overhaul
   that quite a bit.
@@ -101,7 +115,7 @@ Documentation
   across the board. 
 
 3rd party
-=========
+---------
 
 - The Boehm-Weiser garbage collector does not seem to support 
   PARALLEL_MARK and THREAD_LOCAL_ALLOC on all platforms; notably not
@@ -110,7 +124,7 @@ Documentation
   them based on platform. Check that more carefully.
 
 Links
-=====
+-----
 
 - Sunrise DD: A hash table implementation with lock-free concurrent
   access. Looks pretty complex though, and does not make sense to
@@ -123,3 +137,66 @@ Links
   
 - LGPL Aho-Corasick implementation.  
 
+
+Optimizations
+-------------
+
+HILTI Level
+~~~~~~~~~~~
+
+- Track which fields of a struct are actually needed. Those which are
+  not read (or not used at all), can be removed for non~exported types.
+
+  Potentially, a struct could be empty afterwards, in which case can
+  remove it completely, including all references to it.
+
+- Track which locals don't need to be saved in the function frame
+  (e.g., because of potential yielding).  Remove them from the frame
+  and use local LLVM (SSA~) variables during code generation
+  instead.
+
+- Track locals which have the same type but are never used
+  concurrently.  They can be merged into a single local (the
+  previous point may already remove a number of these, but not all).
+
+- There are probably a number of micro~optimizations easy and
+  worthwhile doing. Look at generated HILTI code.
+
+- Dead~code elimination, in particular remove all code for hooks
+  which are never run.
+
+  While LLVM already does eliminate dead code, doing it at the HILTI
+  level as well allows the other optimization above to kick in.
+
+- Inlining at the HILTI level; again, this will allow more
+  optimizations to kick in.
+
+- Can we identify cases where we can combine nested structures into
+  a single one? Might be hard to do in general, but seems there
+  could a few specific cases, particularly coming out of BinPAC,
+  where it will be helpful.
+
+- BinPAC++ uses a "__cur_ field in the parse objects to allow hooks
+  to change the current parsing position. Before a hook is run, that
+  field is set to the current position and afterwards its value is
+  written back to the current position. A hook can change it in
+  between. However, most of the time there is no change and the
+  compiler should optimize then that field away.
+
+LLVM Level
+~~~~~~~~~~
+
+- Track which of our one~function~per~block functions are called
+  only from their parent function, not from external via
+  continuations (or from other child functions of the same functions
+  that are called from continatuions). Those can be recombined with
+  their parent into a single LLVM function, removing the function
+  call glue.
+
+- Can we optimize the frame management for cases where yielding is
+  unlikley? Use real locals initially and copy them into the frame
+  only when necessary.
+
+- "opt ~O1/2/3" doesn't work and creates binaries that crash with
+  "illegal instruction". To reproduce: build pac~driver with HTTP
+  parser on vette. 

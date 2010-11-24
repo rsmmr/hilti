@@ -1,0 +1,13 @@
+diff -ur llvm-py-svn-r101/setup.py llvm-py-svn-r101-patched/setup.py
+--- llvm-py-svn-r101/setup.py	2010-10-17 20:08:37.000000000 -0700
++++ llvm-py-svn-r101-patched/setup.py	2010-10-17 20:41:11.000000000 -0700
+@@ -101,7 +101,7 @@
+         library_dirs = [libdir],
+         libraries = std_libs + libs_core,
+         extra_objects = objs_core,
+-        extra_link_args = ["-fPIC"])
++        extra_link_args = ["-fPIC"] + ldflags.split())
+ 
+     setup(
+         name='llvm-py',
+Only in llvm-py-svn-r101-patched: setup.py.orig

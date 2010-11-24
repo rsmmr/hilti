@@ -1,0 +1,37 @@
+diff -ur llvm-2.8/include/llvm-c/Core.h llvm-2.8-patched/include/llvm-c/Core.h
+--- llvm-2.8/include/llvm-c/Core.h	2010-08-27 21:09:24.000000000 -0700
++++ llvm-2.8-patched/include/llvm-c/Core.h	2010-10-17 20:48:28.000000000 -0700
+@@ -1056,7 +1056,10 @@
+     See llvm::PassManagerBase::~PassManagerBase. */
+ void LLVMDisposePassManager(LLVMPassManagerRef PM);
+ 
+-
++/** Return the target triple of the running.
++    See llvm::sys::getHostTriple(). */
++const char* LLVMGetHostTriple();
++    
+ #ifdef __cplusplus
+ }
+ 
+diff -ur llvm-2.8/lib/VMCore/Core.cpp llvm-2.8-patched/lib/VMCore/Core.cpp
+--- llvm-2.8/lib/VMCore/Core.cpp	2010-08-27 21:09:24.000000000 -0700
++++ llvm-2.8-patched/lib/VMCore/Core.cpp	2010-10-17 20:51:24.000000000 -0700
+@@ -28,6 +28,7 @@
+ #include "llvm/Support/ErrorHandling.h"
+ #include "llvm/Support/MemoryBuffer.h"
+ #include "llvm/Support/raw_ostream.h"
++#include "llvm/System/Host.h"
+ #include <cassert>
+ #include <cstdlib>
+ #include <cstring>
+@@ -2247,3 +2248,10 @@
+ void LLVMDisposePassManager(LLVMPassManagerRef PM) {
+   delete unwrap(PM);
+ }
++
++/*===-- System ----------------------------------------------------===*/
++
++const char * LLVMGetHostTriple() {
++    return llvm::sys::getHostTriple().c_str();
++}
++

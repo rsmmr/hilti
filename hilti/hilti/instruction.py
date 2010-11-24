@@ -501,6 +501,20 @@ def getInstructions():
     """
     return _Instructions
 
+def getOverloads(op):
+    """Returns a list of instructions overloading a giving operator.
+
+    op: ~~Operator-derived class - A *class* derived from ~~Operator
+    in which the caller is interested in.
+
+    Returns: list of ~~Instruction objects - The instructions
+    overlaoded *oper*. 
+    """
+    try:
+        return _OverloadedOperators[op.__name__]
+    except KeyError:
+        return []
+
 def createInstruction(name, op1=None, op2=None, op3=None, target=None, location=None):
     """Instantiates a new instruction.
 

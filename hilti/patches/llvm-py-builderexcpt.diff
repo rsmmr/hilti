@@ -1,0 +1,20 @@
+diff -ur llvm-py-svn-r101/llvm/core.py llvm-py-svn-r101-patched/llvm/core.py
+--- llvm-py-svn-r101/llvm/core.py	2010-10-17 20:08:37.000000000 -0700
++++ llvm-py-svn-r101-patched/llvm/core.py	2010-10-17 20:39:04.000000000 -0700
+@@ -1563,7 +1563,14 @@
+         self.ptr = ptr
+ 
+     def __del__(self):
+-        _core.LLVMDisposeBuilder(self.ptr)
++        try:
++            _core.LLVMDisposeBuilder(self.ptr)
++        except:
++            # [Robin] This sometimes fails with: Exception AttributeError:
++            # "'NoneType' object has no attribute 'LLVMDisposeBuilder'" in
++            # <bound method Builder.__del__ of <llvm.core.Builder object at
++            # 0x1022c8d10>> ignored
++            pass
+ 
+     def position_at_beginning(self, bblk):
+         """Position the builder at the beginning of the given block.
+Only in llvm-py-svn-r101-patched/llvm: core.py.orig

@@ -1,0 +1,36 @@
+diff -ur llvm-py-svn-r101/llvm/_core.c llvm-py-svn-r101-patched/llvm/_core.c
+--- llvm-py-svn-r101/llvm/_core.c	2010-10-17 20:08:37.000000000 -0700
++++ llvm-py-svn-r101-patched/llvm/_core.c	2010-10-17 20:40:14.000000000 -0700
+@@ -1131,6 +1131,12 @@
+ 
+ _wrap_obj2none(LLVMDisposeGenericValue, LLVMGenericValueRef)
+ 
++static PyObject *
++_wLLVMGetHostTriple()
++{
++    return PyString_FromString(LLVMGetHostTriple());
++}
++
+ 
+ /*===----------------------------------------------------------------------===*/
+ /* Misc                                                                       */
+@@ -1673,6 +1679,7 @@
+     _method( LLVMLoadLibraryPermanently )
+     _method( LLVMInlineFunction )
+     _method( PyCObjectVoidPtrToPyLong )
++    _method( LLVMGetHostTriple )
+ 
+     { NULL }
+ };
+Only in llvm-py-svn-r101-patched/llvm: _core.c.orig
+diff -ur llvm-py-svn-r101/llvm/core.py llvm-py-svn-r101-patched/llvm/core.py
+--- llvm-py-svn-r101/llvm/core.py	2010-10-17 20:08:37.000000000 -0700
++++ llvm-py-svn-r101-patched/llvm/core.py	2010-10-17 20:40:14.000000000 -0700
+@@ -1993,3 +1993,6 @@
+     check_is_value(call)
+     return _core.LLVMInlineFunction(call.ptr)
+ 
++def getHostTriple():
++    return _core.LLVMGetHostTriple()
++
+Only in llvm-py-svn-r101-patched/llvm: core.py.orig

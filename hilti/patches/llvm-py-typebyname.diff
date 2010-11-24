@@ -1,0 +1,28 @@
+diff -ru llvm-py-svn-r82/llvm/core.py llvm-py-svn-r82-patched/llvm/core.py
+--- llvm-py-svn-r82/llvm/core.py	2009-11-01 20:35:39.000000000 -0800
++++ llvm-py-svn-r82-patched/llvm/core.py	2010-02-17 20:13:46.000000000 -0800
+@@ -440,6 +440,10 @@
+         """
+         _core.LLVMDeleteTypeName(self.ptr, name)
+ 
++    def get_type_by_name(self, name):
++        """Returns the type a name maps to."""
++        return _core.LLVMGetTypeByName(self.ptr, name)
++        
+     def add_global_variable(self, ty, name):
+         """Add a global variable of given type with given name."""
+         return GlobalVariable.new(self, ty, name)
+diff -ur llvm-py/llvm/core.py llvm-py-patched/llvm/core.py
+--- llvm-py/llvm/core.py	2010-02-17 20:43:21.000000000 -0800
++++ llvm-py-patched/llvm/core.py	2010-02-17 20:58:33.000000000 -0800
+@@ -442,7 +442,9 @@
+ 
+     def get_type_by_name(self, name):
+         """Returns the type a name maps to."""
+-        return _core.LLVMGetTypeByName(self.ptr, name)
++        ptr =  _core.LLVMGetTypeByName(self.ptr, name)
++        kind = _core.LLVMGetTypeKind(ptr)
++        return _make_type(ptr, kind)
+         
+     def add_global_variable(self, ty, name):
+         """Add a global variable of given type with given name."""
