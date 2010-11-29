@@ -3,8 +3,8 @@
 
 .. _overview:
 
-Introduction [Partially Missing]
-================================
+Introduction
+============
 
 This introduction gives a short overview of how to write and use
 BinPAC++ parsers. For a complete list of features available see
