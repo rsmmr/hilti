@@ -1,8 +1,5 @@
 # $Id$
 """
-Exceptions
-~~~~~~~~~~
-
 The *exception* data type represents an exception that can divert control up
 the calling stack to the closest function prepared to handle it.
 """

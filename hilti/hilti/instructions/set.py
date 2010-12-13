@@ -1,8 +1,5 @@
 # $Id$
 """
-Sets
-~~~~
-
 A ``set`` store keys of a particular type ``K``. Insertions,
 lookups, and deletes are amortized constant time. Keys must be HILTI
 *value types*, and each value can only be stored once.

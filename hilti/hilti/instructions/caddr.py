@@ -1,8 +1,5 @@
 # $Id$
 """
-CAddr
-~~~~~
-
 The ``caddr`` data type stores the physical memory address of a HILTI object.
 It is primarily a tool for passing such an address on to an external C
 program. Note that there's no type information associated with a *caddr* value

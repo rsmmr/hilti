@@ -1,8 +1,5 @@
 # $Id$
 """
-I/O Sources
-~~~~~~~~~~~
-
 The *iosrc* data type represents a source of external input coming in for
 processing. It transparently support a set of different sources (currently
 only ``libpcap``-based, but in the future potentially other's as well.).
@@ -196,10 +193,10 @@ def _makeIterator(cg, ty, src, elem):
 class New(Operator):
     """Instantiates a new *iosrc* instance, and initializes it for reading.
     The format of string *op2* is depending on the kind of ``iosrc``. For
-    ~~PcapLive, it is the name of the local interface to listen on. For
-    ~~PcapOffline, it is the name of the trace file.
+    :hlt:glob:`PcapLive`, it is the name of the local interface to listen
+    on. For :hlt:glob:`PcapLive`, it is the name of the trace file.
 
-    Raises: ~~IOSrcError if the packet source cannot be opened.
+    Raises: :hlt:type:`IOSrcError` if the packet source cannot be opened.
     """
     def _codegen(self, cg):
         result = _makeSwitch(cg, self.op1().value(), "new", [self.op2()], True, ctor=True)

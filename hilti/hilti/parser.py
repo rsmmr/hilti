@@ -107,7 +107,7 @@ def p_def_global(p):
 
     p.parser.state.module.scope().add(i)
 
-    return i
+    p[0] = i
 
 def p_def_const(p):
     """def_const : CONST const_id '=' operand"""
@@ -125,12 +125,12 @@ def p_def_const(p):
     i = id.Constant(name, p[4], location=_loc(p, 2))
     p.parser.state.module.scope().add(i)
 
-    return p[2]
+    p[0] = p[2]
 
 def p_def_local(p):
     """def_local : LOCAL local_id NL"""
     p.parser.state.function.scope().add(p[2])
-    return p[2]
+    p[0] = p[2]
 
 def p_def_type(p):
     """def_type : def_struct_decl
@@ -139,7 +139,7 @@ def p_def_type(p):
                 | def_bitset_decl
                 | def_exception_decl
                 """
-    return p[1]
+    p[0] = p[1]
 
 def _addTypeDecl(p, name, t, location):
     i = id.Type(name, t, linkage=id.Linkage.EXPORTED, location=location)
@@ -176,7 +176,7 @@ def p_def_enum(p):
     undef = id.Constant(p[2] + "::Undef", operand.Constant(t.undef()), linkage=id.Linkage.EXPORTED, location=_loc(p, 1))
     p.parser.state.module.scope().add(undef)
 
-    return nid
+    p[0] = nid
 
 def p_enum_label_list(p):
     """enum_label_list : enum_label "," enum_label_list
@@ -203,7 +203,7 @@ def p_def_bitset(p):
         eid = id.Constant(p[2] + "::" + label, operand.Constant(c), linkage=id.Linkage.EXPORTED, location=_loc(p, 1))
         p.parser.state.module.scope().add(eid)
 
-    return nid
+    p[0] = nid
 
 def p_def_exception(p):
     """def_exception_decl : TYPE IDENT '=' EXCEPTION '<' opt_type '>' opt_exception_base opt_internal"""
@@ -211,7 +211,7 @@ def p_def_exception(p):
     if p[9]:
         t.setInternalName(p[9])
 
-    return _addTypeDecl(p, p[2], t, location=_loc(p, 1))
+    p[0] = _addTypeDecl(p, p[2], t, location=_loc(p, 1))
 
 def p_opt_internal(p):
     """opt_internal : INTERNAL '(' CSTRING ')'
@@ -220,7 +220,7 @@ def p_opt_internal(p):
 
 def p_def_exception_no_type(p):
     """def_exception_decl : TYPE IDENT '=' EXCEPTION opt_exception_base"""
-    return _addTypeDecl(p, p[2], type.Exception(None, p[5], location=_loc(p, 1)), location=_loc(p, 1))
+    p[0] = _addTypeDecl(p, p[2], type.Exception(None, p[5], location=_loc(p, 1)), location=_loc(p, 1))
 
 def p_opt_exception_base(p):
     """opt_exception_base : ':' type
@@ -234,7 +234,7 @@ def p_def_overlay(p):
     for f in p[7]:
         t.addField(f)
 
-    return _addTypeDecl(p, p[2], t, location=_loc(p, 1))
+    p[0] = _addTypeDecl(p, p[2], t, location=_loc(p, 1))
 
 def p_def_overlay_field_list(p):
     """overlay_field_list : overlay_field ',' overlay_field_list
@@ -948,7 +948,7 @@ def p_opt_id_init(p):
     """opt_int_init : '=' CINTEGER
                     | """
 
-    return p[2] if len(p) == 3 else None
+    p[0] =  p[2] if len(p) == 3 else None
 
 def p_error(p):
     if p:

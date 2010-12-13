@@ -1,4 +1,9 @@
 # $Id$
+"""
+XXX
+"""
+
+_doc_section = ("loop", "Loops")
 
 import hilti.instruction as instruction
 import hilti.signature as signature
@@ -8,9 +13,12 @@ import hilti.operand as operand
 import hilti.util as util
 import hilti.block as block
 
+from hilti import hlt
+
 import operators
 import flow
 
+@hlt.instruction("<foreach>", doc="for i in XXX")
 class ForEach(instruction.Instruction):
 
     _signature = signature.Signature("for")

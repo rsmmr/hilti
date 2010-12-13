@@ -2,6 +2,7 @@
 #
 # Generates the instruction reference.
 
+import inspect
 import os
 import os.path
 import sys
@@ -70,6 +71,10 @@ def safeAdd(dict, idx, val):
         dict[idx] = [val]
 
 def canonicalizeDoc(doc):
+
+    if not doc:
+        return ""
+
     canon = []
 
     for line in doc.strip().split("\n"):
@@ -84,7 +89,11 @@ def fmtIns(mnemo, ins, kind):
     ops = []
     params = []
 
-    sig = ins._signature
+    if not isinstance(ins, hilti.signature.Signature):
+        sig = ins._signature
+    else:
+        sig = ins
+        kind = "overload"
 
     if sig.target():
         ops += ["target"]
@@ -104,7 +113,12 @@ def fmtIns(mnemo, ins, kind):
         params += ["    :Target: %s" % sig.getOpDoc(sig.target())]
 
     s = ""
-    s += ".. hlt:%s:: %s %s\n" % (kind, mnemo, " ".join(ops))
+
+    if not sig.doc():
+        s += ".. hlt:%s:: %s %s\n" % (kind, mnemo, " ".join(ops))
+    else:
+        s += ".. hlt:%s:: %s\n" % (kind, sig.doc())
+
     s += "\n"
     s += "\n".join(params) + "\n"
     s += "\n"
@@ -123,18 +137,28 @@ def fmtOverload(ins):
 
     return "    * %s" % ", ".join(params)
 
-def startGroup(tag, title, group, ts):
-    out = openFile("hilti-%s-%s.rst" % (tag, group), None, ts)
+def startGroup(tag, title, docstring, ts):
+    out = openFile("hilti-instructions-%s.rst" % tag, None, ts)
 
-    if out and title:
-        print >>out, fmtGroup(title)
+    if not out:
+        return None
+
+    if title:
+        print >>out, fmtGroup(tag, title, docstring)
 
     return out
 
-def fmtGroup(group, sec='-'):
+def fmtGroup(tag, group, docstring, sec='-'):
     s = ""
     s += group + "\n"
-    s += sec * len(group) + "\n"
+    s += sec * len(group) + "\n\n"
+
+    if tag.startswith("types"):
+        (section, subsection) = tag.split("-")
+        s += ".. hlt::type %s\n\n" % subsection
+
+    if docstring:
+        s += "%s\n" % docstring
 
     return s
 
@@ -146,45 +170,104 @@ if len(sys.argv) != 2:
 
 dst = sys.argv[1]
 
+sections = {}
 instructions = {}
-ops_overloaded = {}
-ops_generic = []
-internal = {}
-
 timestamps = {}
 newest = 0
+
+def makeIdx(sec, subsec):
+    if subsec:
+        return "%s-%s" % (sec, subsec)
+    else:
+        return "main-%s" % sec
 
 for (mnemo, ins) in hilti.instruction.getInstructions().items():
 
     m = mnemo.split(".")
     prefix = m[0]
 
-    if prefix == "":
-        prefix = "internal"
-        safeAdd(internal, prefix, (mnemo, ins))
+    mod = sys.modules[ins.__module__]
 
-    elif issubclass(ins, hilti.instruction.Operator):
-        safeAdd(ops_overloaded, prefix, (mnemo, ins))
+    # Internal instructions go straight into the internal section.
+    if not prefix:
+        section = "internal"
+        subsection = None
+        title = "Internal Instructions"
+        docstring = None
 
-    elif issubclass(ins, hilti.instruction.Instruction):
-        if ins.__module__ == "hilti.instructions.operators":
-            prefix = "operators"
-            ops_generic += [(mnemo, ins)]
-        else:
-            safeAdd(instructions, prefix, (mnemo, ins))
+    # See if the module specified which section its instructions should go into.
+    elif "_doc_section" in mod.__dict__:
+        doc = mod._doc_section
 
-    if not prefix in timestamps:
-        ts = os.path.getmtime(sys.modules[ins.__module__].__file__)
-        timestamps[prefix] = ts
-        newest = max(newest, ts)
+        if (not isinstance(doc, list) and not isinstance(doc, tuple)) or \
+           len(doc) != 2:
+           print >>sys.stderr, "%s: doc_section not of required type" % mod
+
+        section = doc[0]
+        subsection = None
+        title = doc[1]
+        docstring = mod.__doc__
+
+    else:
+        # Default is data types, with one subsection per type.
+        section = "types"
+        subsection = prefix
+        title = prefix
+        docstring = mod.__doc__
+
+    # Add instruction to its section.
+
+    idx = makeIdx(section, subsection)
+
+    if not idx in sections:
+        sections[idx] = (section, subsection, title, docstring)
+
+    if not idx in instructions:
+        instructions[idx] = []
+
+        # See if the module overloads any operators. If so, we insert them
+        # into the section as well.
+        ops = hilti.instruction.getOverloadsByModule(ins.__module__)
+        for op in ops:
+            instructions[idx] += [(op.name(), op)]
+
+
+    instructions[idx] += [(mnemo, ins)]
+
+    # Update timestamp for this section.
+    if not idx in timestamps:
+        timestamps[idx] = 0
+
+    ts = os.path.getmtime(sys.modules[ins.__module__].__file__)
+    timestamps[idx] = max(ts, timestamps[idx])
+    newest = max(newest, ts)
 
 #######
 
-for group in instructions:
-    out = startGroup("instructions", group, group, timestamps[group])
+for idx in sections:
+    (section, subsection, title, docstring) = sections[idx]
+
+    out = startGroup(idx, title, docstring, timestamps[idx])
+
     if out:
-        for (mnemo, ins) in sorted(instructions[group], key=lambda x: x[0]):
-            print >>out, fmtIns(mnemo, ins, "instruction")
+        for (mnemo, ins) in sorted(instructions[idx], key=lambda x: x[0]):
+            # Special case operators: they have their own role, and we add all
+            # their overloads.
+            if inspect.isclass(ins) and issubclass(ins, hilti.instruction.Operator):
+                print >>out, fmtIns(mnemo, ins, "operator")
+
+                print >>out, "Overloaded for:\n"
+
+                for i in hilti.instruction.getOverloads(ins):
+                    print >>out, fmtOverload(i())
+
+                print >>out, "\n"
+
+            else:
+                # Default case.
+                print >>out, fmtIns(mnemo, ins, "instruction")
+
+sys.exit(0)
 
 #######
 
@@ -195,13 +278,6 @@ if out:
 
         for (mnemo, oper) in sorted(ops_overloaded[group], key=lambda x: x[0]):
             print >>out, fmtIns(mnemo, oper, "operator")
-
-        print >>out, "Overloaded for:\n"
-
-        for i in hilti.instruction.getOverloads(oper):
-            print >>out, fmtOverload(i())
-
-        print >>out, "\n"
 
 #######
 

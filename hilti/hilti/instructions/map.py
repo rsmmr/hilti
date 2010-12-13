@@ -1,8 +1,5 @@
 # $Id$
 """
-Maps
-~~~~
-
 A ``maps`` maps keys of type ``K`` to values of type ``T``. Insertions,
 lookups, and deletes are amortized constant time. Keys must be HILTI *value
 types*, while values can be of any time. Up to one value can be associated

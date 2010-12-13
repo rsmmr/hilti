@@ -1,8 +1,5 @@
 # $Id$
 """
-References
-~~~~~~~~~~
-
 The ``ref<T>`` data type encapsulates references to dynamically
 allocated, garbage-collected objects of type *T*.
 

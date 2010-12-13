@@ -1,8 +1,5 @@
 # $Id$
 """
-Channels
-~~~~~~~~
-
 A channel is a high-performance data type for I/O operations that is designed
 to efficiently transfer large volumes of data both between the host
 application and HILTI and intra-HILTI components.

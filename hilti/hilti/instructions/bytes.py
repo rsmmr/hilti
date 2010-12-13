@@ -1,8 +1,5 @@
 # $Id$
 """
-Bytes
-~~~~~
-
 ``bytes`` is a data type for storing sequences of raw bytes. It is optimized
 for storing and operating on large amounts of unstructured data. In
 particular, it provides efficient subsequence and append operations. Bytes are

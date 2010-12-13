@@ -1,4 +1,9 @@
 # $Id$
+"""
+XXX
+"""
+
+_doc_section = ("exceptions", "Exceptions")
 
 builtin_id = id
 

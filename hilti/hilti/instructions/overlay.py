@@ -9,9 +9,6 @@
 #     starting offset, we cache its end position once we have calculated it
 #     once.
 """
-Overlay
-~~~~~~~
-
 Todo.
 """
 

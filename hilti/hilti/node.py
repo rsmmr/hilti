@@ -111,6 +111,15 @@ class Node(visitor.Visitable):
 
         self._codegen(cg)
 
+    def autodoc(self):
+        """Prints out documentation for the node. The output is suitable as
+        input for HILTI's Sphinx-based manual, and will be printed to stdout.
+
+        Can be overridden by derived classes. The default implementation does
+        nothing.
+        """
+        pass
+
     ### Method that can be overridden by derived classes.
 
     def _resolve(self, resolver):

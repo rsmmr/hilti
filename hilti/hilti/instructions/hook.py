@@ -1,8 +1,5 @@
 # $Id$
 """
-Hooks
-~~~~~
-
 A ``hook`` is collection of individual hook functions, all having
 the same signature and grouped together under a shared name. A
 caller can execute all functions making up the hook by refering to

@@ -1,8 +1,5 @@
 # $Id$
 """
-Enums
-~~~~~
-
 The ``enum`` data type represents a selection of unique values, identified by
 labels. Enums must be defined in global space:
 
@@ -88,6 +85,9 @@ class Enum(type.ValueType, type.Constable):
         labels = ["%s = %d" % (l, v) for (l, v) in self._labels.items()]
         return "enum { %s }" % ", ".join(sorted(labels))
 
+    def docName(self):
+        return "enum"
+
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
@@ -161,6 +161,18 @@ class Enum(type.ValueType, type.Constable):
                 namespace = i.name()
 
         printer.output(namespace + "::" + const.value())
+
+    ### Overridden from None.
+    def autodoc(self):
+        for (l, v) in sorted(self._labels.items()):
+            print "    .. hlt:global:: %s" % l
+
+            c = ["<No documentation for enum values yet.>"] # FIXME
+
+            for line in c:
+                print "        ", line
+
+            print
 
 @hlt.overload(Equal, op1=cEnum, op2=cSameTypeAsOp(1), target=cBool)
 class Equal(Operator):

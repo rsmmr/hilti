@@ -5,4 +5,4 @@ Data Types
 .. toctree::
    :glob:
 
-   _generated/hilti-types-*
+   _generated/hilti-instructions-types-*

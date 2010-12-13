@@ -652,6 +652,18 @@ class Type(ID):
         self.type().output(printer)
         printer.output(nl=True)
 
+    def autodoc(self):
+        print ".. hlt:type:: %s %s\n" % (self._name, self.type().docName())
+
+        for line in self.comment():
+            print "    ", line
+
+        print
+
+        self.type().autodoc()
+
+        print
+
 class Unknown(ID):
     """An ID representing a not yet resolved identifier. Such an ID can be
     used in place of the correct one if the latter is not known yet. It must

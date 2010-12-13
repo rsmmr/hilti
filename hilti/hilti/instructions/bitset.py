@@ -1,8 +1,5 @@
 # $Id$
 """
-Bitsets
-~~~~~~~
-
 The ``bitset`` data type groups a set of bits together. In each instance, any
 of the bits is either set or not set. The individual bits are identified by
 labels, which are declared in the bitsets type declaration::

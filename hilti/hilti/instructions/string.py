@@ -1,8 +1,5 @@
 # $Id$
 """
-Strings
-~~~~~~~
-
 Strings are sequences of characters and are intended to be used primarily for
 text that at some point might be presented to a human in one way or the other.
 They are inmutable, copied by value on assignment, and internally stored in

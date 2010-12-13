@@ -1,8 +1,5 @@
 # $Id$
 """
-Structures
-~~~~~~~~~~
-
 The ``struct`` data type groups a set of heterogenous, named fields. Each
 instance tracks which fields have already been set. Fields may optionally
 provide defaul values that are returned when it's read but hasn't been set

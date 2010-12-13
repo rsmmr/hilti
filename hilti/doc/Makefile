@@ -16,6 +16,8 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest autogen autogen-clean
 
+WWW=$(HOME)/www/hilti/doc
+
 all : html 
 
 autogen:
@@ -24,6 +26,10 @@ autogen:
 
 autogen-clean:
 	-rm -rf _generated/*
+
+www: html
+	cp -rp _build/html/* $(WWW)
+	( cd $(WWW)/../.. && make )
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"

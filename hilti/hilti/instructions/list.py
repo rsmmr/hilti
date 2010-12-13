@@ -1,8 +1,5 @@
 # $Id$
 """
-Lists
-~~~~~
-
 A ``list`` stores elements of a specific tyep T in a double-linked list,
 allowing for fast insert operations at the expense of expensive random access.
 

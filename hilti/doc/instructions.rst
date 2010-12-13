@@ -8,7 +8,6 @@ per-type basis, but some are generally available for all types.
 .. toctree::
    :glob:
 
-   _generated/hilti-operators-generic
-   _generated/hilti-operators-overloaded
-   instructions-all
+   _generated/hilti-instructions-main-*
+   types
 

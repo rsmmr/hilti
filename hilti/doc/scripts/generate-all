@@ -14,4 +14,6 @@ dir=`dirname $0`
 $dir/generate-reference $DEST
 $dir/generate-classes $DEST
 
+$dir/generate-module ../libhilti/module/hilti.hlt >$DEST/module-hilti.rst
+
 

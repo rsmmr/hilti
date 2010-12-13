@@ -11,8 +11,8 @@ There are a number of dependencies that HILTI needs to find
 installed:
 
     * Python 2.6,  http://www.python.org
-    * LLVM 2.6, http://llvm.org/releases
-    * Clang 2.6, http://clang.llvm.org
+    * LLVM 2.8, http://llvm.org/releases
+    * Clang 2.8, http://clang.llvm.org
     * llvm-py, http://code.google.com/p/llvm-py/downloads/list
     * Ply 3.3, http://www.dabeaz.com/ply
     * CMake 2.8, http://www.cmake.org

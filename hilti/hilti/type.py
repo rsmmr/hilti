@@ -132,6 +132,9 @@ class Type(object):
         """
         return cls._token
 
+    def autodoc(self):
+        pass
+
     @classmethod
     def typeName(cls):
         """Returns a short, descriptive name for instances of the type. These

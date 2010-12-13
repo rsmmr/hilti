@@ -1,8 +1,5 @@
 # $Id$
 """
-Tuples
-~~~~~~
-
 The *tuple* data type represents ordered tuples of other values, which can be
 of mixed type. Tuple are however statically types and therefore need the
 individual types to be specified as type parameters, e.g.,

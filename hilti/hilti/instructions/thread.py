@@ -1,7 +1,6 @@
 # $Id$
 """
-Concurrency
-~~~~~~~~~~~
+XXX
 """
 
 import llvm.core

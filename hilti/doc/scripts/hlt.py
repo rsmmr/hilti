@@ -13,8 +13,7 @@ from sphinx.directives import ObjectDescription
 from sphinx.roles import XRefRole
 from sphinx.util.nodes import make_refnode
 
-class HltInstruction(ObjectDescription):
-
+class HltGeneric(ObjectDescription):
     def add_target_and_index(self, name, sig, signode):
         targetname = self.objtype + '-' + name
         if targetname not in self.state.document.ids:
@@ -23,7 +22,7 @@ class HltInstruction(ObjectDescription):
             signode['first'] = (not self.names)
             self.state.document.note_explicit_target(signode)
 
-            objects = self.env.domaindata['rst']['objects']
+            objects = self.env.domaindata['hlt']['objects']
             key = (self.objtype, name)
             if key in objects:
                 self.env.warn(self.env.docname,
@@ -39,12 +38,13 @@ class HltInstruction(ObjectDescription):
                                               targetname, targetname))
 
     def get_index_text(self, objectname, name):
-        if self.objtype == 'instruction':
-            return _('%s (instruction)') % name
-        elif self.objtype == 'operator':
-            return _('%s (operator)') % name
-        return ''
+        return _('%s (%s)') % (name, self.objtype)
 
+    def handle_signature(self, sig, signode):
+        signode += addnodes.desc_name(sig, sig)
+        return sig
+
+class HltInstruction(HltGeneric):
     def handle_signature(self, sig, signode):
         m = sig.split()
         name = m[0]
@@ -62,22 +62,45 @@ class HltInstruction(ObjectDescription):
             signode += addnodes.desc_addname(args, args)
         return name
 
+class HltType(HltGeneric):
+    pass
+    #def handle_signature(self, sig, signode):
+    #    # Do nothing, we just want an anchor for xrefing.
+    #    return ""
+
 class HltDomain(Domain):
     """Hlt domain."""
     name = 'hlt'
     label = 'HILTI'
 
     object_types = {
-        'instruction': ObjType(l_('instruction'), 'instr'),
+        'instruction': ObjType(l_('instruction'), 'ins'),
         'operator':    ObjType(l_('operator'),    'op'),
+        'overload':    ObjType(l_('overload'),    'ovl'),
+        'type':        ObjType(l_('type'),        'type'),
+        'function':    ObjType(l_('function'),    'func'),
+        'global':      ObjType(l_('global'),      'glob'),
+        'module':      ObjType(l_('module'),      'mod'),
     }
+
     directives = {
         'instruction':   HltInstruction,
         'operator':      HltInstruction,
+        'overload':      HltInstruction,
+        'type':          HltInstruction,
+        'function':      HltGeneric,
+        'global':        HltGeneric,
+        'mod':           HltGeneric,
     }
+
     roles = {
-        'instr': XRefRole(),
-        'op':    XRefRole(),
+        'ins':    XRefRole(),
+        'op':     XRefRole(),
+        'ovl':    XRefRole(),
+        'type':   XRefRole(),
+        'func':   XRefRole(),
+        'glob':   XRefRole(),
+        'mod':    XRefRole(),
     }
 
     initial_data = {

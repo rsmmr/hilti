@@ -1,8 +1,5 @@
 # $Id$
 """
-Doubles
-~~~~~~~
-
 The ``double`` data type represents a 64-bit floating-point
 numbers.
 """

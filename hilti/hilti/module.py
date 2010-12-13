@@ -259,6 +259,14 @@ class Module(node.Node):
 
         printer.endModule()
 
+    def autodoc(self):
+        print ".. hlt:module:: %s\n" % self.name()
+
+        for line in self.comment():
+            print "    ", line
+
+        print 
+
     # Visitor support.
     def visit(self, v):
         v.visitPre(self)

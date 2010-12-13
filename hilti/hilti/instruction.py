@@ -439,13 +439,13 @@ def _make_ins_init(myclass):
     ins_init.myclass = myclass
     return ins_init
 
-def instruction(name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False, location=None):
+def instruction(name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False, location=None, doc=None):
     """A *decorater* for classes derived from ~~Instruction. The decorator
     defines the new instruction's ~~Signature. The arguments correpond to
     those of the ~~Signature constructor."""
     def register(ins):
         global _Instructions
-        ins._signature = Signature(name, op1, op2, op3, target, callback, terminator)
+        ins._signature = Signature(name, op1, op2, op3, target, callback, terminator, doc)
         d = dict(ins.__dict__)
         d["__init__"] = _make_ins_init(ins)
         newclass = builtin_type(ins.__name__, (ins.__base__,), d)
@@ -471,6 +471,7 @@ def overload(operator, op1, op2=None, op3=None, target=None):
 
         global _Instructions
         ins._signature = Signature(operator().name(), op1, op2, op3, target)
+        ins._signature.__doc__ = ins.__doc__
         d = dict(ins.__dict__)
         d["__init__"] = _make_ins_init(ins)
         newclass = builtin_type(ins.__name__, (ins.__base__,), d)
@@ -481,12 +482,18 @@ def overload(operator, op1, op2=None, op3=None, target=None):
         except:
             _OverloadedOperators[idx] = [ins]
 
+        try:
+            _OverloadedOperatorsByModule[ins.__module__] += [ins._signature]
+        except:
+            _OverloadedOperatorsByModule[ins.__module__] = [ins._signature]
+
         return newclass
 
     return register
 
 _Instructions = {}
 _OverloadedOperators = {}
+_OverloadedOperatorsByModule = {}
 
 def getInstructions():
     """Returns a dictionary of instructions. More precisely, the function
@@ -512,6 +519,19 @@ def getOverloads(op):
     """
     try:
         return _OverloadedOperators[op.__name__]
+    except KeyError:
+        return []
+
+def getOverloadsByModule(mod):
+    """Returns a list of instructions overloading any operator in a specific
+    Python module.
+
+    mod: string - The name of the module.
+
+    Returns: list of ~~Instruction objects - The overloads.
+    """
+    try:
+        return _OverloadedOperatorsByModule[mod]
     except KeyError:
         return []
 

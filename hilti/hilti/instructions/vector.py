@@ -1,8 +1,5 @@
 # $Id$
 """
-Vectors
-~~~~~~~
-
 A ``vector`` maps integer indices to elements of a specific type ``T``. Vector
 elements can be read and written. Indices are zero-based. For a read
 operation, all indices smaller or equal the largest index written so far are

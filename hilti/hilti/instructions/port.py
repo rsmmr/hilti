@@ -1,8 +1,5 @@
 # $Id$
 """
-Port numbers
-~~~~~~~~~~~~
-
 The *port* data type represents TCP and UDP port numbers. Port constants are
 written with a ``/tcp`` or ``/udp`` prefix, respectively. For example,
 ``80/tcp`` and ``53/udp``. If not explicitly initialized, a port ``0/tcp``.

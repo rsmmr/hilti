@@ -1,8 +1,5 @@
 # $Id$
 """
-Network Prefixes
-~~~~~~~~~~~~~~~~
-
 The ``net`` data type represents ranges of IP address, specified in CIDR
 notation. It transparently handles both IPv4 and IPv6 networks.
 """

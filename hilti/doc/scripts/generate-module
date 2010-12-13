@@ -1,0 +1,35 @@
+#! /usr/bin/env python2.6
+#
+# Generates documentation for one HILTI module.
+
+import os
+import os.path
+import sys
+
+import hilti
+
+if len(sys.argv) != 2:
+    print >>sys.stderr, "Usage: %s <input.hlt>" % sys.argv[0]
+    sys.exit(1)
+
+input = sys.argv[1]
+
+(errors, mod) = hilti.parseModule(input, ["../libhilti", "../libhilti/module"])
+
+if errors:
+    print >>sys.stderr, "Errors found while parsing %s" % input
+    sys.exit(1)
+
+print >>sys.stderr, "Writing documentation for %s ..." % os.path.basename(input)
+
+name = mod.name() + '.hlt'
+print name
+print "-" * len(name)
+print
+
+mod.autodoc()
+
+for id in mod.scope().IDs():
+    id.autodoc()
+
+

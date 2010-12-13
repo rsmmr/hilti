@@ -1,7 +1,4 @@
 """
-Operators
-~~~~~~~~~
-
 An *operator* is a instruction that it not tied to a particular type but
 is overloaded for arguments of different types to implement
 semantically similar operations. Note that the specifics of each operation is
@@ -9,6 +6,8 @@ defined on a per-type basis, and documented there. For example, the *incr* opera
 increments its argument by one) will add 1 to an integer yet move to the
 next element for a container iterator.
 """
+
+_doc_section = ("operators", "Operators")
 
 import hilti.constant as constant
 import hilti.util as util

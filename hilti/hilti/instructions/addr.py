@@ -1,8 +1,5 @@
 # $Id$
 """
-IP Addresses
-~~~~~~~~~~~~
-
 The *addr* data type represents IP addresses. It transparently handles both
 IPv4 and IPv6 addresses.
 """

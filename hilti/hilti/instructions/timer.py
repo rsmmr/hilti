@@ -1,8 +1,5 @@
 # $Id$
 """
-Timers  and Timer Managers
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 A ``timer`` executes an action at a certain point of time in the future, where
 "time" is defined by a ``timer_mgr`` object with which each timer is
 associated. Each manager tracks its time as a monotonically increasing

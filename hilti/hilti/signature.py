@@ -33,8 +33,11 @@ class Signature:
 
     terminator: bool - True if the instruction is considered a block
     |terminator|.
+
+    doc: string - If given, this string will be used in the instruction
+    reference instead of the normally generated signatured.
     """
-    def __init__(self, name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False):
+    def __init__(self, name, op1=None, op2=None, op3=None, target=None, callback=None, terminator=False, doc=None):
         self._name = name
         self._op1 = op1
         self._op2 = op2
@@ -42,6 +45,7 @@ class Signature:
         self._target = target
         self._callback = callback
         self._terminator = terminator
+        self._doc = doc
 
         for op in [target, op1, op2, op3]:
             if op:
@@ -99,6 +103,14 @@ class Signature:
         Returns: bool - True if it is terminator instruction.
         """
         return self._terminator
+
+    def doc(self):
+        """Returns a string to be used in the instruction reference in place
+        of the normally generated signature.
+
+        Returns: string - The string, or None if not defined.
+        """
+        return self._doc
 
     def __str__(self):
         target = "<%s> = " % self._target if self._target else ""

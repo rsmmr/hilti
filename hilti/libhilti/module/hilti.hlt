@@ -1,4 +1,3 @@
-# $Id$
 #
 # User-visible libhilti functions.
 #
@@ -14,12 +13,23 @@ declare "C-HILTI" void sleep(double secs)
 declare "C-HILTI" void wait_for_threads()
 
 # FIXME: Add the other internal exceptions here as well.
+
+# Raised when a division by zero is attempted.
 type DivisionByZero = exception<string> @internal("hlt_exception_division_by_zero")
+
+# Raised when an operation cannot complete immediately but would
+# need to block.
 type WouldBlock = exception<string> @internal("hlt_exception_would_block")
+
+## Raised when for a hook declared as returning a value, no
+## implementation has already done so.
 type NoHookResult = exception<string> @internal("hlt_exception_no_hook_result")
 
-type Packed = enum {
+## Raised when an input error is encountered with an hlt:type:`iosrc`.
+type NoHookResult = exception<string> @internal("hlt_exception_no_hook_result")
 
+## Defines the valid formats for the ref:op:`unpack` operator. 
+type Packed = enum {
     # String
     ASCIIZ,
 

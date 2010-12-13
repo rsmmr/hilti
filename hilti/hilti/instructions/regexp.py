@@ -1,8 +1,5 @@
 # $Id$
 """
-Regular Expressions
-~~~~~~~~~~~~~~~~~~~
-
 The *regexp* data type provides regular expression matching on *string* and
 *bytes* objects.
 """

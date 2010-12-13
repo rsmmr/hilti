@@ -1,8 +1,9 @@
 # $Id$
 """
-Debugging Support
-~~~~~~~~~~~~~~~~~
+XXX
 """
+
+_doc_section = ("debug", "Debugging")
 
 import llvm.core
 

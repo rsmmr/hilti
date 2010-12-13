@@ -1,8 +1,8 @@
 # $Id$
 """
-Flow Control
-~~~~~~~~~~~~
 """
+
+_doc_section = ("flow", "Flow Control")
 
 # Todo: Where to document this:
 #
