@@ -12,18 +12,18 @@ if len(sys.argv) != 4:
     print >>sys.stderr, "usage: simple-httpd <dir> <ip> <port>"
     sys.exit(1)
 
-dir = sys.argv[1]    
-ip = sys.argv[2]    
+dir = sys.argv[1]
+ip = sys.argv[2]
 port = int(sys.argv[3])
 
 os.chdir(dir)
-    
+
 httpd = BaseHTTPServer.HTTPServer((ip, port), SimpleHTTPServer.SimpleHTTPRequestHandler)
 sa = httpd.socket.getsockname()
-    
+
 print "Serving %s on %s:%s ..." % (dir, sa[0], sa[1])
 httpd.serve_forever()
-    
-    
-    
+
+
+
 

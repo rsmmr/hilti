@@ -1,7 +1,9 @@
 # $Id$
 """
-The *exception* data type represents an exception that can divert control up
-the calling stack to the closest function prepared to handle it.
+.. hlt:type:: exception
+
+   The *exception* data type represents an exception that can divert control
+   up the calling stack to the closest function prepared to handle it.
 """
 
 builtid_id = id
@@ -16,7 +18,7 @@ from hilti.instructions.operators import *
 # Special place-holder for the root of all exceptions (initalized below).
 _ExceptionRoot = None
 
-@hlt.type("exception", 20)
+@hlt.type("exception", 20, c="hlt_exception *")
 class Exception(type.HeapType, type.Parameterizable):
     """Type for ``exception``.
 
@@ -161,15 +163,12 @@ class Exception(type.HeapType, type.Parameterizable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """An ``exception`` is mapped to an ``hlt_exception *``."""
         return cg.llvmTypeExceptionPtr()
 
     ### Overridden from ValueType.
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_exception *"
-        return typeinfo
+        return cg.TypeInfo(self)
 
     def llvmDefault(self, cg):
         return llvm.core.Constant.null(_llvmStringTypePtr(0))

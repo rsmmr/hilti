@@ -1,13 +1,15 @@
 # $Id$
 """
-The *integer* data type represents signed integers of a fixed width. The width
-is specified as part of the type name as, e.g., in ``int<16>`` for a 16-bit
-integer. There are predefined shortcuts ``int8``, ``int16``, ``int32`` and
-``int64``. If not explictly initialized, integers are set to zero initially.
+.. hlt:type:: int
 
-TODO: Discuss signed vs. unsigned (short version: we don't
-distinguish, but have to version of all instructions for which it
-matters).
+   The *integer* data type represents signed integers of a fixed width. The
+   width is specified as part of the type name as, e.g., in ``int<16>`` for a
+   16-bit integer. There are predefined shortcuts ``int8``, ``int16``,
+   ``int32`` and ``int64``. If not explictly initialized, integers are set to
+   zero initially.
+
+   TODO: Discuss signed vs. unsigned (short version: we don't distinguish, but
+   have to version of all instructions for which it matters).
 """
 
 import llvm.core
@@ -18,7 +20,7 @@ import hilti.type as type
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("int", 1)
+@hlt.type("int", 1, c="int<n>_t")
 class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameterizable):
     """Type for integers.
 

@@ -5,6 +5,7 @@
 import inspect
 import os
 import os.path
+import re
 import sys
 import types as builtin_types
 
@@ -70,7 +71,7 @@ def safeAdd(dict, idx, val):
     except KeyError:
         dict[idx] = [val]
 
-def canonicalizeDoc(doc):
+def canonicalizeDoc(doc, indent=3):
 
     if not doc:
         return ""
@@ -79,7 +80,7 @@ def canonicalizeDoc(doc):
 
     for line in doc.strip().split("\n"):
         line = line.strip()
-        line = "    " + line
+        line = " " * indent + line
 
         canon += [line]
 
@@ -152,10 +153,6 @@ def fmtGroup(tag, group, docstring, sec='-'):
     s = ""
     s += group + "\n"
     s += sec * len(group) + "\n\n"
-
-    if tag.startswith("types"):
-        (section, subsection) = tag.split("-")
-        s += ".. hlt::type %s\n\n" % subsection
 
     if docstring:
         s += "%s\n" % docstring
@@ -231,7 +228,6 @@ for (mnemo, ins) in hilti.instruction.getInstructions().items():
         for op in ops:
             instructions[idx] += [(op.name(), op)]
 
-
     instructions[idx] += [(mnemo, ins)]
 
     # Update timestamp for this section.
@@ -241,6 +237,83 @@ for (mnemo, ins) in hilti.instruction.getInstructions().items():
     ts = os.path.getmtime(sys.modules[ins.__module__].__file__)
     timestamps[idx] = max(ts, timestamps[idx])
     newest = max(newest, ts)
+
+####### Mapping of HILTI types to C types.
+
+def printTable(out, hdr, rows):
+
+    def printTableHeader(out, columns, lens):
+        printTableSeparator(out, lens)
+        printTableRow(out, columns, lens)
+        printTableSeparator(out, lens)
+
+    def printTableRow(out, columns, lens):
+        for (c, l) in zip(columns, lens):
+            print >>out, c + " " * (l - len(c)), " ",
+        print >>out
+
+    def printTableFooter(out, lens):
+        printTableSeparator(out, lens)
+        print >>out
+
+    def printTableSeparator(out, lens):
+        for l in lens:
+            print >>out, "=" * l, " ",
+        print >>out
+
+    lens = [0 for i in hdr]
+
+    for row in rows:
+        for i in range(len(hdr)):
+            lens[i] = max(len(row[i]), lens[i])
+
+    printTableHeader(out, hdr, lens)
+    for row in rows:
+        printTableRow(out, row, lens)
+    printTableFooter(out, lens)
+
+def canonIdx(idx):
+    return idx.replace("`", "").replace(":", "")
+
+out = openFile("hilti-c-types.rst", None, newest)
+
+if out:
+
+    types = {}
+    notes = {}
+
+    for t in hilti.type.allTypes():
+        if t.cPrototype():
+            idx = canonIdx(t.docName())
+            types[idx] = (t.docName(), t.cPrototype())
+            notes[idx] = canonicalizeDoc(t.llvmType.__doc__)
+
+    rows = []
+
+    for idx in sorted(types.keys()):
+        (hlt, c)  = types[idx]
+
+        if c.startswith("hlt_"):
+            link = c.replace("hlt_", "")
+            link = re.sub(" .*$", "", link)
+            c = "`%s <doxygen/group__%s.html>`_" % (c, link)
+
+        fn = "[#%s]_" % idx if notes[idx] else ""
+
+        rows += [(hlt, c, fn)]
+
+    printTable(out, ["HILTI Type", "C Type", "Notes"], rows)
+
+    print >>out, ".. rubric:: Notes"
+    print >>out
+
+    for idx in sorted(types.keys()):
+        if not notes[idx]:
+            continue
+
+        print >>out, ".. [#%s]" % idx
+        print >>out, notes[idx]
+        print >>out
 
 #######
 
@@ -267,6 +340,7 @@ for idx in sections:
                 # Default case.
                 print >>out, fmtIns(mnemo, ins, "instruction")
 
+
 sys.exit(0)
 
 #######
@@ -274,10 +348,8 @@ sys.exit(0)
 out = startGroup("operators", "Overloaded Operators", "overloaded", newest)
 
 if out:
-    for group in ops_overloaded:
-
-        for (mnemo, oper) in sorted(ops_overloaded[group], key=lambda x: x[0]):
-            print >>out, fmtIns(mnemo, oper, "operator")
+    for t in hilti.types.allTypes():
+        ti = t.typeInfo(self, cg)
 
 #######
 

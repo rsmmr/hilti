@@ -63,10 +63,11 @@ class HltInstruction(HltGeneric):
         return name
 
 class HltType(HltGeneric):
-    pass
-    #def handle_signature(self, sig, signode):
-    #    # Do nothing, we just want an anchor for xrefing.
-    #    return ""
+    def handle_signature(self, sig, signode):
+        # Do nothing, we just want an anchor for xrefing.
+        m = sig.split()
+        name = m[0]
+        return name
 
 class HltDomain(Domain):
     """Hlt domain."""
@@ -87,7 +88,7 @@ class HltDomain(Domain):
         'instruction':   HltInstruction,
         'operator':      HltInstruction,
         'overload':      HltInstruction,
-        'type':          HltInstruction,
+        'type':          HltType,
         'function':      HltGeneric,
         'global':        HltGeneric,
         'mod':           HltGeneric,

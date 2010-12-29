@@ -1,6 +1,8 @@
 # $Id$
 """
-XXXX
+.. hlt:type:: file
+
+   XXX
 """
 
 import llvm.core
@@ -12,7 +14,7 @@ from hilti.instructions.operators import *
 
 import bytes
 
-@hlt.type("file", 30)
+@hlt.type("file", 30, c="hlt_file *")
 class File(type.HeapType):
     """Type for ``file``.
 
@@ -24,14 +26,10 @@ class File(type.HeapType):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_file *"
-        return typeinfo
+        return cg.TypeInfo(self)
 
     def llvmType(self, cg):
-        """A ``file` is passed to C as ``hlt_file*``."""
         return cg.llvmTypeGenericPointer()
-
 
 @hlt.overload(New, op1=cType(cFile), target=cReferenceOfOp(1))
 class New(Operator):

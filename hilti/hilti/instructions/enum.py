@@ -1,18 +1,20 @@
 # $Id$
 """
-The ``enum`` data type represents a selection of unique values, identified by
-labels. Enums must be defined in global space:
+.. hlt:type:: enum
 
-   enum Foo { Red, Green, Blue }
+   The ``enum`` data type represents a selection of unique values, identified
+   by labels. Enums must be defined in global space:
 
-The individual labels can then be used as global identifiers. In addition to
-the given labels, each ``enum`` type also implicitly defines one additional
-label called ''Undef''.
+     enum Foo { Red, Green, Blue }
 
-If not explictly initialized, enums are set to
-``Undef`` initially.
+   The individual labels can then be used as global identifiers. In addition
+   to the given labels, each ``enum`` type also implicitly defines one
+   additional label called ''Undef''.
 
-TODO: Extend descriptions with the new semantics regarding storing undefined values.
+   If not explictly initialized, enums are set to ``Undef`` initially.
+
+   TODO: Extend descriptions with the new semantics regarding storing
+   undefined values.
 """
 
 import llvm.core
@@ -22,7 +24,7 @@ from hilti.instructions.operators import *
 
 import string
 
-@hlt.type("enum", 10)
+@hlt.type("enum", 10, c="hlt_enum")
 class Enum(type.ValueType, type.Constable):
     def __init__(self, labels):
         """The enum type.
@@ -85,9 +87,6 @@ class Enum(type.ValueType, type.Constable):
         labels = ["%s = %d" % (l, v) for (l, v) in self._labels.items()]
         return "enum { %s }" % ", ".join(sorted(labels))
 
-    def docName(self):
-        return "enum"
-
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
@@ -97,7 +96,6 @@ class Enum(type.ValueType, type.Constable):
         label). The end of the array is marked by an string of null"""
 
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_enum"
         typeinfo.to_string = "hlt::enum_to_string";
         typeinfo.to_int64 = "hlt::enum_to_int64";
 
@@ -122,7 +120,6 @@ class Enum(type.ValueType, type.Constable):
         return typeinfo
 
     def llvmType(self, cg):
-        """An ``enum`` is mapped to an ``hlt_enum``."""
         # Byte  0:    1 = Undefined value (i.e., one we don't know a label for); 0 otherwise.
         # Byte  1:    1 = No value set (only relevant if Byte 0 is set.); 0 otherwise.
         # Bytes 2-10: Value.

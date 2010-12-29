@@ -1,7 +1,9 @@
 # $Id$
 """
-The ``net`` data type represents ranges of IP address, specified in CIDR
-notation. It transparently handles both IPv4 and IPv6 networks.
+.. hlt:type:: net
+
+   The ``net`` data type represents ranges of IP address, specified in CIDR
+   notation. It transparently handles both IPv4 and IPv6 networks.
 """
 
 import socket
@@ -14,7 +16,7 @@ import llvm.core
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("net", 17)
+@hlt.type("net", 17, c="hlt_net")
 class Net(type.ValueType, type.Constable):
     """Type for booleans."""
     def __init__(self, location=None):
@@ -23,14 +25,12 @@ class Net(type.ValueType, type.Constable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``net`` is mapped to a ``hlt_net``."""
         return llvm.core.Type.struct([llvm.core.Type.int(64)] * 2 + [llvm.core.Type.int(8)])
 
     ### Overridden from ValueType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_net";
         typeinfo.to_string = "hlt::net_to_string";
         return typeinfo
 

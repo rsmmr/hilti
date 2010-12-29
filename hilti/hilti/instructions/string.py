@@ -1,10 +1,12 @@
 # $Id$
 """
-Strings are sequences of characters and are intended to be used primarily for
-text that at some point might be presented to a human in one way or the other.
-They are inmutable, copied by value on assignment, and internally stored in
-UTF-8 encoding. Don't use it for larger amounts of binary data, performance
-won't be good (use *bytes* instead).
+.. hlt:type:: string
+
+   Strings are sequences of characters and are intended to be used primarily
+   for text that at some point might be presented to a human in one way or the
+   other. They are inmutable, copied by value on assignment, and internally
+   stored in UTF-8 encoding. Don't use it for larger amounts of binary data,
+   performance won't be good (use *bytes* instead).
 """
 
 import llvm.core
@@ -43,7 +45,7 @@ def _makeLLVMString(cg, s):
 
     return cg.cache("string-const-%s" % s, makeConst)
 
-@hlt.type("string", 4)
+@hlt.type("string", 4, c="hlt_string")
 class String(type.ValueType, type.Constable):
     """Type for strings."""
     def __init__(self):
@@ -52,14 +54,12 @@ class String(type.ValueType, type.Constable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A string is mapped to ``hlt_string``."""
         return _llvmStringTypePtr()
 
     ### Overridden from ValueType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_string"
         typeinfo.to_string = "hlt::string_to_string"
         typeinfo.hash = "hlt::string_hash"
         typeinfo.equal = "hlt::string_equal"

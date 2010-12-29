@@ -1,12 +1,14 @@
 # $Id$
 """
-The ``ref<T>`` data type encapsulates references to dynamically
-allocated, garbage-collected objects of type *T*.
+.. hlt:type:: ref
 
-The special reference constant ``Null`` can used as place-holder for
-invalid references.
+   The ``ref<T>`` data type encapsulates references to dynamically allocated,
+   garbage-collected objects of type *T*.
 
-If not explictly initialized, references are set to ``Null`` initially.
+   The special reference constant ``Null`` can used as place-holder for
+   invalid references.
+
+   If not explictly initialized, references are set to ``Null`` initially.
 """
 
 import llvm.core
@@ -17,7 +19,7 @@ from hilti import util
 from hilti.constraints import *
 from hilti.instruction import *
 
-@hlt.type("ref", 6)
+@hlt.type("ref", 6, c="void *")
 class Reference(type.ValueType, type.Constable, type.Constructable, type.Parameterizable, type.Unpackable):
     """Type for references.
 
@@ -66,11 +68,7 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
 
     def typeInfo(self, cg):
         if not self._type:
-            # We only create a type info for the wildcard type as that's the
-            # only one we need.
-            typeinfo = cg.TypeInfo(self)
-            typeinfo.c_prototype = "void *"
-            return typeinfo
+            return cg.TypeInfo(self)
 
         return None
 

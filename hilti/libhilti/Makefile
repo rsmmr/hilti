@@ -10,6 +10,3 @@ all:
 clean: 
 	rm -rf build-llvm build-native
 
-doc:
-	cd build-native; make doc-libhilti
-

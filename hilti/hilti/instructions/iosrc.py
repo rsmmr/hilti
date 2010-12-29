@@ -1,9 +1,11 @@
 # $Id$
 """
-The *iosrc* data type represents a source of external input coming in for
-processing. It transparently support a set of different sources (currently
-only ``libpcap``-based, but in the future potentially other's as well.).
-Elements of an IOSrc are ``bytes`` objects and come with a timestamp.
+.. hlt:type:: iosrc
+
+   The *iosrc* data type represents a source of external input coming in for
+   processing. It transparently support a set of different sources (currently
+   only ``libpcap``-based, but in the future potentially other's as well.).
+   Elements of an IOSrc are ``bytes`` objects and come with a timestamp.
 """
 
 import llvm.core
@@ -21,7 +23,7 @@ class Kind:
     PcapLive = "Hilti::IOSrc::PcapLive"
     PcapOffline = "Hilti::IOSrc::PcapOffline"
 
-@hlt.type(None, 103)
+@hlt.type(None, 103, doc="iterator<:hlt:type:`iosrc`\<K>>", c="hlt_iosrc*") # FIXME: Is this C prototype right?
 class IteratorIOSrc(type.Iterator):
     """Type for iterating over the packets provided by a ``IOSrc``.
 
@@ -35,13 +37,9 @@ class IteratorIOSrc(type.Iterator):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_iosrc*"
-        return typeinfo
+        return cg.TypeInfo(self)
 
     def llvmType(self, cg):
-        """A ``IOSrc`` object is mapped to a struct of ``hlt_iosrc *`` and
-        the ``tuple<double, ref<bytes>``."""
         return llvm.core.Type.struct([cg.llvmTypeGenericPointer(), cg.llvmType(self.derefType())])
 
     ### Overridden from ValueType.
@@ -56,7 +54,7 @@ class IteratorIOSrc(type.Iterator):
     def derefType(self):
         return type.Tuple([type.Double(), type.Reference(type.Bytes())])
 
-@hlt.type("iosrc", 27)
+@hlt.type("iosrc", 27, c="hlt_iosrc *")
 class IOSrc(type.HeapType, type.Parameterizable, type.Iterable):
     """Type for ``IOSrc``.
 
@@ -83,12 +81,10 @@ class IOSrc(type.HeapType, type.Parameterizable, type.Iterable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``iosrc`` object is mapped to ``hlt_iosrc *``."""
         return cg.llvmTypeGenericPointer()
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_iosrc *"
         typeinfo.to_string = "hlt::iosrc_pcap_to_string"
         return typeinfo
 

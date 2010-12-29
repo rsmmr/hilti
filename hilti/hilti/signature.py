@@ -11,7 +11,7 @@ class Signature:
     """Defines an instruction's signature. The signature includes the
     instruction's name as well as number and types of operands and target. The
     class is not supposed to be instantiated directly; instead, instances are
-    implicitly created when using the :func:`instruction` decorator.
+    implicitly created when using the :func:`ins    truction` decorator.
 
     Operands and targets are defined with constraints describing
     what kind of arguments they can take.  See

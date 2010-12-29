@@ -89,7 +89,7 @@ class ProtoGen:
         else:
             ti = self.cg().typeInfo(f.type().resultType())
             assert ti.c_prototype
-            result = ti.c_prototype
+            result = ti.cPrototype()
 
         args = []
         for a in f.type().args():

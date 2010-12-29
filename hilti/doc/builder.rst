@@ -1,9 +1,10 @@
 
-Host Interface / C API [Missing]
-================================
+Builder Interface [Missing]
+===========================
 
-HILTI comes with an extensive C API for interfacing with host
-applications. 
+.. contents::
 
-.. toctree::
+HILTI comes with a Python-based builder interface that allows to build HILTI
+program in memory, and then to compile them into into LLVM bytecode directly. 
+
 

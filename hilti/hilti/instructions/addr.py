@@ -1,7 +1,9 @@
 # $Id$
 """
-The *addr* data type represents IP addresses. It transparently handles both
-IPv4 and IPv6 addresses.
+.. hlt:type:: addr
+
+   The *addr* data type represents IP addresses. It transparently handles both
+   IPv4 and IPv6 addresses.
 """
 
 import socket
@@ -12,7 +14,7 @@ import llvm.core
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("addr", 12)
+@hlt.type("addr", 12, c="hlt_addr")
 class Addr(type.ValueType, type.Constable, type.Unpackable):
     """Type for ``addr``."""
     def __init__(self, location=None):
@@ -21,14 +23,12 @@ class Addr(type.ValueType, type.Constable, type.Unpackable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """An ``addr`` is mapped to a ``hlt_addr``."""
         return llvm.core.Type.struct([llvm.core.Type.int(64)] * 2)
 
     ### Overridden from ValueType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_addr";
         typeinfo.to_string = "hlt::addr_to_string";
         return typeinfo
 

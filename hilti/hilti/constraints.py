@@ -113,7 +113,7 @@ def cIntegerOfWidth(n):
     integer type with the given width *n*.
     """
 
-    @hlt.constraint("int<%d>" % n)
+    @hlt.constraint(":hlt:type:`int`\\ <%d>" % n)
     def _integerOfWidth(ty, op, i):
         if not ty:
             return (False, "missing")
@@ -175,7 +175,7 @@ def cReferenceOf(constr):
     ~~Reference and its ~~refType() conforms with *constraint*.
     """
     instruction.assert_constraint(constr)
-    @hlt.constraint(lambda sig: "ref<%s>" % sig.getOpDoc(constr))
+    @hlt.constraint(lambda sig: ":hlt:type:`ref`\\ <%s>" % sig.getOpDoc(constr))
     def _referenceOf(ty, op, i):
         if not isinstance(ty, type.Reference):
             return (False, "must be a reference")
@@ -190,7 +190,7 @@ def cContainer(containert, itemt):
     """
     instruction.assert_constraint(containert)
     instruction.assert_constraint(itemt)
-    @hlt.constraint(lambda sig: "%s<%s>" % (sig.getOpDoc(containert), sig.getOpDoc(itemt)))
+    @hlt.constraint(lambda sig: "%s\\ <%s>" % (sig.getOpDoc(containert), sig.getOpDoc(itemt)))
     def _container(ty, op, i):
 
         (success, msg) = containert(ty, op, i)
@@ -281,7 +281,7 @@ def cReferenceOfOp(n):
     ~~Reference and its ~~refType() is the type of operand *n* (zero is
     target).
     """
-    @hlt.constraint(lambda sig: "ref<%s>" % sig.getOpDoc(_getSigOp(sig, n)))
+    @hlt.constraint(lambda sig: ":hlt:type:`ref`\\ <%s>" % sig.getOpDoc(_getSigOp(sig, n)))
     def _refOfSameTypeAs(ty, op, i):
         o =_getOp(i, n)
 
@@ -294,11 +294,13 @@ def cReferenceOfOp(n):
 
     return _refOfSameTypeAs
 
-def _hasType(name, altname=None):
-    if not altname:
-        altname = name.lower()
+def _hasType(name):
+    altname = name.lower()
 
-    @hlt.constraint(altname)
+    def docName(sig):
+        return type.__dict__[name].docName()
+
+    @hlt.constraint(docName)
     def __hasType(ty, op, i):
         cls = type.__dict__[name]
         return (issubclass(ty.__class__, cls), "must be of type %s but is %s" % (altname, ty))
@@ -316,11 +318,11 @@ def _hasType(name, altname=None):
 cString = _hasType("String")
 cInteger = _hasType("Integer")
 cBytes = _hasType("Bytes")
-cIteratorBytes = _hasType("IteratorBytes", "iterator<bytes>")
+cIteratorBytes = _hasType("IteratorBytes")
 cChannel = _hasType("Channel")
 cDouble = _hasType("Double")
 cBool = _hasType("Bool")
-cAny = _hasType("Type", "any")
+cAny = _hasType("Type")
 cEnum = _hasType("Enum")
 cReference = _hasType("Reference")
 cStruct = _hasType("Struct")
@@ -330,9 +332,9 @@ cNet =  _hasType("Net")
 cPort =  _hasType("Port")
 cOverlay =  _hasType("Overlay")
 cVector =  _hasType("Vector")
-cIteratorVector =  _hasType("IteratorVector", "iterator<vector>")
+cIteratorVector =  _hasType("IteratorVector")
 cList =  _hasType("List")
-cIteratorList =  _hasType("IteratorList", "iterator<list>")
+cIteratorList =  _hasType("IteratorList")
 cRegexp =  _hasType("RegExp")
 cBitset =  _hasType("Bitset")
 cException =  _hasType("Exception")
@@ -341,10 +343,10 @@ cTimer = _hasType("Timer")
 cTimerMgr = _hasType("TimerMgr")
 cMap = _hasType("Map")
 cSet = _hasType("Set")
-cIteratorMap = _hasType("IteratorMap", "iterator<map>")
-cIteratorSet = _hasType("IteratorSet", "iterator<set>")
+cIteratorMap = _hasType("IteratorMap")
+cIteratorSet = _hasType("IteratorSet")
 cIOSrc = _hasType("IOSrc")
-cIteratorIOSrc = _hasType("IteratorIOSrc", "iterator<iosrc>")
+cIteratorIOSrc = _hasType("IteratorIOSrc")
 cFile = _hasType("File")
 cCallable = _hasType("Callable")
 
@@ -352,7 +354,7 @@ cFunction = _hasType("Function")
 cHook = _hasType("Hook")
 cLabel = _hasType("Label")
 cHiltiType = _hasType("HiltiType")
-cHeapType = _hasType("HeapType", "heap type")
-cValueType = _hasType("ValueType", "value type")
+cHeapType = _hasType("HeapType")
+cValueType = _hasType("ValueType")
 cIterator = _hasType("Iterator")
 cIterable = _hasType("Iterable")

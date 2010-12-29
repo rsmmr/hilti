@@ -657,7 +657,6 @@ class Type(ID):
 
         for line in self.comment():
             print "    ", line
-
         print
 
         self.type().autodoc()

@@ -1,17 +1,19 @@
 # $Id$
 """
-A ``set`` store keys of a particular type ``K``. Insertions,
-lookups, and deletes are amortized constant time. Keys must be HILTI
-*value types*, and each value can only be stored once.
+.. hlt:type:: set
 
-Sets are iterable, yet the order in which elements are iterated over
-is undefined.
+   A ``set`` store keys of a particular type ``K``. Insertions, lookups, and
+   deletes are amortized constant time. Keys must be HILTI *value types*, and
+   each value can only be stored once.
 
-Todo: Add note on semantics when modifying the hash table while iterating over
-it.
+   Sets are iterable, yet the order in which elements are iterated over
+   is undefined.
 
-Todo: When resizig, load spikes can occur for large set. We should
-extend the hash table implementation to do resizes incrementally.
+   Todo: Add note on semantics when modifying the hash table while iterating over
+   it.
+
+   Todo: When resizig, load spikes can occur for large set. We should extend
+   the hash table implementation to do resizes incrementally.
 """
 
 import llvm.core
@@ -21,7 +23,7 @@ import hilti.util as util
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type(None, 101)
+@hlt.type(None, 101, doc="iterator<:hlt:type:`set`\<T>>", c="hlt_set_iter")
 class IteratorSet(type.Iterator):
     """Type for iterating over a ``set``.
 
@@ -33,12 +35,9 @@ class IteratorSet(type.Iterator):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_set_iter"
-        return typeinfo
+        return cg.TypeInfo(self)
 
     def llvmType(self, cg):
-        """An ``iterator<set<K>>`` is mapped to ``struct hlt_set_iter``."""
         # Must match with what the C implementation uses as iterator type.
         return llvm.core.Type.struct([cg.llvmTypeGenericPointer(), llvm.core.Type.int(64)])
 
@@ -55,7 +54,7 @@ class IteratorSet(type.Iterator):
         t = self.parentType().itemType()
         return t if t else type.Any()
 
-@hlt.type("set", 15)
+@hlt.type("set", 15, c="hlt_set *")
 class Set(type.Container, type.Iterable):
     """Type for a ``set``.
 
@@ -78,12 +77,10 @@ class Set(type.Container, type.Iterable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``set`` is mapped to a ``hlt_set *``."""
         return cg.llvmTypeGenericPointer()
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_set *"
         typeinfo.to_string = "hlt::set_to_string"
         return typeinfo
 

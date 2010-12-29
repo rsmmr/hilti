@@ -1,9 +1,11 @@
 # $Id$
 """
-The ``struct`` data type groups a set of heterogenous, named fields. Each
-instance tracks which fields have already been set. Fields may optionally
-provide defaul values that are returned when it's read but hasn't been set
-yet.
+.. hlt:type:: struct
+
+   The ``struct`` data type groups a set of heterogenous, named fields. Each
+   instance tracks which fields have already been set. Fields may optionally
+   provide defaul values that are returned when it's read but hasn't been set
+   yet.
 """
 
 builtin_id = id

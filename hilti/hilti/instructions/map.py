@@ -1,18 +1,20 @@
 # $Id$
 """
-A ``maps`` maps keys of type ``K`` to values of type ``T``. Insertions,
-lookups, and deletes are amortized constant time. Keys must be HILTI *value
-types*, while values can be of any time. Up to one value can be associated
-with each key.
+.. hlt:type:: map
 
-Maps are iterable, yet the order in which elements are iterated over
-is undefined.
+   A ``maps`` maps keys of type ``K`` to values of type ``T``. Insertions,
+   lookups, and deletes are amortized constant time. Keys must be HILTI *value
+   types*, while values can be of any time. Up to one value can be associated
+   with each key.
 
-Todo: Add note on semantics when modifying the hash table while iterating over
-it.
+   Maps are iterable, yet the order in which elements are iterated over is
+   undefined.
 
-Todo: When resizig, load spikes can occur for large tables. We should extend
-the hash table implementation to do resizes incrementally.
+   Todo: Add note on semantics when modifying the hash table while iterating
+   over it.
+
+   Todo: When resizig, load spikes can occur for large tables. We should
+   extend the hash table implementation to do resizes incrementally.
 """
 
 import llvm.core
@@ -22,7 +24,7 @@ import hilti.util as util
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type(None, 101)
+@hlt.type(None, 101, doc="iterator<:hlt:type:`map`\<K,V>>", c="hlt_map_iter")
 class IteratorMap(type.Iterator):
     """Type for iterating over a ``map``.
 
@@ -34,12 +36,9 @@ class IteratorMap(type.Iterator):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_map_iter"
-        return typeinfo
+        return cg.TypeInfo(self)
 
     def llvmType(self, cg):
-        """An ``iterator<map<K,V>>`` is mapped to ``struct hlt_map_iter``."""
         # Must match with what the C implementation uses as iterator type.
         return llvm.core.Type.struct([cg.llvmTypeGenericPointer(), llvm.core.Type.int(64)])
 
@@ -55,7 +54,7 @@ class IteratorMap(type.Iterator):
     def derefType(self):
         return self.parentType().itemType()
 
-@hlt.type("map", 15)
+@hlt.type("map", 15, c="hlt_map *")
 class Map(type.Container, type.Iterable):
     """Type for a ``map``.
 
@@ -87,12 +86,10 @@ class Map(type.Container, type.Iterable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``map`` is mapped to a ``hlt_map *``."""
         return cg.llvmTypeGenericPointer()
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_map *"
         typeinfo.to_string = "hlt::map_to_string"
         return typeinfo
 

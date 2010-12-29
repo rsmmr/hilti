@@ -1,20 +1,21 @@
 # $Id$
 """
-The ``bitset`` data type groups a set of bits together. In each instance, any
-of the bits is either set or not set. The individual bits are identified by
-labels, which are declared in the bitsets type declaration::
+.. hlt:type:: bitset
 
-   bitset MyBits { Bit1, Bit2, Bit3 }
+   The ``bitset`` data type groups a set of bits together. In each instance,
+   any of the bits is either set or not set. The individual bits are
+   identified by labels, which are declared in the bitsets type declaration::
 
-The individual labels can then be used with the ``bitset.*``
-commands::
+      bitset MyBits { Bit1, Bit2, Bit3 }
+
+   The individual labels can then be used with the ``bitset.*`` commands::
 
    local mybits: MyBits
    mybits = bitset.set mybits MyBits::Bit2
 
-Note: For efficiency reasons, HILTI supports only up to 64 bits per type.
+   Note: For efficiency reasons, HILTI supports only up to 64 bits per type.
 
-Todo: We can't create constants with multiple bits set yet.
+   Todo: We can't create constants with multiple bits set yet.
 """
 
 import llvm.core
@@ -22,7 +23,7 @@ import llvm.core
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("bitset", 19)
+@hlt.type("bitset", 19, c="int64_t")
 class Bitset(type.ValueType, type.Constable):
     def __init__(self, labels, location=None):
         """The ``bitset`` type.
@@ -63,7 +64,6 @@ class Bitset(type.ValueType, type.Constable):
         containing the label names.
         """
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "int64_t"
         typeinfo.to_string = "hlt::bitset_to_string";
         typeinfo.to_int64 = "hlt::bitset_to_int64";
 
@@ -83,8 +83,6 @@ class Bitset(type.ValueType, type.Constable):
         return typeinfo
 
     def llvmType(self, cg):
-        """A ``bitset`` is mapped to an ``int64_t``, with one bit in that
-        value corresponding to each defined label."""
         return llvm.core.Type.int(64)
 
     def _validate(self, vld):

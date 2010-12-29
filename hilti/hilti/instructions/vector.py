@@ -1,20 +1,25 @@
 # $Id$
 """
-A ``vector`` maps integer indices to elements of a specific type ``T``. Vector
-elements can be read and written. Indices are zero-based. For a read
-operation, all indices smaller or equal the largest index written so far are
-valid. If an index is read that has not been yet written to, type T's default
-value is returned. Read operations are fast, as are insertions as long as the
-indices of inserted elements are not larger than the vector's last index.
-Inserting can be expensive however if an index beyond the vector's current end
-is given.
+.. hlt:type:: vector
 
-Vectors are forward-iterable. An iterator always corresponds to a specific
-index and it is therefore safe to modify the vector even while iterating over
-it. After any change, the iterator will locate the element which is now
-located at the index it is pointing at. Once an iterator has reached the
-end-position however, it will never return an element anymore (but raise an
-~~InvalidIterator exception), even if more are added to the vector.
+   A ``vector`` maps integer indices to elements of a specific type
+   ``T``. Vector elements can be read and written. Indices are
+   zero-based. For a read operation, all indices smaller or equal
+   the largest index written so far are valid. If an index is read
+   that has not been yet written to, type T's default value is
+   returned. Read operations are fast, as are insertions as long as
+   the indices of inserted elements are not larger than the vector's
+   last index. Inserting can be expensive however if an index beyond
+   the vector's current end is given.
+
+   Vectors are forward-iterable. An iterator always corresponds to a
+   specific index and it is therefore safe to modify the vector even
+   while iterating over it. After any change, the iterator will
+   locate the element which is now located at the index it is
+   pointing at. Once an iterator has reached the end-position
+   however, it will never return an element anymore (but raise an
+   ~~InvalidIterator exception), even if more are added to the
+   vector.
 """
 
 import llvm.core
@@ -24,7 +29,7 @@ import hilti.util as util
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type(None, 101)
+@hlt.type(None, 101, doc="iterator<:hlt:type:`vector`\<T>>", c="hlt_vector_iter")
 class IteratorVector(type.Iterator):
     """Type for iterating over ``vector``.
 
@@ -36,12 +41,9 @@ class IteratorVector(type.Iterator):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_vector_iter"
-        return typeinfo
+        return cg.TypeInfo(self)
 
     def llvmType(self, cg):
-        """An ``iterator<vector<T>>`` is mapped to ``struct hlt_vector_iter``."""
         return llvm.core.Type.struct([cg.llvmTypeGenericPointer(), llvm.core.Type.int(64)])
 
     ### Overridden from ValueType.
@@ -57,7 +59,7 @@ class IteratorVector(type.Iterator):
         t = self.parentType().itemType()
         return t if t else type.Any()
 
-@hlt.type("vector", 15)
+@hlt.type("vector", 15, c="hlt_vector *")
 class Vector(type.Container, type.Iterable):
     """Type for a ``vector``.
 
@@ -69,13 +71,7 @@ class Vector(type.Container, type.Iterable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``vector`` is mapped to a ``hlt_vector *``."""
         return cg.llvmTypeGenericPointer()
-
-    def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_vector *"
-        return typeinfo
 
     ### Overriden from Iterable.
 

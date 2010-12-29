@@ -1,7 +1,9 @@
 # $Id$
 """
-The *regexp* data type provides regular expression matching on *string* and
-*bytes* objects.
+.. hlt:type:: regexp
+
+   The *regexp* data type provides regular expression matching on *string* and
+   *bytes* objects.
 """
 
 import llvm.core
@@ -13,7 +15,7 @@ from hilti.instructions.operators import *
 
 import bytes
 
-@hlt.type("regexp", 18)
+@hlt.type("regexp", 18, c="hlt_regexp *")
 class RegExp(type.HeapType, type.Constructable, type.Parameterizable):
     """Type for ``regexp``.
 
@@ -67,12 +69,10 @@ class RegExp(type.HeapType, type.Constructable, type.Parameterizable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``regexp`` object is mapped to ``hlt_regexp *``."""
         return cg.llvmTypeGenericPointer()
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_regexp *"
         typeinfo.to_string = "hlt::regexp_to_string"
         return typeinfo
 

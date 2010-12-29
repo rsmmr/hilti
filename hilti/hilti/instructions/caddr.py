@@ -1,9 +1,11 @@
 # $Id$
 """
-The ``caddr`` data type stores the physical memory address of a HILTI object.
-It is primarily a tool for passing such an address on to an external C
-program. Note that there's no type information associated with a *caddr* value
-and thus care has to be taken when using it to access memory.
+.. hlt:type:: caddr
+
+   The ``caddr`` data type stores the physical memory address of a HILTI
+   object. It is primarily a tool for passing such an address on to an
+   external C program. Note that there's no type information associated with a
+   *caddr* value and thus care has to be taken when using it to access memory.
 """
 
 import llvm.core
@@ -13,7 +15,7 @@ import hilti.function as function
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("caddr", 22)
+@hlt.type("caddr", 22, c="void *")
 class CAddr(type.ValueType):
     """Type for ``caddr``."""
     def __init__(self, location=None):
@@ -22,14 +24,12 @@ class CAddr(type.ValueType):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """ A ``caddr`` is mapped to ``void *``."""
         return cg.llvmTypeGenericPointer()
 
     ### Overridden from ValueType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "void *"
         typeinfo.to_string = "hlt::caddr_to_string";
         return typeinfo
 

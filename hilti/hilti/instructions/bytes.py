@@ -1,9 +1,11 @@
 # $Id$
 """
-``bytes`` is a data type for storing sequences of raw bytes. It is optimized
-for storing and operating on large amounts of unstructured data. In
-particular, it provides efficient subsequence and append operations. Bytes are
-forward-iterable.
+.. hlt:type:: bytes
+
+   ``bytes`` is a data type for storing sequences of raw bytes. It is
+   optimized for storing and operating on large amounts of unstructured data.
+   In particular, it provides efficient subsequence and append operations.
+   Bytes are forward-iterable.
 """
 
 import llvm.core
@@ -21,7 +23,7 @@ def llvmEnd(cg):
     the end-of-bytes marker, obviously."""
     return llvm.core.Constant.struct([llvm.core.Constant.null(cg.llvmTypeGenericPointer())] * 2)
 
-@hlt.type(None, 100)
+@hlt.type(None, 100, doc="iterator<:hlt:type:`bytes`>", c="hlt_bytes_pos")
 class IteratorBytes(type.Iterator):
     """Type for iterating over ``bytes``.
 
@@ -33,12 +35,9 @@ class IteratorBytes(type.Iterator):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_bytes_pos"
-        return typeinfo
+        return cg.TypeInfo(self)
 
     def llvmType(self, cg):
-        """A ``bytes`` iterator is mapped to ``hlt_bytes_pos``."""
         return cg.llvmTypeInternal("__hlt_bytes_pos")
 
     ### Overridden from ValueType.
@@ -53,7 +52,7 @@ class IteratorBytes(type.Iterator):
     def derefType(self):
         return type.Integer(8)
 
-@hlt.type("bytes", 9)
+@hlt.type("bytes", 9, c="hlt_bytes *")
 class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
     """Type for ``bytes``.
 
@@ -65,12 +64,10 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``bytes`` object is mapped to ``hlt_bytes *``."""
         return cg.llvmTypeGenericPointer()
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt::bytes *"
         typeinfo.to_string = "hlt::bytes_to_string"
         return typeinfo
 

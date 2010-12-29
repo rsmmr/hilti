@@ -98,4 +98,3 @@ add_library(hiltimain STATIC ${SRCS} ${OBJS} main.c ${LIBGC})
 
 set(DOXYGEN ${CMAKE_CURRENT_SOURCE_DIR}/Doxygen)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxygen/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-add_custom_target(doc-libhilti doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)

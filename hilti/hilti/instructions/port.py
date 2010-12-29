@@ -1,8 +1,10 @@
 # $Id$
 """
-The *port* data type represents TCP and UDP port numbers. Port constants are
-written with a ``/tcp`` or ``/udp`` prefix, respectively. For example,
-``80/tcp`` and ``53/udp``. If not explicitly initialized, a port ``0/tcp``.
+.. hlt:type:: port
+
+   The *port* data type represents TCP and UDP port numbers. Port constants
+   are written with a ``/tcp`` or ``/udp`` prefix, respectively. For example,
+   ``80/tcp`` and ``53/udp``. If not explicitly initialized, a port ``0/tcp``.
 """
 
 import llvm.core
@@ -10,7 +12,7 @@ import llvm.core
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("port", 13)
+@hlt.type("port", 13, c="hlt_port")
 class Port(type.ValueType, type.Constable, type.Unpackable):
     """Type for booleans."""
     def __init__(self, location=None):
@@ -22,14 +24,12 @@ class Port(type.ValueType, type.Constable, type.Unpackable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``port`` is mapped to a ``hlt_port``."""
         return llvm.core.Type.struct([llvm.core.Type.int(16), llvm.core.Type.int(8)])
 
     ### Overridden from ValueType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_port";
         typeinfo.to_string = "hlt::port_to_string";
         typeinfo.to_int64 = "hlt::port_to_int64";
         return typeinfo

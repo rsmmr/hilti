@@ -14,7 +14,7 @@ import util
 def _notOverridden(self, method):
     util.internal_error("%s not overidden for %s" % (method, self.__class__.__name__))
 
-def hilti(token, ident):
+def hilti(token, ident, c=None, doc=None):
     """Class decorator to add a type class that is defined in some other
     module to the namespace of *hilti.type*.
 
@@ -27,6 +27,15 @@ def hilti(token, ident):
     :download:`/libhilti/hilti_intern.h`. Can be -1 if and only if
     the type will never be used by any C function.
 
+    c: string - The C prototype to use for this type, or None if none. This
+    prototype applies all instances of the type class; a per-instance
+    prototype can be defined in the type's ~~TypeInfo, which will then
+    override this. 
+
+    doc: string - The string to be used for this type in the auto-generated
+    documentation. This should include the right cross-reference, such as in
+    ```:hlt:type:\`net\``
+
     Todo: Perhaps we should autogenerate the *_id* constants in some
     way and also automatically synchronize them with
     ``hilti_intern.h``.
@@ -38,6 +47,8 @@ def hilti(token, ident):
 
         ty._token = token
         ty._id = ident
+        ty._doc_name = doc
+        ty._c_prototype = c
 
         if token:
             ty._type_name = token
@@ -48,6 +59,14 @@ def hilti(token, ident):
 
     return _hilti
 
+def allTypes():
+    """Returns a list of all defined types.
+
+    Returns: list of ~~Type - The types. 
+    """
+    import hilti
+    return hilti._types.values()
+
 ### Base classes
 
 class Type(object):
@@ -55,6 +74,9 @@ class Type(object):
 
     location: ~~Location - The location where the type was defined.
     """
+
+    _doc_name = None
+
     def __init__(self, location=None):
         super(Type, self).__init__()
         Type._type_name = "type"
@@ -123,6 +145,9 @@ class Type(object):
         """
         return self._validate(vld)
 
+    def autodoc(self):
+        pass
+
     @classmethod
     def token(cls):
         """Returns the parser token for the type. This is what's passed to
@@ -131,9 +156,6 @@ class Type(object):
         Returns: string - The token string.
         """
         return cls._token
-
-    def autodoc(self):
-        pass
 
     @classmethod
     def typeName(cls):
@@ -153,6 +175,14 @@ class Type(object):
         name: string - The name.
         """
         cls._type_name = name
+
+    @classmethod
+    def cPrototype(cls):
+        """Returns the C prototype for this type.
+
+        Returns: string - The C type the HILTI type is mapped to. None if not set.
+        """
+        return cls._c_prototype
 
     def __str__(self):
         """Returns a string representation of the type. This returns
@@ -175,16 +205,25 @@ class Type(object):
         """
         return self.__class__.typeName()
 
-    def docName(self):
+    @classmethod
+    def docName(cls):
         """Returns the name of the type as used in the instruction
         documentation.
 
         Can be overridden by derived classes; the default implementation
-        returns ~~name.
+        returns ~~typeName.
 
         Returns: string - The documentation name of the type.
         """
-        return self.name()
+        return cls._doc_name if cls._doc_name else ":hlt:type:`%s`" % cls.typeName()
+
+    @classmethod
+    def setDocName(cls, name):
+        """Sets the name of the type as used in the instruction documentation.
+
+        name: string - The name.
+        """
+        cls._doc_name = name
 
     def _resolve(self, resolver):
         """Implements resolving for derived classes.
@@ -468,7 +507,20 @@ class HiltiType(Type):
 
 # HiltiType traits.
 
-class Constructable:
+class Trait:
+    @classmethod
+    def docName(cls):
+        """Returns the name of the type as used in the instruction
+        documentation.
+
+        Can be overridden by derived classes; the default implementation
+        returns the lower-cased class name. 
+
+        Returns: string - The documentation name of the type.
+        """
+        return cls.__name__.lower()
+
+class Constructable(Trait):
     """Trait class for ~~HiltiTypes that allow the creation of *non-const*
     instances with a constructor expression."""
 
@@ -562,7 +614,7 @@ class Constructable:
         assert self.canCoerceCtorTo(ctor, dsttype)
         return ctor if self == dsttype else None
 
-class Constable:
+class Constable(Trait):
     """Trait class for ~~HiltiTypes that allow the instantion of constants."""
 
     def resolveConstant(self, resolver, const):
@@ -717,7 +769,7 @@ class Constable:
         """
         _notOverridden(self, "outputConstant")
 
-class Parameterizable:
+class Parameterizable(Trait):
     """Trait class for ~~HiltiTypes which take type parameters."""
 
     ### Methods for derived classes to override.
@@ -732,7 +784,7 @@ class Parameterizable:
         """
         _notOverridden(self, "args")
 
-class Iterable:
+class Iterable(Trait):
     """Trait class for ~~HiltiTypes which provide itertors."""
 
     ### Methods for derived classes to override.
@@ -747,7 +799,7 @@ class Iterable:
         """
         _notOverridden(self, "iterType")
 
-class Unpackable:
+class Unpackable(Trait):
     """A type that can be unpacked via the ``unpack`` operator."""
 
     ### Methods for derived classes to override.
@@ -962,9 +1014,10 @@ class Iterator(ValueType, Parameterizable):
 
     location: ~~Location - The location where the type was defined.
     """
+
     def __init__(self, t, location=None):
         super(Iterator, self).__init__(location)
-        Iterator.setTypeName("iterator")
+        Iterator.setTypeName("iterator<%s>" % t.typeName())
         self._type = t
 
     def derefType(self):
@@ -1045,7 +1098,7 @@ class Void(ValueType, Constable):
         # Never.
         return False
 
-@hilti("any", 24)
+@hilti("any", 24, c="void *")
 class Any(ValueType, Constable, Constructable):
     """Wildcard type that matches any other type.
 
@@ -1057,13 +1110,12 @@ class Any(ValueType, Constable, Constructable):
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "void *"
         return typeinfo
 
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """Any is mapped to ``void *``, and always passed with type information."""
+        """Parameters are always passed with type information."""
         return llvm.core.Type.pointer(llvm.core.Type.int(8))
 
     def cPassTypeInfo(self):

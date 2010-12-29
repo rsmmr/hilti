@@ -1,12 +1,15 @@
 # $Id$
 """
-A ``list`` stores elements of a specific tyep T in a double-linked list,
-allowing for fast insert operations at the expense of expensive random access.
+.. hlt:type:: list
 
-Lists are forward-iterable. Note that it is generally safe to modify a list
-while iterating over it. The only problematic case occurs if the very element
-get removed from the list to which an iterator is pointing. If so, accessing
-the iterator will raise an ~~InvalidIterator exception.
+   A ``list`` stores elements of a specific tyep T in a double-linked list,
+   allowing for fast insert operations at the expense of expensive random
+   access.
+
+   Lists are forward-iterable. Note that it is generally safe to modify a list
+   while iterating over it. The only problematic case occurs if the very
+   element get removed from the list to which an iterator is pointing. If so,
+   accessing the iterator will raise an ~~InvalidIterator exception.
 """
 
 import llvm.core
@@ -16,7 +19,7 @@ import hilti.util as util
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type(None, 102)
+@hlt.type(None, 102, doc="iterator<:hlt:type:`list`\<T>>", c="hlt_list_iter")
 class IteratorList(type.Iterator):
     """Type for iterating over ``List``.
 
@@ -28,12 +31,9 @@ class IteratorList(type.Iterator):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_list_iter"
-        return typeinfo
+        return cg.TypeInfo(self)
 
     def llvmType(self, cg):
-        """An ``iterator<list<T>>`` is mapped to ``struct hlt_list_iter``."""
         return llvm.core.Type.struct([cg.llvmTypeGenericPointer()] * 2)
 
     ### Overridden from ValueType.
@@ -49,7 +49,7 @@ class IteratorList(type.Iterator):
         t = self.parentType().itemType()
         return t if t else type.Any()
 
-@hlt.type("list", 16)
+@hlt.type("list", 16, c="hlt_list *")
 class List(type.Container, type.Constructable, type.Iterable):
     """Type for a ``list``.
 
@@ -61,12 +61,10 @@ class List(type.Container, type.Constructable, type.Iterable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``list`` is mapped to a ``hlt_list *``."""
         return cg.llvmTypeGenericPointer()
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_list *"
         typeinfo.to_string = "hlt::list_to_string"
         return typeinfo
 

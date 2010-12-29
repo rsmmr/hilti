@@ -1,7 +1,8 @@
 # $Id$
 """
-The ``double`` data type represents a 64-bit floating-point
-numbers.
+.. hlt:type:: double
+
+   The ``double`` data type represents a 64-bit floating-point numbers.
 """
 
 import llvm.core
@@ -9,7 +10,7 @@ import llvm.core
 from hilti.constraints import *
 from hilti.instruction import *
 
-@hlt.type("double", 2)
+@hlt.type("double", 2, c="double")
 class Double(type.ValueType, type.Constable):
     """Type for ``double``."""
     def __init__(self):
@@ -18,14 +19,12 @@ class Double(type.ValueType, type.Constable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``double`` is mapped transparently to a C double."""
         return llvm.core.Type.double()
 
     ### Overridden from ValueType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "double"
         typeinfo.to_string = "hlt::double_to_string";
         typeinfo.to_double = "hlt::double_to_double";
         return typeinfo

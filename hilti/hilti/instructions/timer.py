@@ -1,10 +1,12 @@
 # $Id$
 """
-A ``timer`` executes an action at a certain point of time in the future, where
-"time" is defined by a ``timer_mgr`` object with which each timer is
-associated. Each manager tracks its time as a monotonically increasing
-``double`` value. Managers never advance their time themselves; the HILTI
-program does that explicitly.
+.. hlt:type:: timer
+
+   A ``timer`` executes an action at a certain point of time in the future,
+   where "time" is defined by a ``timer_mgr`` object with which each timer is
+   associated. Each manager tracks its time as a monotonically increasing
+   ``double`` value. Managers never advance their time themselves; the HILTI
+   program does that explicitly.
 """
 
 builtin_id = id
@@ -16,7 +18,7 @@ import hilti.util as util
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("timer", 25)
+@hlt.type("timer", 25, c="hlt_timer *")
 class Timer(type.HeapType):
     """Type for ``timer``.
 
@@ -29,16 +31,14 @@ class Timer(type.HeapType):
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_timer *"
         typeinfo.to_string = "hlt::timer_to_string"
         typeinfo.to_double = "hlt::timer_to_double"
         return typeinfo
 
     def llvmType(self, cg):
-        """A ``timer` is passed to C as ``hlt_timer*``."""
         return cg.llvmTypeGenericPointer()
 
-@hlt.type("timer_mgr", 26)
+@hlt.type("timer_mgr", 26, c="hlt_timer_mgr *")
 class TimerMgr(type.HeapType):
     """Type for ``timer_mgr``.
 
@@ -51,12 +51,10 @@ class TimerMgr(type.HeapType):
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_timer_mgr *"
         typeinfo.to_string = "hlt::timer_mgr_to_string"
         return typeinfo
 
     def llvmType(self, cg):
-        """A ``timer_mgr` is passed to C as ``hlt_timer_mgr*``."""
         return cg.llvmTypeGenericPointer()
 
 @hlt.overload(New, op1=cType(cTimer), op2=cFunction, op3=cTuple, target=cReferenceOfOp(1))

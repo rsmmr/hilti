@@ -1,6 +1,9 @@
 # $Id$
 """
-XXX
+
+.. hlt:type:: thread
+
+   XXX
 """
 
 import llvm.core

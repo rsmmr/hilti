@@ -1,9 +1,10 @@
 # $Id$
 """
-The *bool* data type represents boolean values. The two boolean constants are
-``True`` and ``False``. If not explictly initialized, booleans are set to
-``False`` initially.
+.. hlt:type:: bool
 
+   The *bool* data type represents boolean values. The two boolean constants
+   are ``True`` and ``False``. If not explictly initialized, booleans are set
+   to ``False`` initially.
 """
 
 import llvm.core
@@ -14,7 +15,7 @@ from hilti.constraints import *
 from hilti.instruction import *
 from hilti.instructions.operators import *
 
-@hlt.type("bool", 3)
+@hlt.type("bool", 3, c="int8_t")
 class Bool(type.ValueType, type.Constable, type.Unpackable):
     """Type for booleans."""
     def __init__(self, location=None):
@@ -23,15 +24,14 @@ class Bool(type.ValueType, type.Constable, type.Unpackable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        """A ``bool`` is mapped to an ``int8_t``, with ``True`` corresponding
-        to the value ``1`` and ``False`` to value ``0``."""
+        """``True`` corresponds to the value ``1`` and ``False`` to value
+        ``0``."""
         return llvm.core.Type.int(1)
 
     ### Overridden from ValueType.
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "int8_t"
         typeinfo.to_string = "hlt::bool_to_string";
         typeinfo.to_int64 = "hlt::bool_to_int64";
         return typeinfo

@@ -1,6 +1,8 @@
 # $Id$
 """
-XXX
+.. hlt:type:: callable
+
+   XXX
 """
 
 import llvm.core
@@ -14,7 +16,7 @@ from hilti.instructions.operators import *
 import bytes
 import flow
 
-@hlt.type("callable", 31)
+@hlt.type("callable", 31, c="hlt_callable *")
 class Callable(type.HeapType, type.Parameterizable):
     """Type for ``callable``.
 
@@ -49,9 +51,7 @@ class Callable(type.HeapType, type.Parameterizable):
         return llvm.core.Type.pointer(cg.llvmTypeContinuationPtr())
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_callable *"
-        return typeinfo
+        return cg.TypeInfo(self)
 
     ### Overridden from Parameterizable.
 

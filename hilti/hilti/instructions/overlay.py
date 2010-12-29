@@ -9,7 +9,9 @@
 #     starting offset, we cache its end position once we have calculated it
 #     once.
 """
-Todo.
+.. hlt:type:: overlay
+
+   XXX
 """
 
 import llvm.core
@@ -19,7 +21,7 @@ import hilti.util as util
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("overlay", 14)
+@hlt.type("overlay", 14, c="hlt_overlay")
 class Overlay(type.ValueType):
     """Type for ``overlay``."""
 
@@ -254,12 +256,9 @@ class Overlay(type.ValueType):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        typeinfo = cg.TypeInfo(self)
-        typeinfo.c_prototype = "hlt_overlay";
-        return typeinfo
+        return cg.TypeInfo(self)
 
     def llvmType(self, cg):
-        """An ``overlay`` is mapped to a ``hlt_overlay``."""
         itype = cg.llvmType(type.IteratorBytes())
         return llvm.core.Type.array(itype, self._arraySize())
 

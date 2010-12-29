@@ -52,7 +52,8 @@ class TypeInfo(object):
 
     *c_prototype* (string)
        A string specifying how the type should be represented in C function
-       prototypes.
+       prototypes. If not given, the class-wide prototype defined
+       ~~hlt.type is used instead. 
 
     *to_string* (string)
        The name of an internal libhilti function that converts a value of the
@@ -103,6 +104,18 @@ class TypeInfo(object):
         self.hash = "hlt::default_hash"
         self.equal = "hlt::default_equal"
         self.aux = None
+
+    def cPrototype(self):
+        """Returns the C prototype for the type. If defined by the type info
+        itself, that is taken. If not, the class-wide default is used. If that
+        is likewise not defined, None is returned.
+
+        Returns: string - The C type.
+        """
+        if self.c_prototyoe:
+            return self.c_prototype
+
+        return self.type.cPrototype()
 
 class CodeGen(objcache.Cache):
     """Implements the generation of LLVM code from a HILTI module."""
