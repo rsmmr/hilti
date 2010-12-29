@@ -21,6 +21,7 @@ installed:
 If you want to generate the documentation (optional), you also need:
 
     * Sphinx 1.0.4, http://sphinx.pocoo.org
+    * Doxygen 1.7.2, http://www.stack.nl/~dimitri/doxygen
     * Graphviz 2.24.0, http://www.graphviz.org
 
 In addition, there is eusually a number of custom patches required for
