@@ -859,6 +859,11 @@ class Any(Type):
     """
     pass
 
+class Void(Type):
+    """Type indicating a void function/method return value. 
+    """
+    pass
+
 # Additional traits types may have.
 #class Derefable(object):
 #    """A deref'able type can appear as the LHS in attribute expressions of the

@@ -6,6 +6,9 @@ module BinPAC
 
 type ParseSuccess = exception<string>
 type ParseError = exception<string>
+type UnitAlreadyConnected = exception<>
 
+# Debugging.
 declare "C-HILTI" void enable_debugging(bool enabled)
 declare "C-HILTI" bool debugging_enabled()
+

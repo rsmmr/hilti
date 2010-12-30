@@ -15,3 +15,4 @@ import enum
 import iterator
 import tuple
 import addr
+import sink

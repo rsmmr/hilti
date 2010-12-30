@@ -239,6 +239,9 @@ class UnitHook(Block):
     def resolve(self, resolver):
         Block.resolve(self, resolver)
         self._unit.resolve(resolver)
+        self._scope.resolve(resolver)
+        for stmt in self._stmts:
+            stmt.resolve(resolver)
 
         for arg in self._unit.args():
             arg.resolve(resolver)
@@ -247,6 +250,12 @@ class UnitHook(Block):
     def validate(self, vld):
         Block.validate(self, vld)
         self._unit.validate(vld)
+
+        for stmt in self._stmts:
+            stmt.validate(vld)
+
+        for arg in self._unit.args():
+            arg.validate(vld)
 
     def execute(self, cg):
         if self.debug() and not cg.debug():

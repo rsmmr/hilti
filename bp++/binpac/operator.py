@@ -252,6 +252,7 @@ _Operators = {
     "DecrPostfix": (1, "Postfix decrement operator (`i++`)", _pacUnaryPostfix("--")),
     "Deref": (1, "Dereference operator. (`*i`)", _pacUnary("*")),
     "Index": (2, "Element at a given index (`a[i]`).", lambda p, e: p.output("<Index>")),
+    "New": (1, "Allocate a new instance of a type (`new T`).", _pacUnary("new")),
     }
 
 _Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type",
@@ -421,14 +422,15 @@ def canCoerceExprTo(expr, dsttype):
 def canCoerceTo(srctype, dsttype):
     """Returns whether an expression of the given type (assumed to be
     non-constant) can be coerced to a given target type. If *dsttype* is of
-    the same type as the expression, the result is always True.
+    the same type as the expression, the result is always True. Here, "of the
+    same type" means that both types return the same ~~name.
 
     *srctype*: ~~Type - The source type.
     *dstype*: ~~Type - The target type.
 
     Returns: bool - True if the expression can be coerceed.
     """
-    if srctype == dsttype:
+    if srctype == dsttype and srctype.name() == dsttype.name():
         return True
 
     if not typecheck(Operator.Coerce, [srctype]):

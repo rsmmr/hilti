@@ -63,7 +63,7 @@ class CodeGen(object):
         return self._debug
 
     def currentModule(self):
-        """Returns the module currently being validated.
+        """Returns the module currently being generated.
 
         Returns: ~~Module - The module
         """
@@ -428,3 +428,9 @@ class CodeGen(object):
         self.setBuilder(resume)
 
         return result
+
+    def debugPrintPtr(self, tag, ptr):
+        cfunc = self.builder().idOp("BinPACIntern::debug_print_ptr")
+        cargs = self.builder().tupleOp([self.builder().constOp(tag), ptr])
+        self.builder().call(None, cfunc, cargs)
+

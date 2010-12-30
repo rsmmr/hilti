@@ -129,6 +129,10 @@ class Scope(visitor.Visitable):
 
         return self._parent.lookupID(id) if self._parent else None
 
+    def resolve(self, resolver):
+        for (id, value) in self._ids.values():
+            id.resolve(resolver)
+
     # Visit support.
     def _visitType(self, v, ids, visited, filter):
 

@@ -8,10 +8,12 @@ module BinPACIntern
 type ParseError = exception<string>
 
 type Parser = struct {
-    string name,        # Short descriptive name.
-    string description, # Longer textual description.
-    caddr parse_func,   # The C function performing the parsing.
-    caddr resume_func   # The C function resuming parsing after a yield.
+    string name,           # Short descriptive name.
+    string description,    # Longer textual description.
+    caddr parse_func,      # The C function performing the parsing.
+    caddr resume_func,     # The C function resuming parsing after a yield.
+    caddr parse_func_sink, # The C function performing the parsing for a sink.
+    caddr resume_func_sink # The C function resuming sink parsing after a yield.
 }
 
 # Registers a parser with the HILTI runtime. Note that this function is not
@@ -22,6 +24,21 @@ declare "C-HILTI" void register_parser(ref<Parser> parser)
 # Runs a module's init function passed in with it's C stub.
 # (This is only needed because we can't call the stub (easily) from C.
 declare "C" void call_init_func(caddr func)
+
+# Support functions for sinks.
+type Sink = struct {
+    # We leave this empty here as we access this struct only from C.
+    # See sink.c for it's definition. 
+}
+
+declare "C-HILTI" ref<Sink> sink_new()
+declare "C-HILTI" void sink_connect(ref<Sink> sink, any pobj, ref<Parser> parser)
+declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj)
+declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data)
+declare "C-HILTI" void sink_close(ref<Sink> sink)
+
+# Debugging.
+declare "C-HILTI" void debug_print_ptr(string tag, any ptr)
 
 # Matches a regexp against a bytes object and returns a given match group.
 # If not found, an empty bytes object is returned.

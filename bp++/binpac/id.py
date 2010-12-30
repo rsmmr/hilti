@@ -232,7 +232,8 @@ class Local(ID):
 
     def resolve(self, resolver):
         ID.resolve(self, resolver)
-        self._expr.resolve(resolver)
+        if self._expr:
+            self._expr.resolve(resolver)
 
     def validate(self, vld):
         ID.validate(self, vld)

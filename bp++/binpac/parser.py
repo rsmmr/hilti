@@ -784,6 +784,13 @@ def p_opt_expr(p):
     """
     p[0] = p[1] if len(p) > 1 else None
 
+def p_expr_new(p):
+    """expr : NEW IDENT
+            | NEW IDENT '(' expr_list ')'
+    """
+    ident = expr.Name(p[2], _currentScope(p))
+    p[0] = expr.Overloaded(Operator.New, (ident, p[4] if len(p) > 5 else []), location=_loc(p, 1))
+
 ### Statement blocks.
 
 def p_stmt_block(p):

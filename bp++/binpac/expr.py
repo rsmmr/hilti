@@ -236,7 +236,8 @@ class Not(Expression):
 
     def resolve(self, resolver):
         Expression.resolve(self, resolver)
-        self._expr.resolve(resolver)
+        if self._expr:
+            self._expr.resolve(resolver)
 
     def validate(self, vld):
         Expression.validate(self, vld)
@@ -490,7 +491,7 @@ class Assign(Expression):
             vld.error(self, "cannot assign to lhs expression")
 
         if not self._rhs.type().canCoerceTo(self._dest.type()):
-            vld.error(self, "types do not match in assigment (%s vs. %s)" % (self._rhs.type(), self._dest.type()))
+            vld.error(self, "types do not match in assigment (%s <- %s)" % (self._dest.type(), self._rhs.type()))
 
         if self._dest.isInit():
             vld.error(self, "cannot assign to an init expression")
