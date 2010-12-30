@@ -73,6 +73,10 @@ class Vector(type.Container, type.Iterable):
     def llvmType(self, cg):
         return cg.llvmTypeGenericPointer()
 
+    def typeInfo(self, cg):
+        typeinfo = cg.TypeInfo(self)
+        return typeinfo
+
     ### Overriden from Iterable.
 
     def iterType(self):

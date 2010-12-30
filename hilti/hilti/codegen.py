@@ -105,6 +105,8 @@ class TypeInfo(object):
         self.equal = "hlt::default_equal"
         self.aux = None
 
+        assert self.args or self.args == []
+
     def cPrototype(self):
         """Returns the C prototype for the type. If defined by the type info
         itself, that is taken. If not, the class-wide default is used. If that

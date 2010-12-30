@@ -176,7 +176,7 @@ class Exception(type.HeapType, type.Parameterizable):
     ### Overridden from Parameterizable.
 
     def args(self):
-        return [self._argtype] if self._argtype else None
+        return [self._argtype] if self._argtype else []
 
     ### Interal.
 

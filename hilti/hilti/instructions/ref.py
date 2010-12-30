@@ -67,10 +67,11 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
+        ti = cg.TypeInfo(self)
         if not self._type:
-            return cg.TypeInfo(self)
-
-        return None
+            ti.c_prototype = "void *"
+        else:
+            ti.c_prototype = self._type.typeInfo(cg).c_prototype
 
     def llvmType(self, cg):
         """A ``ref<T>`` is mapped to the same type as ``T``. Note that because

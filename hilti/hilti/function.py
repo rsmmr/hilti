@@ -520,7 +520,7 @@ class Function(node.Node):
         if self.callingConvention() == CallingConvention.HILTI:
             for i in self.type().args():
                 t = i.type()
-                if isinstance(t, type.ValueType) and not t.instantiable():
+                if isinstance(t, type.ValueType) and not t.instantiable() and not isinstance(t, type.Any):
                     vld.error(self, "HILTI functions cannot have parameter of type %s" % t)
                     return
 
