@@ -50,7 +50,7 @@ class String(type.ParseableType):
     def production(self, field):
         util.internal_error("string parsing not implemented")
 
-    def generateParser(self, cg, cur, dst, skipping):
+    def generateParser(self, cg, var, cur, dst, skipping):
         util.internal_error("string parsing not implemented")
 
 

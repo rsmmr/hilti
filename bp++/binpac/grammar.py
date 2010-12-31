@@ -24,7 +24,7 @@ class Production(object):
     _counter = 0
     _symbols = {}
 
-    def __init__(self, name=None, type=None, symbol=None, location=None):
+    def __init__(self, name=None, type=None, symbol=None, field=None, location=None):
         assert not name or type
 
         self._name = name
@@ -35,7 +35,7 @@ class Production(object):
         self._post = []
         self._location = location
         self._noid = False
-        self._field = None
+        self._field = field
         self._foreach = None
         self._until = None
         self._run_hook = False
@@ -286,8 +286,8 @@ class Terminal(Production):
     Todo: The functionality for *expr* is not yet implemented, and the
     parameter just stored but otherwise ignored.
     """
-    def __init__(self, name, type, expr, filter=None, location=None):
-        super(Terminal, self).__init__(name, type, symbol="terminal", location=location)
+    def __init__(self, name, type, expr, filter=None, field=None, location=None):
+        super(Terminal, self).__init__(name, type, symbol="terminal", field=field, location=location)
         self._expr = expr
         self._filter = filter
 
@@ -387,8 +387,8 @@ class Variable(Terminal):
     location: ~~Location - A location object decscribing the point of definition.
     """
 
-    def __init__(self, name, type, expr=None, filter=None, location=None):
-        super(Variable, self).__init__(name, type, expr, filter, location=location)
+    def __init__(self, name, type, expr=None, filter=None, field=None, location=None):
+        super(Variable, self).__init__(name, type, expr, filter, field, location=location)
         self._type = type
 
     def _rhss(self):

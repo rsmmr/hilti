@@ -1,0 +1,43 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  echo 1234567890abcde | ./a.out -p Mini::Main >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type Main = unit {
+    a: bytes &length=2;
+    b: bytes &length=5 -> self.data;
+    c: bytes &length=3;
+     : bytes &length=5 -> self.data;
+
+    var data: sink;
+
+    on %init {
+        self.data.connect(new Sub);
+        self.data.connect(new Sub2);
+    }
+
+    on %done {
+        print "Main", self;
+    }
+};
+
+export type Sub = unit {
+    s1: bytes &length=2;
+    s2: bytes &length=8;
+
+    on %done {
+        print "Sub ", self;
+    }
+};
+
+export type Sub2 = unit {
+    s: bytes &eod;
+
+    on %done {
+        print "Sub2 ", self;
+    }
+};
+

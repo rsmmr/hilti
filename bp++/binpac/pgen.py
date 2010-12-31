@@ -390,7 +390,7 @@ class ParserGen:
         # Call the type's parse function.
         name = var.name() if var.name() else "__tmp"
         dst = self.builder().addTmp(name , var.parsedType().hiltiType(self.cg()))
-        args.cur = var.parsedType().generateParser(self.cg(), args.cur, dst, not need_val)
+        args.cur = var.parsedType().generateParser(self.cg(), var, args.cur, dst, not need_val)
 
         dst = self._runFilter(var, dst)
 
@@ -743,7 +743,7 @@ class ParserGen:
         self.cg().setBuilder(cont)
 
     def _finishedProduction(self, args, prod, value):
-        """Called whenever a production has sucessfully parsed value."""
+        """Called whenever a production has sucessfully parsed a value."""
 
         builder = self.builder()
         fbuilder = self.functionBuilder()

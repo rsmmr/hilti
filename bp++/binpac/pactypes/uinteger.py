@@ -124,7 +124,7 @@ class UnsignedInteger(type.Integer):
         ("network", 64): "Hilti::Packed::Int64Big",
         }
 
-    def generateParser(self, cg, cur, dst, skipping):
+    def generateParser(self, cg, var, cur, dst, skipping):
         bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
         resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
         fbuilder = cg.functionBuilder()

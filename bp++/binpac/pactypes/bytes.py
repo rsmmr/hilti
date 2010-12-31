@@ -28,7 +28,7 @@ class IteratorBytes(type.Iterator):
         return hilti.type.IteratorBytes()
 
 @type.pac("bytes")
-class Bytes(type.ParseableType, type.Iterable):
+class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
     """Type for bytes objects.
 
     location: ~~Location - A location object describing the point of definition.
@@ -94,11 +94,11 @@ class Bytes(type.ParseableType, type.Iterable):
 
     def production(self, field):
         filter = self.attributeExpr("convert")
-        return grammar.Variable(None, self, filter=filter, location=self.location())
+        return grammar.Variable(None, self, filter=filter, field=field, location=self.location())
 
     def productionForLiteral(self, field, literal):
         filter = self.attributeExpr("convert")
-        return grammar.Literal(None, literal, filter=filter)
+        return grammar.Literal(None, literal, field=field, filter=filter)
 
     def fieldType(self):
         filter = self.attributeExpr("convert")
@@ -107,7 +107,23 @@ class Bytes(type.ParseableType, type.Iterable):
         else:
             return self.parsedType()
 
-    def generateParser(self, cg, cur, dst, skipping):
+    def generateParser(self, cg, var, cur, dst, skipping):
+
+        def toSink(data):
+            if not var.field():
+                return
+
+            sink = var.field().sink()
+
+            if not sink:
+                return
+
+            self.hiltiWriteDataToSink(cg, sink, data)
+
+        if var.field() and var.field().sink():
+            # Need data if not skipping.
+            skipping = False
+
         bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
         resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
         fbuilder = cg.functionBuilder()
@@ -150,6 +166,7 @@ class Bytes(type.ParseableType, type.Iterable):
             cg.setBuilder(done)
             if not skipping:
                 done.bytes_sub(dst, cur, end)
+                toSink(dst)
 
             return end
 
@@ -159,6 +176,7 @@ class Bytes(type.ParseableType, type.Iterable):
 
         if dst and not skipping:
             builder.tuple_index(dst, result, builder.constOp(0))
+            toSink(dst)
 
         builder.tuple_index(cur, result, builder.constOp(1))
 

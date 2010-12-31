@@ -457,7 +457,7 @@ def _addAttrs(p, t, attrs):
         t.addAttribute(attr[0], attr[1])
 
 def p_unit_field(p):
-    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond _leave_unit_field ';'"""
+    """unit_field : opt_unit_field_name unit_field_type _instantiate_field _enter_unit_field opt_type_attr_list opt_unit_field_cond opt_unit_field_sink _leave_unit_field ';'"""
     _addAttrs(p, p.parser.state.field.type(), p[5])
     p[0] = p.parser.state.field
 
@@ -537,6 +537,12 @@ def p_opt_unit_field_cond(p):
                            | """
     if len(p) > 1:
         p.parser.state.field.setCondition(p[3])
+
+def p_opt_unit_field_sink(p):
+    """opt_unit_field_sink : ARROW expr
+                           | """
+    if len(p) > 1:
+        p.parser.state.field.setSink(p[2])
 
 def p_unit_switch(p):
     """unit_switch : SWITCH '(' expr ')' '{' _instantiate_switch unit_switch_case_list '}' ';'"""

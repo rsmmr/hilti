@@ -40,7 +40,7 @@ class SignedInteger(type.Integer):
         # XXX
         pass
 
-    def generateParser(self, cg, dst):
+    def generateParser(self, cg, var, cur, dst, skipping):
         pass
 
 @operator.Coerce(type.SignedInteger)

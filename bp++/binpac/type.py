@@ -624,13 +624,15 @@ class ParseableType(Type):
         """XXXX"""
         util.internal_error("Type.productionForLiteral() not overidden for %s" % self.__class__)
 
-    def generateParser(self, cg, cur, dst, skipping):
+    def generateParser(self, cg, var, cur, dst, skipping):
         """Generate code for parsing an instance of the type.
 
         The method must be overridden by derived classes which may be used as
         the type of ~~Variable production.
 
         cg: ~~CodeGen - The current code generator.
+
+        var: ~~Variable - The variable being parsed.
 
         dst: hilti.operand.Operand - The operand in which to store
         the parsed value. The operand will have the type returned by
@@ -769,6 +771,54 @@ class Iterator(Type):
 
         if not isinstance(self._type, Iterable):
             vld.error(self._type, "iterator requires an iterable tyype as parameter")
+
+class Sinkable:
+    """Trait class for a ~~Type to which a ~~Sink can directly be attached.
+
+    If a type is Sinkable, it needs to call one of the method
+    ~~hiltiWriteDataToSink or ~~hiltiWriteRangeToSink when it has a sink
+    attached (~~UnitField.sink) and data available.
+    """
+
+    def hiltiWriteDataToSink(self, cg, sink, data):
+        """Writes a bytes object into a sink.
+
+        cg: ~~CodeGen - The code generator to use.
+
+        sink: ~~Expr - An expression evaluating to the target sink.
+
+        data: ~~hilti.Operand - An operand with the data to write, which much
+        be of type ~~Bytes. 
+        """
+
+        assert isinstance(sink.type(), type.Sink)
+        assert isinstance(data.type(), hilti.type.Reference) and isinstance(data.type().refType(), hilti.type.Bytes)
+
+        sink = sink.evaluate(cg)
+
+        cfunc = cg.builder().idOp("BinPACIntern::sink_write")
+        cargs = cg.builder().tupleOp([sink, data])
+        cg.builder().call(None, cfunc, cargs)
+
+    def hiltiWriteRangeToSink(self, cg, sink, begin, end):
+        """Writes a bytes range into a sink.
+
+        cg: ~~CodeGen - The code generator to use.
+
+        sink: ~~Expr - An expression evaluating to the target sink.
+
+        begin: ~~hilti.Operand - An operand with a bytes iterator defining
+        the beginning of the data to write into the sink.
+
+        end: ~~hilti.Operand - An operand with a bytes iterator defining
+        the end of the data to write into the sink.
+        """
+        sink = sink.evaluate(cg)
+
+        data = cg.builder().addLocal("__data", hilti.type.Bytes())
+        cg.builder().bytes_sub(data, begin, end)
+
+        self.hiltiWriteDataToSink(cg, sink, data)
 
 class Unknown(ParseableType):
     """Type for an identifier that has not yet been resolved. This is used

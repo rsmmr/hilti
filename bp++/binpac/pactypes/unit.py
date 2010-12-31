@@ -57,6 +57,7 @@ class Field(node.Node):
         self._cond = None
         self._args = args if args else []
         self._noid = False
+        self._sink = None
         self._scope = scope.Scope(None, parent.scope())
 
         if self._type:
@@ -151,6 +152,22 @@ class Field(node.Node):
         cond: ~~Expression: The condition, which must evaluate to a ~~Bool.
         """
         self._cond = cond
+
+    def sink(self):
+        """Returns the sink associated with the field, if any.
+
+        Returns: ~~Expr - An expression referencing the sink parsed data
+        should be forwarded to; or None if not set. 
+        """
+        return self._sink
+
+    def setSink(self, sink):
+        """Sets the sink associated with the field.
+
+        sink: ~~Expr - An expression referencing the sink parsed data
+        should be forwarded to; or None if not set. 
+        """
+        self._sink = sink
 
     def setNoID(self):
         """Sets a flags indicating the HILTI struct for the parent union
@@ -295,7 +312,11 @@ class Field(node.Node):
         convert = self.type().attributeExpr("convert") if self.type() else None
 
         if convert and not operator.typecheck(operator.Operator.Call, [convert, [expr.Hilti(None, self.parsedType())]]):
-            vld.error("no matching function for &convert found")
+            vld.error(self, "no matching function for &convert found")
+
+        if self._sink and not isinstance(self.type(), type.Sinkable):
+            vld.error(self, "cannot attach sink to type %s" % self.type())
+
 
     def pac(self, printer):
         """Converts the field into parseable BinPAC++ code.
@@ -737,7 +758,7 @@ class Unit(type.ParseableType, property.Container):
         #return seq
         return grammar.ChildGrammar(self, location=self.location())
 
-    def generateParser(self, cg, dst):
+    def generateParser(self, cg, var, cur, dst, skipping):
         # This will not be called because we handle the grammar.ChildGrammar
         # case separetely in the parser generator.
         util.internal_error("cannot be reached")
