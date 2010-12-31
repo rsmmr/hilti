@@ -683,6 +683,7 @@ class Unit(type.ParseableType, property.Container):
         return {
             "name": expr.Ctor(self._name, type.String()),
             "byteorder": False,
+            "mimetype": [],
             }
 
     # Overridden from Type.

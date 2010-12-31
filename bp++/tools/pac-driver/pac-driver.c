@@ -66,7 +66,30 @@ static void usage(const char* prog)
         for ( int n = 25 - hlt_string_len(p->name, &excpt, ctx); n; n-- )
             fputc(' ', stderr);
 
-        hlt_string_print(stderr, p->description, 1, &excpt, ctx);
+        hlt_string_print(stderr, p->description, 0, &excpt, ctx);
+
+        if ( p->mime_types && hlt_list_size(p->mime_types, &excpt, ctx) ) {
+            fputs(" [", stderr);
+
+            hlt_list_iter j = hlt_list_begin(p->mime_types, &excpt, ctx);
+            hlt_list_iter end2 = hlt_list_end(p->mime_types, &excpt, ctx);
+
+            int8_t first = 1;
+            while ( ! (hlt_list_iter_eq(j, end2, &excpt, ctx) || excpt) ) {
+                if ( ! first )
+                    fputs(", ", stderr);
+
+                hlt_string s = *(hlt_string*) hlt_list_iter_deref(j, &excpt, ctx);
+                hlt_string_print(stderr, s, 0, &excpt, ctx);
+
+                first = 0;
+                j = hlt_list_iter_incr(j, &excpt, ctx);
+            }
+
+            fputc(']', stderr);
+        }
+
+        fputc('\n', stderr);
 
         i = hlt_list_iter_incr(i, &excpt, ctx);
     }

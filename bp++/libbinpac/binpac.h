@@ -30,10 +30,11 @@ typedef struct {
     int32_t internal;                    // HILTI-internal.
     hlt_string name;                     /// Short descriptive name.
     hlt_string description;              /// Longer textual description.
-    binpac_parse_function *parse_func;   /// The C function performing the parsing.
-    binpac_resume_function *resume_func; /// The C function resuming parsing after a yield.
-    _binpac_parse_sink_function *_parse_func_sink;   // The C function performing the parsing for sink.write. For internal use only. 
-    _binpac_resume_sink_function *_resume_func_sink; // The C function resuming sink parsing after a yield. For internal use only. 
+    hlt_list* mime_types;                /// list<string> of all MIME types handled by this parser.
+    binpac_parse_function* parse_func;   /// The C function performing the parsing.
+    binpac_resume_function* resume_func; /// The C function resuming parsing after a yield.
+    _binpac_parse_sink_function* _parse_func_sink;   // The C function performing the parsing for sink.write. For internal use only. 
+    _binpac_resume_sink_function* _resume_func_sink; // The C function resuming sink parsing after a yield. For internal use only. 
 } binpac_parser;
 
 /// Must be called exactly once at program startup to initialize the BinPAC

@@ -162,10 +162,14 @@ class ParserGen:
         funcs = builder.addLocal("funcs", hilti.type.Tuple([hilti.type.CAddr()] * 2))
         f = builder.addLocal("f", hilti.type.CAddr())
 
+        mime_types = [hilti.operand.Constant(hilti.constant.Constant(t.value(), hilti.type.String())) for t in self._type.property("mimetype")]
+        mime_types = hilti.operand.Ctor(mime_types, hilti.type.List(hilti.type.String()))
+
         builder.new(parser, builder.typeOp(parser.type().refType()))
 
         builder.struct_set(parser, builder.constOp("name"), builder.constOp(grammar.name()))
         builder.struct_set(parser, builder.constOp("description"), builder.constOp("(No description)"))
+        builder.struct_set(parser, builder.constOp("mime_types"), mime_types)
 
         builder.caddr_function(funcs, builder.idOp(self._name("parse")))
         builder.tuple_index(f, funcs, builder.constOp(0))

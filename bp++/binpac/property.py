@@ -16,9 +16,10 @@ class Container:
         Can be overwritten by derived classes. The default implementation
         returns an empty dictionary.
 
-        Returns: dict mapping string to ~~Ctor - For each allowed
-        property, there is one entry under it's name (excluding the leading
-        dot) mapping to its default value.
+        Returns: dict mapping string to ~~Ctor or list of ~~Ctor - For each
+        allowed property, there is one entry under it's name (excluding the
+        leading dot) mapping to its default value. If the default value is a
+        list, it is assumed that the property can have multiple values. 
         """
         return {}
 
@@ -32,7 +33,7 @@ class Container:
         parent: Container - If given, if the property is not defined by the
         unit (or it's value evaluates to False), the parent is checked.
 
-        Returns: ~~Ctor - The value of the property. If not explicity
+        Returns: ~~Ctor or list of ~Ctor - The value of the property. If not explicity
         set, the default value is returned. The returned constant will be of
         the same type as that of the default value returned by ~~allProperties.
         """
@@ -48,7 +49,10 @@ class Container:
 
     def setProperty(self, name, constant):
         """Sets the value of a property. The property name must be one of
-        those returned by ~~allProperties.
+        those returned by ~~allProperties. If the name's default value is a
+        list, it is assumed that the property can have more than one value,
+        and each call to ~~setProperty adds one element to the list (if not
+        already a member). 
 
         name: string - The name of the property.
         value: any - The value to set it to. The type must correspond to what
@@ -61,12 +65,21 @@ class Container:
         except:
             raise ValueError(name)
 
-        self._props[name] = constant
-
+        if not isinstance(default, list):
+            self._props[name] = constant
+        else:
+            self._props[name] = self._props.get(name, default) + [constant]
 
     def resolveProperties(self, resolver):
         """XXXX"""
         for e in self._props.values():
-            if e:
+            if not e:
+                continue
+
+            if isinstance(e, list):
+                for c in e:
+                    if c:
+                        c.resolve(resolver)
+            else:
                 e.resolve(resolver)
 
