@@ -26,6 +26,9 @@ extern binpac_sink* binpacintern_sink_new(hlt_exception** excpt, hlt_execution_c
 /// ctx: &
 extern void binpacintern_sink_connect(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Internal version which also optionally takes the MIME type for better debugging output.
+extern void _binpacintern_sink_connect_intern(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_bytes* mtype, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Disconnects a parser from a sink. The parser is first signaled an
 /// end-of-data (and thus it might still be doing some work), and then
 /// removed from the sink. If the parser is not found, the function does

@@ -74,6 +74,7 @@ class ParserGen:
             self._cg.beginCompile(self)
             self._functionHostApplication(False)
             self._functionHostApplication(True)
+            self._hiltiFunctionNew()
             self._cg.endCompile()
             return True
 
@@ -163,7 +164,7 @@ class ParserGen:
         f = builder.addLocal("f", hilti.type.CAddr())
 
         mime_types = [hilti.operand.Constant(hilti.constant.Constant(t.value(), hilti.type.String())) for t in self._type.property("mimetype")]
-        mime_types = hilti.operand.Ctor(mime_types, hilti.type.List(hilti.type.String()))
+        mime_types = hilti.operand.Ctor(mime_types, hilti.type.Reference(hilti.type.List(hilti.type.String())))
 
         builder.new(parser, builder.typeOp(parser.type().refType()))
 
@@ -183,9 +184,22 @@ class ParserGen:
         builder.tuple_index(f, funcs, builder.constOp(1))
         builder.struct_set(parser, builder.constOp("resume_func_sink"), f)
 
+        # Set the new_func field if our parser does not receive further
+        # parameters.
+        if not self._grammar.params():
+            name = self._type.nameFunctionNew()
+            fid = hilti.operand.ID(hilti.id.Unknown(name, self.cg().moduleBuilder().module().scope()))
+            builder.caddr_function(funcs, fid)
+            builder.tuple_index(f, funcs, builder.constOp(0))
+            builder.struct_set(parser, builder.constOp("new_func"), f)
+
+        else:
+            # Set the new_func field to null.
+            null = builder.addLocal("null", hilti.type.CAddr())
+            builder.struct_set(parser, builder.constOp("new_func"), null)
+
         builder.call(None, builder.idOp("BinPACIntern::register_parser"), builder.tupleOp([parser]))
         builder.return_void()
-
         self.cg().endFunction()
 
     def _functionHostApplication(self, sink):
@@ -213,8 +227,9 @@ class ParserGen:
             pobj = hilti.id.Parameter("__pobj", self._typeParseObjectRef())
             args = [pobj] + args
 
-        for p in self._grammar.params():
-            args += [hilti.id.Parameter(p.name(), p.type().hiltiType(self._cg))]
+        else:
+            for p in self._grammar.params():
+                args += [hilti.id.Parameter(p.name(), p.type().hiltiType(self._cg))]
 
         ftype = hilti.type.Function(args, result)
         name = self._name("parse")
@@ -251,9 +266,6 @@ class ParserGen:
         self.builder().return_result(pobj)
 
         self.cg().endFunction()
-
-        # Create the function to instantiate a parse object from external.
-        self._hiltiFunctionNew()
 
     ### Methods generating parsing code for Productions.
 
@@ -437,8 +449,8 @@ class ParserGen:
         cargs = ParserGen._Args(self.functionBuilder(), (cur, cobj, lahead, lahstart, args.flags))
         params = [p.evaluate(self._cg) for p in child.params()]
 
-        cpgen._newParseObject(cargs, params)
-
+        self._cg.builder().assign(cargs.obj, cpgen._allocateParseObject(params))
+        cpgen._prepareParseObject(cargs)
         cpgen._parseStartSymbol(cargs)
 
         if child.name():
@@ -832,11 +844,19 @@ class ParserGen:
             # For passing the set_input() position back,
             ids += [(hilti.id.Local("__cur", hilti.type.IteratorBytes()), None)]
 
-            # The parser object.
-            ids += [(hilti.id.Local("__parser", self._globalParserObject().type()), None)]
+            ## We need the following only if the type is exported.
+            if self._type.exported():
 
-            # The sink this parser is connected to.
-            ids += [(hilti.id.Local("__sink", self.cg().functionBuilder().typeByID("BinPACIntern::Sink")), None)]
+                # The parser object.
+                ids += [(hilti.id.Local("__parser", self._globalParserObject().type()), None)]
+
+                # The sink this parser is connected to.
+                ids += [(hilti.id.Local("__sink", self.cg().functionBuilder().typeByID("BinPACIntern::Sink")),
+                                        hilti.operand.Constant(hilti.constant.Constant(None, hilti.type.Reference(None))))]
+
+                # The MIME type associated with our input. 
+                ids += [(hilti.id.Local("__mimetype", hilti.type.Reference(hilti.type.Bytes())),
+                                        hilti.operand.Ctor("", hilti.type.Reference(hilti.type.Bytes())))]
 
             structty = hilti.type.Struct(ids)
             self._mbuilder.addTypeDecl(self._name("object"), structty)
@@ -908,7 +928,7 @@ class ParserGen:
         builder.hook_run(result, op1, builder.tupleOp(pargs))
         self._updateInputPointer(args)
 
-    def _allocateParseObject(self, params):
+    def _allocateParseObject(self, params, mtype=None, sink=None):
         """Allocates and initializes a struct type for the parsed grammar.
         """
         builder = self.cg().builder()
@@ -928,14 +948,22 @@ class ParserGen:
                 continue
 
             cg = self.cg()
-            sink = cg.builder().addLocal("__sink", var.type().hiltiType(cg))
+            new_sink = cg.builder().addLocal("__new_sink", var.type().hiltiType(cg))
             cfunc = cg.builder().idOp("BinPACIntern::sink_new")
             cargs = cg.builder().tupleOp([])
-            cg.builder().call(sink, cfunc, cargs)
+            cg.builder().call(new_sink, cfunc, cargs)
 
-            cg.builder().struct_set(obj, cg.builder().constOp(var.name()), sink);
+            cg.builder().struct_set(obj, cg.builder().constOp(var.name()), new_sink);
 
-        self.cg().builder().struct_set(obj, self.cg().builder().constOp("__parser"), self._globalParserObject())
+        if self._type.exported():
+            builder = self.cg().builder()
+            builder.struct_set(obj, builder.constOp("__parser"), self._globalParserObject())
+
+            if mtype:
+                builder.struct_set(obj, builder.constOp("__mimetype"), mtype)
+
+            if sink:
+                builder.struct_set(obj, builder.constOp("__sink"), sink)
 
         return obj
 
@@ -972,15 +1000,31 @@ class ParserGen:
 
     def _hiltiFunctionNew(self):
         """Creates a function that can be called from external to create a new
-        instance of a parse object.
+        instance of a parse object. In addition to the type parameters, the
+        function receives two parameters: a ``hlt_sink *`` with the sink the
+        parser is connected to (NULL if none); and a ``bytes`` object with the
+        MIME type associated with the input (empty if None). 
         """
+        sink = hilti.id.Parameter("__sink", self.cg().moduleBuilder().typeByID("BinPACIntern::Sink"))
+        mtype = hilti.id.Parameter("__mimetype", hilti.type.Reference(hilti.type.Bytes()))
+
         ty = self._type
         params = [hilti.id.Parameter("p%d" % i, arg.type().hiltiType(self.cg())) for (i, arg) in zip(range(len(ty.args())), ty.args())]
+        params += [sink, mtype]
         ftype = hilti.type.Function(params, self._typeParseObjectRef())
         name = ty.nameFunctionNew()
         (fbuilder, builder) = self.cg().beginFunction(name, ftype)
-        self.cg().builder().return_result(self._allocateParseObject([hilti.operand.ID(p) for p in params]))
+
+        obj = self._allocateParseObject([hilti.operand.ID(p) for p in params], self.builder().idOp("__mimetype"), self.builder().idOp("__sink"))
+
+        self.cg().builder().return_result(obj)
         self.cg().endFunction()
+
+        fbuilder.function().id().setLinkage(hilti.id.Linkage.EXPORTED)
+
+        ### FIXME: HILTI generates incorrect code for C_HILTI functions. For
+        ### example, it doesn't access function parameters correctly. 
+        ### fbuilder.function().setCallingConvention(hilti.function.CallingConvention.C_HILTI)
 
     ### Helper methods.
 

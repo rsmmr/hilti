@@ -45,6 +45,7 @@ class Type(object):
         self._params = []
         self._name = "type_%d" % Type._counter
         self._resolved = False
+        self._exported = False
         self._attrs = {}
 
         all = self.supportedParameters()
@@ -197,6 +198,20 @@ class Type(object):
         location: ~~Location - The location.
         """
         self._location = location
+
+    def setExported(self):
+        """Marks this type as exported, i.e., being defined by an ~~ID that
+        has linkage ~~EXPORTED.
+        """
+        self._exported = True
+
+    def exported(self):
+        """Returns whether this type is exported, i.e., being defined by an
+        ~~ID that has linkage ~~EXPORTED.
+
+        Returns: bool - True if exported.
+        """
+        return self._exported
 
     def resolve(self, resolver):
         """Resolves any previously unknown types that might be

@@ -214,6 +214,9 @@ class Field(node.Node):
         prod.setName(self._name)
         prod.setType(self._type)
 
+        if isinstance(prod, grammar.Terminal):
+            prod.setSink(self._sink)
+
         # We add the hooks to a concatened epsilon production. If we woudl add
         # them to the returned production, they might end up being executed
         # multiple times if that contains some kind of loop of itself.
@@ -745,6 +748,9 @@ class Unit(type.ParseableType, property.Container):
         for param in self._args:
             param.validate(vld)
 
+        if self.property("mimetype") and self._args:
+            vld.error(self, "a unit with a MIME type must not take any additional parameters")
+
     def pac(self, printer):
         printer.output("<unit type - TODO>")
 
@@ -904,6 +910,8 @@ class _:
         name = tid.type().nameFunctionNew()
         fid = hilti.operand.ID(hilti.id.Unknown(name, cg.moduleBuilder().module().scope()))
         hargs = [arg.evaluate(cg) for arg in args]
+        null = cg.builder().constOp(None, hilti.type.Reference(None))
+        hargs += [null, hilti.operand.Ctor("", hilti.type.Reference(hilti.type.Bytes()))]
         obj = cg.builder().call(obj, fid, cg.builder().tupleOp(hargs))
         return obj
 
@@ -914,7 +922,7 @@ class _:
     processed before the method returns.  If the unit is not connected to a
     sink, the method does not have any effect.
     """
-    def type(obj, method):
+    def type(obj, method, args):
         return type.Void()
 
     def evaluate(cg, obj, method, args):
@@ -944,3 +952,23 @@ class _:
 
         return None
 
+
+@operator.MethodCall(type.Unit, expr.Attribute("mime_type"), [])
+class _:
+    """Returns the MIME type that was specified when the unit was
+    instantiated (e.g., via ~~sink.connect_mime_type()). Returns an
+    empty ``bytes`` object if none was specified. This method can
+    only be called for exported types.
+    """
+    def type(obj, method, args):
+        return type.Bytes()
+
+    def validate(vld, obj, method, args):
+        if not obj.type().exported():
+            vld.error(obj, "mime_type() can only be called for exported types")
+
+    def evaluate(cg, obj, method, args):
+        pobj = obj.evaluate(cg)
+        mt = cg.builder().addLocal("__mime_type", hilti.type.Reference(hilti.type.Bytes()))
+        cg.builder().struct_get(mt, pobj, cg.builder().constOp("__mimetype"))
+        return mt

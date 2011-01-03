@@ -6,17 +6,18 @@
 #include <stdlib.h>
 
 #include "binpac.h"
+#include "mime.h"
 
 static hlt_list* _parsers = 0;
 static int _initalized = 0;
 
 // FIXME: This is a very unfortunate naming scheme ...
-extern const hlt_type_info hlt_type_info_struct_string_name_string_description_caddr_parse_func_caddr_resume_func;
+extern const hlt_type_info hlt_type_info_struct_string_name_string_description_ref_list_string_mime_types_caddr_parse_func_caddr_resume_func_caddr_parse_func_sink_caddr_resume_func_sink_caddr_new_func;
 
 static void _ensure_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! _parsers )
-        _parsers = hlt_list_new(&hlt_type_info_struct_string_name_string_description_caddr_parse_func_caddr_resume_func, excpt, ctx);
+        _parsers = hlt_list_new(&hlt_type_info_struct_string_name_string_description_ref_list_string_mime_types_caddr_parse_func_caddr_resume_func_caddr_parse_func_sink_caddr_resume_func_sink_caddr_new_func, excpt, ctx);
 }
 
 // Public API functions.
@@ -43,8 +44,9 @@ void binpac_fatal_error(const char* msg)
 void binpacintern_register_parser(binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     _ensure_parsers(excpt, ctx);
-    hlt_list_push_back(_parsers, &hlt_type_info_struct_string_name_string_description_caddr_parse_func_caddr_resume_func, &parser, excpt, ctx);
+    hlt_list_push_back(_parsers, &hlt_type_info_struct_string_name_string_description_ref_list_string_mime_types_caddr_parse_func_caddr_resume_func_caddr_parse_func_sink_caddr_resume_func_sink_caddr_new_func, &parser, excpt, ctx);
 
+    binpacintern_mime_register_parser(parser, excpt, ctx);
 }
 
 void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* ctx))

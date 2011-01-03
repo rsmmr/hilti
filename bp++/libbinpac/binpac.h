@@ -18,6 +18,10 @@ typedef void* binpac_resume_function(hlt_exception* yield, hlt_exception** excpt
 typedef void* _binpac_parse_sink_function(void* pobj, hlt_bytes_pos iter, int8_t reserved, hlt_exception** excpt, hlt_execution_context* ctx);
 typedef void* _binpac_resume_sink_function(hlt_exception* yield, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Internal function to create an instance of a parser.
+struct binpac_sink;
+typedef void* _binpac_new_function(struct binpac_sink* sink, hlt_bytes* mimetype, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Predefined exceptions.
 
 /// Raised when a generated parser encounters an error in its input.
@@ -33,8 +37,12 @@ typedef struct {
     hlt_list* mime_types;                /// list<string> of all MIME types handled by this parser.
     binpac_parse_function* parse_func;   /// The C function performing the parsing.
     binpac_resume_function* resume_func; /// The C function resuming parsing after a yield.
+
     _binpac_parse_sink_function* _parse_func_sink;   // The C function performing the parsing for sink.write. For internal use only. 
-    _binpac_resume_sink_function* _resume_func_sink; // The C function resuming sink parsing after a yield. For internal use only. 
+    _binpac_resume_sink_function* _resume_func_sink; // The C function resuming sink parsing after a yield. For internal use only.
+    _binpac_new_function* _new_func;                 // C function to create a new instance of the parser. May be None of not supported.
+                                                     // Note that this function must not take any further parser parameter.
+
 } binpac_parser;
 
 /// Must be called exactly once at program startup to initialize the BinPAC

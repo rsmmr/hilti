@@ -49,9 +49,10 @@ class ID(node.Node):
         self._name = name
         self._namespace = namespace.lower() if namespace else None
         self._type = type
-        self._linkage = linkage
         self._imported = imported
         self._location = location
+
+        self.setLinkage(linkage)
 
     def name(self):
         """Returns the ID's name.
@@ -81,6 +82,9 @@ class ID(node.Node):
         linkage: string - The new linkage.
         """
         self._linkage = linkage
+
+        if linkage == Linkage.EXPORTED:
+            self._type.setExported()
 
     def setName(self, name):
         """Sets the ID's name.

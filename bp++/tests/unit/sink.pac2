@@ -22,7 +22,7 @@ export type Main = unit {
     var data : sink;
 
     on %init {
-        self.data.connect(new Sub);
+        self.data.connect(new Sub(b"Foo", True));
         self.data.connect(new Sub2);
     }
 
@@ -31,12 +31,12 @@ export type Main = unit {
     }
 };
 
-export type Sub = unit {
+export type Sub = unit(a: bytes, b: bool) {
     s1: bytes &length=2;
     s2: bytes &length=8;
 
     on %done {
-        print "Sub ", self;
+        print "Sub ", self, a, b;
     }
 };
 

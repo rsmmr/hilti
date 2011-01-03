@@ -39,8 +39,11 @@ class _:
         pobj = args[0].evaluate(cg)
 
         # Check if it's already connected.
+        old_sink = cg.builder().addLocal("__old_sink", sink.type())
         old_sink_set = cg.builder().addLocal("__old_sink_set", hilti.type.Bool())
-        cg.builder().struct_is_set(old_sink_set, pobj, cg.builder().constOp("__sink"))
+
+        cg.builder().struct_get(old_sink, pobj, cg.builder().constOp("__sink"))
+        cg.builder().ref_cast_bool(old_sink_set, old_sink)
 
         fbuilder = cg.functionBuilder()
         ok = fbuilder.newBuilder("not_connected")
@@ -61,6 +64,34 @@ class _:
         # Record the connected sink in parsing object.
         cg.builder().struct_set(pobj, cg.builder().constOp("__sink"), sink)
 
+        return None
+
+@operator.MethodCall(type.Sink, expr.Attribute("connect_mime_type"), [type.String])
+class _:
+    """XXX"""
+    def type(obj, method, args):
+        return type.Void()
+
+    def evaluate(cg, obj, method, args):
+        sink = obj.evaluate(cg)
+        mtype = args[0].evaluate(cg)
+        cfunc = cg.builder().idOp("BinPACIntern::mime_connect_by_string")
+        cargs = cg.builder().tupleOp([sink, mtype])
+        cg.builder().call(None, cfunc, cargs)
+        return None
+
+@operator.MethodCall(type.Sink, expr.Attribute("connect_mime_type"), [type.Bytes])
+class _:
+    """XXX"""
+    def type(obj, method, args):
+        return type.Void()
+
+    def evaluate(cg, obj, method, args):
+        sink = obj.evaluate(cg)
+        mtype = args[0].evaluate(cg)
+        cfunc = cg.builder().idOp("BinPACIntern::mime_connect_by_bytes")
+        cargs = cg.builder().tupleOp([sink, mtype])
+        cg.builder().call(None, cfunc, cargs)
         return None
 
 @operator.MethodCall(type.Sink, expr.Attribute("write"), [type.Bytes])

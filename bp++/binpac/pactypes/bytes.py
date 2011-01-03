@@ -94,11 +94,11 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
 
     def production(self, field):
         filter = self.attributeExpr("convert")
-        return grammar.Variable(None, self, filter=filter, field=field, location=self.location())
+        return grammar.Variable(None, self, filter=filter, location=self.location())
 
     def productionForLiteral(self, field, literal):
         filter = self.attributeExpr("convert")
-        return grammar.Literal(None, literal, field=field, filter=filter)
+        return grammar.Literal(None, literal, filter=filter)
 
     def fieldType(self):
         filter = self.attributeExpr("convert")
@@ -108,19 +108,18 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
             return self.parsedType()
 
     def generateParser(self, cg, var, cur, dst, skipping):
-
         def toSink(data):
-            if not var.field():
+            if not var.sink():
                 return
 
-            sink = var.field().sink()
+            sink = var.sink()
 
             if not sink:
                 return
 
             self.hiltiWriteDataToSink(cg, sink, data)
 
-        if var.field() and var.field().sink():
+        if var.sink():
             # Need data if not skipping.
             skipping = False
 
