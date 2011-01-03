@@ -30,27 +30,33 @@ void run() {
     set.insert m "F-10"
 
     call Hilti::print(m)
+    call Hilti::print("")
 
     timer_mgr.advance t 10.0
     call Hilti::print(m)
     call Hilti::print(t)
+    call Hilti::print("")
 
     b = set.exists m "B-0"
 
     timer_mgr.advance t 20.0
     call Hilti::print(m)
     call Hilti::print(t)
+    call Hilti::print("")
 
     timer_mgr.advance t 25.0
     call Hilti::print(m)
     call Hilti::print(t)
+    call Hilti::print("")
 
     set.remove m "F-10"
     call Hilti::print(m)
     call Hilti::print(t)
+    call Hilti::print("")
 
     timer_mgr.advance t 50.0
     call Hilti::print(m)
     call Hilti::print(t)
+    call Hilti::print("")
 
 }

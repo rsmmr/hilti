@@ -128,6 +128,15 @@ extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exceptio
 /// Raises: ValueError - If *b* has been frozen.
 extern void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Searches for the first occurance of a specific byte in a bytes object. 
+///
+/// b: The bytes object to search.
+/// chr: The byte to search.
+/// excpt: &
+///
+/// Returns: The position where the byte is found, or ~~hlt_bytes_end if not found.
+extern hlt_bytes_pos hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Returns a subsequence of a bytes object.
 ///
 /// start: The start of the subsequence.

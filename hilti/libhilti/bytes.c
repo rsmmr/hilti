@@ -177,6 +177,19 @@ void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, h
 
 static hlt_bytes_pos GenericEndPos = { 0, 0 };
 
+hlt_bytes_pos hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    for ( hlt_bytes_chunk* c = b->head; c; c = c->next ) {
+        int8_t* p = memchr(c->start, chr, c->end - c->start);
+        if ( p ) {
+            hlt_bytes_pos i = { c, p };
+            return i;
+        }
+    }
+    
+    return GenericEndPos;
+}
+
 static inline int8_t is_end(hlt_bytes_pos pos)
 {
     return pos.chunk == 0 || (!pos.cur) || pos.cur >= pos.chunk->end;
@@ -691,6 +704,31 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
     }
 
     return dst;
+}
+
+hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return 1;
+
+    hlt_bytes* b = *((hlt_bytes**)obj);
+
+    hlt_hash hash = 0;
+
+    for ( const hlt_bytes_chunk* c = b->head; c; c = c->next )
+        hash += hlt_hash_bytes(c->start, c->end - c->start);
+
+    return hash;
+}
+
+int8_t hlt_bytes_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes* b1 = *((hlt_bytes**)obj1);
+    hlt_bytes* b2 = *((hlt_bytes**)obj2);
+
+    hlt_execution_context* c= hlt_global_execution_context();
+    hlt_exception* e = 0;
+
+    return hlt_bytes_cmp(b1, b2, &e, c) == 0;
 }
 
 void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)

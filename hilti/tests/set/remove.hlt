@@ -10,7 +10,7 @@ import Hilti
 
 void run() {
     local bool b
-    local int32 i
+    local int64 i
     local ref<set<string>> m
 
     m = new set<string>

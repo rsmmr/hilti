@@ -22,7 +22,7 @@ if errors:
 
 print >>sys.stderr, "Writing documentation for %s ..." % os.path.basename(input)
 
-name = mod.name() + '.hlt'
+name = mod.name()
 print name
 print "-" * len(name)
 print

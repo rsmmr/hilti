@@ -1,5 +1,5 @@
 >>> struct.set a "b" 42
-wrong-args.hlt:19: error, operand 3 type must be bool
+wrong-args.hlt:19: error, operand 3 type must be bool, but is int<64>
 
 
 1 error found

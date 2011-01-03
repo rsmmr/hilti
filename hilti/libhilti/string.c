@@ -400,5 +400,6 @@ const char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execut
     char* buffer = hlt_gc_malloc_atomic(len + 1);
     memcpy(buffer, raw, len);
     buffer[len] = '\0';
+
     return (const char*) raw;
 }

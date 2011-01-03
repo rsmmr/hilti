@@ -6,6 +6,8 @@ import node
 import type
 import visitor
 
+import copy
+
 class Scope(node.Node):
     """Groups a set of IDs into a common visibility space. A scope
     can have a parent scope that will be searched recursively when
@@ -65,6 +67,21 @@ class Scope(node.Node):
         self._ids[idx] = (i, True)
 
         i.setScope(self)
+
+        ns = i.name()
+        n = ns.rfind("::")
+        if n > 0:
+            ns = ns[0:n]
+
+        p = self
+        while p:
+            if p._namespace:
+                ns = p._namespace + "::" + ns if ns else p._namespace
+                p = p._parent
+            else:
+                break
+
+        i.type()._namespace = ns
 
     def _lookupID(self, i, return_val):
         if isinstance(i, str):

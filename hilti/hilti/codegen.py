@@ -114,7 +114,7 @@ class TypeInfo(object):
 
         Returns: string - The C type.
         """
-        if self.c_prototyoe:
+        if self.c_prototype:
             return self.c_prototype
 
         return self.type.cPrototype()
@@ -745,7 +745,7 @@ class CodeGen(objcache.Cache):
         """
 
         canonified = type.name()
-        for c in ["<", ">", ",", "{", "}", " ", "*", "="]:
+        for c in ["<", ">", ",", "{", "}", " ", "*", "=", "&"]:
             canonified = canonified.replace(c, "_")
 
         while canonified.find("__") >= 0:

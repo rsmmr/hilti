@@ -44,4 +44,10 @@ void run() {
      c = bitset.has b2 b3
      call Hilti::print(c)
 
+     b3 = bitset.clear b3 MyBits::Bit23
+     b3 = bitset.clear b3 MyBits::Bit24
+     call Hilti::print(b3)
+     
+
+
 }

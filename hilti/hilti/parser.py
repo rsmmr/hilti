@@ -125,7 +125,7 @@ def p_def_const(p):
     i = id.Constant(name, p[4], location=_loc(p, 2))
     p.parser.state.module.scope().add(i)
 
-    p[0] = p[2]
+    p[0] = i
 
 def p_def_local(p):
     """def_local : LOCAL local_id NL"""

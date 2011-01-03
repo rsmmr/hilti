@@ -88,7 +88,6 @@ class ProtoGen:
             result = "void"
         else:
             ti = self.cg().typeInfo(f.type().resultType())
-            assert ti.c_prototype
             result = ti.cPrototype()
 
         args = []
@@ -100,8 +99,8 @@ class ProtoGen:
                     ti = self.cg().typeInfo(a.type().refType())
                 else:
                     ti = self.cg().typeInfo(a.type())
-                assert ti and ti.c_prototype
-                args += [ti.c_prototype]
+                assert ti
+                args += [ti.cPrototype()]
 
         args = "".join(["%s, " % a for a in args])
         self.output("%s %s(%shlt_exception **);" % (result, self.cg().nameFunction(f, prefix=False), args))
@@ -131,7 +130,7 @@ class ProtoGen:
         else:
             value = i.value().value()
 
-        self.output("static const hlt_enum %s_%s = { 0, 0, %s };" % (scope, i.name().replace("::", "_"), value))
+        self.output("static const hlt_enum %s_%s = { 0, %s };" % (scope, i.name().replace("::", "_"), value))
 
 
 

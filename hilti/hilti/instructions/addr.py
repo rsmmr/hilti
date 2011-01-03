@@ -1,9 +1,16 @@
 # $Id$
 """
-.. hlt:type:: addr
+.. hlt:type:: addr Addresses
 
-   The *addr* data type represents IP addresses. It transparently handles both
-   IPv4 and IPv6 addresses.
+    The ``addr`` data type represents IP addresses, and it transparently
+    handles both IPv4 and IPv6 addresses.
+
+    Address constants are specified in the standard notation for IPv4
+    addresses ("dotted quad", e.g., ``192.168.1.1``) or IPv6 addresses
+    (colon-notation, e.g., ``2001:db8::1428:57ab``).
+
+    If not further specified, instances of type ``addr`` are by default
+    initialized to ``::0``.
 """
 
 import socket
@@ -33,15 +40,11 @@ class Addr(type.ValueType, type.Constable, type.Unpackable):
         return typeinfo
 
     def llvmDefault(self, cg):
-        """Addresses are initialized to ``::0``."""
         return llvm.core.Constant.struct([cg.llvmConstInt(0, 64)] * 2)
 
     ### Overridden from Constable.
 
     def validateConstant(self, vld, const):
-        """Address constants are specified in standartd notation for either v4
-        addresses ("dotted quad", e.g., ``192.168.1.1``), or v6 addresses
-        (colon-notation, e.g., ``2001:db8::1428:57ab``)."""
         # Todo: implement.
         pass
 
@@ -118,12 +121,12 @@ class Addr(type.ValueType, type.Constable, type.Unpackable):
 
 @hlt.overload(Equal, op1=cAddr, op2=cAddr, target=cBool)
 class Equal(Operator):
-    """ Returns True if the address in *op1* equals the address in *op2*. Note
-    that an IPv4 address ``a.b.c.d`` will match the corresponding IPv6
+    """Returns True if the address *op1* equals the address *op2*. Note that
+    an IPv4 address ``a.b.c.d`` will match the corresponding IPv6
     ``::a.b.c.d``.
 
-    Todo: Are the v6 vs v4 matching semantics right? Should it be
-    ``::ffff:a.b.c.d``? Should v4 never match a v6 address?``
+    .. todo:: Are the IPv6 vs IPv4 matching semantics right? Should it be
+       ``::ffff:a.b.c.d``? Should IPv4 never match an IPv6 address?
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
@@ -144,9 +147,9 @@ class Equal(Operator):
 
 @hlt.instruction("addr.family", op1=cAddr, target=cEnum)
 class Family(Instruction):
-    """
-    Returns the address family of *op1*, which can currently be either
-    ``AddrFamily::IPv4`` or ``AddrFamiliy::IPv6``.
+    """Returns the address family of *op1*, which can be either
+    :hlt:glob:`hilti::AddrFamily::IPv4` or
+    :hlt:glob:`hilti::AddrFamily::IPv6`.
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())

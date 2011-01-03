@@ -72,8 +72,12 @@ class Function(Instruction):
             (hltmain, main, hltresume, resume) = cg.llvmCStubs(func)
             main = builder.bitcast(main, cg.llvmTypeGenericPointer())
             resume = builder.bitcast(resume, cg.llvmTypeGenericPointer())
+        elif func.callingConvention() == function.CallingConvention.C_HILTI:
+            func = cg.llvmFunction(func)
+            main = builder.bitcast(func, cg.llvmTypeGenericPointer())
+            resume = llvm.core.Constant.null(cg.llvmTypeGenericPointer())
         else:
-            util.internal_error("caddr.Function not supported for non-HILTI functions yet")
+            util.internal_error("caddr.Function not supported for non-HILTI/HILTI-C functions yet")
 
         struct = llvm.core.Constant.struct([main, resume])
         cg.llvmStoreInTarget(self, struct)

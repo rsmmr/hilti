@@ -24,6 +24,37 @@ from hilti.instructions.operators import *
 
 import string
 
+def _makeVal(cg, undef, have_value, val):
+    flags = cg.llvmConstInt( (1 if undef else 0) +  (2 if have_value else 0), 8)
+    val = cg.llvmConstInt(val, 64)
+    return llvm.core.Constant.struct([flags, val])
+
+def _makeValLLVM(cg, undef, have_val, val):
+    undef = cg.builder().zext(undef, llvm.core.Type.int(8))
+    have_val = cg.builder().zext(have_val, llvm.core.Type.int(8))
+    have_val = cg.builder().shl(have_val, cg.llvmConstInt(1, 32))
+    flags = cg.builder().or_(undef, have_val)
+
+    e = llvm.core.Constant.struct([cg.llvmConstInt(0, 8), cg.llvmConstInt(0, 64)])
+    e = cg.llvmInsertValue(e, 0, flags)
+    e = cg.llvmInsertValue(e, 1, val)
+
+    return e
+
+def _getUndef(cg, op):
+    flags = cg.llvmExtractValue(op, cg.llvmConstInt(0, 32))
+    bit = cg.builder().and_(flags, cg.llvmConstInt(1, 8))
+    return cg.builder().trunc(bit, llvm.core.Type.int(1))
+
+def _getHaveVal(cg, op):
+    flags = cg.llvmExtractValue(op, cg.llvmConstInt(0, 32))
+    bit = cg.builder().and_(flags, cg.llvmConstInt(2, 8))
+    bit = cg.builder().lshr(bit, cg.llvmConstInt(1, 8))
+    return cg.builder().trunc(bit, llvm.core.Type.int(1))
+
+def _getVal(cg, op):
+    return cg.llvmExtractValue(op, cg.llvmConstInt(1, 32))
+
 @hlt.type("enum", 10, c="hlt_enum")
 class Enum(type.ValueType, type.Constable):
     def __init__(self, labels):
@@ -73,13 +104,7 @@ class Enum(type.ValueType, type.Constable):
 
         Returns: llvm.core.Value - The value.
         """
-        return self._makeVal(cg, True, False, 0)
-
-    def _makeVal(self, cg, undef, have_value, val):
-        zero = cg.llvmConstInt(0, 1)
-        one = cg.llvmConstInt(1, 1)
-        val = cg.llvmConstInt(val, 64)
-        return llvm.core.Constant.struct([one if undef else zero, one if have_value else zero, val])
+        return _makeVal(cg, True, False, 0)
 
     ### Overridden from Type.
 
@@ -120,19 +145,15 @@ class Enum(type.ValueType, type.Constable):
         return typeinfo
 
     def llvmType(self, cg):
-        # Byte  0:    1 = Undefined value (i.e., one we don't know a label for); 0 otherwise.
-        # Byte  1:    1 = No value set (only relevant if Byte 0 is set.); 0 otherwise.
-        # Bytes 2-10: Value.
-        #
-        # TODO: Check that LLVM's alignment for the 1-bit flags is indeed to use
-        # two bytes.
-        return llvm.core.Type.struct([llvm.core.Type.int(1), llvm.core.Type.int(1), llvm.core.Type.int(64)])
+        # Bit  0:    1 = Undefined value (i.e., one we don't know a label for); 0 otherwise.
+        # Bit  1:    1 = No value set (only relevant if Byte 0 is set.); 0 otherwise.
+        return llvm.core.Type.struct([llvm.core.Type.int(8), llvm.core.Type.int(64)])
 
     ### Overridden from ValueType.
 
     def llvmDefault(self, cg):
         """``enum`` variables are initialized with the ``Undef`` label."""
-        return self._makeVal(cg, True, False, 0)
+        return _makeVal(cg, True, False, 0)
 
     ### Overridden from Constable.
 
@@ -147,7 +168,7 @@ class Enum(type.ValueType, type.Constable):
         if self.isUndef(const):
             return self.llvmUndef(cg)
 
-        return self._makeVal(cg, False, False, self._labels[const.value()])
+        return _makeVal(cg, False, False, self._labels[const.value()])
 
     def outputConstant(self, printer, const):
         for i in printer.currentModule().scope().IDs():
@@ -162,9 +183,10 @@ class Enum(type.ValueType, type.Constable):
     ### Overridden from None.
     def autodoc(self):
         for (l, v) in sorted(self._labels.items()):
-            print "    .. hlt:global:: %s" % l
 
-            c = ["<No documentation for enum values yet.>"] # FIXME
+            print "    .. hlt:global:: %s::%s %s" % (self._namespace, l, l)
+
+            c = ["\n        No documentation for enum values yet."] # FIXME
 
             for line in c:
                 print "        ", line
@@ -182,14 +204,12 @@ class Equal(Operator):
         op2 = cg.llvmOp(self.op2())
 
         # Compare undef flags.
-        zero = cg.llvmConstInt(0, 32)
-        undef1 = cg.llvmExtractValue(op1, zero)
-        undef2 = cg.llvmExtractValue(op2, zero)
+        undef1 = _getUndef(cg, op1)
+        undef2 = _getUndef(cg, op2)
 
         # Compare values.
-        two = cg.llvmConstInt(2, 32)
-        val1 = cg.llvmExtractValue(op1, two)
-        val2 = cg.llvmExtractValue(op2, two)
+        val1 = _getVal(cg, op1)
+        val2 = _getVal(cg, op2)
 
         undef_or = cg.builder().or_(undef1, undef2)
         undef_and = cg.builder().and_(undef1, undef2)
@@ -235,9 +255,6 @@ class FromInt(Instruction):
         phi.add_incoming(cg.llvmConstInt(0, 1), block_known)
         phi.add_incoming(cg.llvmConstInt(1, 1), block_unknown)
 
-        result = llvm.core.Constant.struct([cg.llvmConstInt(0, 1), cg.llvmConstInt(1, 1), cg.llvmConstInt(0, 64)])
-        result = cg.llvmInsertValue(result, 0, phi);
-        result = cg.llvmInsertValue(result, 2, op);
-
+        result = _makeValLLVM(cg, phi, cg.llvmConstInt(1, 1), op)
         cg.llvmStoreInTarget(self, result)
 

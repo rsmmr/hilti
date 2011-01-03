@@ -59,18 +59,12 @@ struct __hlt_set_iter {
 
 hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( type->size <= sizeof(__khkey_t) )
-        return (khint_t)(*(void**)obj);
-    else
-        return hlt_hash_bytes(obj, type->size);
+    return hlt_hash_bytes(obj, type->size);
 }
 
 int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( type1->size <= sizeof(__khkey_t) )
-        return (*(void**)obj1) == (*(void**)obj2);
-    else
-        return memcmp(obj1, obj2, type1->size) == 0;
+    return memcmp(obj1, obj2, type1->size) == 0;
 }
 
 static inline hlt_hash _kh_hash_func(const void* obj, const hlt_type_info* type)
@@ -265,7 +259,7 @@ void hlt_list_map_expire(__hlt_map_timer_cookie cookie)
     kh_del_map(cookie.map, i);
 }
 
-int32_t hlt_map_size(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx)
+int64_t hlt_map_size(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -524,7 +518,7 @@ void hlt_list_set_expire(__hlt_set_timer_cookie cookie)
     kh_del_set(cookie.set, i);
 }
 
-int32_t hlt_set_size(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx)
+int64_t hlt_set_size(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);

@@ -653,7 +653,7 @@ class Type(ID):
         printer.output(nl=True)
 
     def autodoc(self):
-        print ".. hlt:type:: %s %s\n" % (self._name, self.type().docName())
+        print ".. hlt:typedef:: XX::%s %s %s\n" % (self._name, self._name, self.type().docName())
 
         for line in self.comment():
             print "    ", line

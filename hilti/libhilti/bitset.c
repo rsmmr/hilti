@@ -8,6 +8,12 @@
 
 #include <stdio.h>
 
+typedef struct {
+    uint8_t bit;
+    hlt_string name;
+} Label;
+
+
 static hlt_string_constant _sep = { 1, "|" };
 static hlt_string_constant _none = { 7, "<empty>" };
 
@@ -16,23 +22,21 @@ hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int3
     assert(type->type == HLT_TYPE_BITSET);
     int64_t i = *((int64_t*)obj);
 
-    // Labels are stored as concatenated ASCIIZ.
-    const char *labels = (const char*) type->aux;
-
     hlt_string str = 0;
-    int bit = 1;
-    while ( *labels ) {
-        if ( i & bit ) {
+    Label *labels = (Label*) type->aux;
+
+    while ( labels->name ) {
+        if ( i & (1 << labels->bit) ) {
             if ( ! str )
-                str = hlt_string_from_asciiz(labels, excpt, ctx);
+                str = labels->name;
             else {
                 str = hlt_string_concat(str, &_sep, excpt, ctx);
-                str = hlt_string_concat(str, hlt_string_from_asciiz(labels, excpt, ctx), excpt, ctx);
+                str = hlt_string_concat(str, labels->name, excpt, ctx);
             }
 
         }
-        bit <<= 1;
-        while ( *labels++ );
+
+        ++labels;
     }
 
     return str ? str : &_none;

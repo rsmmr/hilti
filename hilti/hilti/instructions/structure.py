@@ -188,7 +188,7 @@ def _fieldType(ty, op, i):
             if op.canCoerceTo(id.type()):
                 return (True, "")
             else:
-                return (False, "type must be %s" % id.type())
+                return (False, "type must be %s, but is %s" % (id.type(), op.type()))
 
     assert False
 

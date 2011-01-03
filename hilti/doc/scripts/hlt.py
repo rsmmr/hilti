@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+"""X
     The Hlt domain for Sphinx.
 """
 
@@ -12,6 +12,8 @@ from sphinx.locale import l_, _
 from sphinx.directives import ObjectDescription
 from sphinx.roles import XRefRole
 from sphinx.util.nodes import make_refnode
+
+from docutils import nodes
 
 class HltGeneric(ObjectDescription):
     def add_target_and_index(self, name, sig, signode):
@@ -41,7 +43,7 @@ class HltGeneric(ObjectDescription):
         return _('%s (%s)') % (name, self.objtype)
 
     def handle_signature(self, sig, signode):
-        signode += addnodes.desc_name(sig, sig)
+        signode += addnodes.desc_name("", sig)
         return sig
 
 class HltInstruction(HltGeneric):
@@ -52,17 +54,43 @@ class HltInstruction(HltGeneric):
 
         if len(args) > 1 and args[0] == "target":
             args = args[1:] if len(args) > 1 else []
-            signode += addnodes.desc_addname("target = ", "target = ")
+            signode += addnodes.desc_addname("", "target = ")
 
         args = " ".join(args)
         args = " " + args
         desc_name = name
-        signode += addnodes.desc_name(desc_name, desc_name)
+        signode += addnodes.desc_name("", desc_name)
         if len(args) > 0:
-            signode += addnodes.desc_addname(args, args)
+            signode += addnodes.desc_addname("", args)
         return name
 
 class HltType(HltGeneric):
+    def handle_signature(self, sig, signode):
+        # Do nothing, we just want an anchor for xrefing.
+        m = sig.split()
+        name = m[0]
+        return name
+
+class HltTypeDef(HltGeneric):
+    def handle_signature(self, sig, signode):
+        m = sig.split()
+        full = m[0]
+        short = m[1]
+        ty = m[2]
+
+        signode += addnodes.desc_addname("", ty + " ")
+        signode += addnodes.desc_name("", short)
+        return full
+
+class HltGlobal(HltGeneric):
+    def handle_signature(self, sig, signode):
+        m = sig.split()
+        full = m[0]
+        short = m[1]
+        signode += addnodes.desc_name("", short)
+        return full
+
+class HltModule(HltGeneric):
     def handle_signature(self, sig, signode):
         # Do nothing, we just want an anchor for xrefing.
         m = sig.split()
@@ -79,6 +107,7 @@ class HltDomain(Domain):
         'operator':    ObjType(l_('operator'),    'op'),
         'overload':    ObjType(l_('overload'),    'ovl'),
         'type':        ObjType(l_('type'),        'type'),
+        'typedef':     ObjType(l_('typedef'),     'typedef'),
         'function':    ObjType(l_('function'),    'func'),
         'global':      ObjType(l_('global'),      'glob'),
         'module':      ObjType(l_('module'),      'mod'),
@@ -89,9 +118,10 @@ class HltDomain(Domain):
         'operator':      HltInstruction,
         'overload':      HltInstruction,
         'type':          HltType,
+        'typedef':       HltTypeDef,
         'function':      HltGeneric,
-        'global':        HltGeneric,
-        'mod':           HltGeneric,
+        'global':        HltGlobal,
+        'module':        HltModule,
     }
 
     roles = {

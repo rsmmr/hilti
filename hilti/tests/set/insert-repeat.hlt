@@ -9,14 +9,14 @@ module Main
 import Hilti
 
 void run() {
-    local ref<set<tuple<string,int64>> m
+    local ref<set<tuple<string,int64>>> m
 
     m = new set<tuple<string,int64>>
 
-    set.insert m ("Foo",1) 10
-    set.insert m ("Bar",2) 20
-    set.insert m ("Foo",1) 30
-    set.insert m ("Bar",2) 40
+    set.insert m ("Foo",1)
+    set.insert m ("Bar",2)
+    set.insert m ("Foo",1)
+    set.insert m ("Bar",2)
 
     call Hilti::print(m)
 }

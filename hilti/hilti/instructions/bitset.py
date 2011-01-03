@@ -23,6 +23,8 @@ import llvm.core
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
+import string
+
 @hlt.type("bitset", 19, c="int64_t")
 class Bitset(type.ValueType, type.Constable):
     def __init__(self, labels, location=None):
@@ -59,22 +61,28 @@ class Bitset(type.ValueType, type.Constable):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        """An ``bitset``'s type information keeps additional information in
-        the ``aux`` field: ``aux`` points to a concatenation of ASCIIZ strings
-        containing the label names.
+        """An ``bitset``'s type information keep additional information in the
+        ``aux`` field: ``aux`` points to a concatenation of entries ``{ uint8,
+        hlt_string }``, one per label. The end of the array is marked by an
+        string of null
         """
+
         typeinfo = cg.TypeInfo(self)
         typeinfo.to_string = "hlt::bitset_to_string";
         typeinfo.to_int64 = "hlt::bitset_to_int64";
 
-        # Build the ASCIIZ strings.
+        # Build ASCIIZ strings for the labels.
         aux = []
         zero = [cg.llvmConstInt(0, 8)]
         for (label, value) in sorted(self.labels().items(), key=lambda x: x[1]):
-            aux += [cg.llvmConstInt(ord(c), 8) for c in label] + zero
+            label_glob = string._makeLLVMString(cg, label)
+            aux += [llvm.core.Constant.struct([cg.llvmConstInt(value, 8), label_glob])]
+
+        null = llvm.core.Constant.null(string._llvmStringTypePtr());
+        aux += [llvm.core.Constant.struct([cg.llvmConstInt(0, 8), null])]
 
         name = cg.nameTypeInfo(self) + "_labels"
-        const = llvm.core.Constant.array(llvm.core.Type.int(8), aux)
+        const = llvm.core.Constant.array(aux[0].type, aux)
         glob = cg.llvmNewGlobalConst(name, const)
         glob.linkage = llvm.core.LINKAGE_LINKONCE_ANY
 

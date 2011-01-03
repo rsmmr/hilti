@@ -118,7 +118,7 @@ extern void hlt_list_map_expire(__hlt_map_timer_cookie cookie);
 /// excpt: &
 ///
 /// Returns: The size of the map.
-extern int32_t hlt_map_size(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int64_t hlt_map_size(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Remove all keys from a map.
 ///
@@ -264,7 +264,7 @@ extern void hlt_list_set_expire(__hlt_set_timer_cookie cookie);
 /// excpt: &
 ///
 /// Returns: The size of the set.
-extern int32_t hlt_set_size(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int64_t hlt_set_size(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Remove all keys from a set.
 ///

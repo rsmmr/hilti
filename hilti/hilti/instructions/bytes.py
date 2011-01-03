@@ -69,6 +69,8 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
         typeinfo.to_string = "hlt::bytes_to_string"
+        typeinfo.hash = "hlt::bytes_hash"
+        typeinfo.equal = "hlt::bytes_equal"
         return typeinfo
 
     ### Overridden from Constructable.

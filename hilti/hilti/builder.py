@@ -233,6 +233,29 @@ class ModuleBuilder(OperandBuilder):
 
         return t
 
+
+    def typeByID(self, name):
+        """Returns the type referenced by the an ID name. If the referenced
+        type is a ~~HeapType, returns a ~~Reference to it.
+
+        name: string - The name of the ID; it must be an ~~id.Type.
+
+        Returns: hilti.type - The type referenced by the ID.
+        """
+        li = self.module().scope().lookup(name)
+        if not li:
+            raise ValueError("ID %s does not exist in function's scope" % i)
+
+        if not isinstance(li, id.Type):
+            raise ValueError("ID %s is not a type declaration" % i)
+
+        ty = li.type()
+
+        if isinstance(ty, type.HeapType):
+            return type.Reference(ty)
+        else:
+            return ty
+
 class FunctionBuilder(OperandBuilder):
     """A class for building functions.
 
@@ -316,20 +339,11 @@ class FunctionBuilder(OperandBuilder):
         name: string - The name of the ID; it must be an ~~id.Type.
 
         Returns: hilti.type - The type referenced by the ID.
+
+        Note: This simply forwards to the equally named method in the
+        ~~ModuleBuilder.
         """
-        li = self.moduleBuilder().module().scope().lookup(name)
-        if not li:
-            raise ValueError("ID %s does not exist in function's scope" % i)
-
-        if not isinstance(li, id.Type):
-            raise ValueError("ID %s is not a type declaration" % i)
-
-        ty = li.type()
-
-        if isinstance(ty, type.HeapType):
-            return type.Reference(ty)
-        else:
-            return ty
+        return self.moduleBuilder().typeByID(name)
 
     def addLocal(self, name, ty, value = None, force=True, reuse=False):
         """Adds a new local variable to the function. Normally, it's ok if the
