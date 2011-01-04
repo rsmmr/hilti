@@ -13,6 +13,7 @@ static hlt_string_constant prefix = { 1, "<" };
 static hlt_string_constant postfix = { 1, ">" };
 static hlt_string_constant separator = { 2, ", " };
 static hlt_string_constant equal = { 1, "=" };
+static hlt_string_constant null = { 6, "<null>" };
 
 hlt_string hlt_struct_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -27,6 +28,9 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, const void* obj, int3
     struct field* array = (struct field *)type->aux;
 
     obj = *((const char**)obj);
+
+    if ( ! obj )
+        return &null;
 
     uint32_t mask = *((uint32_t*)obj);
 

@@ -46,6 +46,10 @@ Infrastructure
   Essentually, comapring two types should yield True only if they
   are exactly equivalent (i.e., without coercion). 
 
+- Defining HILTI-C functions in HILTI doesn't work right yet. For example,
+  accessing their parameters from the HILTI body doesn't produce the right
+  code.
+
 Cleanup
 -------
 
