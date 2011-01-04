@@ -860,7 +860,7 @@ class Unknown(ParseableType):
             resolver.error(self, "undefined type id %s" % self._id)
             return self
 
-        if not isinstance(i, id.Type):
+        if not isinstance(i, id.Type) and not isinstance(i.type(), type.RegExp):
             resolver.error(self, "identifier %s does not refer to a type" % self._id)
             return self
 

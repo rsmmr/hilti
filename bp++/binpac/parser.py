@@ -630,7 +630,7 @@ def p_ctor_or_expr(p):
 
 def p_ctor_tuple(p):
     """ctor : '(' ctor ',' ctor_list_list ')'"""
-    ctors = [p[2] + p[4]]
+    ctors = [p[2]] + p[4]
     types = [c.type() for c in ctors]
     p[0] = expr.Ctor(ctors, type.Tuple(types))
 
