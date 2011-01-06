@@ -1,3 +1,2 @@
 module.hlt:2: parser error, unexpected declare
-
-1 error found
+module.hlt: 1 error found during parsing

@@ -1,3 +1,2 @@
 no-run.hlt:4: error, in module Main, ID 'run' must be a function
-
-1 error found
+no-run.hlt: 1 error found during validating

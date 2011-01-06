@@ -1,5 +1,4 @@
 >>> a = new string
 wrong-args.hlt:18: error, operand 1 must be of type heaptype but is string
 
-
-1 error found
+wrong-args.hlt: 1 error found during validating

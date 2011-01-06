@@ -1,5 +1,4 @@
 >>> call foo ()
 wrong-calls.hlt:9: error, called function returns a value
 
-
-1 error found
+wrong-calls.hlt: 1 error found during validating

@@ -1,4 +1,4 @@
 >>> return.void
 wrong-returns.hlt:6: error, function must return a value
 
-1 error(s) after canonicalization
+wrong-returns: 1 error found during validating canonified module

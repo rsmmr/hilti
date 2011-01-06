@@ -18,6 +18,8 @@ import llvm.core
 
 import hilti.util as util
 
+import bytes
+
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
@@ -306,8 +308,8 @@ class Attach(Instruction):
         ov = cg.llvmInsertValue(ov, 0, iter)
 
         # Clear the cache
-        end = cg.llvmConstDefaultValue(type.IteratorBytes())
-        for j in range(1, overlayt._arraySize() + 1):
+        end = bytes.llvmEnd(cg)
+        for j in range(1, overlayt._arraySize()):
             ov = cg.llvmInsertValue(ov, j, end)
 
         # Need to rewrite back into the original value.
@@ -380,7 +382,7 @@ class Get(Instruction):
             block_cached = cg.llvmNewBlock("cached-%s" % dep.name)
             block_notcached = cg.llvmNewBlock("not-cached-%s" % dep.name)
 
-            _isNull(cg, ov, dep.depIndex(), block_notcached, block_cont)
+            _isEnd(cg, ov, dep.depIndex(), block_notcached, block_cont)
 
             cg.pushBuilder(block_notcached)
             ov = _makeDep(ov, dep)
@@ -406,7 +408,7 @@ class Get(Instruction):
         cg.llvmRaiseExceptionByName("hlt_exception_overlay_not_attached", self.location())
         cg.popBuilder()
 
-        _isNull(cg, ov, 0, block_notattached, block_attached)
+        _isEnd(cg, ov, 0, block_notattached, block_attached)
 
         cg.pushBuilder(block_attached) # Leave on stack.
 
@@ -416,11 +418,10 @@ class Get(Instruction):
         cg.llvmStoreInTarget(self, val)
 
 
-def _isNull(cg, ov, idx, block_yes, block_no):
+def _isEnd(cg, ov, idx, block_yes, block_no):
     # FIXME: I guess we should do this check somewhere in the bytes code as
     # technically we can't know here what the internal representation of an
     # iterator is ...
-    val = cg.llvmExtractValue(ov, idx)
-    chunk = cg.llvmExtractValue(val, 0)
-    cmp = cg.builder().icmp(llvm.core.IPRED_EQ, chunk, llvm.core.Constant.null(cg.llvmTypeGenericPointer()))
-    cg.builder().cbranch(cmp, block_yes, block_no)
+    iter = cg.llvmExtractValue(ov, idx)
+    is_end = cg.llvmCallC("hlt::bytes_pos_eq", [operand.LLVM(iter, type.IteratorBytes()), operand.LLVM(bytes.llvmEnd(cg), type.IteratorBytes())])
+    cg.builder().cbranch(is_end, block_yes, block_no)

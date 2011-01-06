@@ -17,8 +17,8 @@ ImportPaths = [ "." ]
 # -O1/2/3 create "illegal instruction" ...  :-( TODO: Try with newer LLVM
 # versions, or figure out which pass is to blame. 
 
-ClangOptSpec = "-O0"             # -O4 is LTO, which we can't do wo/ support by the system linker.
-OptOptSpec   = "-tailcallelim"
+ClangOptSpec = "-O3"             # -O4 is LTO, which we can't do wo/ support by the system linker.
+OptOptSpec   = "-std-compile-opts"
 
 try:
     HiltiConfig= os.environ["HILTI_CONFIG"]
@@ -192,6 +192,12 @@ def hltToBc(hlt, file):
     if not hilti.canonifyModule(hlt, debug=Options.debug):
         check_errors(-1, file, "canonifying")
     timeStop()
+
+    timeStart("validating canonified HILTI code")
+    errors = hilti.validateModule(hlt)
+    timeStop()
+
+    check_errors(errors, input, "validating canonified module")
 
     timeStart("generating LLVM code")
     (success, bc) = hilti.codegen(hlt, ImportPaths, debug=Options.debug, stack=Options.stack, verify=False)
@@ -373,7 +379,11 @@ inputs = parseOptions()
 
 import llvm
 import hilti
-import binpac
+
+try:
+    import binpac
+except ImportError:
+    pass
 
 all_pac2 = []
 all_hlt  = []

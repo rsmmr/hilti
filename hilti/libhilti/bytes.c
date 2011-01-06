@@ -445,6 +445,7 @@ hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt, hlt_exe
     hlt_bytes_pos p;
     p.chunk = b->head;
     p.cur = b->head ? b->head->start : 0;
+
     return p;
 }
 

@@ -1,5 +1,4 @@
 >>> e = new myException
 wrong-new.hlt:14: error, exception argument of type string missing
 
-
-1 error found
+wrong-new.hlt: 1 error found during validating

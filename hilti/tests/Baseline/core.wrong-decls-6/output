@@ -1,3 +1,2 @@
 wrong-decls.hlt:4: error, cannot create global variable of type any
-
-1 error found
+wrong-decls.hlt: 1 error found during validating

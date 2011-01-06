@@ -1,5 +1,4 @@
 >>> call foo (42, 43)
 wrong-calls.hlt:7: error, wrong number of arguments for function
 
-
-1 error found
+wrong-calls.hlt: 1 error found during validating

@@ -1,5 +1,4 @@
 >>> int.add 1 2
 wrong-op-number.hlt:4: error, operand 1 missing
 
-
-1 error found
+wrong-op-number.hlt: 1 error found during validating

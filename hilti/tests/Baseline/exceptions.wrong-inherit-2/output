@@ -1,3 +1,2 @@
 wrong-inherit.hlt:7: error, exception argument type must match that of parent, which is string
-
-1 error found
+wrong-inherit.hlt: 1 error found during validating

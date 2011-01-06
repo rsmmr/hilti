@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build  %INPUT -o a.out
+# @TEST-EXEC:  hilti-build2  %INPUT -o a.out
 #
 # Makes sure the CPS conversion deals correctly with "C" function
 # which don't get a frame pointer.

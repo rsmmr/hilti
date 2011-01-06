@@ -1,5 +1,4 @@
 >>> switch n @default ((1, @b1), (2, "xxx"), (3, @b3))
 switch-wrong-types.hlt:8: error, operand 3 all destination must be labels (destination 2 is not)
 
-
-1 error found
+switch-wrong-types.hlt: 1 error found during validating

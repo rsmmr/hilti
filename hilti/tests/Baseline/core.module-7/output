@@ -1,5 +1,4 @@
 module.hlt:4: parser error, unexpected nl '
 
 '
-
-1 error found
+module.hlt: 1 error found during parsing

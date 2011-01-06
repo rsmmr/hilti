@@ -18,7 +18,7 @@ import operand
 import type
 import util
 
-import instructions.foreach
+import instructions.loop
 import instructions.trycatch
 import instructions.hook as hook
 
@@ -515,7 +515,7 @@ def p_assignment(p):
 def p_foreach(p):
     """instruction : FOR IDENT IN operand DO NL _push_blocklist instruction_list DONE NL"""
     blocks = _popBlockList(p)
-    ins = instructions.foreach.ForEach(p[2], p[4], blocks, location=_loc(p, 1))
+    ins = instructions.loop.ForEach(p[2], p[4], blocks, location=_loc(p, 1))
     p.parser.state.block.addInstruction(ins)
 
 def p_trycatch(p):

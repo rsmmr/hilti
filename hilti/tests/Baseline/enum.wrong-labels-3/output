@@ -1,3 +1,2 @@
 wrong-labels.hlt:9: error, unknown identifier Packed::ASCIIZ
-
-1 error found
+wrong-labels.hlt: 1 error found during validating

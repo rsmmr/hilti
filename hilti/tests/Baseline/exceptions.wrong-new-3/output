@@ -1,5 +1,4 @@
 >>> e = new myException "hello"
 wrong-new.hlt:10: error, exception type does not take an argument
 
-
-1 error found
+wrong-new.hlt: 1 error found during validating
