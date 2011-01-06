@@ -215,6 +215,9 @@ and 1 otherwise.
     -F FILTER, --filter=FILTER
         Activates a filter_ defined in the configuration file.
 
+    -S SUBST, --subst=SUBST
+        Activates a substitution_ defined in the configuration file.
+
     -t, --tmp-keep
         Does not delete any temporary files created for running the
         tests (including their outputs). By default, the temporary
@@ -331,6 +334,27 @@ case, the filter could be a no-op in the form ``cp $1 $2``.
 
     * Filters are only executed for ``@TEST-EXEC``, not for
       ``@TEST-EXEC-FAIL``.
+
+.. _substitution:
+
+Substitutions
+~~~~~~~~~~~~~
+
+Substitutions are similar to filters, yet they do net adapt the
+input but the command line being exectued. A substitutions is defined by adding a
+section ``[subst-<name>]`` to the configuration file. This section
+must have exactly one entry, and the name of that entry is
+interpreted as the name of a command that is to be replaced with
+something else. Example::
+
+    [subst-opt]
+    gcc=gcc -O2
+
+Once the substitution is activated by running ``btest`` with
+``--subst=opt``, every time a ``@TEST-EXEC`` executes ``gcc``, that
+is replaced with ``gcc -O2``. The replacement is simple string
+substitution so it works in fact not only with commands but anything
+found in the command line. 
 
 Writing Tests
 -------------

@@ -37,7 +37,7 @@ Commands = (RE_EXEC, )
 def output(msg, nl=True, file=None):
     if not file:
         file = sys.stderr
-        
+
     if nl:
         print >>file, msg
     else:
@@ -53,17 +53,17 @@ def mkdir(dir):
             os.mkdir(dir)
         except OSError, e:
             error("cannot create directory %s: %s" % (dir, e))
-        
+
     else:
         if not os.path.isdir(dir):
             error("path %s exists but is not a directory" % dir)
-    
+
 def getOption(key, default):
     try:
         return Config.get("btest", key)
     except ConfigParser.NoSectionError:
         return default
-    
+
 class Test(object):
     def __init__(self, file):
         self.file = file
@@ -73,40 +73,40 @@ class Test(object):
         self.group = None
         self.cmdlines = []
         self.tmpdir = None
-        self.diag = None 
+        self.diag = None
         self.baseline = None
         self.files = []
 
-        # Parse the test's content. 
+        # Parse the test's content.
     def parse(self, content):
         cmds = {}
         for line in content:
-            
+
             if line.find("@TEST-IGNORE") >= 0:
                 # Ignore this file.
                 return False
-            
+
             for (tag, regexp, multiple, optional, group1, group2) in Commands:
                 m = regexp.search(line)
-            
+
                 if m:
                     value = m.group(group1)
-                    
+
                     if group2 >= 0:
                         value = (value, m.group(group2))
-                
+
                     if not multiple:
                         if tag in cmds:
                             error("%s: %d defined multiple times." % (test, tag))
-                        
+
                         cmds[tag] = value
-                    
+
                     else:
                         try:
                             cmds[tag] += [value]
                         except KeyError:
                             cmds[tag] = [value]
-                            
+
         # Make sure all non-optional commands are there.
         for (tag, regexp, multiple, optional, group1, group2) in Commands:
             if not optional and not tag in cmds:
@@ -117,34 +117,39 @@ class Test(object):
         # self.diagin = cmds["diag-in"] if "diag-in" in cmds else None
 
         (name, ext) = os.path.splitext(self.file)
-        
+
         self.name = name.replace("/", ".")
         while self.name.startswith("."):
             self.name = self.name[1:]
-        
+
         self.group = os.path.dirname(self.file).replace("/", ".")
         while self.group.startswith("."):
             self.group = self.group[1:]
-        
+
         self.content = content
         self.cmdlines = [(cmd.strip(), success!="-FAIL") for (cmd, success) in cmds["exec"]]
+
+        if Substitutions:
+            for (key, val) in Substitutions.items():
+                self.cmdlines = [(cmd[0].replace(key, val), cmd[1]) for cmd in self.cmdlines]
+
         return True
-        
+
     # Copies all control information over t a new Test but replaces test content
     # with a new one.
     def clone(self, content):
         clone = Test("")
         clone.file = self.file
         clone.number = self.number + 1
-        clone.name = self.name 
+        clone.name = self.name
         clone.group = self.group
 #       clone.diagin = self.diagin
         clone.cmdlines = self.cmdlines
-        
+
         clone.content = content
-            
-        return clone        
-        
+
+        return clone
+
     def run(self, filter=None):
         if self.number > 1:
             self.name = "%s-%d" % (self.name, self.number)
@@ -153,18 +158,18 @@ class Test(object):
             name = self.name
         else:
             name = "%s (%s)" % (self.name, filter)
-            
+
         if Options.verbose or not Options.brief:
             output("%s ..." % name, nl=Options.verbose)
-            
+
         self.tmpdir = os.path.abspath(os.path.join(TmpDir, self.name))
         self.diag = os.path.join(self.tmpdir, ".diag")
         self.baseline = os.path.abspath(os.path.join(BaselineDir, self.name))
         self.diagmsgs = []
-        
+
         self.rmTmp()
-        mkdir(self.baseline)        
-        mkdir(self.tmpdir)        
+        mkdir(self.baseline)
+        mkdir(self.tmpdir)
         os.chdir(self.tmpdir)
 
         for (fname, lines) in self.files:
@@ -172,43 +177,43 @@ class Test(object):
                 ffile = open(fname, "w")
             except IOError, e:
                 error("cannot write test's additional file '%s'" % fname)
-                
+
             for line in lines:
                 print >>ffile, line,
-                
+
             ffile.close()
-        
+
         self.localfile = os.path.join(self.tmpdir, os.path.basename(self.file))
-        
+
         content = open(self.localfile, "w")
         for line in self.content:
             print >>content, line,
         content.close()
-        
+
         self.log = open(os.path.join(self.tmpdir, ".log"), "w")
         self.stdout = open(os.path.join(self.tmpdir, ".stdout"), "w")
         self.stderr = open(os.path.join(self.tmpdir, ".stderr"), "w")
-        
+
         for cmd in self.cmdlines:
             if not self.execute(cmd, apply_filter=(filter != None)):
                 global Failed
                 Failed += 1
-                
+
                 if Options.verbose:
                     output("... %s failed" % name)
                 else:
                     if Options.brief:
                         output("%s ..." % name, nl=False)
-                        
+
                     output("failed")
-                    
+
                 if Options.diag or Options.diagall:
                     self.showDiag()
-                
+
                 if Options.diagfile:
                     print >>Options.diagfile, "%s ... failed" % name
                     self.showDiag(Options.diagfile)
-                    
+
                 break
         else:
             if Options.verbose:
@@ -216,30 +221,30 @@ class Test(object):
             else:
                 if not Options.brief:
                     output("ok")
-                
+
             if Options.diagall:
                 self.showDiag()
-                
+
             if not Options.tmps:
                 self.rmTmp()
-        
+
         try:
             # Try removing the baseline directory. If it works, it's empty, i.e., no baseline was created.
             os.rmdir(self.baseline)
         except OSError, e:
             pass
-        
+
         self.log.close()
         self.stdout.close()
         self.stderr.close()
-        
+
     def execute(self, cmd, apply_filter=False):
         (cmdline, expect_success) = cmd
 
-        
-        # See if we need to apply a filter. 
+
+        # See if we need to apply a filter.
         filter_cmd = None
-        
+
         if apply_filter:
             try:
                 (path, executable) = os.path.split(cmdline.split()[0])
@@ -255,59 +260,59 @@ class Test(object):
             filtered = os.path.join(self.tmpdir, "filtered-%s" % os.path.basename(self.localfile))
             if not self.execute(("%s %s %s" % (filter_cmd, self.localfile, filtered), True), apply_filter=False):
                 return False
-            
+
             if not self.execute(("mv %s %s" % (filtered, self.localfile), True), apply_filter=False):
                 return False
-            
+
             localfile = self.localfile
 
         if Options.verbose:
             output("  > %s" % cmdline)
-            
-        # Replace special names. 
+
+        # Replace special names.
         cmdline = RE_INPUT.sub(localfile, cmdline)
         cmdline = RE_DIR.sub(self.dir, cmdline)
-        
+
         # Replace environment variables.
         def replace_with_env(m):
             try:
                 return os.environ[m.group(1)]
             except KeyError:
                 return ""
-        
+
         cmdline = RE_ENV.sub(replace_with_env, cmdline)
-        
+
         print >>self.log, cmdline, "(expect %s)" % ("success" if expect_success else "failure")
-        
+
         env = self.prepareEnv()
-        
+
         try:
             subprocess.check_call(cmdline, shell=True, env=env, stderr=self.stderr, stdout=self.stdout)
         except subprocess.CalledProcessError, e:
-            
+
             if expect_success:
                 self.diagmsgs += ["'%s' failed unexpectedly (exit code %s)" % (cmdline, e.returncode)]
                 return False
-            
+
             else:
                 return True
 
         if not expect_success:
             self.diagmsgs += ["'%s' succeeded unexpectedly (exit code 0)" % cmdline]
             return False
-        
+
         return True
-            
+
     def rmTmp(self):
         os.chdir(TmpDir)
-        
+
         try:
             if os.path.isfile(self.tmpdir):
                 os.remove(self.tmpdir)
-            
+
             if os.path.isdir(self.tmpdir):
                 subprocess.call("rm -rf %s 2>/dev/null" % self.tmpdir, shell=True)
-            
+
         except OSError, e:
             error("cannot remove tmp directory %s: %s" % (self.tmpdir, e))
 
@@ -318,13 +323,13 @@ class Test(object):
         env["TEST_BASELINE"] = self.baseline
         env["TEST_DIAGNOSTICS"] = self.diag
         env["TEST_MODE"] = Options.mode.upper()
-        
+
         return env
 
     def addFiles(self, files):
         # files is a list of tuple (fname, lines).
         self.files = files
-    
+
     def showDiag(self, file=None):
         for line in self.diagmsgs:
             output("  % " + line, file=file)
@@ -332,31 +337,31 @@ class Test(object):
         for f in (self.diag, ".stderr"):
             if not f:
                 continue
-            
+
             if os.path.isfile(f):
                 output("  % cat " + os.path.basename(f), file=file)
                 for line in open(f):
                     output("  " + line.strip(), file=file)
-                output("", file=file)	
-        
-        if Options.wait and not file: 
-            output("<Enter> ...") 
+                output("", file=file)
+
+        if Options.wait and not file:
+            output("<Enter> ...")
             try:
-                sys.stdin.readline() 
-            except KeyboardInterrupt: 
+                sys.stdin.readline()
+            except KeyboardInterrupt:
                 sys.exit(1)
-            
-# Walk the given directory and return all test files.    
-def findTests(paths):    
+
+# Walk the given directory and return all test files.
+def findTests(paths):
     tests = []
 
     ignore_files = getOption("IgnoreFiles", "").split()
     ignore_dirs = getOption("IgnoreDirs", "").split()
-    
+
     for path in paths:
         if os.path.isfile(path):
             tests += readTestFile(path)
-        
+
         elif os.path.isdir(path):
             for (dirpath, dirnames, filenames) in os.walk(path):
                 for file in filenames:
@@ -366,13 +371,20 @@ def findTests(paths):
                     else:
                         tests += readTestFile(os.path.join(dirpath, file))
 
-                # Don't recurse into these. 
+                # Don't recurse into these.
                 for skip in ignore_dirs:
                     if skip in dirnames:
                         dirnames.remove(skip)
-                        
+
         else:
-            error("cannot read %s" % path)
+            # See if we have a test named like this in our configured set.
+            for t in Config.configured_tests:
+                if t and path == t.name:
+                    tests += [t]
+                    break
+
+            else:
+                error("cannot read %s" % path)
 
     return tests
 
@@ -388,7 +400,7 @@ def readTestFile(filename):
                 return None
         else:
             return previous.clone(content)
-    
+
     try:
         input = open(filename)
     except IOError, e:
@@ -396,15 +408,15 @@ def readTestFile(filename):
 
     tests = []
     files = []
-    
+
     content = []
     previous = None
     file = (None, [])
-        
+
     state = "test"
-    
+
     for line in input:
-        
+
         if state == "test":
             m = RE_START_FILE.search(line)
             if m:
@@ -415,21 +427,21 @@ def readTestFile(filename):
             m = RE_END_FILE.search(line)
             if m:
                 error("unexpected @test-end-file")
-            
+
             m = RE_START_NEXT_TEST.search(line)
             if not m:
                 content += [line]
                 continue
-    
+
             t = newTest(content, previous)
             if not t:
                 return []
-            
+
             tests += [t]
-            
+
             previous = t
             content = []
-            
+
         elif state == "file":
             m = RE_END_FILE.search(line)
             if m:
@@ -437,9 +449,9 @@ def readTestFile(filename):
                 files += [file]
                 file = (None, [])
                 continue
-            
+
             file = (file[0], file[1] + [line])
-            
+
         else:
             error("internal: unknown state %s" % state)
 
@@ -447,13 +459,13 @@ def readTestFile(filename):
         files += [file]
 
     tests += [newTest(content, previous)]
-        
+
     input.close()
 
     for t in tests:
         if t:
             t.addFiles(files)
-    
+
     return tests
 
 ### Main
@@ -479,6 +491,8 @@ optparser.add_option("-F", "--filter", action="store", type="string", dest="filt
                      help="active filter in given config file section")
 optparser.add_option("-t", "--tmp-keep", action="store_true", dest="tmps", default=False,
                      help="do not delete tmp files created for running tests")
+optparser.add_option("-S", "--subst", action="store", type="string", dest="subst", default=None,
+                     help="active substitution in given config file section")
 
 (Options, args) = optparser.parse_args()
 
@@ -488,18 +502,13 @@ if not basedir:
     basedir = "."
 
 os.chdir(basedir)
-    
+
 defaults=os.environ
 defaults["testbase"] = os.path.abspath(basedir)
 defaults["default_path"] = os.environ["PATH"]
 Config = ConfigParser.ConfigParser(defaults)
 Config.read(Options.config)
 
-tests = args
-
-if not tests:
-    tests += getOption("TestDirs", "").split()
-    
 if Options.diagfile:
     try:
         Options.diagfile = open(Options.diagfile, "a")
@@ -509,13 +518,39 @@ if Options.diagfile:
 if Config.has_section("environment"):
     for (name, value) in Config.items("environment"):
         os.environ[name.upper()] = value
-        
+
+Filters = {}
+if Options.filter:
+    sec = "filters-%s" % Options.filter
+    if not Config.has_section(sec):
+        error("configuration file has no section '%s'" % sec)
+
+    for (name, value) in Config.items(sec):
+        Filters[name] = value
+
+Substitutions = {}
+if Options.subst:
+    sec = "subst-%s" % Options.subst
+    if not Config.has_section(sec):
+        error("configuration file has no section '%s'" % sec)
+
+    for (name, value) in Config.items(sec):
+        Substitutions[name] = value
+
 # Add the directory where this executable is located to PATH.
 addpath = os.path.abspath(os.path.dirname(sys.argv[0]))
 oldpath = os.environ["PATH"]
 os.environ["PATH"] = "%s:%s" % (addpath, oldpath) if oldpath else addpath
 
-tests = findTests(args)
+Config.configured_tests = []
+testdirs = getOption("TestDirs", None).split()
+if testdirs:
+    Config.configured_tests = findTests(testdirs)
+
+if args:
+    tests = findTests(args)
+else:
+    tests = Config.configured_tests
 
 if not tests:
     error("no tests given")
@@ -525,22 +560,13 @@ BaselineDir = os.path.abspath(getOption("BaselineDir", os.path.join(defaults["te
 mkdir(BaselineDir)
 mkdir(TmpDir)
 
-Filters = {}
-if Options.filter: 
-    sec = "filters-%s" % Options.filter
-    if not Config.has_section(sec):
-        error("configuration file has no section '%s'" % sec)
-
-    for (name, value) in Config.items(sec):
-        Filters[name] = value
-        
 Failed = 0
 
 for test in tests:
-    
+
     if not test:
         continue
-    
+
     if Filters:
         test2 = copy.deepcopy(test)
         test.run()
@@ -550,4 +576,4 @@ for test in tests:
 
 if Failed > 0:
     output("%d test%s failed" % (Failed, "s" if Failed > 1 else ""))
-   
+
