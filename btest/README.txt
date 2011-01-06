@@ -6,7 +6,7 @@
 BTest - A Simple Driver for Basic Unit Tests
 ============================================
 
-:Version: 0.2
+:Version: 0.3
 :Home: http://www.icir.org/robin/btest
 :Author: Robin Sommer <robin@icir.org>
 :Date: |date|
