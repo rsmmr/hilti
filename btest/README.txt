@@ -354,7 +354,8 @@ Once the substitution is activated by running ``btest`` with
 ``--subst=opt``, every time a ``@TEST-EXEC`` executes ``gcc``, that
 is replaced with ``gcc -O2``. The replacement is simple string
 substitution so it works in fact not only with commands but anything
-found in the command line. 
+found in the command line; it however only replaces full words, not subparts
+of words. 
 
 Writing Tests
 -------------

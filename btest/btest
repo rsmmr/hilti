@@ -131,7 +131,7 @@ class Test(object):
 
         if Substitutions:
             for (key, val) in Substitutions.items():
-                self.cmdlines = [(cmd[0].replace(key, val), cmd[1]) for cmd in self.cmdlines]
+                self.cmdlines = [(re.sub("\\b" + re.escape(key) + "\\b", val, cmd[0]), cmd[1]) for cmd in self.cmdlines]
 
         return True
 
