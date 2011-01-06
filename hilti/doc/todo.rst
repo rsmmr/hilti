@@ -107,6 +107,9 @@ Low-level CodeGen Optimizations
 - When building struct values, rather than alloc'ing tmp instances,
   which should use insertvalue.
 
+- The map type needs to copy key and value currently, as they may be lying on
+  the stack. Can we change that so that they are only copied if necessary?
+
 See below for higher-level / more extensive optimization ideas.
 
 Documentation
