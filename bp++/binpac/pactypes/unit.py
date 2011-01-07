@@ -864,6 +864,38 @@ class _:
         builder.struct_get(tmp, obj.evaluate(cg), builder.constOp("__input"))
         return tmp
 
+@operator.MethodCall(type.Unit, expr.Attribute("offset"), [])
+class _:
+    """Returns the offset of the current parsing position relative to the
+    start of the current parsing unit. This method must only be called while
+    the unit is being parsed, and will throw an ``UndefinedValue`` exception
+    otherwise.
+
+    Note that when being inside a field hook, the current parsing position
+    will have already moved on to the start of the *next* field because the
+    hook is only run after the current field has been fully parsed. On the
+    other hand, if the method is called from an expression evaluated before
+    the parsing of a field starts (such as in a field's ``&length``
+    attribute), the returned offset will reflect the beginning of that field. 
+    """
+
+    def type(obj, method, args):
+        return type.UnsignedInteger(64)
+
+    def evaluate(cg, obj, method, args):
+        offset = cg.functionBuilder().addLocal("__offset", hilti.type.Integer(64))
+        input = cg.functionBuilder().addLocal("__input", hilti.type.IteratorBytes())
+        cur = cg.functionBuilder().addLocal("__cur", hilti.type.IteratorBytes())
+
+        obj = obj.evaluate(cg)
+
+        builder = cg.builder()
+        builder.struct_get(input, obj, builder.constOp("__input"))
+        builder.struct_get(cur,   obj, builder.constOp("__cur"))
+        builder.bytes_diff(offset, input, cur)
+
+        return offset
+
 @operator.MethodCall(type.Unit, expr.Attribute("set_input"), [type.IteratorBytes])
 class _:
     """Changes the position in the input stream to continue parsing from. The
