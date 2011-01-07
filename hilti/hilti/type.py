@@ -182,7 +182,7 @@ class Type(object):
 
         Returns: string - The C type the HILTI type is mapped to. None if not set.
         """
-        assert cls._c_prototype
+        #assert cls._c_prototype
         return cls._c_prototype
 
     def __str__(self):

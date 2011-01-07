@@ -125,8 +125,7 @@ class Equal(Operator):
     an IPv4 address ``a.b.c.d`` will match the corresponding IPv6
     ``::a.b.c.d``.
 
-    .. todo:: Are the IPv6 vs IPv4 matching semantics right? Should it be
-       ``::ffff:a.b.c.d``? Should IPv4 never match an IPv6 address?
+    .. note:: Are the IPv6 vs IPv4 matching semantics right? Should it be ``::ffff:a.b.c.d``? Should IPv4 never match an IPv6 address?
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())

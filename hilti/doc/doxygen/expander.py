@@ -31,6 +31,8 @@ re_raises = re.compile(r"^\s*Raises:\s*([^-]+)-\s*(.*)$")
 re_note = re.compile(r"^\s*Note:\s*(.*)$")
 re_todo = re.compile(r"^\s*To-?[dD]o:\s*(.*)$")
 
+re_tt = re.compile(r"``([^`]*)``")
+
 re_skip_first = re.compile(r"^\s*[\\-]")
 
 re_include = re.compile(r"^\s*Include:\s*(.*)$")
@@ -53,6 +55,9 @@ def readFillInArgs():
         pass
 
 def feedLine(sec, line):
+
+    line = expandMarkup(line)
+
     if sec.state == FIRST:
 
         m = re_skip_first.match(line)
@@ -148,7 +153,8 @@ def feedLine(sec, line):
         sec.state = next_state
 
 def expandMarkup(line):
-    return line.replace("~~", "::")
+    line = re_tt.sub("<tt>\\1</tt>", line)
+    return line
 
 def expandBlock(lines):
     sec = Section()
