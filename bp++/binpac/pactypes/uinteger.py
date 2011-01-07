@@ -197,21 +197,66 @@ class Coerce:
             cg.builder().int_trunc(tmp, e.evaluate(cg))
             return expr.Hilti(tmp, dsttype)
 
+def _dstType(expr1, expr2):
+    return UnsignedInteger(max(expr1.type().width(), expr2.type().width()))
+
+def _extendOps(cg, expr1, expr2):
+    w = max(expr1.type().width(), expr2.type().width())
+    expr1 = expr1.evaluate(cg)
+    expr2 = expr2.evaluate(cg)
+    tmp = None
+
+    if expr1.type().width() < w:
+        tmp = cg.builder().addLocal("__extop1", hilti.type.Integer(w))
+        cg.builder().int_zext(tmp, expr1)
+        expr1 = tmp
+
+    if expr2.type().width() < w:
+        tmp = cg.builder().addLocal("__extop2", hilti.type.Integer(w))
+        cg.builder().int_zext(tmp, expr2)
+        expr2 = tmp
+
+    return (expr1, expr2)
+
 @operator.Plus(UnsignedInteger, UnsignedInteger)
 class Plus:
+
     def type(expr1, expr2):
-        return UnsignedInteger(max(expr1.type().width(), expr2.type().width()))
+        return _dstType(expr1, expr2)
 
     def simplify(expr1, expr2):
-        if isinstanct(expr1, expr.Ctor) and isinstanct(expr2, expr.Ctor):
+        if isinstance(expr1, expr.Ctor) and isinstance(expr2, expr.Ctor):
             val = expr1.value() + expr2.value()
-            return expr.Ctor(val, UnsignedInteger(max(expr1.type().width(), expr2.type().width())))
+            return expr.Ctor(val, _dstType(expr1, expr2))
 
         else:
             return None
 
     def evaluate(cg, expr1, expr2):
-        util.internal_error("not implemented")
+        (expr1, expr2) = _extendOps(cg, expr1, expr2)
+        tmp = cg.builder().addLocal("__sum", hilti.type.Integer(expr1.type().width()))
+        cg.builder().int_add(tmp, expr1, expr2)
+        return tmp
+
+@operator.Minus(UnsignedInteger, UnsignedInteger)
+class Minus:
+
+    def type(expr1, expr2):
+        return _dstType(expr1, expr2)
+
+    def simplify(expr1, expr2):
+        if isinstance(expr1, expr.Ctor) and isinstance(expr2, expr.Ctor):
+            val = expr1.value() - expr2.value()
+            return expr.Ctor(val, _dstType(expr1, expr2))
+
+        else:
+            return None
+
+    def evaluate(cg, expr1, expr2):
+        (expr1, expr2) = _extendOps(cg, expr1, expr2)
+        tmp = cg.builder().addLocal("__sum", hilti.type.Integer(expr1.type().width()))
+        cg.builder().int_sub(tmp, expr1, expr2)
+        return tmp
 
 @operator.Equal(UnsignedInteger, type.UnsignedInteger)
 class _:

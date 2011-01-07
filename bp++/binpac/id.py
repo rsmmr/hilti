@@ -197,7 +197,7 @@ class Constant(ID):
     def validate(self, vld):
         ID.validate(self, vld)
 
-        if self._expr and self._expr.type() != self.type():
+        if self._expr and not self._expr.canCoerceTo(self.type()):
             vld.error("type of initializer expression does not match")
 
         if self._expr and not self._expr.isInit():
@@ -242,7 +242,7 @@ class Local(ID):
     def validate(self, vld):
         ID.validate(self, vld)
 
-        if self._expr and self._expr.type() != self.type():
+        if self._expr and not self._expr.canCoerceTo(self.type()):
             vld.error("type of initializer expression does not match")
 
         if self._expr and not self._expr.isInit():
@@ -324,7 +324,7 @@ class Global(ID):
     def validate(self, vld):
         ID.validate(self, vld)
 
-        if self._expr and self._expr.type() != self.type():
+        if self._expr and not self._expr.canCoerceTo(self.type()):
             vld.error(self, "type of initializer expression does not match")
 
         if self._expr and not self._expr.isInit():
