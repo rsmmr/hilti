@@ -6,7 +6,7 @@
 BTest - A Simple Driver for Basic Unit Tests
 ============================================
 
-:Version: 0.3
+:Version: 0.21
 :Home: http://www.icir.org/robin/btest
 :Author: Robin Sommer <robin@icir.org>
 :Date: |date|
@@ -27,15 +27,15 @@ previously established baseline.
 Downloads
 =========
 
-* `btest-0.2.tar.gz <http://www.icir.org/robin/btest/btest-0.2.tar.gz>`_
+* `btest-0.21.tar.gz <http://www.icir.org/robin/btest/btest-0.21.tar.gz>`_
 
 Installation
 ============
 
 Installation is simple and standard::
 
-    > tar xzvf btest-0.2.tar.gz
-    > cd btest-0.2
+    > tar xzvf btest-0.21.tar.gz
+    > cd btest-0.21
     > python setup.py install
 
 This will install two scripts: ``btest`` is the main driver program,
@@ -248,6 +248,11 @@ or the current working directory if not. When setting values for
 configuration options, the absolute path to the base directory is
 available by using the macro ``%(testbase)s`` (the weird syntax is
 due to Python`'s ``ConfigParser`` module ...).
+
+Furthermore, all values can use standard "backtick-syntax" to
+include the output of external commands (e.g., xyz=`\echo test\`).
+Note that the backtick expansion is performed after any ``%(..)``
+have already been replaced (including within the backticks). 
 
 Options
 ~~~~~~~

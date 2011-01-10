@@ -1,0 +1,11 @@
+include LICENSE
+include README
+include MANIFEST
+include MANIFEST.in
+include btest
+include btest-diff
+include setup.py
+include btest.cfg.example
+graft Baseline
+graft examples
+

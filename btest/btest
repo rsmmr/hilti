@@ -17,7 +17,7 @@ import fnmatch
 import ConfigParser
 
 Name ="btest"
-Version = 0.2
+Version = 0.21
 
 ConfigDefault = "btest.cfg"
 Config = None
@@ -63,6 +63,28 @@ def getOption(key, default):
         return Config.get("btest", key)
     except ConfigParser.NoSectionError:
         return default
+
+reBackticks = re.compile(r"`(([^`]|\`)*)`")
+
+# We monkey-patch the OptionParser to expand backticks.
+def cpExpandBackticks(self, section, option, rawval, vars):
+    def _exec(m):
+        cmd = m.group(1)
+        if not cmd:
+            return ""
+
+        try:
+            return subprocess.Popen(cmd.split(), stdout=subprocess.PIPE).communicate()[0].strip()
+        except OSError, e:
+            error("cannot execute '%s': %s" % (cmd, e))
+
+    value = cpOriginalInterpolate(self, section, option, rawval, vars)
+    value = reBackticks.sub(_exec, value)
+
+    return value
+
+cpOriginalInterpolate = ConfigParser.ConfigParser._interpolate
+ConfigParser.ConfigParser._interpolate = cpExpandBackticks
 
 class Test(object):
     def __init__(self, file):
