@@ -157,7 +157,7 @@ class Field(node.Node):
         """Returns the sink associated with the field, if any.
 
         Returns: ~~Expr - An expression referencing the sink parsed data
-        should be forwarded to; or None if not set. 
+        should be forwarded to; or None if not set.
         """
         return self._sink
 
@@ -165,7 +165,7 @@ class Field(node.Node):
         """Sets the sink associated with the field.
 
         sink: ~~Expr - An expression referencing the sink parsed data
-        should be forwarded to; or None if not set. 
+        should be forwarded to; or None if not set.
         """
         self._sink = sink
 
@@ -303,7 +303,7 @@ class Field(node.Node):
             for (have, want) in zip(self._args, self._type.args()):
                 i += 1
                 if have.type() != want.type():
-                    vld.error(self, "unit parameter %d mismatch: is %s but need %s" % (have.type(), want.type()))
+                    vld.error(self, "unit parameter %d mismatch: is %s but need %s" % (i, have.type(), want.type()))
 
         else:
             if len(self._args):
@@ -678,7 +678,7 @@ class Unit(type.ParseableType, property.Container):
         Note: The function creates the object but does not yet run the
         ``%init`` hooks. That will happen only when parsing is initialized.
         """
-        return "__new_%s" % self.name().replace(" ", "") 
+        return "__new_%s" % self.name().replace(" ", "")
 
     # Overriden from property.Container
 
@@ -765,7 +765,7 @@ class Unit(type.ParseableType, property.Container):
         #return seq
         return grammar.ChildGrammar(self, location=self.location())
 
-    def generateParser(self, cg, var, cur, dst, skipping):
+    def generateParser(self, cg, var, args, dst, skipping):
         # This will not be called because we handle the grammar.ChildGrammar
         # case separetely in the parser generator.
         util.internal_error("cannot be reached")
@@ -876,7 +876,7 @@ class _:
     hook is only run after the current field has been fully parsed. On the
     other hand, if the method is called from an expression evaluated before
     the parsing of a field starts (such as in a field's ``&length``
-    attribute), the returned offset will reflect the beginning of that field. 
+    attribute), the returned offset will reflect the beginning of that field.
     """
 
     def type(obj, method, args):
@@ -903,7 +903,7 @@ class _:
     proceed. Note this changes the position *globally*: all subsequent field
     will be parsed from the new position, including those of a potential
     higher-level unit this unit is part of. Returns an ``iter<bytes>`` with
-    the old position. 
+    the old position.
     """
     def type(obj, method, args):
         return type.IteratorBytes()
@@ -960,7 +960,7 @@ class _:
     def evaluate(cg, obj, method, args):
         pobj = obj.evaluate(cg)
 
-        sink = cg.builder().addLocal("__sink", cg.functionBuilder().typeByID("BinPACIntern::Sink"))
+        sink = cg.builder().addLocal("__sink", cg.functionBuilder().typeByID("BinPAC::Sink"))
         sink_set = cg.builder().addLocal("__sink_set", hilti.type.Bool())
         cg.builder().struct_is_set(sink_set, pobj, cg.builder().constOp("__sink"))
 
@@ -973,7 +973,7 @@ class _:
 
         cg.builder().struct_get(sink, pobj, cg.builder().constOp("__sink"))
 
-        cfunc = cg.builder().idOp("BinPACIntern::sink_disconnect")
+        cfunc = cg.builder().idOp("BinPAC::sink_disconnect")
         cargs = cg.builder().tupleOp([sink, pobj])
         cg.builder().call(None, cfunc, cargs)
         cg.builder().struct_unset(pobj, cg.builder().constOp("__sink"))
@@ -997,10 +997,60 @@ class _:
 
     def validate(vld, obj, method, args):
         if not obj.type().exported():
-            vld.error(obj, "mime_type() can only be called for exported types")
+            vld.error(obj, "mime_type() can only be called with exported types")
 
     def evaluate(cg, obj, method, args):
         pobj = obj.evaluate(cg)
         mt = cg.builder().addLocal("__mime_type", hilti.type.Reference(hilti.type.Bytes()))
         cg.builder().struct_get(mt, pobj, cg.builder().constOp("__mimetype"))
         return mt
+
+@operator.MethodCall(type.Unit, expr.Attribute("add_filter"), [type.Enum])
+class _:
+    """Adds an input filter of type *op1* (of type ~~BinPAC::Filter) to the
+    unit object. *op1* The filter will receive all parse input first,
+    transform it according to its semantics, and then the unit will parse the
+    *output* of the filter.
+
+    Multiple filters can be added to a parsing unit, in which case they will
+    be chained into a pipeline and the data is passed through them in the
+    order they have been added. The actual unit parsing will then be carried
+    out on the output of the last filter in the chain.
+
+    Note that filters must be added before the first data chunk is passed in.
+    If parsing has alrady started when a filter is added, behaviour is
+    undefined.  Also note that filters can only be added to *exported* unit
+    types. 
+
+    Currently, only a set of predefined filters can be used; see
+    ~~BinPAC::Filter. One cannot define own filters in BinPAC++.
+
+    Todo: We should probably either enables adding filters laters, or catch
+    the case of adding them too late at run-time an abort with an exception.
+    """
+    def type(obj, method, args):
+        return type.Void()
+
+    def validate(vld, obj, method, args):
+        if not obj.type().exported():
+            vld.error(obj, "add_filter() can only be called with exported types")
+
+        # TODO: Make sure it's the right enum ...
+
+    def evaluate(cg, obj, method, args):
+        obj = obj.evaluate(cg)
+        ftype = args[0].evaluate(cg)
+
+        filter = cg.builder().addLocal("__filter", cg.functionBuilder().typeByID("BinPAC::ParseFilter"))
+        cg.builder().call(filter, cg.builder().idOp("BinPAC::filter_new"),  cg.builder().tupleOp([ftype]))
+
+        head = cg.builder().addLocal("__filter_head", cg.functionBuilder().typeByID("BinPAC::ParseFilter"))
+        null = hilti.operand.Constant(hilti.constant.Constant(None, filter.type()))
+        cg.builder().struct_get_default(head, obj, cg.builder().constOp("__filter"), null)
+        cfunc = cg.builder().idOp("BinPAC::filter_add")
+        cargs = cg.builder().tupleOp([head, filter])
+        cg.builder().call(head, cfunc, cargs)
+
+        cg.builder().struct_set(obj, cg.builder().constOp("__filter"), head)
+
+        return None

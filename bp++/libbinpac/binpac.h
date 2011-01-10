@@ -6,6 +6,7 @@
 #define BINPAC_H
 
 #include <hilti.h>
+#include <binpac.hlt.h>
 
 /// The main entry function to a BinPAC-generated parser. This function is
 /// used for both starting the parsing initially and resuming it after a
@@ -25,7 +26,13 @@ typedef void* _binpac_new_function(struct binpac_sink* sink, hlt_bytes* mimetype
 // Predefined exceptions.
 
 /// Raised when a generated parser encounters an error in its input.
-extern hlt_exception binpac_parseerror;
+extern hlt_exception_type binpac_exception_parseerror;
+
+/// Raised when a ~~Filter encounters an error. 
+extern hlt_exception_type binpac_exception_filtererror;
+
+/// Raised when a ~~Filter not supported by the run-time system has been requested.
+extern hlt_exception_type binpac_exception_filterunsupported;
 
 /// Structure defining an BinPAC generated parser.
 ///
@@ -67,5 +74,6 @@ extern void binpac_enable_debugging(int8_t enabled);
 ///
 /// Returns: 1 if enabled, 0 otherwise.
 extern int8_t binpac_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ctx);
+
 
 #endif

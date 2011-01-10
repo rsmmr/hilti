@@ -124,7 +124,8 @@ class UnsignedInteger(type.Integer):
         ("network", 64): "Hilti::Packed::Int64Big",
         }
 
-    def generateParser(self, cg, var, cur, dst, skipping):
+    def generateParser(self, cg, var, args, dst, skipping):
+        cur = args.cur
         bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
         resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
         fbuilder = cg.functionBuilder()
@@ -145,7 +146,7 @@ class UnsignedInteger(type.Integer):
             op2 = cg.builder().idOp("Hilti::Packed::SkipBytesFixed")
             op3 = cg.builder().constOp(self.width() / 8, hilti.type.Integer(64))
 
-        result = self.generateUnpack(cg, op1, op2, op3)
+        result = self.generateUnpack(cg, args, op1, op2, op3)
 
         builder = cg.builder()
 

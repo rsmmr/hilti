@@ -125,7 +125,7 @@ class ParserGen:
     ### Internal class to represent arguments of generated HILTI parsing function.
 
     class _Args:
-        def __init__(self, fbuilder=None, args=None):
+        def __init__(self, fbuilder, exported, args):
             def _makeArg(arg):
                 return arg if isinstance(arg, hilti.operand.Operand) else fbuilder.idOp(arg)
 
@@ -135,17 +135,24 @@ class ParserGen:
             self.lahstart = _makeArg(args[3])
             self.flags = _makeArg(args[4])
 
+            self._exported = exported
+
         def tupleOp(self, addl=None):
             elems = [self.cur, self.obj, self.lahead, self.lahstart, self.flags] + (addl if addl else [])
             const = hilti.constant.Constant(elems, hilti.type.Tuple([e.type() for e in elems]))
             return hilti.operand.Constant(const)
+
+        def exported(self):
+            """Returns True if the parsing object this belongs two
+            is exported."""
+            return self._exported
 
     ### Methods generating parsing functions.
 
     def _globalParserObject(self):
         if not self._parser:
             name = "__binpac_parser_%s" % self._grammar.name()
-            self._parser = self.cg().moduleBuilder().addGlobal(name, self.cg().functionBuilder().typeByID("BinPACIntern::Parser"), None)
+            self._parser = self.cg().moduleBuilder().addGlobal(name, self.cg().functionBuilder().typeByID("BinPAC::Parser"), None)
 
         return self._parser
 
@@ -198,7 +205,7 @@ class ParserGen:
             null = builder.addLocal("null", hilti.type.CAddr())
             builder.struct_set(parser, builder.constOp("new_func"), null)
 
-        builder.call(None, builder.idOp("BinPACIntern::register_parser"), builder.tupleOp([parser]))
+        builder.call(None, builder.idOp("BinPAC::register_parser"), builder.tupleOp([parser]))
         builder.return_void()
         self.cg().endFunction()
 
@@ -214,7 +221,6 @@ class ParserGen:
         Todo: Passing in additional parameters from C hasn't been tested
         yet.
         """
-
         grammar = self._grammar
 
         cur = hilti.id.Parameter("__cur", _BytesIterType)
@@ -250,12 +256,12 @@ class ParserGen:
         lahstart = builder.addLocal("__lahstart", _BytesIterType)
         builder.assign(lahead, _LookAheadNone)
 
-        args = ParserGen._Args(fbuilder, ["__cur", "__pobj", "__lahead", "__lahstart", "__flags"])
+        args = ParserGen._Args(fbuilder, self._type.exported(), ["__cur", "__pobj", "__lahead", "__lahstart", "__flags"])
 
         if not sink:
             params = []
             for p in self._grammar.params():
-                params += [builder.idOp(p.name())]
+                params += [self.cg().builder().idOp(p.name())]
 
             self.cg().builder().assign(pobj, self._allocateParseObject(params))
 
@@ -406,7 +412,7 @@ class ParserGen:
         # Call the type's parse function.
         name = var.name() if var.name() else "__tmp"
         dst = self.builder().addTmp(name , var.parsedType().hiltiType(self.cg()))
-        args.cur = var.parsedType().generateParser(self.cg(), var, args.cur, dst, not need_val)
+        args.cur = var.parsedType().generateParser(self.cg(), var, args, dst, not need_val)
 
         dst = self._runFilter(var, dst)
 
@@ -446,7 +452,7 @@ class ParserGen:
             lahstart = builder.addTmp("__tmp_lahstart", _BytesIterType)
             builder.assign(lahead, _LookAheadNone)
 
-        cargs = ParserGen._Args(self.functionBuilder(), (cur, cobj, lahead, lahstart, args.flags))
+        cargs = ParserGen._Args(self.functionBuilder(), child.type().exported(), (cur, cobj, lahead, lahstart, args.flags))
         params = [p.evaluate(self._cg) for p in child.params()]
 
         self._cg.builder().assign(cargs.obj, cpgen._allocateParseObject(params))
@@ -684,13 +690,13 @@ class ParserGen:
         self.cg().setBuilder(builder)
 
         if not prod.eodOk():
-            self.cg().generateInsufficientInputHandler(args.cur)
+            self.cg().generateInsufficientInputHandler(args)
             self.cg().builder().jump(cont.labelOp())
         else:
             eod = self.functionBuilder().newBuilder("eod_ok")
             eod.return_result(builder.tupleOp([args.cur, args.lahead, args.lahstart]))
 
-            at_eod = self.cg().generateInsufficientInputHandler(args.cur, eod_ok=True)
+            at_eod = self.cg().generateInsufficientInputHandler(args, eod_ok=True)
             self.builder().if_else(at_eod, eod.labelOp(), cont.labelOp())
 
         self.cg().setBuilder(old_builder)
@@ -851,12 +857,21 @@ class ParserGen:
                 ids += [(hilti.id.Local("__parser", self._globalParserObject().type()), None)]
 
                 # The sink this parser is connected to.
-                ids += [(hilti.id.Local("__sink", self.cg().functionBuilder().typeByID("BinPACIntern::Sink")),
+                ids += [(hilti.id.Local("__sink", self.cg().functionBuilder().typeByID("BinPAC::Sink")),
                                         hilti.operand.Constant(hilti.constant.Constant(None, hilti.type.Reference(None))))]
 
-                # The MIME type associated with our input. 
-                ids += [(hilti.id.Local("__mimetype", hilti.type.Reference(hilti.type.Bytes())),
-                                        hilti.operand.Ctor("", hilti.type.Reference(hilti.type.Bytes())))]
+                # The MIME type associated with our input.
+                ids += [(hilti.id.Local("__mimetype", hilti.type.Reference(hilti.type.Bytes())), None)]
+
+                # The filter chain attached to this parser.
+                ids += [(hilti.id.Local("__filter", self.cg().functionBuilder().typeByID("BinPAC::ParseFilter")), None)]
+
+                # State for transparently filtering input.
+                    # The bytes object storign the not-yet-filtered data.
+                ids += [(hilti.id.Local("__filter_decoded", hilti.type.Reference(hilti.type.Bytes())), None)]
+                    # The current position in the non-yet-filtered data (i.e.,
+                    # in __filter_decoded)
+                ids += [(hilti.id.Local("__filter_cur", hilti.type.IteratorBytes()), None)]
 
             structty = hilti.type.Struct(ids)
             self._mbuilder.addTypeDecl(self._name("object"), structty)
@@ -949,7 +964,7 @@ class ParserGen:
 
             cg = self.cg()
             new_sink = cg.builder().addLocal("__new_sink", var.type().hiltiType(cg))
-            cfunc = cg.builder().idOp("BinPACIntern::sink_new")
+            cfunc = cg.builder().idOp("BinPAC::sink_new")
             cargs = cg.builder().tupleOp([])
             cg.builder().call(new_sink, cfunc, cargs)
 
@@ -973,10 +988,23 @@ class ParserGen:
         self.cg().builder().struct_set(args.obj, self.cg().builder().constOp("__input"), args.cur)
         self._runUnitHook(args, "%init")
 
+        if args.exported():
+            self.filterInput(args, resume=False)
+
     def _doneParseObject(self, args):
-        builder = self.cg().builder()
+        cg = self.cg()
 
         self._runUnitHook(args, "%done")
+
+        # Close the filter chain, if any.
+        if args.exported():
+            filter = cg.builder().addLocal("__filter", cg.functionBuilder().typeByID("BinPAC::ParseFilter"))
+            null = hilti.operand.Constant(hilti.constant.Constant(None, filter.type()))
+            cg.builder().struct_get_default(filter, args.obj, cg.builder().constOp("__filter"), null)
+            cfunc = cg.builder().idOp("BinPAC::filter_close")
+            cargs = cg.builder().tupleOp([filter])
+            cg.builder().call(None, cfunc, cargs)
+            cg.builder().struct_unset(args.obj, cg.builder().constOp("__filter"))
 
         # Close all sinks.
         # TODO: We should problably come up with a generic mechanism to
@@ -987,25 +1015,36 @@ class ParserGen:
                 continue
 
             cg = self.cg()
-            sink = cg.builder().addLocal("__sink", cg.functionBuilder().typeByID("BinPACIntern::Sink"))
+            sink = cg.builder().addLocal("__sink", cg.functionBuilder().typeByID("BinPAC::Sink"))
             cg.builder().struct_get(sink, args.obj, cg.builder().constOp(var.name()));
-            cfunc = cg.builder().idOp("BinPACIntern::sink_close")
+            cfunc = cg.builder().idOp("BinPAC::sink_close")
             cargs = cg.builder().tupleOp([sink])
             cg.builder().call(None, cfunc, cargs)
 
             cg.builder().struct_unset(args.obj, cg.builder().constOp(var.name()));
 
         # Clear what's unit.input() is returning.
-        builder.struct_unset(args.obj, builder.constOp("__input"))
+        cg.builder().struct_unset(args.obj, cg.builder().constOp("__input"))
+
+        # Close filters if we have any.
+        if args.exported():
+            (filter, done) = self.ifFilter(args)
+
+            cfunc = cg.builder().idOp("BinPAC::filter_close")
+            cargs = cg.builder().tupleOp([filter])
+            cg.builder().call(None, cfunc, cargs)
+            cg.builder().jump(done.labelOp())
+
+            cg.setBuilder(done)
 
     def _hiltiFunctionNew(self):
         """Creates a function that can be called from external to create a new
         instance of a parse object. In addition to the type parameters, the
         function receives two parameters: a ``hlt_sink *`` with the sink the
         parser is connected to (NULL if none); and a ``bytes`` object with the
-        MIME type associated with the input (empty if None). 
+        MIME type associated with the input (empty if None).
         """
-        sink = hilti.id.Parameter("__sink", self.cg().moduleBuilder().typeByID("BinPACIntern::Sink"))
+        sink = hilti.id.Parameter("__sink", self.cg().moduleBuilder().typeByID("BinPAC::Sink"))
         mtype = hilti.id.Parameter("__mimetype", hilti.type.Reference(hilti.type.Bytes()))
 
         ty = self._type
@@ -1023,8 +1062,117 @@ class ParserGen:
         fbuilder.function().id().setLinkage(hilti.id.Linkage.EXPORTED)
 
         ### FIXME: HILTI generates incorrect code for C_HILTI functions. For
-        ### example, it doesn't access function parameters correctly. 
+        ### example, it doesn't access function parameters correctly.
         ### fbuilder.function().setCallingConvention(hilti.function.CallingConvention.C_HILTI)
+
+    ### Filter management, plugging potential filters transparently into the
+    ### parsing process.
+
+    def ifFilter(self, args):
+        """Helper to execute code only when a parsing object has a filter
+        defined. When the function returns, a ~~Builder is set that
+        corresponds to the case that a filter has been defined for *args.obj*.
+        The caller can then add further code there, and when done jump to the
+        returned *done* builder. 
+
+        args: An ~~Args object with the current parsing arguments, as used by
+        the ~~ParserGen.
+
+        Returns: tuple (filter, done) - *filter* is an ~~hilti.Operand with
+        the filter, if defined; the operand must only be accessed in the case
+        that filter is defined (i.e., within the builder left active when the
+        method returns). *done* is builder where to continue when the
+        filter-specific has been finished; the caller needs to jump there
+        eventually.
+        """
+        cg = self.cg()
+
+        filter_set = cg.builder().addLocal("__filter_set", hilti.type.Bool())
+        cg.builder().struct_is_set(filter_set, args.obj, cg.builder().constOp("__filter"))
+
+        fbuilder = cg.functionBuilder()
+        has_filter = fbuilder.newBuilder("__has_filter")
+        done = fbuilder.newBuilder("__done_filter")
+
+        cg.builder().if_else(filter_set, has_filter.labelOp(), done.labelOp())
+
+        cg.setBuilder(has_filter)
+
+        filter = cg.builder().addLocal("__filter", cg.functionBuilder().typeByID("BinPAC::ParseFilter"))
+        cg.builder().struct_get(filter, args.obj, cg.builder().constOp("__filter"))
+
+        return (filter, done)
+
+    def filterInput(self, args, resume):
+        """Helper to transparently pipe input through a chain of filters if a
+        parsing object has defined any. It adjust the parsing arguments
+        appropiately so that subsequent code doesn't notice the filtering. 
+
+        args: An ~~Args object with the current parsing arguments, as used by
+        the ~~ParserGen.
+
+        resume: bool - True if this method is called after resuming parsing
+        because of having insufficient inout earlier. False if it's the
+        initial parsing step for a newly instantiated parser. 
+        """
+        cg = self.cg()
+
+        (filter, done) = self.ifFilter(args)
+
+        builder = cg.builder()
+
+        if not resume:
+            builder.setComment("Passing input through filter chain")
+
+        encoded = builder.addLocal("__encoded", hilti.type.Reference(hilti.type.Bytes()))
+        decoded = builder.addLocal("__decoded", hilti.type.Reference(hilti.type.Bytes()), reuse=True)
+        filter_decoded = builder.addLocal("__filter_decoded", hilti.type.Reference(hilti.type.Bytes()))
+        filter_cur = builder.addLocal("__filter_cur", hilti.type.IteratorBytes())
+        begin = builder.addLocal("bgn", hilti.type.IteratorBytes())
+        end = builder.addLocal("eob", hilti.type.IteratorBytes()) # We rely on this being intialized with end()
+        len = builder.addLocal("len", hilti.type.Integer(64))
+        is_frozen = cg.builder().addLocal("__is_frozen", hilti.type.Bool())
+
+        if not resume:
+            builder.bytes_sub(encoded, args.cur, end)
+            cg.builder().bytes_is_frozen(is_frozen, args.cur)
+
+        else:
+            builder.struct_get(filter_cur, args.obj, builder.constOp("__filter_cur"))
+            builder.bytes_sub(encoded, filter_cur, end)
+            cg.builder().bytes_is_frozen(is_frozen, filter_cur)
+
+        cfunc = cg.builder().idOp("BinPAC::filter_decode")
+        cargs = cg.builder().tupleOp([filter, encoded])
+        cg.builder().call(decoded, cfunc, cargs)
+
+        if not resume:
+            builder.struct_set(args.obj, builder.constOp("__filter_cur"), args.cur)
+
+            builder.struct_set(args.obj, builder.constOp("__filter_decoded"), decoded)
+            builder.begin(begin, decoded)
+            builder.struct_set(args.obj, builder.constOp("__input"), begin)
+            builder.struct_set(args.obj, builder.constOp("__cur"), begin) # TODO: Do we need this?
+            builder.assign(args.cur, begin)
+
+            filter_decoded = decoded
+        else:
+            builder.struct_get(filter_decoded, args.obj, builder.constOp("__filter_decoded"))
+            builder.bytes_append(filter_decoded, decoded)
+
+        builder.struct_get(filter_cur, args.obj, builder.constOp("__filter_cur"))
+        builder.bytes_length(len, encoded)
+        builder.incr_by(filter_cur, filter_cur, len)
+        builder.struct_set(args.obj, builder.constOp("__filter_cur"), filter_cur)
+
+        # Freeze the decoded data if the input data is frozen.
+        freeze = cg.functionBuilder().newBuilder("_freeze")
+        cg.builder().if_else(is_frozen, freeze.labelOp(), done.labelOp())
+
+        freeze.bytes_freeze(filter_decoded);
+        freeze.jump(done.labelOp())
+
+        cg.setBuilder(done)
 
     ### Helper methods.
 
@@ -1061,7 +1209,7 @@ class ParserGen:
         name = self._name(prefix, prod.symbol())
 
         (fbuilder, builder) = self.cg().beginFunction(name, ftype)
-        return (fbuilder.function(), ParserGen._Args(fbuilder, args))
+        return (fbuilder.function(), ParserGen._Args(fbuilder, self._type.exported(), args))
 
     def _addMatchTokenErrorCases(self, prod, builder, args, values, branches, repeat, expected_literals):
         """Build the standard error branches for the switch-statement

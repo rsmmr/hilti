@@ -19,7 +19,7 @@ Usage: binpac-config <options>
     --libs-c        Print native libaries for system linker.
     --pythonpath    Print PYTHONPATH for BinPAC module.
     --path          Print PATH for BinPAC tools.
-    
+
     --debug         Print all output suitable for building debugging versions.
                     Note: this options must come first currently.
     --version       Print BinPAC version.
@@ -28,107 +28,107 @@ EOF
    exit 1
 }
 
-### Determine distbase. 
+### Determine distbase.
 
 base=$BINPAC_BASE
 
 if [ "$base" == "" ]; then
-   # Try to find the binpac distribution based on our path. 
-   
+   # Try to find the binpac distribution based on our path.
+
    # If we are called via a symbolic link, dereference it.
    link=`readlink $0`
    if [ "$link" != "" ]; then
        dir=`dirname $link`
    else
        dir=`dirname $0`
-   fi   
-   
+   fi
+
    base=`cd $dir/../../ && pwd -P`
 fi
 
-if [ ! -d "$base/libbinpac" ]; then 
+if [ ! -d "$base/libbinpac" ]; then
     echo "cannot determine binpac directory; please set BINPAC_BASE correctly"
     exit 1
 fi
 
 ### Parse command line.
 
-if [ "$#" == "0" ]; then 
+if [ "$#" == "0" ]; then
    usage
 fi
 
 debug=""
 
 while [ "$1" != "" ]; do
-    case $1 in 
+    case $1 in
         --version)
             echo "BinPAC++ 0.1"
             shift;;
-            
+
         --distbase)
             echo $base
             shift;;
-            
+
         --ldflags)
             echo "-L$base/libbinpac/build-llvm -L$base/libbinpac/build-llvm/justrx/src"
             shift;;
-            
+
         --libs-bc)
             echo "-lbinpac"
             shift;;
-            
+
         --libs-c)
             echo ""
             shift;;
-            
+
         --bppflags)
             if [ "$debug" == "" ]; then
-                #echo ""    
-                echo "-I$base/libbinpac"    
+                #echo ""
+                echo "-I$base/libbinpac"
             else
-                #echo "-d"    
-                echo "-I$base/libbinpac -d"    
+                #echo "-d"
+                echo "-I$base/libbinpac -d"
             fi
             shift;;
-            
+
         --hiltic)
             if [ "$debug" == "" ]; then
-                echo "-I$base/libbinpac"    
+                echo "-I$base/libbinpac"
             else
-                echo "-I$base/libbinpac -d"    
+                echo "-I$base/libbinpac -d"
             fi
             shift;;
-            
+
         --libbinpac)
             echo "$base/libbinpac"
             shift;;
-            
+
         --cflags)
-            echo "-I$base/libbinpac"
+            echo "-I$base/libbinpac -I$base/libbinpac/build-llvm"
             shift;;
-            
+
         --cxxflags)
-            echo "-I$base/libbinpac"
+            echo "-I$base/libbinpac -I$base/libbinpac/build-llvm"
             shift;;
-            
+
         --pythonpath)
             echo "$base"
             shift;;
-            
+
         --path)
             echo "$base/tools/binpac++"
             shift;;
-            
+
         --debug)
             debug=1
             shift;;
-            
-        -h) 
-            usage;; 
+
+        -h)
+            usage;;
         *)
             usage;;
     esac
-done    
+done
 
 
 

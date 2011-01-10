@@ -3,6 +3,6 @@
 
 module BinPacTypeInfo
 
-import BinPACIntern
+import BinPAC
 
-export BinPACIntern::Parser
+export BinPAC::Parser

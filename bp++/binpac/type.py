@@ -506,7 +506,7 @@ class ParseableType(Type):
         """
         return self._pgen
 
-    def generateUnpack(self, cg, op1, op2, op3=None):
+    def generateUnpack(self, cg, args, op1, op2, op3=None):
         """Generates a HILTI ``unpack`` instruction wrapped in error handling
         code. The error handling code will do "the right thing" when either a
         parsing error occurs or insufficient input is found. In the latter
@@ -514,6 +514,9 @@ class ParseableType(Type):
         ~~generateInsufficientInputHandler.
 
         cg: ~~CodeGen - The current code generator.
+
+        args: An ~~Args objects with the current parsing arguments, as
+        used by the ~~ParserGen.
 
         op1, op2, op3: ~~hilti.Operand - Same as with the regular ``unpack``
         instruction.
@@ -541,7 +544,7 @@ class ParseableType(Type):
         cg.setBuilder(insufficient)
         iter = fbuilder.addTmp("__iter", bytesit)
         cg.builder().tuple_index(iter, op1, fbuilder.constOp(0))
-        cg.generateInsufficientInputHandler(iter)
+        cg.generateInsufficientInputHandler(args, iter=iter)
         cg.builder().jump(parse.labelOp())
 
         catch1 = (None, [error.block()])
@@ -639,7 +642,7 @@ class ParseableType(Type):
         """XXXX"""
         util.internal_error("Type.productionForLiteral() not overidden for %s" % self.__class__)
 
-    def generateParser(self, cg, var, cur, dst, skipping):
+    def generateParser(self, cg, var, args, dst, skipping):
         """Generate code for parsing an instance of the type.
 
         The method must be overridden by derived classes which may be used as
@@ -653,8 +656,8 @@ class ParseableType(Type):
         the parsed value. The operand will have the type returned by
         ~~hiltiType.
 
-        cur: hilti.operand.Operand - A bytes iterator with the
-        position where to start parsing.
+        args: An ~~Args objects with the current parsing arguments, as
+        used by the ~~ParserGen.
 
         skipping: boolean - True if the parsed value will actually never be
         used. If so, the function is free to skip fully parsing it, as well as
@@ -811,7 +814,7 @@ class Sinkable:
 
         sink = sink.evaluate(cg)
 
-        cfunc = cg.builder().idOp("BinPACIntern::sink_write")
+        cfunc = cg.builder().idOp("BinPAC::sink_write")
         cargs = cg.builder().tupleOp([sink, data])
         cg.builder().call(None, cfunc, cargs)
 

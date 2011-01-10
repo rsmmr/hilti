@@ -41,12 +41,12 @@ void binpac_fatal_error(const char* msg)
 }
 
 // Note that this function can be called before binpac_init().
-void binpacintern_register_parser(binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_register_parser(binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     _ensure_parsers(excpt, ctx);
     hlt_list_push_back(_parsers, &hlt_type_info_struct_string_name_string_description_ref_list_string_mime_types_caddr_parse_func_caddr_resume_func_caddr_parse_func_sink_caddr_resume_func_sink_caddr_new_func, &parser, excpt, ctx);
 
-    binpacintern_mime_register_parser(parser, excpt, ctx);
+    binpac_mime_register_parser(parser, excpt, ctx);
 }
 
 void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* ctx))
@@ -60,7 +60,7 @@ void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* c
         hlt_exception_print_uncaught(excpt, ctx);
 }
 
-void binpacintern_debug_print_ptr(hlt_string tag, const hlt_type_info* type, void** ptr, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_debug_print_ptr(hlt_string tag, const hlt_type_info* type, void** ptr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const char* s = hlt_string_to_native(tag, excpt, ctx);
     fprintf(stderr, "debug: %s %p\n", s, *ptr);

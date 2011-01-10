@@ -252,7 +252,7 @@ class CodeGen(object):
         self._mbuilder = hilti.builder.ModuleBuilder(hltmod)
 
         paths = self.importPaths()
-        for mod in ["libhilti", "hilti", "binpac", "binpacintern"]:
+        for mod in ["libhilti", "hilti", "binpac"]:
             if not hilti.importModule(self._mbuilder.module(), mod, paths):
                 self.error(hltmod, "cannot import module %s" % mod)
 
@@ -302,7 +302,7 @@ class CodeGen(object):
         f = wbuilder.addLocal("f", hilti.type.CAddr())
         wbuilder.tuple_index(f, funcs, builder.constOp(0))
 
-        wbuilder.call(None, wbuilder.idOp("BinPACIntern::call_init_func"), wbuilder.tupleOp(([f])))
+        wbuilder.call(None, wbuilder.idOp("BinPAC::call_init_func"), wbuilder.tupleOp(([f])))
 
         self.endFunction()
 
@@ -371,7 +371,7 @@ class CodeGen(object):
 
         return hilti.operand.ID(hid)
 
-    def generateInsufficientInputHandler(self, iter, eod_ok=False):
+    def generateInsufficientInputHandler(self, args, eod_ok=False, iter=None):
         """Function generating code for handling insufficient input. If
         parsing finds insufficient input, it must execute the code generated
         by this method and then retry the same operation afterwards. The
@@ -382,8 +382,8 @@ class CodeGen(object):
         it will throw an ~~ParseError exception; if not it will throw an
         ~~ParseSuccess exception.
 
-        iter: ~~hilti.Operand - A HITLI operand with the ``iterator<bytes>``
-        from which is being parsed.
+        args: An ~~Args objects with the current parsing arguments, as used by
+        the ~~ParserGen.
 
         eod_ok: bool - Indicates whether running out of input is ok.
 
@@ -394,6 +394,9 @@ class CodeGen(object):
         false. If *eod_ok* is True, the calling code should first check the
         return value to see whether end-of-data has been reached, and repeat
         the original operation only if not.
+
+        iter: hilti.Operand - An optional operand to use instead of
+        ``args.cur``.
         """
         # If our flags indicate that we won't be getting more input, we throw
         # a parse error. Otherwise, we yield and return.
@@ -409,7 +412,7 @@ class CodeGen(object):
 
         error = fbuilder.newBuilder("error")
 
-        self.builder().bytes_is_frozen(cont, iter)
+        self.builder().bytes_is_frozen(cont, iter if iter else args.cur)
 
         if eod_ok:
             error.makeDebugMsg("binpac-verbose", "parse error, insufficient input (but end-of-data would be ok)")
@@ -427,10 +430,13 @@ class CodeGen(object):
 
         self.setBuilder(resume)
 
+        if args.exported():
+            self.parserGen().filterInput(args, resume=True)
+
         return result
 
     def debugPrintPtr(self, tag, ptr):
-        cfunc = self.builder().idOp("BinPACIntern::debug_print_ptr")
+        cfunc = self.builder().idOp("BinPAC::debug_print_ptr")
         cargs = self.builder().tupleOp([self.builder().constOp(tag), ptr])
         self.builder().call(None, cfunc, cargs)
 

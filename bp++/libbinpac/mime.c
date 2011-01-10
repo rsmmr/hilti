@@ -73,7 +73,7 @@ hlt_bytes* main_type(hlt_bytes* mtype, hlt_exception** excpt, hlt_execution_cont
     }
 }
 
-void binpacintern_mime_register_parser(binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_mime_register_parser(binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! (parser->mime_types && parser->_new_func) )
          return;
@@ -100,10 +100,10 @@ void binpacintern_mime_register_parser(binpac_parser* parser, hlt_exception** ex
     }
 }
 
-void binpacintern_mime_connect_by_string(binpac_sink* sink, hlt_string mtype, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_mime_connect_by_string(binpac_sink* sink, hlt_string mtype, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_string_encode(mtype, &ASCII, excpt, ctx);
-    return binpacintern_mime_connect_by_bytes(sink, b, excpt, ctx);
+    return binpac_mime_connect_by_bytes(sink, b, excpt, ctx);
 }
 
 static void connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_full, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -123,13 +123,13 @@ static void connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_fu
         void* pobj = mp->parser->_new_func(sink, mtype, excpt, ctx);
         assert(pobj);
 
-        _binpacintern_sink_connect_intern(sink, 0, &pobj, mp->parser, mtype_full, excpt, ctx);
+        _binpac_sink_connect_intern(sink, 0, &pobj, mp->parser, mtype_full, excpt, ctx);
 
         mp = mp->next;
     }
 }
 
-void binpacintern_mime_connect_by_bytes(binpac_sink* sink, hlt_bytes* mtype, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_mime_connect_by_bytes(binpac_sink* sink, hlt_bytes* mtype, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     connect_one(sink, mtype, mtype, excpt, ctx);
 

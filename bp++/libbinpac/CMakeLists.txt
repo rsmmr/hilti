@@ -9,13 +9,15 @@ find_package(HILTI)
 project(libbinpac)
 set(PROJECT_VERSION "0.1")
 
-set(CMAKE_C_FLAGS "-g ${HILTI_CFLAGS}")
+set(CMAKE_C_FLAGS "-g ${HILTI_CFLAGS} -I ${CMAKE_CURRENT_BINARY_DIR} -I ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libb64-1.2/include")
 
 include(EnableLLVM)
 
 set(OBJS ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o)
 
-set(SRCS binpac-intern.c binpac.c sink.c mime.c)
+set(SRCS binpac-intern.c binpac.c sink.c mime.c filter.c filter_base64.c exceptions.c
+
+         3rdparty/libb64-1.2/src/cdecode.c)
 
 # Generate type information for libbinpac.
 add_custom_command(
@@ -25,5 +27,12 @@ add_custom_command(
     ARGS    ${CMAKE_CURRENT_SOURCE_DIR}/type-info.hlt ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o
     )
 
-add_library(binpac STATIC ${SRCS} ${OBJS})
+# Generate the C header for what's defined in hilti.hlt.
+add_custom_command(
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/binpac.hlt.h
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/binpac.hlt
+    COMMAND hiltic
+    ARGS    -P ${CMAKE_CURRENT_SOURCE_DIR}/binpac.hlt >${CMAKE_CURRENT_BINARY_DIR}/binpac.hlt.h
+    )
 
+add_library(binpac STATIC ${SRCS} ${OBJS} ${CMAKE_CURRENT_BINARY_DIR}/binpac.hlt.h)
