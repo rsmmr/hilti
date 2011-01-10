@@ -79,14 +79,9 @@ static inline int8_t _kh_hash_equal(const void* obj1, const void* obj2, const hl
 
 static inline void* _to_voidp(const hlt_type_info* type, void* data)
 {
-    if ( type->size <= sizeof(__val_t) )
-        return data;
-
-    else {
-        void* z = hlt_gc_malloc_non_atomic(type->size);
-        memcpy(z, data, type->size);
-        return z;
-    }
+    void* z = hlt_gc_malloc_non_atomic(type->size);
+    memcpy(z, data, type->size);
+    return z;
 }
 
 static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt, hlt_execution_context* ctx)

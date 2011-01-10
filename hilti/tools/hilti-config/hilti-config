@@ -19,8 +19,8 @@ Usage: hilti-config <options>
     --libs-bc-main Print bitcode libaries for llvm-ld, including a main() routine.
     --libs-c       Print native libaries for system linker.
     --pythonpath   Print PYTHONPATH for HILTI module.
-    --path         Print PATH for HILTI tools. 
-    
+    --path         Print PATH for HILTI tools.
+
     --debug        Print all output suitable for building debugging versions.
                    Note: this options must come first currently.
     --version      Print HILTI version.
@@ -29,25 +29,25 @@ EOF
    exit 1
 }
 
-### Determine distbase. 
+### Determine distbase.
 
 base=$HILTI_BASE
 
 if [ "$base" == "" ]; then
-   # Try to find the HILTI distribution based on our path. 
-   
+   # Try to find the HILTI distribution based on our path.
+
    # If we are called via a symbolic link, dereference it.
    link=`readlink $0`
    if [ "$link" != "" ]; then
        dir=`dirname $link`
    else
        dir=`dirname $0`
-   fi   
-   
+   fi
+
    base=`cd $dir/../../ && pwd -P`
 fi
 
-if [ ! -d "$base/libhilti" ]; then 
+if [ ! -d "$base/libhilti" ]; then
     echo "cannot determine HILTI directory; please set HILTI_BASE correctly"
     exit 1
 fi
@@ -59,83 +59,83 @@ pcap_config=`which pcap-config 2>/dev/null`
 if [ "$pcap_config" == "" ]; then
    echo "cannot find pcap-config"
    exit 1
-fi 
+fi
 
 pcap_cflags=`pcap-config --cflags `
 pcap_libs=`pcap-config --libs | sed 's/-L /-L/g'` # clang doesn't like spaces.
 
 ### Parse command line.
 
-if [ "$#" == "0" ]; then 
+if [ "$#" == "0" ]; then
    usage
 fi
 
 debug=""
 
 while [ "$1" != "" ]; do
-    case $1 in 
+    case $1 in
         --version)
             echo "HILTI 0.1"
             shift;;
-            
+
         --distbase)
             echo $base
             shift;;
-            
+
         --ldflags)
             echo "-L$base/libhilti/build-llvm -L$base/libhilti/build-llvm/justrx/src"
             shift;;
-            
+
         --libs-bc)
             echo "-lhilti -ljrx"
             shift;;
-            
+
         --libs-bc-main)
             echo "-lhiltimain -ljrx"
             shift;;
-            
+
         --libs-c)
             echo "-lc -lpthread $pcap_libs"
             shift;;
-            
+
         --hilticflags)
             if [ "$debug" == "" ]; then
-                echo "-I$base/libhilti -I$base/libhilti/module"    
+                echo "-I$base/libhilti -I$base/libhilti/module"
             else
-                echo "-I$base/libhilti -I$base/libhilti/module -d"    
+                echo "-I$base/libhilti -I$base/libhilti/module -d"
             fi
             shift;;
-            
+
         --cflags)
-            echo "-I$base/libhilti -g $pcap_cflags"
+            echo "-I$base/libhilti -g -I$base/libhilti/build-llvm $pcap_cflags"
             shift;;
-            
+
         --cxxflags)
-            echo "-I$base/libhilti -g $pcap_cflags"
+            echo "-I$base/libhilti -g -I$base/libhilti/build-llvm $pcap_cflags"
             shift;;
-            
+
         --libhilti)
             echo "$base/libhilti $base/libhilti/module"
             shift;;
-            
+
         --pythonpath)
             echo "$base"
             shift;;
-            
+
         --path)
             echo "$base/tools/hiltic:$base/tools/hilti-build"
             shift;;
-            
+
         --debug)
             debug=1
             shift;;
-            
-        -h) 
-            usage;; 
+
+        -h)
+            usage;;
         *)
             usage;;
     esac
-done    
+done
 
 
 

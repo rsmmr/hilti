@@ -86,7 +86,7 @@ function compile_ll {
     dir=`dirname $input`
     base=`basename $input .ll`
 
-    if [ "$opt" != "" ]; then
+    if [ "$opt" != "-O0" ]; then
         pipeopt="| opt $opt"
     else
         pipeopt=""
@@ -141,7 +141,7 @@ function link_all {
     execute "llvm-ld -disable-opt -b=$output.bc $bc $libsbc $llvmldflags" || exit 1
     execute "rm -f $output" || exit 1 # Stupid shell script.
 
-    if [ "$opt" != "" ]; then
+    if [ "$opt" != "-O0" ]; then
         tmpfiles="$tmpfiles $output.opt.bc"
         execute "opt -f $opt $output.bc -o=$output.opt.bc" || exit 1
         execute "mv $output.opt.bc $output.bc"
@@ -262,6 +262,10 @@ fi
 
 if [ "$TEST_DIAGNOSTICS" != "" ]; then
    keeptmp=1
+fi   
+
+if [ "$opt" == "" ]; then
+   opt="-O0"
 fi   
 
 trap delete_tmps 0

@@ -1,5 +1,4 @@
 >>> d = double.div 42.840000 0.000000
 div-by-zero-const.hlt:14: error, operand 2 must not be zero
 
-
-1 error found
+div-by-zero-const.hlt: 1 error found during validating

@@ -1,0 +1,22 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build2 -d -m %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  echo 'TXkgbGl0dGxlIGZpbHRlciB0ZXN0IQo=' | ./a.out -i 5 -p Mini::Main >output
+# @TEST-EXEC:  echo 'TXkgbGl0dGxlIGZpbHRlciB0ZXN0IQo=' | ./a.out -i 3 -p Mini::Main >>output
+# @TEST-EXEC:  echo 'TXkgbGl0dGxlIGZpbHRlciB0ZXN0IQo=' | ./a.out -i 1 -p Mini::Main >>output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import BinPAC;
+
+export type Main = unit {
+    data: bytes &eod {
+        print self.data;
+        }
+
+    on %init {
+        self.add_filter(BinPAC::Filter::BASE64);
+    }
+};
+

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC-FAIL:  hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC-FAIL:  hilti-build2 %INPUT -o a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 module Main
@@ -23,7 +23,7 @@ void run() {
     return.void
 }
 
-@TEST-START-FILE TestModule.hlt
+@TEST-START-FILE testmodule.hlt
 module Test
 
 import Hilti

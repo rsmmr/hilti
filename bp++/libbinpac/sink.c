@@ -11,6 +11,7 @@ typedef struct parser_state {
 
 struct binpac_sink {
     parser_state* head;
+    binpac_filter* filter;
 };
 
 static void finish_parsing(parser_state* s, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -31,7 +32,7 @@ static void finish_parsing(parser_state* s, hlt_exception** excpt, hlt_execution
     s->resume = 0;
 }
 
-binpac_sink* binpacintern_sink_new(hlt_exception** excpt, hlt_execution_context* ctx)
+binpac_sink* binpac_sink_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     binpac_sink* sink = hlt_gc_malloc_non_atomic(sizeof(binpac_sink));
     if ( ! sink ) {
@@ -40,18 +41,19 @@ binpac_sink* binpacintern_sink_new(hlt_exception** excpt, hlt_execution_context*
     }
 
     sink->head = 0;
+    sink->filter = 0;
 
     return sink;
 }
 
-void binpacintern_sink_connect(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_sink_connect(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    _binpacintern_sink_connect_intern(sink, type, pobj, parser, 0, excpt, ctx);
+    _binpac_sink_connect_intern(sink, type, pobj, parser, 0, excpt, ctx);
 }
 
 static hlt_string_constant ASCII = { 5, "ascii" };
 
-void _binpacintern_sink_connect_intern(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_bytes* mtype, hlt_exception** excpt, hlt_execution_context* ctx)
+void _binpac_sink_connect_intern(binpac_sink* sink, const hlt_type_info* type, void** pobj, binpac_parser* parser, hlt_bytes* mtype, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     parser_state* state = hlt_gc_malloc_non_atomic(sizeof(parser_state));
     if ( ! state ) {
@@ -84,7 +86,7 @@ void _binpacintern_sink_connect_intern(binpac_sink* sink, const hlt_type_info* t
 
 }
 
-void binpacintern_sink_disconnect(binpac_sink* sink, const hlt_type_info* type, void** pobj, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_sink_disconnect(binpac_sink* sink, const hlt_type_info* type, void** pobj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     parser_state* prev = 0;
     parser_state* s = 0;
@@ -112,15 +114,11 @@ void binpacintern_sink_disconnect(binpac_sink* sink, const hlt_type_info* type, 
 
 }
 
-void binpacintern_sink_write(binpac_sink* sink, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    parser_state* prev = 0;
-    parser_state* s = sink->head;
-
 #ifdef DEBUG
-    // Log what we're feeding into the sink, with non-printable characters
-    // escaped and output trimmed if too long.
-
+    // Log data with non-printable characters escaped and output trimmed if
+    // too long.
     int8_t buffer[50];
     int i = 0;
 
@@ -148,9 +146,34 @@ void binpacintern_sink_write(binpac_sink* sink, hlt_bytes* data, hlt_exception**
 
     const char* dots = hlt_bytes_pos_eq(p, hlt_bytes_end(data, excpt, ctx), excpt, ctx) ? "" : " ...";
 
-    DBG_LOG("binpac-sinks", "writing to sink %p: |%s%s|", sink, buffer, dots);
+    if ( ! filter )
+        DBG_LOG("binpac-sinks", "writing to sink %p: |%s%s|", sink, buffer, dots);
+    else
+        DBG_LOG("binpac-sinks", "    filtered by %s: |%s%s|", filter->name, buffer, dots);
 #endif
+}
 
+void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    binpac_dbg_print_data(sink, data, 0, excpt, ctx);
+
+    parser_state* prev = 0;
+    parser_state* s = sink->head;
+
+    if ( sink->filter ) {
+        hlt_bytes* decoded = binpac_filter_decode(sink->filter, data, excpt, ctx);
+
+        if ( ! decoded )
+            return;
+
+        if ( hlt_bytes_is_frozen(data, excpt, ctx) )
+            // No more data going to come.
+            hlt_bytes_freeze(decoded, 1, excpt, ctx);
+
+        data = decoded;
+    }
+
+    // Now pass it onto parsers.
     while ( s ) {
 
         if ( ! s->data ) {
@@ -200,14 +223,26 @@ void binpacintern_sink_write(binpac_sink* sink, hlt_bytes* data, hlt_exception**
     }
 }
 
-void binpacintern_sink_close(binpac_sink* sink, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_sink_close(binpac_sink* sink, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     for ( parser_state* s = sink->head; s; s = s->next )
         finish_parsing(s, excpt, ctx);
+
+    if ( sink->filter )
+        binpac_filter_close(sink->filter, excpt, ctx);
 
     sink->head = 0;
 
 #ifdef DEBUG
     DBG_LOG("binpac-sinks", "closed sink %p, disconnected all parsers", sink);
+#endif
+}
+
+void binpac_sink_filter(binpac_sink* sink, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    sink->filter = binpac_filter_add(sink->filter, filter, excpt, ctx);
+
+#ifdef DEBUG
+    DBG_LOG("binpac-sinks", "attached filter %s to sink %p", filter->name, sink);
 #endif
 }

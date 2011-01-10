@@ -1,3 +1,2 @@
 missing-import.hlt:16: error, unknown identifier Hilti::print
-
-1 error found
+missing-import.hlt: 1 error found during validating

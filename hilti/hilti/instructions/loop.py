@@ -18,7 +18,6 @@ from hilti import hlt
 import operators
 import flow
 
-@hlt.instruction("<foreach>", doc="for i in XXX")
 class ForEach(instruction.Instruction):
 
     _signature = signature.Signature("for")

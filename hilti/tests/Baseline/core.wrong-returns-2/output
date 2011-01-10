@@ -1,5 +1,4 @@
 >>> return.result 42
 wrong-returns.hlt:5: error, void function returns a value
 
-
-1 error found
+wrong-returns.hlt: 1 error found during validating

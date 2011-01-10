@@ -58,7 +58,7 @@ class ProtoGen:
 
     def header(self):
         """Outputs the static header of the prototype file."""
-        ifdefname = "HILTI_" + os.path.basename(self._fname).upper().replace("-", "_").replace(".", "_")
+        ifdefname = "HILTI_" + self._module.name().upper().replace("-", "_").replace(".", "_") + "_HLT_H"
 
         print >>self._output, """
 /* Automatically generated. Do not edit. */

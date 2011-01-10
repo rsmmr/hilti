@@ -1,5 +1,4 @@
 >>> b = assign a
 wrong-args.hlt:22: error, operand 1 must be coercable to type of target, which is ref<struct { bool b }>
 
-
-1 error found
+wrong-args.hlt: 1 error found during validating

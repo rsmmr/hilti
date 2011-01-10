@@ -1,5 +1,4 @@
 >>> i1 = int.add i2 i2
 mixing-widths.hlt:7: error, operand 1 can't be coerced from integer of width 16 to one of width 8
 
-
-1 error found
+mixing-widths.hlt: 1 error found during validating

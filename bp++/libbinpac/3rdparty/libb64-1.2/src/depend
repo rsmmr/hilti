@@ -1,0 +1,4 @@
+# DO NOT DELETE
+
+edanticcdecode.o: ../include/b64/cdecode.h
+edanticcencode.o: ../include/b64/cencode.h

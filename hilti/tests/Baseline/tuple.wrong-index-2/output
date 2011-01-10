@@ -1,5 +1,4 @@
 >>> b = tuple.index a b
 wrong-index.hlt:8: error, operand 2 must be a constant
 
-
-1 error found
+wrong-index.hlt: 1 error found during validating

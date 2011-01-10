@@ -6,7 +6,7 @@
 #include <hilti.h>
 #include <assert.h>
 
-#include "yield-with-return.h"
+#include "yield-with-return.hlt.h"
 
 int main()
 {

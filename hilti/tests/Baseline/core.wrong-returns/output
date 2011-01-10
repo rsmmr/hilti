@@ -1,5 +1,4 @@
 >>> return.void
 wrong-returns.hlt:11: error, function must return a value
 
-
-1 error found
+wrong-returns.hlt: 1 error found during validating

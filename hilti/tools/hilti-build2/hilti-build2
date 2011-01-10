@@ -17,8 +17,8 @@ ImportPaths = [ "." ]
 # -O1/2/3 create "illegal instruction" ...  :-( TODO: Try with newer LLVM
 # versions, or figure out which pass is to blame. 
 
-ClangOptSpec = "-O0"             # -O4 is LTO, which we can't do wo/ support by the system linker.
-OptOptSpec   = "-tailcallelim"
+ClangOptSpec = "-O3"             # -O4 is LTO, which we can't do wo/ support by the system linker.
+OptOptSpec   = "-std-compile-opts"
 
 try:
     HiltiConfig= os.environ["HILTI_CONFIG"]
@@ -193,6 +193,12 @@ def hltToBc(hlt, file):
         check_errors(-1, file, "canonifying")
     timeStop()
 
+    timeStart("validating canonified HILTI code")
+    errors = hilti.validateModule(hlt)
+    timeStop()
+
+    check_errors(errors, input, "validating canonified module")
+
     timeStart("generating LLVM code")
     (success, bc) = hilti.codegen(hlt, ImportPaths, debug=Options.debug, stack=Options.stack, verify=False)
     timeStop()
@@ -214,6 +220,11 @@ def hltToBc(hlt, file):
     check_errors(errors, file, "validating")
 
     return bc
+
+def hltToPrototypes(hlt, dst):
+    timeStart("generating C prototypes")
+    hilti.protogen(hlt, dst)
+    timeStop()
 
 def uniqueArgs(args):
     t = []
@@ -331,8 +342,10 @@ Input files may be end in one of the following extensions:
                          help="Create and leave files with intermediary outputs.")
     optparser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
                          help="Output information about intermediary steps.")
-    optparser.add_option("-O", "--opt", action="store_true", dest="opt", default=0,
+    optparser.add_option("-O", "--opt", action="store_true", dest="opt", default=False,
                          help="Apply optimizations.")
+    optparser.add_option("-P", "--prototypes", action="store_true", dest="proto", default=False,
+                         help="Generate just prototypes for all *.hlt files (including generated ones).")
     optparser.add_option("-b", "--bc", action="store_true", dest="bitcode", default=False,
                          help="Produce a bitcode file for JITing rather than an executable. (NOT IMPLEMENTED)")
     optparser.add_option("-d", "--debug", action="store_const", const=1, dest="debug", default=0,
@@ -349,7 +362,7 @@ Input files may be end in one of the following extensions:
     if len(args) < 1:
         optparser.error("no input file specified")
 
-    if not options.output:
+    if not options.output and not options.proto:
         optparser.error("no output file specified")
 
     if options.time:
@@ -366,7 +379,11 @@ inputs = parseOptions()
 
 import llvm
 import hilti
-import binpac
+
+try:
+    import binpac
+except ImportError:
+    pass
 
 all_pac2 = []
 all_hlt  = []
@@ -403,12 +420,16 @@ for input in all_pac2:
 
     pac2 = readPac2(input + ".pac2")
     hlt = pac2ToHlt(pac2, input + ".pac2")
+    bc = hltToBc(hlt, input + ".pac2")
+
+    if Options.proto:
+        hltToPrototypes(hlt, input + ".hlt.h")
+        # Generate just prototypes.
+        continue
 
     if Options.tmps:
         output = makeOutput(input, "hlt")
         writeHlt(hlt, output)
-
-    bc = hltToBc(hlt, input + ".pac2")
 
     if Options.tmps:
         output = makeOutput(input, "ll")
@@ -425,6 +446,11 @@ for input in all_hlt:
     hlt = readHlt(input + ".hlt")
     bc = hltToBc(hlt, input + ".hlt")
 
+    if Options.proto:
+        hltToPrototypes(hlt, input + ".hlt.h")
+        # Generate just prototypes.
+        continue
+
     if Options.tmps:
         output = makeOutput(input, "ll")
         writeLl(bc, output)
@@ -433,15 +459,17 @@ for input in all_hlt:
     writeBc(bc, output)
     all_bc += [output]
 
-for input in all_c:
-    verbose("compiling %s ..." % input)
+if not Options.proto:
 
-    output = makeOutput(input, "bc")
-    cToBcFile(input + ".c", output)
-    all_bc += [output]
+    for input in all_c:
+        verbose("compiling %s ..." % input)
+    
+        output = makeOutput(input, "bc")
+        cToBcFile(input + ".c", output)
+        all_bc += [output]
 
-verbose("linking %s" % Options.output)
-linkAll(all_ll + all_bc)
+    verbose("linking %s" % Options.output)
+    linkAll(all_ll + all_bc)
 
 removeTmps()
 

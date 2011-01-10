@@ -1,0 +1,31 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build2 %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# More extensive tests of the bytes functions are in c-api/bytes.c
+#
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> i
+    local iterator<bytes> e
+
+    b = b"abc"
+    i = begin b
+    bytes.append b b"def"
+    i = incr_by i 2
+    b = bytes.sub i e
+    call Hilti::print(b)
+
+    b = b""
+    i = begin b
+    bytes.append b b"def"
+    i = incr_by i 2
+    b = bytes.sub i e
+    call Hilti::print(b)
+}

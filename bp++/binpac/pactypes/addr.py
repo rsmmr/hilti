@@ -74,7 +74,9 @@ class Addr(type.ParseableWithByteOrder):
         # FIXME: Don't have a HILTI enum for addr in little-endian.
         }
 
-    def generateParser(self, cg, var, cur, dst, skipping):
+    def generateParser(self, cg, var, args, dst, skipping):
+        cur = args.cur
+
         resultt = hilti.type.Tuple([hilti.type.Addr()])
         fbuilder = cg.functionBuilder()
 
@@ -96,7 +98,7 @@ class Addr(type.ParseableWithByteOrder):
             op2 = cg.builder().idOp("Hilti::Packed::SkipBytesFixed")
             op3 = cg.builder().constOp(4 if v4 else 16, hilti.type.Integer(32))
 
-        result = self.generateUnpack(cg, op1, op2, op3)
+        result = self.generateUnpack(cg, args, op1, op2, op3)
 
         builder = cg.builder()
 

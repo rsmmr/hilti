@@ -1,3 +1,2 @@
 wrong-decls.hlt:11: error, cannot create local variable of type any
-
-1 error found
+wrong-decls.hlt: 1 error found during validating

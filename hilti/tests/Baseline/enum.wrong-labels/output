@@ -1,3 +1,2 @@
 wrong-labels.hlt:15: error, unknown identifier A
-
-1 error found
+wrong-labels.hlt: 1 error found during validating

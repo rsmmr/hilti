@@ -107,7 +107,9 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
         else:
             return self.parsedType()
 
-    def generateParser(self, cg, var, cur, dst, skipping):
+    def generateParser(self, cg, var, args, dst, skipping):
+        cur = args.cur
+
         def toSink(data):
             if not var.sink():
                 return
@@ -159,7 +161,7 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
             loop.if_else(eod, done.labelOp(), suspend.labelOp())
 
             cg.setBuilder(suspend)
-            cg.generateInsufficientInputHandler(cur)
+            cg.generateInsufficientInputHandler(args)
             cg.builder().jump(loop.labelOp())
 
             cg.setBuilder(done)
@@ -169,7 +171,7 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
 
             return end
 
-        result = self.generateUnpack(cg, op1, op2, op3)
+        result = self.generateUnpack(cg, args, op1, op2, op3)
 
         builder = cg.builder()
 
@@ -258,7 +260,7 @@ class Match:
         else:
             group = cg.builder().constOp(0)
 
-        func = cg.builder().idOp("BinPACIntern::bytes_match")
+        func = cg.builder().idOp("BinPAC::bytes_match")
         args = cg.builder().tupleOp([obj, re, group])
         tmp = cg.functionBuilder().addLocal("__match", obj.type())
         cg.builder().call(tmp, func, args)

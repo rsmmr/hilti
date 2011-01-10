@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  hilti-build2 %INPUT -o a.out
 # @TEST-EXEC:  ./a.out
 # @TEST-EXEC:  sort <output.log >output.log.sorted
 # @TEST-EXEC:  btest-diff output.log.sorted

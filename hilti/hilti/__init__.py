@@ -115,7 +115,7 @@ def canonifyModule(mod, debug=0):
     """
     return canonifier.Canonifier().canonify(mod, debug)
 
-def codegen(mod, libpaths, debug=0, stack=16384, trace=False, verify=True):
+def codegen(mod, libpaths, debug=0, stack=0, trace=False, verify=True):
     """Compiles a module into LLVM module.  The module must be well-formed as
     verified by ~~validateModule, and it must have been canonified by
     ~~canonifyModule.
@@ -130,7 +130,8 @@ def codegen(mod, libpaths, debug=0, stack=16384, trace=False, verify=True):
     debug: int - Debugging level. With 1 or 2, debugging support or more
     debugging support is compiled in.
 
-    stack: int - The default stack segment size.
+    stack: int - The default stack segment size. If zero, a default value will
+    be chosen.
 
     trace: bool - If true, debugging information will be printed to trace
     where codegeneration currently is.
@@ -139,6 +140,9 @@ def codegen(mod, libpaths, debug=0, stack=16384, trace=False, verify=True):
     if *verify* is True, also verification) was successful. If so, the second
     element of the tuple is the resulting LLVM module.
     """
+
+    if stack == 0:
+        stack = 16384
 
     gen = cg.CodeGen()
     mod._cg = gen

@@ -267,8 +267,15 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
     ### Private.
 
     def _tupleType(self, cg):
-        llvm_types = [cg.llvmType(t) for t in self._types]
-        return llvm.core.Type.struct(llvm_types)
+
+        if len(self._types) == 0:
+            # The empty tuple. We use some arbitrary placeholder type so that we
+            # don't end up with zero-length variables. 
+            return llvm.core.Type.struct([llvm.core.Type.int(1)])
+
+        else:
+            llvm_types = [cg.llvmType(t) for t in self._types]
+            return llvm.core.Type.struct(llvm_types)
 
 @hlt.constraint("any")
 def _isElementIndex(ty, op, i):

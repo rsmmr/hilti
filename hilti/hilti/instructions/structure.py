@@ -270,6 +270,52 @@ class Get(Instruction):
         addr = cg.builder().gep(s, [zero, index])
         cg.llvmStoreInTarget(self, cg.builder().load(addr))
 
+@hlt.instruction("struct.get_default", op1=cReferenceOf(cStruct), op2=_fieldName, op3=_fieldType, target=_fieldType)
+class Get(Instruction):
+    """Returns the field named *op2* in the struct referenced by *op1*, or a
+    default value *op3* if not set (if the field has a default itself, that
+    however has priority). The field name must be a constant, and the type of
+    the target must match the field's type, as must that of the default value.
+    """
+    def _codegen(self, cg):
+        (idx, ftype) = _getIndex(self)
+        assert idx >= 0
+
+        s = cg.llvmOp(self.op1())
+
+        # Check whether field is valid.
+        zero = cg.llvmGEPIdx(0)
+
+        addr = cg.builder().gep(s, [zero, zero])
+        mask = cg.builder().load(addr)
+
+        bit = cg.llvmConstInt(1<<idx, 32)
+        isset = cg.builder().and_(bit, mask)
+
+        block_ok = cg.llvmNewBlock("ok")
+        block_default = cg.llvmNewBlock("default")
+        block_done = cg.llvmNewBlock("done")
+
+        notzero = cg.builder().icmp(llvm.core.IPRED_NE, isset, cg.llvmConstInt(0, 32))
+        cg.builder().cbranch(notzero, block_ok, block_default)
+
+        cg.pushBuilder(block_ok)
+
+        # Load field.
+        index = cg.llvmGEPIdx(idx + 1)
+        addr = cg.builder().gep(s, [zero, index])
+        cg.llvmStoreInTarget(self, cg.builder().load(addr))
+
+        cg.builder().branch(block_done)
+        cg.popBuilder()
+
+        cg.pushBuilder(block_default)
+        cg.llvmStoreInTarget(self, self.op3())
+        cg.builder().branch(block_done)
+        cg.popBuilder()
+
+        cg.pushBuilder(block_done)
+
 @hlt.instruction("struct.set", op1=cReferenceOf(cStruct), op2=_fieldName, op3=_fieldType)
 class Set(Instruction):
     """

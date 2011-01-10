@@ -1,15 +1,5 @@
-[binpac-sinks] MIME type application/ registered for parser Mini::Sub3
-[binpac-sinks] MIME type application/foo registered for parser Mini::Sub
-[binpac-sinks] MIME type application/bar registered for parser Mini::Sub
-[binpac-sinks] MIME type application/bar registered for parser Mini::Sub2
-[binpac-sinks] connected parser Mini::Sub2 [0x100201110] to sink 0x1002010a0 for MIME type application/bar
-[binpac-sinks] connected parser Mini::Sub [0x100201320] to sink 0x1002010a0 for MIME type application/bar
-[binpac-sinks] connected parser Mini::Sub3 [0x100201570] to sink 0x1002010a0 for MIME type application/bar
-[binpac-sinks] writing to sink 0x1002010a0: |34567|
-[binpac-sinks] writing to sink 0x1002010a0: |abcde|
 Sub  <s2=567abcde, s1=34>
 Main <data=<>, b=34567, c=890, a=12>
 Sub3  <s=34567abcde>
 Sub2  <s=34567abcde>
    MT application/bar
-[binpac-sinks] closed sink 0x1002010a0, disconnected all parsers

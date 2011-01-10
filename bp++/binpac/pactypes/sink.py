@@ -19,7 +19,7 @@ class Sink(type.Type):
         super(Sink, self).__init__(location=location)
 
     def hiltiType(self, cg):
-        return cg.functionBuilder().typeByID("BinPACIntern::Sink")
+        return cg.functionBuilder().typeByID("BinPAC::Sink")
 
     def pac(self, printer):
         printer.output("sink")
@@ -54,10 +54,10 @@ class _:
 
         cg.setBuilder(ok)
 
-        parser = cg.builder().addLocal("__parser", cg.functionBuilder().typeByID("BinPACIntern::Parser"))
+        parser = cg.builder().addLocal("__parser", cg.functionBuilder().typeByID("BinPAC::Parser"))
         cg.builder().struct_get(parser, pobj, cg.builder().constOp("__parser"))
 
-        cfunc = cg.builder().idOp("BinPACIntern::sink_connect")
+        cfunc = cg.builder().idOp("BinPAC::sink_connect")
         cargs = cg.builder().tupleOp([sink, pobj, parser])
         cg.builder().call(None, cfunc, cargs)
 
@@ -68,28 +68,36 @@ class _:
 
 @operator.MethodCall(type.Sink, expr.Attribute("connect_mime_type"), [type.String])
 class _:
-    """XXX"""
+    """Connects a parsing units to a sink based on their MIME type, given as
+    *op1*. It works similar to ~~connect, but it instantiates and connects all
+    parsers they specify the given MIME type via their ``%mimetype`` property.
+    This may be zero, one, or more; which will all be connected to the sink.
+    """
     def type(obj, method, args):
         return type.Void()
 
     def evaluate(cg, obj, method, args):
         sink = obj.evaluate(cg)
         mtype = args[0].evaluate(cg)
-        cfunc = cg.builder().idOp("BinPACIntern::mime_connect_by_string")
+        cfunc = cg.builder().idOp("BinPAC::mime_connect_by_string")
         cargs = cg.builder().tupleOp([sink, mtype])
         cg.builder().call(None, cfunc, cargs)
         return None
 
 @operator.MethodCall(type.Sink, expr.Attribute("connect_mime_type"), [type.Bytes])
 class _:
-    """XXX"""
+    """Connects a parsing units to a sink based on their MIME type, given as
+    *op1*. It works similar to ~~connect, but it instantiates and connects all
+    parsers they specify the given MIME type via their ``%mimetype`` property.
+    This may be zero, one, or more; which will all be connected to the sink.
+    """
     def type(obj, method, args):
         return type.Void()
 
     def evaluate(cg, obj, method, args):
         sink = obj.evaluate(cg)
         mtype = args[0].evaluate(cg)
-        cfunc = cg.builder().idOp("BinPACIntern::mime_connect_by_bytes")
+        cfunc = cg.builder().idOp("BinPAC::mime_connect_by_bytes")
         cargs = cg.builder().tupleOp([sink, mtype])
         cg.builder().call(None, cfunc, cargs)
         return None
@@ -112,7 +120,7 @@ class _:
     def evaluate(cg, obj, method, args):
         sink = obj.evaluate(cg)
         data = args[0].evaluate(cg)
-        cfunc = cg.builder().idOp("BinPACIntern::sink_write")
+        cfunc = cg.builder().idOp("BinPAC::sink_write")
         cargs = cg.builder().tupleOp([sink, data])
         cg.builder().call(None, cfunc, cargs)
         return None
@@ -131,9 +139,47 @@ class _:
 
     def evaluate(cg, obj, method, args):
         sink = obj.evaluate(cg)
-        cfunc = cg.builder().idOp("BinPACIntern::sink_close")
+        cfunc = cg.builder().idOp("BinPAC::sink_close")
         cargs = cg.builder().tupleOp([sink])
         cg.builder().call(None, cfunc, cargs)
         return None
 
+@operator.MethodCall(type.Sink, expr.Attribute("add_filter"), [type.Enum])
+class _:
+    """Adds an input filter of type *op1* (of type ~~BinPAC::Filter) to the
+    sink. *op1* The filter will receive all input written into the sink first,
+    transform it according to its semantics, and then parser attached to the
+    unit will parse the *output* of the filter.
+
+    Multiple filters can be added to a sink, in which case they will be
+    chained into a pipeline and the data is passed through them in the order
+    they have been added. The parsing will then be carried out on the output
+    of the last filter in the chain.
+
+    Note that filters must be added before the first data chunk is written
+    into the sink. If data has already been written when a filter is added,
+    behaviour is undefined.
+
+    Currently, only a set of predefined filters can be used; see
+    ~~BinPAC::Filter. One cannot define own filters in BinPAC++.
+
+    Todo: We should probably either enables adding filters laters, or catch
+    the case of adding them too late at run-time an abort with an exception.
+    """
+    def type(obj, method, args):
+        return type.Void()
+
+    def validate(vld, obj, method, args):
+        # TODO: Make srue it's the right enum ...
+        return
+
+    def evaluate(cg, obj, method, args):
+        sink = obj.evaluate(cg)
+        ftype = args[0].evaluate(cg)
+
+        filter = cg.builder().addLocal("__filter", cg.functionBuilder().typeByID("BinPAC::ParseFilter"))
+        cg.builder().call(filter, cg.builder().idOp("BinPAC::filter_new"),  cg.builder().tupleOp([ftype]))
+        cg.builder().call(None, cg.builder().idOp("BinPAC::sink_filter"), cg.builder().tupleOp([sink, filter]))
+
+        return None
 
