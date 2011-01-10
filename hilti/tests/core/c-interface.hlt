@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC:  hilti-build2 -P %INPUT
-# @TEST-EXEC:  ${CC} -c -I . %DIR/c-interface-host.c -o c-interface-host.bc
+# @TEST-EXEC:  ${CC} -I . -c %DIR/c-interface-host.c -o c-interface-host.bc
 # @TEST-EXEC:  hilti-build2 c-interface-host.bc %INPUT -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output

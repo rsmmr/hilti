@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <hilti.h>
 
-#include "c-interface.h"
+#include "c-interface.hlt.h"
 
 int main()
 {

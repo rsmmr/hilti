@@ -1,8 +1,0 @@
-#! /usr/bin/env bash
-
-tools=$1
-
-export PYTHONPATH=$tools/..:$PYTHONPATH
-export PATH=$tools/hilti-config:$PATH
-
-$tools/hiltic/hiltic -I ../module -I .. -P $2 >$3

@@ -369,8 +369,6 @@ class FunctionBuilder(OperandBuilder):
         to remain valid very long
         """
 
-        assert not (reuse and force)
-
         old = self._func.scope().lookup(name)
 
         if old:

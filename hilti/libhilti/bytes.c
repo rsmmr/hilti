@@ -1,4 +1,12 @@
 // $Id$
+//
+// Note that we manitain two invariants:
+//
+//  - The head and tail pointers must always point to a chunk. For an empty
+//  bytes object, they must point to one with equal start and end addresses.
+//
+//  - Only that head chunk of a bytes object may have equal start and end
+// pointers. If so, that marks and empty bytes object.
 
 #include <ctype.h>
 #include <string.h>
@@ -29,10 +37,40 @@ static const int16_t MAX_COPY_SIZE = 256;
 // If we allocate a chunk of a data ourselves, it will be of this size.
 static const int16_t ALLOC_SIZE = 1024;
 
+// Sentinial for marking a chunk as empty by having both start and end point
+// here.
+static int8_t empty_sentinel;
+
+static inline int8_t is_empty_chunk(const hlt_bytes_chunk* chunk)
+{
+    return (chunk->start == chunk->end);
+}
+
+static inline int8_t is_empty(const hlt_bytes* b)
+{
+    assert(b->head);
+    return is_empty_chunk(b->head);
+}
+
+#if 0
+// For debugging, not used currently.
+static void __print_bytes(const char* prefix, const hlt_bytes* b)
+{
+    return;
+    fprintf(stderr, "%s: %p b( ", prefix, b);
+    for ( hlt_bytes_chunk *c = b->head; c; c = c->next )
+        fprintf(stderr, "#%ld:%p-%p(%d) ", c->end - c->start, c->start, c->end, c->free);
+    fprintf(stderr, ")\n");
+}
+#endif
+
 static void add_chunk(hlt_bytes* b, hlt_bytes_chunk* c)
 {
     assert(b);
     assert(c);
+
+    if ( is_empty_chunk(c) )
+        return;
 
     if ( b->tail ) {
         assert(b->head);
@@ -46,23 +84,49 @@ static void add_chunk(hlt_bytes* b, hlt_bytes_chunk* c)
         c->prev = c->next = 0;
         b->head = b->tail = c;
     }
+
+    // We added data, so the first chunk must not be empty anymore because
+    // that would signal an empty bytes object.
+    if ( is_empty_chunk(b->head) ) {
+        // Remove first chunk (cannot be tail at this point).
+        assert(b->head != b->tail);
+        b->head->next->prev = 0;
+        b->head = b->head->next;
+    }
+
+    assert(!is_empty_chunk(b->head));
 }
 
 hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes));
+    hlt_bytes* b = hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes));
+    hlt_bytes_chunk* dst = hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes_chunk));
+
+    if ( ! (b && dst) ) {
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
+        return 0;
+    }
+
+    b->head = b->tail = dst;
+    dst->start = &empty_sentinel;
+    dst->end = &empty_sentinel;
+
+    assert(is_empty(b));
+
+    return b;
 }
 
 hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_bytes* b = hlt_gc_calloc_non_atomic(1, sizeof(hlt_bytes));
-    hlt_bytes_chunk* dst = hlt_gc_malloc_non_atomic(sizeof(hlt_bytes_chunk));
-    dst->start = data;
-    dst->end = data + len;
-    dst->owner = 0;
-    dst->frozen = 0;
+    hlt_bytes* b = hlt_bytes_new(excpt, ctx);
+    if ( ! b )
+        return 0;
 
-    add_chunk(b, dst);
+    if ( len > 0 ) {
+        b->head->start = data;
+        b->head->end = data + len;
+        assert(!is_empty(b));
+    }
 
     return b;
 }
@@ -91,7 +155,7 @@ int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_
         return 0;
     }
 
-    return b->head == 0;
+    return is_empty(b);
 }
 
 // Appends one Bytes object to another.
@@ -107,12 +171,12 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
         return;
     }
 
-    if ( ! other->head )
+    if ( is_empty(other) )
         // Empty.
         return;
 
     // Special case: if the other object has only one chunk, pass it on to
-    // the *_raw version which might decide to copy the data over.
+    // the *_raw version which might decide to copy the data over. 
     if ( other->head == other->tail )
         return hlt_bytes_append_raw(b, other->head->start, other->head->end - other->head->start, excpt, ctx);
 
@@ -186,7 +250,7 @@ hlt_bytes_pos hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excp
             return i;
         }
     }
-    
+
     return GenericEndPos;
 }
 

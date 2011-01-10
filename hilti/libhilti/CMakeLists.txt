@@ -13,7 +13,7 @@ set(PROJECT_VERSION "0.1")
 
 add_subdirectory(justrx) # must come before EnableLLVM.
 
-set(CMAKE_C_FLAGS "-fno-color-diagnostics -g -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src ${PCAP_CFLAGS}")
+set(CMAKE_C_FLAGS "-fno-color-diagnostics -g -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src ${PCAP_CFLAGS}")
 
 include(EnableLLVM)
 
@@ -28,8 +28,6 @@ set(SRCS
 
     3rdparty/libpqueue/src/pqueue.c
     )
-
-ADD_CUSTOM_TARGET(header ALL DEPENDS module/_hilti.h)
 
 # FIXME: We should allow for multiple LLs and build a loop around
 # the stuff below.
@@ -50,13 +48,13 @@ add_custom_command(
 
 # Generate C prototypes for definitions in hilti.hlt.
 add_custom_command(
-   OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/module/_hilti.h
-   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/module/hilti.hlt
-   COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/libhilti-prototypes
-   ARGS    ${CMAKE_CURRENT_SOURCE_DIR}/../tools ${CMAKE_CURRENT_SOURCE_DIR}/module/hilti.hlt ${CMAKE_CURRENT_SOURCE_DIR}/module/_hilti.h
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/module/hilti.hlt
+    COMMAND hiltic
+    ARGS    -P ${CMAKE_CURRENT_SOURCE_DIR}/module/hilti.hlt >${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h
+    )
 
-   ${CMAKE_CURRENT_SOURCE_DIR}/libhilti.hlt
-   )
+ADD_CUSTOM_TARGET(header ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h)
 
 if ( ENABLE_LLVM )
     set(OBJS
@@ -93,5 +91,5 @@ endif ( ENABLE_LLVM )
 # Get all the files which go into libgcmt-lib.a.
 FILE(GLOB_RECURSE LIBGC "${CMAKE_CURRENT_BINARY_DIR}/3rdparty/bdwgc/CMakeFiles/gcmt-lib.dir/*")
 
-add_library(hilti STATIC ${SRCS} ${OBJS} ${LIBGC})
+add_library(hilti STATIC ${SRCS} ${OBJS} ${LIBGC} ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h)
 add_library(hiltimain STATIC ${SRCS} ${OBJS} main.c ${LIBGC})

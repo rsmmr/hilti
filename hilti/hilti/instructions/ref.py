@@ -73,6 +73,8 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
         else:
             ti.c_prototype = self._type.typeInfo(cg).c_prototype
 
+        return ti
+
     def llvmType(self, cg):
         """A ``ref<T>`` is mapped to the same type as ``T``. Note that because
         ``T`` must be a ~~HeapType, and all ~~HeapTypes are mapped to
@@ -138,7 +140,7 @@ class Reference(type.ValueType, type.Constable, type.Constructable, type.Paramet
         if not const.type().refType():
             return True
 
-        if not dsttype.type().refType():
+        if not dsttype.refType():
             return True
 
         return False

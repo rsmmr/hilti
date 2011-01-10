@@ -423,7 +423,7 @@ for input in all_pac2:
     bc = hltToBc(hlt, input + ".pac2")
 
     if Options.proto:
-        hltToPrototypes(hlt, input + ".h")
+        hltToPrototypes(hlt, input + ".hlt.h")
         # Generate just prototypes.
         continue
 
@@ -447,7 +447,7 @@ for input in all_hlt:
     bc = hltToBc(hlt, input + ".hlt")
 
     if Options.proto:
-        hltToPrototypes(hlt, input + ".h")
+        hltToPrototypes(hlt, input + ".hlt.h")
         # Generate just prototypes.
         continue
 

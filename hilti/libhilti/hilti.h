@@ -72,6 +72,7 @@
 #include "file.h"
 
 #include "module/module.h"
-#include "module/_hilti.h"
+
+#include <hilti.hlt.h>
 
 #endif
