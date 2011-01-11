@@ -1,0 +1,17 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  printf '\0x00\x01\x02\x03\x04\x05\x06\x07\x08\x09' | HILTI_DEBUG=binpac ./a.out -p Mini::test >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import BinPAC;
+
+export type test = unit {
+
+    %byteorder = BinPAC::ByteOrder::Big;
+    l: list<uint16> &length=5 {
+        print self.l;
+        }
+};
