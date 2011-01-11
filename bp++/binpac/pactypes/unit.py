@@ -302,7 +302,7 @@ class Field(node.Node):
             i = 0
             for (have, want) in zip(self._args, self._type.args()):
                 i += 1
-                if have.type() != want.type():
+                if not have.canCoerceTo(want.type()):
                     vld.error(self, "unit parameter %d mismatch: is %s but need %s" % (i, have.type(), want.type()))
 
         else:

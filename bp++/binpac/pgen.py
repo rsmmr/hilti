@@ -453,7 +453,10 @@ class ParserGen:
             builder.assign(lahead, _LookAheadNone)
 
         cargs = ParserGen._Args(self.functionBuilder(), child.type().exported(), (cur, cobj, lahead, lahstart, args.flags))
-        params = [p.evaluate(self._cg) for p in child.params()]
+
+        params = []
+        for (p, t) in zip(child.params(), child.type().args()):
+            params += [p.coerceTo(t.type(), self._cg).evaluate(self._cg)]
 
         self._cg.builder().assign(cargs.obj, cpgen._allocateParseObject(params))
         cpgen._prepareParseObject(cargs)

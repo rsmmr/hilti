@@ -1,0 +1,5 @@
+[binpac] test
+[binpac]    a = '5'
+[binpac]    MyUnit
+[binpac]       b = 'WORKS'
+WORKS
