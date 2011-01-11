@@ -249,7 +249,7 @@ _Operators = {
     "IncrPrefix": (1, "Prefix increment operator (`++i`)", _pacUnary("++")),
     "DecrPrefix": (1, "Prefix decrement operator (`--i`)", _pacUnary("--")),
     "IncrPostfix": (1, "Postfix increment operator (`i++`)", _pacUnaryPostfix("++")),
-    "DecrPostfix": (1, "Postfix decrement operator (`i++`)", _pacUnaryPostfix("--")),
+    "DecrPostfix": (1, "Postfix decrement operator (`i--`)", _pacUnaryPostfix("--")),
     "Deref": (1, "Dereference operator. (`*i`)", _pacUnary("*")),
     "Index": (2, "Element at a given index (`a[i]`).", lambda p, e: p.output("<Index>")),
     "New": (1, "Allocate a new instance of a type (`new T`).", _pacUnary("new")),
