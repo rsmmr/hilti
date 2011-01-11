@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC:  hilti-build -d -m %INPUT ${PAC_DRIVER} -o a.out
-# @TEST-EXEC:  printf '\x00\x0a\x00\x0a\xff\xff' | HILTI_DEBUG=binpac ./a.out -p Mini::test >output 2>&1
+# @TEST-EXEC:  printf '\x00\x0a\x00\x0a\xff\xff\x00\x02' | HILTI_DEBUG=binpac ./a.out -p Mini::test >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 module Mini;
@@ -14,14 +14,22 @@ type Foo = enum {
     C = 20
     };
 
+type Bar = enum {
+    D = 0,
+    E = 1,
+    F = 2
+    };
+
 export type test = unit {
     a: uint16;
     b: uint16 &convert=Foo;
     c: uint16 &convert=Foo;
+    d: uint16 &convert=Bar;
 
     on %done {
         print self.a;
         print self.b;
         print self.c;
+        print self.d;
         }
 };
