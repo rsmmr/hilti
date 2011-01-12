@@ -457,6 +457,20 @@ class Unfreeze(Instruction):
         freeze = constant.Constant(0, type.Bool())
         cg.llvmCallC("hlt::bytes_freeze", [self.op1(), operand.Constant(freeze)])
 
+@hlt.instruction("bytes.trim", op1=cReferenceOf(cBytes), op2=cIteratorBytes)
+class Trim(Instruction):
+    """Trims the bytes object *op1* at the beginning by removing data up to
+    (but not including) the given position *op2*. The iterator *op2* will
+    remain valid afterwards and still point to the same location, which will
+    now be the first of the bytes object.
+
+    Note: The effect of this instruction is undefined if the given iterator
+    *op2* does not actually refer to a location inside the bytes object *op1*.
+    """
+    def _codegen(self, cg):
+        freeze = constant.Constant(0, type.Bool())
+        cg.llvmCallC("hlt::bytes_trim", [self.op1(), self.op2()])
+
 @hlt.constraint("ref<bytes> or iterator<bytes>")
 def _bytesOrIterator(ty, op, i):
     (bytes, msg) = cIteratorBytes(ty, op, i)

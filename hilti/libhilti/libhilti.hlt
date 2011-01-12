@@ -79,6 +79,7 @@ declare "C-HILTI" iterator<bytes> bytes_begin(ref<bytes> b)
 declare "C-HILTI" iterator<bytes> bytes_end(ref<bytes> b)
 declare "C-HILTI" int8 bytes_cmp(ref<bytes> b1, ref<bytes> b2)
 declare "C-HILTI" ref<bytes> bytes_copy(ref<bytes> b)
+declare "C-HILTI" void bytes_trim(ref<bytes> b, iterator<bytes> pos)
 
 declare "C-HILTI" void bytes_freeze(ref<bytes> b, bool freeze)
 declare "C-HILTI" bool bytes_is_frozen(ref<bytes> b)

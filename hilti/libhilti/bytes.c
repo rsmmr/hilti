@@ -547,6 +547,15 @@ void hlt_bytes_freeze(const hlt_bytes* b, int8_t freeze, hlt_exception** excpt, 
     b->tail->frozen = freeze;
 }
 
+void hlt_bytes_trim(hlt_bytes* b, hlt_bytes_pos pos, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    normalize_pos(&pos);
+
+    b->head = pos.chunk;
+    b->head->start = pos.cur;
+    b->head->prev = 0;
+}
+
 int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! b ) {

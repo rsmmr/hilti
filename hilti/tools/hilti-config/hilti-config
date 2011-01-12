@@ -123,7 +123,7 @@ while [ "$1" != "" ]; do
             shift;;
 
         --path)
-            echo "$base/tools/hiltic:$base/tools/hilti-build"
+            echo "$base/tools/hiltic:$base/tools/hilti-build:$base/tools/hilti-build2"
             shift;;
 
         --debug)

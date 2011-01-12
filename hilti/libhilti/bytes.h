@@ -275,6 +275,21 @@ extern void hlt_bytes_freeze(const hlt_bytes* b, int8_t freeze, hlt_exception** 
 /// Returns: 1 if frozen, 0 otherwise..
 extern int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Trims a bytes object at the beginning by removing data up to a given
+/// position. The iterator will remain valid afterwards and still point to the
+/// same location, which will now be the first of the bytes object.
+///
+///
+/// b: The bytes object to be trimmed.
+///
+/// pos: The position up to which to trim. Afterwards, the bytes object will start with the bytes located by *pos*.
+///
+/// excpt: &
+///
+/// Note that the result is undefined if the given iterator does actually not refer to a location inside the
+/// bytes object.
+void hlt_bytes_trim(hlt_bytes* b, hlt_bytes_pos pos, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Returns whether the bytes object a position is refering to has been
 /// frozen. For an empty bytes object as well as for the generic end
 /// position, this returns always 0.

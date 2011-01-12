@@ -2,7 +2,7 @@
 
 #GC_CONF="-Denable_threads=NO -Denable_parallel_mark=YES"
 #
-#GC_CFLAGS="-DREDIRECT_MALLOC=GC_malloc -DIGNORE_FREE"
+GC_CFLAGS="-DREDIRECT_MALLOC=GC_malloc -DIGNORE_FREE -DKEEP_BACK_PTRS"
 
 function build {
     base=`pwd`/$1

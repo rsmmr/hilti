@@ -34,6 +34,7 @@
 #endif
 
 #include "3rdparty/bdwgc/include/gc.h"
+#include "3rdparty/bdwgc/include/gc_backptr.h"
 
 #include "types.h"
 
