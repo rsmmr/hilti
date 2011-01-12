@@ -813,9 +813,10 @@ class Sinkable:
         assert isinstance(data.type(), hilti.type.Reference) and isinstance(data.type().refType(), hilti.type.Bytes)
 
         sink = sink.evaluate(cg)
-
+        user = cg.builder().idOp("__user")
+        
         cfunc = cg.builder().idOp("BinPAC::sink_write")
-        cargs = cg.builder().tupleOp([sink, data])
+        cargs = cg.builder().tupleOp([sink, data, user])
         cg.builder().call(None, cfunc, cargs)
 
     def hiltiWriteRangeToSink(self, cg, sink, begin, end):

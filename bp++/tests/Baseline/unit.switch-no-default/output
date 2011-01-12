@@ -2,4 +2,4 @@ b1 2345
 b2 <not set>
 b1 <not set>
 b2 2345
-hilti: uncaught exception, ParseError with argument unexpected switch case (from switch-no-default.pac2.tmp.hlt:332)
+hilti: uncaught exception, ParseError with argument unexpected switch case (from switch-no-default.pac2.tmp.hlt:336)

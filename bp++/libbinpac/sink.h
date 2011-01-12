@@ -47,7 +47,7 @@ extern void binpac_sink_disconnect(binpac_sink* sink, const hlt_type_info* type,
 /// data: The data to write into the sink. 
 /// excpt: &
 /// ctx: &
-extern void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Close a sink by disconnecting all parsers.  Afterwards, the sink will be
 /// in a state as if just freshly instantiated.

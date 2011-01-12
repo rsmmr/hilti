@@ -830,7 +830,8 @@ class _Attribute:
         op1 = cg.declareHook(unit, ident, objt)
 
         if not cg.inHook(op1.value()):
-            op2 = builder.tupleOp([obj])
+            user = cg.builder().idOp("__user")
+            op2 = builder.tupleOp([obj, user])
             builder.hook_run(None, op1, op2)
 
 @operator.HasAttribute(Unit, type.String)

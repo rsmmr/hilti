@@ -15,6 +15,7 @@ import type
 
 import binpac.util as util
 
+_BytesType     = hilti.type.Reference(hilti.type.Bytes())
 _BytesIterType = hilti.type.IteratorBytes(hilti.type.Bytes())
 _LookAheadType = hilti.type.Integer(32)
 _LookAheadNone = hilti.operand.Constant(hilti.constant.Constant(0, _LookAheadType))
@@ -129,16 +130,18 @@ class ParserGen:
             def _makeArg(arg):
                 return arg if isinstance(arg, hilti.operand.Operand) else fbuilder.idOp(arg)
 
-            self.cur = _makeArg(args[0])
-            self.obj = _makeArg(args[1])
-            self.lahead = _makeArg(args[2])
-            self.lahstart = _makeArg(args[3])
-            self.flags = _makeArg(args[4])
+            self.data = _makeArg(args[0])
+            self.cur = _makeArg(args[1])
+            self.obj = _makeArg(args[2])
+            self.lahead = _makeArg(args[3])
+            self.lahstart = _makeArg(args[4])
+            self.flags = _makeArg(args[5])
+            self.user = _makeArg(args[6])
 
             self._exported = exported
 
         def tupleOp(self, addl=None):
-            elems = [self.cur, self.obj, self.lahead, self.lahstart, self.flags] + (addl if addl else [])
+            elems = [self.data, self.cur, self.obj, self.lahead, self.lahstart, self.flags, self.user] + (addl if addl else [])
             const = hilti.constant.Constant(elems, hilti.type.Tuple([e.type() for e in elems]))
             return hilti.operand.Constant(const)
 
@@ -223,11 +226,12 @@ class ParserGen:
         """
         grammar = self._grammar
 
-        cur = hilti.id.Parameter("__cur", _BytesIterType)
+        data = hilti.id.Parameter("__data", _BytesType)
         flags = hilti.id.Parameter("__flags", _FlagsType)
+        user = hilti.id.Parameter("__user", hilti.type.Reference(hilti.type.Unknown("BinPAC::UserCookie")))
         result = self._typeParseObjectRef()
 
-        args = [cur, flags]
+        args = [data, flags, user]
 
         if sink:
             pobj = hilti.id.Parameter("__pobj", self._typeParseObjectRef())
@@ -251,12 +255,14 @@ class ParserGen:
         else:
             pobj = builder.idOp("__pobj")
 
+        cur = builder.addLocal("__cur", _BytesIterType)
         presult = builder.addLocal("__presult", _ParseFunctionResultType)
         lahead = builder.addLocal("__lahead", _LookAheadType)
         lahstart = builder.addLocal("__lahstart", _BytesIterType)
         builder.assign(lahead, _LookAheadNone)
+        builder.begin(cur, builder.idOp("__data"))
 
-        args = ParserGen._Args(fbuilder, self._type.exported(), ["__cur", "__pobj", "__lahead", "__lahstart", "__flags"])
+        args = ParserGen._Args(fbuilder, self._type.exported(), ["__data", "__cur", "__pobj", "__lahead", "__lahstart", "__flags", "__user"])
 
         if not sink:
             params = []
@@ -452,7 +458,7 @@ class ParserGen:
             lahstart = builder.addTmp("__tmp_lahstart", _BytesIterType)
             builder.assign(lahead, _LookAheadNone)
 
-        cargs = ParserGen._Args(self.functionBuilder(), child.type().exported(), (cur, cobj, lahead, lahstart, args.flags))
+        cargs = ParserGen._Args(self.functionBuilder(), child.type().exported(), (args.data, cur, cobj, lahead, lahstart, args.flags, args.user))
 
         params = []
         for (p, t) in zip(child.params(), child.type().args()):
@@ -905,7 +911,7 @@ class ParserGen:
         builder = self.cg().builder()
 
         op1 = self.cg().declareHook(self._type, hook, self.objectType())
-        op2 = builder.tupleOp([args.obj])
+        op2 = builder.tupleOp([args.obj, args.user])
 
         self._saveInputPointer(args)
         builder.hook_run(None, op1, op2)
@@ -933,12 +939,13 @@ class ParserGen:
         op1 = builder.idOp(hilti.id.Unknown(name, self.cg().moduleBuilder().module().scope()))
 
         pargs_proto = [(hilti.id.Parameter("__self", args.obj.type()), None)]
+        pargs_proto += [(hilti.id.Parameter("__user", args.obj.type()), None)]
 
         if value:
-            pargs = [args.obj, value]
+            pargs = [args.obj, args.user, value]
             pargs_proto += [(hilti.id.Parameter("__dollardollar", value.type()), None)]
         else:
-            pargs = [args.obj]
+            pargs = [args.obj, args.user]
 
         self.cg()._mbuilder.declareHook(name, pargs_proto, result.type() if result else hilti.type.Void())
 
@@ -1138,12 +1145,12 @@ class ParserGen:
 
         if not resume:
             builder.bytes_sub(encoded, args.cur, end)
-            cg.builder().bytes_is_frozen(is_frozen, args.cur)
+            cg.builder().bytes_is_frozen(is_frozen, args.data)
 
         else:
             builder.struct_get(filter_cur, args.obj, builder.constOp("__filter_cur"))
             builder.bytes_sub(encoded, filter_cur, end)
-            cg.builder().bytes_is_frozen(is_frozen, filter_cur)
+            cg.builder().bytes_is_frozen(is_frozen, args.data)
 
         cfunc = cg.builder().idOp("BinPAC::filter_decode")
         cargs = cg.builder().tupleOp([filter, encoded])
@@ -1199,14 +1206,16 @@ class ParserGen:
         """Creates a HILTI function with the standard parse function
         signature."""
 
-        arg1 = hilti.id.Parameter("__cur", _BytesIterType)
-        arg2 = hilti.id.Parameter("__self", self._typeParseObjectRef())
-        arg3 = hilti.id.Parameter("__lahead", _LookAheadType)
-        arg4 = hilti.id.Parameter("__lahstart", _BytesIterType)
-        arg5 = hilti.id.Parameter("__flags", _FlagsType)
+        arg1 = hilti.id.Parameter("__data", _BytesType)
+        arg2 = hilti.id.Parameter("__cur", _BytesIterType)
+        arg3 = hilti.id.Parameter("__self", self._typeParseObjectRef())
+        arg4 = hilti.id.Parameter("__lahead", _LookAheadType)
+        arg5 = hilti.id.Parameter("__lahstart", _BytesIterType)
+        arg6 = hilti.id.Parameter("__flags", _FlagsType)
+        arg7 = hilti.id.Parameter("__user", hilti.type.Reference(hilti.type.Unknown("BinPAC::UserCookie")))
         result = _ParseFunctionResultType
 
-        args = [arg1, arg2, arg3, arg4, arg5]
+        args = [arg1, arg2, arg3, arg4, arg5, arg6, arg7]
 
         ftype = hilti.type.Function(args, result)
         name = self._name(prefix, prod.symbol())

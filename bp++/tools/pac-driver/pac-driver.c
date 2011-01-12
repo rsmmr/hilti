@@ -173,7 +173,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
     if ( ! chunk_size ) {
         // Feed all input at once.
         hlt_bytes_freeze(input, 1, &excpt, ctx);
-        (*p->parse_func)(cur, 0, &excpt, ctx);
+        (*p->parse_func)(input, 0, 0, &excpt, ctx);
         check_exception(excpt);
         return;
     }
@@ -198,21 +198,20 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
         if ( done )
             hlt_bytes_freeze(input, 1, &excpt, ctx);
 
+        int frozen = hlt_bytes_is_frozen(input, &excpt, ctx);
+
         check_exception(excpt);
 
         if ( ! resume ) {
             if ( debug )
-                fprintf(stderr, "--- pac-driver: starting parsing.\n");
+                fprintf(stderr, "--- pac-driver: starting parsing (eod=%d).\n", frozen);
 
-            hlt_bytes_pos s = hlt_bytes_begin(input, &excpt, ctx);
-            check_exception(excpt);
-
-            (*p->parse_func)(s, 0, &excpt, ctx);
+            (*p->parse_func)(input, 0, 0, &excpt, ctx);
         }
 
         else {
             if ( debug )
-                fprintf(stderr, "--- pac-driver: resuming parsing.\n");
+                fprintf(stderr, "--- pac-driver: resuming parsing (eod=%d).\n", frozen);
 
             (*p->resume_func)(resume, &excpt, ctx);
         }
@@ -314,8 +313,7 @@ Flow* bulkFeedPiece(binpac_parser* parser, Flow* flow, int eof, const char* data
         if ( debug )
             fprintf(stderr, "--- pac-driver: starting parsing flow %s at %s.\n", fid, t);
 
-        hlt_bytes_pos begin = hlt_bytes_begin(input, &excpt, ctx);
-        (*parser->parse_func)(begin, 0, &excpt, ctx);
+        (*parser->parse_func)(input, 0, 0, &excpt, ctx);
     }
 
     else {
@@ -369,8 +367,7 @@ Flow* bulkFeedPacket(binpac_parser* parser, Flow* flow, int eof, const char* dat
     if ( debug )
         fprintf(stderr, "--- pac-driver: starting parsing packet for flow %s at %s.\n", fid, t);
 
-    hlt_bytes_pos begin = hlt_bytes_begin(input, &excpt, ctx);
-    (*parser->parse_func)(begin, 0, &excpt, ctx);
+    (*parser->parse_func)(input, 0, 0, &excpt, ctx);
 
     if ( excpt ) {
         // We also don't excpect any yield.
@@ -495,12 +492,16 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
                 kh_value(hash, i) = result;
         }
 
-        if ( eof && kh_value(hash, i) ) {
+        if ( eof ) {
             // Delete state we allocated. BinPAC state is cleanup via GC.
-            free(kh_value(hash, i));
+            if ( kh_value(hash, i) ) {
+                free(kh_value(hash, i));
+                kh_value(hash, i) = 0;
+            }
             kh_del(Flow, hash, i);
         }
     }
+
 }
 
 int main(int argc, char** argv)

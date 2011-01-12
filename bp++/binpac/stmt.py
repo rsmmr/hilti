@@ -232,7 +232,8 @@ class UnitHook(Block):
         Returns: hilti.type.Hook - The type.
         """
         self = (hilti.id.Parameter("__self", self.unit().hiltiType(cg)), None)
-        return hilti.type.Hook([self], hilti.type.Void())
+        user = (hilti.id.Parameter("__user", hilti.type.Reference(hilti.type.Unknown("BinPAC::UserCookie"))), None)
+        return hilti.type.Hook([self, user], hilti.type.Void())
 
     ### Overidden from node.Node.
 
@@ -377,9 +378,10 @@ class FieldForEachHook(FieldHook):
 
     def hiltiFunctionType(self, cg):
         arg1 = (hilti.id.Parameter("__self", self.unit().hiltiType(cg)), None)
-        arg2 = (hilti.id.Parameter("__dollardollar", self.itemType().hiltiType(cg)), None)
+        arg2 = (hilti.id.Parameter("__user", hilti.type.Reference(hilti.type.Unknown("BinPAC::UserCookie"))), None)
+        arg3 = (hilti.id.Parameter("__dollardollar", self.itemType().hiltiType(cg)), None)
 
-        return hilti.type.Hook([arg1, arg2], hilti.type.Bool())
+        return hilti.type.Hook([arg1, arg2, arg3], hilti.type.Bool())
 
     def hiltiName(self, cg):
         return cg.hookName(self.unit(), self.field(), True)

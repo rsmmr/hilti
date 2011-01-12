@@ -363,6 +363,7 @@ class CodeGen(object):
         """
         name = self.hookName(unit, field, ddtype != None)
         args = [(hilti.id.Parameter("__self", objtype), None)]
+        args += [(hilti.id.Parameter("__user", hilti.type.Reference(hilti.type.Unknown("BinPAC::UserCookie"))), None)]
 
         if ddtype:
             args += [(hilti.id.Parameter("__dollardollar", ddtype.hiltiType(self.cg()), None))]
@@ -412,7 +413,7 @@ class CodeGen(object):
 
         error = fbuilder.newBuilder("error")
 
-        self.builder().bytes_is_frozen(cont, iter if iter else args.cur)
+        self.builder().bytes_is_frozen(cont, args.data)
 
         if eod_ok:
             error.makeDebugMsg("binpac-verbose", "parse error, insufficient input (but end-of-data would be ok)")

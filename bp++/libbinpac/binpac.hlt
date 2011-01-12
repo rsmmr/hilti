@@ -39,7 +39,7 @@ type Sink = struct {
 declare "C-HILTI" ref<Sink> sink_new()
 declare "C-HILTI" void sink_connect(ref<Sink> sink, any pobj, ref<Parser> parser)
 declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj)
-declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data)
+declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, ref<UserCookie> user)
 declare "C-HILTI" void sink_close(ref<Sink> sink)
 declare "C-HILTI" void sink_filter(ref<Sink> sink, ref<ParseFilter> filter)
 
@@ -117,3 +117,6 @@ ref<bytes> bytes_match(ref<bytes> b, ref<regexp> re, int<64> group = 0) {
 }
 
 export bytes_match
+
+# Type place-holder for the user-defined parser argument.
+type UserCookie = struct { }

@@ -153,7 +153,7 @@ void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* fi
 #endif
 }
 
-void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     binpac_dbg_print_data(sink, data, 0, excpt, ctx);
 
@@ -179,8 +179,7 @@ void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, hlt_exception** excpt
         if ( ! s->data ) {
             // First chunk.
             s->data = hlt_bytes_copy(data, excpt, ctx);
-            hlt_bytes_pos begin = hlt_bytes_begin(s->data, excpt, ctx);
-            (s->parser->_parse_func_sink)(s->pobj, begin, 0, excpt, ctx);
+            (s->parser->_parse_func_sink)(s->pobj, s->data, 0, user, excpt, ctx);
         }
 
         else {

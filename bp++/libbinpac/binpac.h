@@ -11,12 +11,12 @@
 /// The main entry function to a BinPAC-generated parser. This function is
 /// used for both starting the parsing initially and resuming it after a
 /// YieldException. The protocols is as follows: TODO
-typedef void* binpac_parse_function(hlt_bytes_pos iter, int8_t reserved, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void* binpac_parse_function(hlt_bytes* data, int8_t reserved, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
 typedef void* binpac_resume_function(hlt_exception* yield, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Internal functions for parsing from sink.write. Here, we already have the
 // parsing object.
-typedef void* _binpac_parse_sink_function(void* pobj, hlt_bytes_pos iter, int8_t reserved, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void* _binpac_parse_sink_function(void* pobj, hlt_bytes* data, int8_t reserved, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
 typedef void* _binpac_resume_sink_function(hlt_exception* yield, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Internal function to create an instance of a parser.
