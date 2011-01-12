@@ -21,7 +21,7 @@ import llvm.core
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("addr", 12, c="hlt_addr")
+@hlt.type("addr", 12, c="hlt_addr", hdr="addr.h")
 class Addr(type.ValueType, type.Constable, type.Unpackable):
     """Type for ``addr``."""
     def __init__(self, location=None):
