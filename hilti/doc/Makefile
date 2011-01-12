@@ -20,6 +20,9 @@ WWW=$(HOME)/www/hilti/doc
 
 all : html 
 
+libhilti:
+	( cd doxygen && doxygen )
+
 autogen:
 	@install -d _generated
 	./scripts/generate-all
@@ -53,7 +56,7 @@ help:
 clean: autogen-clean
 	-rm -rf $(BUILDDIR)/*
 
-html: autogen
+html: autogen libhilti
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."

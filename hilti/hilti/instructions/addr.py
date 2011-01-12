@@ -21,7 +21,7 @@ import llvm.core
 from hilti.constraints import *
 from hilti.instructions.operators import *
 
-@hlt.type("addr", 12, c="hlt_addr")
+@hlt.type("addr", 12, c="hlt_addr", hdr="addr.h")
 class Addr(type.ValueType, type.Constable, type.Unpackable):
     """Type for ``addr``."""
     def __init__(self, location=None):
@@ -125,8 +125,7 @@ class Equal(Operator):
     an IPv4 address ``a.b.c.d`` will match the corresponding IPv6
     ``::a.b.c.d``.
 
-    .. todo:: Are the IPv6 vs IPv4 matching semantics right? Should it be
-       ``::ffff:a.b.c.d``? Should IPv4 never match an IPv6 address?
+    .. note:: Are the IPv6 vs IPv4 matching semantics right? Should it be ``::ffff:a.b.c.d``? Should IPv4 never match an IPv6 address?
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())

@@ -1,0 +1,6 @@
+This directory contains tests that are currently failing due to
+missing functionality or bugs in BinPAC++.
+
+The validation/ sub-directory contains cases of broken BinPAC++
+input where the compiler's error reporting is suboptimal and should
+be improved.

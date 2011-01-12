@@ -2,20 +2,45 @@
 """
 .. hlt:type:: bitset
 
-   The ``bitset`` data type groups a set of bits together. In each instance,
-   any of the bits is either set or not set. The individual bits are
-   identified by labels, which are declared in the bitsets type declaration::
+    The ``bitset`` data type groups a set of individual bits together. In each
+    instance, any of the bits is either set or not set. The individual bits are
+    identified by labels, which are declared in the bitsets type declaration::
 
-      bitset MyBits { Bit1, Bit2, Bit3 }
+        bitset MyBits { BitA, BitB, BitC, BitD }
 
-   The individual labels can then be used with the ``bitset.*`` commands::
 
-   local mybits: MyBits
-   mybits = bitset.set mybits MyBits::Bit2
+    The individual labels can be accessed via their namespace, e.g.,
+    ``MyBits::BitC``, and used with the ``bitset.*`` instructions::
 
-   Note: For efficiency reasons, HILTI supports only up to 64 bits per type.
+        # Initialized to all bits cleared.
+        local mybits: MyBits
 
-   Todo: We can't create constants with multiple bits set yet.
+        # Set a bit in the bit set.
+        mybits = bitset.set mybits MyBits::BitB
+
+    Normally, bits are numbered in the order they are given within the
+    ``bitset`` type definition. In the example above, ``BitA`` is the least
+    signficiant bit, ``BitB`` the next, etc. One can however also assign
+    numbers to bits to enforce a particular mapping from labels to bit positions::
+
+            bitset MyBits { BitA=2, BitB=3, BitC=5, BitD=7 }
+
+    Such specific mappings are relevant when (1) printing their numerical
+    value (see below); and (2) accessing an instance from C, as then one needs
+    to know what bit to test. 
+
+    If a ``bitmap`` instance is not explicitly initialized, all bits are
+    initially cleared.
+
+    A ``bitmap`` can be printed as either a string (which will display the
+    labels of all set bits), or as an integer (which will be the numerical
+    value corresponding to all bits sets according to their positions). 
+
+    Note: For efficiency reasons, HILTI for supports only up to 64 bits per
+    type; and one can only assign positions from 0 to 63. 
+
+    Todo: We can't create constants with multiple bit set yet (e.g.,
+    ``MyBits::BitA | MyBits::BitB`` should work, but doesn't.)
 """
 
 import llvm.core
@@ -25,7 +50,7 @@ from hilti.instructions.operators import *
 
 import string
 
-@hlt.type("bitset", 19, c="int64_t")
+@hlt.type("bitset", 19, c="uint64_t", hdr="bitset.h")
 class Bitset(type.ValueType, type.Constable):
     def __init__(self, labels, location=None):
         """The ``bitset`` type.
@@ -61,10 +86,11 @@ class Bitset(type.ValueType, type.Constable):
     ### Overridden from HiltiType.
 
     def typeInfo(self, cg):
-        """An ``bitset``'s type information keep additional information in the
-        ``aux`` field: ``aux`` points to a concatenation of entries ``{ uint8,
-        hlt_string }``, one per label. The end of the array is marked by an
-        string of null
+        """An ``bitset``'s type information keeps additional information in
+        the ``aux`` field: ``aux`` points to a concatenation of entries ``{
+        uint8, hlt_string }``, one per label. The integer corresponds to the
+        bit number, and the string to the bit's label. The end of the array is
+        marked by an string of null. 
         """
 
         typeinfo = cg.TypeInfo(self)
@@ -104,7 +130,6 @@ class Bitset(type.ValueType, type.Constable):
     ### Overridden from ValueType.
 
     def llvmDefault(self, cg):
-        """In a ``bitset``, all bits are initially unitialized."""
         return cg.llvmConstInt(0, 64)
 
     ### Overridden from Constable.
@@ -131,8 +156,8 @@ class Bitset(type.ValueType, type.Constable):
 
 @hlt.overload(Equal, op1=cBitset, op2=cSameTypeAsOp(1), target=cBool)
 class Equal(Operator):
-    """
-    Returns True if *op1* equals *op2*.
+    """Returns True if *op1* equals *op2*. Both operands must be of the *same*
+    ``bitset`` type.
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
@@ -142,8 +167,8 @@ class Equal(Operator):
 
 @hlt.instruction("bitset.set", op1=cBitset, op2=cSameTypeAsOp(1), target=cSameTypeAsOp(1))
 class Set(Instruction):
-    """
-    Adds the bits set in *op2* to those set in *op1* and returns the result.
+    """Adds the bits set in *op2* to those set in *op1* and returns the
+    result. Both operands must be of the *same* ``bitset`` type.
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
@@ -153,8 +178,8 @@ class Set(Instruction):
 
 @hlt.instruction("bitset.clear", op1=cBitset, op2=cSameTypeAsOp(1), target=cSameTypeAsOp(1))
 class Clear(Instruction):
-    """
-    Removes the bits set in *op2* from those set in *op1* and returns the result.
+    """Clears the bits set in *op2* from those set in *op1* and returns the
+    result. Both operands must be of the *same* ``bitset`` type.
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
@@ -165,8 +190,8 @@ class Clear(Instruction):
 
 @hlt.instruction("bitset.has", op1=cBitset, op2=cSameTypeAsOp(1), target=cBool)
 class Has(Instruction):
-    """
-    Returns true if all bits in *op2* are set in *op1*.
+    """ Returns True if all bits in *op2* are set in *op1*. Both operands must
+    be of the *same* ``bitset`` type.
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())

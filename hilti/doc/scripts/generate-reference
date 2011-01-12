@@ -283,26 +283,33 @@ if out:
     notes = {}
 
     for t in hilti.type.allTypes():
+        idx = canonIdx(t.docName())
+
         if t.cPrototype():
-            idx = canonIdx(t.docName())
-            types[idx] = (t.docName(), t.cPrototype())
+            types[idx] = (t.docName(), t.cPrototype(), t.cHeader())
             notes[idx] = canonicalizeDoc(t.llvmType.__doc__)
 
     rows = []
 
     for idx in sorted(types.keys()):
-        (hlt, c)  = types[idx]
+        (hlt, c, hdr)  = types[idx]
 
         if c.startswith("hlt_"):
-            link = c.replace("hlt_", "")
-            link = re.sub(" .*$", "", link)
-            c = "`%s <doxygen/group__%s.html>`_" % (c, link)
+            doxyfile = "__" + c.replace("_", "__")
+            doxyfile = re.sub(" .*$", "", doxyfile)
+            fn = "[#%s]_" % idx if notes[idx] else ""
+            c = "`%s <doxygen/struct__%s.html>`_ %s" % (c, doxyfile, fn)
 
-        fn = "[#%s]_" % idx if notes[idx] else ""
+        if hdr:
+            doxyfile = hdr.replace(".h", "")
+            hdr = "`%s <doxygen/group__%s.html>`_" % (hdr, doxyfile)
+        else:
+            hdr = ""
 
-        rows += [(hlt, c, fn)]
 
-    printTable(out, ["HILTI Type", "C Type", "Notes"], rows)
+        rows += [(hlt, c, hdr)]
+
+    printTable(out, ["HILTI Type", "C Type", "Header"], rows)
 
     print >>out, ".. rubric:: Notes"
     print >>out

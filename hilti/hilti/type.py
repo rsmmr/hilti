@@ -14,7 +14,7 @@ import util
 def _notOverridden(self, method):
     util.internal_error("%s not overidden for %s" % (method, self.__class__.__name__))
 
-def hilti(token, ident, c=None, doc=None):
+def hilti(token, ident, c=None, hdr=None, doc=None):
     """Class decorator to add a type class that is defined in some other
     module to the namespace of *hilti.type*.
 
@@ -31,6 +31,9 @@ def hilti(token, ident, c=None, doc=None):
     prototype applies all instances of the type class; a per-instance
     prototype can be defined in the type's ~~TypeInfo, which will then
     override this. 
+
+    hdr: - The name of the C header file associated with this tyoe, or None if
+    none. This information will be used for the generated documentation.
 
     doc: string - The string to be used for this type in the auto-generated
     documentation. This should include the right cross-reference, such as in
@@ -49,6 +52,7 @@ def hilti(token, ident, c=None, doc=None):
         ty._id = ident
         ty._doc_name = doc
         ty._c_prototype = c
+        ty._c_hdr = hdr
 
         if token:
             ty._type_name = token
@@ -182,8 +186,17 @@ class Type(object):
 
         Returns: string - The C type the HILTI type is mapped to. None if not set.
         """
-        assert cls._c_prototype
+        #assert cls._c_prototype
         return cls._c_prototype
+
+    @classmethod
+    def cHeader(cls):
+        """Returns the name fo the C header associated with this type.
+
+        Returns: string - The name of the C header.
+        """
+        #assert cls._c_prototype
+        return cls._c_hdr
 
     def __str__(self):
         """Returns a string representation of the type. This returns
