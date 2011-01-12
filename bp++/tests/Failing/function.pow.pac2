@@ -1,0 +1,21 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -m -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import BinPAC;
+
+uint64 pow(val: uint64, power: uint64)
+{
+        power--;
+        if (power > 0)
+                return val * pow(val, power);
+        else
+                return val;
+}
+
+
+print pow(2, 8);
