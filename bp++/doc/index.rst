@@ -16,6 +16,7 @@ Table of Contents:
    c-api
    internals
    todo
+   feature-requests
 
 Index
 
