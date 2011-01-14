@@ -15,7 +15,7 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
 #ifdef DEBUG
 # define DBG_LOG(args...) __hlt_debug_printf_internal(args)
 #else
-# define DBG_LOG
+# define DBG_LOG(args...)
 #endif
 
 extern void __hlt_debug_printf_internal(const char* stream, const char* fmt, ...);

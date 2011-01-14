@@ -1,6 +1,9 @@
 // $Id$
 //
 // Top-level HILTI include file.
+//
+// Note that all code using libhilti (or part of libhilti) should include
+// this file before any other. (This is to make sure GC is setup correctly.
 
 /// \mainpage LibHILTI Reference Documentation
 ///
@@ -18,7 +21,9 @@
 #ifndef HILTI_H
 #define HILTI_H
 
-#define DEBUG
+// gc.h must be included library-wide because it overwrites some standard
+// functions (such as pthreads_create())
+#include <gc.h>
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -26,15 +31,6 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <assert.h>
-
-// gc.h must be included library-wide because it overwrites some standard
-// functions (such as pthreads_create())
-#ifdef DEBUG
-#define GC_DEBUG
-#endif
-
-#include "3rdparty/bdwgc/include/gc.h"
-#include "3rdparty/bdwgc/include/gc_backptr.h"
 
 #include "types.h"
 

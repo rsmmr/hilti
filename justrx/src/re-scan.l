@@ -2,7 +2,7 @@
 /* Loosely based on Bro's re-scan.l */
 
 %{
-#include "jrx.h"
+#include "jrx-intern.h"
 #include "nfa.h"
 #include "util.h"
 #include "re-parse.h"

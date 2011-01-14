@@ -3,14 +3,13 @@
  * printf() function for libhilti.
  *
  */
+#include "hilti.h"
+#include "utf8proc.h"
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <pthread.h>
-
-#include "hilti.h"
-#include "utf8proc.h"
 
 /* FIXME: This function doesn't print non-ASCII Unicode codepoints as we can't
  * convert to the locale encoding yet. We just print them in \u syntax. */

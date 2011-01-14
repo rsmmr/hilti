@@ -13,9 +13,9 @@
  *   channel destructor if we can get rid of the pthread code.
  */
 
-#include <string.h>
-
 #include "hilti.h"
+
+#include <string.h>
 
 #define INITIAL_CHUNK_SIZE (1<<8)
 #define MAX_CHUNK_SIZE (1<<14)

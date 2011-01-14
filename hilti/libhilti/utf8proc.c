@@ -41,6 +41,8 @@
  */
 
 
+#include "hilti.h"
+
 #include "utf8proc.h"
 #include "utf8proc_data.c"
 

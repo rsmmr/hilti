@@ -1,1 +1,2 @@
-build-llvm
+build-debug
+build-release

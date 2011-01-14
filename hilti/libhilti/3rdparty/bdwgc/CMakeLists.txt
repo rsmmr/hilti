@@ -230,10 +230,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
 find_package(LLVM)
 include(EnableLLVM)
 
-if ( ENABLE_LLVM )
+if (${LLVM_ENABLED})
    message("Not building gctest in LLVM build")
-else ( ENABLE_LLVM )
+else ()
    ADD_SUBDIRECTORY(tests)
-endif ( ENABLE_LLVM )
+endif ()
 
 

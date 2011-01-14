@@ -8,11 +8,11 @@
 //  - Only that head chunk of a bytes object may have equal start and end
 // pointers. If so, that marks and empty bytes object.
 
+#include "hilti.h"
+
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
-
-#include "hilti.h"
 
 struct hlt_bytes_chunk {
     const int8_t* start;          // Pointer to first data byte.
@@ -550,6 +550,9 @@ void hlt_bytes_freeze(const hlt_bytes* b, int8_t freeze, hlt_exception** excpt, 
 void hlt_bytes_trim(hlt_bytes* b, hlt_bytes_pos pos, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&pos);
+
+    if ( ! (pos.chunk && pos.cur) )
+        return;
 
     b->head = pos.chunk;
     b->head->start = pos.cur;

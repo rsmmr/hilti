@@ -4,9 +4,9 @@
 
 -include ${HILTIDEPS}/bin/setup-paths.mk
 
-all: 
+all:
 	./scripts/do-build
 
-clean: 
-	rm -rf build-llvm build-native
+clean:
+	rm -rf build-debug build-release
 

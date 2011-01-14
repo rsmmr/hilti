@@ -4,19 +4,15 @@
 
 -include ${HILTIDEPS}/bin/setup-paths.mk
 
-all: do-build-llvm
+all: do-build-release do-build-debug
 
-do-build-llvm:
-	test -e build-llvm || mkdir build-llvm
-	cd build-llvm; test -e Makefile || cmake -DENABLE_LLVM=1 ..; make VERBOSE=1
+do-build-release:
+	test -e build-release || mkdir build-release
+	cd build-release; test -e Makefile || cmake -DLLVM_ENABLE_DEBUG=0 ..; make
 
-do-build-native:
-	test -e build-native || mkdir build-native
-	cd build-native; test -e Makefile || cmake -DENABLE_LLVM=0 ..; make VERBOSE=1
+do-build-debug:
+	test -e build-debug || mkdir build-debug
+	cd build-debug; test -e Makefile || cmake -DLLVM_ENABLE_DEBUG=1 ..; make
 
-clean: 
-	rm -rf build-llvm build-native
-
-doc:
-	cd build-native; make doc-libhilti
-
+clean:
+	rm -rf build-release build-debug

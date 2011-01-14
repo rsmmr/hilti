@@ -72,6 +72,9 @@ fi
 
 debug=""
 
+builddir="build-release"
+libpostfix=""
+
 while [ "$1" != "" ]; do
     case $1 in
         --version)
@@ -83,15 +86,15 @@ while [ "$1" != "" ]; do
             shift;;
 
         --ldflags)
-            echo "-L$base/libhilti/build-llvm -L$base/libhilti/build-llvm/justrx/src"
+            echo "-L$base/libhilti/$builddir -L$base/libhilti/$builddir/justrx/src"
             shift;;
 
         --libs-bc)
-            echo "-lhilti -ljrx"
+            echo "-lhilti${libpostfix} -ljrx${libpostfix}"
             shift;;
 
         --libs-bc-main)
-            echo "-lhiltimain -ljrx"
+            echo "-lhilti${libpostfix} -lhiltimain${libpostfix} -ljrx${libpostfix}"
             shift;;
 
         --libs-c)
@@ -107,11 +110,11 @@ while [ "$1" != "" ]; do
             shift;;
 
         --cflags)
-            echo "-I$base/libhilti -g -I$base/libhilti/build-llvm $pcap_cflags"
+            echo "-I$base/libhilti -I$base/libhilti/3rdparty/bdwgc/include -g -I$base/libhilti/$builddir $pcap_cflags"
             shift;;
 
         --cxxflags)
-            echo "-I$base/libhilti -g -I$base/libhilti/build-llvm $pcap_cflags"
+            echo "-I$base/libhilti -I$base/libhilti/3rdparty/bdwgc/include -g -I$base/libhilti/$builddir $pcap_cflags"
             shift;;
 
         --libhilti)
@@ -128,6 +131,8 @@ while [ "$1" != "" ]; do
 
         --debug)
             debug=1
+            builddir="build-debug"
+            libpostfix="dbg"
             shift;;
 
         -h)

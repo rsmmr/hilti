@@ -1,11 +1,12 @@
 // $Id$
 
-#include <stdlib.h>
-#include <string.h>
-
+#include "jrx-intern.h"
 #include "ccl.h"
 #include "jlocale.h"
 #include "util.h"
+
+#include <stdlib.h>
+#include <string.h>
 
 static jrx_ccl* _ccl_create_epsilon()
 {
@@ -410,8 +411,9 @@ void ccl_group_disambiguate(jrx_ccl_group* group)
     do {
         changed = 0;
 
-        for ( jrx_ccl_id i = 0; i < vec_ccl_size(group->ccls); i++ )
-            for ( jrx_ccl_id j = i + 1; j < vec_ccl_size(group->ccls); j++ ) {
+        jrx_ccl_id i, j;
+        for ( i = 0; i < vec_ccl_size(group->ccls); i++ )
+            for ( j = i + 1; j < vec_ccl_size(group->ccls); j++ ) {
 
                 jrx_ccl* ccl1 = vec_ccl_get(group->ccls, i);
                 jrx_ccl* ccl2 = vec_ccl_get(group->ccls, j);

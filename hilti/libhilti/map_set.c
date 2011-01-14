@@ -1,8 +1,8 @@
 // $Id$
 
-#include <string.h>
-
 #include "hilti.h"
+
+#include <string.h>
 
 typedef hlt_hash khint_t;
 typedef void* __val_t;

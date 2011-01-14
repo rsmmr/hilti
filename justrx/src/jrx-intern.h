@@ -1,11 +1,18 @@
 // $Id$
+//
+// Every file part the library should include this header first so that GC
+// can be set up correctly, if necessary.
 
 #ifndef JRX_INTERN_H
 #define JRX_INTERN_H
 
-#include <stdint.h>
+#ifdef USE_GC
+#include <gc.h>
+#endif
 
 #include "jrx.h"
+
+#include <stdint.h>
 
 // Predefined constants.
 static const jrx_char JRX_CHAR_MAX = UINT32_MAX; // Max. codepoint.

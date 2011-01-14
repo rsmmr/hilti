@@ -97,10 +97,10 @@
 #line 1 "re-parse.y"
 
 
-#include <stdio.h>
-
-#include "jrx.h"
+#include "jrx-intern.h"
 #include "nfa.h"
+
+#include <stdio.h>
 
 extern void REerror(void* scanner, const char* msg);
 extern int RElex(void* yylval_param, void* yyscanner);
@@ -137,12 +137,12 @@ typedef union YYSTYPE
     jrx_assertion assertion;
     jrx_std_ccl dynccl;
     int count;
-
+    
     jrx_nfa* nfa;
     jrx_ccl* ccl;
 }
 /* Line 193 of yacc.c.  */
-#line 146 "/Users/robin/work/binpacpp/hilti/libhilti/justrx/src/re-parse.c"
+#line 146 "/home/robin/work/binpacpp/hilti/libhilti/justrx/src/re-parse.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -155,7 +155,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 159 "/Users/robin/work/binpacpp/hilti/libhilti/justrx/src/re-parse.c"
+#line 159 "/home/robin/work/binpacpp/hilti/libhilti/justrx/src/re-parse.c"
 
 #ifdef short
 # undef short
@@ -205,7 +205,7 @@ typedef short int yytype_int16;
 #define YYSIZE_MAXIMUM ((YYSIZE_T) -1)
 
 #ifndef YY_
-# if defined YYENABLE_NLS && YYENABLE_NLS
+# if YYENABLE_NLS
 #  if ENABLE_NLS
 #   include <libintl.h> /* INFRINGES ON USER NAME SPACE */
 #   define YY_(msgid) dgettext ("bison-runtime", msgid)
@@ -641,7 +641,7 @@ while (YYID (0))
    we won't break user code: when these are the locations we know.  */
 
 #ifndef YY_LOCATION_PRINT
-# if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
+# if YYLTYPE_IS_TRIVIAL
 #  define YY_LOCATION_PRINT(File, Loc)			\
      fprintf (File, "%d.%d-%d.%d",			\
 	      (Loc).first_line, (Loc).first_column,	\
@@ -849,7 +849,7 @@ int yydebug;
 # define YYMAXDEPTH 10000
 #endif
 
-
+
 
 #if YYERROR_VERBOSE
 
@@ -1060,7 +1060,7 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
     }
 }
 #endif /* YYERROR_VERBOSE */
-
+
 
 /*-----------------------------------------------.
 | Release the memory associated to this symbol.  |
@@ -1098,7 +1098,7 @@ yydestruct (yymsg, yytype, yyvaluep, scanner, nfactx, nfa)
 	break;
     }
 }
-
+
 
 /* Prevent warnings from -Wmissing-prototypes.  */
 
@@ -1406,13 +1406,13 @@ yyreduce:
     {
                   *nfa = (yyvsp[(1) - (2)].nfa);
                   *nfa = nfa_set_capture(*nfa, 0);
-
+                      
                   /* Add a .* if requested. */
                   if ( nfactx->options & JRX_OPTION_DONT_ANCHOR ) {
                       jrx_nfa* any = nfa_from_ccl(nfactx, ccl_any(nfactx->ccls));
-                      *nfa = nfa_concat(nfa_iterate(any, 0, -1), *nfa, 0);
+                      *nfa = nfa_concat(nfa_iterate(any, 0, -1), *nfa, 0);             
                       }
-
+                      
                   if ( (yyvsp[(2) - (2)].count) > 0 )
                       *nfa = nfa_set_accept(*nfa, (yyvsp[(2) - (2)].count));
                    ;}
@@ -1450,10 +1450,10 @@ yyreduce:
 
   case 9:
 #line 84 "re-parse.y"
-    {
+    { 
                  jrx_ccl* ccl = ccl_epsilon(nfactx->ccls);
                  ccl = ccl_add_assertions(ccl, (yyvsp[(2) - (3)].assertion));
-                 (yyval.nfa) = nfa_concat((yyvsp[(1) - (3)].nfa), (yyvsp[(3) - (3)].nfa), ccl);
+                 (yyval.nfa) = nfa_concat((yyvsp[(1) - (3)].nfa), (yyvsp[(3) - (3)].nfa), ccl); 
              ;}
     break;
 
@@ -1489,20 +1489,20 @@ yyreduce:
 
   case 16:
 #line 110 "re-parse.y"
-    {
+    { 
                 if ( (yyvsp[(3) - (6)].count) > (yyvsp[(5) - (6)].count) && (yyvsp[(5) - (6)].count) >= 0 )
                     parse_error("bad interation value");
-                else
+                else    
                     (yyval.nfa) = nfa_iterate((yyvsp[(1) - (6)].nfa), (yyvsp[(3) - (6)].count), (yyvsp[(5) - (6)].count));
             ;}
     break;
 
   case 17:
 #line 118 "re-parse.y"
-    {
+    { 
                 if ( (yyvsp[(3) - (4)].count) < 0 )
                     parse_error("bad interation value");
-                else
+                else    
                     (yyval.nfa) = nfa_iterate((yyvsp[(1) - (4)].nfa), (yyvsp[(3) - (4)].count), (yyvsp[(3) - (4)].count));
             ;}
     break;
@@ -1579,7 +1579,7 @@ yyreduce:
 
 
 /* Line 1267 of yacc.c.  */
-#line 1583 "/Users/robin/work/binpacpp/hilti/libhilti/justrx/src/re-parse.c"
+#line 1583 "/home/robin/work/binpacpp/hilti/libhilti/justrx/src/re-parse.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);

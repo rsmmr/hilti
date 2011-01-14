@@ -5,7 +5,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "regex.h"
+#include <regex.h>
 
 static void print_error(int rc, regex_t* re, const char* prefix)
 {
@@ -18,6 +18,7 @@ static void do_match(char** argv, int argc, int opt, int options, char* data)
 {
     const int max_captures = 20;
 
+    int i;
     int rc;
     regex_t re;
     regmatch_t pmatch[max_captures];
@@ -26,7 +27,7 @@ static void do_match(char** argv, int argc, int opt, int options, char* data)
         rc = regcomp(&re, argv[opt], REG_EXTENDED | options);
     else {
         jrx_regset_init(&re, -1, REG_EXTENDED | options);
-        for ( int i = opt; i < argc; i++ ) {
+        for ( i = opt; i < argc; i++ ) {
             rc = jrx_regset_add(&re, argv[i], strlen(argv[i]));
             if ( rc != 0 )
                 break;
@@ -49,7 +50,7 @@ static void do_match(char** argv, int argc, int opt, int options, char* data)
 
     printf("match found!\n");
 
-    for ( int i = 0; i < max_captures; i++ ) {
+    for ( i = 0; i < max_captures; i++ ) {
         if ( pmatch[i].rm_so != -1 )
             printf("  capture group #%d: (%d,%d)\n", i, pmatch[i].rm_so, pmatch[i].rm_eo);
     }
@@ -88,8 +89,10 @@ char* readInput()
 int main(int argc, char**argv)
 {
     int opt = 1;
-
     int debug = 0;
+
+    int i;
+    char* d;
 
     if ( argc > opt && strcmp(argv[opt], "-d") == 0 ) {
         debug = REG_DEBUG;
@@ -105,11 +108,11 @@ int main(int argc, char**argv)
 
     fprintf(stderr, "=== Pattern: %s\n", argv[opt]);
 
-    for ( int i = opt + 1; i < argc; i++ )
+    for ( i = opt + 1; i < argc; i++ )
         fprintf(stderr, "             %s\n", argv[i]);
 
     fputs("=== Data   : ", stderr);
-    for ( char* d = data; *d; d++ ) {
+    for ( d = data; *d; d++ ) {
         if ( isprint(*d) )
             fputc(*d, stderr);
         else

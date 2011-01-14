@@ -1,12 +1,12 @@
 // $Id$
 
+#include "hilti.h"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdio.h>
-
-#include "hilti.h"
 
 static inline int is_v4(const hlt_addr addr)
 {

@@ -1,8 +1,9 @@
 // $Id$
 
-#include <pcap.h>
-
+#include "hilti.h"
 #include "iosrc.h"
+
+#include <pcap.h>
 
 extern const hlt_type_info hlt_type_info_tuple_double_ref_bytes;
 

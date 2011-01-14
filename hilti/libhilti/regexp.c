@@ -2,10 +2,10 @@
 //
 // TODO: Need to register cleanup with GC.
 
+#include "hilti.h"
+
 #include <string.h>
 #include <jrx.h>
-
-#include "hilti.h"
 
 struct hlt_regexp {
     int32_t num; // Number of patterns in set.

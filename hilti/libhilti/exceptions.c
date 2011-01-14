@@ -7,10 +7,10 @@
  *
  */
 
+#include "hilti.h"
+
 #include <string.h>
 #include <stdio.h>
-
-#include "hilti.h"
 
 extern const hlt_type_info hlt_type_info_int_32;
 extern const hlt_type_info hlt_type_info_string;

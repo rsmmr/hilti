@@ -6,9 +6,9 @@
 // allows us to keep iterator valid even if a list changes. The GC will take
 // of freeing nodes eventually.
 
-#include <string.h>
-
 #include "hilti.h"
+
+#include <string.h>
 
 // Initial allocation size for the free list.
 static const uint32_t InitialCapacity = 2;

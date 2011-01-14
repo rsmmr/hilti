@@ -6,6 +6,10 @@
 #ifndef JRX_VECTOR_H
 #define JRX_VECTOR_H
 
+#ifdef USE_GC
+#include <gc.h>
+#endif
+
 #include <assert.h>
 
 static const int VECTOR_DEFAULT_SIZE = 2;

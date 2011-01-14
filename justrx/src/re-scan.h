@@ -38,7 +38,7 @@
 #if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 
 /* C99 says to define __STDC_LIMIT_MACROS before including stdint.h,
- * if you want the limit (max/min) macros for int types.
+ * if you want the limit (max/min) macros for int types. 
  */
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS 1
@@ -55,7 +55,7 @@ typedef uint32_t flex_uint32_t;
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
 typedef int flex_int32_t;
-typedef unsigned char flex_uint8_t;
+typedef unsigned char flex_uint8_t; 
 typedef unsigned short int flex_uint16_t;
 typedef unsigned int flex_uint32_t;
 #endif /* ! C99 */
@@ -161,7 +161,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	yy_size_t yy_n_chars;
+	int yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -184,7 +184,7 @@ struct yy_buffer_state
 
     int yy_bs_lineno; /**< The line count. */
     int yy_bs_column; /**< The column count. */
-
+    
 	/* Whether to try to fill the input buffer when we reach the
 	 * end of it.
 	 */
@@ -205,7 +205,7 @@ void REpop_buffer_state (yyscan_t yyscanner );
 
 YY_BUFFER_STATE RE_scan_buffer (char *base,yy_size_t size ,yyscan_t yyscanner );
 YY_BUFFER_STATE RE_scan_string (yyconst char *yy_str ,yyscan_t yyscanner );
-YY_BUFFER_STATE RE_scan_bytes (yyconst char *bytes,yy_size_t len ,yyscan_t yyscanner );
+YY_BUFFER_STATE RE_scan_bytes (yyconst char *bytes,int len ,yyscan_t yyscanner );
 
 void *REalloc (yy_size_t ,yyscan_t yyscanner );
 void *RErealloc (void *,yy_size_t ,yyscan_t yyscanner );
@@ -264,7 +264,7 @@ FILE *REget_out (yyscan_t yyscanner );
 
 void REset_out  (FILE * out_str ,yyscan_t yyscanner );
 
-yy_size_t REget_leng (yyscan_t yyscanner );
+int REget_leng (yyscan_t yyscanner );
 
 char *REget_text (yyscan_t yyscanner );
 

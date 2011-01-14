@@ -4,11 +4,11 @@
  *
  */
 
+#include "hilti.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
-#include "hilti.h"
 
 // Converts the integer into a int64_t correctly considering its width and
 // assuming a signed value.

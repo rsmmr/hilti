@@ -1,10 +1,10 @@
 // $Id$
 
+#include "jrx-intern.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-
-#include "util.h"
 
 // Copied and adapted from Bro.
 jrx_char jrx_expand_escape(const char* s)
@@ -32,7 +32,8 @@ jrx_char jrx_expand_escape(const char* s)
           // to allow easy handling of string like: "^H0" as
           // "\0100".
           //
-          for ( int len = 0; len < 3 && isascii(*s) && isdigit(*s); ++s, ++len)
+          int len;
+          for ( len = 0; len < 3 && isascii(*s) && isdigit(*s); ++s, ++len)
               ;
 
           int result;
@@ -49,7 +50,8 @@ jrx_char jrx_expand_escape(const char* s)
           const char* start = s;
 
           // Look at most 2 characters, so that "\x0ddir" -> "^Mdir".
-          for ( int len = 0; len < 2 && isascii(*s) && isxdigit(*s);
+          int len;
+          for ( len = 0; len < 2 && isascii(*s) && isxdigit(*s);
                 ++s, ++len);
 
           int result;

@@ -9,10 +9,10 @@
 #define _POSIX_SOURCE
 #define _POSIX_C_SOURCE 199309
 
-#include <string.h>
-
 #include "hilti.h"
 #include "utf8proc.h"
+
+#include <string.h>
 
 static hlt_string_constant EmptyString = { 0, "" };
 

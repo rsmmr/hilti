@@ -1,10 +1,12 @@
 // $Id$
 
+#include "hilti.h"
+
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
-
-#include "hilti.h"
+#include <ctype.h>
+#include <unistd.h>
 
 // This struct describes one currently open file.
 typedef struct __hlt_file_info {

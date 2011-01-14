@@ -1,10 +1,10 @@
 // $Id$
 
-#include <string.h>
-#include <stdarg.h>
-
 #include "hilti.h"
 #include "list.h"
+
+#include <string.h>
+#include <stdarg.h>
 
 extern const hlt_type_info hlt_type_info_string;
 extern const hlt_type_info hlt_type_info_tuple_string;

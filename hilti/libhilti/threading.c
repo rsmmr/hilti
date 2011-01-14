@@ -11,13 +11,13 @@
 #define _POSIX_SOURCE
 #define _POSIX_C_SOURCE 199309
 
+#include "hilti.h"
+#include "debug.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <pthread.h>
-
-#include "hilti.h"
-#include "debug.h"
 
 #define DBG_STREAM "hilti-threads"
 
@@ -376,7 +376,7 @@ static void* _worker(void* worker_thread_ptr)
 
     }
 
-    __fatal_error("cannot be reached");
+    _fatal_error("cannot be reached");
     return 0;
 }
 

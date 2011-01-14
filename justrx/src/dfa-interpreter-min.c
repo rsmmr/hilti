@@ -1,5 +1,6 @@
 // $Id$
 
+#include "jrx-intern.h"
 #include "dfa-interpreter-min.h"
 #include "jlocale.h"
 #include "nfa.h"

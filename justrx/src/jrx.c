@@ -41,7 +41,8 @@ static jrx_option _options(jrx_regex_t *preg)
 
 static inline void _clear_pmatch(size_t nmatch, jrx_regmatch_t pmatch[], int first_zero)
 {
-    for ( int i = 0; i < nmatch; i++ )
+    int i;
+    for ( i = 0; i < nmatch; i++ )
         pmatch[i].rm_so = pmatch[i].rm_eo = -1;
 
     if ( first_zero && nmatch > 0 )
@@ -81,7 +82,8 @@ static inline jrx_match_accept _pick_accept(set_match_accept* accepts)
 // -1: partial but not full match yet.
 static int _regexec_partial_std(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms, int find_partial_matches)
 {
-    for ( const char* p = buffer; len; len-- ) {
+    const char* p;
+    for ( p = buffer; len; len-- ) {
 
         jrx_assertion assertions = JRX_ASSERTION_NONE;
 
@@ -114,7 +116,8 @@ static int _regexec_partial_min(const jrx_regex_t *preg, const char *buffer, uns
 {
     jrx_offset eo = ms->offset;
 
-    for ( const char* p = buffer; len; --len ) {
+    const char* p;
+    for ( p = buffer; len; --len ) {
         jrx_assertion assertions = JRX_ASSERTION_NONE;
 
         if ( p == buffer )
@@ -236,7 +239,9 @@ int jrx_reggroups(const jrx_regex_t *preg, jrx_match_state* ms, size_t nmatch, j
     jrx_match_accept acc = _pick_accept(ms->accepts);
     jrx_offset* tags = acc.tags;
 
-        for ( int i = 0; i < nmatch; i++ ) {
+    int i;
+
+        for ( i = 0; i < nmatch; i++ ) {
             if ( i <= preg->dfa->max_capture && tags[i*2] > 0 && tags[i*2 + 1] > 0 ) {
                 pmatch[i].rm_so = ms->begin + tags[i*2] - 1;
                 pmatch[i].rm_eo = ms->begin + tags[i*2 + 1] - 1;

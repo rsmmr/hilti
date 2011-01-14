@@ -66,12 +66,12 @@ typedef union YYSTYPE
     jrx_assertion assertion;
     jrx_std_ccl dynccl;
     int count;
-
+    
     jrx_nfa* nfa;
     jrx_ccl* ccl;
 }
 /* Line 1529 of yacc.c.  */
-#line 75 "/Users/robin/work/binpacpp/hilti/libhilti/justrx/src/re-parse.h"
+#line 75 "/home/robin/work/binpacpp/hilti/libhilti/justrx/src/re-parse.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

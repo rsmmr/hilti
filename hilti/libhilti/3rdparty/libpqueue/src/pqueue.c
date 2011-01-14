@@ -254,6 +254,7 @@ pqueue_dump(pqueue_t *q,
 #endif
 
 
+#if 0
 static void
 set_pos(void *d, size_t val)
 {
@@ -266,6 +267,7 @@ set_pri(void *d, pqueue_pri_t pri)
 {
     /* do nothing */
 }
+#endif
 
 
 #if 0

@@ -2,9 +2,9 @@
 //
 // FIXME: Vector's don't shrink at the moment. When should they?
 
-#include <string.h>
-
 #include "hilti.h"
+
+#include <string.h>
 
 // Factor by which to growth array on reallocation.
 static const float GrowthFactor = 1.5;

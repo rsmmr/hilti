@@ -1,5 +1,6 @@
 // $Id$
 
+#include "jrx-intern.h"
 #include "dfa.h"
 
 static jrx_dfa* _dfa_create()
@@ -425,7 +426,8 @@ void dfa_print(jrx_dfa* dfa, FILE* file)
 
     fputs("state sets\n", file);
 
-    for ( khiter_t k = kh_begin(dfa->hstates); k != kh_end(dfa->hstates); ++k ) {
+    khiter_t k;
+    for ( k = kh_begin(dfa->hstates); k != kh_end(dfa->hstates); ++k ) {
         if ( ! kh_exist(dfa->hstates, k) )
             continue;
 

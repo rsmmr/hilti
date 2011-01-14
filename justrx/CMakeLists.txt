@@ -2,8 +2,6 @@
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-find_package(LLVM)
-
 project(JustRX)
 
 cmake_minimum_required(VERSION 2.6)
@@ -31,6 +29,13 @@ set(CONFIG_CXXFLAGS "${CONFIG_CFLAGS}")
 configure_file("bin/jrx-config.in" "bin/jrx-config")
 
 add_subdirectory(src)
-add_subdirectory(test)
 add_subdirectory(doc)
+
+if (${LLVM_ENABLED})
+else ()
+    # Only build the executable when we're not building the LLVM
+    # version. Otherwise the compilers get mixed up.
+    add_subdirectory(test)
+endif ()
+
 

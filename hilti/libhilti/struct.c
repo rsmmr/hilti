@@ -4,10 +4,10 @@
  *
  */
 
-#include <stdio.h>
-
 #include "hilti.h"
 #include "str.h"
+
+#include <stdio.h>
 
 static hlt_string_constant prefix = { 1, "<" };
 static hlt_string_constant postfix = { 1, ">" };

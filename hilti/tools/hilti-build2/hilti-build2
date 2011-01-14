@@ -21,7 +21,7 @@ ClangOptSpec = "-O3"             # -O4 is LTO, which we can't do wo/ support by 
 OptOptSpec   = "-std-compile-opts"
 
 try:
-    HiltiConfig= os.environ["HILTI_CONFIG"]
+    HiltiConfig = os.environ["HILTI_CONFIG"]
 except:
     HiltiConfig = "hilti-config"
 
@@ -34,7 +34,7 @@ except:
 def runConfig(tool, option):
     try:
         options = [option]
-        if Options and Options.debug > 0:
+        if Options and not Options.opt:
             options = ["--debug"] + options
 
         return subprocess.Popen([tool] + options, stdout=subprocess.PIPE).communicate()[0].strip()

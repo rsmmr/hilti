@@ -1,9 +1,9 @@
 #! /usr/bin/env bash
 #
-# Turns a HILTI source into an executable by compiling, assembling, 
-# and linking with libhiltimain. 
+# Turns a HILTI source into an executable by compiling, assembling,
+# and linking with libhiltimain.
 #
-# Honors the following environment variables to pass additional flags 
+# Honors the following environment variables to pass additional flags
 # on to the corresponding tools:
 #
 #     HILTICFLAGS
@@ -16,11 +16,11 @@
 
 if [ "$HILTIDEPS" != "" -a -e "$HILTIDEPS/bin/setup-paths" ]; then
    eval `$HILTIDEPS/bin/setup-paths`
-fi   
+fi
 
 function usage {
    echo "Usage: hilti-build [-m] [-t] [-v] -o <output> <input-files>"
-   echo 
+   echo
    echo "Input files may be end in one of the following extensions:"
    echo "    *.hlt     - HILTI files"
    echo "    *.ll      - LLVM assember file"
@@ -42,7 +42,7 @@ function usage {
    echo "    -a         Set flags for compiling BinPAC++ sources even if not given"
    echo "    -S <size>  Default stack segment size to pass to hiltic"
    echo
-   exit 1 
+   exit 1
 }
 
 function execute {
@@ -65,7 +65,7 @@ function compile_hlt {
     input=$1
     dir=`dirname $input`
     base=`basename $input .hlt`
-    
+
     if [ "$protos" == "1" ]; then
         # Just run hiltic to generate the C prototypes.
         doth=$base.h
@@ -137,7 +137,7 @@ function compile_cc {
 # Links all *.bc together into the final output file.
 function link_all {
     bc=$@
-    
+
     execute "llvm-ld -disable-opt -b=$output.bc $bc $libsbc $llvmldflags" || exit 1
     execute "rm -f $output" || exit 1 # Stupid shell script.
 
@@ -145,7 +145,7 @@ function link_all {
         tmpfiles="$tmpfiles $output.opt.bc"
         execute "opt -f $opt $output.bc -o=$output.opt.bc" || exit 1
         execute "mv $output.opt.bc $output.bc"
-    fi   
+    fi
 
     if [ "$bitcode" != "" ]; then
        # Done.
@@ -157,14 +157,14 @@ function link_all {
 
     # Compile into native assembler.
     execute "llc -o=$output.bc.S $output.bc" || exit 1
-    
+
     # Assemble into executable code. Seems using the compiler driver is the way to go here ...
     if [ "$noexec" != "" ]; then
         exec="-Xlinker=-r"
     else
         exec=""
-    fi   
-    
+    fi
+
     execute "clang -g -o $output $exec $libsc $output.bc.S"
 }
 
@@ -173,29 +173,29 @@ function find_libraries {
     paths=""
     libs=""
     ext=$1
-    shift 
+    shift
 
-    for flag in $@; do 
+    for flag in $@; do
         echo $flag | grep -q '^-L'
         if [ $? == 0 ]; then
            paths="$paths `echo $flag | sed 's/^-L//g'`"
         fi
-        
+
         echo $flag | grep -q '^-l'
         if [ $? == 0 ]; then
            libs="$libs `echo $flag | sed 's/^-l//g'`"
         fi
     done
-    
-    for lib in $libs; do 
-        for path in $paths; do 
+
+    for lib in $libs; do
+        for path in $paths; do
             full=$path/lib$lib.$ext
             if [ -f $full ]; then
                result="$result $full"
             fi
         done
     done
-    
+
     echo $result
 }
 
@@ -204,43 +204,43 @@ inputs=""
 protos=""
 noexec=""
 bitcode=""
-debug=""
+debug="--debug"
 stack=""
 libsbcflag="--libs-bc-main"
 have_pac2=0
 
 while [ "$1" != "" ]; do
-    case $1 in 
+    case $1 in
         -m)
             libsbcflag="--libs-bc" ; shift;;
         -t)
             keeptmp=1; shift;;
         -v)
             verbose=/dev/stderr; shift;;
-        -O1) 
-            opt=$1; shift;;
-        -O2) 
-            opt=$1; shift;;
-        -O3) 
-            opt=$1; shift;;
+        -O1)
+            opt=$1; debug=""; shift;;
+        -O2)
+            opt=$1; debug=""; shift;;
+        -O3)
+            opt=$1; debug=""; shift;;
         -P)
             protos="1"; shift;;
         -o)
-            output=$2; shift; shift;; 
+            output=$2; shift; shift;;
         -c)
-            noexec="1"; shift;; 
+            noexec="1"; shift;;
         -b)
-            bitcode="1"; shift;; 
+            bitcode="1"; shift;;
         -d)
-            debug="--debug"; shift;; 
+            shift;;
         -D)
-            hiltic_debug_addl="-d"; debug="--debug"; shift;; 
+            hiltic_debug_addl="-d"; debug="--debug"; shift;;
         -a)
             have_pac2=1; shift;;
         -S)
             stack="-S $2"; shift; shift;;
-        -h) 
-            usage;; 
+        -h)
+            usage;;
         -*)
             usage;;
         *)
@@ -249,24 +249,24 @@ while [ "$1" != "" ]; do
             fi
             inputs="$inputs $1"; shift;;
     esac
-done    
+done
 
 if [ "$inputs" == "" ]; then
    usage
-fi   
+fi
 
 if [ "$output" == "" -a "$protos" != "1" ]; then
    echo "name of output file must be given with -o." >&2
    exit 1
-fi   
+fi
 
 if [ "$TEST_DIAGNOSTICS" != "" ]; then
    keeptmp=1
-fi   
+fi
 
 if [ "$opt" == "" ]; then
    opt="-O0"
-fi   
+fi
 
 trap delete_tmps 0
 
@@ -274,13 +274,13 @@ if [ "$HILTI_CONFIG" != "" ]; then
     hilticonfig=$HILTI_CONFIG
 else
     hilticonfig=`which hilti-config 2>/dev/null`
-fi    
+fi
 
 if [ "$BINPAC_CONFIG" != "" ]; then
     binpacconfig=$BINPAC_CONFIG
 else
     binpacconfig=`which binpac-config 2>/dev/null`
-fi    
+fi
 
 if [ ! -x "$hilticonfig" ]; then
    echo "cannot find hilti-config; try setting HILTI_CONFIG." >&2
@@ -292,8 +292,8 @@ hilticflags="`$hilticonfig $debug --hilticflags` $hiltic_debug_addl $stack $HILT
 llvmldflags="`$hilticonfig $debug --ldflags` $LLVMLDFLAGS"
 cflags="`$hilticonfig $debug --cflags` -Wall $CFLAGS -g"
 cxxflags="`$hilticonfig $debug --cxxflags` $CFLAGS -g"
-libsbc=`$hilticonfig $libsbcflag`
-libsc=`$hilticonfig --libs-c`
+libsbc=`$hilticonfig $debug $libsbcflag`
+libsc=`$hilticonfig $debug --libs-c`
 
 if [ "$have_pac2" == "1" ]; then
 
@@ -303,47 +303,47 @@ if [ "$have_pac2" == "1" ]; then
    fi
 
    # Need binpac++ flags.
-   cflags="$cflags `$binpacconfig --cflags`"
-   hilticflags="$hilticflags `$binpacconfig --hiltic`"
-   llvmldflags="$llvmldflags `$binpacconfig --ldflags`"
-   libsbc="`$binpacconfig --libs-bc` $libsbc" # Order is important!
+   cflags="$cflags `$binpacconfig $debug --cflags`"
+   hilticflags="$hilticflags `$binpacconfig $debug --hiltic`"
+   llvmldflags="$llvmldflags `$binpacconfig $debug --ldflags`"
+   libsbc="`$binpacconfig $debug --libs-bc` $libsbc" # Order is important!
    bppflags="`$binpacconfig $debug --bppflags` `$hilticonfig --hilticflags`"
-   
-   export PATH=`$binpacconfig --path`:$PATH
-   export PYTHONPATH=`$binpacconfig --pythonpath`:$PYTHONPATH
-   
-fi   
 
-export PATH=`$hilticonfig --path`:$PATH
-export PYTHONPATH=`$hilticonfig --pythonpath`:$PYTHONPATH
+   export PATH=`$binpacconfig $debug --path`:$PATH
+   export PYTHONPATH=`$binpacconfig $debug --pythonpath`:$PYTHONPATH
+
+fi
+
+export PATH=`$hilticonfig $debug --path`:$PATH
+export PYTHONPATH=`$hilticonfig $debug --pythonpath`:$PYTHONPATH
 
 input=$@
 objs=""
 
 for file in $inputs; do
-    
+
     if echo $file | grep -q '\.hlt$'; then
        compile_hlt $file
        if [ "$protos" != "1" ]; then
            compile_ll $result
        fi
        objs="$objs $result"
-       
+
     elif echo $file | grep -q '\.ll$'; then
        compile_ll $file
        objs="$objs $result"
-       
+
     elif echo $file | grep -q '\.c$'; then
        compile_c $file
        objs="$objs $result"
-       
+
     elif echo $file | grep -q '\.cc$'; then
        compile_cc $file
        objs="$objs $result"
-       
+
     elif echo $file | grep -q '\.bc$' ; then
        objs="$objs $file"
-       
+
     elif echo $file | grep -q '\.pac2$' ; then
        compile_pac $file
        compile_hlt $result
@@ -351,12 +351,12 @@ for file in $inputs; do
            compile_ll $result
        fi
        objs="$objs $result"
-       
+
     else
        echo "unknown input type $file"
        exit 1
     fi
-    
+
 done
 
 if [ "$protos" == "1" ]; then

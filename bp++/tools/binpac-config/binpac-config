@@ -59,6 +59,9 @@ fi
 
 debug=""
 
+builddir="build-release"
+libbase="binpac"
+
 while [ "$1" != "" ]; do
     case $1 in
         --version)
@@ -70,11 +73,11 @@ while [ "$1" != "" ]; do
             shift;;
 
         --ldflags)
-            echo "-L$base/libbinpac/build-llvm -L$base/libbinpac/build-llvm/justrx/src"
+            echo "-L$base/libbinpac/$builddir"
             shift;;
 
         --libs-bc)
-            echo "-lbinpac"
+            echo "-l$libbase"
             shift;;
 
         --libs-c)
@@ -104,11 +107,11 @@ while [ "$1" != "" ]; do
             shift;;
 
         --cflags)
-            echo "-I$base/libbinpac -I$base/libbinpac/build-llvm"
+            echo "-I$base/libbinpac -I$base/libbinpac/$builddir"
             shift;;
 
         --cxxflags)
-            echo "-I$base/libbinpac -I$base/libbinpac/build-llvm"
+            echo "-I$base/libbinpac -I$base/libbinpac/$builddir"
             shift;;
 
         --pythonpath)
@@ -121,6 +124,8 @@ while [ "$1" != "" ]; do
 
         --debug)
             debug=1
+            builddir="build-debug"
+            libbase="binpacdbg"
             shift;;
 
         -h)

@@ -1,13 +1,14 @@
 // $Id$
 
+#include "jrx-intern.h"
+#include "nfa.h"
+#include "re-parse.h"
+#include "re-scan.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-
-#include "nfa.h"
-#include "re-parse.h"
-#include "re-scan.h"
 
 /** \addtogroup NFA */
 //@{
@@ -254,14 +255,16 @@ jrx_nfa* nfa_iterate(jrx_nfa* nfa, int min, int max)
 
     if ( min > 1 ) {
         all = nfa;
-        for ( int i = 0; i < min - 1; i++ )
+        int i;
+        for ( i = 0; i < min - 1; i++ )
             all = nfa_concat(all, _nfa_deep_copy(templ), 0);
     }
 
     if ( max >= 0 ) {
         jrx_nfa* optional = nfa_alternative(_nfa_deep_copy(templ), nfa_empty(ctx));
 
-        for ( int i = max - min; i > 0; i-- )
+        int i;
+        for ( i = max - min; i > 0; i-- )
             all = all ? nfa_concat(all, _nfa_deep_copy(optional), 0) : optional;
     }
 

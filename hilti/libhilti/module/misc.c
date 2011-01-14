@@ -1,6 +1,7 @@
 // $Id$
 
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "module.h"
 

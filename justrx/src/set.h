@@ -148,7 +148,8 @@ static inline int set_##name##_insert(set_##name* set, set_elem_t elem)        \
     set->size++;                                                               \
                                                                                \
     /* Bubble it to the right place */                                         \
-    for ( set_size_t i = set->size - 1; i > 0; i-- ) {                         \
+    set_size_t i;                                                              \
+    for ( i = set->size - 1; i > 0; i-- ) {                                    \
         if ( cmp_func(set->elems[i], set->elems[i-1]) >= 0 )                   \
             break;                                                             \
                                                                                \
@@ -156,7 +157,6 @@ static inline int set_##name##_insert(set_##name* set, set_elem_t elem)        \
         set->elems[i] = set->elems[i-1];                                       \
         set->elems[i-1] = tmp;                                                 \
     }                                                                          \
-                                                                               \
     return 1;                                                                  \
 }                                                                              \
                                                                                \
@@ -181,7 +181,8 @@ static inline int set_##name##_equal(set_##name* s1, set_##name* s2)           \
     if ( s1->size != s2->size )                                                \
         return 0;                                                              \
                                                                                \
-    for ( set_size_t i = 0; i < s1->size; i++ ) {                              \
+    set_size_t i;                                                              \
+    for ( i = 0; i < s1->size; i++ ) {                                         \
         if ( cmp_func(s1->elems[i], s2->elems[i]) != 0 )                       \
             return 0;                                                          \
     }                                                                          \
@@ -191,7 +192,8 @@ static inline int set_##name##_equal(set_##name* s1, set_##name* s2)           \
                                                                                \
 static inline int set_##name##_join(set_##name* set, const set_##name* other)  \
 {                                                                              \
-    for ( set_size_t i = 0; i < other->size; i++ ) {                           \
+    set_size_t i;                                                              \
+    for ( i = 0; i < other->size; i++ ) {                                      \
         if ( ! set_##name##_insert(set, other->elems[i]) )                     \
             return 0;                                                          \
     }                                                                          \

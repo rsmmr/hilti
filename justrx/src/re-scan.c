@@ -1,6 +1,6 @@
-#line 2 "/Users/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
+#line 2 "/home/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
 
-#line 4 "/Users/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
+#line 4 "/home/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -34,7 +34,7 @@
 #if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 
 /* C99 says to define __STDC_LIMIT_MACROS before including stdint.h,
- * if you want the limit (max/min) macros for int types.
+ * if you want the limit (max/min) macros for int types. 
  */
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS 1
@@ -51,7 +51,7 @@ typedef uint32_t flex_uint32_t;
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
 typedef int flex_int32_t;
-typedef unsigned char flex_uint8_t;
+typedef unsigned char flex_uint8_t; 
 typedef unsigned short int flex_uint16_t;
 typedef unsigned int flex_uint32_t;
 #endif /* ! C99 */
@@ -170,17 +170,12 @@ typedef void* yyscan_t;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 #endif
 
-#ifndef YY_TYPEDEF_YY_SIZE_T
-#define YY_TYPEDEF_YY_SIZE_T
-typedef size_t yy_size_t;
-#endif
-
 #define EOB_ACT_CONTINUE_SCAN 0
 #define EOB_ACT_END_OF_FILE 1
 #define EOB_ACT_LAST_MATCH 2
 
     #define YY_LESS_LINENO(n)
-
+    
 /* Return all but the first "n" matched characters back to the input stream. */
 #define yyless(n) \
 	do \
@@ -196,6 +191,11 @@ typedef size_t yy_size_t;
 	while ( 0 )
 
 #define unput(c) yyunput( c, yyg->yytext_ptr , yyscanner )
+
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+typedef size_t yy_size_t;
+#endif
 
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
@@ -214,7 +214,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	yy_size_t yy_n_chars;
+	int yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -237,7 +237,7 @@ struct yy_buffer_state
 
     int yy_bs_lineno; /**< The line count. */
     int yy_bs_column; /**< The column count. */
-
+    
 	/* Whether to try to fill the input buffer when we reach the
 	 * end of it.
 	 */
@@ -293,7 +293,7 @@ static void RE_init_buffer (YY_BUFFER_STATE b,FILE *file ,yyscan_t yyscanner );
 
 YY_BUFFER_STATE RE_scan_buffer (char *base,yy_size_t size ,yyscan_t yyscanner );
 YY_BUFFER_STATE RE_scan_string (yyconst char *yy_str ,yyscan_t yyscanner );
-YY_BUFFER_STATE RE_scan_bytes (yyconst char *bytes,yy_size_t len ,yyscan_t yyscanner );
+YY_BUFFER_STATE RE_scan_bytes (yyconst char *bytes,int len ,yyscan_t yyscanner );
 
 void *REalloc (yy_size_t ,yyscan_t yyscanner );
 void *RErealloc (void *,yy_size_t ,yyscan_t yyscanner );
@@ -490,7 +490,7 @@ static yyconst flex_int16_t yy_chk[186] =
 #line 1 "re-scan.l"
 /* Loosely based on Bro's re-scan.l */
 #line 5 "re-scan.l"
-#include "jrx.h"
+#include "jrx-intern.h"
 #include "nfa.h"
 #include "util.h"
 #include "re-parse.h"
@@ -499,7 +499,7 @@ static yyconst flex_int16_t yy_chk[186] =
 void REerror(yyscan_t scanner, const char* msg);
 
 
-#line 503 "/Users/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
+#line 503 "/home/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
 
 #define INITIAL 0
 #define COUNT 1
@@ -532,8 +532,8 @@ struct yyguts_t
     size_t yy_buffer_stack_max; /**< capacity of stack. */
     YY_BUFFER_STATE * yy_buffer_stack; /**< Stack as an array. */
     char yy_hold_char;
-    yy_size_t yy_n_chars;
-    yy_size_t yyleng_r;
+    int yy_n_chars;
+    int yyleng_r;
     char *yy_c_buf_p;
     int yy_init;
     int yy_start;
@@ -560,7 +560,7 @@ static int yy_init_globals (yyscan_t yyscanner );
     /* This must go here because YYSTYPE and YYLTYPE are included
      * from bison output in section 1.*/
     #    define yylval yyg->yylval_r
-
+    
 int RElex_init (yyscan_t* scanner);
 
 int RElex_init_extra (YY_EXTRA_TYPE user_defined,yyscan_t* scanner);
@@ -586,7 +586,7 @@ FILE *REget_out (yyscan_t yyscanner );
 
 void REset_out  (FILE * out_str ,yyscan_t yyscanner );
 
-yy_size_t REget_leng (yyscan_t yyscanner );
+int REget_leng (yyscan_t yyscanner );
 
 char *REget_text (yyscan_t yyscanner );
 
@@ -649,7 +649,7 @@ static int input (yyscan_t yyscanner );
 	if ( YY_CURRENT_BUFFER_LVALUE->yy_is_interactive ) \
 		{ \
 		int c = '*'; \
-		yy_size_t n; \
+		int n; \
 		for ( n = 0; n < max_size && \
 			     (c = getc( yyin )) != EOF && c != '\n'; ++n ) \
 			buf[n] = (char) c; \
@@ -737,7 +737,7 @@ YY_DECL
 #line 26 "re-scan.l"
 
 
-#line 741 "/Users/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
+#line 741 "/home/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
 
     yylval = yylval_param;
 
@@ -967,7 +967,7 @@ YY_RULE_SETUP
 #line 80 "re-scan.l"
 ECHO;
 	YY_BREAK
-#line 971 "/Users/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
+#line 971 "/home/robin/work/binpacpp/hilti/libhilti/justrx/src/re-scan.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(COUNT):
 case YY_STATE_EOF(CCL_FIRST):
@@ -1158,7 +1158,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 	else
 		{
-			yy_size_t num_to_read =
+			int num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
@@ -1172,7 +1172,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 			if ( b->yy_is_our_buffer )
 				{
-				yy_size_t new_size = b->yy_buf_size * 2;
+				int new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1203,7 +1203,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			yyg->yy_n_chars, num_to_read );
+			yyg->yy_n_chars, (size_t) num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = yyg->yy_n_chars;
 		}
@@ -1328,7 +1328,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		else
 			{ /* need more input */
-			yy_size_t offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
+			int offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
 			++yyg->yy_c_buf_p;
 
 			switch ( yy_get_next_buffer( yyscanner ) )
@@ -1352,7 +1352,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 				case EOB_ACT_END_OF_FILE:
 					{
 					if ( REwrap(yyscanner ) )
-						return 0;
+						return EOF;
 
 					if ( ! yyg->yy_did_buffer_switch_on_eof )
 						YY_NEW_FILE;
@@ -1451,7 +1451,7 @@ static void RE_load_buffer_state  (yyscan_t yyscanner)
     YY_BUFFER_STATE RE_create_buffer  (FILE * file, int  size , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
-
+    
 	b = (YY_BUFFER_STATE) REalloc(sizeof( struct yy_buffer_state ) ,yyscanner );
 	if ( ! b )
 		YY_FATAL_ERROR( "out of dynamic memory in RE_create_buffer()" );
@@ -1495,7 +1495,7 @@ static void RE_load_buffer_state  (yyscan_t yyscanner)
 #ifndef __cplusplus
 extern int isatty (int );
 #endif /* __cplusplus */
-
+    
 /* Initializes or reinitializes a buffer.
  * This function is sometimes called more than once on the same buffer,
  * such as during a RErestart() or at EOF.
@@ -1521,7 +1521,7 @@ extern int isatty (int );
     }
 
         b->yy_is_interactive = file ? (isatty( fileno(file) ) > 0) : 0;
-
+    
 	errno = oerrno;
 }
 
@@ -1612,7 +1612,7 @@ void REpop_buffer_state (yyscan_t yyscanner)
  */
 static void REensure_buffer_stack (yyscan_t yyscanner)
 {
-	yy_size_t num_to_alloc;
+	int num_to_alloc;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
 	if (!yyg->yy_buffer_stack) {
@@ -1627,9 +1627,9 @@ static void REensure_buffer_stack (yyscan_t yyscanner)
 								, yyscanner);
 		if ( ! yyg->yy_buffer_stack )
 			YY_FATAL_ERROR( "out of dynamic memory in REensure_buffer_stack()" );
-
+								  
 		memset(yyg->yy_buffer_stack, 0, num_to_alloc * sizeof(struct yy_buffer_state*));
-
+				
 		yyg->yy_buffer_stack_max = num_to_alloc;
 		yyg->yy_buffer_stack_top = 0;
 		return;
@@ -1658,12 +1658,12 @@ static void REensure_buffer_stack (yyscan_t yyscanner)
  * @param base the character buffer
  * @param size the size in bytes of the character buffer
  * @param yyscanner The scanner object.
- * @return the newly allocated buffer state object.
+ * @return the newly allocated buffer state object. 
  */
 YY_BUFFER_STATE RE_scan_buffer  (char * base, yy_size_t  size , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
-
+    
 	if ( size < 2 ||
 	     base[size-2] != YY_END_OF_BUFFER_CHAR ||
 	     base[size-1] != YY_END_OF_BUFFER_CHAR )
@@ -1699,7 +1699,7 @@ YY_BUFFER_STATE RE_scan_buffer  (char * base, yy_size_t  size , yyscan_t yyscann
  */
 YY_BUFFER_STATE RE_scan_string (yyconst char * yystr , yyscan_t yyscanner)
 {
-
+    
 	return RE_scan_bytes(yystr,strlen(yystr) ,yyscanner);
 }
 
@@ -1710,12 +1710,13 @@ YY_BUFFER_STATE RE_scan_string (yyconst char * yystr , yyscan_t yyscanner)
  * @param yyscanner The scanner object.
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE RE_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len , yyscan_t yyscanner)
+YY_BUFFER_STATE RE_scan_bytes  (yyconst char * yybytes, int  _yybytes_len , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
 	char *buf;
-	yy_size_t n, i;
-
+	yy_size_t n;
+	int i;
+    
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
 	buf = (char *) REalloc(n ,yyscanner );
@@ -1783,10 +1784,10 @@ YY_EXTRA_TYPE REget_extra  (yyscan_t yyscanner)
 int REget_lineno  (yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
-
+    
         if (! YY_CURRENT_BUFFER)
             return 0;
-
+    
     return yylineno;
 }
 
@@ -1796,10 +1797,10 @@ int REget_lineno  (yyscan_t yyscanner)
 int REget_column  (yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
-
+    
         if (! YY_CURRENT_BUFFER)
             return 0;
-
+    
     return yycolumn;
 }
 
@@ -1824,7 +1825,7 @@ FILE *REget_out  (yyscan_t yyscanner)
 /** Get the length of the current token.
  * @param yyscanner The scanner object.
  */
-yy_size_t REget_leng  (yyscan_t yyscanner)
+int REget_leng  (yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
     return yyleng;
@@ -1860,8 +1861,8 @@ void REset_lineno (int  line_number , yyscan_t yyscanner)
 
         /* lineno is only valid if an input buffer exists. */
         if (! YY_CURRENT_BUFFER )
-           yy_fatal_error( "REset_lineno called with no buffer" , yyscanner);
-
+           yy_fatal_error( "REset_lineno called with no buffer" , yyscanner); 
+    
     yylineno = line_number;
 }
 
@@ -1875,8 +1876,8 @@ void REset_column (int  column_no , yyscan_t yyscanner)
 
         /* column is only valid if an input buffer exists. */
         if (! YY_CURRENT_BUFFER )
-           yy_fatal_error( "REset_column called with no buffer" , yyscanner);
-
+           yy_fatal_error( "REset_column called with no buffer" , yyscanner); 
+    
     yycolumn = column_no;
 }
 
@@ -1971,20 +1972,20 @@ int RElex_init_extra(YY_EXTRA_TYPE yy_user_defined,yyscan_t* ptr_yy_globals )
         errno = EINVAL;
         return 1;
     }
-
+	
     *ptr_yy_globals = (yyscan_t) REalloc ( sizeof( struct yyguts_t ), &dummy_yyguts );
-
+	
     if (*ptr_yy_globals == NULL){
         errno = ENOMEM;
         return 1;
     }
-
+    
     /* By setting to 0xAA, we expose bugs in
     yy_init_globals. Leave at 0x00 for releases. */
     memset(*ptr_yy_globals,0x00,sizeof(struct yyguts_t));
-
+    
     REset_extra (yy_user_defined, *ptr_yy_globals);
-
+    
     return yy_init_globals ( *ptr_yy_globals );
 }
 

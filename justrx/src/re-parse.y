@@ -1,9 +1,9 @@
 %{
 
-#include <stdio.h>
-
-#include "jrx.h"
+#include "jrx-intern.h"
 #include "nfa.h"
+
+#include <stdio.h>
 
 extern void REerror(void* scanner, const char* msg);
 extern int RElex(void* yylval_param, void* yyscanner);

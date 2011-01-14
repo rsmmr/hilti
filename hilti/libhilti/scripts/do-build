@@ -1,10 +1,20 @@
 #! /usr/bin/env bash
 
-#GC_CONF="-Denable_threads=NO -Denable_parallel_mark=YES"
-#
-GC_CFLAGS="-DREDIRECT_MALLOC=GC_malloc -DIGNORE_FREE -DKEEP_BACK_PTRS"
+# Arguments to GC's CMakeLists.txt Note that the parallel_mark is untried yet,
+# as is incremental collection.
+GC_CMAKE="-Denable_threads=YES -Denable_parallel_mark=NO"
+
+# Additional arguments to the C compiler when compiling the GC. 
+GC_CFLAGS="-DGC_THREADS -D_REENTRANT"
+
+# Further C compiler flags for the debugging version.
+GC_CFLAGS_DEBUG="-DGC_DEBUG -DGC_ASSERTIONS"
 
 function build {
+    dir=$1          # Build directory.
+    cmake_flags=$2  # cmake flags for libhilti.
+    gc=$3           # C compiler flags for GC.
+
     base=`pwd`/$1
 
 	# Create directories.
@@ -16,17 +26,30 @@ function build {
 
     # Build libgc.
     cd $base/3rdparty/bdwgc
-    test -e Makefile || CFLAGS=$GC_CFLAGS cmake $GC_CONF $2 ../../../3rdparty/bdwgc
+    test -e Makefile || CFLAGS=$gc cmake $GC_CMAKE ../../../3rdparty/bdwgc
     make
 
     # Build libhilti.
     cd $base
-    test -e Makefile || cmake $2 ..
+    test -e Makefile || cmake $cmake_flags ..
     make
 
     cd $cwd
 }
 
-build build-llvm   "-DENABLE_LLVM=1"
-# build build-native "-DENABLE_LLVM=0"
+echo
+echo =============
+echo Release Build
+echo =============
+echo
+
+build build-release "-DLLVM_ENABLE_DEBUG=0"  "$GC_CFLAGS"
+
+echo
+echo ===========
+echo Debug Build
+echo ===========
+echo
+
+build build-debug   "-DLLVM_ENABLE_DEBUG=1 " "$GC_CFLAGS $GC_CFLAGS_DEBUG"
 

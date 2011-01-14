@@ -4,12 +4,12 @@
  *
  */
 
+#include "hilti.h"
+#include "context.h"
+
 #include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "hilti.h"
-#include "context.h"
 
 typedef struct {
     int8_t prio;
@@ -21,6 +21,9 @@ static int _num_registered_funcs = 0;
 
 void hlt_init()
 {
+    // Initialize the garbage collector.
+    __hlt_init_gc();
+
     // Initialize locale.
     if ( ! setlocale(LC_CTYPE, "") ) {
         fputs("libhilti: cannot set locale", stderr);
@@ -29,9 +32,6 @@ void hlt_init()
 
     // Initialize configuration to defaults.
     __hlt_config_init();
-
-    // Initialize the garbage collector.
-    __hlt_init_gc();
 
     // Initialize debug streams from environment.
     const char* dbg = getenv("HILTI_DEBUG");
@@ -49,7 +49,9 @@ void hlt_init()
     }
 
     // Two rounds for the two priortity levels.
-    for ( int i = 0; i < _num_registered_funcs; i++ )
+    int i;
+    
+    for ( i = 0; i < _num_registered_funcs; i++ )
         if ( _registered_funcs[i].prio > 0 )
             (*(_registered_funcs[i].func))();
 

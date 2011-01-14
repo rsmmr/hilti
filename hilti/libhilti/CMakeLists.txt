@@ -11,11 +11,14 @@ find_package(Pcap)
 project(libhilti)
 set(PROJECT_VERSION "0.1")
 
-add_subdirectory(justrx) # must come before EnableLLVM.
+set(LLVM_ENABLED 1)
 
-set(CMAKE_C_FLAGS "-fno-color-diagnostics -g -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src ${PCAP_CFLAGS}")
+add_subdirectory(justrx) # Must come before EnableLLVM.
 
 include(EnableLLVM)
+include(EnableBWDGC)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src ${PCAP_CFLAGS}")
 
 set(SRCS
     exceptions.c utf8proc.c init.c memory.c string.c int.c double.c
@@ -56,40 +59,22 @@ add_custom_command(
 
 ADD_CUSTOM_TARGET(header ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h)
 
-if ( ENABLE_LLVM )
-    set(OBJS
-        ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.bc.o
-        ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o
-        )
-
-else ( ENABLE_LLVM )
-
-    # Need to convert the BC files into native object files.
-    add_custom_command(
-        OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.o
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.bc.o
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/bc-to-native
-        ARGS    ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.bc.o ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.o
-        )
-
-    # Generate type information for types defines in type-info.hlt
-    add_custom_command(
-        OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/type-info.o
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/bc-to-native
-        ARGS    ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o ${CMAKE_CURRENT_BINARY_DIR}/type-info.o
-        )
-
-    set(OBJS
-        ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.o
-        ${CMAKE_CURRENT_BINARY_DIR}/type-info.o
-        )
-
-
-endif ( ENABLE_LLVM )
+set(OBJS
+    ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.bc.o
+    ${CMAKE_CURRENT_BINARY_DIR}/type-info.bc.o
+)
 
 # Get all the files which go into libgcmt-lib.a.
 FILE(GLOB_RECURSE LIBGC "${CMAKE_CURRENT_BINARY_DIR}/3rdparty/bdwgc/CMakeFiles/gcmt-lib.dir/*")
 
-add_library(hilti STATIC ${SRCS} ${OBJS} ${LIBGC} ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h)
-add_library(hiltimain STATIC ${SRCS} ${OBJS} main.c ${LIBGC})
+set(all_deps  ${SRCS} ${OBJS} ${LIBGC} ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h)
+set(main_deps main.c)
+
+if (${LLVM_ENABLE_DEBUG})
+    add_library(hiltidbg     STATIC ${all_deps})
+    add_library(hiltimaindbg STATIC ${main_deps})
+else ()
+    add_library(hilti     STATIC ${all_deps})
+    add_library(hiltimain STATIC ${main_deps})
+endif ()
+
