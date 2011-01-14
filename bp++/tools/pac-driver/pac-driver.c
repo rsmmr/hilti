@@ -389,6 +389,8 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
 
     khash_t(Flow) *hash = kh_init(Flow);
 
+    int num_flows = 0;
+
     while ( true ) {
         char* p = fgets(buffer, sizeof(buffer), stdin);
         char* e = p + strlen(buffer);
@@ -476,6 +478,8 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
             int ret;
             i = kh_put(Flow, hash, strdup(fid), &ret);
             kh_value(hash, i) = 0;
+
+            ++num_flows;
         }
 
         if ( ! ignore ) {
@@ -500,6 +504,12 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
             }
             kh_del(Flow, hash, i);
         }
+
+        // Output a state summary in regular intervals.
+        static int cnt = 0;
+
+        if ( ++cnt % 1000 == 0 )
+            fprintf(stderr, "--- pac-driver bulk state: %d total flows, %d in memory at %s\n", num_flows, kh_size(hash), ts);
     }
 
 }
