@@ -1047,6 +1047,9 @@ class ParserGen:
 
             cg.setBuilder(done)
 
+        # Trim input, we don't need it anymore what we have already parsed.
+        self.builder().bytes_trim(args.data, args.cur)
+
     def _hiltiFunctionNew(self):
         """Creates a function that can be called from external to create a new
         instance of a parse object. In addition to the type parameters, the
