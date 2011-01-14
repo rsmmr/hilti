@@ -22,10 +22,19 @@ global pac_out = open("pac-contents.dat");
 
 function output(c: connection, is_orig: bool, contents: string, len: int, kind: string)
 {
-    local dir = is_orig ? ">" : "<";
+    local dir: string;
     local fid = fmt("%s:%s-%s:%s", c$id$orig_h, c$id$orig_p, c$id$resp_h, c$id$resp_p);
-    
-    print pac_out, fmt("# %s %s %d %s %.6f", kind, dir, len, fid, network_time());
+
+    if ( kind != "T" ) {
+        dir = is_orig ? ">" : "<";
+        print pac_out, fmt("# %s %s %d %s %.6f", kind, dir, len, fid, network_time());
+    }
+
+    else {
+        # Terminate both directions.
+        print pac_out, fmt("# %s < %d %s %.6f", kind, len, fid, network_time());
+        print pac_out, fmt("# %s > %d %s %.6f", kind, len, fid, network_time());
+    }
 
     if ( (kind == "D" || kind == "U") && len > 0 )
         write_file(pac_out, contents);
