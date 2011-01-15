@@ -2,6 +2,9 @@
 #
 # Changes the compiler settings to redirect all memory allocation to
 # the BDW garbage collector.
+#
+# NOTE: If changing CFLAGS here, you might also want to change them
+# for host applications by adapting what "hilti-config --cflags" outputs.
 
 MESSAGE(STATUS "Compiling for BWD garbage collector")
 

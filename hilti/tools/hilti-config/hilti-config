@@ -29,6 +29,17 @@ EOF
    exit 1
 }
 
+function release_or_debug {
+    std=$1
+    dbg=$2
+
+    if [ "$debug" == "" ]; then
+        echo $std
+    else
+        echo $dbg $std
+    fi
+}
+
 ### Determine distbase.
 
 base=$HILTI_BASE
@@ -102,19 +113,13 @@ while [ "$1" != "" ]; do
             shift;;
 
         --hilticflags)
-            if [ "$debug" == "" ]; then
-                echo "-I$base/libhilti -I$base/libhilti/module"
-            else
-                echo "-I$base/libhilti -I$base/libhilti/module -d"
-            fi
+            release_or_debug "-I$base/libhilti -I$base/libhilti/module" "-d"
             shift;;
 
-        --cflags)
-            echo "-I$base/libhilti -I$base/libhilti/3rdparty/bdwgc/include -g -I$base/libhilti/$builddir $pcap_cflags"
-            shift;;
-
-        --cxxflags)
-            echo "-I$base/libhilti -I$base/libhilti/3rdparty/bdwgc/include -g -I$base/libhilti/$builddir $pcap_cflags"
+        --cflags | --cxxflags)
+            # NOTE: If changing the GC-related CFLAGS here, you might also want
+            # to change them for libhilti itself in cmake/EnableBWDGC.cmake.
+            release_or_debug "-DGC_THREADS -D_REENTRANT -I$base/libhilti -I$base/libhilti/3rdparty/bdwgc/include -g -I$base/libhilti/$builddir $pcap_cflags" "-DGC_DEBUG -DGC_ASSERTIONS"
             shift;;
 
         --libhilti)

@@ -2,12 +2,13 @@
 //
 // A stand-alone driver for BinPAC++ generated parsers.
 
+#include <hilti.h>
+
 #include <stdio.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
 
-#include <hilti.h>
 #include <binpac.h>
 
 int debug = 0;

@@ -28,6 +28,17 @@ EOF
    exit 1
 }
 
+function release_or_debug {
+    std=$1
+    dbg=$2
+
+    if [ "$debug" == "" ]; then
+        echo $std
+    else
+        echo $dbg $std
+    fi
+}
+
 ### Determine distbase.
 
 base=$BINPAC_BASE
@@ -85,21 +96,11 @@ while [ "$1" != "" ]; do
             shift;;
 
         --bppflags)
-            if [ "$debug" == "" ]; then
-                #echo ""
-                echo "-I$base/libbinpac"
-            else
-                #echo "-d"
-                echo "-I$base/libbinpac -d"
-            fi
+            release_or_debug "-I$base/libbinpac" "-d"
             shift;;
 
         --hiltic)
-            if [ "$debug" == "" ]; then
-                echo "-I$base/libbinpac"
-            else
-                echo "-I$base/libbinpac -d"
-            fi
+            release_or_debug "-I$base/libbinpac" "-d"
             shift;;
 
         --libbinpac)

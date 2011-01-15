@@ -7,8 +7,9 @@ GC_CMAKE="-Denable_threads=YES -Denable_parallel_mark=NO"
 # Additional arguments to the C compiler when compiling the GC. 
 GC_CFLAGS="-DGC_THREADS -D_REENTRANT"
 
-# Further C compiler flags for the debugging version.
-GC_CFLAGS_DEBUG="-DGC_DEBUG -DGC_ASSERTIONS"
+# Further C compiler flags for the debugging version. We just all
+#debugging stuff we can find ...
+GC_CFLAGS_DEBUG="-DGC_DEBUG -DGC_ASSERTIONS -DMAKE_BACK_GRAPH -DDBG_HDRS_ALL -DKEEP_BACK_PTRS"
 
 function build {
     dir=$1          # Build directory.
