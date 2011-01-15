@@ -1,3 +1,7 @@
+[binpac] test
+[binpac]    a = 'A'
+[binpac]    b = 'B'
+[binpac]    c = 'C'
 A
 B
 C
