@@ -25,6 +25,7 @@ while True:
 
     if not line.startswith("# "):
         print >>sys.stderr, "format error in", sys.argv[1]
+        print >>sys.stderr, "|%s|" % line
         sys.exit(1)
 
     m = line.split()

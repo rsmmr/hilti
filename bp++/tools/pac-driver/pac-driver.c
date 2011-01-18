@@ -289,6 +289,10 @@ Flow* bulkFeedPiece(binpac_parser* parser, Flow* flow, int eof, const char* data
     }
     else {
 
+        if ( flow->stopped )
+            // Error encountered earlier, just ignore further input.
+            return 0;
+
         if ( size && ! flow->resume ) {
             // Past parsing proceeded all the way through and we don't expect
             // further input.
@@ -301,14 +305,11 @@ Flow* bulkFeedPiece(binpac_parser* parser, Flow* flow, int eof, const char* data
         hlt_bytes_append(flow->input, input, &excpt, ctx);
     }
 
-    if ( flow->stopped )
-        // Error encountered earlier, just ignore further input.
-        return 0;
-
     if ( eof )
         hlt_bytes_freeze(flow->input, 1, &excpt, ctx);
 
     check_exception(excpt);
+
 
     if ( ! flow->resume ) {
         if ( debug )
@@ -445,11 +446,12 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
         int ignore = 0;
         int eof = 0;
         int known_flow = (i != kh_end(hash));
+        int payload = 0;
 
         if ( debug )
             fprintf(stderr, "--- pac-driver: kind=%c dir=%c size=%d fid=|%s| t=|%s| known=%d\n", kind, dir, size, fid, ts, known_flow);
 
-        if ( kind == 'G' ) {
+        if ( known_flow && kind == 'G' ) {
             // Can't handle gaps yet. Mark flow as to be ignored by setting parser to null.
             kh_value(hash, i) = 0;
             continue;
@@ -473,6 +475,8 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
                 fprintf(stderr, "error reading input chunk: %s\n", strerror(errno));
                 exit(1);
             }
+
+            payload = 1;
         }
 
         if ( ! known_flow ) {
@@ -483,7 +487,7 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
             ++num_flows;
         }
 
-        if ( ! ignore ) {
+        if ( payload && ! ignore ) {
             binpac_parser* p = (dir == '>') ? request_parser : reply_parser;
 
             void* result = 0;
@@ -498,11 +502,10 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
         }
 
         if ( eof ) {
-            // Delete state we allocated. BinPAC state is cleanup via GC.
-            if ( kh_value(hash, i) ) {
-                free(kh_value(hash, i));
+            // Flush state (gc will take care of actually releasing the memory.
+            if ( kh_value(hash, i) )
                 kh_value(hash, i) = 0;
-            }
+
             kh_del(Flow, hash, i);
         }
 

@@ -117,15 +117,10 @@ static const double __ac_HASH_UPPER = 0.77;
 		khval_t *vals;													\
 	} kh_##name##_t;													\
 	static inline kh_##name##_t *kh_init_##name() {						\
-		return (kh_##name##_t*)calloc(1, sizeof(kh_##name##_t));		\
+		return (kh_##name##_t*)hlt_gc_calloc_non_atomic(1, sizeof(kh_##name##_t));		\
 	}																	\
 	static inline void kh_destroy_##name(kh_##name##_t *h)				\
 	{																	\
-		if (h) {														\
-			free(h->keys); free(h->flags);								\
-			free(h->vals);												\
-			free(h);													\
-		}																\
 	}																	\
 	static inline void kh_clear_##name(kh_##name##_t *h)				\
 	{																	\
@@ -158,12 +153,12 @@ static const double __ac_HASH_UPPER = 0.77;
 			new_n_buckets = __ac_prime_list[t+1];						\
 			if (h->size >= (khint_t)(new_n_buckets * __ac_HASH_UPPER + 0.5)) j = 0;	\
 			else {														\
-				new_flags = (uint32_t*)malloc(((new_n_buckets>>4) + 1) * sizeof(uint32_t));	\
+				new_flags = (uint32_t*)hlt_gc_malloc_non_atomic(((new_n_buckets>>4) + 1) * sizeof(uint32_t));	\
 				memset(new_flags, 0xaa, ((new_n_buckets>>4) + 1) * sizeof(uint32_t)); \
 				if (h->n_buckets < new_n_buckets) {						\
-					h->keys = (khkey_t*)realloc(h->keys, new_n_buckets * sizeof(khkey_t)); \
+					h->keys = (khkey_t*)hlt_gc_realloc_non_atomic(h->keys, new_n_buckets * sizeof(khkey_t)); \
 					if (kh_is_map)										\
-						h->vals = (khval_t*)realloc(h->vals, new_n_buckets * sizeof(khval_t)); \
+						h->vals = (khval_t*)hlt_gc_realloc_non_atomic(h->vals, new_n_buckets * sizeof(khval_t)); \
 				}														\
 			}															\
 		}																\
@@ -197,11 +192,10 @@ static const double __ac_HASH_UPPER = 0.77;
 				}														\
 			}															\
 			if (h->n_buckets > new_n_buckets) {							\
-				h->keys = (khkey_t*)realloc(h->keys, new_n_buckets * sizeof(khkey_t)); \
+				h->keys = (khkey_t*)hlt_gc_realloc_non_atomic(h->keys, new_n_buckets * sizeof(khkey_t)); \
 				if (kh_is_map)											\
-					h->vals = (khval_t*)realloc(h->vals, new_n_buckets * sizeof(khval_t)); \
+					h->vals = (khval_t*)hlt_gc_realloc_non_atomic(h->vals, new_n_buckets * sizeof(khval_t)); \
 			}															\
-			free(h->flags);												\
 			h->flags = new_flags;										\
 			h->n_buckets = new_n_buckets;								\
 			h->n_occupied = h->size;									\
