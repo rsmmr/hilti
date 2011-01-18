@@ -112,12 +112,11 @@ type Message = unit(body_default: bool) {
 };
 
 const HeaderName  = /[^:\r\n]+/;
-const HeaderValue = /[^\r\n]+/;
+const HeaderValue = /[^\r\n]*/;
 
 type Header = unit(msg: Message) {
     name:    HeaderName &convert=to_lower;
-    :        /:/;
-    :        WhiteSpace;
+    :        /:[\t ]*/;
     content: HeaderValue;
     :        NewLine;
 
