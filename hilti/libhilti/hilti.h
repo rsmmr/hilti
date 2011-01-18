@@ -21,9 +21,11 @@
 #ifndef HILTI_H
 #define HILTI_H
 
+#ifdef USE_GC
 // gc.h must be included library-wide because it overwrites some standard
 // functions (such as pthreads_create())
 #include <gc.h>
+#endif
 
 #include <stdlib.h>
 #include <stdint.h>

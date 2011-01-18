@@ -15,7 +15,7 @@
 // problem is probably the 3rdparty code, which doesn't use the hlt_gc_*
 // functions ...
 
-#if 1
+#if USE_GC
 
 void __hlt_init_gc()
 {
