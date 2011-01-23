@@ -20,7 +20,7 @@ typedef struct __hlt_map {
     const hlt_type_info* tkey;   // Key type.
     const hlt_type_info* tvalue; // Value type.
     hlt_timer_mgr* tmgr;         // The timer manager or null.
-    double timeout;              // The timeout value, or 0 if disabled
+    hlt_interval timeout;        // The timeout value, or 0 if disabled
     hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
     int8_t have_def;             // True if a default value has been set.
     __val_t def;                 // The default value if set.
@@ -41,7 +41,7 @@ struct __hlt_map_iter {
 typedef struct __hlt_set {
     const hlt_type_info* tkey;   // Key type.
     hlt_timer_mgr* tmgr;         // The timer manager or null.
-    double timeout;              // The timeout value, or 0 if disabled
+    hlt_interval timeout;        // The timeout value, or 0 if disabled
     hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
 
     // These are used by khash and copied from there (see README.HILTI).
@@ -92,7 +92,7 @@ static inline void _access_map(hlt_map* m, khiter_t i, hlt_exception** excpt, hl
     if ( ! kh_value(m, i).timer )
         return;
 
-    double t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
+    hlt_interval t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
     hlt_timer_update(kh_value(m, i).timer, t, excpt, ctx);
 }
 
@@ -104,7 +104,7 @@ static inline void _access_set(hlt_set* m, khiter_t i, hlt_exception** excpt, hl
     if ( ! kh_value(m, i) )
         return;
 
-    double t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
+    hlt_interval t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
     hlt_timer_update(kh_value(m, i), t, excpt, ctx);
 }
 
@@ -196,7 +196,7 @@ void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_
             // Create timer.
             __hlt_map_timer_cookie cookie = { m, keytmp };
             kh_value(m, i).timer = __hlt_timer_new_map(cookie, excpt, ctx);
-            double t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
+            hlt_interval t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
             hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i).timer, excpt, ctx);
         }
         else
@@ -287,7 +287,7 @@ void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_excep
     m->def = _to_voidp(tdef, def);
 }
 
-void hlt_map_timeout(hlt_map* m, hlt_enum strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_map_timeout(hlt_map* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m->tmgr ) {
         hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);
@@ -457,7 +457,7 @@ void hlt_set_insert(hlt_set* m, const hlt_type_info* tkey, void* key, hlt_except
             // Create timer.
             __hlt_set_timer_cookie cookie = { m, keytmp };
             kh_value(m, i) = __hlt_timer_new_set(cookie, excpt, ctx);
-            double t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
+            hlt_interval t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
             hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i), excpt, ctx);
         }
         else
@@ -540,7 +540,7 @@ void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_context* ctx
     kh_clear_set(m);
 }
 
-void hlt_set_timeout(hlt_set* m, hlt_enum strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_set_timeout(hlt_set* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! m->tmgr ) {
         hlt_set_exception(excpt, &hlt_exception_no_timer_manager, 0);

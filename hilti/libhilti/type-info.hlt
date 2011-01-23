@@ -5,6 +5,9 @@ module InternalTypeInfo
 
 export tuple<string>
 export tuple<iterator<bytes>,iterator<bytes>>
+export int<64>
+export time
+export double
 
 # This is an internal function that the code-generator will
 # auto-generate if exported. Note that the signature here doesn't

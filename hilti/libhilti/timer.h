@@ -27,9 +27,6 @@
 #include "map_set.h"
 #include "hilti.h"
 
-#define HLT_TIME_NONE -1.0                    ///< Expiration time for non-scheduled timers.
-
-typedef double hlt_time;                      ///< The type storing a time.
 typedef struct __hlt_timer hlt_timer;         ///< Type for representing a HILTI timer.
 typedef struct __hlt_timer_mgr hlt_timer_mgr; ///< Type for representing a HILTI timer manager.
 
@@ -77,10 +74,18 @@ extern void hlt_timer_cancel(hlt_timer* timer, hlt_exception** excpt, hlt_execut
 extern hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Converts a timer to a double. The returned double is the timer's
-/// expiration time, or HLT_TIME_NONE if none has been set.
+/// expiration time in seconds since the epoch, or HLT_TIME_NONE if none has
+/// been set.
 ///
 /// This function has the standard RTTI signature.
 extern double hlt_timer_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
+
+/// Converts a timer to an int64. The returned valye is the timer's
+/// expiration time in nanoseconds since the epoch, or HLT_TIME_NONE if none
+/// has been set.
+///
+/// This function has the standard RTTI signature.
+extern int64_t hlt_timer_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Instantiates a new timer manager object. It's current time well initially be set to zero.
 ///
@@ -143,10 +148,16 @@ extern void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception*
 extern hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Converts a timer manager to a double. The returned double is the
-/// manager's current time.
+/// manager's current time in seconds since the epoch.
 ///
 /// This function has the standard RTTI signature.
 extern double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
+
+/// Converts a timer manager to an int64. The returned value is the
+/// manager's current time in nanoseconds since the epoch.
+///
+/// This function has the standard RTTI signature.
+extern int64_t hlt_timer_mgr_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx);
 
 /// Instantiates a new timer object that will execute a bound function when it
 /// fires.

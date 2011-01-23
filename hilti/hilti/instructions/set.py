@@ -123,10 +123,10 @@ class Insert(Instruction):
         key = self.op1().type().refType().keyType()
         cg.llvmCallC("hlt::set_insert", [self.op1(), self.op2().coerceTo(cg, key)])
 
-@hlt.instruction("set.timeout", op1=cReferenceOf(cSet), op2=cEnum, op3=cDouble)
+@hlt.instruction("set.timeout", op1=cReferenceOf(cSet), op2=cEnum, op3=cInterval)
 class Timeout(Instruction):
     """Activates automatic expiration of items for set *op1*. All subsequently
-    inserted entries will be expired *op3* seconds after they have been added
+    inserted entries will be expired after an interval of *op3* after they
     (if *op2* is *Expire::Create*) or last accessed (if *op2* is
     *Expire::Access). Expiration is disable if *op3* is zero. Throws
     NoTimerManager if no timer manager has been associated with the set at

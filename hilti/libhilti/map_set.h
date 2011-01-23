@@ -143,12 +143,12 @@ extern void  hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, h
 ///
 /// strategy: The expiration strategy to use
 ///
-/// timeout: Timeout in seconds after which to expire entries. If zero, expiration is disabled.
+/// timeout: Timeout after which to expire entries. If zero, expiration is disabled.
 ///
 /// excpt: &
 ///
 /// Raises: NoTimerManager if not timer manager has been associated with the map.
-extern void hlt_map_timeout(hlt_map* m, hlt_enum strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_map_timeout(hlt_map* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns an iterator pointing the first map element.
 ///
@@ -280,12 +280,12 @@ extern void hlt_set_clear(hlt_set* m, hlt_exception** excpt, hlt_execution_conte
 ///
 /// strategy: The expiration strategy to use
 ///
-/// timeout: Timeout in seconds after which to expire entries. If zero, expiration is disabled.
+/// timeout: Timeout after which to expire entries. If zero, expiration is disabled.
 ///
 /// excpt: &
 ///
 /// Raises: NoTimerManager if not timer manager has been associated with the set.
-extern void hlt_set_timeout(hlt_set* m, hlt_enum strategy, double timeout, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_set_timeout(hlt_set* m, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns an iterator pointing the first set element.
 ///

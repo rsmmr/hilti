@@ -42,6 +42,7 @@ keywords = {
     "try": "TRY",
     "catch": "CATCH",
     "hook": "HOOK",
+    "epoch": "EPOCH",
 
     "@internal": "INTERNAL",
     }
@@ -205,12 +206,9 @@ def t_CPORT(t):
 
 def t_CDOUBLE(t):
     r'-?\d+\.\d+'
-    try:
-        t.value = float(t.value)
-    except ValueError:
-        error(t, "cannot parse double %s" % t.value)
-        t.value = 0
-
+    (full, frac) = t.value.split(".")
+    frac = int(frac) * (10.0 ** (9 - len(frac)))
+    t.value = (int(full), int(frac)) if int(full) >= 0 else (int(full), -int(frac))
     return t
 
 def t_CINTEGER(t):

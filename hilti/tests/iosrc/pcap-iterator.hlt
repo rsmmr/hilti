@@ -12,7 +12,7 @@ import Hilti
 void run() {
     local bool eq
     local ref<iosrc<Hilti::IOSrc::PcapOffline>> psrc
-    local tuple<double,ref<bytes>> pkt
+    local tuple<time,ref<bytes>> pkt
     local iterator<iosrc<Hilti::IOSrc::PcapOffline>> cur
     local iterator<iosrc<Hilti::IOSrc::PcapOffline>> last
 

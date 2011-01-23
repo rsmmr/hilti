@@ -12,7 +12,7 @@ import Hilti
 void run() {
 
     local ref<iosrc<Hilti::IOSrc::PcapOffline>> psrc
-    local tuple<double,ref<bytes>> pkt
+    local tuple<time,ref<bytes>> pkt
 
     psrc = new iosrc<Hilti::IOSrc::PcapOffline> "trace.pcap"
 

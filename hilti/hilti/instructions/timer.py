@@ -5,7 +5,7 @@
    A ``timer`` executes an action at a certain point of time in the future,
    where "time" is defined by a ``timer_mgr`` object with which each timer is
    associated. Each manager tracks its time as a monotonically increasing
-   ``double`` value. Managers never advance their time themselves; the HILTI
+   ``time`` value. Managers never advance their time themselves; the HILTI
    program does that explicitly.
 """
 
@@ -33,6 +33,7 @@ class Timer(type.HeapType):
         typeinfo = cg.TypeInfo(self)
         typeinfo.to_string = "hlt::timer_to_string"
         typeinfo.to_double = "hlt::timer_to_double"
+        typeinfo.to_int64 = "hlt::timer_to_int64";
         return typeinfo
 
     def llvmType(self, cg):
@@ -77,7 +78,7 @@ class NewTimer(Operator):
         cg.llvmExceptionTest()
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("timer.update", op1=cReferenceOf(cTimer), op2=cDouble)
+@hlt.instruction("timer.update", op1=cReferenceOf(cTimer), op2=cTime)
 class Update(InstructionWithCallables):
     """Adjusts *op1*'s expiration time to *op2*.
 
@@ -101,7 +102,7 @@ class NewTimerMgr(Operator):
         result = cg.llvmCallC("hlt::timer_mgr_new", [])
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("timer_mgr.advance", op1=cReferenceOf(cTimerMgr), op2=cDouble)
+@hlt.instruction("timer_mgr.advance", op1=cReferenceOf(cTimerMgr), op2=cTime)
 class Advance(InstructionWithCallables):
     """Advances *op1*'s notion of time to *op2*. Time can never go backwards,
     and thus the instruction has no effect if *op2* is smaller than the timer
@@ -109,7 +110,7 @@ class Advance(InstructionWithCallables):
     def _codegen(self, cg):
         cg.llvmCallC("hlt::timer_mgr_advance", [self.op1(), self.op2()])
 
-@hlt.instruction("timer_mgr.current", op1=cReferenceOf(cTimerMgr), target=cDouble)
+@hlt.instruction("timer_mgr.current", op1=cReferenceOf(cTimerMgr), target=cTime)
 class Current(Instruction):
     """Returns *op1*'s current time."""
     def _codegen(self, cg):
@@ -124,7 +125,7 @@ class Expire(InstructionWithCallables):
     def _codegen(self, cg):
         cg.llvmCallC("hlt::timer_mgr_expire", [self.op1(), self.op2()])
 
-@hlt.instruction("timer_mgr.schedule", op1=cReferenceOf(cTimerMgr), op2=cDouble, op3=cReferenceOf(cTimer))
+@hlt.instruction("timer_mgr.schedule", op1=cReferenceOf(cTimerMgr), op2=cTime, op3=cReferenceOf(cTimer))
 class Schedule(InstructionWithCallables):
     """Schedules *op2* with the timer manager *op1* to be executed at time
     *op2*. If *op2* is smaller or equal to the manager's current time, the

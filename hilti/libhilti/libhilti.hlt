@@ -31,16 +31,23 @@ declare "C-HILTI" string timer_mgr_to_string(any s, int32 options)
 declare "C-HILTI" string map_to_string(any s, int32 options)
 declare "C-HILTI" string set_to_string(any s, int32 options)
 declare "C-HILTI" string iosrc_pcap_to_string(any s, int32 options)
+declare "C-HILTI" string time_to_string(any d, int32 options)
+declare "C-HILTI" string interval_to_string(any d, int32 options)
 
-declare "C-HILTI" string int_to_int64(any n)
-declare "C-HILTI" string bool_to_int64(any b)
-declare "C-HILTI" string enum_to_int64(any b)
-declare "C-HILTI" string port_to_int64(any b)
-declare "C-HILTI" string bitset_to_int64(any b)
+declare "C-HILTI" int64 int_to_int64(any n)
+declare "C-HILTI" int64 bool_to_int64(any b)
+declare "C-HILTI" int64 enum_to_int64(any b)
+declare "C-HILTI" int64 port_to_int64(any b)
+declare "C-HILTI" int64 bitset_to_int64(any b)
+declare "C-HILTI" int64 timer_to_int64(any n)
+declare "C-HILTI" int64 time_to_int64(any n)
+declare "C-HILTI" int64 interval_to_int64(any n)
 
-declare "C-HILTI" string double_to_double(any d)
-declare "C-HILTI" string timer_to_double(any d)
-declare "C-HILTI" string timer_mgr_to_double(any d)
+declare "C-HILTI" double double_to_double(any d)
+declare "C-HILTI" double timer_to_double(any d)
+declare "C-HILTI" double timer_mgr_to_double(any d)
+declare "C-HILTI" double time_to_double(any d)
+declare "C-HILTI" double interval_to_double(any d)
 
 declare "C-HILTI" int64 default_hash(any s)
 declare "C-HILTI" bool  default_equal(any s1, any s2)
@@ -141,12 +148,12 @@ declare "C-HILTI" tuple<int32, iterator<bytes>> regexp_bytes_match_token(ref<reg
 
 ##
 
-declare "C-HILTI" void timer_update(ref<timer> t, double time)
+declare "C-HILTI" void timer_update(ref<timer> t, time tim)
 declare "C-HILTI" void timer_cancel(ref<timer> t)
 declare "C-HILTI" ref<timer_mgr> timer_mgr_new()
-declare "C-HILTI" void timer_mgr_schedule(ref<timer_mgr> mgr, double t, ref<timer> t)
-declare "C-HILTI" int32 timer_mgr_advance(ref<timer_mgr> mgr, double time)
-declare "C-HILTI" double timer_mgr_current(ref<timer_mgr> mgr)
+declare "C-HILTI" void timer_mgr_schedule(ref<timer_mgr> mgr, time t, ref<timer> t)
+declare "C-HILTI" int32 timer_mgr_advance(ref<timer_mgr> mgr, time tim)
+declare "C-HILTI" time timer_mgr_current(ref<timer_mgr> mgr)
 declare "C-HILTI" void timer_mgr_expire(ref<timer_mgr> mgr, bool fire)
 
 ##
@@ -160,7 +167,7 @@ declare "C-HILTI" void map_remove(ref<map<*>> m, any key)
 declare "C-HILTI" int64 map_size(ref<map<*>> m)
 declare "C-HILTI" void map_clear(ref<map<*>> m)
 declare "C-HILTI" void map_default(ref<map<*>> m, any value)
-declare "C-HILTI" void map_timeout(ref<map<*>> m, Hilti::ExpireStrategy s, double timeout)
+declare "C-HILTI" void map_timeout(ref<map<*>> m, Hilti::ExpireStrategy s, interval timeout)
 
 declare "C-HILTI" iterator<map<*>> map_begin(ref<map<*>> v)
 declare "C-HILTI" iterator<map<*>> map_end()
@@ -176,7 +183,7 @@ declare "C-HILTI" bool set_exists(ref<set<*>> m, any key)
 declare "C-HILTI" void set_remove(ref<set<*>> m, any key)
 declare "C-HILTI" int64 set_size(ref<set<*>> m)
 declare "C-HILTI" void set_clear(ref<set<*>> m)
-declare "C-HILTI" void set_timeout(ref<set<*>> m, Hilti::ExpireStrategy s, double timeout)
+declare "C-HILTI" void set_timeout(ref<set<*>> m, Hilti::ExpireStrategy s, interval timeout)
 
 declare "C-HILTI" iterator<set<*>> set_begin(ref<set<*>> v)
 declare "C-HILTI" iterator<set<*>> set_end()
@@ -188,7 +195,7 @@ declare "C-HILTI" bool set_iter_eq(iterator<set<*>> i1, iterator<set<*>> i2)
 
 declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_live(string interface)
 declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_offline(string interface)
-declare "C-HILTI" tuple<double, ref<bytes>> iosrc_pcap_read_try(ref<iosrc<*>> src, bool keep_link_layer)
+declare "C-HILTI" tuple<time, ref<bytes>> iosrc_pcap_read_try(ref<iosrc<*>> src, bool keep_link_layer)
 declare "C-HILTI" void iosrc_pcap_close(ref<iosrc<*>> src)
 
 ##
@@ -212,6 +219,10 @@ declare "C-HILTI" void file_open(ref<file> f, string path, Hilti::FileType ty, H
 declare "C-HILTI" void file_close(ref<file> f)
 declare "C-HILTI" void file_write_string(ref<file> f, string str)
 declare "C-HILTI" void file_write_bytes(ref<file> f, ref<bytes> b)
+
+#
+
+declare "C-HILTI" time time_wall()
 
 ##
 

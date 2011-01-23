@@ -62,6 +62,8 @@
 #include "vector.h"
 #include "continuation.h"
 #include "list.h"
+#include "tim.h"
+#include "interval.h"
 #include "timer.h"
 #include "map_set.h"
 #include "iosrc.h"

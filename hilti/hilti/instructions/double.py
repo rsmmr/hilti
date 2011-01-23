@@ -30,19 +30,38 @@ class Double(type.ValueType, type.Constable):
         return typeinfo
 
     def llvmDefault(self, cg):
-        """A ``double`` is intially initialized to zero."""
+        """A ``double`` is initially initialized to zero."""
         return cg.llvmConstDouble(0)
 
     ### Overridden from Constable.
 
     def validateConstant(self, vld, const):
-        return isinstance(const.value(), float)
+        val = const.value()
+
+        if isinstance(val, float):
+            return True
+
+        if not isinstance(val, list) and not isinstance(val, tuple):
+            return False
+
+        return isinstance(val[0], int) and isinstance(val[1], int)
+
+    def _float(self, const):
+        val = const.value()
+
+        if not isinstance(val, float):
+            if not val[1]:
+                val = float(val[0])
+            else:
+                val = float(val[0]) + float(val[1]) / 1e9
+
+        return val
 
     def llvmConstant(self, cg, const):
-        return cg.llvmConstDouble(const.value())
+        return cg.llvmConstDouble(self._float(const))
 
     def outputConstant(self, printer, const):
-        printer.output("%f" % const.value())
+        printer.output("%f" % self._float(const))
 
 @hlt.instruction("double.add", op1=cDouble, op2=cDouble, target=cDouble)
 class Add(Instruction):

@@ -16,7 +16,7 @@ void run() {
 
     t = new timer_mgr
     m = new set<string> t
-    set.timeout m Hilti::ExpireStrategy::Access 20.0
+    set.timeout m Hilti::ExpireStrategy::Access interval(20.0)
 
     set.insert m "A-0"
     set.insert m "B-0"

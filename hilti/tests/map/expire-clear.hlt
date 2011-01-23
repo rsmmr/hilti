@@ -16,7 +16,7 @@ void run() {
 
     t = new timer_mgr
     m = new map<string, int32> t
-    map.timeout m Hilti::ExpireStrategy::Access 20.0
+    map.timeout m Hilti::ExpireStrategy::Access interval(20.0)
 
     map.insert m "A-0" 1
     map.insert m "B-0" 2

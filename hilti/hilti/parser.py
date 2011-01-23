@@ -563,6 +563,27 @@ def p_operand_double(p):
     const = constant.Constant(p[1], type.Double(), location=_loc(p, 1))
     p[0] = operand.Constant(const, location=_loc(p, 1))
 
+def p_operand_epoch(p):
+    """operand : EPOCH"""
+    const = constant.Constant(instructions.time.Epoch, type.Time(), location=_loc(p, 1))
+    p[0] = operand.Constant(const, location=_loc(p, 1))
+
+def p_operand_time(p):
+    """operand : TIME '(' CDOUBLE ')'
+               | TIME '(' CINTEGER ')'
+               """
+    dbl = p[3] if isinstance(p[3], tuple) else (p[3], 0)
+    const = constant.Constant(dbl, type.Time(), location=_loc(p, 1))
+    p[0] = operand.Constant(const, location=_loc(p, 1))
+
+def p_operand_interval(p):
+    """operand : INTERVAL '(' CDOUBLE ')'
+               | INTERVAL '(' CINTEGER ')'
+               """
+    dbl = p[3] if isinstance(p[3], tuple) else (p[3], 0)
+    const = constant.Constant(dbl, type.Interval(), location=_loc(p, 1))
+    p[0] = operand.Constant(const, location=_loc(p, 1))
+
 def p_operand_bool(p):
     """operand : CBOOL"""
     const = constant.Constant(p[1], type.Bool(), location=_loc(p, 1))
@@ -795,6 +816,13 @@ def p_type_file(p):
     """type : FILE"""
     p[0] = type.File()
 
+def p_type_time(p):
+    """type : TIME"""
+    p[0] = type.Time()
+
+def p_type_interval(p):
+    """type : INTERVAL"""
+    p[0] = type.Interval()
 
 #
 
@@ -928,13 +956,15 @@ def p_opt_struct_id_list(p):
                           | """
     p[0] = p[1] if len(p) == 2 else []
 
-def p_id_list(p):
-    """id_list : IDENT "," id_list
-                | IDENT"""
-    if len(p) == 2:
-        p[0] = [p[1]]
-    else:
-        p[0] = [p[1]] + p[3]
+# Unused currently.
+#
+# def p_id_list(p):
+#     """id_list : IDENT "," id_list
+#                 | IDENT"""
+#     if len(p) == 2:
+#         p[0] = [p[1]]
+#     else:
+#         p[0] = [p[1]] + p[3]
 
 def p_id_with_opt_int_init_list(p):
     """id_with_opt_int_init_list : IDENT opt_int_init "," id_with_opt_int_init_list

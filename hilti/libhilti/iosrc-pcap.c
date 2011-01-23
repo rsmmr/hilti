@@ -5,8 +5,6 @@
 
 #include <pcap.h>
 
-extern const hlt_type_info hlt_type_info_tuple_double_ref_bytes;
-
 static hlt_string_constant PREFIX = { 11, "error with " };
 static hlt_string_constant COLON = { 3, ": " };
 
@@ -173,7 +171,7 @@ hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, 
             return result;
 
         // Build the result tuple.
-        result.t = hdr->ts.tv_sec + (double)(hdr->ts.tv_usec) / 1e6;
+        result.t = hlt_time_value(hdr->ts.tv_sec, hdr->ts.tv_usec * 1000);
         result.data = pkt;
         return result;
     }

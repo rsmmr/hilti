@@ -14,9 +14,9 @@ struct __hlt_iosrc_pcap {
     void* handle;         // A kind-specific handle.
 };
 
-/// tuple<double, ref<bytes>>
+/// tuple<time, ref<bytes>>
 struct __hlt_packet {
-    double t;
+    hlt_time t;
     hlt_bytes* data;
 };
 
@@ -49,7 +49,7 @@ extern hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exce
 ///
 /// keep_link_layer: If not true, any link layer headers are stripped.
 ///
-/// Returns: A tuple <double, hlt_bytes*> in which the ``double`` is the
+/// Returns: A tuple <hlt_time, hlt_bytes*> in which the time is the
 /// packet's timestamp, and the ``bytes`` object is the packet's content. If
 /// the source is permanenly exhausted, the ``bytes`` pointer will be null.
 ///

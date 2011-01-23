@@ -9,15 +9,17 @@ module Main
 import Hilti
 
 void foo(int32 n) {
-    call Hilti::print ("Timer at ", False)
-    call Hilti::print (n)
+    local time t
+    t = time.from_unix n
+    call Hilti::print ("Timer at   ", False)
+    call Hilti::print (t)
 }
 
 void run() {
 
     local ref<timer> t
     t = new timer foo (4)
-    timer.update t 10.0
+    timer.update t time(10.0)
 
     call Hilti::print("not reached")
 

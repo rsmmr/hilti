@@ -52,7 +52,7 @@ class IteratorIOSrc(type.Iterator):
     ### Overridden from Iterator.
 
     def derefType(self):
-        return type.Tuple([type.Double(), type.Reference(type.Bytes())])
+        return type.Tuple([type.Time(), type.Reference(type.Bytes())])
 
 @hlt.type("iosrc", 27, c="hlt_iosrc *")
 class IOSrc(type.HeapType, type.Parameterizable, type.Iterable):
@@ -199,7 +199,7 @@ class New(Operator):
         assert result
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("iosrc.read", op1=cReferenceOf(cIOSrc), target=cIsTuple([cDouble, cReferenceOf(cBytes)]))
+@hlt.instruction("iosrc.read", op1=cReferenceOf(cIOSrc), target=cIsTuple([cTime, cReferenceOf(cBytes)]))
 class Read(BlockingInstruction):
     """Returns the next element from the I/O source *op1*. If currently no
     element is available, the instruction blocks until one is.

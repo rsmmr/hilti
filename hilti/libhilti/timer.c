@@ -51,7 +51,7 @@ hlt_timer* __hlt_timer_new_function(hlt_callable* func, hlt_exception** excpt, h
     }
 
     timer->mgr = 0;
-    timer->time = HLT_TIME_NONE;
+    timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_FUNCTION;
     timer->cookie.function = func;
     return timer;
@@ -68,7 +68,7 @@ hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** 
     }
 
     timer->mgr = 0;
-    timer->time = HLT_TIME_NONE;
+    timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_LIST;
     timer->cookie.list = cookie;
     return timer;
@@ -84,7 +84,7 @@ hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_exception** ex
     }
 
     timer->mgr = 0;
-    timer->time = HLT_TIME_NONE;
+    timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_MAP;
     timer->cookie.map = cookie;
     return timer;
@@ -99,7 +99,7 @@ hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** ex
     }
 
     timer->mgr = 0;
-    timer->time = HLT_TIME_NONE;
+    timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_SET;
     timer->cookie.set = cookie;
     return timer;
@@ -138,25 +138,40 @@ void hlt_timer_cancel(hlt_timer* timer, hlt_exception** excpt, hlt_execution_con
     timer->time = 0;
 }
 
+static hlt_string_constant timer_prefix = HLT_STRING_CONSTANT("<timer scheduled at ");
+static hlt_string_constant timer_postfix = HLT_STRING_CONSTANT(">");
+static hlt_string_constant timer_unsched = HLT_STRING_CONSTANT("<unscheduled timer>");
+
+extern const hlt_type_info hlt_type_info_string;
+extern const hlt_type_info hlt_type_info_double;
+extern const hlt_type_info hlt_type_info_int_64;
+extern const hlt_type_info hlt_type_info_time;
+
 hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER);
     hlt_timer* t = *((hlt_timer **)obj);
 
-    char buffer[64];
-    if ( t->time != HLT_TIME_NONE )
-        snprintf(buffer, sizeof(buffer), "<timer scheduled at %.6f>", t->time);
-    else
-        strcpy(buffer, "<unscheduled timer>");
+    if ( t->time == HLT_TIME_UNSET )
+        return &timer_unsched;
 
-    return hlt_string_from_asciiz(buffer, excpt, ctx);
+    hlt_string s = hlt_time_to_string(&hlt_type_info_time, &t->time, options, excpt, ctx);
+    s = hlt_string_concat(&timer_prefix, s, excpt, ctx);
+    return hlt_string_concat(s, &timer_postfix, excpt, ctx);
 }
 
 double hlt_timer_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER);
     hlt_timer* t = *((hlt_timer **)obj);
-    return t->time;
+    return hlt_time_to_double(&hlt_type_info_time, &t->time, options, excpt, ctx);
+}
+
+int64_t hlt_timer_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    assert(type->type == HLT_TYPE_TIMER);
+    hlt_timer* t = *((hlt_timer **)obj);
+    return hlt_time_to_int64(&hlt_type_info_time, &t->time, options, excpt, ctx);
 }
 
 hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_context* ctx)
@@ -259,19 +274,35 @@ void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception** excpt
     }
 }
 
+static hlt_string_constant tmgr_prefix = HLT_STRING_CONSTANT("<timer_mgr at ");
+static hlt_string_constant tmgr_middle = HLT_STRING_CONSTANT(" / ");
+static hlt_string_constant tmgr_postfix = HLT_STRING_CONSTANT(" active timers>");
+
 hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER_MGR);
     hlt_timer_mgr* mgr = *((hlt_timer_mgr **)obj);
 
-    char buffer[128];
-    snprintf(buffer, sizeof(buffer), "<timer_mgr at time %.6f / %" PRId64 " active timers>", mgr->time, (int64_t)pqueue_size(mgr->timers));
-    return hlt_string_from_asciiz(buffer, excpt, ctx);
+    int64_t size = pqueue_size(mgr->timers);
+    hlt_string size_str = hlt_int_to_string(&hlt_type_info_int_64, &size, options, excpt, ctx);
+
+    hlt_string s = hlt_time_to_string(&hlt_type_info_time, &mgr->time, options, excpt, ctx);
+    s = hlt_string_concat(&tmgr_prefix, s, excpt, ctx);
+    s = hlt_string_concat(s, &tmgr_middle, excpt, ctx);
+    s = hlt_string_concat(s, size_str, excpt, ctx);
+    return hlt_string_concat(s, &tmgr_postfix, excpt, ctx);
 }
 
 double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER_MGR);
     hlt_timer_mgr* mgr = *((hlt_timer_mgr **)obj);
-    return mgr->time;
+    return hlt_time_to_double(&hlt_type_info_time, &mgr->time, options, excpt, ctx);
+}
+
+int64_t hlt_timer_mgr_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    assert(type->type == HLT_TYPE_TIMER_MGR);
+    hlt_timer_mgr* mgr = *((hlt_timer_mgr **)obj);
+    return hlt_time_to_int64(&hlt_type_info_time, &mgr->time, options, excpt, ctx);
 }

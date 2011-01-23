@@ -9,11 +9,13 @@ module Main
 import Hilti
 
 void foo(int32 n) {
-    call Hilti::print ("Timer at ", False)
-    call Hilti::print (n)
+    local time t
+    t = time.from_unix n
+    call Hilti::print ("Timer at   ", False)
+    call Hilti::print (t)
 }
 
-void advance(ref<timer_mgr> mgr, double t) {
+void advance(ref<timer_mgr> mgr, time t) {
     call Hilti::print ("Advance to ", False)
     call Hilti::print (t)
     timer_mgr.advance mgr t
@@ -26,26 +28,26 @@ void run() {
 
     mgr = new timer_mgr
     t = new timer foo (4)
-    timer_mgr.schedule mgr 4.0 t
+    timer_mgr.schedule mgr time(4.0) t
     t = new timer foo (1)
-    timer_mgr.schedule mgr 1.0 t
+    timer_mgr.schedule mgr time(1.0) t
     t = new timer foo (5)
-    timer_mgr.schedule mgr 5.0 t
+    timer_mgr.schedule mgr time(5.0) t
     t = new timer foo (2)
-    timer_mgr.schedule mgr 2.0 t
+    timer_mgr.schedule mgr time(2.0) t
     t = new timer foo (3)
-    timer_mgr.schedule mgr 3.0 t
+    timer_mgr.schedule mgr time(3.0) t
 
-    timer.update t 10.0
+    timer.update t time(10.0)
 
-    call advance(mgr, 0.1)
-    call advance(mgr, 0.2)
-    call advance(mgr, 0.3)
-    call advance(mgr, 0.5)
-    call advance(mgr, 1.0)
-    call advance(mgr, 4.5)
-    call advance(mgr, 5.0)
-    call advance(mgr, 10.0)
+    call advance(mgr, time(0.1))
+    call advance(mgr, time(0.2))
+    call advance(mgr, time(0.3))
+    call advance(mgr, time(0.5))
+    call advance(mgr, time(1.0))
+    call advance(mgr, time(4.5))
+    call advance(mgr, time(5.0))
+    call advance(mgr, time(10.0))
 
     return.void
 }

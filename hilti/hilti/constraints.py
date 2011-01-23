@@ -164,7 +164,15 @@ def cNonZero(constr):
             return (False, msg)
 
         if op and isinstance(op, operand.Constant):
-            return (op.value().value() != 0, "must not be zero")
+            val = op.value().value()
+
+            if isinstance(val, tuple) or isinstance(val, list):
+                # A double.
+                return (op.value().value() != (0, 0), "must not be zero")
+
+            else:
+                # An integer.
+                return (op.value().value() != 0, "must not be zero")
         else:
             return (True, "")
 
@@ -349,6 +357,8 @@ cIOSrc = _hasType("IOSrc")
 cIteratorIOSrc = _hasType("IteratorIOSrc")
 cFile = _hasType("File")
 cCallable = _hasType("Callable")
+cTime = _hasType("Time")
+cInterval = _hasType("Interval")
 
 cFunction = _hasType("Function")
 cHook = _hasType("Hook")

@@ -21,9 +21,9 @@ void run() {
     mgr = new timer_mgr
     t = new timer foo (42)
 
-    timer_mgr.schedule mgr 10.0 t
+    timer_mgr.schedule mgr time(10.0) t
 
-    timer_mgr.advance mgr 20.0
+    timer_mgr.advance mgr time(20.0)
 
     return.void
 }

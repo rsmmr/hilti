@@ -1,17 +1,17 @@
-Advance to 0.100000
-<timer_mgr at time 0.100000 / 0 active timers>
-Advance to 0.200000
-<timer_mgr at time 0.200000 / 0 active timers>
-Advance to 0.300000
-<timer_mgr at time 0.300000 / 0 active timers>
-Advance to 0.500000
-<timer_mgr at time 0.500000 / 0 active timers>
-Advance to 1.000000
-<timer_mgr at time 1.000000 / 0 active timers>
-Advance to 4.500000
-<timer_mgr at time 4.500000 / 0 active timers>
-Advance to 5.000000
-<timer_mgr at time 5.000000 / 0 active timers>
-Advance to 10.000000
-<timer_mgr at time 10.000000 / 0 active timers>
-10.000000
+Advance to 1970-01-01T00:00:00.100000000Z
+<timer_mgr at 1970-01-01T00:00:00.100000000Z / 0 active timers>
+Advance to 1970-01-01T00:00:00.200000000Z
+<timer_mgr at 1970-01-01T00:00:00.200000000Z / 0 active timers>
+Advance to 1970-01-01T00:00:00.300000000Z
+<timer_mgr at 1970-01-01T00:00:00.300000000Z / 0 active timers>
+Advance to 1970-01-01T00:00:00.500000000Z
+<timer_mgr at 1970-01-01T00:00:00.500000000Z / 0 active timers>
+Advance to 1970-01-01T00:00:01.000000000Z
+<timer_mgr at 1970-01-01T00:00:01.000000000Z / 0 active timers>
+Advance to 1970-01-01T00:00:04.500000000Z
+<timer_mgr at 1970-01-01T00:00:04.500000000Z / 0 active timers>
+Advance to 1970-01-01T00:00:05.000000000Z
+<timer_mgr at 1970-01-01T00:00:05.000000000Z / 0 active timers>
+Advance to 1970-01-01T00:00:10.000000000Z
+<timer_mgr at 1970-01-01T00:00:10.000000000Z / 0 active timers>
+1970-01-01T00:00:10.000000000Z

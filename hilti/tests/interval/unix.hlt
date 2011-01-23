@@ -1,0 +1,41 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build2 %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void printInterval(interval t) {
+    local string s
+    s = call Hilti::fmt("%s | %d | %f", (t, t, t))
+    call Hilti::print(s)
+}
+
+void run() {
+    local int<32> i
+    local double d
+    local interval t
+
+    d = 1000.42
+    i = 2000
+
+    t = interval.from_secs d
+    call printInterval(t)
+
+    t = interval.from_secs i
+    call printInterval(t)
+
+    call Hilti::print("")
+
+    t = interval(1000.42)
+    d = interval.to_secs t
+    call Hilti::print(d)
+
+    i = interval.to_secs t
+    call Hilti::print(i)
+
+    }
+

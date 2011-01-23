@@ -73,6 +73,11 @@ Cleanup
 - Remove labels'@-prefix. We might want to introduce id.Label to
   separate them from other locals.
 
+- For some types, we have "ty.eq" instructions, for other we overload the eq
+  operator, and for some we do both. Should generally move to just operators.
+  (Same problem may exist for other operators). 
+
+
 LLVM problems
 -------------
 

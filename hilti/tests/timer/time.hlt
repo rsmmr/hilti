@@ -8,7 +8,7 @@ module Main
 
 import Hilti
 
-void advance(ref<timer_mgr> mgr, double t) {
+void advance(ref<timer_mgr> mgr, time t) {
     call Hilti::print ("Advance to ", False)
     call Hilti::print (t)
     timer_mgr.advance mgr t
@@ -18,17 +18,17 @@ void advance(ref<timer_mgr> mgr, double t) {
 void run() {
 
     local ref<timer_mgr> mgr
-    local double t
+    local time t
 
     mgr = new timer_mgr
-    call advance(mgr, 0.1)
-    call advance(mgr, 0.2)
-    call advance(mgr, 0.3)
-    call advance(mgr, 0.5)
-    call advance(mgr, 1.0)
-    call advance(mgr, 4.5)
-    call advance(mgr, 5.0)
-    call advance(mgr, 10.0)
+    call advance(mgr, time(0.1))
+    call advance(mgr, time(0.2))
+    call advance(mgr, time(0.3))
+    call advance(mgr, time(0.5))
+    call advance(mgr, time(1.0))
+    call advance(mgr, time(4.5))
+    call advance(mgr, time(5.0))
+    call advance(mgr, time(10.0))
 
     t = timer_mgr.current mgr
     call Hilti::print(t)

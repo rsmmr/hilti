@@ -14,6 +14,8 @@ struct hlt_bytes;
 
 typedef struct __hlt_string hlt_string_constant;
 
+#define HLT_STRING_CONSTANT(str) { sizeof(str) - 1, str };
+
 struct __hlt_string {
     hlt_string_size len;
     int8_t bytes[];
