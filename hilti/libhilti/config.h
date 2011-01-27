@@ -30,6 +30,10 @@ typedef struct
     /// List of enabled debug output streams. This is of type
     /// ``list<string>``. Per default, the list is empty.
     struct __hlt_list* debug_streams;
+
+    /// 1 if profiling is enabled, 0 otherwise. Default is off.
+    int8_t profiling;
+    
 } hlt_config;
 
 extern const hlt_config* hlt_config_get();

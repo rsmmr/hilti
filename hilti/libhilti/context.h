@@ -6,6 +6,7 @@
 #include "continuation.h"
 #include "threading.h"
 #include "context.h"
+#include "profiler.h"
 
 /// A per-thread execution context. This is however just the common header of
 /// all contexts; in memory, the header will be followed with the set of
@@ -22,6 +23,8 @@ typedef struct hlt_execution_context {
     uint64_t       calls_alloced; /// Number of slots allocated.
     uint64_t       calls_first;   /// Index of first non-yet processed element.
     hlt_callable** calls;         /// First element of array, or 0 if empty.
+
+    hlt_profiling_state* pstate;  /// State for ongoing profiling, or 0 if none.
 
     // TODO; We should not compile this in in non-debug mode.
     uint64_t debug_indent;        /// Current indent level for debug messages.

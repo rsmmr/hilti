@@ -24,6 +24,7 @@
 #ifndef HILTI_TIMER_H
 #define HILTI_TIMER_H
 
+#include "profiler.h"
 #include "map_set.h"
 #include "hilti.h"
 
@@ -45,6 +46,7 @@ struct __hlt_timer {
 #endif
         __hlt_map_timer_cookie map;
         __hlt_set_timer_cookie set;
+        __hlt_profiler_timer_cookie profiler;
     } cookie;
 };
 
@@ -200,5 +202,15 @@ extern hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_excepti
 ///
 /// Returns: The new timer object.
 extern hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Instantiates a new timer object that will record a profiler snapshot when it
+/// fires.
+///
+/// cookie: A profiler-specific cookie to identify the profiler to snapshot.
+///
+/// excpt: &
+///
+/// Returns: The new timer object.
+extern hlt_timer* __hlt_timer_new_profiler(__hlt_profiler_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

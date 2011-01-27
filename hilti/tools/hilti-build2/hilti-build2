@@ -200,7 +200,7 @@ def hltToBc(hlt, file):
     check_errors(errors, input, "validating canonified module")
 
     timeStart("generating LLVM code")
-    (success, bc) = hilti.codegen(hlt, ImportPaths, debug=Options.debug, stack=Options.stack, verify=False)
+    (success, bc) = hilti.codegen(hlt, ImportPaths, debug=Options.debug, stack=Options.stack, verify=False, profile=Options.profile)
     timeStop()
 
     if not success:
@@ -233,7 +233,7 @@ def uniqueArgs(args):
 
 def cToBcFile(c, output):
 
-    cflags = ["-c", "-emit-llvm", "-g"]
+    cflags = ["-c", "-emit-llvm", "-g", "-fno-color-diagnostics"]
     cflags += [("-I" + path) for path in ImportPaths]
     cflags += runConfig(HiltiConfig, "--cflags").split()
     cflags += runConfig(BinpacConfig, "--cflags").split()
@@ -356,6 +356,8 @@ Input files may be end in one of the following extensions:
                          help="Default HILTI stack size.. (NOT IMPLEMENTED)")
     optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
                          help="Add DIR to search path for imports", metavar="DIR")
+    optparser.add_option("-F", "--profile", action="count", dest="profile", default=0,
+                         help="Enable profiling support; each time this option is given, the profiling level is increased by one")
 
     (options, args) = optparser.parse_args()
 

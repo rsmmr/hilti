@@ -142,7 +142,7 @@ class CodeGen(objcache.Cache):
 
         return x
 
-    def codegen(self, mod, libpaths, debug=0, stack=16384, trace=False, verify=True):
+    def codegen(self, mod, libpaths, debug=0, stack=16384, trace=False, verify=True, profile=0):
         """Compiles a HILTI module into a LLVM module.  The module must be
         well-formed as verified by ~~validateModule, and it must have been
         canonified by ~~canonifyModule.
@@ -162,12 +162,16 @@ class CodeGen(objcache.Cache):
         verify: bool - If true, the correctness of the generated LLVM code will
         be verified via LLVM's internal validator.
 
+        profile: int - Profiling level. When > 0, profiling support is
+        compiled in, with higher levels meaning more detailed profiling.
+
         Returns: tuple (bool, llvm.core.Module) - If the bool is True, code generation (and
         if *verify* is True, also verification) was successful. If so, the second
         element of the tuple is the resulting LLVM module.
         """
         self._libpaths = libpaths
         self._debug = debug
+        self._profile = profile
         self._trace = trace
         self._stack_segment_size = stack
 
@@ -213,6 +217,14 @@ class CodeGen(objcache.Cache):
         Returns: integer - The level.
         """
         return self._debug
+
+    def profileLevel(self):
+        """Returns the profiling level. When > 0, profiling support is
+        compiled in, with higher levels meaning more detailed profiling.
+
+        Returns: integer - The level.
+        """
+        return self._profile
 
     def defaultStackSegmentSize(self):
         """Returns the default stack segment size.
@@ -2158,6 +2170,7 @@ class CodeGen(objcache.Cache):
         six = self.llvmGEPIdx(6)
         seven = self.llvmGEPIdx(7)
         eight = self.llvmGEPIdx(8)
+        nine = self.llvmGEPIdx(9)
 
         null = llvm.core.Constant.null(self.llvmTypeGenericPointer())
         zero64 = self.llvmConstInt(0, 64)
@@ -2181,7 +2194,8 @@ class CodeGen(objcache.Cache):
         calls = self.builder().gep(rec, [zero, zero, seven])
         self.llvmAssign(llvm.core.Constant.null(calls.type.pointee), calls) # calls
 
-        self.llvmAssign(zero64, self.builder().gep(rec, [zero, zero, eight])) # debug_indent
+        self.llvmAssign(null, self.builder().gep(rec, [zero, zero, eight])) # profilers
+        self.llvmAssign(zero64, self.builder().gep(rec, [zero, zero, nine])) # debug_indent
 
         # Initialize the globals.
 

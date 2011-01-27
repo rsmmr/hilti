@@ -10,6 +10,7 @@
 #define HLT_TIMER_LIST     2
 #define HLT_TIMER_MAP      3
 #define HLT_TIMER_SET      4
+#define HLT_TIMER_PROFILER 5
 
 struct __hlt_timer_mgr {
     hlt_time time;      // The current time.
@@ -35,6 +36,10 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
 
       case HLT_TIMER_SET:
         hlt_list_set_expire(timer->cookie.set);
+        break;
+
+      case HLT_TIMER_PROFILER:
+        hlt_profiler_timer_expire(timer->cookie.profiler, excpt, ctx);
         break;
 
       default:
@@ -102,6 +107,21 @@ hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** ex
     timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_SET;
     timer->cookie.set = cookie;
+    return timer;
+}
+
+hlt_timer* __hlt_timer_new_profiler(__hlt_profiler_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_timer* timer = (hlt_timer*) hlt_gc_malloc_non_atomic(sizeof(hlt_timer));
+    if ( ! timer ) {
+        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
+        return 0;
+    }
+
+    timer->mgr = 0;
+    timer->time = HLT_TIME_UNSET;
+    timer->type = HLT_TIMER_PROFILER;
+    timer->cookie.profiler = cookie;
     return timer;
 }
 

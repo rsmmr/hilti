@@ -1,0 +1,58 @@
+# $Id$
+# @TEST-EXEC:  hilti-build2 -F %INPUT -o a.out
+# @TEST-EXEC:  ./a.out
+# @TEST-EXEC:  for i in hlt.prof.*.dat; do hilti-prof $i; done | canonify-hilti-prof >output
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void print1() {
+    profiler.start "test"
+    call Hilti::print ("1", True)
+    profiler.update "test"
+    profiler.stop "test"
+    return.void
+}
+
+void print2() {
+    profiler.start "test"
+    call Hilti::print ("2", True)
+    profiler.update "test"
+    profiler.stop "test"
+    return.void
+}
+
+void print3() {
+    profiler.start "test"
+    call Hilti::print ("3", True)
+    profiler.update "test"
+    profiler.stop "test"
+    return.void
+}
+
+void print4() {
+    profiler.start "test"
+    call Hilti::print ("4", True)
+    profiler.update "test"
+    profiler.stop "test"
+    return.void
+}
+
+void print5() {
+    profiler.start "test"
+    call Hilti::print ("5", True)
+    profiler.update "test"
+    profiler.stop "test"
+    return.void
+}
+
+void run() {
+    thread.schedule 1 print1()
+    thread.schedule 2 print2()
+    thread.schedule 3 print3()
+    thread.schedule 4 print4()
+    thread.schedule 5 print5()
+}
+

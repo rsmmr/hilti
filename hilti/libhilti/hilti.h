@@ -71,6 +71,7 @@
 #include "globals.h"
 #include "cmdqueue.h"
 #include "file.h"
+#include "profiler.h"
 
 #include "module/module.h"
 

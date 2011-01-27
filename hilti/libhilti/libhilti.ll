@@ -77,6 +77,7 @@
     i64,
     i64,
     %__hlt_callable**,
+    %__hlt_void*,
     i64
 }
 

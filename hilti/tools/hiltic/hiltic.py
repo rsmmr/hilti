@@ -55,6 +55,8 @@ optparser.add_option("-D", "--debug-codegen", action="store_true", dest="debug_c
                      help="Print debugging information during code generation phase")
 optparser.add_option("-S", "--stack-size", action="store", dest="stack", default=16384,
                      help="Default stack segment size in bytes (default: 16384)")
+optparser.add_option("-F", "--profile", action="count", dest="profile", default=0,
+                     help="Enable profiling support; each time this option is given, the profiling level is increased by one")
 options = None
 
 if addl_flags:
@@ -161,7 +163,7 @@ if options.hilti_canon:
     sys.exit(0)
 
 # Generate code.
-(success, llvm_module) = hilti.codegen(mod, options.import_paths, debug=options.debug, stack=options.stack, trace=options.debug_cg, verify=(not options.ll_noverify))
+(success, llvm_module) = hilti.codegen(mod, options.import_paths, debug=options.debug, stack=options.stack, trace=options.debug_cg, verify=(not options.ll_noverify), profile=options.profile)
 
 if not success:
     print >>sys.stderr, "error during code generation"

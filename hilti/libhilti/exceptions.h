@@ -123,6 +123,12 @@ extern hlt_exception_type hlt_exception_iosrc_error;
 // Raised when an I/O operation failed.
 extern hlt_exception_type hlt_exception_io_error;
 
+// An incompatible profiler has been specified. 
+extern hlt_exception_type hlt_exception_profiler_mismatch;
+
+// An unknown profiler has been specified.
+extern hlt_exception_type hlt_exception_profiler_unknown;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Exception-related functions.
 ///////////////////////////////////////////////////////////////////////////////

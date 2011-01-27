@@ -92,9 +92,10 @@ Installation
    best run just right ouf of the repository. This will eventually
    change as things get more stable. 
 
-* First, you need to build ``libhilti``, the run-time library::
+* First, you need to build ``libhilti`` (the run-time library) and
+  some tools::
 
-    > cd binpacpp/hilti/libhilti
+    > cd binpacpp/hilti
     > make
 
   There shouldn't be any problems compiling this as long as all

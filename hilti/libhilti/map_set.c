@@ -196,7 +196,7 @@ void hlt_map_insert(hlt_map* m, const hlt_type_info* tkey, void* key, const hlt_
             // Create timer.
             __hlt_map_timer_cookie cookie = { m, keytmp };
             kh_value(m, i).timer = __hlt_timer_new_map(cookie, excpt, ctx);
-            hlt_interval t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
+            hlt_time t = hlt_timer_mgr_current(m->tmgr, excpt, ctx) + m->timeout;
             hlt_timer_mgr_schedule(m->tmgr, t, kh_value(m, i).timer, excpt, ctx);
         }
         else

@@ -7,7 +7,7 @@
 
 #include "exceptions.h"
 
-typedef struct {
+typedef struct hlt_enum {
     int8_t flags;
     int64_t value;
 } hlt_enum;

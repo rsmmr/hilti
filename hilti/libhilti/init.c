@@ -33,6 +33,9 @@ void hlt_init()
     // Initialize configuration to defaults.
     __hlt_config_init();
 
+    // Initialize profiling.
+    __hlt_profiler_init();
+
     // Initialize debug streams from environment.
     const char* dbg = getenv("HILTI_DEBUG");
     if ( dbg ) {

@@ -101,6 +101,16 @@ type IOSrc = enum { PcapLive, PcapOffline }
 type FileMode = enum { Create, Append }
 type FileType = enum { Text, Binary }
 
+type ProfileStyle = enum {
+    Standard,    # Record on "update".
+    Time,        # Record after intervals of <n> nsecs in timer_mgr's time.
+    Updates,     # Record after <n> calls to "update".
+
+    # Not implemented. Not sure we can easily/efficiently.
+    Wall,        # Record after interval of <n> nsecs in wall time.
+    Cycles       # Record after <n> CPU cycles. 
+    }
+
 # Bytes functions.
 declare "C-HILTI" int<64> bytes_to_int(ref<bytes> b, int<64> base=10)
 declare "C-HILTI" ref<bytes> bytes_to_lower(ref<bytes> b)

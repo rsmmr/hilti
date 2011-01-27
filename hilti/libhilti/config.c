@@ -19,6 +19,7 @@ void __hlt_config_init()
    current_config.stack_size = 268435456;
    current_config.debug_out = stderr;
    current_config.debug_streams = 0;
+   current_config.profiling = 0;
 }
 
 const hlt_config* hlt_config_get()

@@ -226,6 +226,12 @@ declare "C-HILTI" time time_wall()
 
 ##
 
+declare "C-HILTI" void profiler_start(string tag, Hilti::ProfileStyle style, int<64> param, ref<timer_mgr> tmgr)
+declare "C-HILTI" void profiler_update(string tag, int<64> user_delta)
+declare "C-HILTI" void profiler_stop(string tag)
+
+##
+
 declare "C" void abort()
 
 ##
