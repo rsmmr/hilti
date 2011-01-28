@@ -635,6 +635,45 @@ class Xor(Instruction):
         result = _extractBits(cg, op1, low, high)
         cg.llvmStoreInTarget(self, result)
 
+@hlt.instruction("int.shl", op1=cIntegerOfWidthAsOp(0), op2=cIntegerOfWidthAsOp(0), target=cInteger)
+class Shl(Instruction):
+    """Shifts *op1* to the left by *op2* bits. The least-signficant bits are
+    filled with zeros. If the value of *op2* is larger than the integer type
+    has bits, the result is undefined.
+    """
+    def _codegen(self, cg):
+        t = self.target().type()
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().shl(op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("int.shr", op1=cIntegerOfWidthAsOp(0), op2=cIntegerOfWidthAsOp(0), target=cInteger)
+class Shr(Instruction):
+    """Shifts *op1* to the right by *op2* bits. The most-signficant bits are
+    filled with zeros. If the value of *op2* is larger than the integer type
+    has bits, the result is undefined.
+    """
+    def _codegen(self, cg):
+        t = self.target().type()
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().lshr(op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("int.ashr", op1=cIntegerOfWidthAsOp(0), op2=cIntegerOfWidthAsOp(0), target=cInteger)
+class Ashr(Instruction):
+    """Arithmetically shifts *op1* to the right by *op2* bits. The
+    most-signficant bits are filled with the sign of *op1*. If the value of
+    *op2* is larger than the integer type has bits, the result is undefined.
+    """
+    def _codegen(self, cg):
+        t = self.target().type()
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().ashr(op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
 # tag, id, width, signed, little, bytes
 _Unpacks = {
     "Int8Little": (0,  8, True, True, [0]),
