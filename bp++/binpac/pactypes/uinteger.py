@@ -31,7 +31,7 @@ class UnsignedInteger(type.Integer):
         bits: dictionary string -> (int, int, attrs) - A dictionary mapping
         field names to the bit-range. (``(4,6, attrs)`` means bits 4 to
         (inclusive) 6; ``(1,1, attrs)`` means just bit 1). ``attrs`` is an
-        optional list of (string, expr.Expr) pairs defining field attributes. 
+        optional list of (string, expr.Expr) pairs defining field attributes.
 
         """
         import sys
@@ -43,7 +43,7 @@ class UnsignedInteger(type.Integer):
         Returns: dictionary string -> (int, int, attrs), or None - A dictionary
         mapping field names to the bit-range. (``(4,6,attrs)`` means bits 4 to
         (inclusive) 6; ``(1,1,attrs)`` means just bit 1). ``attrs`` is an
-        optional list of (string, expr.Expr) pairs defining field attributes. 
+        optional list of (string, expr.Expr) pairs defining field attributes.
         """
         return self._bits
 
@@ -261,9 +261,12 @@ class Minus:
 
 @operator.Div(UnsignedInteger, UnsignedInteger)
 class Div:
-
     def type(expr1, expr2):
         return _dstType(expr1, expr2)
+
+    def validate(vld, expr1, expr2):
+        if isinstance(expr2, expr.Ctor) and expr2.value() == 0:
+            vld.error(expr2, "division by zero")
 
     def simplify(expr1, expr2):
         if isinstance(expr1, expr.Ctor) and isinstance(expr2, expr.Ctor):
@@ -284,7 +287,7 @@ class Div:
 
     def type(expr1, expr2):
         return _dstType(expr1, expr2)
-        
+
     def simplify(expr1, expr2):
         if isinstance(expr1, expr.Ctor) and isinstance(expr2, expr.Ctor):
             val = expr1.value() * expr2.value()
