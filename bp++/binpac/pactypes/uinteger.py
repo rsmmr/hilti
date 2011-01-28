@@ -259,6 +259,46 @@ class Minus:
         cg.builder().int_sub(tmp, expr1, expr2)
         return tmp
 
+@operator.Div(UnsignedInteger, UnsignedInteger)
+class Div:
+
+    def type(expr1, expr2):
+        return _dstType(expr1, expr2)
+
+    def simplify(expr1, expr2):
+        if isinstance(expr1, expr.Ctor) and isinstance(expr2, expr.Ctor):
+            val = expr1.value() / expr2.value()
+            return expr.Ctor(val, _dstType(expr1, expr2))
+
+        else:
+            return None
+
+    def evaluate(cg, expr1, expr2):
+        (expr1, expr2) = _extendOps(cg, expr1, expr2)
+        tmp = cg.builder().addLocal("__div", hilti.type.Integer(expr1.type().width()))
+        cg.builder().int_div(tmp, expr1, expr2)
+        return tmp
+
+@operator.Mult(UnsignedInteger, UnsignedInteger)
+class Div:
+
+    def type(expr1, expr2):
+        return _dstType(expr1, expr2)
+        
+    def simplify(expr1, expr2):
+        if isinstance(expr1, expr.Ctor) and isinstance(expr2, expr.Ctor):
+            val = expr1.value() * expr2.value()
+            return expr.Ctor(val, _dstType(expr1, expr2))
+
+        else:
+            return None
+
+    def evaluate(cg, expr1, expr2):
+        (expr1, expr2) = _extendOps(cg, expr1, expr2)
+        tmp = cg.builder().addLocal("__mul", hilti.type.Integer(expr1.type().width()))
+        cg.builder().int_mul(tmp, expr1, expr2)
+        return tmp
+
 @operator.Equal(UnsignedInteger, type.UnsignedInteger)
 class _:
     def type(e1, e2):

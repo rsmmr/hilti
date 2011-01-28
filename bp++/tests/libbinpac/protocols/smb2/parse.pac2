@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -d -m -o a.out
+# @TEST-EXEC:  echo ======== GetInfo Response >>output
+# @TEST-EXEC:  cat %DIR/smb2-getinfo-response.dat | ./a.out -p SMB2::PDU >>output
+# @TEST-EXEC:  echo ======== SetInfo Request >>output
+# @TEST-EXEC:  cat %DIR/smb2-setinfo-request.dat | ./a.out -p SMB2::PDU >>output
+# @TEST-EXEC:  echo ======== TreeConnect Request >>output
+# @TEST-EXEC:  cat %DIR/smb2-tree-connect-request.dat | ./a.out -p SMB2::PDU >>output
+# @TEST-EXEC:  echo ======== Write Request >>output
+# @TEST-EXEC:  cat %DIR/smb2-write-request.dat | ./a.out -p SMB2::PDU >>output
+
+
+
+
+module Test;
+
+import protocols.smb2;
+
+on SMB2::PDU::%done {
+    print self;
+    }
+

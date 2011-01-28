@@ -1,0 +1,797 @@
+module SMB2;
+
+import BinPAC;
+
+# TODO: This still doesn't account for the NetBIOS session service
+#       that this protocol is always wrapped in.
+
+type Command = enum {
+	NEGOTIATE_PROTOCOL = 0,
+	SESSION_SETUP      = 1,
+	# TODO: waiting for enum problem with 0 and 2 elements fix
+	#LOGOFF             = 2,
+	TREE_CONNECT       = 3,
+	TREE_DISCONNECT    = 4,
+	CREATE             = 5,
+	CLOSE              = 6,
+	FLUSH              = 7,
+	READ               = 8,
+	WRITE              = 9,
+	LOCK               = 10,
+	IOCTL              = 11,
+	CANCEL             = 12,
+	ECHO               = 13,
+	QUERY_DIRECTORY    = 14,
+	CHANGE_NOTIFY      = 15,
+	QUERY_INFO         = 16,
+	SET_INFO           = 17,
+	OPLOCK_BREAK       = 18
+};
+
+
+export type PDU = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	header     : Header;
+	message    : Message(self.header);
+
+	on %done {
+		if ( self.header.next_command != 0 ) 
+			print "ERROR: compounded requests are not supported yet (next_command: ", self.header.next_command,")";
+	}
+};
+
+type Message = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	switch ( header.flags.ResponseToRedir ) {
+		0 -> request  : Message_Request(header);
+		1 -> response : Message_Response(header);
+	};
+};
+
+type Message_Request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	switch(header.command) {
+		Command::NEGOTIATE_PROTOCOL -> negotiate_protocol  : negotiate_request(header);
+		Command::SESSION_SETUP      -> session_setup       : session_setup_request(header);
+		Command::TREE_CONNECT       -> tree_connect        : tree_connect_request(header);
+		Command::TREE_DISCONNECT    -> tree_disconnect     : tree_disconnect_request(header);
+		Command::CREATE             -> create              : create_request(header);
+		Command::CLOSE              -> close               : close_request(header);
+		Command::FLUSH              -> flush               : flush_request(header);
+		Command::READ               -> read                : read_request(header);
+		Command::WRITE              -> write               : write_request(header);
+		Command::LOCK               -> lock                : lock_request(header);
+		Command::IOCTL              -> ioctl               : ioctl_request(header);
+		Command::CANCEL             -> cancel              : cancel_request(header);
+		Command::ECHO               -> echo                : echo_request(header);
+		Command::QUERY_DIRECTORY    -> query_directory     : query_directory_request(header);
+		Command::CHANGE_NOTIFY      -> change_notify       : change_notify_request(header);
+		Command::QUERY_INFO         -> query_info          : query_info_request(header);
+		Command::SET_INFO           -> set_info            : set_info_request(header);
+		Command::OPLOCK_BREAK       -> oplock_break        : oplock_break(header);
+		*                           -> unknown_msg         : bytes &length = 0; # TODO: do something different here!
+	};
+};
+
+type Message_Response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	switch(header.command) {
+		Command::NEGOTIATE_PROTOCOL -> negotiate_protocol  : negotiate_response(header);
+		Command::SESSION_SETUP      -> session_setup       : session_setup_response(header);
+		Command::TREE_CONNECT       -> tree_connect        : tree_connect_response(header);
+		Command::TREE_DISCONNECT    -> tree_disconnect     : tree_disconnect_response(header);
+		Command::CREATE             -> create              : create_response(header);
+		Command::CLOSE              -> close               : close_response(header);
+		Command::FLUSH              -> flush               : flush_response(header);
+		Command::READ               -> read                : read_response(header);
+		Command::WRITE              -> write               : write_response(header);
+		Command::LOCK               -> lock                : lock_response(header);
+		Command::IOCTL              -> ioctl               : ioctl_response(header);
+		Command::ECHO               -> echo                : echo_response(header);
+		Command::QUERY_DIRECTORY    -> query_directory     : query_directory_response(header);
+		Command::CHANGE_NOTIFY      -> change_notify       : change_notify_response(header);
+		Command::QUERY_INFO         -> query_info          : query_info_response(header);
+		Command::SET_INFO           -> set_info            : set_info_response(header);
+		Command::OPLOCK_BREAK       -> oplock_break        : oplock_break(header);
+		*                           -> unknown_msg         : bytes &length = 0; # TODO: do something different here!
+	};
+};
+
+type SMB2_guid = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	guid          : bytes &length = 16;
+};
+
+type StatusSeverity = enum {
+	Success        = 0,
+	Informational  = 1,
+	# TODO: problem with 0 and 2 elements
+	#Warning        = 2,
+	Error          = 3
+};
+
+type synchronous_headers = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	process_id    : uint32;
+	tree_id       : uint32;
+};
+
+type Header = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	protocol      : bytes &length = 4
+		{
+		if ( self.protocol != b"\xFESMB" ) 
+			print "ERROR: This doesn't look like SMB2 traffic! (", self.protocol, ")";
+		}
+	head_length   : uint16;
+	credit_charge : uint16;
+	status        : bitfield(uint32) {
+		Severity : 0..1 &convert=StatusSeverity;
+		Customer : 2;
+		N        : 3;
+		Facility : 4..15;
+		Code     : 16..31;
+	};
+	command       : uint16 &convert=Command;
+	credits       : uint16;
+	flags         : bitfield(uint32) {
+		ResponseToRedir   : 0;
+		AsyncCommand      : 1;
+		RelatedOperations : 2;
+		Signed            : 3;
+		DFSOperations     : 28;
+	};
+	next_command  : uint32;
+	message_id    : bytes &length = 8;
+	switch( self.flags.AsyncCommand ) {
+		0 -> sync_headers  : synchronous_headers;
+		1 -> async_id      : uint64;
+	};
+	session_id    : uint64;
+	signature     : bytes &length = 16;
+
+	on flags {
+		#print "Response flag value: ", self.flags.ResponseToRedir;
+	}
+};
+
+type SMB2_security = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	buffer_offset     : uint16;
+	buffer_len        : uint16;
+	# TODO: handle previous session IDs
+	sec_buffer        : bytes &length = self.buffer_len;
+};
+
+type timestamp = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	lowbits           : uint32;
+	highbits          : uint32;
+
+	#var epoch: double;
+
+	on %done {
+		# TODO: Waiting on some bp++ support.
+		#   NEED: bit shifting for uint/int
+		#         AND-ing and OR-ing for uint/int
+		#         modulus for uint/int
+		#         double/float type to support decimals
+		#local t: uint64 = (highbits << 32) | lowbits;
+		#local secs: uint64     = t / 10000000;
+		#local nanosecs: uint64 = (t % 10000000) * 100;
+		#secs = secs + (1000000000/nanosecs);
+		# NOTE: I refuse to support dates back to the 1600's
+		#self.epoch = secs - 11644473600;
+	}
+};
+
+type file_id_t = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	persistent        : bytes &length = 8;
+	volatile          : bytes &length = 8;
+};
+
+type SMB2_lock = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	offset            : uint64;
+	len               : uint64;
+	flags             : uint32;
+};
+
+type File_Notify_Information = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	next_entry_offset : uint32;
+	action            : uint32;
+	filename_len      : uint32;
+	filename          : bytes &length = self.filename_len;
+};
+
+type create_context = unit(len: uint32) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	#contexts          : list<context> &until(self.offset() == len);
+	switch ( len ) {
+		0 -> empty    : bytes &length=0;
+		* -> contexts : list<context> &until($$.next == 0);
+	};
+};
+
+type context = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	next              : uint32;
+	name_offset       : uint16;
+	name_len          : uint16;
+	reserved          : uint16;
+	data_offset       : uint16;
+	data_len          : uint16;
+	pad               : bytes &length = self.name_offset - self.offset();
+	name              : bytes &length = self.name_len;
+	pad2              : bytes &length = self.data_offset - self.offset();
+	data              : bytes &length = self.data_len;
+};
+
+type symlink_error = unit(byte_count: uint32) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	sym_link_length   : uint32;
+	sym_link_err_tag  : uint32;
+	reparse_tag       : uint32;
+	reparse_data_len  : uint16;
+	unparsed_path_len : uint16;
+	sub_name_offset   : uint16;
+	sub_name_len      : uint16;
+	print_name_offset : uint16;
+	print_name_len    : uint16;
+	flags             : bitfield(uint32) {
+		symlink_flag_relative: 1;
+	};
+	pad               : bytes &length = self.sub_name_offset - self.offset();
+	sub_name          : bytes &length = self.sub_name_len;
+	pad2              : bytes &length = self.print_name_offset - self.offset();
+	print_name        : bytes &length = self.print_name_len;
+};
+
+type error_data_t = unit(byte_count: uint32) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	switch (byte_count) {
+		0 -> empty: uint8;
+		* -> error: symlink_error(byte_count);
+	};
+};
+
+type error_response = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : bytes &length=2;
+	byte_count        : uint32;
+	error_data        : error_data_t(self.byte_count);
+};
+
+type file_attributes = unit {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	attrs : bitfield(uint32) {
+		read_only : 0;
+		hidden    : 1;
+		system    : 2;
+		volume_id : 3;
+		directory : 4;
+		archive   : 5;
+		device    : 6;
+		normal    : 7;
+		temporary : 8;
+		sparse    : 9;
+		reparse   : 10;
+		compressed: 11;
+		offline   : 12;
+		indexed   : 13;
+		encrypted : 14;
+	};
+};
+
+type OplockLevel = unit {
+	level : bitfield(uint8) {
+		# ii is actually representing level 2 and NONE
+		ii        :  0;
+	        exclusive :  3;
+		# Batch is 0x09 and can't be represented by a bitfield appropriatly
+	        #batch     :  ;
+	        lease     :  0..8;
+	};
+};
+
+type negotiate_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;          # client MUST set this to 36
+	dialect_count     : uint16;          # must be > 0
+	security_mode     : uint16;          # there is a list of required modes
+	reserved          : bytes &length=2; # must be set to 0
+	capabilities      : uint32;          # must be set to 0
+	client_guid       : SMB2_guid;       # guid if client implements SMB 2.1 dialect, otherwise set to 0
+	client_start_time : timestamp;       # must be set to 0
+	# TODO: fix this...
+	#dialects          : list<uint16> &length=self.dialect_count;
+	dialects          : bytes &length=self.dialect_count * 2;
+};
+
+type negotiate_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	security_mode     : uint16;
+	dialect_revision  : uint16;
+	reserved          : bytes &length=2;
+	server_guid       : SMB2_guid;
+	capabilities      : uint32;
+	max_transact_size : uint32;
+	max_read_size     : uint32;
+	max_write_size    : uint32;
+	system_time       : timestamp;
+	server_start_time : timestamp;
+	security          : SMB2_security;
+};
+
+type session_setup_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	vc_number         : uint8;
+	security_mode     : uint8;
+	capabilities      : uint32;
+	session_channel   : uint32;
+	security          : SMB2_security;
+};
+
+type session_setup_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	session_flags     : bitfield(uint16) {
+		guest     : 0;
+		anonymous : 1;
+		};
+	security          : SMB2_security;
+};
+
+type logoff_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16;
+};
+
+type logoff_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16;
+};
+
+type tree_connect_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : bytes &length=2;
+	path_offset       : uint16;
+	path_length       : uint16;
+	buffer            : bytes &length = self.path_length;
+};
+
+type tree_connect_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	share_type        : uint8;
+	reserved          : bytes &length=1;
+	share_flags       : uint32;
+	capabilities      : uint32;
+	maximal_access    : uint32;
+};
+
+type tree_disconnect_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16;
+};
+
+type tree_disconnect_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16;
+};
+
+type Disposition = enum {
+	SUPERSEDE    = 0,
+	OPEN         = 1,
+	# TODO: waiting on the fix for 0 & 2 in enums problem
+	#CREATE       = 2,
+	OPEN_IF      = 3,
+	OVERWRITE    = 4,
+	OVERWRITE_IF = 5
+};
+
+type create_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	sec_flags_reserved  : uint8;  # ignored
+	requested_oplock    : OplockLevel;
+	impersonation_level : bitfield(uint32) {
+		# Anonymous is 0x00000000
+		Identification : 0;
+		Impersonation  : 1;
+		# Delegate is 0x00000003
+	};
+	flags               : bytes &length=8; # ignored
+	reserved            : bytes &length=8; # ignored
+	access_mask         : uint32;
+	file_attrs          : file_attributes;
+	share_access        : bitfield(uint32) {
+		Read   : 0;
+		Write  : 1;
+		Delete : 2;
+	};
+	create_disposition  : uint32 &convert=Disposition;
+	create_options      : bitfield(uint32) {
+		DirectoryFile       : 0;
+		WriteThrough        : 1;
+		SequentialOnly      : 2;
+		NoIntermediateBuffering : 3;
+		SynchronousIOAlert      : 4;
+		SynchronousIONonAlert   : 5;
+		NonDirectoryFile    : 6;
+		CompleteIfOplocked  : 7;
+		NoEAKnowledge       : 8;
+		RandomAccess        : 9;
+		DeleteOnClose       : 10;
+		OpenByFileID        : 11;
+		OpenForBackupIntent : 12;
+		NoCompresion        : 13;
+		OpenReserveOpfilter : 14;
+		OpenReparsePoint    : 15;
+		OpenNoRecall        : 16;
+		OpenForFreeSpace    : 17;
+	};
+	filename_offset     : uint16;
+	filename_len        : uint16;
+	context_offset      : uint32;
+	context_len         : uint32;
+	pad                 : bytes &length = self.filename_offset - (self.offset() + header.head_length);
+	filename            : bytes &length = self.filename_len;
+	pad2                : bytes &length = self.context_offset - (self.offset() + header.head_length);
+	create_context      : create_context(self.context_len);
+};
+
+type create_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	oplock              : OplockLevel;
+	reserved            : uint8;
+	create_action       : uint32;
+	creation_time       : timestamp;
+	last_access_time    : timestamp;
+	last_write_time     : timestamp;
+	change_time         : timestamp;
+	alloc_size          : uint64;
+	eof                 : uint64;
+	file_attrs          : file_attributes;
+	reserved2           : uint32;
+	file_id             : file_id_t;
+	context_offset      : uint32;
+	context_len         : uint32;
+	pad                 : bytes &length = self.context_offset - (self.offset() + header.head_length);
+	create_context      : create_context(self.context_len);
+};
+
+type close_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	flags               : uint16;
+	reserved            : uint32;
+	file_id             : file_id_t;
+};
+
+type close_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	flags               : uint16;
+	reserved            : uint32;
+	creation_time       : timestamp;
+	last_access_time    : timestamp;
+	last_write_time     : timestamp;
+	change_time         : timestamp;
+	alloc_size          : uint64;
+	eof                 : uint64;
+	file_attrs          : file_attributes;
+};
+
+type flush_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved1         : uint16;
+	reserved2         : uint32;
+	file_id           : file_id_t;
+};
+
+type flush_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved1         : uint16;
+};
+
+type read_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	pad               : uint8;
+	reserved          : uint8;
+	length            : uint32;
+	offset            : uint64;
+	file_id           : file_id_t;
+	minimum_count     : uint32;
+	channel           : uint32; # ignore
+	remaining_bytes   : uint32;
+	# Everything below should just be 0 and unused currently.
+	#channel_info_offset : uint16;
+	#channel_info_len  : uint16;
+	#pad               : padding to channel_info_offset - header.head_length;
+	#buffer            : bytes &length = channel_info_len;
+	#This is to skip over the bytes
+	trash             : bytes &length = 33;
+};
+
+type read_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	data_offset       : uint8;
+	reserved          : uint8;
+	data_len          : uint32;
+	data_remaining    : uint32; # ignore
+	reserved2         : uint32;
+	pad               : bytes &length = self.data_offset - (self.offset() + header.head_length);
+	data              : bytes &length = self.data_len;
+};
+
+type write_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	data_offset         : uint16;
+	data_len            : uint32;
+	offset              : uint64;
+	file_id             : file_id_t;
+	channel             : uint32; # ignore
+	data_remaining      : uint32;
+	channel_info_offset : uint16; # ignore
+	channel_info_len    : uint16; # ignore
+	flags               : bitfield(uint32) {
+		write_through : 0;
+	};
+	pad                 : bytes &length = self.data_offset - (self.offset() + header.head_length);
+	data                : bytes &length = self.data_len;
+};
+
+type write_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	reserved            : uint16; # ignore
+	byte_count          : uint32;
+	remaining           : uint32; # ignore
+	channel_info_offset : uint16; # ignore
+	channel_info_len    : uint16; # ignore 
+};
+
+type lock_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	lock_count        : uint16;
+	lock_seq          : uint32;
+	file_id           : file_id_t;
+	locks             : list<SMB2_lock> &length = self.lock_count;
+};
+
+type lock_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16; # ignore
+};
+
+type ioctl_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16;
+	ctl_code          : uint32;
+	file_id           : file_id_t;
+	input_offset      : uint32;
+	input_count       : uint32;
+	max_input_resp    : uint32;
+	output_offset     : uint32;
+	output_count      : uint32;
+	max_output_resp   : uint32;
+	flags             : uint32;
+	reserved2         : uint32;
+	pad               : bytes &length = self.input_offset - (self.offset() + header.head_length);
+	input_buffer      : bytes &length = self.input_count;
+	pad2              : bytes &length = self.output_offset - (self.offset() + header.head_length);
+	output_buffer     : bytes &length = self.output_count;
+};
+
+type ioctl_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16;
+	ctl_code          : uint32;
+	file_id           : file_id_t;
+	input_offset      : uint32;
+	input_count       : uint32;
+	output_offset     : uint32;
+	output_count      : uint32;
+	flags             : uint32;
+	reserved2         : uint32;
+	pad               : bytes &length = self.input_offset - (self.offset() + header.head_length);
+	input_buffer      : bytes &length = self.input_count;
+	pad2              : bytes &length = self.output_offset - (self.offset() + header.head_length);
+	output_buffer     : bytes &length = self.output_count;
+};
+
+type cancel_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16;
+};
+
+type echo_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16;
+};
+
+type echo_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	reserved          : uint16;
+};
+
+type query_directory_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	file_info_class   : uint8;
+	flags             : bitfield(uint8) {
+		restart_scans       : 0;
+		return_single_entry : 1;
+		index_specified     : 2;
+		reopen              : 4;
+	};
+	file_index        : uint32;
+	file_id           : file_id_t;
+	filename_offset   : uint16;
+	filename_len      : uint16;
+	output_buffer_len : uint32;
+	pad               : bytes &length = self.filename_offset - (self.offset() + header.head_length);
+	file_name         : bytes &length = self.filename_len;
+};
+
+type query_directory_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	buffer_offset     : uint16;
+	buffer_len        : uint32;
+	pad               : bytes &length = self.buffer_offset - (self.offset() + header.head_length);
+	buffer            : bytes &length = self.buffer_len;
+};
+
+type change_notify_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size    : uint16;
+	flags             : uint16;
+	output_buffer_len : uint32;
+	file_id           : file_id_t;
+	completion_filter : uint32;
+	reserved          : uint32;
+};
+
+type change_notify_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size       : uint16;
+	output_buffer_offset : uint16;
+	output_buffer_len    : uint32;
+	pad                  : bytes &length = self.output_buffer_offset - (self.offset() + header.head_length);
+	buffer               : list<File_Notify_Information> &length = self.output_buffer_len;
+};
+
+type query_info_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	info_type           : uint8;
+	file_info_class     : uint8;
+	output_buffer_len   : uint32;
+	input_buffer_offset : uint16;
+	reserved            : uint16;
+	input_buffer_len    : uint32;
+	additional_info     : uint32;
+	flags               : uint32;
+	file_id             : file_id_t;
+	pad                 : bytes &length = self.input_buffer_offset - (self.offset() + header.head_length);
+	buffer              : bytes &length = self.input_buffer_len;
+};
+
+type query_info_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	buffer_offset       : uint16;
+	buffer_len          : uint32;
+	pad                 : bytes &length = self.buffer_offset - (self.offset() + header.head_length);
+	# TODO: a new structure needs to be created for this.
+	buffer              : bytes &length = self.buffer_len;
+};
+
+type set_info_request = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	info_type           : uint8;
+	file_info_class     : uint8;
+	buffer_len          : uint32;
+	buffer_offset       : uint16;
+	reserved            : uint16;
+	additional_info     : uint32;
+	file_id             : file_id_t;
+	pad                 : bytes &length = self.buffer_offset - (self.offset() + header.head_length);
+	# TODO: a new structure needs to be created for this.
+	buffer              : bytes &length = self.buffer_len;
+};
+
+type set_info_response = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+};
+
+type oplock_break = unit(header: Header) {
+	%byteorder = BinPAC::ByteOrder::Little;
+
+	structure_size      : uint16;
+	oplock              : OplockLevel;
+	reserved            : uint8;
+	reserved2           : uint32;
+	file_id             : file_id_t;
+};
+
