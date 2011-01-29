@@ -178,21 +178,21 @@ class ParserGen:
 
         builder.new(parser, builder.typeOp(parser.type().refType()))
 
-        builder.struct_set(parser, builder.constOp("name"), builder.constOp(grammar.name()))
-        builder.struct_set(parser, builder.constOp("description"), builder.constOp("(No description)"))
-        builder.struct_set(parser, builder.constOp("mime_types"), mime_types)
+        builder.struct_set(parser, "name", grammar.name())
+        builder.struct_set(parser, "description", "(No description)")
+        builder.struct_set(parser, "mime_types", mime_types)
 
         builder.caddr_function(funcs, builder.idOp(self._name("parse")))
-        builder.tuple_index(f, funcs, builder.constOp(0))
-        builder.struct_set(parser, builder.constOp("parse_func"), f)
-        builder.tuple_index(f, funcs, builder.constOp(1))
-        builder.struct_set(parser, builder.constOp("resume_func"), f)
+        builder.tuple_index(f, funcs, 0)
+        builder.struct_set(parser, "parse_func", f)
+        builder.tuple_index(f, funcs, 1)
+        builder.struct_set(parser, "resume_func", f)
 
         builder.caddr_function(funcs, builder.idOp(self._name("parse_sink")))
-        builder.tuple_index(f, funcs, builder.constOp(0))
-        builder.struct_set(parser, builder.constOp("parse_func_sink"), f)
-        builder.tuple_index(f, funcs, builder.constOp(1))
-        builder.struct_set(parser, builder.constOp("resume_func_sink"), f)
+        builder.tuple_index(f, funcs, 0)
+        builder.struct_set(parser, "parse_func_sink", f)
+        builder.tuple_index(f, funcs, 1)
+        builder.struct_set(parser, "resume_func_sink", f)
 
         # Set the new_func field if our parser does not receive further
         # parameters.
@@ -200,13 +200,13 @@ class ParserGen:
             name = self._type.nameFunctionNew()
             fid = hilti.operand.ID(hilti.id.Unknown(name, self.cg().moduleBuilder().module().scope()))
             builder.caddr_function(funcs, fid)
-            builder.tuple_index(f, funcs, builder.constOp(0))
-            builder.struct_set(parser, builder.constOp("new_func"), f)
+            builder.tuple_index(f, funcs, 0)
+            builder.struct_set(parser, "new_func", f)
 
         else:
             # Set the new_func field to null.
             null = builder.addLocal("null", hilti.type.CAddr())
-            builder.struct_set(parser, builder.constOp("new_func"), null)
+            builder.struct_set(parser, "new_func", null)
 
         builder.call(None, builder.idOp("BinPAC::register_parser"), builder.tupleOp([parser]))
         builder.return_void()
@@ -360,10 +360,10 @@ class ParserGen:
         # If we do not have a look-ahead symbol pending, search for our literal.
         match = self._matchToken(no_lahead, "literal", str(lit.id()), [lit], args)
         symbol = builder.addTmp("__lahead", hilti.type.Integer(32))
-        no_lahead.tuple_index(symbol, match, no_lahead.constOp(0))
+        no_lahead.tuple_index(symbol, match, 0)
 
         found_lit = self.functionBuilder().newBuilder("found-sym")
-        found_lit.tuple_index(args.cur, match, found_lit.constOp(1))
+        found_lit.tuple_index(args.cur, match, 1)
         found_lit.jump(done)
 
         values = [no_lahead.constOp(lit.id())]
@@ -373,7 +373,7 @@ class ParserGen:
 
         # If we have a look-ahead symbol, its value must match what we expect.
         have_lahead.setComment("Look-ahead symbol pending, check.")
-        have_lahead.equal(cond, have_lahead.constOp(lit.id()), args.lahead)
+        have_lahead.equal(cond, lit.id(), args.lahead)
         wrong_lahead = self.functionBuilder().cacheBuilder("wrong-lahead", lambda b: self._parseError(b, "unexpected look-ahead symbol pending"))
         (match, _, _) = have_lahead.makeIfElse(cond, no=wrong_lahead, cont=done, tag="check-lahead")
 
@@ -469,7 +469,7 @@ class ParserGen:
         cpgen._parseStartSymbol(cargs)
 
         if child.name():
-            builder.struct_set(args.obj, builder.constOp(child.name()), cobj)
+            builder.struct_set(args.obj, child.name(), cobj)
 
         if not parse_from:
             builder.assign(args.cur, cargs.cur)
@@ -515,9 +515,9 @@ class ParserGen:
         result = builder.addTmp("__presult", _ParseFunctionResultType)
 
         builder.call(result, builder.idOp(func.name()), args.tupleOp([]))
-        builder.tuple_index(args.cur, result, builder.constOp(0))
-        builder.tuple_index(args.lahead, result, builder.constOp(1))
-        builder.tuple_index(args.lahstart, result, builder.constOp(2))
+        builder.tuple_index(args.cur, result, 0)
+        builder.tuple_index(args.lahead, result, 1)
+        builder.tuple_index(args.lahstart, result, 2)
 
         self._finishedProduction(args, prod, None)
 
@@ -545,7 +545,7 @@ class ParserGen:
 
             # Build a regular expression for all the possible symbols.
             match = self._matchToken(no_lahead, "regexp", prod.symbol(), literals[0] | literals[1], args)
-            no_lahead.tuple_index(args.lahead, match, builder.constOp(0))
+            no_lahead.tuple_index(args.lahead, match, 0)
             no_lahead.jump(builder)
 
             ### Now branch according the look-ahead.
@@ -555,7 +555,7 @@ class ParserGen:
             def _makeBranch(i, alts, literals):
                 branch = self.functionBuilder().newBuilder("case-%d" % i)
                 branch.setComment("For look-ahead set {%s}" % ", ".join(['"%s"' % l.literal().value() for l in literals[i]]))
-                branch.tuple_index(args.cur, match, builder.constOp(1)) # Update current position.
+                branch.tuple_index(args.cur, match, 1) # Update current position.
                 self.cg().setBuilder(branch)
                 self._startingProduction(args, alts[i])
                 self._parseProduction(alts[i], args)
@@ -592,9 +592,9 @@ class ParserGen:
         result = builder.addTmp("__presult", _ParseFunctionResultType)
 
         builder.call(result, builder.idOp(func.name()), args.tupleOp([]))
-        builder.tuple_index(args.cur, result, builder.constOp(0))
-        builder.tuple_index(args.lahead, result, builder.constOp(1))
-        builder.tuple_index(args.lahstart, result, builder.constOp(2))
+        builder.tuple_index(args.cur, result, 0)
+        builder.tuple_index(args.lahead, result, 1)
+        builder.tuple_index(args.lahstart, result, 2)
 
     def _parseBoolean(self, prod, args):
         builder = self.builder()
@@ -690,7 +690,7 @@ class ParserGen:
 
     def _parseError(self, builder, msg):
         """Generates code to raise an exception."""
-        builder.makeRaiseException("BinPAC::ParseError", builder.constOp(msg))
+        builder.makeRaiseException("BinPAC::ParseError", msg)
 
     def _yieldAndTryAgain(self, prod, builder, args, cont):
         """Generates code that yields and then jumps to a previous block to
@@ -740,7 +740,7 @@ class ParserGen:
 
         next5 = fbuilder.addTmp("__next5", _BytesIterType)
         str = fbuilder.addTmp("__str", hilti.type.Reference(hilti.type.Bytes()))
-        builder.incr_by(next5, cur, builder.constOp(5))
+        builder.incr_by(next5, cur, 5)
         builder.bytes_sub(str, cur, next5)
 
         msg = "- %s is |" % tag
@@ -790,7 +790,7 @@ class ParserGen:
                 builder.makeDebugMsg("binpac-verbose", "- matched '%s'" % prod)
 
         if prod.name() and value:
-            builder.struct_set(args.obj, builder.constOp(prod.name()), value)
+            builder.struct_set(args.obj, prod.name(), value)
 
         foreach = prod.forEachField()
 
@@ -898,14 +898,14 @@ class ParserGen:
         # pointer will rarely be needed so we should be able to optimize it away
         # in most cases.
         builder = self.cg().builder()
-        builder.struct_set(args.obj, builder.constOp("__cur"), args.cur)
+        builder.struct_set(args.obj, "__cur", args.cur)
 
     def _updateInputPointer(self, args):
         # Update the current input pointer in case a hook has changed it. TODO:
         # This pointer will rarely be needed so we should be able to optimize it
         # away in most cases.
         builder = self.cg().builder()
-        builder.struct_get(args.cur, args.obj, builder.constOp("__cur"))
+        builder.struct_get(args.cur, args.obj, "__cur")
 
     def _runUnitHook(self, args, hook):
         builder = self.cg().builder()
@@ -978,24 +978,24 @@ class ParserGen:
             cargs = cg.builder().tupleOp([])
             cg.builder().call(new_sink, cfunc, cargs)
 
-            cg.builder().struct_set(obj, cg.builder().constOp(var.name()), new_sink);
+            cg.builder().struct_set(obj, var.name(), new_sink);
 
         if self._type.exported():
             builder = self.cg().builder()
-            builder.struct_set(obj, builder.constOp("__parser"), self._globalParserObject())
+            builder.struct_set(obj, "__parser", self._globalParserObject())
 
             if mtype:
-                builder.struct_set(obj, builder.constOp("__mimetype"), mtype)
+                builder.struct_set(obj, "__mimetype", mtype)
 
             if sink:
-                builder.struct_set(obj, builder.constOp("__sink"), sink)
+                builder.struct_set(obj, "__sink", sink)
 
         return obj
 
     def _prepareParseObject(self, args):
         """Prepares a parse object before starting the parsing."""
         # Record the data we're parsing for calls to unit.input().
-        self.cg().builder().struct_set(args.obj, self.cg().builder().constOp("__input"), args.cur)
+        self.cg().builder().struct_set(args.obj, "__input", args.cur)
         self._runUnitHook(args, "%init")
 
         if args.exported():
@@ -1010,11 +1010,11 @@ class ParserGen:
         if args.exported():
             filter = cg.builder().addLocal("__filter", cg.functionBuilder().typeByID("BinPAC::ParseFilter"))
             null = hilti.operand.Constant(hilti.constant.Constant(None, filter.type()))
-            cg.builder().struct_get_default(filter, args.obj, cg.builder().constOp("__filter"), null)
+            cg.builder().struct_get_default(filter, args.obj, "__filter", null)
             cfunc = cg.builder().idOp("BinPAC::filter_close")
             cargs = cg.builder().tupleOp([filter])
             cg.builder().call(None, cfunc, cargs)
-            cg.builder().struct_unset(args.obj, cg.builder().constOp("__filter"))
+            cg.builder().struct_unset(args.obj, "__filter")
 
         # Close all sinks.
         # TODO: We should problably come up with a generic mechanism to
@@ -1026,15 +1026,15 @@ class ParserGen:
 
             cg = self.cg()
             sink = cg.builder().addLocal("__sink", cg.functionBuilder().typeByID("BinPAC::Sink"))
-            cg.builder().struct_get(sink, args.obj, cg.builder().constOp(var.name()));
+            cg.builder().struct_get(sink, args.obj, var.name());
             cfunc = cg.builder().idOp("BinPAC::sink_close")
             cargs = cg.builder().tupleOp([sink])
             cg.builder().call(None, cfunc, cargs)
 
-            cg.builder().struct_unset(args.obj, cg.builder().constOp(var.name()));
+            cg.builder().struct_unset(args.obj, var.name());
 
         # Clear what's unit.input() is returning.
-        cg.builder().struct_unset(args.obj, cg.builder().constOp("__input"))
+        cg.builder().struct_unset(args.obj, "__input")
 
         # Close filters if we have any.
         if args.exported():
@@ -1101,7 +1101,7 @@ class ParserGen:
         cg = self.cg()
 
         filter_set = cg.builder().addLocal("__filter_set", hilti.type.Bool())
-        cg.builder().struct_is_set(filter_set, args.obj, cg.builder().constOp("__filter"))
+        cg.builder().struct_is_set(filter_set, args.obj, "__filter")
 
         fbuilder = cg.functionBuilder()
         has_filter = fbuilder.newBuilder("__has_filter")
@@ -1112,7 +1112,7 @@ class ParserGen:
         cg.setBuilder(has_filter)
 
         filter = cg.builder().addLocal("__filter", cg.functionBuilder().typeByID("BinPAC::ParseFilter"))
-        cg.builder().struct_get(filter, args.obj, cg.builder().constOp("__filter"))
+        cg.builder().struct_get(filter, args.obj, "__filter")
 
         return (filter, done)
 
@@ -1151,7 +1151,7 @@ class ParserGen:
             cg.builder().bytes_is_frozen(is_frozen, args.data)
 
         else:
-            builder.struct_get(filter_cur, args.obj, builder.constOp("__filter_cur"))
+            builder.struct_get(filter_cur, args.obj, "__filter_cur")
             builder.bytes_sub(encoded, filter_cur, end)
             cg.builder().bytes_is_frozen(is_frozen, args.data)
 
@@ -1160,23 +1160,23 @@ class ParserGen:
         cg.builder().call(decoded, cfunc, cargs)
 
         if not resume:
-            builder.struct_set(args.obj, builder.constOp("__filter_cur"), args.cur)
+            builder.struct_set(args.obj, "__filter_cur", args.cur)
 
-            builder.struct_set(args.obj, builder.constOp("__filter_decoded"), decoded)
+            builder.struct_set(args.obj, "__filter_decoded", decoded)
             builder.begin(begin, decoded)
-            builder.struct_set(args.obj, builder.constOp("__input"), begin)
-            builder.struct_set(args.obj, builder.constOp("__cur"), begin) # TODO: Do we need this?
+            builder.struct_set(args.obj, "__input", begin)
+            builder.struct_set(args.obj, "__cur", begin) # TODO: Do we need this?
             builder.assign(args.cur, begin)
 
             filter_decoded = decoded
         else:
-            builder.struct_get(filter_decoded, args.obj, builder.constOp("__filter_decoded"))
+            builder.struct_get(filter_decoded, args.obj, "__filter_decoded")
             builder.bytes_append(filter_decoded, decoded)
 
-        builder.struct_get(filter_cur, args.obj, builder.constOp("__filter_cur"))
+        builder.struct_get(filter_cur, args.obj, "__filter_cur")
         builder.bytes_length(len, encoded)
         builder.incr_by(filter_cur, filter_cur, len)
-        builder.struct_set(args.obj, builder.constOp("__filter_cur"), filter_cur)
+        builder.struct_set(args.obj, "__filter_cur", filter_cur)
 
         # Freeze the decoded data if the input data is frozen.
         freeze = cg.functionBuilder().newBuilder("_freeze")

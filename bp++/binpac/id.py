@@ -295,7 +295,7 @@ class UnitParameter(Parameter):
         builder = cg.builder()
         tmp = builder.addLocal(self.name(), self.type().hiltiType(cg))
         obj = builder.idOp("__self")
-        builder.struct_get(tmp, obj, builder.constOp("__param_%s" % self.name()))
+        builder.struct_get(tmp, obj, "__param_%s" % self.name())
         return tmp
 
 class Global(ID):

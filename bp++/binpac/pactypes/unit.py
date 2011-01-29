@@ -815,7 +815,7 @@ class _Attribute:
         type = _Attribute.attrType(lhs, ident)
         builder = cg.builder()
         tmp = builder.addLocal("__attr", type.hiltiType(cg))
-        builder.struct_get(tmp, lhs.evaluate(cg), builder.constOp(name))
+        builder.struct_get(tmp, lhs.evaluate(cg), name)
         return tmp
 
     def assign(cg, lhs, ident, rhs):
@@ -823,7 +823,7 @@ class _Attribute:
         type = _Attribute.attrType(lhs, ident)
         builder = cg.builder()
         obj = lhs.evaluate(cg)
-        builder.struct_set(obj, builder.constOp(name), rhs)
+        builder.struct_set(obj, name, rhs)
 
         # Run hooks (but not recursively).
         unit = lhs.type()
@@ -848,7 +848,7 @@ class _:
     def evaluate(cg, lhs, ident):
         name = ident.name()
         tmp = cg.builder().addLocal("__has_attr", hilti.type.Bool())
-        cg.builder().struct_is_set(tmp, lhs.evaluate(cg), cg.builder().constOp(name))
+        cg.builder().struct_is_set(tmp, lhs.evaluate(cg), name)
         return tmp
 
 @operator.MethodCall(type.Unit, expr.Attribute("input"), [])
@@ -863,7 +863,7 @@ class _:
     def evaluate(cg, obj, method, args):
         tmp = cg.functionBuilder().addLocal("__iter", hilti.type.IteratorBytes())
         builder = cg.builder()
-        builder.struct_get(tmp, obj.evaluate(cg), builder.constOp("__input"))
+        builder.struct_get(tmp, obj.evaluate(cg), "__input")
         return tmp
 
 @operator.MethodCall(type.Unit, expr.Attribute("offset"), [])
@@ -892,8 +892,8 @@ class _:
         obj = obj.evaluate(cg)
 
         builder = cg.builder()
-        builder.struct_get(input, obj, builder.constOp("__input"))
-        builder.struct_get(cur,   obj, builder.constOp("__cur"))
+        builder.struct_get(input, obj, "__input")
+        builder.struct_get(cur,   obj, "__cur")
         builder.bytes_diff(offset, input, cur)
 
         return offset
@@ -913,7 +913,7 @@ class _:
     def evaluate(cg, obj, method, args):
         obj = obj.evaluate(cg)
         pos = args[0].evaluate(cg)
-        cg.builder().struct_set(obj, cg.builder().constOp("__cur"), pos)
+        cg.builder().struct_set(obj, "__cur", pos)
         return pos
 
 @operator.New(Unit, operator.Any())
@@ -964,7 +964,7 @@ class _:
 
         sink = cg.builder().addLocal("__sink", cg.functionBuilder().typeByID("BinPAC::Sink"))
         sink_set = cg.builder().addLocal("__sink_set", hilti.type.Bool())
-        cg.builder().struct_is_set(sink_set, pobj, cg.builder().constOp("__sink"))
+        cg.builder().struct_is_set(sink_set, pobj, "__sink")
 
         fbuilder = cg.functionBuilder()
         disconnect = fbuilder.newBuilder("disconnect")
@@ -973,12 +973,12 @@ class _:
 
         cg.setBuilder(disconnect)
 
-        cg.builder().struct_get(sink, pobj, cg.builder().constOp("__sink"))
+        cg.builder().struct_get(sink, pobj, "__sink")
 
         cfunc = cg.builder().idOp("BinPAC::sink_disconnect")
         cargs = cg.builder().tupleOp([sink, pobj])
         cg.builder().call(None, cfunc, cargs)
-        cg.builder().struct_unset(pobj, cg.builder().constOp("__sink"))
+        cg.builder().struct_unset(pobj, "__sink")
 
         cg.builder().jump(done)
 
@@ -1004,7 +1004,7 @@ class _:
     def evaluate(cg, obj, method, args):
         pobj = obj.evaluate(cg)
         mt = cg.builder().addLocal("__mime_type", hilti.type.Reference(hilti.type.Bytes()))
-        cg.builder().struct_get(mt, pobj, cg.builder().constOp("__mimetype"))
+        cg.builder().struct_get(mt, pobj, "__mimetype")
         return mt
 
 @operator.MethodCall(type.Unit, expr.Attribute("add_filter"), [type.Enum])
@@ -1048,11 +1048,11 @@ class _:
 
         head = cg.builder().addLocal("__filter_head", cg.functionBuilder().typeByID("BinPAC::ParseFilter"))
         null = hilti.operand.Constant(hilti.constant.Constant(None, filter.type()))
-        cg.builder().struct_get_default(head, obj, cg.builder().constOp("__filter"), null)
+        cg.builder().struct_get_default(head, obj, "__filter", null)
         cfunc = cg.builder().idOp("BinPAC::filter_add")
         cargs = cg.builder().tupleOp([head, filter])
         cg.builder().call(head, cfunc, cargs)
 
-        cg.builder().struct_set(obj, cg.builder().constOp("__filter"), head)
+        cg.builder().struct_set(obj, "__filter", head)
 
         return None

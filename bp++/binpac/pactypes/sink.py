@@ -42,7 +42,7 @@ class _:
         old_sink = cg.builder().addLocal("__old_sink", sink.type())
         old_sink_set = cg.builder().addLocal("__old_sink_set", hilti.type.Bool())
 
-        cg.builder().struct_get(old_sink, pobj, cg.builder().constOp("__sink"))
+        cg.builder().struct_get(old_sink, pobj, "__sink")
         cg.builder().ref_cast_bool(old_sink_set, old_sink)
 
         fbuilder = cg.functionBuilder()
@@ -55,14 +55,14 @@ class _:
         cg.setBuilder(ok)
 
         parser = cg.builder().addLocal("__parser", cg.functionBuilder().typeByID("BinPAC::Parser"))
-        cg.builder().struct_get(parser, pobj, cg.builder().constOp("__parser"))
+        cg.builder().struct_get(parser, pobj, "__parser")
 
         cfunc = cg.builder().idOp("BinPAC::sink_connect")
         cargs = cg.builder().tupleOp([sink, pobj, parser])
         cg.builder().call(None, cfunc, cargs)
 
         # Record the connected sink in parsing object.
-        cg.builder().struct_set(pobj, cg.builder().constOp("__sink"), sink)
+        cg.builder().struct_set(pobj, "__sink", sink)
 
         return None
 

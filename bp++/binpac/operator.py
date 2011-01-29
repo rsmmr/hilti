@@ -246,11 +246,10 @@ _Operators = {
     "BitXor": (2, "Bitwise 'xor' of integer values. (``a | b``)", _pacBinary("^")),
     "ShiftLeft": (2, "Bitwise shift right for integer values. (``a << b``)", _pacBinary("<<")),
     "ShiftRight": (2, "Bitwise shift left for integer values. (``a >> b``)", _pacBinary(">>")),
+    "Power": (2, "Raising to a power (``a ** b``)", _pacBinary("**")),
     "PlusAssign": (2, "Adds to an operand in place (`` a += b``)", _pacBinary("+=")),
     "Lower": (2, "Lower than comparision. (``a < b``)", _pacBinary("<")),
     "Greater": (2, "Greater than comparision. (``a > b``)", _pacBinary(">")),
-    "LowerEqual": (2, "Lower or equal comparision. (``a <= b``)", _pacBinary("<=")),
-    "GreaterEqual": (2, "Greater or equal comparision. (``a >= b``)", _pacBinary(">=")),
     "IncrPrefix": (1, "Prefix increment operator (`++i`)", _pacUnary("++")),
     "DecrPrefix": (1, "Prefix decrement operator (`--i`)", _pacUnary("--")),
     "IncrPostfix": (1, "Postfix increment operator (`i++`)", _pacUnaryPostfix("++")),
@@ -441,7 +440,6 @@ def coerceCtorTo(e, dsttype):
 
     func = _findOp("coerceCtorTo", Operator.Coerce, [e, dsttype])
     if not func:
-        print "not found", e, e.type(), dsttype
         raise CoerceError
 
     assert e.isInit()

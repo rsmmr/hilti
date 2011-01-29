@@ -442,7 +442,7 @@ class Print(Statement):
             nl = builder.constOp(last)
             builder.call(None, func, builder.tupleOp([ops[i], nl]))
             if not last:
-                builder.call(None, func, builder.tupleOp([builder.constOp(" "), builder.constOp(False)]))
+                builder.call(None, func, builder.tupleOp([builder.constOp(" "), False]))
 
     def __str__(self):
         return "<print statement>"

@@ -29,6 +29,7 @@ types = {
     "void": type.Void,
     "addr": type.Addr,
     "sink": type.Sink,
+    "float": type.Float,
     }
 
 # Literals.
@@ -40,7 +41,7 @@ def _loc(t):
 tokens = [
     "IDENT", "CONSTANT", "BYTES", "REGEXP", "PACTYPE", "ATTRIBUTE", "PROPERTY",
     "EQUAL", "UNEQUAL", "LEQ", "GEQ", "HASATTR", "ARROW", "LOGICAL_AND", "LOGICAL_OR", "PLUSEQUAL",
-    "PLUSPLUS", "MINUSMINUS", "DOTDOT", "IMPORT", "MODULE_IDENT", "SHIFT_LEFT", "SHIFT_RIGHT"
+    "PLUSPLUS", "MINUSMINUS", "DOTDOT", "IMPORT", "MODULE_IDENT", "SHIFT_LEFT", "SHIFT_RIGHT", "POW"
     ] + [k.upper() for k in keywords] \
       + [k.upper()[1:] for k in control_props]
 
@@ -102,6 +103,10 @@ def t_SHIFT_LEFT(t):
 
 def t_SHIFT_RIGHT(t):
     r'>>'
+    return t
+
+def t_POW(t):
+    r'\*\*'
     return t
 
 def t_IMPORT(t):
@@ -229,6 +234,16 @@ def t_CADDR6(t): # must come before DOUBLE.
         t.type = "CONSTANT"
         t.value = ((addr[0], addr[1], len), XXXX)
 
+    return t
+
+def t_CONST_FLOAT(t):
+    r'-?\d+\.\d+'
+    t.type = "CONSTANT"
+
+    (full, frac) = t.value.split(".")
+    frac = int(frac) * (10.0 ** (9 - len(frac)))
+    val = (int(full), int(frac)) if int(full) >= 0 else (int(full), -int(frac))
+    t.value = (val, type.Float())
     return t
 
 def t_CONST_INT(t):

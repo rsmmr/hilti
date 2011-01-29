@@ -259,7 +259,7 @@ class Not(Expression):
     def evaluate(self, cg):
         e = self._expr.coerceTo(type.Bool(), cg).evaluate(cg)
         b = cg.builder().addLocal("__bool", hilti.type.Bool())
-        cg.builder().select(b, e, cg.builder().constOp(False), cg.builder().constOp(True))
+        cg.builder().select(b, e, cg.builder().constOp(False), True)
         return b
 
     def __str__(self):

@@ -166,9 +166,9 @@ class Integer(type.ParseableWithByteOrder):
         builder = cg.builder()
 
         if dst and not skipping:
-            builder.tuple_index(dst, result, builder.constOp(0))
+            builder.tuple_index(dst, result, 0)
 
-        builder.tuple_index(cur, result, builder.constOp(1))
+        builder.tuple_index(cur, result, 1)
 
         return cur
 
@@ -481,25 +481,6 @@ class _:
         cg.builder().equal(tmp, e1, e2)
         return tmp
 
-@operator.LowerEqual(_integer, _integer)
-class _:
-    def type(e1, e2):
-        return type.Bool()
-
-    def simplify(e1, e2):
-        if not isinstance(e1, expr.Ctor) or not isinstance(e2, expr.Ctor):
-            return None
-
-        b = (e1.value() <= e2.value())
-        return expr.Ctor(b, type.Bool())
-
-    def evaluate(cg, e1, e2):
-        ty = e1.type()
-        (e1, e2) = _extendOps(cg, e1, e2)
-        tmp = cg.functionBuilder().addLocal("__leq", hilti.type.Bool())
-        ty._leq(cg, tmp, e1, e2)
-        return tmp
-
 @operator.Lower(_integer, _integer)
 class _:
     def type(e1, e2):
@@ -517,25 +498,6 @@ class _:
         (e1, e2) = _extendOps(cg, e1, e2)
         tmp = cg.functionBuilder().addLocal("__lt", hilti.type.Bool())
         ty._lt(cg, tmp, e1, e2)
-        return tmp
-
-@operator.GreaterEqual(_integer, _integer)
-class _:
-    def type(e1, e2):
-        return type.Bool()
-
-    def simplify(e1, e2):
-        if not isinstance(e1, expr.Ctor) or not isinstance(e2, expr.Ctor):
-            return None
-
-        b = (e1.value() >= e2.value())
-        return expr.Ctor(b, type.Bool())
-
-    def evaluate(cg, e1, e2):
-        ty = e1.type()
-        (e1, e2) = _extendOps(cg, e1, e2)
-        tmp = cg.functionBuilder().addLocal("__geq", hilti.type.Bool())
-        ty._geq(cg, tmp, e1, e2)
         return tmp
 
 @operator.Greater(_integer, _integer)
@@ -575,7 +537,7 @@ class _:
         builder = cg.builder()
         (lower, upper, attrs) = lhs.type().bits()[name]
         tmp = builder.addLocal("__bits", lhs.type().hiltiType(cg))
-        cg.builder().int_mask(tmp, lhs.evaluate(cg), builder.constOp(lower), builder.constOp(upper))
+        cg.builder().int_mask(tmp, lhs.evaluate(cg), builder.constOp(lower), upper)
 
         for (attr, ex) in attrs:
             assert attr == "convert"
@@ -593,7 +555,7 @@ class _:
 
     def coerceTo(cg, e, dsttype):
         tmp = cg.builder().addLocal("__nonempty", hilti.type.Bool())
-        cg.builder().equal(tmp, e.evaluate(cg), cg.builder().constOp(0))
+        cg.builder().equal(tmp, e.evaluate(cg), 0)
         cg.builder().bool_not(tmp, tmp)
         return expr.Hilti(tmp, type.Bool())
 

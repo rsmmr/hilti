@@ -86,10 +86,10 @@ class _:
         op = e2.evaluate(cg)
         cg.builder().if_else(op, true, false)
 
-        true.assign(result, true.constOp(True))
+        true.assign(result, True)
         true.jump(cont)
 
-        false.assign(result, false.constOp(False))
+        false.assign(result, False)
         false.jump(cont)
 
         cg.setBuilder(cont)
@@ -128,10 +128,10 @@ class _:
         op = e2.evaluate(cg)
         cg.builder().if_else(op, true, false)
 
-        true.assign(result, true.constOp(True))
+        true.assign(result, True)
         true.jump(cont)
 
-        false.assign(result, false.constOp(False))
+        false.assign(result, False)
         false.jump(cont)
 
         cg.setBuilder(cont)

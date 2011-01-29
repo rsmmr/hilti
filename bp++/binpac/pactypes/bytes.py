@@ -176,10 +176,10 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
         builder = cg.builder()
 
         if dst and not skipping:
-            builder.tuple_index(dst, result, builder.constOp(0))
+            builder.tuple_index(dst, result, 0)
             toSink(dst)
 
-        builder.tuple_index(cur, result, builder.constOp(1))
+        builder.tuple_index(cur, result, 1)
 
         return cur
 

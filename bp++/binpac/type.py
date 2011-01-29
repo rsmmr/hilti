@@ -312,9 +312,10 @@ class Type(object):
         """Validates the semantic correctness of the type.
 
         Can be overridden by derived classes; the default implementation does
-        nothing. If there are any errors encountered during validation, the
-        method must call ~~Validator.error. If there are any sub-nodes that also
-        need to be checked, the method needs to do that recursively.
+        some Type-specific stuff. If there are any errors encountered during
+        validation, the method must call ~~Validator.error. If there are any
+        sub-nodes that also need to be checked, the method needs to do that
+        recursively.
 
         Derived classes should call their parent's implementation.
 
@@ -541,11 +542,11 @@ class ParseableType(Type):
         result = fbuilder.addLocal("__unpacked", resultt)
         try_.unpack(result, op1, op2, op3)
 
-        error.makeRaiseException("BinPAC::ParseError", error.constOp("unpack failed"))
+        error.makeRaiseException("BinPAC::ParseError", "unpack failed")
 
         cg.setBuilder(insufficient)
         iter = fbuilder.addTmp("__iter", bytesit)
-        cg.builder().tuple_index(iter, op1, fbuilder.constOp(0))
+        cg.builder().tuple_index(iter, op1, 0)
         cg.generateInsufficientInputHandler(args, iter=iter)
         cg.builder().jump(parse)
 

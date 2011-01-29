@@ -300,7 +300,7 @@ class CodeGen(object):
         funcs = wbuilder.addLocal("funcs", hilti.type.Tuple([hilti.type.CAddr()] * 2))
         wbuilder.caddr_function(funcs, wbuilder.idOp(fbuilder.function().name()))
         f = wbuilder.addLocal("f", hilti.type.CAddr())
-        wbuilder.tuple_index(f, funcs, builder.constOp(0))
+        wbuilder.tuple_index(f, funcs, 0)
 
         wbuilder.call(None, wbuilder.idOp("BinPAC::call_init_func"), wbuilder.tupleOp(([f])))
 
@@ -423,7 +423,7 @@ class CodeGen(object):
             result = cont
         else:
             error.makeDebugMsg("binpac-verbose", "parse error, insufficient input")
-            error.makeRaiseException("BinPAC::ParseError", error.constOp("insufficient input"))
+            error.makeRaiseException("BinPAC::ParseError", "insufficient input")
 
             self.builder().if_else(cont, error, suspend)
 

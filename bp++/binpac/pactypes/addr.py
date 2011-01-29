@@ -103,9 +103,9 @@ class Addr(type.ParseableWithByteOrder):
         builder = cg.builder()
 
         if dst and not skipping:
-            builder.tuple_index(dst, result, builder.constOp(0))
+            builder.tuple_index(dst, result, 0)
 
-        builder.tuple_index(cur, result, builder.constOp(1))
+        builder.tuple_index(cur, result, 1)
 
         return cur
 

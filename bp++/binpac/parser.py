@@ -689,6 +689,10 @@ def p_expr_shift_right(p):
     """expr : expr SHIFT_RIGHT expr"""
     p[0] = expr.Overloaded(Operator.ShiftRight, (p[1], p[3]), location=_loc(p, 1))
 
+def p_expr_power(p):
+    """expr : expr POW expr"""
+    p[0] = expr.Overloaded(Operator.Power, (p[1], p[3]), location=_loc(p, 1))
+
 #def p_expr_constant(p):
 #    """expr : CONSTANT"""
 #    (val, type) = p[1]
@@ -779,11 +783,13 @@ def p_expr_unequal(p):
 
 def p_expr_lequal(p):
     """expr : expr LEQ expr"""
-    p[0] = expr.Overloaded(Operator.LowerEqual, (p[1], p[3]), location=_loc(p, 1))
+    gt = expr.Overloaded(Operator.Greater, (p[1], p[3]), location=_loc(p, 1))
+    p[0] = expr.Not(gt, location=_loc(p, 1))
 
 def p_expr_gequal(p):
     """expr : expr GEQ expr"""
-    p[0] = expr.Overloaded(Operator.GreaterEqual, (p[1], p[3]), location=_loc(p, 1))
+    lt = expr.Overloaded(Operator.Lower, (p[1], p[3]), location=_loc(p, 1))
+    p[0] = expr.Not(lt, location=_loc(p, 1))
 
 def p_expr_lower(p):
     """expr : expr '<' expr"""
