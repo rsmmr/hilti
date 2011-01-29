@@ -403,7 +403,7 @@ class Mod(Instruction):
         block_ok = cg.llvmNewBlock("ok")
         block_exc = cg.llvmNewBlock("exc")
 
-        iszero = cg.builder().icmp(llvm.core.IPRED_NE, op2, cg.llvmConstInt(0, self.op2.type.width))
+        iszero = cg.builder().icmp(llvm.core.IPRED_NE, op2, cg.llvmConstInt(0, self.op2().type().width()))
         cg.builder().cbranch(iszero, block_ok, block_exc)
 
         cg.pushBuilder(block_exc)
@@ -512,6 +512,36 @@ class Ult(Instruction):
         op2 = cg.llvmOp(self.op2(), t)
         result = cg.builder().icmp(llvm.core.IPRED_ULT, op1, op2)
         cg.llvmStoreInTarget(self, result)
+
+
+@hlt.instruction("int.sgt", op1=cInteger, op2=cIntegerOfWidthAsOp(1), target=cBool)
+class Sgt(Instruction):
+    """
+    Returns true iff *op1* is greater than *op2*, interpreting both as *signed*
+    integers.
+    """
+    def _codegen(self, cg):
+        t = operand.coerceTypes(self.op1(), self.op2())
+        assert t
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().icmp(llvm.core.IPRED_SGT, op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("int.ugt", op1=cInteger, op2=cIntegerOfWidthAsOp(1), target=cBool)
+class Ugt(Instruction):
+    """
+    Returns true iff *op1* is greater than *op2*, interpreting both as *unsigned*
+    integers.
+    """
+    def _codegen(self, cg):
+        t = operand.coerceTypes(self.op1(), self.op2())
+        assert t
+        op1 = cg.llvmOp(self.op1(), t)
+        op2 = cg.llvmOp(self.op2(), t)
+        result = cg.builder().icmp(llvm.core.IPRED_UGT, op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
 
 @hlt.instruction("int.zext", op1=cInteger, target=cInteger)
 class ZExt(Instruction):
