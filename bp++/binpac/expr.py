@@ -183,7 +183,7 @@ class Overloaded(Expression):
             if isinstance(expr, Expression):
                 expr.validate(vld)
 
-        if not operator.typecheck(self._op, self._exprs):
+        if not operator.hasOperator(self._op, self._exprs):
             types = ", ".join([str(e.type()) for e in self._exprs])
             vld.error(self, "no match for overloaded operator %s with types (%s)" % (self._op, types))
 
@@ -549,7 +549,7 @@ class Cast(Expression):
 
         opexprs = [self._expr, self._type]
 
-        if not operator.typecheck(operator.Operator.Cast, opexprs):
+        if not operator.hasOperator(operator.Operator.Cast, opexprs):
             vld.error(self, "no match for cast operator from type %s to type %s" % (self._expr.type(), self._type()))
 
         operator.validate(operator.Operator.Cast, vld, opexprs)

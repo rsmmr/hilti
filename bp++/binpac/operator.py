@@ -56,14 +56,6 @@ them receive instances of ~~Expression objects as arguments, with the number
 determined by the operator type.  Note these methods do not receive a *self*
 attribute; they are all class methods.
 
-.. function:: ctypecheck(<exprs>)
-
-  Optional. Adds additional type-checking supplementing the simple
-  +isinstance+ test performed by default. If implemented, it is guarenteed
-  that all other class methods will only be called if this check returns True.
-
-  Returns: bool - True if the operator applies to these expression types.
-
 .. function:: resolve(resolver, <exprs>)
 
   Optional. Adds additional resolving functionality performed *after* it has
@@ -269,7 +261,7 @@ _Operators = {
     "Cast": (1, "Explictly cast into another type.", lambda p, e: p.output("<Cast>")),
     }
 
-_Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type",
+_Methods = ["resolve", "validate", "simplify", "evaluate", "assign", "type",
             "coerceTo", "coerceCtorTo"]
 
 ### Public functions.
@@ -280,31 +272,11 @@ def hasOperator(op, exprs):
     op: ~~Operator - The operator.
     exprs: list of ~~Expression - The expressions for the operator.
 
-    Returns: bool - True if there's an operator found.
+    Returns: bool - True if there's an operator found implementing
+    that method.
     """
-    func = _findOp("typecheck", op, exprs)
+    func = _findOp("*", op, exprs)
     return func != None
-
-def typecheck(op, exprs):
-    """Checks whether an operator is compatible with a set of operand
-    expressions.
-
-    op: ~~Operator - The operator.
-    exprs: list of ~~Expression - The expressions for the operator.
-
-
-    """
-    func = _findOp("typecheck", op, exprs)
-    if not func:
-        # Not matching operator found, default is ok.
-        return True
-
-    result = func(*exprs)
-
-    if not result:
-        return False
-
-    return True
 
 def resolve(op, resolver, exprs):
     """Resolves an operator's arguments.
@@ -343,13 +315,7 @@ def simplify(op, exprs):
 
     Returns: ~~expr - A new expression, representing the simplified operator
     to be used instead; or None if the operator could not be simplified.
-
-    Note: This function must only be called if ~~typecheck indicates that
-    operator and expressions are compatible.
     """
-    if not typecheck(op, exprs):
-        return None
-
     func = _findOp("simplify", op, exprs)
     result = func(*exprs) if func else None
 
@@ -359,9 +325,6 @@ def simplify(op, exprs):
 def evaluate(op, cg, exprs):
     """Generates HILTI code for an expression.
 
-    This function must only be called if ~~typecheck indicates that operator
-    and expressions are compatible.
-
     op: string - The name of the operator.
     *cg*: ~~CodeGen - The current code generator.
 
@@ -370,10 +333,6 @@ def evaluate(op, cg, exprs):
     Returns: ~~hilti.instructin.Operand - An operand with the value of
     the evaluated expression.
     """
-
-    if not typecheck(op, exprs):
-        util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
-
     func = _findOp("evaluate", op, exprs)
 
     if not func:
@@ -384,9 +343,6 @@ def evaluate(op, cg, exprs):
 def assign(op, cg, exprs, rhs):
     """Generates HILTI code for an assignment.
 
-    This function must only be called if ~~typecheck indicates that operator
-    and expressions are compatible.
-
     op: string - The name of the operator.
     *cg*: ~~CodeGen - The current code generator.
 
@@ -394,10 +350,6 @@ def assign(op, cg, exprs, rhs):
 
     rhs: ~~hilti.operand.Operand - The right-hand side to assign.
     """
-
-    if not typecheck(op, exprs):
-        util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
-
     func = _findOp("assign", op, exprs)
 
     if not func:
@@ -408,17 +360,11 @@ def assign(op, cg, exprs, rhs):
 def type(op, exprs):
     """Returns the result type for an operator.
 
-    This function must only be called if ~~typecheck indicates that operator
-    and expressions are compatible.
-
     op: string - The name of the operator.
     exprs: list of ~~Expression - The expressions for the operator.
 
     Returns: ~~type.Type - The result type.
     """
-    if not typecheck(op, exprs):
-        util.error("no matching %s operator for %s" % (op, _fmtArgTypes(exprs)))
-
     func = _findOp("type", op, exprs)
 
     if not func:
@@ -543,9 +489,6 @@ def _registerOperator(operator, f, exprs):
     except KeyError:
         _OverloadTable[operator] = [(f, exprs)]
 
-def _default_typecheck(*exprs):
-    return True
-
 def _fmtTypes(types):
     return ",".join([str(t) for t in types])
 
@@ -574,10 +517,7 @@ def _makeOp(op, *exprs):
                 #    util.internal_error("%s has wrong number of argument for %s" % (m, _fmtTypes(exprs)))
 
                 _registerOperator((op, m), f, exprs)
-
-        if not "typecheck" in cls.__dict__:
-            # Add a "always true" typecheck if there's no other defined.
-            _registerOperator((op, "typecheck"), _default_typecheck, exprs)
+                _registerOperator((op, "*"), f, exprs)
 
         return cls
 
@@ -673,7 +613,7 @@ def _matchType(arg, proto, all):
     return ty == proto
 
 def _findOp(method, op, args):
-    assert method in _Methods
+    assert method == "*" or method in _Methods
 
     # Args can be expressions or types here.
 
@@ -702,6 +642,9 @@ def _findOp(method, op, args):
 
     if not matches:
         return None
+
+    if method == "*":
+        return True
 
     if len(matches) == 1:
         return matches[0][0]

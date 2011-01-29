@@ -77,7 +77,7 @@ class Integer(type.ParseableWithByteOrder):
                 if attr != "convert":
                     vld.error("unsupport bitfield attribute %s" % attr)
 
-                if not operator.typecheck(operator.Operator.Call, [ex, [expr.Hilti(None, self._typeOfWidth(upper-lower+1))]]):
+                if not operator.hasOperator(operator.Operator.Call, [ex, [expr.Hilti(None, self._typeOfWidth(upper-lower+1))]]):
                     vld.error("no matching function for &convert found")
 
     def validateCtor(self, vld, ctor):

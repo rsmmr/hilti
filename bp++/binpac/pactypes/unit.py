@@ -314,12 +314,11 @@ class Field(node.Node):
 
         convert = self.type().attributeExpr("convert") if self.type() else None
 
-        if convert and not operator.typecheck(operator.Operator.Call, [convert, [expr.Hilti(None, self.parsedType())]]):
+        if convert and not operator.hasOperator(operator.Operator.Call, [convert, [expr.Hilti(None, self.parsedType())]]):
             vld.error(self, "no matching function for &convert found")
 
         if self._sink and not isinstance(self.type(), type.Sinkable):
             vld.error(self, "cannot attach sink to type %s" % self.type())
-
 
     def pac(self, printer):
         """Converts the field into parseable BinPAC++ code.
@@ -1021,7 +1020,7 @@ class _:
     Note that filters must be added before the first data chunk is passed in.
     If parsing has alrady started when a filter is added, behaviour is
     undefined.  Also note that filters can only be added to *exported* unit
-    types. 
+    types.
 
     Currently, only a set of predefined filters can be used; see
     ~~BinPAC::Filter. One cannot define own filters in BinPAC++.
