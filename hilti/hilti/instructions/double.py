@@ -99,6 +99,38 @@ class Mul(Instruction):
         result = cg.builder().fmul(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
+@hlt.constraint("int<32> | double")
+def _int_or_double(ty, op, i):
+    if isinstance(ty, type.Double):
+        return (True, "")
+
+    if isinstance(ty, type.Integer):
+        return (True, "")
+
+    return (False, "must be int<32> or double")
+
+@hlt.instruction("double.pow", op1=cDouble, op2=_int_or_double, target=cDouble)
+class Pow(Instruction):
+    """Raises *op1* to the power *op2*. If the product overflows the range of
+    the double type, the result in undefined.
+    """
+    def _validate(self, vld):
+        if isinstance(self.op2().type(), type.Integer) and not self.op2().canCoerceTo(type.Integer(32)):
+            vld.error(self.op2(), "cannot coerce operand 2 to int<32>")
+
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+
+        if isinstance(self.op2().type(), type.Integer):
+            op2 = cg.llvmOp(self.op2(), coerce_to=type.Integer(32))
+            rtype = cg.llvmType(self.target().type())
+            result = cg.llvmCallIntrinsic(llvm.core.INTR_POWI, [rtype], [op1, op2])
+            cg.llvmStoreInTarget(self, result)
+        else:
+            op2 = cg.llvmOp(self.op2())
+            result = cg.llvmCallCInternal("pow", [op1, op2])
+            cg.llvmStoreInTarget(self, result)
+            
 @hlt.instruction("double.div", op1=cDouble, op2=cNonZero(cDouble), target=cDouble)
 class Div(Instruction):
     """
@@ -125,6 +157,32 @@ class Div(Instruction):
 
         # Leave ok-builder for subsequent code.
 
+@hlt.instruction("double.mod", op1=cDouble, op2=cNonZero(cDouble), target=cDouble)
+class Mod(Instruction):
+    """
+    Calculates *op1* modulo *op2*.
+    Throws :exc:`DivisionByZero` if *op2* is zero.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        op2 = cg.llvmOp(self.op2())
+
+        block_ok = cg.llvmNewBlock("ok")
+        block_exc = cg.llvmNewBlock("exc")
+
+        iszero = cg.builder().fcmp(llvm.core.RPRED_ONE, op2, cg.llvmConstDouble(0))
+        cg.builder().cbranch(iszero, block_ok, block_exc)
+
+        cg.pushBuilder(block_exc)
+        cg.llvmRaiseExceptionByName("hlt_exception_division_by_zero", self.location())
+        cg.popBuilder()
+
+        cg.pushBuilder(block_ok)
+        result = cg.builder().frem(op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
+        # Leave ok-builder for subsequent code.        
+
 @hlt.instruction("double.eq", op1=cDouble, op2=cDouble, target=cBool)
 class Eq(Instruction):
     """
@@ -145,4 +203,35 @@ class Lt(Instruction):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().fcmp(llvm.core.RPRED_OLT, op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("double.gt", op1=cDouble, op2=cDouble, target=cBool)
+class Gt(Instruction):
+    """
+    Returns true iff *op1* is greater than *op2*.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        op2 = cg.llvmOp(self.op2())
+        result = cg.builder().fcmp(llvm.core.RPRED_OGT, op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("double.uint", op1=cDouble, target=cInteger)
+class UInt(Instruction):
+    """Converts the double *op1* into an unsigned integer value, rounding to
+    the nearest value.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        result = cg.builder().fptoui(op1, cg.llvmType(self.target().type()))
+        cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("double.sint", op1=cDouble, target=cInteger)
+class SInt(Instruction):
+    """Converts the double *op1* into a signed integer value, rounding to
+    the nearest value.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        result = cg.builder().fptosi(op1, cg.llvmType(self.target().type()))
         cg.llvmStoreInTarget(self, result)

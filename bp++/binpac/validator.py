@@ -35,7 +35,7 @@ class Validator(object):
         ~~Location suitable to include into the error message.
         """
         loc = context.location() if context else None
-        util.error(msg, component="codegen", context=loc)
+        util.error(msg, component="validation", context=loc)
         self._errors += 1
 
     def currentModule(self):

@@ -80,17 +80,17 @@ class _:
         cont = fbuilder.newBuilder("and_cont")
 
         op = e1.evaluate(cg)
-        cg.builder().if_else(op, eval_op2.labelOp(), false.labelOp())
+        cg.builder().if_else(op, eval_op2, false)
 
         cg.setBuilder(eval_op2)
         op = e2.evaluate(cg)
-        cg.builder().if_else(op, true.labelOp(), false.labelOp())
+        cg.builder().if_else(op, true, false)
 
         true.assign(result, true.constOp(True))
-        true.jump(cont.labelOp())
+        true.jump(cont)
 
         false.assign(result, false.constOp(False))
-        false.jump(cont.labelOp())
+        false.jump(cont)
 
         cg.setBuilder(cont)
         return result
@@ -122,17 +122,17 @@ class _:
         cont = fbuilder.newBuilder("or_cont")
 
         op = e1.evaluate(cg)
-        cg.builder().if_else(op, true.labelOp(), eval_op2.labelOp())
+        cg.builder().if_else(op, true, eval_op2)
 
         cg.setBuilder(eval_op2)
         op = e2.evaluate(cg)
-        cg.builder().if_else(op, true.labelOp(), false.labelOp())
+        cg.builder().if_else(op, true, false)
 
         true.assign(result, true.constOp(True))
-        true.jump(cont.labelOp())
+        true.jump(cont)
 
         false.assign(result, false.constOp(False))
-        false.jump(cont.labelOp())
+        false.jump(cont)
 
         cg.setBuilder(cont)
         return result

@@ -1,0 +1,52 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build2 %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local double d1 = 10.0
+    local double d2 = 15.0
+    local double d
+    local int<32> i
+
+    local bool b
+
+    b = double.gt d1 d2
+    call Hilti::print(b)
+
+    b = double.gt d2 d1
+    call Hilti::print(b)
+
+    d = double.mod d1 d2
+    call Hilti::print(d)
+
+    d = double.mod d2 d1
+    call Hilti::print(d)
+
+    i = double.sint 15.123
+    call Hilti::print(i)
+
+    i = double.sint -15.123
+    call Hilti::print(i)
+
+    i = double.uint 15.123
+    call Hilti::print(i)
+
+    i = double.uint -15.123
+    call Hilti::print(i)
+
+    d = double.pow 2.0 10.0
+    call Hilti::print(d)
+
+    d = double.pow 2.0 10
+    call Hilti::print(d)
+
+    d = double.pow 64.0 -0.5
+    call Hilti::print(d)
+}
+

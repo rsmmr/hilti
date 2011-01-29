@@ -529,7 +529,7 @@ class ParseableType(Type):
         fbuilder = cg.functionBuilder()
 
         parse = fbuilder.newBuilder("parse")
-        cg.builder().jump(parse.labelOp())
+        cg.builder().jump(parse)
 
         try_ = fbuilder.newBuilder(None, add=False)
         error = fbuilder.newBuilder(None, add=False)
@@ -547,14 +547,14 @@ class ParseableType(Type):
         iter = fbuilder.addTmp("__iter", bytesit)
         cg.builder().tuple_index(iter, op1, fbuilder.constOp(0))
         cg.generateInsufficientInputHandler(args, iter=iter)
-        cg.builder().jump(parse.labelOp())
+        cg.builder().jump(parse)
 
         catch1 = (None, [error.block()])
         catch2 = (fbuilder.idOp("Hilti::WouldBlock").type(), [insufficient.block()])
 
         ins = hilti.instructions.trycatch.TryCatch([try_.block()], [catch1, catch2])
         parse.block().addInstruction(ins)
-        parse.jump(cont.labelOp())
+        parse.jump(cont)
 
         cg.setBuilder(cont)
         return result

@@ -969,7 +969,7 @@ class _:
         fbuilder = cg.functionBuilder()
         disconnect = fbuilder.newBuilder("disconnect")
         done = fbuilder.newBuilder("done")
-        cg.builder().if_else(sink_set, disconnect.labelOp(), done.labelOp())
+        cg.builder().if_else(sink_set, disconnect, done)
 
         cg.setBuilder(disconnect)
 
@@ -980,7 +980,7 @@ class _:
         cg.builder().call(None, cfunc, cargs)
         cg.builder().struct_unset(pobj, cg.builder().constOp("__sink"))
 
-        cg.builder().jump(done.labelOp())
+        cg.builder().jump(done)
 
         cg.setBuilder(done)
 

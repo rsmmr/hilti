@@ -70,6 +70,10 @@ class Node(visitor.Visitable):
         Note: To implement validation for derived classes, you must not
         override this method but instead ~~_validate.
         """
+        if self._already(vld, "validate"):
+            return
+
+        self._validate(vld)
 
     def pac(self, printer):
         """Converts the node back into parseable source code.

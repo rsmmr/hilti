@@ -2,6 +2,8 @@
 #
 # The function type.
 
+builtin_id = id
+
 import binpac.node as node
 import binpac.type as type
 import binpac.expr as expr
@@ -79,7 +81,12 @@ class Function(type.Type):
     ### Methods overidden from Type.
 
     def _resolve(self, resolver):
-        super(Function, self)._resolve(resolver)
+        # FIXME: This is kind of weird. Not sure why the type.Function class
+        # object is actually a different one ...
+        if isinstance(self, Function):
+            super(Function, self)._resolve(resolver)
+        else:
+            super(type.Function, self)._resolve(resolver)
 
         for i in self._ids:
             i.resolve(resolver)

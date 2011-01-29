@@ -154,15 +154,15 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
             done = fbuilder.newBuilder("eod_reached")
             suspend = fbuilder.newBuilder("eod_not_reached")
 
-            cg.builder().jump(loop.labelOp())
+            cg.builder().jump(loop)
 
             eod = fbuilder.addTmp("__eod", hilti.type.Bool())
             loop.bytes_is_frozen(eod, cur)
-            loop.if_else(eod, done.labelOp(), suspend.labelOp())
+            loop.if_else(eod, done, suspend)
 
             cg.setBuilder(suspend)
             cg.generateInsufficientInputHandler(args)
-            cg.builder().jump(loop.labelOp())
+            cg.builder().jump(loop)
 
             cg.setBuilder(done)
             if not skipping:

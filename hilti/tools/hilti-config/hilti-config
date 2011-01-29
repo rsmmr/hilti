@@ -109,7 +109,7 @@ while [ "$1" != "" ]; do
             shift;;
 
         --libs-c)
-            echo "-lc -lpthread $pcap_libs"
+            echo "-lc -lm -lpthread $pcap_libs"
             shift;;
 
         --hilticflags)

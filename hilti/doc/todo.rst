@@ -21,6 +21,8 @@ Instructions
 
 - Add support for setting location information.
 
+- Should rename "double" to "float".
+
 Code Generation
 ---------------
 

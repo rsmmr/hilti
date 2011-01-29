@@ -409,7 +409,7 @@ class CodeGen(object):
         suspend = fbuilder.newBuilder("suspend")
         suspend.makeDebugMsg("binpac-verbose", "out of input, yielding ...")
         suspend.yield_()
-        suspend.jump(resume.labelOp())
+        suspend.jump(resume)
 
         error = fbuilder.newBuilder("error")
 
@@ -418,14 +418,14 @@ class CodeGen(object):
         if eod_ok:
             error.makeDebugMsg("binpac-verbose", "parse error, insufficient input (but end-of-data would be ok)")
 
-            self.builder().if_else(cont, resume.labelOp(), suspend.labelOp())
+            self.builder().if_else(cont, resume, suspend)
 
             result = cont
         else:
             error.makeDebugMsg("binpac-verbose", "parse error, insufficient input")
             error.makeRaiseException("BinPAC::ParseError", error.constOp("insufficient input"))
 
-            self.builder().if_else(cont, error.labelOp(), suspend.labelOp())
+            self.builder().if_else(cont, error, suspend)
 
             result = fbuilder.constOp(False)
 

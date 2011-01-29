@@ -276,14 +276,14 @@ class UnitHook(Block):
             dbg = fbuilder.addTmp("__dbg", hilti.type.Bool())
             builder.call(dbg, builder.idOp("BinPAC::debugging_enabled"), builder.tupleOp([]))
 
-            cg.builder().if_else(dbg, hook.labelOp(), cont.labelOp())
+            cg.builder().if_else(dbg, hook, cont)
 
             cg.setBuilder(hook)
 
         Block.execute(self, cg)
 
         if self.debug():
-            cg.builder().jump(cont.labelOp())
+            cg.builder().jump(cont)
             cg.setBuilder(cont)
 
         cg.builder().return_void()
@@ -547,20 +547,20 @@ class IfElse(Statement):
 
         cond = self._cond.simplify().coerceTo(type.Bool(), cg).evaluate(cg)
 
-        cg.builder().if_else(cond, yes.labelOp(), no.labelOp() if no else cont.labelOp())
+        cg.builder().if_else(cond, yes, no if no else cont)
 
         cg.setBuilder(yes)
         self._yes.execute(cg)
 
         if not cg.builder().terminated():
-            cg.builder().jump(cont.labelOp())
+            cg.builder().jump(cont)
 
         if no:
             cg.setBuilder(no)
             self._no.execute(cg)
 
             if not cg.builder().terminated():
-                cg.builder().jump(cont.labelOp())
+                cg.builder().jump(cont)
 
         cg.setBuilder(cont)
 

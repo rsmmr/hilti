@@ -364,7 +364,7 @@ class ParserGen:
 
         found_lit = self.functionBuilder().newBuilder("found-sym")
         found_lit.tuple_index(args.cur, match, found_lit.constOp(1))
-        found_lit.jump(done.labelOp())
+        found_lit.jump(done)
 
         values = [no_lahead.constOp(lit.id())]
         branches = [found_lit]
@@ -379,7 +379,7 @@ class ParserGen:
 
         # If it matches, consume it (i.e., clear the look-ahead).
         match.setComment("Correct look-ahead symbol pending, will be consumed.")
-        match.jump(done.labelOp())
+        match.jump(done)
 
         # Consume look-ahead.
         done.assign(args.lahead, _LookAheadNone)
@@ -546,7 +546,7 @@ class ParserGen:
             # Build a regular expression for all the possible symbols.
             match = self._matchToken(no_lahead, "regexp", prod.symbol(), literals[0] | literals[1], args)
             no_lahead.tuple_index(args.lahead, match, builder.constOp(0))
-            no_lahead.jump(builder.labelOp())
+            no_lahead.jump(builder)
 
             ### Now branch according the look-ahead.
             done = self.functionBuilder().newBuilder("done")
@@ -560,7 +560,7 @@ class ParserGen:
                 self._startingProduction(args, alts[i])
                 self._parseProduction(alts[i], args)
                 self._finishedProduction(args, alts[i], None)
-                self.builder().jump(done.labelOp())
+                self.builder().jump(done)
                 return branch
 
             values = []
@@ -615,9 +615,9 @@ class ParserGen:
             self._startingProduction(args, alts[i])
             self._parseProduction(alts[i], args)
             self._finishedProduction(args, alts[i], None)
-            self.builder().jump(done.labelOp())
+            self.builder().jump(done)
 
-        save_builder.if_else(bool, branches[0].labelOp(), branches[1].labelOp())
+        save_builder.if_else(bool, branches[0], branches[1])
 
         self.cg().setBuilder(done)
 
@@ -635,12 +635,12 @@ class ParserGen:
 
         builder = self.builder()
         builder.assign(cnt, limit)
-        builder.jump(cond.labelOp())
+        builder.jump(cond)
 
         # Condition block checking whether we're done.
         zero = cond.constOp(0, cnt.type())
         cond.equal(finished, cnt, zero)
-        cond.if_else(finished, done.labelOp(), body.labelOp())
+        cond.if_else(finished, done, body)
 
         # The body doing one iteration of the production.
         body.decr(cnt, cnt)
@@ -649,7 +649,7 @@ class ParserGen:
         self._startingProduction(args, prod.body())
         self._parseProduction(prod.body(), args)
         self._finishedProduction(args, prod.body(), None)
-        self.cg().builder().jump(cond.labelOp())
+        self.cg().builder().jump(cond)
 
         # All done.
         self.cg().setBuilder(done)
@@ -673,7 +673,7 @@ class ParserGen:
             self._startingProduction(args, case_prod)
             self._parseProduction(case_prod, args)
             self._finishedProduction(args, case_prod, None)
-            self.builder().jump(done.labelOp())
+            self.builder().jump(done)
 
         cg.setBuilder(default_builder)
 
@@ -682,7 +682,7 @@ class ParserGen:
         else:
             self._parseError(default_builder, "unexpected switch case")
 
-        self.builder().jump(done.labelOp())
+        self.builder().jump(done)
 
         self.cg().setBuilder(done)
 
@@ -700,13 +700,13 @@ class ParserGen:
 
         if not prod.eodOk():
             self.cg().generateInsufficientInputHandler(args)
-            self.cg().builder().jump(cont.labelOp())
+            self.cg().builder().jump(cont)
         else:
             eod = self.functionBuilder().newBuilder("eod_ok")
             eod.return_result(builder.tupleOp([args.cur, args.lahead, args.lahstart]))
 
             at_eod = self.cg().generateInsufficientInputHandler(args, eod_ok=True)
-            self.builder().if_else(at_eod, eod.labelOp(), cont.labelOp())
+            self.builder().if_else(at_eod, eod, cont)
 
         self.cg().setBuilder(old_builder)
 
@@ -770,7 +770,7 @@ class ParserGen:
         (set, cont) = self.cg().builder().makeIf(not_set)
         self.cg().setBuilder(set)
         self.cg().builder().struct_set(args.obj, name, default)
-        self.cg().builder().jump(cont.labelOp())
+        self.cg().builder().jump(cont)
         self.cg().setBuilder(cont)
 
     def _finishedProduction(self, args, prod, value):
@@ -814,7 +814,7 @@ class ParserGen:
             self._runFieldHook(prod.field(), args)
 
         if cont:
-            true.jump(cont.labelOp())
+            true.jump(cont)
             self.cg().setBuilder(cont)
 
     def _runFilter(self, prod, value):
@@ -1043,7 +1043,7 @@ class ParserGen:
             cfunc = cg.builder().idOp("BinPAC::filter_close")
             cargs = cg.builder().tupleOp([filter])
             cg.builder().call(None, cfunc, cargs)
-            cg.builder().jump(done.labelOp())
+            cg.builder().jump(done)
 
             cg.setBuilder(done)
 
@@ -1107,7 +1107,7 @@ class ParserGen:
         has_filter = fbuilder.newBuilder("__has_filter")
         done = fbuilder.newBuilder("__done_filter")
 
-        cg.builder().if_else(filter_set, has_filter.labelOp(), done.labelOp())
+        cg.builder().if_else(filter_set, has_filter, done)
 
         cg.setBuilder(has_filter)
 
@@ -1180,10 +1180,10 @@ class ParserGen:
 
         # Freeze the decoded data if the input data is frozen.
         freeze = cg.functionBuilder().newBuilder("_freeze")
-        cg.builder().if_else(is_frozen, freeze.labelOp(), done.labelOp())
+        cg.builder().if_else(is_frozen, freeze, done)
 
         freeze.bytes_freeze(filter_decoded);
-        freeze.jump(done.labelOp())
+        freeze.jump(done)
 
         cg.setBuilder(done)
 

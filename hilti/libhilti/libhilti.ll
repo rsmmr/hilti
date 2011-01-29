@@ -147,3 +147,6 @@ declare %__hlt_callable** @__hlt_callable_next(%__hlt_execution_context*, %__hlt
 ;;; Globals defined in globals.h
 @__hlt_global_execution_context = external global %__hlt_execution_context*
 @__hlt_global_thread_mgr = external global %__hlt_void*
+
+;;; libc
+declare double @pow(double, double)

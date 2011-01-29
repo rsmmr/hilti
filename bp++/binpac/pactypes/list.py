@@ -288,18 +288,18 @@ class Plus:
         def init(builder, next):
             builder.begin(i, l2)
             builder.end(end, l2)
-            builder.jump(next.labelOp())
+            builder.jump(next)
 
         def cond(builder, next):
             builder.unequal(c, i, end)
-            builder.jump(next.labelOp())
+            builder.jump(next)
             return c
 
         def body(builder, next):
             builder.deref(item, i)
             builder.list_push_back(l1, item)
             builder.incr(i, i)
-            builder.jump(next.labelOp())
+            builder.jump(next)
 
         next = cg.builder().makeForLoop(init, cond, body, tag="list_append")
         cg.setBuilder(next)

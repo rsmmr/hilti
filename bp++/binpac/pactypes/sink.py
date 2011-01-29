@@ -48,7 +48,7 @@ class _:
         fbuilder = cg.functionBuilder()
         ok = fbuilder.newBuilder("not_connected")
         error = fbuilder.newBuilder("already_connected")
-        cg.builder().if_else(old_sink_set, error.labelOp(), ok.labelOp())
+        cg.builder().if_else(old_sink_set, error, ok)
 
         error.makeRaiseException("BinPAC::UnitAlreadyConnected", None)
 
