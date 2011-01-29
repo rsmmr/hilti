@@ -169,16 +169,16 @@ class Overloaded(Expression):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Expression.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Overloaded, self)._resolve(resolver)
         for expr in self._exprs:
             if isinstance(expr, Expression):
                 expr.resolve(resolver)
 
         operator.resolve(self._op, resolver, self._exprs)
 
-    def validate(self, vld):
-        Expression.validate(self, vld)
+    def _validate(self, vld):
+        super(Overloaded, self)._validate(vld)
         for expr in self._exprs:
             if isinstance(expr, Expression):
                 expr.validate(vld)
@@ -234,20 +234,17 @@ class Not(Expression):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Expression.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Not, self)._resolve(resolver)
         if self._expr:
             self._expr.resolve(resolver)
 
-    def validate(self, vld):
-        Expression.validate(self, vld)
+    def _validate(self, vld):
+        super(Not, self)._validate(vld)
         self._expr.validate(vld)
 
         if not self._expr.canCoerceTo(type.Bool()):
             vld.error("expression must be a boolean")
-
-    def pac(self, printer):
-        pass
 
     ### Overidden from Expression.
 
@@ -291,12 +288,12 @@ class Ctor(Expression):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Expression.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Ctor, self)._resolve(resolver)
         self._type = self._type.resolve(resolver)
 
-    def validate(self, vld):
-        Expression.validate(self, vld)
+    def _validate(self, vld):
+        super(Ctor, self)._validate(vld)
         self._type.validate(vld)
         self._type.validateCtor(vld, self._value)
 
@@ -343,8 +340,8 @@ class Name(Assignable):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Assignable.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Name, self)._resolve(resolver)
 
         i = self._scope.lookupID(self._name)
         if not i:
@@ -353,8 +350,8 @@ class Name(Assignable):
 
         self._is_init = isinstance(i, id.Constant)
 
-    def validate(self, vld):
-        Assignable.validate(self, vld)
+    def _validate(self, vld):
+        super(Name, self)._validate(vld)
         if not self._scope.lookupID(self._name):
             vld.error(self, "unknown identifier %s" % self._name)
 
@@ -441,12 +438,12 @@ class Type(Expression):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Expression.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Type, self)._resolve(resolver)
         self._type = self._type.resolve(resolver)
 
-    def validate(self, vld):
-        Expression.validate(self, vld)
+    def _validate(self, vld):
+        super(Type, self)._validate(vld)
         self._type.validate(vld)
 
     def pac(self, printer):
@@ -475,14 +472,14 @@ class Assign(Expression):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Expression.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Assign, self)._resolve(resolver)
 
         self._dest.resolve(resolver)
         self._rhs.resolve(resolver)
 
-    def validate(self, vld):
-        Expression.validate(self, vld)
+    def _validate(self, vld):
+        super(Assign, self)._validate(vld)
 
         self._dest.validate(vld)
         self._rhs.validate(vld)
@@ -532,14 +529,14 @@ class Cast(Expression):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Expression.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Cast, self)._resolve(resolver)
 
         self._expr.resolve(resolver)
         self._type.resolve(resolver)
 
-    def validate(self, vld):
-        Expression.validate(self, vld)
+    def _validate(self, vld):
+        super(Cast, self)._validate(vld)
 
         self._expr.validate(vld)
         self._type.validate(vld)
@@ -594,12 +591,12 @@ class Hilti(Expression):
     def type(self):
         return self._type
 
-    def resolve(self, resolver):
-        Expression.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Hilti, self)._resolve(resolver)
         self._type = self._type.resolve(resolver)
 
-    def validate(self, vld):
-        Expression.validate(self, vld)
+    def _validate(self, vld):
+        super(Hilti, self)._validate(vld)
         self._type.validate(vld)
 
     def evaluate(self, cg):

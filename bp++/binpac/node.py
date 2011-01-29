@@ -3,60 +3,7 @@
 import visitor
 import util
 
-_recursives = set()
-
-def check_recursion(m):
-    """Decorator for ~~Node methods that automatically avoids infinite
-    recursions. Decorated methods must have a single *driver* argument that is
-    passed on to all recursive calls. Each time the method is called, it will
-    be checked whether it has already by called for the current object with
-    the same driver instance. If yes, the method call will not be executed.
-    """
-    global _recursives
-    _recursives.add(m.__name__)
-    return m
-
-class CheckRecursion(object):
-    def __getattribute__(self, name):
-        """Implements the ~~check_recursion checking."""
-
-        method = object.__getattribute__(self, name)
-
-        # FIXME: Not quite clear why need name here.
-        # Without it, sometimes methods aren't called. Might that be a GC
-        # effect when an object gets recycled? If so, howver, adding the name
-        # will probably reduce the chance of running into the problem, but not
-        # elmininate it ...
-
-        idx = str(id(self))
-        def _checkRecursion(driver):
-            try:
-                if idx in driver._already:
-                    return self
-
-            except AttributeError:
-                driver._already = {}
-
-            # We store the object itself to prevent GC from deleting it; that
-            # would mess up our tracking because new objects may get the same
-            # ID.
-            driver._already[idx] = self
-            return method(driver)
-
-        if name in _recursives:
-            return _checkRecursion
-
-        if name == "reset":
-            # Clear memory.
-            driver._already = {}
-
-        if name == "codegen":
-            import sys
-            print >>sys.stderr, "### %s" % self.__class__.__name__
-
-        return method
-
-class Node(visitor.Visitable, CheckRecursion):
+class Node(visitor.Visitable):
     """Base class for all classes that can be nodes in an |ast|.
     """
 
@@ -102,11 +49,44 @@ class Node(visitor.Visitable, CheckRecursion):
         """
         return self._comment
 
-    ### Method that can be overridden by derived classes.
-
-    @check_recursion
     def resolve(self, resolver):
         """Resolves any unknown types the node may have.
+
+        resolver: ~~Resolver - The resolver to use.
+
+        Note: To implement resolving for derived classes, you must
+        not override this method but instead ~~_resolve.
+        """
+        if self._already(resolver, "resolve"):
+            return
+
+        self._resolve(resolver)
+
+    def validate(self, vld):
+        """Validates the semantic correctness of the node.
+
+        vld: ~~Validator - The validator triggering the validation.
+
+        Note: To implement validation for derived classes, you must not
+        override this method but instead ~~_validate.
+        """
+
+    def pac(self, printer):
+        """Converts the node back into parseable source code.
+
+        Can be overridden by derived classes; the default implementation
+        returns a descriptive string pointing at a non-overriden method.
+        nothing.  If overridden, the parent's implementation may be called
+        (but also may not, depending on what's needed). 
+
+        printer: ~~Printer - The printer to use.
+        """
+        printer.output("<pac() not defined for %s>" % self.__class__)
+
+    ### Method that can be overridden by derived classes.
+
+    def _resolve(self, resolver):
+        """Implements resolving for derived classes.
 
         Can be overridden by derived classes; the default implementation does
         nothing. If overridden, the parent's implementation should be called.
@@ -116,43 +96,37 @@ class Node(visitor.Visitable, CheckRecursion):
         The method is called before ~~validate, and thus needs to deal
         robustly with unexpected situations. It should however leave any error
         reporting to ~~validate and just return if it can't resolve something.
-
-        resolver: ~~Resolver - The resolver to use.
-
-        Note: The method is decorated with ~~check_recursion. That means
-        recursion cycles will be avoided automatically. However, that also
-        means that one can't use ``super`` to call the parent's
-        implementation. Instead use ``ParentClass.resolve(self, resolver)``.
         """
-        pass
+        return
 
-    @check_recursion
-    def validate(self, vld):
-        """Validates the semantic correctness of the node.
+    def _validate(self, vld):
+        """Implements validation for derived classes.
+
+        vld: ~~Validator - The validator triggering the validation.
 
         Can be overridden by derived classes; the default implementation does
         nothing.  If overridden, the parent's implementation should be called.
         If there are any errors encountered during validation, the method must
         call ~~Validator.error. If there are any sub-nodes that also need to
         be checked, the method needs to do that recursively.
-
-        vld: ~~Validator - The validator triggering the validation.
-
-        Note: The method is decorated with ~~check_recursion. That means
-        recursion cycles will be avoided automatically. However, that also
-        means that one can't use ``super`` to call the parent's
-        implementation. Instead use ``ParentClass.validate(self, vld)``.
         """
-        pass
+        return
 
-    def pac(self, printer):
-        """Converts the node back into parseable source code.
+    ### Internal method.
 
-        Must be overidden by derived classes if the method can get called.
+    def _already(self, driver, name):
 
-        printer: ~~Printer - The printer to use.
-        """
-        util.internal_error("Node.pac2() not overidden by %s" % self.__class__)
+        idx = str(id(self))
 
+        try:
+            if idx in driver._already:
+                return True
 
+        except AttributeError:
+            driver._already = {}
+
+        # We store the object itself to prevent GC from deleting it; that would
+        # mess up our tracking because new objects may get the same ID.
+        driver._already[idx] = self
+        return False
 

@@ -557,10 +557,10 @@ def _matchType(arg, proto, all):
         if len(arg) == 0 and len(proto) == 0:
             return True
 
-    if proto == Match:
+    if inspect.isclass(proto) and proto == Match:
         return True
 
-    if proto == NoMatch:
+    if inspect.isclass(proto) and proto == NoMatch:
         return False
 
     if isinstance(proto, Any):

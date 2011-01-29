@@ -222,7 +222,10 @@ class Type(object):
         encountered (e.g., we still don't the identifier), an error
         message will be reported via the *resolver*.
 
-        Derived classes should *not* call their parent's implementation.
+        This method *can* be overridden by derived classes if it wants replace
+        an *instance* with something else. Note that if you only want
+        recursively resolve further attributes in derived classes, you must
+        not override this method but ~~_resolve instead.
 
         resolver: ~~Resolver - The current resolver to use.
 
@@ -231,18 +234,19 @@ class Type(object):
         a newly instantiated type; the caller must then use the
         returned type instead of *self* afterwards.
 
+        Note: To implement resolving for derived classes, you must not
+        override this method but instead ~~_resolve.
+
         Note: ~~Type is not derived from ~~Node and thus we are not
         overriding ~~Node.resolve here, even though it might
         initially look like that. This method does work similar but
-        it returns a value, which ~~Node.resolve does not. If you want to
-        resolve attributes of the class (rather than an instance of the class
-        itself), overridde ~~doResolve instead.
+        it returns a value, which ~~Node.resolve does not.
         """
         if self._resolved:
             return self
 
         self._resolved = True
-        self.doResolve(resolver)
+        self._resolve(resolver)
         return self
 
     def __ne__(self, other):
@@ -295,12 +299,10 @@ class Type(object):
         """
         return []
 
-    # @node.check_recursion # Expensinve
-
     def validate(self, vld):
         Type.validate(self, vld)
 
-    def doResolve(self, resolver):
+    def _resolve(self, resolver):
         """XXXX"""
         for expr in self._attrs.values():
             if expr:
@@ -781,7 +783,7 @@ class Iterator(Type):
     def name(self):
         return "iterator<%s>" % self._type
 
-    def doResolve(self, resolver):
+    def _resolve(self, resolver):
         self._type = self._type.resolve(resolver)
 
     def _validate(self, vld):
@@ -858,6 +860,7 @@ class Unknown(ParseableType):
     ### Overidden from Type.
 
     def resolve(self, resolver):
+        # Yes, we want to override resolve() here (not _resolve).
         i = resolver.scope().lookupID(self._id)
 
         if not i:
@@ -911,7 +914,7 @@ class MetaType(Type):
 
     ### Overidden from Type.
 
-    def doResolve(self, resolver):
+    def _resolve(self, resolver):
         self._type = self._type.resolve(resolver)
 
     def validate(self, vld):

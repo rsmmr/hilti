@@ -145,11 +145,12 @@ class ID(node.Node):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
+        super(ID, self)._resolve(resolver)
         self._type = self._type.resolve(resolver)
 
-    def validate(self, vld):
-        self._type.validate(vld)
+    def _validate(self, vld):
+        super(ID, self)._validate(vld)
 
     ### Methods for derived classes to override.
 
@@ -190,12 +191,12 @@ class Constant(ID):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        ID.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Constant, self)._resolve(resolver)
         self._expr.resolve(resolver)
 
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Constant, self)._validate(vld)
 
         if self._expr and not self._expr.canCoerceTo(self.type()):
             vld.error("type of initializer expression does not match")
@@ -234,13 +235,13 @@ class Local(ID):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        ID.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Local, self)._resolve(resolver)
         if self._expr:
             self._expr.resolve(resolver)
 
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Local, self)._validate(vld)
 
         if self._expr and not self._expr.canCoerceTo(self.type()):
             vld.error("type of initializer expression does not match")
@@ -316,13 +317,13 @@ class Global(ID):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        ID.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Global, self)._resolve(resolver)
         if self._expr:
             self._expr.resolve(resolver)
 
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Global, self)._validate(vld)
 
         if self._expr and not self._expr.canCoerceTo(self.type()):
             vld.error(self, "type of initializer expression does not match")
@@ -384,14 +385,11 @@ class Variable(ID):
 
     ### Overidden from node.Node.
 
-    def validate(self, vld):
-        self.type().validate(vld)
+    def _resolve(self, resolver):
+        super(Variable, self)._resolve(resolver)
 
-    def resolve(self, resolver):
-        ID.resolve(self, resolver)
-
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Variable, self)._validate(vld)
 
     def pac(self, printer):
         printer.output("var %s" % self.name())
@@ -422,12 +420,12 @@ class Function(ID):
 
     ### Overidden from ID.
 
-    def resolve(self, resolver):
-        ID.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Function, self)._resolve(resolver)
         self._func.resolve(resolver)
 
-    def validate(self, vld):
-        ID.validate(self, vld)
+    def _validate(self, vld):
+        super(Function, self)._validate(vld)
         self._func.validate(vld)
 
     def pac(self, printer):

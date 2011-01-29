@@ -138,7 +138,8 @@ class Module(node.Node, property.Container):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
+        super(Module, self)._resolve(resolver)
 
         for (mod, path) in self._imported_modules:
             mod.resolve(resolver)
@@ -169,7 +170,9 @@ class Module(node.Node, property.Container):
 
         self.resolveProperties(resolver)
 
-    def validate(self, vld):
+    def _validate(self, vld):
+        super(Module, self)._validate(vld)
+
         for (mod, path) in self._imported_modules:
             mod.validate(vld)
 

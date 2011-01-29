@@ -256,7 +256,9 @@ class Field(node.Node):
         else:
             return (None, ty.resolve(resolver))
 
-    def resolve(self, resolver):
+    def _resolve(self, resolver):
+        super(Field, self)._resolve(resolver)
+
         if self._type:
             (expr, self._type) = self._resolveWithConstant(resolver, self._type)
 
@@ -373,8 +375,8 @@ class SwitchField(Field):
 
     ### Overriden from node.Node.
 
-    def resolve(self, resolver):
-        Field.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(SwitchField, self)._resolve(resolver)
 
         self._expr.resolve(resolver)
 
@@ -490,8 +492,8 @@ class SwitchFieldCase(SubField):
 
     ### Overridden from node.Node
 
-    def resolve(self, resolver):
-        SubField.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(SwitchFieldCase, self)._resolve(resolver)
         for expr in self._exprs:
             expr.resolve(resolver)
 
@@ -700,8 +702,8 @@ class Unit(type.ParseableType, property.Container):
 
         return mbuilder.cache(self, _makeType)
 
-    def doResolve(self, resolver):
-        super(Unit, self).doResolve(resolver)
+    def _resolve(self, resolver):
+        super(Unit, self)._resolve(resolver)
 
         for param in self._args:
             param.resolve(resolver)

@@ -43,7 +43,4 @@ Cleanup
 - A number of those cleanup tasks applied to HILTI aren't yet done
   for BinPAC. Examples:
 
-  * The restructuring of validate into validate() and _validate
-    (same for resolve, etc.)
-    
-  * Has the automatic recursion detection been removed?
+    * Anything left?

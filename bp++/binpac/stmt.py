@@ -85,14 +85,14 @@ class Block(Statement):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Statement.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Block, self)._resolve(resolver)
 
         for stmt in self._stmts:
             stmt.resolve(resolver)
 
-    def validate(self, vld):
-        Statement.validate(self, vld)
+    def _validate(self, vld):
+        super(Block, self)._validate(vld)
 
         for stmt in self._stmts:
             stmt.validate(vld)
@@ -237,8 +237,9 @@ class UnitHook(Block):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Block.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(UnitHook, self)._resolve(resolver)
+
         self._unit.resolve(resolver)
         self._scope.resolve(resolver)
         for stmt in self._stmts:
@@ -248,8 +249,9 @@ class UnitHook(Block):
             arg.resolve(resolver)
             self._scope.addID(id.UnitParameter(arg.name(), arg.type()))
 
-    def validate(self, vld):
-        Block.validate(self, vld)
+    def _validate(self, vld):
+        super(UnitHook, self)._validate(vld)
+
         self._unit.validate(vld)
 
         for stmt in self._stmts:
@@ -322,12 +324,12 @@ class FieldHook(UnitHook):
         """
         self._field = field
 
-    def resolve(self, resolver):
-        UnitHook.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(FieldHook, self)._resolve(resolver)
         self._field.resolve(resolver)
 
-    def validate(self, vld):
-        UnitHook.validate(self, vld)
+    def _validate(self, vld):
+        super(FieldHook, self)._validate(vld)
         self._field.validate(vld)
 
     ### Overidden from UnitHook.
@@ -368,8 +370,8 @@ class FieldForEachHook(FieldHook):
         """
         return self._field.type().itemType()
 
-    def resolve(self, resolver):
-        super(FieldForEachHook, self).resolve(resolver)
+    def _resolve(self, resolver):
+        super(FieldForEachHook, self)._resolve(resolver)
 
         # It may not have been resolved earlier.
         self.scope().lookupID("__dollardollar").setType(self.itemType())
@@ -399,14 +401,14 @@ class Print(Statement):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Statement.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Print, self)._resolve(resolver)
 
         for expr in self._exprs:
             expr.resolve(resolver)
 
-    def validate(self, vld):
-        Statement.validate(self, vld)
+    def _validate(self, vld):
+        super(Print, self)._validate(vld)
 
         for expr in self._exprs:
             expr.validate(vld)
@@ -458,12 +460,12 @@ class Expression(Statement):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Statement.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Expression, self)._resolve(resolver)
         self._expr.resolve(resolver)
 
-    def validate(self, vld):
-        Statement.validate(self, vld)
+    def _validate(self, vld):
+        super(Expression, self)._validate(vld)
         self._expr.validate(vld)
 
     def pac(self, printer):
@@ -500,16 +502,16 @@ class IfElse(Statement):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Statement.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(IfElse, self)._resolve(resolver)
 
         self._cond.resolve(resolver)
         self._yes.resolve(resolver)
         if self._no:
             self._no.resolve(resolver)
 
-    def validate(self, vld):
-        Statement.validate(self, vld)
+    def _validate(self, vld):
+        super(IfElse, self)._validate(vld)
 
         self._cond.validate(vld)
         self._yes.validate(vld)
@@ -580,14 +582,14 @@ class Return(Statement):
 
     ### Overidden from node.Node.
 
-    def resolve(self, resolver):
-        Statement.resolve(self, resolver)
+    def _resolve(self, resolver):
+        super(Return, self)._resolve(resolver)
 
         if self._expr:
             self._expr.resolve(resolver)
 
-    def validate(self, vld):
-        Statement.validate(self, vld)
+    def _validate(self, vld):
+        super(Return, self)._validate(vld)
 
         if self._expr:
             self._expr.validate(vld)

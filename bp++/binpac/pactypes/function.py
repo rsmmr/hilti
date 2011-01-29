@@ -78,8 +78,8 @@ class Function(type.Type):
 
     ### Methods overidden from Type.
 
-    def doResolve(self, resolver):
-        super(Function, self).doResolve(resolver)
+    def _resolve(self, resolver):
+        super(Function, self)._resolve(resolver)
 
         for i in self._ids:
             i.resolve(resolver)
@@ -142,8 +142,8 @@ class OverloadedFunction(type.Type):
     def validate(self, vld):
         self._result.validate(vld)
 
-    def doResolve(self, resolver):
-        type.Type.doResolve(self, resolver)
+    def _resolve(self, resolver):
+        type.Type._resolve(self, resolver)
         self._result = self._result.resolve(resolver)
 
     def pac(self, printer):
@@ -212,8 +212,8 @@ class Function(node.Node):
     def validate(self, vld):
         self._type.validate(vld)
 
-    def doResolve(self, resolver):
-        super(Function, self).doResolve(resolver)
+    def _resolve(self, resolver):
+        super(Function, self)._resolve(resolver)
         self._type = self._type.resolve(resolver)
 
     ### Methods for derived classes to override.
@@ -309,8 +309,8 @@ class PacFunction(Function):
         super(PacFunction, self).setParent(p)
         self._nr = len(p.functions())
 
-    def doResolve(self, resolver):
-        super(PacFunction, self).doResolve(resolver)
+    def _resolve(self, resolver):
+        super(PacFunction, self)._resolve(resolver)
         self._stmts.resolve(resolver)
 
     def validate(self, vld):
@@ -449,8 +449,8 @@ class OverloadedFunction(node.Node):
 
     ### Methods overidden from node.Node.
 
-    def doResolve(self, resolver):
-        super(OverloadedFunction, self).doResolve(resolver)
+    def _resolve(self, resolver):
+        super(OverloadedFunction, self)._resolve(resolver)
         self._type = self._type.resolve(resolver)
         self._id.resolve(resolver)
 

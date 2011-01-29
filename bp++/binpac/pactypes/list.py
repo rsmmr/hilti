@@ -58,7 +58,9 @@ class List(type.Container):
     def name(self):
         return "list<%s>" % self.itemType().name()
 
-    def doResolve(self, resolver):
+    def _resolve(self, resolver):
+        super(List, self)._resolve(resolver)
+
         if self.itemType():
             # FIXME: This block is copied from unit.Field.resolve
             old_item = self.itemType()

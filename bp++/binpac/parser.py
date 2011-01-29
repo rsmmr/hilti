@@ -261,7 +261,7 @@ def p_type_ident(p):
 
  # Simple types.
 
-def p_type_pac(p):
+def p_typepac(p):
     """builtin_type : PACTYPE"""
     p[0] = p[1]
 
