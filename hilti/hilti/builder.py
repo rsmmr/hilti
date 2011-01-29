@@ -33,19 +33,7 @@ class OperandBuilder(objcache.Cache):
 
         Returns: ~~Constant - The constant operand.
         """
-
-        if isinstance(value, bool) and not ty:
-            ty = type.Bool()
-
-        elif isinstance(value, int) and not ty:
-            ty = type.Integer(64)
-
-        elif isinstance(value, str) and not ty:
-            ty = type.String()
-
-        assert ty
-
-        return operand.Constant(constant.Constant(value, ty))
+        return _constOp(value, ty)
 
     def nullOp(self):
         """Returns a constant operand representing the Null value.
@@ -843,11 +831,54 @@ class BlockBuilder(OperandBuilder):
         ins = self._block.instructions()
         return ins[-1].signature().terminator() if ins else False
 
+def _constOp(value, ty=None):
+    if isinstance(value, bool) and not ty:
+        ty = type.Bool()
+
+    elif isinstance(value, int) and not ty:
+        ty = type.Integer(64)
+
+    elif isinstance(value, str) and not ty:
+        ty = type.String()
+
+    assert ty
+
+    return operand.Constant(constant.Constant(value, ty))
+
+#    Note: We do some magic to accept other input than ~~Operand for the
+#    operands, per the following table:
+#
+#        * A ~~BlockBuilder is turned into an ~~operand.Label.
+#
+#        * Bool, ints, and strings are passed through ~~constOp. If
+#          a specific type can be requested by passing in a tuple, e.g.,
+#          (42, type.Integer(16)).
+
 def _init_builder_instructions():
     # Adds all instructions as methods to the Builder class.
     for (name, ins) in instruction.getInstructions().items():
 
-        def _getop(args, sig, op):
+        def _magicOp(ins, arg, op):
+            if arg == None:
+                return arg
+
+            if isinstance(arg, operand.Operand):
+                return arg
+
+            # Do magic conversion into operands for some types.
+            if isinstance(arg, BlockBuilder):
+                return arg.labelOp()
+
+            if (isinstance(arg, tuple) or isinstance(arg, list)) and len(arg) == 2:
+                assert isinstance(arg[1], type.Type)
+                return _constOp(arg[0], ty=arg[1])
+
+            if isinstance(arg, str) or isinstance(arg, bool) or isinstance(arg, int):
+                return _constOp(arg)
+
+            util.internal_error("unsupported type %s for %s in instruction '%s'" %(repr(arg), op, ins))
+
+        def _getOp(ins, args, sig, op):
             if not sig:
                 return (None, args)
 
@@ -857,17 +888,19 @@ def _init_builder_instructions():
             if not args:
                 raise IndexError(op)
 
-            assert (not args[0]) or isinstance(args[0], operand.Operand)
+            arg0 = _magicOp(ins, args[0], op)
 
-            return (args[0], args[1:])
+            assert (not arg0) or isinstance(arg0, operand.Operand)
+
+            return (arg0, args[1:])
 
         def _make_build_function(name, ins, sig):
             def _do_build(self, *args):
                 try:
-                    (target, args) = _getop(args, sig.target(), "target")
-                    (op1, args) = _getop(args, sig.op1(), "operand 1")
-                    (op2, args) = _getop(args, sig.op2(), "operand 2")
-                    (op3, args) = _getop(args, sig.op3(), "operand 3")
+                    (target, args) = _getOp(name, args, sig.target(), "target")
+                    (op1, args) = _getOp(name, args, sig.op1(), "operand 1")
+                    (op2, args) = _getOp(name, args, sig.op2(), "operand 2")
+                    (op3, args) = _getOp(name, args, sig.op3(), "operand 3")
 
                     if args:
                         raise TypeError("too many arguments for instruction %s" % _do_build.__name__)
