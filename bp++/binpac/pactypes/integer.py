@@ -251,7 +251,26 @@ def _integer(ops):
         else:
             return operator.Any()
 
-    return type.Error
+    return operator.NoMatch
+
+def _coerce_integer(ops):
+    assert(len(ops)) == 2
+
+    if isinstance(ops[0], expr.Ctor):
+        val = ops[0].value()
+        (min, max) = ops[1]._range()
+        return operator.Match if val >= min and val <= max else operator.NoMatch
+
+    for cls in (type.SignedInteger, type.UnsignedInteger):
+        if isinstance(ops[0], cls) and isinstance(ops[1], cls):
+            if ops[0].width() <= ops[1].width():
+                return operator.NoMatch
+
+    return operator.NoMatch
+
+def _coerce_other_integer(ops):
+    # The check for the first integer type already does what we need.
+    return operator.Match
 
 @operator.Plus(_integer, _integer)
 class _:
@@ -567,59 +586,44 @@ class _:
     def assign(cg, lhs, ident, rhs):
         util.internal_error("assigning to bitfields is not support currently")
 
-@operator.Coerce(Integer)
+@operator.Coerce(Integer, type.Bool)
 class _:
     def coerceCtorTo(ctor, dsttype):
-        if isinstance(dsttype, type.Bool):
-            return ctor != 0
+        return ctor != 0
 
-        if isinstance(dsttype, type.Integer):
-            (min, max) = dsttype._range()
+    def coerceTo(cg, e, dsttype):
+        tmp = cg.builder().addLocal("__nonempty", hilti.type.Bool())
+        cg.builder().equal(tmp, e.evaluate(cg), cg.builder().constOp(0))
+        cg.builder().bool_not(tmp, tmp)
+        return expr.Hilti(tmp, type.Bool())
 
-            if ctor >= min and ctor <= max:
-                return ctor
+@operator.Coerce(_coerce_integer, _coerce_other_integer)
+class _:
+    def coerceCtorTo(ctor, dsttype):
+        return ctor
 
-        raise operator.CoerceError
-
-    def canCoerceTo(srctype, dsttype):
-        if isinstance(dsttype, type.Bool):
-            return True
-
-        if isinstance(srctype, dsttype.__class__) and srctype.width() <= dsttype.width():
-            return True
-
-        return False
-
-    def coerceExprTo(cg, e, dsttype):
-        if isinstance(dsttype, type.Bool):
-            tmp = cg.builder().addLocal("__nonempty", hilti.type.Bool())
-            cg.builder().equal(tmp, e.evaluate(cg), cg.builder().constOp(0))
-            cg.builder().bool_not(tmp, tmp)
-            return expr.Hilti(tmp, type.Bool())
-
+    def coerceTo(cg, e, dsttype):
         if dsttype.width() == e.type().width():
             return e
 
-        if dsttype.width() > e.type().width():
-            tmp = cg.builder().addLocal("__extended", dsttype.hiltiType(cg))
-            dsttype._ext(cg, tmp, e.evaluate(cg))
-            return expr.Hilti(tmp, dsttype)
+        assert dsttype.width() > e.type().width()
 
-@operator.Cast(Integer, operator.Type(Integer))
+        tmp = cg.builder().addLocal("__extended", dsttype.hiltiType(cg))
+        dsttype._ext(cg, tmp, e.evaluate(cg))
+        return expr.Hilti(tmp, dsttype)
+
+
+@operator.Cast(Integer, Integer)
 class _:
     def type(e, t):
-        return t.type().type()
-
-    def validate(vld, e, t):
-        t = t.type().type()
+        return t
 
     def evaluate(cg, e, t):
         et = e.type()
-        tt = t.type().type()
 
-        if tt.width() < et.width():
+        if t.width() < et.width():
             # Truncate works for both signed and unsigned.
-            tmp = cg.builder().addLocal("__truncated", tt.hiltiType(cg))
+            tmp = cg.builder().addLocal("__truncated", t.hiltiType(cg))
             cg.builder().int_trunc(tmp, e.evaluate(cg))
             return tmp
 
@@ -627,15 +631,15 @@ class _:
         # handled through coercion, so if we arrive here, that means
         # we're casting signedness.
 
-        if tt.width() == et.width():
+        if t.width() == et.width():
             # Nothing todo, just reinterpret.
             return e.evaluate(cg)
 
-        if tt.width() > et.width():
+        if t.width() > et.width():
             # Need to extend. We reinterpret and extend according to target
             # type.
-            tmp = cg.builder().addLocal("__extended", tt.hiltiType(cg))
-            tt._ext(cg, tmp, e.evaluate(cg))
+            tmp = cg.builder().addLocal("__extended", t.hiltiType(cg))
+            t._ext(cg, tmp, e.evaluate(cg))
             return tmp
 
         # Can't get here.

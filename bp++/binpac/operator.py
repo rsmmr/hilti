@@ -56,7 +56,7 @@ them receive instances of ~~Expression objects as arguments, with the number
 determined by the operator type.  Note these methods do not receive a *self*
 attribute; they are all class methods.
 
-.. function:: typecheck(<exprs>)
+.. function:: ctypecheck(<exprs>)
 
   Optional. Adds additional type-checking supplementing the simple
   +isinstance+ test performed by default. If implemented, it is guarenteed
@@ -161,7 +161,7 @@ attribute; they are all class methods.
 .. todo:: Not sure where this should go, but note somewhere that the Cast
    operator does not need to deal with things the Coerce operator already
    does. Coercion will always be tried first for a cast, and if that works,
-   we're done. 
+   we're done.
 """
 
 import sys
@@ -240,7 +240,7 @@ _Operators = {
     "Div": (2, "The division of two expressions. (`a / b`)", _pacBinary("*")),
     "Mod": (2, "The modulo operation for two expressions. (`a % b`)", _pacBinary("%")),
     "Neg": (1, "The negation of an expressions. (`- a`)", _pacUnary("-")),
-    "Coerce": (1, "Coerce into another type.", lambda p, e: p.output("<Coerce>")),
+    "Coerce": (2, "Coerces an expression into another type.", lambda p, e: p.output("<Coerce>")),
     "Attribute": (2, "Attribute expression. (`a.b`)", _pacBinary(".")),
     "HasAttribute": (2, "Has-attribute expression. (`a?.b`)", _pacBinary("?.")),
     "Call": (1, "Function call. (`a()`)", _pacCall),
@@ -270,7 +270,7 @@ _Operators = {
     }
 
 _Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type",
-            "coerceCtorTo", "canCoerceTo", "coerceExprTo"]
+            "coerceTo", "coerceCtorTo"]
 
 ### Public functions.
 
@@ -430,32 +430,32 @@ def type(op, exprs):
 class CoerceError(Exception):
     pass
 
-def canCoerceExprTo(expr, dsttype):
-    return canCoerceTo(expr.type(), dsttype)
+def canCoerceExprTo(e, dsttype):
+    if e.type() == dsttype:
+        return True
+
+    if isinstance(e, expr.Ctor):
+        return _findOp("coerceCtorTo", Operator.Coerce, [e.type(), dsttype])
+    else:
+        return canCoerceTo(e.type(), dsttype)
 
 def canCoerceTo(srctype, dsttype):
     """Returns whether an expression of the given type (assumed to be
     non-constant) can be coerced to a given target type. If *dsttype* is of
-    the same type as the expression, the result is always True. Here, "of the
-    same type" means that both types return the same ~~name.
+    the same type as the expression, the result is always True.
 
     *srctype*: ~~Type - The source type.
     *dstype*: ~~Type - The target type.
 
     Returns: bool - True if the expression can be coerceed.
     """
-    if srctype == dsttype and srctype.name() == dsttype.name():
+    if srctype == dsttype:
         return True
 
-    if not typecheck(Operator.Coerce, [srctype]):
-        return False
+    if _findOp("coerceTo", Operator.Coerce, [srctype, dsttype]):
+        return True
 
-    func = _findOp("canCoerceTo", Operator.Coerce, [srctype])
-
-    if not func:
-        return False
-
-    return func(srctype, dsttype)
+    return False
 
 def coerceExprTo(cg, expr, dsttype):
     """Coerces an expression (assumed to be non-constant) of one type into
@@ -475,14 +475,7 @@ def coerceExprTo(cg, expr, dsttype):
     if expr.type() == dsttype:
         return expr
 
-    if not typecheck(Operator.Coerce, [expr]):
-        return False
-
-    func = _findOp("coerceExprTo", Operator.Coerce, [expr])
-
-    if not func:
-        raise CoerceError
-
+    func = _findOp("coerceTo", Operator.Coerce, [expr, dsttype])
     return func(cg, expr, dsttype)
 
 def coerceCtorTo(e, dsttype):
@@ -500,9 +493,9 @@ def coerceCtorTo(e, dsttype):
     if e.type() == dsttype:
         return e
 
-    func = _findOp("coerceCtorTo", Operator.Coerce, [e])
-
+    func = _findOp("coerceCtorTo", Operator.Coerce, [e, dsttype])
     if not func:
+        print "not found", e, e.type(), dsttype
         raise CoerceError
 
     assert e.isInit()
@@ -561,7 +554,7 @@ def _fmtOneArgType(a):
     if isinstance(a, list):
         return '(' + ", ".join([_fmtOneArgType(x) for x in a]) + ')'
 
-    if isinstance(a, expr.Type):
+    if isinstance(a, mod_type.Type):
         return str(a)
 
     if isinstance(a.type(), mod_type.Type):
@@ -604,11 +597,13 @@ class Optional:
     def __init__(self, arg):
         self._arg = arg
 
-class Type:
-    def __init__(self, arg): # Arg is a class!
-        self._arg = arg
-
 class Any:
+    pass
+
+class Match:
+    pass
+
+class NoMatch:
     pass
 
 def _matchType(arg, proto, all):
@@ -621,6 +616,12 @@ def _matchType(arg, proto, all):
     if isinstance(arg, list) and isinstance(proto, list):
         if len(arg) == 0 and len(proto) == 0:
             return True
+
+    if proto == Match:
+        return True
+
+    if proto == NoMatch:
+        return False
 
     if isinstance(proto, Any):
         return True
@@ -657,13 +658,6 @@ def _matchType(arg, proto, all):
 
     if isinstance(arg, expr.Expression) and isinstance(proto, expr.Expression):
         return arg == proto
-
-    if isinstance(proto, Type):
-        if not isinstance(arg, expr.Type):
-            return False
-
-        proto = proto._arg
-        arg = arg.type().type()
 
     ty = arg if isinstance(arg, mod_type.Type) else arg.type()
     init = arg.isInit() if isinstance(arg, expr.Expression) else False

@@ -547,7 +547,7 @@ class Cast(Expression):
         if self._expr.canCoerceTo(self._type):
             return True
 
-        opexprs = [self._expr, Type(self._type)]
+        opexprs = [self._expr, self._type]
 
         if not operator.typecheck(operator.Operator.Cast, opexprs):
             vld.error(self, "no match for cast operator from type %s to type %s" % (self._expr.type(), self._type()))
@@ -566,7 +566,7 @@ class Cast(Expression):
         if self._expr.canCoerceTo(self._type):
             return self._expr.coerceTo(self._type, cg).evaluate(cg)
 
-        opexprs = [self._expr, Type(self._type)]
+        opexprs = [self._expr, self._type]
         return operator.evaluate(operator.Operator.Cast, cg, opexprs)
 
     def __str__(self):

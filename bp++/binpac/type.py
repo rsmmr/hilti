@@ -935,11 +935,6 @@ class Void(Type):
     """
     pass
 
-class Error(Type):
-    """Place-holder type indicating an error of some kind.
-    """
-    pass
-
 # Additional traits types may have.
 #class Derefable(object):
 #    """A deref'able type can appear as the LHS in attribute expressions of the
