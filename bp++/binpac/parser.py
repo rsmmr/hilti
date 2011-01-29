@@ -640,10 +640,12 @@ precedence = (
     ('left', '[', ']'),
     ('left', '(', ')'),
     ('left', 'PLUSEQUAL'),
-    ('left', 'AND', 'OR'),
-    ('left', 'EQUAL', 'UNEQUAL', 'LEQ', 'GEQ'),
+    ('left', 'LOGICAL_AND', 'LOGICAL_OR'),
+    ('left', 'EQUAL', 'UNEQUAL', 'LEQ', 'GEQ', '<', '>'),
     ('left', '+', '-'),
-    ('left', '*', '/'),
+    ('left', '*', '/', "MOD"),
+    ('left', 'SHIFT_LEFT', 'SHIFT_RIGHT'),
+    ('left', '&', '|', '^'),
     ('left', '!'),
     ('left', '.', 'HASATTR'),
     ('right', 'DEREF', 'PLUSPLUS_PREFIX', 'MINUSMINUS_PREFIX'),
@@ -659,13 +661,33 @@ def p_expr_index(p):
     """expr : expr '[' expr ']'"""
     p[0] = expr.Overloaded(Operator.Index, (p[1], p[3]), location=_loc(p, 1))
 
-def p_expr_and(p):
-    """expr : expr AND expr"""
-    p[0] = expr.Overloaded(Operator.And, (p[1], p[3]), location=_loc(p, 1))
+def p_expr_logical_and(p):
+    """expr : expr LOGICAL_AND expr"""
+    p[0] = expr.Overloaded(Operator.LogicalAnd, (p[1], p[3]), location=_loc(p, 1))
 
-def p_expr_or(p):
-    """expr : expr OR expr"""
-    p[0] = expr.Overloaded(Operator.Or, (p[1], p[3]), location=_loc(p, 1))
+def p_expr_logical_or(p):
+    """expr : expr LOGICAL_OR expr"""
+    p[0] = expr.Overloaded(Operator.LogicalOr, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_bitwise_and(p):
+    """expr : expr '&' expr"""
+    p[0] = expr.Overloaded(Operator.BitAnd, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_bitwise_or(p):
+    """expr : expr '|' expr"""
+    p[0] = expr.Overloaded(Operator.BitOr, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_bitwise_xor(p):
+    """expr : expr '^' expr"""
+    p[0] = expr.Overloaded(Operator.BitXor, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_shift_left(p):
+    """expr : expr SHIFT_LEFT expr"""
+    p[0] = expr.Overloaded(Operator.ShiftLeft, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_shift_right(p):
+    """expr : expr SHIFT_RIGHT expr"""
+    p[0] = expr.Overloaded(Operator.ShiftRight, (p[1], p[3]), location=_loc(p, 1))
 
 #def p_expr_constant(p):
 #    """expr : CONSTANT"""
@@ -675,6 +697,10 @@ def p_expr_or(p):
 def p_expr_ctor(p):
     """expr : ctor"""
     p[0] = p[1]
+
+def p_expr_cast(p):
+    """expr : CAST '<' type '>' '(' expr ')'"""
+    p[0] = expr.Cast(p[6], p[3], location=_loc(p, 1))
 
 def p_expr_attribute(p):
     """expr : expr '.' IDENT"""
@@ -738,6 +764,10 @@ def p_expr_div(p):
     """expr : expr '/' expr"""
     p[0] = expr.Overloaded(Operator.Div, (p[1], p[3]), location=_loc(p, 1))
 
+def p_expr_mod(p):
+    """expr : expr MOD expr"""
+    p[0] = expr.Overloaded(Operator.Mod, (p[1], p[3]), location=_loc(p, 1))
+
 def p_expr_equal(p):
     """expr : expr EQUAL expr"""
     p[0] = expr.Overloaded(Operator.Equal, (p[1], p[3]), location=_loc(p, 1))
@@ -754,6 +784,14 @@ def p_expr_lequal(p):
 def p_expr_gequal(p):
     """expr : expr GEQ expr"""
     p[0] = expr.Overloaded(Operator.GreaterEqual, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_lower(p):
+    """expr : expr '<' expr"""
+    p[0] = expr.Overloaded(Operator.Lower, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_greater(p):
+    """expr : expr '>' expr"""
+    p[0] = expr.Overloaded(Operator.Greater, (p[1], p[3]), location=_loc(p, 1))
 
 def p_expr_add_assign(p):
     """expr : expr PLUSEQUAL expr"""

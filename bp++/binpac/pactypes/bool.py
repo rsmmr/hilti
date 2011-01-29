@@ -53,7 +53,7 @@ class Bool(type.ParseableType):
     def generateParser(self, cg, var, args, dst, skipping):
         util.internal_error("bool parsing not implemented")
 
-@operator.And(Bool, Bool)
+@operator.LogicalAnd(Bool, Bool)
 class _:
     def type(e1, e2):
         return type.Bool()
@@ -95,7 +95,7 @@ class _:
         cg.setBuilder(cont)
         return result
 
-@operator.Or(Bool, Bool)
+@operator.LogicalOr(Bool, Bool)
 class _:
     def type(e1, e2):
         return type.Bool()

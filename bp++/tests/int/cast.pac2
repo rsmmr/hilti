@@ -6,11 +6,35 @@
 
 module Test;
 
-global a: int32 = 1;
+global a: int32 = 511;
 global b: uint32;
+global c: uint16;
+global d: uint8;
+global e: int8;
 
-# Note that this will still print -1 because HILTI's print doesn't
-# differentiate between signed and unsigned.
-b = a.as_uint();
+b = cast<uint32>(a);
 print b;
+
+c = cast<uint16>(b);
+print c;
+
+c = cast<uint16>(a);
+print c;
+
+d = cast<uint8>(a);   # Will print -1 as HILTI doesn't differentiate between signedness.
+print d;
+
+b = cast<uint32>(d);
+print b;
+
+a = cast<int32>(b);
+print a;
+
+e = cast<int8>(d);
+print e;
+a = cast<int32>(e);
+print a;
+
+#cast<string>(e);
+
 

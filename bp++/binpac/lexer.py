@@ -15,7 +15,7 @@ import binpac.expr as expr
 keywords = ["module", "type", "export", "unit", "print", "list",
             "global", "const", "if", "else", "var", "on", "switch",
             "extern", "local", "return", "foreach", "enum", "bitfield", "iter",
-            "tuple", "new"
+            "tuple", "new", "cast", "mod"
             ]
 
 control_props = ["%debug", "%init", "%done"]
@@ -32,15 +32,15 @@ types = {
     }
 
 # Literals.
-literals = ['(',')','{','}', '[', ']', '<', '>', '=', ',', ':', '*', ';', '+', '-', '*', '/', '|', '.', '!']
+literals = ['(',')','{','}', '[', ']', '<', '>', '=', ',', ':', '*', ';', '+', '-', '*', '/', '|', '.', '!', '^', '&', '|']
 
 def _loc(t):
     return location.Location(t.lexer.parser.state._filename, t.lexer.lineno)
 
 tokens = [
     "IDENT", "CONSTANT", "BYTES", "REGEXP", "PACTYPE", "ATTRIBUTE", "PROPERTY",
-    "EQUAL", "UNEQUAL", "LEQ", "GEQ", "HASATTR", "ARROW", "AND", "OR", "PLUSEQUAL",
-    "PLUSPLUS", "MINUSMINUS", "DOTDOT", "IMPORT", "MODULE_IDENT"
+    "EQUAL", "UNEQUAL", "LEQ", "GEQ", "HASATTR", "ARROW", "LOGICAL_AND", "LOGICAL_OR", "PLUSEQUAL",
+    "PLUSPLUS", "MINUSMINUS", "DOTDOT", "IMPORT", "MODULE_IDENT", "SHIFT_LEFT", "SHIFT_RIGHT"
     ] + [k.upper() for k in keywords] \
       + [k.upper()[1:] for k in control_props]
 
@@ -72,11 +72,11 @@ def t_ARROW(t):
     r'->'
     return t
 
-def t_AND(t):
+def t_LOGICAL_AND(t):
     r'&&'
     return t
 
-def t_OR(t):
+def t_LOGICAL_OR(t):
     r'\|\|'
     return t
 
@@ -94,6 +94,14 @@ def t_MINUSMINUS(t):
 
 def t_DOTDOT(t):
     r'\.\.'
+    return t
+
+def t_SHIFT_LEFT(t):
+    r'<<'
+    return t
+
+def t_SHIFT_RIGHT(t):
+    r'>>'
     return t
 
 def t_IMPORT(t):

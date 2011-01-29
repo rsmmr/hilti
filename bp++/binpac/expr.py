@@ -513,6 +513,66 @@ class Assign(Expression):
     def __str__(self):
         return str(self._dest) + " = " + str(self._rhs)
 
+class Cast(Expression):
+    """An expression doing an explicit cast.
+
+    A cast expression will first try to *coerce* an expression to its target
+    type, and if that does not work, it will look for an explicit ~~Cast
+    operator.
+
+    expr: ~~Expression - The source expression.
+    ty: ~~Type - The target type.
+    location: ~~Location - The location where the expression was defined.
+    """
+
+    def __init__(self, expr, ty, location=None):
+        super(Cast, self).__init__(location=location)
+        self._expr = expr
+        self._type = ty
+
+    ### Overidden from node.Node.
+
+    def resolve(self, resolver):
+        Expression.resolve(self, resolver)
+
+        self._expr.resolve(resolver)
+        self._type.resolve(resolver)
+
+    def validate(self, vld):
+        Expression.validate(self, vld)
+
+        self._expr.validate(vld)
+        self._type.validate(vld)
+
+        if self._expr.canCoerceTo(self._type):
+            return True
+
+        opexprs = [self._expr, Type(self._type)]
+
+        if not operator.typecheck(operator.Operator.Cast, opexprs):
+            vld.error(self, "no match for cast operator from type %s to type %s" % (self._expr.type(), self._type()))
+
+        operator.validate(operator.Operator.Cast, vld, opexprs)
+
+    def pac(self, printer):
+        printer.output(" <cast> ")
+
+    ### Overidden from Expression.
+
+    def type(self):
+        return self._type
+
+    def evaluate(self, cg):
+        if self._expr.canCoerceTo(self._type):
+            return self._expr.coerceTo(self._type, cg).evaluate(cg)
+
+        opexprs = [self._expr, Type(self._type)]
+        return operator.evaluate(operator.Operator.Cast, cg, opexprs)
+
+    def __str__(self):
+        return "cast<%s>(%s)" % (self._type, self._expr)
+
+
 class Hilti(Expression):
     """An expression encapsulating an already eveluated HILTI operand. This
     enables HILTI operands to be passed into evaluation functions that expect

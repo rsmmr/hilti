@@ -923,6 +923,8 @@ class MetaType(Type):
     def hiltiType(self, cg):
         util.internal_error("hiltiType() not defined for MetaType")
 
+    _type_name = "<meta type>"
+
 class Any(Type):
     """Type indicating a match with any other type.
     """
@@ -930,6 +932,11 @@ class Any(Type):
 
 class Void(Type):
     """Type indicating a void function/method return value. 
+    """
+    pass
+
+class Error(Type):
+    """Place-holder type indicating an error of some kind.
     """
     pass
 

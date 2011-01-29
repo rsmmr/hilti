@@ -157,6 +157,11 @@ attribute; they are all class methods.
 
    Returns: ~~Expression - A new expression of the target type with
    the coerceed expression.
+
+.. todo:: Not sure where this should go, but note somewhere that the Cast
+   operator does not need to deal with things the Coerce operator already
+   does. Coercion will always be tried first for a cast, and if that works,
+   we're done. 
 """
 
 import sys
@@ -229,10 +234,11 @@ def _pacCall(printer, exprs):
 
 _Operators = {
     # Operator name, #operands, description.
-    "Plus": (2, "The sum of two expressions. (`a + b`)", _pacBinary(" + ")),
-    "Minus": (2, "The difference of two expressions. (`a - b`)", _pacBinary(" + ")),
-    "Mult": (2, "The product of two expressions. (`a * b`)", _pacBinary(" + ")),
-    "Div": (2, "The division of two expressions. (`a / b`)", _pacBinary(" + ")),
+    "Plus": (2, "The sum of two expressions. (`a + b`)", _pacBinary("+")),
+    "Minus": (2, "The difference of two expressions. (`a - b`)", _pacBinary("-")),
+    "Mult": (2, "The product of two expressions. (`a * b`)", _pacBinary("*")),
+    "Div": (2, "The division of two expressions. (`a / b`)", _pacBinary("*")),
+    "Mod": (2, "The modulo operation for two expressions. (`a % b`)", _pacBinary("%")),
     "Neg": (1, "The negation of an expressions. (`- a`)", _pacUnary("-")),
     "Coerce": (1, "Coerce into another type.", lambda p, e: p.output("<Coerce>")),
     "Attribute": (2, "Attribute expression. (`a.b`)", _pacBinary(".")),
@@ -240,10 +246,17 @@ _Operators = {
     "Call": (1, "Function call. (`a()`)", _pacCall),
     "MethodCall": (3, "Method call. (`a.b()`)", _pacMethodCall),
     "Size": (1, "The size of an expression's value, with type-defined definition of \"size\" (`|a|`)", _pacUnary("|")),
-    "Equal": (2, "Compares two values whether they are equal. (``a == b``)", _pacBinary(" + ")),
-    "And": (2, "Logical 'and' of boolean values. (``a && b``)", _pacBinary("&&")),
-    "Or": (2, "Logical 'or' of boolean values. (``a || b``)", _pacBinary("||")),
+    "Equal": (2, "Compares two values whether they are equal. (``a == b``)", _pacBinary("==")),
+    "LogicalAnd": (2, "Logical 'and' of boolean values. (``a && b``)", _pacBinary("&&")),
+    "LogicalOr": (2, "Logical 'or' of boolean values. (``a || b``)", _pacBinary("||")),
+    "BitAnd": (2, "Bitwise 'and' of integer values. (``a & b``)", _pacBinary("&")),
+    "BitOr": (2, "Bitwise 'or' of integer values. (``a | b``)", _pacBinary("|")),
+    "BitXor": (2, "Bitwise 'xor' of integer values. (``a | b``)", _pacBinary("^")),
+    "ShiftLeft": (2, "Bitwise shift right for integer values. (``a << b``)", _pacBinary("<<")),
+    "ShiftRight": (2, "Bitwise shift left for integer values. (``a >> b``)", _pacBinary(">>")),
     "PlusAssign": (2, "Adds to an operand in place (`` a += b``)", _pacBinary("+=")),
+    "Lower": (2, "Lower than comparision. (``a < b``)", _pacBinary("<")),
+    "Greater": (2, "Greater than comparision. (``a > b``)", _pacBinary(">")),
     "LowerEqual": (2, "Lower or equal comparision. (``a <= b``)", _pacBinary("<=")),
     "GreaterEqual": (2, "Greater or equal comparision. (``a >= b``)", _pacBinary(">=")),
     "IncrPrefix": (1, "Prefix increment operator (`++i`)", _pacUnary("++")),
@@ -253,6 +266,7 @@ _Operators = {
     "Deref": (1, "Dereference operator. (`*i`)", _pacUnary("*")),
     "Index": (2, "Element at a given index (`a[i]`).", lambda p, e: p.output("<Index>")),
     "New": (1, "Allocate a new instance of a type (`new T`).", _pacUnary("new")),
+    "Cast": (1, "Explictly cast into another type.", lambda p, e: p.output("<Cast>")),
     }
 
 _Methods = ["typecheck", "resolve", "validate", "simplify", "evaluate", "assign", "type",
@@ -543,8 +557,12 @@ def _fmtTypes(types):
     return ",".join([str(t) for t in types])
 
 def _fmtOneArgType(a):
+
     if isinstance(a, list):
         return '(' + ", ".join([_fmtOneArgType(x) for x in a]) + ')'
+
+    if isinstance(a, expr.Type):
+        return str(a)
 
     if isinstance(a.type(), mod_type.Type):
         return str(a.type())
@@ -586,10 +604,17 @@ class Optional:
     def __init__(self, arg):
         self._arg = arg
 
+class Type:
+    def __init__(self, arg): # Arg is a class!
+        self._arg = arg
+
 class Any:
     pass
 
 def _matchType(arg, proto, all):
+
+    if inspect.isfunction(proto):
+        proto = proto(all)
 
     # Note: arg can be a type or and expression, or a list/tuple of those.
 
@@ -624,17 +649,21 @@ def _matchType(arg, proto, all):
 
         return True
 
-    if inspect.isfunction(proto):
-        proto = proto(all)
-
     mutable = False
 
     if isinstance(proto, Mutable):
         mutable = True
         proto = proto._arg
 
-    if  isinstance(arg, expr.Expression) and isinstance(proto, expr.Expression):
+    if isinstance(arg, expr.Expression) and isinstance(proto, expr.Expression):
         return arg == proto
+
+    if isinstance(proto, Type):
+        if not isinstance(arg, expr.Type):
+            return False
+
+        proto = proto._arg
+        arg = arg.type().type()
 
     ty = arg if isinstance(arg, mod_type.Type) else arg.type()
     init = arg.isInit() if isinstance(arg, expr.Expression) else False

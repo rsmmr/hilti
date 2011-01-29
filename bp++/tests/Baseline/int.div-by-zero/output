@@ -1,0 +1,4 @@
+div-by-zero.pac2:10: codegen error, division by zero
+div-by-zero.pac2.tmp.hlt: parser error, unexpected end of file
+
+1 error found

@@ -6,6 +6,8 @@ import integer
 
 import binpac.type as type
 import binpac.expr as expr
+import binpac.grammar as grammar
+import binpac.util as util
 import binpac.operator as operator
 
 import hilti.type
@@ -21,123 +23,58 @@ class SignedInteger(type.Integer):
     def __init__(self, width, location=None):
         super(SignedInteger, self).__init__(width, location=location)
 
+    ### Overidden from Integer.
+
+    def _typeOfWidth(self, n):
+        return SignedInteger(n)
+
+    def _usableBits(self):
+        return self.width() - 1
+
+    def _packEnums(self):
+        return {
+            ("little", 8): "Hilti::Packed::Int8Little",
+            ("little", 16): "Hilti::Packed::Int16Little",
+            ("little", 32): "Hilti::Packed::Int32Little",
+            ("little", 64): "Hilti::Packed::Int64Little",
+            ("big", 8): "Hilti::Packed::Int8Big",
+            ("big", 16): "Hilti::Packed::Int16Big",
+            ("big", 32): "Hilti::Packed::Int32Big",
+            ("big", 64): "Hilti::Packed::Int64Big",
+            ("host", 8): "Hilti::Packed::Int8",
+            ("host", 16): "Hilti::Packed::Int16",
+            ("host", 32): "Hilti::Packed::Int32",
+            ("host", 64): "Hilti::Packed::Int64",
+            ("network", 8): "Hilti::Packed::Int8Big",
+            ("network", 16): "Hilti::Packed::Int16Big",
+            ("network", 32): "Hilti::Packed::Int32Big",
+            ("network", 64): "Hilti::Packed::Int64Big",
+            }
+
+    def _range(self):
+        t = 2 ** (self.width() - 1)
+        return (-t, t - 1)
+
+    def _ext(self, cg, target, val):
+        cg.builder().int_sext(target, val)
+
+    def _lt(self, cg, target, val1, val2):
+        cg.builder().int_slt(target, val1, val2)
+
+    def _leq(self, cg, target, val1, val2):
+        cg.builder().int_sleq(target, val1, val2)
+
+    def _gt(self, cg, target, val1, val2):
+        cg.builder().int_sgt(target, val1, val2)
+
+    def _geq(self, cg, target, val1, val2):
+        cg.builder().int_sgeq(target, val1, val2)
+
+    def _shr(self, cg, target, val1, val2):
+        cg.builder().int_ashr(target, val1, val2)
 
     ### Overridden from Type.
 
     def name(self):
         return "int%d" % self.width()
 
-    def hiltiType(self, cg):
-        return hilti.type.Integer(self.width())
-
-    def hiltiCtor(self, cg, ctor):
-        const = hilti.constant.Constant(ctor, hilti.type.Integer(self.width()))
-        return hilti.operand.Constant(const)
-
-    ### Overridden from ParseableType.
-
-    def production(self, field):
-        # XXX
-        pass
-
-    def generateParser(self, cg, var, args, dst, skipping):
-        pass
-
-@operator.Coerce(type.SignedInteger)
-class Coerce:
-    def coerceCtorTo(ctor, dsttype):
-        if isinstance(dsttype, type.Bool):
-            return ctor != 0
-
-        if isinstance(dsttype, type.UnsignedInteger) and ctor >= 0:
-            return ctor
-
-        raise operators.CoerceError
-
-    def canCoerceTo(srctype, dsttype):
-        if isinstance(dsttype, type.Bool):
-            return True
-
-        if isinstance(dsttype, type.SignedInteger):
-            return True
-
-        return False
-
-    def coerceExprTo(cg, e, dsttype):
-        if isinstance(dsttype, type.Bool):
-            tmp = cg.builder().addLocal("__nonempty", hilti.type.Bool())
-            cg.builder().equal(tmp, e.evaluate(cg), cg.builder().constOp(0))
-            cg.builder().bool_not(tmp, tmp)
-            return expr.Hilti(tmp, type.Bool())
-
-        if dsttype.width() == e.type().width():
-            return e
-
-        if dsttype.width() > e.type().width():
-            tmp = cg.builder().addLocal("__extended", dsttype.hiltiType(cg))
-            cg.builder().int_sext(tmp, e.evaluate(cg))
-            return expr.Hilti(tmp, dsttype)
-
-        if dsttype.width() < e.type().width():
-            tmp = cg.builder().addLocal("__truncated", dsttype.hiltiType(cg))
-            cg.builder().int_trunc(tmp, e.evaluate(cg))
-            return expr.Hilti(tmp, dsttype)
-
-@operator.Equal(SignedInteger, type.UnsignedInteger)
-class _:
-    def type(e1, e2):
-        return type.Bool()
-
-    def simplify(e1, e2):
-        if not e1.isInit() or not e2.isInit():
-            return None
-
-        b = (e1.value() == e2.value())
-        return expr.Ctor(b, type.Bool())
-
-    def evaluate(cg, e1, e2):
-        tmp = cg.functionBuilder().addLocal("__equal", hilti.type.Bool())
-        cg.builder().equal(tmp, e1.evaluate(cg), e2.evaluate(cg))
-        return tmp
-
-@operator.LowerEqual(SignedInteger, type.UnsignedInteger)
-class _:
-    def type(e1, e2):
-        return type.Bool()
-
-    def simplify(e1, e2):
-        if not e1.isInit() or not e2.isInit():
-            return None
-
-        b = (e1.value() <= e2.value())
-        return expr.Ctor(b, type.Bool())
-
-    def evaluate(cg, e1, e2):
-        tmp = cg.functionBuilder().addLocal("__leq", hilti.type.Bool())
-        cg.builder().int_sleq(tmp, e1.evaluate(cg), e2.evaluate(cg))
-        return tmp
-
-@operator.GreaterEqual(SignedInteger, type.UnsignedInteger)
-class _:
-    def type(e1, e2):
-        return type.Bool()
-
-    def simplify(e1, e2):
-        if not e1.isInit() or not e2.isInit():
-            return None
-
-        b = (e1.value() >= e2.value())
-        return expr.Ctor(b, type.Bool())
-
-    def evaluate(cg, e1, e2):
-        tmp = cg.functionBuilder().addLocal("__geq", hilti.type.Bool())
-        cg.builder().int_sgeq(tmp, e1.evaluate(cg), e2.evaluate(cg))
-        return tmp
-
-@operator.MethodCall(type.SignedInteger, expr.Attribute("as_uint"), [])
-class AsUint:
-    def type(i, method, args):
-        return type.UnsignedInteger(i.type().width())
-
-    def evaluate(cg, i, method, args):
-        return i.evaluate(cg)
