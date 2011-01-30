@@ -548,7 +548,7 @@ class Cast(Expression):
         opexprs = [self._expr, self._type]
 
         if not operator.hasOperator(operator.Operator.Cast, opexprs):
-            vld.error(self, "no match for cast operator from type %s to type %s" % (self._expr.type(), self._type()))
+            vld.error(self, "no match for cast operator from type %s to type %s" % (self._expr.type(), self._type))
 
         operator.validate(operator.Operator.Cast, vld, opexprs)
 

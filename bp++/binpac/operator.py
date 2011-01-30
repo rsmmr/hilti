@@ -165,6 +165,8 @@ import expr
 
 import binpac.util as util
 
+import hilti
+
 ### Available operators and operator methods.
 
 def _pacUnary(op):
@@ -261,7 +263,7 @@ _Operators = {
     }
 
 _Methods = ["resolve", "validate", "simplify", "evaluate", "assign", "type",
-            "coerceTo", "coerceCtorTo"]
+            "coerceTo", "coerceCtorTo", "typeCoerceTo"]
 
 ### Public functions.
 
@@ -544,7 +546,55 @@ class Match:
 class NoMatch:
     pass
 
-def _matchType(arg, proto, all):
+def _makeCoerce(func, dst):
+    def _coerce(*args):
+        if not args[0]:
+            args = args[1:] # Strip dummy cg argument.
+
+        args = (list(args) + [dst])
+        result = func(*args)
+
+        if isinstance(result, hilti.operand.Operand):
+            result = expr.Hilti(result, dst)
+
+        return result
+
+    return _coerce
+
+def _matchOneTypeClass(ty, proto, try_coercion, have_cg):
+    rc = isinstance(ty, proto)
+
+    if rc:
+        return (rc, None)
+
+    if not try_coercion:
+        return (False, None)
+
+    # See if we can coerce the type to what we need.
+    method = "coerceTo" if have_cg else "typeCoerceTo"
+    coerce = _findOp(method, Operator.Coerce, [ty, proto])
+    if not coerce:
+        return (False, None)
+
+    return (True, _makeCoerce(coerce, proto))
+
+def _matchOneTypeInstance(ty, proto, try_coercion, have_cg):
+    rc = (ty == proto)
+
+    if rc:
+        return (rc, None)
+
+    if not try_coercion:
+        return (False, None)
+
+    # See if we can coerce the type to what we need.
+    coerce = _findOp("coerceTo", Operator.Coerce, [ty, proto])
+    if not coerce:
+        return (False, None)
+
+    return (False, _makeCoerce(coerce, proto))
+
+def _matchType(arg, proto, all, try_coercion, have_cg):
 
     if inspect.isfunction(proto):
         proto = proto(all)
@@ -553,40 +603,45 @@ def _matchType(arg, proto, all):
 
     if isinstance(arg, list) and isinstance(proto, list):
         if len(arg) == 0 and len(proto) == 0:
-            return True
+            return (True, None)
 
     if inspect.isclass(proto) and proto == Match:
-        return True
+        return (True, None)
 
     if inspect.isclass(proto) and proto == NoMatch:
-        return False
+        return (False, None)
 
     if isinstance(proto, Any):
-        return True
+        return (True, None)
 
     if isinstance(proto, Optional):
         if not arg:
-            return True
+            return (True, None)
         else:
             proto = proto._arg
 
     if not arg:
-        return False
+        return (False, None)
 
     if isinstance(proto, list) or isinstance(proto, tuple):
         if not (isinstance(arg, list) or isinstance(arg, tuple)):
-            return False
+            return (False, None)
 
         if len(proto) < len(arg):
-            return False
+            return (False, None)
 
         arg = arg + [None] * (len(proto) - len(arg))
 
-        for (e, p) in zip(arg, proto):
-            if not _matchType(e, p, all):
-                return False
+        new_args = []
 
-        return True
+        for (e, p) in zip(arg, proto):
+            (rc, a) = _matchType(e, p, all, try_coercion, have_cg)
+            if not rc:
+                return (False, None)
+
+        new_args += [a]
+
+        return (True, new_args)
 
     mutable = False
 
@@ -594,8 +649,17 @@ def _matchType(arg, proto, all):
         mutable = True
         proto = proto._arg
 
+    if inspect.isclass(arg):
+        if inspect.isclass(proto):
+            rc = (arg == proto)
+            return (rc, None)
+
+        rc = isinstance(proto, arg)
+        return (rc, None)
+
     if isinstance(arg, expr.Expression) and isinstance(proto, expr.Expression):
-        return arg == proto
+        rc = (arg == proto)
+        return (rc, None)
 
     ty = arg if isinstance(arg, mod_type.Type) else arg.type()
     init = arg.isInit() if isinstance(arg, expr.Expression) else False
@@ -603,12 +667,69 @@ def _matchType(arg, proto, all):
     assert isinstance(ty, mod_type.Type)
 
     if inspect.isclass(proto):
-        return isinstance(ty, proto) and (not mutable or not init)
+        if mutable and init:
+            return (rc, None)
+
+        return _matchOneTypeClass(ty, proto, try_coercion, have_cg)
 
     if isinstance(proto, mod_type.Type):
-        return proto == ty and (not mutable or not init)
+        if mutable and init:
+            return (rc, None)
 
-    return ty == proto
+        return _matchOneTypeInstance(ty, proto, try_coercion, have_cg)
+
+    assert False and "Is this ever reached? If so, when?"
+    rc = (ty == proto)
+
+    return (rc, None)
+
+# A function object that remebers which coercions need to be
+# applied to its arguments.
+class _CoercingCall:
+    def __init__(self, op, funcs):
+        self._op = op
+        self._funcs = funcs if funcs else []
+
+    def __call__(self, *args):
+        # Apply coercion functions.
+        funcs = []
+        i = 0
+        for a in args:
+            if isinstance(a, expr.Expression) and i < len(self._funcs):
+                funcs += [self._funcs[i]]
+                i += 1
+            else:
+                funcs += [None]
+
+        if len(args) and not isinstance(args[0], expr.Expression):
+            cg = args[0]
+        else:
+            cg = None
+
+        new_args = self._coerce(args, funcs, cg)
+
+        return self._op(*new_args)
+
+    def _coerce(self, arg, func, cg):
+        if isinstance(arg, tuple) or isinstance(arg, list):
+            new_args = []
+            for (a, f) in zip(arg, func):
+
+                if f == None:
+                    new_args += [a]
+
+                else:
+                    if cg:
+                        new_args += [self._coerce(a, f, cg)]
+                    else:
+                        new_args += [self._coerce(a, f, cg)]
+
+            return new_args
+
+        if not func:
+            return arg
+
+        return func(cg, arg)
 
 def _findOp(method, op, args):
     assert method == "*" or method in _Methods
@@ -624,19 +745,33 @@ def _findOp(method, op, args):
 
     matches = []
 
-    for (func, proto) in ops:
+    # Two rounds, first without coercion to find the best match, then with.
+    for try_coercion in (False, True):
 
-        if len(proto) < len(args):
-            continue
+        for (func, proto) in ops:
 
-        args = [e for e in args] + [None] * (len(proto) - len(args))
+            if len(proto) < len(args):
+                continue
 
-        for (a, t) in zip(args, proto):
-            rc = _matchType(a, t, args)
-            if not rc:
-                break
-        else:
-            matches += [(func, proto)]
+            args = [e for e in args] + [None] * (len(proto) - len(args))
+
+            new_args = []
+
+            for (a, t) in zip(args, proto):
+                (rc, na) = _matchType(a, t, args, try_coercion, (method == "evaluate"))
+                if not rc:
+                    break
+
+                new_args += [na]
+            else:
+                matches += [(func, proto, new_args)]
+
+        if matches:
+            break
+
+        if op == Operator.Coerce:
+            # Don't even try recursive coercion.
+            break
 
     if not matches:
         return None
@@ -645,7 +780,7 @@ def _findOp(method, op, args):
         return True
 
     if len(matches) == 1:
-        return matches[0][0]
+        return _CoercingCall(matches[0][0], matches[0][2]) if op != Operator.Coerce else matches[0][0]
 
     msg = "ambigious operator definitions: types %s match\n" % _fmtArgTypes(args)
     for (func, proto) in matches:

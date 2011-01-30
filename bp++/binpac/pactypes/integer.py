@@ -236,23 +236,6 @@ def _extendOps(cg, e1, e2):
     return (e1, e2)
 
 
-def _integer(ops):
-    # Make sure all operators are instances are either all SignedInteger, or
-    # all UnsignedIntegers. Exception: constants are fine of either kind.
-    for cls in (type.SignedInteger, type.UnsignedInteger):
-        for op in ops:
-
-            if isinstance(op, expr.Ctor) and isinstance(op.type(), Integer):
-                # Constants are fine either way.
-                continue
-
-            if not isinstance(op.type(), cls):
-                break
-        else:
-            return operator.Any()
-
-    return operator.NoMatch
-
 def _coerce_integer(ops):
     assert(len(ops)) == 2
 
@@ -272,10 +255,14 @@ def _coerce_other_integer(ops):
     # The check for the first integer type already does what we need.
     return operator.Match
 
-@operator.Plus(_integer, _integer)
+@operator.Plus(Integer, Integer)
 class _:
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
@@ -290,11 +277,14 @@ class _:
         cg.builder().int_add(tmp, e1, e2)
         return tmp
 
-@operator.Minus(_integer, _integer)
+@operator.Minus(Integer, Integer)
 class _:
-
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
@@ -309,10 +299,14 @@ class _:
         cg.builder().int_sub(tmp, e1, e2)
         return tmp
 
-@operator.Div(_integer, _integer)
+@operator.Div(Integer, Integer)
 class _:
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def validate(vld, e1, e2):
         if isinstance(e2, expr.Ctor) and e2.value() == 0:
@@ -331,10 +325,14 @@ class _:
         cg.builder().int_div(tmp, e1, e2)
         return tmp
 
-@operator.Mod(_integer, _integer)
+@operator.Mod(Integer, Integer)
 class _:
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def validate(vld, e1, e2):
         if isinstance(e2, expr.Ctor) and e2.value() == 0:
@@ -353,10 +351,18 @@ class _:
         cg.builder().int_mod(tmp, e1, e2)
         return tmp
 
-@operator.Mult(_integer, _integer)
+@operator.Mult(Integer, Integer)
 class _:
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
@@ -371,10 +377,14 @@ class _:
         cg.builder().int_mul(tmp, e1, e2)
         return tmp
 
-@operator.BitAnd(_integer, _integer)
+@operator.BitAnd(Integer, Integer)
 class _:
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
@@ -389,10 +399,14 @@ class _:
         cg.builder().int_and(tmp, e1, e2)
         return tmp
 
-@operator.BitOr(_integer, _integer)
+@operator.BitOr(Integer, Integer)
 class _:
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
@@ -408,10 +422,14 @@ class _:
         return tmp
 
 
-@operator.BitXor(_integer, _integer)
+@operator.BitXor(Integer, Integer)
 class _:
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
@@ -426,10 +444,14 @@ class _:
         cg.builder().int_xor(tmp, e1, e2)
         return tmp
 
-@operator.ShiftLeft(_integer, _integer)
+@operator.ShiftLeft(Integer, Integer)
 class _:
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
@@ -444,10 +466,14 @@ class _:
         cg.builder().int_shl(tmp, e1, e2)
         return tmp
 
-@operator.ShiftRight(_integer, _integer)
+@operator.ShiftRight(Integer, Integer)
 class _:
     def type(e1, e2):
         return _dstType(e1, e2)
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
@@ -463,10 +489,14 @@ class _:
         ty._shr(cg, tmp, e1, e2)
         return tmp
 
-@operator.Equal(_integer, _integer)
+@operator.Equal(Integer, Integer)
 class _:
     def type(e1, e2):
         return type.Bool()
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if not isinstance(e1, expr.Ctor) or not isinstance(e2, expr.Ctor):
@@ -481,10 +511,14 @@ class _:
         cg.builder().equal(tmp, e1, e2)
         return tmp
 
-@operator.Lower(_integer, _integer)
+@operator.Lower(Integer, Integer)
 class _:
     def type(e1, e2):
         return type.Bool()
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if not isinstance(e1, expr.Ctor) or not isinstance(e2, expr.Ctor):
@@ -500,10 +534,14 @@ class _:
         ty._lt(cg, tmp, e1, e2)
         return tmp
 
-@operator.Greater(_integer, _integer)
+@operator.Greater(Integer, Integer)
 class _:
     def type(e1, e2):
         return type.Bool()
+
+    def validate(vld, e1, e2):
+        if e1.type().__class__ != e2.type().__class__:
+            vld.error(e1, "mix of signed and unsigned integers")
 
     def simplify(e1, e2):
         if not isinstance(e1, expr.Ctor) or not isinstance(e2, expr.Ctor):
@@ -521,6 +559,9 @@ class _:
 
 @operator.Attribute(Integer, type.String)
 class _:
+    def type(lhs, ident):
+        return lhs.type()
+
     def validate(vld, lhs, ident):
         name = ident.name()
         if not lhs.type().bits():
@@ -528,9 +569,6 @@ class _:
 
         if name and not name in lhs.type().bits():
             vld.error(lhs, "unknown bitset field '%s'" % name)
-
-    def type(lhs, ident):
-        return lhs.type()
 
     def evaluate(cg, lhs, ident):
         name = ident.name()

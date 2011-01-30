@@ -155,15 +155,32 @@ class _:
         return expr.Hilti(tmp, type.Bool())
 
 # We do that here to avoid recursive dependencies in integer.py.
-@operator.Coerce(type.Integer, Float)
+
+@operator.Coerce(type.SignedInteger, Float)
 class _:
     def coerceCtorTo(ctor, dsttype):
         return (ctor, 0)
 
     def coerceTo(cg, e, dsttype):
         tmp = cg.builder().addLocal("__float", hilti.type.Double())
-        cg.builder().assign(tmp, e.evaluate(cg))
+        cg.builder().int_sdouble(tmp, e.evaluate(cg))
         return tmp
+
+    def typeCoerceTo(e, dsttype):
+        return hilti.type.Double()
+
+@operator.Coerce(type.UnsignedInteger, Float)
+class _:
+    def coerceCtorTo(ctor, dsttype):
+        return (ctor, 0)
+
+    def coerceTo(cg, e, dsttype):
+        tmp = cg.builder().addLocal("__float", hilti.type.Double())
+        cg.builder().int_udouble(tmp, e.evaluate(cg))
+        return tmp
+
+    def typeCoerceTo(e, dsttype):
+        return hilti.type.Double()
 
 @operator.Cast(Float, type.SignedInteger)
 class _:
