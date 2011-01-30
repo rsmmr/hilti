@@ -68,6 +68,7 @@ class OperandBuilder(objcache.Cache):
 
         Returns: operand.Constant - The tuple operand made of the given elements.
         """
+        elems = [_magicOp("tupleOp", e, "element") for e in elems]
         const = constant.Constant(elems, type.Tuple([e.type() for e in elems]))
         return operand.Constant(const)
 
@@ -854,30 +855,29 @@ def _constOp(value, ty=None):
 #          a specific type can be requested by passing in a tuple, e.g.,
 #          (42, type.Integer(16)).
 
+def _magicOp(ins, arg, op):
+    if arg == None:
+        return arg
+
+    if isinstance(arg, operand.Operand):
+        return arg
+
+    # Do magic conversion into operands for some types.
+    if isinstance(arg, BlockBuilder):
+        return arg.labelOp()
+
+    if (isinstance(arg, tuple) or isinstance(arg, list)) and len(arg) == 2:
+        assert isinstance(arg[1], type.Type)
+        return _constOp(arg[0], ty=arg[1])
+
+    if isinstance(arg, str) or isinstance(arg, bool) or isinstance(arg, int):
+        return _constOp(arg)
+
+    util.internal_error("unsupported type %s for %s in '%s'" %(repr(arg), op, ins))
+
 def _init_builder_instructions():
     # Adds all instructions as methods to the Builder class.
     for (name, ins) in instruction.getInstructions().items():
-
-        def _magicOp(ins, arg, op):
-            if arg == None:
-                return arg
-
-            if isinstance(arg, operand.Operand):
-                return arg
-
-            # Do magic conversion into operands for some types.
-            if isinstance(arg, BlockBuilder):
-                return arg.labelOp()
-
-            if (isinstance(arg, tuple) or isinstance(arg, list)) and len(arg) == 2:
-                assert isinstance(arg[1], type.Type)
-                return _constOp(arg[0], ty=arg[1])
-
-            if isinstance(arg, str) or isinstance(arg, bool) or isinstance(arg, int):
-                return _constOp(arg)
-
-            util.internal_error("unsupported type %s for %s in instruction '%s'" %(repr(arg), op, ins))
-
         def _getOp(ins, args, sig, op):
             if not sig:
                 return (None, args)

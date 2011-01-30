@@ -48,5 +48,13 @@ void run() {
 
     d = double.pow 64.0 -0.5
     call Hilti::print(d)
+
+    i = 42
+    d = int.udouble i
+    call Hilti::print(d)
+
+    i = -42
+    d = int.sdouble i
+    call Hilti::print(d)
 }
 

@@ -704,6 +704,24 @@ class Ashr(Instruction):
         result = cg.builder().ashr(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
+@hlt.instruction("int.udouble", op1=cInteger, target=cDouble)
+class UInt(Instruction):
+    """Converts the unsigned integer *op1* into a double value.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        result = cg.builder().uitofp(op1, cg.llvmType(self.target().type()))
+        cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("int.sdouble", op1=cInteger, target=cDouble)
+class SInt(Instruction):
+    """Converts the signed integer *op1* into a double value.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        result = cg.builder().sitofp(op1, cg.llvmType(self.target().type()))
+        cg.llvmStoreInTarget(self, result)
+
 # tag, id, width, signed, little, bytes
 _Unpacks = {
     "Int8Little": (0,  8, True, True, [0]),
