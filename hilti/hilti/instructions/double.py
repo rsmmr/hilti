@@ -130,7 +130,7 @@ class Pow(Instruction):
             op2 = cg.llvmOp(self.op2())
             result = cg.llvmCallCInternal("pow", [op1, op2])
             cg.llvmStoreInTarget(self, result)
-            
+
 @hlt.instruction("double.div", op1=cDouble, op2=cNonZero(cDouble), target=cDouble)
 class Div(Instruction):
     """
@@ -181,7 +181,7 @@ class Mod(Instruction):
         result = cg.builder().frem(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
-        # Leave ok-builder for subsequent code.        
+        # Leave ok-builder for subsequent code.
 
 @hlt.instruction("double.eq", op1=cDouble, op2=cDouble, target=cBool)
 class Eq(Instruction):
@@ -216,8 +216,8 @@ class Gt(Instruction):
         result = cg.builder().fcmp(llvm.core.RPRED_OGT, op1, op2)
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("double.uint", op1=cDouble, target=cInteger)
-class UInt(Instruction):
+@hlt.instruction("double.as_uint", op1=cDouble, target=cInteger)
+class AsUint(Instruction):
     """Converts the double *op1* into an unsigned integer value, rounding to
     the nearest value.
     """
@@ -226,8 +226,8 @@ class UInt(Instruction):
         result = cg.builder().fptoui(op1, cg.llvmType(self.target().type()))
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("double.sint", op1=cDouble, target=cInteger)
-class SInt(Instruction):
+@hlt.instruction("double.as_sint", op1=cDouble, target=cInteger)
+class AsUint(Instruction):
     """Converts the double *op1* into a signed integer value, rounding to
     the nearest value.
     """
@@ -235,3 +235,26 @@ class SInt(Instruction):
         op1 = cg.llvmOp(self.op1())
         result = cg.builder().fptosi(op1, cg.llvmType(self.target().type()))
         cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("double.as_time", op1=cDouble, target=cTime)
+class AsTime(Instruction):
+    """Converts the double *op1* into a time value, interpreting it as seconds
+    since the epoch.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        val = cg.builder().fmul(op1, llvm.core.Constant.real(llvm.core.Type.double(), "1e9"))
+        val = cg.builder().fptoui(val, llvm.core.Type.int(64))
+        cg.llvmStoreInTarget(self, val)
+
+@hlt.instruction("double.as_interval", op1=cDouble, target=cInterval)
+class AsInterval(Instruction):
+    """Converts the double *op1* into an interval value, interpreting it as
+    seconds.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        val = cg.builder().fmul(op1, llvm.core.Constant.real(llvm.core.Type.double(), "1e9"))
+        val = cg.builder().fptoui(val, llvm.core.Type.int(64))
+        cg.llvmStoreInTarget(self, val)
+

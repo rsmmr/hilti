@@ -220,9 +220,14 @@ declare "C-HILTI" void file_close(ref<file> f)
 declare "C-HILTI" void file_write_string(ref<file> f, string str)
 declare "C-HILTI" void file_write_bytes(ref<file> f, ref<bytes> b)
 
-#
+##
 
 declare "C-HILTI" time time_wall()
+declare "C-HILTI" int<64> time_nsecs(time t)
+
+##
+
+declare "C-HILTI" int<64> interval_nsecs(interval t)
 
 ##
 

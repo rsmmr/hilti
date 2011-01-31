@@ -14,7 +14,7 @@ static hlt_string_constant not_set = HLT_STRING_CONSTANT("<time not set>");
 
 hlt_time hlt_time_value(uint64_t secs, uint64_t nsecs)
 {
-    return (secs << 32) | nsecs;
+    return secs * 1000000000 + nsecs;
 }
 
 extern const hlt_type_info hlt_type_info_double;
@@ -27,12 +27,13 @@ hlt_string hlt_time_to_string(const hlt_type_info* type, const void* obj, int32_
     if ( val == HLT_TIME_UNSET )
         return &not_set;
 
-    time_t secs = (time_t)(val >> 32);
-
     char buffer[30];
     char buffer2[30];
 
-    snprintf(buffer, sizeof(buffer2), ".%.9fZ", (val & 0xffffffff) / 1e9);
+    time_t secs = val / 1000000000;
+    double frac = (val % 1000000000) / 1e9;
+
+    snprintf(buffer, sizeof(buffer2), ".%.9fZ", frac);
 
     struct tm tm;
     size_t len = strftime(buffer2, sizeof(buffer2), "%Y-%m-%dT%H:%M:%S", gmtime_r(&secs, &tm));
@@ -50,18 +51,14 @@ double hlt_time_to_double(const hlt_type_info* type, const void* obj, int32_t op
     if ( val == HLT_TIME_UNSET )
         return -1;
 
-    uint64_t secs = (val >> 32);
-    uint64_t nanos = val & 0xffffffff;
-
-    return (double)secs + (nanos / 1e9);
+    return val / 1e9;;
 }
 
 int64_t hlt_time_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
 {
-    // This prints nanoseconds.
     assert(type->type == HLT_TYPE_TIME);
     hlt_time val = *((hlt_time *)obj);
-    return val;
+    return (int64_t)(val / 1e9);
 }
 
 hlt_time hlt_time_wall(hlt_exception** excpt, hlt_execution_context* ctx)
@@ -74,7 +71,11 @@ hlt_time hlt_time_wall(hlt_exception** excpt, hlt_execution_context* ctx)
         return 0;
     }
 
-    uint64_t secs = tv.tv_sec;
-    uint64_t nanos = tv.tv_usec * 1000;
-    return (secs << 32) | nanos;
+    return hlt_time_value(tv.tv_sec, tv.tv_usec * 1000);
 }
+
+uint64_t hlt_time_nsecs(hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return t;
+}
+

@@ -16,26 +16,29 @@ void printTime(time t) {
 
 void run() {
     local double d
-    local int<32> i
+    local int<64> i
+    local int<64> nsecs
     local time t
 
     d = 1295415110.5
     i = 1295759890
 
-    t = time.from_unix d
+    t = double.as_time d
     call printTime(t)
 
-    t = time.from_unix i
+    t = int.as_time i
     call printTime(t)
 
     call Hilti::print("")
 
     t = time(1295415110.5)
-    d = time.to_unix t
+    d = time.as_double t
     call Hilti::print(d)
 
-    i = time.to_unix t
+    i = time.as_int t
     call Hilti::print(i)
 
+    nsecs = time.nsecs t
+    call Hilti::print(nsecs)
     }
 

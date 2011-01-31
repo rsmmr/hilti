@@ -5,7 +5,7 @@
     The ``time`` data type represents specific points in time, with nanosecond
     resolution. The earliest time that can be represented is the standard UNIX
     epoch, i.e., Jan 1 1970 UTC.
-    
+
     Time constants are specified in seconds since the epoch, either as
     integers (``1295411800``) or as floating poing values
     (``1295411800.123456789``). In the latter case, there may be at most 9
@@ -16,7 +16,7 @@
     If not further initialized, a ``time`` instance is set to the ``Epoch``.
 
     Note that when operating on time values, behaviour in case of under- and
-    overflow is undefined. 
+    overflow is undefined.
 
     Internally, ``time`` uses a fixed-point represenation with 32 bit for full
     seconds, and 32 bit for the fraction of a second.
@@ -28,7 +28,7 @@ from hilti.constraints import *
 from hilti.instruction import *
 from hilti.instructions.operators import *
 
-Epoch = (0, 0)
+Epoch = 0
 
 @hlt.type("time", 32, c="hlt_time")
 class Time(type.ValueType, type.Constable):
@@ -53,7 +53,7 @@ class Time(type.ValueType, type.Constable):
         return typeinfo
 
     def llvmDefault(self, cg):
-        return cg.llvmConstInt((Epoch[0] << 32) + Epoch[1], 64)
+        return cg.llvmConstInt(Epoch, 64)
 
     ### Overridden from Constable.
 
@@ -70,8 +70,7 @@ class Time(type.ValueType, type.Constable):
 
     def llvmConstant(self, cg, const):
         (secs, nano) = const.value()
-
-        return cg.llvmConstInt((secs << 32) + nano, 64)
+        return cg.llvmConstInt(secs * 1000000000 + nano, 64)
 
     def outputConstant(self, printer, const):
         printer.output("%.9f" % const.value())
@@ -120,6 +119,17 @@ class Lt(Instruction):
         result = cg.builder().icmp(llvm.core.IPRED_SLT, op1, op2)
         cg.llvmStoreInTarget(self, result)
 
+@hlt.instruction("time.gt",  op1=cTime, op2=cTime, target=cBool)
+class Gt(Instruction):
+    """
+    Returns True if the time represented by *op1* is later than that of *op2*.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        op2 = cg.llvmOp(self.op2())
+        result = cg.builder().icmp(llvm.core.IPRED_SGT, op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
 @hlt.instruction("time.eq",  op1=cTime, op2=cTime, target=cBool)
 class Eq(Instruction):
     """
@@ -152,57 +162,33 @@ class Wall(Instruction):
         wall = cg.llvmCallC("hlt::time_wall", [])
         cg.llvmStoreInTarget(self, wall)
 
-
-@hlt.instruction("time.from_unix", op1=_int_or_double, target=cTime)
-class FromUnix(Instruction):
-    """Converts a UNIX timestamp in *op1* (i.e., seconds since Jan 1, 1970)
-    into a HILTI time.
+@hlt.instruction("time.nsecs",  op1=cTime, op2=None, target=cIntegerOfWidth(64))
+class Nsecs(Instruction):
+    """
+    Returns the time *op1* as nanoseconds since the epoch.
     """
     def _codegen(self, cg):
-        if isinstance(self.op1().type(), type.Double):
-            op1 = cg.llvmOp(self.op1())
-            secs = cg.builder().fptoui(op1, llvm.core.Type.int(32))
-            nanos = cg.builder().fsub(op1, cg.builder().uitofp(secs, llvm.core.Type.double()))
-            nanos = cg.builder().fmul(nanos, llvm.core.Constant.real(llvm.core.Type.double(), "1e9"))
-            nanos = cg.builder().fptoui(nanos, llvm.core.Type.int(32))
+        nsecs = cg.llvmCallC("hlt::time_nsecs", [self.op1()])
+        cg.llvmStoreInTarget(self, nsecs)
 
-            secs = cg.builder().zext(secs, llvm.core.Type.int(64))
-            nanos = cg.builder().zext(nanos, llvm.core.Type.int(64))
-
-            result = cg.builder().shl(secs, cg.llvmConstInt(32, 64))
-            result = cg.builder().or_(result, nanos)
-
-        else:
-            op1 = self.op1().coerceTo(cg, type.Integer(32))
-            op1 = cg.llvmOp(op1)
-            op1 = cg.builder().zext(op1, llvm.core.Type.int(64))
-            result = cg.builder().shl(op1, cg.llvmConstInt(32, 64))
-
-        cg.llvmStoreInTarget(self, result)
-
-@hlt.instruction("time.to_unix", op1=cTime, target=_int_or_double)
-class ToUnix(Instruction):
-    """Converts the time *op1* into a UNIX timestamp (i.e., seconds since Jan
-    1, 1970). Note that this may loose precision. 
+@hlt.instruction("time.as_int",  op1=cTime, op2=None, target=cIntegerOfWidth(64))
+class AsInt(Instruction):
+    """Returns *op1*' in seconds since the epoch, rounded down to the nearest
+    integer.
     """
     def _codegen(self, cg):
-        if isinstance(self.target().type(), type.Double):
-            op1 = cg.llvmOp(self.op1())
-
-            secs = cg.builder().lshr(op1, cg.llvmConstInt(32, 64))
-            secs = cg.builder().uitofp(secs, llvm.core.Type.double())
-
-            nanos = cg.builder().and_(op1, cg.llvmConstInt(0xffffffff, 64))
-            nanos = cg.builder().uitofp(nanos, llvm.core.Type.double())
-            nanos = cg.builder().fdiv(nanos, llvm.core.Constant.real(llvm.core.Type.double(), "1e9"))
-
-            result = cg.builder().fadd(secs, nanos)
-
-        else:
-            op1 = cg.llvmOp(self.op1())
-            result = cg.builder().lshr(op1, cg.llvmConstInt(32, 64))
-            result = cg.builder().trunc(result, llvm.core.Type.int(32))
-
+        op1 = cg.llvmOp(self.op1())
+        result = cg.builder().udiv(op1, cg.llvmConstInt(1000000000, 64))
         cg.llvmStoreInTarget(self, result)
 
+@hlt.instruction("time.as_double",  op1=cTime, op2=None, target=cDouble)
+class AsDouble(Instruction):
+    """Returns *op1* in seconds since the epoch, rounded down to the nearest
+    value that can be represented as a double.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        val = cg.builder().uitofp(op1, llvm.core.Type.double())
+        val = cg.builder().fdiv(val, llvm.core.Constant.real(llvm.core.Type.double(), "1e9"))
+        cg.llvmStoreInTarget(self, val)
 

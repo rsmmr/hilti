@@ -15,27 +15,31 @@ void printInterval(interval t) {
 }
 
 void run() {
-    local int<32> i
+    local int<64> i
     local double d
     local interval t
+    local int<64> nsecs
 
     d = 1000.42
     i = 2000
 
-    t = interval.from_secs d
+    t = double.as_interval d
     call printInterval(t)
 
-    t = interval.from_secs i
+    t = int.as_interval i
     call printInterval(t)
 
     call Hilti::print("")
 
     t = interval(1000.42)
-    d = interval.to_secs t
+    d = interval.as_double t
     call Hilti::print(d)
 
-    i = interval.to_secs t
+    i = interval.as_int t
     call Hilti::print(i)
+
+    nsecs = interval.nsecs t
+    call Hilti::print(nsecs)
 
     }
 

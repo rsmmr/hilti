@@ -45,3 +45,20 @@ void run() {
     call Hilti::print (result)
 }
 
+### @TEST-START-NEXT
+
+# Underflow
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<8> i
+    local int<32> result = 42;
+    i = int.sub 100 result
+
+    result = int.zext i
+    call Hilti::print (result)
+}
+

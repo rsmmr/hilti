@@ -704,7 +704,7 @@ class Ashr(Instruction):
         result = cg.builder().ashr(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("int.udouble", op1=cInteger, target=cDouble)
+@hlt.instruction("int.as_udouble", op1=cInteger, target=cDouble)
 class UInt(Instruction):
     """Converts the unsigned integer *op1* into a double value.
     """
@@ -713,7 +713,7 @@ class UInt(Instruction):
         result = cg.builder().uitofp(op1, cg.llvmType(self.target().type()))
         cg.llvmStoreInTarget(self, result)
 
-@hlt.instruction("int.sdouble", op1=cInteger, target=cDouble)
+@hlt.instruction("int.as_sdouble", op1=cInteger, target=cDouble)
 class SInt(Instruction):
     """Converts the signed integer *op1* into a double value.
     """
@@ -721,6 +721,29 @@ class SInt(Instruction):
         op1 = cg.llvmOp(self.op1())
         result = cg.builder().sitofp(op1, cg.llvmType(self.target().type()))
         cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("int.as_time", op1=cInteger, target=cTime)
+class AsTime(Instruction):
+    """Converts the integer *op1* into a time value, interpreting it as seconds
+    since the epoch.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        result = cg.builder().zext(op1, llvm.core.Type.int(64))
+        result = cg.builder().mul(result, cg.llvmConstInt(1000000000, 64))
+        cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("int.as_interval", op1=cInteger, target=cInterval)
+class AsDouble(Instruction):
+    """Converts the integer *op1* into an interval value, interpreting it as
+    seconds.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        result = cg.builder().zext(op1, llvm.core.Type.int(64))
+        result = cg.builder().mul(result, cg.llvmConstInt(1000000000, 64))
+        cg.llvmStoreInTarget(self, result)
+
 
 # tag, id, width, signed, little, bytes
 _Unpacks = {
