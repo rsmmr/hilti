@@ -184,10 +184,10 @@ bytes to_lower(b: bytes)
 
 uint64 dec_to_uint(b: bytes)
 {
-     return Hilti::bytes_to_int(b, 10).as_uint();
+     return cast<uint64>(Hilti::bytes_to_int(b, 10));
 }
 
 uint64 hex_to_uint(b: bytes)
 {
-     return Hilti::bytes_to_int(b, 16).as_uint();
+     return cast<uint64>(Hilti::bytes_to_int(b, 16));
 }

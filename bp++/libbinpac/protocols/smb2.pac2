@@ -311,7 +311,7 @@ type OplockLevel = unit {
 	        exclusive :  3;
 		# Batch is 0x09 and can't be represented by a bitfield appropriatly
 	        #batch     :  ;
-	        lease     :  0..8;
+	        lease     :  0..7;
 	};
 };
 

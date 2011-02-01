@@ -507,7 +507,8 @@ class Assign(Expression):
         return self._dest.type()
 
     def evaluate(self, cg):
-        rhs = self._rhs.coerceTo(self._dest.type(), cg).evaluate(cg)
+        rhs = self._rhs.coerceTo(self._dest.type(), cg)
+        rhs = rhs.evaluate(cg)
         self._dest.assign(cg, rhs)
 
     def __str__(self):

@@ -391,27 +391,32 @@ def canCoerceTo(srctype, dsttype):
 
     return False
 
-def coerceExprTo(cg, expr, dsttype):
+def coerceExprTo(cg, e, dsttype):
     """Coerces an expression (assumed to be non-constant) of one type into
     another. This operator must only be called if ~~canCoerceExprTo indicates
     that the coerce is supported.
 
     *cg*: ~~CodeGen - The current code generator.
-    expr: ~~expr - The expression to coerce.
+    e: ~~expr - The expression to coerce.
     dsttype: ~~Type - The type to coerce the expression into.
 
     Returns: ~~Expression - A new expression of the target type with the
     coerceed expression.
     """
 
-    assert canCoerceExprTo(expr, dsttype)
+    assert canCoerceExprTo(e, dsttype)
 
-    if expr.type() == dsttype:
-        return expr
+    if e.type() == dsttype:
+        return e
 
-    func = _findOp("coerceTo", Operator.Coerce, [expr, dsttype])
+    func = _findOp("coerceTo", Operator.Coerce, [e, dsttype])
     assert func != None
-    return func(cg, expr, dsttype)
+    result = func(cg, e, dsttype)
+
+    if isinstance(result, hilti.operand.Operand):
+        result = expr.Hilti(result, dsttype)
+
+    return result
 
 def coerceCtorTo(e, dsttype):
     """Coerces a ctor expression of one type into another. This may or may

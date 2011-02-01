@@ -228,7 +228,7 @@ def _coerce_integer(ops):
 
     for cls in (type.SignedInteger, type.UnsignedInteger):
         if isinstance(ty1, cls) and isinstance(ops[1], cls):
-            if ops[0].type().width() <= ops[1].width():
+            if ty1.width() <= ops[1].width():
                 return operator.Match
 
     return operator.NoMatch
@@ -322,12 +322,6 @@ class _:
         if not _checkTypes(e1, e2):
             vld.error(e1, "incompatible integer types")
 
-    def simplify(e1, e2):
-        if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
-            val = e1.value() - e2.value()
-            return expr.Ctor(val, _checkTypes(e1, e2))
-
-        return None
 
     def evaluate(cg, e1, e2):
         (e1, e2) = _extendOps(cg, e1, e2)
