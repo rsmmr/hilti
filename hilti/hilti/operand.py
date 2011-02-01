@@ -124,7 +124,7 @@ class Operand(node.Node):
         util.internal_error("llvmStore() not implemented for %s" % repr(self))
 
     def __str__(self):
-        return unicode(self.value())
+        return unicode(self.value()).encode("unicode_escape")
 
     ### Overridden from Node.
 
