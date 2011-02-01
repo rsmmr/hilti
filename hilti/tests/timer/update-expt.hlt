@@ -10,7 +10,7 @@ import Hilti
 
 void foo(int32 n) {
     local time t
-    t = time.from_unix n
+    t = int.as_time n
     call Hilti::print ("Timer at   ", False)
     call Hilti::print (t)
 }

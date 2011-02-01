@@ -47,15 +47,13 @@ void run() {
 
 ### @TEST-START-NEXT
 
-# Underflow
-
 module Main
 
 import Hilti
 
 void run() {
     local int<8> i
-    local int<32> result = 42;
+    local int<8> result = 42
     i = int.sub 100 result
 
     result = int.zext i

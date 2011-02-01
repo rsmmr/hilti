@@ -28,16 +28,16 @@ void run() {
     d = double.mod d2 d1
     call Hilti::print(d)
 
-    i = double.sint 15.123
+    i = double.as_sint 15.123
     call Hilti::print(i)
 
-    i = double.sint -15.123
+    i = double.as_sint -15.123
     call Hilti::print(i)
 
-    i = double.uint 15.123
+    i = double.as_uint 15.123
     call Hilti::print(i)
 
-    i = double.uint -15.123
+    i = double.as_uint -15.123
     call Hilti::print(i)
 
     d = double.pow 2.0 10.0
@@ -50,11 +50,11 @@ void run() {
     call Hilti::print(d)
 
     i = 42
-    d = int.udouble i
+    d = int.as_udouble i
     call Hilti::print(d)
 
     i = -42
-    d = int.sdouble i
+    d = int.as_sdouble i
     call Hilti::print(d)
 }
 
