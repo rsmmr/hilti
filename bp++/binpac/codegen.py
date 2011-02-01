@@ -228,7 +228,7 @@ class CodeGen(object):
 
             if isinstance(i, id.Global):
                 if i.expr():
-                    init = i.expr().evaluate(self)
+                    init = i.expr().coerceTo(i.type(), cg=self).evaluate(self)
                 else:
                     init = i.type().hiltiDefault(self)
 

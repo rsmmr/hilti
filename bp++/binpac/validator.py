@@ -25,8 +25,9 @@ class Validator(object):
         self._module = mod
         self._errors = 0
         self._funcs = [None]
+        self._aux_location = None
 
-    def error(self, context, msg):
+    def error(self, context, msg, addl=""):
         """Reports an error during code generation.
 
         msg: string - The error message to report.
@@ -34,7 +35,10 @@ class Validator(object):
         context: any - Optional object with a *location* method returning a
         ~~Location suitable to include into the error message.
         """
-        loc = context.location() if context else None
+        loc = context.location() if context else self._aux_location
+        if addl:
+            msg += " (%s)" % addl
+
         util.error(msg, component="validation", context=loc)
         self._errors += 1
 
@@ -64,6 +68,15 @@ class Validator(object):
         within a function.
         """
         return self._funcs[-1]
+
+    def setLocation(self, loc):
+        """Records a location as the one to use if no other information is
+        found for object causing an error.
+
+        loc: ~~Location - The location to push on the location stack. Can be
+        None to clear. 
+        """
+        self._aux_location = loc
 
     def _validate(self):
         # Top-level driver of the validation process.

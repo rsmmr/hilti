@@ -30,6 +30,8 @@ types = {
     "addr": type.Addr,
     "sink": type.Sink,
     "float": type.Float,
+    "time": type.Time,
+    "interval": type.Interval,
     }
 
 # Literals.

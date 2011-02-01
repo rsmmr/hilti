@@ -180,12 +180,14 @@ class Overloaded(Expression):
     def _validate(self, vld):
         super(Overloaded, self)._validate(vld)
 
-        for expr in self._exprs:
-            if isinstance(expr, Expression):
-                expr.validate(vld)
+        vld.setLocation(self.location())
+
+        for e in self._exprs:
+            if isinstance(e, Expression):
+                e.validate(vld)
 
         if not operator.hasOperator(self._op, self._exprs):
-            types = ", ".join([str(e.type()) for e in self._exprs])
+            types = ", ".join([str(e.type() if isinstance(e, Expression) else e) for e in self._exprs])
             vld.error(self, "no match for overloaded operator %s with types (%s)" % (self._op, types))
 
         operator.validate(self._op, vld, self._exprs)

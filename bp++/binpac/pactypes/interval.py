@@ -23,9 +23,9 @@ class Interval(type.Type):
         return True
 
     def validateCtor(self, vld, ctor):
-        if not )isinstance(ctor, tuple) and len(ctor) == 2) or \
+        if not (isinstance(ctor, tuple) and len(ctor) == 2) or \
            not isinstance(ctor[0], int) or \
-           not isinstance(ctor[1], int) or \
+           not isinstance(ctor[1], int):
             vld.error(ctor, "interval: constant of wrong internal type")
 
     def hiltiType(self, cg):
@@ -51,7 +51,7 @@ class _:
 
     def evaluate(cg, e1, e2):
         tmp = cg.builder().addLocal("__result", hilti.type.Interval())
-        cg.builder().interval_add(tmp, e1.evaluate(cg), e2.evaluate(cg)_
+        cg.builder().interval_add(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
 @operator.Minus(Interval, Interval)
@@ -61,7 +61,7 @@ class _:
 
     def evaluate(cg, e1, e2):
         tmp = cg.builder().addLocal("__result", hilti.type.Interval())
-        cg.builder().interval_sub(tmp, e1.evaluate(cg), e2.evaluate(cg)_
+        cg.builder().interval_sub(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
 @operator.Mult(Interval, type.UnsignedInteger)
@@ -114,6 +114,26 @@ class _:
         cg.builder().interval_gt(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
+@operator.Coerce(type.Float, Interval)
+class _:
+    def coerceCtorTo(ctor, dsttype):
+        return ctor
+
+    def coerceTo(cg, e, dsttype):
+        tmp = cg.builder().addLocal("__interval", hilti.type.Interval())
+        cg.builder().float_as_interval(tmp, e.evaluate(cg))
+        return tmp
+
+@operator.Coerce(type.UnsignedInteger, Interval)
+class _:
+    def coerceCtorTo(ctor, dsttype):
+        return (ctor, 0)
+
+    def coerceTo(cg, e, dsttype):
+        tmp = cg.builder().addLocal("__interval", hilti.type.Interval())
+        cg.builder().int_as_interval(tmp, e.evaluate(cg))
+        return tmp
+
 @operator.Cast(Interval, type.UnsignedInteger)
 class _:
     def type(e, t):
@@ -140,6 +160,6 @@ class Begin:
         return type.UnsignedInteger(64)
 
     def evaluate(cg, obj, method, args):
-        tmp = cg.functionBuilder().addLocal("__nsecs", type.UnsignedInteger(64))
-        cg.builder().interval_nsecs(tmp, e.evaluate(cg))
+        tmp = cg.functionBuilder().addLocal("__nsecs", hilti.type.Integer(64))
+        cg.builder().interval_nsecs(tmp, obj.evaluate(cg))
         return tmp

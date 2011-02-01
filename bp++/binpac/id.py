@@ -151,7 +151,7 @@ class ID(node.Node):
 
     def _validate(self, vld):
         super(ID, self)._validate(vld)
-
+        vld.setLocation(self.location())
         self._type.validate(vld)
 
     ### Methods for derived classes to override.
@@ -201,10 +201,10 @@ class Constant(ID):
         super(Constant, self)._validate(vld)
 
         if self._expr and not self._expr.canCoerceTo(self.type()):
-            vld.error("type of initializer expression does not match")
+            vld.error(self, "type of initializer expression does not match", addl=self)
 
         if self._expr and not self._expr.isInit():
-            vld.error("expression cannot be used as initializer")
+            vld.error(self, "expression cannot be used as initializer", addl=self)
 
     def pac(self, printer):
         printer.output("const %s: " % self.name(), nl=False)
@@ -246,10 +246,10 @@ class Local(ID):
         super(Local, self)._validate(vld)
 
         if self._expr and not self._expr.canCoerceTo(self.type()):
-            vld.error("type of initializer expression does not match")
+            vld.error(self, "type of initializer expression does not match", addl=self)
 
         if self._expr and not self._expr.isInit():
-            vld.error("expression cannot be used as initializer")
+            vld.error(self, "expression cannot be used as initializer", addl=self)
 
     def pac(self):
         printer.output("local %s: " % self.name())
@@ -328,10 +328,10 @@ class Global(ID):
         super(Global, self)._validate(vld)
 
         if self._expr and not self._expr.canCoerceTo(self.type()):
-            vld.error(self, "type of initializer expression does not match")
+            vld.error(self, "type of initializer expression does not match", addl=self)
 
         if self._expr and not self._expr.isInit():
-            vld.error(self, "expression cannot be used as initializer")
+            vld.error(self, "expression cannot be used as initializer", addl=self)
 
     def pac(self, printer):
         printer.output("global %s: " % self.name())

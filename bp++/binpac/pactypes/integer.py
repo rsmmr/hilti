@@ -71,7 +71,7 @@ class Integer(type.ParseableWithByteOrder):
 
         for (lower, upper, attrs) in self._bits.values():
             if lower < 0 or upper >= self._usableBits() or upper < lower:
-                vld.error("invalid bit field specification (%d:%d)" % (lower, upper))
+                vld.error(self, "invalid bit field specification (%d:%d)" % (lower, upper))
 
             for (attr, ex) in attrs:
                 if attr != "convert":

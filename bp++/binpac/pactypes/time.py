@@ -23,9 +23,9 @@ class Time(type.Type):
         return True
 
     def validateCtor(self, vld, ctor):
-        if not )isinstance(ctor, tuple) and len(ctor) == 2) or \
+        if not (isinstance(ctor, tuple) and len(ctor) == 2) or \
            not isinstance(ctor[0], int) or \
-           not isinstance(ctor[1], int) or \
+           not isinstance(ctor[1], int):
             vld.error(ctor, "time: constant of wrong internal type")
 
     def hiltiType(self, cg):
@@ -51,7 +51,7 @@ class _:
 
     def evaluate(cg, e1, e2):
         tmp = cg.builder().addLocal("__result", hilti.type.Time())
-        cg.builder().time_add(tmp, e1.evaluate(cg), e2.evaluate(cg)_
+        cg.builder().time_add(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
 @operator.Minus(Time, type.Interval)
@@ -61,7 +61,27 @@ class _:
 
     def evaluate(cg, e1, e2):
         tmp = cg.builder().addLocal("__result", hilti.type.Time())
-        cg.builder().time_sub(tmp, e1.evaluate(cg), e2.evaluate(cg)_
+        cg.builder().time_sub(tmp, e1.evaluate(cg), e2.evaluate(cg))
+        return tmp
+
+@operator.Plus(type.Interval, Time)
+class _:
+    def type(e1, e2):
+        return Time()
+
+    def evaluate(cg, e1, e2):
+        tmp = cg.builder().addLocal("__result", hilti.type.Time())
+        cg.builder().time_add(tmp, e2.evaluate(cg), e1.evaluate(cg))
+        return tmp
+
+@operator.Minus(type.Interval, Time)
+class _:
+    def type(e1, e2):
+        return Time()
+
+    def evaluate(cg, e1, e2):
+        tmp = cg.builder().addLocal("__result", hilti.type.Time())
+        cg.builder().time_sub(tmp, e2.evaluate(cg), e1.evaluate(cg))
         return tmp
 
 @operator.Equal(Time, Time)
@@ -94,6 +114,26 @@ class _:
         cg.builder().time_gt(tmp, e1.evaluate(cg), e2.evaluate(cg))
         return tmp
 
+@operator.Coerce(type.Float, Time)
+class _:
+    def coerceCtorTo(ctor, dsttype):
+        return ctor
+
+    def coerceTo(cg, e, dsttype):
+        tmp = cg.builder().addLocal("__time", hilti.type.Time())
+        cg.builder().float_as_time(tmp, e.evaluate(cg))
+        return tmp
+
+@operator.Coerce(type.UnsignedInteger, Time)
+class _:
+    def coerceCtorTo(ctor, dsttype):
+        return (ctor, 0)
+
+    def coerceTo(cg, e, dsttype):
+        tmp = cg.builder().addLocal("__time", hilti.type.Time())
+        cg.builder().int_as_time(tmp, e.evaluate(cg))
+        return tmp
+
 @operator.Cast(Time, type.UnsignedInteger)
 class _:
     def type(e, t):
@@ -120,6 +160,6 @@ class Begin:
         return type.UnsignedInteger(64)
 
     def evaluate(cg, obj, method, args):
-        tmp = cg.functionBuilder().addLocal("__nsecs", type.UnsignedInteger(64))
-        cg.builder().time_nsecs(tmp, e.evaluate(cg))
+        tmp = cg.functionBuilder().addLocal("__nsecs", hilti.type.Integer(64))
+        cg.builder().time_nsecs(tmp, obj.evaluate(cg))
         return tmp

@@ -128,9 +128,9 @@ def p_global_decl(p):
     linkage = p[1]
 
     if p[2] == "const":
-        i = id.Constant(name, ty, e, linkage=linkage, location=_loc(p, 2))
+        i = id.Constant(name, ty, e, linkage=linkage, location=_loc(p, 4))
     else:
-        i = id.Global(name, ty, e, linkage=linkage, location=_loc(p, 2))
+        i = id.Global(name, ty, e, linkage=linkage, location=_loc(p, 4))
 
     _currentScope(p).addID(i)
 

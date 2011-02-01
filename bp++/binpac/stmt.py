@@ -35,6 +35,12 @@ class Statement(node.Node):
     def __str__(self):
         return "<generic statement>"
 
+    ### Overidden from node.Node.
+
+    def _validate(self, vld):
+        super(Statement, self)._validate(vld)
+        vld.setLocation(self.location())
+
 class Epsilon(Statement):
     """A no-op statement.
 
