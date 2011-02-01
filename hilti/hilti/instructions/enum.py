@@ -245,9 +245,16 @@ class FromInt(Instruction):
         op = cg.llvmOp(self.op1())
         switch = cg.builder().switch(op, block_unknown)
 
+        have_vals = set()
+
         cases = []
-        for (label, value) in labels:
+        for (label, value) in sorted(labels):
+            if value in have_vals:
+                # If one value has multiple labels, we just take the first.
+                continue
+
             switch.add_case(cg.llvmConstInt(value, 64), block_known)
+            have_vals.add(value)
 
         cg.pushBuilder(block_cont)
 
