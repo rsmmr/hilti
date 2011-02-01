@@ -1,0 +1,36 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -m -o a.out 
+# @TEST-EXEC:  ./a.out >output
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+global t: time = 1296522456.12345;
+global t2: time = 1296522466.12345;
+global i: interval = 50.05;
+
+print t;
+print i;
+
+print t + i;
+print t - i;
+print i + t;
+print i - t;
+
+print t < t2;
+print t > t2;
+print t == t2;
+print t == t;
+
+print cast<float>(t);
+print cast<uint64>(t2);
+
+print t.nsecs();
+
+
+
+
+
+
+
