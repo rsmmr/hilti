@@ -35,7 +35,7 @@ class Enum(type.ParseableType):
         self._labels = {}
 
         for (name, val) in labels:
-            next_val = val if val else last_val + 1
+            next_val = val if val != None else last_val + 1
             self._labels[name] = next_val
             last_val = next_val
 

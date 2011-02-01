@@ -2,6 +2,8 @@
 [binpac]    a = '10'
 [binpac]    b = 'A'
 [binpac]    c = 'Unknown-65535'
+[binpac]    d = 'F'
 10
 A
 Unknown-65535
+F
