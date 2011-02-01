@@ -552,7 +552,7 @@ type read_request = unit(header: Header) {
 	offset            : uint64;
 	file_id           : file_id_t;
 	minimum_count     : uint32;
-	channel           : uint32; # ignore
+	channel_          : uint32; # ignore
 	remaining_bytes   : uint32;
 	# Everything below should just be 0 and unused currently.
 	#channel_info_offset : uint16;
@@ -584,7 +584,7 @@ type write_request = unit(header: Header) {
 	data_len            : uint32;
 	offset              : uint64;
 	file_id             : file_id_t;
-	channel             : uint32; # ignore
+	channel_            : uint32; # ignore
 	data_remaining      : uint32;
 	channel_info_offset : uint16; # ignore
 	channel_info_len    : uint16; # ignore

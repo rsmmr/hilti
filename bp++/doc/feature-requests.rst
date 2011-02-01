@@ -37,8 +37,3 @@ It would be more helpful if it looked something like this::
 	[binpac]          Facility = '0'
 	[binpac]          Code = '0'
 
-* Bit Shifting and logical operators for uints. Needed for timestamp parsing
-  in SMB2.
-
-Test found at <write test>
-
