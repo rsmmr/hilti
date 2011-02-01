@@ -71,6 +71,10 @@ print -4 > -5;
 print -4 <= -5;
 print -4 >= -5;
 
+print 2 ** 9;
+a = 3;
+b = 4;
+print a ** b;
 
 
 

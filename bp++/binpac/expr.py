@@ -490,7 +490,7 @@ class Assign(Expression):
         if "assign" in self._dest.__dict__:
             vld.error(self, "cannot assign to lhs expression")
 
-        if not self._rhs.type().canCoerceTo(self._dest.type()):
+        if not self._rhs.canCoerceTo(self._dest.type()):
             vld.error(self, "types do not match in assigment (%s <- %s)" % (self._dest.type(), self._rhs.type()))
 
         if self._dest.isInit():

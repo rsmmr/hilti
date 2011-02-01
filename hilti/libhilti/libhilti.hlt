@@ -60,6 +60,10 @@ declare "C-HILTI" bool  bytes_equal(any s1, any s2)
 
 ###
 
+declare "C-HILTI" int64 int_pow(int64 base, int64 exp)
+
+###
+
 declare "C-HILTI" int64 string_len(string s)
 declare "C-HILTI" string string_concat(string s1, string s2)
 declare "C-HILTI" int8 string_cmp(string s1, string s2)

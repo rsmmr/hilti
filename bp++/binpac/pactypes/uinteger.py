@@ -77,3 +77,13 @@ class UnsignedInteger(type.Integer):
     def name(self):
         return "uint%d" % self.width()
 
+@operator.Power(UnsignedInteger, UnsignedInteger)
+class _:
+    def type(e1, e2):
+        return integer._checkTypes(e1, e2)
+
+    def evaluate(cg, e1, e2):
+        (e1, e2) = integer._extendOps(cg, e1, e2)
+        tmp = cg.builder().addLocal("__pow", hilti.type.Integer(e1.type().width()))
+        cg.builder().int_pow(tmp, e1, e2)
+        return tmp

@@ -54,6 +54,21 @@ static uint64_t _makeInt64Unsigned(const hlt_type_info* type, const void *obj)
     return val;
 }
 
+uint64_t hlt_int_pow(uint64_t base, uint64_t exp, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    int result = 1;
+
+    while ( exp ) {
+        if ( exp % 2 )
+            result *= base;
+
+        exp >>= 1;
+        base *= base;
+    }
+
+    return result;
+}
+
 hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** exception, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_INTEGER);

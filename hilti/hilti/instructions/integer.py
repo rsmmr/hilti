@@ -357,6 +357,23 @@ class Mul(Instruction):
         result = cg.builder().mul(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
+@hlt.instruction("int.pow", op1=cInteger, op2=cInteger, target=cInteger)
+class Pow(Instruction):
+    """Raise *op1* to the power *op2*. Note that both *op1* and *op2* are
+    interpreted as unsigned integers. If the result overflows the target's
+    type, the result is undefined.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        op2 = cg.llvmOp(self.op2())
+        op1 = cg.builder().zext(op1, llvm.core.Type.int(64))
+        op2 = cg.builder().zext(op2, llvm.core.Type.int(64))
+        op1 = (op1, type.Integer(64))
+        op2 = (op2, type.Integer(64))
+        result = cg.llvmCallC("hlt::int_pow", [op1, op2])
+        result = cg.builder().trunc(result, llvm.core.Type.int(self.target().type().width()))
+        cg.llvmStoreInTarget(self, result)
+
 @hlt.instruction("int.div", op1=cIntegerOfWidthAsOp(0), op2=cNonZero(cIntegerOfWidthAsOp(0)), target=cInteger)
 class Div(Instruction):
     """
