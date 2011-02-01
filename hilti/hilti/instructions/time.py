@@ -73,7 +73,10 @@ class Time(type.ValueType, type.Constable):
         return cg.llvmConstInt(secs * 1000000000 + nano, 64)
 
     def outputConstant(self, printer, const):
-        printer.output("%.9f" % const.value())
+        secs = const.value()[0]
+        frac = const.value()[1] / 1e9
+        frac = "%.9f" % frac
+        printer.output("time(%d.%s)" % (secs, frac[2:]))
 
 @hlt.constraint("int<32> | double")
 def _int_or_double(ty, op, i):

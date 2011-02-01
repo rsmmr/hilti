@@ -121,27 +121,10 @@ attribute; they are all class methods.
    Throws: ~~CoerceError if the coerce is not possible. There's no need to augment
    the exception with an explaining string as that will be added automatically.
 
-.. function:: canCoerceTo(srctype, dsttype):
-
-   Optional. Applies only to the ~~Coerce operator. Checks whether we can
-   coerce a non-constant expression of the operator's type to another type.
-
-   *srctype*: ~~Type - The type to coerce an expression from.
-   *dsttype*: ~~Type - The type to coerce an expression into.
-
-   Note: The return value of this method should match with what
-   ~~coerceCtorTo and ~~coerceExprTo are able to do. If in doubt,
-   this function should accept a superset of what those methods can
-   do (with them then raising exceptions if necessary).
-
-   Returns: bool - True if the coerce is possible.
-
-.. function:: coerceExprTo(cg, expr, dsttype):
+.. function:: coerceTo(cg, expr, dsttype):
 
    Optional. Applies only to the ~~Coerce operator. Coerces a non-constant
-   expression of the operator's type to another type. This function will only
-   be called if the corresponding ~~canCoerceTo indicates that the
-   coerce is possible.
+   expression of the operator's type to another type.
 
    *cg*: ~~CodeGen - The current code generator.
    *expr*: ~~Expression - The expression to coerce.
@@ -154,6 +137,10 @@ attribute; they are all class methods.
    operator does not need to deal with things the Coerce operator already
    does. Coercion will always be tried first for a cast, and if that works,
    we're done.
+
+.. todo:: The implementation of overloaded operators in ``operator.py`` has
+   become quite messy. This file needs a significant cleanup.
+
 """
 
 import sys
@@ -382,9 +369,9 @@ def canCoerceExprTo(e, dsttype):
         return True
 
     if isinstance(e, expr.Ctor):
-        return _findOp("coerceCtorTo", Operator.Coerce, [e.type(), dsttype])
+        return _findOp("coerceCtorTo", Operator.Coerce, [e, dsttype])
     else:
-        return canCoerceTo(e.type(), dsttype)
+        return _findOp("coerceTo", Operator.Coerce, [e, dsttype])
 
 def canCoerceTo(srctype, dsttype):
     """Returns whether an expression of the given type (assumed to be
@@ -423,6 +410,7 @@ def coerceExprTo(cg, expr, dsttype):
         return expr
 
     func = _findOp("coerceTo", Operator.Coerce, [expr, dsttype])
+    assert func != None
     return func(cg, expr, dsttype)
 
 def coerceCtorTo(e, dsttype):

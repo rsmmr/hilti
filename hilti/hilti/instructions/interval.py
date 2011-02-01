@@ -71,7 +71,11 @@ class Interval(type.ValueType, type.Constable):
         return cg.llvmConstInt(secs * 1000000000 + nano, 64)
 
     def outputConstant(self, printer, const):
-        printer.output("%.9f" % const.value())
+        secs = const.value()[0]
+        frac = const.value()[1] / 1e9
+        frac = "%.9f" % frac
+
+        printer.output("interval(%d.%s)" % (secs, frac[2:]))
 
 @hlt.constraint("int<32> | double")
 def _int_or_double(ty, op, i):
@@ -106,15 +110,37 @@ class Sub(Instruction):
         result = cg.builder().sub(op1, op2)
         cg.llvmStoreInTarget(self, result)
 
+@hlt.instruction("interval.mul", op1=cInterval, op2=cIntegerOfWidth(64), target=cInterval)
+class Sub(Instruction):
+    """
+    Subtracts interval *op2* to the interval *op1*
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        op2 = cg.llvmOp(self.op2())
+        result = cg.builder().mul(op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
 @hlt.instruction("interval.lt",  op1=cInterval, op2=cInterval, target=cBool)
 class Lt(Instruction):
     """
-    Returns True if the interval represented by *op1* is earlier than that of *op2*.
+    Returns True if the interval represented by *op1* is shorter than that of *op2*.
     """
     def _codegen(self, cg):
         op1 = cg.llvmOp(self.op1())
         op2 = cg.llvmOp(self.op2())
         result = cg.builder().icmp(llvm.core.IPRED_SLT, op1, op2)
+        cg.llvmStoreInTarget(self, result)
+
+@hlt.instruction("interval.gt",  op1=cInterval, op2=cInterval, target=cBool)
+class Gt(Instruction):
+    """
+    Returns True if the interval represented by *op1* is larger than that of *op2*.
+    """
+    def _codegen(self, cg):
+        op1 = cg.llvmOp(self.op1())
+        op2 = cg.llvmOp(self.op2())
+        result = cg.builder().icmp(llvm.core.IPRED_SGT, op1, op2)
         cg.llvmStoreInTarget(self, result)
 
 @hlt.instruction("interval.eq",  op1=cInterval, op2=cInterval, target=cBool)

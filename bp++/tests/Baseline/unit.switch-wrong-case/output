@@ -1,1 +1,1 @@
-switch-wrong-case.pac2:14: codegen error, case expression is of type uint64, but must be bytes
+switch-wrong-case.pac2:14: validation error, case expression is of type uint64, but must be bytes

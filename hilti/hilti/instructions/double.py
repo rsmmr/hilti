@@ -61,7 +61,10 @@ class Double(type.ValueType, type.Constable):
         return cg.llvmConstDouble(self._float(const))
 
     def outputConstant(self, printer, const):
-        printer.output("%f" % self._float(const))
+        secs = const.value()[0]
+        frac = const.value()[1] / 1e9
+        frac = "%.9f" % frac
+        printer.output("%d.%s" % (secs, frac[2:]))
 
 @hlt.instruction("double.add", op1=cDouble, op2=cDouble, target=cDouble)
 class Add(Instruction):

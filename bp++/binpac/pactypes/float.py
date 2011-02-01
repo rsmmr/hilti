@@ -189,7 +189,7 @@ class _:
 
     def evaluate(cg, e, t):
         tmp = cg.builder().addLocal("__sint", t.hiltiType(cg))
-        cg.builder().double_sint(tmp, e.evaluate(cg))
+        cg.builder().double_as_sint(tmp, e.evaluate(cg))
         return tmp
 
 @operator.Cast(Float, type.UnsignedInteger)
@@ -199,5 +199,5 @@ class _:
 
     def evaluate(cg, e, t):
         tmp = cg.builder().addLocal("__uint", t.hiltiType(cg))
-        cg.builder().double_uint(tmp, e.evaluate(cg))
+        cg.builder().double_as_uint(tmp, e.evaluate(cg))
         return tmp

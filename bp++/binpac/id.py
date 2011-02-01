@@ -152,6 +152,8 @@ class ID(node.Node):
     def _validate(self, vld):
         super(ID, self)._validate(vld)
 
+        self._type.validate(vld)
+
     ### Methods for derived classes to override.
 
     def evaluate(self, cg):

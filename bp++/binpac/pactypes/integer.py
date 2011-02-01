@@ -213,31 +213,13 @@ class Integer(type.ParseableWithByteOrder):
     def _shr(self, cg, target, val1, val2):
         util.internal_error("method not overridden")
 
-def _dstType(e1, e2):
-    return e1.type()._typeOfWidth(max(e1.type().width(), e2.type().width()))
-
-def _extendOps(cg, e1, e2):
-    ty = e1.type()
-    w = max(e1.type().width(), e2.type().width())
-    e1 = e1.evaluate(cg)
-    e2 = e2.evaluate(cg)
-    tmp = None
-
-    if e1.type().width() < w:
-        tmp = cg.builder().addLocal("__extop1", hilti.type.Integer(w))
-        ty._ext(cg, tmp, e1)
-        e1 = tmp
-
-    if e2.type().width() < w:
-        tmp = cg.builder().addLocal("__extop2", hilti.type.Integer(w))
-        ty._ext(cg, tmp, e2)
-        e2 = tmp
-
-    return (e1, e2)
-
-
 def _coerce_integer(ops):
     assert(len(ops)) == 2
+
+    ty1 = ops[0].type() if isinstance(ops[0], expr.Expression) else ops[0]
+
+    if not isinstance(ty1, Integer) or not isinstance(ops[1], Integer):
+        return operator.NoMatch
 
     if isinstance(ops[0], expr.Ctor):
         val = ops[0].value()
@@ -245,29 +227,83 @@ def _coerce_integer(ops):
         return operator.Match if val >= min and val <= max else operator.NoMatch
 
     for cls in (type.SignedInteger, type.UnsignedInteger):
-        if isinstance(ops[0], cls) and isinstance(ops[1], cls):
-            if ops[0].width() <= ops[1].width():
-                return operator.NoMatch
+        if isinstance(ty1, cls) and isinstance(ops[1], cls):
+            if ops[0].type().width() <= ops[1].width():
+                return operator.Match
 
     return operator.NoMatch
 
-def _coerce_other_integer(ops):
+def _coerce_type(ops):
     # The check for the first integer type already does what we need.
     return operator.Match
+
+def _extendOps(cg, e1, e2):
+    ty = _checkTypes(e1, e2)
+
+    assert ty
+    w = ty.width()
+    e1 = e1.evaluate(cg)
+    e2 = e2.evaluate(cg)
+    tmp = None
+
+    if isinstance(e1, hilti.operand.Constant):
+        e1 = hilti.operand.Constant(hilti.constant.Constant(e1.value().value(), hilti.type.Integer(ty.width())))
+
+    elif e1.type().width() < w:
+        tmp = cg.builder().addLocal("__extop1", hilti.type.Integer(w))
+        ty._ext(cg, tmp, e1)
+        e1 = tmp
+
+    if isinstance(e2, hilti.operand.Constant):
+        e2 = hilti.operand.Constant(hilti.constant.Constant(e2.value().value(), hilti.type.Integer(ty.width())))
+
+    elif e2.type().width() < w:
+        tmp = cg.builder().addLocal("__extop2", hilti.type.Integer(w))
+        ty._ext(cg, tmp, e2)
+        e2 = tmp
+
+    return (e1, e2)
+
+def _checkRange(ctor, ty):
+    (min, max) = ty._range()
+    return ty if ctor.value() >= min and ctor.value() <= max else None
+
+def _checkTypes(e1, e2):
+    t1 = e1.type()
+    t2 = e2.type()
+
+    tmax = t1 if t1.width() >= t2.width() else t2
+
+    if isinstance(e1, expr.Ctor):
+        if isinstance(e2, expr.Ctor):
+            if t1.__class__ == t2.__class__:
+                return tmax
+            else:
+                return type.SignedInteger(tmax.width())
+
+        return _checkRange(e1, t2)
+
+    if isinstance(e2, expr.Ctor):
+        return _checkRange(e2, t1)
+
+    if t1.__class__ != t2.__class__:
+        return None
+
+    return tmax
 
 @operator.Plus(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() + e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -280,16 +316,16 @@ class _:
 @operator.Minus(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() - e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -302,20 +338,19 @@ class _:
 @operator.Div(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
-    def validate(vld, e1, e2):
         if isinstance(e2, expr.Ctor) and e2.value() == 0:
             vld.error(e2, "division by zero")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() / e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -328,20 +363,19 @@ class _:
 @operator.Mod(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
-    def validate(vld, e1, e2):
         if isinstance(e2, expr.Ctor) and e2.value() == 0:
             vld.error(e2, "division by zero")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() % e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -354,20 +388,16 @@ class _:
 @operator.Mult(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
-
-    def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() * e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -380,16 +410,16 @@ class _:
 @operator.BitAnd(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() & e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -402,16 +432,16 @@ class _:
 @operator.BitOr(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() | e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -425,16 +455,16 @@ class _:
 @operator.BitXor(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() ^ e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -447,16 +477,16 @@ class _:
 @operator.ShiftLeft(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() << e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -469,16 +499,16 @@ class _:
 @operator.ShiftRight(Integer, Integer)
 class _:
     def type(e1, e2):
-        return _dstType(e1, e2)
+        return _checkTypes(e1, e2)
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if isinstance(e1, expr.Ctor) and isinstance(e2, expr.Ctor):
             val = e1.value() >> e2.value()
-            return expr.Ctor(val, _dstType(e1, e2))
+            return expr.Ctor(val, _checkTypes(e1, e2))
 
         return None
 
@@ -495,8 +525,8 @@ class _:
         return type.Bool()
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if not isinstance(e1, expr.Ctor) or not isinstance(e2, expr.Ctor):
@@ -517,8 +547,8 @@ class _:
         return type.Bool()
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if not isinstance(e1, expr.Ctor) or not isinstance(e2, expr.Ctor):
@@ -540,8 +570,8 @@ class _:
         return type.Bool()
 
     def validate(vld, e1, e2):
-        if e1.type().__class__ != e2.type().__class__:
-            vld.error(e1, "mix of signed and unsigned integers")
+        if not _checkTypes(e1, e2):
+            vld.error(e1, "incompatible integer types")
 
     def simplify(e1, e2):
         if not isinstance(e1, expr.Ctor) or not isinstance(e2, expr.Ctor):
@@ -579,7 +609,7 @@ class _:
 
         for (attr, ex) in attrs:
             assert attr == "convert"
-            tmp = operator.evaluate(operator.Operator.Call, cg, [ex, [expr.Hilti(tmp, UnsignedInteger(tmp.type().width()))]])
+            tmp = operator.evaluate(operator.Operator.Call, cg, [ex, [expr.Hilti(tmp, lhs.type()._typeOfWidth(tmp.type().width()))]])
 
         return tmp
 
@@ -597,7 +627,7 @@ class _:
         cg.builder().bool_not(tmp, tmp)
         return expr.Hilti(tmp, type.Bool())
 
-@operator.Coerce(_coerce_integer, _coerce_other_integer)
+@operator.Coerce(_coerce_integer, _coerce_type)
 class _:
     def coerceCtorTo(ctor, dsttype):
         return ctor

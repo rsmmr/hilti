@@ -276,7 +276,9 @@ class Field(node.Node):
             (expr, ty) = self._resolveWithConstant(resolver, dd.type())
             dd.setType(ty.parsedType())
 
-    def validate(self, vld):
+    def _validate(self, vld):
+        super(Field, self).validate(vld)
+
         if self._value:
             util.check_class(self._value, expr.Expression, "Field.validate")
 
@@ -394,8 +396,8 @@ class SwitchField(Field):
             elif field.type() == names[name]:
                 field.setNoID()
 
-    def validate(self, vld):
-        Field.validate(self, vld)
+    def _validate(self, vld):
+        super(SwitchField, self).validate(vld)
 
         self._expr.validate(vld)
 
@@ -497,8 +499,8 @@ class SwitchFieldCase(SubField):
         for expr in self._exprs:
             expr.resolve(resolver)
 
-    def validate(self, vld):
-        SubField.validate(self, vld)
+    def _validate(self, vld):
+        super(SwitchFieldCase, self).validate(vld)
 
         assert self._default or self._exprs
 
@@ -715,7 +717,7 @@ class Unit(type.ParseableType, property.Container):
         self.resolveProperties(resolver)
 
     def validate(self, vld):
-        type.ParseableType.validate(self, vld)
+        super(Unit, self).validate(vld)
 
         g = self.grammar()
         if g.name() == "Message":

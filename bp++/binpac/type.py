@@ -299,9 +299,6 @@ class Type(object):
         """
         return []
 
-    def validate(self, vld):
-        Type.validate(self, vld)
-
     def _resolve(self, resolver):
         """XXXX"""
         for expr in self._attrs.values():
@@ -321,7 +318,6 @@ class Type(object):
 
         vld: ~~Validator - The validator triggering the validation.
         """
-
         for (name, expr) in self._attrs.items():
 
             all = self.supportedAttributes()
@@ -474,7 +470,7 @@ class Type(object):
             if p1 != p2:
                 return False
 
-        return True
+        return self.name() == other.name()
 
 class ParseableType(Type):
     """Type that can be parsed from an input stream. Only these types can be
