@@ -16,6 +16,10 @@ Code Generator
   problem when compiling in memory with hilti-build2, but will
   generate illegal code when writing the *.hlt to disk. 
 
+- vectors: we should do a vector_resize(n) at the beginning to set the
+  vector to the right size. There's no good interface for doing that
+  yet though without evaluating the length expression multiple times.
+
 Code Structure
 --------------
 

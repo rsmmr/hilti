@@ -11,6 +11,8 @@ import type
 import binpac.util as util
 import binpac.pgen as pgen
 import binpac.expr as expr
+import binpac.stmt as stmt
+import binpac.grammar as grammar
 import binpac.operator as operator
 
 import hilti.constant
@@ -732,17 +734,190 @@ class Iterable:
         """
         util.internal_error("Type.iterType() not overidden for %s" % self.__class__)
 
-class Container(ParseableType, Iterable):
-    """A parseable type that is a container, i.e., a collection of items of a
-    particular type.
+class Container(Type, Iterable):
+    """A type that is a container, i.e., a collection of items of a particular
+    type.
 
-    Todo: Currently, there are no method in this class, we just use it as a
-    trait to idenify containers. ~~List is the only container we have
-    currently, but once we have more, we should move their shared methods
-    (e.g., ~~itemType) to here. We also need to provide iterType, probably
-    just be return itemType.
+    ty: ~~Type or ~~Expr - The type of the container elements. If an
+    expression, its type defines the item type.
     """
-    pass
+    def __init__(self, ty, location=None):
+        super(Container, self).__init__(location=location)
+        self._item = ty
+
+    def itemType(self):
+        """Returns the type of the container elements.
+
+        Returns: ~~Type - The type of the container elements.
+        """
+        if isinstance(self._item, expr.Expression):
+            self._item = self._item.type()
+
+        return self._item.parsedType()
+
+    def setItemType(self, ty):
+        """XXX"""
+        self._item = ty
+
+    def _resolve(self, resolver):
+        super(Container, self)._resolve(resolver)
+        self._item = self._item.resolve(resolver)
+
+    def validate(self, vld):
+        super(Container, self).validate(vld)
+        self._item.validate(vld)
+
+class ParseableContainer(type.Container, type.ParseableType):
+    """A parseable container type.
+
+    ty: ~~Type or ~~Expr - The type of the container elements. If an
+    expression, its type defines the item type.
+
+    value: ~~Expr - If the container elements are specified via a constant,
+    this expression gives that (e.g., regular expression constants for parsing
+    bytes). None otherwise.
+
+    itemargs: vector of ~~Expr - Optional parameters for parsing the items.
+    Only valid if the item type is a ~~Unit.  None otherwise.
+
+    location: ~~Location - A location object describing the point of
+    definition.
+    """
+    def __init__(self, ty, value=None, item_args=None, location=None):
+        super(ParseableContainer, self).__init__(ty, location=location)
+        self._item_args = item_args
+        self._prod = None
+        self._value = value
+        self._field = None
+
+    ### Overridden from Type.
+
+    def name(self):
+        return "%s<%s>" % (self.typeName(), self.itemType().name())
+
+    def _resolve(self, resolver):
+        # Before we call the parent's method, let's see if our type 
+        # actually resolved to a constant.
+        old_item = self.itemType()
+
+        if isinstance(self.itemType(), type.Unknown):
+
+            (val, ty) = resolver.lookupTypeID(self.itemType())
+
+            self._value = val
+            self.setItemType(ty)
+
+        super(ParseableContainer, self)._resolve(resolver)
+
+        self._item.copyAttributesFrom(old_item)
+
+        if self._value:
+            self._value.resolve(resolver)
+
+        if self._item_args:
+            for p in self._item_args:
+                p.resolve(resolver)
+
+    def validate(self, vld):
+        super(ParseableContainer, self).validate(vld)
+
+        if self._value:
+            self._value.validate(vld)
+
+        if self._item_args and not isinstance(self.itemType(), type.Unit):
+            vld.error(self, "parameters only allowed for unit types")
+
+        if self._item_args:
+            for p in self._item_args:
+                p.validate(vld)
+
+    def validateCtor(self, vld, value):
+        if not isinstance(value, list) and not isinstance(value, tuple):
+            vld.error(self, "%s: ctor value of wrong internal type" % str(self))
+
+        for elem in value:
+            if not isinstance(elem, expr.Expression):
+                vld.error(self, "%s: ctor value's elements of wrong internal type" % str(self))
+
+            if elem.type() != self.itemType():
+                vld.error(self, "%s: ctor value must be of type %s" % (str(self), elem.type()))
+
+            elem.validate(vld)
+
+    def pac(self, printer):
+        printer.output("%s<" % self.__class__.typeName())
+        self.itemType().pac(printer)
+        printer.output(">")
+
+    def pacCtor(self, printer, elems):
+        printer.output("%s<" % self.__class__.typeName())
+        self.itemType().pac(printer)
+        printer.output(">(")
+        for i in range(len(elems)):
+            self.itemType().pacCtor(printer, elems[i])
+            if i != len(elems) - 1:
+                printer.output(", ")
+        printer.output(")")
+
+    ### Overridden from ParseableType.
+
+    def initParser(self, field):
+        self._field = field
+
+    def _itemProduction(self, field):
+        """Todo: This is pretty ugly and mostly copied from
+        ~~unit.Field.production. We should probably use a ~~unit.Field as our
+        item type directly."""
+        if self._value:
+            for t in type._AllowedConstantTypes:
+                if isinstance(self.itemType(), t):
+                    prod = grammar.Literal(None, self._value, location=self._location)
+                    break
+            else:
+                util.internal_error("unexpected constant type for literal")
+
+        else:
+            prod = self.itemType().production(field)
+            assert prod
+
+            if self._item_args:
+                prod.setParams(self._item_args)
+
+        return prod
+
+    def containerProduction(self, field, item):
+        """XXXX"""
+        util.internal_error("not overridden")
+
+    def production(self, field):
+        if self._prod:
+            return self._prod
+
+        loc = self.location()
+        item = self._itemProduction(field)
+        item.setForEachField(field)
+        unit = field.parent()
+
+        if field.name():
+            # Create a high-priority hook that pushes each element into the
+            # container as it is parsed.
+            hook = stmt.FieldForEachHook(unit, field, 254)
+
+            # Create a "vector.push_back($$)" statement for the internal_hook.
+            loc = None
+            dollar = expr.Name("__dollardollar", hook.scope(), location=loc)
+            slf = expr.Name("__self", hook.scope(), location=loc)
+            vector = expr.Attribute(field.name(), location=loc)
+            method = expr.Attribute("push_back", location=loc)
+            attr = expr.Overloaded(operator.Operator.Attribute, (slf, vector), location=loc)
+            push_back = expr.Overloaded(operator.Operator.MethodCall, (attr, method, [dollar]), location=loc)
+            push_back = stmt.Expression(push_back, location=loc)
+
+            hook.setStmts(stmt.Block(None, stmts=[push_back]))
+            unit.module().addHook(hook)
+
+        self._prod = self.containerProduction(field, item)
+        return self._prod
 
 class Iterator(Type):
     """Type for iterating over elements stored by an instance of another type.
@@ -783,7 +958,7 @@ class Iterator(Type):
     def _resolve(self, resolver):
         self._type = self._type.resolve(resolver)
 
-    def _validate(self, vld):
+    def validate(self, vld):
         self._type.validate(vld)
 
         if not isinstance(self._type, Iterable):

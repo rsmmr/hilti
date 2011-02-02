@@ -18,3 +18,7 @@ import stmt
 import printer
 import parser
 import lexer
+
+# FIXME: We hardcode the constant types we support here. Should do
+# that somewhere else.
+type._AllowedConstantTypes = (type.Bytes, type.RegExp)

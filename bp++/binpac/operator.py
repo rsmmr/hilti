@@ -237,6 +237,7 @@ _Operators = {
     "ShiftRight": (2, "Bitwise shift left for integer values. (``a >> b``)", _pacBinary(">>")),
     "Power": (2, "Raising to a power (``a ** b``)", _pacBinary("**")),
     "PlusAssign": (2, "Adds to an operand in place (`` a += b``)", _pacBinary("+=")),
+    "IndexAssign": (3, "Assigns a value to a specific index (``a[i] = b``)", _pacBinary("<IndexAssign>")),
     "Lower": (2, "Lower than comparision. (``a < b``)", _pacBinary("<")),
     "Greater": (2, "Greater than comparision. (``a > b``)", _pacBinary(">")),
     "IncrPrefix": (1, "Prefix increment operator (`++i`)", _pacUnary("++")),

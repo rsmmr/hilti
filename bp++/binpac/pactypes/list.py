@@ -23,98 +23,26 @@ import hilti.operand
 import copy
 
 @type.pac("list")
-class List(type.Container):
+class List(type.ParseableContainer):
     """Type for list objects.
 
-    itemty: ~~Type or ~~Expr - The type of the list elements. If an
-    expression, it's type defines the item type. In the latter case,
-    determining the type is deferred to later, so that even works if the
-    expressions type is not determined yet. 
-    value: ~~Expr - The value for lists of constants, or None otherwise.
-    itemargs: list of ~~Expr - Optional parameters for parsing the items. Only valid
-    if the type is a ~~Unit and used inside another unit's field.
-    location: ~~Location - A location object describing the point of definition.
+    ty: ~~Type or ~~Expr - The type of the container elements. If an
+    expression, its type defines the item type.
+
+    value: ~~Expr - If the container elements are specified via a constant,
+    this expression gives that (e.g., regular expression constants for parsing
+    bytes). None otherwise.
+
+    itemargs: list of ~~Expr - Optional parameters for parsing the items.
+    Only valid if the item type is a ~~Unit.  None otherwise.
+
+    location: ~~Location - A location object describing the point of
+    definition.
     """
-    def __init__(self, itemty, value=None, item_args=None, location=None):
-        super(List, self).__init__(location=location)
-        self._item = itemty
-        self._item_args = item_args
-        self._prod = None
-        self._value = value
-        self._field = None
-
-    def itemType(self):
-        """Returns the type of the list elements.
-
-        Returns: ~~Type - The type of the list elements.
-        """
-        if isinstance(self._item, expr.Expression):
-            self._item = self._item.type()
-
-        return self._item.parsedType()
+    def __init__(self, ty, value=None, item_args=None, location=None):
+        super(List, self).__init__(ty, value, item_args, location=location)
 
     ### Overridden from Type.
-
-    def name(self):
-        return "list<%s>" % self.itemType().name()
-
-    def _resolve(self, resolver):
-        super(List, self)._resolve(resolver)
-
-        if self.itemType():
-            # FIXME: This block is copied from unit.Field.resolve
-            old_item = self.itemType()
-
-            # Before we resolve the type, let's see if it's actually refering
-            # to a constanst.
-            if isinstance(self.itemType(), type.Unknown):
-                i = resolver.scope().lookupID(self.itemType().idName())
-
-                if i and isinstance(i, id.Constant):
-                    self._value = i.expr()
-                    self._item = i.expr().type()
-                else:
-                    self._item = self._item.resolve(resolver)
-
-            else:
-                self._item = self._item.resolve(resolver)
-
-            self._item.copyAttributesFrom(old_item)
-
-        if self._value:
-            self._value.resolve(resolver)
-
-        if self._item_args:
-            for p in self._item_args:
-                p.resolve(resolver)
-
-    def validate(self, vld):
-        type.ParseableType.validate(self, vld)
-        self.itemType().validate(vld)
-
-        if self._value:
-            self._value.validate(vld)
-
-        if self._item_args and not isinstance(self.itemType(), type.Unit):
-            vld.error(self, "parameters only allowed for unit types")
-
-        if self._item_args:
-            for p in self._item_args:
-                p.validate(vld)
-
-    def validateCtor(self, vld, value):
-        if not isinstance(value, list):
-            vld.error(self, "list: ctor value of wrong internal type")
-
-        for elem in value:
-            if not isinstance(elem, expr.Expression):
-                vld.error(self, "list: ctor value's elements of wrong internal type")
-
-        for elem in value:
-            if elem.type() != self.itemType():
-                vld.error(self, "list: ctor value must be of type %s" % elem.type())
-
-            elem.validate(vld)
 
     def hiltiCtor(self, cg, value):
         elems = [e.evaluate(cg) for e in value]
@@ -132,19 +60,6 @@ class List(type.Container):
     def hiltiUnitDefault(self, cg):
         return self.hiltiDefault(cg)
 
-    def pac(self, printer):
-        printer.output("list<")
-        self.itemType().pac(printer)
-        printer.output(">")
-
-    def pacCtor(self, printer, elems):
-        printer.output("[")
-        for i in range(len(elems)):
-            self.itemType().pacCtor(printer, elems[i])
-            if i != len(elems) - 1:
-                printer.output(", ")
-        printer.output("]")
-
     ### Overridden from ParseableType.
 
     def supportedAttributes(self):
@@ -153,56 +68,11 @@ class List(type.Container):
             "until": (type.Bool(), False, None)
             }
 
-    def initParser(self, field):
-        self._field = field
+    ### Overridden from ParseableContainer.
 
-    def _itemProduction(self, field):
-        """Todo: This is pretty ugly and mostly copied from
-        ~~unit.Field.production. We should probably use a ~~unit.Field as our
-        item type directly."""
-        if self._value:
-            for t in unit._AllowedConstantTypes:
-                if isinstance(self.itemType(), t):
-                    prod = grammar.Literal(None, self._value, location=self._location)
-                    break
-            else:
-                util.internal_error("unexpected constant type for literal")
-
-        else:
-            prod = self.itemType().production(field)
-            assert prod
-
-            if self._item_args:
-                prod.setParams(self._item_args)
-
-        return prod
-
-    def production(self, field):
-        if self._prod:
-            return self._prod
-
-        loc = self.location()
-        item = self._itemProduction(field)
-        item.setForEachField(field)
+    def containerProduction(self, field, item):
+        loc = field.location()
         unit = field.parent()
-
-        if field.name():
-            # Create a high-priority hook that pushes each element into the list
-            # as it is parsed.
-            hook = stmt.FieldForEachHook(unit, field, 254)
-
-            # Create a "list.push_back($$)" statement for the internal_hook.
-            loc = None
-            dollar = expr.Name("__dollardollar", hook.scope(), location=loc)
-            slf = expr.Name("__self", hook.scope(), location=loc)
-            list = expr.Attribute(field.name(), location=loc)
-            method = expr.Attribute("push_back", location=loc)
-            attr = expr.Overloaded(operator.Operator.Attribute, (slf, list), location=loc)
-            push_back = expr.Overloaded(operator.Operator.MethodCall, (attr, method, [dollar]), location=loc)
-            push_back = stmt.Expression(push_back, location=loc)
-
-            hook.setStmts(stmt.Block(None, stmts=[push_back]))
-            unit.module().addHook(hook)
 
         until = self.attributeExpr("until")
         length = self.attributeExpr("length")
@@ -248,8 +118,8 @@ class List(type.Container):
 
             l1 = l2
 
-        self._prod = l1
-        return self._prod
+        return l1
+
 
 def itemType(exprs):
     return exprs[0].type().itemType()

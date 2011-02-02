@@ -1,0 +1,22 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+print vector(1, 2, 3);
+print vector<string>();
+
+global v: vector<string> = vector("foo", "bar");
+
+print v;
+
+print v[0];
+print v[1];
+
+v.push_back("XYZ");
+print v[2];
+
+print |v|;

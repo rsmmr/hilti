@@ -272,6 +272,11 @@ def p_list(p):
     ((val, ty), args) = p[3]
     p[0] = type.List(ty, value=val, item_args=args, location=_loc(p, 1))
 
+def p_vector(p):
+    """builtin_type : VECTOR '<' unit_field_type '>'"""
+    ((val, ty), args) = p[3]
+    p[0] = type.Vector(ty, value=val, item_args=args, location=_loc(p, 1))
+
  # Iterators.
 def p_iterator(p):
     """builtin_type : ITER '<' type '>'"""
@@ -518,6 +523,13 @@ def p_unit_field_type_ident(p):
     val = (None, type.Unknown(p[1], location=_loc(p, 1)))
     p[0] = (val, p[2])
 
+def p_unit_field_type_vector(p):
+    """unit_field_type : unit_field_type '[' expr ']'"""
+    ((val, ty), args) = p[1]
+    length = p[3];
+    vty = type.Vector(ty, value=val, item_args=args, length=length, location=_loc(p, 1))
+    p[0] = ((None, vty), [])
+
 def p_unit_field_type_builtin_type(p):
     """unit_field_type : builtin_type opt_unit_field_params"""
     p[0] = ((None, p[1]), p[2])
@@ -599,7 +611,7 @@ def p_ctor_regexp(p):
     p[0] = expr.Ctor(p[1], type.RegExp(), location=_loc(p, 1))
 
 def p_ctor_list(p):
-    """ctor : '[' opt_ctor_list_list ']'
+    """ctor : '[' opt_initializer_list ']'
             | LIST '<' type '>' '(' ')'"""
     if len(p) > 4:
         val = []
@@ -613,14 +625,29 @@ def p_ctor_list(p):
 
     p[0] = expr.Ctor(val, type.List(ty))
 
-def p_opt_ctor_list_list(p):
-    """opt_ctor_list_list : ctor_list_list
-                          | """
+def p_ctor_vector(p):
+    """ctor : VECTOR '(' opt_initializer_list ')'
+            | VECTOR '<' type '>' '(' opt_initializer_list ')'"""
+    if len(p) > 5:
+        val = p[6]
+        ty = p[3]
+    else:
+        if not len(p[2]):
+            util.parser_error(p, "vector ctors cannot be empty (use vector<T>() instead)")
+            raise SyntaxError
+        val = p[3]
+        ty = p[3][0]
+
+    p[0] = expr.Ctor(val, type.Vector(ty))
+
+def p_opt_initializer_list(p):
+    """opt_initializer_list : initializer_list
+                     | """
     p[0] = p[1] if len(p) > 1 else []
 
-def p_ctor_list_list(p):
-    """ctor_list_list : ctor_or_expr ',' ctor_list_list
-                      | ctor_or_expr """
+def p_initializer_list(p):
+    """initializer_list : ctor_or_expr ',' initializer_list
+                 | ctor_or_expr """
     p[0] = [p[1]] + p[3] if len(p) > 2 else [p[1]]
 
 def p_ctor_or_expr(p):
@@ -629,7 +656,7 @@ def p_ctor_or_expr(p):
     p[0] = p[1]
 
 def p_ctor_tuple(p):
-    """ctor : '(' ctor ',' ctor_list_list ')'"""
+    """ctor : '(' ctor ',' initializer_list ')'"""
     ctors = [p[2]] + p[4]
     types = [c.type() for c in ctors]
     p[0] = expr.Ctor(ctors, type.Tuple(types))
@@ -802,6 +829,10 @@ def p_expr_greater(p):
 def p_expr_add_assign(p):
     """expr : expr PLUSEQUAL expr"""
     p[0] = expr.Overloaded(Operator.PlusAssign, (p[1], p[3]), location=_loc(p, 1))
+
+def p_expr_index_assign(p):
+    """expr : expr '[' expr ']' '=' expr"""
+    p[0] = expr.Overloaded(Operator.IndexAssign, (p[1], p[3]. p[6]), location=_loc(p, 1))
 
 def p_expr_method_call(p):
     """expr : expr '.' IDENT '(' opt_expr_list ')'"""

@@ -1,6 +1,7 @@
 # $Id$
 
 import binpac.util as util
+import binpac.id as id
 
 class Resolver(object):
     """Class that resolves all still unresolved identifiers in a module."""
@@ -41,6 +42,21 @@ class Resolver(object):
         Returns: ~~Scope - The scope, or None if ~~resolve is not running.
         """
         return self._scope
+
+    def lookupTypeID(self, ty):
+        """XXXX"""
+        # Before we resolve the type, let's see if it's actually refering
+        # to a constanst.
+        i = self.scope().lookupID(ty.idName())
+
+        if i and isinstance(i, id.Constant):
+            val = i.expr()
+            ty = i.expr().type()
+        else:
+            val = None
+            ty = ty.resolve(self)
+
+        return (val, ty)
 
     def already(self, node):
         """Checks whether a node has already been resolved. The first time
