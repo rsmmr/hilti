@@ -672,6 +672,15 @@ def p_operand_ctor(p):
         p[0] = operand.Ctor(ops, type.Reference(t), location=_loc(p, 1))
         return
 
+    if isinstance(p[1], type.Vector):
+        for op in ops:
+            if not op.canCoerceTo(t.itemType()):
+                util.parser_error(p, "vector element %s is of wrong type" % op)
+                raise SyntaxError
+
+        p[0] = operand.Ctor(ops, type.Reference(t), location=_loc(p, 1))
+        return
+
     util.parser_error(p, "type %s does not support constructor expression" % t)
     raise SyntaxError
 

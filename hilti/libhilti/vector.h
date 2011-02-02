@@ -24,6 +24,9 @@ extern void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** exc
 // Sets the element at the given index to the value.
 extern void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Appends the element to the vector.
+extern void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Returns the size of the vector (i.e., the largest valid index + 1 )
 extern hlt_vector_idx hlt_vector_size(hlt_vector* v, hlt_exception** excpt, hlt_execution_context* ctx);
 
@@ -46,5 +49,8 @@ extern void* hlt_vector_iter_deref(const hlt_vector_iter i, hlt_exception** excp
 
 // Returns true if two iterator locate the same element.
 extern int8_t hlt_vector_iter_eq(const hlt_vector_iter i1, const hlt_vector_iter i2, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Converts a vector into a string.
+extern hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

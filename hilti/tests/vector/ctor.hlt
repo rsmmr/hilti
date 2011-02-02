@@ -1,0 +1,27 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build2 %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global ref<vector<bool>> gl = vector<bool>(False, True, False)
+global ref<vector<string>> gl2 = vector<string>("foo", "bar")
+global ref<vector<ref<bytes>>> gl3 = vector<ref<bytes>>(b"123", b"345")
+global ref<vector<int64>> gl4 = vector<int<64>>(1, 2, 3)
+global ref<vector<int64>> gl5 = vector<int<64>>()
+
+void run() {
+    local ref<vector<bool>> l
+    l = vector<bool>(True, False, True)
+    call Hilti::print(l)
+
+    call Hilti::print(gl)
+    call Hilti::print(gl2)
+    call Hilti::print(gl3)
+    call Hilti::print(gl4)
+    call Hilti::print(gl5)
+}

@@ -60,7 +60,7 @@ class IteratorVector(type.Iterator):
         return t if t else type.Any()
 
 @hlt.type("vector", 15, c="hlt_vector *")
-class Vector(type.Container, type.Iterable):
+class Vector(type.Container, type.Constructable, type.Iterable):
     """Type for a ``vector``.
 
     t: ~~Type - The element type of the vector.
@@ -75,6 +75,7 @@ class Vector(type.Container, type.Iterable):
 
     def typeInfo(self, cg):
         typeinfo = cg.TypeInfo(self)
+        typeinfo.to_string = "hlt::vector_to_string"
         return typeinfo
 
     ### Overriden from Iterable.
@@ -82,6 +83,40 @@ class Vector(type.Container, type.Iterable):
     def iterType(self):
         return IteratorVector(self, location=self.location())
 
+    ### Overridden from Constructable.
+
+    def validateCtor(self, vld, val):
+        if not isinstance(val, list):
+            vld.error(self, "not a Python list")
+
+        for op in val:
+            op.validate(vld)
+            if not op.canCoerceTo(self.itemType()):
+                vld.error(self, "vector element not coercable to %s" % self.itemType())
+
+    def llvmCtor(self, cg, val):
+        default = (self.itemType().llvmDefault(cg), self.itemType())
+        vector = cg.llvmCallC("hlt::vector_new", [default], abort_on_except=True)
+        vecop = operand.LLVM(vector, type.Reference(self))
+        size = operand.Constant(constant.Constant(len(val), type.Integer(64)))
+        cg.llvmCallC("hlt::vector_reserve", [vecop, size], abort_on_except=True)
+
+        for o in val:
+            o = o.coerceTo(cg, self.itemType())
+            cg.llvmCallC("hlt::vector_push_back", [vecop, o], abort_on_except=True)
+
+        return vector
+
+    def outputCtor(self, printer, val):
+        printer.printType(self)
+        printer.output("(")
+        first = True
+        for op in val:
+            if not first:
+                printer.output(", ")
+            op.output(printer)
+            first = False
+        printer.output(")")
 
 @hlt.overload(New, op1=cType(cVector), target=cReferenceOfOp(1))
 class New(Operator):
@@ -109,6 +144,13 @@ class Set(Instruction):
         op2 = self.op2().coerceTo(cg, type.Integer(64))
         op3 = self.op3().coerceTo(cg, self.op1().type().refType().itemType())
         cg.llvmCallC("hlt::vector_set", [self.op1(), op2, op3])
+
+@hlt.instruction("vector.push_back", op1=cReferenceOf(cVector), op2=cItemTypeOfOp(1))
+class Set(Instruction):
+    """Sets the element at index *op2* in vector *op1* to *op3."""
+    def _codegen(self, cg):
+        op2 = self.op2().coerceTo(cg, self.op1().type().refType().itemType())
+        cg.llvmCallC("hlt::vector_push_back", [self.op1(), op2])
 
 @hlt.instruction("vector.size", op1=cReferenceOf(cVector), target=cIntegerOfWidth(64))
 class Size(Instruction):

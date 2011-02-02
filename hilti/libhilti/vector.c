@@ -92,6 +92,25 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
     memcpy(dst, val, v->type->size);
 }
 
+void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    assert(elemtype == v->type);
+
+    if ( v->last >= v->capacity ) {
+        // Allocate more memory.
+        hlt_vector_idx c = v->capacity * GrowthFactor;
+        hlt_vector_reserve(v, c, excpt, ctx);
+        if ( *excpt )
+            return;
+    }
+
+    ++v->last;
+
+    // Copy new value into vector.
+    void* dst = v->elems + v->last * v->type->size;
+    memcpy(dst, val, v->type->size);
+}
+
 hlt_vector_idx hlt_vector_size(hlt_vector* v, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return v->last + 1;
@@ -158,4 +177,53 @@ int8_t hlt_vector_iter_eq(const hlt_vector_iter i1, const hlt_vector_iter i2, hl
     return i1.vec == i2.vec && i1.idx == i2.idx;
 }
 
+static hlt_string_constant prefix = HLT_STRING_CONSTANT("[")
+static hlt_string_constant postfix = HLT_STRING_CONSTANT("]")
+static hlt_string_constant sep1 = HLT_STRING_CONSTANT(": ")
+static hlt_string_constant sep2 = HLT_STRING_CONSTANT(", ")
+
+extern const hlt_type_info hlt_type_info_int_64;
+
+hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    const hlt_vector* v = *((const hlt_vector**)obj);
+    hlt_string s = &prefix;
+
+    for ( hlt_vector_idx i = 0; i <= v->last; i++ ) {
+
+        hlt_string t;
+
+        if ( v->type->to_string )
+            t = (v->type->to_string)(v->type, v->elems + i * v->type->size, options, excpt, ctx);
+        else
+            // No format function.
+            t = hlt_string_from_asciiz(v->type->tag, excpt, ctx);
+
+        if ( *excpt )
+            return 0;
+
+        hlt_string istr = hlt_int_to_string(&hlt_type_info_int_64, &i, options, excpt, ctx);
+
+        s = hlt_string_concat(s, istr, excpt, ctx);
+        if ( *excpt )
+            return 0;
+
+        s = hlt_string_concat(s, &sep1, excpt, ctx);
+        if ( *excpt )
+            return 0;
+
+        s = hlt_string_concat(s, t, excpt, ctx);
+        if ( *excpt )
+            return 0;
+
+        if ( i < v->last ) {
+            s = hlt_string_concat(s, &sep2, excpt, ctx);
+            if ( *excpt )
+                return 0;
+        }
+    }
+
+    return hlt_string_concat(s, &postfix, excpt, ctx);
+
+}
 
