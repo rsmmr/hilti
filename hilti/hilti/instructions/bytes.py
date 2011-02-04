@@ -226,6 +226,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
                     block_body = cg.llvmNewBlock("loop-body-start")
                     block_cmp = cg.llvmNewBlock("loop-body-cmp")
                     block_exit = cg.llvmNewBlock("loop-exit")
+                    block_insufficient = cg.llvmNewBlock("unpack-out-of-input")
 
                     # Copy the start iterator.
                     builder = cg.builder()
@@ -242,7 +243,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
                     arg2 = operand.LLVM(end, type.IteratorBytes())
                     done = cg.llvmCallC("hlt::bytes_pos_eq", [arg1, arg2])
                     builder = cg.builder()
-                    builder.cbranch(done, block_exit, block_cmp)
+                    builder.cbranch(done, block_insufficient, block_cmp)
                     cg.popBuilder()
 
                         # Check whether we found the delimiter
@@ -250,6 +251,11 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
                     byte = cg.llvmCallCInternal("__hlt_bytes_extract_one", [iter, end, exception, ctx])
                     done = builder.icmp(llvm.core.IPRED_EQ, byte, delim)
                     builder.cbranch(done, block_exit, block_body)
+                    cg.popBuilder()
+
+                        # Not found.
+                    builder = cg.pushBuilder(block_insufficient)
+                    cg.llvmRaiseExceptionByName("hlt_exception_would_block", self.location())
                     cg.popBuilder()
 
                     # Loop exit.
