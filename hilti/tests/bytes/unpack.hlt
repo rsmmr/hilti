@@ -72,7 +72,7 @@ void run() {
 
     ####
 
-    t = unpack (first,last) Hilti::Packed::BytesDelim b"\xff"
+    t = unpack (first,last) Hilti::Packed::BytesDelim b"\x0f"
     sub = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst
