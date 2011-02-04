@@ -44,8 +44,8 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
     def validateInUnit(self, field, vld):
         # We need exactly one of the attributes.
         c = 0
-        for (name, (ty, const, default)) in self.supportedAttributes().items():
-            if self.hasAttribute(name) and not name in ("default", "convert"):
+        for name in self.supportedAttributes():
+            if self.hasAttribute(name) and not name in ("default", "convert", "chunked"):
                 c += 1
 
         if c == 0:
@@ -90,11 +90,14 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
             "length": (type.UnsignedInteger(64), False, None),
             "until": (type.Bytes(), False, None),
             "eod": (None, False, None),
+            "chunked": (type.UnsignedInteger(64), False, expr.Ctor(1, type.UnsignedInteger(64)), True),
             }
 
     def production(self, field):
         filter = self.attributeExpr("convert")
-        return grammar.Variable(None, self, filter=filter, location=self.location())
+        var = grammar.Variable(None, self, filter=filter, location=self.location())
+        var._field_for_chunked = field # Record this for a potential &chunked attribute.
+        return var
 
     def productionForLiteral(self, field, literal):
         filter = self.attributeExpr("convert")
@@ -107,7 +110,15 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
         else:
             return self.parsedType()
 
-    def generateParser(self, cg, var, args, dst, skipping):
+    def generateParser(self, cg, pgen, var, args, dst, skipping):
+
+        fbuilder = cg.functionBuilder()
+
+        if self.hasAttribute("length"):
+            length_op = fbuilder.addLocal("__len", hilti.type.Integer(64))
+            length_expr = self.attributeExpr("length").coerceTo(type.UnsignedInteger(64), cg)
+            cg.builder().assign(length_op, length_expr.evaluate(cg))
+
         cur = args.cur
 
         def toSink(data):
@@ -121,13 +132,50 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
 
             self.hiltiWriteDataToSink(cg, sink, data)
 
+        def have_chunk():
+            # We always do chunked if we're skipping so that we don't buffer
+            # data that we won't need anyway.
+            if not self.hasAttribute("chunked") and not skipping:
+                return
+
+            cur = args.cur
+            end = fbuilder.addTmp("__end_of_chunk", hilti.type.IteratorBytes(hilti.type.Bytes()))
+            cg.builder().end(end, args.data)
+
+            chunk_len = fbuilder.addTmp("__chunk_len", hilti.type.Integer(64))
+            cg.builder().bytes_diff(chunk_len, cur, end)
+
+            target_size = self.attributeExpr("chunked").evaluate(cg)
+
+            large_enough = fbuilder.addTmp("__chunk_size_reached", hilti.type.Bool())
+            cg.builder().int_ugeq(large_enough, chunk_len, target_size)
+            (use_chunk, cont) = cg.builder().makeIf(large_enough)
+
+            # Chunk has the required size, pass it on.
+            cg.setBuilder(use_chunk)
+            chunk = fbuilder.addTmp("__chunk", hilti.type.Reference(hilti.type.Bytes()))
+            cg.builder().bytes_sub(chunk, cur, end)
+            toSink(chunk)
+            pgen.valueForField(args, var, var._field_for_chunked, chunk)
+
+            # Move beyond the chunk.
+
+            if self.hasAttribute("length"):
+                cg.builder().int_sub(length_op, length_op, chunk_len)
+
+            cg.builder().assign(args.cur, end)
+            cg.builder().bytes_trim(args.data, end)
+            cg.builder().jump(cont)
+
+            # Done.
+            cg.setBuilder(cont)
+
         if var.sink():
             # Need data if not skipping.
             skipping = False
 
         bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
         resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])
-        fbuilder = cg.functionBuilder()
 
         # FIXME: We trust here that bytes iterators are inialized with the
         # generic end position. We should add a way to get that position
@@ -140,8 +188,7 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
 
         if self.hasAttribute("length"):
             op2 = cg.builder().idOp("Hilti::Packed::BytesFixed" if not skipping else "Hilti::Packed::SkipBytesFixed")
-            expr = self.attributeExpr("length").coerceTo(type.UnsignedInteger(64), cg)
-            op3 = expr.evaluate(cg)
+            op3 = length_op
 
         elif self.hasAttribute("until"):
             op2 = cg.builder().idOp("Hilti::Packed::BytesDelim" if not skipping else "Hilti::Packed::SkipBytesDelim")
@@ -161,6 +208,7 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
             loop.if_else(eod, done, suspend)
 
             cg.setBuilder(suspend)
+            have_chunk()
             cg.generateInsufficientInputHandler(args)
             cg.builder().jump(loop)
 
@@ -171,7 +219,7 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
 
             return end
 
-        result = self.generateUnpack(cg, args, op1, op2, op3)
+        result = self.generateUnpack(cg, args, op1, op2, op3, callback=have_chunk)
 
         builder = cg.builder()
 

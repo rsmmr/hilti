@@ -1,0 +1,9 @@
+[binpac] test
+[binpac]    a = '123'
+123
+[binpac]    a = '456'
+456
+[binpac]    a = '789'
+789
+[binpac]    a = '0\x0a'
+0\x0a

@@ -114,6 +114,18 @@ class Type(object):
         replaced with their defaults"""
         return self._params
 
+    def _readDefaultAttribute(self, name):
+        all = self.supportedAttributes()
+        m = all[name]
+
+        if len(m) == 3:
+            (ty, const, default) = m
+            explicit = False
+        else:
+            (ty, const, default, explicit) = m
+
+        return (ty, const, default, explicit)
+
     def hasAttribute(self, name):
         """Returns whether an attribute has been defined. If an attribute has
         a default expression, it is always returned as being defined.
@@ -127,12 +139,11 @@ class Type(object):
             return True
 
         try:
-            all = self.supportedAttributes()
-            (ty, const, default) = all[name]
+            (ty, const, default, explicit) = self._readDefaultAttribute(name)
         except KeyError:
             return None
 
-        if default:
+        if default and not explicit:
             return True
 
         return False
@@ -150,13 +161,16 @@ class Type(object):
         attribute, or None as described above.
         """
         try:
-            all = self.supportedAttributes()
-            (ty, const, default) = all[name]
+            (ty, const, default, explicit) = self._readDefaultAttribute(name)
         except KeyError:
             return None
 
         if name in self._attrs:
-            return self._attrs[name]
+            expr = self._attrs[name]
+            if not expr and default and explicit:
+                return default
+
+            return expr
 
         return default
 
@@ -327,7 +341,10 @@ class Type(object):
                 vld.error(self, "unknown type attribute &%s" % name)
                 continue
 
-            (ty, init, default) = all[name]
+            (ty, init, default, explicit) = self._readDefaultAttribute(name)
+
+            if explicit and not expr and default:
+                expr = default
 
             if isinstance(ty, str):
                 i = vld.currentModule().scope().lookupID(ty)
@@ -336,7 +353,7 @@ class Type(object):
                 else:
                     util.internal_error("unknown type %s defined for attribute %s" % (ty, name))
 
-            if ty and not expr:
+            if ty and not expr and (not default or not explicit):
                 vld.error(self, "attribute must have expression of type %s" % ty)
 
             if expr and not ty:
@@ -371,10 +388,13 @@ class Type(object):
         have (either as a ~~Type or string referecing a global ID which's type
         will be taken), or None if the attribute doesn't take a expression;
         *init* is a boolean indicating whether the attribute's expression must
-        suitable for intializing a HILTI variable; and *default* is a ~~Ctor
+        suitable for intializing a HILTI variable; *default* is a ~~Ctor
         expression with a default expression to be used if the attributes is
-        not explicitly specified, or None if the attribute is unset by
-        default.
+        not explicitly specified, or None if no such default; and *explicit*
+        is False if a given default means that the attribute is treated as
+        present if not given at all, and True if it must be given always
+        explicitly even when just taking the default value. Note that
+        *explicit* can be skipped, and will be assumed as *False* then.
 
         This method can be overridden by derived classes. The
         default implementation returns an empty dictionary, i.e., no
@@ -507,7 +527,7 @@ class ParseableType(Type):
         """
         return self._pgen
 
-    def generateUnpack(self, cg, args, op1, op2, op3=None):
+    def generateUnpack(self, cg, args, op1, op2, op3=None, callback=None):
         """Generates a HILTI ``unpack`` instruction wrapped in error handling
         code. The error handling code will do "the right thing" when either a
         parsing error occurs or insufficient input is found. In the latter
@@ -521,6 +541,9 @@ class ParseableType(Type):
 
         op1, op2, op3: ~~hilti.Operand - Same as with the regular ``unpack``
         instruction.
+
+        callback: function - A function that will be called for
+        generating additional code for the case of insufficient input.
 
         Returns: ~~hilti.Operand - The result of the unpack.
         """
@@ -543,6 +566,8 @@ class ParseableType(Type):
         error.makeRaiseException("BinPAC::ParseError", "unpack failed")
 
         cg.setBuilder(insufficient)
+        if callback:
+            callback()
         iter = fbuilder.addTmp("__iter", bytesit)
         cg.builder().tuple_index(iter, op1, 0)
         cg.generateInsufficientInputHandler(args, iter=iter)
@@ -643,7 +668,7 @@ class ParseableType(Type):
         """XXXX"""
         util.internal_error("Type.productionForLiteral() not overidden for %s" % self.__class__)
 
-    def generateParser(self, cg, var, args, dst, skipping):
+    def generateParser(self, cg, pgen, var, args, dst, skipping):
         """Generate code for parsing an instance of the type.
 
         The method must be overridden by derived classes which may be used as
@@ -678,7 +703,7 @@ class ParseableWithByteOrder(ParseableType):
     See ~~Parseable for arguments.
 
     Note: This is primarily a helper class that provides some shared
-    functionality. 
+    functionality.
     """
     def _isByteOrderConstant(self):
         expr = self._hiltiByteOrderExpr()
@@ -796,7 +821,7 @@ class ParseableContainer(type.Container, type.ParseableType):
         return "%s<%s>" % (self.typeName(), self.itemType().name())
 
     def _resolve(self, resolver):
-        # Before we call the parent's method, let's see if our type 
+        # Before we call the parent's method, let's see if our type
         # actually resolved to a constant.
         old_item = self.itemType()
 
@@ -980,7 +1005,7 @@ class Sinkable:
         sink: ~~Expr - An expression evaluating to the target sink.
 
         data: ~~hilti.Operand - An operand with the data to write, which much
-        be of type ~~Bytes. 
+        be of type ~~Bytes.
         """
 
         assert isinstance(sink.type(), type.Sink)
@@ -988,7 +1013,7 @@ class Sinkable:
 
         sink = sink.evaluate(cg)
         user = cg.builder().idOp("__user")
-        
+
         cfunc = cg.builder().idOp("BinPAC::sink_write")
         cargs = cg.builder().tupleOp([sink, data, user])
         cg.builder().call(None, cfunc, cargs)
@@ -1106,7 +1131,7 @@ class Any(Type):
     pass
 
 class Void(Type):
-    """Type indicating a void function/method return value. 
+    """Type indicating a void function/method return value.
     """
     pass
 

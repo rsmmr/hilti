@@ -768,7 +768,7 @@ class Unit(type.ParseableType, property.Container):
         #return seq
         return grammar.ChildGrammar(self, location=self.location())
 
-    def generateParser(self, cg, var, args, dst, skipping):
+    def generateParser(self, cg, pgen, var, args, dst, skipping):
         # This will not be called because we handle the grammar.ChildGrammar
         # case separetely in the parser generator.
         util.internal_error("cannot be reached")

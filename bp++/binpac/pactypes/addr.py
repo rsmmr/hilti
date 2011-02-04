@@ -74,7 +74,7 @@ class Addr(type.ParseableWithByteOrder):
         # FIXME: Don't have a HILTI enum for addr in little-endian.
         }
 
-    def generateParser(self, cg, var, args, dst, skipping):
+    def generateParser(self, cg, pgen, var, args, dst, skipping):
         cur = args.cur
 
         resultt = hilti.type.Tuple([hilti.type.Addr()])

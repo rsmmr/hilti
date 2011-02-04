@@ -139,7 +139,7 @@ class Integer(type.ParseableWithByteOrder):
     def parsedType(self):
         return self
 
-    def generateParser(self, cg, var, args, dst, skipping):
+    def generateParser(self, cg, pgen, var, args, dst, skipping):
         cur = args.cur
         bytesit = hilti.type.IteratorBytes(hilti.type.Bytes())
         resultt = hilti.type.Tuple([self.hiltiType(cg), bytesit])

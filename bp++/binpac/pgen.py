@@ -418,7 +418,7 @@ class ParserGen:
         # Call the type's parse function.
         name = var.name() if var.name() else "__tmp"
         dst = self.builder().addTmp(name , var.parsedType().hiltiType(self.cg()))
-        args.cur = var.parsedType().generateParser(self.cg(), var, args, dst, not need_val)
+        args.cur = var.parsedType().generateParser(self.cg(), self, var, args, dst, not need_val)
 
         dst = self._runFilter(var, dst)
 
@@ -773,14 +773,11 @@ class ParserGen:
         self.cg().builder().jump(cont)
         self.cg().setBuilder(cont)
 
-    def _finishedProduction(self, args, prod, value):
-        """Called whenever a production has sucessfully parsed a value."""
-
+    def _valueForFieldPre(self, args, prod, field, value):
         builder = self.builder()
         fbuilder = self.functionBuilder()
 
         if isinstance(prod, grammar.Terminal):
-
             if value:
                 if prod.debugName():
                     builder.makeDebugMsg("binpac", "%s = '%%s'" % prod.debugName(), [value])
@@ -791,6 +788,30 @@ class ParserGen:
 
         if prod.name() and value:
             builder.struct_set(args.obj, prod.name(), value)
+
+    def _valueForFieldPost(self, args, prod, field, value):
+        builder = self.builder()
+        fbuilder = self.functionBuilder()
+
+        if field:
+            # Additional hook with extended name.
+            import pactypes.unit
+            if isinstance(field, pactypes.unit.SwitchFieldCase):
+                self._runFieldHook(field, args, addl=field.caseNumber())
+
+            # Standard field hook.
+            self._runFieldHook(field, args)
+
+    def valueForField(self, args, prod, field, value):
+        self._valueForFieldPre(args, prod, field, value)
+        self._valueForFieldPost(args, prod, field, value)
+
+    def _finishedProduction(self, args, prod, value):
+        """Called whenever a production has sucessfully parsed a value."""
+        self._valueForFieldPre(args, prod, prod.field(), value)
+
+        builder = self.builder()
+        fbuilder = self.functionBuilder()
 
         foreach = prod.forEachField()
 
@@ -804,14 +825,7 @@ class ParserGen:
         else:
             cont = None
 
-        if prod.field():
-            # Additional hook with extended name.
-            import pactypes.unit
-            if isinstance(prod.field(), pactypes.unit.SwitchFieldCase):
-                self._runFieldHook(prod.field(), args, addl=prod.field().caseNumber())
-
-            # Standard field hook.
-            self._runFieldHook(prod.field(), args)
+        self._valueForFieldPost(args, prod, prod.field(), value)
 
         if cont:
             true.jump(cont)

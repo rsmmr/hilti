@@ -50,7 +50,7 @@ class Bool(type.ParseableType):
     def production(self, field):
         util.internal_error("bool parsing not implemented")
 
-    def generateParser(self, cg, var, args, dst, skipping):
+    def generateParser(self, cg, pgen, var, args, dst, skipping):
         util.internal_error("bool parsing not implemented")
 
 @operator.LogicalAnd(Bool, Bool)
