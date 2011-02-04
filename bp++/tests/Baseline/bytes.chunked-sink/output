@@ -1,11 +1,5 @@
-[binpac-sinks] connected parser Mini::Sub [0x12f9cdf0] to sink 0x12f96d50
-[binpac-sinks] writing to sink 0x12f96d50: |1234|
 s 1234
-[binpac-sinks] writing to sink 0x12f96d50: |5678|
 s 5678
-[binpac-sinks] writing to sink 0x12f96d50: |90ab|
 s 90ab
-[binpac-sinks] writing to sink 0x12f96d50: |cde|
 s cde
 Done Main <data=<>, b=cde>
-[binpac-sinks] closed sink 0x12f96d50, disconnected all parsers
