@@ -155,6 +155,12 @@ void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* fi
 
 void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    // If the HILTI function that we'll call suspends, it will change the
+    // yield/resume fields. We need to reset them when we leave this
+    // function.
+    hlt_continuation* saved_yield = ctx->yield;
+    hlt_continuation* saved_resume = ctx->resume;
+
     binpac_dbg_print_data(sink, data, 0, excpt, ctx);
 
     parser_state* prev = 0;
@@ -164,7 +170,7 @@ void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_excep
         hlt_bytes* decoded = binpac_filter_decode(sink->filter, data, excpt, ctx);
 
         if ( ! decoded )
-            return;
+            goto exit;
 
         if ( hlt_bytes_is_frozen(data, excpt, ctx) )
             // No more data going to come.
@@ -173,19 +179,22 @@ void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_excep
         data = decoded;
     }
 
+
     // Now pass it onto parsers.
     while ( s ) {
+
+        hlt_exception* sink_excpt = 0;
 
         if ( ! s->data ) {
             // First chunk.
             s->data = hlt_bytes_copy(data, excpt, ctx);
-            (s->parser->_parse_func_sink)(s->pobj, s->data, 0, user, excpt, ctx);
+            (s->parser->_parse_func_sink)(s->pobj, s->data, 0, user, &sink_excpt, ctx);
         }
 
         else {
             if ( ! s->resume ) {
                 // Parsing has already finished for this parser. We ignore this here,
-                // as otherwise we'd have to throw an expception and thus abort the
+                // as otherwise we'd have to throw an exception and thus abort the
                 // other parsers as well.
                 prev = s;
                 s = s->next;
@@ -194,13 +203,13 @@ void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_excep
 
             // Subsequent chunk, resume.
             hlt_bytes_append(s->data, data, excpt, ctx);
-            (s->parser->_resume_func_sink)(s->resume, excpt, ctx);
+            (s->parser->_resume_func_sink)(s->resume, &sink_excpt, ctx);
         }
 
-        if ( *excpt && (*excpt)->type == &hlt_exception_yield ) {
+        if ( sink_excpt && sink_excpt->type == &hlt_exception_yield ) {
             // Suspended.
-            s->resume = *excpt;
-            *excpt = 0;
+            s->resume = sink_excpt;
+            sink_excpt = 0;
 
             prev = s;
             s = s->next;
@@ -218,8 +227,13 @@ void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_excep
 
         if ( *excpt )
             // Error, abort.
-            return;
+            goto exit;
     }
+
+exit:
+    ctx->yield = saved_yield;
+    ctx->resume = saved_resume;
+
 }
 
 void binpac_sink_close(binpac_sink* sink, hlt_exception** excpt, hlt_execution_context* ctx)
