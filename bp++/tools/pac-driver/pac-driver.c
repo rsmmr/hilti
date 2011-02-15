@@ -513,7 +513,7 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
         static int cnt = 0;
 
         if ( ++cnt % 1000 == 0 )
-            fprintf(stderr, "--- pac-driver bulk state: %d total flows, %d in memory at %s\n", num_flows, kh_size(hash), ts);
+            fprintf(stderr, "--- pac-driver bulk state: %d total flows, %d in memory at %s, gc heap size %lu\n", num_flows, kh_size(hash), ts, GC_get_heap_size());
     }
 
 }

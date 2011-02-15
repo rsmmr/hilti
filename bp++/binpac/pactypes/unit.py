@@ -544,6 +544,7 @@ class Unit(type.ParseableType, property.Container):
         self._scope = scope.Scope(None, module.scope())
         self._pobjtype = None
         self._module = module
+        self._buffer_input = False
 
         self._scope.addID(id.Parameter("self", self, location=location))
 
@@ -683,6 +684,26 @@ class Unit(type.ParseableType, property.Container):
         """
         return "__new_%s" % self.name().replace(" ", "")
 
+    def bufferInput(self):
+        """Returns whether the type has been marked as one that needs
+        to fully buffer its input until fully parsed. See
+        ~~setBufferInput for more information.
+
+        Returns: bool - True if buffering is required.
+        """
+        return self._buffer_input
+
+    def setBufferInput(self):
+        """Marks the type as one that needs to buffer its input until
+        fully parsed. This is required if certain functionality is to
+        be used, such as the ``offset`` and ``input`` methods.
+
+        Note: This can have an performance impact. In particular, for
+        nested types where the top-level is buffering, it may prevent
+        garbage collection from freeing memory early.
+        """
+        self._buffer_input = True
+
     # Overriden from property.Container
 
     def allProperties(self):
@@ -705,8 +726,6 @@ class Unit(type.ParseableType, property.Container):
         return mbuilder.cache(self, _makeType)
 
     def _resolve(self, resolver):
-        super(Unit, self)._resolve(resolver)
-
         for param in self._args:
             param.resolve(resolver)
 
@@ -715,6 +734,8 @@ class Unit(type.ParseableType, property.Container):
                 f.resolve(resolver)
 
         self.resolveProperties(resolver)
+
+        super(Unit, self)._resolve(resolver)
 
     def validate(self, vld):
         super(Unit, self).validate(vld)
@@ -858,9 +879,17 @@ class _:
     """Returns an ``iter<bytes>`` referencing the first byte of the raw data
     for parsing the unit. This method must only be called while the unit is
     being parsed, and will throw an ``UndefinedValue`` exception otherwise.
+
+    Note that using this method requires the unit being parsed to fully buffer
+    its input until finished. That may have a performance impact, in
+    particular in terms of memory requirements since now the garbage
+    collection may need to hold on to it significantly longer. 
     """
     def type(obj, method, args):
         return type.IteratorBytes()
+
+    def resolve(resolver, obj, method, args):
+        obj.type().setBufferInput()
 
     def evaluate(cg, obj, method, args):
         tmp = cg.functionBuilder().addLocal("__iter", hilti.type.IteratorBytes())
@@ -881,10 +910,17 @@ class _:
     other hand, if the method is called from an expression evaluated before
     the parsing of a field starts (such as in a field's ``&length``
     attribute), the returned offset will reflect the beginning of that field.
-    """
 
+    Note that using this method requires the unit being parsed to fully buffer
+    its input until finished. That may have a performance impact, in
+    particular in terms of memory requirements since now the garbage
+    collection may need to hold on to it significantly longer. 
+    """
     def type(obj, method, args):
         return type.UnsignedInteger(64)
+
+    def resolve(resolver, obj, method, args):
+        obj.type().setBufferInput()
 
     def evaluate(cg, obj, method, args):
         offset = cg.functionBuilder().addLocal("__offset", hilti.type.Integer(64))
@@ -898,6 +934,9 @@ class _:
         builder.struct_get(cur,   obj, "__cur")
         builder.bytes_diff(offset, input, cur)
 
+        builder.clear(cur)
+        builder.clear(input)
+
         return offset
 
 @operator.MethodCall(type.Unit, expr.Attribute("set_input"), [type.IteratorBytes])
@@ -908,9 +947,17 @@ class _:
     will be parsed from the new position, including those of a potential
     higher-level unit this unit is part of. Returns an ``iter<bytes>`` with
     the old position.
+
+    Note that using this method requires the unit being parsed to fully buffer
+    its input until finished. That may have a performance impact, in
+    particular in terms of memory requirements since now the garbage
+    collection may need to hold on to it significantly longer. 
     """
     def type(obj, method, args):
         return type.IteratorBytes()
+
+    def resolve(resolver, obj, method, args):
+        obj.type().setBufferInput()
 
     def evaluate(cg, obj, method, args):
         obj = obj.evaluate(cg)

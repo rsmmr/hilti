@@ -163,8 +163,10 @@ class Bytes(type.ParseableType, type.Iterable, type.Sinkable):
             if self.hasAttribute("length"):
                 cg.builder().int_sub(length_op, length_op, chunk_len)
 
-            cg.builder().assign(args.cur, end)
             cg.builder().bytes_trim(args.data, end)
+            cg.builder().assign(args.cur, end)
+            cg.builder().clear(end)
+            cg.builder().clear(chunk)
             cg.builder().jump(cont)
 
             # Done.

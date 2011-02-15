@@ -1,0 +1,50 @@
+# @TEST-EXEC: hilti-build2 %INPUT ${PAC_DRIVER} -O -m -o a.out
+# @TEST-EXEC: awk -f generate.awk | ./a.out -U -p HTTP::Requests/HTTP::Replies >output 2>&1
+# @TEST-EXEC: cat output | grep -- --- | awk '{print $NF}' | sort | uniq | wc -l >count
+# @TEST-EXEC: btest-diff count
+#
+# This test checks that with a large HTTP message, the input is parsed
+# in small chunks without buffering them unnecessarily. In other words,
+# even though the input is large, the heap size should stay 
+# constant as the GC cleans things up.
+#
+# If this fails, then either (1) GC is not working at all; or (2) somewhere a
+# on the upper layers of the call stack a pointer is referencing
+# already processed input, preventing GC from cleaning up. If the
+# latter, it can be hard to pinpoint unfortunately where exactly
+# that's happening.
+
+module Test;
+
+import protocols.http;
+
+on HTTP::Message::%done {
+    print "Content-Length:", self.content_length;
+    }
+
+@TEST-START-FILE generate.awk
+# Generates a huge dummy HTTP response in pac-contents chunked format.
+
+function print_chunk()
+{
+    print "# D < 1024 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0";
+    for ( j = 0; j < 1023; j++ )
+        printf("A");
+    print "";
+}
+
+BEGIN {
+    print "# D < 81 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0"
+    print "HTTP/1.1 200 OK"
+    print "Content-Length:", 10000 * 1024;
+    print "Content-Type: application/octet-stream"
+    print ""
+
+    for ( i = 0; i < 10000; i++ )
+        print_chunk();
+    print "# T < 0 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0"
+    }
+@TEST-END-FILE
+
+
+

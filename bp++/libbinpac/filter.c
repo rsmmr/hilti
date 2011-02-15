@@ -3,7 +3,7 @@
 #include "sink.h"
 
 // These are defined in filter_*.c.
-extern __binpac_filter_base64_new(hlt_exception** excpt, hlt_execution_context* ctx);
+extern binpac_filter* __binpac_filter_base64_new(hlt_exception** excpt, hlt_execution_context* ctx);
 
 static hlt_string_constant FilterName = { 34, "<should show the filter name here>" };
 

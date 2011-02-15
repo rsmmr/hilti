@@ -61,7 +61,7 @@ extern void __binpac_filter_base64_close(__binpac_filter_base64* filter, hlt_exc
     // probably fine anyway.
 }
 
-extern __binpac_filter_base64* __binpac_filter_base64_new(hlt_exception** excpt, hlt_execution_context* ctx)
+extern binpac_filter* __binpac_filter_base64_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __binpac_filter_base64* filter = hlt_gc_malloc_non_atomic(sizeof(__binpac_filter_base64));
 
@@ -77,6 +77,6 @@ extern __binpac_filter_base64* __binpac_filter_base64_new(hlt_exception** excpt,
 
     base64_init_decodestate(&filter->state);
 
-    return filter;
+    return (binpac_filter*)filter;
 }
 

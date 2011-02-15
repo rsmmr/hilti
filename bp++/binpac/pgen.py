@@ -284,11 +284,11 @@ class ParserGen:
     def _parseProduction(self, prod, args):
         pname = prod.__class__.__name__.lower()
 
-        self.builder().makeDebugMsg("binpac-verbose", "bgn %s '%s'" % (pname, prod))
-
-        self._debugShowInput("input", args.cur)
-        self._debugShowToken("lahead symbol", args.lahead)
-        self._debugShowInput("lahead start", args.lahstart)
+        if self.cg().debug():
+            self.builder().makeDebugMsg("binpac-verbose", "bgn %s '%s'" % (pname, prod))
+            self._debugShowInput("input", args.cur)
+            self._debugShowToken("lahead symbol", args.lahead)
+            self._debugShowInput("lahead start", args.lahstart)
 
         if isinstance(prod, grammar.Literal):
             self._parseLiteral(prod, args)
@@ -323,7 +323,8 @@ class ParserGen:
         else:
             util.internal_error("unexpected non-terminal type %s" % repr(prod))
 
-        self.builder().makeDebugMsg("binpac-verbose", "end %s '%s'" % (pname, prod))
+        if self.cg().debug():
+            self.builder().makeDebugMsg("binpac-verbose", "end %s '%s'" % (pname, prod))
 
     def _parseStartSymbol(self, args):
         prod = self._grammar.startSymbol()
@@ -332,17 +333,18 @@ class ParserGen:
         # The start symbol is always a sequence.
         assert isinstance(prod, grammar.Sequence)
 
-        builder = self.builder()
-        builder.makeDebugMsg("binpac-verbose", "bgn start-sym %s '%s' with flags %%d" % (pname, prod), [args.flags])
-
-        builder.makeDebugMsg("binpac", "%s" % prod.type().name())
-        builder.debug_push_indent()
+        if self.cg().debug():
+            builder = self.builder()
+            builder.makeDebugMsg("binpac-verbose", "bgn start-sym %s '%s' with flags %%d" % (pname, prod), [args.flags])
+            builder.makeDebugMsg("binpac", "%s" % prod.type().name())
+            builder.debug_push_indent()
 
         self._parseSequence(prod, args)
 
-        builder = self.builder()
-        builder.makeDebugMsg("binpac-verbose", "end start-sym %s '%s'" % (pname, prod))
-        builder.debug_pop_indent()
+        if self.cg().debug():
+            builder = self.builder()
+            builder.makeDebugMsg("binpac-verbose", "end start-sym %s '%s'" % (pname, prod))
+            builder.debug_pop_indent()
 
     def _parseLiteral(self, lit, args):
         """Generates code to parse a literal."""
@@ -358,12 +360,12 @@ class ParserGen:
         (no_lahead, have_lahead, done) = builder.makeIfElse(cond, tag="no-lahead")
 
         # If we do not have a look-ahead symbol pending, search for our literal.
-        match = self._matchToken(no_lahead, "literal", str(lit.id()), [lit], args)
+        match_result = self._matchToken(no_lahead, "literal", str(lit.id()), [lit], args)
         symbol = builder.addTmp("__lahead", hilti.type.Integer(32))
-        no_lahead.tuple_index(symbol, match, 0)
+        no_lahead.tuple_index(symbol, match_result, 0)
 
         found_lit = self.functionBuilder().newBuilder("found-sym")
-        found_lit.tuple_index(args.cur, match, 1)
+        found_lit.tuple_index(args.cur, match_result, 1)
         found_lit.jump(done)
 
         values = [no_lahead.constOp(lit.id())]
@@ -381,12 +383,14 @@ class ParserGen:
         match.setComment("Correct look-ahead symbol pending, will be consumed.")
         match.jump(done)
 
-        # Consume look-ahead.
-        done.assign(args.lahead, _LookAheadNone)
-
         # Extract token value.
         token = builder.addTmp("__token", hilti.type.Reference(hilti.type.Bytes()))
         done.bytes_sub(token, args.lahstart, args.cur)
+
+        # Consume look-ahead.
+        done.assign(args.lahead, _LookAheadNone)
+        done.clear(args.lahstart)
+        done.clear(match_result)
 
         self.cg().setBuilder(done)
 
@@ -441,7 +445,6 @@ class ParserGen:
         cpgen.compile()
 
         # Call the parsing code.
-        result = builder.addTmp("__presult", _ParseFunctionResultType)
         cobj = builder.addTmp("__cobj_%s" % utype.name(), utype.hiltiType(self._cg))
 
         parse_from = child.type().attributeExpr("parse")
@@ -457,6 +460,7 @@ class ParserGen:
             lahead = builder.addTmp("__tmp_lhead", _LookAheadType)
             lahstart = builder.addTmp("__tmp_lahstart", _BytesIterType)
             builder.assign(lahead, _LookAheadNone)
+            builder.clear(args.lahstart)
 
         cargs = ParserGen._Args(self.functionBuilder(), child.type().exported(), (args.data, cur, cobj, lahead, lahstart, args.flags, args.user))
 
@@ -518,6 +522,7 @@ class ParserGen:
         builder.tuple_index(args.cur, result, 0)
         builder.tuple_index(args.lahead, result, 1)
         builder.tuple_index(args.lahstart, result, 2)
+        builder.clear(result)
 
         self._finishedProduction(args, prod, None)
 
@@ -556,6 +561,7 @@ class ParserGen:
                 branch = self.functionBuilder().newBuilder("case-%d" % i)
                 branch.setComment("For look-ahead set {%s}" % ", ".join(['"%s"' % l.literal().value() for l in literals[i]]))
                 branch.tuple_index(args.cur, match, 1) # Update current position.
+                branch.clear(match)
                 self.cg().setBuilder(branch)
                 self._startingProduction(args, alts[i])
                 self._parseProduction(alts[i], args)
@@ -579,6 +585,7 @@ class ParserGen:
             builder.makeSwitch(args.lahead, values, default=default, branches=branches, cont=done, tag="lahead-next-sym")
 
             # Done, return the result.
+            done.clear(match)
             done.return_result(done.tupleOp([args.cur, args.lahead, args.lahstart]))
 
             self.cg().endFunction()
@@ -595,6 +602,7 @@ class ParserGen:
         builder.tuple_index(args.cur, result, 0)
         builder.tuple_index(args.lahead, result, 1)
         builder.tuple_index(args.lahstart, result, 2)
+        builder.clear(result)
 
     def _parseBoolean(self, prod, args):
         builder = self.builder()
@@ -735,6 +743,9 @@ class ParserGen:
         return match
 
     def _debugShowInput(self, tag, cur):
+        if not self.cg().debug():
+            return
+
         fbuilder = self.cg().functionBuilder()
         builder = self.cg().builder()
 
@@ -747,6 +758,9 @@ class ParserGen:
         builder.makeDebugMsg("binpac-verbose", msg + "%s| ...", [str])
 
     def _debugShowToken(self, tag, token):
+        if not self.cg().debug():
+            return
+
         fbuilder = self.cg().functionBuilder()
         builder = self.cg().builder()
         msg = "- %s is " % tag
@@ -777,7 +791,7 @@ class ParserGen:
         builder = self.builder()
         fbuilder = self.functionBuilder()
 
-        if isinstance(prod, grammar.Terminal):
+        if self.cg().debug() and isinstance(prod, grammar.Terminal):
             if value:
                 if prod.debugName():
                     builder.makeDebugMsg("binpac", "%s = '%%s'" % prod.debugName(), [value])
@@ -867,11 +881,12 @@ class ParserGen:
             for p in self._grammar.params():
                 ids += [(hilti.id.Local("__param_%s" % p.name(), p.type().hiltiType(self._cg)), None)]
 
-            # The input() position.
-            ids += [(hilti.id.Local("__input", hilti.type.IteratorBytes()), None)]
+            if self._type.bufferInput():
+                # The input() position.
+                ids += [(hilti.id.Local("__input", hilti.type.IteratorBytes()), None)]
 
-            # For passing the set_input() position back,
-            ids += [(hilti.id.Local("__cur", hilti.type.IteratorBytes()), None)]
+                # For passing the set_input() position back,
+                ids += [(hilti.id.Local("__cur", hilti.type.IteratorBytes()), None)]
 
             ## We need the following only if the type is exported.
             if self._type.exported():
@@ -908,16 +923,18 @@ class ParserGen:
         return hilti.type.Reference(hilti.type.Unknown(self._name("object")))
 
     def _saveInputPointer(self, args):
-        # Store the current input pointer for access by a hook. TODO: This
-        # pointer will rarely be needed so we should be able to optimize it away
-        # in most cases.
+        if not self._type.bufferInput():
+            return
+
+        # Stores the current input pointer for access by a hook.
         builder = self.cg().builder()
         builder.struct_set(args.obj, "__cur", args.cur)
 
     def _updateInputPointer(self, args):
-        # Update the current input pointer in case a hook has changed it. TODO:
-        # This pointer will rarely be needed so we should be able to optimize it
-        # away in most cases.
+        if not self._type.bufferInput():
+            return
+
+        # Updates the current input pointer in case a hook has changed it.
         builder = self.cg().builder()
         builder.struct_get(args.cur, args.obj, "__cur")
 
@@ -1009,7 +1026,8 @@ class ParserGen:
     def _prepareParseObject(self, args):
         """Prepares a parse object before starting the parsing."""
         # Record the data we're parsing for calls to unit.input().
-        self.cg().builder().struct_set(args.obj, "__input", args.cur)
+        if self._type.bufferInput():
+            self.cg().builder().struct_set(args.obj, "__input", args.cur)
         self._runUnitHook(args, "%init")
 
         if args.exported():
@@ -1048,7 +1066,9 @@ class ParserGen:
             cg.builder().struct_unset(args.obj, var.name());
 
         # Clear what's unit.input() is returning.
-        cg.builder().struct_unset(args.obj, "__input")
+        if self._type.bufferInput():
+            cg.builder().struct_unset(args.obj, "__input")
+            cg.builder().struct_unset(args.obj, "__cur") # Clear for GC.
 
         # Close filters if we have any.
         if args.exported():
@@ -1167,6 +1187,7 @@ class ParserGen:
         else:
             builder.struct_get(filter_cur, args.obj, "__filter_cur")
             builder.bytes_sub(encoded, filter_cur, end)
+            builder.clear(filter_cur)
             cg.builder().bytes_is_frozen(is_frozen, args.data)
 
         cfunc = cg.builder().idOp("BinPAC::filter_decode")
@@ -1175,12 +1196,13 @@ class ParserGen:
 
         if not resume:
             builder.struct_set(args.obj, "__filter_cur", args.cur)
-
             builder.struct_set(args.obj, "__filter_decoded", decoded)
             builder.begin(begin, decoded)
-            builder.struct_set(args.obj, "__input", begin)
-            builder.struct_set(args.obj, "__cur", begin) # TODO: Do we need this?
+            if self._type.bufferInput():
+                builder.struct_set(args.obj, "__input", begin)
+                builder.struct_set(args.obj, "__cur", begin) # TODO; Do we need to do this?
             builder.assign(args.cur, begin)
+            builder.clear(begin)
 
             filter_decoded = decoded
         else:
@@ -1191,6 +1213,7 @@ class ParserGen:
         builder.bytes_length(len, encoded)
         builder.incr_by(filter_cur, filter_cur, len)
         builder.struct_set(args.obj, "__filter_cur", filter_cur)
+        builder.clear(filter_cur)
 
         # Freeze the decoded data if the input data is frozen.
         freeze = cg.functionBuilder().newBuilder("_freeze")
@@ -1225,9 +1248,11 @@ class ParserGen:
 
         arg1 = hilti.id.Parameter("__data", _BytesType)
         arg2 = hilti.id.Parameter("__cur", _BytesIterType)
+        arg2.setAttrClear()
         arg3 = hilti.id.Parameter("__self", self._typeParseObjectRef())
         arg4 = hilti.id.Parameter("__lahead", _LookAheadType)
         arg5 = hilti.id.Parameter("__lahstart", _BytesIterType)
+        arg5.setAttrClear()
         arg6 = hilti.id.Parameter("__flags", _FlagsType)
         arg7 = hilti.id.Parameter("__user", hilti.type.Reference(hilti.type.Unknown("BinPAC::UserCookie")))
         result = _ParseFunctionResultType

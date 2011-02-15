@@ -317,7 +317,7 @@ class Type(object):
 
     def _resolve(self, resolver):
         """XXXX"""
-        for expr in self._attrs.values():
+        for (name, expr) in self._attrs.items():
             if expr:
                 expr.resolve(resolver)
 
@@ -1070,9 +1070,13 @@ class Unknown(ParseableType):
 
         i.resolve(resolver)
 
-        t = copy.copy(i.type())
+        t = i.type() # i.copy(i.type()) XXX
 
         t._attrs = copy.copy(self._attrs)
+
+        # Still calling _resolve though.
+        self._resolve(resolver)
+
         return t
 
     _type_name = "<unknown type>"
