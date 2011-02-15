@@ -362,6 +362,31 @@ class Parameter(ID):
     """
     def __init__(self, name, type, linkage=Linkage.LOCAL, imported=False, namespace=None, location=None):
         super(Parameter, self).__init__(name, type, linkage, imported, namespace, location=location)
+        self._clear = False
+
+    def attrClear(self):
+        """Returns whether the ``__clear`` attribute is set for the parameter.
+
+        See ~~setAttrClear for more information about the attribute.
+
+        Returns: bool - True if the attribute is set.
+        """
+        return self._clear
+
+    def setAttrClear(self):
+        """Sets the ``__clear`` attribute for the parameter.
+
+        Once set, the HILTI ``clear`` operator will be implicitly called on
+        any non-constant value passed into a function via this parameter. That
+        means the value will be reset to its default *in the caller*, and thus
+        the original will no longer be accessible after the call returns.
+
+        Doing so can enable the garbage collection to free memory the
+        parameter references earlier than it could otherwise do; and may at
+        some point also provide the optimizer with further hints about value
+        usage.
+        """
+        self._clear = True
 
     ### Overidden from ID.
 
@@ -388,6 +413,8 @@ class Parameter(ID):
 
     def output(self, printer):
         printer.printType(self.type())
+        if self._clear:
+            printer.output(" __clear")
         printer.output(" %s" % self._name)
 
 class Global(ID):

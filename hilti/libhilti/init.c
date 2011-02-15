@@ -22,7 +22,7 @@ static int _num_registered_funcs = 0;
 void hlt_init()
 {
     // Initialize the garbage collector.
-    __hlt_init_gc();
+    __hlt_gc_init();
 
     // Initialize locale.
     if ( ! setlocale(LC_CTYPE, "") ) {

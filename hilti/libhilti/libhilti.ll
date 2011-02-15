@@ -117,9 +117,10 @@ declare i1 @__hlt_exception_match_type(%__hlt_exception*, %__hlt_exception_type*
 @hlt_exception_would_block = external constant %__hlt_exception_type
 
 ;;; Memory management.
-declare void @__hlt_init_gc()
-declare %__hlt_void* @hlt_gc_malloc_non_atomic(i64)
-declare %__hlt_void* @hlt_gc_calloc_non_atomic(i64, i64)
+declare void @__hlt_gc_init()
+declare %__hlt_void* @__hlt_gc_malloc_non_atomic(i64, i8*, i32)
+declare %__hlt_void* @__hlt_gc_calloc_non_atomic(i64, i64, i8*, i32)
+declare void @hlt_memory_clear(i8*, i64)
 
 ;;; Bytes.
 ; This functions takes an int8_t parameter, which does not fit normal C_HILTI

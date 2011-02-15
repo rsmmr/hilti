@@ -41,7 +41,7 @@ class Canonifier(object):
 
         return True
 
-    def debugMode(self):
+    def debugLevel(self):
         """Returns whether we are compiling with debugging support.
 
         Returns: int - 0 if noto compiling with debugging support, otherwise
@@ -171,7 +171,7 @@ class Canonifier(object):
         if ins:
             current_block = self.currentTransformedBlock()
 
-            if add_flow_dbg and self.debugMode():
+            if add_flow_dbg and self.debugLevel():
                 dbg = hilti.instructions.debug.message("hilti-flow", "leaving %s" % self.currentFunctionName())
                 current_block.addInstruction(dbg)
 

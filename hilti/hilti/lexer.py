@@ -43,6 +43,7 @@ keywords = {
     "catch": "CATCH",
     "hook": "HOOK",
     "epoch": "EPOCH",
+    "__clear": "PARAM_CLEAR",
 
     "@internal": "INTERNAL",
     }

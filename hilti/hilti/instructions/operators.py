@@ -219,3 +219,13 @@ class Unequal(Instruction):
         eq.codegen(cg)
         negated = cg.builder().xor(eq.llvmTarget(), cg.llvmConstInt(1, 1))
         cg.llvmStoreInTarget(self, negated)
+
+@hlt.instruction("clear", op1=cValueType)
+class Clear(Instruction):
+    """Resets *op1* to the default value a new variable would be set to.
+
+    Note: This operator is automatically defined for all value types.
+    """
+    def _codegen(self, cg):
+        cg.llvmStoreInTarget(self, self.op1().type().llvmDefault(cg), target=self.op1())
+

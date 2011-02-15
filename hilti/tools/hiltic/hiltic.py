@@ -53,8 +53,8 @@ optparser.add_option("-d", "--debug", action="count", dest="debug", default=0,
                      help="Compile with debugging support. Multiple times increases level.")
 optparser.add_option("-D", "--debug-codegen", action="store_true", dest="debug_cg", default=False,
                      help="Print debugging information during code generation phase")
-optparser.add_option("-S", "--stack-size", action="store", dest="stack", default=16384,
-                     help="Default stack segment size in bytes (default: 16384)")
+optparser.add_option("-S", "--stack-size", action="store", dest="stack", default=0,
+                     help="Default stack segment size in bytes")
 optparser.add_option("-F", "--profile", action="count", dest="profile", default=0,
                      help="Enable profiling support; each time this option is given, the profiling level is increased by one")
 options = None

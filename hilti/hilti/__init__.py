@@ -130,8 +130,9 @@ def codegen(mod, libpaths, debug=0, stack=0, trace=False, verify=True, profile=0
     debug: int - Debugging level. With 1 or 2, debugging support or more
     debugging support is compiled in.
 
-    stack: int - The default stack segment size. If zero, a default value will
-    be chosen.
+    stack: int - The default stack segment size. If zero, we'll simply
+    allocate each stack frame independently; this is the default and may
+    actually be the best choice. 
 
     trace: bool - If true, debugging information will be printed to trace
     where codegeneration currently is.
@@ -143,10 +144,6 @@ def codegen(mod, libpaths, debug=0, stack=0, trace=False, verify=True, profile=0
     if *verify* is True, also verification) was successful. If so, the second
     element of the tuple is the resulting LLVM module.
     """
-
-    if stack == 0:
-        stack = 16384
-
     gen = cg.CodeGen()
     mod._cg = gen
     return gen.codegen(mod, libpaths, debug, stack, trace, verify, profile)

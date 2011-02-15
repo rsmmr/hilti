@@ -474,7 +474,6 @@ class Trim(Instruction):
     *op2* does not actually refer to a location inside the bytes object *op1*.
     """
     def _codegen(self, cg):
-        freeze = constant.Constant(0, type.Bool())
         cg.llvmCallC("hlt::bytes_trim", [self.op1(), self.op2()])
 
 @hlt.constraint("ref<bytes> or iterator<bytes>")

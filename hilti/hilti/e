@@ -1,0 +1,56 @@
+        zero = self.llvmGEPIdx(0)
+        one = self.llvmGEPIdx(1)
+
+
+        fptr = stack.fptr()
+        eoss = stack.eoss()
+
+        # We first need to increase the current fptr by sizeof(__hlt_bframe)
+        # to get to the current end of the allocated stack space.
+        fptr = self.builder().bitcast(fptr, self.llvmTypeBasicFramePtr())
+        fptr = self.builder().gep(fptr, [one])
+
+        # Now we increase the frame pointer further by
+        # sizeof(_hlt_frame_for_the_called_function).
+        fptr = self.builder().bitcast(fptr, self.llvmTypeFunctionFramePtr(func))
+        end = self.builder().gep(fptr, [one])
+        end = self.builder().bitcast(end, self.llvmTypeGenericPointer())
+
+        # If this end pointer is still within the bounds of our current segment,
+        # we have enough space. If not, we need to allocate a new segment.
+
+        block_current = self.builder().block
+        block_avail = llvm_func.append_basic_block("stack-avail")
+        block_exhausted = llvm_func.append_basic_block("stack-exhausted")
+
+        avail = self.builder().icmp(llvm.core.IPRED_ULT, end, eoss)
+        avail = self.llvmConstInt(0, 1)
+        self.builder().cbranch(avail, block_avail, block_exhausted)
+
+        # Not enough space, allocate a new stack segment.
+        self.pushBuilder(block_exhausted)
+
+           # Calculate min(defaultStackSegmentSize(), sizeof(frame))
+        default = self.llvmConstInt(self.defaultStackSegmentSize(), 64)
+        needed = self.llvmSizeOf(self.llvmTypeFunctionFrame(func))
+
+        cond = self.builder().icmp(llvm.core.IPRED_SGT, needed, default)
+        size = self.builder().select(cond, needed, default)
+
+        new_segment = self.llvmNewStackSegment(size, descr="for " + func.name())
+        new_fptr = self.builder().bitcast(new_segment.fptr(), self.llvmTypeFunctionFramePtr(func))
+
+        self.builder().branch(block_avail)
+        self.popBuilder()
+
+        # Joint continuation here.
+        self.pushBuilder(block_avail)
+
+        adj_fptr = fptr
+        fptr = self.builder().phi(fptr.type)
+        fptr.add_incoming(adj_fptr, block_current)
+        fptr.add_incoming(new_fptr, block_exhausted)
+
+        eoss = self.builder().phi(eoss.type)
+        eoss.add_incoming(stack.eoss(), block_current)
+        eoss.add_incoming(new_segment.eoss(), block_exhausted)

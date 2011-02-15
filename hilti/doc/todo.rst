@@ -137,6 +137,9 @@ Documentation
   libhilti/scripts/do-build, but bdwgc/CMakeLists.txt may ignore
   them based on platform. Check that more carefully.
 
+- There are a lot tuning options for the GC. Figure out what makes
+  sense; see in particular doc/README.macros.
+
 Links
 -----
 
@@ -196,6 +199,17 @@ HILTI Level
   written back to the current position. A hook can change it in
   between. However, most of the time there is no change and the
   compiler should optimize then that field away.
+
+- We currently need the ``__clear`` attribute for function parameters
+  as well as the ``clear`` instruction for values to explicitly remove
+  no longer necessary memory references that prevent the GC from
+  cleaning things up. Seems both of these could be figured out by the
+  optimizer automatically so that references are always cleared as
+  soon as helpful if it would help with GC.
+
+  In addition, this analysis could also be used to generally better
+  use variables once we figured out that their old values won't be
+  used anymore. 
 
 LLVM Level
 ~~~~~~~~~~

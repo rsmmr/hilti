@@ -151,6 +151,9 @@ class Struct(type.HeapType):
         """A ``struct` is passed as a pointer to an eqivalent C struct; the
         fields' types are converted recursively to C using standard rules."""
 
+        if len(self.fields()) == 0:
+            return cg.llvmTypeGenericPointer()
+
         th = llvm.core.TypeHandle.new(llvm.core.Type.opaque())
 
         assert len(self.fields()) <= 32
@@ -204,7 +207,7 @@ class New(Operator):
         else:
             structt = self.op1().value().type()
 
-        s = cg.llvmMalloc(structt.llvmType(cg).pointee)
+        s = cg.llvmMalloc(structt.llvmType(cg).pointee, tag="new <struct>", location=self.location())
 
         # Initialize fields
         zero = cg.llvmGEPIdx(0)

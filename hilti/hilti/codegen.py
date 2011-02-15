@@ -53,7 +53,7 @@ class TypeInfo(object):
     *c_prototype* (string)
        A string specifying how the type should be represented in C function
        prototypes. If not given, the class-wide prototype defined
-       ~~hlt.type is used instead. 
+       ~~hlt.type is used instead.
 
     *to_string* (string)
        The name of an internal libhilti function that converts a value of the
@@ -142,7 +142,7 @@ class CodeGen(objcache.Cache):
 
         return x
 
-    def codegen(self, mod, libpaths, debug=0, stack=16384, trace=False, verify=True, profile=0):
+    def codegen(self, mod, libpaths, debug=0, stack=0, trace=False, verify=True, profile=0):
         """Compiles a HILTI module into a LLVM module.  The module must be
         well-formed as verified by ~~validateModule, and it must have been
         canonified by ~~canonifyModule.
@@ -154,7 +154,9 @@ class CodeGen(objcache.Cache):
         debug: int - Debugging level. With 1 or 2, debugging support or more
         debugging support is compiled in.
 
-        stack: int - The default stack segment size.
+        stack: int - The default stack segment size. If zero, we'll simply
+        allocate each stack frame independently; this is the default and may
+        actually be the best choice.
 
         trace: bool - If true, debugging information will be printed to stderr
         tracing where code generation currently is.
@@ -1625,7 +1627,7 @@ class CodeGen(objcache.Cache):
 
         Returns: llvm.core.Value - The continuation object.
         """
-        cont = self.llvmMalloc(self.llvmTypeContinuation())
+        cont = self.llvmMalloc(self.llvmTypeContinuation(), tag="new <continuation>")
         zero = self.llvmGEPIdx(0)
         one = self.llvmGEPIdx(1)
         two = self.llvmGEPIdx(2)
@@ -1682,7 +1684,7 @@ class CodeGen(objcache.Cache):
         # current stack, so we just allocate a new stack segment of minimal
         # size. When executing, this segment will become the current stack.
         size = self.llvmSizeOf(self.llvmTypeFunctionFrame(func))
-        stack = self.llvmNewStackSegment(size)
+        stack = self.llvmNewStackSegment(size, descr="for callable")
 
         no_frame = self.makeFrameDescriptor(None, None)
         no_func = llvm.core.Constant.null(self.llvmTypeBasicFunctionPtr())
@@ -1874,7 +1876,7 @@ class CodeGen(objcache.Cache):
         addr = null.gep([one])
         return addr if ptr else addr.ptrtoint(llvm.core.Type.int(64))
 
-    def llvmMalloc(self, ty, cast_to=None):
+    def llvmMalloc(self, ty, tag, location=None, cast_to=None):
         """Allocates memory for the given type. From the caller's perspective
         essentially acts like a ``builder().malloc(type)``. However, it must
         be used instead of that as will branch out the internal memory
@@ -1895,7 +1897,17 @@ class CodeGen(objcache.Cache):
             ty = self.llvmType(ty)
 
         sizeof = self.llvmSizeOf(ty)
-        mem = self.llvmCallCInternal("hlt_gc_malloc_non_atomic", [sizeof])
+
+        if location:
+            file = tag + " / " + location.file()
+            line = location.line()
+        else:
+            file = tag
+            line = 0
+
+        file = self.llvmNewGlobalStringConst(self.nameNewGlobal("malloc"), file)
+        line = self.llvmConstInt(line, 32)
+        mem = self.llvmCallCInternal("__hlt_gc_malloc_non_atomic", [sizeof, file, line])
 
         if not cast_to:
             cast_to = llvm.core.Type.pointer(ty)
@@ -2155,10 +2167,10 @@ class CodeGen(objcache.Cache):
         self.pushBuilder(func.append_basic_block(""))
 
         # Make sure GC is initialized.
-        self.llvmSafeCall(self.llvmCFunctionInternal("__hlt_init_gc"), [])
+        self.llvmSafeCall(self.llvmCFunctionInternal("__hlt_gc_init"), [])
 
         # Allocate the memory for the globals.
-        rec = self.llvmMalloc(ty_full)
+        rec = self.llvmMalloc(ty_full, tag="<execution context globals>")
 
         # Initialize the header.
         zero = self.llvmGEPIdx(0)
@@ -2260,7 +2272,7 @@ class CodeGen(objcache.Cache):
 
         self.builder().store(value, addr)
 
-    def llvmStoreInTarget(self, ins, val, coerce_from=None):
+    def llvmStoreInTarget(self, ins, val, coerce_from=None, target=None):
         """Stores a value in a target operand.
 
         ins: ~~Instruction - An instruction into which's target operand to
@@ -2270,7 +2282,9 @@ class CodeGen(objcache.Cache):
         operand, we perform coercion if possible.
         """
         assert isinstance(ins, instruction.Instruction)
-        target = ins.target()
+
+        if not target:
+            target = ins.target()
 
         if isinstance(val, operand.Operand):
             val = val.coerceTo(self, target.type())
@@ -2284,6 +2298,23 @@ class CodeGen(objcache.Cache):
 
         if not ins.targetDisabled():
             target.llvmStore(self, val)
+
+    def _llvmPhysicalStartOfFrame(self, func, fptr):
+        # Given a frame pointer, returns physical address where the frame
+        # actually starts. Note that locals are positioned *below* the fptr
+        # so we need to adjust for that. To make sure everything is aligned
+        # correclty, we do it in two steps.
+
+        # 1. Get the top of the current stack segment (that's the end of our
+        # frame).
+        fptr = self.builder().bitcast(fptr, self.llvmTypeBasicFramePtr())
+        fptr = self.builder().gep(fptr, [self.llvmGEPIdx(1)])
+
+        # 2. Move it back by one full function frame.
+        fptr = self.builder().bitcast(fptr, self.llvmTypeFunctionFramePtr(func))
+        fptr = self.builder().gep(fptr, [self.llvmGEPIdx(-1)])
+
+        return fptr
 
     def _llvmAddrLocalVar(self, name, func=None, fptr=None):
         """Returns the address of a local variable inside a function's frame.
@@ -2324,20 +2355,7 @@ class CodeGen(objcache.Cache):
 
             frame_idx = self.cache("frame-%s-%s" % (func.name(), func.callingConvention()), _makeFrameIdx)
 
-            # The locals are positioned *below* the fptr so we need to
-            # adjust that first. To make sure everything is aligned correclty,
-            # we do it in three steps.
-
-            # 1. Get the top of the current stack segment (that's the end of our
-            # frame).
-            fptr = self.builder().bitcast(fptr, self.llvmTypeBasicFramePtr())
-            fptr = self.builder().gep(fptr, [self.llvmGEPIdx(1)])
-
-            # 2. Move it back by one full function frame.
-            fptr = self.builder().bitcast(fptr, self.llvmTypeFunctionFramePtr(func))
-            fptr = self.builder().gep(fptr, [self.llvmGEPIdx(-1)])
-
-            # 3. Now calculate the address of the local we're looking for.
+            fptr = self._llvmPhysicalStartOfFrame(func, fptr)
             zero = self.llvmGEPIdx(0)
             index = self.llvmGEPIdx(frame_idx[name])
 
@@ -2462,7 +2480,7 @@ class CodeGen(objcache.Cache):
         """
         return llvm.core.Type.pointer(self.llvmTypeFunctionFrame(function))
 
-    def llvmNewStackSegment(self, size=0):
+    def llvmNewStackSegment(self, size=0, descr=""):
         """Allocates a new stack segment.
 
         size: llvm.core.Value - The size of the stack segment. If not
@@ -2474,56 +2492,18 @@ class CodeGen(objcache.Cache):
         if not size:
             size = self.llvmConstInt(self.defaultStackSegmentSize(), 64)
 
-        fptr = self.llvmCallCInternal("hlt_gc_malloc_non_atomic", [size])
+        file = self.llvmNewGlobalStringConst(self.nameNewGlobal("malloc"), "increasing stack " + descr)
+        line = self.llvmConstInt(0, 32)
+        fptr = self.llvmCallCInternal("__hlt_gc_malloc_non_atomic", [size, file, line])
+
         tmp = self.builder().ptrtoint(fptr, llvm.core.Type.int(64))
         tmp = self.builder().add(tmp, size)
 
         return self.makeFrameDescriptor(fptr, self.builder().inttoptr(tmp, self.llvmTypeGenericPointer()))
 
-    def llvmMakeFunctionFrame(self, func, args, contNormFunc=None, contNormFrame=None, contExceptFunc=None, contExceptFrame=None, stack=None, llvm_func=None):
-        """Instantiates a new function frame. The frame will be initialized
-        with the given values. If any of the optional ones is not specified,
-        their values will be taken from the current frame pointed to by
-        ~~llvmCurrentFramePtr, with the exceptions of *contNormFrame* which by
-        default will be set to ~~llvmCurrentFramePtr itself, and
-        *contExceptFunc* which will be set to the current function's
-        ~~llvmExceptionHandler.
-
-         All local varibles are initalized with their defaults.
-
-        func: ~~Function - The function to create a frame for. This must have
-        calling convention ~~C_HILTI.
-
-        args: list of ~~Operand - The arguments passed to the function when
-        called with the created frame.
-
-        contNormFunc: llvm.core.Value - The successor function  for normal
-        continuation.
-
-        contNormFrame: ~~FrameDescriptor - The successor frame descriptor for normal
-        continuation.
-
-        contExceptFunc: llvm.core.Value - The successor function for
-        exceptional continuation.
-
-        contExceptFrame: ~~FrameDescriptor - The successor frame descriptor
-        for exceptional continuation.
-
-        stack: ~~FrameDescriptor - The stack segment on which to allocate the
-        new frame. If not given, ~~llvmCurrentFrameDescriptor is used.
-        """
-        assert func.callingConvention() == function.CallingConvention.HILTI
-
-        if not llvm_func:
-            llvm_func = self._llvm.func
-
-        assert llvm_func
-
+    def _llvmEnsureStackSpace(self, stack, func, llvm_func):
         zero = self.llvmGEPIdx(0)
         one = self.llvmGEPIdx(1)
-
-        if not stack:
-            stack = self.llvmCurrentFrameDescriptor()
 
         fptr = stack.fptr()
         eoss = stack.eoss()
@@ -2559,7 +2539,7 @@ class CodeGen(objcache.Cache):
         cond = self.builder().icmp(llvm.core.IPRED_SGT, needed, default)
         size = self.builder().select(cond, needed, default)
 
-        new_segment = self.llvmNewStackSegment(size)
+        new_segment = self.llvmNewStackSegment(size, descr="for " + func.name())
         new_fptr = self.builder().bitcast(new_segment.fptr(), self.llvmTypeFunctionFramePtr(func))
 
         self.builder().branch(block_avail)
@@ -2576,6 +2556,63 @@ class CodeGen(objcache.Cache):
         eoss = self.builder().phi(eoss.type)
         eoss.add_incoming(stack.eoss(), block_current)
         eoss.add_incoming(new_segment.eoss(), block_exhausted)
+
+        return (fptr, eoss)
+
+    def llvmMakeFunctionFrame(self, func, args, contNormFunc=None, contNormFrame=None, contExceptFunc=None, contExceptFrame=None, stack=None, llvm_func=None):
+        """Instantiates a new function frame. The frame will be initialized
+        with the given values. If any of the optional ones is not specified,
+        their values will be taken from the current frame pointed to by
+        ~~llvmCurrentFramePtr, with the exceptions of *contNormFrame* which by
+        default will be set to ~~llvmCurrentFramePtr itself, and
+        *contExceptFunc* which will be set to the current function's
+        ~~llvmExceptionHandler.
+
+         All local varibles are initalized with their defaults.
+
+        func: ~~Function - The function to create a frame for. This must have
+        calling convention ~~C_HILTI.
+
+        args: list of ~~Operand - The arguments passed to the function when
+        called with the created frame.
+
+        contNormFunc: llvm.core.Value - The successor function  for normal
+        continuation.
+
+        contNormFrame: ~~FrameDescriptor - The successor frame descriptor for normal
+        continuation.
+
+        contExceptFunc: llvm.core.Value - The successor function for
+        exceptional continuation.
+
+        contExceptFrame: ~~FrameDescriptor - The successor frame descriptor
+        for exceptional continuation.
+
+        stack: ~~FrameDescriptor - The stack segment on which to allocate the
+        new frame. If not given, ~~llvmCurrentFrameDescriptor is used.
+        """
+        assert func.callingConvention() == function.CallingConvention.HILTI
+
+        zero = self.llvmGEPIdx(0)
+        one = self.llvmGEPIdx(1)
+
+        if not stack:
+            stack = self.llvmCurrentFrameDescriptor()
+
+        if not llvm_func:
+            llvm_func = self._llvm.func
+
+        assert llvm_func
+
+        if self.defaultStackSegmentSize() == 0:
+            # Allways allocate a new chunk.
+            size = self.llvmSizeOf(self.llvmTypeFunctionFrame(func))
+            new_segment = self.llvmNewStackSegment(size, descr="for " + func.name())
+            fptr = self.builder().bitcast(new_segment.fptr(), self.llvmTypeFunctionFramePtr(func))
+            eoss = new_segment.eoss()
+
+        else:
+            (fptr, eoss) = self._llvmEnsureStackSpace(stack, func, llvm_func)
 
         # ftpr now points to sufficient space for a full frame, and eoss points
         # to the end of the corresponding segment. We now need to adjust fptr so
@@ -2622,6 +2659,10 @@ class CodeGen(objcache.Cache):
         for (i, arg) in zip(func.type().args(), args):
             self.llvmStoreLocalVar(i, self.llvmOp(arg, coerce_to=i.type()), frame=fptr, func=func)
 
+            if i.attrClear() and not isinstance(arg, operand.Constant) and not isinstance(arg, operand.Ctor):
+                # Reset to default, just like "clear".
+                arg.llvmStore(self, arg.type().llvmDefault(self))
+
         # Initialize local variables.
         for i in func.locals():
             if isinstance(i, id.Local):
@@ -2629,6 +2670,13 @@ class CodeGen(objcache.Cache):
                 self.llvmStoreLocalVar(i, init, frame=fptr, func=func)
 
         return self.makeFrameDescriptor(fptr, eoss)
+
+    def llvmClearFunctionFrame(self, func, frame):
+        """XXX"""
+        size = self.llvmSizeOf(self.llvmTypeFunctionFrame(func))
+        fptr = self._llvmPhysicalStartOfFrame(func, frame.fptr())
+        fptr = self.builder().bitcast(fptr, self.llvmTypeGenericPointer())
+        self.llvmCallCInternal("hlt_memory_clear", [fptr, size])
 
     def llvmFrameNormalSucc(self, frame=None):
         """Returns the normal successor function stored in a frame.
@@ -3241,8 +3289,8 @@ class CodeGen(objcache.Cache):
 
         return result
 
-    def llvmTailCall(self, func, frame=None, ctx=None, addl_args=[], prototype=None):
-        """Calls a function with HILTI linkage. The call will be tail call,
+    def llvmTailCall(self, func, frame=None, ctx=None, addl_args=[], prototype=None, clear=None):
+        """Calls a function with HILTI linkage. The call will be a tail call,
         i.e., any subsequent code in the same block will be never be reached.
         This method cannot be used for calling HILTI functions; use
         ~~llvmCallC instead.
@@ -3329,6 +3377,9 @@ class CodeGen(objcache.Cache):
             #        ret int %Y
             #    }
             #
+
+        if clear and self.defaultStackSegmentSize() > 0:
+            self.llvmClearFunctionFrame(self.currentFunction(), self.llvmCurrentFrameDescriptor())
 
         call = self.llvmSafeCall(llvm_func, llvm_args)
         call.calling_convention = llvm.core.CC_FASTCALL
@@ -3602,7 +3653,7 @@ class CodeGen(objcache.Cache):
         self.pushBuilder(block)
 
             # Create the initial stack segment.
-        stack = self.llvmNewStackSegment()
+        stack = self.llvmNewStackSegment(descr="initial")
 
             # Create a frame for the stub function that it can pass into the
             # callee for continuation. We set both the normal and exception
@@ -3676,7 +3727,7 @@ class CodeGen(objcache.Cache):
         callback: Function - Function receiving a single parameter.
 
         prio: Bool - Code registered with True will be run before code
-        registered with False. Use False if unsure. 
+        registered with False. Use False if unsure.
 
         Note: It is guaranteed that the HILTI run-time has been fully
         initialized when this code will be run.

@@ -64,7 +64,7 @@ class New(Operator):
     with arguments already bound to *op2*.
     """
     def _codegen(self, cg):
-        ptr = cg.llvmMalloc(cg.llvmTypeContinuationPtr())
+        ptr = cg.llvmMalloc(cg.llvmTypeContinuationPtr(), tag="new <callable>", location=self.location())
         null = llvm.core.Constant.null(cg.llvmTypeContinuationPtr())
         cg.builder().store(null, ptr)
         cg.llvmStoreInTarget(self, ptr)

@@ -720,8 +720,13 @@ def p_param_list(p):
         p[0] = [(p[1], p[2])] + p[4]
 
 def p_param_id(p):
-    """param_id : type IDENT"""
-    p[0] = id.Parameter(p[2], p[1], location=_loc(p, 2))
+    """param_id : type IDENT
+                | type PARAM_CLEAR IDENT
+    """
+    p[0] = id.Parameter(p[2] if len(p) <= 3 else p[3], p[1], location=_loc(p, 2))
+
+    if len(p) > 3:
+        p[0].setAttrClear()
 
 def p_local_id(p):
     """local_id : type IDENT

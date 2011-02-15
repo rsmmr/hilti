@@ -70,7 +70,7 @@ class ReturnVoid(Instruction):
         if cg.currentFunction().callingConvention() == function.CallingConvention.HILTI:
             succ = cg.llvmFrameNormalSucc()
             frame = cg.llvmFrameNormalFrame()
-            cg.llvmTailCall(succ, frame=frame)
+            cg.llvmTailCall(succ, frame=frame, clear=True)
         else:
             cg.builder().ret_void()
 
@@ -111,7 +111,7 @@ class ReturnResult(Instruction):
             frame = cg.llvmFrameNormalFrame()
 
             addr = cg._llvmAddrInBasicFrame(frame.fptr(), 0, 2)
-            cg.llvmTailCall(succ, frame=frame, addl_args=[(op1, rtype)])
+            cg.llvmTailCall(succ, frame=frame, addl_args=[(op1, rtype)], clear=True)
         else:
             cg.builder().ret(op1)
 
@@ -537,7 +537,7 @@ def _getStandardFrame(cg):
     cont_except = cg.llvmCFunctionInternal("__hlt_standard_cont_except")
 
     # Construct the frame for the exception continuation. (This can't be reused.)
-    cont_except_frame = cg.llvmMalloc(cg.llvmTypeBasicFrame())
+    cont_except_frame = cg.llvmMalloc(cg.llvmTypeBasicFrame(), tag="<exception frame>")
     cg.llvmFrameClearException(cont_except_frame)
 
     return (cont_normal, cont_normal_frame, cont_except, cont_except_frame)

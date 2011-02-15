@@ -611,7 +611,7 @@ class Function(node.Node):
         # self._scope.canonify(canonifier)
         self._id.canonify(canonifier)
 
-        if canonifier.debugMode() > 1:
+        if canonifier.debugLevel() > 1:
             args = [operand.ID(i) for i in canonifier.currentFunction().type().args()]
             fmt = ["%s"] * len(args)
             dbg = hilti.instructions.debug.message("hilti-flow", "entering %s(%s)" % (canonifier.currentFunctionName(), ", ".join(fmt)), args)
@@ -693,7 +693,7 @@ def _unifyBlock(canonifier, block):
             newins = hilti.instructions.flow.Jump(operand.ID(id.Local(block.next(), type.Label(), location=loc)), location=loc)
         else:
 
-            if canonifier.debugMode() > 1:
+            if canonifier.debugLevel() > 1:
                 dbg = hilti.instructions.debug.message("hilti-flow", "leaving %s" % canonifier.currentFunctionName())
                 block.addInstruction(dbg)
 

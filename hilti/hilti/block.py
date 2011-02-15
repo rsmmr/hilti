@@ -170,7 +170,7 @@ class Block(node.Node):
 
     def _canonify(self, canonifier):
         # If we are in debug mode, first add message instructions.
-        if canonifier.debugMode() > 1:
+        if canonifier.debugLevel() > 1:
             b = Block(canonifier.currentFunction(), instructions=[], name=self._name, location=self.location())
             b.setMayRemove(self.mayRemove())
             b.setNext(self.next())
@@ -224,6 +224,9 @@ class Block(node.Node):
         visitor.visitPost(self)
 
 def _addDebugPreInstruction(canonifier, b, i):
+    if canonifier.debugLevel() == 0:
+        return
+
     if isinstance(i, hilti.instructions.debug.Msg):
         return
 
@@ -263,6 +266,9 @@ def _addDebugPreInstruction(canonifier, b, i):
     b.addInstruction(dbg)
 
 def _addDebugPostInstruction(canonifier, b, i):
+    if canonifier.debugLevel() == 0:
+        return
+
     if isinstance(i, hilti.instructions.debug.Msg):
         return
 
