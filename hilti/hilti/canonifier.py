@@ -171,7 +171,7 @@ class Canonifier(object):
         if ins:
             current_block = self.currentTransformedBlock()
 
-            if add_flow_dbg and self.debugLevel():
+            if add_flow_dbg and self.debugLevel() > 1:
                 dbg = hilti.instructions.debug.message("hilti-flow", "leaving %s" % self.currentFunctionName())
                 current_block.addInstruction(dbg)
 
