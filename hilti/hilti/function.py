@@ -402,7 +402,8 @@ class Function(node.Node):
         assert builtin_id(self) == builtin_id(cg.currentFunction())
 
         if self._handlers:
-            cg.llvmTailCall(self.llvmExceptionHandler(cg))
+            (excpt_succ, excpt_frame) = self.llvmExceptionHandler(cg)
+            cg.llvmTailCall(excpt_succ) # sic! we don't pass the frame.
 
         else:
             # No handlers, escalate directly to caller.
@@ -459,7 +460,7 @@ class Function(node.Node):
 
         if not self._handlers:
             # No handlers defined, pass on to parent.
-            return cg.llvmFrameExcptSucc()
+            return (cg.llvmFrameExcptSucc(), cg.llvmFrameExcptFrame())
 
         name = "%s_exception_%s" % (cg.nameFunction(self), self._handlers[-1][2])
 
@@ -486,7 +487,7 @@ class Function(node.Node):
             cg._llvm.eoss = old_eoss
             cg._llvm.ctxptr = old_ctxptr
 
-            return func
+            return (func, cg.llvmCurrentFrameDescriptor())
 
         return cg.cache(name, _makeFunction)
 

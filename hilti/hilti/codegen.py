@@ -1482,6 +1482,7 @@ class CodeGen(objcache.Cache):
         assert self.currentFunction()
         ptr = self.llvmFrameExcptSucc()
         frame = self.llvmFrameExcptFrame()
+
         self.llvmFrameSetException(exception, frame)
         self.llvmTailCall(ptr, frame=frame)
 
@@ -1715,8 +1716,10 @@ class CodeGen(objcache.Cache):
 
         self.llvmFrameSetNormalSucc(llvm_succ, frame=frame)
         self.llvmFrameSetNormalFrame(self.llvmCurrentFrameDescriptor(), frame=frame)
-        self.llvmFrameSetExcptSucc(self.currentFunction().llvmExceptionHandler(self), frame=frame)
-        self.llvmFrameSetExcptFrame(self.llvmFrameExcptFrame(), frame=frame)
+
+        (excpt_succ, excpt_frame) = self.currentFunction().llvmExceptionHandler(self)
+        self.llvmFrameSetExcptSucc(excpt_succ, frame=frame)
+        self.llvmFrameSetExcptFrame(excpt_frame, frame=frame)
 
         self.llvmTailCall(func, frame=frame)
 
@@ -2627,15 +2630,17 @@ class CodeGen(objcache.Cache):
             contNormFunc = self.builder().bitcast(contNormFunc, self.llvmTypeBasicFunctionPtr())
 
         if not contExceptFunc:
-            contExceptFunc = self.currentFunction().llvmExceptionHandler(self)
+            (excpt_succ, excpt_frame) = self.currentFunction().llvmExceptionHandler(self)
+            contExceptFunc = excpt_succ
+            if not contExceptFrame:
+                contExceptFrame = excpt_frame
         else:
             contExceptFunc = self.builder().bitcast(contExceptFunc, self.llvmTypeBasicFunctionPtr())
+            if not contExceptFrame:
+                contExceptFrame = self.llvmFrameExcptFrame()
 
         if not contNormFrame:
             contNormFrame = self.llvmCurrentFrameDescriptor()
-
-        if not contExceptFrame:
-            contExceptFrame = self.llvmFrameExcptFrame()
 
         util.check_class(contNormFrame, CodeGen._FrameDescriptor, "llvmMakeFunctionFrame")
         util.check_class(contExceptFrame, CodeGen._FrameDescriptor, "llvmMakeFunctionFrame")
@@ -3933,7 +3938,7 @@ class CodeGen(objcache.Cache):
     def llvmDebugPopIndent(self):
         self.llvmCallCInternal("__hlt_debug_pop_indent", [self.llvmCurrentExecutionContextPtr()])
 
-    def llvmDebugPrintFrame(s, frame):
+    def llvmDebugPrintFrame(self, s, frame):
         s = "   | " + s
         self.llvmDebugPrintPtr(s + "       fptr", frame.fptr())
         self.llvmDebugPrintPtr(s + "       eoss", frame.eoss())

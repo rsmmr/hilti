@@ -1,0 +1,41 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build2 %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type myException = exception
+
+void foo() {
+    local ref<myException> e
+    e = new myException
+    exception.throw e
+}
+
+void run() {
+
+    local ref<callable<string>> c
+    local string result
+
+    result = "init"
+
+    nop
+
+    try {
+        call foo ()
+    }
+
+    catch myException {
+       call Hilti::print ("Caught it!")
+    }
+
+    nop
+    call hilti::print (result)
+
+    return.void
+}
+
