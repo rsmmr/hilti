@@ -310,7 +310,6 @@ Flow* bulkFeedPiece(binpac_parser* parser, Flow* flow, int eof, const char* data
 
     check_exception(excpt);
 
-
     if ( ! flow->resume ) {
         if ( debug )
             fprintf(stderr, "--- pac-driver: starting parsing flow %s at %s.\n", fid, t);

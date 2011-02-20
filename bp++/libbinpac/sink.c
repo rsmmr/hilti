@@ -155,6 +155,8 @@ void binpac_dbg_print_data(binpac_sink* sink, hlt_bytes* data, binpac_filter* fi
 
 void binpac_sink_write(binpac_sink* sink, hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    DBG_LOG("binpac-sinks", "starting to write to sink %p", sink);
+
     // If the HILTI function that we'll call suspends, it will change the
     // yield/resume fields. We need to reset them when we leave this
     // function.
@@ -234,6 +236,7 @@ exit:
     ctx->yield = saved_yield;
     ctx->resume = saved_resume;
 
+    DBG_LOG("binpac-sinks", "done writing to sink %p", sink);
 }
 
 void binpac_sink_close(binpac_sink* sink, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -246,16 +249,12 @@ void binpac_sink_close(binpac_sink* sink, hlt_exception** excpt, hlt_execution_c
 
     sink->head = 0;
 
-#ifdef DEBUG
     DBG_LOG("binpac-sinks", "closed sink %p, disconnected all parsers", sink);
-#endif
 }
 
 void binpac_sink_filter(binpac_sink* sink, binpac_filter* filter, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     sink->filter = binpac_filter_add(sink->filter, filter, excpt, ctx);
 
-#ifdef DEBUG
     DBG_LOG("binpac-sinks", "attached filter %s to sink %p", filter->name, sink);
-#endif
 }

@@ -95,6 +95,10 @@ void binpac_mime_register_parser(binpac_parser* parser, hlt_exception** excpt, h
             b = main;
         }
 
+        // If it's the catch-all "*", add an empty string.
+        if ( len == 1 && raw[0] == '*' )
+            b = hlt_bytes_new(excpt, ctx);
+
         add_parser(b, parser, excpt, ctx);
         i = hlt_list_iter_incr(i, excpt, ctx);
     }
@@ -120,8 +124,17 @@ static void connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_fu
 
     while ( mp ) {
         assert(mp->parser->_new_func);
+
+        // The C stub for the ctor function may mess with our yield/resume
+        // information. We need to restore that afterwards.
+        hlt_continuation* saved_yield = ctx->yield;
+        hlt_continuation* saved_resume = ctx->resume;
+
         void* pobj = mp->parser->_new_func(sink, mtype, excpt, ctx);
         assert(pobj);
+
+        ctx->yield = saved_yield;
+        ctx->resume = saved_resume;
 
         _binpac_sink_connect_intern(sink, 0, &pobj, mp->parser, mtype_full, excpt, ctx);
 
@@ -137,4 +150,7 @@ void binpac_mime_connect_by_bytes(binpac_sink* sink, hlt_bytes* mtype, hlt_excep
     hlt_bytes* mtype2 = main_type(mtype, excpt, ctx);
     if ( mtype )
         connect_one(sink, mtype2, mtype, excpt, ctx);
+
+    // Check for catch-alls with the empty string.
+    connect_one(sink, hlt_bytes_new(excpt, ctx), mtype, excpt, ctx);
 }
