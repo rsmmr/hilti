@@ -88,16 +88,9 @@ class List(type.ParseableContainer):
             hook.setStmts(stmt.Block(None, stmts=[ifelse]))
             unit.module().addHook(hook)
 
-            # Add a boolean production checking the condition.
-            #
-            # List1 -> Item Alt
-            # List2 -> Epsilon
+            # Add a While production checking the condition.
             hookrc = expr.Hilti(hilti.operand.ID(hilti.id.Local("__hookrc", hilti.type.Bool())), type.Bool())
-            l1 = grammar.Sequence(location=loc)
-            eps = grammar.Epsilon(location=loc)
-            alt = grammar.Boolean(hookrc, l1, eps, location=loc)
-            l1.addProduction(item)
-            l1.addProduction(alt)
+            l1 = grammar.While(hookrc, item, location=loc)
 
             item.setUntilField(field)
 

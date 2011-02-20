@@ -678,6 +678,35 @@ class Counter(NonTerminal):
     def _rhss(self):
         return [[self._body]]
 
+class While(NonTerminal):
+    """A productions executing as long as condition is true.
+
+    expr: ~~Expr : An expression of type ~~Bool controlling the loop.
+
+    body: ~~Production: The production to be repeated.
+    """
+    def __init__(self, expr, body, symbol=None, location=None):
+        super(While, self).__init__(name=None, type=None, symbol=symbol, location=location)
+        self._expr = expr
+        self._body = body
+
+    def expr(self):
+        """Returns the expression controlling the loop.
+
+        Returns: ~~Expression - The expression of boolean type.
+        """
+        return self._expr
+
+    def body(self):
+        """Returns production for the loop body.
+
+        Returns: ~~Production - The production.
+        """
+        return self._body
+
+    def _rhss(self):
+        return [[self._body]]
+
 class Switch(Conditional):
     """Alternatives between which we decide based on which value out of a set
     of options is matched; plus a default if none.

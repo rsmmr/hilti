@@ -119,10 +119,8 @@ class _:
 
     def evaluate(cg, obj, method, args):
         sink = obj.evaluate(cg)
-        data = args[0].evaluate(cg)
-        user = cg.builder().idOp("__user")
-        cfunc = cg.builder().idOp("BinPAC::sink_write")
-        cargs = cg.builder().tupleOp([sink, data, user])
+        cfunc = cg.builder().idOp("BinPAC::sink_close")
+        cargs = cg.builder().tupleOp([sink])
         cg.builder().call(None, cfunc, cargs)
         return None
 

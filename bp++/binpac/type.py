@@ -1007,7 +1007,6 @@ class Sinkable:
         data: ~~hilti.Operand - An operand with the data to write, which much
         be of type ~~Bytes.
         """
-
         assert isinstance(sink.type(), type.Sink)
         assert isinstance(data.type(), hilti.type.Reference) and isinstance(data.type().refType(), hilti.type.Bytes)
 

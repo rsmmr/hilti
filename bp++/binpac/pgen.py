@@ -317,6 +317,9 @@ class ParserGen:
         elif isinstance(prod, grammar.Counter):
             self._parseCounter(prod, args)
 
+        elif isinstance(prod, grammar.While):
+            self._parseWhile(prod, args)
+
         elif isinstance(prod, grammar.Switch):
             self._parseSwitch(prod, args)
 
@@ -631,7 +634,7 @@ class ParserGen:
 
     def _parseCounter(self, prod, args):
         builder = self.builder()
-        builder.setNextComment("Parsing counter %s" % prod.symbol())
+        builder.setNextComment("Parsing counter loop %s" % prod.symbol())
 
         limit = prod.expr().evaluate(self.cg())
         cnt = self.cg().builder().addLocal("__loop_counter", limit.type())
@@ -653,6 +656,30 @@ class ParserGen:
         # The body doing one iteration of the production.
         body.decr(cnt, cnt)
 
+        self.cg().setBuilder(body)
+        self._startingProduction(args, prod.body())
+        self._parseProduction(prod.body(), args)
+        self._finishedProduction(args, prod.body(), None)
+        self.cg().builder().jump(cond)
+
+        # All done.
+        self.cg().setBuilder(done)
+
+    def _parseWhile(self, prod, args):
+        self.builder().setNextComment("Parsing while loop %s" % prod.symbol())
+
+        body = self.functionBuilder().newBuilder("loop_body")
+        done = self.functionBuilder().newBuilder("loop_done")
+        cond = self.functionBuilder().newBuilder("loop_cond")
+
+        self.builder().jump(cond)
+
+        # Condition block checking whether we're done.
+        self.cg().setBuilder(cond)
+        bool = prod.expr().evaluate(self.cg())
+        cond.if_else(bool, body, done)
+
+        # The body doing one iteration of the production.
         self.cg().setBuilder(body)
         self._startingProduction(args, prod.body())
         self._parseProduction(prod.body(), args)
@@ -746,6 +773,9 @@ class ParserGen:
         if not self.cg().debug():
             return
 
+        # TODO: This method does not seem to release all memory references. In
+        # debug mode, the GC appears to not clean things up in garbage mode.
+        # When removing this code, that effect disappears.
         fbuilder = self.cg().functionBuilder()
         builder = self.cg().builder()
 
@@ -753,6 +783,7 @@ class ParserGen:
         str = fbuilder.addTmp("__str", hilti.type.Reference(hilti.type.Bytes()))
         builder.incr_by(next5, cur, 5)
         builder.bytes_sub(str, cur, next5)
+        builder.clear(next5)
 
         msg = "- %s is |" % tag
         builder.makeDebugMsg("binpac-verbose", msg + "%s| ...", [str])
@@ -1120,7 +1151,7 @@ class ParserGen:
         defined. When the function returns, a ~~Builder is set that
         corresponds to the case that a filter has been defined for *args.obj*.
         The caller can then add further code there, and when done jump to the
-        returned *done* builder. 
+        returned *done* builder.
 
         args: An ~~Args object with the current parsing arguments, as used by
         the ~~ParserGen.
@@ -1153,14 +1184,14 @@ class ParserGen:
     def filterInput(self, args, resume):
         """Helper to transparently pipe input through a chain of filters if a
         parsing object has defined any. It adjust the parsing arguments
-        appropiately so that subsequent code doesn't notice the filtering. 
+        appropiately so that subsequent code doesn't notice the filtering.
 
         args: An ~~Args object with the current parsing arguments, as used by
         the ~~ParserGen.
 
         resume: bool - True if this method is called after resuming parsing
         because of having insufficient inout earlier. False if it's the
-        initial parsing step for a newly instantiated parser. 
+        initial parsing step for a newly instantiated parser.
         """
         cg = self.cg()
 
