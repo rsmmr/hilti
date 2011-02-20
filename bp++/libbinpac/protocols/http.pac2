@@ -140,32 +140,37 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
 
     switch ( delivery_mode ) {
 
-      DeliveryMode::EndOfData -> : bytes &eod &chunked; # -> self.data;
+      DeliveryMode::EndOfData -> : bytes &eod &chunked -> self.data;
 
-      DeliveryMode::Length    -> : bytes &length=msg.content_length &chunked; # -> self.data;
+      DeliveryMode::Length    -> : bytes &length=msg.content_length &chunked -> self.data;
 
       DeliveryMode::Multipart -> : list<FullLine> &until($$ == msg.multipart_boundary)
-                                   ; # foreach { self.data.write($$); }
+                                   foreach { self.data.write($$); }
 
       DeliveryMode::Chunked   -> : Chunks(self, msg);
     };
 
-    # var data: sink;
+    var data: sink;
+
+    on %init {
+        if ( msg.content_type != b"" )
+            self.data.connect_mime_type(msg.content_type);
+        }
 };
 
 type Chunks = unit(body: Body, msg: Message) {
-    :        list<Chunk> &until($$.length == 0);
+    :        list<Chunk(body)> &until($$.length == 0);
     trailer: list<Header(msg)>
                 { msg.headers += self.trailer; }
     :        NewLine;
 };
 
-type Chunk = unit {
+type Chunk = unit(body: Body) {
     length:    HexInteger &convert=hex_to_uint;
     :          OptionalWhiteSpace;
     extension: RestOfLine;
     :          NewLine;
-    :          bytes &length=self.length &chunked; # -> data;
+    :          bytes &length=self.length &chunked -> body.data;
     :          NewLine if ( self.length != 0 );
 };
 
