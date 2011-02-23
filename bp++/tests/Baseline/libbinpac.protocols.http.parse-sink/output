@@ -1,0 +1,13 @@
+======== Requests 1
+======== Requests 2
+======== Replies Chunked
+I ate all: This is the data in the first chunk\x0d\x0aand this is the second one
+======== Replies Chunked w/ trailer
+I ate all: This is the data in the first chunk\x0d\x0aand this is the second one
+======== Replies Content Length
+I ate all: 1\x0d\x0a22\x0d\x0a333\x0d\x0a4444\x0d\x0a55555\x0d\x0a666666\x0d\x0a7777777\x0d\x0a88888888\x0d\x0a999999999\x0d\x0a0000000000\x0d\x0a
+======== Replies Eod
+I ate all: 1\x0d\x0a22\x0d\x0a333\x0d\x0a4444\x0d\x0a55555\x0d\x0a666666\x0d\x0a7777777\x0d\x0a88888888\x0d\x0a999999999\x0d\x0a0000000000\x0d\x0a
+======== Replies Multipart
+I ate all: This is a message with multiple parts in MIME format.\x0d\x0a--frontier\x0d\x0aContent-Type: text/plain\x0d\x0a\x0d\x0aThis is the body of the message.\x0d\x0a--frontier\x0d\x0aContent-Type: application/octet-stream\x0d\x0aContent-Transfer-Encoding: base64\x0d\x0a\x0d\x0aPGh0bWw+CiAgPGhlYWQ+CiAgPC9oZWFkPgogIDxib2R5PgogICAgPHA+VGhpcyBpcyB0aGUg\x0d\x0aYm9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==\x0d\x0a
+========
