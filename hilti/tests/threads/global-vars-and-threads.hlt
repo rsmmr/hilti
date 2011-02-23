@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC:  hilti-build2 %INPUT -o a.out
-# @TEST-EXEC:  ./a.out | sort | uniq -c | sort -n -k 2 >output 2>&1
+# @TEST-EXEC:  ./a.out | sort | uniq -c | sort -n -k 2 | awk '{print $1, $2}' >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
 module Main

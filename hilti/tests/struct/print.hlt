@@ -8,7 +8,9 @@ module Main
 
 import Hilti
 
-type B = struct { }
+type B = struct {
+    int32 x
+}
 
 
 type A = struct {
