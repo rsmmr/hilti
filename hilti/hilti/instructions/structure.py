@@ -207,6 +207,9 @@ class New(Operator):
         else:
             structt = self.op1().value().type()
 
+        if not len(structt.fields()):
+            return llvm.core.Constant.null(cg.llvmTypeGenericPointer())
+
         s = cg.llvmMalloc(structt.llvmType(cg).pointee, tag="new <struct>", location=self.location())
 
         # Initialize fields
