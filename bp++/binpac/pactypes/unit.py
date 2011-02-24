@@ -544,7 +544,6 @@ class Unit(type.ParseableType, property.Container):
         self._scope = scope.Scope(None, module.scope())
         self._pobjtype = None
         self._module = module
-        self._buffer_input = False
 
         self._scope.addID(id.Parameter("self", self, location=location))
 
@@ -684,6 +683,8 @@ class Unit(type.ParseableType, property.Container):
         """
         return "__new_%s" % self.name().replace(" ", "")
 
+    _buffer_input = {}
+
     def bufferInput(self):
         """Returns whether the type has been marked as one that needs
         to fully buffer its input until fully parsed. See
@@ -691,7 +692,7 @@ class Unit(type.ParseableType, property.Container):
 
         Returns: bool - True if buffering is required.
         """
-        return self._buffer_input
+        return Unit._buffer_input.get(str(self.__class__), False)
 
     def setBufferInput(self):
         """Marks the type as one that needs to buffer its input until
@@ -702,7 +703,10 @@ class Unit(type.ParseableType, property.Container):
         nested types where the top-level is buffering, it may prevent
         garbage collection from freeing memory early.
         """
-        self._buffer_input = True
+        # We associate the flag with the class name to extend it to all
+        # instances of the class. Because we sometimes deep-copy instances, we'd
+        # otherwise not reach all.
+        Unit._buffer_input[str(self.__class__)] = True
 
     # Overriden from property.Container
 

@@ -1069,7 +1069,8 @@ class Unknown(ParseableType):
 
         i.resolve(resolver)
 
-        t = i.type() # i.copy(i.type()) XXX
+        # t = i.type()
+        t = copy.copy(i.type())
 
         t._attrs = copy.copy(self._attrs)
 
