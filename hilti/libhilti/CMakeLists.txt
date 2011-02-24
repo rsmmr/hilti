@@ -54,7 +54,7 @@ add_custom_command(
 add_custom_command(
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/module/hilti.hlt
-    COMMAND hiltic
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/run-hiltic
     ARGS    -P ${CMAKE_CURRENT_SOURCE_DIR}/module/hilti.hlt >${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h
     )
 
