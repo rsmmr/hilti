@@ -1,0 +1,13 @@
+
+module main
+
+import hilti
+
+void run() {
+@start:
+    call hilti::print ("Hello, world!", True)
+    return.void
+    }
+
+export run
+
