@@ -18,7 +18,7 @@ from hilti.constraints import *
 from hilti.instructions.operators import *
 
 @hlt.type("struct", 7)
-class Struct(type.HeapType):
+class Struct(type.HeapType, type.TypeListable):
     """Type for ``struct``.
 
     fields: list of (~~ID, ~~Operand) - The fields of the struct, given as
@@ -38,6 +38,34 @@ class Struct(type.HeapType):
         tuples of an ID and an optional default value.
         """
         return self._ids
+
+    def llvmFromValues(self, cg, vals):
+        """Creates a new struct instance from a list of values. The individual
+        values must already be coerced to the corresponding field's type (if
+        necessary). Note that all values must be given, including optional
+        ones and any with default values.
+ 
+        vals: list of llvm.core.Value - The values to initialize the struct
+        with.
+
+        Returns: llvm.core.Value - The new structure.
+        """
+        assert len(vals) == len(self._ids)
+
+        # Add the mask; all bits are set.
+        vals = [cg.llvmConstInt((2 ** (len(self._ids) + 1)) - 1, 32)] + vals
+
+        stype = self.llvmType(cg).pointee
+        init = cg.llvmAlloca(stype)
+        init = cg.builder().load(init)
+
+        for (i, val) in zip(range(len(vals)), vals):
+            init = cg.llvmInsertValue(init, i, val)
+
+        s = cg.llvmMalloc(self.llvmType(cg).pointee, tag="new <struct>")
+        cg.llvmAssign(init, s)
+
+        return s
 
     ### Overridden from Type.
 
@@ -161,6 +189,11 @@ class Struct(type.HeapType):
         ty = llvm.core.Type.pointer(llvm.core.Type.struct(fields))
         th.type.refine(ty)
         return ty
+
+    ### Overridden from TypeListable.
+
+    def typeList(self):
+        return [id[0].type() for id in self._ids]
 
 @hlt.constraint("string")
 def _fieldName(ty, op, i):

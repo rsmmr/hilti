@@ -21,7 +21,7 @@ from hilti.constraints import *
 from hilti.instructions.operators import *
 
 @hlt.type("tuple", 5)
-class Tuple(type.ValueType, type.Constable, type.Parameterizable):
+class Tuple(type.ValueType, type.Constable, type.Parameterizable, type.TypeListable):
     """A type for tuples of values.
 
     types: list of ~~Type - The types of the individual tuple elements, or an
@@ -44,6 +44,16 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
         types: list of ~~ValueType - The types.
         """
         self._types = types
+
+    def llvmIndex(self, cg, val, idx):
+        """Extract a tuple element out of an LLVM value.
+
+        val: llvm.core.Value - The tuple value.
+        idx: integer - The index to extract.
+
+        Returns: llvm.core.Value - The extracted value.
+        """
+        return cg.llvmExtractValue(val, cg.llvmConstInt(idx, 32))
 
     ### Overridden from Type.
 
@@ -129,19 +139,27 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
         return self._types != []
 
     def canCoerceTo(self, dsttype):
-        if not isinstance(dsttype, Tuple):
+        target_types = None
+
+        if isinstance(dsttype, Tuple):
+            if not dsttype._types:
+                return True
+
+            if not self._types:
+                return False
+
+            target_types = dsttype.typeList()
+
+        if isinstance(dsttype, type.Reference) and isinstance(dsttype.refType(), type.Struct):
+            target_types = dsttype.refType().typeList()
+
+        if not target_types:
             return False
 
-        if not dsttype._types:
-            return True
-
-        if not self._types:
+        if len(self._types) != len(target_types):
             return False
 
-        if len(self._types) != len(dsttype._types):
-            return False
-
-        for (t1, t2) in zip(self._types, dsttype._types):
+        for (t1, t2) in zip(self._types, target_types):
             if not type.canCoerceTo(t1, t2):
                 return False
 
@@ -156,18 +174,28 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
         if self == dsttype:
             return value
 
-        if not dsttype._types:
-            return value
+        target_types = None
 
-        new_elems = []
+        if isinstance(dsttype, Tuple):
+            if not dsttype._types:
+                return value
+
+            target_types = dsttype.typeList()
+
+        if isinstance(dsttype, type.Reference) and isinstance(dsttype.refType(), type.Struct):
+            target_types = dsttype.refType().typeList()
+
+        assert target_types
+
+        elems = []
         for i in range(len(self._types)):
-            idx = cg.llvmGEPIdx(i)
-            ptr = cg.builder().gep(value, [self.llvmGEPIdx(0), idx])
-            elem = self.builder().load(ptr)
-            elem = type.llvmCoerceTo(cg, elem, self._types[i], dsttype._types[i])
-            new_elems += [elem]
+            elem = cg.llvmExtractValue(value, i)
+            elems += [type.llvmCoerceTo(cg, elem, self._types[i], target_types[i])]
 
-        return llvm.core.Constant.struct(elems)
+        if isinstance(dsttype, Tuple):
+            return llvm.core.Constant.struct(elems)
+        else:
+            return dsttype.refType().llvmFromValues(cg, elems)
 
     ### Overridden from Constable.
 
@@ -263,6 +291,11 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable):
 
     def args(self):
         return self._types
+
+    ### Overridden from TypeListable.
+
+    def typeList(self):
+        return self._type
 
     ### Private.
 

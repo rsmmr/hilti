@@ -888,6 +888,51 @@ class Unpackable(Trait):
         """
         _notOverridden(self, "unpack")
 
+class Parameterizable(Trait):
+    """Trait class for ~~HiltiTypes which can used in ~~Classifier rules."""
+
+    ### Methods for derived classes to override.
+
+    def matchableTo(self, t):
+        """Returns True if classifier keys can have type *t* when matching
+        against the current type.
+
+        Can be overidden by derived classes. The default implementation
+        returns True only for ``self``.
+
+        Returns: bool - If it's a valid match type.
+        """
+        return t == self
+
+    def llvmToField(cg, ty, llvm_val):
+        """Returns a LLVM value representing a rule field of value *llvm_val*.
+        *llvm_val* can have any of the (corrsponding LLVM) types indicated as
+        valid by ~~matchableTo. The returned value must be of C type
+        ``hlt_classifier_field``.
+
+        Must be overriden by derived classes.
+
+        ty: ~~HiltiType - The original type of the LLVM value.
+
+	    llvm_val: llvm.core.Value - An LLVM value to convert into the internal
+        format.
+
+        Returns:: llvm.core.Value - The field value.
+        """
+        _notOverridden(self, "llvmToField")
+
+class TypeListable(Trait):
+    """Trait class for ~~HiltiTypes which define an ordered list of types."""
+
+    def typeList(self):
+        """Returns the ordered list of types defined by this type.
+
+        Must be overriden by derived classes.
+
+        Returns: list of ~~HiltiType - The list.
+        """
+        _notOverridden(self, "typeList")
+
 # End of traits for HiltiType.
 
 class ValueType(HiltiType):

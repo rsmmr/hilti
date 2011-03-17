@@ -172,6 +172,7 @@ class Constant(Operand):
     def __init__(self, constant, location=None):
         super(Constant, self).__init__(location)
         self.setValue(constant)
+        self._non_const_coerce = False
 
     def value(self):
         """Returns the constant the operand represents.
@@ -198,17 +199,22 @@ class Constant(Operand):
         return self._constant
 
     def canCoerceTo(self, ty):
-        return type.canCoerceConstantTo(self._constant, ty)
+        return type.canCoerceConstantTo(self._constant, ty) or super(Constant, self).canCoerceTo(ty)
 
     def coerceTo(self, cg, ty):
-        if not self.canCoerceTo(ty):
-            util.internal_error("cannot coerce operand of type %s to %s" % (self.type(), ty))
+        if type.canCoerceConstantTo(self._constant, ty):
+            const = type.coerceConstantTo(cg, self._constant, ty)
+            return Constant(const, location=self.location())
 
-        const = type.coerceConstantTo(cg, self._constant, ty)
-        return Constant(const, location=self.location())
+        else:
+            self._non_const_coerce = True
+            return super(Constant, self).coerceTo(cg, ty)
 
     def llvmLoad(self, cg):
-        return self._constant.llvm(cg)
+        if not  self._non_const_coerce:
+            return self._constant.llvm(cg)
+        else:
+            return self._coerce(cg, self._constant.llvm(cg))
 
     def llvmStore(self, cg):
         util.internal_error("llvmStore() not possible for Constant")
