@@ -359,6 +359,7 @@ cFile = _hasType("File")
 cCallable = _hasType("Callable")
 cTime = _hasType("Time")
 cInterval = _hasType("Interval")
+cClassifier = _hasType("Classifier")
 
 cFunction = _hasType("Function")
 cHook = _hasType("Hook")

@@ -22,10 +22,21 @@ from hilti.instructions.operators import *
 
 @hlt.type("tuple", 5)
 class Tuple(type.ValueType, type.Constable, type.Parameterizable, type.TypeListable):
+
+    class NotSet(type.Any):
+        """Internal type for marking tuple elements not set."""
+        def type(self):
+            return type.Any()
+
+        def llvmConstant(self, cg, t):
+            return llvm.core.Constant.null(cg.llvmTypeGenericPointer())
+
     """A type for tuples of values.
 
-    types: list of ~~Type - The types of the individual tuple elements, or an
-    empty list for ``tuple<*>``."""
+    types: list of ~~Type or ~~Tuple.NotSet - The types of the individual
+    tuple elements, or an empty list for ``tuple<*>``. An element can be
+    ~~NotSet iff the tuple is used as an intialization value for a ~~Struct
+    and then indicates fields that aren't to be initalized."""
     def __init__(self, args):
         super(Tuple, self).__init__()
         self._types = args
@@ -152,6 +163,10 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable, type.TypeLista
 
         if isinstance(dsttype, type.Reference) and isinstance(dsttype.refType(), type.Struct):
             target_types = dsttype.refType().typeList()
+        else:
+            for t in self._types:
+                if isinstance(t, Tuple.NotSet):
+                    return False
 
         if not target_types:
             return False
@@ -189,7 +204,11 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable, type.TypeLista
 
         elems = []
         for i in range(len(self._types)):
-            elem = cg.llvmExtractValue(value, i)
+            if isinstance(self._types[i], Tuple.NotSet):
+                elem = type.Struct.NotSet()
+            else:
+                elem = cg.llvmExtractValue(value, i)
+
             elems += [type.llvmCoerceTo(cg, elem, self._types[i], target_types[i])]
 
         if isinstance(dsttype, Tuple):
@@ -295,12 +314,11 @@ class Tuple(type.ValueType, type.Constable, type.Parameterizable, type.TypeLista
     ### Overridden from TypeListable.
 
     def typeList(self):
-        return self._type
+        return self._types
 
     ### Private.
 
     def _tupleType(self, cg):
-
         if len(self._types) == 0:
             # The empty tuple. We use some arbitrary placeholder type so that we
             # don't end up with zero-length variables. 

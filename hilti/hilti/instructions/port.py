@@ -13,7 +13,7 @@ from hilti.constraints import *
 from hilti.instructions.operators import *
 
 @hlt.type("port", 13, c="hlt_port")
-class Port(type.ValueType, type.Constable, type.Unpackable):
+class Port(type.ValueType, type.Constable, type.Unpackable, type.Classifiable):
     """Type for booleans."""
     def __init__(self, location=None):
         super(Port, self).__init__(location=location)
@@ -100,6 +100,16 @@ class Port(type.ValueType, type.Constable, type.Unpackable):
 
         cg.llvmSwitch(fmt, cases)
         return (cg.builder().load(port), cg.builder().load(iter))
+
+    ### Overidden from Classifiable
+
+    def llvmToField(self, cg, ty, llvm_val):
+        p = cg.llvmExtractValue(llvm_val, 0)
+        p = cg.llvmHtoN(p)
+        tmp = cg.llvmAlloca(llvm.core.Type.int(16))
+        cg.llvmAssign(p, tmp)
+        len = cg.llvmSizeOf(self.llvmType(cg).elements[0])
+        return type.Classifier.llvmClassifierField(cg, tmp, len)
 
 @hlt.overload(Equal, op1=cPort, op2=cPort, target=cBool)
 class Equal(Operator):

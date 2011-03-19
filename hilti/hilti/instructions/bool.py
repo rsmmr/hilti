@@ -16,7 +16,7 @@ from hilti.instruction import *
 from hilti.instructions.operators import *
 
 @hlt.type("bool", 3, c="int8_t")
-class Bool(type.ValueType, type.Constable, type.Unpackable):
+class Bool(type.ValueType, type.Constable, type.Unpackable, type.Classifiable):
     """Type for booleans."""
     def __init__(self, location=None):
         super(Bool, self).__init__(location=location)
@@ -82,6 +82,14 @@ class Bool(type.ValueType, type.Constable, type.Unpackable):
         result = builder.icmp(llvm.core.IPRED_NE, cg.llvmConstInt(0, 8), val)
 
         return (result, i)
+
+    ### Overidden from Classifiable
+
+    def llvmToField(self, cg, ty, llvm_val):
+        ty = self.llvmType(cg)
+        tmp = cg.llvmAlloca(ty)
+        cg.llvmAssign(llvm_val, tmp)
+        return type.Classifier.llvmClassifierField(cg, tmp, cg.llvmSizeOf(ty))
 
 @hlt.instruction("bool.and", op1=cBool, op2=cBool, target=cBool)
 class And(Instruction):

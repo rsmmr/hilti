@@ -1901,6 +1901,29 @@ class CodeGen(objcache.Cache):
 
         sizeof = self.llvmSizeOf(ty)
 
+        if not cast_to:
+            cast_to = llvm.core.Type.pointer(ty)
+
+        return self.llvmMallocBytes(sizeof, tag, location=location, cast_to=cast_to)
+
+    def llvmMallocBytes(self, len, tag, location=None, cast_to=None):
+        """Allocates memory for a given number of bytes. From the caller's
+        perspective essentially acts like a ``builder().malloc(len)``.
+        However, it must be used instead of that as will branch out the
+        internal memory management, rather than to libc.
+
+        len: llvm.core.Value or int - The number of bytes as LLVM or Python
+        integer.
+
+        cast_to: llvm.core.Type or None - If given, the returned pointer is
+        cast to this type. Per default, an ``i8`` pointer is returned.
+
+        Returns: llvm.core.Type.pointer - A pointer to the allocated memory,
+        typed per ``cast_to``.
+        """
+        if isinstance(len, int):
+            len = self.llvmConst(len, 32)
+
         if location:
             file = tag + " / " + location.file()
             line = location.line()
@@ -1910,10 +1933,10 @@ class CodeGen(objcache.Cache):
 
         file = self.llvmNewGlobalStringConst(self.nameNewGlobal("malloc"), file)
         line = self.llvmConstInt(line, 32)
-        mem = self.llvmCallCInternal("__hlt_gc_malloc_non_atomic", [sizeof, file, line])
+        mem = self.llvmCallCInternal("__hlt_gc_malloc_non_atomic", [len, file, line])
 
         if not cast_to:
-            cast_to = llvm.core.Type.pointer(ty)
+            cast_to = self.llvmTypeGenericPointer()
 
         return self.builder().bitcast(mem, cast_to)
 
@@ -3910,6 +3933,26 @@ class CodeGen(objcache.Cache):
         val = op.llvmLoad(self)
         val._value = op
         return val
+
+    def llvmHtoN(self, val):
+        """
+        Converts an LLVM integer value from host to network bytes
+        order. This methods suports 8/16/32/64 values.
+
+        val: llvm.core.Value - The LLVM integer.
+
+        Returns: llvm.core.Value - The converted integer.
+        """
+        if val.type.width == 64:
+            return self.llvmCallC("hlt::hton64", [operand.LLVM(val, type.Integer(64))])
+        if val.type.width == 32:
+            return self.llvmCallC("hlt::hton32", [operand.LLVM(val, type.Integer(32))])
+        if val.type.width == 16:
+            return self.llvmCallC("hlt::hton16", [operand.LLVM(val, type.Integer(16))])
+        if val.type.width == 8:
+            return val
+
+        util.internal_error("width of %d not supported by CodeGen.llvmHtoN" % val.type.width)
 
     ### Generating debug output.
 

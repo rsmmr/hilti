@@ -888,23 +888,12 @@ class Unpackable(Trait):
         """
         _notOverridden(self, "unpack")
 
-class Parameterizable(Trait):
+class Classifiable(Trait):
     """Trait class for ~~HiltiTypes which can used in ~~Classifier rules."""
 
     ### Methods for derived classes to override.
 
-    def matchableTo(self, t):
-        """Returns True if classifier keys can have type *t* when matching
-        against the current type.
-
-        Can be overidden by derived classes. The default implementation
-        returns True only for ``self``.
-
-        Returns: bool - If it's a valid match type.
-        """
-        return t == self
-
-    def llvmToField(cg, ty, llvm_val):
+    def llvmToField(self, cg, ty, llvm_val):
         """Returns a LLVM value representing a rule field of value *llvm_val*.
         *llvm_val* can have any of the (corrsponding LLVM) types indicated as
         valid by ~~matchableTo. The returned value must be of C type

@@ -17,7 +17,7 @@ from hilti.constraints import *
 from hilti.instructions.operators import *
 
 @hlt.type("net", 17, c="hlt_net")
-class Net(type.ValueType, type.Constable):
+class Net(type.ValueType, type.Constable, type.Classifiable):
     """Type for booleans."""
     def __init__(self, location=None):
         super(Net, self).__init__(location=location)
@@ -69,6 +69,27 @@ class Net(type.ValueType, type.Constable):
             net = "%s/%d" % (socket.inet_ntop(socket.AF_INET6, struct.pack("!2Q", b1, b2)), mask)
 
         printer.output(net)
+
+    ### Overidden from Classifiable
+
+    def llvmToField(self, cg, ty, llvm_val):
+        a1 = cg.llvmExtractValue(llvm_val, 0)
+        a1 = cg.llvmHtoN(a1)
+        a2 = cg.llvmExtractValue(llvm_val, 1)
+        a2 = cg.llvmHtoN(a2)
+
+        tmp = cg.llvmAlloca(llvm_val.type)
+        addr = cg.builder().gep(tmp, [cg.llvmGEPIdx(0), cg.llvmGEPIdx(0)])
+        cg.llvmAssign(a1, addr)
+
+        addr = cg.builder().gep(tmp, [cg.llvmGEPIdx(0), cg.llvmGEPIdx(1)])
+        cg.llvmAssign(a2, addr)
+
+        len = cg.llvmSizeOf(self.llvmType(cg).elements[0])
+        len = cg.builder().add(len, cg.llvmSizeOf(self.llvmType(cg).elements[1]))
+        bits = cg.llvmExtractValue(llvm_val, 2)
+        bits = cg.builder().zext(bits, llvm.core.Type.int(64))
+        return type.Classifier.llvmClassifierField(cg, tmp, len, bits)
 
 @hlt.overload(Equal, op1=cNet, op2=cNet, target=cBool)
 class EqualNet(Operator):

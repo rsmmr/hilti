@@ -693,12 +693,17 @@ def p_tuple_non_empty(p):
     p[0] = p[2]
 
 def p_operand_list(p):
-    """operand_list : operand ',' operand_list
-                    | operand"""
+    """operand_list : tuple_operand ',' operand_list
+                    | tuple_operand"""
     if len(p) == 4:
         p[0] = [p[1]] + p[3]
     else:
         p[0] = [p[1]]
+
+def p_tuple_operand(p):
+    """tuple_operand : operand
+                     | '*'"""
+    p[0] = (p[1] if p[1] != '*' else operand.Constant(constant.Constant(0, type.Tuple.NotSet())))
 
 def p_opt_operand_list(p):
     """opt_operand_list : operand_list"""
@@ -928,6 +933,14 @@ def p_type_regexp(p):
 def p_type_callable(p):
     """type : CALLABLE '<' type '>'"""
     p[0] = type.Callable(p[3])
+
+def p_type_classifier(p):
+    """type : CLASSIFIER '<' type ',' type '>'
+            | CLASSIFIER '<' '*' ',' '*' '>'"""
+    if p[3] != '*':
+        p[0] = type.Classifier(p[3], p[5], location=_loc(p, 1))
+    else:
+        p[0] = type.Classifier(None, None, location=_loc(p, 1))
 
 def p_type_ident(p):
     """type : IDENT"""

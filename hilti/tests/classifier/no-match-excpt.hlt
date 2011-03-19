@@ -1,0 +1,35 @@
+# $Id$
+#
+# @TEST-EXEC: hilti-build2 %INPUT -o a.out
+# @TEST-EXEC: ./a.out >output 2>&1
+# @TEST-EXEC: btest-diff output
+
+module Main
+
+import Hilti
+
+type Rule = struct {
+    net saddr,
+    port sport,
+    net daddr,
+    port dport
+}
+
+void run() {
+
+    local bool b
+    local int<64> v
+    local ref<classifier<Rule, int<64>>> c
+
+    local ref<Rule> r1 = (10.0.1.0/24, *, 10.0.2.0/24, 80/tcp)
+
+    c = new classifier<Rule, int<64>>
+    classifier.add c (r1, 10) 42
+    classifier.compile c
+
+    v = classifier.get c (10.0.1.1/32, 1024/tcp, 10.0.2.1, 85/tcp)
+    call Hilti::print (v)
+
+    return.void
+}
+

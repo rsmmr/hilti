@@ -93,6 +93,10 @@
 ; This must match with hook.c defines as hlt_hook_func.
 %__hlt_hook_func = type { i8*, i64, i64 }
 
+; A classifier key.
+; This must match with what classifier.h defines as hlt_classifier_field.
+%__hlt_classifier_field = type { i64, i64, [0 x i8] }
+
 ;;; The following libhilti functions do not fit normal C_HILTI calling
 ;;; conventions and thus declared here directly.
 %__hlt_bytes_pos = type {i8*, i8*}

@@ -62,7 +62,7 @@ hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt, hlt_executio
     while ( p < e ) {
         ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &dummy);
         if ( n < 0 ) {
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
             return 0;
         }
 

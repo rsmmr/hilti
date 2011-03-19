@@ -53,7 +53,7 @@ class IteratorBytes(type.Iterator):
         return type.Integer(8)
 
 @hlt.type("bytes", 9, c="hlt_bytes *")
-class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
+class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable, type.Classifiable):
     """Type for ``bytes``.
 
     location: ~~Location - Location information for the type.
@@ -299,6 +299,13 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable):
 
         return (cg.builder().load(bytes), cg.builder().load(iter))
 
+    ### Overidden from Classifiable
+
+    def llvmToField(self, cg, ty, llvm_val):
+        op = operand.LLVM(llvm_val, type.Reference(type.Bytes()))
+        data = cg.llvmCallC("hlt::bytes_to_raw", [op])
+        len = cg.llvmCallC("hlt::bytes_len", [op])
+        return type.Classifier.llvmClassifierField(cg, data, len)
 
 @hlt.overload(New, op1=cType(cBytes), target=cReferenceOf(cBytes))
 class New(Operator):

@@ -72,6 +72,7 @@
 #include "cmdqueue.h"
 #include "file.h"
 #include "profiler.h"
+#include "classifier.h"
 
 #include "module/module.h"
 

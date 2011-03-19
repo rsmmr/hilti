@@ -21,7 +21,7 @@ from hilti.constraints import *
 from hilti.instructions.operators import *
 
 @hlt.type("int", 1, c="int<n>_t")
-class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameterizable):
+class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameterizable, type.Classifiable):
     """Type for integers.
 
     width: The bit width.
@@ -266,6 +266,12 @@ class Integer(type.ValueType, type.Constable, type.Unpackable, type.Parameteriza
         cases = [(_makeIdx(key, True), unpackOne(spec)) for (key, spec) in _Unpacks.items()]
         cg.llvmSwitch(fmt, cases)
         return (cg.builder().load(val), cg.builder().load(iter))
+
+    def llvmToField(self, cg, ty, llvm_val):
+        ty = self.llvmType(cg)
+        tmp = cg.llvmAlloca(ty)
+        cg.llvmAssign(cg.llvmHtoN(llvm_val), tmp)
+        return type.Classifier.llvmClassifierField(cg, tmp, cg.llvmSizeOf(ty))
 
     ### Private
 

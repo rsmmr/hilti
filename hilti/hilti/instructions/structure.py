@@ -39,33 +39,151 @@ class Struct(type.HeapType, type.TypeListable):
         """
         return self._ids
 
+    class NotSet:
+        """Sentinel to mark an unset fields when listing struct
+        values."""
+        pass
+
     def llvmFromValues(self, cg, vals):
         """Creates a new struct instance from a list of values. The individual
         values must already be coerced to the corresponding field's type (if
-        necessary). Note that all values must be given, including optional
-        ones and any with default values.
- 
-        vals: list of llvm.core.Value - The values to initialize the struct
-        with.
+        necessary). Note that values for all struct fields must be given.
+        However, a value can be an instance of ``Struct.NotSet`` to use either
+        the default value (if one is defined) or leave the field
+        uninitialized. 
+
+        vals: list of llvm.core.Value or Struct.NotSet - The values to
+        initialize the struct with.
 
         Returns: llvm.core.Value - The new structure.
         """
         assert len(vals) == len(self._ids)
 
-        # Add the mask; all bits are set.
-        vals = [cg.llvmConstInt((2 ** (len(self._ids) + 1)) - 1, 32)] + vals
+        # Fill in defaults and determine masks.
+        new_vals = []
+        mask = 0
+        for (i, val) in zip(range(len(vals)), vals):
+            if isinstance(val, Struct.NotSet):
+                (id, default) = self.fields()[i]
+                if default:
+                    mask |= (1 << i)
+                    val = cg.llvmOp(default, id.type())
+                else:
+                    # Leave mask bit unset.
+                    val = None
+
+            else:
+                mask |= (1 << i)
+
+            new_vals += [val]
+
+        # Add the mask in front.
+        vals = [cg.llvmConstInt(mask, 32)] + new_vals
 
         stype = self.llvmType(cg).pointee
         init = cg.llvmAlloca(stype)
         init = cg.builder().load(init)
 
         for (i, val) in zip(range(len(vals)), vals):
-            init = cg.llvmInsertValue(init, i, val)
+            if val:
+                init = cg.llvmInsertValue(init, i, val)
 
         s = cg.llvmMalloc(self.llvmType(cg).pointee, tag="new <struct>")
         cg.llvmAssign(init, s)
 
         return s
+
+    def llvmValueList(self, cg, s, default=None, func=None):
+        """Returns a list with a structure's values.
+
+        cg: ~~CodeGen - The code generator to use.
+
+        s: llvm.core.Value - The structure to extract value's from.
+
+        default: llvm.core.Value - Optional substitute to use if a field is
+        not set; if not given, unset fields will trigger an exception.
+
+        func: function - An optional Python function that will be called for
+        each field value; its return value will then be inserted into the
+        result list instead of the original value. The function will receive
+        two arguments: the code generator and the extracted value.
+
+        Returns: list of llvm.core.Value: The values.
+        """
+        vals = []
+        for i in range(len(self._ids)):
+            vals += self.llvmGetField(cg, s, i, default, func)
+
+        return vals
+
+    def llvmGetField(self, cg, s, idx, default=None, func=None, location=None):
+        """Extracts a field from structure.
+
+        cg: ~~CodeGen - The code generator to use.
+
+        s: llvm.core.Value - The structure to extract the value from.
+
+        idx: integer - The index of the desired field, with zero being the
+        first.
+
+        default: llvm.core.Value - Optional substitute to use if a field is
+        not set; if not given, unset fields will trigger an exception.
+
+        func: function - An optional Python function that will be called for
+        each field value; its return value will then be inserted into the
+        result list instead of the original value. The function will receive
+        two arguments: the code generator and the extracted value.
+
+        Returns: llvm.core.Value - The value.
+        """
+        # Check whether field is valid.
+        zero = cg.llvmGEPIdx(0)
+
+        addr = cg.builder().gep(s, [zero, zero])
+        mask = cg.builder().load(addr)
+
+        bit = cg.llvmConstInt(1<<idx, 32)
+        isset = cg.builder().and_(bit, mask)
+
+        block_ok = cg.llvmNewBlock("ok")
+        block_not_set = cg.llvmNewBlock("not_set")
+        block_done = cg.llvmNewBlock("done")
+
+        notzero = cg.builder().icmp(llvm.core.IPRED_NE, isset, cg.llvmConstInt(0, 32))
+        cg.builder().cbranch(notzero, block_ok, block_not_set)
+
+        cg.pushBuilder(block_ok)
+
+        # Load field.
+        index = cg.llvmGEPIdx(idx + 1)
+        addr = cg.builder().gep(s, [zero, index])
+        result_ok = cg.builder().load(addr)
+
+        if func:
+            result_ok = func(cg, result_ok)
+
+        block_ok = cg.builder().block
+
+        cg.builder().branch(block_done)
+        cg.popBuilder()
+
+        cg.pushBuilder(block_not_set)
+
+        if not default:
+            cg.llvmRaiseExceptionByName("hlt_exception_undefined_value", location)
+
+        cg.builder().branch(block_done)
+        cg.popBuilder()
+
+        cg.pushBuilder(block_done)
+
+        if default:
+            phi = cg.builder().phi(result_ok.type)
+            phi.add_incoming(result_ok, block_ok)
+            phi.add_incoming(default, block_not_set)
+            return phi
+        else:
+            return result_ok
 
     ### Overridden from Type.
 
@@ -282,32 +400,8 @@ class Get(Instruction):
         assert idx >= 0
 
         s = cg.llvmOp(self.op1())
-
-        # Check whether field is valid.
-        zero = cg.llvmGEPIdx(0)
-
-        addr = cg.builder().gep(s, [zero, zero])
-        mask = cg.builder().load(addr)
-
-        bit = cg.llvmConstInt(1<<idx, 32)
-        isset = cg.builder().and_(bit, mask)
-
-        block_ok = cg.llvmNewBlock("ok")
-        block_exc = cg.llvmNewBlock("exc")
-
-        notzero = cg.builder().icmp(llvm.core.IPRED_NE, isset, cg.llvmConstInt(0, 32))
-        cg.builder().cbranch(notzero, block_ok, block_exc)
-
-        cg.pushBuilder(block_exc)
-        cg.llvmRaiseExceptionByName("hlt_exception_undefined_value", self.location())
-        cg.popBuilder()
-
-        cg.pushBuilder(block_ok)
-
-        # Load field.
-        index = cg.llvmGEPIdx(idx + 1)
-        addr = cg.builder().gep(s, [zero, index])
-        cg.llvmStoreInTarget(self, cg.builder().load(addr))
+        val = self.op1().type().refType().llvmGetField(cg, s, idx, location=self.location())
+        cg.llvmStoreInTarget(self, val)
 
 @hlt.instruction("struct.get_default", op1=cReferenceOf(cStruct), op2=_fieldName, op3=_fieldType, target=_fieldType)
 class Get(Instruction):
@@ -321,39 +415,8 @@ class Get(Instruction):
         assert idx >= 0
 
         s = cg.llvmOp(self.op1())
-
-        # Check whether field is valid.
-        zero = cg.llvmGEPIdx(0)
-
-        addr = cg.builder().gep(s, [zero, zero])
-        mask = cg.builder().load(addr)
-
-        bit = cg.llvmConstInt(1<<idx, 32)
-        isset = cg.builder().and_(bit, mask)
-
-        block_ok = cg.llvmNewBlock("ok")
-        block_default = cg.llvmNewBlock("default")
-        block_done = cg.llvmNewBlock("done")
-
-        notzero = cg.builder().icmp(llvm.core.IPRED_NE, isset, cg.llvmConstInt(0, 32))
-        cg.builder().cbranch(notzero, block_ok, block_default)
-
-        cg.pushBuilder(block_ok)
-
-        # Load field.
-        index = cg.llvmGEPIdx(idx + 1)
-        addr = cg.builder().gep(s, [zero, index])
-        cg.llvmStoreInTarget(self, cg.builder().load(addr))
-
-        cg.builder().branch(block_done)
-        cg.popBuilder()
-
-        cg.pushBuilder(block_default)
-        cg.llvmStoreInTarget(self, self.op3())
-        cg.builder().branch(block_done)
-        cg.popBuilder()
-
-        cg.pushBuilder(block_done)
+        val = self.op1().type().refType().llvmGetField(cg, s, idx, default=cg.llvmOp(self.op3()), location=self.location())
+        cg.llvmStoreInTarget(self, val)
 
 @hlt.instruction("struct.set", op1=cReferenceOf(cStruct), op2=_fieldName, op3=_fieldType)
 class Set(Instruction):

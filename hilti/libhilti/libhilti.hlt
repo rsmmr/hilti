@@ -63,6 +63,10 @@ declare "C-HILTI" bool  bytes_equal(any s1, any s2)
 
 declare "C-HILTI" int64 int_pow(int64 base, int64 exp)
 
+declare "C-HILTI" int<64> hton64(int<64> v)
+declare "C-HILTI" int<32> hton32(int<32> v)
+declare "C-HILTI" int<16> hton16(int<16> v)
+
 ###
 
 declare "C-HILTI" int64 string_len(string s)
@@ -98,6 +102,7 @@ declare "C-HILTI" bool bytes_is_frozen(ref<bytes> b)
 declare "C-HILTI" bool bytes_pos_is_frozen(iterator<bytes> pos)
 
 declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> last)
+declare "C-HILTI" caddr bytes_to_raw(ref<bytes> b)
 
 declare "C-HILTI" int8 bytes_pos_deref(iterator<bytes> pos)
 declare "C-HILTI" iterator<bytes> bytes_pos_incr(iterator<bytes> pos)
@@ -240,6 +245,14 @@ declare "C-HILTI" int<64> interval_nsecs(interval t)
 declare "C-HILTI" void profiler_start(string tag, Hilti::ProfileStyle style, int<64> param, ref<timer_mgr> tmgr)
 declare "C-HILTI" void profiler_update(string tag, int<64> user_delta)
 declare "C-HILTI" void profiler_stop(string tag)
+
+##
+
+declare "C-HILTI" ref<classifier<*,*>> classifier_new(int<64> num_fields, type rtype, type vtype)
+declare "C-HILTI" void classifier_add(ref<classifier<*,*>> c, caddr fields, int<64> priority, any value)
+declare "C-HILTI" void classifier_compile(ref<classifier<*,*>> c)
+declare "C-HILTI" bool classifier_matches(ref<classifier<*,*>> c, caddr vals)
+declare "C-HILTI" any classifier_get(ref<classifier<*,*>> c, caddr vals)
 
 ##
 

@@ -11,4 +11,8 @@ extern uint64_t hlt_int_pow(uint64_t base, uint64_t exp, hlt_exception** excpt, 
 extern hlt_string hlt_int_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
 extern int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx);
 
+extern uint64_t hlt_hton64(uint64_t v);
+extern uint32_t hlt_hton32(uint32_t v);
+extern uint16_t hlt_hton16(uint16_t v);
+
 #endif

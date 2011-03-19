@@ -22,7 +22,7 @@ from hilti.constraints import *
 from hilti.instructions.operators import *
 
 @hlt.type("addr", 12, c="hlt_addr", hdr="addr.h")
-class Addr(type.ValueType, type.Constable, type.Unpackable):
+class Addr(type.ValueType, type.Constable, type.Unpackable, type.Classifiable):
     """Type for ``addr``."""
     def __init__(self, location=None):
         super(Addr, self).__init__(location=location)
@@ -31,6 +31,24 @@ class Addr(type.ValueType, type.Constable, type.Unpackable):
 
     def llvmType(self, cg):
         return llvm.core.Type.struct([llvm.core.Type.int(64)] * 2)
+
+    def canCoerceTo(self, dsttype):
+        return isinstance(dsttype, Addr) or isinstance(dsttype, type.Net)
+
+    def llvmCoerceTo(self, cg, value, dsttype):
+        if isinstance(dsttype, Addr):
+            return value
+
+        # Net.
+        v1 = cg.llvmExtractValue(value, 0)
+        v2 = cg.llvmExtractValue(value, 1)
+        len = cg.llvmConstInt(128, 8)
+
+        net = llvm.core.Constant.null(type.Net().llvmType(cg))
+        net = cg.llvmInsertValue(net, 0, v1)
+        net = cg.llvmInsertValue(net, 1, v2)
+        net = cg.llvmInsertValue(net, 2, len)
+        return net
 
     ### Overridden from ValueType.
 
@@ -51,6 +69,16 @@ class Addr(type.ValueType, type.Constable, type.Unpackable):
     def llvmConstant(self, cg, const):
         a = llvm.core.Constant.struct([cg.llvmConstInt(i, 64) for i in const.value()])
         return a
+
+    def canCoerceConstantTo(self, value, dsttype):
+        return isinstance(dsttype, Addr) or isinstance(dsttype, type.Net)
+
+    def coerceConstantTo(self, cg, value, dsttype):
+        if isinstance(dsttype, Addr):
+            return value
+
+        # Net.
+        return constant.Constant((value.value()[0], value.value()[1], 128), type.Net())
 
     def outputConstant(self, printer, const):
         (b1, b2) = const.value()
@@ -118,6 +146,25 @@ class Addr(type.ValueType, type.Constable, type.Unpackable):
 
         cg.llvmSwitch(fmt, cases)
         return (cg.builder().load(addr), cg.builder().load(iter))
+
+    ### Overidden from Classifiable
+
+    def llvmToField(self, cg, ty, llvm_val):
+        a1 = cg.llvmExtractValue(llvm_val, 0)
+        a1 = cg.llvmHtoN(a1)
+        a2 = cg.llvmExtractValue(llvm_val, 1)
+        a2 = cg.llvmHtoN(a2)
+
+        tmp = cg.llvmAlloca(llvm_val.type)
+        addr = cg.builder().gep(tmp, [cg.llvmGEPIdx(0), cg.llvmGEPIdx(0)])
+        cg.llvmAssign(a1, addr)
+
+        addr = cg.builder().gep(tmp, [cg.llvmGEPIdx(0), cg.llvmGEPIdx(1)])
+        cg.llvmAssign(a2, addr)
+
+        len = cg.llvmSizeOf(self.llvmType(cg).elements[0])
+        len = cg.builder().add(len, cg.llvmSizeOf(self.llvmType(cg).elements[1]))
+        return type.Classifier.llvmClassifierField(cg, tmp, len)
 
 @hlt.overload(Equal, op1=cAddr, op2=cAddr, target=cBool)
 class Equal(Operator):
