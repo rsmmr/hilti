@@ -52,6 +52,7 @@ def importModule(mod, filename, import_paths=["."]):
 
     fullpath = util.findFileInPaths(filename, import_paths, True)
     if not fullpath:
+        print >>sys.stderr, "cannot find %s for importing" % filename
         return False
 
     (errors, nmod) = parseModule(fullpath, import_paths)

@@ -13,6 +13,7 @@ import objcache
 import type
 import util
 import operand
+import os.path
 
 import instructions.hook as hook
 
@@ -75,11 +76,31 @@ class OperandBuilder(objcache.Cache):
 class ModuleBuilder(OperandBuilder):
     """A class for adding entities to a module.
 
-    module: Module - The model going to be extended.
+    module: Module or string - The model going to be extended, if a string,
+    the name of new module to be created.
+
+    import_paths: list of string - List of additional paths to search when
+    importing modules. Default is to search the HILTI standard paths and the
+    current directory.
     """
-    def __init__(self, module):
+    # This is hack which only works as long as we don't install the Python
+    # module outside of the HILTI builttree.
+    _LibHiltiPath = os.path.abspath(os.path.join(os.path.dirname(__file__), "../libhilti"))
+    _DefaultImportPath = [_LibHiltiPath, os.path.join(_LibHiltiPath, "module"), "."]
+
+    def __init__(self, module, import_paths=None):
         super(ModuleBuilder, self).__init__()
+
+        if isinstance(module, str):
+            module = hilti.module.Module(module)
+
         self._module = module
+        self._import_paths = ModuleBuilder._DefaultImportPath
+
+        if import_paths:
+            self._import_paths = import_paths + self.import_paths
+
+        self._error = not self.importModule("libhilti")
 
     def module(self):
         """Returns the module associated with this builder.
@@ -100,6 +121,9 @@ class ModuleBuilder(OperandBuilder):
         Returns: integer - The number of errors found.
         """
 
+        if self._error:
+            return 1
+
         resolver_errors = hilti.resolveModule(self._module)
 
         if resolver_errors:
@@ -112,17 +136,44 @@ class ModuleBuilder(OperandBuilder):
 
         return 0
 
+    def codegen(self, debug=0, stack=0, trace=False, verify=True, profile=0):
+        """Compiles the HILTI module into LLVM module. ~~finish must already
+        have been called and indicated success.
+
+        verify: bool - If true, the correctness of the generated LLVM code will
+        be verified via LLVM's internal validator.
+
+        debug: int - Debugging level. With 1 or 2, debugging support or more
+        debugging support is compiled in.
+
+        stack: int - The default stack segment size. If zero, we'll simply
+        allocate each stack frame independently; this is the default and may
+        actually be the best choice.
+
+        trace: bool - If true, debugging information will be printed to trace
+        where codegeneration currently is.
+
+        profile: int - Profiling level. When > 0, profiling support is compiled
+        in, with higher levels meaning more detailed profiling.
+
+        Returns: tuple (bool, llvm.core.Module) - If the bool is True, code
+        generation (and if *verify* is True, also verification) was
+        successful. If so, the second element of the tuple is the resulting
+        LLVM module.
+        """
+        hilti.canonifyModule(self._module, debug=debug)
+        return hilti.codegen(self._module, self._import_paths, debug=debug, stack=stack, trace=trace, verify=verify, profile=profile)
+
     def importModule(self, name):
         """Imports another module. This has the same effect as a HILTI
         ``import`` statement.
 
         name: string - The name of the module.
 
-        Returns: bool - True iff the module has been imported successfully.
-
-        Todo: This function has not been implemented yet.
+        Returns: bool - True iff the module has been imported successfully. If
+        not, error messages will have been written out to stderr.
         """
-        assert False and "import not implemented yet"
+        return hilti.importModule(self._module, name, import_paths=self._import_paths)
 
     def idOp(self, i):
         """Returns an ID operand. Different from ~~OperandBuilder.idOp, this
@@ -262,7 +313,7 @@ class FunctionBuilder(OperandBuilder):
         else:
             self._func = hook.HookFunction(ftype, None, mbuilder.module().scope(), location)
 
-        i = id.Function(name, ftype, self._func)
+        i = id.Function(name, ftype, self._func, namespace=mbuilder.module().name())
         self._func.setID(i)
         self._mbuilder = mbuilder
         self._tmps = {}
