@@ -1,16 +1,16 @@
-[hilti-classifier/main thread] classifier_add: new rule 0x2ac6ee5b8b70 with priority 10 for classifier 0x2ac6ee5baea0
+[hilti-classifier/main thread] classifier_add: new rule 0xXXX with priority 10 for classifier 0xXXX
 [hilti-classifier/main thread] classifier_add:   [0] len=16/120 | 00 00 00 00 00 00 00 00 00 00 00 00 0a 00 01 00 
 [hilti-classifier/main thread] classifier_add:   [1] len= 2/ 16 | 00 50 
 [hilti-classifier/main thread] classifier_add:   [2] len=16/128 | 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01 
 [hilti-classifier/main thread] classifier_add:   [3] len= 1/  8 | 01 
 [hilti-classifier/main thread] classifier_add:   [4] len= 8/ 64 | 01 02 03 04 05 06 07 08 
 [hilti-classifier/main thread] classifier_add:   [5] len= 9/ 72 | 61 62 63 64 65 66 67 68 69 
-[hilti-classifier/main thread] classifier_get: matching with classifier 0x2ac6ee5baea0
+[hilti-classifier/main thread] classifier_get: matching with classifier 0xXXX
 [hilti-classifier/main thread] classifier_get:   [0] len=16/120 | 00 00 00 00 00 00 00 00 00 00 00 00 0a 00 01 00 
 [hilti-classifier/main thread] classifier_get:   [1] len= 2/ 16 | 00 50 
 [hilti-classifier/main thread] classifier_get:   [2] len=16/128 | 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01 
 [hilti-classifier/main thread] classifier_get:   [3] len= 1/  8 | 01 
 [hilti-classifier/main thread] classifier_get:   [4] len= 8/ 64 | 01 02 03 04 05 06 07 08 
 [hilti-classifier/main thread] classifier_get:   [5] len= 9/ 72 | 61 62 63 64 65 66 67 68 69 
-[hilti-classifier/main thread] classifier_get: match with rule 0x2ac6ee5b8b70
+[hilti-classifier/main thread] classifier_get: match found with rule 0xXXX
 42
