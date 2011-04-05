@@ -14,21 +14,29 @@ Target = "<unknown>"
 Options = None
 ImportPaths = [ "." ]
 
-# -O1/2/3 create "illegal instruction" ...  :-( TODO: Try with newer LLVM
-# versions, or figure out which pass is to blame. 
-
 ClangOptSpec = "-O3"             # -O4 is LTO, which we can't do wo/ support by the system linker.
 OptOptSpec   = "-std-compile-opts"
+
+def findInPATH(file):
+    hc = os.path.join(os.path.dirname(sys.argv[0]), "../hilti-config")
+    hc = os.path.abspath(hc)
+
+    for dir in os.environ["PATH"].split(":") + [hc]:
+        p = os.path.join(dir, file)
+        if os.path.exists(p):
+            return p
+    else:
+        return None
 
 try:
     HiltiConfig = os.environ["HILTI_CONFIG"]
 except:
-    HiltiConfig = "hilti-config"
+    HiltiConfig = findInDirs("hilti-config")
 
 try:
     BinpacConfig = os.environ["BINPAC_CONFIG"]
 except:
-    BinpacConfig = "binpac-config"
+    BinpacConfig = findInPATH("binpac-config")
 
 # Run one of the *-config tools to get an option.
 def runConfig(tool, option):
