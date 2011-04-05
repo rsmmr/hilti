@@ -5,8 +5,12 @@
 //     Counters:        cycles, cache, heap, alloced.
 //     Snapshot types:  wall, cycles.
 //
+// TODO: The PAPI profiling is performed on native threads, not HILTI virtual
+// threads. That will mess the numbers up quite a bit when used with a
+// threaded HILTI program, however it's unclear whether that can be fixed.
 //
-//  We don't have 64-bit ntohl() yet, so we store the profiles just in host format. 
+// TODO: We don't have 64-bit ntohl() yet, so we store the profiles just in
+// host format.
 
 #include "hilti.h"
 #include "utf8proc.h"
@@ -15,6 +19,16 @@ typedef hlt_hash khint_t;
 #include "3rdparty/khash/khash.h"
 
 #include <endian.h>
+
+#ifdef HAVE_PAPI
+#include <papi.h>
+
+#define PAPI_NUM_EVENTS 1
+static int8_t papi_available = 0;
+static int8_t profiling_enabled = 0;
+static int papi_set = PAPI_NULL;
+
+#endif
 
 static inline uint64_t ntohll(uint64_t x)
 {
@@ -76,6 +90,87 @@ static inline int8_t __kh_string_equal_func(hlt_string tag1, hlt_string tag2, co
 }
 
 KHASH_INIT(table, hlt_string, hlt_profiler*, 1, __kh_string_hash_func, __kh_string_equal_func)
+
+#ifdef HAVE_PAPI
+
+void init_papi()
+{
+    DBG_LOG("hilti-profiler", "PAPI: initializing library");
+
+	if ( PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) {
+        DBG_LOG("hilti-profiler", "PAPI: cannot initialize library (unsupported platform? lacking perms?)");
+        goto error;
+    }
+
+    // TODO: Can we pass in here a function that return the vid?
+	int ret = PAPI_thread_init(pthread_self);
+    if ( ret != PAPI_OK ) {
+        DBG_LOG("hilti-profiler", "PAPI: cannot init thread support, %s", PAPI_strerror(ret));
+        goto error;
+    }
+
+    if ( ret != PAPI_OK ) {
+    DBG_LOG("hilti-profiler", "PAPI: cannot create event set, %s", PAPI_strerror(ret));
+        goto error;
+		}
+
+    ret = PAPI_create_eventset(&papi_set);
+
+    if ( ret != PAPI_OK ) {
+        DBG_LOG("hilti-profiler", "PAPI: cannot create event set, %s", PAPI_strerror(ret));
+        goto error;
+    }
+
+    // Note: Increase PAPI_NUM_EVENTS if adding more events.
+    ret = PAPI_add_event(papi_set, PAPI_TOT_CYC);
+
+	if ( ret != PAPI_OK ) {
+        DBG_LOG("hilti-profiler", "PAPI: cannot add tot_cyc to event set, %s", PAPI_strerror(ret));
+        goto error;
+    }
+
+	PAPI_option_t options;
+	memset(&options, 0, sizeof(options));
+	options.domain.eventset = papi_set;
+	options.domain.domain = PAPI_DOM_ALL;
+
+    ret = PAPI_set_opt(PAPI_DOMAIN, &options);
+
+	if ( ret != PAPI_OK ) {
+        DBG_LOG("hilti-profiler", "PAPI: cannot set options, %s", PAPI_strerror(ret));
+        goto error;
+		}
+
+    if ( (ret = PAPI_start(papi_set)) != PAPI_OK) {
+        DBG_LOG("hilti-profiler", "PAPI: cannot start counters, %s", PAPI_strerror(ret));
+        goto error;
+		}
+
+    papi_available = 1;
+    return;
+
+error:
+    papi_available = 0;
+    }
+
+void read_papi(long_long* cnts)
+{
+    if ( ! papi_available )
+        goto error;
+
+    int ret = PAPI_read(papi_set, cnts);
+
+    if ( ret == PAPI_OK)
+        return;
+
+    DBG_LOG("hilti-profiler", "PAPI: cannot read counters, %s", PAPI_strerror(ret));
+
+error:
+    for ( int i = 0; i < PAPI_NUM_EVENTS; i++ )
+        cnts[i] = 0;
+}
+
+#endif
 
 inline static void safe_write(const void* data, int len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -225,11 +320,19 @@ static void write_record(int8_t rtype, hlt_profiler* p, hlt_exception** excpt, h
     rec.wall = htonll(rec.cwall - p->wall);
 
     rec.updates = htonll(p->updates);
-    rec.cycles = htonll(0);  // XXX
-    rec.misses = htonll(0);  // XXX
     rec.alloced = htonll(0); // XXX
     rec.heap = htonll(0);    // XXX
     rec.user = htonll(p->user);
+
+#ifdef HAVE_PAPI
+    long_long cnts[PAPI_NUM_EVENTS];
+    read_papi(cnts);
+    rec.cycles = htonll(cnts[0] - p->cycles);
+    rec.misses = htonll(0);  // XXX
+#else
+    rec.cycles = htonll(0);
+    rec.misses = htonll(0);
+#endif
 
     rec.type = rtype;
 
@@ -287,7 +390,7 @@ static void output_record(hlt_profiler* p, int8_t record_type, hlt_exception** e
 
         if ( *excpt )
             return;
-    }
+        }
 
     write_record(record_type, p, excpt, ctx);
 }
@@ -322,71 +425,17 @@ void hlt_profiler_timer_expire(hlt_string tag, hlt_exception** excpt, hlt_execut
 
 void __hlt_profiler_init()
 {
-    const hlt_config *cfg = hlt_config_get();
-    if ( ! cfg->profiling )
-        return;
-
-}
-
-/*
+    profiling_enabled = 1;
 #ifdef HAVE_PAPI
-
-PAPISet = PAPI_NULL;
-EXTERN_CC(bool, have_papi, false);
-
-	if ( PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) {
-		fprintf(stderr, "PAPI warning: cannot init library (not running with sufficient permissions?)\n");
-        goto error;
-    }
-
-    if ( PAPI_thread_init(handle) != PAPI_OK ) {
-		fprintf(stderr, "PAPI warning: cannot init thread support: %s\n", PAPI_strerror(ret));
-        goto error;
-    }
-
-
-	int ret;
-	if ( (ret = PAPI_create_eventset(&PAPISet)) != PAPI_OK )
-		{
-
-#if 0
-	if ( (ret = PAPI_add_event(PAPISet, PAPI_TOT_INS)) != PAPI_OK )
-		{
-		fprintf(stderr, "Error in adding into the event set (tot_ins): %s\n", PAPI_strerror(ret));
-		return;
-		}
-#endif
-
-	if ( (ret = PAPI_add_event(PAPISet, PAPI_TOT_CYC)) != PAPI_OK )
-		{
-		fprintf(stderr, "Error in adding into the event set (tot_cyc): %s\n", PAPI_strerror(ret));
-		return;
-		}
-
-	PAPI_option_t options;
-	memset(&options, 0, sizeof(options));
-	options.domain.eventset = PAPISet;
-	options.domain.domain = PAPI_DOM_ALL;
-	if ( (ret = PAPI_set_opt(PAPI_DOMAIN, &options)) != PAPI_OK )
-		{
-		fprintf(stderr, "Error in setting PAPI domain: %s\n", PAPI_strerror(ret));
-		return;
-		}
-
-	if ( (ret = PAPI_start(PAPISet)) != PAPI_OK)
-		{
-		fprintf(stderr, "Error in starting PAPI counters: %s\n", PAPI_strerror(ret));
-		return;
-		}
-
-	have_papi = true;
-	}
+    init_papi();
 #endif
 }
-*/
 
 void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    if ( ! profiling_enabled )
+        return;
+
     if ( ! ctx->pstate ) {
         ctx->pstate = hlt_gc_malloc_non_atomic(sizeof(hlt_profiling_state));
 
@@ -432,10 +481,18 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
 
         p->time = p->tmgr ? hlt_timer_mgr_current(p->tmgr, excpt, ctx) : 0;
         p->wall = hlt_time_wall(excpt, ctx);
-
-        p->cycles = 0; // FIXME
-        p->cache = 0; // FIXME
         p->heap = 0; // FIXME
+
+#ifdef HAVE_PAPI
+        long_long cnts[PAPI_NUM_EVENTS];
+        read_papi(cnts);
+        p->cycles = htonll(cnts[0]);
+        p->cache = htonll(0);  // XXX
+#else
+        p->cycles = htonll(0);
+        p->cache = htonll(0);
+#endif
+
 
         p->level = 1;
         p->updates = 0;
@@ -472,6 +529,9 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
 
 void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    if ( ! profiling_enabled )
+        return;
+
     if ( ! ctx->pstate->profilers ) {
         hlt_set_exception(excpt, &hlt_exception_profiler_unknown, 0);
         return;
@@ -517,6 +577,9 @@ void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** ex
 
 void hlt_profiler_stop(hlt_string tag, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    if ( ! profiling_enabled )
+        return;
+
     if ( ! ctx->pstate->profilers ) {
         hlt_set_exception(excpt, &hlt_exception_profiler_unknown, 0);
         return;

@@ -63,7 +63,7 @@ if [ ! -d "$base/libhilti" ]; then
     exit 1
 fi
 
-### Add the libpcap flags
+### Add the libpcap flags.
 
 pcap_config=`which pcap-config 2>/dev/null`
 
@@ -76,15 +76,6 @@ pcap_cflags=`pcap-config --cflags `
 pcap_libs=`pcap-config --libs | sed 's/-L /-L/g'` # clang doesn't like spaces.
 
 ### Parse command line.
-
-if [ "$#" == "0" ]; then
-   usage
-fi
-
-debug=""
-
-builddir="build-release"
-libpostfix=""
 
 while [ "$1" != "" ]; do
     case $1 in
@@ -109,7 +100,9 @@ while [ "$1" != "" ]; do
             shift;;
 
         --libs-c)
-            echo "-lc -lm -lpthread $pcap_libs"
+            # This is a hack. Eventually, cmake should replace this directlt *.in style.
+            papi_libs=`cat $base/libhilti/$builddir/papi-libs.cfg`
+            echo "-lc -lm -lpthread $papi_libs $pcap_libs"
             shift;;
 
         --hilticflags)

@@ -33,9 +33,6 @@ void hlt_init()
     // Initialize configuration to defaults.
     __hlt_config_init();
 
-    // Initialize profiling.
-    __hlt_profiler_init();
-
     // Initialize debug streams from environment.
     const char* dbg = getenv("HILTI_DEBUG");
     if ( dbg ) {
@@ -53,7 +50,7 @@ void hlt_init()
 
     // Two rounds for the two priortity levels.
     int i;
-    
+
     for ( i = 0; i < _num_registered_funcs; i++ )
         if ( _registered_funcs[i].prio > 0 )
             (*(_registered_funcs[i].func))();

@@ -29,5 +29,11 @@ const hlt_config* hlt_config_get()
 
 void hlt_config_set(const hlt_config* new_config)
 {
+    bool init_prof =  (new_config->profiling && ! current_config.profiling);
+
     current_config = *new_config;
+
+    if ( init_prof )
+        // Initialize profiling.
+        __hlt_profiler_init();
 }

@@ -6,10 +6,12 @@ cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_package(LLVM)
-find_package(Pcap)
 
 project(libhilti)
 set(PROJECT_VERSION "0.1")
+
+find_package(Pcap)
+find_package(PAPI)
 
 set(LLVM_ENABLED 1)
 
@@ -17,6 +19,10 @@ add_subdirectory(justrx) # Must come before EnableLLVM.
 
 include(EnableLLVM)
 include(EnableBWDGC)
+
+if (${PAPI_FOUND} STREQUAL "TRUE" )
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_PAPI")
+endif ()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src ${PCAP_CFLAGS}")
 
@@ -58,7 +64,16 @@ add_custom_command(
     ARGS    -P ${CMAKE_CURRENT_SOURCE_DIR}/module/hilti.hlt >${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h
     )
 
-ADD_CUSTOM_TARGET(header ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h)
+# Generate a file with the PAPI compiler flags. This is a hack for
+# hilti-config as long as we don't have a "normal" install yet that
+# could do a *.in replacement.
+add_custom_command(
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/papi-libs.cfg
+    COMMAND echo
+    ARGS    ${PAPI_LIBRARIES} >${CMAKE_CURRENT_BINARY_DIR}/papi-libs.cfg
+    )
+
+ADD_CUSTOM_TARGET(header ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h ${CMAKE_CURRENT_BINARY_DIR}/papi-libs.cfg)
 
 set(OBJS
     ${CMAKE_CURRENT_BINARY_DIR}/call_hilti.bc.o
@@ -68,7 +83,7 @@ set(OBJS
 # Get all the files which go into libgcmt-lib.a.
 FILE(GLOB_RECURSE LIBGC "${CMAKE_CURRENT_BINARY_DIR}/3rdparty/bdwgc/CMakeFiles/gcmt-lib.dir/*")
 
-set(all_deps  ${SRCS} ${OBJS} ${LIBGC} ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h)
+set(all_deps  ${SRCS} ${OBJS} ${LIBGC} ${PAPI_LIBRARIES} ${CMAKE_CURRENT_BINARY_DIR}/hilti.hlt.h)
 set(main_deps main.c)
 
 if (${LLVM_ENABLE_DEBUG})

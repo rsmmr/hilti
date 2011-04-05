@@ -18,6 +18,7 @@ static void usage(const char* prog)
     printf("%s [options]\n"
            "\n"
            "  -h| --help           Show usage information.\n"
+           "  -P| --profile        Activate profiling support.\n"
            "  -t| --threads <num>  Number of worker threads. [default: 2]\n"
            "\n", prog);
 
@@ -26,15 +27,17 @@ static void usage(const char* prog)
 
 static struct option long_options[] = {
     {"threads", required_argument, 0, 't'},
+    {"profile", no_argument, 0, 'P'},
     {0, 0, 0, 0}
 };
 
 int main(int argc, char **argv)
 {
     int threads = 2;
+    int profiling = 0;
 
     while ( 1 ) {
-        char c = getopt_long (argc, argv, "ht:", long_options, 0);
+        char c = getopt_long (argc, argv, "ht:P", long_options, 0);
 
         if ( c == -1 )
             break;
@@ -42,6 +45,10 @@ int main(int argc, char **argv)
         switch ( c ) {
           case 't':
             threads = atoi(optarg);
+            break;
+
+          case 'P':
+            profiling = 1;
             break;
 
           default:
@@ -56,6 +63,7 @@ int main(int argc, char **argv)
 
     hlt_config cfg = *hlt_config_get();
     cfg.num_workers = threads;
+    cfg.profiling = profiling;
     hlt_config_set(&cfg);
 
     hlt_exception* excpt = 0;
