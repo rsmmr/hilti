@@ -12,13 +12,32 @@ import subprocess
 import llvm.core
 Target = llvm.core.getHostTriple()
 
+def findInPATH(file):
+    hc = os.path.join(os.path.dirname(sys.argv[0]), "../hilti-config")
+    hc = os.path.abspath(hc)
+
+    for dir in os.environ["PATH"].split(":") + [hc]:
+        p = os.path.join(dir, file)
+        if os.path.exists(p):
+            return p
+    else:
+        return None
+
 try:
-    # Get hilti-config information.
-    p = subprocess.Popen(["hilti-config", "--pythonpath"], stdout=subprocess.PIPE).communicate()[0].strip()
-    sys.path = p.split(":") + sys.path
-    addl_flags = subprocess.Popen(["hilti-config", "--hilticflags"], stdout=subprocess.PIPE).communicate()[0].strip()
+    HiltiConfig = os.environ["HILTI_CONFIG"]
 except:
-    addl_flags = ""
+    HiltiConfig = findInPATH("hilti-config")
+
+# Run one of the *-config tools to get an option.
+def runConfig(tool, option):
+    try:
+        return subprocess.Popen([tool] + [option], stdout=subprocess.PIPE).communicate()[0].strip()
+    except:
+        return ""
+
+# Extend Python path.
+sys.path = runConfig(HiltiConfig, "--pythonpath").split(":") + sys.path
+addl_flags = runConfig(HiltiConfig, "--hilticflags")
 
 import hilti
 

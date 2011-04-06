@@ -31,7 +31,7 @@ def findInPATH(file):
 try:
     HiltiConfig = os.environ["HILTI_CONFIG"]
 except:
-    HiltiConfig = findInDirs("hilti-config")
+    HiltiConfig = findInPATH("hilti-config")
 
 try:
     BinpacConfig = os.environ["BINPAC_CONFIG"]
