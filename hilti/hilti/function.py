@@ -623,6 +623,16 @@ class Function(node.Node):
                 # Function without an implementation.
                 pass
 
+        if canonifier.profileLevel() > 1:
+            tag = operand.Constant(constant.Constant(canonifier.currentFunctionName(), type.String()))
+            prof = hilti.instructions.profiler.Start(op1=tag)
+
+            if self.blocks():
+                self.blocks()[0].addInstructionAtFront(prof)
+            else:
+                # Function without an implementation.
+                pass
+
         # "init" functions get C linkage.
         if self.id().linkage() == id.Linkage.INIT:
             self.setCallingConvention(function.CallingConvention.C)

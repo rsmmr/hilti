@@ -229,11 +229,12 @@ inline static void write_tag(hlt_string str, hlt_exception** excpt, hlt_executio
 inline static int read_tag(int fd, char* tag)
 {
     int8_t len;
-    char buffer[len];
 
     int ret = safe_read(fd, &len, sizeof(len));
     if ( ret <= 0 )
         return ret;
+
+    char buffer[len];
 
     if ( safe_read(fd, &buffer, len) <= 0 )
         return -1; // Eof is an error here.
@@ -250,12 +251,7 @@ inline static int read_tag(int fd, char* tag)
             return 0;
         }
 
-        // FIXME: Without this explicit tmp, the output get mangled. Don't
-        // know why ...
-        int8_t c = (int8_t) uc;
-
-        // Replace non-ASCII characters with '?'.
-        *tag++ = c < 128 && isprint(c) ? (int8_t)uc : '?';
+        *tag++ = uc < 128 && isprint(uc) ? uc : '?';
         p += n;
     }
 
@@ -327,7 +323,7 @@ static void write_record(int8_t rtype, hlt_profiler* p, hlt_exception** excpt, h
 #ifdef HAVE_PAPI
     long_long cnts[PAPI_NUM_EVENTS];
     read_papi(cnts);
-    rec.cycles = htonll(cnts[0] - p->cycles);
+    rec.cycles = (rtype != HLT_PROFILER_START) ? htonll(cnts[0] - p->cycles) : 0;
     rec.misses = htonll(0);  // XXX
 #else
     rec.cycles = htonll(0);

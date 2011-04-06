@@ -1,6 +1,9 @@
 # $Id$
 
 import block
+import operand
+import constant
+import type
 
 import hilti.instructions.debug
 
@@ -8,7 +11,7 @@ class Canonifier(object):
     """Implements the canonification of a module. Canonification is mandatory
     to perform before starting the code generation.
     """
-    def canonify(self, mod, debug=0):
+    def canonify(self, mod, debug=0, profile=0):
         """Transforms a module into a canonified form suitable for code
         generation. The canonified form ensures a set of properties that simplify
         the code generation process, such as enforcing a fully linked block
@@ -20,6 +23,9 @@ class Canonifier(object):
 
         debug: integer - If debug is non-zero, the canonifier may insert additional
         code for helping with debugging at run-time.
+
+        profile: integer - If non-zero, the canonifier may insert additional
+        code for helping with profiling at run-time.
 
         Note: In the future, the canonifier will also be used to implement
         additional 'syntactic sugar' for the HILTI language, so that we can
@@ -36,6 +42,7 @@ class Canonifier(object):
         self._label_counter = 0
         self._instr = None
         self._debug = debug
+        self._profile = profile
 
         mod.canonify(self)
 
@@ -48,6 +55,14 @@ class Canonifier(object):
         an integer indicatin the debug level.
         """
         return self._debug
+
+    def profileLevel(self):
+        """Returns the profiling level. When > 0, profiling support is
+        compiled in, with higher levels meaning more detailed profiling.
+
+        Returns: integer - The level.
+        """
+        return self._profile
 
     def startModule(self, m):
         """Indicates that code generation starts for a new module.
@@ -171,9 +186,15 @@ class Canonifier(object):
         if ins:
             current_block = self.currentTransformedBlock()
 
-            if add_flow_dbg and self.debugLevel() > 1:
-                dbg = hilti.instructions.debug.message("hilti-flow", "leaving %s" % self.currentFunctionName())
-                current_block.addInstruction(dbg)
+            if add_flow_dbg:
+                if self.debugLevel() > 1:
+                    dbg = hilti.instructions.debug.message("hilti-flow", "leaving %s" % self.currentFunctionName())
+                    current_block.addInstruction(dbg)
+
+                if self.profileLevel() > 1:
+                    tag = operand.Constant(constant.Constant(self.currentFunctionName(), type.String()))
+                    prof = hilti.instructions.profiler.Stop(op1=tag)
+                    current_block.addInstruction(prof)
 
             current_block.addInstruction(ins)
 

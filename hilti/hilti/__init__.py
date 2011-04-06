@@ -96,7 +96,7 @@ def validateModule(mod):
     """
     return validator.Validator().validate(mod)
 
-def canonifyModule(mod, debug=0):
+def canonifyModule(mod, debug=0, profile=0):
     """Transforms a module into a canonified form suitable for code
     generation. The canonified form ensures a set of properties that simplify
     the code generation process, such as enforcing a fully linked block
@@ -113,8 +113,11 @@ def canonifyModule(mod, debug=0):
 
     debug: int - If debug is larger than 0, the canonifier may insert
     additional code for helping with debugging.
+
+    profile: int - Profiling level. When > 0, profiling support is compiled
+    in, with higher levels meaning more detailed profiling.
     """
-    return canonifier.Canonifier().canonify(mod, debug)
+    return canonifier.Canonifier().canonify(mod, debug, profile)
 
 def codegen(mod, libpaths, debug=0, stack=0, trace=False, verify=True, profile=0):
     """Compiles a module into LLVM module.  The module must be well-formed as

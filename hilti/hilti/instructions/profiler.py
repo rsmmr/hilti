@@ -83,7 +83,7 @@ class Start(Instruction):
         cg.llvmCallC("hlt::profiler_start", [tag, style, param, tmgr])
 
 @hlt.instruction("profiler.stop", op1=cString, terminator=True)
-class Stops(Instruction):
+class Stop(Instruction):
     """Stops the profiler associated with the tag *op1*, recording its current
     state to disk. However, a profiler is only stopped if ``stop`` has been
     called as often as it has previously been started with ``profile.start``.
@@ -97,7 +97,7 @@ class Stops(Instruction):
         cg.llvmCallC("hlt::profiler_stop", [self.op1()])
 
 @hlt.instruction("profiler.update", op1=cString, op2=cOptional(cIntegerOfWidth(64)))
-class Stops(Instruction):
+class Update(Instruction):
     """Records a snapshot of the current state of the profiler associated with
     tag *op1* (in ``STANDARD`` mode, otherwise according to the style).  If
     *op2* is given, the profiler's user-defined counter is adjusted by that

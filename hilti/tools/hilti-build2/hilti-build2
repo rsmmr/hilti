@@ -197,7 +197,7 @@ def pac2ToHlt(pac2, file):
 def hltToBc(hlt, file):
 
     timeStart("canonifing HILTI code")
-    if not hilti.canonifyModule(hlt, debug=Options.debug):
+    if not hilti.canonifyModule(hlt, debug=Options.debug, profile=Options.profile):
         check_errors(-1, file, "canonifying")
     timeStop()
 
