@@ -1,5 +1,5 @@
 wrong-inherit.hlt:9: error, circuluar exception inheritance
 wrong-inherit.hlt:8: error, circuluar exception inheritance
-wrong-inherit.hlt:7: error, circuluar exception inheritance
 wrong-inherit.hlt:6: error, circuluar exception inheritance
+wrong-inherit.hlt:7: error, circuluar exception inheritance
 wrong-inherit.hlt: 4 errors found during validating

@@ -1,7 +1,7 @@
 # $Id$
 #
 # @TEST-EXEC:  python %INPUT >tmp.hlt
-# @TEST-EXEC:  hilti-build tmp.hlt -o a.out
+# @TEST-EXEC:  hilti-build2 tmp.hlt -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
