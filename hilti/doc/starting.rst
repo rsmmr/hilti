@@ -59,30 +59,33 @@ To install ``hilti-deps``, do the following:
         example above, you'll find ``clang`` in
         ``/opt/hilti-deps/bin/clang``).
 
-      * For the HILTI to find the tools, you have to set the
-        environment variable ``HILTIDEPS`` to point to the
-        ``<prefix>`` directory.
+      * For HILTI to find the tools, you have to set the environment
+        variable ``HILTIDEPS`` to point to the ``<prefix>``
+        directory::
 
-      * If you generally want to adapt your environment to use these
-        tools (recommended), run::
+          > export HILTIDEPS=<prefix>
+
+      * If you generally want to adapt your environment to use all
+        these tools, run::
 
           > eval `<prefix>/bin/setup-paths`
 
-        This adapts `PATH` (and others) to include the installed tools.
+        This adapts `PATH` (and others) to include the installed
+        tools; it also sets HILTIDEPS so you can skip the previous
+        step if you do this.
+
+        Note that the ``setup-path`` only works with a bash.
 
 Installation
 ------------
 
-* Checkout the git repository that contains HILTI:
+* Clone the git repository that contains HILTI:
 
-    > git clone ssh://envoy.icir.org/binpacpp
+    > git clone git://envoy.icir.org/binpacpp
 
   There's some other stuff in this repository as well (in particular
-  BinPAC++, as the name already suggests). HILTI is located in
-  ``binpacpp/hilti``.
-
-.. note:: The repository is currently private so your SSH key needs
-   to be installed on the server. 
+  `BinPAC++ <http://www.icir.org/robin/binpac++>`_ , as the name
+  already suggests). HILTI is located in ``binpacpp/hilti``.
 
 .. note:: Eventually, we well split up the repository into individual
    ones for each component. As things are still moving fast, it's
