@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  hilti-build2 %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 

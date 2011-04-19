@@ -1,4 +1,1 @@
 wrong-cast.pac2:10: validation error, no match for cast operator from type int32 to type string
-wrong-cast.pac2.tmp.hlt: parser error, unexpected end of file
-
-1 error found

@@ -1,4 +1,1 @@
 wrong-type.pac2:12: validation error, types do not match in assigment (test2 <- test)
-wrong-type.pac2.tmp.hlt: parser error, unexpected end of file
-
-1 error found

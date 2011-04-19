@@ -1,4 +1,1 @@
 wrong-assign.pac2:11: validation error, types do not match in assigment (uint32 <- int32)
-wrong-assign.pac2.tmp.hlt: parser error, unexpected end of file
-
-1 error found

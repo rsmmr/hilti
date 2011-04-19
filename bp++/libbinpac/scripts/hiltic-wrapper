@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+
+hilticonfig="../../../hilti/tools/hilti-config/hilti-config"
+tools=`$hilticonfig --distbase`/tools
+$tools/hiltic/hiltic $@

@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -d -m -o a.out
+# @TEST-EXEC:  hilti-build2 %INPUT ${PAC_DRIVER} -d -m -o a.out
 # @TEST-EXEC:  cat %DIR/single.dat | ./a.out -p DNS::Message >output
 # @TEST-EXEC:  cat %DIR/single.dat | ./a.out -i 1 -p DNS::Message >output-incremental
 

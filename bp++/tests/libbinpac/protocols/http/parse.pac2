@@ -1,6 +1,6 @@
 # $Id$
 #
-# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -d -m -o a.out
+# @TEST-EXEC:  hilti-build2 %INPUT ${PAC_DRIVER} -d -m -o a.out
 # @TEST-EXEC:  echo ======== Requests 1 >>output
 # @TEST-EXEC:  cat %DIR/request.dat | ./a.out -p HTTP::Requests >>output
 # @TEST-EXEC:  echo ======== Requests 2 >>output

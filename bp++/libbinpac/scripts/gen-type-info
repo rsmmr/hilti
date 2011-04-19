@@ -4,8 +4,9 @@ hilticonfig="../../../hilti/tools/hilti-config/hilti-config"
 binpacconfig="../../tools/binpac-config/binpac-config"
 
 tools=`$hilticonfig --distbase`/tools
+path=`$hilticonfig --path`
 hiltic=`$binpacconfig --hiltic`
 
-export PATH=$tools/hilti-config:$PATH
+export PATH=$path:$PATH
 
 $tools/hiltic/hiltic $hiltic -l $1 | llvm-as >$2

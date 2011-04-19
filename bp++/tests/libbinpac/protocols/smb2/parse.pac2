@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -d -m -o a.out
+# @TEST-EXEC:  hilti-build2 %INPUT ${PAC_DRIVER} -d -m -o a.out
 # @TEST-EXEC:  echo ======== GetInfo Response >>output
 # @TEST-EXEC:  cat %DIR/smb2-getinfo-response.dat | ./a.out -p SMB2::PDU >>output
 # @TEST-EXEC:  echo ======== SetInfo Request >>output

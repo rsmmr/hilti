@@ -32,7 +32,7 @@ add_custom_command(
 add_custom_command(
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/binpac.hlt.h
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/binpac.hlt
-    COMMAND hiltic
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/hiltic-wrapper
     ARGS    -P ${CMAKE_CURRENT_SOURCE_DIR}/binpac.hlt >${CMAKE_CURRENT_BINARY_DIR}/binpac.hlt.h
     )
 
