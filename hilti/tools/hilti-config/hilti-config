@@ -74,6 +74,7 @@ fi
 
 pcap_cflags=`pcap-config --cflags `
 pcap_libs=`pcap-config --libs | sed 's/-L /-L/g'` # clang doesn't like spaces.
+builddir="build-release"
 
 ### Parse command line.
 
@@ -120,11 +121,20 @@ while [ "$1" != "" ]; do
             shift;;
 
         --pythonpath)
-            echo "$base"
+            if [ "$HILTIDEPS" != "" ]; then
+                hpath=`echo $HILTIDEPS/lib*/python*/site-packages | sed 's/  */:/g'`
+                hpath=":$hpath"
+            fi
+
+            echo "$base$hpath"
             shift;;
 
         --path)
-            echo "$base/tools/hiltic:$base/tools/hilti-build:$base/tools/hilti-build2"
+            if [ "$HILTIDEPS" != "" ]; then
+                hpath=":$HILTIDEPS/bin"
+            fi
+
+            echo "$base/tools/hiltic:$base/tools/hilti-build:$base/tools/hilti-build2$hpath"
             shift;;
 
         --debug)

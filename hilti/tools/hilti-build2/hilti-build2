@@ -2,6 +2,7 @@
 #
 # Command-line compiler for HILTI and BinPAC++ programs.
 
+import site
 import sys
 import os.path
 import optparse
@@ -49,17 +50,26 @@ def runConfig(tool, option):
     except:
         return ""
 
+def addToSysPath(dirs):
+    for dir in dirs.split(":"):
+        if dir != "":
+            site.addsitedir(dir)
+
 # Determine paths and flags.
 def setupEnvironment():
 
     # Extend Python path.
-    sys.path = runConfig(HiltiConfig, "--pythonpath").split(":") + sys.path
-    sys.path = runConfig(BinpacConfig, "--pythonpath").split(":") + sys.path
+    addToSysPath(runConfig(HiltiConfig, "--pythonpath"))
+    addToSysPath(runConfig(BinpacConfig, "--pythonpath"))
 
     # Determine paths for importing libraries.
     global ImportPaths
     ImportPaths += runConfig(HiltiConfig, "--libhilti").split()
     ImportPaths += runConfig(BinpacConfig, "--libbinpac").split()
+
+    # Extend shell search path.
+    path = runConfig(HiltiConfig, "--path")
+    os.environ["PATH"] = "%s:%s" % (path, os.environ["PATH"])
 
     # Get the target architecture.
     global Target
