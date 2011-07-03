@@ -126,15 +126,24 @@ Flow* bulk_feed_piece(const char* analyzer, Flow* flow, char dir, int eof, const
         // Error encountered earlier, just ignore further input.
         return 0;
 
+    bool error = false;
+
     if ( size ) {
         assert(flow->conn);
-        flow->conn->NewData(dir == '>', tmp, tmp + size);
+
+        try {
+            flow->conn->NewData(dir == '>', tmp, tmp + size);
+        }
+
+        catch ( binpac::Exception e ) {
+        	error = true;
+        }
     }
 
     free(tmp);
 
-    if ( 0 ) { // Can't really test for error right now. :-(
-        fprintf(stderr, "%s error", fid);
+    if ( error ) { // Can't really test for error right now. :-(
+        fprintf(stderr, "%s error\n", fid);
         flow->stopped = 1;
         return 0;
     }
@@ -149,6 +158,8 @@ void feed_bulk(const char* analyzer)
     static char ts[256];
 
     khash_t(Flow) *hash = kh_init(Flow);
+
+    int num_flows = 0;
 
     while ( true ) {
         char* p = fgets(buffer, sizeof(buffer), stdin);
@@ -203,11 +214,12 @@ void feed_bulk(const char* analyzer)
         int ignore = 0;
         int eof = 0;
         int known_flow = (i != kh_end(hash));
+        int payload = 0;
 
         if ( debug )
             fprintf(stderr, "--- pac-driver: kind=%c dir=%c size=%d fid=|%s| t=|%s| known=%d\n", kind, dir, size, fid, ts, known_flow);
 
-        if ( kind == 'G' ) {
+        if ( known_flow && kind == 'G' ) {
             // Can't handle gaps yet. Mark flow as to be ignored by setting parser to null.
             kh_value(hash, i) = 0;
             continue;
@@ -221,7 +233,7 @@ void feed_bulk(const char* analyzer)
             eof = 1;
         }
 
-        if ( kind == 'D' ) {
+        if ( kind == 'D' || kind == 'U' ) {
             if ( size > sizeof(buffer) ) {
                 fprintf(stderr, "error reading input: data chunk unexpected large (%d)\n", size);
                 exit(1);
@@ -231,26 +243,46 @@ void feed_bulk(const char* analyzer)
                 fprintf(stderr, "error reading input chunk: %s\n", strerror(errno));
                 exit(1);
             }
+
+            payload = 1;
         }
 
         if ( ! known_flow ) {
             int ret;
             i = kh_put(Flow, hash, strdup(fid), &ret);
             kh_value(hash, i) = 0;
+
+            ++num_flows;
         }
 
-        if ( ! ignore ) {
-            Flow* result = bulk_feed_piece(analyzer, kh_value(hash, i), dir, eof, buffer, size, fid, ts);
+        if ( payload && ! ignore ) {
+            Flow* result = 0;
+
+            if ( kind == 'D' )
+                result = bulk_feed_piece(analyzer, kh_value(hash, i), dir, eof, buffer, size, fid, ts);
+
+            else {
+                fprintf(stderr, "packet input not support for bptool\n");
+                assert(false);
+            }
 
             if ( result )
                 kh_value(hash, i) = result;
         }
 
-        if ( eof && kh_value(hash, i) ) {
-            delete kh_value(hash, i)->conn;
-            free(kh_value(hash, i));
+        if ( eof ) {
+            // Flush state (gc will take care of actually releasing the memory.
+            if ( kh_value(hash, i) )
+                kh_value(hash, i) = 0;
+
             kh_del(Flow, hash, i);
         }
+
+        // Output a state summary in regular intervals.
+        static int cnt = 0;
+
+        if ( ++cnt % 1000 == 0 )
+            fprintf(stderr, "--- pac-driver bulk state: %d total flows, %d in memory at %s\n", num_flows, kh_size(hash), ts);
     }
 }
 

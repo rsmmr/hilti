@@ -1,7 +1,7 @@
 # $Id$
 #
 
-BRO=$(HOME)/bro/trunk
+BRO=$(HOME)/bro/1.5
 
 CXXFLAGS = -I include -I$(BRO)/aux/binpac/lib -I pac
 LDFLAGS  = -Lpac -L$(BRO)/aux/binpac/lib

@@ -1,7 +1,7 @@
 
 # Needs GNU make.
 
-BRO=$(HOME)/bro/trunk
+BRO=$(HOME)/bro/1.5
 
 BINPAC=$(BRO)/aux/binpac/src/binpac
 CXXFLAGS=-I$(BRO)/aux/binpac/lib -I../include
