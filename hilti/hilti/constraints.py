@@ -360,6 +360,7 @@ cCallable = _hasType("Callable")
 cTime = _hasType("Time")
 cInterval = _hasType("Interval")
 cClassifier = _hasType("Classifier")
+cContext = _hasType("Context")
 
 cFunction = _hasType("Function")
 cHook = _hasType("Hook")

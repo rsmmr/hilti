@@ -29,6 +29,7 @@ typedef struct hlt_execution_context {
     // TODO; We should not compile this in in non-debug mode.
     uint64_t debug_indent;        /// Current indent level for debug messages.
 
+    void* tcontext; /// The current threading context, per the module's "context" definition; NULL if not set.
 } hlt_execution_context;
 
 typedef void yield_func(void* frame, void* eoss, hlt_execution_context* ctx);

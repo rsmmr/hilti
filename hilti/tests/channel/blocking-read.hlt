@@ -18,7 +18,7 @@ void reader(ref<channel<int32>> ch) {
 
      # Schedule to same thread. When we yield, this one will get
      # executed.
-     thread.schedule 1 other()
+     thread.schedule other() 1
 
      call Hilti::print("doing read")
      n = channel.read ch
@@ -33,7 +33,7 @@ void run() {
     local int32 b
     local int32 c
 
-    thread.schedule 1 reader(ch)
+    thread.schedule reader(ch) 1
 
     call Hilti::sleep(0.5)
 

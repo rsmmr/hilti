@@ -48,11 +48,11 @@ void print5() {
 }
 
 void run() {
-    thread.schedule 1 print1()
-    thread.schedule 2 print2()
-    thread.schedule 3 print3()
-    thread.schedule 4 print4()
-    thread.schedule 5 print5()
+    thread.schedule print1() 1
+    thread.schedule print2() 2
+    thread.schedule print3() 3
+    thread.schedule print4() 4
+    thread.schedule print5() 5
 }
 
 # @TEST-START-NEXT
@@ -83,7 +83,7 @@ void run() {
     if.else eq @exit @cont
 
 @cont:
-    thread.schedule count print_num(count)
+    thread.schedule print_num(count) count
     count = incr count
     jump @loop
 

@@ -78,7 +78,8 @@
     i64,
     %__hlt_callable**,
     %__hlt_void*,
-    i64
+    i64,
+    %__hlt_void*
 }
 
 ; A global function to be run at startup.
@@ -119,6 +120,7 @@ declare i1 @__hlt_exception_match_type(%__hlt_exception*, %__hlt_exception_type*
 @hlt_exception_iosrc_exhausted = external constant %__hlt_exception_type
 @hlt_exception_yield = external constant %__hlt_exception_type
 @hlt_exception_would_block = external constant %__hlt_exception_type
+@hlt_exception_no_thread_context = external constant %__hlt_exception_type
 
 ;;; Memory management.
 declare void @__hlt_gc_init()
@@ -136,6 +138,7 @@ declare %__hlt_void* @__hlt_timer_new_function(%__hlt_continuation*, %__hlt_exce
 
 ;;; Threads
 declare void @__hlt_thread_mgr_schedule(%__hlt_void*, %__hlt_vthread_id, %__hlt_continuation*, %__hlt_exception**, %__hlt_execution_context*)
+declare void @__hlt_thread_mgr_schedule_tcontext(%__hlt_void*, %__hlt_type_info*, %__hlt_void*, %__hlt_continuation*, %__hlt_exception**, %__hlt_execution_context*)
 
 ;;; A function with the standard header that simply aborts.
 declare void @__hlt_abort(%__hlt_bframe*, %__hlt_eoss*, %__hlt_execution_context*)

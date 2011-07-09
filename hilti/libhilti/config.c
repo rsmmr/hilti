@@ -20,6 +20,8 @@ void __hlt_config_init()
    current_config.debug_out = stderr;
    current_config.debug_streams = 0;
    current_config.profiling = 0;
+   current_config.vid_schedule_min = 1;
+   current_config.vid_schedule_max = 101;
 }
 
 const hlt_config* hlt_config_get()

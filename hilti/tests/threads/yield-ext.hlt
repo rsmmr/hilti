@@ -25,14 +25,14 @@ void printhello(int32 i) {
 void doSchedule() {
     # This will run on the same worker as the two helles, i.e., we
     # serialize execution here.
-    thread.schedule 1 printhello(1)
-    thread.schedule 2 printhello(2)
-    thread.schedule 3 printhello(3)
-    thread.schedule 4 printhello(4)
-    thread.schedule 5 printhello(5)
+    thread.schedule printhello(1) 1
+    thread.schedule printhello(2) 2
+    thread.schedule printhello(3) 3
+    thread.schedule printhello(4) 4
+    thread.schedule printhello(5) 5
 }
 
 void run() {
-    thread.schedule 1 doSchedule()
+    thread.schedule doSchedule() 1
     call Hilti::wait_for_threads()
 }

@@ -175,6 +175,12 @@ class Scope(node.Node):
                (isinstance(i.type(), type.Bitset) or isinstance(i.type(), type.Enum)):
                    continue
 
+            # Don't print thread contexts and scopes, they are handled
+            # separately in module's output().
+            if isinstance(i, id.Type) and \
+               (isinstance(i.type(), type.Context) or isinstance(i.type(), type.Scope)):
+                   continue
+
             if last and last != i.__class__:
                 printer.output()
 

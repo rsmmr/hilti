@@ -129,6 +129,9 @@ extern hlt_exception_type hlt_exception_profiler_mismatch;
 // An unknown profiler has been specified.
 extern hlt_exception_type hlt_exception_profiler_unknown;
 
+// A thread.schedule instruction was executed without a thread context being set.
+extern hlt_exception_type hlt_exception_no_thread_context;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Exception-related functions.
 ///////////////////////////////////////////////////////////////////////////////

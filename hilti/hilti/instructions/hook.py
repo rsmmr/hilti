@@ -198,6 +198,8 @@ class HookFunction(function.Function):
 
     # Overwritten from function.Function.
     def _outputAttrs(self, printer):
+        super(HookFunction, self)._outputAttrs(printer)
+
         if self._group:
             printer.output(" &group=%d" % self._group)
 

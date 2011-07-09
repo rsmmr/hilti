@@ -23,13 +23,19 @@ class Struct(type.HeapType, type.TypeListable):
 
     fields: list of (~~ID, ~~Operand) - The fields of the struct, given as
     tuples of an ID and an optional default value; if a field does not have a
-    default value, use None as the operand.
+    default value, use None as the operand. If an ID is of ~~INTERNAL linkage,
+    it will not be printed when the struct type in rendered as a string.
+    Internal IDS are also skipped from for ctor expressions and list
+    conversions.
 
     location: ~~Location - Location information for the type.
     """
     def __init__(self, fields, location=None):
         super(Struct, self).__init__(location=location)
         self._ids = fields
+
+        # Maps field name to (idx, id).
+        self._idmap = dict([(t[0].name(), (n, t[0])) for (n, t) in zip(range(len(fields)), fields)])
 
     def fields(self):
         """Returns the struct's fields.
@@ -38,6 +44,28 @@ class Struct(type.HeapType, type.TypeListable):
         tuples of an ID and an optional default value.
         """
         return self._ids
+
+    def field(self, name):
+        """Returns teh struct's field of the given name.
+
+        Returns: ~~ID - The ID for the field, or None if the struct doesn't
+        have a field of that name.
+        """
+        try:
+            return self._idmap[name][1]
+        except KeyError:
+            return None
+
+    def fieldIndex(self, name):
+        """Returns teh struct's field index for the given name.
+
+        Returns: int - The index for the field, or -1 if the struct doesn't
+        have a field of that name.
+        """
+        try:
+            return self._idmap[name][0]
+        except KeyError:
+            return -1
 
     class NotSet:
         """Sentinel to mark an unset fields when listing struct
@@ -50,30 +78,41 @@ class Struct(type.HeapType, type.TypeListable):
         necessary). Note that values for all struct fields must be given.
         However, a value can be an instance of ``Struct.NotSet`` to use either
         the default value (if one is defined) or leave the field
-        uninitialized. 
+        uninitialized.
 
         vals: list of llvm.core.Value or Struct.NotSet - The values to
-        initialize the struct with.
+        initialize the struct with, excluding any internal fields.
 
         Returns: llvm.core.Value - The new structure.
         """
-        assert len(vals) == len(self._ids)
-
         # Fill in defaults and determine masks.
         new_vals = []
         mask = 0
-        for (i, val) in zip(range(len(vals)), vals):
-            if isinstance(val, Struct.NotSet):
-                (id, default) = self.fields()[i]
-                if default:
-                    mask |= (1 << i)
-                    val = cg.llvmOp(default, id.type())
-                else:
-                    # Leave mask bit unset.
-                    val = None
+        m = 0
+        for n in range(len(self._ids)):
+
+            val = None
+            use_default = True
+
+            (i, default) = self._ids[n]
+
+            if i.linkage() == id.Linkage.INTERNAL:
+                use_default = True
 
             else:
-                mask |= (1 << i)
+                if isinstance(vals[m], Struct.NotSet):
+                    use_default = True
+
+                else:
+                    val = vals[m]
+                    # Mark as set.
+                    mask |= (1 << n)
+
+                m += 1
+
+            if use_default and default and not val:
+                mask |= (1 << n) # Mark as set.
+                val = cg.llvmOp(default, i.type())
 
             new_vals += [val]
 
@@ -112,7 +151,8 @@ class Struct(type.HeapType, type.TypeListable):
         """
         vals = []
         for i in range(len(self._ids)):
-            vals += self.llvmGetField(cg, s, i, default, func)
+            if i[0].linkage() != id.Linkage.INTERNAL:
+                vals += self.llvmGetField(cg, s, i, default, func)
 
         return vals
 
@@ -123,8 +163,8 @@ class Struct(type.HeapType, type.TypeListable):
 
         s: llvm.core.Value - The structure to extract the value from.
 
-        idx: integer - The index of the desired field, with zero being the
-        first.
+        idx: integer or string - If an integer, the index of the desired
+        field, with zero being the first. If a string, the name of the field.
 
         default: llvm.core.Value - Optional substitute to use if a field is
         not set; if not given, unset fields will trigger an exception.
@@ -141,6 +181,9 @@ class Struct(type.HeapType, type.TypeListable):
 
         addr = cg.builder().gep(s, [zero, zero])
         mask = cg.builder().load(addr)
+
+        if isinstance(idx, str):
+            idx = self._idmap[idx][0]
 
         bit = cg.llvmConstInt(1<<idx, 32)
         isset = cg.builder().and_(bit, mask)
@@ -231,10 +274,13 @@ class Struct(type.HeapType, type.TypeListable):
         printer.output("struct {", nl=True)
         printer.push()
         first = True
-        for (id, op) in self._ids:
+        for (i, op) in self._ids:
+            if i.linkage() == id.Linkage.INTERNAL:
+                continue
+
             if not first:
                 printer.output(",", nl=True)
-            id.output(printer)
+            i.output(printer)
             if op:
                 printer.output(" &default=")
                 op.output(printer)
@@ -253,16 +299,18 @@ class Struct(type.HeapType, type.TypeListable):
         """
         typeinfo = cg.TypeInfo(self)
         typeinfo.to_string = "hlt::struct_to_string";
-        typeinfo.args = [id.type() for (id, op) in self.fields()]
+        typeinfo.hash = "hlt::struct_hash"
+        typeinfo.equal = "hlt::struct_equal"
+        typeinfo.args = [id.type() for (id, op) in self._ids]
 
         zero = cg.llvmGEPIdx(0)
         null = llvm.core.Constant.null(self.llvmType(cg))
 
         array = []
-        for i in range(len(self.fields())):
+        for i in range(len(self._ids)):
 
             # Make the field name.
-            str = cg.llvmNewGlobalStringConst(cg.nameNewGlobal("struct-field"), self.fields()[i][0].name())
+            str = cg.llvmNewGlobalStringConst(cg.nameNewGlobal("struct-field"), self._ids[i][0].name())
 
             # Calculate the offset.
 
@@ -297,13 +345,13 @@ class Struct(type.HeapType, type.TypeListable):
         """A ``struct` is passed as a pointer to an eqivalent C struct; the
         fields' types are converted recursively to C using standard rules."""
 
-        if len(self.fields()) == 0:
+        if len(self._ids) == 0:
             return cg.llvmTypeGenericPointer()
 
         th = llvm.core.TypeHandle.new(llvm.core.Type.opaque())
 
-        assert len(self.fields()) <= 32
-        fields = [llvm.core.Type.int(32)] + [cg.llvmType(id.type()) for (id, default) in self.fields()]
+        assert len(self._ids) <= 32
+        fields = [llvm.core.Type.int(32)] + [cg.llvmType(id.type()) for (id, default) in self._ids]
         ty = llvm.core.Type.pointer(llvm.core.Type.struct(fields))
         th.type.refine(ty)
         return ty
@@ -311,7 +359,7 @@ class Struct(type.HeapType, type.TypeListable):
     ### Overridden from TypeListable.
 
     def typeList(self):
-        return [id[0].type() for id in self._ids]
+        return [i[0].type() for i in self._ids if i[0].linkage() != id.Linkage.INTERNAL]
 
 @hlt.constraint("string")
 def _fieldName(ty, op, i):
@@ -326,7 +374,7 @@ def _fieldName(ty, op, i):
     if not isinstance(ty, type.String):
         return (False, "index must be string")
 
-    for (id, default) in i.op1().type().refType().fields():
+    for (id, default) in i.op1().type().refType()._ids:
         if c.value() == id.name():
             return (True, "")
 
@@ -337,7 +385,7 @@ def _fieldType(ty, op, i):
 
     c = i.op2().constant()
 
-    for (id, default) in i.op1().type().refType().fields():
+    for (id, default) in i.op1().type().refType()._ids:
         if c.value() == id.name():
             if op.canCoerceTo(id.type()):
                 return (True, "")
@@ -358,7 +406,7 @@ class New(Operator):
         else:
             structt = self.op1().value().type()
 
-        if not len(structt.fields()):
+        if not len(structt._ids):
             return llvm.core.Constant.null(cg.llvmTypeGenericPointer())
 
         s = cg.llvmMalloc(structt.llvmType(cg).pointee, tag="new <struct>", location=self.location())
@@ -367,7 +415,7 @@ class New(Operator):
         zero = cg.llvmGEPIdx(0)
         mask = 0
 
-        fields = structt.fields()
+        fields = structt._ids
         for j in range(len(fields)):
             (id, default) = fields[j]
             if default:
@@ -487,13 +535,10 @@ class IsSet(Instruction):
         cg.llvmStoreInTarget(self, notzero)
 
 def _getIndex(instr):
-
-    fields = instr.op1().type().refType().fields()
-
-    for i in range(len(fields)):
-        (id, default) = fields[i]
-        c = instr.op2().constant()
-        if id.name() == c.value():
-            return (i, id.type())
-
-    return (-1, None)
+    ty = instr.op1().type().refType()
+    field = instr.op2().constant().value()
+    try:
+        (idx, i) = ty._idmap[field]
+        return (idx, i.type())
+    except IndexError:
+        return (-1, None)

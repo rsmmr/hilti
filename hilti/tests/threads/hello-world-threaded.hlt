@@ -24,5 +24,5 @@ void printhello() {
 }
 
 void run() {
-    thread.schedule 1 printhello()
+    thread.schedule printhello() 1
 }

@@ -138,6 +138,8 @@ def p_def_type(p):
                 | def_overlay_decl
                 | def_bitset_decl
                 | def_exception_decl
+                | def_context_decl
+                | def_scope_decl
                 """
     p[0] = p[1]
 
@@ -149,6 +151,16 @@ def _addTypeDecl(p, name, t, location):
 def p_def_struct(p):
     """def_struct_decl : TYPE IDENT '=' STRUCT _begin_nolines '{' opt_struct_id_list '}' _end_nolines"""
     _addTypeDecl(p, p[2], type.Struct(p[7]), location=_loc(p, 1))
+
+def p_def_context(p):
+    """def_context_decl : CONTEXT _begin_nolines '{' context_id_list '}' _end_nolines"""
+    context = type.Context(p[4], location=_loc(p, 1))
+    p.parser.state.module.setThreadContext(context)
+
+def p_def_scope(p):
+    """def_scope_decl : SCOPE IDENT '=' '{' opt_id_list '}'"""
+    scope = type.Scope(p[5], location=_loc(p, 1))
+    p.parser.state.module.addThreadScope(p[2], scope)
 
 def p_def_enum(p):
     """def_enum_decl : TYPE IDENT '=' ENUM _begin_nolines '{' enum_label_list '}' _end_nolines"""
@@ -299,7 +311,7 @@ def p_def_export_type(p):
     p.parser.state.module.exportIdent(ident)
 
 def p_def_function_head(p):
-    """function_head : opt_linkage opt_cc type IDENT '(' param_list ')' opt_hook_attrs"""
+    """function_head : opt_linkage opt_cc type IDENT '(' param_list ')' opt_func_attrs"""
     ftype = type.Function(p[6], p[3], location=_loc(p, 4))
     namespace = p.parser.state.module.name()
     ident = p[4]
@@ -320,18 +332,26 @@ def p_def_function_head(p):
         assert False
 
     for (key, val) in p[8]:
-        if not p.parser.state.in_hook:
-            util.parser_error(p, "hook attributes not allowed for function")
-            raise SyntaxError
 
-        if key == "ATTR_PRIORITY":
-            func.setPriority(val)
+        if p.parser.state.in_hook:
+            if key == "ATTR_PRIORITY":
+                func.setPriority(val)
 
-        elif key == "ATTR_GROUP":
-            func.setGroup(val)
+            elif key == "ATTR_GROUP":
+                func.setGroup(val)
+
+            else:
+                util.parser_error(p, "attribute '%s' not allowed for hook" % key)
+                raise SyntaxError
 
         else:
-            util.internal_error("unexpected attribute in p_def_opt_hook_attrs: %s" % key)
+            if key == "ATTR_SCOPE":
+                i = id.Unknown(val, _currentScope(p), location=_loc(p, 1))
+                func.setThreadScope(i)
+
+            else:
+                util.parser_error(p, "attribute '%s' not allowed for function" % key)
+                raise SyntaxError
 
     i = id.Function(ident, ftype, func, namespace=namespace, location=_loc(p, 4))
 
@@ -380,9 +400,10 @@ def p_def_opt_linkage(p):
         else:
             util.internal_error("unexpected state in p_def_opt_linkage")
 
-def p_def_opt_hook_attrs(p):
-    """opt_hook_attrs : ATTR_PRIORITY '=' CINTEGER opt_hook_attrs
-                      | ATTR_GROUP '=' CINTEGER opt_hook_attrs
+def p_def_opt_func_attrs(p):
+    """opt_func_attrs : ATTR_PRIORITY '=' CINTEGER opt_func_attrs
+                      | ATTR_GROUP '=' CINTEGER opt_func_attrs
+                      | ATTR_SCOPE '=' IDENT opt_func_attrs
                       |
     """
     if len(p) == 1:
@@ -749,6 +770,10 @@ def p_struct_id(p):
     else:
         p[0] = (id.Local(p[2], p[1], location=_loc(p, 2)), p[5])
 
+def p_context_id(p):
+    """context_id : type IDENT"""
+    p[0] = id.Local(p[2], p[1], location=_loc(p, 2))
+
 def p_global_id(p):
     """global_id : type IDENT"""
     p[0] = (p[1], p[2])
@@ -842,6 +867,10 @@ def p_type_time(p):
 def p_type_interval(p):
     """type : INTERVAL"""
     p[0] = type.Interval()
+
+def p_type_context(p):
+    """type : CONTEXT"""
+    p[0] = type.Unknown("context")
 
 #
 
@@ -983,15 +1012,26 @@ def p_opt_struct_id_list(p):
                           | """
     p[0] = p[1] if len(p) == 2 else []
 
-# Unused currently.
-#
-# def p_id_list(p):
-#     """id_list : IDENT "," id_list
-#                 | IDENT"""
-#     if len(p) == 2:
-#         p[0] = [p[1]]
-#     else:
-#         p[0] = [p[1]] + p[3]
+def p_context_id_list(p):
+    """context_id_list : context_id "," context_id_list
+                       | context_id"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
+
+def p_id_list(p):
+    """id_list : IDENT "," id_list
+               | IDENT"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
+
+def p_opt_id_list(p):
+    """opt_id_list : id_list
+                   | """
+    p[0] = p[1] if len(p) == 2 else []
 
 def p_id_with_opt_int_init_list(p):
     """id_with_opt_int_init_list : IDENT opt_int_init "," id_with_opt_int_init_list

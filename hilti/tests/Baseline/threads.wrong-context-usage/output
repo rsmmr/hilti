@@ -1,0 +1,4 @@
+>>> thread.schedule Func ()
+wrong-context-usage.hlt:25: error, callee function does not define a scope
+
+wrong-context-usage.hlt: 1 error found during validating

@@ -43,6 +43,8 @@ keywords = {
     "catch": "CATCH",
     "hook": "HOOK",
     "epoch": "EPOCH",
+    "context": "CONTEXT",
+    "scope": "SCOPE",
     "__clear": "PARAM_CLEAR",
 
     "@internal": "INTERNAL",
@@ -59,6 +61,7 @@ tokens = [
    'ATTR_NOSUB',
    'ATTR_PRIORITY',
    'ATTR_GROUP',
+   'ATTR_SCOPE',
 
    # Constants.
    'CLABEL',
@@ -158,6 +161,9 @@ def t_ATTRIBUTE(t):
 
     elif t.value == "&group":
         t.type = t.value = "ATTR_GROUP"
+
+    elif t.value == "&scope":
+        t.type = t.value = "ATTR_SCOPE"
 
     else:
         util.parser_error(None, "unknown attribute %s" % t.value)

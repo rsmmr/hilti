@@ -59,7 +59,8 @@ struct __hlt_set_iter {
 
 hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return hlt_hash_bytes(obj, type->size);
+    hlt_hash hash = hlt_hash_bytes(obj, type->size);
+    return hash;
 }
 
 int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)

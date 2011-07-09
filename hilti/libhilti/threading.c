@@ -13,6 +13,7 @@
 
 #include "hilti.h"
 #include "debug.h"
+#include "rtti.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -37,6 +38,7 @@ struct hlt_thread_mgr {
 typedef struct hlt_job {
     hlt_continuation* func; // The bound function to run.
     hlt_vthread_id vid;     // The virtual thread the function is scheduled to.
+    void* tcontext;         // The jobs thread context to use when executing.
     struct hlt_job* next;   // The next job in the queue.
 } hlt_job;
 
@@ -209,7 +211,7 @@ static void _terminate_threads(hlt_thread_mgr* mgr, hlt_thread_mgr_state state)
 }
 
 // Schedules a job to a worker thread.
-static void _worker_schedule(hlt_worker_thread* target, hlt_vthread_id vid, hlt_continuation* func)
+static void _worker_schedule(hlt_worker_thread* target, hlt_vthread_id vid, hlt_continuation* func, void* tcontext)
 {
     if ( target->mgr->state != HLT_THREAD_MGR_RUN &&
          target->mgr->state != HLT_THREAD_MGR_FINISH ) {
@@ -220,6 +222,7 @@ static void _worker_schedule(hlt_worker_thread* target, hlt_vthread_id vid, hlt_
     hlt_job* job = hlt_gc_malloc_non_atomic(sizeof(hlt_job));
     job->func = func;
     job->vid = vid;
+    job->tcontext = tcontext,
     job->next = 0;
 
     DBG_LOG(DBG_STREAM, "scheduling job %p for vid %d to worker %p", job, vid, target);
@@ -242,7 +245,7 @@ static void _worker_schedule(hlt_worker_thread* target, hlt_vthread_id vid, hlt_
 static void _worker_yield(void* frame, void* eoss, hlt_execution_context* ctx)
 {
     DBG_LOG(DBG_STREAM, "vid %d is yielding", ctx->vid);
-    _worker_schedule(ctx->worker, ctx->vid, ctx->resume);
+    _worker_schedule(ctx->worker, ctx->vid, ctx->resume, ctx->tcontext);
 }
 
 // Returns the execution context to use for a given virtual thread ID.
@@ -280,11 +283,13 @@ static hlt_execution_context* _worker_get_ctx(hlt_worker_thread* thread, hlt_vth
 static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
 {
     hlt_execution_context* ctx = _worker_get_ctx(thread, job->vid);
-    DBG_LOG(DBG_STREAM, "executing job %p with context %p", job, ctx);
+    DBG_LOG(DBG_STREAM, "executing job %p with context %p and thread context %p", job, ctx, job->tcontext);
 
     hlt_exception* excpt = 0;
 
+    ctx->tcontext = job->tcontext;
     __hlt_thread_mgr_run_callable(job->func, &excpt, ctx);
+    ctx->tcontext = 0;
 
     DBG_LOG(DBG_STREAM, "done with job %p", job);
 
@@ -579,7 +584,32 @@ void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_cont
     }
 
     hlt_worker_thread* thread = _vthread_to_worker(mgr, vid);
-    _worker_schedule(thread, vid, func);
+    _worker_schedule(thread, vid, func, 0);
+}
+
+void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, const struct __hlt_type_info* type, void* tcontext, struct hlt_continuation* func, struct hlt_exception** excpt, struct hlt_execution_context* ctx)
+{
+    if ( ! hlt_is_multi_threaded() ) {
+        hlt_set_exception(excpt, &hlt_exception_no_threading, 0);
+        return;
+    }
+
+    hlt_vthread_id vid = tcontext ? (*type->hash)(type, &tcontext, 0, 0) : 0;
+
+    if ( vid < 0 )
+        vid = -vid;
+
+    // Scale the VID into the right interval.
+    const hlt_config* cfg = hlt_config_get();
+    hlt_vthread_id n = (cfg->vid_schedule_max - cfg->vid_schedule_min + 1);
+
+    if ( n <= 0 )
+        _fatal_error("invalid config.vld_schedule_{min,max} values");
+
+    hlt_vthread_id scaled_vid = (vid % n) + cfg->vid_schedule_min;
+
+    hlt_worker_thread* thread = _vthread_to_worker(mgr, scaled_vid);
+    _worker_schedule(thread, scaled_vid, func, tcontext);
 }
 
 void hlt_thread_mgr_check_exceptions(hlt_thread_mgr* mgr, hlt_exception** excpt, hlt_execution_context* ctx)

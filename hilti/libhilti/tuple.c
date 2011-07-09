@@ -66,6 +66,7 @@ hlt_hash hlt_tuple_hash(const hlt_type_info* type, const void* obj, hlt_exceptio
     for ( int i = 0; i < type->num_params; i++ ) {
         assert(types[i]->hash);
         hash += (*types[i]->hash)(types[i], obj + offsets[i], excpt, ctx);
+        hash *= 2147483647;
     }
 
     return hash;

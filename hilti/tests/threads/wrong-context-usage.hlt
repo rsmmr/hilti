@@ -1,0 +1,64 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL: hilti-build2 %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+
+module Main
+
+import Hilti
+
+context {
+    addr orig_h,
+    port orig_p,
+    addr resp_h,
+    port resp_p
+}
+
+scope Connection = { orig_h, orig_p, resp_h, resp_p }
+scope Originator = { orig_h }
+
+void Func() {
+}
+
+void run() &scope=Connection {
+    thread.set_context (192.160.0.1, 1234/tcp, 10.0.0.1, 80/tcp)
+    thread.schedule Func()
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void Func() {
+}
+
+void run() &scope=Connection {
+    thread.set_context (192.160.0.1, 1234/tcp, 10.0.0.1, 80/tcp)
+    thread.schedule Func()
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+context {
+    addr orig_h,
+    port orig_p,
+    addr resp_h,
+    port resp_p
+}
+
+scope Connection = { orig_h, orig_p, resp_h, resp_p }
+scope Originator = { orig_h }
+
+void Func() &scope=Connection {
+}
+
+void run() &scope=Originator {
+    thread.set_context (192.160.0.1, 1234/tcp, 10.0.0.1, 80/tcp)
+    thread.schedule Func()
+}

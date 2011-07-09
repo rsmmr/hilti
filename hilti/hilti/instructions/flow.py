@@ -22,6 +22,8 @@ import hilti.instructions.hook as hook
 
 import operators
 
+thread = None
+
 from hilti.instruction import *
 from hilti.constraints import *
 
@@ -577,7 +579,7 @@ def _applyDefaultParams(func, tuple):
     const = constant.Constant(new_args, type.Tuple([t.type() for t in new_args]))
     return operand.Constant(const, location=tuple.location())
 
-def _checkFunc(vld, i, func, cc):
+def _checkFunc(vld, i, func, cc, schedule=False):
     if not isinstance(func, function.Function):
         vld.error(i, "not a function name")
         return False
@@ -588,6 +590,15 @@ def _checkFunc(vld, i, func, cc):
     if vld.currentFunction().callingConvention() != function.CallingConvention.HILTI and \
        func.callingConvention() == function.CallingConvention.HILTI:
            vld.error(i, "cannot call HILTI function from non-HILTI function")
+
+    if not schedule and func.threadScope():
+        global thread
+        if not thread:
+            import thread as thread_mod
+            thread = thread_mod
+
+        if not thread._checkCall(vld.currentFunction(), func):
+           vld.error(i, "cannot call function with a different scope; use thread.schedule")
 
     return True
 

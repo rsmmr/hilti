@@ -5,6 +5,7 @@
 #define HLT_PROFILER_H
 
 #include <stdint.h>
+#include <time.h>
 
 struct hlt_execution_context;
 struct hlt_exception;

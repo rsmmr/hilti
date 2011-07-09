@@ -57,8 +57,8 @@ void run() {
     if.else eq @exit @cont
 
 @cont:
-    thread.schedule count produce(ch, count)
-    thread.schedule count consume(ch)
+    thread.schedule produce(ch, count) count
+    thread.schedule consume(ch) count
 
     count = incr count
     jump @loop

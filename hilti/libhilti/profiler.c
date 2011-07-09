@@ -19,6 +19,9 @@ typedef hlt_hash khint_t;
 #include "3rdparty/khash/khash.h"
 
 #include <endian.h>
+#if 0
+#include <architecture/byte_order.h> // Mac
+#endif
 
 #ifdef HAVE_PAPI
 #include <papi.h>
@@ -103,7 +106,7 @@ void init_papi()
     }
 
     // TODO: Can we pass in here a function that return the vid?
-	int ret = PAPI_thread_init(pthread_self);
+	int ret = 0; // FIXME PAPI_thread_init(pthread_self);
     if ( ret != PAPI_OK ) {
         DBG_LOG("hilti-profiler", "PAPI: cannot init thread support, %s", PAPI_strerror(ret));
         goto error;
@@ -184,8 +187,8 @@ inline static void safe_write(const void* data, int len, hlt_exception** excpt, 
                 continue;
 
             char buffer[128];
-            char* msg = strerror_r(errno, buffer, sizeof(buffer));
-            hlt_string err = hlt_string_from_asciiz(msg, excpt, ctx);
+            strerror_r(errno, buffer, sizeof(buffer));
+            hlt_string err = hlt_string_from_asciiz(buffer, excpt, ctx);
             hlt_set_exception(excpt, &hlt_exception_io_error, err);
             return;
         }
@@ -373,7 +376,7 @@ static void output_record(hlt_profiler* p, int8_t record_type, hlt_exception** e
         int fd = open(buffer, O_WRONLY | O_CREAT | O_TRUNC, 0770);
 
         if ( fd < 0 ) {
-            char* msg = strerror_r(errno, buffer, sizeof(buffer));
+            strerror_r(errno, buffer, sizeof(buffer));
             hlt_string err = hlt_string_from_asciiz(buffer, excpt, ctx);
             hlt_set_exception(excpt, &hlt_exception_io_error, err);
             return;

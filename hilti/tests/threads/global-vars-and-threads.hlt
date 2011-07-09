@@ -16,20 +16,20 @@ void func_with_globals() {
 }
 
 void run() {
-    thread.schedule 1 func_with_globals()
-    thread.schedule 2 func_with_globals()
-    thread.schedule 3 func_with_globals()
-    thread.schedule 4 func_with_globals()
-    thread.schedule 5 func_with_globals()
-    thread.schedule 1 func_with_globals()
-    thread.schedule 2 func_with_globals()
-    thread.schedule 3 func_with_globals()
-    thread.schedule 4 func_with_globals()
-    thread.schedule 5 func_with_globals()
-    thread.schedule 1 func_with_globals()
-    thread.schedule 2 func_with_globals()
-    thread.schedule 3 func_with_globals()
-    thread.schedule 4 func_with_globals()
-    thread.schedule 5 func_with_globals()
+    thread.schedule func_with_globals() 1
+    thread.schedule func_with_globals() 2
+    thread.schedule func_with_globals() 3
+    thread.schedule func_with_globals() 4
+    thread.schedule func_with_globals() 5
+    thread.schedule func_with_globals() 1
+    thread.schedule func_with_globals() 2
+    thread.schedule func_with_globals() 3
+    thread.schedule func_with_globals() 4
+    thread.schedule func_with_globals() 5
+    thread.schedule func_with_globals() 1
+    thread.schedule func_with_globals() 2
+    thread.schedule func_with_globals() 3
+    thread.schedule func_with_globals() 4
+    thread.schedule func_with_globals() 5
 }
 

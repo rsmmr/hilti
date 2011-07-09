@@ -1,0 +1,4 @@
+>>> call Func ()
+wrong-context-call.hlt:24: error, cannot call function with a different scope; use thread.schedule
+
+wrong-context-call.hlt: 1 error found during validating

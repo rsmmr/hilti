@@ -36,6 +36,12 @@ class Linkage:
     are compiled with the ~~C linkage.
     """
 
+    INTERNAL = 4
+    """An ID with internal linkage may be hidden when rendered as a string.
+    Exact semantics depends on the context the ID is used in; currently only
+    the ~~Struct type uses this linkage to hide field.
+    """
+
 class ID(node.Node):
     """Binds a name to a type.
 

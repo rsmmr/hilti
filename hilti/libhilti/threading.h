@@ -21,9 +21,9 @@ typedef struct hlt_worker_thread hlt_worker_thread;
 
 struct hlt_exception;
 struct hlt_continuation;
+struct __hlt_type_info;
 
 /// Type for representing the ID of a virtual thread.
-typedef int64_t hlt_vthread_id;
 #define HLT_VID_MAIN -1
 #define HLT_VID_QUEUE -2
 
@@ -146,6 +146,27 @@ extern hlt_thread_mgr_state hlt_thread_mgr_get_state(const hlt_thread_mgr* mgr);
 ///
 /// excpt: &
 extern void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, struct hlt_continuation* func, struct hlt_exception** excpt, struct hlt_execution_context* ctx);
+
+/// Schedules a job to a virtual thread determined by an object's hash.
+///
+/// This function determined the target virtual thread by hashing *obj* into
+/// the range determined by ``config.vid_schedule_max -
+/// config.vid_schedule_min``.
+/// 
+/// This function is safe to call from all threads.
+///
+/// mgr: The thread manager to use.
+///
+/// type: The type of the thread context to be hashed (i.e., *tcontext*).
+///
+/// tcontext: The thread context for the job, per its module's ``context`` definition.
+///
+/// cont: The continuation representing a bound function.
+///
+/// ctx: The caller's execution context.
+///
+/// excpt: &
+extern void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, const struct __hlt_type_info* type, void* tcontext, struct hlt_continuation* func, struct hlt_exception** excpt, struct hlt_execution_context* ctx);
 
 /// Checks whether any worker thread has raised an uncaught exception. In
 /// that case, all worker threads will have been terminated, and this

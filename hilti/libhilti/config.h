@@ -7,6 +7,8 @@
 
 #include <stdio.h>
 
+typedef int64_t hlt_vthread_id;
+
 struct __hlt_list;
 
 /// Configuration parameters for the HILTI run-time system.
@@ -33,7 +35,16 @@ typedef struct
 
     /// 1 if profiling is enabled, 0 otherwise. Default is off.
     int8_t profiling;
-    
+
+    /// The smallest virtual thread number to use when hashing a thread
+    /// context into the set of virtual threads. Default is 1.
+    hlt_vthread_id vid_schedule_min;
+
+    /// The largest virtual thread number to use when hashing a thread
+    /// context into the set of virtual threads. Default is 100.
+    hlt_vthread_id vid_schedule_max;
+
+
 } hlt_config;
 
 extern const hlt_config* hlt_config_get();

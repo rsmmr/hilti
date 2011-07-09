@@ -45,6 +45,7 @@ hlt_exception_type hlt_exception_iosrc_error = { "IOSrcError", &hlt_exception_un
 hlt_exception_type hlt_exception_io_error = { "IOError", &hlt_exception_unspecified, &hlt_type_info_string };
 hlt_exception_type hlt_exception_profiler_mismatch = { "ProfilerMismatch", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_profiler_unknown = { "ProfilerUnknown", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_no_thread_context = { "NoThreadContext", &hlt_exception_unspecified, 0 };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}; // FIXME: &hlt_type_info_int_32 };

@@ -28,5 +28,5 @@ void run() {
 
     hello = "Hello!"
 
-    thread.schedule 1 printstring(hello)
+    thread.schedule printstring(hello) 1
 }

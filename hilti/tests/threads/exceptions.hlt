@@ -48,7 +48,7 @@ void run() {
     if.else eq @exit @cont
 
 @cont:
-    thread.schedule count print_num(count)
+    thread.schedule print_num(count) count
     count = incr count
     jump @loop
 
@@ -95,7 +95,7 @@ void run() {
     limit = call make_const(6)
     bad_num = call make_const(3)
 
-#    thread.schedule 3 bad_print_num(3)
+#    thread.schedule bad_print_num(3) 3
 
 @loop:
     eq = int.eq count limit
@@ -106,12 +106,12 @@ void run() {
     if.else eq @bad_print @good_print
 
 @bad_print:
-    thread.schedule count bad_print_num(count)
+    thread.schedule bad_print_num(count) count
     count = incr count
     jump @loop
 
 @good_print:
-    thread.schedule count print_num(count)
+    thread.schedule print_num(count) count
     count = incr count
     jump @loop
 

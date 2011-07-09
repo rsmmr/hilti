@@ -40,11 +40,11 @@ void run() {
     f = new file
     file.open f "output.log"
 
-    thread.schedule 1 print1(f)
-    thread.schedule 2 print2(f)
-    thread.schedule 3 print3(f)
-    thread.schedule 4 print4(f)
-    thread.schedule 5 print5(f)
+    thread.schedule print1(f) 1
+    thread.schedule print2(f) 2
+    thread.schedule print3(f) 3
+    thread.schedule print4(f) 4
+    thread.schedule print5(f) 5
 
     return.void
 

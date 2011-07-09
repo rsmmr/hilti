@@ -212,6 +212,7 @@ class Function(node.Node):
         self._handlers = []
         self._output_name = None
         self._hook = False
+        self._tscope = None
 
         self._scope = scope.Scope(parent)
         for i in ty.args():
@@ -298,6 +299,21 @@ class Function(node.Node):
         cc: ~~CallingConvention - The calling convention to set.
         """
         self._cc = cc
+
+    def threadScope(self):
+        """Returns the function's thread scope.
+
+        Returns: ~~id.Type - The scope's ID of type ~~Scope, or None if no
+        scope has been set.
+        """
+        return self._tscope
+
+    def setThreadScope(self, scope):
+        """Sets the function's thread scope.
+
+        scope:: ~~id.Type - The scope's ID of type ~~Scope
+        """
+        self._tscope = scope
 
     def addBlock(self, b):
         """Adds a block to the function's implementation. Appends the ~~Block
@@ -505,6 +521,9 @@ class Function(node.Node):
 
         self._scope.resolve(resolver)
 
+        if self._tscope and isinstance(self._tscope, id.Unknown):
+            self._tscope = self.scope().lookup(self._tscope.name())
+
         for b in self._bodies:
             b.resolve(resolver)
 
@@ -529,6 +548,9 @@ class Function(node.Node):
             if isinstance(t, type.ValueType) and not t.instantiable() and not isinstance(t, type.Void):
                 vld.error(self, "HILTI functions cannot have result of type %s" % t)
                 return
+
+        if self._tscope and isinstance(self._tscope, id.Unknown):
+            vld.error(self, "unknown thread scope %s" % self._tscope.name())
 
         vld.endFunction()
 
@@ -586,8 +608,9 @@ class Function(node.Node):
         printer.pop()
 
     def _outputAttrs(self, printer):
-        # Overwritten by derived classes to print out attributes.
-        pass
+        # Can be overwritten by derived classes to print out attributes.
+        if self._tscope:
+            printer.output(" &scope=%s" % self._tscope.name())
 
     def _canonify(self, canonifier):
         """

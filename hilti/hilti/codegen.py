@@ -2137,6 +2137,37 @@ class CodeGen(objcache.Cache):
         vid = self.builder().gep(ctx, [self.llvmGEPIdx(0), self.llvmGEPIdx(0)])
         return self.builder().load(vid)
 
+    def llvmExecutionContextThreadContext(self, ctx=None):
+        """Returns the ``tcontext`` field from an execution context.
+
+        ctx: llvm.core.Value - Pointer to the execution context. If not given,
+        ~~llvmCurrentExecutionContextPtr is used.
+
+        Returns: llvm.core.Value - The thread context as a void pointer, which
+        may be null if the thread context is not set.
+        """
+        if not ctx:
+            ctx = self.llvmCurrentExecutionContextPtr()
+
+        tcontext = self.builder().gep(ctx, [self.llvmGEPIdx(0), self.llvmGEPIdx(10)])
+        return self.builder().load(tcontext)
+
+    def llvmExecutionContextSetThreadContext(self, tctx, ctx=None):
+        """Set an execution context's ``tcontext`` field to a thread context.
+
+        tctx: llvm.core.Value - The new context pointer. Can be null to clear
+        the current thread context.
+
+        ctx: llvm.core.Value - Pointer to the execution context. If not given,
+        ~~llvmCurrentExecutionContextPtr is used.
+        """
+        if not ctx:
+            ctx = self.llvmCurrentExecutionContextPtr()
+
+        tctx = self.builder().bitcast(tctx, self.llvmTypeGenericPointer())
+        tcontext = self.builder().gep(ctx, [self.llvmGEPIdx(0), self.llvmGEPIdx(10)])
+        self.llvmAssign(tctx, tcontext)
+
     def llvmYield(self, resume):
         """Generates code to yield execution back to caller/scheduler.
 

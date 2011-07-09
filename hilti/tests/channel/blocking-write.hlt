@@ -42,8 +42,8 @@ void run() {
     local ref<channel<int32>> ch
     ch = new channel<int32> 1
 
-    thread.schedule 1 writer (ch)
-    thread.schedule 2 reader (ch)
+    thread.schedule writer (ch) 1
+    thread.schedule reader (ch) 2
 
     call Hilti::wait_for_threads()
 }

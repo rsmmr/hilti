@@ -38,7 +38,7 @@ void run() {
     if.else eq @exit @cont
 
 @cont:
-    thread.schedule count print_num(count)
+    thread.schedule print_num(count) count
     count = incr count
     jump @loop
 

@@ -13,6 +13,8 @@ import scope
 import type
 import resolver
 
+import instructions.thread
+
 class Module(node.Node):
 
     _hooks = {}
@@ -33,6 +35,13 @@ class Module(node.Node):
         self._scope = scope.Scope(None, self._name)
         self._imported_modules = []
         self._exported = []
+        self._tcontext = None
+        self._tscopes = []
+
+        # Add a "context" here that indicates none has been defined. The ID will
+        # be overridden once a context is defined.
+        i = id.Type("context", instructions.thread.NoContext)
+        self.scope().add(i)
 
         if name.lower() == "main":
             # Automatically export the "run" function.
@@ -130,6 +139,49 @@ class Module(node.Node):
         except KeyError:
             return None
 
+    def threadContext(self):
+        """Returns the module's threading context type.
+
+        Returns: ~~Context - The context type if set, or None otherwise.
+        """
+        return self._tcontext
+
+    def setThreadContext(self, context):
+        """Sets the module's threading context type.
+
+        context: ~~Context - The type of the module context.
+        """
+        assert isinstance(context, type.Context)
+        self._tcontext = context
+
+        # Add a "magic" identifier to reference the type. This overrides the
+        # default identifier that's left undefined.
+        i = id.Type("context", context, linkage=id.Linkage.EXPORTED, location=context.location())
+        self.scope().add(i)
+
+    def threadScopes(self):
+        """Returns the threading scopes defined for the module.
+
+        Returns: list of (name, ~~Scope) - The list of scopes with their
+        names, which can be empty if no scopes have been defined.
+        """
+        return self._tscopes
+
+    def addThreadScope(self, name, scope):
+        """Adds a threading scope to the module. The scope's fields must be a
+        subset of the fields the module's ~~context defines. The thread scope
+        will also be added to the module's identifier scope under the given
+        *name* name.
+
+        name: string - The name of the scope.
+        scope: ~~Scope - The scope to add.
+        """
+        self._tscopes += [(name, scope)]
+
+        # Add an identifier to reference the scope.
+        i = id.Type(name, scope, linkage=id.Linkage.EXPORTED, location=scope.location())
+        self.scope().add(i)
+
     def __str__(self):
         return "module %s" % self._name
 
@@ -177,6 +229,15 @@ class Module(node.Node):
                 continue
 
             i.validate(vld)
+
+        ctx = set([i.name() for i in self._tcontext.fields()] if self._tcontext else [])
+
+        for (name, scope) in self._tscopes:
+            scope.validate(vld)
+
+            for f in scope.fields():
+                if not f in ctx:
+                    vld.error(scope, "scope's field name %s is not defined in module's context" % f)
 
         vld.endModule()
 
@@ -250,6 +311,18 @@ class Module(node.Node):
 
         if imported:
             printer.output("", nl=True)
+
+        if self._tcontext:
+            printer.output("context ");
+            self._tcontext.output(printer)
+            printer.output("", nl=True);
+
+        for (name, scope) in self._tscopes:
+            printer.output("scope %s " % name);
+            scope.output(printer)
+
+        if self._tscopes:
+            printer.output("", nl=True);
 
         self._scope.output(printer)
 

@@ -29,6 +29,6 @@ void printhello() {
 }
 
 void run() {
-    thread.schedule 1 printhello()
+    thread.schedule printhello() 1
     call Hilti::wait_for_threads()
 }
