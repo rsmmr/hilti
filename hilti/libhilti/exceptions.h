@@ -132,6 +132,10 @@ extern hlt_exception_type hlt_exception_profiler_unknown;
 // A thread.schedule instruction was executed without a thread context being set.
 extern hlt_exception_type hlt_exception_no_thread_context;
 
+// Converting a value from one type to another failed.
+extern hlt_exception_type hlt_exception_conversion_error;
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Exception-related functions.
 ///////////////////////////////////////////////////////////////////////////////

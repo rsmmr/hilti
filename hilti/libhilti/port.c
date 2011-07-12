@@ -27,3 +27,31 @@ int64_t hlt_port_to_int64(const hlt_type_info* type, const void* obj, int32_t op
     return port.port;
 }
 
+hlt_port hlt_port_from_asciiz(const char* s, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_port p;
+    const char *t = s;
+
+    while ( *t && isdigit(*t) )
+        ++t;
+
+    if ( s == t || *t != '/' )
+        goto error;
+
+    if ( strcmp(t, "/tcp") == 0 )
+        p.proto = hlt_port_tcp;
+
+    else if ( strcmp(t, "/udp") == 0 )
+        p.proto = hlt_port_udp;
+
+    else
+        goto error;
+
+    p.port = atoi(s);
+    return p;
+
+error:
+    hlt_set_exception(excpt, &hlt_exception_conversion_error, 0);
+    return p;
+}
+

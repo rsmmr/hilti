@@ -8,6 +8,8 @@ export tuple<iterator<bytes>,iterator<bytes>>
 export int<64>
 export time
 export double
+export addr
+export port
 
 # This is an internal function that the code-generator will
 # auto-generate if exported. Note that the signature here doesn't

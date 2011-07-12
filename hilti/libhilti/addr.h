@@ -36,6 +36,16 @@ struct __hlt_addr {
 /// ctx: & 
 extern hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Converts an ASCIIZ string into an address. The string can be either an
+/// IPv4 or IPv6 address in their standard ASCII representations.
+///
+/// s: The string with the address.
+///
+/// excpt: &
+///
+/// Raises: ConversionError - If it can't parse the string.
+hlt_addr hlt_addr_from_asciiz(const char* s, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// @}
 
 #endif
