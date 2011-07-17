@@ -139,7 +139,7 @@ GC_API void * GC_CALL GC_malloc(size_t bytes)
 
 #   if !defined(USE_PTHREAD_SPECIFIC) && !defined(USE_WIN32_SPECIFIC)
       GC_key_t k = GC_thread_key;
-      if (EXPECT(0 == k, 0)) {
+      if (EXPECT(0 == k, FALSE)) {
         /* We haven't yet run GC_init_parallel.  That means     */
         /* we also aren't locking, so this is fairly cheap.     */
         return GC_core_malloc(bytes);
@@ -147,9 +147,7 @@ GC_API void * GC_CALL GC_malloc(size_t bytes)
       tsd = GC_getspecific(k);
 #   else
       tsd = GC_getspecific(GC_thread_key);
-#   endif
-#   if defined(USE_PTHREAD_SPECIFIC) || defined(USE_WIN32_SPECIFIC)
-      if (EXPECT(0 == tsd, 0)) {
+      if (EXPECT(0 == tsd, FALSE)) {
         return GC_core_malloc(bytes);
       }
 #   endif
@@ -176,18 +174,16 @@ GC_API void * GC_CALL GC_malloc_atomic(size_t bytes)
 
 #   if !defined(USE_PTHREAD_SPECIFIC) && !defined(USE_WIN32_SPECIFIC)
       GC_key_t k = GC_thread_key;
-      if (EXPECT(0 == k, 0)) {
+      if (EXPECT(0 == k, FALSE)) {
         /* We haven't yet run GC_init_parallel.  That means     */
         /* we also aren't locking, so this is fairly cheap.     */
-        return GC_core_malloc(bytes);
+        return GC_core_malloc_atomic(bytes);
       }
       tsd = GC_getspecific(k);
 #   else
       tsd = GC_getspecific(GC_thread_key);
-#   endif
-#   if defined(USE_PTHREAD_SPECIFIC) || defined(USE_WIN32_SPECIFIC)
-      if (EXPECT(0 == tsd, 0)) {
-        return GC_core_malloc(bytes);
+      if (EXPECT(0 == tsd, FALSE)) {
+        return GC_core_malloc_atomic(bytes);
       }
 #   endif
     GC_ASSERT(GC_is_initialized);
@@ -288,7 +284,7 @@ GC_INNER void GC_mark_thread_local_fls_for(GC_tlfs p)
 }
 
 #if defined(GC_ASSERTIONS)
-    /* Check that all thread-local free-lists in p are completely marked.       */
+    /* Check that all thread-local free-lists in p are completely marked. */
     void GC_check_tls_for(GC_tlfs p)
     {
         ptr_t q;

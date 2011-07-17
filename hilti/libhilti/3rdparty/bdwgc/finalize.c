@@ -374,7 +374,7 @@ STATIC void GC_register_finalizer_inner(void * obj,
         curr_fo = fo_next(curr_fo);
       }
       if (EXPECT(new_fo != 0, FALSE)) {
-        /* new_fo is returned GC_oom_fn(), so fn != 0 and hhdr != 0.    */
+        /* new_fo is returned by GC_oom_fn(), so fn != 0 and hhdr != 0. */
         break;
       }
       if (fn == 0) {
@@ -485,18 +485,13 @@ GC_API void GC_CALL GC_register_finalizer_unreachable(void * obj,
       }
     }
   }
-#endif
+#endif /* !NO_DEBUGGING */
 
 #ifndef SMALL_CONFIG
   STATIC word GC_old_dl_entries = 0; /* for stats printing */
 #endif
 
-#ifdef THREADS
-  /* Defined in pthread_support.c or win32_threads.c.  Called with the  */
-  /* allocation lock held.                                              */
-  GC_INNER void GC_reset_finalizer_nested(void);
-  GC_INNER unsigned char *GC_check_finalizer_nested(void);
-#else
+#ifndef THREADS
   /* Global variables to minimize the level of recursion when a client  */
   /* finalizer allocates memory.                                        */
   STATIC unsigned char GC_finalizer_nested = 0;
@@ -946,4 +941,4 @@ GC_API void * GC_CALL GC_call_with_alloc_lock(GC_fn_type fn,
                   "%ld links cleared\n",
                   ready, (long)GC_old_dl_entries - (long)GC_dl_entries);
   }
-#endif /* SMALL_CONFIG */
+#endif /* !SMALL_CONFIG */

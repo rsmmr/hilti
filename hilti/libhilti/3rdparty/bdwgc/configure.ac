@@ -17,13 +17,13 @@ dnl Process this file with autoconf to produce configure.
 # Initialization
 # ==============
 
-AC_INIT(gc,7.2alpha5,Hans.Boehm@hp.com)
+AC_INIT(gc,7.2alpha6,Hans.Boehm@hp.com)
     ## version must conform to [0-9]+[.][0-9]+(alpha[0-9]+)?
 AC_CONFIG_SRCDIR(gcj_mlc.c)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
-AC_PREREQ(2.53)
-AC_REVISION($Revision: 1.63 $)
+AC_PREREQ(2.64)
+AC_REVISION($Revision: 1.67 $)
 GC_SET_VERSION
 AM_INIT_AUTOMAKE([foreign dist-bzip2 nostdinc])
 AM_CONFIG_HEADER([include/private/config.h])
@@ -108,7 +108,7 @@ case "$THREADS" in
     ;;
  posix | pthreads)
     THREADS=posix
-    THREADDLLIBS=-lpthread
+    AC_CHECK_LIB(pthread, pthread_self, THREADDLLIBS="-lpthread",,)
     case "$host" in
      x86-*-linux* | ia64-*-linux* | i586-*-linux* | i686-*-linux* | x86_64-*-linux* | alpha-*-linux* | sparc*-*-linux*)
         AC_DEFINE(GC_LINUX_THREADS)
@@ -180,11 +180,11 @@ case "$THREADS" in
      *-*-solaris*)
         AC_DEFINE(GC_SOLARIS_THREADS)
         AC_DEFINE(THREAD_LOCAL_ALLOC)
-        THREADDLLIBS="-lpthread -lrt"
-        if test "$GCC" != yes; then
-          CFLAGS="$CFLAGS -O"
-          need_atomic_ops_asm=true
-        fi
+        # Need to use alternate thread library, otherwise gctest hangs
+        # on Solaris 8.
+        multi_os_directory=`$CC -print-multi-os-directory`
+        THREADDLLIBS="-L/usr/lib/lwp/$multi_os_directory \
+                      -R/usr/lib/lwp/$multi_os_directory -lpthread -lrt"
         ;;
      *-*-irix*)
         AC_DEFINE(GC_IRIX_THREADS)
@@ -224,6 +224,14 @@ case "$THREADS" in
         ;;
       *)
         AC_MSG_ERROR("Pthreads not supported by the GC on this platform.")
+        ;;
+    esac
+    case "$host" in
+     sparc*-*-solaris*)
+        if test "$GCC" != yes; then
+          CFLAGS="$CFLAGS -O"
+          need_atomic_ops_asm=true
+        fi
         ;;
     esac
     ;;
@@ -293,9 +301,12 @@ if test $compiler_xlc = yes -a "$powerpc_darwin" = true; then
   AC_DEFINE([DARWIN_DONT_PARSE_STACK], 1, [See doc/README.macros.])
 fi
 
+case "$host" in
+# While IRIX 6 has libdl for the O32 and N32 ABIs, it's missing for N64
+# and unnecessary everywhere.
+  mips-sgi-irix6*) ;;
 # We never want libdl on darwin. It is a fake libdl that just ends up making
 # dyld calls anyway.  The same applies to Cygwin.
-case "$host" in
   *-*-darwin*) ;;
   *-*-cygwin*) ;;
   *)
@@ -384,7 +395,8 @@ case "$host" in
  alpha*-*-linux*)
     machdep="mach_dep.lo"
     ;;
- i?86-*-solaris2.[[89]] | i?86-*-solaris2.1?)
+ i?86-*-solaris2.[[89]])
+    # PROC_VDB appears to work in 2.8 and 2.9 but not in 2.10+ (for now).
     AC_DEFINE([SOLARIS25_PROC_VDB_BUG_FIXED], 1,
               [See the comment in gcconfig.h.])
     ;;

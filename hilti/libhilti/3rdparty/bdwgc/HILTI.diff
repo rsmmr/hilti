@@ -1,5 +1,6 @@
---- ../bdwgc.old/CMakeLists.orig	2010-08-24 20:55:18.000000000 -0700
-+++ ../bdwgc.old/CMakeLists.txt	2010-08-24 20:55:18.000000000 -0700
+diff -ur gc-7.2alpha6/CMakeLists.txt bdwgc/CMakeLists.txt
+--- gc-7.2alpha6/CMakeLists.txt	2010-10-21 22:47:47.000000000 -0700
++++ bdwgc/CMakeLists.txt	2011-07-16 17:25:45.000000000 -0700
 @@ -30,9 +30,9 @@
                   -DGC_BUILD
  ")
@@ -7,13 +8,13 @@
 -IF(APPLE)
 -    SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;x86_64" CACHE STRING "Build architectures for Mac OS X" FORCE)
 -ENDIF(APPLE)
-+#IF(APPLE)
++# IF(APPLE)
 +#    SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;x86_64" CACHE STRING "Build architectures for Mac OS X" FORCE)
-+#ENDIF(APPLE)
++# ENDIF(APPLE)
  
  #LIBATOMIC #TODO
  #ADD_LIBRARY(atomic_ops STATIC )
-@@ -217,7 +217,7 @@
+@@ -216,7 +216,7 @@
  SET_TARGET_PROPERTIES(gcmt-lib PROPERTIES
                        COMPILE_DEFINITIONS GC_NOT_DLL)
  
@@ -22,7 +23,7 @@
  
  IF(WIN32)
    ADD_EXECUTABLE(cord cord/cordbscs.c cord/cordxtra.c cord/de.c cord/de_win.c)
-@@ -227,4 +227,14 @@
+@@ -226,4 +226,12 @@
    TARGET_LINK_LIBRARIES(cord gc-lib)
  ENDIF(WIN32)
  
@@ -36,11 +37,11 @@
 +else ( ENABLE_LLVM )
 +   ADD_SUBDIRECTORY(tests)
 +endif ( ENABLE_LLVM )
-+
-+
---- ../bdwgc/libatomic_ops/src/atomic_ops/sysdeps/gcc/x86_64.h	2010-02-19 09:12:07.000000000 -0800
-+++ ../bdwgc.old//libatomic_ops/src/atomic_ops/sysdeps/gcc/x86_64.h	2010-08-24 20:55:18.000000000 -0700
-@@ -111,7 +111,7 @@
+Only in bdwgc: HILTI.diff
+diff -ur gc-7.2alpha6/libatomic_ops/src/atomic_ops/sysdeps/gcc/x86_64.h bdwgc/libatomic_ops/src/atomic_ops/sysdeps/gcc/x86_64.h
+--- gc-7.2alpha6/libatomic_ops/src/atomic_ops/sysdeps/gcc/x86_64.h	2011-06-03 02:17:00.000000000 -0700
++++ bdwgc/libatomic_ops/src/atomic_ops/sysdeps/gcc/x86_64.h	2011-07-16 17:06:59.000000000 -0700
+@@ -110,7 +110,7 @@
    /* Note: the "xchg" instruction does not need a "lock" prefix */
    __asm__ __volatile__("xchgb %0, %1"
                  : "=q"(oldval), "=m"(*addr)
@@ -48,4 +49,5 @@
 +                : "0"((unsigned char)0xff), "m"(*addr) : "memory");
    return (AO_TS_VAL_t)oldval;
  }
- 
+ #define AO_HAVE_test_and_set_full
+Only in bdwgc/libatomic_ops/src/atomic_ops/sysdeps/gcc: x86_64.h.orig

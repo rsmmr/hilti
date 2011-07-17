@@ -37,9 +37,8 @@
 AO_INLINE void
 AO_nop_full(void)
 {
-  __asm__ __volatile__("mfence" : : : "memory");
+  __asm__ __volatile__ ("mfence" : : : "memory");
 }
-
 #define AO_HAVE_nop_full
 
 #else
@@ -64,7 +63,6 @@ AO_fetch_and_add_full (volatile AO_t *p, AO_t incr)
                         : "memory");
   return result;
 }
-
 #define AO_HAVE_fetch_and_add_full
 
 AO_INLINE unsigned char
@@ -77,7 +75,6 @@ AO_char_fetch_and_add_full (volatile unsigned char *p, unsigned char incr)
                         : "memory");
   return result;
 }
-
 #define AO_HAVE_char_fetch_and_add_full
 
 AO_INLINE unsigned short
@@ -90,7 +87,6 @@ AO_short_fetch_and_add_full (volatile unsigned short *p, unsigned short incr)
                         : "memory");
   return result;
 }
-
 #define AO_HAVE_short_fetch_and_add_full
 
 /* Really only works for 486 and later */
@@ -101,35 +97,31 @@ AO_or_full (volatile AO_t *p, AO_t incr)
                         "=m" (*p) : "r" (incr) /* , "m" (*p) */
                         : "memory");
 }
-
 #define AO_HAVE_or_full
 
 AO_INLINE AO_TS_VAL_t
-AO_test_and_set_full(volatile AO_TS_t *addr)
+AO_test_and_set_full (volatile AO_TS_t *addr)
 {
   AO_TS_t oldval;
   /* Note: the "xchg" instruction does not need a "lock" prefix */
-  __asm__ __volatile__("xchg %0, %1"
-                : "=q"(oldval), "=m"(*addr)
-                : "0"(0xff) /* , "m"(*addr) */
-                : "memory");
+  __asm__ __volatile__ ("xchg %b0, %1"
+                        : "=q"(oldval), "=m"(*addr)
+                        : "0"(0xff) /* , "m"(*addr) */
+                        : "memory");
   return (AO_TS_VAL_t)oldval;
 }
-
 #define AO_HAVE_test_and_set_full
 
 /* Returns nonzero if the comparison succeeded. */
 AO_INLINE int
-AO_compare_and_swap_full(volatile AO_t *addr,
-                             AO_t old, AO_t new_val)
+AO_compare_and_swap_full (volatile AO_t *addr, AO_t old, AO_t new_val)
 {
   char result;
-  __asm__ __volatile__("lock; cmpxchgl %2, %0; setz %1"
-                       : "=m"(*addr), "=a"(result)
-                       : "r" (new_val), "a"(old) : "memory");
+  __asm__ __volatile__ ("lock; cmpxchgl %2, %0; setz %1"
+                        : "=m"(*addr), "=a"(result)
+                        : "r" (new_val), "a"(old) : "memory");
   return (int) result;
 }
-
 #define AO_HAVE_compare_and_swap_full
 
 #if 0
@@ -166,7 +158,6 @@ AO_compare_double_and_swap_double_full(volatile AO_double_t *addr,
 #endif
   return (int) result;
 }
-
 #define AO_HAVE_compare_double_and_swap_double_full
 #endif
 

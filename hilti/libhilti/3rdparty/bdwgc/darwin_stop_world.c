@@ -56,9 +56,9 @@ GC_INNER ptr_t GC_FindTopOfStack(unsigned long stack_start)
   if (stack_start == 0) {
 # ifdef POWERPC
 #   if CPP_WORDSZ == 32
-      __asm__ volatile("lwz     %0,0(r1)" : "=r" (frame));
+      __asm__ __volatile__ ("lwz %0,0(r1)" : "=r" (frame));
 #   else
-      __asm__ volatile("ld      %0,0(r1)" : "=r" (frame));
+      __asm__ __volatile__ ("ld %0,0(r1)" : "=r" (frame));
 #   endif
 # endif
   } else {
@@ -145,7 +145,7 @@ STATIC ptr_t GC_stack_range_for(ptr_t *phi, thread_act_t thread, GC_thread p,
                                    (natural_t *)&state,
                                    &thread_state_count);
 #   ifdef DEBUG_THREADS
-      GC_printf("thread_get_state return value = %d\n", kern_result);
+      GC_log_printf("thread_get_state returns value = %d\n", kern_result);
 #   endif
     if (kern_result != KERN_SUCCESS)
       ABORT("thread_get_state failed");
@@ -255,8 +255,8 @@ STATIC ptr_t GC_stack_range_for(ptr_t *phi, thread_act_t thread, GC_thread p,
     *phi = (p->flags & MAIN_THREAD) != 0 ? GC_stackbottom : p->stack_end;
 # endif
 # ifdef DEBUG_THREADS
-    GC_printf("Darwin: Stack for thread 0x%lx = [%p,%p)\n",
-              (unsigned long) thread, lo, *phi);
+    GC_log_printf("Darwin: Stack for thread 0x%lx = [%p,%p)\n",
+                  (unsigned long)thread, lo, *phi);
 # endif
   return lo;
 }
@@ -322,20 +322,22 @@ GC_INNER void GC_push_all_stacks(void)
   if (GC_print_stats == VERBOSE)
     GC_log_printf("Pushed %d thread stacks\n", nthreads);
   if (!found_me && !GC_in_thread_creation)
-    ABORT("Collecting from unknown thread.");
+    ABORT("Collecting from unknown thread");
   GC_total_stacksize = total_size;
 }
 
 #ifndef GC_NO_THREADS_DISCOVERY
 
-  STATIC mach_port_t GC_mach_handler_thread = 0;
-  STATIC GC_bool GC_use_mach_handler_thread = FALSE;
+# ifdef MPROTECT_VDB
+    STATIC mach_port_t GC_mach_handler_thread = 0;
+    STATIC GC_bool GC_use_mach_handler_thread = FALSE;
 
-  GC_INNER void GC_darwin_register_mach_handler_thread(mach_port_t thread)
-  {
-    GC_mach_handler_thread = thread;
-    GC_use_mach_handler_thread = TRUE;
-  }
+    GC_INNER void GC_darwin_register_mach_handler_thread(mach_port_t thread)
+    {
+      GC_mach_handler_thread = thread;
+      GC_use_mach_handler_thread = TRUE;
+    }
+# endif /* MPROTECT_VDB */
 
 # ifndef GC_MAX_MACH_THREADS
 #   define GC_MAX_MACH_THREADS THREAD_TABLE_SZ
@@ -349,10 +351,6 @@ GC_INNER void GC_push_all_stacks(void)
   struct GC_mach_thread GC_mach_threads[GC_MAX_MACH_THREADS];
   STATIC int GC_mach_threads_count = 0;
   /* FIXME: it is better to implement GC_mach_threads as a hash set.  */
-
-# ifdef PARALLEL_MARK
-    GC_INNER GC_bool GC_is_mach_marker(thread_act_t thread);
-# endif
 
 /* returns true if there's a thread in act_list that wasn't in old_list */
 STATIC GC_bool GC_suspend_thread_list(thread_act_array_t act_list, int count,
@@ -370,8 +368,11 @@ STATIC GC_bool GC_suspend_thread_list(thread_act_array_t act_list, int count,
     mach_msg_type_number_t outCount;
     kern_return_t kern_result;
 
-    if (thread == my_thread || (GC_mach_handler_thread == thread
-                                && GC_use_mach_handler_thread)) {
+    if (thread == my_thread
+#       ifdef MPROTECT_VDB
+          || (GC_mach_handler_thread == thread && GC_use_mach_handler_thread)
+#       endif
+        ) {
       /* Don't add our and the handler threads. */
       continue;
     }
@@ -381,8 +382,8 @@ STATIC GC_bool GC_suspend_thread_list(thread_act_array_t act_list, int count,
 #   endif
 
 #   ifdef DEBUG_THREADS
-      GC_printf("Attempting to suspend thread 0x%lx\n",
-                (unsigned long)thread);
+      GC_log_printf("Attempting to suspend thread 0x%lx\n",
+                    (unsigned long)thread);
 #   endif
     /* find the current thread in the old list */
     found = FALSE;
@@ -406,7 +407,7 @@ STATIC GC_bool GC_suspend_thread_list(thread_act_array_t act_list, int count,
         if (!found) {
           /* add it to the GC_mach_threads list */
           if (GC_mach_threads_count == GC_MAX_MACH_THREADS)
-            ABORT("too many threads");
+            ABORT("Too many threads");
           GC_mach_threads[GC_mach_threads_count].thread = thread;
           /* default is not suspended */
           GC_mach_threads[GC_mach_threads_count].already_suspended = FALSE;
@@ -426,8 +427,8 @@ STATIC GC_bool GC_suspend_thread_list(thread_act_array_t act_list, int count,
       continue;
     }
 #   ifdef DEBUG_THREADS
-      GC_printf("Thread state for 0x%lx = %d\n", (unsigned long)thread,
-                info.run_state);
+      GC_log_printf("Thread state for 0x%lx = %d\n", (unsigned long)thread,
+                    info.run_state);
 #   endif
     if (info.suspend_count != 0) {
       /* thread is already suspended. */
@@ -437,7 +438,7 @@ STATIC GC_bool GC_suspend_thread_list(thread_act_array_t act_list, int count,
     }
 
 #   ifdef DEBUG_THREADS
-      GC_printf("Suspending 0x%lx\n", (unsigned long)thread);
+      GC_log_printf("Suspending 0x%lx\n", (unsigned long)thread);
 #   endif
     kern_result = thread_suspend(thread);
     if (kern_result != KERN_SUCCESS) {
@@ -455,11 +456,6 @@ STATIC GC_bool GC_suspend_thread_list(thread_act_array_t act_list, int count,
 
 #endif /* !GC_NO_THREADS_DISCOVERY */
 
-#ifdef MPROTECT_VDB
-  GC_INNER void GC_mprotect_stop(void);
-  GC_INNER void GC_mprotect_resume(void);
-#endif
-
 /* Caller holds allocation lock.        */
 GC_INNER void GC_stop_world(void)
 {
@@ -469,14 +465,9 @@ GC_INNER void GC_stop_world(void)
   kern_return_t kern_result;
 
 # ifdef DEBUG_THREADS
-    GC_printf("Stopping the world from thread 0x%lx\n",
-              (unsigned long)my_thread);
+    GC_log_printf("Stopping the world from thread 0x%lx\n",
+                  (unsigned long)my_thread);
 # endif
-  /* Clear out the mach threads list table.  We do not need to really   */
-  /* clear GC_mach_threads[] as it is used only in the range from 0 to  */
-  /* GC_mach_threads_count-1, inclusive.                                */
-  GC_mach_threads_count = 0;
-
 # ifdef PARALLEL_MARK
     if (GC_parallel) {
       /* Make sure all free list construction has stopped before we     */
@@ -494,6 +485,11 @@ GC_INNER void GC_stop_world(void)
       GC_bool changed;
       thread_act_array_t act_list, prev_list;
       mach_msg_type_number_t listcount, prevcount;
+
+      /* Clear out the mach threads list table.  We do not need to      */
+      /* really clear GC_mach_threads[] as it is used only in the range */
+      /* from 0 to GC_mach_threads_count-1, inclusive.                  */
+      GC_mach_threads_count = 0;
 
       /* Loop stopping threads until you have gone over the whole list  */
       /* twice without a new one appearing.  thread_create() won't      */
@@ -559,7 +555,7 @@ GC_INNER void GC_stop_world(void)
 # endif
 
 # ifdef DEBUG_THREADS
-    GC_printf("World stopped from 0x%lx\n", (unsigned long)my_thread);
+    GC_log_printf("World stopped from 0x%lx\n", (unsigned long)my_thread);
 # endif
   mach_port_deallocate(my_task, my_thread);
 }
@@ -576,8 +572,8 @@ GC_INLINE void GC_thread_resume(thread_act_t thread)
       ABORT("thread_info failed");
 # endif
 # ifdef DEBUG_THREADS
-    GC_printf("Resuming thread 0x%lx with state %d\n",
-              (unsigned long)thread, info.run_state);
+    GC_log_printf("Resuming thread 0x%lx with state %d\n",
+                  (unsigned long)thread, info.run_state);
 # endif
   /* Resume the thread */
   kern_result = thread_resume(thread);
@@ -592,7 +588,7 @@ GC_INNER void GC_start_world(void)
   task_t my_task = current_task();
   int i;
 # ifdef DEBUG_THREADS
-    GC_printf("World starting\n");
+    GC_log_printf("World starting\n");
 # endif
 # ifdef MPROTECT_VDB
     if(GC_incremental) {
@@ -634,8 +630,8 @@ GC_INNER void GC_start_world(void)
           /* The thread is found in GC_mach_threads.      */
           if (GC_mach_threads[j].already_suspended) {
 #           ifdef DEBUG_THREADS
-              GC_printf("Not resuming already suspended thread 0x%lx\n",
-                        (unsigned long)thread);
+              GC_log_printf("Not resuming already suspended thread 0x%lx\n",
+                            (unsigned long)thread);
 #           endif
           } else {
             GC_thread_resume(thread);
@@ -664,7 +660,7 @@ GC_INNER void GC_start_world(void)
   }
 
 # ifdef DEBUG_THREADS
-    GC_printf("World started\n");
+    GC_log_printf("World started\n");
 # endif
 }
 

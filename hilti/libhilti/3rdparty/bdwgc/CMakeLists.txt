@@ -30,9 +30,9 @@ ADD_DEFINITIONS("-D_CRT_SECURE_NO_DEPRECATE
                  -DGC_BUILD
 ")
 
-#IF(APPLE)
+# IF(APPLE)
 #    SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;x86_64" CACHE STRING "Build architectures for Mac OS X" FORCE)
-#ENDIF(APPLE)
+# ENDIF(APPLE)
 
 #LIBATOMIC #TODO
 #ADD_LIBRARY(atomic_ops STATIC )
@@ -48,7 +48,7 @@ SET(SRC alloc.c reclaim.c allchblk.c misc.c mach_dep.c os_dep.c
         mark_rts.c headers.c mark.c obj_map.c blacklst.c finalize.c
         new_hblk.c dbg_mlc.c malloc.c stubborn.c dyn_load.c
         typd_mlc.c ptr_chck.c gc_cpp.cc mallocx.c checksums.c
-        thread_local_alloc.c backgraph.c)
+        thread_local_alloc.c)
 SET(LIBS)
 OPTION(enable_threads "TODO" NO)
 IF(enable_threads)
@@ -230,10 +230,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
 find_package(LLVM)
 include(EnableLLVM)
 
-if (${LLVM_ENABLED})
+if ( ENABLE_LLVM )
    message("Not building gctest in LLVM build")
-else ()
+else ( ENABLE_LLVM )
    ADD_SUBDIRECTORY(tests)
-endif ()
-
-
+endif ( ENABLE_LLVM )

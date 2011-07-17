@@ -18,9 +18,9 @@
 #ifndef GC_PTHREAD_SUPPORT_H
 #define GC_PTHREAD_SUPPORT_H
 
-# include "private/gc_priv.h"
+#include "private/gc_priv.h"
 
-# if defined(GC_PTHREADS) && !defined(GC_WIN32_THREADS)
+#if defined(GC_PTHREADS) && !defined(GC_WIN32_THREADS)
 
 #if defined(GC_DARWIN_THREADS)
 # include "private/darwin_stop_world.h"
@@ -30,7 +30,7 @@
 
 #ifdef THREAD_LOCAL_ALLOC
 # include "thread_local_alloc.h"
-#endif /* THREAD_LOCAL_ALLOC */
+#endif
 
 /* We use the allocation lock to protect thread-related data structures. */
 
@@ -46,11 +46,14 @@ typedef struct GC_Thread_Rep {
                                   /* guaranteed to be dead, but we may  */
                                   /* not yet have registered the join.) */
     pthread_t id;
+#   ifdef PLATFORM_ANDROID
+      pid_t kernel_id;
+#   endif
     /* Extra bookkeeping information the stopping code uses */
     struct thread_stop_info stop_info;
 
     unsigned char flags;
-#       define FINISHED 1       /* Thread has exited.   */
+#       define FINISHED 1       /* Thread has exited.                   */
 #       define DETACHED 2       /* Thread is treated as detached.       */
                                 /* Thread may really be detached, or    */
                                 /* it may have have been explicitly     */
@@ -59,7 +62,10 @@ typedef struct GC_Thread_Rep {
                                 /* it unregisters itself, since it      */
                                 /* may not return a GC pointer.         */
 #       define MAIN_THREAD 4    /* True for the original thread only.   */
-#       define DISABLED_GC 8    /* Collections are disabled while the   */
+#       define SUSPENDED_EXT 8  /* Thread was suspended externally      */
+                                /* (this is not used by the unmodified  */
+                                /* GC itself at present).               */
+#       define DISABLED_GC 0x10 /* Collections are disabled while the   */
                                 /* thread is exiting.                   */
 
     unsigned char thread_blocked;
@@ -120,5 +126,21 @@ GC_EXTERN GC_bool GC_in_thread_creation;
         /* Only set to TRUE while allocation lock is held.              */
         /* When set, it is OK to run GC from unknown thread.            */
 
-#endif /* GC_PTHREADS && !GC_SOLARIS_THREADS.... etc */
+#ifdef NACL
+  GC_EXTERN __thread GC_thread GC_nacl_gc_thread_self;
+  GC_INNER void GC_nacl_initialize_gc_thread(void);
+  GC_INNER void GC_nacl_shutdown_gc_thread(void);
+#endif
+
+#ifdef GC_EXPLICIT_SIGNALS_UNBLOCK
+  GC_INNER void GC_unblock_gc_signals(void);
+#endif
+
+GC_INNER GC_thread GC_start_rtn_prepare_thread(void *(**pstart)(void *),
+                                        void **pstart_arg,
+                                        struct GC_stack_base *sb, void *arg);
+GC_INNER void GC_thread_exit_proc(void *);
+
+#endif /* GC_PTHREADS && !GC_WIN32_THREADS */
+
 #endif /* GC_PTHREAD_SUPPORT_H */
