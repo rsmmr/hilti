@@ -725,6 +725,7 @@ class ParserGen:
 
     def _parseError(self, builder, msg):
         """Generates code to raise an exception."""
+        builder.makeDebugMsg("binpac-verbose", "raising parse error")
         builder.makeRaiseException("BinPAC::ParseError", msg)
 
     def _yieldAndTryAgain(self, prod, builder, args, cont):

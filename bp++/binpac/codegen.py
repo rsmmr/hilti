@@ -408,7 +408,7 @@ class CodeGen(object):
 
         suspend = fbuilder.newBuilder("suspend")
         suspend.makeDebugMsg("binpac-verbose", "out of input, yielding ...")
-        suspend.yield_()
+        suspend.yield_until(args.data)
         suspend.jump(resume)
 
         error = fbuilder.newBuilder("error")
