@@ -15,7 +15,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_GC -I${CMAKE_SOURCE_DIR}/3rdparty/bdwg
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DREDIRECT_MALLOC=GC_malloc -DIGNORE_FREE")
 
 # Docs say every file that can make use threads need to define these on Linux.
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGC_THREADS -D_REENTRANT")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGC_THREADS -D_REENTRANT -DTHREAD_LOCAL_ALLOC")
 
 if (${LLVM_ENABLE_DEBUG})
     # For the debugging version, add further checks.
