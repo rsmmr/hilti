@@ -4,7 +4,7 @@
 BRO=$(HOME)/bro/1.5
 
 BINPAC=$(BRO)/aux/binpac/src/binpac
-CXXFLAGS=-I$(BRO)/aux/binpac/lib -I../include
+CXXFLAGS=-O2 -I$(BRO)/aux/binpac/lib -I../include
 
 #PAC=$(wildcard *.pac)
 PAC=binpac.pac binpac-lib.pac test.pac http.pac

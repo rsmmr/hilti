@@ -3,7 +3,7 @@
 
 BRO=$(HOME)/bro/1.5
 
-CXXFLAGS = -I include -I$(BRO)/aux/binpac/lib -I pac
+CXXFLAGS = -O2 -I include -I$(BRO)/aux/binpac/lib -I pac
 LDFLAGS  = -Lpac -L$(BRO)/aux/binpac/lib
 LIBS = pac/libanalyzers.a $(BRO)/aux/binpac/lib/libbinpac.a -lpcre
 

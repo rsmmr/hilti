@@ -116,7 +116,8 @@ Flow* bulk_feed_piece(const char* analyzer, Flow* flow, char dir, int eof, const
         if ( 0 ) { // Can't really test for error right now. :-(
             // Past parsing proceeded all the way through and we don't expect
             // further input.
-            fprintf(stderr, "%s: error, no further input expected\n", fid);
+            if ( bptool_verbose )
+                fprintf(stderr, "%s: error, no further input expected\n", fid);
             flow->stopped = 1;
             return 0;
         }
@@ -143,7 +144,8 @@ Flow* bulk_feed_piece(const char* analyzer, Flow* flow, char dir, int eof, const
     free(tmp);
 
     if ( error ) { // Can't really test for error right now. :-(
-        fprintf(stderr, "%s error\n", fid);
+        if ( bptool_verbose )
+            fprintf(stderr, "%s error\n", fid);
         flow->stopped = 1;
         return 0;
     }
@@ -281,7 +283,7 @@ void feed_bulk(const char* analyzer)
         // Output a state summary in regular intervals.
         static int cnt = 0;
 
-        if ( ++cnt % 1000 == 0 )
+        if ( ++cnt % 10000 == 0 )
             fprintf(stderr, "--- pac-driver bulk state: %d total flows, %d in memory at %s\n", num_flows, kh_size(hash), ts);
     }
 }
