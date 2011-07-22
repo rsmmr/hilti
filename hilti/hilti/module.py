@@ -84,9 +84,13 @@ class Module(node.Node):
 
             if i.imported():
                 # Don't import IDs recursively.
+                # continue # FIXME
+                self.scope().add(i)
                 continue
 
-            if i.linkage() == id.Linkage.EXPORTED:
+             # FIXME: See core/import-global, which fails without importating
+             # all globals.
+            if i.linkage() == id.Linkage.EXPORTED or True:
                 newid = i.clone()
                 newid.setLocation(i.location())
                 newid.setImported()

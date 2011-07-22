@@ -50,22 +50,26 @@ static void fatal_error(const char* msg)
     exit(1);
 }
 
-static inline void acqire_lock()
+static inline void acqire_lock(int* i)
 {
     if ( ! hlt_is_multi_threaded() )
         return;
+
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, i);
 
     if ( pthread_mutex_lock(&files_lock) != 0 )
         fatal_error("cannot lock mutex");
 }
 
-static inline void release_lock()
+static inline void release_lock(int i)
 {
     if ( ! hlt_is_multi_threaded() )
         return;
 
     if ( pthread_mutex_unlock(&files_lock) != 0 )
         fatal_error("cannot unlock mutex");
+
+    pthread_setcancelstate(i, NULL);
 }
 
 void __hlt_files_start()
@@ -76,6 +80,9 @@ void __hlt_files_start()
 
 void __hlt_files_stop()
 {
+    for ( __hlt_file_info* info = files; info; info = info->next )
+        fsync(info->fd);
+
     // if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&files_lock) != 0 )
     //    fatal_error("cannot destroy mutex");
 
@@ -105,7 +112,8 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
         return;
     }
 
-    acqire_lock();
+    int s;
+    acqire_lock(&s);
 
     // First see whether we know this file already.
     //
@@ -170,7 +178,7 @@ error:
     file->open = 0;
 
 done:
-    release_lock();
+    release_lock(s);
 }
 
 void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -249,6 +257,7 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
     hlt_bytes_pos start = hlt_bytes_begin(data, excpt, ctx);
     hlt_bytes_pos end = hlt_bytes_end(data, excpt, ctx);
     void* cookie = 0;
+    char buf[5] = { '\\', 'x', 'X', 'X', '0' };
 
     assert(file->info);
 
@@ -261,17 +270,27 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
         int8_t text = hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx);
 
         if ( text ) {
-            // Escape unprintable characters. FIXME: We don't honor the
+            // Need to escape unprintable characters. FIXME: We don't honor the
             // charset here yet, just encode everything that is not
             // representable in our current locale.
-            for ( const int8_t* c = block.start; c < block.end; c++ ) {
-                if ( isprint(*c) )
-                    write(file->info->fd, c, 1);
-                else {
-                    char buf[5];
-                    int n = snprintf(buf, sizeof(buf) - 1, "\\x%x", (int)*c);
-                    write(file->info->fd, buf, n);
+            const int8_t* s = block.start;
+            const int8_t* e = s;
+
+            while ( s < block.end ) {
+                while ( e < block.end && isprint(*e) )
+                    ++e;
+
+                if ( e != s )
+                    write(file->info->fd, s, e - s);
+
+                if ( e < block.end ) {
+                    // Unprintable character.
+                    int n = hlt_util_uitoa_n(*e, buf + 2, 3, 16, 1);
+                    write(file->info->fd, buf, n + 2);
+                    ++e;
                 }
+
+                s = e;
             }
         }
 
@@ -288,7 +307,6 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
 
     if ( hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx) )
         write(file->info->fd, "\n", 1);
-
 }
 
 void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -308,7 +326,7 @@ void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_
           // String.
           hlt_bytes* b = hlt_string_encode(cmd->data.string, cmd->file->charset, excpt, ctx);
           if ( *excpt )
-              return;
+              break;
 
           _write_bytes(cmd->file, b, excpt, ctx);
           break;
@@ -316,7 +334,8 @@ void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_
 
       case 2: {
           // Close command.
-          acqire_lock();
+          int s;
+          acqire_lock(&s);
 
           assert(cmd->file->info->writers);
 
@@ -346,7 +365,7 @@ void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_
                   fatal_error("file to close not found");
           }
 
-          release_lock();
+          release_lock(s);
           break;
       }
 

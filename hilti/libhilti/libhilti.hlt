@@ -61,6 +61,8 @@ declare "C-HILTI" bool  bytes_equal(any s1, any s2)
 declare "C-HILTI" int64 struct_hash(any s)
 declare "C-HILTI" int64 struct_equal(any s)
 
+declare "C-HILTI" any bytes_blockable(any s)
+
 ###
 
 declare "C-HILTI" int64 int_pow(int64 base, int64 exp)

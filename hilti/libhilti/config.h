@@ -44,6 +44,12 @@ typedef struct
     /// context into the set of virtual threads. Default is 100.
     hlt_vthread_id vid_schedule_max;
 
+    /// A string specifying thread-to-core affinity with entries of the form
+    /// "thread-name:core-number", separated by commas. No whitespace allowed
+    /// anywhere. Set to NULL or empty string to disable any pinning. Default
+    /// is the magic string "DEFAULT" which let's HILTI determine a pinning
+    /// itself.
+    const char* core_affinity;
 
 } hlt_config;
 

@@ -4,9 +4,10 @@
 #define HLT_CONTEXT_H
 
 #include "continuation.h"
-#include "threading.h"
 #include "context.h"
 #include "profiler.h"
+
+typedef struct hlt_worker_thread hlt_worker_thread;
 
 /// A per-thread execution context. This is however just the common header of
 /// all contexts; in memory, the header will be followed with the set of

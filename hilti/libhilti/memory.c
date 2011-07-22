@@ -67,7 +67,7 @@ void sample_heap()
 void __hlt_gc_init()
 {
     GC_INIT();
-
+    
 #ifdef GC_DEBUG
     char* env = getenv("HILTI_SAMPLE_HEAP");
     if ( env )

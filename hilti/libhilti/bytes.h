@@ -263,7 +263,7 @@ extern hlt_bytes_pos hlt_bytes_generic_end(hlt_exception** excpt, hlt_execution_
 /// excpt: &
 ///
 /// Raises: ValueError - If the bytes object is empty.
-extern void hlt_bytes_freeze(const hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns whether a bytes object has been frozen. For an empty object, this
 /// returns always 0.

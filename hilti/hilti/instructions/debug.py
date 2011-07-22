@@ -84,6 +84,18 @@ class InternalError(Instruction):
     def _codegen(self, cg):
         cg.llvmDebugPopIndent()
 
+@hlt.instruction("debug.print_frame")
+class PrintFrame(Instruction):
+    """An internal debugging instruction that prints out pointers making up
+    the current stack frame.
+    """
+    def _codegen(self, cg):
+        cg.llvmDebugPrintPtr("dbg.print-frame: normal succ ", cg.llvmFrameNormalSucc())
+        cg.llvmDebugPrintPtr("dbg.print-frame: normal frame", cg.llvmFrameNormalFrame().fptr())
+        cg.llvmDebugPrintPtr("dbg.print-frame: excpt succ  ", cg.llvmFrameExcptSucc())
+        cg.llvmDebugPrintPtr("dbg.print-frame: excpt frame ", cg.llvmFrameExcptFrame().fptr())
+        cg.llvmDebugPrintPtr("dbg.print-frame: excpt ptr",    cg.llvmFrameException())
+
 def message(stream, fmt, args = []):
     """Helpers function to create a ~~Msg instruction.
 

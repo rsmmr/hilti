@@ -71,6 +71,10 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     if ( *excpt )
         return;
 
+    // We must not terminate while in here.
+    int old_state;
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
+
     FILE* out = hlt_config_get()->debug_out;
     flockfile(out);
 
@@ -78,6 +82,8 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
 
     fflush(out);
     funlockfile(out);
+
+    pthread_setcancelstate(old_state, NULL);
 }
 
 void __hlt_debug_printf_internal(const char* s, const char* fmt, ...)
@@ -106,6 +112,10 @@ void __hlt_debug_printf_internal(const char* s, const char* fmt, ...)
 
     strncat(buffer, "\n", sizeof(buffer) - strlen(buffer) - 1);
 
+    // We must not terminate while in here.
+    int old_state;
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
+
     FILE* out = hlt_config_get()->debug_out;
     flockfile(out);
 
@@ -113,6 +123,8 @@ void __hlt_debug_printf_internal(const char* s, const char* fmt, ...)
 
     fflush(out);
     funlockfile(out);
+
+    pthread_setcancelstate(old_state, NULL);
 }
 
 

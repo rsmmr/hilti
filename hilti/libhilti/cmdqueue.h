@@ -26,8 +26,11 @@
 // Called from hlt_threading_start().
 extern void __hlt_cmd_queue_start();
 
-// Called from hlt_threading_stopt().
+// Called from hlt_threading_stop().
 extern void __hlt_cmd_queue_stop();
+
+// Called from _kill_all_threads() in threading.cc.
+extern void __hlt_cmd_queue_kill();
 
 // The command type currently defined.
 #define __HLT_CMD_FILE   1  // File operation.
@@ -51,5 +54,9 @@ void __hlt_cmdqueue_init_cmd(__hlt_cmd *cmd, uint16_t type);
 // Note that in a non-threaded configuration, this will directly execute the
 // command and return only after it has finished.
 extern void __hlt_cmdqueue_push(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_context* ctx);
+
+// Signals that a worker thread is about to terminate.
+extern void __hlt_cmd_worker_terminating(int worker);
+
 
 #endif

@@ -104,6 +104,11 @@ struct __hlt_type_info {
     // argument will not be used and will always be null.
     int8_t (*equal)(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** expt, hlt_execution_context* ctx);
 
+    // If this is a type that a "yield" can block for until a resource
+    // becomes available, a function returning hlt_thread_mgr_blockable
+    // object for an instance.
+    void* (*blockable)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
+
     // Type-parameters start here. The format is type-specific.
     char type_params[];
 };

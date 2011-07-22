@@ -5,15 +5,18 @@
 
 struct hlt_execution_context;
 struct hlt_exception;
+struct hlt_thread_mgr_blockable;
 
 #define HLT_BOUND_FUNCTION_STACK_SIZE 1024 ///< The initial amount of stack size to allocate for bound functions.
 
-/// A continuation instance. We don't define the attributes further as they
+/// A continuation instance. We don't define most attributes further as they
 /// aren't usable from C.
 typedef struct hlt_continuation {
     void *succ;
     void *frame;
     void *eoss;
+
+    struct hlt_thread_mgr_blockable *blockable; // A resource continuation depends on, or Null.
 } hlt_continuation;
 
 /// A stack to be used when calling bound function.

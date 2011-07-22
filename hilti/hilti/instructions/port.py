@@ -24,7 +24,7 @@ class Port(type.ValueType, type.Constable, type.Unpackable, type.Classifiable):
     ### Overridden from HiltiType.
 
     def llvmType(self, cg):
-        return llvm.core.Type.struct([llvm.core.Type.int(16), llvm.core.Type.int(8)])
+        return llvm.core.Type.packed_struct([llvm.core.Type.int(16), llvm.core.Type.int(8)])
 
     ### Overridden from ValueType.
 
@@ -36,7 +36,7 @@ class Port(type.ValueType, type.Constable, type.Unpackable, type.Classifiable):
 
     def llvmDefault(self, cg):
         """A ``port`` is initialized to ``0/tcp``."""
-        return llvm.core.Constant.struct([cg.llvmConstInt(0, 16), cg.llvmConstInt(Port._protos["tcp"], 8)])
+        return llvm.core.Constant.packed_struct([cg.llvmConstInt(0, 16), cg.llvmConstInt(Port._protos["tcp"], 8)])
 
     ### Overridden from Constable.
 
@@ -59,7 +59,7 @@ class Port(type.ValueType, type.Constable, type.Unpackable, type.Classifiable):
         port = int(port)
         proto = Port._protos[proto]
 
-        return llvm.core.Constant.struct([cg.llvmConstInt(port, 16), cg.llvmConstInt(proto, 8)])
+        return llvm.core.Constant.packed_struct([cg.llvmConstInt(port, 16), cg.llvmConstInt(proto, 8)])
 
     def outputConstant(self, printer, const):
         printer.output(const.value())

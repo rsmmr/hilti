@@ -302,6 +302,7 @@ class Struct(type.HeapType, type.TypeListable):
         typeinfo.hash = "hlt::struct_hash"
         typeinfo.equal = "hlt::struct_equal"
         typeinfo.args = [id.type() for (id, op) in self._ids]
+        typeinfo.c_prototype = "void *"
 
         zero = cg.llvmGEPIdx(0)
         null = llvm.core.Constant.null(self.llvmType(cg))

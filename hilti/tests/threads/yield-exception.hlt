@@ -1,0 +1,38 @@
+# $Id$
+#
+# @TEST-EXEC:  hilti-build2 %INPUT -o a.out
+# @TEST-EXEC:  ./a.out -t 1 >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type myException = exception
+
+void doSomething() {
+    local ref<myException> e
+
+    call Hilti::print("before yield1")
+    yield
+    call Hilti::print("after yield1")
+    yield
+    call Hilti::print("after yield2")
+    e = new myException
+    exception.throw e
+    call Hilti::print("after exception")
+}
+
+void doSchedule() {
+    try {
+        call doSomething()
+    }
+    catch {
+        call Hilti::print("Caught exception")
+        }
+}
+
+void run() {
+    thread.schedule doSchedule() 1
+    call Hilti::wait_for_threads()
+}

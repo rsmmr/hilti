@@ -28,22 +28,21 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
 {
     // To prevent race conditions with multiple threads, we have to lock stdout here and then
     // unlock it at each possible exit to this function.
+
+    // We must not terminate while in here.
+    int old_state;
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
+
     flockfile(stdout);
 
     if ( type->to_string ) {
         hlt_string s = (*type->to_string)(type, obj, 0, excpt, ctx);
         if ( *excpt )
-        {
-            funlockfile(stdout);
-            return;
-        }
+            goto unlock;
 
         hlt_string_print(stdout, s, 0, excpt, ctx);
         if ( *excpt )
-        {
-            funlockfile(stdout);
-            return;
-        }
+            goto unlock;
     }
 
     else {
@@ -56,6 +55,8 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
 
     fflush(stdout);
 
+unlock:
     funlockfile(stdout);
+    pthread_setcancelstate(old_state, NULL);
 }
 

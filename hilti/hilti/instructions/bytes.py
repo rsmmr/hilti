@@ -53,7 +53,7 @@ class IteratorBytes(type.Iterator):
         return type.Integer(8)
 
 @hlt.type("bytes", 9, c="hlt_bytes *")
-class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable, type.Classifiable):
+class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable, type.Classifiable, type.Blockable):
     """Type for ``bytes``.
 
     location: ~~Location - Location information for the type.
@@ -71,6 +71,7 @@ class Bytes(type.HeapType, type.Constructable, type.Iterable, type.Unpackable, t
         typeinfo.to_string = "hlt::bytes_to_string"
         typeinfo.hash = "hlt::bytes_hash"
         typeinfo.equal = "hlt::bytes_equal"
+        typeinfo.blockable = "hlt::bytes_blockable"
         return typeinfo
 
     ### Overridden from Constructable.

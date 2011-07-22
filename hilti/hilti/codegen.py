@@ -84,6 +84,14 @@ class TypeInfo(object):
        :download:`/libhilti/hilti_intern.h` for the function's
        complete C signature.
 
+    *blockable* (string)
+       The name of an internal libhilti function that returns an
+       internal HILTI "blockable" object if a ``yield`` can wait for
+       instances of this type to become available. See
+       :download:`/libhilti/hilti_intern.h` for the function's
+       complete C signature. If this field is set, the corresponding type must
+       be derived from trait ~~Blockable.
+
     *aux* (llvm.core.Value)
        A global LLVM variable with auxiliary type-specific information, which
        will be accessible from the C level.
@@ -103,6 +111,7 @@ class TypeInfo(object):
         self.to_double = None
         self.hash = "hlt::default_hash"
         self.equal = "hlt::default_equal"
+        self.blockable = None
         self.aux = None
 
         assert self.args or self.args == []
@@ -527,6 +536,14 @@ class CodeGen(objcache.Cache):
                 continue
 
             if builtin_id(i.type()) == builtin_id(ty):
+                return i
+
+        # FIXME: This is a hack. We need to overhaul the import system.
+        for i in self.currentModule().scope().IDs():
+            if not isinstance(i, id.Type):
+                continue
+
+            if str(i.type()) == str(ty):
                 return i
 
         assert False
@@ -986,7 +1003,7 @@ class CodeGen(objcache.Cache):
         hlt_func_vals = []
         hlt_func_types = []
 
-        for conversion in ("to_string", "to_int64", "to_double", "hash", "equal"):
+        for conversion in ("to_string", "to_int64", "to_double", "hash", "equal", "blockable"):
             if ti.__dict__[conversion]:
                 name = ti.__dict__[conversion]
                 func = self.lookupFunction(name)
@@ -1620,11 +1637,16 @@ class CodeGen(objcache.Cache):
         """
         return llvm.core.Type.pointer(self.llvmTypeInternal("__hlt_continuation"))
 
-    def llvmNewContinuation(self, succ, frame):
+    def llvmNewContinuation(self, succ, frame, blockable=None):
         """Create a new continuation object.
 
         succ: llvm.core.Function - The entry point for the continuation
         frame: ~~FrameDescriptor - The frame descriptor for the continuation.
+
+        blockable: llvm.core.Value - A ``hlt_thread_mgr_blockable*`` to store
+        in the continuation as a resource to depend on before execution, or
+        None if none. This is currently only used for jobs scheduled by the
+        threading system.
 
         Returns: llvm.core.Value - The continuation object.
         """
@@ -1632,18 +1654,22 @@ class CodeGen(objcache.Cache):
         zero = self.llvmGEPIdx(0)
         one = self.llvmGEPIdx(1)
         two = self.llvmGEPIdx(2)
+        three = self.llvmGEPIdx(3)
 
         succ_addr = self.builder().gep(cont, [zero, zero])
         frame_addr = self.builder().gep(cont, [zero, one])
         eoss_addr = self.builder().gep(cont, [zero, two])
+        blockable_addr = self.builder().gep(cont, [zero, three])
 
         succ = self.builder().bitcast(succ, self.llvmTypeBasicFunctionPtr())
         fptr = frame.fptr()
         eoss = frame.eoss()
+        blockable = blockable if blockable else llvm.core.Constant.null(self.llvmTypeGenericPointer())
 
         self.llvmAssign(succ, succ_addr)
         self.llvmAssign(fptr, frame_addr)
         self.llvmAssign(eoss, eoss_addr)
+        self.llvmAssign(blockable, blockable_addr)
 
         return cont
 
@@ -1669,12 +1695,14 @@ class CodeGen(objcache.Cache):
 
         self.llvmTailCall(succ, frame=self.makeFrameDescriptor(fptr, eoss), ctx=ctx)
 
-    def llvmMakeCallable(self, func, args):
+    def llvmMakeCallable(self, func, args, thread_mgr=False):
         """Create a new contintiuation instance representing a function call
         with arguments already bound.
 
         func: ~~Function - The function to call.
         args: ~~Operand - A tuple operand with the call's argument.
+
+        thread_mgr: TODO
 
         Returns: llvm.core.Value - A pointer to the continuation.
 
@@ -1693,6 +1721,14 @@ class CodeGen(objcache.Cache):
 
         llvm_func = self.llvmFunctionForBlock(func)
         cont = self.llvmNewContinuation(llvm_func, frame)
+
+        if thread_mgr:
+            return_func = self._llvmRunCallableReturnFunc()
+            excpt_func = self._llvmRunCallableReturnFunc(excpt=True)
+            self.llvmFrameSetNormalFrame(frame, frame)
+            self.llvmFrameSetNormalSucc(return_func, frame=frame)
+            self.llvmFrameSetExcptSucc(excpt_func, frame=frame)
+            self.llvmFrameSetExcptFrame(frame, frame)
 
         return cont
 
@@ -1723,14 +1759,22 @@ class CodeGen(objcache.Cache):
 
         self.llvmTailCall(func, frame=frame)
 
-    def _llvmRunCallableReturnFunc(self):
+    def _llvmRunCallableReturnFunc(self, excpt=False):
         # Creates an empty return function for bound functions. Note that this
         # works only for bound functions not returning any value, which is all
         # we support at the moment.
+        #
+        # If excpt is True, we create an exception handler that calls
+        # "__hlt_thread_mgr_uncaught_exception_in_thread" when run.
         def makeReturnFunc():
             args = self.llvmTypeBasicFunctionPtr().pointee.args
             ft = llvm.core.Type.function(llvm.core.Type.void(), args)
-            return_func = self._llvm.module.add_function(ft, "__hlt_thread_mgr_run_callable_return_func")
+
+            if not excpt:
+                return_func = self._llvm.module.add_function(ft, "__hlt_thread_mgr_run_callable_return_func")
+            else:
+                return_func = self._llvm.module.add_function(ft, "__hlt_thread_mgr_run_callable_excpt_func")
+
             return_func.calling_convention = llvm.core.CC_C
             return_func.linkage = llvm.core.LINKAGE_LINKONCE_ODR
             return_func.args[0].name = "__frame"
@@ -1738,6 +1782,12 @@ class CodeGen(objcache.Cache):
             return_func.args[2].name = "__ctx"
             b = return_func.append_basic_block("")
             self.pushBuilder(b)
+
+            if excpt:
+                frame = self.makeFrameDescriptor(return_func.args[0], return_func.args[1])
+                llvm_excpt = self.llvmFrameException(frame=frame)
+                self.llvmCallCInternal("__hlt_thread_mgr_uncaught_exception_in_thread", [llvm_excpt, return_func.args[2]])
+
             self.builder().ret_void()
             self.popBuilder()
 
@@ -1776,20 +1826,11 @@ class CodeGen(objcache.Cache):
             self.pushBuilder(b)
 
             # Call the continuation.
-
             llvm_func = self.llvmContinuationSucc(cont)
-            return_func = self._llvmRunCallableReturnFunc()
-
             frame = self.llvmContinuationFrame(cont)
-            self.llvmFrameSetExcptFrame(frame, frame)
-            self.llvmFrameSetNormalSucc(return_func, frame=frame)
-            self.llvmFrameSetExcptSucc(return_func, frame=frame)
 
             call = self.llvmSafeCall(llvm_func, [frame.fptr(), frame.eoss(), ctx])
             call.calling_convention = llvm.core.CC_FASTCALL
-
-            # Transfer the exception to our argument.
-            self.builder().store(self.llvmFrameException(frame), excpt)
 
             self.builder().ret_void()
 
@@ -2168,15 +2209,20 @@ class CodeGen(objcache.Cache):
         tcontext = self.builder().gep(ctx, [self.llvmGEPIdx(0), self.llvmGEPIdx(10)])
         self.llvmAssign(tctx, tcontext)
 
-    def llvmYield(self, resume):
+    def llvmYield(self, resume, blockable=None):
         """Generates code to yield execution back to caller/scheduler.
 
         resume: llvm.core.Function - The function where to resume execution
         later.
+
+        blockable: llvm.core.Value - A ``hlt_thread_mgr_blockable*`` to store
+        in the continuation as a resource to depend on before execution, or
+        None if none. This is currently only used for jobs scheduled by the
+        threading system.
         """
 
         # Save where we want to resume.
-        cont = self.llvmNewContinuation(resume, self.llvmCurrentFrameDescriptor())
+        cont = self.llvmNewContinuation(resume, self.llvmCurrentFrameDescriptor(), blockable=blockable)
         self.llvmExecutionContextSetResume(cont)
 
         # Transfer to scheduler, as defined in the execution context's yield
@@ -3984,6 +4030,25 @@ class CodeGen(objcache.Cache):
             return val
 
         util.internal_error("width of %d not supported by CodeGen.llvmHtoN" % val.type.width)
+
+    def llvmBlockable(self, ty, val):
+        """Returns the ``hlt_blockable`` instance for an object. The object's
+        type must be of trait ~~Blockable
+
+        ty: ~~type.Reference - A reference type to the HILTI type of the value
+        to return the blockable for.
+
+        val: llvm.core.Value - The value to return the blockable for.
+
+        Returns: llvm.core.Value - The blockable.
+        """
+
+        assert isinstance(ty, type.Reference) and isinstance(ty.refType(), type.Blockable)
+
+        ti = self.typeInfo(ty.refType())
+        assert ti.blockable
+
+        return self.llvmCallC(ti.blockable, [operand.LLVM(val, ty)])
 
     ### Generating debug output.
 

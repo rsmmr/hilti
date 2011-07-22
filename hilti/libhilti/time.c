@@ -51,7 +51,7 @@ double hlt_time_to_double(const hlt_type_info* type, const void* obj, int32_t op
     if ( val == HLT_TIME_UNSET )
         return -1;
 
-    return val / 1e9;;
+    return val / 1e9;
 }
 
 int64_t hlt_time_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** expt, hlt_execution_context* ctx)
@@ -79,3 +79,7 @@ uint64_t hlt_time_nsecs(hlt_time t, hlt_exception** excpt, hlt_execution_context
     return t;
 }
 
+hlt_time hlt_time_from_timestamp(double ts)
+{
+    return (hlt_time)(ts * 1e9);
+}

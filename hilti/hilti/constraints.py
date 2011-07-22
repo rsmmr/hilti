@@ -361,6 +361,7 @@ cTime = _hasType("Time")
 cInterval = _hasType("Interval")
 cClassifier = _hasType("Classifier")
 cContext = _hasType("Context")
+cBlockable = _hasType("Blockable")
 
 cFunction = _hasType("Function")
 cHook = _hasType("Hook")

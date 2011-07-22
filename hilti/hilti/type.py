@@ -922,6 +922,12 @@ class TypeListable(Trait):
         """
         _notOverridden(self, "typeList")
 
+class Blockable(Trait):
+    """Trait class for ~~HiltiTypes that a ``yield.until`` statement can block
+    for until they become available. Blockables must set the ``blockable``
+    field of their ~~TypeInfo."""
+    pass
+
 # End of traits for HiltiType.
 
 class ValueType(HiltiType):

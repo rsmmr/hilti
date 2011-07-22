@@ -26,8 +26,9 @@ struct hlt_bytes_chunk {
 };
 
 struct hlt_bytes {
-    hlt_bytes_chunk* head;  // First chunk.
-    hlt_bytes_chunk* tail;  // Last chunk.
+    hlt_bytes_chunk* head;              // First chunk.
+    hlt_bytes_chunk* tail;              // Last chunk.
+    hlt_thread_mgr_blockable blockable; // For blocking until changed.
 };
 
 // If a chunk of data is of size is less than this, we can decide to copy it
@@ -111,6 +112,8 @@ hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
     dst->start = &empty_sentinel;
     dst->end = &empty_sentinel;
 
+    hlt_thread_mgr_blockable_init(&b->blockable);
+
     assert(is_empty(b));
 
     return b;
@@ -175,6 +178,8 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
         // Empty.
         return;
 
+    hlt_thread_mgr_unblock(&b->blockable, ctx);
+
     // Special case: if the other object has only one chunk, pass it on to
     // the *_raw version which might decide to copy the data over. 
     if ( other->head == other->tail )
@@ -205,6 +210,8 @@ void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, h
     if ( ! len )
         // Empty.
         return;
+
+    hlt_thread_mgr_unblock(&b->blockable, ctx);
 
     // Special case: see if we can copy it into the last chunk.
     if ( b->tail && b->tail->owner && b->tail->free >= len ) {
@@ -532,7 +539,7 @@ hlt_bytes_pos hlt_bytes_generic_end(hlt_exception** excpt, hlt_execution_context
     return GenericEndPos;
 }
 
-void hlt_bytes_freeze(const hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
@@ -545,6 +552,7 @@ void hlt_bytes_freeze(const hlt_bytes* b, int8_t freeze, hlt_exception** excpt, 
     }
 
     b->tail->frozen = freeze;
+    hlt_thread_mgr_unblock(&b->blockable, ctx);
 }
 
 void hlt_bytes_trim(hlt_bytes* b, hlt_bytes_pos pos, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -757,8 +765,6 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
 {
     hlt_string dst = 0;
 
-    char buf[] = "                ";
-
     const hlt_bytes* b = *((const hlt_bytes**)obj);
 
     if ( ! b ) {
@@ -774,7 +780,8 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
             if ( isprint(c) && c < 128 )
                 dst = hlt_string_concat(dst, hlt_string_from_data((int8_t*)&c, 1, excpt, ctx), excpt, ctx);
             else {
-                snprintf(buf, sizeof(buf) - 1, "\\x%02x", c);
+                char buf[5] = { '\\', 'x', 'X', 'X', '\0' };
+                int n = hlt_util_uitoa_n(c, buf + 2, 3, 16, 1);
                 dst = hlt_string_concat(dst, hlt_string_from_asciiz(buf, excpt, ctx), excpt, ctx);
             }
         }
@@ -785,8 +792,6 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
 
 hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    return 1;
-
     hlt_bytes* b = *((hlt_bytes**)obj);
 
     hlt_hash hash = 0;
@@ -806,6 +811,12 @@ int8_t hlt_bytes_equal(const hlt_type_info* type1, const void* obj1, const hlt_t
     hlt_exception* e = 0;
 
     return hlt_bytes_cmp(b1, b2, &e, c) == 0;
+}
+
+void* hlt_bytes_blockable(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_bytes* b = *((hlt_bytes**)obj);
+    return &b->blockable;
 }
 
 void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)

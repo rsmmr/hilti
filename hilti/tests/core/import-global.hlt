@@ -1,0 +1,33 @@
+# $Id$
+#
+# @TEST-EXEC: hilti-build2 %INPUT -o a.out
+# @TEST-EXEC: ./a.out
+# @TEST-EXEC: btest-diff output
+#
+
+module Main
+
+global string s1 = "test"
+
+import other
+
+void run() {
+    call Other::foo ()
+}
+
+# @TEST-START-FILE other.hlt
+
+module Other
+
+import Hilti
+
+global string s2 = "Test"
+
+void foo () {
+    call Hilti::print (s2)
+}
+
+export foo
+
+# @TEST-END-FILE
+

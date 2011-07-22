@@ -7,6 +7,7 @@
 %__hlt_void = type i8
 %__hlt_cchar = type i8
 %__hlt_eoss = type i8
+%__hlt_blockable = type i8
 %__hlt_func = type void (%__hlt_bframe*, %__hlt_eoss*, %__hlt_execution_context*)
 
 ; A basic frame
@@ -21,7 +22,8 @@
 %__hlt_continuation = type {
     %__hlt_func*,
     %__hlt_bframe*,
-    %__hlt_eoss*
+    %__hlt_eoss*,
+    %__hlt_blockable*
 }
 
 ; A callable is just a (partially initaliazed) continuation.
@@ -139,6 +141,7 @@ declare %__hlt_void* @__hlt_timer_new_function(%__hlt_continuation*, %__hlt_exce
 ;;; Threads
 declare void @__hlt_thread_mgr_schedule(%__hlt_void*, %__hlt_vthread_id, %__hlt_continuation*, %__hlt_exception**, %__hlt_execution_context*)
 declare void @__hlt_thread_mgr_schedule_tcontext(%__hlt_void*, %__hlt_type_info*, %__hlt_void*, %__hlt_continuation*, %__hlt_exception**, %__hlt_execution_context*)
+declare void @__hlt_thread_mgr_uncaught_exception_in_thread(%__hlt_exception*, %__hlt_execution_context*)
 
 ;;; A function with the standard header that simply aborts.
 declare void @__hlt_abort(%__hlt_bframe*, %__hlt_eoss*, %__hlt_execution_context*)

@@ -41,11 +41,11 @@
 #include "bytes.h"
 #include "channel.h"
 #include "config.h"
-#include "debug.h"
 #include "double.h"
 #include "enum.h"
 #include "hook.h"
 #include "exceptions.h"
+#include "debug.h"
 #include "hilti.h"
 #include "init.h"
 #include "int.h"
@@ -73,6 +73,7 @@
 #include "file.h"
 #include "profiler.h"
 #include "classifier.h"
+#include "util.h"
 
 #include "module/module.h"
 

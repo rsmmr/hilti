@@ -1,22 +1,15 @@
 // $Id$
 //
 // The command queue implementation.
-//
-// TODO: We should move to a lock-free queue sometime.
+
+#include <sys/prctl.h>
 
 #include "hilti.h"
+#include "tqueue.h"
 
-// The head and tail of the command queue.
-static __hlt_cmd* queue_head = 0;
-static __hlt_cmd* queue_tail = 0;
+static hlt_thread_queue* cmd_queue = 0;
+static pthread_t queue_manager;
 
-static pthread_mutex_t queue_lock;     // Protects acceses to the queue data structure.
-static pthread_cond_t queue_non_empty; // The manager will wait for this when the queue is empty.
-static pthread_t queue_manager;        // The manager thread.
-
-static int queue_canceled = 0; // Will be set to signal termination request.
-
-#define DBG_STREAM_THREADS "hilti-queue"
 #define DBG_STREAM_QUEUE "hilti-queue"
 
 static void fatal_error(const char* msg)
@@ -43,50 +36,38 @@ static void execute_cmd(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_con
 // The entry function for the manager thread.
 static void* _manager(void *arg)
 {
-    DBG_LOG(DBG_STREAM_THREADS, "command queue manager started");
+    __hlt_thread_mgr_init_native_thread(__hlt_global_thread_mgr, "cqueue", 0);
 
-    // We don't want to be canceled externally because we always want to
-    // execute all pending commands before terminating.
-    if ( pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0) != 0 )
-        fatal_error("cannot set cancel state");
+    DBG_LOG(DBG_STREAM_QUEUE, "processing started");
 
     hlt_execution_context* ctx = hlt_execution_context_new(HLT_VID_QUEUE, 0);
 
-    // We terminate iff termination has been requested and the queue is
-    // empty.
-    while ( queue_head || ! queue_canceled ) {
+    // We terminate iff all writer threads have terminated already with all
+    // remaining elements processed.
+    while ( ! hlt_thread_queue_terminated(cmd_queue) ) {
 
-        __hlt_cmd* cmd = 0;
+        __hlt_cmd* cmd = hlt_thread_queue_read(cmd_queue, 0);
 
-        if ( pthread_mutex_lock(&queue_lock) != 0 )
-            fatal_error("cannot lock mutex");
+        if ( ! cmd )
+            continue;
 
-        while ( ! queue_head && ! queue_canceled ) {
-            if ( pthread_cond_wait(&queue_non_empty, &queue_lock) != 0 ) {
-                fatal_error("wait for condition failed");
-            }
+        hlt_exception* excpt = 0;
+        execute_cmd(cmd, &excpt, ctx);
+        if ( excpt )
+            __hlt_exception_print_uncaught_abort(excpt, ctx);
+
+#if 1
+        uint64_t size = hlt_thread_queue_size(cmd_queue);
+        if ( size % 100 == 0 ) {
+            char name_buffer[128];
+            snprintf(name_buffer, sizeof(name_buffer), "cqueue (%lu)", size);
+            name_buffer[sizeof(name_buffer)-1] = '\0';
+            prctl(PR_SET_NAME, name_buffer, 0, 0, 0);
         }
-
-        if ( queue_head ) {
-            cmd = queue_head;
-            queue_head = cmd->next;
-
-            if ( ! queue_head )
-                queue_tail = 0;
-        }
-
-        if ( pthread_mutex_unlock(&queue_lock) != 0 )
-            fatal_error("cannot unlock mutex");
-
-        if ( cmd ) {
-            hlt_exception* excpt = 0;
-            execute_cmd(cmd, &excpt, ctx);
-            if ( excpt )
-                __hlt_exception_print_uncaught_abort(excpt, ctx);
-        }
+#endif
     }
 
-    DBG_LOG(DBG_STREAM_THREADS, "command queue manager finished");
+    DBG_LOG(DBG_STREAM_QUEUE, "command queue manager finished at size %d", hlt_thread_queue_size(cmd_queue));
 
     return 0;
 }
@@ -96,14 +77,23 @@ void __hlt_cmd_queue_start()
     if ( ! hlt_is_multi_threaded() )
         return;
 
-    if ( pthread_mutex_init(&queue_lock, 0) != 0 )
-        fatal_error("cannot init mutex");
+    DBG_LOG(DBG_STREAM_QUEUE, "starting command queue manager thread");
 
-    if ( pthread_cond_init(&queue_non_empty, 0) != 0 )
-        fatal_error("cannot init condition variable");
+    cmd_queue = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 1000, 0); // Slot 0 is main thread.
+
+    if ( ! cmd_queue )
+        fatal_error("cannot create command queue data structure");
 
     if ( pthread_create(&queue_manager, 0, _manager, 0) != 0 )
-        fatal_error("cannot create worker threads");
+        fatal_error("cannot create cmd-queue thread");
+}
+
+void __hlt_cmd_worker_terminating(int worker)
+{
+    if ( ! hlt_is_multi_threaded() )
+        return;
+
+    hlt_thread_queue_terminate_writer(cmd_queue, worker);
 }
 
 void __hlt_cmd_queue_stop()
@@ -111,29 +101,26 @@ void __hlt_cmd_queue_stop()
     if ( ! hlt_is_multi_threaded() )
         return;
 
-    DBG_LOG(DBG_STREAM_THREADS, "signaling command queue manager to stop");
+    DBG_LOG(DBG_STREAM_QUEUE, "waiting for command queue manager to terminate");
 
-    if ( pthread_mutex_lock(&queue_lock) != 0 )
-        fatal_error("cannot lock mutex");
-
-    queue_canceled = 1;
-
-    if ( pthread_cond_signal(&queue_non_empty) != 0 )
-        fatal_error("cannot signal condition variable");
-
-    if ( pthread_mutex_unlock(&queue_lock) != 0 )
-        fatal_error("cannot unlock mutex");
+    hlt_thread_queue_terminate_writer(cmd_queue, 0); // The main thread.
 
     if ( pthread_join(queue_manager, 0) != 0 )
         fatal_error("cannot join thread");
 
-    if ( pthread_mutex_destroy(&queue_lock) != 0 )
-        fatal_error("cannot destroy mutex");
+    hlt_thread_queue_delete(cmd_queue);
 
-    if ( pthread_cond_destroy(&queue_non_empty) != 0 )
-        fatal_error("cannot destroy condition variable");
+    DBG_LOG(DBG_STREAM_QUEUE, "command queue manager has terminated");
+}
 
-    DBG_LOG(DBG_STREAM_THREADS, "command queue manager has terminated");
+void __hlt_cmd_queue_kill()
+{
+    if ( ! hlt_is_multi_threaded() )
+        return;
+
+    DBG_LOG(DBG_STREAM_QUEUE, "killing queue manager thread");
+
+    pthread_cancel(queue_manager);
 }
 
 void __hlt_cmdqueue_init_cmd(__hlt_cmd *cmd, uint16_t type)
@@ -146,30 +133,14 @@ void __hlt_cmdqueue_init_cmd(__hlt_cmd *cmd, uint16_t type)
 void __hlt_cmdqueue_push(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! hlt_is_multi_threaded() ) {
+        DBG_LOG(DBG_STREAM_QUEUE, "directly executing cmd %p of type %d", cmd, cmd->type);
         execute_cmd(cmd, excpt, ctx);
-        return;
     }
 
-    DBG_LOG(DBG_STREAM_QUEUE, "queuing cmd %p of type %d", cmd, cmd->type);
-
-    if ( pthread_mutex_lock(&queue_lock) != 0 )
-        fatal_error("cannot lock mutex");
-
-    if ( queue_tail ) {
-        queue_tail->next = cmd;
-        queue_tail = cmd;
-    }
     else {
-        if ( pthread_cond_signal(&queue_non_empty) != 0 )
-            fatal_error("cannot signal condition variable");
-
-        queue_head = queue_tail = cmd;
+        DBG_LOG(DBG_STREAM_QUEUE, "queuing cmd %p of type %d", cmd, cmd->type);
+        hlt_thread_queue_write(cmd_queue, ctx->worker ? ctx->worker->id : 0, cmd);
     }
-
-    if ( pthread_mutex_unlock(&queue_lock) != 0 )
-        fatal_error("cannot unlock mutex");
-
-    return;
 }
 
 
