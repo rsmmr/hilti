@@ -2,6 +2,10 @@
 //
 // A stand-alone driver for BinPAC++ generated parsers.
 
+#define HTTP_THREADED
+
+int sleep = 0;
+
 #include <hilti.h>
 
 #include <stdio.h>
@@ -37,6 +41,13 @@ static void usage(const char* prog)
     fprintf(stderr, "    -B            Enable BinPAC++ debugging hooks\n");
     fprintf(stderr, "    -i  <n>       Feed input incrementally in chunks of size <n>\n");
     fprintf(stderr, "    -U            Enable bulk input mode\n");
+    fprintf(stderr, "\n");
+#ifdef HTTP_THREADED
+    fprintf(stderr, "    -T            Enabling bulk mode with threading; works only for HTTP currently.\n");
+    fprintf(stderr, "    -t <n>        The number of HILTI native threads to use. (default: 5)\n");
+    fprintf(stderr, "    -v <n>        The number of HILTI virtual threads to use. (default: 50)\n");
+    fprintf(stderr, "    -a <str>      Specificy thread affinity as comma-separated 'name:core' pairs (default: unset)\n");
+#endif
     fprintf(stderr, "\n");
 
     hlt_exception* excpt = 0;
@@ -511,24 +522,191 @@ void parseBulkInput(binpac_parser* request_parser, binpac_parser* reply_parser)
         // Output a state summary in regular intervals.
         static int cnt = 0;
 
-        if ( ++cnt % 1000 == 0 )
+        if ( ++cnt % 10000 == 0 )
             fprintf(stderr, "--- pac-driver bulk state: %d total flows, %d in memory at %s, gc heap size %lu\n", num_flows, kh_size(hash), ts, GC_get_heap_size());
     }
 
 }
 
+#include "http.h"
+
+struct Packet {
+    uint32_t mask;
+    hlt_time t;
+    hlt_addr orig_h;
+    hlt_port orig_p;
+    hlt_addr resp_h;
+    hlt_port resp_p;
+    int8_t is_orig;
+    int8_t eof;
+    hlt_bytes* data;
+};
+
+#ifdef HTTP_THREADED
+
+// This can handle only HTTP at the moment and sources processing out to http.hlt.
+void parseBulkInputThreaded()
+{
+    hlt_threading_start();
+
+    hlt_execution_context* ctx = hlt_global_execution_context();
+
+    static char buffer[65536];
+    static char fid[256];
+    static char ts[256];
+    static char orig_h[256];
+    static char resp_h[256];
+    static char orig_p[256];
+    static char resp_p[256];
+    int cnt = 0;
+
+    uint64_t start = 0;
+
+    hlt_exception* excpt = 0;
+    hlt_bytes* empty = hlt_bytes_new_from_data((int8_t*)"", 0, &excpt, ctx);
+
+    while ( true ) {
+        char* p = fgets(buffer, sizeof(buffer), stdin);
+        char* e = p + strlen(buffer);
+
+        if ( feof(stdin) )
+            break;
+
+        if ( ! p ) {
+            fprintf(stderr, "error reading input header: %s\n", strerror(errno));
+            exit(1);
+        }
+
+        if ( e > p )
+            *(e-1) = '\0'; // Kill the NL.
+
+        if ( p[0] != '#' )
+            input_error(buffer);
+
+        // Format is
+        //
+        //    # <kind> <dir> <len> <fid> <time>
+
+        char kind = p[2];
+        char dir = p[4];
+
+        int size = atoi(&p[6]);
+        int eof = 0;
+        int payload = 0;
+        int ignore = 0;
+
+        char* f = &p[6];
+        while ( *f++ != ' ' );
+        sscanf(f, "%[^:]:%[^-]-%[^:]:%s", orig_h, orig_p, resp_h, resp_p);
+        char* ts = f;
+        while ( *ts++ != ' ' );
+
+        hlt_time t = hlt_time_from_timestamp(strtod(ts, 0));
+
+        if ( debug )
+            fprintf(stderr, "--- pac-driver: kind=%c dir=%c size=%d orig_h=%s orig_p=%s resp_h=%s resp_p=%s t=|%s|\n", kind, dir, size, orig_h, orig_p, resp_h, resp_p, ts);
+
+        if ( kind == 'T' ) {
+            size = 0;
+            eof = 1;
+        }
+
+        if ( kind == 'D' || kind == 'U' ) {
+            if ( size > sizeof(buffer) ) {
+                fprintf(stderr, "error reading input: data chunk unexpected large (%d)\n", size);
+                exit(1);
+            }
+
+            if ( fread(buffer, size, 1, stdin) != 1 ) {
+                fprintf(stderr, "error reading input chunk: %s\n", strerror(errno));
+                exit(1);
+            }
+
+            payload = 1;
+        }
+
+        if ( payload || eof ) {
+            struct Packet p;
+            p.mask = 255;
+            p.orig_h = hlt_addr_from_asciiz(orig_h, &excpt, ctx);
+            p.orig_p = hlt_port_from_asciiz(orig_p, &excpt, ctx);
+            p.resp_h = hlt_addr_from_asciiz(resp_h, &excpt, ctx);
+            p.resp_p = hlt_port_from_asciiz(resp_p, &excpt, ctx);
+            p.is_orig = (dir == '>');
+            p.eof = eof;
+
+            int8_t* tmp = 0;
+            if ( size ) {
+                tmp = hlt_gc_malloc_atomic(size);
+                assert(tmp);
+                memcpy(tmp, buffer, size);
+                p.data = hlt_bytes_new_from_data(tmp, size, &excpt, ctx);
+            }
+            else
+                p.data = empty;
+
+            http_newChunk(&p, &excpt);
+
+            if ( excpt )
+                hlt_exception_print_uncaught(excpt, __hlt_global_execution_context);
+        }
+
+        if ( start == 0 ) {
+            hlt_exception* excpt = 0;
+            start = hlt_time_nsecs(t, &excpt, ctx);
+        }
+
+        ++cnt;
+
+#if 1
+        if ( sleep && (cnt % sleep == 0) ) {
+            hlt_util_nanosleep(1);
+        }
+
+#else
+        if ( cnt % 10 == 0 ) {
+            hlt_exception* excpt = 0;
+            double load = hlt_threading_load(&excpt);
+
+            if ( load > 0.2 && sleep )
+                hlt_util_nanosleep(sleep);
+        }
+#endif
+
+        if ( cnt % 10000 == 0 ) {
+            hlt_exception* excpt = 0;
+            uint64_t current = hlt_time_nsecs(t, &excpt, ctx);
+            fprintf(stderr, "--- pac-driver bulk state: gc heap size %lu after %.2f hours, HILTI load %.2f\n", GC_get_heap_size(), (double)(current-start)/1e9/60.0/60.0, hlt_threading_load(&excpt));
+        }
+
+    }
+
+    fprintf(stderr, "--- pac-driver waiting for threads to finish ...\n");
+    hilti_wait_for_threads();
+    fprintf(stderr, "--- pac-driver done ...\n");
+
+    hlt_threading_stop(&excpt);
+
+    if ( excpt )
+        hlt_exception_print_uncaught(excpt, __hlt_global_execution_context);
+}
+
+#endif
+
 int main(int argc, char** argv)
 {
     int chunk_size = 0;
     int bulk = 0;
+    int threading = 0;
+    int threads = 5;
+    int vthreads = 50;
     const char* parser = 0;
+    const char* affinity = 0;
 
     hlt_init();
 
-    hlt_execution_context* ctx = hlt_global_execution_context();
-
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:vdBhU")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dBhUT")) != -1) {
 
         switch (ch) {
 
@@ -538,6 +716,10 @@ int main(int argc, char** argv)
 
           case 'p':
             parser = optarg;
+            break;
+
+          case 'a':
+            affinity = strdup(optarg);
             break;
 
           case 'd':
@@ -550,6 +732,22 @@ int main(int argc, char** argv)
 
           case 'U':
             bulk = 1;
+            break;
+
+          case 'T':
+            threading = 1;
+            break;
+
+          case 't':
+            threads = atoi(optarg);
+            break;
+
+          case 'v':
+            vthreads = atoi(optarg);
+            break;
+
+          case 's':
+            sleep = atoi(optarg);
             break;
 
           case 'h':
@@ -568,7 +766,31 @@ int main(int argc, char** argv)
     if ( chunk_size && bulk )
         fprintf(stderr, "warning: chunk size ignored in bulk mode\n");
 
+    if ( threading && parser && strcmp(parser, "http") ) {
+        fprintf(stderr, "error: threading mode supports only HTTP currently\n");
+        exit(1);
+    }
+
+    hlt_config cfg = *hlt_config_get();
+    cfg.num_workers = threads;
+    cfg.vid_schedule_min = 1;
+    cfg.vid_schedule_max = 1 + vthreads;
+
+    if ( affinity )
+        cfg.core_affinity = affinity;
+
+    hlt_config_set(&cfg);
+
+    hlt_execution_context* ctx = hlt_global_execution_context();
+
     binpac_enable_debugging(debug_hooks);
+
+#ifdef HTTP_THREADED
+    if ( threading ) {
+        parseBulkInputThreaded();
+        return 0;
+    }
+#endif
 
     binpac_parser* request = 0;
     binpac_parser* reply = 0;
@@ -629,3 +851,4 @@ int main(int argc, char** argv)
 
     exit(0);
 }
+

@@ -1,0 +1,221 @@
+#
+# HILTI helper code to parallize the protocol processing via pac-driver.
+#
+# Hardcodes HTTP processing at the moment.
+
+#module PacDriverHTTP
+
+#import Hilti
+#import pachttp
+#import binpac
+
+context { addr orig_h, port orig_p, addr resp_h, port resp_p }
+scope Connection = { orig_h, orig_p, resp_h, resp_p }
+
+# Entry point for data chunks from the host application.
+export newChunk
+
+type Packet = struct {
+    time t,
+    addr orig_h,
+    port orig_p,
+    addr resp_h,
+    port resp_p,
+    bool is_orig,
+    bool eof,
+    ref<bytes> data
+}
+
+export Packet
+
+void newChunk(ref<Packet> p) &scope=Connection {
+    local time t
+    local addr orig_h
+    local port orig_p
+    local addr resp_h
+    local port resp_p
+    local bool is_orig
+    local bool eof
+    local ref<bytes> data
+
+    # This is a pain. However, we can't parse these as separate
+    # parameters into the function currently because of ABI trouble. :(
+    t = struct.get p "t"
+    orig_h = struct.get p "orig_h"
+    orig_p = struct.get p "orig_p"
+    resp_h = struct.get p "resp_h"
+    resp_p = struct.get p "resp_p"
+    is_orig = struct.get p "is_orig"
+    eof = struct.get p "eof"
+    data = struct.get p "data"
+
+    thread.set_context(orig_h, orig_p, resp_h, resp_p)
+    thread.schedule processChunk(t, (orig_h, orig_p, resp_h, resp_p, is_orig), eof, data)
+}
+
+# Per-thread connection table.
+type Flow = struct {
+    tuple<addr, port, addr, port, bool> fid, # The flow ID.
+    ref<bytes> data,                         # We'll keep adding input to this object.
+    bool stopped  &default=False             # Error encountered, ignore further input.
+    }
+
+global ref<map<tuple<addr, port, addr, port, bool>, ref<Flow>>> connections
+global ref<file> http_log
+
+# Per-thread entry point for data chunks, with thread context set appropiately.
+void processChunk(time t, tuple<addr, port, addr, port, bool> fid, bool eof, ref<bytes> ndata) &scope=Connection {
+    local ref<Flow> flow
+    local bool not_null
+    local bool is_orig
+    local bool in_table
+    local bool stopped
+    local ref<bytes> data
+    local string s
+
+    # FIXME: This should happen once somewhere else.
+    not_null = ref.cast.bool connections
+    if.else not_null @cont @init
+
+@init:
+    connections = new map<tuple<addr, port, addr, port, bool>, ref<Flow>>
+    http_log = new file
+    file.open http_log "http.log"
+    jump @cont
+
+@cont:
+    flow = map.get_default connections fid Null
+    not_null = ref.cast.bool flow
+    if.else not_null @known_flow @new_flow
+
+@new_flow:
+    flow = (fid, ndata, False)
+    map.insert connections fid flow
+    call checkEof(fid, ndata, eof)
+
+    #in_table = map.exists connections fid
+    #stopped = struct.get flow "stopped"
+    #s = call Hilti::fmt ("new flow %s, stopped is %s, eof is %s, exists is %s", (fid, stopped, eof, in_table))
+    #file.write http_log s
+
+    call parseHTTPData(flow, ndata) # Returns only when done with connection.
+
+    #stopped = struct.get flow "stopped"
+    #s = call Hilti::fmt ("done parsing flow %s, stopped is %s, eof is %s", (fid, stopped, eof))
+    #file.write http_log s
+
+    return.void
+
+@known_flow:
+    stopped = struct.get flow "stopped"
+
+    #in_table = map.exists connections fid
+    #s = call Hilti::fmt ("known flow %s, stopped is %s, eof is %s, exists is %s", (fid, stopped, eof, in_table))
+    #file.write http_log s
+
+    if.else stopped @ignore @process
+
+@process:
+    # Appends data to input object.
+    data = struct.get flow "data"
+    bytes.append data ndata
+    call checkEof(fid, data, eof)
+    return.void
+
+@ignore:
+    #s = call Hilti::fmt ("block ignored for %s", (fid))
+    #file.write http_log s
+    return.void
+}
+
+# Freezes the bytes object if eof is true, and remove the entry from
+# the conn table.
+void checkEof(tuple<addr, port, addr, port, bool> fid, ref<bytes> b, bool eof) {
+    local string s
+
+    if.else eof @have_eof @done
+
+@have_eof:
+    bytes.freeze b
+    map.remove connections fid
+    #s = call Hilti::fmt ("removed from conn table %s", (fid))
+    #file.write http_log s
+    return.void
+
+@done:
+    return.void
+}
+
+void parseHTTPData(ref<Flow> flow, ref<bytes> data)  &scope=Connection {
+    local tuple<addr, port, addr, port, bool> fid
+    local string s
+    local bool is_orig
+    #local int<64> vid
+    #local int<64> size
+
+    fid = struct.get flow "fid"
+    # s = call Hilti::fmt ("parsing %s as HTTP request", (fid))
+    # file.write http_log s
+
+    # vid = thread.id
+    # size = map.size connections
+    # s = call Hilti::fmt("vid %d conn table: %s", (vid, size))
+    # call Hilti::print(s)
+
+    is_orig = tuple.index fid 4
+    if.else is_orig @request @reply
+
+@request:
+    call parseHTTPRequest(flow, data)
+    return.void
+
+@reply:
+    call parseHTTPReply(flow, data)
+    return.void
+}
+
+# Parses the HTTP client side.
+void parseHTTPRequest(ref<Flow> flow, ref<bytes> data) {
+    local tuple<addr, port, addr, port, bool> fid
+    local ref<http_requests_object> requests
+    local string s
+
+    try {
+        requests = call http_requests_parse(data, 0, Null)
+    }
+    catch {
+        fid = struct.get flow "fid"
+        s = call Hilti::fmt ("request exception for %s", (fid))
+        file.write http_log s
+        struct.set flow "stopped" True
+    }
+}
+
+# Parses the HTTP server side.
+void parseHTTPReply(ref<Flow> flow, ref<bytes> data) {
+    local tuple<addr, port, addr, port, bool> fid
+    local ref<http_replies_object> replies
+    local string s
+
+    try {
+        replies = call http_replies_parse(data, 0, Null)
+    }
+    catch {
+        fid = struct.get flow "fid"
+        s = call Hilti::fmt ("reply exception for %s", (fid))
+        file.write http_log s
+        struct.set flow "stopped" True
+    }
+}
+
+#hook void hook_on_http_RequestLine___done(ref<http_requestline_object> __self, ref<binpac::UserCookie> __user) {
+#    local string s
+#    s = call Hilti::fmt ("request: %s", (__self))
+#    file.write http_log s
+#}
+
+#hook void hook_on_http_ReplyLine___done(ref<http_replyline_object> __self, ref<binpac::UserCookie> __user) {
+#    local string s
+#    s = call Hilti::fmt ("reply : %s", (__self))
+#    file.write http_log s
+#}
