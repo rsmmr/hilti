@@ -55,7 +55,7 @@ static inline void acqire_lock(int* i)
     if ( ! hlt_is_multi_threaded() )
         return;
 
-    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, i);
+    hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, i);
 
     if ( pthread_mutex_lock(&files_lock) != 0 )
         fatal_error("cannot lock mutex");
@@ -69,7 +69,7 @@ static inline void release_lock(int i)
     if ( pthread_mutex_unlock(&files_lock) != 0 )
         fatal_error("cannot unlock mutex");
 
-    pthread_setcancelstate(i, NULL);
+    hlt_pthread_setcancelstate(i, NULL);
 }
 
 void __hlt_files_start()

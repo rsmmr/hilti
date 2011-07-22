@@ -100,7 +100,7 @@ static void __exception_print(const char* prefix, hlt_exception* exception, hlt_
 
     // We must not terminate while in here.
     int old_state;
-    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
+    hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
 
     flockfile(stderr);
     fprintf(stderr, "%s%s", prefix, exception->type->name);
@@ -125,7 +125,7 @@ static void __exception_print(const char* prefix, hlt_exception* exception, hlt_
     fflush(stderr);
     funlockfile(stderr);
 
-    pthread_setcancelstate(old_state, NULL);
+    hlt_pthread_setcancelstate(old_state, NULL);
 }
 
 void hlt_exception_print(hlt_exception* exception, hlt_execution_context* ctx)

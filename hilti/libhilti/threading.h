@@ -26,43 +26,6 @@ struct hlt_exception;
 struct hlt_continuation;
 struct __hlt_type_info;
 
-typedef struct hlt_thread_mgr hlt_thread_mgr;
-typedef struct hlt_job hlt_job;
-
-typedef struct hlt_thread_mgr_blockable {
-    uint64_t num_blocked;	// Number of jobs waiting for this resource.
-} hlt_thread_mgr_blockable;
-
-// A struct that encapsulates data related to a single worker thread.
-struct hlt_worker_thread {
-    // Accesses to these must only be made from the worker thread itself.
-    hlt_thread_mgr* mgr;          // The manager this thread is part of.
-    hlt_execution_context** ctxs; // Execution contexts indexed by virtual thread id.
-    hlt_vthread_id max_vid;       // Largest vid allocated space for in ctxs.
-
-    // This can be *read* from different threads without further locking.
-    int id;                       // ID of this worker thread in the range 1..*num_workers*.
-    const char* name;             // A string identifying the worker.
-    int idle;                     // When in state FINISH, the worker will set this when idle.
-    pthread_t handle;             // The pthread handle for this thread.
-
-    // Write accesses to the main jobs queue can be made from all worker
-    // threads and the main thread, while read accesses come only from the
-    // worker thread itself. If another thread needs to schedule a job
-    // already blocked, it can write here and it will be moved over to the
-    // blocked queue by the worker later.
-    hlt_thread_queue* jobs;  // Jobs queued for this worker and ready to run.
-
-    // Write accesses to the blocked queue  may be done only from the writer.
-    hlt_job* blocked_head;
-    hlt_job* blocked_tail;
-    uint64_t num_blocked_jobs;
-};
-
-/// Type for representing the ID of a virtual thread.
-#define HLT_VID_MAIN -1
-#define HLT_VID_QUEUE -2
-
 /// The enumeration lists the possible states for a thread manager.
 ///
 /// Note: One could imagine another option such as STOP_WHEN_READY in which
@@ -93,6 +56,67 @@ typedef enum {
     HLT_THREAD_MGR_DEAD,
 
 } hlt_thread_mgr_state;
+
+typedef struct hlt_thread_mgr_blockable {
+    uint64_t num_blocked;	// Number of jobs waiting for this resource.
+} hlt_thread_mgr_blockable;
+
+// A job queued for execution.
+typedef struct hlt_job {
+    hlt_continuation* func; // The bound function to run.
+    hlt_vthread_id vid;     // The virtual thread the function is scheduled to.
+    void* tcontext;         // The jobs thread context to use when executing.
+
+#ifdef DEBUG
+    uint64_t id;            // For debugging, we assign numerical IDs for easier identification.
+#endif
+
+    struct hlt_job* prev;   // The prev job in the *blocked* queue if linked in there.
+    struct hlt_job* next;   // The next job in the *blocked* queue if linked in there.
+} hlt_job;
+
+struct hlt_thread_mgr;
+
+// A struct that encapsulates data related to a single worker thread.
+typedef struct hlt_worker_thread {
+    // Accesses to these must only be made from the worker thread itself.
+    struct hlt_thread_mgr* mgr;   // The manager this thread is part of.
+    hlt_execution_context** ctxs; // Execution contexts indexed by virtual thread id.
+    hlt_vthread_id max_vid;       // Largest vid allocated space for in ctxs.
+
+    // This can be *read* from different threads without further locking.
+    int id;                       // ID of this worker thread in the range 1..*num_workers*.
+    const char* name;             // A string identifying the worker.
+    int idle;                     // When in state FINISH, the worker will set this when idle.
+    pthread_t handle;             // The pthread handle for this thread.
+
+    // Write accesses to the main jobs queue can be made from all worker
+    // threads and the main thread, while read accesses come only from the
+    // worker thread itself. If another thread needs to schedule a job
+    // already blocked, it can write here and it will be moved over to the
+    // blocked queue by the worker later.
+    hlt_thread_queue* jobs;  // Jobs queued for this worker and ready to run.
+
+    // Write accesses to the blocked queue  may be done only from the writer.
+    hlt_job* blocked_head;
+    hlt_job* blocked_tail;
+    uint64_t num_blocked_jobs;
+} hlt_worker_thread;
+
+// A thread manager encapsulates the global state that all threads share.
+typedef struct hlt_thread_mgr {
+    hlt_thread_mgr_state state;  // The manager's current state.
+    int num_workers;             // The number of worker threads.
+    int num_excpts;              // The number of worker's that have raised exceptions.
+    hlt_worker_thread** workers; // The worker threads.
+    pthread_t cmdqueue;          // The pthread handle for the command queue.
+    pthread_key_t id;            // A per-thread key storing a string identifying the string.
+} hlt_thread_mgr;
+
+
+/// Type for representing the ID of a virtual thread.
+#define HLT_VID_MAIN -1
+#define HLT_VID_QUEUE -2
 
 /// Returns whether the HILTI runtime environment is configured for running
 /// multiple threads.

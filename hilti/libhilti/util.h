@@ -4,9 +4,13 @@
 
 #include <stdint.h>
 
-extern void hlt_util_nanosleep(uint64_t nsecs);
-extern int hlt_util_uitoa_n(uint64_t value, char* buf, int n, int base, int zerofill);
+#include "threading.h"
 
-extern int hlt_util_number_of_cpus();
+extern void hlt_util_nanosleep(uint64_t nsecs);
+extern int  hlt_util_uitoa_n(uint64_t value, char* buf, int n, int base, int zerofill);
+extern int  hlt_util_number_of_cpus();
+
+// This is a noop as long as we aren't shutting down.
+extern void hlt_pthread_setcancelstate(int state, int *oldstate);
 
 #endif

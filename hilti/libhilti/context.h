@@ -7,16 +7,16 @@
 #include "context.h"
 #include "profiler.h"
 
-typedef struct hlt_worker_thread hlt_worker_thread;
+struct hlt_worker_thread;
 
 /// A per-thread execution context. This is however just the common header of
 /// all contexts; in memory, the header will be followed with the set of
 /// thread-local variables.
 typedef struct hlt_execution_context {
-    hlt_vthread_id vid;        /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
-    hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
-    hlt_continuation* yield;   /// A continuation to call when a ``yield`` statement is executed.
-    hlt_continuation* resume;  /// A continuation to call when resuming after a ``yield`` statement. Is set by the ``yield``.
+    hlt_vthread_id vid;               /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
+    struct hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
+    hlt_continuation* yield;          /// A continuation to call when a ``yield`` statement is executed.
+    hlt_continuation* resume;         /// A continuation to call when resuming after a ``yield`` statement. Is set by the ``yield``.
 
     /// We keep an array of callable registered for execution but not
     /// processed yet.

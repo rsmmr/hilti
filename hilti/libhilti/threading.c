@@ -27,30 +27,6 @@ uint64_t job_counter = 0;
 
 struct hlt_worker_thread;
 
-// A thread manager encapsulates the global state that all threads share.
-struct hlt_thread_mgr {
-    hlt_thread_mgr_state state;  // The manager's current state.
-    int num_workers;             // The number of worker threads.
-    int num_excpts;              // The number of worker's that have raised exceptions.
-    hlt_worker_thread** workers; // The worker threads.
-    pthread_t cmdqueue;          // The pthread handle for the command queue.
-    pthread_key_t id;            // A per-thread key storing a string identifying the string.
-};
-
-// A job queued for execution.
-struct hlt_job {
-    hlt_continuation* func; // The bound function to run.
-    hlt_vthread_id vid;     // The virtual thread the function is scheduled to.
-    void* tcontext;         // The jobs thread context to use when executing.
-
-#ifdef DEBUG
-    uint64_t id;            // For debugging, we assign numerical IDs for easier identification.
-#endif
-
-    struct hlt_job* prev;   // The prev job in the *blocked* queue if linked in there.
-    struct hlt_job* next;   // The next job in the *blocked* queue if linked in there.
-};
-
 static void _fatal_error(const char* msg)
 {
     fprintf(stderr, "libhilti threading: %s\n", msg);

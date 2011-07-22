@@ -4,6 +4,8 @@
 #include <unistd.h>
 
 #include "util.h"
+#include "globals.h"
+#include "threading.h"
 
 void hlt_util_nanosleep(uint64_t nsecs)
 {
@@ -50,4 +52,10 @@ int hlt_util_uitoa_n(uint64_t value, char* buf, int n, int base, int zerofill)
 int hlt_util_number_of_cpus()
 {
     return sysconf(_SC_NPROCESSORS_ONLN);
+}
+
+void hlt_pthread_setcancelstate(int state, int *oldstate)
+{
+    if (  __hlt_global_thread_mgr->state != HLT_THREAD_MGR_RUN )
+        pthread_setcancelstate(state, oldstate);
 }

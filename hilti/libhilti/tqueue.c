@@ -56,7 +56,7 @@ static void _fatal_error(const char* msg)
 // acquired after a thread has already terminated.
 inline static void _acquire_lock(hlt_thread_queue* queue, int* i, int reader, int thread)
 {
-    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, i);
+    hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, i);
 
     if ( pthread_spin_lock(&queue->lock) != 0 )
         _fatal_error("cannot acquire lock");
@@ -72,7 +72,7 @@ inline static void _release_lock(hlt_thread_queue* queue, int i, int reader, int
 
     //fprintf(stderr, "released %p %d %d\n", queue, reader, thread);
 
-    pthread_setcancelstate(i, NULL);
+    hlt_pthread_setcancelstate(i, NULL);
 }
 
 #if 0
