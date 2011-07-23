@@ -25,6 +25,7 @@
 struct hlt_exception;
 struct hlt_continuation;
 struct __hlt_type_info;
+struct __kh_blocked_jobs_t;
 
 /// The enumeration lists the possible states for a thread manager.
 ///
@@ -97,10 +98,10 @@ typedef struct hlt_worker_thread {
     // blocked queue by the worker later.
     hlt_thread_queue* jobs;  // Jobs queued for this worker and ready to run.
 
-    // Write accesses to the blocked queue  may be done only from the writer.
-    hlt_job* blocked_head;
-    hlt_job* blocked_tail;
-    uint64_t num_blocked_jobs;
+    // Write accesses to the blocked queue may be done only from the writer.
+    // This is in fact a hash table indexed by the corresponding
+    // hlt_thread_mgr_blockable address.
+    struct __kh_blocked_jobs_t* jobs_blocked;
 } hlt_worker_thread;
 
 // A thread manager encapsulates the global state that all threads share.

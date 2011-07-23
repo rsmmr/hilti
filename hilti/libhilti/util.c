@@ -56,6 +56,9 @@ int hlt_util_number_of_cpus()
 
 void hlt_pthread_setcancelstate(int state, int *oldstate)
 {
+    if ( ! __hlt_global_thread_mgr )
+        return;
+
     if (  __hlt_global_thread_mgr->state != HLT_THREAD_MGR_RUN )
         pthread_setcancelstate(state, oldstate);
 }

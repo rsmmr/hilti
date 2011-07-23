@@ -3,10 +3,6 @@
 #define _POSIX_SOURCE
 #define _POSIX_C_SOURCE 199309
 
-#include "hilti.h"
-#include "debug.h"
-#include "rtti.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -14,12 +10,44 @@
 #include <sys/prctl.h>
 #include <pthread.h>
 
+#include "hilti.h"
+#include "debug.h"
+#include "rtti.h"
+
+typedef hlt_hash khint_t;
+#include "3rdparty/khash/khash.h"
+
+typedef struct hlt_blocked_job {
+    hlt_job* job;
+    struct hlt_blocked_job* next;
+} hlt_blocked_job;
+
+typedef struct __kh_blocked_jobs_t {
+    // These are used by khash and copied from there (see README.HILTI).
+    khint_t n_buckets, size, n_occupied, upper_bound;
+    uint32_t *flags;
+    const void** keys;
+    hlt_blocked_job** vals;
+} kh_blocked_jobs_t;
+
+static inline hlt_hash __kh_ptr_hash_func(const void* p, const void* unused)
+{
+    return (hlt_hash)p;
+}
+
+static inline int8_t __kh_ptr_equal_func(const void* p1, const void* p2, const void* unused)
+{
+    return p1 == p2;
+}
+
+KHASH_INIT(blocked_jobs, const void*, hlt_blocked_job*, 1, __kh_ptr_hash_func, __kh_ptr_equal_func)
+
 // Batch size for the jobs queues.
 #define QUEUE_BATCH_SIZE 5000
 
 // Number of pending element across all job qeueus that correspond to the
 // maximum load of 1.0.
-# define QUEUE_MAX_LOAD   (QUEUE_BATCH_SIZE * 3 * mgr->num_workers)
+#define QUEUE_MAX_LOAD   (QUEUE_BATCH_SIZE * 3 * mgr->num_workers)
 
 #ifdef DEBUG
 uint64_t job_counter = 0;
@@ -147,44 +175,27 @@ static void _terminate_threads(hlt_thread_mgr* mgr, hlt_thread_mgr_state state)
     }
 }
 
-static void _add_to_blocked(hlt_worker_thread* thread, hlt_job* job)
+static void _add_to_blocked(hlt_worker_thread* thread, hlt_thread_mgr_blockable* resource, hlt_job* job)
 {
-    if ( thread->blocked_tail )
-        thread->blocked_tail->next = job;
+    DBG_LOG(DBG_STREAM, "added job %lu to blocked queue for %s with blockable %p", job->id, thread->name, job->func->blockable);
+
+    hlt_blocked_job* bjob = hlt_gc_malloc_non_atomic(sizeof(hlt_blocked_job));
+    bjob->job = job;
+
+    khiter_t i = kh_get_blocked_jobs(thread->jobs_blocked, resource, 0);
+
+    if ( i == kh_end(thread->jobs_blocked) ) {
+        int ret;
+        i = kh_put_blocked_jobs(thread->jobs_blocked, resource, &ret, 0);
+        bjob->next = 0;
+    }
+
     else
-        thread->blocked_head = job;
+        bjob->next = kh_value(thread->jobs_blocked, i);
 
-    job->prev = thread->blocked_tail;
-    job->next = 0;
+    kh_value(thread->jobs_blocked, i) = bjob;
 
-    thread->blocked_tail = job;
-
-    assert(job->func->blockable);
-    ++job->func->blockable->num_blocked;
-    ++thread->num_blocked_jobs;
-
-    DBG_LOG(DBG_STREAM, "adding job %lu to blocked queue for %s with blockable %p", job->id, thread->name, job->func->blockable);
-}
-
-static void _remove_from_blocked(hlt_worker_thread* thread, hlt_job* job)
-{
-    if ( job->prev )
-        job->prev->next = job->next;
-    else
-        thread->blocked_head = job->next;
-
-    if ( job->next )
-        job->next->prev = job->prev;
-    else
-        thread->blocked_tail = job->prev;
-
-    job->prev = 0;
-    job->next = 0;
-
-    --job->func->blockable->num_blocked;
-    --thread->num_blocked_jobs;
-
-    DBG_LOG(DBG_STREAM, "removed job %lu from blocked queue for %s", job->id, thread->name);
+    ++resource->num_blocked;
 }
 
 // Schedules a job to a worker thread.
@@ -196,8 +207,30 @@ static void _worker_schedule_job(hlt_worker_thread* target, hlt_job* job, hlt_ex
         hlt_thread_queue_write(target->jobs, ctx->worker ? ctx->worker->id : 0, job);
     else {
         assert(ctx->worker);
-        _add_to_blocked(target, job);
+        _add_to_blocked(target, job->func->blockable, job);
     }
+}
+
+static void _unblock_blocked(hlt_worker_thread* thread, hlt_thread_mgr_blockable* resource, hlt_execution_context* ctx)
+{
+    khiter_t i = kh_get_blocked_jobs(thread->jobs_blocked, resource, 0);
+
+    // hlt_thread_mgr_unblock() only calls us if there's a blocked job.
+    assert(i != kh_end(thread->jobs_blocked));
+
+    DBG_LOG(DBG_STREAM, "unblocking resource %p in %s", resource, ctx->worker->name);
+
+    for ( hlt_blocked_job* bjob = kh_value(thread->jobs_blocked, i); bjob; bjob = bjob->next ) {
+        hlt_job* job = bjob->job;
+        DBG_LOG(DBG_STREAM, "removing job %lu from blocked queue for %s", job->id, thread->name);
+        assert(job->func->blockable == resource);
+        job->func->blockable = 0;
+        --resource->num_blocked;
+        _worker_schedule_job(thread, job, ctx);
+    }
+
+    kh_value(thread->jobs_blocked, i) = 0;
+    kh_del_blocked_jobs(thread->jobs_blocked, i);
 }
 
 static void _worker_schedule(hlt_worker_thread* target, hlt_vthread_id vid, hlt_continuation* func, void* tcontext, hlt_execution_context* ctx)
@@ -240,7 +273,7 @@ static void _debug_print_job_summary(hlt_thread_mgr* mgr)
         fprintf(stderr, "=== %s\n", thread->name);
         fprintf(stderr, "  %20s : ", "read");
         _debug_print_queue_stats(hlt_thread_queue_stats_reader(queue));
-        fprintf(stderr, "  %20s : %lu   queue size: %lu  batches pending: %lu\n", "blocked jobs", thread->num_blocked_jobs, hlt_thread_queue_size(thread->jobs), size);
+        fprintf(stderr, "  %20s : %lu   queue size: %lu  batches pending: %lu\n", "blocked jobs", kh_size(thread->jobs_blocked), hlt_thread_queue_size(thread->jobs), size);
         for ( int j = 0; j < mgr->num_workers + 1; j++ ) {
             fprintf(stderr, "  %20s[%d] : ", (j==0 ? "writer-main" : "writer-worker"), j);
             _debug_print_queue_stats(hlt_thread_queue_stats_writer(queue, j));
@@ -265,18 +298,7 @@ void __hlt_thread_mgr_unblock(hlt_thread_mgr_blockable *resource, hlt_execution_
     DBG_LOG(DBG_STREAM, "unblocking blocklable %p (#%d)", resource, resource->num_blocked);
 
     hlt_worker_thread* thread = ctx->worker;
-
-    // TODO: Need better data structure.
-    for ( hlt_job* job = thread->blocked_head; job; job = job->next ) {
-        if ( job->func->blockable == resource ) {
-            DBG_LOG(DBG_STREAM, "unblocking job %lu for vid %d in %s", job->id, job->vid, ctx->worker->name);
-            _remove_from_blocked(thread, job);
-            job->func->blockable = 0;
-            _worker_schedule_job(thread, job, ctx);
-        }
-    }
-
-    assert(resource->num_blocked == 0);
+    _unblock_blocked(thread, resource, ctx);
 }
 
 // Called when a virtual thread executes a ``yield`` statement. The first two
@@ -392,7 +414,7 @@ static void* _worker(void* worker_thread_ptr)
                 _worker_run_job(thread, job);
             else
                 // Move to blocked queue.
-                _add_to_blocked(thread, job);
+                _add_to_blocked(thread, job->func->blockable, job);
         }
 
         if ( mgr->state == HLT_THREAD_MGR_STOP && ! finished ) {
@@ -594,9 +616,7 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
         thread->max_vid = 2;
         thread->id = i + 1; // We leave zero for the main thread so that we can use that as its writer id.
         thread->idle = 0;
-        thread->blocked_head = 0;
-        thread->blocked_tail = 0;
-        thread->num_blocked_jobs = 0;
+        thread->jobs_blocked = kh_init(blocked_jobs);
 
         char* name = (char*) malloc(20);
         snprintf(name, 20, "worker-%d", thread->id);
