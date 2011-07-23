@@ -616,7 +616,7 @@ def _checkFunc(vld, i, func, cc, schedule=False):
         if not thread._checkCall(vld.currentFunction(), func):
            vld.error(i, "cannot call function with a different scope; use thread.schedule")
 
-           return True
+    return True
 
 def _checkArgs(vld, i, ftype, op, txt="function"):
     try:

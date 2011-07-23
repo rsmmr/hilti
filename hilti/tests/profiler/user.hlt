@@ -1,5 +1,7 @@
 # $Id$
 #
+# @TEST-REQUIRES: which hilti-prof
+#
 # @TEST-EXEC:  hilti-build2 -F %INPUT -o a.out
 # @TEST-EXEC:  ./a.out -P
 # @TEST-EXEC:  hilti-prof hlt.prof.*.dat | canonify-hilti-prof >output
