@@ -6,7 +6,7 @@
 BTest - A Simple Driver for Basic Unit Tests
 ============================================
 
-:Version: 0.21
+:Version: 0.22
 :Home: http://www.icir.org/robin/btest
 :Author: Robin Sommer <robin@icir.org>
 :Date: |date|
@@ -27,20 +27,21 @@ previously established baseline.
 Downloads
 =========
 
-* `btest-0.21.tar.gz <http://www.icir.org/robin/btest/btest-0.21.tar.gz>`_
+* `btest-0.22.tar.gz <http://www.icir.org/robin/btest/btest-0.22.tar.gz>`_
 
 Installation
 ============
 
 Installation is simple and standard::
 
-    > tar xzvf btest-0.21.tar.gz
-    > cd btest-0.21
+    > tar xzvf btest-0.22.tar.gz
+    > cd btest-0.22
     > python setup.py install
 
-This will install two scripts: ``btest`` is the main driver program,
-and ``btest-diff`` is an additional tool that can be used by tests
-to compare output with a previously established baseline.
+This will install a few scripts: ``btest`` is the main driver program,
+and there are number of further helper scripts that we discuss below
+(including ``btest-diff``, which is a tool for comparing output to a
+previously established baseline).
 
 Writing a Simple Test
 =====================
@@ -180,6 +181,10 @@ and 1 otherwise.
         does not compute a diff but instead considers the given file
         to authoritative and records it as the version to compare
         with in future runs.
+
+    -u, --update-interactive
+        For failed tests, btest will stop and ask whether the user
+        wants to record a new baseline.
 
     -d, --diagnostics
         Reports diagnostics for all failed tests. The diagnostics
@@ -399,16 +404,42 @@ supported:
 
         ``TEST_MODE``
             This is normally set to ``TEST``, but will be ``UPDATE``
-            if ``btest`` is run with ``--update-baselin``.
+            if ``btest`` is run with ``--update-baseline`` and
+            ``UPDATE_INTERACTIVE`` with ``--update-interactive``.
 
         ``TEST_BASELINE``
             A filename where the command can save permanent
             information across ``btest`` runs. (This is where
             ``btest-diff`` stores its baseline in ``UPDATE`` mode.)
 
+        ``TEST_NAME``
+            The name of the currently executing test.
+
+    .. note::
+
+        If a command returns the special exit code 100, the test is
+        considered failed, however subsequent test commands are still
+        run. ``btest-diff`` uses this to continue in the case that no
+        baseline has yet been established.
+
+        If a command returns the special exit code 200, the test is
+        considered failed and all further test executions are aborted.
+
+
 ``@TEST-EXEC-FAIL: <cmdline>``
     Like ``@TEST-EXEC``, except that this expects the command to
     *fail*, i.e., the test is aborted when the return code is zero.
+
+``@TEST-REQUIRES: <cmdline>``
+    Defines a condition that must be met for the test to be executed.
+    The given command line will be run before any of the actual test
+    commands, and it must return success for the test to continue. If
+    it does not return success, the rest of the test will be skipped
+    but doing so will not be considered an error. This allows to write
+    conditional tests that may not always make sense to run, depending
+    on whether external constraints are satisfied or not (say, whether
+    a particular library is available). Multiple requirements may be
+    specified and then all must be met for the test to continue.
 
 ``@TEST-START-NEXT``
     This is a short-cut for defining multiple test inputs in the
@@ -495,6 +526,39 @@ from stdin and writing the canonified version to stdout. Note that
 both baseline and current output are passed through the filter
 before their differences are computed.
 
+Running Processes in the Background
+===================================
+
+Sometimes processes need to be spawned in the background for a test,
+in particular if multiple processes need to cooperate in some fashion.
+``btest`` comes with two helper scripts to make life easier in such a
+situation:
+
+``btest-bg-run <tag> <cmdline>``
+    This is a script that runs ``<cmdline>`` in the background, i.e.,
+    it's like using ``cmdline &`` in a shell script. Test execution
+    continues immediately with the next command. Note that the spawned
+    command is *not* run in the current directory, but instead in a
+    newly created sub-directory called ``<tag>``. This allows 
+    spawning multiple instances of the same process without needing to
+    wory about conflicting outputs. If you want to access a command's
+    output later, like with ``btest-diff``, use ``<tag>/foo.log`` to
+    access it. 
+
+``btest-bg-wait [-k] <timeout>``
+
+    This scripts waits for all processes previousluy spawned via
+    ``btest-bg-run`` to finish. If any of them exits with a non-zero
+    return code, ``btest-bg-wait`` does so as well, indicating a
+    failed test. ``<timeout>>`` is mandatory and gives the maximum
+    number of seconds to wait for any of the processes to terminate.
+    If any process hasn't done so when the timeout expires, it will be
+    killed and the test is considered to be failed as long as ``-k``
+    is not given. If ``-k`` is given, pending processes are still
+    killed but the test continues normally, i.e., non-termination is
+    not considered a failure in this case. This script also collect
+    the processes' stdout and stderr outputs for diagnostics output.
+
 To-Do List
 ==========
 
@@ -516,3 +580,4 @@ License
 =======
 
 btest is open-source under a BSD licence.
+

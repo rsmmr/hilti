@@ -1,0 +1,14 @@
+#! /usr/bin/env bash
+#
+# Internal helper for btest-bg-run.
+
+trap "kill 0" 0
+
+eval $@ &
+
+pid=$!
+echo $$ >.pid
+
+wait $pid
+echo $? >.exitcode
+pid=""

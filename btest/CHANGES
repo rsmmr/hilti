@@ -1,0 +1,69 @@
+0.22-18 | 2011-07-23 11:54:07 -0700
+
+  * A new option -u for interactively updating baselines.
+
+  * Teach btest's TEST-START-FILE to make subdirectories (Jon Siwek)
+
+  * Output polishing. (Robin Sommer)
+
+  * Have distutils install 'btest-setsid' script. (Jon Siwek)
+
+  * A portable setsid. (Robin Sommer)
+
+  * Fixes for background execution of processes.
+    
+  * Fixing exit codes. (Robin Sommer)
+
+0.22-6 | 2011-07-19 17:38:03 -0700
+
+  * Teach btest's TEST-START-FILE to make subdirectories (Jon Siwek)
+    
+0.22-5 | 2011-05-02 08:41:34 -0700
+
+  * A number of bug fixes, and output polishing. (Robin Sommer)
+
+  * More robust background execution by btest-bg-*. (Robin Sommer)
+
+0.22-4 | 2011-03-29 21:38:13 -0700
+
+  * A test command can now signal to btest that even if it fails
+    subsequent test commands should still run by returning exit code 100.
+    btest-diff uses this to continue in the case that no baseline has
+    yet been established.
+
+  * New test option @TEST-REQUIRES for running a test conditionally.
+    See the README for more information.
+
+0.22-2 | 2011-03-03 21:44:18 -0800
+
+  * Two new helper scripts for spawning processes in the background.
+    See README for more information.
+
+  * btest-diff can now deal with files specificied with paths.
+    
+0.22 | 2011-02-08 14:06:13 -0800
+
+  * BTest is now hosted along with the other Bro repositories on
+    git.bro-ids.org.
+
+0.21 | 2011-01-09 21:29:18 -0800
+
+  * In btest.cfg, option values can now include commands to execute in
+    backticks.
+
+    Example:
+    
+        [environment]
+        CC=clang -emit-llvm -g `hilti-config --cflags`
+    
+  * Limiting substitutions to replacing whole words.
+
+  * Adding "substitutions". Substitutions are similar to filters, yet
+    they do not adapt the input but the command line being exectued.
+    See README for more information.
+
+  * Instead of giving a test's file name on the command line, one can
+    now also use its "dotted" name as it's printed out when btest is
+    running (e.g., "foo.bar"). That allows for easier copy/paste.
+
+  * Starting CHANGES.

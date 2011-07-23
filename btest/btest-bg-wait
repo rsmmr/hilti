@@ -1,0 +1,146 @@
+#! /usr/bin/env bash
+#
+# Usage: btest-bg-wait [-k] <timeout>
+#
+# Waits until all of the background process spawned by btest-bg-run
+# have finished, or the given timeout (in seconds) has been exceeded.
+#
+# If the timeout triggers, all remaining processed are killed. If -k
+# is not given, this is considered an error and the script abort with
+# error code 1. If -k is given, a timeout is not considered an error.
+#
+# Once all processes have finished (or were killed), the scripts
+# merges their stdout and stderr. If one of them returned an error,
+# this script does so as well
+
+if [ "$1" == "-k" ]; then
+    timeout_ok=1
+    shift
+else
+    timeout_ok=0
+fi
+
+if [ $# != 1 ]; then
+    echo "usage: `basename $0` [-k] <timeout>"
+    exit 1
+fi
+
+timeout=$1
+
+procs=`cat .bgprocs`
+
+trap "kill -9 $procs" EXIT
+
+rm -f .timeout
+touch .timeout
+
+function check_procs
+{
+    for p in $procs; do
+        if [ ! -e $p/.exitcode ]; then
+            return 1;
+        fi
+    done
+
+    # All done.
+    return 0;
+}
+
+function kill_procs
+{
+    for p in $procs; do
+        if [ ! -e $p/.exitcode ]; then
+            kill -1 `cat $p/.pid` 2>/dev/null
+            cat $p/.cmdline >>.timeout
+        fi
+    done
+
+    sleep 1
+
+    for p in $procs; do
+        if [ ! -e $p/.exitcode ]; then
+            kill -9 `cat $p/.pid` 2>/dev/null
+            sleep 1
+        fi
+    done
+}
+
+function collect_output
+{
+    rm -f .stdout .stderr
+
+    if [ $timeout_ok != 1 -a -s .timeout ]; then
+        echo "The following processes did not terminate:" >>.stderr
+        echo >>.stderr
+
+        cat .timeout >>.stderr
+
+        echo >>.stderr
+        echo "-----------" >>.stderr
+    fi
+
+    for p in $procs; do
+        pid=`cat $p/.pid`
+        cmdline=`cat $p/.cmdline`
+
+        printf "<<< [%s] %s\\n" "$pid" "$cmdline" >> .stdout
+        cat $p/.stdout >>.stdout
+        echo ">>>" >>.stdout
+
+        printf "<<< [%s] %s\\n" "$pid" "$cmdline" >> .stderr
+        cat $p/.stderr >>.stderr
+        echo ">>>" >>.stderr
+    done
+}
+
+while true; do
+
+    if check_procs; then
+        # All done.
+        break
+    fi
+
+    timeout=`expr $timeout - 1`
+
+    if [ $timeout -le 0 ]; then
+        # Timeout exceeded.
+        kill_procs
+
+        if [ $timeout_ok == 1 ]; then
+            # Just continue.
+            break;
+        fi
+
+        # Exit with error.
+        collect_output
+        exit 1
+    fi
+
+    sleep 1
+done
+
+trap - EXIT
+
+# All terminated either by themselves, or with a benign timeout.
+
+collect_output
+
+# See if any returned an error.
+result=0
+for p in $procs; do
+    rc=`cat $p/.exitcode`
+    pid=`cat $p/.pid`
+    cmdline=`cat $p/.cmdline`
+
+    if [ $rc != 0 ]; then
+        echo ">>> process $pid failed with exitcode $rc: $cmdline" >> .stderr
+        result=1
+    fi
+done
+
+exit $result
+
+
+
+
+

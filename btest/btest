@@ -17,7 +17,7 @@ import fnmatch
 import ConfigParser
 
 Name ="btest"
-Version = 0.21
+Version = "0.22-dev"
 
 ConfigDefault = "btest.cfg"
 Config = None
@@ -30,9 +30,10 @@ RE_START_FILE = re.compile("@TEST-START-FILE +([^\n ]*)")
 RE_END_FILE = re.compile("@TEST-END-FILE")
 
 # Commands as tuple (tag, regexp, more-than-one-is-ok, optional, group-main, group-add)
-RE_EXEC = ("exec", re.compile("@TEST-EXEC(-FAIL)?: *(.*)"), True, False, 2, 1)
+RE_EXEC     = ("exec",     re.compile("@TEST-EXEC(-FAIL)?: *(.*)"), True, False, 2, 1)
+RE_REQUIRES = ("requires", re.compile("@TEST-REQUIRES: *(.*)"), True, True, 1, -1)
 
-Commands = (RE_EXEC, )
+Commands = (RE_EXEC, RE_REQUIRES)
 
 def output(msg, nl=True, file=None):
     if not file:
@@ -98,6 +99,7 @@ class Test(object):
         self.diag = None
         self.baseline = None
         self.files = []
+        self.requires = []
 
         # Parse the test's content.
     def parse(self, content):
@@ -151,6 +153,9 @@ class Test(object):
         self.content = content
         self.cmdlines = [(cmd.strip(), success!="-FAIL") for (cmd, success) in cmds["exec"]]
 
+        if "requires" in cmds:
+            self.requires = [cmd.strip() for cmd in cmds["requires"]]
+
         if Substitutions:
             for (key, val) in Substitutions.items():
                 self.cmdlines = [(re.sub("\\b" + re.escape(key) + "\\b", val, cmd[0]), cmd[1]) for cmd in self.cmdlines]
@@ -195,6 +200,9 @@ class Test(object):
         os.chdir(self.tmpdir)
 
         for (fname, lines) in self.files:
+            subdir = os.path.dirname(fname)
+            if subdir != "":
+                mkdir(subdir)
             try:
                 ffile = open(fname, "w")
             except IOError, e:
@@ -216,28 +224,67 @@ class Test(object):
         self.stdout = open(os.path.join(self.tmpdir, ".stdout"), "w")
         self.stderr = open(os.path.join(self.tmpdir, ".stderr"), "w")
 
-        for cmd in self.cmdlines:
-            if not self.execute(cmd, apply_filter=(filter != None)):
-                global Failed
-                Failed += 1
+        for cmd in self.requires:
+
+            (success, rc) = self.execute((cmd, True), apply_filter=(filter != None))
+
+            if not success:
+                global Skipped
+                Skipped += 1
 
                 if Options.verbose:
-                    output("... %s failed" % name)
-                else:
-                    if Options.brief:
-                        output("%s ..." % name, nl=False)
+                    output("... %s not available, skipped" % name)
 
-                    output("failed")
+                else:
+                    if not Options.brief:
+                        output("not available, skipped")
+
+                if Options.diagfile:
+                    print >>Options.diagfile, "%s ... not available, skipped" % name
+
+                self.finish()
+                return
+
+        failures = 0
+
+        for cmd in self.cmdlines:
+
+            (success, rc) = self.execute(cmd, apply_filter=(filter != None))
+
+            if not success:
+                failures += 1
+
+                if failures == 1:
+
+                    global Failed
+                    Failed += 1
+
+                    if Options.verbose:
+                        output("... %s failed" % name)
+
+                    else:
+                        if Options.brief:
+                            output("%s ..." % name, nl=False)
+
+                        output(" failed")
+
+                    if Options.diagfile:
+                        print >>Options.diagfile, "%s ... failed" % name
 
                 if Options.diag or Options.diagall:
                     self.showDiag()
 
                 if Options.diagfile:
-                    print >>Options.diagfile, "%s ... failed" % name
                     self.showDiag(Options.diagfile)
 
-                break
-        else:
+                if rc == 200:
+                    # Abort all tests.
+                    sys.exit(1)
+
+                if rc != 100:
+                    break
+
+        if failures == 0:
             if Options.verbose:
                     output("... %s ok" % name)
             else:
@@ -250,6 +297,9 @@ class Test(object):
             if not Options.tmps:
                 self.rmTmp()
 
+        self.finish()
+
+    def finish(self):
         try:
             # Try removing the baseline directory. If it works, it's empty, i.e., no baseline was created.
             os.rmdir(self.baseline)
@@ -262,7 +312,6 @@ class Test(object):
 
     def execute(self, cmd, apply_filter=False):
         (cmdline, expect_success) = cmd
-
 
         # See if we need to apply a filter.
         filter_cmd = None
@@ -280,11 +329,13 @@ class Test(object):
             # This is not quite correct as it does not necessarily need to be
             # the %INPUT file which we are filtering ...
             filtered = os.path.join(self.tmpdir, "filtered-%s" % os.path.basename(self.localfile))
-            if not self.execute(("%s %s %s" % (filter_cmd, self.localfile, filtered), True), apply_filter=False):
-                return False
+            (success, rc) = self.execute(("%s %s %s" % (filter_cmd, self.localfile, filtered), True), apply_filter=False)
+            if not success:
+                return (False, rc)
 
-            if not self.execute(("mv %s %s" % (filtered, self.localfile), True), apply_filter=False):
-                return False
+            (success, rc) = self.execute(("mv %s %s" % (filtered, self.localfile), True), apply_filter=False)
+            if not success:
+                return (False, rc)
 
             localfile = self.localfile
 
@@ -310,20 +361,20 @@ class Test(object):
 
         try:
             subprocess.check_call(cmdline, shell=True, env=env, stderr=self.stderr, stdout=self.stdout)
-        except subprocess.CalledProcessError, e:
 
+        except subprocess.CalledProcessError, e:
             if expect_success:
                 self.diagmsgs += ["'%s' failed unexpectedly (exit code %s)" % (cmdline, e.returncode)]
-                return False
+                return (False, e.returncode)
 
             else:
-                return True
+                return (True, e.returncode)
 
         if not expect_success:
             self.diagmsgs += ["'%s' succeeded unexpectedly (exit code 0)" % cmdline]
-            return False
+            return (False, 0)
 
-        return True
+        return (True, 0)
 
     def rmTmp(self):
         os.chdir(TmpDir)
@@ -345,6 +396,7 @@ class Test(object):
         env["TEST_BASELINE"] = self.baseline
         env["TEST_DIAGNOSTICS"] = self.diag
         env["TEST_MODE"] = Options.mode.upper()
+        env["TEST_NAME"] = self.name
 
         return env
 
@@ -493,8 +545,10 @@ def readTestFile(filename):
 ### Main
 
 optparser = optparse.OptionParser(usage="%prog [options] <directorys>", version=Version)
-optparser.add_option("-U", "--update-baseline", action="store_const", dest="mode", const="UPDATE", default="TEST",
+optparser.add_option("-U", "--update-baseline", action="store_const", dest="mode", const="UPDATE",
                      help="create a new baseline from the tests' output")
+optparser.add_option("-u", "--update-interactive", action="store_const", dest="mode", const="UPDATE_INTERACTIVE",
+                     help="interactively asks whether to update baseline for a failed test")
 optparser.add_option("-d", "--diagnostics", action="store_true", dest="diag", default=False,
                      help="show diagnostic output for failed tests")
 optparser.add_option("-D", "--diagnostics-all", action="store_true", dest="diagall", default=False,
@@ -516,6 +570,7 @@ optparser.add_option("-t", "--tmp-keep", action="store_true", dest="tmps", defau
 optparser.add_option("-S", "--subst", action="store", type="string", dest="subst", default=None,
                      help="active substitution in given config file section")
 
+optparser.set_defaults(mode="TEST")
 (Options, args) = optparser.parse_args()
 
 (basedir, fname) = os.path.split(Options.config)
@@ -575,7 +630,8 @@ else:
     tests = Config.configured_tests
 
 if not tests:
-    error("no tests given")
+    output("no tests given")
+    sys.exit(0)
 
 TmpDir = os.path.abspath(getOption("TmpDir", os.path.join(defaults["testbase"], ".tmp")))
 BaselineDir = os.path.abspath(getOption("BaselineDir", os.path.join(defaults["testbase"], "Baseline")))
@@ -583,6 +639,7 @@ mkdir(BaselineDir)
 mkdir(TmpDir)
 
 Failed = 0
+Skipped = 0
 
 for test in tests:
 
@@ -597,5 +654,11 @@ for test in tests:
         test.run()
 
 if Failed > 0:
-    output("%d test%s failed" % (Failed, "s" if Failed > 1 else ""))
+    skipped = (", %d skipped" % Skipped) if Skipped > 0 else ""
+    output("%d test%s failed%s" % (Failed, "s" if Failed > 1 else "", skipped))
+    sys.exit(1)
+
+else:
+    output("all tests successful")
+    sys.exit(0)
 

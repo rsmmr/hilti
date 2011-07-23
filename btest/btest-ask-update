@@ -1,0 +1,31 @@
+#! /usr/bin/env bash
+#
+# Helper script that asks whether the user want to update a baseline.
+#
+# Return code:
+#
+# 0: Yes, update and continue.
+# 1: No, don't update but continue.
+# 2: No, don't update and abort.
+
+while true; do
+    echo " failed" >>/dev/tty
+    echo ">> Type 'c' to continue, 'd' to see diagnostics, 'u' to update baseline, and 'a' to abort." >/dev/tty
+
+    read -s -n 1 key </dev/tty
+
+    case $key in
+        [uU]) echo ">> Updating baseline ..." >/dev/tty; exit 0;;
+        [cC]) echo ">> Continuing ..." >/dev/tty; exit 1;;
+        [aA]) echo ">> Aborting ..." >/dev/tty; exit 200;;
+
+        [dD])
+           if [ "$TEST_DIAGNOSTICS" != "" -a "$TEST_DIAGNOSTICS" != "/dev/stdout" ]; then
+               less -S $TEST_DIAGNOSTICS </dev/tty >/dev/tty
+           else
+               echo "Do not have diagnostics." >/dev/tty
+           fi
+           ;;
+        *)    echo ">> Answer not recognized, try again ..." >/dev/tty ;;
+    esac
+done

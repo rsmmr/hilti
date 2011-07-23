@@ -1,0 +1,42 @@
+#! /usr/bin/env bash
+#
+# Usage: btest-bg-run <tag> <cmdline>
+#
+# Creates a new empty working directory <tag> within the current directory
+# and spawns <cmdline> in there in the background. It also records
+# a set of meta information that btest-bg-wait will read.
+
+if [ "$#" -le 1 ]; then
+    echo "usage: `basename $0` <tag> <cmdline>"
+    exit 1
+fi
+
+cwd=`pwd`
+cd `dirname $0`
+helper=`pwd`/btest-bg-run-helper
+setsid=`pwd`/btest-setsid
+cd $cwd
+
+bname=`basename $0`
+dir=$1
+shift
+
+if [ -e $dir ]; then
+    echo "directory '$dir' already exists" >&2
+    exit 1;
+fi
+
+echo $dir >>.bgprocs
+mkdir $dir
+cd $dir
+
+echo $@ >.cmdline
+
+$setsid $helper "$@" >.stdout 2>.stderr &
+
+sleep 1
+
+
+
+
+
