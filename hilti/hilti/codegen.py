@@ -1793,7 +1793,7 @@ class CodeGen(objcache.Cache):
 
             return return_func
 
-        return self.cache("thread-mgr-run-callable-return-func", makeReturnFunc)
+        return self.cache("thread-mgr-run-callable-return-func-%s" % str(excpt), makeReturnFunc)
 
     def _llvmFunctionThreadMgrRunCallable(self):
         """Generates a C function for running a callable (as returned by
