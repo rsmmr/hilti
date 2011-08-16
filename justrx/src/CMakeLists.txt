@@ -25,7 +25,7 @@ set(SRCS
     ccl.c dfa.c dfa-interpreter-std.c dfa-interpreter-min.c jlocale.c
     jrx.c nfa.c util.c
 
-    dummy.cpp
+    jit.c dummy.cpp
 
     # Generated.
     ${FLEX_rescan_OUTPUTS} ${BISON_reparse_OUTPUT_SOURCE}
