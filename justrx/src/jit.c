@@ -14,6 +14,9 @@
 #include "ccl.h"
 #include "dfa.h"
 
+// match state
+#include "jrx.h"
+
 
 /** Compiler meta */
 
@@ -26,19 +29,6 @@ struct jit_compile_info
 };
 
 
-/** C <-> LLVM match state bridge structure */
-
-typedef struct jit_match_state jit_match_state;
-struct jit_match_state
-{
-    jrx_offset begin;           // Logical offset of the first cp
-    jrx_char prev;              // Last cp matched in previous partial match
-    jrx_accept_id accept_id;    // Last accept id
-    jrx_offset accept_offset;   // Offset of last accept
-    LLVMValueRef current_state; // Function pointer to current jit DFA state
-};
-
-
 /** LLVM Types */
 
 #define JIT_BOOL_LLVM_TYPE      LLVMInt1Type()
@@ -46,6 +36,7 @@ struct jit_match_state
 #define JRX_OFFSET_LLVM_TYPE    LLVMInt32Type()
 #define JRX_CHAR_LLVM_TYPE      LLVMInt32Type()
 #define JRX_ASSERTION_LLVM_TYPE LLVMInt16Type()
+#define JRX_STATE_ID_LLVM_TYPE  LLVMInt32Type()
 
 #define JIT_NEG_ONE LLVMConstInt(LLVMInt32Type(), -1, 1)
 #define JIT_ZERO    LLVMConstInt(LLVMInt32Type(), 0, 0)
@@ -54,41 +45,38 @@ struct jit_match_state
 #define JIT_TRUE    LLVMConstInt(JIT_BOOL_LLVM_TYPE, 1, 0)
 #define JIT_FALSE   LLVMConstInt(JIT_BOOL_LLVM_TYPE, 0, 0)
 
-#define JIT_MS_STRUCT_LLVM_TYPE JITMatchStateStructType()
 #define JIT_DFA_FN_LLVM_TYPE JITDFAStateFnType()
 
 
-LLVMTypeRef JITDFAStateFnType();
-
-LLVMTypeRef JITMatchStateStructType() {
-    LLVMTypeRef element_types[] = {
-            JRX_OFFSET_LLVM_TYPE,       // begin
-            JRX_CHAR_LLVM_TYPE,         // prev
-            JRX_ACCEPT_ID_LLVM_TYPE,    // accept_id
-            JRX_OFFSET_LLVM_TYPE,       // accept_offset
-            LLVMPointerType(JIT_DFA_FN_LLVM_TYPE, 0)
-    };
-
-    return LLVMStructType(element_types, 5, 0);
-}
-
-enum JIT_MATCH_STATE_ELEMENTS_GEP_OFFSETS
-    { BEGIN=0, PREV, ACCEPT_ID, ACCEPT_OFFSET, CURRENT_STATE };
-
-
-LLVMTypeRef JITDFAStateFnType() {
-    // Prototype jrx_accept_id stateX (char* string, jrx_offset length, jrx_char prev_cp, jrx_assertion first, jrx_assertion last, jit_match_state *ms)
+LLVMTypeRef JITDFAStateFnType()
+{
+    // Prototype jrx_accept_id stateX (char* string, jrx_offset length, jrx_char prev_cp, jrx_accept_id last_accept_id, jrx_offset last_acc_offset, jrx_assertion first, jrx_assertion last, opaque *match_state)
     LLVMTypeRef arg_types[] = {
             LLVMArrayType(LLVMInt8Type(), 0),
             JRX_OFFSET_LLVM_TYPE,
             JRX_CHAR_LLVM_TYPE,
+            JRX_ACCEPT_ID_LLVM_TYPE,
+            JRX_OFFSET_LLVM_TYPE,
             JRX_ASSERTION_LLVM_TYPE,
             JRX_ASSERTION_LLVM_TYPE,
-            JIT_MS_STRUCT_LLVM_TYPE
+            LLVMPointerType(LLVMOpaqueType(), 0)
         };
     return LLVMFunctionType(JRX_ACCEPT_ID_LLVM_TYPE, arg_types, 6, 0);
 }
 
+LLVMTypeRef JITSaveStateFnType()
+{
+    // Prototype void save_state (opaque *ms, jrx_accept_id accept_id, jrx_offset acc_offset, jrx_char prev_cp, jrx_dfa_state_id state_id, JIT_DFA_FN_LLVM_TYPE state_fn)
+    LLVMTypeRef arg_types[] = {
+        LLVMPointerType(LLVMOpaqueType(), 0),
+        JRX_ACCEPT_ID_LLVM_TYPE,
+        JRX_OFFSET_LLVM_TYPE,
+        JRX_CHAR_LLVM_TYPE,
+        JRX_STATE_ID_LLVM_TYPE,
+        JIT_DFA_FN_LLVM_TYPE
+    };
+    return LLVMFunctionType(LLVMVoidType(), arg_types, 5, 0);
+}
 
 /* Function references */
 
@@ -151,6 +139,16 @@ LLVMValueRef jit_local_word_boundary_fn_ref(jit_compile_info *ci)
     return func;
 }
 
+LLVMValueRef jit_save_match_state_fn_ref(jit_compile_info *ci)
+{
+    char *name = "_jit_ext_save_match_state";
+    LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
+    if (!func) {
+        LLVMValueRef func = LLVMAddFunction(ci->module, name, JITSaveStateFnType());
+        LLVMSetFunctionCallConv(func, LLVMCCallConv);
+    }
+    return func;
+}
 
 /** Code generation */
 
@@ -214,7 +212,8 @@ LLVMValueRef _jit_codegen_ccl_fn (jit_compile_info *ci, jrx_ccl_id id)
 
 /* dfa state */
 
-jrx_assertion necessary_assertions(jrx_dfa_state* state, jrx_ccl_group* with_ccls) {
+jrx_assertion necessary_assertions(jrx_dfa_state* state, jrx_ccl_group* with_ccls)
+{
     jrx_assertion assertions = JRX_ASSERTION_NONE;
     vec_for_each(dfa_transition, state->trans, trans) {
             jrx_ccl* ccl = vec_ccl_get(with_ccls->ccls, trans.ccl);
@@ -234,14 +233,17 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
 
     LLVMBuilderRef builder = ci->builder;
 
+    // Parameters
     LLVMValueRef str = LLVMGetParam(fn, 0);
     LLVMValueRef len = LLVMGetParam(fn, 1);
-    LLVMValueRef prev_cp = LLVMGetParam(fn, 2);
-    LLVMValueRef assert_first = LLVMGetParam(fn, 3);
-    LLVMValueRef assert_last = LLVMGetParam(fn, 4);
-    LLVMValueRef match_state = LLVMGetParam(fn, 5);
+    LLVMValueRef prev_cp = LLVMGetParam(fn, 3);
+    LLVMValueRef last_acc_id = LLVMGetParam(fn, 4);
+    LLVMValueRef last_acc_offset = LLVMGetParam(fn, 5);
+    LLVMValueRef assert_first = LLVMGetParam(fn, 6);
+    LLVMValueRef assert_last = LLVMGetParam(fn, 7);
+    LLVMValueRef match_state = LLVMGetParam(fn, 8);
 
-    // make entry
+    // Make entry
     LLVMBasicBlockRef entry_block = LLVMAppendBasicBlock(fn, "entry");
     LLVMPositionBuilderAtEnd(builder, entry_block);
     LLVMValueRef cp = LLVMBuildLoad(builder, str, "cp");
@@ -249,43 +251,36 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
     // If this is a Accept state, set last_accept to my aid
     if (state->accepts) {
         jrx_accept_id aid = vec_dfa_accept_get(state->accepts, 0).aid;
-        LLVMBuildStore(builder,
-                LLVMConstInt(JRX_ACCEPT_ID_LLVM_TYPE, aid, 0),
-                LLVMBuildStructGEP(builder, match_state, ACCEPT_ID, "ms->accept_id"));
-
-        LLVMBuildStore(builder,
-                len,
-                LLVMBuildStructGEP(builder, match_state, ACCEPT_OFFSET, "ms->accept_offset"));
+        last_acc_id = LLVMConstInt(JRX_ACCEPT_ID_LLVM_TYPE, aid, 0);
+        last_acc_offset = len;
     }
 
-    // if len==0
+    // If len==0:
     // set this fcn as the cur state
     // set prev to last_cp
     // return last_accept. this might be -1 to indicate partial match
     {
-        LLVMBasicBlockRef data_end_block = LLVMAppendBasicBlock(fn, "data_end");
+        LLVMBasicBlockRef save_state_block = LLVMAppendBasicBlock(fn, "save_state");
         LLVMBasicBlockRef assertions_block = LLVMAppendBasicBlock(fn, "assertions");
-        LLVMValueRef if_past_end = LLVMBuildICmp(builder, LLVMIntEQ, len, JIT_ZERO, "len==0");
-        LLVMBuildCondBr(builder, if_past_end, data_end_block, assertions_block);
 
-        LLVMPositionBuilderAtEnd(builder, data_end_block);
-        LLVMBuildStore(builder,
-                fn,
-                LLVMBuildStructGEP(builder, match_state, CURRENT_STATE, "ms->current_state"));
-        LLVMBuildStore(builder,
-                prev_cp,
-                LLVMBuildStructGEP(builder, match_state, PREV, "ms->prev"));
-        LLVMValueRef accept_id = LLVMBuildLoad(builder,
-                LLVMBuildStructGEP(builder, match_state, ACCEPT_ID, "ms->accept_id"), "accept_id");
-        LLVMBuildRet(builder, accept_id);
+        LLVMValueRef if_past_end = LLVMBuildICmp(builder, LLVMIntEQ, len, JIT_ZERO, "len==0");
+        LLVMBuildCondBr(builder, if_past_end, save_state_block, assertions_block);
+
+        LLVMPositionBuilderAtEnd(builder, save_state_block);
+        LLVMValueRef save_state_fn_args[] = { match_state,
+                                              last_acc_id,
+                                              last_acc_offset,
+                                              prev_cp,
+                                              LLVMConstInt(JRX_STATE_ID_LLVM_TYPE, id, 0),
+                                              fn };
+        LLVMBuildCall(builder, jit_save_match_state_fn_ref(ci), save_state_fn_args, 6 , "");
+        LLVMBuildRet(builder, last_acc_id);
 
         LLVMPositionBuilderAtEnd(builder, assertions_block);
     }
 
     // If any transition ccl requires an assertion,
     // determine what assertions apply here, otherwise don't bother
-    // Can check for word boundary with prev
-    // Maybe also check beginning/end of string here too? -- nevermind
     LLVMValueRef current_assertions = LLVMConstInt(JRX_ASSERTION_LLVM_TYPE, JRX_ASSERTION_NONE, 0);
     {
         jrx_assertion requested_assertions = necessary_assertions(state, ci->dfa->ccls);
@@ -304,25 +299,29 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
                     "");
         }
 
-        LLVMValueRef local_word_boundary_fn_args[] = { prev_cp, cp };
-        LLVMValueRef on_word_boundary = LLVMBuildCall(builder, jit_local_word_boundary_fn_ref(ci), local_word_boundary_fn_args, 2, "on_local_word_boundary");
+        if ((requested_assertions & JRX_ASSERTION_WORD_BOUNDARY) ||
+            (requested_assertions & JRX_ASSERTION_NOT_WORD_BOUNDARY)) {
 
-        if (requested_assertions & JRX_ASSERTION_WORD_BOUNDARY) {
-            current_assertions = LLVMBuildSelect(builder,
-                    on_word_boundary,
-                    LLVMBuildOr(builder, current_assertions,
-                            LLVMConstInt(JRX_ASSERTION_LLVM_TYPE, JRX_ASSERTION_WORD_BOUNDARY, 0), ""),
-                    current_assertions,
-                    "");
-        }
+            LLVMValueRef local_word_boundary_fn_args[] = { prev_cp, cp };
+            LLVMValueRef on_word_boundary = LLVMBuildCall(builder, jit_local_word_boundary_fn_ref(ci), local_word_boundary_fn_args, 2, "on_local_word_boundary");
 
-        if (requested_assertions & JRX_ASSERTION_NOT_WORD_BOUNDARY) {
-            current_assertions = LLVMBuildSelect(builder,
-                    on_word_boundary,
-                    current_assertions,
-                    LLVMBuildOr(builder, current_assertions,
-                            LLVMConstInt(JRX_ASSERTION_LLVM_TYPE, JRX_ASSERTION_NOT_WORD_BOUNDARY, 0), ""),
-                    "");
+            if (requested_assertions & JRX_ASSERTION_WORD_BOUNDARY) {
+                current_assertions = LLVMBuildSelect(builder,
+                        on_word_boundary,
+                        LLVMBuildOr(builder, current_assertions,
+                                LLVMConstInt(JRX_ASSERTION_LLVM_TYPE, JRX_ASSERTION_WORD_BOUNDARY, 0), ""),
+                        current_assertions,
+                        "");
+            }
+
+            if (requested_assertions & JRX_ASSERTION_NOT_WORD_BOUNDARY) {
+                current_assertions = LLVMBuildSelect(builder,
+                        on_word_boundary,
+                        current_assertions,
+                        LLVMBuildOr(builder, current_assertions,
+                                LLVMConstInt(JRX_ASSERTION_LLVM_TYPE, JRX_ASSERTION_NOT_WORD_BOUNDARY, 0), ""),
+                        "");
+            }
         }
     }
 
@@ -347,7 +346,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
             LLVMBuildCondBr(builder, ccl_match, transition_block, next_block);
 
             LLVMPositionBuilderAtEnd(builder, transition_block);
-            LLVMValueRef trans_fn_args[] = { str, len, cp, assert_first, assert_last, match_state };
+            LLVMValueRef trans_fn_args[] = { str, len, cp, last_acc_id, last_acc_offset, assert_first, assert_last, match_state };
             LLVMValueRef trans_result = LLVMBuildCall(builder, jit_dfa_state_fn_ref(ci, trans.succ), trans_fn_args, 6, "");
             LLVMSetTailCall(trans_result, 1); // do i need to use LLVMGetLastInstruction?
             LLVMBuildRet(builder, trans_result);
@@ -361,17 +360,21 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
     // return last_accept id OR, if last_accept is -1 , return 0
     //  to indicate failure (since we can't transition past this point)  [ use SELECT instruction ]
     {
-        LLVMBuildStore(builder, jit_dfa_state_jammed_fn_ref(ci), LLVMBuildStructGEP(builder, match_state, CURRENT_STATE, "ms->current_state"));
-
-        LLVMValueRef accept_id = LLVMBuildLoad(builder,
-                        LLVMBuildStructGEP(builder, match_state, ACCEPT_ID, "ms->accept_id"), "");
-
-        accept_id = LLVMBuildSelect(builder,
-                LLVMBuildICmp(builder, LLVMIntEQ, accept_id, JIT_NEG_ONE, ""),
+        last_acc_id = LLVMBuildSelect(builder,
+                LLVMBuildICmp(builder, LLVMIntEQ, last_acc_id, JIT_NEG_ONE, ""),
                 JIT_ZERO,
-                accept_id,
+                last_acc_id,
                 "");
-        LLVMBuildRet(builder, accept_id);
+
+        LLVMValueRef save_state_fn_args[] = { match_state,
+                                              last_acc_id,
+                                              last_acc_offset,
+                                              prev_cp,
+                                              LLVMConstInt(JRX_STATE_ID_LLVM_TYPE, -1, 0),
+                                              jit_dfa_state_jammed_fn_ref(ci) };
+        LLVMBuildCall(builder, jit_save_match_state_fn_ref(ci), save_state_fn_args, 6 , "");
+
+        LLVMBuildRet(builder, last_acc_id);
     }
 
     LLVMVerifyFunction(fn, LLVMAbortProcessAction);
@@ -383,17 +386,32 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
 
 /** Externally defined functions that are called from JIT code */
 
-extern jrx_accept_id _jit_ext_state_jammed() {
+extern jrx_accept_id _jit_ext_state_jammed()
+{
     // We can no longer match
     return 0;
 }
 
 
-extern LLVMBool _jit_ext_local_word_boundary(jrx_char prev_cp, jrx_char cp) {
+extern LLVMBool _jit_ext_local_word_boundary(jrx_char prev_cp, jrx_char cp)
+{
     // TODO
     return 0;
 }
 
+extern void _jit_ext_save_match_state(jrx_match_state *ms,
+                                jrx_accept_id accept_id,
+                                jrx_offset accept_offset,
+                                jrx_char prev_cp,
+                                jrx_dfa_state_id state_id,
+                                int (*state_fn)() )
+{
+    ms->acc       = accept_id;
+    ms->offset    = accept_offset;
+    ms->previous  = prev_cp;
+    ms->state     = state_id;
+    //ms->jit_state = state_fn;
+}
 
 /** Compilation */
 void COMPILE(jrx_dfa *dfa) {
