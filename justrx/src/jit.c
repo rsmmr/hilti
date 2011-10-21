@@ -16,6 +16,9 @@
 // Match State
 #include "jrx.h"
 
+// _isword
+#include "jlocale.h"
+
 
 /** Compiler meta */
 typedef struct jit_compile_info jit_compile_info;
@@ -432,10 +435,9 @@ extern jrx_accept_id _jit_ext_state_jammed()
     return 0;
 }
 
-extern LLVMBool _jit_ext_local_word_boundary(jrx_char prev_cp, jrx_char cp)
+extern int _jit_ext_local_word_boundary(jrx_char prev_cp, jrx_char cp)
 {
-    // TODO
-    return 0;
+    return _isword(cp) ? (prev_cp ? ! _isword(prev_cp) : 1) : 0;
 }
 
 extern void _jit_ext_save_match_state(jrx_match_state *ms,
