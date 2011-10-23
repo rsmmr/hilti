@@ -38,6 +38,16 @@ struct jit_compile_info
 #define JRX_ASSERTION_LLVM_TYPE LLVMInt16Type()
 #define JRX_STATE_ID_LLVM_TYPE  LLVMInt32Type()
 
+#define JIT_MATCH_STATE_STRUCT_LLVM_TYPE JITMatchStateStructType()
+LLVMTypeRef JITMatchStateStructType()
+{
+    // Turns out that opaque types are not equivelant???
+    static LLVMTypeRef type = NULL;
+    if (!type)
+        type = LLVMOpaqueType();
+    return type;
+}
+
 #define JIT_STATE_FN_LLVM_TYPE JITDFAStateFnType()
 LLVMTypeRef JITDFAStateFnType()
 {
@@ -49,19 +59,19 @@ LLVMTypeRef JITDFAStateFnType()
                           opaque *match_state)
     */
     LLVMTypeRef arg_types[] = {
-            LLVMArrayType(LLVMInt8Type(), 0),
+            LLVMPointerType(LLVMInt8Type(), 0),
             JRX_OFFSET_LLVM_TYPE,
             JRX_CHAR_LLVM_TYPE,
             JRX_ACCEPT_ID_LLVM_TYPE,
             JRX_OFFSET_LLVM_TYPE,
             JRX_ASSERTION_LLVM_TYPE,
             JRX_ASSERTION_LLVM_TYPE,
-            LLVMPointerType(LLVMOpaqueType(), 0)
+            LLVMPointerType(JIT_MATCH_STATE_STRUCT_LLVM_TYPE, 0)
         };
-    return LLVMFunctionType(JRX_ACCEPT_ID_LLVM_TYPE, arg_types, 6, 0);
+    return LLVMFunctionType(JRX_ACCEPT_ID_LLVM_TYPE, arg_types, 8, 0);
 }
 
-#define JIT_SAVE_FN_LLVM_TYPE JITDFAStateFnType()
+#define JIT_SAVE_FN_LLVM_TYPE JITSaveStateFnType()
 LLVMTypeRef JITSaveStateFnType()
 {
     /* Prototype:
@@ -70,14 +80,14 @@ LLVMTypeRef JITSaveStateFnType()
                         jrx_dfa_state_id state_id, JIT_STATE_FN_TYPE state_fn)
     */
     LLVMTypeRef arg_types[] = {
-        LLVMPointerType(LLVMOpaqueType(), 0),
+        LLVMPointerType(JIT_MATCH_STATE_STRUCT_LLVM_TYPE, 0),
         JRX_ACCEPT_ID_LLVM_TYPE,
         JRX_OFFSET_LLVM_TYPE,
         JRX_CHAR_LLVM_TYPE,
         JRX_STATE_ID_LLVM_TYPE,
-        JIT_STATE_FN_LLVM_TYPE
+        LLVMPointerType(JIT_STATE_FN_LLVM_TYPE, 0)
     };
-    return LLVMFunctionType(LLVMVoidType(), arg_types, 5, 0);
+    return LLVMFunctionType(LLVMVoidType(), arg_types, 6, 0);
 }
 
 /** LLVM Constants */
@@ -119,8 +129,8 @@ LLVMValueRef jit_ccl_fn_ref(jit_compile_info *ci, jrx_ccl_id id)
            bool cclX (jrx_char cp, jrx_assertion assertions)
         */
         LLVMTypeRef arg_types[] = { JRX_CHAR_LLVM_TYPE, JRX_ASSERTION_LLVM_TYPE };
-        LLVMValueRef func = LLVMAddFunction(ci->module, name,
-                LLVMFunctionType(JIT_BOOL_LLVM_TYPE, arg_types, 2, 0));
+        func = LLVMAddFunction(ci->module, name,
+                               LLVMFunctionType(JIT_BOOL_LLVM_TYPE, arg_types, 2, 0));
         LLVMSetFunctionCallConv(func, LLVMFastCallConv);
     }
 
@@ -136,7 +146,7 @@ LLVMValueRef jit_dfa_state_fn_ref(jit_compile_info *ci, jrx_dfa_state_id id)
 
     LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
     if (!func) {
-        LLVMValueRef func = LLVMAddFunction(ci->module, name, JIT_STATE_FN_LLVM_TYPE);
+        func = LLVMAddFunction(ci->module, name, JIT_STATE_FN_LLVM_TYPE);
         LLVMSetFunctionCallConv(func, LLVMFastCallConv);
     }
 
@@ -149,7 +159,7 @@ LLVMValueRef jit_dfa_state_jammed_fn_ref(jit_compile_info *ci)
     char *name = "_jit_ext_state_jammed";
     LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
     if (!func) {
-        LLVMValueRef func = LLVMAddFunction(ci->module, name, JIT_STATE_FN_LLVM_TYPE);
+        func = LLVMAddFunction(ci->module, name, JIT_STATE_FN_LLVM_TYPE);
         LLVMSetFunctionCallConv(func, LLVMCCallConv);
     }
     return func;
@@ -161,7 +171,7 @@ LLVMValueRef jit_local_word_boundary_fn_ref(jit_compile_info *ci)
     LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
     if (!func) {
         LLVMTypeRef arg_types[] = { JRX_CHAR_LLVM_TYPE, JRX_CHAR_LLVM_TYPE };
-        LLVMValueRef func = LLVMAddFunction(ci->module, name,
+        func = LLVMAddFunction(ci->module, name,
                 LLVMFunctionType(JIT_BOOL_LLVM_TYPE, arg_types, 2, 0));
         LLVMSetFunctionCallConv(func, LLVMCCallConv);
     }
@@ -173,7 +183,7 @@ LLVMValueRef jit_save_match_state_fn_ref(jit_compile_info *ci)
     char *name = "_jit_ext_save_match_state";
     LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
     if (!func) {
-        LLVMValueRef func = LLVMAddFunction(ci->module, name, JIT_SAVE_FN_LLVM_TYPE);
+        func = LLVMAddFunction(ci->module, name, JIT_SAVE_FN_LLVM_TYPE);
         LLVMSetFunctionCallConv(func, LLVMCCallConv);
     }
     return func;
@@ -222,9 +232,8 @@ LLVMValueRef _jit_codegen_ccl_fn (jit_compile_info *ci, jrx_ccl_id id)
         LLVMValueRef inside_range =
             LLVMBuildAnd(b, inside_lower_bound, inside_upper_bound, "");
 
-        LLVMBuildCondBr(b, inside_range, success_block, next_block);
-
         next_block = LLVMAppendBasicBlock(fn, "range check");
+        LLVMBuildCondBr(b, inside_range, success_block, next_block);
     }
     LLVMPositionBuilderAtEnd(b, next_block);
     LLVMBuildBr(b, failed_block);
@@ -266,16 +275,17 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
     // Parameters
     LLVMValueRef str = LLVMGetParam(fn, 0);
     LLVMValueRef len = LLVMGetParam(fn, 1);
-    LLVMValueRef prev_cp = LLVMGetParam(fn, 3);
-    LLVMValueRef last_accept_id = LLVMGetParam(fn, 4);
-    LLVMValueRef last_accept_offset = LLVMGetParam(fn, 5);
-    LLVMValueRef assert_first = LLVMGetParam(fn, 6);
-    LLVMValueRef assert_last = LLVMGetParam(fn, 7);
-    LLVMValueRef match_state = LLVMGetParam(fn, 8);
+    LLVMValueRef prev_cp = LLVMGetParam(fn, 2);
+    LLVMValueRef last_accept_id = LLVMGetParam(fn, 3);
+    LLVMValueRef last_accept_offset = LLVMGetParam(fn, 4);
+    LLVMValueRef assert_first = LLVMGetParam(fn, 5);
+    LLVMValueRef assert_last = LLVMGetParam(fn, 6);
+    LLVMValueRef match_state = LLVMGetParam(fn, 7);
 
     // Make entry
     LLVMPositionBuilderAtEnd(b, LLVMAppendBasicBlock(fn, "entry"));
-    LLVMValueRef cp = LLVMBuildLoad(b, str, "cp");
+    LLVMValueRef cp = LLVMBuildZExt(b, LLVMBuildLoad(b, str, ""),
+                                       JRX_CHAR_LLVM_TYPE, "cp");
 
     // If this is an Accept state, set last_accept to my aid
     if (state->accepts) {
@@ -386,10 +396,10 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
             LLVMPositionBuilderAtEnd(b, transition_block);
             LLVMValueRef trans_fn_args[] = { str, len, cp,
                                              last_accept_id, last_accept_offset,
-                                             assert_first, assert_last,
+                                             JIT_ASSERTION(JRX_ASSERTION_NONE), assert_last,
                                              match_state };
             LLVMValueRef trans_result = LLVMBuildCall(b, jit_dfa_state_fn_ref(ci, trans.succ),
-                                                      trans_fn_args, 6, "");
+                                                      trans_fn_args, 8, "");
             LLVMSetTailCall(trans_result, 1); // do i need to use LLVMGetLastInstruction?
             LLVMBuildRet(b, trans_result);
 
@@ -405,8 +415,8 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
         JIT_ENTER_BLOCK(b, fn, "jammed");
 
         last_accept_id =
-            LLVMBuildSelect(b, LLVMBuildICmp(b, LLVMIntEQ, last_accept_id, JIT_NEG_ONE, ""),
-                            JIT_ZERO,
+            LLVMBuildSelect(b, LLVMBuildICmp(b, LLVMIntEQ, last_accept_id, JIT_ACCEPT_ID(-1), ""),
+                            JIT_ACCEPT_ID(0),
                             last_accept_id,
                             "");
 
