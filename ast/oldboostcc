@@ -1,0 +1,18 @@
+#if 0
+template<typename AstInfo>
+class _ValueVisiter : public boost::static_visitor<shared_ptr<Node>>
+{
+public:
+   shared_ptr<Node> operator()(shared_ptr<Node> node) {
+       return node;
+   }
+};
+
+
+template<typename AstInfo>
+inline shared_ptr<Node> Scope<AstInfo>::ValueToNode(const Value& Value)
+{
+    return boost::apply_visitor(_ValueVisiter<Node>(), Value);
+
+}
+#endif

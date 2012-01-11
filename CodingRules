@@ -1,0 +1,12 @@
+
+Passing pointers into functions:
+
+    - Use real pointers ("*") only if the function doesn't store the
+      pointer beyond its return; or internally in private methods if
+      you know what you are doing.
+
+    - Use unique_ptr if the function takes ownership.
+
+    - Use shared_ptr otherwise (probably the most common case).
+
+* Pass references only as const.    

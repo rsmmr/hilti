@@ -1,0 +1,340 @@
+#! /usr/bin/env python
+#
+# Command-line compiler driver for HILTI programs.
+
+import site
+import sys
+import os.path
+import optparse
+import subprocess
+import time
+
+Version = 0.2
+
+Target = "<unknown>"
+
+Cc           = "clang"                    # Note, we really need clang.
+Ld           = "llvm-ld"                  # Same here.
+CcOptSpec    = "-O3"                      # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
+OptOptSpec   = "-std-compile-opts -std-link-opts"
+
+# Search file in shell PATH. Returns None if not found.
+def findInPATH(file):
+    hc = os.path.join(os.path.dirname(sys.argv[0]), "../hilti-config")
+    hc = os.path.abspath(hc)
+
+    for dir in os.environ["PATH"].split(":") + [hc]:
+        p = os.path.join(dir, file)
+        if os.path.exists(p):
+            return p
+    else:
+        return None
+
+# Find a *-configure tool. Aborts if not found.
+def findConfigTool(tool):
+    # Look for an environment variable.
+    env = tool.upper().replace("-", "_")
+    if env in os.environ:
+        path = os.environ[env]
+        if not os.path.exists(path):
+            print >>sys.stderr, "%s set to %s but path does not exist" % (env, path)
+            sys.exit(1)
+
+        return os.environ[env]
+
+    # Search in the same directory as we are in.
+    dir = os.path.dirname(sys.argv[0])
+    path = os.path.join(dir, tool)
+    if os.path.exists(path):
+        return path
+
+    # Search PATH.
+    path = findInPATH(tool)
+
+    if not path:
+        print >>sys.stderr, "cannot find %s, aborting." % tool
+
+# Run a *-config tool to get an option.
+def runConfig(path, option):
+    try:
+        options = [option]
+        if Options and not Options.optimize:
+            options = ["--debug"] + options
+
+        return subprocess.Popen([path] + options, stdout=subprocess.PIPE).communicate()[0].strip()
+    except:
+        return ""
+
+# Report a message if verbose output is requested.
+def verbose(msg):
+    if Options.verbose:
+        print >>sys.stderr, msg
+
+def error(msg):
+    print >>sys.stderr, msg
+    removeTmps();
+    sys.exit(1)
+
+# Start timer to measure duration of a tool execution. In verbose mode, it also
+# prints the "phase" string given. If time measurement are disabled, it does
+# nothing else.
+def timeStart(phase):
+    if Options.verbose:
+        print >>sys.stderr, "  >", phase,
+
+        if Options.time:
+            global TimerStart
+            TimerStart = time.time()
+
+        else:
+            print >>sys.stderr
+
+# Stop timer to measure duration of a tool execution. Does nothing if time
+# measurement disabled.
+def timeStop():
+    if Options.time:
+        print >>sys.stderr, "(%.2fs)" % (time.time() - TimerStart)
+
+Tmps = []
+
+# Record a file as a tmp that will be deleted automatically at termination.
+def registerTmp(tmp):
+    global Tmps
+    Tmps += [tmp]
+
+# Deletes all files recorded as being tmp files.
+def removeTmps():
+    if Options.tmps:
+        return
+
+    for output in Tmps:
+        try:
+            os.unlink(output)
+        except OSError:
+            pass
+
+# Takes a list of argumens and turns them into space-separated string, but
+# make sure to include each only once.
+def uniqueArgs(args):
+    t = []
+    [t.append(i) for i in args if not t.count(i)]
+    return " ".join(t)
+
+Used = set()
+
+def makeOutput(input, dstext):
+    global used
+
+    cnt = 0
+    while True:
+        cnt += 1
+        (root, ext) = os.path.splitext(input)
+        cntext = "-%d" % cnt if cnt > 1 else ""
+        output = "%s.hb%s%s.tmp.%s" % (os.path.basename(root), os.getpid(), cntext, dstext)
+
+        if not output in Used:
+            break
+
+    registerTmp(output)
+    Used.add(output)
+    return output
+
+def execute(cmd):
+    timeStart(cmd)
+    result = os.system(cmd)
+    timeStop()
+    return result == 0
+
+### Compile and lin function.
+
+# Compile C and C++ files into LLVM bitcode.
+def compileC(input, output, cxx):
+
+    tag = "cxx" if cxx else "c"
+
+    try:
+        flags = os.environ.get("%sFLAGS" % tag.upper(), "").split()
+    except:
+        flags = []
+
+    flags += ["-c", "-emit-llvm", "-g", "-fno-color-diagnostics", "-O0"]
+    flags += runConfig(HiltiConfig, "--%sflags" % tag).split()
+    flags = uniqueArgs(flags)
+
+    cc = "%s %s -o %s %s" % (Cc, flags, output, input)
+
+    if not execute(cc):
+        error("error compiling %s, aborting" % input)
+
+# Compile HILTI and LLVM files.
+def runHiltic(inputs, output):
+    try:
+        flags = os.environ.get("HILTICFLAGS", "").split()
+    except:
+        flags = []
+
+    for i in range(Options.debug):
+        flags += ["-d"]
+
+    if Options.libhiltimain:
+        flags += runConfig(HiltiConfig, "--hiltic-flags-main").split()
+    else:
+        flags += runConfig(HiltiConfig, "--hiltic-flags").split()
+
+    flags = uniqueArgs(flags)
+
+    inputs = " ".join(inputs)
+    path = runConfig(HiltiConfig, "--hiltic-binary")
+    hiltic = "%s %s -b -o %s %s" % (path, flags, output, inputs)
+
+    if not execute(hiltic):
+        error("error running hiltic, aborting")
+
+def optimize(input, output):
+    opt = "opt -f %s -o=%s %s" % (OptOptSpec, output, input)
+    return execute(opt)
+
+def nativeLink(input, output):
+    try:
+        flags = os.environ.get("LDFLAGS", "").split()
+    except:
+        flags = []
+
+    flags += ["-g"]
+    flags += runConfig(HiltiConfig, "--ldflags").split()
+    flags += runConfig(HiltiConfig, "--libs").split()
+
+    if Options.optimize:
+        flags += [CcOptSpec]
+
+    flags = uniqueArgs(flags)
+
+    cc = "%s %s -o %s %s" % (Cc, flags, output, input)
+
+    if not execute(cc):
+        error("error linking %s to native executable, aborting" % input)
+
+### Command line options.
+
+def parseOptions():
+    # Collect additional -I arguments.
+    def import_path_callback(option, opt, value, parser):
+        global ImportPaths
+        ImportPaths += [value]
+
+    version = "hilti-build2 %s\ntarget: %s" % (Version, Target)
+    usage = """%prog [options] -o <output> <inputs>
+
+Input files may be end in one of the following extensions:
+
+    *.hlt     - HILTI files
+    *.ll      - LLVM assember file
+    *.bc      - LLVM bitcode files
+    *.c       - C files.
+    *.cc      - C++ files.
+"""
+
+    optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=version)
+
+    optparser.add_option("-o", "--output", action="store", type="string", dest="output", default=None,
+                         help="Name of destination (mandatory).", metavar="FILE")
+    optparser.add_option("-m", "--main", action="store_false", dest="libhiltimain", default=True,
+                         help="Link with libhilti instead of libhiltimain.")
+    optparser.add_option("-T", "--time", action="store_true", dest="time", default=False,
+                         help="Time individual steps (implies --verbose)")
+    optparser.add_option("-t", "--tmps", action="store_true", dest="tmps", default=False,
+                         help="Create and leave files with intermediary outputs.")
+    optparser.add_option("-l", "--llvm", action="store_true", dest="print_llvm", default=False,
+                         help="Write out the final LLVM assembly code.")
+    optparser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                         help="Output information about intermediary steps.")
+    optparser.add_option("-O", "--optimize", action="store_true", dest="optimize", default=False,
+                         help="Apply optimizations.")
+#    optparser.add_option("-P", "--prototypes", action="store_true", dest="proto", default=False,
+#                         help="Generate just prototypes for all *.hlt files (including generated ones).")
+    optparser.add_option("-b", "--bc", action="store_true", dest="bitcode", default=False,
+                         help="Produce a bitcode file for JITing rather than an executable.")
+    optparser.add_option("-d", "--debug", action="count", dest="debug", default=0,
+                         help="Compile HILTI code with debugging support; multiple times increases level.")
+#    optparser.add_option("-S", "--stack-size", action="store", type="int", dest="stack", default=0,
+#                         help="Default HILTI stack size. Default is allocate each frame independently.")
+#    optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
+#                         help="Add DIR to search path for imports", metavar="DIR")
+#    optparser.add_option("-F", "--profile", action="count", dest="profile", default=0,
+#                         help="Enable profiling support; each time this option is given, the profiling level is increased by one")
+
+    (options, args) = optparser.parse_args()
+
+    if len(args) < 1:
+        optparser.error("no input file specified")
+
+    if not options.output and not options.print_llvm: # and not options.proto:
+        optparser.error("no output file specified")
+
+    if options.time:
+        options.verbose = True
+
+    global Options
+    Options = options
+
+    return args
+
+### Main.
+
+HiltiConfig = findConfigTool("hilti-config")
+
+inputs = parseOptions()
+
+files = {}
+
+for ext in [".hlt", ".c", ".cc", ".cxx", ".cpp", ".ll", ".bc"]:
+    files[ext] = []
+
+for input in inputs:
+
+    (root, ext) = os.path.splitext(input)
+
+    if ext in files:
+        files[ext] += [input]
+
+    else:
+        error("unsupported input file %s" % input)
+
+for input in files[".c"]:
+    verbose("compiling %s ..." % input)
+    output = makeOutput(input, "bc")
+    compileC(input, output, False)
+    files[".bc"] += [output]
+
+for input in files[".cc"] + files[".cxx"] + files[".cpp"]:
+    verbose("compiling %s ..." % input)
+    output = makeOutput(input, "bc")
+    compileC(input, output, True)
+    files[".bc"] += [output]
+
+output = Options.output if Options.output else "no-output-name"
+output = makeOutput(output, "bc")
+
+runHiltic(files[".hlt"] + files[".ll"] + files[".bc"], output)
+
+if Options.optimize:
+    input = output
+    output = makeOutput(output, "opt.bc")
+    optimize(input, output)
+
+input = output
+
+if Options.print_llvm:
+    output = ">%s" % Options.output if Options.output else ""
+    execute("llvm-dis <%s %s" % (input, output))
+
+elif Options.bitcode:
+    # We're done.
+    os.rename(input, Options.output)
+
+else:
+    # Produce the executable.
+    nativeLink(input, Options.output)
+
+removeTmps()
+sys.exit(0)

@@ -1,0 +1,7 @@
+#
+# Instantiates RTTI libhilti needs.
+#
+
+module LibHILTIRtti
+
+export string

@@ -1,0 +1,107 @@
+
+ToDo
+====
+
+Note that generally much of HILTI's functionality is not yet
+implemented in the new C++ based compiler. This section records
+specific todo items in addition to that.
+
+AST Infrastructure
+------------------
+
+* We should have two types of IDs, ScopedID and UnscopedID, both
+  derived from the same base. Then we can use whatever is appropiate
+  (scoped for all declarations, and unscoped for all references).
+
+* We should split type::function::Parameter into two classes, one for
+  actual parameters and one for return values.
+
+C/C++ Code
+----------
+
+The Doxygen documentation `tracks todos <doxygen/todo.html>`_ 's that
+are marked directly in the code.
+
+Links
+-----
+
+Some of these could be useful in one way or the other.
+
+- Sunrise DD: A hash table implementation with lock-free concurrent
+  access. Looks pretty complex though, and does not make sense to
+  use until we have settled on a data model for multi-threading.
+
+  http://www.sunrisetel.net/software/devtools/sunrise-data-dictionary.shtml
+
+- Look at http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for an
+  alternative (and extremely small) UTF-8 decoder.
+
+- LGPL Aho-Corasick implementation.
+
+Optimizations
+-------------
+
+Here we collect some thoughts on code optimization we could apply at
+the HILTI and LLVM levels.
+
+HILTI Level
+~~~~~~~~~~~
+
+- Track which fields of a struct are actually needed. Those which are
+  not read (or not used at all), can be removed for non exported
+  types.
+
+  Potentially, a struct could be empty afterwards, in which case can
+  remove it completely, including all references to it.
+
+- Track locals which have the same type but are never used
+  concurrently.  They can be merged into a single local.
+
+- There are probably a number of micro-optimizations easy and
+  worthwhile doing. Look at generated HILTI code.
+
+- Dead-code elimination, in particular remove all code for hooks which
+  are never run.
+
+  While LLVM already does eliminate dead code, doing it at the HILTI
+  level as well allows the other optimization above to kick in.
+
+- Inlining at the HILTI level; again, this will allow more
+  optimizations to kick in.
+
+- Can we identify cases where we can combine nested structures into
+  a single one? Might be hard to do in general, but seems there
+  could a few specific cases, particularly coming out of BinPAC,
+  where it will be helpful.
+
+- BinPAC++ uses a ``__cur`` field in the parse objects to allow hooks
+  to change the current parsing position. Before a hook is run, that
+  field is set to the current position and afterwards its value is
+  written back to the current position. A hook can change it in
+  between. However, most of the time there is no change and the
+  compiler should optimize then that field away.
+
+- We currently need the ``__clear`` attribute for function parameters
+  as well as the ``clear`` instruction for values to explicitly remove
+  no longer necessary memory references that prevent the GC from
+  cleaning things up. Seems both of these could be figured out by the
+  optimizer automatically so that references are always cleared as
+  soon as helpful if it would help with GC.
+
+  In addition, this analysis could also be used to generally better
+  use variables once we figured out that their old values won't be
+  used anymore. 
+
+LLVM Level
+~~~~~~~~~~
+
+Misc
+----
+
+The documentation should be generated under the top-level ``build/``
+directory, not in ``doc/build/``.
+
+ToDos Recorded in Sphinx
+------------------------
+
+.. todolist::

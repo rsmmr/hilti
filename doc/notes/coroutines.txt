@@ -1,0 +1,143 @@
+
+void coroutine_new(coro*, func, args, excpt, ctx)
+    Creates a new coroutine func(args), giving it its own stack.
+
+int coroutine_run(coro*, excpt, ctx)
+    Transfers control to coro.
+        - Sets ctx->on_yield.
+        - Clears ctx->excpt.    (if it gets set, we have an exception)
+        - Clears ctx->on_resume (if it gets set, we have yielded).
+        - Starts coro.
+
+    If it exists normally, it comes back with excpt cleared and
+    releases the stack.
+
+    If it yields, it comes back with excpt set to YieldExcpt, with
+    resume information set and stack maintained.
+
+    If it exists with an uncaught exception, it comes back with expct
+    set and releases the stack.
+
+void coroutine_yield(ctx)
+     - sets ctx->on_resume
+     - transers to ctx->on_yield
+     - on return:
+        If abort requested, throw AbortException to clean up the stack.
+
+void coroutine_uncaught_exception(ctx)
+     - keeps ctx->excpt set.
+     - clears ctx->on_resume
+     - transfers to ctx->on_yield
+
+void coroutine_delete(coro*)
+    Deletes all resources asscoiated with coro (in particular,
+    releases the stack). To do that, we mark the coro for abort (not
+    sure yet how[1]) and then resume it. The yield checks for the mark
+    and cleans up the stack. Once done, we can release it.
+
+    [1] Perhaps by clearing ctx->on_yield? And perhaps we want to do
+    the check *before* the yield then?
+
+---------------------------------------------------------------------
+
+rtype func_wrapper(args, excpt)
+{
+    ctx = hlt_global_execution_context();
+
+    result = alloca rtype;
+    coro callee;
+    coroutine_new(&callee, func_wrapper_enter, result + args, excpt, ctx);
+    coroutine_run(&callee, excpt, ctx);
+    return result;
+}
+
+rtype func_wrapper_resume(yexcpt, excpt)
+{
+    ctx = hlt_global_execution_context();
+    coroutine_run(yexcpt->on_resume, excpt, ctx);
+    return result ??? how do we get that ??? the alloca isn't valid
+    anymore ...;
+}
+
+void func_wrapper_enter(result, args, ctx)
+{
+    try {
+         *result = __func(args);
+    }
+    catch ( e ) {
+         // Reset in context.
+         ctx->excpt = e;
+    }
+}
+
+"yield" statement:
+    coro_yield(ctx);
+
+---------------------------------------------------------------------
+
+continuation
+    registers
+    stack
+    pc
+
+
+execution_context
+    ucontext on_yield
+    ucontext on_resume
+
+    stack_pool spool;
+
+    volatile status { RUNNING, YIELDED, EXITING } status
+
+c-hilti func_wrapper(args)
+{
+    ctx->status = RUNNING
+
+    getcontext(ctx->on_yield)
+
+    if ( ctx->status == YIELD ) {
+        return YieldException(on_resume);
+
+    ucontext callee
+    getcontext(callee)
+    callee.stack = get_stack(ctx->spool);
+
+    ctx->status = BEFORE_CALL
+    getcontext(callee.on_exit)
+
+    alloca result
+
+    if ( ctx->status == AFTER_CALL ) {
+        release_stack(callee_stack)
+        return result;
+    }
+
+    ctx->status = AFTER_CALL;
+    makecontext(callee, func_wrapper_enter, &result, args)
+    setcontext(callee)
+    // Doesn't return.
+    }
+}
+
+c-hilti func_wrapper_enter(result, args)
+{
+   *result = func();
+}
+
+c-hilti func_wrapper_exit()
+{
+}
+
+c-hilti func_wrapper_resume(excpt)
+{
+    ctx->status = RUNNING;
+    setcontext(excpt->on_resume);
+}
+
+"yield" statement:
+    ctx->status = YIELDING
+    swapcontext(ctx->on_resume, ctx->on_yield);
+
+
+
+

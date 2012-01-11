@@ -1,0 +1,82 @@
+#! /usr/bin/env bash
+#
+# Checks hiltic's print option (-p) in two ways:
+#
+#   * It runs 'hiltic -p' two times: first on the original program $1
+#     and then on the output of the first run. The two outputs are
+#     then compared to make sure that they are equivalent.
+#
+#   * If they are equivalent, it writes the results of the first -p
+#     into $2, which can then be used by the tester to perform the
+#     regression test.
+#
+# The script reads $1 and convertes that into $2, it can be used as
+# an external filter for "tester".
+#
+# If $1 does not end in ".hlt", the script just copies it over to $2
+# and does nothing otherwise.
+
+function error {
+
+    if [ "$TEST_DIAGNOSTICS" ]; then
+        out=$TEST_DIAGNOSTICS
+    else
+        out=/dev/stdout
+    fi
+
+    echo "== HILTI printer test: $1 =======================" >$out
+    echo >>$out
+    cat $diag >>$out
+
+    if [ "$2" != "" ]; then
+        echo >>$out
+        echo "== File =======================" >>$out
+        cat $2 >>$out
+    fi
+
+    exit 1
+}
+
+function delete_tmps {
+     rm -f $tmp1 $tmp2 $diag
+}
+
+trap delete_tmps 0
+
+if [ "$#" != 2 ]; then
+   echo "usage: $0 <input> <output>"
+   exit 1
+fi
+
+input=$1
+output=$2
+
+echo $1 | grep -q '\.hlt$'
+if [ $? == 1 ]; then
+   cat $1 >$2
+   exit 0
+fi
+
+if [ "$HILTI_CONFIG" = "" ]; then
+    HILTI_CONFIG=`which hilti-config`
+fi
+
+if [ "$HILTI_CONFIG" = "" ]; then
+    echo "Cannot find hilti-config. Set HILTI_CONFIG or put it into PATH." >&2
+    exit 1
+fi
+
+base=`basename $input`
+ext=${base##*.}
+
+tmp1=$1.printer-test-$$-1.tmp.$ext
+tmp2=$1.printer-test-$$-2.tmp.$ext
+diag=$1.printer-test-$$-diag.tmp
+
+hiltic="`$HILTI_CONFIG --hiltic-binary` -I`$HILTI_CONFIG --libhilti`"
+
+$hiltic -p -o $tmp1 $input 2>$diag || error "hiltic failed with input file"
+$hiltic -p -o $tmp2 $tmp1  2>$diag || error "hiltic failed with the output of the initial hiltic run" $tmp1
+diff -u $tmp1 $tmp2 >$diag || error "differences between hiltic outputs"
+
+cp $input $output
