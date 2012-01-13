@@ -239,6 +239,9 @@ reference-counted objects:
 Exception Handling
 ------------------
 
+See this thread:
+    http://groups.google.com/group/llvm-dev/browse_thread/thread/f04c4ed8df41bbb6/a65e630d24b76cdb?show_docid=a65e630d24b76cdb
+
 TODO.
 
 Continuations

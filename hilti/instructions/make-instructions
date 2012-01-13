@@ -1,0 +1,108 @@
+#! /usr/bin/env bash
+#
+# Autogenerates files with support code implementing instructions.
+#
+# In a parallel build, cmake sometimes starts this twice in parallel.
+# We protect against that somewhat by using PIDs in file names,
+# which seems to work, even though in principle there's still a small
+# race condition left.
+#
+# This creates:
+#
+#     instructions.h
+#     instructions-declare.h
+#     instructions-visits.h
+#     instructions-stmt-builder.h
+#     instructions-register.cc
+
+targets="instructions.h instructions-declare.h instructions-visits.h instructions-register.cc instructions-stmt-builder.h"
+
+if [ $# -le 2 ]; then
+    echo "usage: `basename $0` <source-directory> <target-directory> *.h"
+    exit 1
+fi
+
+src=$1
+dst=$2
+shift
+shift
+
+hdrs=$@
+
+tmp=$dst/make-instructions.tmp.$$
+
+cd $src
+
+## Get the names of all instruction classes (e.g., "integer::Add").
+cat $hdrs | grep -h '^[\t ]*iBegin' | sed 's/.*(\(.*\) *, ".*)/\1/g' | sed 's/, /::/g' | sort >$tmp
+
+##### Create instructions-register.cc that registers all instructions with the InstructionRegistry.
+
+cat >$dst/instructions-register.cc.$$ <<EOF
+
+#include "../hilti.h"
+#include "autogen/instructions.h"
+
+using namespace hilti;
+
+void InstructionRegistry::addAll()
+{
+EOF
+
+cat $tmp | while read line; do
+    echo "    implementInstruction($line);" >>$dst/instructions-register.cc.$$
+done
+
+echo '}' >>$dst/instructions-register.cc.$$
+
+##### Create instructions.h that includes all the instruction *.h files.
+
+cat >$dst/instructions.h.$$ <<EOF
+
+#ifndef HILTI_INSTRUCTIONS_INSTRUCTIONS_H
+#define HILTI_INSTRUCTIONS_INSTRUCTIONS_H
+
+#include "instructions/define-instruction.h"
+
+EOF
+
+for h in $hdrs; do
+    echo "#include \"instructions/$h\"" >>$dst/instructions.h.$$
+done
+
+echo >>$dst/instructions.h.$$
+echo "#endif" >>$dst/instructions.h.$$
+
+#### Create instructions-declare.h that declares all instruction statement classes, and 
+#### instructions-visits.h with visit() methods for all instruction statement classes, and
+#### instructions-stmt-builder.h with visit() methods for the statement builder.
+
+cat </dev/null >$dst/instructions-declare.h.$$
+cat </dev/null >$dst/instructions-visits.h.$$
+cat </dev/null >$dst/instructions-stmt-builder.h.$$
+
+cat $tmp | while read line; do
+    ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
+    cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
+    echo "namespace statement { namespace instruction { namespace $ns { class $cls; } } };" >>$dst/instructions-declare.h.$$
+    echo "       virtual void visit(statement::instruction::$ns::$cls* i) {}" >>$dst/instructions-visits.h.$$
+    echo "       void visit(statement::instruction::$ns::$cls* i) override;" >>$dst/instructions-stmt-builder.h.$$
+done
+
+#### Cleanup.
+
+rm -f $tmp
+
+### Move to its right place.
+
+for t in $targets; do
+    mv $dst/$t.$$ $dst/$t
+done
+
+
+
+
+
+
+
+

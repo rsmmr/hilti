@@ -37,6 +37,25 @@ LLVM assembly (included generated code)
 Adding Instructions [Missing]
 -----------------------------
 
+You need to make the instruction known to HILTI
+``hilti/instructions/`` and add code-generation in ``hilti/codegen/``.
+
+Here're the steps:
+
+    * If your new instruction starts a new semantical group (like all
+      instructions associated with a specific type), create a new file
+      ``<group>.h`` in ``hilti/instructions/``, and the file to the
+      ``instructions`` variable in
+      ``hilti/instructions/CMakeList.txt``.
+
+      Also add a comment header describing the group. For type's, add
+      blocks ``\type`` with the type's name, followed by a general
+      description; ``\ctor <example>`` with examples of creating
+      instance of the type if it has constants or ctors; and
+      ``\cproto`` with the C type it will be mapped to. The easiest is
+      to copy a template from an existing type.
+          
+
 Adding Types [Partially Missing]
 --------------------------------
 

@@ -7,7 +7,7 @@
 ///
 /// \cproto hlt_string
 
-iBegin(string, Cat, "string.cat")
+iBegin(string, Concat, "string.concat")
     iTarget(type::String)
     iOp1(type::String, true)
     iOp2(type::String, true)

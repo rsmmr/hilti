@@ -24,7 +24,10 @@ iBegin(integer, Add, "int.add")
             error(op1, "op2 does not match with width of target");
     }
 
-    iDoc("Calculates the sum of the two operands. Operands and target must be of same width. The result is calculated modulo 2^{width}.")
+    iDoc(R"(
+        Calculates the sum of the two operands. Operands and target must be of same width.
+        The result is calculated modulo 2^{width}.
+    )")
 iEnd
 
 iBegin(integer, Sub, "int.sub")

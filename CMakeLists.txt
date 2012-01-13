@@ -34,8 +34,4 @@ add_subdirectory(util)
 add_subdirectory(hilti)
 add_subdirectory(tools)
 
-link_directories(${HILTI_BINARY_DIR}/ast)
-link_directories(${HILTI_BINARY_DIR}/hilti)
-link_directories(${HILTI_BINARY_DIR}/util)
-
 include(ShowCompilerSettings)

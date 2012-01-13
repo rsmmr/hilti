@@ -1,9 +1,10 @@
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../hilti)
 
 FindRequiredPackage(LLVM)
 
-set(LIBS ast hilti util passes codegen)
+set(LIBS ast hilti util)
 
 add_executable(hiltic hiltic.cc)
 

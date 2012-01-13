@@ -13,4 +13,3 @@ bison_target(Parser parser.yy
 flex_target(Scanner scanner.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cc)
 
 ADD_CUSTOM_TARGET(generate_parser DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/parser.cc ${CMAKE_CURRENT_BINARY_DIR}/scanner.cc)
-
