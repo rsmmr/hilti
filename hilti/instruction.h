@@ -10,7 +10,7 @@
 
 namespace hilti {
 
-namespace statement { namespace instruction { class Resolved; } } 
+namespace statement { namespace instruction { class Resolved; } }
 
 class InstructionRegistry;
 extern unique_ptr<InstructionRegistry> theInstructionRegistry;
@@ -73,7 +73,7 @@ protected:
    }
 
 
-   /// Examines a set of operands for overload resolution. 
+   /// Examines a set of operands for overload resolution.
    /// InstructionRegistry::getMatching() calls this method for overload
    /// resolution to see if a set of operands is compatible with the
    /// instruction's signature. Note that this does just simple type-checks.
@@ -92,6 +92,37 @@ protected:
    ///
    /// msg: An error message for the user.
    void error(Node* op, string msg) const;
+
+   /// Method to report errors found by validate(). This forwards to the
+   /// current passes::Validator.
+   ///
+   /// op: The AST node triggering the error.
+   ///
+   /// msg: An error message for the user.
+   void error(shared_ptr<Node> op, string msg) const {
+       return error(op.get(), msg);
+   }
+
+   /// calls error(). This is primarily intended to be called from
+   /// __validate().
+   ///
+   /// op: The operand to coercion for.
+   ///
+   /// dst: The type to coerce into.
+   ///
+   /// Returns: True if coercion is possible.
+   bool canCoerceTo(shared_ptr<Expression> op, shared_ptr<Type> target) const;
+
+   /// Checks whether an operand can be coerced into the type of a given
+   /// target expression. If not, calls error(). This is primarily intended
+   /// to be called from __validate().
+   ///
+   /// op: The operand to coercion for.
+   ///
+   /// dst: The type to coerce into.
+   ///
+   /// Returns: True if coercion is possible.
+   bool canCoerceTo(shared_ptr<Expression> op, shared_ptr<Expression> target) const;
 
    // For internal use only. Will be overridden automagically via macros.
    virtual void __validate(const hilti::instruction::Operands& ops) const {}

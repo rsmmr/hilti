@@ -56,6 +56,27 @@ void Instruction::error(Node* op, string msg) const
     _validator->error(op, msg);
 }
 
+bool Instruction::canCoerceTo(shared_ptr<Expression> op, shared_ptr<Type> target) const
+{
+    if ( op->canCoerceTo(target) )
+        return true;
+
+    error(op, util::fmt("operand type %s not compatible with type %s",
+                        op->type()->repr().c_str(), target->repr().c_str()));
+    return false;
+}
+
+
+bool Instruction::canCoerceTo(shared_ptr<Expression> op, Expression* target) const
+{
+    if ( op->canCoerceTo(target->type()) )
+        return true;
+
+    error(op, util::fmt("operand type %s not compatible with target type %s",
+                        op->type()->repr().c_str(), target->type()->repr().c_str()));
+    return false;
+}
+
 shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(shared_ptr<Instruction> instr, shared_ptr<statement::Instruction> stmt)
 {
     instruction::Operands new_ops;

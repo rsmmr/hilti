@@ -141,10 +141,10 @@ static inline bool __checkType(shared_ptr<Expression> expr)
 /// operands.
 #define iValidate \
        void __validate(const hilti::instruction::Operands& ops) const override { \
-           Expression* target(ops[0].get()); \
-           Expression* op1(ops[1].get()); \
-           Expression* op2(ops[2].get()); \
-           Expression* op3(ops[3].get());
+           shared_ptr<Expression> target(ops[0].get_shared()); \
+           shared_ptr<Expression> op1(ops[1].get_shared()); \
+           shared_ptr<Expression> op2(ops[2].get_shared()); \
+           shared_ptr<Expression> op3(ops[3].get_shared());
 
 /// Defines the manual entry for an instruction, describing its semantics and
 /// operands.
