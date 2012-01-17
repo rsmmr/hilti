@@ -29,6 +29,22 @@ public:
    /// stmt: The statement.
    void llvmStatement(shared_ptr<Statement> stmt);
 
+   /// For a pair of expressions, returns the type of one expression into
+   /// which the other one can be coerded. Tries either way. If both ways
+   /// work, it's undefined which one is returned. If neither works, that's
+   /// an error and execution will be aborted.
+   ///
+   /// This is mainly a helper function for code generation from one of the
+   /// visit() methods.
+   ///
+   /// op1: The first expression.
+   ///
+   /// op2: The second expression.
+   ///
+   /// Returms: The type of either \c op1 (if \c op2 can be coerced into
+   /// that) or \c op2 (if op1 can be coerced into that).
+   shared_ptr<Type> coerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const;
+
 protected:
    void visit(statement::Block* b) override;
 
@@ -40,6 +56,7 @@ protected:
    #include <autogen/instructions-stmt-builder.h>
 
    void prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params);
+
 };
 
 }

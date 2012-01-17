@@ -66,8 +66,7 @@ bool Instruction::canCoerceTo(shared_ptr<Expression> op, shared_ptr<Type> target
     return false;
 }
 
-
-bool Instruction::canCoerceTo(shared_ptr<Expression> op, Expression* target) const
+bool Instruction::canCoerceTo(shared_ptr<Expression> op, shared_ptr<Expression> target) const
 {
     if ( op->canCoerceTo(target->type()) )
         return true;

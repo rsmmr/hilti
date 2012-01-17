@@ -43,3 +43,7 @@ declare void @hlt_object_ref(%hlt.type_info*, i8 *)
 declare void @hlt_object_unref(%hlt.type_info*, i8 *)
 
 declare %hlt.string* @hlt_string_from_data(i8*, i64, %hlt.exception**, %hlt.execution_context*)
+
+declare %hlt_abort()
+
+;;; Exception types used by the code generator.

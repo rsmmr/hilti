@@ -38,6 +38,12 @@ Some of these could be useful in one way or the other.
 
 - LGPL Aho-Corasick implementation.
 
+Instruction Set
+---------------
+
+- ``int.div`` is signed. We should replace that with ``int.sdiv`` and
+  ``int.udiv``.
+
 Optimizations
 -------------
 

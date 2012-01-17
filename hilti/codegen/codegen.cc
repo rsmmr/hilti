@@ -91,7 +91,7 @@ llvm::Value* CodeGen::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> s
     return _coercer->llvmCoerceTo(value, src, dst);
 }
 
-llvm::Type* CodeGen::llvmLibType(const char* name)
+llvm::Type* CodeGen::llvmLibType(const string& name)
 {
     auto type = lookupCachedType("libhilti", name);
 
@@ -101,7 +101,7 @@ llvm::Type* CodeGen::llvmLibType(const char* name)
     type = _libhilti->getTypeByName(name);
 
     if ( ! type )
-        internalError(::util::fmt("type %s not found in libhilti.ll", name));
+        internalError(::util::fmt("type %s not found in libhilti.ll", name.c_str()));
 
     // We need to recreate the type as otherwise the linker gets messed up
     // when we reuse the same library value directly (and in separate
@@ -153,7 +153,7 @@ llvm::Type* CodeGen::replaceLibType(llvm::Type* ntype)
     return ntype;
 }
 
-llvm::Function* CodeGen::llvmLibFunction(const char* name)
+llvm::Function* CodeGen::llvmLibFunction(const string& name)
 {
     llvm::Value* val = lookupCachedValue("function", name);
     if ( val )
@@ -161,7 +161,7 @@ llvm::Function* CodeGen::llvmLibFunction(const char* name)
 
     auto func = _libhilti->getFunction(name);
     if ( ! func )
-        internalError(::util::fmt("function %s not found in libhilti.ll", name));
+        internalError(::util::fmt("function %s not found in libhilti.ll", name.c_str()));
 
     // As we recreate the library types in llvmLibType, they now won't match
     // anymore what function prototype specify. So we need to recreate the
@@ -181,11 +181,11 @@ llvm::Function* CodeGen::llvmLibFunction(const char* name)
     return nfunc;
 }
 
-llvm::GlobalVariable* CodeGen::llvmLibGlobal(const char* name)
+llvm::GlobalVariable* CodeGen::llvmLibGlobal(const string& name)
 {
     auto glob = _libhilti->getGlobalVariable(name, true);
     if ( ! glob )
-        internalError(::util::fmt("global %s not found in libhilti.ll", name));
+        internalError(::util::fmt("global %s not found in libhilti.ll", name.c_str()));
 
     return glob;
 }
@@ -326,9 +326,33 @@ llvm::IRBuilder<>* CodeGen::pushBuilder(llvm::IRBuilder<>* builder)
 
 llvm::IRBuilder<>* CodeGen::pushBuilder(string name)
 {
-    auto block = llvm::BasicBlock::Create(llvmContext(), name, function());
+    return pushBuilder(newBuilder(name));
+}
+
+llvm::IRBuilder<>* CodeGen::newBuilder(string name)
+{
+    int cnt = 1;
+
+    name = util::mangle(name, false);
+
+    string n;
+
+    while ( true ) {
+        if ( cnt == 1 )
+            n = ::util::fmt(".%s", name.c_str());
+        else
+            n = ::util::fmt(".%s.%d", name.c_str(), ++cnt);
+
+        if ( _functions.back()->builders_by_name.find(n) == _functions.back()->builders_by_name.end() )
+            break;
+    }
+
+    auto block = llvm::BasicBlock::Create(llvmContext(), n, function());
     auto builder = new llvm::IRBuilder<>(block);
-    return pushBuilder(builder);
+
+    _functions.back()->builders_by_name.insert(std::make_pair(n, builder));
+
+    return builder;
 }
 
 void CodeGen::popBuilder()
@@ -1120,6 +1144,18 @@ llvm::CallInst* CodeGen::llvmCallC(llvm::Value* llvm_func, const value_list& arg
     return result;
 }
 
+llvm::CallInst* CodeGen::llvmCallC(const string& llvm_func, const value_list& args, bool add_hiltic_args)
+{
+    return llvmCallC(llvmLibFunction(llvm_func), args, add_hiltic_args);
+}
+
+void CodeGen::llvmRaiseException(const string& exception, shared_ptr<Node> node, llvm::Value* arg)
+{
+    /// TODO: Currently we just abort.
+    value_list no_args;
+    llvmCallC("hlt_abort", no_args, false);
+}
+
 llvm::CallInst* CodeGen::llvmCheckedCreateCall(llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name)
 {
     return util::checkedCreateCall(builder(), "CodeGen", callee, args, name);
@@ -1318,3 +1354,17 @@ void CodeGen::llvmCheckCException(llvm::Value* excpt)
     // Not yet implemented.
 }
 
+llvm::Value* CodeGen::llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm::Value* high)
+{
+    auto width = llvm::cast<llvm::IntegerType>(value->getType())->getBitWidth();
+
+    auto bits = builder()->CreateSub(llvmConstInt(width, width), high);
+    bits = builder()->CreateAdd(bits, low);
+    bits = builder()->CreateSub(bits, llvmConstInt(1, width));
+
+    auto mask = builder()->CreateLShr(llvmConstInt(-1, width), bits);
+
+    value = builder()->CreateLShr(value, low);
+
+    return builder()->CreateAnd(value, mask);
+}

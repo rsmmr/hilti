@@ -34,9 +34,15 @@ void codegen::Coercer::visit(type::Integer* t)
     auto val = arg1();
     auto dst = arg2();
 
-    assert(false);
+    shared_ptr<type::Bool> dst_b = ast::as<type::Bool>(dst);
 
-    setResult(val);
+    if ( dst_b ) {
+        auto width = llvm::cast<llvm::IntegerType>(val->getType())->getBitWidth();
+        auto result = builder()->CreateICmpEQ(val, cg()->llvmConstInt(0, width));
+        setResult(result);
+    }
+
+    assert(false);
 }
 
 void codegen::Coercer::visit(type::Tuple* t)

@@ -44,15 +44,15 @@ public:
 
    virtual ~Logger();
 
-   const string& loggerName() { return _name; }
+   const string& loggerName() const { return _name; }
    void setLoggerName(const string& name) { _name = name; }
 
    void forwardLoggingTo(Logger* logger) { _forward = logger; }
 
-   void fatalError(const string& message, const string& location = "");
-   void error(const string& message, const string& location = "");
-   void internalError(const string& message, const string& location = "");
-   void warning(const string& message, const string& location = "");
+   void fatalError(const string& message, const string& location = "") const;
+   void error(const string& message, const string& location = "") const;
+   void internalError(const string& message, const string& location = "") const;
+   void warning(const string& message, const string& location = "") const;
 
    int errors() const { return _errors; }
    int warnings() const { return _warnings; }
@@ -76,8 +76,8 @@ private:
    string _name;
    std::ostream& _output = std::cerr;
    Logger* _forward = nullptr;
-   int _warnings = 0;
-   int _errors = 0;
+   mutable int _warnings = 0;
+   mutable int _errors = 0;
 
 #ifdef DEBUG
    int _debug_level = 0;
@@ -86,7 +86,7 @@ private:
 
 protected:
    enum ErrorType { Warning, Error, Internal, Fatal };
-   virtual void doError(const string& message, const string& location, ErrorType type);
+   virtual void doError(const string& message, const string& location, ErrorType type) const;
 };
 
 }

@@ -21,6 +21,18 @@ void StatementBuilder::llvmStatement(shared_ptr<Statement> stmt)
     call(stmt);
 }
 
+shared_ptr<Type> StatementBuilder::coerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const
+{
+    if ( op1->canCoerceTo(op2->type()) )
+        return op2->type();
+
+    if ( op2->canCoerceTo(op1->type()) )
+        return op1->type();
+
+    internalError("incompatible types in Instruction::coerceTypes()");
+    return 0;
+}
+
 void StatementBuilder::visit(statement::Block* b)
 {
     bool in_function = in<declaration::Function>();

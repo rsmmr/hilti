@@ -192,12 +192,12 @@ public:
    string levelIndent() const;
 
    /// Forwards to Logger.
-   void error(NodeBase* node, string msg) {
+   void error(NodeBase* node, string msg) const {
        Logger::error(msg, node->location());
    }
 
    /// Forwards to Logger.
-   void error(shared_ptr<NodeBase> node, string msg) {
+   void error(shared_ptr<NodeBase> node, string msg) const {
        Logger::error(msg, node->location());
    }
 
@@ -207,47 +207,47 @@ public:
    }
 
    /// Forwards to Logger.
-   void internalError(NodeBase* node, string msg) {
+   void internalError(NodeBase* node, string msg) const {
        Logger::internalError(msg, node->location());
    }
 
    /// Forwards to Logger.
-   void internalError(shared_ptr<NodeBase> node, string msg) {
+   void internalError(shared_ptr<NodeBase> node, string msg) const {
        Logger::internalError(msg, node->location());
    }
 
    /// Forwards to Logger.
-   void internalError(string msg) {
+   void internalError(string msg) const {
        Logger::internalError(msg);
    }
 
    /// Forwards to Logger.
-   void fatalError(NodeBase* node, string msg) {
+   void fatalError(NodeBase* node, string msg) const {
        Logger::fatalError(msg, node->location());
    }
 
    /// Forwards to Logger.
-   void fatalError(shared_ptr<NodeBase> node, string msg) {
+   void fatalError(shared_ptr<NodeBase> node, string msg) const {
        Logger::fatalError(msg, node->location());
    }
 
    /// Forwards to Logger.
-   void fatalError(string msg) {
+   void fatalError(string msg) const {
        Logger::fatalError(msg);
    }
 
    /// Forwards to Logger.
-   void warning(NodeBase* node, string msg) {
+   void warning(NodeBase* node, string msg) const {
        Logger::warning(msg, node->location());
    }
 
    /// Forwards to Logger.
-   void warning(shared_ptr<NodeBase> node, string msg) {
+   void warning(shared_ptr<NodeBase> node, string msg) const {
        Logger::warning(msg, node->location());
    }
 
    /// Forwards to Logger.
-   void warning(string msg) {
+   void warning(string msg) const {
        Logger::warning(msg);
    }
 

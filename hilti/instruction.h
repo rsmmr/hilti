@@ -103,7 +103,8 @@ protected:
        return error(op.get(), msg);
    }
 
-   /// calls error(). This is primarily intended to be called from
+   /// Checks whether an operand can be coerced into a given target type. If
+   /// not, calls error(). This is primarily intended to be called from
    /// __validate().
    ///
    /// op: The operand to coercion for.
@@ -123,6 +124,20 @@ protected:
    ///
    /// Returns: True if coercion is possible.
    bool canCoerceTo(shared_ptr<Expression> op, shared_ptr<Expression> target) const;
+
+   /// Checks whether of two operands, one can be coerced into the other. It
+   /// doesn't matter which one would be the source and which the
+   /// destination. If coercion is not possible, calls error(). This is
+   /// primarily intended to be called from __validate().
+   ///
+   /// op1: The first operand.
+   ///
+   /// op2: The second operand.
+   ///
+   /// Returns: True if coercion is possible either way.
+   bool canCoerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const {
+       return canCoerceTo(op1, op2) || canCoerceTo(op2, op1);
+   }
 
    // For internal use only. Will be overridden automagically via macros.
    virtual void __validate(const hilti::instruction::Operands& ops) const {}

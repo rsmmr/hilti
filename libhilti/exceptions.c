@@ -148,8 +148,3 @@ void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_executio
     abort();
 }
 
-void __hlt_abort(void* fptr, void* eeos, void* ctx)
-{
-    fprintf(stderr, "internal HILTI error: hlt_abort() called");
-    abort();
-}

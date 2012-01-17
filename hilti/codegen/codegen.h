@@ -160,9 +160,10 @@ protected:
    /// Creates a new LLVM block and pushes a corresponding builder onto the
    /// stack of builders associated with the current function. A
    /// corresponding popBuilder() must eventually be called.
-   /// builder: The builder.
    ///
-   /// name: The name of the new block, or empty if none.
+   /// name: The name of the new block, or empty if none. Note that it might
+   /// be further mangled and made unique. If empty, the block will be
+   /// anonymous
    ///
    /// Returns: The LLVM IRBuilder.
    llvm::IRBuilder<>* pushBuilder(string name = "");
@@ -171,6 +172,17 @@ protected:
    /// with the current LLVM function(). Calls to this method must match
    /// those to pushBuilder().
    void popBuilder();
+
+   /// Creates a new LLVM block along with a corresponding builder. It does
+   /// however not push it onto stack of builders associated with the current
+   /// function.
+   ///
+   /// name: The name of the new block, or empty if none. Note that it might
+   /// be further mangled and made unique. If empty, the block will be
+   /// anonymous
+   ///
+   /// Returns: The LLVM IRBuilder.
+   llvm::IRBuilder<>* newBuilder(string name = "");
 
    /// Caches an LLVM value for later reuse. The value is identified by two
    /// string keys that can be chosen by the caller. lookupCachedValue() will
@@ -407,14 +419,14 @@ protected:
    /// Returns: The coerce value.
    llvm::Value* llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst);
 
-   /// Returns an LLVM type from \c libbhilti.ll. The method looks up a name
+   /// Returns an LLVM type from \c libhilti.ll. The method looks up a name
    /// in the library and returns the corresponding type. It's an error if
    /// the name doesn't define a type.
    ///
    /// name: The name to lookup.
    ///
    /// Returns: The LLVM type.
-   llvm::Type* llvmLibType(const char* name);
+   llvm::Type* llvmLibType(const string& name);
 
    /// Returns an LLVM function from \c libbhilti.ll. The method looks up a
    /// name in the library and returns the corresponding function. It's an
@@ -423,7 +435,7 @@ protected:
    /// name: The name to lookup.
    ///
    /// Returns: The LLVM type.
-   llvm::Function* llvmLibFunction(const char* name);
+   llvm::Function* llvmLibFunction(const string& name);
 
    /// Returns an LLVM global from \c libbhilti.ll. The method looks up a
    /// name in the library and returns the corresponding value. It's an error
@@ -433,7 +445,7 @@ protected:
    ///
    /// Returns: The LLVM global (which, as usual with LLVM, is a pointer to
    /// the actual value).
-   llvm::GlobalVariable* llvmLibGlobal(const char* name);
+   llvm::GlobalVariable* llvmLibGlobal(const string& name);
 
    /// Returns the type information structure for a type.
    ///
@@ -769,12 +781,41 @@ protected:
    /// Returns: The call instruction created.
    llvm::CallInst* llvmCallC(llvm::Value* llvm_func, const value_list& args, bool add_hiltic_args);
 
+   /// Generates a straight LLVM call to a C function defined in \c
+   /// libhilti.ll, without adapting parameters to HILTI'c calling
+   /// conventions.
+   ///
+   /// llvm_func: The function to call.
+   ///
+   /// args: The parameters to the call.
+   ///
+   /// add_hiltic_args: If true, the method does add the standard additional
+   /// \c C-HILTI arguments to the call.
+   ///
+   /// Returns: The call instruction created.
+   llvm::CallInst* llvmCallC(const string& llvm_func, const value_list& args, bool add_hiltic_args);
+
    /// Inserts code that checks with a \c C-HILTI function has raised an
    /// exception. If so, the code will reraise that as a HILTI exception.
    ///
    /// excpt: The value where the \c C-HILTI function would have stored its
    /// exception (i.e., usually the \c excpt parameter).
    void llvmCheckCException(llvm::Value* excpt);
+
+   /// Generates code to raise an exception. When executed, the code will
+   /// *not* return control back to the current block.
+   ///
+   /// exception: The name of the exception's type. The name must define an
+   /// exception type in \c libhilti.ll.
+   ///
+   /// node: A node to associate with the exception as its source. We use the
+   /// node location information.
+   ///
+   /// arg: The exception's argument if the type takes one, or null if not.
+   ///
+   /// \todo As we have not implemented exception yet, this currently just
+   /// aborts execution.
+   void llvmRaiseException(const string& exception, shared_ptr<Node> node, llvm::Value* arg = nullptr);
 
    /// Wrapper method to create an LLVM \c call instruction that first checks
    /// the call's parameters for compatibility with the function's prototype
@@ -880,6 +921,23 @@ protected:
    /// Returns: The extracted value.
    llvm::Constant* llvmConstExtractValue(llvm::Constant* aggr, unsigned int idx);
 
+   /// Extract a range of bits from an integer value. All three arguments
+   /// must be of same bitwidth.
+   ///
+   /// This mimics an old LLVM intrinsic which seems to have been removed (\c
+   /// INTR_PART_SELECT).
+   ///
+   /// value: The integer value to extract bits from.
+   ///
+   /// low: The number of the range's low bit.
+   ///
+   /// high: The number of the range's high bit.
+   ///
+   /// Returns: The extracted bits, shifted so that the lowest one alings at
+   /// bit zero. The result is undefined if the given range exceeds the bits
+   /// available.
+   llvm::Value* llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm::Value* hight);
+
 private:
    // Creates/finishes the module intialization function that will receive all global
    // code, and pushes it onto the stack.
@@ -936,6 +994,7 @@ private:
 
    typedef std::list<llvm::IRBuilder<>*> builder_list;
    typedef std::map<string, int> label_map;
+   typedef std::map<string, llvm::IRBuilder<>*> builder_map;
    typedef std::map<string, llvm::Value*> local_map;
    typedef std::list<std::pair<llvm::BasicBlock*, llvm::Value*>> exit_point_list;
 
@@ -943,6 +1002,7 @@ private:
        llvm::Function* function;
        llvm::BasicBlock* exit_block = nullptr;
        builder_list builders;
+       builder_map builders_by_name;
        label_map labels;
        local_map locals;
        local_map tmps;

@@ -7,7 +7,7 @@ Logger::~Logger()
 {
 }
 
-void Logger::error(const string& message, const string& location)
+void Logger::error(const string& message, const string& location) const
 {
     if ( _forward ) {
         _forward->error(message, location);
@@ -18,7 +18,7 @@ void Logger::error(const string& message, const string& location)
     doError(message, location, Error);
 }
 
-void Logger::internalError(const string& message, const string& location)
+void Logger::internalError(const string& message, const string& location) const
 {
     if ( _forward ) {
         _forward->internalError(message, location);
@@ -30,7 +30,7 @@ void Logger::internalError(const string& message, const string& location)
     abort();
 }
 
-void Logger::fatalError(const string& message, const string& location)
+void Logger::fatalError(const string& message, const string& location) const
 {
     if ( _forward ) {
         _forward->fatalError(message, location);
@@ -42,7 +42,7 @@ void Logger::fatalError(const string& message, const string& location)
     throw FatalLoggerError(message);
 }
 
-void Logger::warning(const string& message, const string& location)
+void Logger::warning(const string& message, const string& location) const
 {
     if ( _forward ) {
         _forward->warning(message, location);
@@ -53,7 +53,7 @@ void Logger::warning(const string& message, const string& location)
     doError(message, location, Warning);
 }
 
-void Logger::doError(const string& message, const string& location, ErrorType type)
+void Logger::doError(const string& message, const string& location, ErrorType type) const
 {
     string tag;
 

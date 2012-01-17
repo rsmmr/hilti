@@ -11,13 +11,6 @@ void Coercer::visit(type::Integer* i)
 {
     setResult(false);
 
-    shared_ptr<type::Integer> dst_i = ast::as<type::Integer>(arg1());
-
-    if ( dst_i && i->width() <= dst_i->width() ) {
-        setResult(true);
-        return;
-    }
-
     shared_ptr<type::Bool> dst_b = ast::as<type::Bool>(arg1());
 
     if ( dst_b ) {

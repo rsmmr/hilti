@@ -1,4 +1,6 @@
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <time.h>
 #include <unistd.h>
@@ -87,4 +89,9 @@ uint32_t hlt_hton32(uint32_t v)
 uint16_t hlt_hton16(uint16_t v)
 {
     return ntohs(v);
+
+void hlt_abort()
+{
+    fprintf(stderr, "internal HILTI error: hlt_abort() called");
+    abort();
 }

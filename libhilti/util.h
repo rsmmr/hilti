@@ -44,6 +44,9 @@ extern size_t hlt_util_memory_usage();
 ///
 // extern void hlt_pthread_setcancelstate(int state, int *oldstate);
 
+/// Aborts execution immediately with a core dump.
+void hlt_abort();
+
 // This is a noop as long as we aren't shutting down.
 // extern void hlt_pthread_setcancelstate(int state, int *oldstate);
 
