@@ -66,7 +66,7 @@ extern hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ct
 ///
 /// data: Pointer to the raw bytes.
 /// len: Number of raw byes starting at *data*.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: The new bytes object.
 extern hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -75,7 +75,7 @@ extern hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, hlt_bytes_size len
 ///
 /// b: The bytes object.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: The number of bytes stored in *b*.
 ///
@@ -86,7 +86,7 @@ extern hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt, h
 ///
 /// b: The bytes object.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Note: This test is more efficient than comparing the result of
 /// ~~hlt_bytes_len() to zero.
@@ -99,7 +99,7 @@ extern int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception** excpt, hlt_exe
 /// b1: The first byte object.
 /// b2: The second byte object.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: 0 if the two are equal; -1 if *b1* is lexicographically smaller
 /// than *b2*, and 1 if *b2* is lexicographically smaller than *b1*.
@@ -109,7 +109,7 @@ extern int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_except
 ///
 /// b: The bytes object to append to.
 /// other: The bytes object to append from.
-/// \chilti
+/// \hlt_c
 ///
 /// Raises: ValueError - If the two objects are the same, or *b* has been
 /// frozen.
@@ -122,7 +122,7 @@ extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exceptio
 /// b: The bytes object to append to.
 /// raw: A pointer to the beginning of the byte sequence to append.
 /// len: The number of bytes to append starting from *raw*.
-/// \chilti
+/// \hlt_c
 ///
 /// Raises: ValueError - If *b* has been frozen.
 extern void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -131,7 +131,7 @@ extern void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size
 ///
 /// b: The bytes object to search.
 /// chr: The byte to search.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: The position where the byte is found, or ~~hlt_bytes_end if not found.
 extern hlt_bytes_pos hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -140,7 +140,7 @@ extern hlt_bytes_pos hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception
 ///
 /// start: The start of the subsequence.
 /// end: The end of the subsequence; *end* itself is not included anymore.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: A new bytes object representing the subsequence.
 ///
@@ -151,7 +151,7 @@ extern hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exce
 ///
 /// start: The start of the subsequence.
 /// end: The end of the subsequence; *end* itself is not included anymore.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: A pointer to continuous memory containing the subsequence. The
 /// memory must not be altered nor freed. Only ``hlt_bytes_pos_diff(start,
@@ -168,7 +168,7 @@ extern const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, h
 ///
 /// b: The bytes object to duplicate.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: The new object.
 extern hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -176,7 +176,7 @@ extern hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execut
 /// Converts a bytes object into a raw C array.
 ///
 /// b: The object to convert.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: A pointer to continuous memory containing the bytes. The memory
 /// must not be altered nor freed. Only ``hlt_bytes_len(b)`` number of bytes
@@ -197,7 +197,7 @@ extern const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt,
 ///
 /// end: End position.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Raises: WouldBlock - If *pos* is already the end of bytes object.
 ///
@@ -213,7 +213,7 @@ extern int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, hlt_bytes_pos end, hlt
 /// Creates a new position object representing a specific offset.
 ///
 /// b: The bytes object to create the position for.
-/// \chilti
+/// \hlt_c
 ///
 /// offset: The offset within the object the position is to represent. The
 /// offset is zero-based and must not extend beyond the length of the
@@ -228,7 +228,7 @@ extern hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size offset,
 /// Returns a position representing the first element of a bytes object.
 ///
 /// b: The bytes object to return the beginning of.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: The position.
 extern hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -236,7 +236,7 @@ extern hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt, 
 /// Returns a position representing the end of any bytes object.
 ///
 /// b: The bytes object to return the beginning of.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: The position.
 extern hlt_bytes_pos hlt_bytes_end(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -259,7 +259,7 @@ extern hlt_bytes_pos hlt_bytes_generic_end(hlt_exception** excpt, hlt_execution_
 ///
 /// freeze: 1 to freeze, 0 to unfreeze.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Raises: ValueError - If the bytes object is empty.
 extern void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -269,7 +269,7 @@ extern void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt,
 ///
 /// b: The bytes object.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: 1 if frozen, 0 otherwise..
 extern int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -283,7 +283,7 @@ extern int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt, hlt
 ///
 /// pos: The position up to which to trim. Afterwards, the bytes object will start with the bytes located by *pos*.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Note that the result is undefined if the given iterator does actually not refer to a location inside the
 /// bytes object.
@@ -295,7 +295,7 @@ void hlt_bytes_trim(hlt_bytes* b, hlt_bytes_pos pos, hlt_exception** excpt, hlt_
 ///
 /// pos: The position.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: 1 if frozen, 0 otherwise..
 extern int8_t hlt_bytes_pos_is_frozen(hlt_bytes_pos pos, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -303,7 +303,7 @@ extern int8_t hlt_bytes_pos_is_frozen(hlt_bytes_pos pos, hlt_exception** excpt, 
 /// Extracts the element at a position.
 ///
 /// pos: The position to dereference.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: The element.
 ///
@@ -316,7 +316,7 @@ extern int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception** excpt, hlt_
 /// further increase such a position, it will be left untouched.
 ///
 /// pos: The position to increase.
-/// \chilti
+/// \hlt_c
 extern hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos pos, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Increases a position by a given number of positions. If this exceeds the
@@ -325,14 +325,14 @@ extern hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos pos, hlt_exception** excpt
 ///
 /// pos: The position to increase.
 /// n: The number of bytes to skip.
-/// \chilti
+/// \hlt_c
 extern hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos pos, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Compares two positions whether they refer to the same offset within a bytes object.
 ///
 /// pos1: The first position to be compared.
 /// pos2: The second position to be compares.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: True if the position refer to the same location. Returns false in
 /// particular when *pos1* and *pos2* do not refer to the same bytes object.
@@ -343,7 +343,7 @@ extern int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_excep
 ///
 /// pos1: The starting position.
 /// pos2: The end position; the byte pointed to by *pos* is not counted anymore. *end* must be >= *start*.
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: The number of bytes between *pos1* and *pos2*.
 ///
@@ -385,7 +385,7 @@ typedef struct hlt_bytes_block hlt_bytes_block;
 /// end: The end of the subsequence; *end* itself is not included anymore.
 /// Pass in the same value on all calls of a single iteration.
 ///
-/// \chilti
+/// \hlt_c
 ///
 /// Returns: Cookie for next call, or NULL if end has been reached. In the
 /// latter case, block will still contain the final data (which may have a

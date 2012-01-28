@@ -110,19 +110,3 @@ int64_t hlt_int_to_int64(const hlt_type_info* type, const void* obj, int32_t opt
         return (int64_t)_makeInt64Signed(type, obj);
 }
 
-uint64_t hlt_hton64(uint64_t v)
-{
-    void *p = &v;
-    return ((uint64_t)hlt_hton32(*(uint32_t*)p) << 32) | ((uint64_t)hlt_hton32(*(uint32_t*)(p + 4)));
-}
-
-uint32_t hlt_hton32(uint32_t v)
-{
-    return ntohl(v);
-}
-
-uint16_t hlt_hton16(uint16_t v)
-{
-    return ntohs(v);
-}
-

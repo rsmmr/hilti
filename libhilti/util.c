@@ -72,3 +72,19 @@ size_t hlt_util_memory_usage()
     getrusage(RUSAGE_SELF, &r);
     return (r.ru_maxrss * 1024);
 }
+
+uint64_t hlt_hton64(uint64_t v)
+{
+    void *p = &v;
+    return ((uint64_t)hlt_hton32(*(uint32_t*)p) << 32) | ((uint64_t)hlt_hton32(*(uint32_t*)(p + 4)));
+}
+
+uint32_t hlt_hton32(uint32_t v)
+{
+    return ntohl(v);
+}
+
+uint16_t hlt_hton16(uint16_t v)
+{
+    return ntohs(v);
+}

@@ -192,7 +192,12 @@ TAB_SIZE               = 8
 # will result in a user-defined paragraph with heading "Side Effects:".
 # You can put \n's in the value part of an alias to insert newlines.
 
-ALIASES                += "chilti=\param excpt Exception information.\n\param ctx Execution context."
+ALIASES += "hlt_c=\param excpt Exception information.\n\param ctx Execution context.\n"
+ALIASES += "hlt_to_string=This function has the standard \c *_to_string signature.\n\param type Type information for the type being converted to string.\n\param obj A pointer to the object being converted to string.\n\param options Conversion options. Currently not used.\n\param excpt Exception information.\n\param ctx Execution context.\n\return The converted string.\n"
+ALIASES += "hlt_to_int64=This function has the standard \c *_to_int64 signature.\n\param type Type information for the type being converted to an integer.\n\param obj A pointer to the object being converted to an integer.\n\param options Conversion options. Currently not used.\n\param excpt Exception information.\n\param ctx Execution context.\n\return The converted integer.\n"
+ALIASES += "hlt_to_float=This function has the standard \c *_to_float signature.\n\param type Type information for the type being converted to a float.\n\param obj A pointer to the object being converted to a float.\n\param options Conversion options. Currently not used.\n\param excpt Exception information.\n\param ctx Execution context.\n\return The converted float.\n"
+ALIASES += "hlt_ref=Increments the objects reference counter.\n"
+ALIASES += "hlt_unref=Decrements the objects reference counter.\n"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C
 # sources only. Doxygen will then generate output that is more tailored for C.

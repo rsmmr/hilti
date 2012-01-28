@@ -7,7 +7,10 @@
 
 #include "types.h"
 
-extern hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char*, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+/// Converts a HILTI tuple into a HILTI string.
+///
+/// \hlt_to_string
+extern hlt_string hlt_tuple_to_string(const hlt_type_info* type, void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif
 

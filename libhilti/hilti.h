@@ -1,9 +1,11 @@
-// $Id$
-//
-// Top-level HILTI include file.
-//
-// Note that all code using libhilti (or part of libhilti) should include
-// this file before any other.
+/// Top-level HILTI include file.
+///
+/// All external code using libhilti should include this file. It exposes the
+/// complete public interface.
+///
+/// However, the file should generally \a not be included directly by any
+/// libhilti code. Instead, include only those headers that provided the
+/// required functionality.
 
 #ifndef HILTI_H
 #define HILTI_H
@@ -21,6 +23,8 @@
 #include "debug.h"
 #include "memory.h"
 #include "init.h"
+
+// Not yet ported to new compiler framework.
 
 #if 0
 #include "addr.h"

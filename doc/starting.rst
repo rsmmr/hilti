@@ -62,7 +62,7 @@ is important:
   ``--prefix=/opt/llvm``::
 
     > cd llvm
-    > ./configure --prefix=/opt/llvm --enable-optimized --enable-libcpp
+    > ./configure --prefix=/opt/llvm --enable-optimized
     > make -j 5
     > make install
     > cd ..
@@ -73,14 +73,15 @@ is important:
      > TRIPLE=-apple- ./buildit    # Lion only. SL is different.
      > cd ../..
 
-  Then symlink the library into ``/opt/llvm`` (clang will use it
+  Then copy the library into ``/opt/llvm`` (clang will use it
   automatically if it finds it there at the right spot)::
 
-    > mkdir -p /opt/llvm/lib/c++
+    > mkdir -p /opt/llvm/lib/c++/v1
     > cd libcxx
-    > ln -s `pwd`/include /opt/llvm/lib/c++/v1
-    > ln -sf `pwd`/lib/libc++.1.dylib /opt/llvm/libc++.1.dylib
-    > ln -sf /opt/llvm/libc++.1.dylib /opt/llvm/libc++.dylib
+    > ( (cd include && tar czvf - . ) | ( cd /opt/llvm/lib/c++/v1 && tar xzvf -) )
+    > cp `pwd`/lib/libc++.1.dylib /opt/llvm/lib/libc++.1.dylib
+    > ln -sf /opt/llvm/lib/libc++.1.dylib /opt/llvm/lib/libc++.dylib
+    > cd ..
 
 - Now we need to recompile LLVM/clang to use the right libc++::
 

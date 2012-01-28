@@ -11,7 +11,7 @@
 /// hlt_init().
 extern void hlt_init();
 
-/// Terminate libhilti. Must be called before program termination.
+/// Terminates libhilti. Must be called before program termination.
 /// Afterwards, no further libhilti functionality must be used anymore.
 extern void hlt_done();
 
