@@ -33,3 +33,8 @@ shared_ptr<Type> constant::Tuple::type() const
 
     return shared_ptr<type::Tuple>(new type::Tuple(types, location()));
 }
+
+shared_ptr<Type> constant::Reference::type() const
+{
+    return shared_ptr<type::Reference>(new type::Reference(location()));
+}

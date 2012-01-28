@@ -84,6 +84,21 @@ public:
        : ast::SpecificConstant<AstInfo, Constant, bool>(false, shared_ptr<Type>(new type::Unset()), l) {}
 };
 
+/// AST node for a constant of type \c ref<*>. This can be only \c null.
+class Reference : public Constant
+{
+public:
+   /// Constructor. This creates a \c null constant of the given type.
+   ///
+   /// l: An associated location.
+   Reference(const Location& l=Location::None) : Constant(l) {}
+
+   /// Returns the type of the constant.
+   shared_ptr<Type> type() const override;
+
+   ACCEPT_VISITOR(Constant);
+};
+
 /// AST node for a constant of type Tuple.
 class Tuple : public Constant
 {

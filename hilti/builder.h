@@ -160,6 +160,101 @@ inline shared_ptr<hilti::type::Tuple> typeAny(const Location& l=Location::None) 
 
 }
 
+namespace bytes {
+
+/// Instantiates an AST expression node representing a bytes ctor.
+///
+/// b: The bytes value.
+///
+/// l: Location associated with the instance.
+///
+/// Returns: The expression node.
+inline shared_ptr<expression::Ctor> create(const ::string& b, const Location& l=Location::None)
+{
+    auto c = _sptr(new ctor::Bytes(b, l));
+    return _sptr(new expression::Ctor(c, l));
+}
+
+/// Instantiates a type::Bytes type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Bytes> type(const Location& l=Location::None) {
+    return _sptr(new hilti::type::Bytes(l));
+}
+
+}
+
+namespace reference {
+
+/// Instantiates an AST expression node representing a null reference..
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<expression::Constant> createNull(const Location& l=Location::None)
+{
+    auto c = _sptr(new constant::Reference(l));
+    return _sptr(new expression::Constant(c, l));
+}
+
+/// Instantiates a type::Reference type.
+///
+/// rtype: The referenced type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Reference> type(shared_ptr<hilti::Type> rtype, const Location& l=Location::None) {
+    return _sptr(new hilti::type::Reference(rtype, l));
+}
+
+/// Instantiates a type::Reference type that matches any other reference type (i.e., \c ref<*>).
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Reference> typeAny(const Location& l=Location::None) {
+    return _sptr(new hilti::type::Reference(l));
+}
+
+}
+
+namespace iterator {
+
+/// Instantiates a type::Iterator for a given target type.
+///
+/// ttype: The target type. This must be an type::trait::Iterable.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Iterator> type(shared_ptr<Type> type, const Location& l=Location::None) {
+    return _sptr(new hilti::type::Iterator(type, l));
+}
+
+/// Instantiates a type::Iterator type that matches any other iterator type (i.e., \c iter<*>).
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Iterator> typeAny(const Location& l=Location::None) {
+    return _sptr(new hilti::type::Iterator(l));
+}
+
+/// Instantiates a type::iterator::Bytes.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Iterator> bytes(const Location& l=Location::None) {
+    auto ty = shared_ptr<Type>(new type::Bytes(l));
+    return _sptr(new hilti::type::Iterator(ty, l));
+}
+
+}
+
 namespace module {
 
 /// Instantiates an AST node representing a top-level module.

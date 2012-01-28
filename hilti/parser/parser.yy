@@ -67,6 +67,8 @@ using namespace hilti;
 %token <ival>  CINTEGER       "integer"
 %token <bval>  CBOOL          "bool"
 %token <sval>  CSTRING        "string"
+%token <sval>  CBYTES         "bytes"
+%token         CNULL          "'null'"
 
 %token         GLOBAL         "'global'"
 %token         LOCAL          "'local'"
@@ -81,6 +83,9 @@ using namespace hilti;
 %token         DECLARE        "'declare'"
 %token         EXPORT         "'export'"
 %token         TUPLE          "'tuple'"
+%token         REF            "'ref'"
+%token         ITER           "'iter'"
+%token         BYTES          "'bytes'"
 
 %token         NEWLINE        "newline"
 
@@ -88,7 +93,7 @@ using namespace hilti;
 %type <decls>            opt_local_decls
 %type <type>             type
 %type <id>               local_id scoped_id mnemonic import
-%type <expr>             expr opt_default_expr tuple_elem constant
+%type <expr>             expr opt_default_expr tuple_elem constant ctor
 %type <exprs>            opt_tuple_elem_list tuple_elem_list tuple
 %type <types>            type_list
 %type <stmt>             stmt instruction
@@ -193,22 +198,32 @@ type          : ANY                              { $$ = builder::any::type(loc(@
               | VOID                             { $$ = builder::void_::type(loc(@$)); }
               | STRING                           { $$ = builder::string::type(loc(@$)); }
               | BOOL                             { $$ = builder::boolean::type(loc(@$)); }
+              | BYTES                            { $$ = builder::bytes::type(loc(@$)); }
               | INT '<' CINTEGER '>'             { $$ = builder::integer::type($3, loc(@$)); }
               | TUPLE '<' type_list '>'          { $$ = builder::tuple::type($3, loc(@$)); }
               | TUPLE '<' '*' '>'                { $$ = builder::tuple::typeAny(loc(@$)); }
+              | REF '<' type '>'                 { $$ = builder::reference::type($3, loc(@$)); }
+              | REF '<' '*' '>'                  { $$ = builder::reference::typeAny(loc(@$)); }
+              | ITER '<' type '>'                { $$ = builder::iterator::type($3, loc(@$)); }
+              | ITER '<' '*' '>'                 { $$ = builder::iterator::typeAny(loc(@$)); }
               ;
 
 type_list     : type ',' type_list               { $$ = $3; $$.push_front($1); }
               | type                             { $$ = builder::type_list(); $$.push_back($1); }
 
 expr          : constant                         { $$ = $1; }
+              | ctor                             { $$ = $1; }
               | scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
               ;
 
 constant      : CINTEGER                         { $$ = builder::integer::create($1, loc(@$)); }
               | CBOOL                            { $$ = builder::boolean::create($1, loc(@$)); }
               | CSTRING                          { $$ = builder::string::create($1, loc(@$)); }
+              | CNULL                            { $$ = builder::reference::createNull(loc(@$)); }
               | tuple                            { $$ = builder::tuple::create($1, loc(@$));  }
+              ;
+
+ctor          : CBYTES                           { $$ = builder::bytes::create($1, loc(@$)); }
               ;
 
 import        : IMPORT local_id eol              { $$ = $2; }

@@ -8,22 +8,7 @@
 #include "../instruction.h"
 #include "../statement.h"
 
-/// Checks whether an expression is of a given type. The type is given as C++
-/// class and thus it can only check for general is-it-the-right-kind
-/// constraints (and not, e.g., whether an integer type has the right width).
-/// It does however take into account that the Any type matches any
-/// expression.
-template<typename T>
-static inline bool __checkType(shared_ptr<Expression> expr)
-{
-    if ( ! expr )
-        return false;
-
-    if ( typeid(T) == typeid(type::Any) )
-        return true;
-
-    return (std::dynamic_pointer_cast<T>(expr->type()) != 0);
-}
+#include "optypes.h"
 
 #define __cat(a,b) a##b
 #define __unique(l) __cat(register_, l)
@@ -83,9 +68,9 @@ static inline bool __checkType(shared_ptr<Expression> expr)
 #define __implementOp(nr, ty, constant) \
        bool __matchOp##nr(shared_ptr<Expression> op) const override {  \
            if ( ! op ) return false;                                   \
-           if ( ! __checkType<ty>(op) ) return false;                  \
+           if ( ty != op->type() ) return false;                        \
            if ( op->isConstant() && ! constant ) return false;         \
-           if ( ! op && ! __defaultOp##nr() ) return false;              \
+           if ( ! op && ! __defaultOp##nr() ) return false;            \
            return true;                                                \
            }
 

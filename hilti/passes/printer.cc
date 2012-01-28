@@ -128,6 +128,12 @@ void Printer::visit(expression::Constant* e)
     p << e->constant();
 }
 
+void Printer::visit(expression::Ctor* e)
+{
+    Printer& p = *this;
+    p << e->ctor();
+}
+
 void Printer::visit(expression::ID* i)
 {
     Printer& p = *this;
@@ -287,6 +293,18 @@ void Printer::visit(type::Bool* b)
     p << "bool";
 }
 
+void Printer::visit(type::Reference* r)
+{
+    Printer& p = *this;
+    p << "ref<" << r->refType() << ">";
+}
+
+void Printer::visit(type::Bytes* b)
+{
+    Printer& p = *this;
+    p << "bytes";
+}
+
 void Printer::visit(type::Tuple* t)
 {
     Printer& p = *this;
@@ -314,6 +332,12 @@ void Printer::visit(constant::Bool* b)
     p << (b->value() ? "True" : "False");
 }
 
+void Printer::visit(constant::Reference* r)
+{
+    Printer& p = *this;
+    p << "null"; // Only possible constant.
+}
+
 void Printer::visit(constant::Tuple* t)
 {
     Printer& p = *this;
@@ -331,5 +355,11 @@ void Printer::visit(constant::Unset* t)
         internalError("printing supports unset value only in tuples");
 
     p << '*';
+}
+
+void Printer::visit(ctor::Bytes* b)
+{
+    Printer& p = *this;
+    p << 'b' << '"' << b->value() << '"';
 }
 

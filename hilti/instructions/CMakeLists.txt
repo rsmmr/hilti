@@ -3,6 +3,8 @@ set(instructions
     flow.h
     integer.h
     string.h
+    bool.h
+    bytes.h
 )
 
 add_custom_command(

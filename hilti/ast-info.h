@@ -25,6 +25,7 @@ class VisitorInterface;
 struct AstInfo {
     typedef hilti::Coercer coercer;
     typedef hilti::Constant constant;
+    typedef hilti::Ctor ctor;
     typedef hilti::ConstantCoercer constant_coercer;
     typedef hilti::Declaration declaration;
     typedef hilti::Expression expression;
@@ -39,6 +40,7 @@ struct AstInfo {
 
     typedef hilti::expression::Coerced coerced_expression;
     typedef hilti::expression::Constant constant_expression;
+    typedef hilti::expression::Ctor ctor_expression;
     typedef hilti::expression::List list_expression;
 
     typedef hilti::statement::Block block;

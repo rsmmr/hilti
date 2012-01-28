@@ -17,7 +17,8 @@ class Coercer : public ast::Coercer<AstInfo>
 {
 public:
    void visit(type::Integer* i);
-   void visit(type::Tuple* t) override;
+   void visit(type::Reference* r);
+   void visit(type::Tuple* t);
 };
 
 }

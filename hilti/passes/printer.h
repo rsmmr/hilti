@@ -51,6 +51,8 @@ protected:
    void visit(type::String* s) override;
    void visit(type::Bool* b) override;
    void visit(type::Tuple* t) override;
+   void visit(type::Reference* t) override;
+   void visit(type::Bytes* t) override;
 
    void visit(expression::Constant* e) override;
    void visit(expression::ID* e) override;
@@ -61,12 +63,16 @@ protected:
    void visit(expression::Type* t) override;
    void visit(expression::Block* b) override;
    void visit(expression::CodeGen* c) override;
+   void visit(expression::Ctor* t) override;
 
    void visit(constant::Integer* i) override;
    void visit(constant::String* s) override;
    void visit(constant::Bool* b) override;
+   void visit(constant::Reference* r) override;
    void visit(constant::Tuple* t) override;
    void visit(constant::Unset* u) override;
+
+   void visit(ctor::Bytes* r) override;
 
    void pushIndent() { ++_indent; _bol = true; }
    void popIndent()   { --_indent; }

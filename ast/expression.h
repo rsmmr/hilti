@@ -4,6 +4,7 @@
 
 #include "node.h"
 #include "constant.h"
+#include "ctor.h"
 #include "mixin.h"
 
 namespace ast {
@@ -180,26 +181,23 @@ class Ctor : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
 public:
    typedef typename AstInfo::type Type;
    typedef typename AstInfo::expression Expression;
-   typedef typename AstInfo::list_expression ListExpression;
+   typedef typename AstInfo::ctor AICtor;
 
    /// Constructor.
    ///
    /// target: The expression we're mixed in with.
    ///
-   /// values: The values used for construction.
-   ///
-   /// type: The type of the ctor expression.
-   Ctor(Expression* target, shared_ptr<ListExpression> values, shared_ptr<Type> type) : __EXPRESSION_MIXIN(target, this) {
-       _values = values;
-       __type = type;
-       target->addChild(_values);
-       target->addChild(__type);
+   /// ctor: The construced value.
+   Ctor(Expression* target, shared_ptr<AICtor> ctor) : __EXPRESSION_MIXIN(target, this) {
+       _ctor = ctor;
+       target->addChild(_ctor);
    }
 
-   shared_ptr<ListExpression> values() const { return _values; }
+   /// Returns the constructed value.
+   shared_ptr<AICtor> ctor() const { return _ctor; }
 
    shared_ptr<Type> _type() const /* override */ {
-       return __type;
+       return _ctor->type();
    }
 
    void _render(std::ostream& out) const /* override */ {
@@ -208,8 +206,7 @@ public:
    }
 
 private:
-   node_ptr<ListExpression> _values;
-   node_ptr<Type> __type;
+   node_ptr<AICtor> _ctor;
 };
 
 /// A mix-in class to define a constant expression.

@@ -25,6 +25,7 @@ type::Void::~Void() {}
 type::String::~String() {}
 type::Integer::~Integer() {}
 type::Bool::~Bool() {}
+type::Bytes::~Bytes() {};
 
 string type::trait::Parameterized::repr() const
 {
@@ -50,6 +51,14 @@ type::Function::Function(shared_ptr<hilti::function::Parameter> result, const fu
     : hilti::Type(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
     _cc = cc;
+}
+
+type::Function::Function(const Location& l)
+    : hilti::Type(l),
+    ast::type::mixin::Function<AstInfo>(this, shared_ptr<hilti::function::Parameter>(new hilti::function::Parameter(shared_ptr<hilti::Type>(new type::Void()), false)), function::parameter_list())
+{
+    setWildcard(true);
+    _cc = function::CallingConvention::DEFAULT; // Doesn't matter.
 }
 
 type::function::Parameter::Parameter(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value, Location l)
@@ -84,4 +93,32 @@ const type::Tuple::type_list& type::Tuple::typeList() const
     return _types;
 }
 
+type::Reference::Reference(const Location& l) : ValueType(l)
+{
+    setWildcard(true);
+}
 
+type::Reference::Reference(shared_ptr<Type> rtype, const Location& l) : ValueType(l)
+{
+    _rtype = rtype;
+    addChild(_rtype);
+
+    auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(rtype));
+    _parameters.push_back(p);
+    addChild(p);
+}
+
+type::Iterator::Iterator(const Location& l) : ValueType(l)
+{
+    setWildcard(true);
+}
+
+type::Iterator::Iterator(shared_ptr<Type> ttype, const Location& l) : ValueType(l)
+{
+    _ttype = ttype;
+    addChild(_ttype);
+
+    auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(ttype));
+    _parameters.push_back(p);
+    addChild(p);
+}

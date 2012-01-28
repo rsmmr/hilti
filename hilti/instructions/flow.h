@@ -2,7 +2,7 @@
 // Instructions controlling flow.
 
 iBegin(flow, ReturnResult, "return.result")
-    iOp1(type::Any, true)
+    iOp1(optype::any, true)
 
     iValidate {
     }
@@ -18,8 +18,8 @@ iBegin(flow, ReturnVoid, "return.void")
 iEnd
 
 iBegin(flow, CallVoid, "call")
-    iOp1(type::Function, true)
-    iOp2(type::Tuple, true)
+    iOp1(optype::function, true)
+    iOp2(optype::tuple, true)
 
     iValidate {
     }
@@ -28,9 +28,9 @@ iBegin(flow, CallVoid, "call")
 iEnd
 
 iBegin(flow, CallResult, "call")
-    iTarget(type::Any)
-    iOp1(type::Function, true)
-    iOp2(type::Tuple, true)
+    iTarget(optype::any)
+    iOp1(optype::function, true)
+    iOp2(optype::tuple, true)
 
     iValidate {
     }

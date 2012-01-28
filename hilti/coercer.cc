@@ -11,7 +11,26 @@ void Coercer::visit(type::Integer* i)
 {
     setResult(false);
 
-    shared_ptr<type::Bool> dst_b = ast::as<type::Bool>(arg1());
+    auto dst_b = ast::as<type::Bool>(arg1());
+
+    if ( dst_b ) {
+        setResult(true);
+        return;
+    }
+}
+
+void Coercer::visit(type::Reference* r)
+{
+    setResult(false);
+
+    auto dst_ref = ast::as<type::Reference>(arg1());
+
+    if ( dst_ref ) {
+        setResult(dst_ref->wildcard());
+        return;
+    }
+
+    auto dst_b = ast::as<type::Bool>(arg1());
 
     if ( dst_b ) {
         setResult(true);
@@ -23,7 +42,7 @@ void Coercer::visit(type::Tuple* t)
 {
     setResult(false);
 
-    shared_ptr<type::Tuple> dst = ast::as<type::Tuple>(arg1());
+    auto dst = ast::as<type::Tuple>(arg1());
 
     if ( ! dst )
         return;

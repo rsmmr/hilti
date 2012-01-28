@@ -13,6 +13,8 @@
 ///
 /// If not explictly initialized, integers are set to zero initially.
 ///
+/// \default 0
+///
 /// \ctor 42, -10
 ///
 /// \cproto An ``int<n>`` is mapped to C integers depending on its width *n*,
@@ -28,9 +30,9 @@
 ///     ======  =======
 
 iBegin(integer, Add, "int.add")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -46,9 +48,9 @@ iEnd
 
 
 iBegin(integer, Sub, "int.sub")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -63,9 +65,9 @@ iBegin(integer, Sub, "int.sub")
 iEnd
 
 iBegin(integer, Div, "int.div")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -92,9 +94,9 @@ iBegin(integer, Div, "int.div")
 iEnd
 
 iBegin(integer, Sleq, "int.sleq")
-    iTarget(type::Bool)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTypes(op1, op2);
@@ -109,7 +111,7 @@ iEnd
 
 // iBegin(integer, AsSDouble, "int.as_sdouble")
 //    iTarget(double)
-//    iOp1(type::Integer, true)
+//    iOp1(optype::integer, true)
 //
 //    iValidate {
 //    }
@@ -121,9 +123,9 @@ iEnd
 // iEnd
 
 iBegin(integer, Pow, "int.pow")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
     }
@@ -137,8 +139,8 @@ iBegin(integer, Pow, "int.pow")
 iEnd
 
 iBegin(integer, SExt, "int.sext")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
 
     iValidate {
         auto ty_target = as<type::Integer>(target->type());
@@ -156,9 +158,9 @@ iBegin(integer, SExt, "int.sext")
 iEnd
 
 iBegin(integer, Shr, "int.shr")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -174,9 +176,9 @@ iBegin(integer, Shr, "int.shr")
 iEnd
 
 iBegin(integer, Mul, "int.mul")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -191,9 +193,9 @@ iBegin(integer, Mul, "int.mul")
 iEnd
 
 iBegin(integer, Shl, "int.shl")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -209,9 +211,9 @@ iBegin(integer, Shl, "int.shl")
 iEnd
 
 iBegin(integer, Ult, "int.ult")
-    iTarget(type::Bool)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTypes(op1, op2);
@@ -225,9 +227,9 @@ iBegin(integer, Ult, "int.ult")
 iEnd
 
 iBegin(integer, Uleq, "int.uleq")
-    iTarget(type::Bool)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTypes(op1, op2);
@@ -241,9 +243,9 @@ iBegin(integer, Uleq, "int.uleq")
 iEnd
 
 iBegin(integer, Ashr, "int.ashr")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -260,10 +262,10 @@ iBegin(integer, Ashr, "int.ashr")
 iEnd
 
 iBegin(integer, Mask, "int.mask")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
-    iOp3(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
+    iOp3(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -277,9 +279,9 @@ iBegin(integer, Mask, "int.mask")
 iEnd
 
 iBegin(integer, Mod, "int.mod")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -305,9 +307,9 @@ iBegin(integer, Mod, "int.mod")
 iEnd
 
 iBegin(integer, Eq, "int.eq")
-    iTarget(type::Bool)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTypes(op1, op2);
@@ -320,8 +322,8 @@ iBegin(integer, Eq, "int.eq")
 iEnd
 
 iBegin(integer, ZExt, "int.zext")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
 
     iValidate {
         auto ty_target = as<type::Integer>(target->type());
@@ -340,7 +342,7 @@ iEnd
 
 // iBegin(integer, AsTime, "int.as_time")
 //   iTarget(time)
-//     iOp1(type::Integer, true)
+//     iOp1(optype::integer, true)
 //
 //     iValidate {
 //     }
@@ -352,9 +354,9 @@ iEnd
 // iEnd
 
 iBegin(integer, Slt, "int.slt")
-    iTarget(type::Bool)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTypes(op1, op2);
@@ -368,8 +370,8 @@ iBegin(integer, Slt, "int.slt")
 iEnd
 
 iBegin(integer, Trunc, "int.trunc")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
 
     iValidate {
         auto ty_target = as<type::Integer>(target->type());
@@ -387,9 +389,9 @@ iBegin(integer, Trunc, "int.trunc")
 iEnd
 
 iBegin(integer, Sqeq, "int.sgeq")
-    iTarget(type::Bool)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTypes(op1, op2);
@@ -404,7 +406,7 @@ iEnd
 
 // iBegin(integer, AsUDouble, "int.as_udouble")
 //     iTarget(double)
-//     iOp1(type::Integer, true)
+//     iOp1(optype::integer, true)
 // 
 //     iValidate {
 //     }
@@ -416,9 +418,9 @@ iEnd
 // iEnd
 
 iBegin(integer, Or, "int.or")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -433,9 +435,9 @@ iBegin(integer, Or, "int.or")
 iEnd
 
 iBegin(integer, Ugeq, "int.ugeq")
-    iTarget(type::Bool)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTypes(op1, op2);
@@ -449,9 +451,9 @@ iBegin(integer, Ugeq, "int.ugeq")
 iEnd
 
 iBegin(integer, Sgt, "int.sgt")
-    iTarget(type::Bool)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTypes(op1, op2);
@@ -466,7 +468,7 @@ iEnd
 
 // iBegin(integer, AsInterval, "int.as_interval")
 //     iTarget(interval)
-//     iOp1(type::Integer, true)
+//     iOp1(optype::integer, true)
 // 
 //     iValidate {
 //         auto ty_target = as<interval>(target->type());
@@ -480,9 +482,9 @@ iEnd
 // iEnd
 
 iBegin(integer, Xor, "int.xor")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -497,9 +499,9 @@ iBegin(integer, Xor, "int.xor")
 iEnd
 
 iBegin(integer, And, "int.and")
-    iTarget(type::Integer)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::integer)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTo(op1, target);
@@ -514,9 +516,9 @@ iBegin(integer, And, "int.and")
 iEnd
 
 iBegin(integer, Ugt, "int.ugt")
-    iTarget(type::Bool)
-    iOp1(type::Integer, true)
-    iOp2(type::Integer, true)
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true)
+    iOp2(optype::integer, true)
 
     iValidate {
         canCoerceTypes(op1, op2);

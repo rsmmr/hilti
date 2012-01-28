@@ -20,6 +20,7 @@ add_library (hilti
      parser/driver.cc
      module.cc
      constant.cc
+     ctor.cc
      constant-coercer.cc
      coercer.cc
      instruction.cc

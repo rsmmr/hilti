@@ -6,6 +6,7 @@
 #include "coercer.h"
 #include "constant-coercer.h"
 #include "constant.h"
+#include "ctor.h"
 #include "exception.h"
 #include "expression.h"
 #include "function.h"

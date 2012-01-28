@@ -11,7 +11,7 @@ void ConstantCoercer::visit(constant::Integer* i)
 {
     setResult(nullptr);
 
-    shared_ptr<type::Integer> dst_i = ast::as<type::Integer>(arg1());
+    auto dst_i = ast::as<type::Integer>(arg1());
 
     if ( dst_i && i->value() <=  (2l << (dst_i->width() - 1) - 1)
                && i->value() >= -(2l << (dst_i->width() - 1)) ) {
@@ -20,19 +20,19 @@ void ConstantCoercer::visit(constant::Integer* i)
         return;
     }
 
-    shared_ptr<type::Bool> dst_b = ast::as<type::Bool>(arg1());
+    auto dst_b = ast::as<type::Bool>(arg1());
 
     if ( dst_b ) {
-           auto c = new constant::Bool(i->value() != 0, i->location());
+        auto c = new constant::Bool(i->value() != 0, i->location());
         setResult(shared_ptr<Constant>(c));
-    };
+    }
 }
 
 void ConstantCoercer::visit(constant::Tuple* t)
 {
     setResult(nullptr);
 
-    shared_ptr<type::Tuple> dst = ast::as<type::Tuple>(arg1());
+    auto dst = ast::as<type::Tuple>(arg1());
 
     if ( ! dst )
         return;
@@ -59,4 +59,31 @@ void ConstantCoercer::visit(constant::Tuple* t)
     }
 
     setResult(shared_ptr<Constant>(new constant::Tuple(coerced_elems, t->location())));
+}
+
+void ConstantCoercer::visit(constant::Reference* r)
+{
+    setResult(nullptr);
+
+    auto dst_ref = ast::as<type::Reference>(arg1());
+
+    if ( dst_ref->wildcard() ) {
+        // Null coerces into all reference types.
+        setResult(r->sharedPtr<constant::Tuple>());
+        return;
+    }
+
+    if ( dst_ref ) {
+        // Null coerces into all reference types.
+        setResult(r->sharedPtr<constant::Tuple>());
+        return;
+    }
+
+    auto dst_bool = ast::as<type::Bool>(arg1());
+
+    if ( dst_bool ) {
+        // The only possible constant is null, and that's false.
+        auto c = new constant::Bool(false, r->location());
+        setResult(shared_ptr<Constant>(c));
+    }
 }

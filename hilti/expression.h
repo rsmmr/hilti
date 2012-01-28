@@ -5,6 +5,7 @@
 #include "common.h"
 #include "id.h"
 #include "coercer.h"
+#include "ctor.h"
 #include "constant-coercer.h"
 #include "scope.h"
 #include "variable.h"
@@ -51,8 +52,8 @@ public:
    /// type: The type of the constructed value.
    ///
    /// l: An associated location.
-   Ctor(shared_ptr<List> values, shared_ptr<hilti::Type> type, const Location& l=Location::None)
-       : hilti::Expression(l), ast::expression::mixin::Ctor<AstInfo>(this, values, type) {}
+   Ctor(shared_ptr<hilti::Ctor> ctor, const Location& l=Location::None)
+       : hilti::Expression(l), ast::expression::mixin::Ctor<AstInfo>(this, ctor) {}
 
    ACCEPT_VISITOR(hilti::Expression);
 };

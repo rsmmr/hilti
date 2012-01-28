@@ -5,6 +5,7 @@
 namespace hilti {
 
 class Constant;
+class Ctor;
 class Declaration;
 class Expression;
 class Function;
@@ -23,6 +24,9 @@ namespace type {
    class String;
    class Integer;
    class Bool;
+   class Reference;
+   class Iterator;
+   class Bytes;
    class Function;
    class Tuple;
    class Block;
@@ -41,6 +45,10 @@ namespace type {
    namespace function {
       class Parameter;
    }
+
+   namespace iterator {
+      class Bytes;
+   }
 }
 
 namespace constant {
@@ -49,6 +57,11 @@ namespace constant {
    class Integer;
    class Bool;
    class Tuple;
+   class Reference;
+}
+
+namespace ctor {
+   class Bytes;
 }
 
 namespace expression {
@@ -131,20 +144,31 @@ public:
    virtual void visit(type::String* s)      {}
    virtual void visit(type::Integer* i)     {}
    virtual void visit(type::Bool* b)        {}
+   virtual void visit(type::Reference* r)   {}
+   virtual void visit(type::Iterator* i)   {}
+   virtual void visit(type::Bytes* b)       {}
    virtual void visit(type::Function* i)    {}
    virtual void visit(type::Tuple* t)       {}
+
+   // Iterartor types.
+   virtual void visit(type::iterator::Bytes* i)       {}
 
    virtual void visit(type::trait::parameter::Base* b) {}
    virtual void visit(type::trait::parameter::Type* t) {}
    virtual void visit(type::trait::parameter::Integer* i) {}
 
    // Constants.
-   virtual void visit(Constant* s)          {}
-   virtual void visit(constant::Unset* u)   {};
-   virtual void visit(constant::Integer* i) {}
-   virtual void visit(constant::String* i)  {}
-   virtual void visit(constant::Bool* i)    {}
-   virtual void visit(constant::Tuple* t)   {};
+   virtual void visit(Constant* s)            {}
+   virtual void visit(constant::Unset* u)     {}
+   virtual void visit(constant::Integer* i)   {}
+   virtual void visit(constant::String* i)    {}
+   virtual void visit(constant::Bool* i)      {}
+   virtual void visit(constant::Tuple* t)     {}
+   virtual void visit(constant::Reference* t) {}
+
+   // Ctors.
+   virtual void visit(Ctor* s)              {}
+   virtual void visit(ctor::Bytes* b)   {}
 
    // Expressions.
    virtual void visit(Expression* e)        {}

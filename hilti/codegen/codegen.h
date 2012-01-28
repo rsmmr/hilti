@@ -757,6 +757,19 @@ protected:
    /// Returns: The call instruction created.
    llvm::CallInst* llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args);
 
+   /// Generates an LLVM call to a HILTI function. This method handles all
+   /// calling conventions.
+   ///
+   /// name: The name of the HILTI function to call, which must be resolvable
+   /// in the current module's scope.
+   ///
+   /// ftype: The type of the callee.
+   ///
+   /// args: The parameters to evaluate and pass to the callee.
+   ///
+   /// Returns: The call instruction created.
+   llvm::CallInst* llvmCall(const string& name, const expr_list& args);
+
    /// Generates the code for a HILTI \c return or \c return.void statement. 
    /// This methods must be used instead of a plain LLVM \c return
    /// instruction; it makes sure to run any necessary end-of-function

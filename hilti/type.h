@@ -122,7 +122,11 @@ class GarbageCollected : public Trait
 {
 };
 
-// class Iterable.
+/// Trait class marking a type that provides iterators.
+class Iterable : public Trait
+{
+};
+
 // class Unpackable.
 // class Classifiable.
 // class Blockable.
@@ -311,6 +315,14 @@ public:
        _parameters.push_back(p);
        }
 
+   /// Constructore creating an integer type matching any other integer type (i.e., \c int<*>).
+   Integer(const Location& l=Location::None) : ValueType(l) {
+       _width = 0;
+       auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Integer(0));
+       _parameters.push_back(p);
+       setWildcard(true);
+   }
+
    virtual ~Integer();
 
    /// Returns the types bit width.
@@ -343,7 +355,7 @@ public:
    ///
    /// l: Associated location.
    Tuple(const Location& l=Location::None);
-   
+
    const type_list& typeList() const override;
    string reprPrefix() const override { return "tuple"; }
    string repr() const override { return trait::Parameterized::repr(); }
@@ -354,6 +366,64 @@ public:
 private:
    parameter_list _parameters;
    type_list _types;
+};
+
+/// Type for references.
+class Reference : public ValueType, public trait::Parameterized {
+public:
+   /// Constructor.
+   ///
+   /// rtype: The referenced type. This must be a HeapType.
+   ///
+   /// l: Associated location.
+   Reference(shared_ptr<Type> rtype, const Location& l=Location::None);
+
+   /// Constructor for wildcard reference type..
+   ///
+   /// l: Associated location.
+   Reference(const Location& l=Location::None);
+
+   shared_ptr<Type> refType() const { return _rtype; }
+
+   string reprPrefix() const override { return "ref"; }
+   string repr() const override { return trait::Parameterized::repr(); }
+   const std::list<node_ptr<trait::parameter::Base>>& parameters() const override { return _parameters; }
+
+   ACCEPT_VISITOR(Type);
+
+private:
+   parameter_list _parameters;
+   node_ptr<hilti::Type> _rtype;
+};
+
+/// Base type for iterators.
+class Iterator : public ValueType, public trait::Parameterized {
+public:
+   /// Constructor for an iterator over a given target tyoe.
+   ///
+   /// ttype: The target type. This must be a trait::Iterable.
+   ///
+   /// l: Associated location.
+   ///
+   Iterator(shared_ptr<Type> ttype, const Location& l=Location::None);
+
+   /// Constructor for a wildcard iterator type.
+   ///
+   /// l: Associated location.
+   Iterator(const Location& l=Location::None);
+
+   /// Returns the type this iterator iterates over.
+   shared_ptr<Type> targetType() const { return _ttype; }
+
+   string reprPrefix() const override { return "iter"; }
+   string repr() const override { return trait::Parameterized::repr(); }
+   const std::list<node_ptr<trait::parameter::Base>>& parameters() const override { return _parameters; }
+
+   ACCEPT_VISITOR(Type);
+
+private:
+   parameter_list _parameters;
+   node_ptr<hilti::Type> _ttype;
 };
 
 namespace function {
@@ -394,7 +464,7 @@ typedef ast::type::mixin::Function<AstInfo>::parameter_list parameter_list;
 /// HILTI's supported calling conventions.
 enum CallingConvention {
     DEFAULT,    /// Place-holder for chosing a default automatically.
-    HILTI,      /// Internal convention for calls between HILTI functions. 
+    HILTI,      /// Internal convention for calls between HILTI functions.
     HILTI_C,    /// C-compatible calling convention, but with extra HILTI run-time parameters.
     C           /// C-compatable calling convention, with no messing around with parameters.
 };
@@ -417,6 +487,9 @@ public:
    /// l: Associated location.
    Function(shared_ptr<hilti::type::function::Parameter> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l=Location::None);
 
+   /// Constructor for a function type that matches any other function type (i.e., a wildcard type).
+   Function(const Location& l=Location::None);
+
    /// Returns the function's calling convention.
    hilti::type::function::CallingConvention callingConvention() const { return _cc; }
 
@@ -424,6 +497,22 @@ public:
 
 private:
    hilti::type::function::CallingConvention _cc;
+};
+
+/// Type for bytes instances.
+///
+class Bytes : public HeapType, public trait::Iterable
+{
+public:
+   /// Constructor.
+   ///
+   /// l: Associated location.
+   Bytes(const Location& l=Location::None) : HeapType(l) {}
+   virtual ~Bytes();
+
+   string repr() const override { return "bytes"; }
+
+   ACCEPT_VISITOR(Type);
 };
 
 }

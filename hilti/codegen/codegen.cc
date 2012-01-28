@@ -1349,6 +1349,22 @@ llvm::CallInst* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list& ar
     return llvmCall(llvmFunction(func), func->type(), args);
 }
 
+llvm::CallInst* CodeGen::llvmCall(const string& name, const expr_list& args)
+{
+    auto id = shared_ptr<ID>(new ID(name));
+    auto expr = _hilti_module->body()->scope()->lookup(id);
+
+    if ( ! expr )
+        internalError(string("unknown function ") + id->name() + " in llvmCall()");
+
+    if ( ! ast::isA<expression::Function>(expr) )
+        internalError(string("ID ") + id->name() + " is not a function in llvmCall()");
+
+    auto func = ast::as<expression::Function>(expr)->function();
+
+    return llvmCall(func, args);
+}
+
 void CodeGen::llvmCheckCException(llvm::Value* excpt)
 {
     // Not yet implemented.
