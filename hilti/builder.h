@@ -414,6 +414,25 @@ inline shared_ptr<statement::Instruction> create(shared_ptr<ID> mnemonic, const 
     return _sptr(new statement::instruction::Unresolved(mnemonic, ops, l));
 }
 
+/// Instantiates an AST statement node representing an instruction. This
+/// returns an statement::instruction::Unresolved instruction, which the
+/// passes::IdResolver will need to resolve before the AST can be used
+/// further.
+///
+/// mnemonic: The name of the instruction.
+///
+/// ops: The list of expressions representing target/op1/op2/op3,
+/// respectively. To leave out the target operand, set it to null. To leave
+/// out any of the others, either likewise use null or pass in a shorter list.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The statement node.
+inline shared_ptr<statement::Instruction> create(const ::string& mnemonic, const hilti::instruction::Operands& ops, const Location& l=Location::None) {
+    auto id = shared_ptr<ID>(new ID(mnemonic, l));
+    return create(id, ops, l);
+}
+
 }
 
 namespace function {

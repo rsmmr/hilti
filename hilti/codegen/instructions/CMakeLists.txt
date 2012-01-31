@@ -5,4 +5,5 @@ add_library(cg-instructions
     string.cc
     bool.cc
     bytes.cc
+    operators.cc
 )

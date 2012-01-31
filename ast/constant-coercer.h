@@ -54,7 +54,7 @@ public:
 template<typename AstInfo>
 inline shared_ptr<typename AstInfo::constant> ConstantCoercer<AstInfo>::coerceTo(shared_ptr<Constant> constant, shared_ptr<Type> dst)
 {
-    if ( *constant->type() == *dst )
+    if ( constant->type()->equal(dst) )
         return constant;
 
     if ( dst->matchesAny() )

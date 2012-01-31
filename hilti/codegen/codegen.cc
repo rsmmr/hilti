@@ -1219,7 +1219,7 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
 
     auto result = llvmCall(func, params);
 
-    if ( *ftype->result()->type() == type::Void() )
+    if ( ftype->result()->type()->equal(shared_ptr<Type>(new type::Void())) )
         builder()->CreateRetVoid();
     else
         builder()->CreateRet(result);

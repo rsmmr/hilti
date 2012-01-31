@@ -112,7 +112,7 @@ private:
 template<typename AstInfo>
 inline shared_ptr<typename AstInfo::expression> ExpressionOverrider<AstInfo>::_coerceTo(shared_ptr<Type> target)
 {
-    if ( *this->object()->type() == *target.get() )
+    if ( this->object()->type()->equal(target) )
         return this->object();
 
     std::cerr << util::fmt("cannot coerce expression of type %s to type %s",
@@ -247,7 +247,7 @@ public:
    ///
    /// Returns: True if the constant can be coerced.
    bool _canCoerceTo(shared_ptr<Type> target) const /* override */ {
-       if ( *this->object()->type() == *target )
+       if ( this->object()->type()->equal(target) )
            return true;
 
        if ( ConstantCoercer().canCoerceTo(_constant, target) )
@@ -266,7 +266,7 @@ public:
    /// Returns: The coerced constant, or null if coercion to the target type
    /// isn't supported.
    shared_ptr<Expression> _coerceTo(shared_ptr<Type> target) /* override */ {
-       if ( *this->object()->type() == *target )
+       if ( this->object()->type()->equal(target) )
            return this->object();
 
        auto coerced = ConstantCoercer().coerceTo(_constant, target);

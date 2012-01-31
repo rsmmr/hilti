@@ -5,6 +5,7 @@ set(instructions
     string.h
     bool.h
     bytes.h
+    operators.h
 )
 
 add_custom_command(

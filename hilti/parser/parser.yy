@@ -186,6 +186,7 @@ stmt_list     : stmt stmt_list                   { $$ = $2; $$.push_front($1); }
 
 instruction   : mnemonic operands                { $$ = builder::instruction::create($1, $2, loc(@$)); }
               | expr '=' mnemonic operands       { $4[0] = $1; $$ = builder::instruction::create($3, $4, loc(@$)); }
+              | expr '=' operands                { $3[0] = $1; $$ = builder::instruction::create("assign", $3, loc(@$)); }
 
 mnemonic      : local_id                         { $$ = $1; }
               | DOTTED_IDENT                     { $$ = builder::id::create($1, loc(@$)); }

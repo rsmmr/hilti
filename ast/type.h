@@ -33,6 +33,7 @@ class Type : public AstInfo::node, public Overridable<TypeOverrider<AstInfo>>
 {
 public:
    typedef typename AstInfo::node Node;
+   typedef typename AstInfo::type AIType;
    typedef typename AstInfo::id ID;
 
    /// Constructor.
@@ -54,14 +55,14 @@ public:
    ///    Type class.
    ///
    /// other: The other type to compare with.
-   bool operator==(const Type& other) const {
-       if ( _any || other._any )
+   bool equal(shared_ptr<AIType> other) const {
+       if ( _any || other->_any )
            return true;
 
-       if ( _wildcard || other._wildcard )
-           return typeid(*this) == typeid(other);
+       if ( _wildcard || other->_wildcard )
+           return typeid(*this) == typeid(*other);
 
-       return repr() == other.repr();
+       return repr() == other->repr();
    }
 
    /// Returns the ID associated with the type, or null of none.
@@ -109,6 +110,8 @@ public:
    }
 
 private:
+   bool operator==(const Type& other) const; // Disable.
+
    node_ptr<ID> _id;
    bool _wildcard = false;
    bool _any = false;

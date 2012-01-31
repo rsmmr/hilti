@@ -39,7 +39,7 @@ public:
 template<typename AstInfo>
 inline bool Coercer<AstInfo>::canCoerceTo(shared_ptr<Type> src, shared_ptr<Type> dst)
 {
-    if ( *src == *dst )
+    if ( src->equal(dst) )
         return true;
 
     if ( isA<AnyType>(src) )
