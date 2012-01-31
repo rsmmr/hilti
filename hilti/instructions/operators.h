@@ -17,7 +17,7 @@ iBegin(operator_, Assign, "assign")
             return;
         }
 
-        if ( op1->canCoerceTo(ty_target) )
+        if ( ! op1->canCoerceTo(ty_target) )
             error(op1, "operand not compatible with target");
     }
 

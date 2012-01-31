@@ -120,16 +120,19 @@
 /// def: The default Expression for the operand. 
 #define iDefault3(def)  __implementDdefault(3, def)
 
+#define __get_op(n) \
+    ops[n] ? ops[n]->sharedPtr<Expression>() : shared_ptr<Expression>();
+
 /// Starts a C++ code block that verifies the correctess of an instruction's
 /// operands. The code has access to Expression instances \a target, \a op1,
 /// \a op2, \a op3, that represent the Expression for the corresponding
 /// operands.
 #define iValidate \
        void __validate(const hilti::instruction::Operands& ops) const override { \
-           shared_ptr<Expression> target(ops[0].get_shared()); \
-           shared_ptr<Expression> op1(ops[1].get_shared()); \
-           shared_ptr<Expression> op2(ops[2].get_shared()); \
-           shared_ptr<Expression> op3(ops[3].get_shared());
+           shared_ptr<Expression> target = __get_op(0); \
+           shared_ptr<Expression> op1 = __get_op(1); \
+           shared_ptr<Expression> op2 = __get_op(2); \
+           shared_ptr<Expression> op3 = __get_op(3); \
 
 /// Defines the manual entry for an instruction, describing its semantics and
 /// operands.
