@@ -35,13 +35,27 @@ shared_ptr<Type> StatementBuilder::coerceTypes(shared_ptr<Expression> op1, share
 
 void StatementBuilder::visit(statement::Block* b)
 {
+    std::ostringstream comment;
+    passes::Printer printer(comment);
+
     bool in_function = in<declaration::Function>();
 
     for ( auto d : b->Declarations() )
         call(d);
 
-    for ( auto s : b->Statements() )
+    for ( auto s : b->Statements() ) {
+
+        if ( cg()->debugLevel() > 0 ) {
+            // Insert the source instruction as comment into the generated
+            // code.
+            comment.str(string());
+            printer.run(s);
+            passes::Printer p(comment);
+            cg()->llvmInsertComment(comment.str());
+        }
+
         call(s);
+    }
 }
 
 void StatementBuilder::visit(declaration::Variable* v)

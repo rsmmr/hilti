@@ -86,6 +86,11 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
 
 }
 
+void CodeGen::llvmInsertComment(const string& comment)
+{
+    _functions.back()->next_comment = comment;
+}
+
 llvm::Value* CodeGen::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst)
 {
     return _coercer->llvmCoerceTo(value, src, dst);
@@ -311,25 +316,25 @@ bool CodeGen::functionEmpty() const
     return false;
 }
 
-llvm::IRBuilder<>* CodeGen::builder() const
+IRBuilder* CodeGen::builder() const
 {
     assert(_functions.size());
     return _functions.back()->builders.back();
 }
 
-llvm::IRBuilder<>* CodeGen::pushBuilder(llvm::IRBuilder<>* builder)
+IRBuilder* CodeGen::pushBuilder(IRBuilder* builder)
 {
     assert(_functions.size());
     _functions.back()->builders.push_back(builder);
     return builder;
 }
 
-llvm::IRBuilder<>* CodeGen::pushBuilder(string name)
+IRBuilder* CodeGen::pushBuilder(string name)
 {
     return pushBuilder(newBuilder(name));
 }
 
-llvm::IRBuilder<>* CodeGen::newBuilder(string name)
+IRBuilder* CodeGen::newBuilder(string name)
 {
     int cnt = 1;
 
@@ -348,11 +353,16 @@ llvm::IRBuilder<>* CodeGen::newBuilder(string name)
     }
 
     auto block = llvm::BasicBlock::Create(llvmContext(), n, function());
-    auto builder = new llvm::IRBuilder<>(block);
+    auto builder = newBuilder(block);
 
     _functions.back()->builders_by_name.insert(std::make_pair(n, builder));
 
     return builder;
+}
+
+IRBuilder* CodeGen::newBuilder(llvm::BasicBlock* block, bool insert_at_beginning)
+{
+    return util::newBuilder(this, block, insert_at_beginning);
 }
 
 void CodeGen::popBuilder()
@@ -483,11 +493,6 @@ llvm::Value* CodeGen::llvmGlobalIndex(Variable* var)
     return i->second;
 }
 
-static llvm::MDNode* mdFromValue(CodeGen* cg, llvm::Value* v)
-{
-    return llvm::MDNode::get(cg->llvmContext(), llvm::ArrayRef<llvm::Value*>(&v, 1));
-}
-
 void CodeGen::createLinkerData()
 {
     // Add them main meta information node.
@@ -504,25 +509,25 @@ void CodeGen::createLinkerData()
     llvm::Value *id = llvm::MDString::get(llvmContext(), _hilti_module->id()->name());
     llvm::Value *file = llvm::MDString::get(llvmContext(), _hilti_module->path());
 
-    md->addOperand(mdFromValue(this, version));
-    md->addOperand(mdFromValue(this, id));
-    md->addOperand(mdFromValue(this, file));
+    md->addOperand(util::llvmMdFromValue(llvmContext(), version));
+    md->addOperand(util::llvmMdFromValue(llvmContext(), id));
+    md->addOperand(util::llvmMdFromValue(llvmContext(), file));
 
     // Add the MD function arrays that the linker will merge.
 
     if ( _module_init_func ) {
         md  = _module->getOrInsertNamedMetadata(symbols::MetaModuleInit);
-        md->addOperand(mdFromValue(this, _module_init_func));
+        md->addOperand(util::llvmMdFromValue(llvmContext(), _module_init_func));
     }
 
     if ( _globals_init_func ) {
         md  = _module->getOrInsertNamedMetadata(symbols::MetaGlobalsInit);
-        md->addOperand(mdFromValue(this, _globals_init_func));
+        md->addOperand(util::llvmMdFromValue(llvmContext(), _globals_init_func));
     }
 
     if ( _globals_dtor_func ) {
         md  = _module->getOrInsertNamedMetadata(symbols::MetaGlobalsDtor);
-        md->addOperand(mdFromValue(this, _globals_dtor_func));
+        md->addOperand(util::llvmMdFromValue(llvmContext(), _globals_dtor_func));
     }
 }
 
@@ -810,13 +815,16 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, llvm::Type* type, llvm::V
         init = llvmConstNull(type);
 
     llvm::BasicBlock& block(function()->getEntryBlock());
-    llvm::IRBuilder<> builder(&block, block.getFirstInsertionPt());
-    auto local = builder.CreateAlloca(type, 0, name);
+
+    auto builder = newBuilder(&block, true);
+    auto local = builder->CreateAlloca(type, 0, name);
 
     if ( init )
-        builder.CreateStore(init, local);
+        builder->CreateStore(init, local);
 
     _functions.back()->locals.insert(make_pair(name, local));
+
+    delete builder;
 
     return local;
 }
@@ -838,15 +846,17 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
     }
 
     llvm::BasicBlock& block(function()->getEntryBlock());
-    llvm::IRBuilder<> tmp_builder(&block, block.getFirstInsertionPt());
 
-    auto tmp = tmp_builder.CreateAlloca(type, 0, tname);
+    auto tmp_builder = newBuilder(&block, true);
+    auto tmp = tmp_builder->CreateAlloca(type, 0, tname);
 
     if ( init )
         // Must be done in original block.
         builder()->CreateStore(init, tmp);
 
     _functions.back()->tmps.insert(make_pair(tname, tmp));
+
+    delete tmp_builder;
 
     return tmp;
 }
@@ -1034,29 +1044,31 @@ void CodeGen::llvmBuildExitBlock(shared_ptr<Function> func)
     if ( ! state->exit_block )
         return;
 
-    llvm::IRBuilder<> exit_builder(state->exit_block);
+    auto exit_builder = newBuilder(state->exit_block);
 
     llvm::PHINode* phi = nullptr;
 
     if ( func->type()->result() ) {
         auto rtype = llvmType(func->type()->result()->type());
-        phi = exit_builder.CreatePHI(rtype, state->exits.size());
+        phi = exit_builder->CreatePHI(rtype, state->exits.size());
 
         for ( auto e : state->exits )
             phi->addIncoming(e.second, e.first);
     }
 
-    pushBuilder(&exit_builder);
+    pushBuilder(exit_builder);
     llvmBuildFunctionCleanup();
     popBuilder();
 
     if ( func->type()->result() ) {
         assert(phi);
-        exit_builder.CreateRet(phi);
+        exit_builder->CreateRet(phi);
     }
 
     else
-        exit_builder.CreateRetVoid();
+        exit_builder->CreateRetVoid();
+
+    delete exit_builder;
 }
 
 void CodeGen::llvmBuildFunctionCleanup()

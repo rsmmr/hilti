@@ -42,14 +42,15 @@ public:
 
 protected:
    virtual void visit(expression::Variable* p) override;
-   virtual void visit(variable::Local* v) override;
-   virtual void visit(variable::Global* v) override;
-
    virtual void visit(expression::Parameter* p) override;
+   virtual void visit(expression::CodeGen* c) override;
+
    virtual void visit(expression::Constant* e) override;
    virtual void visit(expression::Coerced* e) override;
    virtual void visit(expression::Function* f) override;
-   virtual void visit(expression::CodeGen* c) override;
+
+   virtual void visit(variable::Local* v) override;
+   virtual void visit(variable::Global* v) override;
 
    virtual void visit(constant::Integer* c) override;
    virtual void visit(constant::String* s) override;

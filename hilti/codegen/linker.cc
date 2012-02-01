@@ -202,8 +202,8 @@ void Linker::joinFunctions(const char* new_func, const char* meta, const std::li
         return;
     }
 
+    IRBuilder* builder = nullptr;
     llvm::LLVMContext& ctx = llvm::getGlobalContext();
-    llvm::IRBuilder<>* builder = nullptr;
     llvm::Function* nfunc = nullptr;
 
     for ( int i = 0; i < md->getNumOperands(); ++i ) {
@@ -216,7 +216,7 @@ void Linker::joinFunctions(const char* new_func, const char* meta, const std::li
             auto ftype = llvm::cast<llvm::FunctionType>(ftype_ptr->getElementType());
             nfunc = llvm::Function::Create(ftype, llvm::Function::ExternalLinkage, new_func, module);
             nfunc->setCallingConv(llvm::CallingConv::C);
-            builder = new llvm::IRBuilder<>(llvm::BasicBlock::Create(ctx, "", nfunc));
+            builder = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "", nfunc));
         }
 
         std::vector<llvm::Value*> params;

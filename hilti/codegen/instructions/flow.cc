@@ -22,14 +22,19 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnVoid* i)
 void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params)
 {
     auto expr = ast::as<expression::Constant>(args);
+    auto ftype = ast::as<type::Function>(func->type());
+    auto params = ftype->parameters();
+    auto p = params.begin();
 
-    if ( expr ) {
+    if ( expr && expr->isConstant() ) {
         // This is a short-cut to generate nicer code: if we have a constant
         // tuple, we use its element directly to avoid generating a struct first
         // just to then disassemble it again (LLVM should be able to optimize the
         // overhead in any case, but it's better readable this way.)
-        for ( auto a : ast::as<constant::Tuple>(expr->constant())->value() )
+        for ( auto a : ast::as<constant::Tuple>(expr->constant())->value() ) {
             call_params->push_back(a);
+            ++p;
+        }
     }
 
     else {
@@ -38,11 +43,21 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
         auto tval = cg()->llvmValue(args);
 
         int i = 0;
+        auto p = params.begin();
+
         for ( shared_ptr<hilti::Type> t : ttype->typeList() ) {
             llvm::Value* val = cg()->llvmExtractValue(tval, i++);
             auto expr = shared_ptr<Expression>(new expression::CodeGen(t, val));
             call_params->push_back(expr);
+            ++p;
         }
+    }
+
+    // Add default values.
+    while ( p != params.end() ) {
+        auto def = (*p++)->defaultValue();
+        assert(def);
+        call_params->push_back(def);
     }
 }
 

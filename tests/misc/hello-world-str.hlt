@@ -11,6 +11,6 @@ void run() {
     local string s
     s = "Hello, world!"
 
-    call Hilti::print(s)
+    call Hilti::print (s)
 }
 

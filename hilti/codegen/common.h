@@ -19,8 +19,10 @@
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Support/IRReader.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/FormattedStream.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/PathV1.h>
+#include <llvm/Assembly/AssemblyAnnotationWriter.h>
 
 #include "../common.h"
 

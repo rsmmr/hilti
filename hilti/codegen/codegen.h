@@ -5,6 +5,7 @@
 #include <list>
 
 #include "common.h"
+#include "util.h"
 #include "../type.h"
 #include "../visitor.h"
 
@@ -21,11 +22,16 @@ namespace passes { class Collector; }
 
 namespace codegen {
 
+namespace util { class IRInserter; }
+
 class TypeInfo;
 
 /// Namespace for the name of symbols generated/examined by code generator 
 /// and linker.
 namespace symbols {
+    // Names of meta data examined by AssemblyAnnotationWriter.
+    static const char* MetaComment      = "hlt.comment";
+
     // Names of globals examined by custom linker pass.
     static const char* MetaModule       = "hlt.module";
     static const char* MetaModuleInit   = "hlt.module.init";
@@ -66,6 +72,9 @@ class TypeInfoBuilder;
 class DebugInfoBuilder;
 class PointerMap;
 
+/// The IRBuilder used by the code generator.
+typedef util::IRBuilder IRBuilder;
+
 /// Central code generator. This class coordinates the code generatio and
 /// provides lots of helpers to create LLVM elements. Most of the knowledge
 /// about how the generated LLVM code looks like is here. However, various
@@ -103,13 +112,17 @@ public:
    /// Passes ownership to the caller.
    llvm::Module* generateLLVM(shared_ptr<hilti::Module> hltmod, bool verify, int debug, int profile);
 
+   /// Returns the debug level for the generated code. This is the value
+   /// passed into generateLLVM().
+   int debugLevel() const { return _debug_level; }
+
    /// Returns the LLVM context to use with all LLVM calls.
    llvm::LLVMContext& llvmContext() { return llvm::getGlobalContext(); }
 
    /// Returns the LLVM builder to use for inserting code at the current
    /// location. For each LLVM function being built, a stack of builder is
    /// maintained and manipulated via pushBuilder() and popBuilder().
-   llvm::IRBuilder<>* builder() const;
+   IRBuilder* builder() const;
 
 protected:
    friend class Coercer;
@@ -133,7 +146,7 @@ protected:
    /// function: The function to push onto the stack.
    ///
    /// push_builder: If true, the methods adds an entry block to the
-   /// function, wraps it into an llvm::IRBuilder, and makes that with
+   /// function, wraps it into an IRBuilder, and makes that with
    /// current builder() with pushBuilder().
    llvm::Function* pushFunction(llvm::Function* function, bool push_builder=true);
 
@@ -155,7 +168,7 @@ protected:
    /// builder: The builder.
    ///
    /// Returns: The LLVM IRBuilder.
-   llvm::IRBuilder<>* pushBuilder(llvm::IRBuilder<>* builder);
+   IRBuilder* pushBuilder(IRBuilder* builder);
 
    /// Creates a new LLVM block and pushes a corresponding builder onto the
    /// stack of builders associated with the current function. A
@@ -166,7 +179,7 @@ protected:
    /// anonymous
    ///
    /// Returns: The LLVM IRBuilder.
-   llvm::IRBuilder<>* pushBuilder(string name = "");
+   IRBuilder* pushBuilder(string name = "");
 
    /// Removes the top-most builder from the stack of builders associated
    /// with the current LLVM function(). Calls to this method must match
@@ -182,7 +195,19 @@ protected:
    /// anonymous
    ///
    /// Returns: The LLVM IRBuilder.
-   llvm::IRBuilder<>* newBuilder(string name = "");
+   IRBuilder* newBuilder(string name = "");
+
+   /// Creates a new LLVM builder with a given block as its insertion point.
+   /// It does however not push it onto stack of builders associated with the
+   /// current function.
+   ///
+   /// block: The block to set as insertion point.
+   ///
+   /// insert_at_beginning: If true, the insertion point is set to the
+   /// beginning of the block; otherwise to the end.
+   ///
+   /// Returns: The LLVM IRBuilder.
+   IRBuilder* newBuilder(llvm::BasicBlock* block, bool insert_at_beginning = false);
 
    /// Caches an LLVM value for later reuse. The value is identified by two
    /// string keys that can be chosen by the caller. lookupCachedValue() will
@@ -277,6 +302,10 @@ protected:
    ///
    /// Returns: A unique string.
    string uniqueName(const string& component, const string& str);
+
+   /// Adds a comment just before the next instruction that will be printed
+   /// out by the AssemblyAnnotationWriter.
+   void llvmInsertComment(const string& comment);
 
    /// Returns the LLVM module currently being built.
    llvm::Module* llvmModule() const { return _module; }
@@ -983,6 +1012,15 @@ private:
    // module. See implementation of llvmLibFunction() for more information.
    llvm::Type* replaceLibType(llvm::Type* ntype);
 
+   friend class util::IRInserter;
+   const string& nextComment() const { // Used by the util::IRInserter.
+       return _functions.back()->next_comment;
+   }
+
+   void clearNextComment() { // Used by the util::IRInserter.
+       _functions.back()->next_comment.clear();
+   }
+
    path_list _libdirs;
    bool _verify;
    int _debug_level;
@@ -1005,9 +1043,9 @@ private:
    llvm::Value* _globals_base_func = nullptr;
    llvm::Type* _globals_type = nullptr;
 
-   typedef std::list<llvm::IRBuilder<>*> builder_list;
+   typedef std::list<IRBuilder*> builder_list;
    typedef std::map<string, int> label_map;
-   typedef std::map<string, llvm::IRBuilder<>*> builder_map;
+   typedef std::map<string, IRBuilder*> builder_map;
    typedef std::map<string, llvm::Value*> local_map;
    typedef std::list<std::pair<llvm::BasicBlock*, llvm::Value*>> exit_point_list;
 
@@ -1020,6 +1058,7 @@ private:
        local_map locals;
        local_map tmps;
        exit_point_list exits;
+       string next_comment;
    };
 
    typedef std::list<std::unique_ptr<FunctionState>> function_list;
@@ -1064,7 +1103,7 @@ public:
    /// is just a shortcut for calling CodeGen::builder().
    ///
    /// Returns: The current LLVM builder.
-   llvm::IRBuilder<>* builder() const {
+   IRBuilder* builder() const {
        return _codegen->builder();
    }
 

@@ -31,8 +31,10 @@ public:
 
 protected:
    void visit(expression::Variable* v) override;
+   void visit(expression::Parameter* p) override;
    void visit(expression::CodeGen* c) override;
 
+   void visit(variable::Local* v) override;
    void visit(variable::Global* v) override;
 };
 

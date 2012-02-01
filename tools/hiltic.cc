@@ -162,7 +162,7 @@ llvm::Module* compileHILTI(string path)
         if ( num_input_files > 1 )
             cout << "<<< Begin " << path << endl;
 
-        llvm_module->print(llvm_out, 0);
+        hilti::printAssembly(llvm_out, llvm_module);
 
         if ( num_input_files > 1 )
             cout << ">>> End " << path << endl;
@@ -317,7 +317,7 @@ int main(int argc, char** argv)
     llvm::raw_os_ostream llvm_out(out);
 
     if ( output_llvm )
-        linked_module->print(llvm_out, 0);
+        hilti::printAssembly(llvm_out, linked_module);
 
     if ( output_bitcode )
         llvm::WriteBitcodeToFile(linked_module, llvm_out);

@@ -13,6 +13,7 @@ add_library(codegen
     linker.cc
     coercer.cc
     stmt-builder.cc
+    asm-annotater.cc
 )
 
 target_link_libraries(codegen cg-instructions)

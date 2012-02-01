@@ -4,9 +4,25 @@
 #include "../id.h"
 
 #include "util.h"
+#include "codegen.h"
 
 using namespace hilti;
 using namespace codegen;
+
+void codegen::util::IRInserter::InsertHelper(llvm::Instruction *I, const llvm::Twine &Name, llvm::BasicBlock *BB, llvm::BasicBlock::iterator InsertPt) const
+{
+    // Do the default stuff first.
+    llvm::IRBuilderDefaultInserter<>::InsertHelper(I, Name, BB, InsertPt);
+
+    // Add comment if the codegen has one for us.
+    const string& comment = _cg->nextComment();
+    if ( _cg && comment.size() ) {
+        auto cmt = llvm::MDString::get(_cg->llvmContext(), comment);
+        auto md = codegen::util::llvmMdFromValue(_cg->llvmContext(), cmt);
+        I->setMetadata(symbols::MetaComment, md);
+        _cg->clearNextComment();
+    }
+}
 
 string codegen::util::mangle(const string& name, bool global, shared_ptr<ID> parent, string prefix, bool internal)
 {
@@ -96,7 +112,7 @@ static void _dumpCall(llvm::Function* func, llvm::ArrayRef<llvm::Value *> args, 
     abort();
 }
 
-llvm::CallInst* codegen::util::checkedCreateCall(llvm::IRBuilder<>* builder, const string& where, llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name)
+llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const string& where, llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name)
 {
     assert(callee);
     assert(llvm::isa<llvm::Function>(callee));
@@ -117,4 +133,39 @@ llvm::CallInst* codegen::util::checkedCreateCall(llvm::IRBuilder<>* builder, con
     }
 
     return builder->CreateCall(callee, args, name);
+}
+
+llvm::MDNode* codegen::util::llvmMdFromValue(llvm::LLVMContext& ctx, llvm::Value* v)
+{
+    return llvm::MDNode::get(ctx, llvm::ArrayRef<llvm::Value*>(&v, 1));
+}
+
+IRBuilder* codegen::util::newBuilder(CodeGen* cg, llvm::BasicBlock* block, bool insert_at_beginning)
+{
+    llvm::ConstantFolder folder;
+
+    auto builder = new IRBuilder(cg->llvmContext(), folder, util::IRInserter(cg));
+
+    insert_at_beginning = false; // FIXME
+
+    if ( ! insert_at_beginning )
+        builder->SetInsertPoint(block);
+    else
+        builder->SetInsertPoint(block->getFirstInsertionPt());
+
+    return builder;
+}
+
+IRBuilder* codegen::util::newBuilder(llvm::LLVMContext& ctx, llvm::BasicBlock* block, bool insert_at_beginning)
+{
+    llvm::ConstantFolder folder;
+
+    auto builder = new IRBuilder(ctx, folder, util::IRInserter(0));
+
+    if ( ! insert_at_beginning )
+        builder->SetInsertPoint(block);
+    else
+        builder->SetInsertPoint(block->getFirstInsertionPt());
+
+    return builder;
 }
