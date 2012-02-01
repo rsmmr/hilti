@@ -109,3 +109,10 @@ void Loader::visit(constant::Tuple* t)
     setResult(val);
 }
 
+void Loader::visit(constant::Reference* r)
+{
+    // This can only be the null value.
+    auto val = cg()->llvmConstNull();
+    setResult(val);
+}
+

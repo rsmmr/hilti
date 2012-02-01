@@ -1,0 +1,7 @@
+Test1
+Test2 %
+Test Foo|1|True
+Test 1|Foo|True
+|42|0|
+|-42|1|
+|0x0|

@@ -179,6 +179,8 @@ protected:
    void visit(type::Integer* u) override;
    void visit(type::Bool* b) override;
    void visit(type::Tuple* t) override;
+   void visit(type::Reference* r) override;
+   void visit(type::Bytes* r) override;
 
 private:
    llvm::Constant* _lookupFunction(const string& func);

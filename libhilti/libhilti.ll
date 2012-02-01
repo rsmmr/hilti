@@ -37,6 +37,9 @@
     i8  ;; Start of data.
 }
 
+; Types we don't specify further at the LLVM level.
+%hlt.bytes = type i8*
+
 ;;; libhilti functions that don't fit the normal calling conventions.
 
 declare void @hlt_object_ref(%hlt.type_info*, i8 *)

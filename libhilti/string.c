@@ -26,6 +26,9 @@ void hlt_string_ref(hlt_string s)
 
 void hlt_string_unref(hlt_string s)
 {
+    if ( ! s )
+        return;
+
     hlt_object_unref(hlt_type_info_string, s);
 }
 
@@ -109,7 +112,7 @@ hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt
     if ( ! len2 )
         return s1;
 
-    hlt_string dst = hlt_object_new(hlt_type_info_string, sizeof(hlt_string) + len1 + len2);
+    hlt_string dst = hlt_object_new(hlt_type_info_string, sizeof(struct __hlt_string) + len1 + len2);
 
     if ( ! dst ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
@@ -272,15 +275,15 @@ hlt_string hlt_string_empty(hlt_exception** excpt, hlt_execution_context* ctx)
 hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string_size len = strlen(asciiz);
-    hlt_string dst = hlt_object_new(hlt_type_info_string, sizeof(hlt_string) + len);
+    hlt_string dst = hlt_object_new(hlt_type_info_string, sizeof(struct __hlt_string) + len);
     dst->len = len;
-    memcpy(dst->bytes, asciiz, len);
+    memcpy(&dst->bytes, asciiz, len);
     return dst;
 }
 
 hlt_string hlt_string_from_data(const int8_t* data, hlt_string_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_string dst = hlt_object_new(hlt_type_info_string, sizeof(hlt_string) + len);
+    hlt_string dst = hlt_object_new(hlt_type_info_string, sizeof(struct __hlt_string) + len);
     dst->len = len;
     memcpy(dst->bytes, data, len);
     return dst;
@@ -325,6 +328,7 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** e
     const int8_t* e;
 
     enum Charset ch = get_charset(charset, excpt, ctx);
+
     if ( ch == ERROR )
         return 0;
 
@@ -392,7 +396,7 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** e
     if ( ch == ASCII ) {
         // Convert all bytes to 7-bit codepoints.
         hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
-        hlt_string dst = hlt_object_new(hlt_type_info_string, sizeof(hlt_string) + hlt_bytes_len(b, excpt, ctx));
+        hlt_string dst = hlt_object_new(hlt_type_info_string, sizeof(struct __hlt_string) + hlt_bytes_len(b, excpt, ctx));
         dst->len = len;
         int8_t* p = dst->bytes;
 
@@ -468,6 +472,7 @@ const char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execut
     hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
     hlt_bytes* b = hlt_string_encode(s, ascii, excpt, ctx);
     hlt_string_unref(ascii);
+    assert(! *excpt);
 
     if ( *excpt )
         return 0;
@@ -484,5 +489,5 @@ const char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execut
     buffer[len] = '\0';
 
     // hlt_bytes_unref(b);
-    return (const char*) raw;
+    return (const char*) buffer;
 }

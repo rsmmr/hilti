@@ -5,5 +5,5 @@
 module Hilti
 
 declare "C-HILTI" void print(any obj, bool newline = True)
-# declare "C-HILTI" string fmt(string fmt, tuple<*> vals)
+declare "C-HILTI" string fmt(string fmt, tuple<*> vals)
 

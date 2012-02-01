@@ -1,0 +1,41 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+void run() {
+    local string str
+    local tuple<int<64>, string, bool> t
+
+    t = (1, "Foo", True)
+
+    str = call Hilti::fmt ("Test1", ())
+    call Hilti::print (str)
+
+    str = call Hilti::fmt ("Test2 %%", ())
+    call Hilti::print (str)
+
+    str = call Hilti::fmt ("Test %s|%s|%s", ("Foo", 1, True))
+    call Hilti::print (str)
+
+    str = call Hilti::fmt ("Test %s|%s|%s", (1, "Foo", True))
+    call Hilti::print (str)
+
+    str = call Hilti::fmt ("|%d|%d|", (42, False))
+    call Hilti::print (str)
+
+    str = call Hilti::fmt ("|%d|%d|", (-42, True))
+    call Hilti::print (str)
+
+    # str = call Hilti::fmt ("|%f|", (-3.14))
+    # call Hilti::print (str)
+
+    str = call Hilti::fmt ("|%p|", (Null))
+    call Hilti::print (str)
+}
+

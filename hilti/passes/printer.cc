@@ -187,9 +187,9 @@ void Printer::visit(declaration::Variable* v)
 {
     Printer& p = *this;
 
-    const char* tag = in<Function>() ? "local" : "global";
+    const char* tag = ast::as<variable::Local>(v->variable()) ? "local" : "global";
 
-    p << "global " << v->variable()->type() << " " << v->id();
+    p << tag << " " << v->variable()->type() << " " << v->id();
 
     if ( v->variable()->init() ) {
         p << " = ";
@@ -335,7 +335,7 @@ void Printer::visit(constant::Bool* b)
 void Printer::visit(constant::Reference* r)
 {
     Printer& p = *this;
-    p << "null"; // Only possible constant.
+    p << "Null"; // Only possible constant.
 }
 
 void Printer::visit(constant::Tuple* t)

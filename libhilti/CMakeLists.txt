@@ -18,7 +18,9 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -D_GNU_SOURCE")
 set(SRCS
     config.c context.c debug.c globals.c init.c memory.c
     int.c tuple.c string.c utf8proc.c bytes.c exceptions.c
-    util.c print.c
+    util.c print.c bool.c
+
+    module/fmt.c
     )
 
 if ( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )

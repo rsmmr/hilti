@@ -62,7 +62,7 @@ bytes                 return token::BYTES;
 
 True                  yylval->bval = 1; return token::CBOOL;
 False                 yylval->bval = 0; return token::CBOOL;
-null                  return token::CNULL;
+Null                  return token::CNULL;
 
 {int}                 yylval->ival = atoi(yytext); return token::CINTEGER;
 {string}              yylval->sval = string(yytext, 1, strlen(yytext) - 2); return token::CSTRING;
@@ -75,7 +75,7 @@ b{string}             yylval->sval = string(yytext, 2, strlen(yytext) - 3); retu
 
 {comment}             yylval->sval = yytext; return token::COMMENT;
 
-[,=;<>(){}]           return (token_type) yytext[0];
+[*,=;<>(){}]          return (token_type) yytext[0];
 
 .                     driver.error("invalid character", *yylloc);
 

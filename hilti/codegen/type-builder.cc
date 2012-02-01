@@ -199,6 +199,19 @@ void TypeBuilder::visit(type::Bool* b)
     ti->c_prototype = "int8_t";
     ti->init_val = cg()->llvmConstInt(0, 8);
     ti->to_string = "hlt::bool_to_string";
+    ti->to_int64 = "hlt::bool_to_int64";
+    // ti->hash = "hlt::bool_hash";
+    // ti->equal = "hlt::bool_equal";
+    setResult(ti);
+}
+
+void TypeBuilder::visit(type::Bytes* b)
+{
+    TypeInfo* ti = new TypeInfo(b);
+    ti->id = HLT_TYPE_BYTES;
+    ti->c_prototype = "hlt_bytes*";
+    ti->init_val = cg()->llvmConstNull(cg()->llvmLibType("hlt.bytes"));
+    ti->to_string = "hlt::bytes_to_string";
     // ti->hash = "hlt::bool_hash";
     // ti->equal = "hlt::bool_equal";
     setResult(ti);
@@ -249,15 +262,21 @@ void TypeBuilder::visit(type::Tuple* t)
         offsets.push_back(llvm::ConstantExpr::getPtrToInt(offset, cg()->llvmTypeInt(16)));
     }
 
-    auto cval = cg()->llvmConstArray(offsets);
-    auto aux = cg()->llvmAddConst("offsets", cval);
+    llvm::Constant* aux;
+    if ( offsets.size() ) {
+        auto cval = cg()->llvmConstArray(offsets);
+        aux = cg()->llvmAddConst("offsets", cval);
+    }
+
+    else
+        aux = cg()->llvmConstNull();
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_TUPLE;
     ti->ptr_map = PointerMap(cg(), t).llvmMap();
     ti->c_prototype = "hlt_tuple";
     ti->init_val = init_val;
-    ti->pass_type_info = true;
+    ti->pass_type_info = t->wildcard();
     ti->to_string = "hlt::tuple_to_string";
     // ti->hash = "hlt::tuple_hash";
     // ti->equal = "hlt::tuple_equal";
@@ -266,3 +285,19 @@ void TypeBuilder::visit(type::Tuple* t)
     setResult(ti);
 }
 
+void TypeBuilder::visit(type::Reference* b)
+{
+    shared_ptr<hilti::Type> t = nullptr;
+
+    if ( ! b->wildcard() ) {
+        setResult(typeInfo(b->refType()).get());
+        return;
+    }
+
+    // ref<*>
+    TypeInfo* ti = new TypeInfo(b);
+    ti->id = HLT_TYPE_ANY;
+    ti->init_val = cg()->llvmConstNull();
+    ti->c_prototype = "void*";
+    setResult(ti);
+}

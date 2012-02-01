@@ -622,8 +622,11 @@ llvm::Constant* CodeGen::llvmRtti(shared_ptr<hilti::Type> type)
 {
     llvm::Constant* val = lookupCachedConstant("type.rtti", type->repr());
 
-    if ( val )
-        return val;
+    if ( val ) {
+        auto v = llvm::cast<llvm::GlobalVariable>(val);
+        assert(v);
+        return v->getInitializer();
+    }
 
     // We add the global here first and cache it before we call llvmRtti() so
     // the recursive calls function properly.
@@ -640,7 +643,8 @@ llvm::Constant* CodeGen::llvmRtti(shared_ptr<hilti::Type> type)
 
     cval = llvm::ConstantExpr::getBitCast(constant2, llvmTypePtr(llvmTypeRtti()));
     constant1->setInitializer(llvm::ConstantExpr::getBitCast(constant2, llvmTypePtr(llvmTypeRtti())));
-    return cval;
+
+    return constant1->getInitializer();
 }
 
 llvm::Type* CodeGen::llvmTypeVoid() {
@@ -693,7 +697,7 @@ llvm::Constant* CodeGen::llvmGEPIdx(int64_t idx)
 llvm::Constant* CodeGen::llvmConstNull(llvm::Type* t)
 {
     if ( ! t )
-        t = llvmTypeInt(8); // Will return "i8 *" aka "void *".
+        t = llvmTypePtr(llvmTypeInt(8)); // Will return "i8 *" aka "void *".
 
     return llvm::Constant::getNullValue(t);
 }
@@ -730,7 +734,13 @@ llvm::Constant* CodeGen::llvmConstAsciizPtr(const string& str)
 
 llvm::Constant* CodeGen::llvmConstStruct(const std::vector<llvm::Constant*>& elems, bool packed)
 {
-    return llvm::ConstantStruct::getAnon(elems, packed);
+    if ( elems.size() )
+        return llvm::ConstantStruct::getAnon(elems, packed);
+    else {
+        std::vector<llvm::Type*> empty;
+        auto stype = llvmTypeStruct("", empty, packed);
+        return llvmConstNull(stype);
+    }
 }
 
 llvm::Constant* CodeGen::llvmCastConst(llvm::Constant* c, llvm::Type* t)
@@ -1284,7 +1294,8 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
 
          case type::function::HILTI_C: {
             if ( pti->pass_type_info ) {
-                llvm_args.push_back(llvmRtti(arg_type));
+                auto rtti = llvmRtti(arg_type);
+                llvm_args.push_back(rtti);
                 auto tmp = llvmAddTmp("arg", arg_llvm_type, arg_value);
                 llvm_args.push_back(builder()->CreateBitCast(tmp, llvmTypePtr()));
             }
