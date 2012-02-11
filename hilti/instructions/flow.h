@@ -2,6 +2,7 @@
 // Instructions controlling flow.
 
 iBegin(flow, ReturnResult, "return.result")
+    iTerminator()
     iOp1(optype::any, true)
 
     iValidate {
@@ -11,6 +12,7 @@ iBegin(flow, ReturnResult, "return.result")
 iEnd
 
 iBegin(flow, ReturnVoid, "return.void")
+    iTerminator()
     iValidate {
     }
 
@@ -37,3 +39,33 @@ iBegin(flow, CallResult, "call")
 
     iDoc("")
 iEnd
+
+iBegin(flow, IfElse, "if.else")
+    iTerminator()
+    iOp1(optype::boolean, true)
+    iOp2(optype::label, true)
+    iOp3(optype::label, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Transfers control label *op2* if *op1* is true, and to *op3*
+        otherwise.
+    )")
+
+iEnd
+
+iBegin(flow, Jump, "jump")
+    iTerminator()
+    iOp1(optype::label, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Jumps unconditionally to label *op2*.
+    )")
+
+iEnd
+

@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include <sys/stat.h>
+#include <execinfo.h>
 
 #include "util.h"
 
@@ -9,7 +10,7 @@ using namespace util;
 
 string util::fmt(const char* fmt, ...)
 {
-    static char buffer[1024];
+    char buffer[1024];
 
     va_list ap;
     va_start(ap, fmt);
@@ -155,4 +156,13 @@ string util::findInPaths(const string& file, const path_list& paths)
     }
 
     return "";
+}
+
+void util::abort_with_backtrace()
+{
+    fputs("\n--- Aborting\n", stderr);
+    void* callstack[128];
+    int frames = backtrace(callstack, 128);
+    backtrace_symbols_fd(callstack, frames, 2);
+    abort();
 }

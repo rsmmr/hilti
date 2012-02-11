@@ -74,7 +74,9 @@ class Scanner;
 class location;
 
 struct Context {
-    node_ptr<hilti::Module> module;
+   node_ptr<hilti::Module> module;
+   std::list<shared_ptr<Scope>> scopes;
+   std::list<shared_ptr<statement::Block>> blocks;
 };
 
 class Driver : public ast::Logger {
@@ -92,6 +94,17 @@ public:
    Scanner* scanner() const { return _scanner; }
    Parser* parser() const { return _parser; }
    Context* context() const { return _context; }
+
+   void pushScope(shared_ptr<Scope> scope) { _context->scopes.push_back(scope); }
+   void popScope() { _context->scopes.pop_back(); }
+
+   shared_ptr<Scope> currentScope() const  { return _context->scopes.back(); }
+
+   void pushBlock(shared_ptr<statement::Block> block) { _context->blocks.push_back(block); }
+   void popBlock() { _context->blocks.pop_back(); }
+
+   shared_ptr<statement::Block> currentBlock() const  { return _context->blocks.back(); }
+
 
 private:
    std::string _sname;

@@ -20,7 +20,7 @@
 #define YY_USER_ACTION yylloc->columns(yyleng);
 %}
 
-id      @?[a-zA-Z_][a-zA-Z_0-9]*
+id      [a-zA-Z_][a-zA-Z_0-9]*
 string  \"(\\.|[^\\"])*\"
 int     [+-]?[0-9]+
 blank   [ \t]
@@ -69,13 +69,14 @@ Null                  return token::CNULL;
 b{string}             yylval->sval = string(yytext, 2, strlen(yytext) - 3); return token::CBYTES;
 
 {id}                  yylval->sval = yytext; return token::IDENT;
+@{id}                  yylval->sval = yytext; return token::LABEL_IDENT;
 {id}(\.{id}){1,}      yylval->sval = yytext; return token::DOTTED_IDENT;
 {id}(::{id}){1,}      yylval->sval = yytext; return token::SCOPED_IDENT;
 
 
 {comment}             yylval->sval = yytext; return token::COMMENT;
 
-[*,=;<>(){}]          return (token_type) yytext[0];
+[*,=:;<>(){}]          return (token_type) yytext[0];
 
 .                     driver.error("invalid character", *yylloc);
 

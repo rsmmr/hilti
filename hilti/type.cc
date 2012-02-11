@@ -25,6 +25,7 @@ type::Void::~Void() {}
 type::String::~String() {}
 type::Integer::~Integer() {}
 type::Bool::~Bool() {}
+type::Label::~Label() {}
 type::Bytes::~Bytes() {};
 
 string type::trait::Parameterized::repr() const

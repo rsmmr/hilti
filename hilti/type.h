@@ -275,6 +275,19 @@ public:
    ACCEPT_VISITOR(Type);
 };
 
+/// A type representing the name of an instruction block.
+class Label : public hilti::Type
+{
+public:
+   /// Constructor.
+   ///
+   /// l: Associated location.
+   Label(const Location& l=Location::None) : hilti::Type(l) {}
+   virtual ~Label();
+   virtual string repr() const { return "<label>"; }
+   ACCEPT_VISITOR(Type);
+};
+
 /// Type for strings.
 class String : public ValueType, public trait::GarbageCollected {
 public:

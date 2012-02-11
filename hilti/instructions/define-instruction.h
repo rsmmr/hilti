@@ -142,4 +142,8 @@
        } \
        const char* __doc() const override { { return txt; }
 
+/// Marks an instruction as a block terminator.
+#define iTerminator() \
+       bool __terminator() const override { return true; }
+
 #endif

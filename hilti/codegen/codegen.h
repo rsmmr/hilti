@@ -194,8 +194,11 @@ protected:
    /// be further mangled and made unique. If empty, the block will be
    /// anonymous
    ///
+   /// reuse: If true and we have already created a builder of the given name
+   /// within the same function, that will be returned.
+   ///
    /// Returns: The LLVM IRBuilder.
-   IRBuilder* newBuilder(string name = "");
+   IRBuilder* newBuilder(string name = "", bool reuse = false);
 
    /// Creates a new LLVM builder with a given block as its insertion point.
    /// It does however not push it onto stack of builders associated with the
@@ -208,6 +211,16 @@ protected:
    ///
    /// Returns: The LLVM IRBuilder.
    IRBuilder* newBuilder(llvm::BasicBlock* block, bool insert_at_beginning = false);
+
+   /// Returns the builder associated with a block label. This first this is
+   /// called for a given pair label/function, a new builder is created and
+   /// returned. Subsequent calls for the same pair will then return the same
+   /// builder.
+   ///
+   /// id: The label.
+   ///
+   /// Returns: The builder.
+   IRBuilder* builderForLabel(const string& name);
 
    /// Caches an LLVM value for later reuse. The value is identified by two
    /// string keys that can be chosen by the caller. lookupCachedValue() will
@@ -885,6 +898,11 @@ protected:
    ///
    /// Returns: The created call instruction.
    llvm::CallInst* llvmCheckedCreateCall(llvm::Value* callee, const llvm::Twine &name="");
+
+   /// Wrapper method to create an LLVM \c sotre instructions that first
+   /// checks operands for compatibility. If not matching, it dumps out
+   /// debugging outout and abort execution.
+   llvm::StoreInst* llvmCheckedCreateStore(llvm::Value *val, llvm::Value *ptr, bool isVolatile=false);
 
    /// Wrapper method to create an LLVM \c gep instruction a bit more easily.
    /// There's also a const version of this method.

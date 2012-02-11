@@ -8,5 +8,6 @@
 #include "scope-builder.h"
 #include "validator.h"
 #include "collector.h"
+#include "block-normalizer.h"
 
 #endif

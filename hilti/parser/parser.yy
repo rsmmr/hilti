@@ -24,6 +24,7 @@ namespace hilti_parser { class Parser; }
 %lex-param   { class Driver& driver }
 
 %error-verbose
+%debug
 
 %union {}
 
@@ -60,6 +61,7 @@ using namespace hilti;
 
 %token         END     0      "end of file"
 %token <sval>  IDENT          "identifier"
+%token <sval>  LABEL_IDENT    "block label"
 %token <sval>  DOTTED_IDENT   "dotted identifier"
 %token <sval>  SCOPED_IDENT   "scoped identifier"
 %token <sval>  COMMENT        "comment"
@@ -92,13 +94,13 @@ using namespace hilti;
 %type <decl>             global local function
 %type <decls>            opt_local_decls
 %type <type>             type
-%type <id>               local_id scoped_id mnemonic import
-%type <expr>             expr opt_default_expr tuple_elem constant ctor
+%type <id>               local_id scoped_id mnemonic import opt_label label
+%type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor
 %type <exprs>            opt_tuple_elem_list tuple_elem_list tuple
 %type <types>            type_list
 %type <stmt>             stmt instruction
-%type <stmts>            stmt_list opt_stmt_list
-%type <block>            body
+%type <stmts>            stmt_list first_block more_blocks
+%type <block>            body blocks block_content
 %type <operands>         operands
 %type <params>           param_list opt_param_list
 %type <param>            param result
@@ -139,7 +141,9 @@ opt_nl        : NEWLINE
 input         : opt_comment module global_decls
               ;
 
-module        : MODULE local_id eol              { driver.context()->module = builder::module::create($2, *driver.streamName(), loc(@$)); }
+module        : MODULE local_id eol              { auto module = builder::module::create($2, *driver.streamName(), loc(@$));
+                                                   driver.context()->module = module;
+                                                 }
               ;
 
 local_id      : IDENT                            { $$ = builder::id::create($1, loc(@$)); }
@@ -175,23 +179,21 @@ stmt          : instruction eol                  { $$ = $1; }
               | local                            { $$ = $1; }
               ;
 
-opt_stmt_list : stmt_list                        { $$ = $1; }
-              | /* empty */                      { $$ = builder::function::statement_list(); }
-
 stmt_list     : stmt stmt_list                   { $$ = $2; $$.push_front($1); }
               | comment stmt_list                { $$ = $2; }
-              | stmt                             { $$ = builder::function::statement_list(); $$.push_back($1); }
-              | comment                          { $$ = builder::function::statement_list(); }
+              | stmt                             { $$ = builder::block::statement_list(); $$.push_back($1); }
+              | comment                          { $$ = builder::block::statement_list(); }
               ;
 
 instruction   : mnemonic operands                { $$ = builder::instruction::create($1, $2, loc(@$)); }
-              | expr '=' mnemonic operands       { $4[0] = $1; $$ = builder::instruction::create($3, $4, loc(@$)); }
-              | expr '=' operands                { $3[0] = $1; $$ = builder::instruction::create("assign", $3, loc(@$)); }
+              | expr_lhs '=' mnemonic operands   { $4[0] = $1; $$ = builder::instruction::create($3, $4, loc(@$)); }
+              | expr_lhs '=' operands            { $3[0] = $1; $$ = builder::instruction::create("assign", $3, loc(@$)); }
 
 mnemonic      : local_id                         { $$ = $1; }
               | DOTTED_IDENT                     { $$ = builder::id::create($1, loc(@$)); }
 
-operands      : expr                             { $$ = make_ops(nullptr, $1, nullptr, nullptr); }
+operands      : /* empty */                      { $$ = make_ops(nullptr, nullptr, nullptr, nullptr); }
+              | expr                             { $$ = make_ops(nullptr, $1, nullptr, nullptr); }
               | expr expr                        { $$ = make_ops(nullptr, $1, $2, nullptr); }
               | expr expr expr                   { $$ = make_ops(nullptr, $1, $2, $3); }
 
@@ -217,10 +219,14 @@ expr          : constant                         { $$ = $1; }
               | scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
               ;
 
+expr_lhs      : scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
+              ;
+
 constant      : CINTEGER                         { $$ = builder::integer::create($1, loc(@$)); }
               | CBOOL                            { $$ = builder::boolean::create($1, loc(@$)); }
               | CSTRING                          { $$ = builder::string::create($1, loc(@$)); }
               | CNULL                            { $$ = builder::reference::createNull(loc(@$)); }
+              | LABEL_IDENT                      { $$ = builder::label::create($1, loc(@$)); }
               | tuple                            { $$ = builder::tuple::create($1, loc(@$));  }
               ;
 
@@ -264,7 +270,40 @@ opt_tok_const : CONST                            { $$ = true; }
 opt_default_expr : '=' expr                      { $$ = $2; }
               | /* empty */                      { $$ = node_ptr<Expression>(); }
 
-body          : opt_nl '{' opt_nl opt_local_decls opt_stmt_list opt_nl '}' opt_nl  { $$ = builder::function::body($4, $5, driver.context()->module, loc(@$)); }
+body          : opt_nl '{' opt_nl blocks opt_nl '}' opt_nl { $$ = $4; }
+
+blocks        :                                  { auto b = builder::block::create(driver.context()->module->body()->scope(), loc(@$));
+                                                   driver.pushBlock(b);
+                                                   driver.pushScope(b->scope());
+                                                 }
+
+                first_block                      { $$ = driver.currentBlock();
+
+                                                   for ( auto b : $2 )
+                                                       $$->addStatement(b);
+
+                                                   driver.popScope();
+                                                   driver.popBlock();
+                                                 }
+
+first_block   : opt_label block_content          { $2->setID($1); driver.pushScope($2->scope()); }
+                  more_blocks                    { $$ = $4; $$.push_front($2); driver.popScope(); }
+
+              | opt_label block_content          { $2->setID($1); $$ = builder::block::statement_list(); $$.push_front($2); }
+
+more_blocks   : label block_content              { $2->setID($1); driver.pushScope($2->scope()); }
+                  more_blocks                    { $$ = $4; $$.push_front($2); driver.popScope(); }
+
+              | label block_content              { $2->setID($1); $$ = builder::block::statement_list(); $$.push_back($2); }
+              ;
+
+block_content : opt_local_decls stmt_list        { $$ = builder::block::create($1, $2, driver.currentScope(), loc(@$)); }
+
+opt_label     : label                            { $$ = $1; }
+              | /* empty */                      { $$ = nullptr; }
+
+label         : LABEL_IDENT ':' opt_nl           { $$ = builder::id::create($1, loc(@$));; }
+
 
 tuple         : '(' opt_tuple_elem_list ')'      { $$ = $2; }
 

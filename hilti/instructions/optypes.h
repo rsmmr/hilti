@@ -9,6 +9,7 @@ static shared_ptr<Type> any(new type::Any());
 static shared_ptr<Type> boolean(new type::Bool());
 static shared_ptr<Type> string(new type::String());
 static shared_ptr<Type> function(new type::Function());
+static shared_ptr<Type> label(new type::Label());
 static shared_ptr<Type> tuple(new type::Tuple());
 
 static shared_ptr<Type> refBytes(new type::Reference(shared_ptr<Type>(new type::Bytes())));

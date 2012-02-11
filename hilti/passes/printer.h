@@ -31,6 +31,7 @@ public:
    std::ostream& out() const { return _out; }
 
    bool _bol = true;
+   bool _no_indent = false;
 
 protected:
    void visit(Module* m) override;
@@ -70,6 +71,7 @@ protected:
    void visit(constant::Bool* b) override;
    void visit(constant::Reference* r) override;
    void visit(constant::Tuple* t) override;
+   void visit(constant::Label* l) override;
    void visit(constant::Unset* u) override;
 
    void visit(ctor::Bytes* r) override;
@@ -100,11 +102,12 @@ private:
    template<typename T> friend Printer& operator<<(Printer& p, node_ptr<T> node);
 
    void prepLine() {
-       if ( _bol ) {
+       if ( _bol && ! _no_indent ) {
            for ( int i = 0; i < _indent; ++i )
                _out << "    ";
        }
        _bol = false;
+       _no_indent = false;
    }
 
    string scopedID(Expression* expr, shared_ptr<ID> id);
@@ -119,6 +122,11 @@ namespace printer {
     inline Printer& endl(Printer& p) {
         p.out() << std::endl;
         p._bol = true;
+        return p;
+    }
+
+    inline Printer& no_indent(Printer& p) {
+        p._no_indent = true;
         return p;
     }
 }

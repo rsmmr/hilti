@@ -36,6 +36,7 @@ string codegen::util::mangle(const string& name, bool global, shared_ptr<ID> par
     normalized = ::util::strreplace(normalized, ",", "_");
     normalized = ::util::strreplace(normalized, " ", "_");
     normalized = ::util::strreplace(normalized, "__", "_");
+    normalized = ::util::strreplace(normalized, "@", "l_");
 
     while ( ::util::endsWith(normalized, "_") )
         normalized = normalized.substr(0, normalized.size() - 1);
@@ -109,7 +110,8 @@ static void _dumpCall(llvm::Function* func, llvm::ArrayRef<llvm::Value *> args, 
 
     os << "\n";
     os.flush();
-    abort();
+
+    ::util::abort_with_backtrace();
 }
 
 llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const string& where, llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name)
@@ -146,9 +148,7 @@ IRBuilder* codegen::util::newBuilder(CodeGen* cg, llvm::BasicBlock* block, bool 
 
     auto builder = new IRBuilder(cg->llvmContext(), folder, util::IRInserter(cg));
 
-    insert_at_beginning = false; // FIXME
-
-    if ( ! insert_at_beginning )
+    if ( ! (insert_at_beginning && block->getFirstInsertionPt() != block->end() ) )
         builder->SetInsertPoint(block);
     else
         builder->SetInsertPoint(block->getFirstInsertionPt());

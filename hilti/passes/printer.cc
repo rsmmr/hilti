@@ -79,21 +79,22 @@ void Printer::visit(statement::Block* b)
 
     if ( in_function ) {
         if ( b->id() )
-            p << b->id() << ":" << endl;
+            p << no_indent << b->id() << ":" << endl;
 
-        pushIndent();
+        if ( parent<statement::Block>() )
+            pushIndent();
     }
 
-    for ( auto d : b->Declarations() )
+    for ( auto d : b->declarations() )
         p << d << endl;
 
-    if ( b->Declarations().size() )
+    if ( b->declarations().size() )
         p << endl;
 
-    for ( auto s : b->Statements() )
+    for ( auto s : b->statements() )
         p << s << endl;
 
-    if ( in_function )
+    if ( in_function && parent<statement::Block>() )
         popIndent();
 }
 
@@ -330,6 +331,12 @@ void Printer::visit(constant::Bool* b)
 {
     Printer& p = *this;
     p << (b->value() ? "True" : "False");
+}
+
+void Printer::visit(constant::Label* b)
+{
+    Printer& p = *this;
+    p << b->value();
 }
 
 void Printer::visit(constant::Reference* r)

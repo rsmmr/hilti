@@ -46,19 +46,36 @@ NodeBase::operator string() const {
     std::ostringstream sout;
     render(sout);
 
-    const char* location = _location ? string(_location).c_str() : "-";
+    string s = sout.str();
+    string location = "-";
+
+    if ( _location )
+        location = string(_location);
 
     return util::fmt("%s [%d/%s %p] %s", typeid(*this).name(),
-                     _childs.size(), location, this, sout.str().c_str());
+                     _childs.size(), location.c_str(), this, s.c_str());
 }
 
-void NodeBase::dump(std::ostream& out, int level) const
+void NodeBase::dump(std::ostream& out) const
+{
+    node_set seen;
+    dump(out, 0, &seen);
+}
+
+void NodeBase::dump(std::ostream& out, int level, node_set* seen) const
 {
     for ( int i = 0; i < level; ++i )
         out << "  ";
 
-    out << string(*this) << std::endl;
+    if ( seen->find(this) == seen->end() ) {
+        seen->insert(this);
 
-    for ( auto c : _childs )
-        c->dump(out, level + 1);
+        out << string(*this) << std::endl;
+
+        for ( auto c : _childs )
+            c->dump(out, level + 1, seen);
+    }
+
+    else
+        out << string(*this) << " (childs suppressed due to recursion)" << std::endl;
 }

@@ -79,3 +79,24 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
     auto result = cg()->llvmCall(func, ftype, params);
     cg()->llvmStore(i->target(), result);
 }
+
+void StatementBuilder::visit(statement::instruction::flow::IfElse* i)
+{
+    auto btype = shared_ptr<Type>(new type::Bool());
+    auto op1 = cg()->llvmValue(i->op1(), btype);
+    auto op2 = cg()->llvmValue(i->op2());
+    auto op3 = cg()->llvmValue(i->op3());
+
+    auto op2_bb = llvm::cast<llvm::BasicBlock>(op2);
+    auto op3_bb = llvm::cast<llvm::BasicBlock>(op3);
+
+    cg()->builder()->CreateCondBr(op1, op2_bb, op3_bb);
+}
+
+void StatementBuilder::visit(statement::instruction::flow::Jump* i)
+{
+    auto op1 = cg()->llvmValue(i->op1());
+    auto op1_bb = llvm::cast<llvm::BasicBlock>(op1);
+
+    cg()->builder()->CreateBr(op1_bb);
+}

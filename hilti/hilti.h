@@ -73,28 +73,7 @@ inline bool printAST(shared_ptr<Module> module, std::ostream& out)
 /// needed.
 ///
 /// Returns: True if no errors were found.
-inline bool resolveAST(shared_ptr<Module> module, const path_list& libdirs)
-{
-    passes::ScopeBuilder scope_builder(libdirs);
-    if ( ! scope_builder.run(module) )
-        return false;
-
-#if 0
-    passes::ScopePrinter scope_printer;
-    if ( ! scope_printer.run(module) )
-        return false;
-#endif
-
-    passes::IdResolver id_resolver;
-    if ( ! id_resolver.run(module) )
-        return false;
-
-    passes::InstructionResolver instruction_resolver;
-    if ( ! instruction_resolver.run(module) )
-        return false;
-
-    return true;
-}
+extern bool resolveAST(shared_ptr<Module> module, const path_list& libdirs);
 
 /// Verifyies the semantic correctness of an AST. This function should be
 /// called before code generation, and must be called only after resolveAST

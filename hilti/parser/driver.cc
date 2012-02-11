@@ -21,6 +21,7 @@ shared_ptr<hilti::Module> Driver::parse(std::istream& in, const std::string& sna
 
     Parser parser(*this);
     _parser = &parser;
+    _parser->set_debug_level(0);
     _parser->parse();
 
     _scanner = 0;

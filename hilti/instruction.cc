@@ -33,6 +33,21 @@ InstructionRegistry::instr_list InstructionRegistry::getMatching(shared_ptr<ID> 
     return matches;
 }
 
+shared_ptr<Instruction> InstructionRegistry::byName(const string& name) const
+{
+    instr_list matches;
+
+    auto m = _instructions.equal_range(name);
+
+    for ( auto n = m.first; n != m.second; ++n ) {
+        shared_ptr<Instruction> instr = n->second;
+        matches.push_back(instr);
+    }
+
+    assert(matches.size() == 1);
+    return matches.front();
+}
+
 bool Instruction::matchesOperands(const instruction::Operands& ops) const
 {
     if ( ! __matchOp0(ops[0]) )
@@ -73,6 +88,17 @@ bool Instruction::canCoerceTo(shared_ptr<Expression> op, shared_ptr<Expression> 
 
     error(op, util::fmt("operand type %s not compatible with target type %s",
                         op->type()->repr().c_str(), target->type()->repr().c_str()));
+    return false;
+}
+
+bool Instruction::canCoerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const
+{
+   if ( op1->canCoerceTo(op2->type()) || op2->canCoerceTo(op1->type()) )
+        return true;
+
+    error(op1, util::fmt("operand types %s and %s are not compatible",
+                        op1->type()->repr().c_str(), op2->type()->repr().c_str()));
+
     return false;
 }
 

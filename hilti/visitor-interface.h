@@ -33,6 +33,7 @@ namespace type {
    class Module;
    class Type;
    class Function;
+   class Label;
 
    namespace trait {
       namespace parameter {
@@ -58,6 +59,7 @@ namespace constant {
    class Bool;
    class Tuple;
    class Reference;
+   class Label;
 }
 
 namespace ctor {
@@ -163,6 +165,7 @@ public:
    virtual void visit(constant::Integer* i)   {}
    virtual void visit(constant::String* i)    {}
    virtual void visit(constant::Bool* i)      {}
+   virtual void visit(constant::Label* l)      {}
    virtual void visit(constant::Tuple* t)     {}
    virtual void visit(constant::Reference* t) {}
 

@@ -197,7 +197,7 @@ void TypeBuilder::visit(type::Bool* b)
     TypeInfo* ti = new TypeInfo(b);
     ti->id = HLT_TYPE_BOOL;
     ti->c_prototype = "int8_t";
-    ti->init_val = cg()->llvmConstInt(0, 8);
+    ti->init_val = cg()->llvmConstInt(0, 1);
     ti->to_string = "hlt::bool_to_string";
     ti->to_int64 = "hlt::bool_to_int64";
     // ti->hash = "hlt::bool_hash";

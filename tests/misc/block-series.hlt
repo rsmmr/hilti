@@ -1,0 +1,25 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run()
+{
+    call Hilti::print ("1!", True)
+
+@b2:
+    call Hilti::print ("2!", True)
+
+@b3:
+    call Hilti::print ("3!", True)
+
+@b4:
+    call Hilti::print ("4!", True)
+
+@b5:
+    call Hilti::print ("5!", True)
+}
+

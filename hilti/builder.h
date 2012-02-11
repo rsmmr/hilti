@@ -255,6 +255,33 @@ inline shared_ptr<hilti::type::Iterator> bytes(const Location& l=Location::None)
 
 }
 
+namespace label {
+
+/// Instantiates an AST expression node representing a label constant.
+///
+/// id: The label ID.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<expression::Constant> create(const ::string& id, const Location& l=Location::None)
+{
+    auto c = _sptr(new constant::Label(id, l));
+    return _sptr(new expression::Constant(c, l));
+}
+
+/// Instantiates a type::Label type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Label> type(const Location& l=Location::None) {
+    return _sptr(new hilti::type::Label(l));
+}
+
+
+}
+
 namespace module {
 
 /// Instantiates an AST node representing a top-level module.
@@ -438,8 +465,6 @@ inline shared_ptr<statement::Instruction> create(const ::string& mnemonic, const
 namespace function {
 
 typedef hilti::function::parameter_list parameter_list;
-typedef hilti::statement::Block::stmt_list statement_list;
-typedef hilti::statement::Block::decl_list declaration_list;
 
 /// Instantiates an AST node representating the declaration of a function.
 ///
@@ -472,21 +497,6 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
     return _sptr(new declaration::Function(id, func, l));
 }
 
-/// Instantiates an AST statement node representing the body of a function.
-///
-/// decls: A list of declarations that are part of the function body.
-///
-/// stmts: A list of statements making up the code of the function.
-///
-/// module: The module the corresponding function is part of.
-///
-/// l: Location associated with the type.
-///
-/// Returns: The body node.
-inline shared_ptr<statement::Block> body(const declaration_list& decls, const statement_list& stmts, const shared_ptr<Module>& module, Location l=Location::None) {
-    return _sptr(new hilti::statement::Block(decls, stmts, module->body()->scope(), nullptr, l));
-}
-
 /// Instantiates an AST node representing a function parameter for its type description.
 ///
 /// id: The name of the parameter.
@@ -514,6 +524,41 @@ inline shared_ptr<hilti::function::Parameter> parameter(shared_ptr<ID> id, share
 /// Returns: The result node.
 inline shared_ptr<hilti::function::Parameter> result(shared_ptr<Type> type, bool constant, Location l=Location::None) {
     return _sptr(new hilti::function::Parameter(type, constant, l));
+}
+
+}
+
+namespace block {
+
+typedef hilti::statement::Block::stmt_list statement_list;
+typedef hilti::statement::Block::decl_list declaration_list;
+
+/// Instantiates an AST statement node representing a statement block.
+///
+/// label: A name for the block, or null if non name.
+///
+/// decls: A list of declarations that are part of the block.
+///
+/// stmts: A list of statements making up the block
+///
+/// parent: The parent scope.
+///
+/// l: Location associated with the block.
+///
+/// Returns: The block node.
+inline shared_ptr<statement::Block> create(const declaration_list& decls, const statement_list& stmts, const shared_ptr<Scope>& parent, Location l=Location::None) {
+    return _sptr(new hilti::statement::Block(decls, stmts, parent, nullptr, l));
+}
+
+/// Instantiates an AST statement node representing a statement block.
+///
+/// parent: The parent scope.
+///
+/// l: Location associated with the block.
+///
+/// Returns: The block node.
+inline shared_ptr<statement::Block> create(const shared_ptr<Scope>& parent, Location l=Location::None) {
+    return _sptr(new hilti::statement::Block(parent, nullptr, l));
 }
 
 }

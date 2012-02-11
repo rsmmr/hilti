@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <set>
 
 #include "common.h"
 #include "location.h"
@@ -145,9 +146,7 @@ public:
    /// childs. For each node, its render() output will be included.
    ///
    /// out: The stream to use.
-   ///
-   /// level: Recursion level, should be zero for initial call.
-   void dump(std::ostream& out, int level = 0) const;
+   void dump(std::ostream& out) const;
 
    /// Returns a non-recursive textual representation of the node. The output
    /// of render() will be included.
@@ -205,6 +204,9 @@ public:
 
 private:
    NodeBase& operator = (const NodeBase&); // No assignment.
+
+   typedef std::set<const NodeBase*> node_set;
+   void dump(std::ostream& out, int level, node_set* seen) const;
 
    NodeBase* _parent;
    Location _location;

@@ -149,12 +149,36 @@ public:
    /// Returns the closest higher-level instance of a given type. This method
    /// must only be called during an ongoing visiting process from another
    /// visit method. It will return a higher-level objects of type T, or null
-   /// if there's no such.
+   /// if there's no such. Note that this may return the current instance,
+   /// use parent() if that's not desired.
    template<typename T>
    shared_ptr<T> current() {
        auto t = current<T>(typeid(T));
-       assert(t);
        return t;
+   }
+
+   /// Returns the closest higher-level instance of a given type (excluding
+   /// the current one). This method must only be called during an ongoing
+   /// visiting process from another visit method. It will return a
+   /// higher-level objects of type T, or null if there's no such.
+   template<typename T>
+   shared_ptr<T> parent() {
+       auto t = current<T, true>(typeid(T));
+       return t;
+   }
+
+   /// Returns the number of higher-level instance of a given type. This method
+   /// must only be called during an ongoing visiting process from another
+   /// visit method.
+   template<typename T>
+   shared_ptr<T> depth() {
+       int d = 0;
+       for ( auto i = _current.rbegin(); i != _current.rend(); i++ ) {
+           if ( typeid(**i) == typeid(T) )
+               ++d;
+       }
+
+       return d;
    }
 
    /// Returns the first argument given to the visitor. The argument can be
@@ -303,9 +327,14 @@ private:
        --_level;
    }
 
-   template<typename T>
+   template<typename T, bool skip_first=false>
    shared_ptr<T> current(const std::type_info& ti) const {
-       for ( auto i = _current.rbegin(); i != _current.rend(); i++ ) {
+       auto i = _current.rbegin();
+
+       if ( skip_first )
+           ++i;
+
+       for ( ; i != _current.rend(); ++i ) {
            if ( typeid(**i) == ti )
                return std::dynamic_pointer_cast<T>(*i);
        }

@@ -8,4 +8,5 @@ add_library (passes
      instruction-resolver.cc
      scope-builder.cc
      validator.cc
+     block-normalizer.cc
 )

@@ -53,7 +53,19 @@ void Loader::visit(variable::Global* v)
 
 void Loader::visit(expression::Parameter* p)
 {
-    auto val = cg()->llvmParameter(p->parameter());
+    auto param = p->parameter();
+
+    llvm::Value* val = 0;
+
+    if ( param->constant() )
+        val = cg()->llvmParameter(param);
+    else {
+        // Load shadow local.
+        auto name = "__shadow_" + param->id()->name();
+        auto addr = cg()->llvmLocal(name);
+        val = cg()->builder()->CreateLoad(addr);
+    }
+
     setResult(val);
 }
 
@@ -95,8 +107,14 @@ void Loader::visit(constant::String* s)
 
 void Loader::visit(constant::Bool* b)
 {
-    auto val = cg()->llvmConstInt(b->value() ? 1 : 0, 8);
+    auto val = cg()->llvmConstInt(b->value() ? 1 : 0, 1);
     setResult(val);
+}
+
+void Loader::visit(constant::Label* l)
+{
+    auto b = cg()->builderForLabel(l->value());
+    setResult(b->GetInsertBlock());
 }
 
 void Loader::visit(constant::Tuple* t)

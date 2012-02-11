@@ -57,6 +57,9 @@ public:
        _validator = nullptr;
    }
 
+   /// Returns true if the instruction is a block terminator.
+   bool terminator() const { return __terminator(); }
+
    ACCEPT_VISITOR_ROOT();
 
 protected:
@@ -135,9 +138,7 @@ protected:
    /// op2: The second operand.
    ///
    /// Returns: True if coercion is possible either way.
-   bool canCoerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const {
-       return canCoerceTo(op1, op2) || canCoerceTo(op2, op1);
-   }
+   bool canCoerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const;
 
    // For internal use only. Will be overridden automagically via macros.
    virtual void __validate(const hilti::instruction::Operands& ops) const {}
@@ -168,6 +169,9 @@ protected:
 
    // For internal use only. Will be overridden automagically via macros.
    virtual shared_ptr<Expression> __defaultOp3() const { return nullptr; }
+
+   // For internal use only. Will be overridden automagically via macros.
+   virtual bool __terminator() const { return false; }
 
    node_ptr<ID> _id;
    stmt_factory _factory;
@@ -200,6 +204,14 @@ public:
    ///
    /// Returns: A list of instructions compatatible with \a id and \a ops.
    instr_list getMatching(shared_ptr<ID> id, const instruction::Operands& ops) const;
+
+   /// Returns an instruction by name. The name must be unambigious. The
+   /// methods aborts if it is not, or the name does not exist at all.
+   ///
+   /// name: The name of the instruction.
+   ///
+   /// Returns: The instruction.
+   shared_ptr<Instruction> byName(const string& name) const;
 
    /// Returns a map of all instructions, indexed by their names.
    const instr_map& getAll() const { return _instructions; }

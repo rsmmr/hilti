@@ -73,6 +73,21 @@ public:
    ACCEPT_VISITOR(Constant);
 };
 
+/// AST node for a constant of type Label.
+class Label : public ast::SpecificConstant<AstInfo, Constant, string>
+{
+public:
+   /// Constructor.
+   ///
+   /// id: The name of the label.
+   ///
+   /// l: An associated location.
+   Label(string id, const Location& l=Location::None)
+       : ast::SpecificConstant<AstInfo, Constant, string>(id, shared_ptr<Type>(new type::Label()), l) {}
+
+   ACCEPT_VISITOR(Constant);
+};
+
 /// AST node for a constant of type Unset.
 class Unset : public ast::SpecificConstant<AstInfo, Constant, bool>
 {

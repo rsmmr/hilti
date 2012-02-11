@@ -46,6 +46,9 @@ extern string findInPaths(const string& file, const path_list& paths);
 extern string dirname(const string& path);
 extern string basename(const string& path);
 
+extern void abort_with_backtrace();
+
+
 }
 
 #endif

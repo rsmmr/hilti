@@ -334,7 +334,7 @@ IRBuilder* CodeGen::pushBuilder(string name)
     return pushBuilder(newBuilder(name));
 }
 
-IRBuilder* CodeGen::newBuilder(string name)
+IRBuilder* CodeGen::newBuilder(string name, bool reuse)
 {
     int cnt = 1;
 
@@ -348,8 +348,13 @@ IRBuilder* CodeGen::newBuilder(string name)
         else
             n = ::util::fmt(".%s.%d", name.c_str(), ++cnt);
 
-        if ( _functions.back()->builders_by_name.find(n) == _functions.back()->builders_by_name.end() )
+        auto b = _functions.back()->builders_by_name.find(n);
+
+        if ( b == _functions.back()->builders_by_name.end() )
             break;
+
+        if ( reuse )
+            return b->second;
     }
 
     auto block = llvm::BasicBlock::Create(llvmContext(), n, function());
@@ -363,6 +368,11 @@ IRBuilder* CodeGen::newBuilder(string name)
 IRBuilder* CodeGen::newBuilder(llvm::BasicBlock* block, bool insert_at_beginning)
 {
     return util::newBuilder(this, block, insert_at_beginning);
+}
+
+IRBuilder* CodeGen::builderForLabel(const string& name)
+{
+    return newBuilder(name, true);
 }
 
 void CodeGen::popBuilder()
@@ -440,7 +450,7 @@ void CodeGen::initGlobals()
         auto init = g->init() ? llvmValue(g->init(), g->type()) : llvmInitVal(g->type());
         assert(init);
         auto addr = llvmGlobal(g.get());
-        builder()->CreateStore(init, addr);
+        llvmCheckedCreateStore(init, addr);
     }
 
     if ( ! functionEmpty() )
@@ -830,7 +840,7 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, llvm::Type* type, llvm::V
     auto local = builder->CreateAlloca(type, 0, name);
 
     if ( init )
-        builder->CreateStore(init, local);
+        llvmCheckedCreateStore(init, local);
 
     _functions.back()->locals.insert(make_pair(name, local));
 
@@ -850,7 +860,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
         auto i = _functions.back()->tmps.find(tname);
         if ( i != _functions.back()->tmps.end() ) {
             auto tmp = i->second;
-            builder()->CreateStore(init, tmp);
+            llvmCheckedCreateStore(init, tmp);
             return tmp;
         }
     }
@@ -862,7 +872,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
 
     if ( init )
         // Must be done in original block.
-        builder()->CreateStore(init, tmp);
+        llvmCheckedCreateStore(init, tmp);
 
     _functions.back()->tmps.insert(make_pair(tname, tmp));
 
@@ -1044,7 +1054,9 @@ void CodeGen::llvmReturn(llvm::Value* result)
         state->exit_block = llvm::BasicBlock::Create(llvmContext(), "__exit", function());
 
     builder()->CreateBr(state->exit_block);
-    state->exits.push_back(std::make_pair(block(), result));
+
+    if ( result )
+        state->exits.push_back(std::make_pair(block(), result));
 }
 
 void CodeGen::llvmBuildExitBlock(shared_ptr<Function> func)
@@ -1058,7 +1070,7 @@ void CodeGen::llvmBuildExitBlock(shared_ptr<Function> func)
 
     llvm::PHINode* phi = nullptr;
 
-    if ( func->type()->result() ) {
+    if ( state->exits.size() ) {
         auto rtype = llvmType(func->type()->result()->type());
         phi = exit_builder->CreatePHI(rtype, state->exits.size());
 
@@ -1070,11 +1082,8 @@ void CodeGen::llvmBuildExitBlock(shared_ptr<Function> func)
     llvmBuildFunctionCleanup();
     popBuilder();
 
-    if ( func->type()->result() ) {
-        assert(phi);
+    if ( phi )
         exit_builder->CreateRet(phi);
-    }
-
     else
         exit_builder->CreateRetVoid();
 
@@ -1125,27 +1134,6 @@ llvm::Constant* CodeGen::llvmGEP(llvm::Constant* addr, llvm::Value* i1, llvm::Va
     return llvm::ConstantExpr::getGetElementPtr(addr, idx);
 }
 
-static void _dumpCall(llvm::Function* func, llvm::ArrayRef<llvm::Value *> args, const string& msg)
-{
-    llvm::raw_os_ostream os(std::cerr);
-    std::cerr << "=== Function call mismatch: " << msg << std::endl;
-    std::cerr << std::endl;
-
-    std::cerr << "-- Prototype:" << std::endl;
-    func->print(os);
-
-    std::cerr << "-- Arguments:" << std::endl;
-
-    for ( int i = 0; i < args.size(); ++i ) {
-        std::cerr << "[" << i << "] ";
-        args[i]->getType()->print(os);
-        std::cerr << std::endl;
-    }
-
-    std::cerr << std::endl;
-    abort();
-}
-
 llvm::CallInst* CodeGen::llvmCallC(llvm::Value* llvm_func, const value_list& args, bool add_hiltic_args)
 {
     value_list call_args = args;
@@ -1187,6 +1175,38 @@ llvm::CallInst* CodeGen::llvmCheckedCreateCall(llvm::Value *callee, const llvm::
 {
     std::vector<llvm::Value*> no_params;
     return util::checkedCreateCall(builder(), "CodeGen", callee, no_params, name);
+}
+
+static void _dumpStore(llvm::Value *val, llvm::Value *ptr, const string& where, const string& msg)
+{
+    llvm::raw_os_ostream os(std::cerr);
+
+    os << "\n";
+    os << "=== LLVM store mismatch in " << where << ": " << msg << "\n";
+    os << "\n";
+    os << "-- Value type:\n";
+    val->getType()->print(os);
+    os << "\n";
+    os << "-- Target type:\n";
+    ptr->getType()->print(os);
+    os << "\n";
+    os.flush();
+
+    ::util::abort_with_backtrace();
+}
+
+llvm::StoreInst* CodeGen::llvmCheckedCreateStore(llvm::Value *val, llvm::Value *ptr, bool isVolatile)
+{
+    auto ptype = ptr->getType();
+    auto p = llvm::isa<llvm::PointerType>(ptype);
+
+    if ( ! p )
+        _dumpStore(val, ptr, "CodeGen", "target is not of pointer type");
+
+    if ( llvm::cast<llvm::PointerType>(ptype)->getElementType() != val->getType() )
+        _dumpStore(val, ptr, "CodeGen", "operand types do not match");
+
+    return builder()->CreateStore(val, ptr, isVolatile);
 }
 
 llvm::Value* CodeGen::llvmInsertValue(llvm::Value* aggr, llvm::Value* val, unsigned int idx)

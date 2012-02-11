@@ -208,9 +208,9 @@ inline void Scope<AstInfo>::dump(std::ostream& out, int level, std::set<const Sc
     out << indent << "* Scope" << this;
 
     if ( _parent )
-        out << " / " << "has parent scope";
+        out << " / " << "has parent scope " << _parent;
     else
-        out << " / " << "no parent scope";
+        out << " / " << "no parent scope" << _parent;
 
     out << std::endl;
 

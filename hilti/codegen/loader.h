@@ -55,6 +55,7 @@ protected:
    virtual void visit(constant::Integer* c) override;
    virtual void visit(constant::String* s) override;
    virtual void visit(constant::Bool* b) override;
+   virtual void visit(constant::Label* l) override;
    virtual void visit(constant::Tuple* t) override;
    virtual void visit(constant::Reference* t) override;
 };

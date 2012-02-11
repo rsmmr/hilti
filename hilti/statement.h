@@ -82,14 +82,19 @@ public:
    /// Returns the block's name.
    shared_ptr<ID> id() const { return _id; }
 
+   /// Sets the block's name.
+   ///
+   /// id: The name.
+   void setID(shared_ptr<ID> id) { _id = id;}
+
    /// Returns the block's scope.
    shared_ptr<Scope> scope() const { return _scope; }
 
    /// Returns the block's statements.
-   const stmt_list& Statements() const { return _stmts; }
+   const stmt_list& statements() const { return _stmts; }
 
    /// Returns the block's declaratations..
-   const decl_list& Declarations() const { return _decls; }
+   const decl_list& declarations() const { return _decls; }
 
    /// Associates a comment with the \a next statement that will be added to
    /// the block via addStatement().
@@ -104,12 +109,28 @@ public:
    /// stmt: The statement.
    void addStatement(shared_ptr<Statement> stmt);
 
+   /// Adds a statement to the front of the block.
+   ///
+   /// stmt: The statement.
+   void addStatementAtFront(shared_ptr<Statement> stmt);
+
+   /// Adds a series of statements to the block.
+   ///
+   /// stmt: The statement.
+   void addStatements(const stmt_list& stmts);
+
    /// Adds a declaration to the block.
    ///
    /// stmt: The declarartion.
    void addDeclaration(shared_ptr<Declaration> decl);
 
+   /// Returns true if the last statement of the block is a terminator
+   /// instruction.
+   bool terminated() const;
+
    ACCEPT_VISITOR(Statement);
+
+   void render(std::ostream& out) const /* override */ { out << ( _id ? _id->name() : "<no name>" ); }
 
 private:
    void Init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l=Location::None);
@@ -155,7 +176,9 @@ protected:
    ///
    /// id: The name of the instruction.
    ///
-   /// ops: The list of operands. The first is the target and may be null if none is used.
+   /// ops: The list of operands. The first is the target and may be null if
+   /// none is used. If the the list has less than 4 elements, it will be
+   /// filled with nullptr corresponding to unused operands.
    ///
    /// l: An associated location.
    Instruction(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l=Location::None);
@@ -181,6 +204,15 @@ public:
    ///
    /// l: An associated location.
    Unresolved(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l=Location::None);
+
+   /// Constructor.
+   ///
+   /// name: The name of the instruction.
+   ///
+   /// ops: The list of operands. The first is the target and may be null if none is used.
+   ///
+   /// l: An associated location.
+   Unresolved(const ::string& name, const hilti::instruction::Operands& ops, const Location& l=Location::None);
 
    ACCEPT_VISITOR(Instruction);
 };
