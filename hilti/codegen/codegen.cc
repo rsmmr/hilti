@@ -63,12 +63,12 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
 
         _module = new ::llvm::Module(util::mangle(hltmod->id(), false), llvmContext());
 
-        initGlobals();
-
         createInitFunction();
 
         // Kick-off recursive code generation.
         _stmt_builder->llvmStatement(hltmod->body());
+
+        initGlobals();
 
         finishInitFunction();
 
@@ -204,7 +204,7 @@ llvm::Value* CodeGen::llvmLocal(const string& name)
     if ( i == map.end() )
         internalError("unknown local " + name);
 
-    return i->second;
+    return i->second.first;
 }
 
 llvm::Value* CodeGen::llvmGlobal(shared_ptr<Variable> var)
@@ -255,9 +255,9 @@ llvm::Constant* CodeGen::llvmSizeOf(llvm::Constant* v)
     return llvm::ConstantExpr::getPtrToInt(addr, llvmTypeInt(64));
 }
 
-void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value)
+void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value, bool plusone)
 {
-    _storer->llvmStore(target, value);
+    _storer->llvmStore(target, value, plusone);
 }
 
 llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
@@ -274,9 +274,9 @@ llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
     return 0; // Never reached.
 }
 
-void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value)
+void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value, bool plusone)
 {
-    _storer->llvmStore(instr->target(), value);
+    _storer->llvmStore(instr->target(), value, plusone);
 }
 
 llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builder)
@@ -426,11 +426,11 @@ void CodeGen::initGlobals()
 
     // This global will be accessed by our custom linker. Unfortunastely, it
     // seems, we can't store a type in a metadata node directly, which would
-    // simply the linker.
+    // simplify the linker.
     _globals_type = llvmTypeStruct(symbols::TypeGlobals + postfix, globals);
 
     // If we don't have any globals, we don't need any of the following.
-    if ( globals.size() == 0 )
+    if ( globals.size() == 0 && _global_strings.size() == 0 )
         return;
 
     // Create the @hlt.globals.base() function. This will be called when we
@@ -446,11 +446,33 @@ void CodeGen::initGlobals()
 
     pushFunction(_globals_init_func);
 
+    // Init user defined globals.
     for ( auto g : _collector->globals() ) {
         auto init = g->init() ? llvmValue(g->init(), g->type()) : llvmInitVal(g->type());
         assert(init);
         auto addr = llvmGlobal(g.get());
+        llvmRef(init, g->type());
         llvmCheckedCreateStore(init, addr);
+    }
+
+    // Init the global string constants.
+    for ( auto gs : _global_strings ) {
+        auto str = gs.first;
+        auto glob = gs.second;
+
+        std::vector<llvm::Constant*> vec_data;
+        for ( auto c : str )
+            vec_data.push_back(llvmConstInt(c, 8));
+
+        auto array = llvmConstArray(llvmTypeInt(8), vec_data);
+        llvm::Constant* data = llvmAddConst("string", array);
+        data = llvm::ConstantExpr::getBitCast(data, llvmTypePtr());
+
+        value_list args;
+        args.push_back(data);
+        args.push_back(llvmConstInt(str.size(), 64));
+        auto s = llvmCallC(llvmLibFunction("hlt_string_from_data"), args, true);
+        builder()->CreateStore(s, glob);
     }
 
     if ( ! functionEmpty() )
@@ -481,6 +503,16 @@ void CodeGen::initGlobals()
             args.push_back(llvmGlobal(g));
             llvmCheckedCreateCall(func, args);
         }
+
+        auto val = builder()->CreateLoad(llvmGlobal(g));
+        llvmUnref(val, g->type());
+    }
+
+    auto stype = shared_ptr<Type>(new type::String());
+
+    for ( auto gs : _global_strings ) {
+        auto glob = gs.second;
+        llvmUnref(builder()->CreateLoad(glob), stype);
     }
 
     if ( ! functionEmpty() )
@@ -765,25 +797,15 @@ llvm::Value* CodeGen::llvmString(const string& s)
         return llvmConstNull(llvmTypeString());
 
     // See if we have already created an array for this string.
-    llvm::Constant* data = lookupCachedConstant("llvmString", s);
+    llvm::Value* data = lookupCachedValue("llvmString", s);
 
     if ( ! data ) {
-        std::vector<llvm::Constant*> vec_data;
-        for ( auto c : s )
-            vec_data.push_back(llvmConstInt(c, 8));
-
-        auto array = llvmConstArray(llvmTypeInt(8), vec_data);
-        data = llvmAddConst("string", array);
+        data = llvmAddGlobal("string", llvmTypeString());
         cacheValue("llvmString", s, data);
-        assert(data);
+        _global_strings.push_back(make_pair(s, data));
     }
 
-    data = llvm::ConstantExpr::getBitCast(data, llvmTypePtr());
-
-    value_list args;
-    args.push_back(data);
-    args.push_back(llvmConstInt(s.size(), 64));
-    return llvmCallC(llvmLibFunction("hlt_string_from_data"), args, true);
+    return builder()->CreateLoad(data);
 }
 
 llvm::Value* CodeGen::llvmValueStruct(const std::vector<llvm::Value*>& elems, bool packed)
@@ -829,20 +851,22 @@ llvm::GlobalVariable* CodeGen::llvmAddGlobal(const string& name, llvm::Constant*
     return llvmAddGlobal(name, init->getType(), init, use_name_as_is);
 }
 
-llvm::Value* CodeGen::llvmAddLocal(const string& name, llvm::Type* type, llvm::Value* init)
+llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, llvm::Value* init)
 {
+    auto llvm_type = llvmType(type);
+
     if ( ! init )
-        init = llvmConstNull(type);
+        init = llvmConstNull(llvm_type);
 
     llvm::BasicBlock& block(function()->getEntryBlock());
 
     auto builder = newBuilder(&block, true);
-    auto local = builder->CreateAlloca(type, 0, name);
+    auto local = builder->CreateAlloca(llvm_type, 0, name);
 
     if ( init )
         llvmCheckedCreateStore(init, local);
 
-    _functions.back()->locals.insert(make_pair(name, local));
+    _functions.back()->locals.insert(make_pair(name, std::make_pair(local, type)));
 
     delete builder;
 
@@ -859,7 +883,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
     if ( reuse ) {
         auto i = _functions.back()->tmps.find(tname);
         if ( i != _functions.back()->tmps.end() ) {
-            auto tmp = i->second;
+            auto tmp = i->second.first;
             llvmCheckedCreateStore(init, tmp);
             return tmp;
         }
@@ -874,7 +898,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
         // Must be done in original block.
         llvmCheckedCreateStore(init, tmp);
 
-    _functions.back()->tmps.insert(make_pair(tname, tmp));
+    _functions.back()->tmps.insert(make_pair(tname, std::make_pair(tmp, nullptr)));
 
     delete tmp_builder;
 
@@ -1092,9 +1116,14 @@ void CodeGen::llvmBuildExitBlock(shared_ptr<Function> func)
 
 void CodeGen::llvmBuildFunctionCleanup()
 {
-    // TODO: Unref locals and parameters.
-}
+    // Unref locals (incl. parameters).
+    for ( auto l : _functions.back()->locals )
+        llvmUnref(builder()->CreateLoad(l.second.first), l.second.second);
 
+    // Unref values registered for doing so.
+    for ( auto unref : _functions.back()->unrefs_at_return )
+        llvmUnref(unref.first, unref.second);
+}
 
 llvm::Value* CodeGen::llvmGEP(llvm::Value* addr, llvm::Value* i1, llvm::Value* i2, llvm::Value* i3, llvm::Value* i4)
 {
@@ -1426,4 +1455,84 @@ llvm::Value* CodeGen::llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm
     value = builder()->CreateLShr(value, low);
 
     return builder()->CreateAnd(value, mask);
+}
+
+void CodeGen::llvmRefHelper(const char* func, llvm::Value* val, shared_ptr<Type> type)
+{
+    // FIXME: Not so great to hardcode all the types here. But unclear what
+    // would be better.
+
+    auto ttype = ast::as<type::Tuple>(type);
+
+    if ( ttype ) {
+        // Ref/unref all elements.
+
+        int i = 0;
+        auto cval = llvm::dyn_cast<llvm::Constant>(val);
+
+        for ( auto et : ttype->typeList() ) {
+            llvm::Value* e = nullptr;
+
+            if ( cval )
+                e = llvm::ConstantExpr::getExtractValue(cval, i);
+            else
+                e = builder()->CreateExtractValue(val, i);
+
+            llvmRefHelper(func, e, et);
+
+            ++i;
+        }
+
+        return;
+    }
+
+    auto rtype = ast::as<type::Reference>(type);
+
+    if ( rtype ) {
+        // Deference.
+        val = builder()->CreateLoad(val);
+        type = rtype->refType();
+    }
+
+    if ( ! type::hasTrait<type::trait::GarbageCollected>(type) )
+        return;
+
+    auto c = llvm::dyn_cast<llvm::Constant>(val);
+
+    if ( c && c->isNullValue() )
+        return;
+
+    value_list args;
+    args.push_back(llvmRtti(type));
+    args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
+    llvmCallC(func, args, false);
+}
+
+void CodeGen::llvmRef(llvm::Value* val, shared_ptr<Type> type)
+{
+    llvmRefHelper("hlt_object_ref", val, type);
+}
+
+void CodeGen::llvmUnref(llvm::Value* val, shared_ptr<Type> type)
+{
+    llvmRefHelper("hlt_object_unref", val, type);
+}
+
+void CodeGen::llvmUnrefAtReturn(llvm::Value* val, shared_ptr<Type> type)
+{
+    _functions.back()->unrefs_at_return.push_back(std::make_tuple(val, type));
+}
+
+void CodeGen::llvmUnrefAfterInstruction(llvm::Value* val, shared_ptr<Type> type)
+{
+    _functions.back()->unrefs_after_ins.push_back(std::make_tuple(val, type));
+}
+
+void CodeGen::finishStatement()
+{
+    // Unref values registered for doing so.
+    for ( auto unref : _functions.back()->unrefs_after_ins )
+        llvmUnref(unref.first, unref.second);
+
+    _functions.back()->unrefs_after_ins.clear();
 }

@@ -1,5 +1,7 @@
 // $Id$
 
+#include <stdio.h>
+
 #include "memory.h"
 #include "context.h"
 #include "rtti.h"

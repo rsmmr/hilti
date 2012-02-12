@@ -136,9 +136,6 @@ always ref'counted, but others may be too (like
 
 The code generator provides three methods to manage such objects:
 
-    :hltc:`llvmNewObject` 
-        Allocates a new instance.
-
     :hltc:`llvmRef` 
         Indicates that a new reference to an objects has been stored
         (i.e., increasing the reference count).
@@ -151,13 +148,12 @@ The code generator provides three methods to manage such objects:
         immediately though usually it probably will.
 
 There are corresponding functions in ``libhilti`` for internal C-level
-memory management (:hltc:`__hlt_object_new`, :hltc:`__hlt_object_ref`,
+memory management (:hltc:`__hlt_object_ref`,
 :hltc:`__hlt_object_unref`). In addition, by convention each garbaged
-collected type ``foo`` that provides a function ``foo_new`` also
-provides ``foo_ref`` and ``foo_unref``. While equivalent in function
-to ``__hlt_object_ref/unref``, calling these is more convinient as
-type information doesn't need to be passed in (and it's more readable
-too).
+collected type ``foo`` provides functions ``foo_new``, ``foo_ref`` and
+``foo_unref``. While the latter two are equivalent in functionality to
+``__hlt_object_ref/unref``, calling these is more convinient as type
+information doesn't need to be passed in (and it's more readable too).
 
 For each garbage collected type, HILTI's run-time type information
 provides two pieces of information for memory management:
@@ -205,13 +201,17 @@ reference-counted objects:
 
     1. When storing a reference in any variable or parameter, first
        *unref* the old value, then *ref* the new value before doing
-       the store.
+       the store. The :hltc:`codegen::Storer` takes care of this.
 
     2. When calling functions of :ref:`dev-cc` ``HILTI`` or
        ``C-HILTI``, we pass all ref-counted objects at +0. For the
-       callee the object is guaranteed to exists until it returns, but
-       if it needs to store a reference to one of its arguments
-       longer, it needs to ref.
+       callee, the object is guaranteed to exists until it returns. 
+       If it needs to store a reference to one of its arguments that
+       exceeds that, it needs to ref.
+
+       For non-const parameters, we create local shadow variables in
+       the function. These shadow variables are treated like any other
+       and they ref upon initialization.
 
     3. When returning an object of a ref-counted type from a
        ``HILTI``/``C-HILTI`` function, we *always* return it at +1.
@@ -221,7 +221,8 @@ reference-counted objects:
        (1) above, it then doesn't need to anything.)
 
     4. ``HILTI``/``C-HILTI`` functions *unref* all their local
-       variables at exit (both normal or exception).
+       variables (and shadow parameters) at exit (both normal or
+       exception).
 
     5. Globals are *unref* when the execution context they are stored
        in gets destroyed.
@@ -231,6 +232,13 @@ reference-counted objects:
        any standard convention), ref-counting semantics must be
        defined individually (though it's usually best to follow the
        above wherever possible to avoid confusion).
+
+    7. Composite objects storing references to garbage collected
+       objects must ``ref`` and ``unref`` as appropiate.
+
+       Note that tuples are tricky here as they are a value type. We
+       hardcode the login in :hltc:`CodeGen::llvmRef` and
+       :hltc:`CodeGen::llvmUnref`.
 
 .. note:: These conventions generates more updates than necessary.  We
    should be able to add an optimization pass later that removes a

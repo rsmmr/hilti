@@ -34,6 +34,7 @@ static void _add_char(int8_t c, int8_t* buffer, hlt_string_size* bpos, hlt_strin
         new_dst = hlt_string_concat(*dst, new_dst, excpt, ctx);
         buffer[0] = c;
         *bpos = 1;
+        hlt_string_unref(*dst);
         *dst = new_dst;
     }
 }
@@ -152,8 +153,10 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
             if ( *excpt )
                 return;
 
-            if ( str )
+            if ( str ) {
                 _add_chars(str->bytes, str->len, buffer, bpos, dst, excpt, ctx);
+                hlt_string_unref(str);
+            }
         }
 
         else
@@ -209,8 +212,11 @@ hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tupl
     if ( *excpt )
         return 0;
 
-    if ( dst )
-        result = hlt_string_concat(dst, result, excpt, ctx);
+    if ( dst ) {
+        hlt_string nresult = hlt_string_concat(dst, result, excpt, ctx);
+        hlt_string_unref(result);
+        result = nresult;
+    }
 
     return result;
 }

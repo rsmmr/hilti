@@ -35,6 +35,7 @@ void hlt_string_unref(hlt_string s)
 hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s = *((hlt_string*)obj);
+    hlt_string_ref(s);
     return s ? s : 0;
 }
 

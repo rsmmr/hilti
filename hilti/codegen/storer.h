@@ -13,7 +13,7 @@ namespace codegen {
 /// Visitor that generates the code for storing an LLVM value into a target
 /// described by a HILTI expression. Note that this class should not be used
 /// directly, the main frontend function is CodeGen::llvmStore().
-class Storer : public CGVisitor<int, llvm::Value*>
+class Storer : public CGVisitor<int, llvm::Value*, bool>
 {
 public:
    /// Constructor.
@@ -27,7 +27,7 @@ public:
    /// target: The target of the store.
    ///
    /// value: The value to store.
-   void llvmStore(shared_ptr<Expression> target, llvm::Value* value);
+   void llvmStore(shared_ptr<Expression> target, llvm::Value* value, bool plusone);
 
 protected:
    void visit(expression::Variable* v) override;

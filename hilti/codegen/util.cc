@@ -14,6 +14,9 @@ void codegen::util::IRInserter::InsertHelper(llvm::Instruction *I, const llvm::T
     // Do the default stuff first.
     llvm::IRBuilderDefaultInserter<>::InsertHelper(I, Name, BB, InsertPt);
 
+    if ( ! _cg )
+        return;
+
     // Add comment if the codegen has one for us.
     const string& comment = _cg->nextComment();
     if ( _cg && comment.size() ) {

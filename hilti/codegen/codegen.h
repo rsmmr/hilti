@@ -412,7 +412,9 @@ protected:
    /// the value.
    ///
    /// value: The value to store.
-   void llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value);
+   ///
+   /// plusone: XXX
+   void llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value, bool plusone=false);
 
    /// Stores an LLVM value at the location associated with a HILTI
    /// instruction's target operand. expression.
@@ -423,7 +425,9 @@ protected:
    /// destination for the store operation.
    ///
    /// value: The value to store.
-   void llvmStore(statement::Instruction* instr, llvm::Value* value);
+   ///
+   /// plusone: XXX
+   void llvmStore(statement::Instruction* instr, llvm::Value* value, bool plusone=false);
 
    /// Returns a global's index in the module-wide array of globals. Each
    /// module keeps an array with all its globals as part of HILTI's
@@ -691,7 +695,8 @@ protected:
    /// Adds a new local variable to the current LLVM function. Locals created
    /// with this method should correspond to variables defined by the user at
    /// the HILTI level. To create internal temporaries for use by the code
-   /// generator, use llvmAddTmp() instead.
+   /// generator, use llvmAddTmp() instead. Locals will be unrefed
+   /// automatically at function exit.
    ///
    /// name: A name to use for the local. Note that it's not necessarily used
    /// literally and may be adpated further.
@@ -701,11 +706,13 @@ protected:
    /// init: An optional intialization value.
    ///
    /// Returns: The new local variable.
-   llvm::Value* llvmAddLocal(const string& name, llvm::Type* type, llvm::Value* init = 0);
+   llvm::Value* llvmAddLocal(const string& name, shared_ptr<Type> type, llvm::Value* init = 0);
 
    /// Adds a new local temporary variable to the current LLVM function.
    /// Temporaries don't correspond to a user-defined variable but are
-   /// created internally by the code generator to store intermediaries.
+   /// created internally by the code generator to store intermediaries. 
+   /// Locals will *not* be unrefed automatically at function exit. If you
+   /// need that, use llvmUnrefAtExit or llvmUnrefAfterInstruction.
    ///
    /// name: A name to use for the temporary. Note that it's not necessarily
    /// used literally and may be adpated further.
@@ -719,7 +726,7 @@ protected:
    /// new one. Note that no type-check is done.
    ///
    /// Returns: The new temporary variable.
-   llvm::Value*    llvmAddTmp(const string& name, llvm::Type* type, llvm::Value* init = 0, bool reuse = false);
+   llvm::Value* llvmAddTmp(const string& name, llvm::Type* type, llvm::Value* init = 0, bool reuse = false);
 
    /// Adds a new local temporary variable to the current LLVM function.
    /// Temporaries don't correspond to a user-defined variable but are
@@ -998,6 +1005,50 @@ protected:
    /// available.
    llvm::Value* llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm::Value* hight);
 
+   /// Increases the reference count of a garbage-collected object. This
+   /// method is safe to call also instances of types that are not reference
+   /// counted, and with null pointers; in both cases, it will just turn into
+   /// a no-op (either statically or at runtime). If it gets called with a
+   /// reference to a garbage collected object, that will be dereferenced
+   /// first.
+   ///
+   /// val: The value which's reference count to increase.
+   ///
+   /// type: The HILTI type of *val*.
+   void llvmRef(llvm::Value* val, shared_ptr<Type> type);
+
+   /// Decreases the reference count of a garbage-collected object. If it
+   /// goes to zero, the object will be freed and become invalid. This method
+   /// is safe to call also instances of types that are not reference
+   /// counted, and with null pointers; in both cases, it will just turn into
+   /// a no-op (either statically or at runtime). If it gets called with a
+   /// reference to a garbage collected object, that will be dereferenced
+   /// first.
+   ///
+   /// val: The value which's reference count to increase.
+   ///
+   /// type: The HILTI type of *val*. 
+   void llvmUnref(llvm::Value* val, shared_ptr<Type> type);
+
+   /// Similar to llvmUnref but postpones the counter decrease until the end
+   /// of the current function.
+   ///
+   /// val: The value which's reference count to increase.
+   ///
+   /// type: The HILTI type of *val*. 
+   void llvmUnrefAtReturn(llvm::Value* val, shared_ptr<Type> type);
+
+   /// Similar to llvmUnref but postpones the counter decrease until the
+   /// current instruction has been finished.
+   ///
+   /// val: The value which's reference count to increase.
+   ///
+   /// type: The HILTI type of *val*. 
+   void llvmUnrefAfterInstruction(llvm::Value* val, shared_ptr<Type> type);
+
+   /// Finished generation of a statement. This is called from the statement builder.
+   void finishStatement();
+
 private:
    // Creates/finishes the module intialization function that will receive all global
    // code, and pushes it onto the stack.
@@ -1025,6 +1076,9 @@ private:
    // Fills the current funtions's exit block and links it with all the
    // exit_points via a PHI instruction.
    void llvmBuildExitBlock(shared_ptr<Function> func);
+
+   // Implements both ref/unref.
+   void llvmRefHelper(const char* func, llvm::Value* val, shared_ptr<Type> type);
 
    // Take a type from libhilti.ll and adapts it for use in the current
    // module. See implementation of llvmLibFunction() for more information.
@@ -1064,7 +1118,8 @@ private:
    typedef std::list<IRBuilder*> builder_list;
    typedef std::map<string, int> label_map;
    typedef std::map<string, IRBuilder*> builder_map;
-   typedef std::map<string, llvm::Value*> local_map;
+   typedef std::map<string, std::pair<llvm::Value*, shared_ptr<Type>>> local_map;
+   typedef std::list<std::pair<llvm::Value*, shared_ptr<Type>>> unref_list;
    typedef std::list<std::pair<llvm::BasicBlock*, llvm::Value*>> exit_point_list;
 
    struct FunctionState {
@@ -1076,6 +1131,8 @@ private:
        local_map locals;
        local_map tmps;
        exit_point_list exits;
+       unref_list unrefs_at_return;
+       unref_list unrefs_after_ins;
        string next_comment;
    };
 
@@ -1096,6 +1153,9 @@ private:
 
    typedef std::map<Variable*, llvm::Value*> globals_map;
    globals_map _globals;
+
+   typedef std::list<std::pair<string, llvm::Value*>> global_string_list;
+   global_string_list _global_strings;
 };
 
 /// Base class for visitor that the code generator uses for its work.

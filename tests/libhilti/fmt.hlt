@@ -26,6 +26,9 @@ void run() {
     str = call Hilti::fmt ("Test %s|%s|%s", (1, "Foo", True))
     call Hilti::print (str)
 
+    str = call Hilti::fmt ("Test %s|%s|%s", t)
+    call Hilti::print (str)
+
     str = call Hilti::fmt ("|%d|%d|", (42, False))
     call Hilti::print (str)
 

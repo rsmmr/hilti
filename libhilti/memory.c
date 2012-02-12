@@ -16,6 +16,9 @@ void hlt_object_ref(const hlt_type_info* ti, void* obj)
 {
     __hlt_gchdr* hdr = (__hlt_gchdr*)obj;;
     assert(hdr->ref_cnt > 0);
+
+//    fprintf(stderr, "ref   %p %llu\n", hdr, hdr->ref_cnt);
+
     ++hdr->ref_cnt;
 }
 
@@ -27,12 +30,15 @@ void hlt_object_unref(const hlt_type_info* ti, void* obj)
     __hlt_gchdr* hdr = (__hlt_gchdr*)obj;;
     assert(hdr->ref_cnt > 0);
 
+//    fprintf(stderr, "unref %p %llu\n", hdr, hdr->ref_cnt);
+
     // We explicitly set it to zero even if we're about to delete the object.
     // That can catch some errors when the destroyed objects is still
     // accessed later.
     if ( --hdr->ref_cnt == 0 ) {
         typedef void (*fptr)(void *obj);
-        (*(ti->dtor))(obj);
+        if ( ti->dtor )
+            (*(ti->dtor))(obj);
         hlt_free(obj);
     }
 }

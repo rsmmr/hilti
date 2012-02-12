@@ -39,10 +39,10 @@ hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32
             t = hlt_string_from_asciiz(types[i]->tag, excpt, ctx);
 
         s = hlt_string_concat(s, t, excpt, ctx);
+        hlt_string_unref(t);
+
         if ( *excpt )
             goto error;
-
-        hlt_string_unref(t);
 
         if ( i < type->num_params - 1 ) {
             s = hlt_string_concat(s, separator, excpt, ctx);

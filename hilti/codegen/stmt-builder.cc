@@ -60,6 +60,7 @@ void StatementBuilder::visit(statement::Block* b)
         }
 
         call(s);
+        cg()->finishStatement();
     }
 
     if ( builder )
@@ -76,7 +77,7 @@ void StatementBuilder::visit(declaration::Variable* v)
 
     auto init = var->init() ? cg()->llvmValue(var->init()) : nullptr;
 
-    cg()->llvmAddLocal(var->id()->name(), cg()->llvmType(var->type()), init);
+    cg()->llvmAddLocal(var->id()->name(), var->type(), init);
 }
 
 void StatementBuilder::visit(declaration::Function* f)
@@ -100,10 +101,9 @@ void StatementBuilder::visit(declaration::Function* f)
         if ( p->constant() )
             continue;
 
-        auto llvm_type = cg()->llvmType(p->type());
-        auto llvm_init = cg()->llvmParameter(p);
-
-        cg()->llvmAddLocal("__shadow_" + p->id()->name(), llvm_type, llvm_init);
+        auto init = cg()->llvmParameter(p);
+        cg()->llvmRef(init, p->type());
+        cg()->llvmAddLocal("__shadow_" + p->id()->name(), p->type(), init);
     }
 
     call(func->body());
