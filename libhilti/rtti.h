@@ -48,6 +48,8 @@
 #define HLT_TYPE_SCOPE    35
 #define HLT_TYPE_MATCH_TOKEN_STATE 36
 #define HLT_TYPE_VOID     37
+#define HLT_TYPE_BYTES_DATA 38
+#define HLT_TYPE_BYTES_CHUNK 39
 
 #define HLT_TYPE_ITERATOR_BYTES  100
 #define HLT_TYPE_ITERATOR_VECTOR 101
@@ -73,6 +75,9 @@ struct __hlt_type_info {
 
     /// Number of type parameters.
     int16_t num_params;
+
+    /// True if instances of this type are garbage collected.
+    int16_t gc;
 
     /// Type-specific information; null if not used.
     void* aux;
@@ -112,11 +117,41 @@ struct __hlt_type_info {
     /// if an objects reference count went down to zero and its about to be
     /// deleted. Can be null if no further cleanup is needed. The function
     /// must not fail.
-    void (*dtor)(void* obj);
+    void (*dtor)(const struct __hlt_type_info* ti, void* obj);
+
+    /// XXX
+    void (*obj_dtor)(const struct __hlt_type_info* ti, void* obj);
+
+    /// If this is a value type, a function that will be called if an
+    /// instance has been copied. The function is called after a bitwise copy
+    /// has been made, but before any further operation is executed that
+    /// involves it.
+    void (*cctor)(const struct __hlt_type_info* ti, void* obj);
 
     // Type-parameters start here. The format is type-specific.
     char type_params[];
 };
+
+/// Macro to define type information for an internal garbage collected type.
+#define __HLT_RTTI_GC_TYPE(id, type) \
+   static const hlt_type_info __hlt_type_info_##id = { \
+       type, \
+       sizeof(id), \
+       #id, \
+       0, \
+       1, \
+       0, \
+       (int16_t*)-1, \
+       0, 0, 0, 0, 0, 0, \
+       (void (*)(const struct __hlt_type_info*, void *))__hlt_object_unref, \
+       (void (*)(const struct __hlt_type_info*, void *))id##_dtor, \
+       (void (*)(const struct __hlt_type_info*, void *))__hlt_object_ref, \
+   }; \
+   \
+   const hlt_type_info* hlt_type_info_##id = &__hlt_type_info_##id;
+
+#define __HLT_DECLARE_RTTI_GC_TYPE(id) \
+   extern const hlt_type_info* hlt_type_info_##id; \
 
 // Include prototypes for compiler-generated type information.
 #include "type-info.h"

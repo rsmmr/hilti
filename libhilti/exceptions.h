@@ -47,12 +47,6 @@ extern hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, c
 
 // extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location);
 
-/// \hlt_ref
-extern void hlt_exception_ref(hlt_exception* expt);
-
-/// \hlt_unref
-extern void hlt_exception_unref(hlt_exception* expt);
-
 /// Internal function that generated the output shown to the user when an
 /// exception is not caught and then aborts processing. This function is
 /// intended for use outside of threads.

@@ -13,6 +13,7 @@
 
 #include "types.h"
 #include "rtti.h"
+#include "memory.h"
 
 /*
  * Hilti::print(obj, newline = True)
@@ -40,7 +41,7 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
             goto unlock;
 
         hlt_string_print(stdout, s, 0, excpt, ctx);
-        hlt_string_unref(s);
+        GC_DTOR(s, hlt_string);
 
         if ( *excpt )
             goto unlock;

@@ -125,6 +125,9 @@ class GarbageCollected : public Trait
 /// Trait class marking a type that provides iterators.
 class Iterable : public Trait
 {
+public:
+   /// Returns the type for an iterator over this type.
+   virtual shared_ptr<hilti::Type> iterType() const = 0;
 };
 
 // class Unpackable.
@@ -412,14 +415,6 @@ private:
 /// Base type for iterators.
 class Iterator : public ValueType, public trait::Parameterized {
 public:
-   /// Constructor for an iterator over a given target tyoe.
-   ///
-   /// ttype: The target type. This must be a trait::Iterable.
-   ///
-   /// l: Associated location.
-   ///
-   Iterator(shared_ptr<Type> ttype, const Location& l=Location::None);
-
    /// Constructor for a wildcard iterator type.
    ///
    /// l: Associated location.
@@ -428,11 +423,20 @@ public:
    /// Returns the type this iterator iterates over.
    shared_ptr<Type> targetType() const { return _ttype; }
 
-   string reprPrefix() const override { return "iter"; }
+   string reprPrefix() const override { return "iterator"; }
    string repr() const override { return trait::Parameterized::repr(); }
    const std::list<node_ptr<trait::parameter::Base>>& parameters() const override { return _parameters; }
 
    ACCEPT_VISITOR(Type);
+
+protected:
+   /// Constructor for an iterator over a given target tyoe.
+   ///
+   /// ttype: The target type. This must be a trait::Iterable.
+   ///
+   /// l: Associated location.
+   ///
+   Iterator(shared_ptr<Type> ttype, const Location& l=Location::None);
 
 private:
    parameter_list _parameters;
@@ -524,9 +528,26 @@ public:
    virtual ~Bytes();
 
    string repr() const override { return "bytes"; }
+   shared_ptr<hilti::Type> iterType() const override;
 
    ACCEPT_VISITOR(Type);
 };
+
+namespace iterator {
+
+class Bytes : public Iterator
+{
+public:
+   /// Constructor for an iterator over a bytes object.
+   ///
+   /// l: Associated location.
+   ///
+   Bytes(const Location& l=Location::None) : Iterator(shared_ptr<Type>(new type::Bytes(l))) {}
+
+   ACCEPT_VISITOR(Iterator);
+};
+
+}
 
 }
 

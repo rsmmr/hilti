@@ -85,6 +85,11 @@ public:
 
    // Report parsing errors.
    void error(const std::string& m, const hilti_parser::location& l);
+   
+   void checkNotNull(shared_ptr<Node> node, string msg, const hilti_parser::location& l) {
+       if ( ! node )
+           error(msg, l);
+   }
 
    // The following methods are used by the parsing functions.
 

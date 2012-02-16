@@ -27,7 +27,7 @@ public:
    /// target: The target of the store.
    ///
    /// value: The value to store.
-   void llvmStore(shared_ptr<Expression> target, llvm::Value* value, bool plusone);
+   void llvmStore(shared_ptr<Expression> target, llvm::Value* value);
 
 protected:
    void visit(expression::Variable* v) override;

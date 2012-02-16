@@ -19,22 +19,64 @@
 #include "string_.h"
 #include "globals.h"
 
-struct __hlt_bytes_chunk {
-    const int8_t* start;          // Pointer to first data byte.
-    const int8_t* end;            // Pointer one beyond the last data byte.
-    hlt_bytes_chunk* next; // Successor in bytes object.
-    hlt_bytes_chunk* prev; // Predecessor in bytes object.
+typedef struct {
+    __hlt_gchdr __gchdr; // Header for memory management.
+    int8_t *data;        // Data.
+} __hlt_bytes_data;
 
-    int8_t owner;           // True if we "own" the data, i.e., allocated it.
-    int8_t frozen;          // True if the object has been frozen.
-    int16_t free;           // Bytes still available in allocated block. Only valid if owner.
+struct __hlt_bytes_chunk {
+    __hlt_gchdr __gchdr;      // Header for memory management.
+    __hlt_bytes_data* bytes;  // Data block.
+    int8_t* start;            // Pointer to first data byte inside block.
+    int8_t* end;              // Pointer one beyond the last data byte.
+    __hlt_bytes_chunk* next;  // Successor in bytes object.
+    __hlt_bytes_chunk* prev;  // Predecessor in bytes object.
+
+    int8_t owner;             // True if we "own" the data, i.e., allocated it.
+    int8_t frozen;            // True if the object has been frozen.
+    int16_t free;             // Bytes still available in allocated block. Only valid if owner.
 };
 
 struct __hlt_bytes {
-    hlt_bytes_chunk* head;              // First chunk.
-    hlt_bytes_chunk* tail;              // Last chunk.
+    __hlt_gchdr __gchdr;     // Header for memory management.
+    __hlt_bytes_chunk* head; // First chunk.
+    __hlt_bytes_chunk* tail; // Last chunk.
     // hlt_thread_mgr_blockable blockable; // For blocking until changed.
 };
+
+void __hlt_bytes_chunk_dtor(hlt_type_info* ti, __hlt_bytes_chunk* c);
+void __hlt_bytes_data_dtor(hlt_type_info* ti, __hlt_bytes_data* d);
+
+__HLT_RTTI_GC_TYPE(__hlt_bytes_data,  HLT_TYPE_BYTES_DATA)
+__HLT_RTTI_GC_TYPE(__hlt_bytes_chunk, HLT_TYPE_BYTES_CHUNK)
+
+void __hlt_bytes_data_dtor(hlt_type_info* ti, __hlt_bytes_data* d)
+{
+    hlt_free(d->data);
+}
+
+void __hlt_bytes_chunk_dtor(hlt_type_info* ti, __hlt_bytes_chunk* c)
+{
+    GC_CLEAR(c->bytes, __hlt_bytes_data);
+    GC_CLEAR(c->next, __hlt_bytes_chunk);
+    GC_CLEAR(c->prev, __hlt_bytes_chunk);
+}
+
+void hlt_bytes_dtor(hlt_type_info* ti, hlt_bytes* b)
+{
+    GC_CLEAR(b->head, __hlt_bytes_chunk);
+    GC_CLEAR(b->tail, __hlt_bytes_chunk);
+}
+
+void hlt_iterator_bytes_dtor(hlt_type_info* ti, hlt_iterator_bytes* p)
+{
+    GC_CLEAR(p->chunk, __hlt_bytes_chunk);
+}
+
+void hlt_iterator_bytes_cctor(hlt_type_info* ti, hlt_iterator_bytes* p)
+{
+    GC_CCTOR(p->chunk, __hlt_bytes_chunk)
+}
 
 // If a chunk of data is of size is less than this, we can decide to copy it
 // into space we allocated ourselves.
@@ -47,7 +89,7 @@ static const int16_t ALLOC_SIZE = 1024;
 // here.
 static int8_t empty_sentinel;
 
-static inline int8_t is_empty_chunk(const hlt_bytes_chunk* chunk)
+static inline int8_t is_empty_chunk(const __hlt_bytes_chunk* chunk)
 {
     return (chunk->start == chunk->end);
 }
@@ -64,31 +106,37 @@ static void __print_bytes(const char* prefix, const hlt_bytes* b)
 {
     return;
     fprintf(stderr, "%s: %p b( ", prefix, b);
-    for ( hlt_bytes_chunk *c = b->head; c; c = c->next )
+    for ( __hlt_bytes_chunk *c = b->head; c; c = c->next )
         fprintf(stderr, "#%ld:%p-%p(%d) ", c->end - c->start, c->start, c->end, c->free);
     fprintf(stderr, ")\n");
 }
 #endif
 
-static void add_chunk(hlt_bytes* b, hlt_bytes_chunk* c)
+// c already ref'ed.
+static void add_chunk(hlt_bytes* b, __hlt_bytes_chunk* c)
 {
     assert(b);
     assert(c);
 
-    if ( is_empty_chunk(c) )
+    if ( is_empty_chunk(c) ) {
+        GC_CLEAR(c, __hlt_bytes_chunk);
         return;
+    }
 
     if ( b->tail ) {
         assert(b->head);
-        c->prev = b->tail;
-        c->next = 0;
-        b->tail->next = c;
-        b->tail = c;
+        GC_ASSIGN(c->prev, b->tail, __hlt_bytes_chunk);
+        GC_CLEAR(c->next, __hlt_bytes_chunk);
+        GC_ASSIGN(b->tail->next, c, __hlt_bytes_chunk);
+        GC_ASSIGN(b->tail, c, __hlt_bytes_chunk);
     }
+
     else {
         assert( ! b->head );
-        c->prev = c->next = 0;
-        b->head = b->tail = c;
+        GC_CLEAR(c->prev, __hlt_bytes_chunk);
+        GC_CLEAR(c->next, __hlt_bytes_chunk);
+        GC_ASSIGN(b->head, c, __hlt_bytes_chunk);
+        GC_ASSIGN(b->tail, c, __hlt_bytes_chunk);
     }
 
     // We added data, so the first chunk must not be empty anymore because
@@ -96,26 +144,28 @@ static void add_chunk(hlt_bytes* b, hlt_bytes_chunk* c)
     if ( is_empty_chunk(b->head) ) {
         // Remove first chunk (cannot be tail at this point).
         assert(b->head != b->tail);
-        b->head->next->prev = 0;
-        b->head = b->head->next;
+        GC_CLEAR(b->head->next->prev, __hlt_bytes_chunk);
+        GC_ASSIGN(b->head, b->head->next, __hlt_bytes_chunk);
     }
 
     assert(!is_empty_chunk(b->head));
+
+    GC_CLEAR(c, __hlt_bytes_chunk);
 }
 
 hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_bytes* b = hlt_calloc(1, sizeof(hlt_bytes));
-    hlt_bytes_chunk* dst = hlt_calloc(1, sizeof(hlt_bytes_chunk));
+    hlt_bytes* b = GC_NEW(hlt_bytes);
 
-    if ( ! (b && dst) ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
+    __hlt_bytes_chunk* dst = GC_NEW(__hlt_bytes_chunk);
+    GC_ASSIGN(b->head, dst, __hlt_bytes_chunk);
+    GC_ASSIGN(b->tail, dst, __hlt_bytes_chunk);
 
-    b->head = b->tail = dst;
+    GC_CLEAR(dst->bytes, __hlt_bytes_data);
     dst->start = &empty_sentinel;
     dst->end = &empty_sentinel;
+
+    GC_CLEAR(dst, __hlt_bytes_chunk);
 
     // hlt_thread_mgr_blockable_init(&b->blockable);
 
@@ -124,15 +174,32 @@ hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
     return b;
 }
 
-hlt_bytes* hlt_bytes_new_from_data(const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_new_from_data(int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b = hlt_bytes_new(excpt, ctx);
-    if ( ! b )
-        return 0;
 
     if ( len > 0 ) {
+        b->head->bytes = GC_NEW(__hlt_bytes_data);
+        b->head->bytes->data = data;
         b->head->start = data;
         b->head->end = data + len;
+        assert(!is_empty(b));
+    }
+
+    return b;
+}
+
+hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    int8_t* copy = hlt_malloc(len);
+    hlt_bytes* b = hlt_bytes_new(excpt, ctx);
+
+    if ( len > 0 ) {
+        memcpy(copy, data, len);
+        b->head->bytes = GC_NEW(__hlt_bytes_data);
+        b->head->bytes->data = copy;
+        b->head->start = copy;
+        b->head->end = copy + len;
         assert(!is_empty(b));
     }
 
@@ -149,7 +216,7 @@ hlt_bytes_size hlt_bytes_len(const hlt_bytes* b, hlt_exception** excpt, hlt_exec
 
     hlt_bytes_size len = 0;
 
-    for ( const hlt_bytes_chunk* c = b->head; c; c = c->next )
+    for ( const __hlt_bytes_chunk* c = b->head; c; c = c->next )
         len += c->end - c->start;
 
     return len;
@@ -164,6 +231,83 @@ int8_t hlt_bytes_empty(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_
     }
 
     return is_empty(b);
+}
+
+// Returns true if we're using the raw data passed in, and false if we've
+// made a copy. In the latter case, the raw data will have been freed if owner is true.
+int8_t __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx, int8_t owner)
+{
+    if ( ! b ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+
+        if ( owner )
+            hlt_free(raw);
+
+        return 0;
+    }
+
+    if ( hlt_bytes_is_frozen(b, excpt, ctx) ) {
+        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+
+        if ( owner )
+            hlt_free(raw);
+
+        return 0;
+    }
+
+    if ( ! len ) {
+        // Empty.
+        if ( owner )
+            hlt_free(raw);
+
+        return 0;
+    }
+
+    // hlt_thread_mgr_unblock(&b->blockable, ctx);
+
+    // Special case: see if we can copy it into the last chunk.
+    if ( b->tail && b->tail->owner && b->tail->free >= len ) {
+        memcpy((int8_t*)b->tail->end, raw, len);
+        b->tail->end += len;
+        b->tail->free -= len;
+
+        if ( owner )
+            hlt_free(raw);
+
+        return 0;
+    }
+
+    __hlt_bytes_chunk* dst = GC_NEW(__hlt_bytes_chunk);
+    dst->bytes = GC_NEW(__hlt_bytes_data);
+
+    // If the raw data is small, we copy it over into a newly allocated block
+    // to avoid fragmentation.
+    if ( len <= MAX_COPY_SIZE ) {
+        int8_t* mem = hlt_malloc(ALLOC_SIZE);
+        dst->bytes->data = mem;
+        dst->start = mem;
+        dst->end = mem + len;
+        dst->owner = 1;
+        dst->frozen = 0;
+        dst->free = ALLOC_SIZE - (dst->end - dst->start);
+        memcpy(mem, raw, len);
+        add_chunk(b, dst);
+
+        if ( owner )
+            hlt_free(raw);
+
+        return 0;
+    }
+
+    else {
+        dst->bytes->data = raw;
+        dst->start = raw;
+        dst->end = raw + len;
+        dst->owner = 0;
+        dst->frozen = 0;
+        add_chunk(b, dst);
+        return 1;
+    }
 }
 
 // Appends one Bytes object to another.
@@ -186,12 +330,18 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
     // hlt_thread_mgr_unblock(&b->blockable, ctx);
 
     // Special case: if the other object has only one chunk, pass it on to
-    // the *_raw version which might decide to copy the data over. 
-    if ( other->head == other->tail )
-        return hlt_bytes_append_raw(b, other->head->start, other->head->end - other->head->start, excpt, ctx);
+    // the *_raw version which might decide to copy the data over.
+    if ( other->head == other->tail ) {
+        int need_cctor = __hlt_bytes_append_raw(b, other->head->start, other->head->end - other->head->start, excpt, ctx, 0);
 
-    for ( const hlt_bytes_chunk* src = other->head; src; src = src->next ) {
-        hlt_bytes_chunk* dst = hlt_malloc(sizeof(hlt_bytes_chunk));
+        if ( need_cctor )
+            GC_CCTOR(other->head->bytes, __hlt_bytes_data);
+
+        return;
+    }
+
+    for ( const __hlt_bytes_chunk* src = other->head; src; src = src->next ) {
+        __hlt_bytes_chunk* dst = GC_NEW(__hlt_bytes_chunk);
         dst->start = src->start;
         dst->end = src->end;
         dst->owner = 0;
@@ -200,65 +350,19 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
     }
 }
 
-void hlt_bytes_append_raw(hlt_bytes* b, const int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! b ) {
-        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        return;
-    }
-
-    if ( hlt_bytes_is_frozen(b, excpt, ctx) ) {
-        hlt_set_exception(excpt, &hlt_exception_value_error, 0);
-        return;
-    }
-
-    if ( ! len )
-        // Empty.
-        return;
-
-    // hlt_thread_mgr_unblock(&b->blockable, ctx);
-
-    // Special case: see if we can copy it into the last chunk.
-    if ( b->tail && b->tail->owner && b->tail->free >= len ) {
-        memcpy((int8_t*)b->tail->end, raw, len); // const cast is safe because we allocated the block.
-        b->tail->end += len;
-        b->tail->free -= len;
-        return;
-    }
-
-    hlt_bytes_chunk* dst = hlt_malloc(sizeof(hlt_bytes_chunk));
-
-    // If the raw data is small, we copy it over into a newly allocated block
-    // to avoid fragmentation.
-    if ( len <= MAX_COPY_SIZE ) {
-        int8_t* mem = hlt_malloc(ALLOC_SIZE);
-        dst->start = mem;
-        dst->end = dst->start + len;
-        dst->owner = 1;
-        dst->frozen = 0;
-        dst->free = ALLOC_SIZE - (dst->end - dst->start);
-        memcpy(mem, raw, len);
-    }
-
-    else {
-        // Otherwise, we link to the data directly.
-        dst->start = raw;
-        dst->end = raw + len;
-        dst->owner = 0;
-        dst->frozen = 0;
-    }
-
-    add_chunk(b, dst);
+    __hlt_bytes_append_raw(b, raw, len, excpt, ctx, 1);
 }
 
-static hlt_bytes_pos GenericEndPos = { 0, 0 };
+static hlt_iterator_bytes GenericEndPos = { 0, 0 };
 
-hlt_bytes_pos hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    for ( hlt_bytes_chunk* c = b->head; c; c = c->next ) {
+    for ( __hlt_bytes_chunk* c = b->head; c; c = c->next ) {
         int8_t* p = memchr(c->start, chr, c->end - c->start);
         if ( p ) {
-            hlt_bytes_pos i = { c, p };
+            hlt_iterator_bytes i = { c, p };
             return i;
         }
     }
@@ -266,12 +370,12 @@ hlt_bytes_pos hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excp
     return GenericEndPos;
 }
 
-static inline int8_t is_end(hlt_bytes_pos pos)
+static inline int8_t is_end(hlt_iterator_bytes pos)
 {
     return pos.chunk == 0 || (!pos.cur) || pos.cur >= pos.chunk->end;
 }
 
-static inline void normalize_pos(hlt_bytes_pos* pos)
+static inline void normalize_pos(hlt_iterator_bytes* pos)
 {
     if ( ! pos->chunk)
         return;
@@ -279,6 +383,7 @@ static inline void normalize_pos(hlt_bytes_pos* pos)
     // If the pos was previously an end position, but now new data has been
     // added, adjust it so that it's pointing to the next byte.
     if ( (! pos->cur || pos->cur >= pos->chunk->end) && pos->chunk->next ) {
+        GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
         pos->chunk = pos->chunk->next;
         pos->cur = pos->chunk->start;
     }
@@ -286,17 +391,17 @@ static inline void normalize_pos(hlt_bytes_pos* pos)
 
 hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_bytes_pos begin = hlt_bytes_begin(b, excpt, ctx);
-    hlt_bytes_pos end = hlt_bytes_end(b, excpt, ctx);
+    hlt_iterator_bytes begin = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
     return hlt_bytes_sub(begin, end, excpt, ctx);
 }
 
-hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&start);
     normalize_pos(&end);
 
-    if ( hlt_bytes_pos_eq(start, end, excpt, ctx) )
+    if ( hlt_iterator_bytes_eq(start, end, excpt, ctx) )
         // Return an empty bytes object.
         return hlt_bytes_new(excpt, ctx);
 
@@ -309,7 +414,8 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
 
     // Special case: if both positions are inside the same chunk, it's easy.
     if ( start.chunk == end.chunk || (is_end(end) && start.chunk->next == 0) ) {
-        hlt_bytes_chunk* c = hlt_malloc(sizeof(hlt_bytes_chunk));
+        __hlt_bytes_chunk* c = GC_NEW(__hlt_bytes_chunk);
+        c->bytes = start.chunk->bytes;
         c->start = start.cur;
         c->end = end.cur ? end.cur : start.chunk->end;
         c->owner = 0;
@@ -319,7 +425,8 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
     }
 
     // Create the first chunk of the sub-bytes.
-    hlt_bytes_chunk* first = hlt_malloc(sizeof(hlt_bytes_chunk));
+    __hlt_bytes_chunk* first = GC_NEW(__hlt_bytes_chunk);
+    first->bytes = start.chunk->bytes;
     first->start = start.cur;
     first->end = start.chunk->end;
     first->owner = 0;
@@ -327,7 +434,7 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
     add_chunk(b, first);
 
     // Copy the chunks in between.
-    for ( const hlt_bytes_chunk* c = start.chunk->next; is_end(end) || c != end.chunk; c = c->next ) {
+    for ( const __hlt_bytes_chunk* c = start.chunk->next; is_end(end) || c != end.chunk; c = c->next ) {
 
         if ( ! c ) {
             if ( is_end(end) )
@@ -338,7 +445,8 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
             return 0;
         }
 
-        hlt_bytes_chunk* dst = hlt_malloc(sizeof(hlt_bytes_chunk));
+        __hlt_bytes_chunk* dst = GC_NEW(__hlt_bytes_chunk);
+        dst->bytes = c->bytes;
         dst->start = c->start;
         dst->end = c->end;
         dst->owner = 0;
@@ -348,7 +456,8 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
 
     if ( ! is_end(end) ) {
         // Create the last chunk of the sub-bytes.
-        hlt_bytes_chunk* last = hlt_malloc(sizeof(hlt_bytes_chunk));
+        __hlt_bytes_chunk* last = GC_NEW(__hlt_bytes_chunk);
+        last->bytes = end.chunk->bytes;
         last->start = end.chunk->start;
         last->end = end.cur;
         last->owner = 0;
@@ -359,12 +468,12 @@ hlt_bytes* hlt_bytes_sub(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception**
     return b;
 }
 
-static const int8_t* hlt_bytes_sub_raw_internal(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
+static int8_t* hlt_bytes_sub_raw_internal(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&start);
     normalize_pos(&end);
 
-    hlt_bytes_size len = hlt_bytes_pos_diff(start, end, excpt, ctx);
+    hlt_bytes_size len = hlt_iterator_bytes_diff(start, end, excpt, ctx);
 
     if ( len == 0 ) {
         // Can't happen because we should have be in the easy case.
@@ -389,7 +498,7 @@ static const int8_t* hlt_bytes_sub_raw_internal(hlt_bytes_pos start, hlt_bytes_p
     p += n;
 
     // Copy the chunks in between.
-    for ( const hlt_bytes_chunk* c = start.chunk->next; is_end(end) || c != end.chunk; c = c->next ) {
+    for ( const __hlt_bytes_chunk* c = start.chunk->next; is_end(end) || c != end.chunk; c = c->next ) {
 
         if ( ! c ) {
 
@@ -418,38 +527,48 @@ static const int8_t* hlt_bytes_sub_raw_internal(hlt_bytes_pos start, hlt_bytes_p
 }
 
 
-const int8_t* hlt_bytes_sub_raw(hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t* hlt_bytes_sub_raw(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&start);
     normalize_pos(&end);
 
     // The easy case: start and end are within the same chunk.
-    if ( start.chunk == end.chunk )
-        return start.cur;
+    if ( start.chunk == end.chunk ) {
+        size_t len = start.chunk->end - start.cur;
+        int8_t* mem = hlt_malloc(len);
+        memcpy(mem, start.chunk->start, len);
+        return mem;
+    }
 
     // We split the rest into its own function to make it easier for the
     // compiler to inline the fast case.
     return hlt_bytes_sub_raw_internal(start, end, excpt, ctx);
 }
 
-const int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
         return 0;
     }
 
-    hlt_bytes_pos begin = hlt_bytes_begin(b, excpt, ctx);
-    hlt_bytes_pos end = hlt_bytes_end(b, excpt, ctx);
-    return hlt_bytes_sub_raw(begin, end, excpt, ctx);
+    hlt_iterator_bytes begin = hlt_bytes_begin(b, excpt, ctx);
+    hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
+
+    int8_t* i = hlt_bytes_sub_raw(begin, end, excpt, ctx);
+
+    GC_DTOR(begin, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+
+    return i;
 }
 
-int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(pos);
     normalize_pos(&end);
 
-    if ( is_end(*pos) || hlt_bytes_pos_eq(*pos, end, excpt, ctx) ) {
+    if ( is_end(*pos) || hlt_iterator_bytes_eq(*pos, end, excpt, ctx) ) {
         hlt_set_exception(excpt, &hlt_exception_would_block, 0);
         return 0;
     }
@@ -465,7 +584,7 @@ int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, hlt_bytes_pos end, hlt_except
     else {
         if ( pos->chunk->next ) {
             // Switch to next chunk.
-            pos->chunk = pos->chunk->next;
+            GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
             pos->cur = pos->chunk->start;
         }
         else {
@@ -477,18 +596,18 @@ int8_t __hlt_bytes_extract_one(hlt_bytes_pos* pos, hlt_bytes_pos end, hlt_except
     return b;
 }
 
-hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        hlt_bytes_pos p;
+        hlt_iterator_bytes p;
         return p;
     }
 
     if ( pos < 0 )
         pos += hlt_bytes_len(b, excpt, ctx);
 
-    hlt_bytes_chunk* c;
+    __hlt_bytes_chunk* c;
     for ( c = b->head; pos >= (c->end - c->start); c = c->next ) {
 
         if ( ! c ) {
@@ -501,45 +620,45 @@ hlt_bytes_pos hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_excep
 
     }
 
-    hlt_bytes_pos p;
-    p.chunk = c;
+    hlt_iterator_bytes p;
+    GC_ASSIGN(p.chunk, c, __hlt_bytes_chunk);
     p.cur = c->start + pos;
     return p;
 }
 
-hlt_bytes_pos hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        hlt_bytes_pos p;
+        hlt_iterator_bytes p;
         return p;
     }
 
     if ( hlt_bytes_len(b, excpt, ctx) == 0 )
         return hlt_bytes_end(b, excpt, ctx);
 
-    hlt_bytes_pos p;
-    p.chunk = b->head;
+    hlt_iterator_bytes p;
+    GC_ASSIGN(p.chunk, b->head, __hlt_bytes_chunk);
     p.cur = b->head ? b->head->start : 0;
 
     return p;
 }
 
-hlt_bytes_pos hlt_bytes_end(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_end(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        hlt_bytes_pos p;
+        hlt_iterator_bytes p;
         return p;
     }
 
-    hlt_bytes_pos p;
-    p.chunk = b->tail;
+    hlt_iterator_bytes p;
+    GC_ASSIGN(p.chunk, b->tail, __hlt_bytes_chunk);
     p.cur = b->tail ? b->tail->end : 0;
     return p;
 }
 
-hlt_bytes_pos hlt_bytes_generic_end(hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_bytes_generic_end(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return GenericEndPos;
 }
@@ -560,14 +679,15 @@ void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_ex
     // hlt_thread_mgr_unblock(&b->blockable, ctx);
 }
 
-void hlt_bytes_trim(hlt_bytes* b, hlt_bytes_pos pos, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&pos);
 
     if ( ! (pos.chunk && pos.cur) )
         return;
 
-    b->head = pos.chunk;
+    GC_ASSIGN(b->head, pos.chunk, __hlt_bytes_chunk);
+    GC_ASSIGN(b->head->bytes, pos.chunk->bytes, __hlt_bytes_data);
     b->head->start = pos.cur;
     b->head->prev = 0;
 }
@@ -582,7 +702,7 @@ int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt, hlt_execut
     return b->tail ? b->tail->frozen : 0;
 }
 
-int8_t hlt_bytes_pos_is_frozen(hlt_bytes_pos pos, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&pos);
 
@@ -590,13 +710,13 @@ int8_t hlt_bytes_pos_is_frozen(hlt_bytes_pos pos, hlt_exception** excpt, hlt_exe
         return 0;
 
     // Go to last chunk of string.
-    const hlt_bytes_chunk* c;
+    const __hlt_bytes_chunk* c;
     for ( c = pos.chunk; c->next; c = c->next );
 
     return c->frozen;
 }
 
-int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_iterator_bytes_deref(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&pos);
 
@@ -609,7 +729,7 @@ int8_t hlt_bytes_pos_deref(hlt_bytes_pos pos, hlt_exception** excpt, hlt_executi
     return *pos.cur;
 }
 
-hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes old, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&old);
 
@@ -617,7 +737,7 @@ hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception** excpt, hlt_e
         // Fail silently.
         return old;
 
-    hlt_bytes_pos pos = old;
+    hlt_iterator_bytes pos = old;
 
     // Can we stay inside the same chunk?
     if ( pos.cur < pos.chunk->end - 1 ) {
@@ -627,7 +747,7 @@ hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception** excpt, hlt_e
 
     if ( pos.chunk->next ) {
         // Need to switch chunk.
-        pos.chunk = pos.chunk->next;
+        GC_ASSIGN(pos.chunk, pos.chunk->next, __hlt_bytes_chunk);
         pos.cur = pos.chunk->start;
     }
     else
@@ -637,7 +757,7 @@ hlt_bytes_pos hlt_bytes_pos_incr(hlt_bytes_pos old, hlt_exception** excpt, hlt_e
     return pos;
 }
 
-hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes old, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! n )
         return old;
@@ -648,7 +768,7 @@ hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int64_t n, hlt_exception*
         // Fail silently.
         return old;
 
-    hlt_bytes_pos pos = old;
+    hlt_iterator_bytes pos = old;
 
     while ( 1 ) {
         // Can we stay inside the same chunk?
@@ -661,7 +781,7 @@ hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int64_t n, hlt_exception*
 
         if ( pos.chunk->next ) {
             // Need to switch chunk.
-            pos.chunk = pos.chunk->next;
+            GC_ASSIGN(pos.chunk, pos.chunk->next, __hlt_bytes_chunk);
             pos.cur = pos.chunk->start;
         }
         else {
@@ -677,7 +797,7 @@ hlt_bytes_pos hlt_bytes_pos_incr_by(hlt_bytes_pos old, int64_t n, hlt_exception*
 // This is a bit tricky because pos_end() doesn't return anything suitable
 // for iteration.  Let's leave this out for now until we know whether we
 // actually need reverse iteration.
-void hlt_bytes_pos_decr(hlt_bytes_pos* pos, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_iterator_bytes_decr(hlt_iterator_bytes* pos, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&pos);
 
@@ -705,7 +825,7 @@ void hlt_bytes_pos_decr(hlt_bytes_pos* pos, hlt_exception** excpt, hlt_execution
 }
 #endif
 
-int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&pos1);
     normalize_pos(&pos2);
@@ -717,12 +837,12 @@ int8_t hlt_bytes_pos_eq(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** 
 }
 
 // Returns the number of bytes from pos1 to pos2 (not counting pos2).
-hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&pos1);
     normalize_pos(&pos2);
 
-    if ( hlt_bytes_pos_eq(pos1, pos2, excpt, ctx) )
+    if ( hlt_iterator_bytes_eq(pos1, pos2, excpt, ctx) )
         return 0;
 
     if ( is_end(pos1) && ! is_end(pos2) ) {
@@ -745,7 +865,7 @@ hlt_bytes_size hlt_bytes_pos_diff(hlt_bytes_pos pos1, hlt_bytes_pos pos2, hlt_ex
     hlt_bytes_size n = pos1.chunk->end - pos1.cur;
 
     // Count intermediary chunks.
-    const hlt_bytes_chunk* c;
+    const __hlt_bytes_chunk* c;
     for ( c = pos1.chunk->next; is_end(pos2) || c != pos2.chunk; c = c->next ) {
         if ( ! c ) {
             if ( is_end(pos2) )
@@ -777,19 +897,41 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
         return 0;
     }
 
-    // FIXME: I'm sure we can do this more efficiently ...
-    for ( const hlt_bytes_chunk* c = b->head; c; c = c->next ) {
-        for ( const int8_t* p = c->start; p < c->end; ++p ) {
-            unsigned char c = (unsigned char) *p;
+    char hex[5] = { '\\', 'x', 'X', 'X', '\0' };
+    char buffer[256];
+    char i = 0;
 
-            if ( isprint(c) && c < 128 )
-                dst = hlt_string_concat(dst, hlt_string_from_data((int8_t*)&c, 1, excpt, ctx), excpt, ctx);
+    for ( const __hlt_bytes_chunk* c = b->head; c; c = c->next ) {
+        for ( const int8_t* p = c->start; p < c->end; ++p ) {
+
+            if ( i > sizeof(buffer) - 10 ) {
+                hlt_string tmp1 = dst;
+                hlt_string tmp2 = hlt_string_from_data((int8_t*)buffer, i, excpt, ctx);
+                dst = hlt_string_concat(tmp1, tmp2, excpt, ctx);
+                GC_DTOR(tmp1, hlt_string);
+                GC_DTOR(tmp2, hlt_string);
+                i = 0;
+            }
+
+            char c = *(char *)p;
+
+            if ( isprint((char)c) && c < 128 )
+                buffer[i++] = c;
+
             else {
-                char buf[5] = { '\\', 'x', 'X', 'X', '\0' };
-                int n = hlt_util_uitoa_n(c, buf + 2, 3, 16, 1);
-                dst = hlt_string_concat(dst, hlt_string_from_asciiz(buf, excpt, ctx), excpt, ctx);
+                int n = hlt_util_uitoa_n(c, hex + 2, 3, 16, 1);
+                strcpy(buffer + i, hex);
+                i += n;
             }
         }
+    }
+
+    if ( i ) {
+        hlt_string tmp1 = dst;
+        hlt_string tmp2 = hlt_string_from_data((int8_t*)buffer, i, excpt, ctx);
+        dst = hlt_string_concat(tmp1, tmp2, excpt, ctx);
+        GC_DTOR(tmp1, hlt_string);
+        GC_DTOR(tmp2, hlt_string);
     }
 
     return dst;
@@ -802,7 +944,7 @@ hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exceptio
 
     hlt_hash hash = 0;
 
-    for ( const hlt_bytes_chunk* c = b->head; c; c = c->next )
+    for ( const __hlt_bytes_chunk* c = b->head; c; c = c->next )
         hash += hlt_hash_bytes(c->start, c->end - c->start);
 
     return hash;
@@ -828,14 +970,14 @@ void* hlt_bytes_blockable(const hlt_type_info* type, const void* obj, hlt_except
 }
 #endif
 
-void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_bytes_pos start, hlt_bytes_pos end, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(&start);
     normalize_pos(&end);
 
     if ( ! cookie ) {
 
-        if ( hlt_bytes_pos_eq(start, end, excpt, ctx) ) {
+        if ( hlt_iterator_bytes_eq(start, end, excpt, ctx) ) {
             block->start = block->end = start.cur;
             block->next = 0;
             return 0;
@@ -884,8 +1026,8 @@ int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** e
 
     // FIXME: This is not the smartest implementation. Rather than using the
     // iterator functions, we should compare larger chunks at once.
-    hlt_bytes_pos p1 = hlt_bytes_begin(b1, excpt, ctx);
-    hlt_bytes_pos p2 = hlt_bytes_begin(b2, excpt, ctx);
+    hlt_iterator_bytes p1 = hlt_bytes_begin(b1, excpt, ctx);
+    hlt_iterator_bytes p2 = hlt_bytes_begin(b2, excpt, ctx);
 
     while ( 1 ) {
 
@@ -895,13 +1037,13 @@ int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** e
         if ( is_end(p2) )
             return -1;
 
-        int8_t c1 = hlt_bytes_pos_deref(p1, excpt, ctx);
-        int8_t c2 = hlt_bytes_pos_deref(p2, excpt, ctx);
+        int8_t c1 = hlt_iterator_bytes_deref(p1, excpt, ctx);
+        int8_t c2 = hlt_iterator_bytes_deref(p2, excpt, ctx);
 
         if ( c1 != c2 )
             return c1 > c2 ? -1 : 1;
 
-        p1 = hlt_bytes_pos_incr(p1, excpt, ctx);
-        p2 = hlt_bytes_pos_incr(p2, excpt, ctx);
+        p1 = hlt_iterator_bytes_incr(p1, excpt, ctx);
+        p2 = hlt_iterator_bytes_incr(p2, excpt, ctx);
     }
 }

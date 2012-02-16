@@ -6,7 +6,9 @@
 #ifndef HILTI_TYPE_INFO_H
 #define HILTI_TYPE_INFO_H
 
-extern const hlt_type_info* hlt_type_info_int_32;
-extern const hlt_type_info* hlt_type_info_string;
+extern const hlt_type_info* hlt_type_info_hlt_int_32;
+extern const hlt_type_info* hlt_type_info_hlt_string;
+extern const hlt_type_info* hlt_type_info_hlt_bytes;
+extern const hlt_type_info* hlt_type_info_hlt_iterator_bytes;
 
 #endif

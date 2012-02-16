@@ -152,7 +152,7 @@ public:
    virtual void visit(type::Function* i)    {}
    virtual void visit(type::Tuple* t)       {}
 
-   // Iterartor types.
+   // Iterator types.
    virtual void visit(type::iterator::Bytes* i)       {}
 
    virtual void visit(type::trait::parameter::Base* b) {}

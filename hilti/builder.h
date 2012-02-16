@@ -229,9 +229,13 @@ namespace iterator {
 ///
 /// l: Location associated with the type.
 ///
-/// Returns: The type node.
-inline shared_ptr<hilti::type::Iterator> type(shared_ptr<Type> type, const Location& l=Location::None) {
-    return _sptr(new hilti::type::Iterator(type, l));
+/// Returns: The type node. Returns null if \c l is not iterable.
+inline shared_ptr<hilti::Type> type(shared_ptr<Type> type, const Location& l=Location::None) {
+
+    if ( ! type::hasTrait<type::trait::Iterable>(type) )
+        return nullptr;
+
+    return ast::as<type::trait::Iterable>(type)->iterType();
 }
 
 /// Instantiates a type::Iterator type that matches any other iterator type (i.e., \c iter<*>).
@@ -250,7 +254,7 @@ inline shared_ptr<hilti::type::Iterator> typeAny(const Location& l=Location::Non
 /// Returns: The type node.
 inline shared_ptr<hilti::type::Iterator> bytes(const Location& l=Location::None) {
     auto ty = shared_ptr<Type>(new type::Bytes(l));
-    return _sptr(new hilti::type::Iterator(ty, l));
+    return _sptr(new hilti::type::iterator::Bytes(l));
 }
 
 }

@@ -61,7 +61,7 @@ declare "C-HILTI" int<64> struct_equal(any s)
 
 declare "C-HILTI" any bytes_blockable(any s)
 
-### String functions.
+###
 
 declare "C-HILTI" int<64> string_len(string s)
 declare "C-HILTI" string string_concat(string s1, string s2)
@@ -71,6 +71,41 @@ declare "C-HILTI" int<8> string_cmp(string s1, string s2)
 declare "C-HILTI" string string_substr(string s, int<64> pos, int<64> len)
 declare "C-HILTI" int<64> string_find(string s1, string s2)
 # declare "C-HILTI" tuple<string,iterator<bytes>> string_unpack(iterator<bytes> first, iterator<bytes> last, Hilti::Packed fmt)
+
+###
+
+declare "C-HILTI" void bytes_dtor(ref<bytes> b)
+declare "C-HILTI" ref<bytes> bytes_new()
+declare "C-HILTI" int<64> bytes_len(ref<bytes> b)
+declare "C-HILTI" bool bytes_empty(ref<bytes> b)
+declare "C-HILTI" void  bytes_append(ref<bytes> b, ref<bytes> other)
+declare "C-HILTI" ref<bytes> bytes_sub(iterator<bytes> start, iterator<bytes> last)
+declare "C-HILTI" iterator<bytes> bytes_offset(ref<bytes> b, int<64> offset)
+declare "C-HILTI" iterator<bytes> bytes_begin(ref<bytes> b)
+declare "C-HILTI" iterator<bytes> bytes_end(ref<bytes> b)
+declare "C-HILTI" int<8> bytes_cmp(ref<bytes> b1, ref<bytes> b2)
+declare "C-HILTI" ref<bytes> bytes_copy(ref<bytes> b)
+declare "C-HILTI" void bytes_trim(ref<bytes> b, iterator<bytes> pos)
+
+declare "C-HILTI" void bytes_freeze(ref<bytes> b, bool freeze)
+declare "C-HILTI" bool bytes_is_frozen(ref<bytes> b)
+declare "C-HILTI" bool iterator_bytes_is_frozen(iterator<bytes> pos)
+
+declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> last)
+# declare "C-HILTI" caddr bytes_to_raw(ref<bytes> b)
+
+declare "C-HILTI" void iterator_bytes_dtor(iterator<bytes> pos)
+declare "C-HILTI" void iterator_bytes_cctor(iterator<bytes> pos)
+declare "C-HILTI" int<8> iterator_bytes_deref(iterator<bytes> pos)
+declare "C-HILTI" iterator<bytes> iterator_bytes_incr(iterator<bytes> pos)
+declare "C-HILTI" iterator<bytes> iterator_bytes_incr_by(iterator<bytes> pos, int<64> n)
+declare "C-HILTI" bool iterator_bytes_eq(iterator<bytes> pos1, iterator<bytes> pos2)
+declare "C-HILTI" int<64> iterator_bytes_diff(iterator<bytes> pos1, iterator<bytes> pos2)
+
+###
+
+declare "C-HILTI" void tuple_dtor(tuple<*> t)
+declare "C-HILTI" void tuple_cctor(tuple<*> t)
 
 ###
 #
@@ -86,33 +121,6 @@ declare "C-HILTI" int<64> string_find(string s1, string s2)
 # declare "C-HILTI" void channel_write_try(ref<channel<*>> ch, any data)
 # declare "C-HILTI" any channel_read_try(ref<channel<*>> ch)
 # declare "C-HILTI" int<64> channel_size(ref<channel<*>> ch)
-#
-# ###
-#
-# declare "C-HILTI" ref<bytes> bytes_new()
-# declare "C-HILTI" int<64> bytes_len(ref<bytes> b)
-# declare "C-HILTI" bool bytes_empty(ref<bytes> b)
-# declare "C-HILTI" void  bytes_append(ref<bytes> b, ref<bytes> other)
-# declare "C-HILTI" ref<bytes> bytes_sub(iterator<bytes> start, iterator<bytes> last)
-# declare "C-HILTI" iterator<bytes> bytes_offset(ref<bytes> b, int<64> offset)
-# declare "C-HILTI" iterator<bytes> bytes_begin(ref<bytes> b)
-# declare "C-HILTI" iterator<bytes> bytes_end(ref<bytes> b)
-# declare "C-HILTI" int<8> bytes_cmp(ref<bytes> b1, ref<bytes> b2)
-# declare "C-HILTI" ref<bytes> bytes_copy(ref<bytes> b)
-# declare "C-HILTI" void bytes_trim(ref<bytes> b, iterator<bytes> pos)
-#
-# declare "C-HILTI" void bytes_freeze(ref<bytes> b, bool freeze)
-# declare "C-HILTI" bool bytes_is_frozen(ref<bytes> b)
-# declare "C-HILTI" bool bytes_pos_is_frozen(iterator<bytes> pos)
-#
-# declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> last)
-# declare "C-HILTI" caddr bytes_to_raw(ref<bytes> b)
-#
-# declare "C-HILTI" int<8> bytes_pos_deref(iterator<bytes> pos)
-# declare "C-HILTI" iterator<bytes> bytes_pos_incr(iterator<bytes> pos)
-# declare "C-HILTI" iterator<bytes> bytes_pos_incr_by(iterator<bytes> pos, int<64> n)
-# declare "C-HILTI" bool bytes_pos_eq(iterator<bytes> pos1, iterator<bytes> pos2)
-# declare "C-HILTI" int<64> bytes_pos_diff(iterator<bytes> pos1, iterator<bytes> pos2)
 #
 # ###
 #

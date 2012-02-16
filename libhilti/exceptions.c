@@ -26,7 +26,7 @@ hlt_exception_type hlt_exception_would_block = { "WouldBlock", &hlt_exception_un
 hlt_exception_type hlt_exception_decoding_error = { "DecodingError", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_uncaught_thread_exception = { "ThreadException", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_no_threading = { "NoThreading", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_exception_internal_error = { "InternalError", &hlt_exception_unspecified, &hlt_type_info_string };
+hlt_exception_type hlt_exception_internal_error = { "InternalError", &hlt_exception_unspecified, &hlt_type_info_hlt_string };
 hlt_exception_type hlt_exception_os_error = { "OSError", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_overlay_not_attached = { "OverlayNotAttached", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_index_error = { "IndexError", &hlt_exception_unspecified, 0 };
@@ -34,21 +34,25 @@ hlt_exception_type hlt_exception_underflow = { "Underflow", &hlt_exception_unspe
 hlt_exception_type hlt_exception_invalid_iterator = { "InvalidIterator", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_not_implemented = { "NotImplemented", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_pattern_error = { "PatternError", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_exception_assertion_error = { "AssertionError", &hlt_exception_unspecified, &hlt_type_info_string };
+hlt_exception_type hlt_exception_assertion_error = { "AssertionError", &hlt_exception_unspecified, &hlt_type_info_hlt_string };
 hlt_exception_type hlt_exception_null_reference = { "NulLReference", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_timer_already_scheduled = { "TimerAlreadyScheduled", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_timer_not_scheduled = { "TimerNotScheduled", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_no_timer_manager = { "NoTimerManager", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_iosrc_exhausted = { "IOSrcExhausted", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_exception_iosrc_error = { "IOSrcError", &hlt_exception_unspecified, &hlt_type_info_string };
-hlt_exception_type hlt_exception_io_error = { "IOError", &hlt_exception_unspecified, &hlt_type_info_string };
+hlt_exception_type hlt_exception_iosrc_error = { "IOSrcError", &hlt_exception_unspecified, &hlt_type_info_hlt_string };
+hlt_exception_type hlt_exception_io_error = { "IOError", &hlt_exception_unspecified, &hlt_type_info_hlt_string };
 hlt_exception_type hlt_exception_profiler_mismatch = { "ProfilerMismatch", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_profiler_unknown = { "ProfilerUnknown", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_no_thread_context = { "NoThreadContext", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_conversion_error = { "ConversionError", &hlt_exception_unspecified, 0 };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
-hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}; // FIXME: &hlt_type_info_int_32 };
+hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}; // FIXME: &hlt_type_info_hlt_int_32 };
+
+void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt)
+{
+}
 
 hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)
 {

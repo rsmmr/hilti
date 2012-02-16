@@ -137,3 +137,40 @@ void StatementBuilder::visit(statement::instruction::bytes::Unfreeze* i)
     cg()->llvmCall("hlt::bytes_freeze", args);
 }
 
+void StatementBuilder::visit(statement::instruction::bytes::Begin* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    auto result = cg()->llvmCall("hlt::bytes_begin", args);
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::End* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    auto result = cg()->llvmCall("hlt::bytes_end", args);
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Incr* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    auto result = cg()->llvmCall("hlt::bytes_pos_incr", args);
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::IncrBy* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::bytes_pos_incr_by", args);
+
+    cg()->llvmStore(i, result);
+}
+

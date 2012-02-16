@@ -57,7 +57,7 @@ int                   return token::INT;
 bool                  return token::BOOL;
 tuple                 return token::TUPLE;
 ref                   return token::REF;
-iter                  return token::ITER;
+iterator              return token::ITER;
 bytes                 return token::BYTES;
 
 True                  yylval->bval = 1; return token::CBOOL;

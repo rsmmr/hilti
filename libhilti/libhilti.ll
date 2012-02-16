@@ -37,15 +37,24 @@
     i8  ;; Start of data.
 }
 
+; A bytes iterator.
+%hlt.iterator.bytes = type {
+    i8*,
+    i8*
+}
+
 ; Types we don't specify further at the LLVM level.
-%hlt.bytes = type i8*
+%hlt.bytes = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.
 
-declare void @hlt_object_ref(%hlt.type_info*, i8 *)
-declare void @hlt_object_unref(%hlt.type_info*, i8 *)
+declare void @__hlt_object_ref(%hlt.type_info*, i8 *)
+declare void @__hlt_object_unref(%hlt.type_info*, i8 *)
+declare void @__hlt_object_dtor(%hlt.type_info*, i8 *)
+declare void @__hlt_object_cctor(%hlt.type_info*, i8 *)
 
 declare %hlt.string* @hlt_string_from_data(i8*, i64, %hlt.exception**, %hlt.execution_context*)
+declare %hlt.bytes*  @hlt_bytes_new_from_data_copy(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 
 declare void @hlt_abort()
 

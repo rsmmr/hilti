@@ -207,7 +207,9 @@ type          : ANY                              { $$ = builder::any::type(loc(@
               | TUPLE '<' '*' '>'                { $$ = builder::tuple::typeAny(loc(@$)); }
               | REF '<' type '>'                 { $$ = builder::reference::type($3, loc(@$)); }
               | REF '<' '*' '>'                  { $$ = builder::reference::typeAny(loc(@$)); }
-              | ITER '<' type '>'                { $$ = builder::iterator::type($3, loc(@$)); }
+              | ITER '<' type '>'                { $$ = builder::iterator::type($3, loc(@$));
+                                                   driver.checkNotNull($$, "type not iterable", @$);
+                                                 }
               | ITER '<' '*' '>'                 { $$ = builder::iterator::typeAny(loc(@$)); }
               ;
 

@@ -9,8 +9,6 @@
 
 #include "types.h"
 
-struct __hlt_list;
-
 /// Configuration parameters for the HILTI runtime system..
 typedef struct
 {
@@ -29,8 +27,7 @@ typedef struct
     /// Where debug output is to be sent. Default is stderr.
     FILE* debug_out;
 
-    /// List of enabled debug output streams as a colon-separated string.
-    /// Null (default) means no debugging output.
+    /// Colon-separated list of debug stream.
     const char* debug_streams;
 
     /// 1 if profiling is enabled, 0 otherwise. Default is off.

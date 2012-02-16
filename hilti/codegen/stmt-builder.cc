@@ -102,7 +102,7 @@ void StatementBuilder::visit(declaration::Function* f)
             continue;
 
         auto init = cg()->llvmParameter(p);
-        cg()->llvmRef(init, p->type());
+        cg()->llvmCctor(init, p->type(), false);
         cg()->llvmAddLocal("__shadow_" + p->id()->name(), p->type(), init);
     }
 

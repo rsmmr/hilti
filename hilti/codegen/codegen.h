@@ -412,9 +412,7 @@ protected:
    /// the value.
    ///
    /// value: The value to store.
-   ///
-   /// plusone: XXX
-   void llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value, bool plusone=false);
+   void llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value);
 
    /// Stores an LLVM value at the location associated with a HILTI
    /// instruction's target operand. expression.
@@ -425,9 +423,7 @@ protected:
    /// destination for the store operation.
    ///
    /// value: The value to store.
-   ///
-   /// plusone: XXX
-   void llvmStore(statement::Instruction* instr, llvm::Value* value, bool plusone=false);
+   void llvmStore(statement::Instruction* instr, llvm::Value* value);
 
    /// Returns a global's index in the module-wide array of globals. Each
    /// module keeps an array with all its globals as part of HILTI's
@@ -747,6 +743,9 @@ protected:
    typedef std::pair<string, shared_ptr<hilti::Type>> parameter;
    typedef std::vector<parameter> parameter_list;
 
+   typedef std::pair<string, llvm::Type*> llvm_parameter;
+   typedef std::vector<llvm_parameter> llvm_parameter_list;
+
    /// Adds a new LLVM function to the current module.
    ///
    /// func: The HILTI function corresponding to the function being created.
@@ -778,6 +777,9 @@ protected:
    ///
    /// Returns: The new function.
    llvm::Function* llvmAddFunction(const string& name, llvm::Type* rtype, parameter_list params, bool internal, type::function::CallingConvention cc);
+
+   /// XXX.
+   llvm::Function* llvmAddFunction(const string& name, llvm::Type* rtype, llvm_parameter_list params, bool internal);
 
    typedef std::vector<shared_ptr<Expression>> expr_list;
 
@@ -1005,6 +1007,7 @@ protected:
    /// available.
    llvm::Value* llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm::Value* hight);
 
+#if 0
    /// Increases the reference count of a garbage-collected object. This
    /// method is safe to call also instances of types that are not reference
    /// counted, and with null pointers; in both cases, it will just turn into
@@ -1038,13 +1041,30 @@ protected:
    /// type: The HILTI type of *val*. 
    void llvmUnrefAtReturn(llvm::Value* val, shared_ptr<Type> type);
 
-   /// Similar to llvmUnref but postpones the counter decrease until the
-   /// current instruction has been finished.
+#endif
+
+   /// Similar to llvmDtor but postpones the operation until the current
+   /// instruction has been finished.
    ///
    /// val: The value which's reference count to increase.
    ///
-   /// type: The HILTI type of *val*. 
-   void llvmUnrefAfterInstruction(llvm::Value* val, shared_ptr<Type> type);
+   /// type: The HILTI type of *val*.
+   ///
+   /// is_ptr: True if *val* is in fact a pointer to an instance of the type
+   /// described by *type*; false if it's the instance itself.
+   void llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr);
+
+   /// XXX.
+   void llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr);
+
+   /// XXX.
+   void llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr);
+
+   /// XXXX
+   void llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type);
+
+   /// XXXX
+   void llvmGCClear(llvm::Value* val, shared_ptr<Type> type);
 
    /// Finished generation of a statement. This is called from the statement builder.
    void finishStatement();
@@ -1119,7 +1139,7 @@ private:
    typedef std::map<string, int> label_map;
    typedef std::map<string, IRBuilder*> builder_map;
    typedef std::map<string, std::pair<llvm::Value*, shared_ptr<Type>>> local_map;
-   typedef std::list<std::pair<llvm::Value*, shared_ptr<Type>>> unref_list;
+   typedef std::list<std::pair<std::pair<llvm::Value*, bool>, shared_ptr<Type>>> dtor_list;
    typedef std::list<std::pair<llvm::BasicBlock*, llvm::Value*>> exit_point_list;
 
    struct FunctionState {
@@ -1131,8 +1151,7 @@ private:
        local_map locals;
        local_map tmps;
        exit_point_list exits;
-       unref_list unrefs_at_return;
-       unref_list unrefs_after_ins;
+       dtor_list dtors_after_ins;
        string next_comment;
    };
 

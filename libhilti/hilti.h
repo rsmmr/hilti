@@ -23,6 +23,8 @@
 #include "debug.h"
 #include "memory.h"
 #include "init.h"
+#include "string_.h"
+#include "list.h"
 
 // Not yet ported to new compiler framework.
 
@@ -46,7 +48,6 @@
 #include "overlay.h"
 #include "port.h"
 #include "regexp.h"
-#include "string_.h"
 #include "threading.h"
 #include "tuple.h"
 #include "utf8proc.h"

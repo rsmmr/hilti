@@ -12,7 +12,7 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
     auto func = current<declaration::Function>();
     auto rtype = as<type::Function>(func->function()->type())->result()->type();
     auto op1 = cg()->llvmValue(i->op1(), rtype);
-    cg()->llvmRef(op1, rtype); // Return at +1.
+    cg()->llvmCctor(op1, rtype, false); // Return at +1.
     cg()->llvmReturn(op1);
 }
 
@@ -79,7 +79,8 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
     auto func = cg()->llvmValue(i->op1());
     auto ftype = ast::as<type::Function>(i->op1()->type());
     auto result = cg()->llvmCall(func, ftype, params);
-    cg()->llvmStore(i->target(), result, true);
+    cg()->llvmStore(i->target(), result);
+    cg()->llvmDtor(result, ftype->result()->type(), false);
 }
 
 void StatementBuilder::visit(statement::instruction::flow::IfElse* i)

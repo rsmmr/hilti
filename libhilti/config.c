@@ -13,7 +13,7 @@ const hlt_config* hlt_config_get()
 {
     if ( ! _current_config ) {
         // Handled outside of the normal memory management.
-        _current_config = hlt_malloc(sizeof(hlt_config));
+        _current_config = malloc(sizeof(hlt_config));
 
         if ( ! _current_config ) {
             fputs("cannot allocate memory for libhilti configuration", stderr);
@@ -46,12 +46,11 @@ void hlt_config_set(const hlt_config* new_config)
 
 void __hlt_config_init()
 {
-    // Make sure we've initialized our config->
+    // Make sure we've initialized our config.
     hlt_config_get();
 }
 
 void __hlt_config_done()
 {
-    // hlt_unref_obj(_current_config->debug_streams, typeinfo);
     hlt_free(_current_config);
 }

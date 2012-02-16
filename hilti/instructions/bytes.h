@@ -170,8 +170,8 @@ iEnd
 
 iBegin(bytes, Sub, "bytes.sub")
     iTarget(optype::refBytes)
-    iOp1(optype::refBytes, true);
-    iOp2(optype::refBytes, true);
+    iOp1(optype::iterBytes, true);
+    iOp2(optype::iterBytes, true);
 
     iValidate {
     }
@@ -218,3 +218,52 @@ iBegin(bytes, Unfreeze, "bytes.unfreeze")
 
 iEnd
 
+iBegin(bytes, Begin, "begin")
+    iTarget(optype::iterBytes);
+    iOp1(optype::refBytes, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Returns an iterator pointing to the start of bytes object *op1*.
+    )")
+iEnd
+
+iBegin(bytes, End, "end")
+    iTarget(optype::iterBytes);
+    iOp1(optype::refBytes, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Returns an iterator pointing to the end of bytes object *op1*.
+    )")
+iEnd
+
+iBegin(bytes, Incr, "incr")
+    iTarget(optype::iterBytes);
+    iOp1(optype::iterBytes, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Advances the iterator to the next element, or to the end position if already at the end.
+    )")
+iEnd
+
+iBegin(bytes, IncrBy, "incr_by")
+    iTarget(optype::iterBytes);
+    iOp1(optype::iterBytes, true);
+    iOp2(optype::int64, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Advances the iterator by *op2* elements, or to the end position
+        if that is reached during the process.
+    )")
+iEnd

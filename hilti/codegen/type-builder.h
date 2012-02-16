@@ -126,12 +126,31 @@ struct TypeInfo {
     /// set, the corresponding type must be derived from trait ~~Blockable.
     string blockable = "";
 
-    /// For garbage collected objects, the name of an internal libhilti
-    /// function that will be called when an object's reference count went
-    /// down to zero and its about to be deleted. The function receives a
-    /// pointer to the object as its single parameter. Can be left unset if a
-    /// type does not need any further cleanup.
+    /// The name of an internal libhilti function that will be called if an
+    /// instance is going to be destroyed.It receives two parameters: type
+    /// information for the instance and and pointer to the instance.
     string dtor = "";
+
+    /// Like \a dtor, but giving the function (of the same signature)
+    /// directly. Only one of \a dtor and \a dtor_func must be given.
+    llvm::Function* dtor_func = 0;
+
+    /// XXX
+    string obj_dtor = "";
+
+    /// XXX
+    llvm::Function* obj_dtor_func = 0;
+
+    /// The name of an internal libhilti function that will be called if an
+    /// instance has been copied. The function is called after a bitwise copy
+    /// has been made, but before any further operation is executed that
+    /// involves it. It receives two parameters: type information for the
+    /// instance and and pointer to the instance.
+    string cctor = "";
+
+    /// Like \a dtor, but giving the function (of the same signature)
+    /// directly. Only one of \a cctor and \a cctor_func must be given.
+    llvm::Function* cctor_func = 0;
 
     /// A global LLVM variable with auxiliary type-specific RTTI information,
     /// which will be accessible from the C level.
@@ -181,9 +200,14 @@ protected:
    void visit(type::Tuple* t) override;
    void visit(type::Reference* r) override;
    void visit(type::Bytes* r) override;
+   void visit(type::iterator::Bytes* i) override;
 
 private:
    llvm::Constant* _lookupFunction(const string& func);
+   TypeInfo* _typeInfo(shared_ptr<hilti::Type> type);
+   llvm::Function* _makeTupleDtor(CodeGen* cg, type::Tuple* type);
+   llvm::Function* _makeTupleCctor(CodeGen* cg, type::Tuple* type);
+   llvm::Function* _makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, bool dtor);
 
    // We cached all once computed type-infos and return the cached version
    // next time somebody asks for the same type instance.

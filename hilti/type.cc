@@ -123,3 +123,7 @@ type::Iterator::Iterator(shared_ptr<Type> ttype, const Location& l) : ValueType(
     _parameters.push_back(p);
     addChild(p);
 }
+
+shared_ptr<Type> type::Bytes::iterType() const {
+    return shared_ptr<Type>(new type::iterator::Bytes(location()));
+}

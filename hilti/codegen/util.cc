@@ -40,6 +40,7 @@ string codegen::util::mangle(const string& name, bool global, shared_ptr<ID> par
     normalized = ::util::strreplace(normalized, " ", "_");
     normalized = ::util::strreplace(normalized, "__", "_");
     normalized = ::util::strreplace(normalized, "@", "l_");
+    normalized = ::util::strreplace(normalized, "*", "any");
 
     while ( ::util::endsWith(normalized, "_") )
         normalized = normalized.substr(0, normalized.size() - 1);

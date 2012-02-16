@@ -17,11 +17,11 @@
 
 /// Initializes libhilti's debugging subsystem if compiled in. If not, this
 /// is just a no-op. The function is called from hlt_init().
-extern __hlt_debug_init();
+extern void __hlt_debug_init();
 
 /// Terminates libhilti's debugging subsystem. The function is called from hlt_done().
-extern __hlt_debug_done();
+extern void __hlt_debug_done();
 
-// extern void __hlt_debug_printf_internal(const char* stream, const char* fmt, ...);
+extern void __hlt_debug_printf_internal(const char* stream, const char* fmt, ...);
 
 #endif

@@ -22,7 +22,7 @@ void __hlt_global_state_init()
 
 void __hlt_global_state_done()
 {
-    __hlt_execution_context_unref(_global_execution_context);
+    GC_DTOR(_global_execution_context, hlt_execution_context);
     _global_execution_context = 0;
 }
 

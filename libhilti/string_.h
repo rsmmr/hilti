@@ -25,6 +25,7 @@
 
 #include "types.h"
 #include "memory.h"
+#include "rtti.h"
 
 /// Type for the size of, and offsets into, a string.
 typedef int64_t hlt_string_size;
@@ -39,12 +40,6 @@ struct __hlt_string {
                           // as it does not accoutn for character encoding.
     int8_t bytes[];       // The bytes representing the strings value, encoded in UTF-8.
 } __attribute__((__packed__));
-
-/// \hlt_ref
-extern void hlt_string_ref(hlt_string s);
-
-/// \hlt_unref
-extern void hlt_string_unref(hlt_string s);
 
 /// Returns a given string directly back. This is a wrapper function that has
 /// the right signature to use in an \ref hlt_type_info object.

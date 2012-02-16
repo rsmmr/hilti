@@ -255,9 +255,9 @@ llvm::Constant* CodeGen::llvmSizeOf(llvm::Constant* v)
     return llvm::ConstantExpr::getPtrToInt(addr, llvmTypeInt(64));
 }
 
-void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value, bool plusone)
+void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value)
 {
-    _storer->llvmStore(target, value, plusone);
+    _storer->llvmStore(target, value);
 }
 
 llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
@@ -274,9 +274,9 @@ llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
     return 0; // Never reached.
 }
 
-void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value, bool plusone)
+void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value)
 {
-    _storer->llvmStore(instr->target(), value, plusone);
+    _storer->llvmStore(instr->target(), value);
 }
 
 llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builder)
@@ -451,7 +451,7 @@ void CodeGen::initGlobals()
         auto init = g->init() ? llvmValue(g->init(), g->type()) : llvmInitVal(g->type());
         assert(init);
         auto addr = llvmGlobal(g.get());
-        llvmRef(init, g->type());
+        llvmCctor(init, g->type(), true);
         llvmCheckedCreateStore(init, addr);
     }
 
@@ -504,15 +504,14 @@ void CodeGen::initGlobals()
             llvmCheckedCreateCall(func, args);
         }
 
-        auto val = builder()->CreateLoad(llvmGlobal(g));
-        llvmUnref(val, g->type());
+        auto val = llvmGlobal(g);
+        llvmDtor(val, g->type(), true);
     }
 
     auto stype = shared_ptr<Type>(new type::String());
 
     for ( auto gs : _global_strings ) {
-        auto glob = gs.second;
-        llvmUnref(builder()->CreateLoad(glob), stype);
+        llvmDtor(gs.second, stype, true);
     }
 
     if ( ! functionEmpty() )
@@ -672,7 +671,7 @@ llvm::Constant* CodeGen::llvmRtti(shared_ptr<hilti::Type> type)
 
     // We add the global here first and cache it before we call llvmRtti() so
     // the recursive calls function properly.
-    string name = util::mangle(string("hlt_type_info_") + type->repr(), true, nullptr, "", false);
+    string name = util::mangle(string("hlt_type_info_hlt_") + type->repr(), true, nullptr, "", false);
     llvm::Constant* cval = llvmConstNull(llvmTypePtr(llvmTypeRtti()));
     auto constant1 = llvmAddConst(name, cval, true);
     constant1->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
@@ -856,7 +855,7 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
     auto llvm_type = llvmType(type);
 
     if ( ! init )
-        init = llvmConstNull(llvm_type);
+        init = typeInfo(type)->init_val;
 
     llvm::BasicBlock& block(function()->getEntryBlock());
 
@@ -1016,6 +1015,29 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
     return func;
 }
 
+llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, llvm_parameter_list params, bool internal)
+{
+    auto mangled_name = util::mangle(name, true, nullptr, "", false);
+
+    auto llvm_linkage = internal ? llvm::Function::InternalLinkage : llvm::Function::ExternalLinkage;
+    auto llvm_cc = llvm::CallingConv::C;
+
+    std::vector<llvm::Type*> func_args;
+    for ( auto a : params )
+        func_args.push_back(a.second);
+
+    auto ftype = llvm::FunctionType::get(rtype, func_args, false);
+    auto func = llvm::Function::Create(ftype, llvm_linkage, mangled_name, _module);
+
+    func->setCallingConv(llvm_cc);
+
+    auto i = params.begin();
+    for ( auto a = func->arg_begin(); a != func->arg_end(); ++a, ++i )
+        a->setName(i->first);
+
+    return func;
+}
+
 llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool internal, type::function::CallingConvention cc)
 {
     if ( cc == type::function::DEFAULT )
@@ -1118,11 +1140,7 @@ void CodeGen::llvmBuildFunctionCleanup()
 {
     // Unref locals (incl. parameters).
     for ( auto l : _functions.back()->locals )
-        llvmUnref(builder()->CreateLoad(l.second.first), l.second.second);
-
-    // Unref values registered for doing so.
-    for ( auto unref : _functions.back()->unrefs_at_return )
-        llvmUnref(unref.first, unref.second);
+        llvmDtor(l.second.first, l.second.second, true);
 }
 
 llvm::Value* CodeGen::llvmGEP(llvm::Value* addr, llvm::Value* i1, llvm::Value* i2, llvm::Value* i3, llvm::Value* i4)
@@ -1457,82 +1475,73 @@ llvm::Value* CodeGen::llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm
     return builder()->CreateAnd(value, mask);
 }
 
-void CodeGen::llvmRefHelper(const char* func, llvm::Value* val, shared_ptr<Type> type)
+void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
 {
-    // FIXME: Not so great to hardcode all the types here. But unclear what
-    // would be better.
-
-    auto ttype = ast::as<type::Tuple>(type);
-
-    if ( ttype ) {
-        // Ref/unref all elements.
-
-        int i = 0;
-        auto cval = llvm::dyn_cast<llvm::Constant>(val);
-
-        for ( auto et : ttype->typeList() ) {
-            llvm::Value* e = nullptr;
-
-            if ( cval )
-                e = llvm::ConstantExpr::getExtractValue(cval, i);
-            else
-                e = builder()->CreateExtractValue(val, i);
-
-            llvmRefHelper(func, e, et);
-
-            ++i;
-        }
-
-        return;
-    }
-
-    auto rtype = ast::as<type::Reference>(type);
-
-    if ( rtype ) {
-        // Deference.
-        val = builder()->CreateLoad(val);
-        type = rtype->refType();
-    }
-
-    if ( ! type::hasTrait<type::trait::GarbageCollected>(type) )
-        return;
-
-    auto c = llvm::dyn_cast<llvm::Constant>(val);
-
-    if ( c && c->isNullValue() )
-        return;
-
-    value_list args;
-    args.push_back(llvmRtti(type));
-    args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
-    llvmCallC(func, args, false);
-}
-
-void CodeGen::llvmRef(llvm::Value* val, shared_ptr<Type> type)
-{
-    llvmRefHelper("hlt_object_ref", val, type);
-}
-
-void CodeGen::llvmUnref(llvm::Value* val, shared_ptr<Type> type)
-{
-    llvmRefHelper("hlt_object_unref", val, type);
-}
-
-void CodeGen::llvmUnrefAtReturn(llvm::Value* val, shared_ptr<Type> type)
-{
-    _functions.back()->unrefs_at_return.push_back(std::make_tuple(val, type));
-}
-
-void CodeGen::llvmUnrefAfterInstruction(llvm::Value* val, shared_ptr<Type> type)
-{
-    _functions.back()->unrefs_after_ins.push_back(std::make_tuple(val, type));
+    _functions.back()->dtors_after_ins.push_back(std::make_tuple(std::make_tuple(val, is_ptr), type));
 }
 
 void CodeGen::finishStatement()
 {
     // Unref values registered for doing so.
-    for ( auto unref : _functions.back()->unrefs_after_ins )
-        llvmUnref(unref.first, unref.second);
+    for ( auto unref : _functions.back()->dtors_after_ins )
+        llvmDtor(unref.first.first, unref.second, unref.first.second);
 
-    _functions.back()->unrefs_after_ins.clear();
+    _functions.back()->dtors_after_ins.clear();
 }
+
+void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
+{
+    auto ti = typeInfo(type);
+
+    if ( ti->dtor.size() == 0 && ti->dtor_func == 0 )
+        return;
+
+    // If we didn't get a pointer to the value, we need to create a tmp so
+    // that we can take its address.
+    if ( ! is_ptr ) {
+        auto tmp = llvmAddTmp("gcobj", llvmTypePtr(), nullptr, true);
+        llvmCheckedCreateStore(builder()->CreateBitCast(val, llvmTypePtr()), tmp);
+        val = tmp;
+    }
+
+    value_list args;
+    args.push_back(llvmRtti(type));
+    args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
+    llvmCallC("__hlt_object_dtor", args, false);
+}
+
+void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
+{
+    auto ti = typeInfo(type);
+
+    if ( ti->cctor.size() == 0 && ti->cctor_func == 0 )
+        return;
+
+    // If we didn't get a pointer to the value, we need to create a tmp so
+    // that we can take its address.
+    if ( ! is_ptr ) {
+        auto tmp = llvmAddTmp("gcobj", llvmTypePtr(), nullptr, true);
+        llvmCheckedCreateStore(builder()->CreateBitCast(val, llvmTypePtr()), tmp);
+        val = tmp;
+    }
+
+    value_list args;
+    args.push_back(llvmRtti(type));
+    args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
+    llvmCallC("__hlt_object_cctor", args, false);
+}
+
+void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type)
+{
+    assert(ast::isA<type::ValueType>(type));
+    llvmDtor(dst, type, true);
+    llvmCheckedCreateStore(val, dst);
+    llvmCctor(dst, type, true);
+}
+
+void CodeGen::llvmGCClear(llvm::Value* val, shared_ptr<Type> type)
+{
+    assert(ast::isA<type::ValueType>(type));
+    llvmDtor(val, type, true);
+}
+

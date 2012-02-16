@@ -102,8 +102,8 @@
 
 ;;; The following libhilti functions do not fit normal C_HILTI calling
 ;;; conventions and thus declared here directly.
-%__hlt_bytes_pos = type {i8*, i8*}
-declare i8 @__hlt_bytes_extract_one(%__hlt_bytes_pos*, %__hlt_bytes_pos, %__hlt_exception**, %__hlt_execution_context*)
+%__hlt_iterator_bytes = type {i8*, i8*}
+declare i8 @__hlt_bytes_extract_one(%__hlt_iterator_bytes*, %__hlt_iterator_bytes, %__hlt_exception**, %__hlt_execution_context*)
 
 ;;; Exception management.
 declare %__hlt_exception* @__hlt_exception_new(%__hlt_exception_type*, %__hlt_void*, %__hlt_cchar*)

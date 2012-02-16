@@ -15,10 +15,9 @@ Storer::~Storer()
 {
 }
 
-void Storer::llvmStore(shared_ptr<Expression> target, llvm::Value* value, bool plusone)
+void Storer::llvmStore(shared_ptr<Expression> target, llvm::Value* value)
 {
     setArg1(value);
-    setArg2(plusone);
     call(target);
 }
 
@@ -40,12 +39,7 @@ void Storer::visit(expression::Parameter* p)
     auto name = "__shadow_" + param->id()->name();
     auto addr = cg()->llvmLocal(name);
 
-    cg()->llvmUnref(builder()->CreateLoad(addr), p->type());
-
-    if ( ! plusone )
-        cg()->llvmRef(val, p->type());
-
-    cg()->llvmCheckedCreateStore(val, addr);
+    cg()->llvmGCAssign(addr, val, p->type());
 }
 
 void Storer::visit(expression::CodeGen* c)
@@ -62,12 +56,7 @@ void Storer::visit(variable::Global* v)
 
     auto addr = cg()->llvmGlobal(v);
 
-    cg()->llvmUnref(builder()->CreateLoad(addr), v->type());
-
-    if ( ! plusone )
-        cg()->llvmRef(val, v->type());
-
-    cg()->llvmCheckedCreateStore(val, addr, true); // Mark as volatile.
+    cg()->llvmGCAssign(addr, val, v->type());
 }
 
 void Storer::visit(variable::Local* v)
@@ -78,10 +67,5 @@ void Storer::visit(variable::Local* v)
     auto name = v->id()->name();
     auto addr = cg()->llvmLocal(name);
 
-    cg()->llvmUnref(builder()->CreateLoad(addr), v->type());
-
-    if ( ! plusone )
-        cg()->llvmRef(val, v->type());
-
-    cg()->llvmCheckedCreateStore(val, addr);
+    cg()->llvmGCAssign(addr, val, v->type());
 }

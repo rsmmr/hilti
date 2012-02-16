@@ -5,6 +5,28 @@
 #include "rtti.h"
 #include "string_.h"
 
+// Generic version working with all tuple types.
+void hlt_tuple_dtor(hlt_type_info* ti, void* obj)
+{
+    hlt_type_info** types = (hlt_type_info**) &ti->type_params;
+    int16_t* offsets = (int16_t *)ti->aux;
+
+    for ( int i = 0; i < ti->num_params; i++ ) {
+        __hlt_object_dtor(types[i], obj + offsets[i]);
+    }
+}
+
+// Generic version working with all tuple types.
+void hlt_tuple_cctor(hlt_type_info* ti, void* obj)
+{
+    hlt_type_info** types = (hlt_type_info**) &ti->type_params;
+    int16_t* offsets = (int16_t *)ti->aux;
+
+    for ( int i = 0; i < ti->num_params; i++ ) {
+        __hlt_object_cctor(types[i], obj + offsets[i]);
+    }
+}
+
 hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string prefix = hlt_string_from_asciiz("(", excpt, ctx);
@@ -30,7 +52,7 @@ hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32
         hlt_string t;
 
         if ( types[i]->to_string ) {
-            t = (types[i]->to_string)(types[i], obj + offsets[i] , 0, excpt, ctx);
+            t = (types[i]->to_string)(types[i], obj + offsets[i], 0, excpt, ctx);
             if ( *excpt )
                 goto error;
         }
@@ -38,14 +60,21 @@ hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32
             // No format function.
             t = hlt_string_from_asciiz(types[i]->tag, excpt, ctx);
 
+        hlt_string tmp = s;
         s = hlt_string_concat(s, t, excpt, ctx);
-        hlt_string_unref(t);
+
+        GC_DTOR(tmp, hlt_string);
+        GC_DTOR(t, hlt_string);
+        t = 0;
 
         if ( *excpt )
             goto error;
 
         if ( i < type->num_params - 1 ) {
+            hlt_string tmp = s;
             s = hlt_string_concat(s, separator, excpt, ctx);
+            GC_DTOR(tmp, hlt_string);
+
             if ( *excpt )
                 goto error;
         }
@@ -56,14 +85,13 @@ hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32
 
 error:
     if ( ! result )
-        hlt_string_unref(s);
+        GC_DTOR(s, hlt_string);
 
-    hlt_string_unref(s);
-    hlt_string_unref(t);
+    GC_DTOR(t, hlt_string);
 
-    hlt_string_unref(prefix);
-    hlt_string_unref(postfix);
-    hlt_string_unref(separator);
+    GC_DTOR(prefix, hlt_string);
+    GC_DTOR(postfix, hlt_string);
+    GC_DTOR(separator, hlt_string);
 
     return result;
 }

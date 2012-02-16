@@ -40,12 +40,20 @@ public:
    /// Returns: The computed LLVM value.
    llvm::Value* llvmValue(shared_ptr<Constant> constant);
 
+   /// Returns the LLVM value corresponding to a HILTI constructor.
+   ///
+   /// constant: The constant.
+   ///
+   /// Returns: The computed LLVM value.
+   llvm::Value* llvmValue(shared_ptr<Ctor> ctor);
+
 protected:
    virtual void visit(expression::Variable* p) override;
    virtual void visit(expression::Parameter* p) override;
    virtual void visit(expression::CodeGen* c) override;
 
    virtual void visit(expression::Constant* e) override;
+   virtual void visit(expression::Ctor* e) override;
    virtual void visit(expression::Coerced* e) override;
    virtual void visit(expression::Function* f) override;
 
@@ -58,6 +66,8 @@ protected:
    virtual void visit(constant::Label* l) override;
    virtual void visit(constant::Tuple* t) override;
    virtual void visit(constant::Reference* t) override;
+
+   virtual void visit(ctor::Bytes* b) override;
 };
 
 

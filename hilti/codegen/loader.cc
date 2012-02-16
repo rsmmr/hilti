@@ -33,6 +33,15 @@ llvm::Value* Loader::llvmValue(shared_ptr<Constant> constant)
     assert(success);
     return result;
 }
+
+llvm::Value* Loader::llvmValue(shared_ptr<Ctor> ctor)
+{
+    llvm::Value* result;
+    bool success = processOne(ctor, &result);
+    assert(success);
+    return result;
+}
+
 void Loader::visit(expression::Variable* v)
 {
     call(v->variable());
@@ -72,6 +81,11 @@ void Loader::visit(expression::Parameter* p)
 void Loader::visit(expression::Constant* e)
 {
     setResult(llvmValue(e->constant()));
+}
+
+void Loader::visit(expression::Ctor* e)
+{
+    setResult(llvmValue(e->ctor()));
 }
 
 void Loader::visit(expression::Coerced* e)
@@ -134,3 +148,23 @@ void Loader::visit(constant::Reference* r)
     setResult(val);
 }
 
+void Loader::visit(ctor::Bytes* b)
+{
+    std::vector<llvm::Constant*> vec_data;
+    for ( auto c : b->value() )
+        vec_data.push_back(cg()->llvmConstInt(c, 8));
+
+    auto array = cg()->llvmConstArray(cg()->llvmTypeInt(8), vec_data);
+    llvm::Constant* data = cg()->llvmAddConst("bytes", array);
+    data = llvm::ConstantExpr::getBitCast(data, cg()->llvmTypePtr());
+
+    CodeGen::value_list args;
+    args.push_back(data);
+    args.push_back(cg()->llvmConstInt(b->value().size(), 64));
+
+    auto val = cg()->llvmCallC("hlt_bytes_new_from_data_copy", args, true);
+
+    cg()->llvmDtorAfterInstruction(val, b->type(), false);
+
+    setResult(val);
+}

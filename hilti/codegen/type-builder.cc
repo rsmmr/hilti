@@ -57,6 +57,14 @@ TypeBuilder::~TypeBuilder()
 {
 }
 
+TypeInfo* TypeBuilder::_typeInfo(shared_ptr<hilti::Type> type)
+{
+    TypeInfo* result;
+    bool success = processOne(type, &result);
+    assert(success);
+    return result;
+}
+
 shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
 {
     auto i = _ti_cache.find(type);
@@ -66,11 +74,8 @@ shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
         return i->second;
 
     setDefaultResult(nullptr);
-    TypeInfo* result;
-    bool success = processOne(type, &result);
-    assert(success);
 
-    shared_ptr<TypeInfo> ti(result);
+    shared_ptr<TypeInfo> ti(_typeInfo(type));
 
     if ( ! ti )
         internalError(::util::fmt("typeInfo() not available for type '%s'", type->repr().c_str()));
@@ -131,6 +136,7 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     vals.push_back(llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->init_val), cg()->llvmTypeInt(16)));
     vals.push_back(cg()->llvmConstAsciizPtr(ti->name));
     vals.push_back(cg()->llvmConstInt((ptype ? ptype->parameters().size() : 0), 16));
+    vals.push_back(cg()->llvmConstInt(type::hasTrait<type::trait::GarbageCollected>(type), 16));
     vals.push_back(ti->aux ? ti->aux : cg()->llvmConstNull(cg()->llvmTypePtr()));
     vals.push_back(ti->ptr_map ? ti->ptr_map : cg()->llvmConstNull(cg()->llvmTypePtr()));
     vals.push_back(_lookupFunction(ti->to_string));
@@ -139,7 +145,9 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     vals.push_back(_lookupFunction(ti->hash));
     vals.push_back(_lookupFunction(ti->equal));
     vals.push_back(_lookupFunction(ti->blockable));
-    vals.push_back(_lookupFunction(ti->dtor));
+    vals.push_back(ti->dtor_func ? ti->dtor_func : _lookupFunction(ti->dtor));
+    vals.push_back(ti->obj_dtor_func ? ti->obj_dtor_func : _lookupFunction(ti->obj_dtor));
+    vals.push_back(ti->cctor_func ? ti->cctor_func : _lookupFunction(ti->cctor));
 
     if ( ptype ) {
         // Add type parameters.
@@ -184,6 +192,8 @@ void TypeBuilder::visit(type::String* s)
 {
     TypeInfo* ti = new TypeInfo(s);
     ti->id = HLT_TYPE_STRING;
+    ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
+    ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
     ti->c_prototype = "hlt_string";
     ti->init_val = cg()->llvmConstNull(cg()->llvmTypeString());
     ti->to_string = "hlt::string_to_string";
@@ -209,11 +219,23 @@ void TypeBuilder::visit(type::Bytes* b)
 {
     TypeInfo* ti = new TypeInfo(b);
     ti->id = HLT_TYPE_BYTES;
+    ti->dtor = "hlt::bytes_dtor";
     ti->c_prototype = "hlt_bytes*";
-    ti->init_val = cg()->llvmConstNull(cg()->llvmLibType("hlt.bytes"));
+    ti->init_val = cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmLibType("hlt.bytes")));
     ti->to_string = "hlt::bytes_to_string";
     // ti->hash = "hlt::bool_hash";
     // ti->equal = "hlt::bool_equal";
+    setResult(ti);
+}
+
+void TypeBuilder::visit(type::iterator::Bytes* i)
+{
+    TypeInfo* ti = new TypeInfo(i);
+    ti->id = HLT_TYPE_ITERATOR_BYTES;
+    ti->dtor = "hlt::iterator_bytes_dtor";
+    ti->cctor = "hlt::iterator_bytes_cctor";
+    ti->c_prototype = "hlt_iterator_bytes";
+    ti->init_val = cg()->llvmConstNull(cg()->llvmLibType("hlt.iterator.bytes"));
     setResult(ti);
 }
 
@@ -239,6 +261,67 @@ void TypeBuilder::visit(type::Integer* i)
         assert(false);
 
     setResult(ti);
+}
+
+llvm::Function* TypeBuilder::_makeTupleDtor(CodeGen* cg, type::Tuple* t)
+{
+    // Creates the destructor for tuples.
+    return _makeTupleFuncHelper(cg, t, true);
+}
+
+llvm::Function* TypeBuilder::_makeTupleCctor(CodeGen* cg, type::Tuple* t)
+{
+    // Creates the cctor for tuples.
+    return _makeTupleFuncHelper(cg, t, false);
+}
+
+llvm::Function* TypeBuilder::_makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, bool dtor)
+{
+    auto type = t->sharedPtr<Type>();
+
+    string prefix = dtor ? "dtor_" : "cctor_";
+    string name = prefix + type->repr();
+
+    llvm::Value* cached = cg->lookupCachedValue(prefix + "-tuple", name);
+
+    if ( cached )
+        return llvm::cast<llvm::Function>(cached);
+
+    // Build tuple type. Can't use llvmType() as that would recurse.
+    std::vector<llvm::Type*> fields;
+    for ( auto t : t->typeList() )
+        fields.push_back(cg->llvmType(t));
+
+    auto llvm_type = cg->llvmTypeStruct("", fields);
+
+    CodeGen::llvm_parameter_list params;
+    params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
+    params.push_back(std::make_pair("tuple", cg->llvmTypePtr(llvm_type)));
+
+    auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
+
+    cg->pushFunction(func);
+
+    auto a = func->arg_begin();
+    ++a;
+    auto tval = cg->builder()->CreateLoad(a);
+
+    int idx = 0;
+
+    for ( auto et : t->typeList() ) {
+        auto elem = cg->llvmExtractValue(tval, idx++);
+
+        if ( dtor )
+            cg->llvmDtor(elem, et, false);
+        else
+            cg->llvmCctor(elem, et, false);
+    }
+
+    cg->popFunction();
+
+    cg->cacheValue(prefix + "-tuple", name, func);
+
+    return func;
 }
 
 void TypeBuilder::visit(type::Tuple* t)
@@ -281,6 +364,17 @@ void TypeBuilder::visit(type::Tuple* t)
     // ti->hash = "hlt::tuple_hash";
     // ti->equal = "hlt::tuple_equal";
     ti->aux = aux;
+    // ti->cctor_func = make_tuple_cctor(cg(), t);
+
+    if ( ! t->wildcard() ) {
+        ti->dtor_func = _makeTupleDtor(cg(), t);
+        ti->cctor_func = _makeTupleCctor(cg(), t);
+    }
+    else {
+        // Generic versions working with all tuples.
+        ti->dtor = "hlt::tuple_dtor";
+        ti->cctor = "hlt::tuple_cctor";
+    }
 
     setResult(ti);
 }
@@ -290,7 +384,15 @@ void TypeBuilder::visit(type::Reference* b)
     shared_ptr<hilti::Type> t = nullptr;
 
     if ( ! b->wildcard() ) {
-        setResult(typeInfo(b->refType()).get());
+        auto ti = _typeInfo(b->refType());
+
+        ti->obj_dtor = ti->dtor;
+        ti->obj_dtor_func = ti->dtor_func;
+
+        ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
+        ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
+
+        setResult(ti);
         return;
     }
 

@@ -14,7 +14,7 @@ static shared_ptr<Type> tuple(new type::Tuple());
 
 static shared_ptr<Type> refBytes(new type::Reference(shared_ptr<Type>(new type::Bytes())));
 
-static shared_ptr<Type> iterBytes(new type::Iterator(shared_ptr<Type>(new type::Bytes())));
+static shared_ptr<Type> iterBytes(new type::iterator::Bytes());
 
 static shared_ptr<Type> integer(new type::Integer());
 static shared_ptr<Type> int8(new type::Integer(8));
