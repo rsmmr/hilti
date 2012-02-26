@@ -100,17 +100,14 @@ static inline int8_t is_empty(const hlt_bytes* b)
     return is_empty_chunk(b->head);
 }
 
-#if 0
-// For debugging, not used currently.
+// For debugging.
 static void __print_bytes(const char* prefix, const hlt_bytes* b)
 {
-    return;
     fprintf(stderr, "%s: %p b( ", prefix, b);
     for ( __hlt_bytes_chunk *c = b->head; c; c = c->next )
         fprintf(stderr, "#%ld:%p-%p(%d) ", c->end - c->start, c->start, c->end, c->free);
     fprintf(stderr, ")\n");
 }
-#endif
 
 // c already ref'ed.
 static void add_chunk(hlt_bytes* b, __hlt_bytes_chunk* c)
@@ -139,6 +136,9 @@ static void add_chunk(hlt_bytes* b, __hlt_bytes_chunk* c)
         GC_ASSIGN(b->tail, c, __hlt_bytes_chunk);
     }
 
+    // Delete refernece passed in.
+    GC_CLEAR(c, __hlt_bytes_chunk);
+
     // We added data, so the first chunk must not be empty anymore because
     // that would signal an empty bytes object.
     if ( is_empty_chunk(b->head) ) {
@@ -148,9 +148,7 @@ static void add_chunk(hlt_bytes* b, __hlt_bytes_chunk* c)
         GC_ASSIGN(b->head, b->head->next, __hlt_bytes_chunk);
     }
 
-    assert(!is_empty_chunk(b->head));
-
-    GC_CLEAR(c, __hlt_bytes_chunk);
+    //assert(!is_empty_chunk(b->head));
 }
 
 hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
@@ -306,7 +304,7 @@ int8_t __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt
         dst->owner = 0;
         dst->frozen = 0;
         add_chunk(b, dst);
-        return 1;
+        return ! owner;
     }
 }
 
@@ -342,6 +340,7 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
 
     for ( const __hlt_bytes_chunk* src = other->head; src; src = src->next ) {
         __hlt_bytes_chunk* dst = GC_NEW(__hlt_bytes_chunk);
+        GC_ASSIGN(dst->bytes, src->bytes, __hlt_bytes_data);
         dst->start = src->start;
         dst->end = src->end;
         dst->owner = 0;
@@ -377,16 +376,17 @@ static inline int8_t is_end(hlt_iterator_bytes pos)
 
 static inline void normalize_pos(hlt_iterator_bytes* pos)
 {
-    if ( ! pos->chunk)
+    if ( ! pos->chunk )
         return;
 
-    // If the pos was previously an end position, but now new data has been
+    // If the pos was previously an end position but now new data has been
     // added, adjust it so that it's pointing to the next byte.
     if ( (! pos->cur || pos->cur >= pos->chunk->end) && pos->chunk->next ) {
-        GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
+        //GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
         pos->chunk = pos->chunk->next;
         pos->cur = pos->chunk->start;
     }
+
 }
 
 hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -415,7 +415,7 @@ hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_e
     // Special case: if both positions are inside the same chunk, it's easy.
     if ( start.chunk == end.chunk || (is_end(end) && start.chunk->next == 0) ) {
         __hlt_bytes_chunk* c = GC_NEW(__hlt_bytes_chunk);
-        c->bytes = start.chunk->bytes;
+        GC_ASSIGN(c->bytes, start.chunk->bytes, __hlt_bytes_data);
         c->start = start.cur;
         c->end = end.cur ? end.cur : start.chunk->end;
         c->owner = 0;
@@ -426,7 +426,7 @@ hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_e
 
     // Create the first chunk of the sub-bytes.
     __hlt_bytes_chunk* first = GC_NEW(__hlt_bytes_chunk);
-    first->bytes = start.chunk->bytes;
+    GC_ASSIGN(first->bytes, start.chunk->bytes, __hlt_bytes_data);
     first->start = start.cur;
     first->end = start.chunk->end;
     first->owner = 0;
@@ -446,7 +446,7 @@ hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_e
         }
 
         __hlt_bytes_chunk* dst = GC_NEW(__hlt_bytes_chunk);
-        dst->bytes = c->bytes;
+        GC_ASSIGN(dst->bytes, c->bytes, __hlt_bytes_data);
         dst->start = c->start;
         dst->end = c->end;
         dst->owner = 0;
@@ -457,7 +457,7 @@ hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_e
     if ( ! is_end(end) ) {
         // Create the last chunk of the sub-bytes.
         __hlt_bytes_chunk* last = GC_NEW(__hlt_bytes_chunk);
-        last->bytes = end.chunk->bytes;
+        GC_ASSIGN(last->bytes, end.chunk->bytes, __hlt_bytes_data);
         last->start = end.chunk->start;
         last->end = end.cur;
         last->owner = 0;
@@ -600,8 +600,7 @@ hlt_iterator_bytes hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        hlt_iterator_bytes p;
-        return p;
+        return GenericEndPos;
     }
 
     if ( pos < 0 )
@@ -621,7 +620,7 @@ hlt_iterator_bytes hlt_bytes_offset(const hlt_bytes* b, hlt_bytes_size pos, hlt_
     }
 
     hlt_iterator_bytes p;
-    GC_ASSIGN(p.chunk, c, __hlt_bytes_chunk);
+    GC_INIT(p.chunk, c, __hlt_bytes_chunk);
     p.cur = c->start + pos;
     return p;
 }
@@ -630,15 +629,14 @@ hlt_iterator_bytes hlt_bytes_begin(const hlt_bytes* b, hlt_exception** excpt, hl
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        hlt_iterator_bytes p;
-        return p;
+        return GenericEndPos;
     }
 
     if ( hlt_bytes_len(b, excpt, ctx) == 0 )
         return hlt_bytes_end(b, excpt, ctx);
 
     hlt_iterator_bytes p;
-    GC_ASSIGN(p.chunk, b->head, __hlt_bytes_chunk);
+    GC_INIT(p.chunk, b->head, __hlt_bytes_chunk);
     p.cur = b->head ? b->head->start : 0;
 
     return p;
@@ -648,12 +646,11 @@ hlt_iterator_bytes hlt_bytes_end(const hlt_bytes* b, hlt_exception** excpt, hlt_
 {
     if ( ! b ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
-        hlt_iterator_bytes p;
-        return p;
+        return GenericEndPos;
     }
 
     hlt_iterator_bytes p;
-    GC_ASSIGN(p.chunk, b->tail, __hlt_bytes_chunk);
+    GC_INIT(p.chunk, b->tail, __hlt_bytes_chunk);
     p.cur = b->tail ? b->tail->end : 0;
     return p;
 }
@@ -688,8 +685,8 @@ void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes pos, hlt_exception** excpt,
 
     GC_ASSIGN(b->head, pos.chunk, __hlt_bytes_chunk);
     GC_ASSIGN(b->head->bytes, pos.chunk->bytes, __hlt_bytes_data);
+    GC_CLEAR(b->head->prev, __hlt_bytes_chunk);
     b->head->start = pos.cur;
-    b->head->prev = 0;
 }
 
 int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -700,6 +697,15 @@ int8_t hlt_bytes_is_frozen(const hlt_bytes* b, hlt_exception** excpt, hlt_execut
     }
 
     return b->tail ? b->tail->frozen : 0;
+}
+
+hlt_iterator_bytes hlt_iterator_bytes_copy(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_iterator_bytes copy;
+    GC_INIT(copy.chunk, pos.chunk, __hlt_bytes_chunk);
+    copy.cur = pos.cur;
+    normalize_pos(&copy);
+    return copy;
 }
 
 int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -731,13 +737,11 @@ int8_t hlt_iterator_bytes_deref(hlt_iterator_bytes pos, hlt_exception** excpt, h
 
 hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes old, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&old);
+    hlt_iterator_bytes pos = hlt_iterator_bytes_copy(old, excpt, ctx);
 
-    if ( is_end(old) )
+    if ( is_end(pos) )
         // Fail silently.
-        return old;
-
-    hlt_iterator_bytes pos = old;
+        return pos;
 
     // Can we stay inside the same chunk?
     if ( pos.cur < pos.chunk->end - 1 ) {
@@ -759,16 +763,16 @@ hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes old, hlt_exception
 
 hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes old, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! n )
-        return old;
-
     normalize_pos(&old);
 
-    if ( is_end(old) )
-        // Fail silently.
-        return old;
+    hlt_iterator_bytes pos = hlt_iterator_bytes_copy(old, excpt, ctx);
 
-    hlt_iterator_bytes pos = old;
+    if ( ! n )
+        return pos;
+
+    if ( is_end(pos) )
+        // Fail silently.
+        return pos;
 
     while ( 1 ) {
         // Can we stay inside the same chunk?

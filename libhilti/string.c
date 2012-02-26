@@ -334,9 +334,16 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** e
 
     if ( ch == UTF8 ) {
         // Caller wants UTF-8 so we just need append it literally.
-        hlt_bytes_append_raw(dst, s->bytes, s->len, excpt, ctx);
+        int8_t* data = hlt_malloc(s->len);
+        memcpy(data, s->bytes, s->len);
+        hlt_bytes_append_raw(dst, data, s->len, excpt, ctx);
         return dst;
     }
+
+    static const int BUFFER_SIZE = 128;
+
+    int8_t* data = 0;
+    int i = 0;
 
     while ( p < e ) {
 
@@ -349,11 +356,16 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** e
             return 0;
         }
 
+        if ( ! data ) {
+            data = hlt_malloc(BUFFER_SIZE);
+            i = 0;
+        }
+
         switch ( ch ) {
           case ASCII: {
               // Replace non-ASCII characters with '?'.
               int8_t c = uc < 128 ? (int8_t)uc : '?';
-              hlt_bytes_append_raw(dst, &c, 1, excpt, ctx);
+              data[i++] = c;
               break;
           }
 
@@ -362,7 +374,15 @@ hlt_bytes* hlt_string_encode(hlt_string s, hlt_string charset, hlt_exception** e
         }
 
         p += n;
+
+        if ( data && (i == BUFFER_SIZE || p >= e) ) {
+            hlt_bytes_append_raw(dst, data, i, excpt, ctx);
+            data = 0;
+        }
     }
+
+    if ( data )
+        hlt_free(data);
 
     return dst;
 }

@@ -9,6 +9,7 @@
 #include "loader.h"
 #include "storer.h"
 #include "coercer.h"
+#include "builder.h"
 #include "stmt-builder.h"
 #include "type-builder.h"
 #include "debug-info-builder.h"
@@ -65,12 +66,14 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
 
         createInitFunction();
 
+        initGlobals();
+
         // Kick-off recursive code generation.
         _stmt_builder->llvmStatement(hltmod->body());
 
-        initGlobals();
-
         finishInitFunction();
+
+        createGlobalsInitFunction();
 
         createLinkerData();
 
@@ -224,9 +227,9 @@ llvm::Value* CodeGen::llvmGlobal(Variable* var)
 }
 
 
-llvm::Value* CodeGen::llvmValue(shared_ptr<Expression> expr, shared_ptr<hilti::Type> coerce_to)
+llvm::Value* CodeGen::llvmValue(shared_ptr<Expression> expr, shared_ptr<hilti::Type> coerce_to, bool cctor)
 {
-    return _loader->llvmValue(expr, coerce_to);
+    return _loader->llvmValue(expr, cctor, coerce_to);
 }
 
 #if 0
@@ -257,7 +260,7 @@ llvm::Constant* CodeGen::llvmSizeOf(llvm::Constant* v)
 
 void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value)
 {
-    _storer->llvmStore(target, value);
+    _storer->llvmStore(target, value, true);
 }
 
 llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
@@ -276,7 +279,7 @@ llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
 
 void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value)
 {
-    _storer->llvmStore(instr->target(), value);
+    _storer->llvmStore(instr->target(), value, true);
 }
 
 llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builder)
@@ -413,8 +416,6 @@ void CodeGen::finishInitFunction()
 
 void CodeGen::initGlobals()
 {
-    string postfix = string(".") + _hilti_module->id()->name();
-
     // Create the %hlt.globals.type struct with all our global variables.
     std::vector<llvm::Type*> globals;
 
@@ -427,33 +428,33 @@ void CodeGen::initGlobals()
     // This global will be accessed by our custom linker. Unfortunastely, it
     // seems, we can't store a type in a metadata node directly, which would
     // simplify the linker.
+    string postfix = string(".") + _hilti_module->id()->name();
     _globals_type = llvmTypeStruct(symbols::TypeGlobals + postfix, globals);
 
+    if ( globals.size() ) {
+        // Create the @hlt.globals.base() function. This will be called when we
+        // need the base address for our globals, but all calls will later be replaced by the linker.
+        string name = symbols::FuncGlobalsBase + postfix;
+
+        CodeGen::parameter_list no_params;
+        _globals_base_func = llvmAddFunction(name, llvmTypePtr(_globals_type), no_params, false, type::function::C); // C to not mess with parameters.
+    }
+}
+
+void CodeGen::createGlobalsInitFunction()
+{
     // If we don't have any globals, we don't need any of the following.
-    if ( globals.size() == 0 && _global_strings.size() == 0 )
+    if ( _collector->globals().size() == 0 && _global_strings.size() == 0 )
         return;
 
-    // Create the @hlt.globals.base() function. This will be called when we
-    // need the base address for our globals, but all calls will later be replaced by the linker.
-    string name = symbols::FuncGlobalsBase + postfix;
-
-    CodeGen::parameter_list no_params;
-    _globals_base_func = llvmAddFunction(name, llvmTypePtr(_globals_type), no_params, false, type::function::C); // C to not mess with parameters.
+    string postfix = string(".") + _hilti_module->id()->name();
 
     // Create a function that initializes our globals with defaults.
-    name = util::mangle(_hilti_module->id(), true, nullptr, "init.globals");
+    auto name = util::mangle(_hilti_module->id(), true, nullptr, "init.globals");
+    CodeGen::parameter_list no_params;
     _globals_init_func = llvmAddFunction(name, llvmTypeVoid(), no_params, false, type::function::HILTI_C);
 
     pushFunction(_globals_init_func);
-
-    // Init user defined globals.
-    for ( auto g : _collector->globals() ) {
-        auto init = g->init() ? llvmValue(g->init(), g->type()) : llvmInitVal(g->type());
-        assert(init);
-        auto addr = llvmGlobal(g.get());
-        llvmCctor(init, g->type(), true);
-        llvmCheckedCreateStore(init, addr);
-    }
 
     // Init the global string constants.
     for ( auto gs : _global_strings ) {
@@ -473,6 +474,14 @@ void CodeGen::initGlobals()
         args.push_back(llvmConstInt(str.size(), 64));
         auto s = llvmCallC(llvmLibFunction("hlt_string_from_data"), args, true);
         builder()->CreateStore(s, glob);
+    }
+
+    // Init user defined globals.
+    for ( auto g : _collector->globals() ) {
+        auto init = g->init() ? llvmValue(g->init(), g->type(), true) : llvmInitVal(g->type());
+        assert(init);
+        auto addr = llvmGlobal(g.get());
+        llvmCheckedCreateStore(init, addr);
     }
 
     if ( ! functionEmpty() )
@@ -495,15 +504,6 @@ void CodeGen::initGlobals()
     pushFunction(_globals_dtor_func);
 
     for ( auto g : _collector->globals() ) {
-        auto dtor = typeInfo(g->type())->dtor;
-
-        if ( dtor.size() ) {
-            auto func = llvmFunction(dtor);
-            std::vector<llvm::Value*> args;
-            args.push_back(llvmGlobal(g));
-            llvmCheckedCreateCall(func, args);
-        }
-
         auto val = llvmGlobal(g);
         llvmDtor(val, g->type(), true);
     }
@@ -770,7 +770,8 @@ llvm::Constant* CodeGen::llvmConstAsciiz(const string& str)
 llvm::Constant* CodeGen::llvmConstAsciizPtr(const string& str)
 {
     auto cval = llvmConstAsciiz(str);
-    return llvmAddConst("asciiz", cval);
+    auto ptr = llvmAddConst("asciiz", cval);
+    return llvm::ConstantExpr::getBitCast(ptr, llvmTypePtr());
 }
 
 llvm::Constant* CodeGen::llvmConstStruct(const std::vector<llvm::Constant*>& elems, bool packed)
@@ -789,7 +790,7 @@ llvm::Constant* CodeGen::llvmCastConst(llvm::Constant* c, llvm::Type* t)
     return llvm::ConstantExpr::getBitCast(c, t);
 }
 
-llvm::Value* CodeGen::llvmString(const string& s)
+llvm::Value* CodeGen::llvmStringPtr(const string& s)
 {
     if ( s.size() == 0 )
         // The empty string is represented by a null pointer.
@@ -804,7 +805,12 @@ llvm::Value* CodeGen::llvmString(const string& s)
         _global_strings.push_back(make_pair(s, data));
     }
 
-    return builder()->CreateLoad(data);
+    return data;
+}
+
+llvm::Value* CodeGen::llvmString(const string& s)
+{
+    return builder()->CreateLoad(llvmStringPtr(s));
 }
 
 llvm::Value* CodeGen::llvmValueStruct(const std::vector<llvm::Value*>& elems, bool packed)
@@ -1342,6 +1348,7 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
     // Prepare parameters according to calling convention.
 
     auto arg = args.begin();
+
     for ( auto p : ftype->parameters() ) {
         auto ptype = p->type();
         shared_ptr<TypeInfo> pti = typeInfo(ptype);
@@ -1489,6 +1496,14 @@ void CodeGen::finishStatement()
     _functions.back()->dtors_after_ins.clear();
 }
 
+llvm::Value* CodeGen::llvmLocationString(const Location& l)
+{
+    if ( debugLevel() == 0 )
+        return llvmConstNull();
+
+    return llvmConstAsciiz(string(l).c_str());
+}
+
 void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
 {
     auto ti = typeInfo(type);
@@ -1499,14 +1514,14 @@ void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
     // If we didn't get a pointer to the value, we need to create a tmp so
     // that we can take its address.
     if ( ! is_ptr ) {
-        auto tmp = llvmAddTmp("gcobj", llvmTypePtr(), nullptr, true);
-        llvmCheckedCreateStore(builder()->CreateBitCast(val, llvmTypePtr()), tmp);
+        auto tmp = llvmAddTmp("gcobj", llvmType(type), val, false);
         val = tmp;
     }
 
     value_list args;
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
+    args.push_back(builder()->CreateBitCast(llvmConstAsciizPtr("HILTI: llvmDtor"), llvmTypePtr()));
     llvmCallC("__hlt_object_dtor", args, false);
 }
 
@@ -1520,23 +1535,25 @@ void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
     // If we didn't get a pointer to the value, we need to create a tmp so
     // that we can take its address.
     if ( ! is_ptr ) {
-        auto tmp = llvmAddTmp("gcobj", llvmTypePtr(), nullptr, true);
-        llvmCheckedCreateStore(builder()->CreateBitCast(val, llvmTypePtr()), tmp);
+        auto tmp = llvmAddTmp("gcobj", llvmType(type), val, false);
         val = tmp;
     }
 
     value_list args;
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
+    args.push_back(builder()->CreateBitCast(llvmConstAsciizPtr("HILTI: llvmCctor"), llvmTypePtr()));
     llvmCallC("__hlt_object_cctor", args, false);
 }
 
-void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type)
+void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone)
 {
     assert(ast::isA<type::ValueType>(type));
     llvmDtor(dst, type, true);
     llvmCheckedCreateStore(val, dst);
-    llvmCctor(dst, type, true);
+
+    if ( ! plusone )
+        llvmCctor(dst, type, true);
 }
 
 void CodeGen::llvmGCClear(llvm::Value* val, shared_ptr<Type> type)
@@ -1545,3 +1562,33 @@ void CodeGen::llvmGCClear(llvm::Value* val, shared_ptr<Type> type)
     llvmDtor(val, type, true);
 }
 
+void CodeGen::llvmDebugPrint(const string& stream, const string& msg)
+{
+
+    if ( debugLevel() == 0 )
+        return;
+
+    auto arg1 = llvmConstAsciizPtr(stream);
+    auto arg2 = llvmConstAsciizPtr(msg);
+
+    value_list args;
+    args.push_back(arg1);
+    args.push_back(arg2);
+
+    llvmCallC("__hlt_debug_print", args, false);
+
+#if 0
+    builder::tuple::element_list elems;
+    elems.push_back(builder::string::create(msg));
+
+    auto arg1 = builder::string::create(stream);
+    auto arg2 = builder::string::create("%s");
+    auto arg3 = builder::tuple::create(elems);
+
+    expr_list args;
+    args.push_back(arg1);
+    args.push_back(arg2);
+    args.push_back(arg3);
+    llvmCall("hlt::debug_printf", args);
+#endif
+}

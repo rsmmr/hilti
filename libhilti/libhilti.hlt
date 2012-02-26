@@ -66,8 +66,8 @@ declare "C-HILTI" any bytes_blockable(any s)
 declare "C-HILTI" int<64> string_len(string s)
 declare "C-HILTI" string string_concat(string s1, string s2)
 declare "C-HILTI" int<8> string_cmp(string s1, string s2)
-# declare "C-HILTI" ref<bytes> string_encode(string s, string charset)
-# declare "C-HILTI" string string_decode(ref<bytes> b, string charset)
+declare "C-HILTI" ref<bytes> string_encode(string s, string charset)
+declare "C-HILTI" string string_decode(ref<bytes> b, string charset)
 declare "C-HILTI" string string_substr(string s, int<64> pos, int<64> len)
 declare "C-HILTI" int<64> string_find(string s1, string s2)
 # declare "C-HILTI" tuple<string,iterator<bytes>> string_unpack(iterator<bytes> first, iterator<bytes> last, Hilti::Packed fmt)
@@ -227,7 +227,7 @@ declare "C-HILTI" void tuple_cctor(tuple<*> t)
 #
 # ##
 #
-# declare "C-HILTI" void debug_printf(string stream, string fmt, any args)
+declare "C-HILTI" void debug_printf(string stream, string fmt, any args)
 #
 # ##
 #

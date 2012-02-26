@@ -109,6 +109,11 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
 //    hlt_pthread_setcancelstate(old_state, NULL);
 }
 
+void __hlt_debug_print(const char* stream, const char* msg)
+{
+    __hlt_debug_printf_internal(stream, "%s", msg);
+}
+
 void __hlt_debug_printf_internal(const char* s, const char* fmt, ...)
 {
     hlt_exception* excpt = 0;

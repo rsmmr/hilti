@@ -32,7 +32,7 @@ public:
    //
    // Returns: True of #src coerces into type #dst.
    bool canCoerceTo(shared_ptr<Constant> constant, shared_ptr<Type> dst) {
-       return coerceTo(constant, dst);
+       return static_cast<bool>(coerceTo(constant, dst));
    }
 
    // Coerce a Constant of one type into a Constant of another. The method

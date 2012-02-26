@@ -65,8 +65,8 @@ False                 yylval->bval = 0; return token::CBOOL;
 Null                  return token::CNULL;
 
 {int}                 yylval->ival = atoi(yytext); return token::CINTEGER;
-{string}              yylval->sval = string(yytext, 1, strlen(yytext) - 2); return token::CSTRING;
-b{string}             yylval->sval = string(yytext, 2, strlen(yytext) - 3); return token::CBYTES;
+{string}              yylval->sval = util::expandEscapes(string(yytext, 1, strlen(yytext) - 2)); return token::CSTRING;
+b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strlen(yytext) - 3)); return token::CBYTES;
 
 {id}                  yylval->sval = yytext; return token::IDENT;
 @{id}                  yylval->sval = yytext; return token::LABEL_IDENT;

@@ -133,9 +133,11 @@ extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exceptio
 /// appending, the memory by the raw bytes must not be modified or freed as
 /// the bytes object might share it.
 ///
-/// b: The bytes object to append to. raw: A pointer to the beginning of the
-/// byte sequence to append. The function takes ownership; it must have been
-/// allocated with hlt_malloc().
+/// b: The bytes object to append to.
+///
+/// raw: A pointer to the beginning of the byte sequence to append. The
+/// function takes ownership; it must have been allocated with hlt_malloc().
+///
 /// len: The number of bytes to append starting from *raw*. \hlt_c
 ///
 /// Raises: ValueError - If *b* has been frozen.
@@ -307,6 +309,14 @@ void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes pos, hlt_exception** excpt,
 ///
 /// Returns: 1 if frozen, 0 otherwise..
 extern int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Creates a copy of a bytes iterator. The copy will point to the same location.
+///
+/// pos: The position to copy.
+/// \hlt_c
+///
+/// Returns: The copied iterator.
+extern hlt_iterator_bytes hlt_iterator_bytes_copy(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Extracts the element at a position.
 ///

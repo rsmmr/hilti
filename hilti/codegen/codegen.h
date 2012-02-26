@@ -379,7 +379,9 @@ protected:
    /// Returns: The LLVM function.
    llvm::Function* llvmFunction(const string& name);
 
-   /// Returns the LLVM value for a HILTI expression.
+   /// Returns the LLVM value for a HILTI expression. The value will have its
+   /// cctor function called already (if necessary) to create a new copy. If
+   /// that isn't needed, llvmDtor() must be called on the result.
    ///
    /// This method branches out the Loader to do its work.
    ///
@@ -388,8 +390,10 @@ protected:
    /// coerce_to: If given, the expr is first coerced into this type before
    /// it's evaluated. It's assumed that the coercion is legal and supported.
    ///
+   /// cctor: XXX
+   ///
    /// Returns: The computed LLVM value.
-   llvm::Value* llvmValue(shared_ptr<Expression> expr, shared_ptr<hilti::Type> coerce_to = nullptr);
+   llvm::Value* llvmValue(shared_ptr<Expression> expr, shared_ptr<hilti::Type> coerce_to = nullptr, bool cctor = false);
 
    /// Returns the LLVM value for the current execution context. Depending on
    /// what object currently being generated, the value may refer to
@@ -404,7 +408,9 @@ protected:
    llvm::Constant* llvmSizeOf(llvm::Constant* v);
 
    /// Stores an LLVM value at the location associated with a HILTI
-   /// expression.
+   /// expression. The value must already have its cctor called, either
+   /// implictly if its comming from llvmValue() or explicitly via
+   /// llvmCCtor().
    ///
    /// This method branches out to the Storer to do its work.
    ///
@@ -415,7 +421,9 @@ protected:
    void llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value);
 
    /// Stores an LLVM value at the location associated with a HILTI
-   /// instruction's target operand. expression.
+   /// instruction's target operand. expression. The value must already have
+   /// its cctor called, either implictly if its comming from llvmValue() or
+   /// explicitly via llvmCCtor().
    /// 
    /// This methods branches out to the Storer to do its work.
    ///
@@ -634,6 +642,12 @@ protected:
    ///
    /// s: The string value.
    llvm::Value* llvmString(const string& s);
+
+   /// Returns a pointer to the LLVM value corresponding to a HILTI string of
+   /// given value.
+   ///
+   /// s: The string value.
+   llvm::Value* llvmStringPtr(const string& s);
 
    /// Returns an LLVM struct value with fields initialized. There's also a
    /// version of this method that works with constants rather than arbitrary
@@ -1061,13 +1075,16 @@ protected:
    void llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr);
 
    /// XXXX
-   void llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type);
+   void llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone);
 
    /// XXXX
    void llvmGCClear(llvm::Value* val, shared_ptr<Type> type);
 
    /// Finished generation of a statement. This is called from the statement builder.
    void finishStatement();
+
+   /// XXXX
+   void llvmDebugPrint(const string& stream, const string& msg);
 
 private:
    // Creates/finishes the module intialization function that will receive all global
@@ -1103,6 +1120,10 @@ private:
    // Take a type from libhilti.ll and adapts it for use in the current
    // module. See implementation of llvmLibFunction() for more information.
    llvm::Type* replaceLibType(llvm::Type* ntype);
+
+   // In debug mode, returns an LLVM i8* value pointing to a string
+   // describing the given location. In non-debug, returns 0.
+   llvm::Value* llvmLocationString(const Location& l);
 
    friend class util::IRInserter;
    const string& nextComment() const { // Used by the util::IRInserter.

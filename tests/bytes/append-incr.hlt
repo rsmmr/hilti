@@ -1,0 +1,60 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# More extensive tests of the bytes functions are in c-api/bytes.c
+#
+module Main
+
+import Hilti
+
+iterator<bytes> print_bytes(iterator<bytes> cur, iterator<bytes> last) {
+
+    local bool eq
+    local int<8> i
+
+@loop:
+    eq = equal cur last
+    if.else eq @exit @cont
+
+@cont:
+    i = deref cur
+    cur = incr cur
+    call Hilti::print (i)
+    jump @loop
+
+@exit:
+    call Hilti::print ("---")
+    return.result cur
+}
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> i
+    local iterator<bytes> last
+
+    b = b"ABC"
+    i = begin b
+    last = end b
+    i = call print_bytes(i, last)
+
+    bytes.append b b"DEF"
+    last = end b
+    i = call print_bytes(i, last)
+
+    bytes.append b b"GHI"
+    last = end b
+    i = call print_bytes(i, last)
+
+    bytes.append b b""
+    last = end b
+    i = call print_bytes(i, last)
+
+    bytes.append b b"JKL"
+    last = end b
+    i = call print_bytes(i, last)
+
+    last = end b
+    i = call print_bytes(i, last)
+
+ }

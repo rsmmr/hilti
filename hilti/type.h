@@ -156,16 +156,6 @@ inline const T* asTrait(const hilti::Type* t) { return dynamic_cast<const T*>(t)
 template<typename T>
 inline T* asTrait(shared_ptr<hilti::Type> t) { return std::dynamic_pointer_cast<T>(t); }
 
-/// Base class for all of HILTI's type.s
-class Type : public hilti::Type
-{
-public:
-   Type() {}
-   virtual ~Type();
-   virtual string repr() const { return "<Type>"; }
-   ACCEPT_VISITOR(Type);
-};
-
 /// Base class for types that a user can instantiate.
 class HiltiType : public hilti::Type
 {
@@ -383,6 +373,32 @@ private:
    parameter_list _parameters;
    type_list _types;
 };
+
+/// Type for types.
+class Type : public hilti::Type
+{
+public:
+   /// Constructor.
+   ///
+   /// type; The represented type.
+   ///
+   /// l: Associated location.
+   Type(shared_ptr<hilti::Type> type, const Location& l=Location::None) : hilti::Type(l) {
+       _rtype= type;
+   }
+
+   ~Type();
+
+   shared_ptr<hilti::Type> typeType() const { return _rtype; }
+
+   virtual string repr() const { return "type<" + _rtype->repr() + ">"; }
+
+   ACCEPT_VISITOR(Type);
+
+private:
+   shared_ptr<hilti::Type> _rtype;
+};
+
 
 /// Type for references.
 class Reference : public ValueType, public trait::Parameterized {

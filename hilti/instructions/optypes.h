@@ -22,6 +22,8 @@ static shared_ptr<Type> int16(new type::Integer(16));
 static shared_ptr<Type> int32(new type::Integer(32));
 static shared_ptr<Type> int64(new type::Integer(64));
 
+static shared_ptr<Type> typeBytes(new type::Type(shared_ptr<Type>(new type::Bytes())));
+
 }
 
 #endif

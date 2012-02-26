@@ -351,7 +351,7 @@ public:
    /// Returns type type::Type. Sic! The type of this expression is not the
    /// type it represents, but a "meta type".
    shared_ptr<AIType> _type() const /* override */ {
-       return shared_ptr<AIType>(new TypeType());
+       return shared_ptr<AIType>(new TypeType(__type));
    }
 
    /// Always returns true. Types don't change.

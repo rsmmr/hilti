@@ -7,7 +7,7 @@
 using namespace hilti;
 using namespace codegen;
 
-Loader::Loader(CodeGen* cg) : CGVisitor<llvm::Value*>(cg, "codegen::Loader")
+Loader::Loader(CodeGen* cg) : CGVisitor<_LoadResult>(cg, "codegen::Loader")
 {
 }
 
@@ -15,31 +15,55 @@ Loader::~Loader()
 {
 }
 
-llvm::Value* Loader::llvmValue(shared_ptr<Expression> expr, shared_ptr<hilti::Type> coerce_to)
+llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type, bool cctor)
+{
+    if ( cctor ) {
+        if ( ! result.cctor )
+            cg()->llvmCctor(result.value, type, result.is_ptr);
+    }
+
+    else {
+        if ( result.cctor )
+            cg()->llvmDtorAfterInstruction(result.value, type, result.is_ptr);
+    }
+
+    if ( result.is_ptr )
+        return cg()->builder()->CreateLoad(result.value);
+    else
+        return result.value;
+}
+
+llvm::Value* Loader::llvmValue(shared_ptr<Expression> expr, bool cctor, shared_ptr<hilti::Type> coerce_to)
 {
     if ( coerce_to )
         expr = expr->coerceTo(coerce_to);
 
-    llvm::Value* result;
+    _cctor = cctor;
+    _LoadResult result;
     bool success = processOne(expr, &result);
     assert(success);
-    return result;
+
+    return normResult(result, expr->type(), cctor);
 }
 
-llvm::Value* Loader::llvmValue(shared_ptr<Constant> constant)
+llvm::Value* Loader::llvmValue(shared_ptr<Constant> constant, bool cctor)
 {
-    llvm::Value* result;
+    _cctor = cctor;
+    _LoadResult result;
     bool success = processOne(constant, &result);
     assert(success);
-    return result;
+
+    return normResult(result, constant->type(), cctor);
 }
 
-llvm::Value* Loader::llvmValue(shared_ptr<Ctor> ctor)
+llvm::Value* Loader::llvmValue(shared_ptr<Ctor> ctor, bool cctor)
 {
-    llvm::Value* result;
+    _cctor = cctor;
+    _LoadResult result;
     bool success = processOne(ctor, &result);
     assert(success);
-    return result;
+
+    return normResult(result, ctor->type(), cctor);
 }
 
 void Loader::visit(expression::Variable* v)
@@ -51,13 +75,14 @@ void Loader::visit(variable::Local* v)
 {
     auto name = v->id()->name();
     auto addr = cg()->llvmLocal(name);
-    setResult(cg()->builder()->CreateLoad(addr));
+    setResult(addr, false, true);
 }
 
 void Loader::visit(variable::Global* v)
 {
     auto addr = cg()->llvmGlobal(v);
-    setResult(cg()->builder()->CreateLoad(addr));
+    auto result = cg()->builder()->CreateLoad(addr);
+    setResult(addr, false, true);
 }
 
 void Loader::visit(expression::Parameter* p)
@@ -66,69 +91,75 @@ void Loader::visit(expression::Parameter* p)
 
     llvm::Value* val = 0;
 
-    if ( param->constant() )
+    if ( param->constant() ) {
         val = cg()->llvmParameter(param);
+        setResult(val, false, false);
+    }
+
     else {
         // Load shadow local.
         auto name = "__shadow_" + param->id()->name();
         auto addr = cg()->llvmLocal(name);
-        val = cg()->builder()->CreateLoad(addr);
+        setResult(addr, false, true);
     }
-
-    setResult(val);
 }
 
 void Loader::visit(expression::Constant* e)
 {
-    setResult(llvmValue(e->constant()));
+    _LoadResult result;
+    bool success = processOne(e->constant(), &result);
+    CGVisitor<_LoadResult>::setResult(result);
 }
 
 void Loader::visit(expression::Ctor* e)
 {
-    setResult(llvmValue(e->ctor()));
+    _LoadResult result;
+    bool success = processOne(e->ctor(), &result);
+    CGVisitor<_LoadResult>::setResult(result);
 }
 
 void Loader::visit(expression::Coerced* e)
 {
-    auto val = llvmValue(e->expression());
+    auto val = llvmValue(e->expression(), _cctor);
     auto coerced = cg()->llvmCoerceTo(val, e->expression()->type(), e->type());
-    setResult(coerced);
+    setResult(coerced, _cctor, false);
 }
 
 void Loader::visit(expression::Function* f)
 {
     auto val = cg()->llvmFunction(f->function());
-    setResult(val);
+    setResult(val, false, false);
 }
 
 void Loader::visit(expression::CodeGen* c)
 {
-    llvm::Value* val = reinterpret_cast<llvm::Value*>(c->cookie());
-    setResult(val);
+    llvm::Value* result = reinterpret_cast<llvm::Value*>(c->cookie());
+    setResult(result, false, false);
 }
 
 void Loader::visit(constant::Integer* c)
 {
     auto val = cg()->llvmConstInt(c->value(), as<type::Integer>(c->type())->width());
-    setResult(val);
+    setResult(val, false, false);
 }
 
 void Loader::visit(constant::String* s)
 {
-    auto val = cg()->llvmString(s->value());
-    setResult(val);
+    auto addr = cg()->llvmStringPtr(s->value());
+    setResult(addr, false, true);
 }
 
 void Loader::visit(constant::Bool* b)
 {
     auto val = cg()->llvmConstInt(b->value() ? 1 : 0, 1);
-    setResult(val);
+    setResult(val, false, false);
 }
 
 void Loader::visit(constant::Label* l)
 {
     auto b = cg()->builderForLabel(l->value());
-    setResult(b->GetInsertBlock());
+    auto result = b->GetInsertBlock();
+    setResult(result, false, false);
 }
 
 void Loader::visit(constant::Tuple* t)
@@ -137,15 +168,15 @@ void Loader::visit(constant::Tuple* t)
     for ( auto e : t->value() )
         elems.push_back(cg()->llvmValue(e));
 
-    auto val = cg()->llvmValueStruct(elems);
-    setResult(val);
+    auto result = cg()->llvmValueStruct(elems);
+    setResult(result, false, false);
 }
 
 void Loader::visit(constant::Reference* r)
 {
     // This can only be the null value.
     auto val = cg()->llvmConstNull();
-    setResult(val);
+    setResult(val, false, false);
 }
 
 void Loader::visit(ctor::Bytes* b)
@@ -164,7 +195,5 @@ void Loader::visit(ctor::Bytes* b)
 
     auto val = cg()->llvmCallC("hlt_bytes_new_from_data_copy", args, true);
 
-    cg()->llvmDtorAfterInstruction(val, b->type(), false);
-
-    setResult(val);
+    setResult(val, true, false);
 }

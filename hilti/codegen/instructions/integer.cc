@@ -188,7 +188,7 @@ void StatementBuilder::visit(statement::instruction::integer::SExt* i)
     llvm::Value* result = 0;
 
     if ( ty_target->width() < ty_op1->width() )
-        result = builder()->CreateSExt(op1, cg()->llvmTypeInt(ty_target));
+        result = builder()->CreateSExt(op1, cg()->llvmTypeInt(ty_target->width()));
     else
         result = op1;
 
@@ -292,7 +292,7 @@ void StatementBuilder::visit(statement::instruction::integer::Trunc* i)
     llvm::Value* result = 0;
 
     if ( ty_target->width() > ty_op1->width() )
-        result = builder()->CreateTrunc(op1, cg()->llvmTypeInt(ty_target));
+        result = builder()->CreateTrunc(op1, cg()->llvmTypeInt(ty_target->width()));
     else
         result = op1;
 
@@ -354,7 +354,7 @@ void StatementBuilder::visit(statement::instruction::integer::ZExt* i)
     llvm::Value* result = 0;
 
     if ( ty_target->width() < ty_op1->width() )
-        result = builder()->CreateZExt(op1, cg()->llvmTypeInt(ty_target));
+        result = builder()->CreateZExt(op1, cg()->llvmTypeInt(ty_target->width()));
     else
         result = op1;
 

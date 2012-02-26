@@ -54,6 +54,7 @@ protected:
    void visit(type::Tuple* t) override;
    void visit(type::Reference* t) override;
    void visit(type::Bytes* t) override;
+   void visit(type::Type* t) override;
 
    void visit(expression::Constant* e) override;
    void visit(expression::ID* e) override;

@@ -168,7 +168,8 @@ void Printer::visit(expression::Module* m)
 void Printer::visit(expression::Type* t)
 {
     Printer& p = *this;
-    p << scopedID(t, t->type()->id());
+    auto id = t->type()->id();
+    p << (id ? scopedID(t, id) : "<no type id>");
 }
 
 void Printer::visit(expression::Block* b)
@@ -205,7 +206,7 @@ void Printer::visit(declaration::Function* f)
     auto func = f->function();
     auto ftype = func->type();
 
-    bool has_impl = func->body();
+    bool has_impl = static_cast<bool>(func->body());
 
     if ( ! has_impl )
         p << "declare ";
@@ -313,6 +314,13 @@ void Printer::visit(type::Tuple* t)
     p << "tuple<";
     printList(t->typeList(), ", ");
     p << ">";
+}
+
+void Printer::visit(type::Type* t)
+{
+    Printer& p = *this;
+
+    p << t->typeType();
 }
 
 void Printer::visit(constant::Integer* i)

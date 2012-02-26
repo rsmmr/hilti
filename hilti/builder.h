@@ -561,8 +561,23 @@ inline shared_ptr<statement::Block> create(const declaration_list& decls, const 
 /// l: Location associated with the block.
 ///
 /// Returns: The block node.
-inline shared_ptr<statement::Block> create(const shared_ptr<Scope>& parent, Location l=Location::None) {
+inline shared_ptr<statement::Block> create(const shared_ptr<Scope> parent, Location l=Location::None) {
     return _sptr(new hilti::statement::Block(parent, nullptr, l));
+}
+
+}
+
+namespace expression {
+
+/// Instantiates an AST expression representing a type.
+///
+/// t: The type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The result node.
+inline shared_ptr<hilti::expression::Type> type(const shared_ptr<Type> t, Location l=Location::None) {
+    return _sptr(new hilti::expression::Type(t, l));
 }
 
 }

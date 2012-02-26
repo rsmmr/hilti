@@ -13,8 +13,7 @@ Version = 0.2
 
 Target = "<unknown>"
 
-Cc           = "clang"                    # Note, we really need clang.
-Ld           = "llvm-ld"                  # Same here.
+Cc           = "clang -gfull"                    # Note, we really need clang.
 CcOptSpec    = "-O3"                      # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
 OptOptSpec   = "-std-compile-opts -std-link-opts"
 

@@ -127,6 +127,14 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
 {
     std::vector<llvm::Constant*> vals;
 
+    int gc = 0;
+
+    auto rt = ast::as<type::Reference>(type);
+
+    if ( type::hasTrait<type::trait::GarbageCollected>(type)
+         || (rt && type::hasTrait<type::trait::GarbageCollected>(rt->refType())) )
+        gc = 1;
+
     auto ti = typeInfo(type);
 
     // Ok if not the right type here.
@@ -136,7 +144,7 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     vals.push_back(llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->init_val), cg()->llvmTypeInt(16)));
     vals.push_back(cg()->llvmConstAsciizPtr(ti->name));
     vals.push_back(cg()->llvmConstInt((ptype ? ptype->parameters().size() : 0), 16));
-    vals.push_back(cg()->llvmConstInt(type::hasTrait<type::trait::GarbageCollected>(type), 16));
+    vals.push_back(cg()->llvmConstInt(gc, 16));
     vals.push_back(ti->aux ? ti->aux : cg()->llvmConstNull(cg()->llvmTypePtr()));
     vals.push_back(ti->ptr_map ? ti->ptr_map : cg()->llvmConstNull(cg()->llvmTypePtr()));
     vals.push_back(_lookupFunction(ti->to_string));

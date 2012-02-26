@@ -147,10 +147,11 @@ public:
    virtual void visit(type::Integer* i)     {}
    virtual void visit(type::Bool* b)        {}
    virtual void visit(type::Reference* r)   {}
-   virtual void visit(type::Iterator* i)   {}
+   virtual void visit(type::Iterator* i)    {}
    virtual void visit(type::Bytes* b)       {}
    virtual void visit(type::Function* i)    {}
    virtual void visit(type::Tuple* t)       {}
+   virtual void visit(type::Type* t)        {}
 
    // Iterator types.
    virtual void visit(type::iterator::Bytes* i)       {}

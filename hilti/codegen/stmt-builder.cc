@@ -57,6 +57,9 @@ void StatementBuilder::visit(statement::Block* b)
             printer.run(s);
             passes::Printer p(comment);
             cg()->llvmInsertComment(comment.str());
+
+            // Send it also to the hilti-trace debug stream.
+            cg()->llvmDebugPrint("hilti-trace", comment.str());
         }
 
         call(s);
@@ -75,7 +78,7 @@ void StatementBuilder::visit(declaration::Variable* v)
         // GLobals are taken care of directly by the CodeGen.
         return;
 
-    auto init = var->init() ? cg()->llvmValue(var->init()) : nullptr;
+    auto init = var->init() ? cg()->llvmValue(var->init(), nullptr, true) : nullptr;
 
     cg()->llvmAddLocal(var->id()->name(), var->type(), init);
 }

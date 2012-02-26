@@ -50,8 +50,10 @@
 
 declare void @__hlt_object_ref(%hlt.type_info*, i8 *)
 declare void @__hlt_object_unref(%hlt.type_info*, i8 *)
-declare void @__hlt_object_dtor(%hlt.type_info*, i8 *)
-declare void @__hlt_object_cctor(%hlt.type_info*, i8 *)
+declare void @__hlt_object_dtor(%hlt.type_info*, i8 *, i8*)
+declare void @__hlt_object_cctor(%hlt.type_info*, i8 *, i8*)
+
+declare void @__hlt_debug_print(i8*, i8*)
 
 declare %hlt.string* @hlt_string_from_data(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 declare %hlt.bytes*  @hlt_bytes_new_from_data_copy(i8*, i64, %hlt.exception**, %hlt.execution_context*)

@@ -1,0 +1,14 @@
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Hilti
+
+global ref<bytes> b1 = b"123"
+global ref<bytes> b2 = b"1234"
+
+void run() {
+}

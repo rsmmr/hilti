@@ -36,6 +36,7 @@ public:
    typedef shared_ptr<NodeBase> ptr;
 
    node_ptr()                         { _p = shared_ptr<ptr>(new ptr()); }
+   node_ptr(std::nullptr_t)           { _p = shared_ptr<ptr>(new ptr()); }
 
    template<typename S>
    node_ptr(const node_ptr<S>& other) { _p = other.get_shared(); }
@@ -50,7 +51,7 @@ public:
    T* operator->() const { return get(); }
    T& operator*() const  { return *get(); }
 
-   operator bool() const { return *_p; }
+   explicit operator bool() const { return _p.get()->get() != 0; }
 
    // Dynamically casts the pointer to a shared_ptr of given type. Returns a
    // nullptr if the dynamic cast fails
@@ -63,6 +64,9 @@ public:
    node_ptr<T>& operator=(const shared_ptr<S>& other) { *_p = other; return *this; }
 
    shared_ptr<ptr>  get_shared() const { return _p; }
+
+   bool operator==(const node_ptr<T>& other) { return *_p == *other._p; }
+   bool operator!=(const node_ptr<T>& other) { return *_p != *other._p; }
 
 private:
 
@@ -151,6 +155,9 @@ public:
    /// Returns a non-recursive textual representation of the node. The output
    /// of render() will be included.
    operator string() const;
+
+   /// Cast operator converting into a Location.
+   operator const Location&() const { return _location; }
 
    typedef std::list<node_ptr<NodeBase> > node_list;
 

@@ -6,6 +6,10 @@
 
 #include "util.h"
 
+extern "C" {
+#include "utf8proc.h"
+}
+
 using namespace util;
 
 string util::fmt(const char* fmt, ...)
@@ -106,6 +110,103 @@ bool util::endsWith(const string& s, const string& suffix)
     return (i == (s.length() - suffix.size()));
 }
 
+///    \\             Backslash
+///    \\n            Line feed
+///    \\r            Carriage return
+///    \\t            Tabulator
+///    \\uXXXX        16-bit Unicode codepoint
+///    \\UXXXXXXXX    32-bit Unicode codepoint
+///    \\xXX          8-bit hex value
+string util::expandEscapes(const string& s)
+{
+    string d;
+
+    for ( auto c = s.begin(); c != s.end(); ) {
+
+        if ( *c != '\\' ) {
+            d += *c++;
+            continue;
+        }
+
+        ++c;
+
+        if ( c == s.end() )
+            throw std::runtime_error("broken escape sequence");
+
+        switch ( *c++ ) {
+         case '\\':
+            d += '\\';
+            break;
+
+         case 'n':
+            d += '\n';
+            break;
+
+         case 'r':
+            d += '\r';
+            break;
+
+         case 't':
+            d += '\t';
+            break;
+
+         case 'u': {
+             int32_t val;
+             auto end = c + 4;
+             c = atoi_n(c, end, 16, &val);
+
+             if ( c != end )
+                 throw std::runtime_error("cannot decode character");
+
+             uint8_t tmp[4];
+             int len = utf8proc_encode_char(val, tmp);
+
+             if ( ! len )
+                 throw std::runtime_error("cannot encode unicode code point");
+
+             d.append((char *)tmp, len);
+             break;
+         }
+
+         case 'U': {
+             int32_t val;
+             auto end = c + 8;
+             c = atoi_n(c, end, 16, &val);
+
+             if ( c != end )
+                 throw std::runtime_error("cannot decode character");
+
+             uint8_t tmp[4];
+             int len = utf8proc_encode_char(val, tmp);
+
+             if ( ! len )
+                 throw std::runtime_error("cannot encode unicode code point");
+
+             d.append((char *)tmp, len);
+             break;
+         }
+
+         case 'x': {
+             char val;
+             auto end = c + 2;
+             c = atoi_n(c, end, 16, &val);
+
+             if ( c != end )
+                 throw std::runtime_error("cannot decode character");
+
+             d.append(&val, 1);
+             break;
+         }
+
+         default:
+            throw std::runtime_error("unknown escape sequence");
+
+        }
+    }
+
+    return d;
+}
+
 string util::pathJoin(const string& p1, const string& p2)
 {
     if ( startsWith(p2, "/") )
@@ -166,3 +267,4 @@ void util::abort_with_backtrace()
     backtrace_symbols_fd(callstack, frames, 2);
     abort();
 }
+

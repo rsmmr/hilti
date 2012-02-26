@@ -5,6 +5,7 @@
 
 #include <list>
 #include <string>
+#include <stdexcept>
 
 namespace util {
 
@@ -38,6 +39,27 @@ extern string strtoupper(const string& s);
 inline bool startsWith(const string& s, const string& prefix) { return s.find(prefix) == 0; }
 extern bool endsWith(const string& s, const string& suffix);
 
+/// Expands escape sequences. The following escape sequences are supported:
+///
+///    ============   ============================
+///    Escape         Result
+///    ============   ============================
+///    \\             Backslash
+///    \\n            Line feed
+///    \\r            Carriage return
+///    \\t            Tabulator
+///    \\uXXXX        16-bit Unicode codepoint
+///    \\UXXXXXXXX    32-bit Unicode codepoint
+///    \\xXX          8-bit hex value
+///    ============   ============================
+///
+/// str: string - The string to expand.
+///
+/// Returns: A UTF8 string with escape sequences expanded.
+///
+/// Raises: std::runtime_error - Raised when an illegal sequence was found.
+extern string expandEscapes(const string& s);
+
 extern bool pathExists(const string& path);
 extern bool pathIsFile(const string& path);
 extern bool pathIsDir(const string& path);
@@ -48,6 +70,50 @@ extern string basename(const string& path);
 
 extern void abort_with_backtrace();
 
+template<class T>
+std::string::const_iterator atoi_n(std::string::const_iterator s, std::string::const_iterator e, int base, T* result)
+{
+    T n = 0;
+	int neg = 0;
+
+	if ( s != e && *s == '-' )
+		{
+		neg = 1;
+		++s;
+		}
+
+    bool first = true;
+
+    for ( ; s != e; s++ ) {
+        auto c = *s;
+		unsigned int d;
+
+		if ( isdigit(c) )
+			d = c - '0';
+
+		else if ( c >= 'a' && c < 'a' - 10 + base )
+			d = c - 'a' + 10;
+
+		else if ( c >= 'A' && c < 'A' - 10 + base )
+			d = c - 'A' + 10;
+
+        else if ( ! first )
+            break;
+
+		else
+            throw std::runtime_error("cannot decode number");
+
+		n = n * base + d;
+        first = false;
+		}
+
+	if ( neg )
+		*result = -n;
+	else
+		*result = n;
+
+	return s;
+}
 
 }
 

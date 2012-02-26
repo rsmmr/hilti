@@ -99,7 +99,7 @@ using namespace hilti;
 %type <exprs>            opt_tuple_elem_list tuple_elem_list tuple
 %type <types>            type_list
 %type <stmt>             stmt instruction
-%type <stmts>            stmt_list first_block more_blocks
+%type <stmts>            stmt_list opt_stmt_list first_block more_blocks
 %type <block>            body blocks block_content
 %type <operands>         operands
 %type <params>           param_list opt_param_list
@@ -176,7 +176,6 @@ local         : LOCAL type local_id eol          { $$ = builder::local::create($
               ;
 
 stmt          : instruction eol                  { $$ = $1; }
-              | local                            { $$ = $1; }
               ;
 
 stmt_list     : stmt stmt_list                   { $$ = $2; $$.push_front($1); }
@@ -184,6 +183,9 @@ stmt_list     : stmt stmt_list                   { $$ = $2; $$.push_front($1); }
               | stmt                             { $$ = builder::block::statement_list(); $$.push_back($1); }
               | comment                          { $$ = builder::block::statement_list(); }
               ;
+
+opt_stmt_list : stmt_list                        { $$ = $1; }
+              | /* empty */                      { $$ = builder::block::statement_list(); }
 
 instruction   : mnemonic operands                { $$ = builder::instruction::create($1, $2, loc(@$)); }
               | expr_lhs '=' mnemonic operands   { $4[0] = $1; $$ = builder::instruction::create($3, $4, loc(@$)); }
@@ -219,6 +221,7 @@ type_list     : type ',' type_list               { $$ = $3; $$.push_front($1); }
 expr          : constant                         { $$ = $1; }
               | ctor                             { $$ = $1; }
               | scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
+              | type                             { $$ = builder::expression::type($1, loc(@$)); }
               ;
 
 expr_lhs      : scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
@@ -299,7 +302,7 @@ more_blocks   : label block_content              { $2->setID($1); driver.pushSco
               | label block_content              { $2->setID($1); $$ = builder::block::statement_list(); $$.push_back($2); }
               ;
 
-block_content : opt_local_decls stmt_list        { $$ = builder::block::create($1, $2, driver.currentScope(), loc(@$)); }
+block_content : opt_local_decls opt_stmt_list    { $$ = builder::block::create($1, $2, driver.currentScope(), loc(@$)); }
 
 opt_label     : label                            { $$ = $1; }
               | /* empty */                      { $$ = nullptr; }

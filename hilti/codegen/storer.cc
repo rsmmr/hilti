@@ -15,9 +15,10 @@ Storer::~Storer()
 {
 }
 
-void Storer::llvmStore(shared_ptr<Expression> target, llvm::Value* value)
+void Storer::llvmStore(shared_ptr<Expression> target, llvm::Value* value, bool plusone)
 {
     setArg1(value);
+    setArg2(plusone);
     call(target);
 }
 
@@ -39,12 +40,14 @@ void Storer::visit(expression::Parameter* p)
     auto name = "__shadow_" + param->id()->name();
     auto addr = cg()->llvmLocal(name);
 
-    cg()->llvmGCAssign(addr, val, p->type());
+    cg()->llvmGCAssign(addr, val, p->type(), plusone);
 }
 
 void Storer::visit(expression::CodeGen* c)
 {
     auto val = arg1();
+    auto plusone = arg2();
+
     llvm::Value* addr = reinterpret_cast<llvm::Value*>(c->cookie());
     cg()->llvmCheckedCreateStore(val, addr);
 }
@@ -56,7 +59,7 @@ void Storer::visit(variable::Global* v)
 
     auto addr = cg()->llvmGlobal(v);
 
-    cg()->llvmGCAssign(addr, val, v->type());
+    cg()->llvmGCAssign(addr, val, v->type(), plusone);
 }
 
 void Storer::visit(variable::Local* v)
@@ -67,5 +70,5 @@ void Storer::visit(variable::Local* v)
     auto name = v->id()->name();
     auto addr = cg()->llvmLocal(name);
 
-    cg()->llvmGCAssign(addr, val, v->type());
+    cg()->llvmGCAssign(addr, val, v->type(), plusone);
 }

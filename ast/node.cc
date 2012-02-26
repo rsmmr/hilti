@@ -6,7 +6,7 @@
 using namespace ast;
 
 void NodeBase::addChild(node_ptr<NodeBase> node) {
-       if ( ! node )
+    if ( ! node )
         return;
 
     _childs.push_back(node);

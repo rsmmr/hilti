@@ -6,6 +6,12 @@
 using namespace hilti;
 using namespace codegen;
 
+void StatementBuilder::visit(statement::instruction::bytes::New* i)
+{
+    CodeGen::expr_list args;
+    auto result = cg()->llvmCall("hlt::bytes_new", args);
+    cg()->llvmStore(i, result);
+}
 
 void StatementBuilder::visit(statement::instruction::bytes::Append* i)
 {
@@ -22,6 +28,20 @@ void StatementBuilder::visit(statement::instruction::bytes::Cmp* i)
     args.push_back(i->op2());
 
     auto result = cg()->llvmCall("hlt::bytes_cmp", args);
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::bytes::Equal* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+
+    auto cmp = cg()->llvmCall("hlt::bytes_cmp", args);
+    auto result = cg()->builder()->CreateICmpEQ(cmp, cg()->llvmConstInt(0, 8));
+
+    cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::bytes::Copy* i)
@@ -40,7 +60,7 @@ void StatementBuilder::visit(statement::instruction::bytes::Diff* i)
     args.push_back(i->op1());
     args.push_back(i->op2());
 
-    auto result = cg()->llvmCall("hlt::bytes_pos_diff", args);
+    auto result = cg()->llvmCall("hlt::iterator_bytes_diff", args);
 
     cg()->llvmStore(i, result);
 }
@@ -81,7 +101,7 @@ void StatementBuilder::visit(statement::instruction::bytes::IsFrozenIterBytes* i
     CodeGen::expr_list args;
     args.push_back(i->op1());
 
-    auto result = cg()->llvmCall("hlt::bytes_pos_is_frozen", args);
+    auto result = cg()->llvmCall("hlt::iterator_bytes_is_frozen", args);
 
     cg()->llvmStore(i, result);
 }
@@ -137,16 +157,15 @@ void StatementBuilder::visit(statement::instruction::bytes::Unfreeze* i)
     cg()->llvmCall("hlt::bytes_freeze", args);
 }
 
-void StatementBuilder::visit(statement::instruction::bytes::Begin* i)
+void StatementBuilder::visit(statement::instruction::iterBytes::Begin* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
     auto result = cg()->llvmCall("hlt::bytes_begin", args);
-
     cg()->llvmStore(i, result);
 }
 
-void StatementBuilder::visit(statement::instruction::bytes::End* i)
+void StatementBuilder::visit(statement::instruction::iterBytes::End* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
@@ -155,21 +174,40 @@ void StatementBuilder::visit(statement::instruction::bytes::End* i)
     cg()->llvmStore(i, result);
 }
 
-void StatementBuilder::visit(statement::instruction::bytes::Incr* i)
+void StatementBuilder::visit(statement::instruction::iterBytes::Incr* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    auto result = cg()->llvmCall("hlt::bytes_pos_incr", args);
+    auto result = cg()->llvmCall("hlt::iterator_bytes_incr", args);
 
     cg()->llvmStore(i, result);
 }
 
-void StatementBuilder::visit(statement::instruction::bytes::IncrBy* i)
+void StatementBuilder::visit(statement::instruction::iterBytes::IncrBy* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
-    auto result = cg()->llvmCall("hlt::bytes_pos_incr_by", args);
+    auto result = cg()->llvmCall("hlt::iterator_bytes_incr_by", args);
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::iterBytes::Equal* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    auto result = cg()->llvmCall("hlt::iterator_bytes_eq", args);
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::iterBytes::Deref* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    auto result = cg()->llvmCall("hlt::iterator_bytes_deref", args);
 
     cg()->llvmStore(i, result);
 }

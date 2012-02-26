@@ -25,6 +25,19 @@
 /// \cproto hlt_bytes_iter
 ///
 
+iBegin(bytes, New, "new")
+    iTarget(optype::refBytes)
+    iOp1(optype::typeBytes, true);
+    
+    iValidate {
+    }
+
+    iDoc(R"(
+        Instantiates a new empty bytes object.
+    )")
+
+iEnd
+
 iBegin(bytes, Append, "bytes.append")
     iOp1(optype::refBytes, false);
     iOp2(optype::refBytes, true);
@@ -52,6 +65,20 @@ iBegin(bytes, Cmp, "bytes.cmp")
         Compares *op1* with *op2* lexicographically. If *op1* is larger,
         returns -1. If both are equal, returns 0. If *op2* is larger, returns
         1.
+    )")
+
+iEnd
+
+iBegin(bytes, Equal, "equal")
+    iTarget(optype::boolean)
+    iOp1(optype::refBytes, true);
+    iOp2(optype::refBytes, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Returns true if *op1* is equal to *op2*.
     )")
 
 iEnd
@@ -186,7 +213,7 @@ iEnd
 
 iBegin(bytes, Trim, "bytes.trim")
     iOp1(optype::refBytes, false);
-    iOp2(optype::refBytes, true);
+    iOp2(optype::iterBytes, true);
 
     iValidate {
 
@@ -218,7 +245,7 @@ iBegin(bytes, Unfreeze, "bytes.unfreeze")
 
 iEnd
 
-iBegin(bytes, Begin, "begin")
+iBegin(iterBytes, Begin, "begin")
     iTarget(optype::iterBytes);
     iOp1(optype::refBytes, true);
 
@@ -230,7 +257,7 @@ iBegin(bytes, Begin, "begin")
     )")
 iEnd
 
-iBegin(bytes, End, "end")
+iBegin(iterBytes, End, "end")
     iTarget(optype::iterBytes);
     iOp1(optype::refBytes, true);
 
@@ -242,7 +269,7 @@ iBegin(bytes, End, "end")
     )")
 iEnd
 
-iBegin(bytes, Incr, "incr")
+iBegin(iterBytes, Incr, "incr")
     iTarget(optype::iterBytes);
     iOp1(optype::iterBytes, true);
 
@@ -254,7 +281,7 @@ iBegin(bytes, Incr, "incr")
     )")
 iEnd
 
-iBegin(bytes, IncrBy, "incr_by")
+iBegin(iterBytes, IncrBy, "incr_by")
     iTarget(optype::iterBytes);
     iOp1(optype::iterBytes, true);
     iOp2(optype::int64, true);
@@ -267,3 +294,31 @@ iBegin(bytes, IncrBy, "incr_by")
         if that is reached during the process.
     )")
 iEnd
+
+iBegin(iterBytes, Equal, "equal")
+    iTarget(optype::boolean)
+    iOp1(optype::iterBytes, true);
+    iOp2(optype::iterBytes, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Returns True if *op1* references the same byes position as *op2*.
+    )")
+
+iEnd
+
+iBegin(iterBytes, Deref, "deref")
+    iTarget(optype::int8)
+    iOp1(optype::iterBytes, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Returns the bytes *op1* is referencing.
+    )")
+
+iEnd
+
