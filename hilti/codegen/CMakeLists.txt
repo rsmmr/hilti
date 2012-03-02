@@ -12,6 +12,7 @@ add_library(codegen
     storer.cc
     linker.cc
     coercer.cc
+    unpacker.cc
     stmt-builder.cc
     asm-annotater.cc
 )

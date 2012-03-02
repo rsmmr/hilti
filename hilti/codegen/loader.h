@@ -14,17 +14,14 @@ namespace codegen {
 // Internal structure encapsulating the result of the Loader visitor.
 struct _LoadResult
 {
-   llvm::Value* value;
-   bool cctor;
-   bool is_ptr;
+   llvm::Value* value; // XXX
+   bool cctor;         // XXX
+   bool is_ptr;        // XXX
 };
 
 /// Visitor that generates the code for loading the value of an HILTI
 /// constant or expression. Note that this class should not be used directly,
 /// the main frontend function is CodeGen::llvmValue().
-///
-/// The visitors results is a pair of the loaded LLVM value and a boolean
-/// indicating whether the value is already run through a cctored.
 class Loader : public CGVisitor<_LoadResult>
 {
 public:

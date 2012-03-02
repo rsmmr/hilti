@@ -1219,6 +1219,13 @@ void CodeGen::llvmRaiseException(const string& exception, shared_ptr<Node> node,
     llvmCallC("hlt_abort", no_args, false);
 }
 
+void CodeGen::llvmRaiseException(const string& exception, const Location& l,  llvm::Value* arg)
+{
+    /// TODO: Currently we just abort.
+    value_list no_args;
+    llvmCallC("hlt_abort", no_args, false);
+}
+
 llvm::CallInst* CodeGen::llvmCheckedCreateCall(llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name)
 {
     return util::checkedCreateCall(builder(), "CodeGen", callee, args, name);
@@ -1591,4 +1598,44 @@ void CodeGen::llvmDebugPrint(const string& stream, const string& msg)
     args.push_back(arg3);
     llvmCall("hlt::debug_printf", args);
 #endif
+}
+
+llvm::Value* CodeGen::llvmSwitch(llvm::Value* op, const case_list& cases, bool result, const Location& l)
+{
+    assert(llvm::cast<llvm::IntegerType>(op->getType()));
+
+    auto def = pushBuilder("switch-default");
+    llvmRaiseException("hlt_exception_value_error", l);
+    popBuilder();
+
+    auto cont = newBuilder("after-switch");
+    auto switch_ = builder()->CreateSwitch(op, def->GetInsertBlock());
+
+    std::list<std::pair<llvm::Value*, llvm::BasicBlock*>> returns;
+
+    for ( auto c : cases ) {
+        auto b = pushBuilder(::util::fmt("switch-%s", c.label.c_str()));
+        auto r = c.callback(this);
+        builder()->CreateBr(cont->GetInsertBlock());
+        popBuilder();
+
+        returns.push_back(std::make_pair(r, b->GetInsertBlock()));
+
+        for ( auto op : c.ops )
+            switch_->addCase(op, b->GetInsertBlock());
+    }
+
+    pushBuilder(cont); // Leave on stack.
+
+    if ( ! result)
+        return nullptr;
+
+    assert(returns.size());
+
+    auto phi = builder()->CreatePHI(returns.front().first->getType(), returns.size());
+
+    for ( auto r : returns )
+        phi->addIncoming(r.first, r.second);
+
+    return phi;
 }

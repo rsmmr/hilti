@@ -4,6 +4,8 @@
 
 // TODO: Much more of this should move into ast/type.h
 
+#include <vector>
+
 #include "common.h"
 #include "visitor-interface.h"
 
@@ -130,7 +132,31 @@ public:
    virtual shared_ptr<hilti::Type> iterType() const = 0;
 };
 
-// class Unpackable.
+/// Trait class marking types which's instances can be unpacked from binary
+/// data via the Unpacker.
+class Unpackable : public Trait
+{
+public:
+   /// Description of an unpack format supported by the type.
+   struct Format {
+       /// The fully-qualified name of a ``Hilti::Packed`` constant (i.e.,
+       /// ``Hilti::Packed::Bool``.
+       string enumName;
+
+       /// The type for the 2nd unpack argument, or null if not used.
+       shared_ptr<hilti::Type> arg_type;
+
+       /// True if the 2nd argument is optional and may be skipped.
+       bool arg_optional;
+
+       /// Description of the format suitable for inclusion in documentation.
+       string doc;
+   };
+
+   /// Returns the suportted unpack formats.
+   virtual const std::vector<Format>& unpackFormats() const = 0;
+};
+
 // class Classifiable.
 // class Blockable.
 
@@ -214,6 +240,32 @@ public:
    virtual ~Unknown();
    virtual string repr() const { return "<Unknown>"; }
    ACCEPT_VISITOR(Type);
+};
+
+/// An internal place holder type representing a type by its name, to be
+/// resolved later. This should be used only in situations where's its
+/// guaranteed that the resolving will be done manually, there's no automatic
+/// handling.
+class TypeByName : public hilti::Type
+{
+public:
+   /// Constructor.
+   ///
+   /// name: The type name.
+   ///
+   /// l: Associated location.
+   TypeByName(const string& name, const Location& l=Location::None) : hilti::Type(l) {
+       _name = name;
+   }
+   virtual ~TypeByName();
+
+   const string& name() const { return _name; }
+
+   virtual string repr() const { return "<TypeByName>"; }
+   ACCEPT_VISITOR(Type);
+
+private:
+   string _name;
 };
 
 /// A type representing an unset value.
@@ -534,7 +586,7 @@ private:
 
 /// Type for bytes instances.
 ///
-class Bytes : public HeapType, public trait::Iterable
+class Bytes : public HeapType, public trait::Iterable, public trait::Unpackable
 {
 public:
    /// Constructor.
@@ -545,6 +597,8 @@ public:
 
    string repr() const override { return "bytes"; }
    shared_ptr<hilti::Type> iterType() const override;
+
+   const std::vector<Format>& unpackFormats() const override;
 
    ACCEPT_VISITOR(Type);
 };

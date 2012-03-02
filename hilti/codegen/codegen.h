@@ -128,6 +128,7 @@ protected:
    friend class Coercer;
    friend class Loader;
    friend class Storer;
+   friend class Unpacker;
    friend class StatementBuilder;
    friend class TypeBuilder;
    friend class TypeInfoBuilder;
@@ -433,6 +434,11 @@ protected:
    /// value: The value to store.
    void llvmStore(statement::Instruction* instr, llvm::Value* value);
 
+   /// XXX
+   void llvmUnpack(shared_ptr<Type> type, shared_ptr<Expression> begin,
+                   shared_ptr<Expression> end, shared_ptr<Expression> fmt,
+                   shared_ptr<Expression> arg = nullptr);
+
    /// Returns a global's index in the module-wide array of globals. Each
    /// module keeps an array with all its globals as part of HILTI's
    /// execution context. This methods returns the index into that array for
@@ -585,6 +591,11 @@ protected:
    /// t: The type which's null value to return. If null, uses \c i8* (aka \c
    /// void*).
    llvm::Constant* llvmConstNull(llvm::Type* t = 0);
+
+   /// Returns the value of an enum label.
+   ///
+   /// label: The qualified name to look up.
+   llvm::ConstantInt* llvmEnum(const string& label);
 
    /// Returns an LLVM struct constant with fields initialized. There's also
    /// a version of this method that works with values rather than constants,
@@ -895,6 +906,20 @@ protected:
    /// aborts execution.
    void llvmRaiseException(const string& exception, shared_ptr<Node> node, llvm::Value* arg = nullptr);
 
+   /// Generates code to raise an exception. When executed, the code will
+   /// *not* return control back to the current block.
+   ///
+   /// exception: The name of the exception's type. The name must define an
+   /// exception type in \c libhilti.ll.
+   ///
+   /// loc: Location information to associate with the exception.
+   ///
+   /// arg: The exception's argument if the type takes one, or null if not.
+   ///
+   /// \todo As we have not implemented exception yet, this currently just
+   /// aborts execution.
+   void llvmRaiseException(const string& exception, const Location& l,  llvm::Value* arg = nullptr);
+
    /// Wrapper method to create an LLVM \c call instruction that first checks
    /// the call's parameters for compatibility with the function's prototype
    /// If not matching, it dumps out debugging outout and abort execution.
@@ -1085,6 +1110,67 @@ protected:
 
    /// XXXX
    void llvmDebugPrint(const string& stream, const string& msg);
+
+
+   /// A case for llvmSwitch().
+   struct SwitchCase {
+       // FIXME: We should be able to use just a nromal function pointer here
+       // but that doesn't compile with clang at the time of writing. 
+       typedef std::function<llvm::Value* (CodeGen* cg)> callback_t;
+
+       SwitchCase(const string& l, std::list<llvm::ConstantInt*> o, callback_t c) {
+           label = l; ops = o; callback = c;
+       }
+
+       SwitchCase(const string& l, llvm::ConstantInt* o, callback_t c) {
+           label = l; ops.push_back(o); callback = c;
+       }
+
+       /// A label used as part of the LLVM block name for the switch.
+       string label;
+
+       /// The case's values.
+       std::list<llvm::ConstantInt*> ops;
+
+       /// A callback run to build the case's code. The callback receives two
+       /// parameters: \a cg is the code generator to use, with the current
+       /// builder suitably set. If llvmSwitch() is called with \a result
+       /// true, the callback must return the corresponding value; otherwise
+       /// it must return null.
+       callback_t callback;
+   };
+
+   /// A list of cases for llvmSwitch(). The first element is a list
+   /// of pair (lable, values) triggering execution of the case (which must
+   /// of integer type); the second is the callback to build the code for the
+   /// case.  The labels are used for naming the LLVM
+   /// case-blocks.
+   typedef std::list<SwitchCase> case_list;
+
+   /// Builds an LLVM switch statement for integer operands. For each case,
+   /// the caller provides a function that will be called to build the case's
+   /// body. The helper will build the necessary code around the switch,
+   /// generate an exception if the switch operand comes with an unknown
+   /// case, and push a builder on the stack for code following the switch
+   /// statement.
+   ///
+   /// op: The operand to switch on, which must be of integer type.
+   ///
+   /// cases: List of cases to build.
+   /// 
+   /// result: If true, the callbacks in \a cases are expected to return
+   /// values, which must be all of the same LLVM type. These are then merged
+   /// with an LLVM ``phi`` instruction to select the one from the branch
+   /// being taken, and the ``phi`` result is returned by this method.
+   ///
+   /// l: Location information to associate with the switch in case of an
+   /// error.
+   ///
+   /// Returns: A value if \a result is true, null otherwise.
+   /// 
+   /// \todo The function should optimized for the case where \a op is
+   /// constant and then generate just the code for the corresponding branch.
+   llvm::Value* llvmSwitch(llvm::Value* op, const case_list& cases, bool result = false, const Location& l=Location::None);
 
 private:
    // Creates/finishes the module intialization function that will receive all global
