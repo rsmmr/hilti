@@ -1,0 +1,48 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<16> i = 255
+    local int<16> j
+
+    local int<8> i2 = 255
+    local int<8> j2
+
+    j = int.shl i 2
+    call Hilti::print (j)
+
+    j = int.shr i 2
+    call Hilti::print (j)
+
+    j = int.ashr i 2
+    call Hilti::print (j)
+
+    call Hilti::print ("")
+
+    j = int.shl i 0
+    call Hilti::print (j)
+
+    j = int.shr i 0
+    call Hilti::print (j)
+
+    j = int.ashr i 0
+    call Hilti::print (j)
+
+    call Hilti::print ("")
+
+    j2 = int.shl i2 2
+    call Hilti::print (j2)
+
+    j2 = int.shr i2 2
+    call Hilti::print (j2)
+
+    j2 = int.ashr i2 2
+    call Hilti::print (j2)
+}
+

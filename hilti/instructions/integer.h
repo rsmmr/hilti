@@ -109,18 +109,18 @@ iBegin(integer, Sleq, "int.sleq")
 
 iEnd
 
-// iBegin(integer, AsSDouble, "int.as_sdouble")
-//    iTarget(double)
-//    iOp1(optype::integer, true)
-//
-//    iValidate {
-//    }
-//
-//    iDoc(R"(
-//        Converts the signed integer *op1* into a double value.
-//     )")
-//
-// iEnd
+iBegin(integer, AsSDouble, "int.as_sdouble")
+    iTarget(optype::double_)
+    iOp1(optype::integer, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(
+       Converts the signed integer *op1* into a double value.
+     )")
+
+ iEnd
 
 iBegin(integer, Pow, "int.pow")
     iTarget(optype::integer)
@@ -340,18 +340,18 @@ iBegin(integer, ZExt, "int.zext")
 
 iEnd
 
-// iBegin(integer, AsTime, "int.as_time")
-//   iTarget(time)
-//     iOp1(optype::integer, true)
-//
-//     iValidate {
-//     }
-//
-//     iDoc(R"(
-//         Converts the integer *op1* into a time value, interpreting it as
-//         seconds since the epoch.
-//      )")
-// iEnd
+iBegin(integer, AsTime, "int.as_time")
+   iTarget(optype::time)
+     iOp1(optype::integer, true)
+
+     iValidate {
+     }
+
+     iDoc(R"(
+         Converts the integer *op1* into a time value, interpreting it as
+         seconds since the epoch.
+      )")
+iEnd
 
 iBegin(integer, Slt, "int.slt")
     iTarget(optype::boolean)
@@ -404,18 +404,18 @@ iBegin(integer, Sqeq, "int.sgeq")
 
 iEnd
 
-// iBegin(integer, AsUDouble, "int.as_udouble")
-//     iTarget(double)
-//     iOp1(optype::integer, true)
-// 
-//     iValidate {
-//     }
-// 
-//     iDoc(R"(
-//         Converts the unsigned integer *op1* into a double value.
-//      )")
-// 
-// iEnd
+iBegin(integer, AsUDouble, "int.as_udouble")
+    iTarget(optype::double_)
+    iOp1(optype::integer, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Converts the unsigned integer *op1* into a double value.
+     )")
+
+iEnd
 
 iBegin(integer, Or, "int.or")
     iTarget(optype::integer)
@@ -466,20 +466,18 @@ iBegin(integer, Sgt, "int.sgt")
 
 iEnd
 
-// iBegin(integer, AsInterval, "int.as_interval")
-//     iTarget(interval)
-//     iOp1(optype::integer, true)
-// 
-//     iValidate {
-//         auto ty_target = as<interval>(target->type());
-//         auto ty_op1 = as<type::Integer>(op1->type());
-//     }
-// 
-//     iDoc(R"(
-//         Converts the integer *op1* into an interval value, interpreting it as
-//         seconds.
-//      )")
-// iEnd
+iBegin(integer, AsInterval, "int.as_interval")
+    iTarget(optype::interval)
+    iOp1(optype::integer, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Converts the integer *op1* into an interval value, interpreting it as
+        seconds.
+     )")
+iEnd
 
 iBegin(integer, Xor, "int.xor")
     iTarget(optype::integer)

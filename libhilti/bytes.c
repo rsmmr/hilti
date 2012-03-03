@@ -1,4 +1,3 @@
-// $Id$
 //
 // Note that we manitain two invariants:
 //
@@ -7,6 +6,7 @@
 //
 //  - Only that head chunk of a bytes object may have equal start and end
 // pointers. If so, that marks and empty bytes object.
+//
 
 #include <assert.h>
 #include <ctype.h>

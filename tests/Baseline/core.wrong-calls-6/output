@@ -1,0 +1,4 @@
+>>> In function foo:
+wrong-calls.hlt:4: error, HILTI functions cannot have parameter of type tuple<*>
+
+wrong-calls.hlt: 1 error found during validating

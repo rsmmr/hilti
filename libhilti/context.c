@@ -25,6 +25,8 @@ void hlt_execution_context_dtor(hlt_execution_context* ctx)
         fprintf(stderr, "global deinitialization threw exception\n");
         exit(1);
     }
+
+    /// GC_DTOR(ctx->excpt, hlt_exception); FIX ME.
 }
 
 __HLT_RTTI_GC_TYPE(hlt_execution_context, HLT_TYPE_CONTEXT)
@@ -44,5 +46,23 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
         exit(1);
     }
 
+    ctx->excpt = 0;
+
     return ctx;
+}
+
+void __hlt_context_set_exception(hlt_exception* excpt, hlt_execution_context* ctx)
+{
+    GC_CLEAR(ctx->excpt, hlt_exception);
+    ctx->excpt = excpt;
+}
+
+hlt_exception* __hlt_context_get_exception(hlt_execution_context* ctx)
+{
+    return ctx->excpt;
+}
+
+void __hlt_context_clear_exception(hlt_execution_context* ctx)
+{
+    GC_CLEAR(ctx->excpt, hlt_exception);
 }

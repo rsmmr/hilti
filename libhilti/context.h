@@ -34,6 +34,8 @@ struct hlt_worker_thread;
 struct __hlt_execution_context {
     __hlt_gchdr __gch;                /// Header for garbage collection.
     hlt_vthread_id vid;               /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
+    hlt_exception* excpt;             /// The currently raised exception, or 0 if none.
+
 #if 0
     struct hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
     hlt_continuation* yield;          /// A continuation to call when a ``yield`` statement is executed.
@@ -65,5 +67,25 @@ struct __hlt_execution_context {
 ///
 /// Returns: The new context.
 extern hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid);
+
+/// Sets the exception field in an execution context. The object must be
+/// passed at +1.
+///
+/// excpt: The exception.
+///
+/// ctx: The context.
+extern void __hlt_context_set_exception(hlt_exception* excpt, hlt_execution_context* ctx);
+
+/// Returns the exception field from an execution context.
+///
+/// ctx: The context.
+///
+/// Returns: The exception.
+extern hlt_exception* __hlt_context_get_exception(hlt_execution_context* ctx);
+
+/// Clears the exception field in an execution context.
+///
+/// ctx: The context.
+extern void __hlt_context_clear_exception(hlt_execution_context* ctx);
 
 #endif

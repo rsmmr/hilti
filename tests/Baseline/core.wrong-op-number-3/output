@@ -1,0 +1,4 @@
+>>> sum = int.add 1 2 3
+wrong-op-number.hlt:5: error, superfluous operand 3
+
+wrong-op-number.hlt: 1 error found during validating

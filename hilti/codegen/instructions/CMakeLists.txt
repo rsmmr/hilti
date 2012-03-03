@@ -1,9 +1,34 @@
 
 add_library(cg-instructions
-    flow.cc
-    integer.cc
-    string.cc
+    address.cc
+    bitset.cc
     bool.cc
     bytes.cc
+    caddr.cc
+    callable.cc
+    channel.cc
+    classifier.cc
+    double.cc
+    enum.cc
+    exception.cc
+    file.cc
+    flow.cc
+    hook.cc
+    integer.cc
+    interval.cc
+    iosrc.cc
+    list.cc
+    map.cc
+    network.cc
     operators.cc
+    port.cc
+    regexp.cc
+    set.cc
+    string.cc
+    struct.cc
+    time.cc
+    timer-mgr.cc
+    timer.cc
+    vector.cc
 )
+    

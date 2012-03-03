@@ -1,0 +1,38 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> i
+    local int<64> s
+    local ref<vector<int<32>>> v
+
+    local bool eq
+    local iterator<vector<int<32>>> cur
+    local iterator<vector<int<32>>> last
+
+    v = new vector<int<32>>
+    vector.set v 0 10
+    vector.set v 2 11
+    vector.set v 4 12
+
+    cur = begin v
+    last = end v
+
+@loop:
+    eq = equal cur last
+    if.else eq @exit @cont
+
+@cont:
+    i = deref cur
+    call Hilti::print (i)
+    cur = incr cur
+    jump @loop
+
+@exit: return.void
+    }

@@ -1,0 +1,44 @@
+#
+# @TEST-EXEC:  hilti-build -S 0 %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Compiling the recursive program with non-standard default stack segment size.
+#
+# Note: -S 0 will cause every frame to be newly allocated on the stack.
+
+module Main
+
+import Hilti
+
+int<32> fibo(int<32> n) {
+    local int<32> f1
+    local int<32> f2
+    local bool cond
+
+    cond = int.slt n 2
+    if.else cond @done @recurse
+
+@recurse:
+    n = int.sub n 1
+    f1 = call fibo(n) # XXXX
+
+    n = int.sub n 1
+    f2 = call fibo(n)
+
+    f1 = int.add f1 f2
+    return.result f1
+
+@done:
+    return.result n
+}
+
+void run() {
+    local int<32> f
+
+    f = call fibo(10)
+
+    call Hilti::print (f)
+
+    return.void
+}

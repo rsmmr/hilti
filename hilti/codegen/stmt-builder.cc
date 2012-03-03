@@ -36,7 +36,7 @@ shared_ptr<Type> StatementBuilder::coerceTypes(shared_ptr<Expression> op1, share
 void StatementBuilder::visit(statement::Block* b)
 {
     std::ostringstream comment;
-    passes::Printer printer(comment);
+    passes::Printer printer(comment, true);
 
     IRBuilder* builder = 0;
 
@@ -55,7 +55,7 @@ void StatementBuilder::visit(statement::Block* b)
             // code.
             comment.str(string());
             printer.run(s);
-            passes::Printer p(comment);
+            passes::Printer p(comment, true);
             cg()->llvmInsertComment(comment.str());
 
             // Send it also to the hilti-trace debug stream.
@@ -70,17 +70,103 @@ void StatementBuilder::visit(statement::Block* b)
         cg()->popBuilder();
 }
 
+void StatementBuilder::visit(statement::Try* t)
+{
+    // Block for normal continuation.
+    auto normal_cont = cg()->newBuilder("try-cont");
+
+    for ( auto c : t->catches() ) {
+        // Build code for catch block.
+        auto builder = cg()->pushBuilder("catch-match");
+        call(c);
+        cg()->pushExceptionHandler(builder);
+
+        // The Catch() will have left the builder on the stack that handles
+        // fully catching the excepetion.  Add a branch and remove it.
+        cg()->llvmClearException();
+        cg()->llvmCreateBr(normal_cont);
+        cg()->popBuilder();
+
+        cg()->popBuilder();
+    }
+
+    call(t->block());
+    cg()->llvmCreateBr(normal_cont);
+
+    // Remove all our handlers.
+    for ( auto c : t->catches() )
+        cg()->popExceptionHandler();
+}
+
+void StatementBuilder::visit(statement::try_::Catch* c)
+{
+    // Create block for our code. Filled below.
+    auto match = cg()->newBuilder("catch-block");
+
+    // Create block for passing on to other handlers.
+    auto no_match = cg()->pushBuilder();
+
+    if ( cg()->topExceptionHandler() )
+        cg()->llvmCreateBr(cg()->topExceptionHandler());
+
+    else
+        cg()->llvmRethrowException();
+
+    cg()->popBuilder();
+
+    // In the original block, check if it's our exception.
+
+    auto rtype = ast::as<type::Reference>(c->type());
+    assert(rtype);
+    auto etype = ast::as<type::Exception>(rtype->argType());
+    assert(etype);
+
+    auto cexcpt = cg()->llvmCurrentException();
+
+    CodeGen::value_list args;
+    args.push_back(cexcpt);
+    args.push_back(cg()->llvmExceptionTypeObject(etype));
+    auto ours = cg()->llvmCallC("__hlt_exception_match", args, false, false);
+
+    auto cond = builder()->CreateICmpNE(ours, cg()->llvmConstInt(0, 8));
+    cg()->llvmCreateCondBr(cond, match, no_match);
+
+    // Now build our code block.
+    cg()->pushBuilder(match);
+
+    if ( c->var() ) {
+        // Initialize the local variable providing access to the exception.
+        auto name = c->var()->internalName();
+        auto addr = cg()->llvmAddLocal(name, c->type());
+
+        // Can't init the local directly as they might end up in the wrong
+        // block.
+        cg()->llvmGCAssign(addr, cexcpt, c->type(), false);
+    }
+
+    call(c->block());
+
+    // Leave on stack, Try's visit will remove.
+}
+
 void StatementBuilder::visit(declaration::Variable* v)
 {
-    auto var = v->variable();
+    // Ignore the Catch local here, we do that in its handlers.
+    if ( in<statement::try_::Catch>() )
+        return;
 
-    if ( ! ast::isA<variable::Local>(var) )
+    auto var = v->variable();
+    auto local = ast::as<variable::Local>(var);
+
+    if ( ! local )
         // GLobals are taken care of directly by the CodeGen.
         return;
 
-    auto init = var->init() ? cg()->llvmValue(var->init(), nullptr, true) : nullptr;
+    auto init = local->init() ? cg()->llvmValue(local->init(), nullptr, true) : nullptr;
+    auto name = local->internalName();
+    assert(name.size());
 
-    cg()->llvmAddLocal(var->id()->name(), var->type(), init);
+    cg()->llvmAddLocal(name, local->type(), init);
 }
 
 void StatementBuilder::visit(declaration::Function* f)
@@ -111,7 +197,7 @@ void StatementBuilder::visit(declaration::Function* f)
 
     call(func->body());
 
-    cg()->llvmBuildExitBlock(func);
+    cg()->llvmBuildExitBlock();
 
     cg()->popFunction();
 

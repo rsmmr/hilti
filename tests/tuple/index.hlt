@@ -1,0 +1,15 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local string s
+    s = tuple.index (42, "foo", True) 1
+    call Hilti::print(s)
+}
+

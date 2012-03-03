@@ -73,8 +73,16 @@ public:
        return _path.size() > 1;
    }
 
-   void render(std::ostream& out) const /* override */ {
+   void render(std::ostream& out) /* override */ {
        out << pathAsString();
+   }
+
+   bool operator==(const ID& other) const {
+       return pathAsString() == other.pathAsString();
+   }
+
+   bool operator==(const string& other) const {
+       return pathAsString() == other;
    }
 
 private:

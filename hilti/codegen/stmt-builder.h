@@ -15,7 +15,7 @@ namespace codegen {
 
 /// Visitor that generates the code for the execution of statemens. Note that
 /// this class should not be used directly, it's used internally by CodeGen.
-class StatementBuilder : public CGVisitor<>
+class StatementBuilder : public CGVisitor<>, public InstructionHelper
 {
 public:
    /// Constructor.
@@ -47,6 +47,8 @@ public:
 
 protected:
    void visit(statement::Block* b) override;
+   void visit(statement::Try* b) override;
+   void visit(statement::try_::Catch* c) override;
 
    void visit(declaration::Function* f);
    void visit(declaration::Variable* v);

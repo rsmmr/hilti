@@ -1,0 +1,69 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# A bunch of calls with signatures mismatches. These are all supposed to fail.
+
+module Main
+
+void foo(int<32> a) {}
+
+void run() {
+    call foo 42
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void foo(int<16> a) {}
+
+void run() {
+    call foo (42, 43)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void foo(int<32> a, int<16> b) {}
+
+void run() {
+    local int<32> x
+    call foo (x, x)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void foo() {}
+
+void run() {
+    local int<32> x
+    x = call foo ()
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+int<32> foo() {
+    return.result 42
+}
+
+void run() {
+    call foo ()
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void foo(tuple<*> t) {
+}
+
+void run() {
+    call foo ((1,2))
+}
+

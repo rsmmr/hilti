@@ -1,0 +1,57 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local bool eq
+    local ref<bytes> b
+    local ref<bytes> sub
+    local iterator<bytes> i1
+    local iterator<bytes> i2
+    local ref<regexp> re
+    local ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> v
+    local tuple<iterator<bytes>,iterator<bytes>> span
+    local iterator<vector<tuple<iterator<bytes>,iterator<bytes>>>> cur
+    local iterator<vector<tuple<iterator<bytes>,iterator<bytes>>>> last
+
+    re = new regexp
+    call Hilti::print(re)
+
+    regexp.compile re "A(.*)X(.*)Y(.*)B"
+    call Hilti::print(re)
+
+    b = b"xxA1234X5678Y9012Bxx"
+    call Hilti::print(b)
+
+    i1 = begin b
+    i2 = end b
+
+    v = regexp.groups re i1 i2
+
+    cur = begin v
+    last = end v
+
+@loop:
+    eq = equal cur last
+    if.else eq @exit @cont
+
+@cont:
+    span = deref cur
+
+    i1 = tuple.index span 0
+    i2 = tuple.index span 1
+    sub = bytes.sub i1 i2
+
+    call Hilti::print(sub)
+
+    cur = incr cur
+    jump @loop
+
+@exit: return.void
+
+}

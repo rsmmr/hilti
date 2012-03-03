@@ -1,0 +1,91 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  bash -c "echo RUN\ 1 > output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 2 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 3 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 4 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 5 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void print1() {
+    call Hilti::print ("1", True)
+    return.void
+}
+
+void print2() {
+    call Hilti::print ("2", True)
+    return.void
+}
+
+void print3() {
+    call Hilti::print ("3", True)
+    return.void
+}
+
+void print4() {
+    call Hilti::print ("4", True)
+    return.void
+}
+
+void print5() {
+    call Hilti::print ("5", True)
+    return.void
+}
+
+void run() {
+    thread.schedule print1() 1
+    thread.schedule print2() 2
+    thread.schedule print3() 3
+    thread.schedule print4() 4
+    thread.schedule print5() 5
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void print_num(int<64> num) {
+    call Hilti::print (num, True)
+    return.void
+}
+
+int<64> make_const(int<64> num) {
+    return.result num
+}
+
+void run() {
+    local int<64> count
+    local int<64> limit
+    local bool eq
+
+    count = call make_const(1)
+    limit = call make_const(6)
+
+@loop:
+    eq = int.eq count limit
+    if.else eq @exit @cont
+
+@cont:
+    thread.schedule print_num(count) count
+    count = incr count
+    jump @loop
+
+@exit:
+    return.void
+}

@@ -1,0 +1,2 @@
+no-run.hlt: error, module Main must define a run() function
+no-run.hlt: 1 error found during validating

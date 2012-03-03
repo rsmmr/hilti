@@ -41,12 +41,9 @@ void NodeBase::replaceChild(shared_ptr<NodeBase> old_node, shared_ptr<NodeBase> 
     }
 }
 
-NodeBase::operator string() const {
+NodeBase::operator string() {
 
-    std::ostringstream sout;
-    render(sout);
-
-    string s = sout.str();
+    string s = render();
     string location = "-";
 
     if ( _location )
@@ -56,13 +53,13 @@ NodeBase::operator string() const {
                      _childs.size(), location.c_str(), this, s.c_str());
 }
 
-void NodeBase::dump(std::ostream& out) const
+void NodeBase::dump(std::ostream& out)
 {
     node_set seen;
     dump(out, 0, &seen);
 }
 
-void NodeBase::dump(std::ostream& out, int level, node_set* seen) const
+void NodeBase::dump(std::ostream& out, int level, node_set* seen)
 {
     for ( int i = 0; i < level; ++i )
         out << "  ";

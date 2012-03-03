@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> zero
+    # Get a non-const zero.
+    zero = int.add -5 5
+    zero = int.div 12 zero
+    return.void
+}

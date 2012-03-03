@@ -13,7 +13,7 @@ void run() {
     local iterator<bytes> first
     local iterator<bytes> last
     local iterator<bytes> nfirst
-    local int64 diff
+    local int<64> diff
     local string out
 
     b = b"\x00\x05\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"

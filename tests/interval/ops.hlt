@@ -1,0 +1,69 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void printInterval(interval t) {
+    local string s
+    s = call Hilti::fmt("%s | %d | %f", (t, t, t))
+    call Hilti::print(s)
+}
+
+void run() {
+    local interval i
+    local interval t
+    local interval t2
+    local bool b
+
+    t = interval(1000.5)
+    i = interval(999.5)
+
+    call printInterval(t)
+    t = interval.add t i
+    call printInterval(t)
+    t = interval.sub t i
+    call printInterval(t)
+
+    call Hilti::print("")
+
+    t2 = interval.add t i
+    b = interval.lt t t2
+    call Hilti::print(b)
+    b = interval.lt t2 t
+    call Hilti::print(b)
+    b = interval.lt t t
+    call Hilti::print(b)
+
+    call Hilti::print("")
+
+    t2 = interval.add t i
+    b = interval.eq t t2
+    call Hilti::print(b)
+    b = interval.eq t2 t
+    call Hilti::print(b)
+    t2 = interval.sub t2 i
+    b = interval.eq t2 t
+    call Hilti::print(b)
+
+    call Hilti::print("")
+
+    t2 = interval.add t i
+    b = equal t t2
+    call Hilti::print(b)
+    b = equal t2 t
+    call Hilti::print(b)
+    t2 = interval.sub t2 i
+    b = equal t2 t
+    call Hilti::print(b)
+
+    call Hilti::print("")
+
+    call Hilti::print(i)
+    i = interval.mul i 2
+    call Hilti::print(i)
+}
+

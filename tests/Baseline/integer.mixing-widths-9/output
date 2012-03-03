@@ -1,0 +1,4 @@
+>>> i1 = int.zext i2
+mixing-widths.hlt:7: error, width of integer operand too large
+
+mixing-widths.hlt: 1 error found during validating

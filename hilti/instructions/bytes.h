@@ -1,6 +1,6 @@
-/// 
+///
 /// \type Bytes
-/// 
+///
 /// *bytes* is a data type for storing sequences of raw bytes. It is
 /// optimized for storing and operating on large amounts of unstructured
 /// data. In particular, it provides efficient subsequence and append
@@ -28,7 +28,7 @@
 iBegin(bytes, New, "new")
     iTarget(optype::refBytes)
     iOp1(optype::typeBytes, true);
-    
+
     iValidate {
     }
 
@@ -45,7 +45,7 @@ iBegin(bytes, Append, "bytes.append")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Appends *op2* to *op1*. The two operands must not refer to the same
         object.  Raises ValueError if *op1* has been frozen, or if *op1* is
         the same as *op2*.
@@ -61,7 +61,7 @@ iBegin(bytes, Cmp, "bytes.cmp")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Compares *op1* with *op2* lexicographically. If *op1* is larger,
         returns -1. If both are equal, returns 0. If *op2* is larger, returns
         1.
@@ -93,7 +93,7 @@ iBegin(bytes, Copy, "bytes.copy")
 
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Copy the contents of *op1* into a new byte instance.
     )")
 
@@ -107,7 +107,7 @@ iBegin(bytes, Diff, "bytes.diff")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns the number of bytes between *op1* and *op2*.
     )")
 
@@ -120,7 +120,7 @@ iBegin(bytes, Empty, "bytes.empty")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns true if *op1* is empty. Note that using this instruction is
         more efficient than comparing the result of ``bytes.length`` to zero.
     )")
@@ -133,7 +133,7 @@ iBegin(bytes, Freeze, "bytes.freeze")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Freezes the bytes object *op1*. A frozen bytes object cannot be
         further modified until unfrozen. If the object is already frozen, the
         instruction is ignored.
@@ -148,7 +148,7 @@ iBegin(bytes, IsFrozenBytes, "bytes.is_frozen")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns whether the bytes object *op1* has been frozen.
     )")
 
@@ -161,7 +161,7 @@ iBegin(bytes, IsFrozenIterBytes, "bytes.is_frozen")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns whether the bytes object referenced by the iterator *op1* has been frozen.
     )")
 
@@ -175,7 +175,7 @@ iBegin(bytes, Length, "bytes.length")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns the number of bytes stored in *op1*.
     )")
 
@@ -189,7 +189,7 @@ iBegin(bytes, Offset, "bytes.offset")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns an iterator representing the offset *op2* in *op1*.
     )")
 
@@ -203,7 +203,7 @@ iBegin(bytes, Sub, "bytes.sub")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Extracts the subsequence between *op1* and *op2* from an existing
         *bytes* instance and returns it in a new ``bytes`` instance. The
         element at *op2* is not included.
@@ -219,7 +219,7 @@ iBegin(bytes, Trim, "bytes.trim")
 
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Trims the bytes object *op1* at the beginning by removing data up to
         (but not including) the given position *op2*. The iterator *op2* will
         remain valid afterwards and still point to the same location, which
@@ -237,7 +237,7 @@ iBegin(bytes, Unfreeze, "bytes.unfreeze")
 
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Unfreezes the bytes object *op1*. An unfrozen bytes object can be
         further modified. If the object is already unfrozen (which is the
         default), the instruction is ignored.
@@ -303,7 +303,7 @@ iBegin(iterBytes, Equal, "equal")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns True if *op1* references the same byes position as *op2*.
     )")
 
@@ -316,7 +316,7 @@ iBegin(iterBytes, Deref, "deref")
     iValidate {
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Returns the bytes *op1* is referencing.
     )")
 

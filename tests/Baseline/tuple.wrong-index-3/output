@@ -1,0 +1,4 @@
+>>> b = tuple.index a 1
+wrong-index.hlt:7: error, target type must be bool but is int<32>
+
+wrong-index.hlt: 1 error found during validating

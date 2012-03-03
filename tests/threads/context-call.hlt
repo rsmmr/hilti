@@ -1,0 +1,38 @@
+# We can call a function as long as scopes match exactly.
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out 2>&1 | sort >output
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+context {
+    addr orig_h,
+    port orig_p,
+    addr resp_h,
+    port resp_p
+}
+
+scope Connection = { orig_h, orig_p, resp_h, resp_p }
+scope Originator = { orig_h }
+scope Global     = { }
+
+void FuncConn() &scope=Connection {
+    local ref<context> ctx
+    local int<64> vid
+    local string s
+
+    local int<64> vid
+    vid = thread.id
+    ctx = thread.get_context
+
+    s = call Hilti::fmt("FuncConn: vid %d ctx %s", (vid, ctx))
+    call Hilti::print (s)
+}
+
+void run() &scope=Connection {
+    thread.set_context (192.160.0.1, 1234/tcp, 10.0.0.1, 80/tcp)
+    call FuncConn()
+    }

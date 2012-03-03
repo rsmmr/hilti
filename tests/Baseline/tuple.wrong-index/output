@@ -1,0 +1,4 @@
+>>> b = tuple.index a 2
+wrong-index.hlt:14: error, operand 2 is out of range
+
+wrong-index.hlt: 1 error found during validating

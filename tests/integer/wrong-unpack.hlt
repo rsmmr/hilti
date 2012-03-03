@@ -1,0 +1,31 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out
+# @TEST-EXEC:      btest-diff output
+#
+# Using an invalid unpack format.
+
+# This test uses a constant, which shouldn't compile.
+#
+# FIXME: Currently, we get only an internal error. Still need to
+# extlast the checker for this, but I'm waiting until we have the new
+# cabilities for specifying signatures.
+#
+# @TEST-IGNORE
+
+module Main
+
+import Hilti
+
+void run() {
+    local iterator<bytes> p1
+    local iterator<bytes> p2
+    local ref<bytes> b
+    local tuple<int<32>, iterator<bytes>> t32
+    local Hilti::Packed e
+
+    b = b"\x11\x22\x33\x44\x55\x66\x77\x88\x99"
+    p1 = begin b
+    p2 = end b
+    t32 = unpack (p1,p2) Hilti::Packed::Undef
+    }
+

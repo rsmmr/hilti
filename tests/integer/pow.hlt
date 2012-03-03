@@ -1,0 +1,23 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<64> i
+    local int<16> i2
+
+    local int<8> i8a = 2
+    local int<8> i8b = 3
+
+    i = int.pow 2 9
+    call Hilti::print (i)
+
+    i2 = int.pow i8a i8b
+    call Hilti::print (i2)
+}
+

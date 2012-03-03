@@ -1,0 +1,36 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<channel<int<32>>> ch
+    ch = new channel<int<32>>
+    local int<32> a
+    local int<32> b
+    local int<32> c
+
+    a = int.mul 7 6
+    b = int.add 9 6
+    c = int.sub 50 8
+
+    channel.write_try ch a
+    channel.write_try ch b
+    channel.write_try ch c
+
+    local int<32> x
+    local int<32> y
+    local int<32> z
+
+    x = channel.read_try ch
+    y = channel.read_try ch
+    z = channel.read_try ch
+
+    call Hilti::print(x)
+    call Hilti::print(y)
+    call Hilti::print(z)
+}

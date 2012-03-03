@@ -1,0 +1,91 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# Illegal arguments. These are all supposed to fail.
+
+module Main
+
+import Hilti
+
+type A = struct {
+    int<64> i &default=100,
+    bool b,
+    string test &default="Hurz",
+    double d
+    }
+
+void run() {
+    local int<64> i
+    local string s
+    local ref<A> a
+
+    i = new A
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type A = struct {
+    int<64> i &default=100,
+    bool b,
+    string test &default="Hurz",
+    double d
+    }
+
+void run() {
+    local int<64> i
+    local string s
+    local ref<A> a
+
+    a = new string
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type A = struct {
+    int<64> i &default=100,
+    bool b,
+    string test &default="Hurz",
+    double d
+    }
+
+void run() {
+    local int<64> i
+    local string s
+    local ref<A> a
+
+    a = new A
+    i = struct.get a "b"
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type A = struct {
+    int<64> i &default=100,
+    bool b,
+    string test &default="Hurz",
+    double d
+    }
+
+void run() {
+    local int<64> i
+    local string s
+    local ref<A> a
+
+    a = new A
+    struct.set a "b" 42
+}
+
+

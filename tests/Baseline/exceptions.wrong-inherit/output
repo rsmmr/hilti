@@ -1,0 +1,2 @@
+wrong-inherit.hlt:11: error, exception argument type must match that of parent, which is string
+wrong-inherit.hlt: 1 error found during validating

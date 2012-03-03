@@ -8,6 +8,7 @@
 #include "id.h"
 #include "instruction.h"
 #include "scope.h"
+#include "declaration.h"
 
 namespace hilti {
 
@@ -20,6 +21,10 @@ public:
    /// l: An associated location.
    Statement(const Location& l=Location::None) : ast::Statement<AstInfo>(l) {}
    ACCEPT_VISITOR_ROOT();
+
+   /// Returns a readable one-line representation of the type.
+   string render() override;
+
 };
 
 namespace statement {
@@ -130,8 +135,6 @@ public:
 
    ACCEPT_VISITOR(Statement);
 
-   void render(std::ostream& out) const /* override */ { out << ( _id ? _id->name() : "<no name>" ); }
-
 private:
    void Init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l=Location::None);
    void addComment(shared_ptr<Node> node);
@@ -142,6 +145,83 @@ private:
    decl_list _decls;
    stmt_list _stmts;
    block_list _subblocks;
+};
+
+namespace try_ {
+
+/// A single catch clause for a Try statement.
+class Catch : public Node
+{
+public:
+   /// Constructor.
+   ///
+   /// type: The type being caught. This must be of type type::Exception. Can
+   /// be null for "catch all".
+   ///
+   /// id: The local ID assigned to the caught exception instance. It will be
+   /// assible in \a block. Must be null if \a type is.
+   ///
+   /// block: The code block for the catch.
+   Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> block, const Location& l=Location::None);
+
+   /// Returns the type being caught. This will be of type type::Exception.
+   /// Will return null for a catch-all clause.
+   shared_ptr<Type> type() const { if ( _type ) return _type; else return var()->type(); }
+
+   /// Returns the local ID assigned to the caught exception instance. Will
+   /// return null for a catch-all clause.
+   shared_ptr<ID> id() const { return _id; }
+
+   /// Returns the catch's code block.
+   shared_ptr<Block> block() const { return _block; }
+
+   /// If an ID was given to the constructor, this returns a local variable
+   /// referecning the exception value. If not, it returns null.
+   shared_ptr<variable::Local> var() const {
+       return _decl ? ast::as<variable::Local>(_decl->variable()) : nullptr;
+       }
+
+   /// Returns true if this is a catch-all clause.
+   bool catchAll() const { return _type.get() == nullptr; }
+
+   ACCEPT_VISITOR_ROOT();
+
+private:
+   node_ptr<Type> _type = nullptr;
+   node_ptr<ID> _id;
+   node_ptr<Block> _block;
+   node_ptr<declaration::Variable> _decl = nullptr;
+};
+
+}
+
+/// A try-encapsulated block, with \a catch handlers.
+class Try : public Statement
+{
+public:
+   typedef std::list<node_ptr<try_::Catch>> catch_list;
+
+   /// Constructor.
+   ///
+   /// try_: The body of the \c try block. Exceptions occuring during its
+   /// execution will matches against all the \a catches.
+   ///
+   /// catches: List of \c catch clauses handling exceptions thrown during
+   /// executing \a try. Note that there must not be more than one catch-all
+   /// clause.
+   Try(shared_ptr<Block> try_, const catch_list& catches, const Location& l=Location::None);
+
+   /// Returns the \a try block.
+   shared_ptr<Block> block() const { return _try; }
+
+   /// Returns the list of all catch clauses.
+   const catch_list& catches() const { return _catches; }
+
+   ACCEPT_VISITOR(Statement);
+
+private:
+   node_ptr<Block> _try;
+   catch_list _catches;
 };
 
 /// Base class for instruction statements. 
@@ -167,11 +247,11 @@ public:
    /// Returns the 3st operand. Null if not used.
    shared_ptr<Expression> op3() const { return _ops[3]; }
 
-   void render(std::ostream& out) const /* override */ { out << _id->name(); }
+   /// Returns a text representation of the instructions operand signature.
+   string signature() const;
 
    ACCEPT_VISITOR(Statement);
 
-protected:
    /// Constructor.
    ///
    /// id: The name of the instruction.

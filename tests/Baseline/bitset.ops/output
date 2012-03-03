@@ -1,0 +1,9 @@
+Bit0
+Bit0|Bit23
+Bit23
+True
+False
+Bit1|Bit24|Bit0|Bit23
+Bit24|Bit23
+True
+<empty>

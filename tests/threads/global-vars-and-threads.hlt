@@ -1,0 +1,34 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out | sort | uniq -c | sort -n -k 2 | awk '{print $1, $2}' >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global int<32> c = 2
+
+void func_with_globals() {
+    c = int.mul c 2
+    call Hilti::print (c)
+}
+
+void run() {
+    thread.schedule func_with_globals() 1
+    thread.schedule func_with_globals() 2
+    thread.schedule func_with_globals() 3
+    thread.schedule func_with_globals() 4
+    thread.schedule func_with_globals() 5
+    thread.schedule func_with_globals() 1
+    thread.schedule func_with_globals() 2
+    thread.schedule func_with_globals() 3
+    thread.schedule func_with_globals() 4
+    thread.schedule func_with_globals() 5
+    thread.schedule func_with_globals() 1
+    thread.schedule func_with_globals() 2
+    thread.schedule func_with_globals() 3
+    thread.schedule func_with_globals() 4
+    thread.schedule func_with_globals() 5
+}
+

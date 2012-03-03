@@ -1,0 +1,4 @@
+>>> switch n @default ((1, @b1), ("bcd", @b2), (3, @b3))
+switch-wrong-types.hlt:14: error, operand 3 all values must be of same type as operand 1 (value 2 is not)
+
+switch-wrong-types.hlt: 1 error found during validating

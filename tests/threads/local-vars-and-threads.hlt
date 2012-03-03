@@ -1,0 +1,21 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void func_with_locals() {
+    local int<32> c
+
+    c = int.mul 9 6
+
+    call Hilti::print (c)
+}
+
+void run() {
+    thread.schedule func_with_locals() 1
+}
+

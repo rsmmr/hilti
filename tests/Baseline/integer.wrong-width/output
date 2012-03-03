@@ -1,0 +1,2 @@
+wrong-width.hlt:11: parser error, unexpected ident 'foo'
+wrong-width.hlt: 1 error found during parsing

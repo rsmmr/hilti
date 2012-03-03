@@ -1,0 +1,27 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+   local bool cond
+   local int<8> i8
+   local int<16> i16
+   local int<32> i32
+
+   i16 = int.add 255 2
+   i8 = int.trunc i16
+
+   i32 = int.zext i16
+   call Hilti::print (i32)
+
+   i32 = int.zext i8
+   call Hilti::print (i32)
+}
+
+
+

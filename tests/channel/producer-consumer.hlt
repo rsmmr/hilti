@@ -1,0 +1,67 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  bash -c "echo RUN\ 1 > output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 2 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 3 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 4 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  bash -c "echo RUN\ 5 >> output"
+# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  sort output.tmp >> output
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void produce(ref<channel<int<64>>> ch, int<64> x) {
+    channel.write_try ch x
+
+    local string str
+    str = call Hilti::fmt("produced %d", (x))
+    call Hilti::print(str)
+}
+
+void consume(ref<channel<int<64>>> ch) {
+    local int<64> x
+    x = channel.read_try ch
+
+    local string str
+    str = call Hilti::fmt("consumed %d", (x))
+    call Hilti::print(str)
+}
+
+
+void run() {
+    local ref<channel<int<64>>> ch
+    local int<64> count
+    local int<64> limit
+    local bool eq
+    local string str
+
+    ch = new channel<int<64>>
+
+    count = int.div 7 7
+    limit = int.mul 1 42
+
+@loop:
+    eq = int.eq count limit
+    if.else eq @exit @cont
+
+@cont:
+    thread.schedule produce(ch, count) count
+    thread.schedule consume(ch) count
+
+    count = incr count
+    jump @loop
+
+@exit:
+    return.void
+}

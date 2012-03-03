@@ -1,0 +1,54 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void foo(time n) {
+    call Hilti::print ("Timer fires at ", False)
+    call Hilti::print (n)
+}
+
+void advance(ref<timer_mgr> mgr, time t) {
+    call Hilti::print ("Advance to ", False)
+    call Hilti::print (t)
+    timer_mgr.advance mgr t
+}
+
+void create(ref<timer_mgr> mgr, time t) {
+    local ref<timer> tim
+    tim = new timer foo (t)
+    timer_mgr.schedule mgr t tim
+
+    call Hilti::print (tim)
+
+    timer.cancel tim
+}
+
+void run() {
+
+    local ref<timer_mgr> mgr
+
+    mgr = new timer_mgr
+    call create(mgr, time(1.0))
+    call create(mgr, time(5.0))
+    call create(mgr, time(2.0))
+    call create(mgr, time(3.0))
+    call create(mgr, time(4.0))
+
+    call advance(mgr, time(0.1))
+    call advance(mgr, time(0.2))
+    call advance(mgr, time(0.3))
+    call advance(mgr, time(0.5))
+    call advance(mgr, time(1.0))
+    call advance(mgr, time(4.5))
+    call advance(mgr, time(5.0))
+    call advance(mgr, time(10.0))
+
+    return.void
+}
+
+

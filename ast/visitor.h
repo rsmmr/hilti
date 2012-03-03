@@ -122,7 +122,7 @@ public:
    bool processOne(shared_ptr<NodeBase> node, Arg1 arg1, Arg2 arg2) {
        this->setArg1(arg1);
        this->setArg2(arg2);
-       processOne(node);
+       return processOne(node);
    }
 
    /// Like processOne(), with setting an argument and getting a result back.

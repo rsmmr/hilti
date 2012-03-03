@@ -1,0 +1,4 @@
+port=513/tcp diff=2
+port=513/udp diff=2
+port=258/tcp diff=2
+port=258/udp diff=2

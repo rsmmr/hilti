@@ -11,36 +11,44 @@
 namespace hilti {
 namespace codegen {
 
-/// The result of Unpacker::llvmUnpack. The first element is the unpacked
-/// instance, and the second an \c iterator<bytes> pointing one after the
-/// last consumed byte.
-typedef std::pair<llvm::Value*, llvm::Value*> UnpackResult;
+struct UnpackArgs {
+    /// The type of the object to be unpacked from the input. This must be a
+    /// type::trait::Unpackable, or a reference of one.
+    shared_ptr<Type> type = nullptr;
 
-typedef struct {
-    /// type: The type of the object to be unpacked from the input. This must
-    /// be a type::trait::Unpackable, or a reference of one.
-    shared_ptr<Type> type;
+    /// A byte iterator marking the first input byte.
+    llvm::Value* begin = nullptr;
 
-    /// begin: A byte iterator marking the first input byte.
-    llvm::Value* begin;
+    /// A byte iterator marking the position one beyond the last consumable
+    /// input byte. *end* may be null to indicate unpacking until the end of
+    /// the bytes object is encountered.
+    llvm::Value* end = nullptr;
 
-    /// end: A byte iterator marking the position one beyond the last
-    /// consumable input byte. *end* may be null to indicate unpacking until
-    /// the end of the bytes object is encountered.
-    llvm::Value* end;
-
-    /// fmt: Specifies the binary format of the input bytes as one of the
+    /// Specifies the binary format of the input bytes as one of the
     /// ``Hilti::Packed`` labels.
-    llvm::Value* fmt;
+    llvm::Value* fmt = nullptr;
 
-    /// arg: Additional format-specific parameter, required by some formats;
+    /// Additional format-specific parameter, required by some formats;
     /// nullptr if not.
-    llvm::Value* arg;
-} UnpackArgs;
+    llvm::Value* arg = nullptr;
+
+    /// A location associagted with the unpack operaton.
+    Location location = Location::None;
+};
+
+struct UnpackResult {
+    /// A pointer to an object of \a type's LLVM type storing the
+    /// unpacked object.
+    llvm::Value* value_ptr = nullptr;
+
+    /// A pointer to a bytes iterator where storing the position just after
+    /// the last one consumed.
+    llvm::Value* iter_ptr = nullptr;
+};
 
 /// Visitor that generates the code unpacking binary data into HILTI data
 /// types.
-class Unpacker : public CGVisitor<UnpackResult, UnpackArgs>
+class Unpacker : public CGVisitor<int, UnpackArgs, UnpackResult>
 {
 public:
    /// Constructor.
@@ -59,13 +67,9 @@ public:
    UnpackResult llvmUnpack(const UnpackArgs& args);
 
 protected:
-   /// XXX
-   void setResult(llvm::Value* value, llvm::Value* iter) {
-       CGVisitor<UnpackResult, UnpackArgs>::setResult(std::make_pair(value, iter));
-   }
-
    virtual void visit(type::Reference* t) override;
    virtual void visit(type::Bytes* t) override;
+   virtual void visit(type::Integer* t) override;
 };
 
 }

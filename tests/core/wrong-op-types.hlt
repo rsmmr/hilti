@@ -1,0 +1,32 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# Give instruction some operands of the wrong type. These are
+# supposed to all fail.
+
+# Two modules.
+module Main
+
+void run() {
+    local int<32> sum
+    sum = int.add True 1
+}
+
+# @TEST-START-NEXT
+module Main
+
+void run() {
+    local int<32> sum
+    sum = int.add 1 True
+}
+
+# @TEST-START-NEXT
+module Main
+
+void run() {
+    local bool foo
+    foo = int.add 1 2
+}
+
+

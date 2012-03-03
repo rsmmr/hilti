@@ -1,0 +1,4 @@
+>>> switch n @default (1, 2, 3)
+switch-wrong-types.hlt:8: error, operand 3 tuple element 1 is not a 2-tuple
+
+switch-wrong-types.hlt: 1 error found during validating

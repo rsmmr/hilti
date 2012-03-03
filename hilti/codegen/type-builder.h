@@ -77,13 +77,19 @@ struct TypeInfo {
     /// ``init_val`` is defined.
     llvm::Type* llvm_type = nullptr;
 
+    /// The name of a library type to use. This is can be given instead of \a
+    /// llvm_type. For heap types, a \a pointer to this type will then be
+    /// used.
+    string lib_type = "";
+
     /// For DynamicTypes, a pointer map for garbage collection. Can be null if
     /// instances don't store pointers.
     llvm::Constant* ptr_map = nullptr;
 
     /// For ValueTypes, the constant to initialize variables with. This value
     /// is also used to determine the number of bytes the instances of the
-    /// type require for the storage.
+    /// type require for the storage. If llvm_type or lib_type is set, this
+    /// defaults to a null value of that type.
     llvm::Constant* init_val = nullptr;
 
     /// For ValueTypes, true if the the HILTI-C calling convention passes type
@@ -192,15 +198,45 @@ public:
 
 protected:
 // void visit(type::Function* f) override;
-   void visit(type::Any* a) override;
-   void visit(type::Void* v) override;
-   void visit(type::String* s) override;
-   void visit(type::Integer* u) override;
-   void visit(type::Bool* b) override;
+   void visit(type::Address* t) override;
+   void visit(type::Any* t) override;
+   void visit(type::Bitset* t) override;
+   void visit(type::Bool* t) override;
+   void visit(type::Bytes* t) override;
+   void visit(type::CAddr* t) override;
+   void visit(type::Callable* t) override;
+   void visit(type::Channel* t) override;
+   void visit(type::Classifier* t) override;
+   void visit(type::Double* t) override;
+   void visit(type::Enum* t) override;
+   void visit(type::Exception* t) override;
+   void visit(type::File* t) override;
+   void visit(type::IOSource* t) override;
+   void visit(type::Integer* t) override;
+   void visit(type::Interval* t) override;
+   void visit(type::List* t) override;
+   void visit(type::Map* t) override;
+   void visit(type::MatchTokenState* t) override;
+   void visit(type::Network* t) override;
+   void visit(type::Overlay* t) override;
+   void visit(type::Port* t) override;
+   void visit(type::Reference* t) override;
+   void visit(type::RegExp* t) override;
+   void visit(type::Set* t) override;
+   void visit(type::String* t) override;
+   void visit(type::Struct* t) override;
+   void visit(type::Time* t) override;
+   void visit(type::Timer* t) override;
+   void visit(type::TimerMgr* t) override;
    void visit(type::Tuple* t) override;
-   void visit(type::Reference* r) override;
-   void visit(type::Bytes* r) override;
+   void visit(type::Vector* t) override;
+   void visit(type::Void* t) override;
+
    void visit(type::iterator::Bytes* i) override;
+   void visit(type::iterator::List* i) override;
+   void visit(type::iterator::Map* i) override;
+   void visit(type::iterator::Set* i) override;
+   void visit(type::iterator::Vector* i) override;
 
 private:
    llvm::Constant* _lookupFunction(const string& func);

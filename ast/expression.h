@@ -37,11 +37,6 @@ public:
    // See Expression::type().
    virtual shared_ptr<Type> _type() const { assert(false); }
 
-   // See Expression::render().
-   virtual void _render(std::ostream& out) const {
-       out << " -> ";
-       this->object()->type()->render(out);
-   }
 };
 
 /// Base class for AST nodes representing expressions.
@@ -98,11 +93,6 @@ public:
    /// classes.
    virtual shared_ptr<Type> type() const { return this->overrider()->_type(); }
 
-   /// Prints out the type of the expressions.
-   void render(std::ostream& out) const /* override */ {
-       this->overrider()->_render(out);
-   }
-
    ACCEPT_DISABLED;
 
 private:
@@ -116,8 +106,8 @@ inline shared_ptr<typename AstInfo::expression> ExpressionOverrider<AstInfo>::_c
         return this->object();
 
     std::cerr << util::fmt("cannot coerce expression of type %s to type %s",
-                           this->object()->type()->repr().c_str(),
-                           target->repr().c_str()) << std::endl;
+                           this->object()->type()->render().c_str(),
+                           target->render().c_str()) << std::endl;
 
     assert(this->object()->canCoerceTo(target));
     auto coerced = new CoercedExpression(this->object(), target, this->object()->location());
@@ -159,17 +149,6 @@ public:
        return _exprs.size() ? (*_exprs.back()).type() : shared_ptr<Type>();
    }
 
-   void _render(std::ostream& out) const /* override */ {
-       bool first = false;
-       for ( auto e : _exprs ) {
-           if ( ! first )
-               out << ", ";
-           e->render(out);
-       }
-
-       ExpressionOverrider<AstInfo>::_render(out);
-   }
-
 private:
    expr_list _exprs;
 };
@@ -198,11 +177,6 @@ public:
 
    shared_ptr<Type> _type() const /* override */ {
        return _ctor->type();
-   }
-
-   void _render(std::ostream& out) const /* override */ {
-       out << "ctor";
-       ExpressionOverrider<AstInfo>::_render(out);
    }
 
 private:
@@ -282,11 +256,6 @@ public:
    /// Always returns true. This is a constant expression.
    bool _isConstant() const /* override */ { return true; }
 
-   void _render(std::ostream& out) const /* override */ {
-       _constant->render(out);
-       ExpressionOverrider<AstInfo>::_render(out);
-   }
-
 private:
    node_ptr<AIConstant> _constant;
 };
@@ -315,11 +284,6 @@ public:
 
    /// Returns the variable's tyoe.
    shared_ptr<Type> _type() const /* override */ { return _var->type(); }
-
-   void _render(std::ostream& out) const /* override */ {
-       _var->render(out);
-       ExpressionOverrider<AstInfo>::_render(out);
-   }
 
 private:
    node_ptr<AIVariable> _var;
@@ -357,11 +321,6 @@ public:
    /// Always returns true. Types don't change.
    bool _isConstant() const /* override */ { return true; }
 
-   void _render(std::ostream& out) const /* override */ {
-       __type->render(out);
-       ExpressionOverrider<AstInfo>::_render(out);
-   }
-
 private:
    node_ptr<AIType> __type;
 };
@@ -398,11 +357,6 @@ public:
    /// Always returns true. Code doesn't change.
    bool _isConstant() const /* override */ { return true; }
 
-   void _render(std::ostream& out) const /* override */ {
-       _block->render(out);
-       ExpressionOverrider<AstInfo>::_render(out);
-   }
-
 private:
    node_ptr<AIBlock> _block;
 };
@@ -438,11 +392,6 @@ public:
    // Always returns true. Modules don't change.
    bool _isConstant() const /* override */ { return true; }
 
-   void _render(std::ostream& out) const /* override */ {
-       _module->render(out);
-       ExpressionOverrider<AstInfo>::_render(out);
-   }
-
 private:
    node_ptr<AIModule> _module;
 };
@@ -474,11 +423,6 @@ public:
 
    /// Always returns true. Functions don't change.
    bool _isConstant() const /* override */ { return true; }
-
-   void _render(std::ostream& out) const /* override */ {
-       _func->render(out);
-       ExpressionOverrider<AstInfo>::_render(out);
-   }
 
 private:
    node_ptr<AIFunction> _func;
@@ -513,11 +457,6 @@ public:
    /// ID eventually with another expression and then know the type.
    shared_ptr<Type> _type() const /* override */  {
        return shared_ptr<Type>(new UnknownType());
-   }
-
-   void _render(std::ostream& out) const /* override */ {
-       _id->render(out);
-       ExpressionOverrider<AstInfo>::_render(out);
    }
 
 private:
@@ -558,14 +497,6 @@ public:
        return __type;
    }
 
-   void _render(std::ostream& out) const /* override */ {
-       out << "cast<";
-       __type->render(out);
-       out << ">( ";
-       _expr->render(out);
-       out << " )";
-   }
-
 private:
    node_ptr<Expression> _expr;
    node_ptr<Type> __type;
@@ -598,11 +529,6 @@ public:
    /// Returns the type passed into Init.
    shared_ptr<Type> _type() const /* override */ {
        return __type;
-   }
-
-   void _render(std::ostream& out) const /* override */ {
-       out << "<CodeGen expr>";
-       ExpressionOverrider<AstInfo>::_render(out);
    }
 
 private:

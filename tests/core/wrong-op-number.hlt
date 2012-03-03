@@ -1,0 +1,39 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# Give instruction the wrong number of arguments. These are supposed to
+# all fail.
+
+# Two modules.
+module Main
+
+void run() {
+    local int<32> sum
+    sum = int.add
+}
+
+# @TEST-START-NEXT
+module Main
+
+void run() {
+    local int<32> sum
+    sum = int.add 1
+}
+
+# @TEST-START-NEXT
+module Main
+
+void run() {
+    local int<32> sum
+    sum = int.add 1 2 3
+}
+
+# @TEST-START-NEXT
+module Main
+
+void run() {
+    int.add 1 2
+}
+
+

@@ -41,3 +41,12 @@ void Driver::error(const std::string& m, const hilti_parser::location& l)
     ast::Logger::error(m, loc.str());
 }
 
+void Driver::disableLineMode()
+{
+    _scanner->disableLineMode();
+}
+
+void Driver::enableLineMode()
+{
+    _scanner->enableLineMode();
+}

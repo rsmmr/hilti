@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# Compiler should catch the zero divisor.
+
+module Main
+
+import Hilti
+
+void run() {
+    local double d
+    d = double.div 42.84 0.0
+    call Hilti::print (d)
+}
+

@@ -66,9 +66,13 @@
    }
 
 #define __implementOp(nr, ty, constant) \
-       bool __matchOp##nr(shared_ptr<Expression> op) const override {  \
+       shared_ptr<Type> __typeOp##nr()  const override { \
+           return ty;                                    \
+       }                                                 \
+                                                         \
+       bool __matchOp##nr(shared_ptr<Expression> op) override {        \
            if ( ! op ) return false;                                   \
-           if ( ! ty->equal(op->type()) ) return false;                        \
+           if ( ! ty->equal(op->type()) ) return false;                \
            if ( op->isConstant() && ! constant ) return false;         \
            if ( ! op && ! __defaultOp##nr() ) return false;            \
            return true;                                                \

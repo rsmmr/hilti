@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+declare hook void my_hook()
+
+void run() {
+    hook.run my_hook ()
+    return.void
+}
+

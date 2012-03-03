@@ -1,0 +1,4 @@
+>>> x = call foo ()
+wrong-calls.hlt:8: error, called function does not return a value
+
+wrong-calls.hlt: 1 error found during validating

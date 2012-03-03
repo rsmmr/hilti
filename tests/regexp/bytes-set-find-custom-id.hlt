@@ -1,0 +1,58 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> i1
+    local iterator<bytes> i2
+    local ref<regexp> re
+    local int<32> found
+    local ref<list<string>> patterns
+
+    re = new regexp
+    call Hilti::print(re)
+
+    patterns = new list<string>
+    list.push_back patterns "Foo{#41}"
+    list.push_back patterns "Bar{#42}"
+    list.push_back patterns "Hurz{#43}"
+
+    regexp.compile re patterns
+    call Hilti::print(re)
+
+    b = b"Hello Foo!"
+    i1 = begin b
+    i2 = end b
+    found = regexp.find re i1 i2
+    call Hilti::print(found)
+
+    b = b"Hello Bar!"
+    i1 = begin b
+    i2 = end b
+    found = regexp.find re i1 i2
+    call Hilti::print(found)
+
+    b = b"Hello Hurz!"
+    i1 = begin b
+    i2 = end b
+    found = regexp.find re i1 i2
+    call Hilti::print(found)
+
+    b = b"Hurz Bar Foo!"
+    i1 = begin b
+    i2 = end b
+    found = regexp.find re i1 i2
+    call Hilti::print(found)
+
+    b = b"Hello Nobody!"
+    i1 = begin b
+    i2 = end b
+    found = regexp.find re i1 i2
+    call Hilti::print(found)
+}

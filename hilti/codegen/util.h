@@ -118,6 +118,36 @@ extern IRBuilder* newBuilder(llvm::LLVMContext& ctx, llvm::BasicBlock* block, bo
 /// Returns: The LLVM IRBuilder.
 extern IRBuilder* newBuilder(CodeGen* cg, llvm::BasicBlock* block, bool insert_at_beginning = false);
 
+/// Converts a 64-bit value from host-order to network order.
+///
+/// v: The value to convert.
+extern uint64_t hton64(uint64_t v);
+
+/// Converts a 32-bit value from host-order to network order.
+///
+/// v: The value to convert.
+extern uint32_t hton32(uint32_t v);
+
+/// Converts a 16-bit value from host-order to network order.
+///
+/// v: The value to convert.
+extern uint16_t hton16(uint16_t v);
+
+/// Converts a 64-bit value from network order to host order.
+///
+/// v: The value to convert.
+extern uint64_t ntoh64(uint64_t v);
+
+/// Converts a 32-bit value from network order to host order.
+///
+/// v: The value to convert.
+extern uint32_t ntoh32(uint32_t v);
+
+/// Converts a 16-bit value from network order to host order.
+///
+/// v: The value to convert.
+extern uint16_t ntoh16(uint16_t v);
+
 
 }
 }

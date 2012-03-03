@@ -1,0 +1,36 @@
+#
+# @TEST-EXEC:  hilti-build -d -P %INPUT
+# @TEST-EXEC:  ${CC} -I . -c %DIR/yield-c-interleaved.c -o yield-c-interleaved.bc
+# @TEST-EXEC:  hilti-build yield-c-interleaved.bc %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Foo
+
+import Hilti
+
+void test(int<64> i) {
+    call Hilti::print(i, False)
+    call Hilti::print(" ", False)
+    call Hilti::print("1")
+    yield
+    call Hilti::print(i, False)
+    call Hilti::print(" ", False)
+    call Hilti::print("2")
+    yield
+    call Hilti::print(i, False)
+    call Hilti::print(" ", False)
+    call Hilti::print("3")
+    yield
+    call Hilti::print(i, False)
+    call Hilti::print(" ", False)
+    call Hilti::print("4")
+    yield
+    call Hilti::print(i, False)
+    call Hilti::print(" ", False)
+    call Hilti::print("5")
+}
+
+export test
+

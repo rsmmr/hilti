@@ -1,0 +1,29 @@
+#
+# @TEST-EXEC:  cp %DIR/trace.pcap .
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Disabled because we can't do a live test when running the test-suite.
+#
+# @TEST-IGNORE
+
+module Main
+
+import Hilti
+
+void run() {
+
+    local ref<iosrc<Hilti::IOSrc::PcapLive>> psrc
+    local tuple<time,ref<bytes>> pkt
+
+    psrc = new iosrc<Hilti::IOSrc::PcapLive> "en0"
+
+@loop:
+    pkt = iosrc.read psrc
+    call Hilti::print (pkt, True)
+    jump @loop
+
+    return.void
+}
+

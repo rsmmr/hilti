@@ -1,0 +1,2 @@
+wrong-width.hlt:5: error, integer type cannot have zero width 
+wrong-width.hlt: 1 error found during validating

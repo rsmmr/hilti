@@ -49,7 +49,7 @@ void Storer::visit(expression::CodeGen* c)
     auto plusone = arg2();
 
     llvm::Value* addr = reinterpret_cast<llvm::Value*>(c->cookie());
-    cg()->llvmCheckedCreateStore(val, addr);
+    cg()->llvmCreateStore(val, addr);
 }
 
 void Storer::visit(variable::Global* v)
@@ -67,7 +67,9 @@ void Storer::visit(variable::Local* v)
     auto val = arg1();
     auto plusone = arg2();
 
-    auto name = v->id()->name();
+    auto name = v->internalName();
+    assert(name.size());
+
     auto addr = cg()->llvmLocal(name);
 
     cg()->llvmGCAssign(addr, val, v->type(), plusone);

@@ -15,6 +15,9 @@ class Scanner : public HiltiFlexLexer
 public:
    Scanner(std::istream* yyin = 0, std::ostream* yyout = 0) : HiltiFlexLexer(yyin, yyout) {}
    virtual Parser::token_type lex(Parser::semantic_type* yylval, Parser::location_type* yylloc, hilti_parser::Driver& driver);
+
+   void disableLineMode();
+   void enableLineMode();
 };
 
 }

@@ -22,6 +22,16 @@ C/C++ Code
 The Doxygen documentation `tracks todos <doxygen/todo.html>`_ 's that
 are marked directly in the code.
 
+Code Cleanup
+------------
+
+- Use C++11 initializer lists instead of the many manual ``push_back``.
+
+- Get rid of ``id::pathAsString``. Just ``name`` should do it, which
+  will then always return the full path.
+
+- Use ``std::make_shared`` consistently.
+
 Links
 -----
 

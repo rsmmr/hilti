@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC:  hilti-build -v %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# @TEST-IGNORE
+#
+# FIXME: This fails but there a few more quirks in the parser and we postpone
+#        fixing those for now.
+
+module Main
+
+void run() {
+@foo:
+    local bool baba
+}

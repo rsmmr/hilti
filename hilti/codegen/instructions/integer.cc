@@ -26,13 +26,11 @@ void StatementBuilder::visit(statement::instruction::integer::And* i)
     cg()->llvmStore(i, result);
 }
 
-#if 0
-
 void StatementBuilder::visit(statement::instruction::integer::AsInterval* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
 
-    auto result = builder()->CreateZext(op1, cg()->llvmTypeInt(64));
+    auto result = builder()->CreateZExt(op1, cg()->llvmTypeInt(64));
     result = builder()->CreateMul(result, cg()->llvmConstInt(1000000000, 64));
 
     cg()->llvmStore(i, result);
@@ -42,7 +40,7 @@ void StatementBuilder::visit(statement::instruction::integer::AsTime* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
 
-    auto result = builder()->CreateZext(op1, cg()->llvmTypeInt(64));
+    auto result = builder()->CreateZExt(op1, cg()->llvmTypeInt(64));
     result = builder()->CreateMul(result, cg()->llvmConstInt(1000000000, 64));
 
     cg()->llvmStore(i, result);
@@ -51,12 +49,18 @@ void StatementBuilder::visit(statement::instruction::integer::AsTime* i)
 void StatementBuilder::visit(statement::instruction::integer::AsUDouble* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
-    auto result = builder()->CreateSIToFP(op1, cg()->llvmType(i->target()->type()));
+    auto result = builder()->CreateUIToFP(op1, cg()->llvmType(i->target()->type()));
 
     cg()->llvmStore(i, result);
 }
 
-#endif
+void StatementBuilder::visit(statement::instruction::integer::AsSDouble* i)
+{
+    auto op1 = cg()->llvmValue(i->op1());
+    auto result = builder()->CreateSIToFP(op1, cg()->llvmType(i->target()->type()));
+
+    cg()->llvmStore(i, result);
+}
 
 void StatementBuilder::visit(statement::instruction::integer::Ashr* i)
 {
@@ -78,7 +82,7 @@ void StatementBuilder::visit(statement::instruction::integer::Div* i)
 
     auto width = as<type::Integer>(i->op1()->type())->width();
     auto is_zero = builder()->CreateICmpNE(op2, cg()->llvmConstInt(0, width));
-    builder()->CreateCondBr(is_zero, ok->GetInsertBlock(), excpt->GetInsertBlock());
+    cg()->llvmCreateCondBr(is_zero, ok, excpt);
 
     cg()->pushBuilder(ok);
     auto result = builder()->CreateSDiv(op1, op2);
@@ -124,7 +128,7 @@ void StatementBuilder::visit(statement::instruction::integer::Mod* i)
 
     auto width = as<type::Integer>(i->op1()->type())->width();
     auto is_zero = builder()->CreateICmpNE(op2, cg()->llvmConstInt(0, width));
-    builder()->CreateCondBr(is_zero, ok->GetInsertBlock(), excpt->GetInsertBlock());
+    cg()->llvmCreateCondBr(is_zero, ok, excpt);
 
     cg()->pushBuilder(ok);
     auto result = builder()->CreateSRem(op1, op2);

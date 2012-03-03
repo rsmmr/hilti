@@ -1,0 +1,24 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Make sure empty functions works.
+
+module Main
+
+import Hilti
+
+void run() {
+    local string foo = "foo"
+    local tuple<int<8>, int<32>> t = (1, 2)
+
+    call Hilti::print(foo)
+    call Hilti::print(t)
+
+    clear foo
+    clear t
+
+    call Hilti::print(foo)
+    call Hilti::print(t)
+}

@@ -1,0 +1,46 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local string s1
+    local string s2
+    local string s3
+
+    s1 = "Foo!"
+    s2 = "B\u00e4r!"
+
+    s3 = string.concat s1 s2
+    call Hilti::print (s3)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+    local string s1
+    s1 = string.concat "" "B\u00e4r!"
+    call Hilti::print (s1)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+    local string s1
+    s1 = string.concat "Foo!" ""
+    call Hilti::print (s1)
+}
+
+

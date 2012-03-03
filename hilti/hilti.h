@@ -10,6 +10,7 @@
 #include "common.h"
 #include "module.h"
 #include "constant.h"
+#include "ctor.h"
 #include "declaration.h"
 #include "expression.h"
 #include "function.h"
@@ -19,6 +20,7 @@
 #include "statement.h"
 #include "type.h"
 #include "variable.h"
+#include "builder.h"
 
 #include "passes/passes.h"
 #include "parser/driver.h"

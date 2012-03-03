@@ -1,4 +1,6 @@
 
+#include <arpa/inet.h>
+
 #include "hilti.h"
 
 using namespace hilti::passes;
@@ -96,6 +98,41 @@ void Printer::visit(statement::Block* b)
 
     if ( in_function && parent<statement::Block>() )
         popIndent();
+}
+
+void Printer::visit(statement::Try* s)
+{
+    Printer& p = *this;
+
+    p << "try {" << endl;
+    p << s->block();
+    p << "}" << endl;
+    p << endl;
+
+    for ( auto c : s->catches() )
+        p << c;
+
+    p << endl;
+}
+
+void Printer::visit(statement::try_::Catch* c)
+{
+    Printer& p = *this;
+
+    if ( c->catchAll() )
+        p << "catch {" << endl;
+
+    else {
+        p << "catch ( ";
+        p << c->type();
+        p << ' ';
+        p << c->id();
+        p << " ) {" << endl;
+    }
+
+    p << c->block();
+    p << "}" << endl;
+    p << endl;
 }
 
 static void printInstruction(Printer& p, statement::Instruction* i)
@@ -259,6 +296,19 @@ void Printer::visit(type::function::Parameter* param)
         p << '=' << def;
 }
 
+void Printer::visit(type::Function * t)
+{
+    Printer& p = *this;
+    p << "<function>";
+}
+
+void Printer::visit(type::Hook* t)
+{
+    Printer& p = *this;
+    p << "<hook>";
+}
+
+
 void Printer::visit(ID* i)
 {
     Printer& p = *this;
@@ -275,6 +325,12 @@ void Printer::visit(type::Void* i)
 {
     Printer& p = *this;
     p << "void";
+}
+
+void Printer::visit(type::Unknown* i)
+{
+    Printer& p = *this;
+    p << (i->id() ? util::fmt("<Unresolved '%s'>", i->id()->pathAsString().c_str()) : "<Unknown>");
 }
 
 void Printer::visit(type::Integer* i)
@@ -298,7 +354,20 @@ void Printer::visit(type::Bool* b)
 void Printer::visit(type::Reference* r)
 {
     Printer& p = *this;
-    p << "ref<" << r->refType() << ">";
+    p << "ref<" << r->argType() << ">";
+}
+
+void Printer::visit(type::Exception* e)
+{
+    Printer& p = *this;
+
+    if ( e->argType() )
+        p << "exception<" << e->argType() << ">";
+    else
+        p << "exception";
+
+    if ( e->baseType() )
+        p << " : " << e->baseType();
 }
 
 void Printer::visit(type::Bytes* b)
@@ -321,6 +390,211 @@ void Printer::visit(type::Type* t)
     Printer& p = *this;
 
     p << t->typeType();
+}
+
+void Printer::visit(type::Address* c)
+{
+    Printer& p = *this;
+    p << "addr";
+}
+
+void Printer::visit(type::Bitset* c)
+{
+    Printer& p = *this;
+
+    p << "bitset { ";
+
+    bool first = false;
+
+    for ( auto l : c->labels() ) {
+
+        if ( ! first )
+            p << ", ";
+
+        p << l.first->pathAsString();
+
+        if ( l.second >= 0 )
+                p << " = " << l.second;
+
+        first = false;
+    }
+}
+
+void Printer::visit(type::CAddr* c)
+{
+    Printer& p = *this;
+    p << "caddr";
+}
+
+void Printer::visit(type::Double* c)
+{
+    Printer& p = *this;
+    p << "double";
+}
+
+void Printer::visit(type::Enum* c)
+{
+    Printer& p = *this;
+
+    p << "enum { ";
+
+    bool first = false;
+
+    for ( auto l : c->labels() ) {
+
+        if ( *l.first == "Undef" )
+            continue;
+
+        if ( ! first )
+            p << ", ";
+
+        p << l.first->pathAsString();
+
+        if ( l.second >= 0 )
+                p << " = " << l.second;
+
+        first = false;
+    }
+}
+
+void Printer::visit(type::Interval* c)
+{
+    Printer& p = *this;
+    p << "interval";
+}
+
+void Printer::visit(type::Time* c)
+{
+    Printer& p = *this;
+    p << "time";
+}
+
+void Printer::visit(type::Network* c)
+{
+    Printer& p = *this;
+    p << "net";
+}
+
+void Printer::visit(type::Port* c)
+{
+    Printer& p = *this;
+    p << "port";
+}
+
+void Printer::visit(type::Callable* t)
+{
+    Printer& p = *this;
+    p << "callable";
+}
+
+void Printer::visit(type::Channel* t)
+{
+    Printer& p = *this;
+    p << "channel<" << t->argType() << ">";
+}
+
+void Printer::visit(type::Classifier* t)
+{
+    Printer& p = *this;
+    p << "classifier";
+}
+
+void Printer::visit(type::File* t)
+{
+    Printer& p = *this;
+    p << "file";
+}
+
+void Printer::visit(type::IOSource* t)
+{
+    Printer& p = *this;
+    p << "iosrc<" << t->kind() << ">";
+}
+
+void Printer::visit(type::List* t)
+{
+    Printer& p = *this;
+    p << "list<" << t->argType() << ">";
+}
+
+void Printer::visit(type::Map* t)
+{
+    Printer& p = *this;
+    p << "map<" << t->keyType() << ", " << t->valueType() << ">";
+}
+
+
+void Printer::visit(type::Vector* t)
+{
+    Printer& p = *this;
+    p << "vector<" << t->argType() << ">";
+}
+
+void Printer::visit(type::Set* t)
+{
+    Printer& p = *this;
+    p << "set<" << t->argType() << ">";
+}
+
+void Printer::visit(type::Overlay* t)
+{
+    Printer& p = *this;
+    p << "overlay";
+}
+
+void Printer::visit(type::RegExp* t)
+{
+    Printer& p = *this;
+    p << "regexp<" << util::strjoin(t->attributes(), ",") << ">";
+}
+
+void Printer::visit(type::MatchTokenState* t)
+{
+    Printer& p = *this;
+    p << "match_token_state";
+}
+
+void Printer::visit(type::Struct* t)
+{
+    Printer& p = *this;
+
+    p << "struct {" << endl;
+    pushIndent();
+
+    bool first = true;
+    for ( auto f : t->fields() ) {
+
+        if ( ! first )
+            p << "," << endl;
+
+        p << f->type() << ' ' << f->id();
+        if ( f->default_() )
+            p << " = " << f->default_();
+
+        first = false;
+    }
+
+    p << endl;
+    popIndent();
+    p << "}" << endl << endl;
+}
+
+void Printer::visit(type::Timer* t)
+{
+    Printer& p = *this;
+    p << "timer";
+}
+
+void Printer::visit(type::TimerMgr* t)
+{
+    Printer& p = *this;
+    p << "timer_mgr";
+}
+
+void Printer::visit(type::Iterator* t)
+{
+    Printer& p = *this;
+    p << "iterator<" << t->argType() << ">";
 }
 
 void Printer::visit(constant::Integer* i)
@@ -372,9 +646,152 @@ void Printer::visit(constant::Unset* t)
     p << '*';
 }
 
-void Printer::visit(ctor::Bytes* b)
+static void _printAddr(Printer& p, const constant::AddressVal& addr)
+{
+    char buffer[INET6_ADDRSTRLEN];
+    const char* result;
+
+    switch ( addr.family ) {
+
+     case constant::AddressVal::IPv4:
+        result = inet_ntop(AF_INET, &addr.in.in4, buffer, INET_ADDRSTRLEN);
+        break;
+
+     case constant::AddressVal::IPv6:
+        result = inet_ntop(AF_INET6, &addr.in.in6, buffer, INET_ADDRSTRLEN);
+        break;
+
+     default:
+        assert(false);
+    }
+
+    if ( result )
+        p << result;
+    else
+        p << "<bad IP address>";
+}
+
+void Printer::visit(constant::Address* c)
 {
     Printer& p = *this;
-    p << 'b' << '"' << b->value() << '"';
+    _printAddr(p, c->value());
+}
+
+void Printer::visit(constant::Network* c)
+{
+    Printer& p = *this;
+    _printAddr(p, c->prefix());
+    p << '/' << c->width();
+}
+
+void Printer::visit(constant::Bitset* c)
+{
+    Printer& p = *this;
+    p << "<bitset constant output not implemented>";
+}
+
+void Printer::visit(constant::Double* c)
+{
+    Printer& p = *this;
+    p << c->value();
+
+}
+
+void Printer::visit(constant::Enum* c)
+{
+    Printer& p = *this;
+    p << "<enum constant output not implemented>";
+}
+
+void Printer::visit(constant::Interval* c)
+{
+    Printer& p = *this;
+
+    p << "interval(" << (c->value() / 1e9) << ")";
+}
+
+void Printer::visit(constant::Time* c)
+{
+    Printer& p = *this;
+
+    p << "time(" << (c->value() / 1e9) << ")";
+}
+
+void Printer::visit(constant::Port* c)
+{
+    Printer& p = *this;
+
+    auto v = c->value();
+
+    switch ( v.proto ) {
+     case constant::PortVal::TCP:
+        p << v.port << "/tcp";
+        break;
+
+     case constant::PortVal::UDP:
+        p << v.port << "/udp";
+        break;
+
+     default:
+        internalError("unknown protocol");
+    }
+}
+
+void Printer::visit(ctor::Bytes* c)
+{
+    Printer& p = *this;
+    p << 'b' << '"' << c->value() << '"';
+}
+
+void Printer::visit(ctor::List* c)
+{
+    Printer& p = *this;
+    p << "list(";
+    printList(c->elements(), ", ");
+    p << ")";
+}
+
+void Printer::visit(ctor::Map* c)
+{
+    Printer& p = *this;
+
+    bool first = true;
+    for ( auto e: c->elements() ) {
+        if ( ! first )
+            p << ", ";
+
+        p << e.first << ": " << e.second;
+
+        first = false;
+    }
+}
+
+void Printer::visit(ctor::Set* c)
+{
+    Printer& p = *this;
+    p << "set(";
+    printList(c->elements(), ", ");
+    p << ")";
+}
+
+
+void Printer::visit(ctor::Vector* c)
+{
+    Printer& p = *this;
+    p << "vector(";
+    printList(c->elements(), ", ");
+    p << ")";
+}
+
+void Printer::visit(ctor::RegExp* c)
+{
+    Printer& p = *this;
+
+    std::list<string> patterns;
+
+    for ( auto p : c->patterns() )
+        patterns.push_back(string("/") + p.first + string("/") + p.second);
+
+    printList(patterns, " | ");
 }
 

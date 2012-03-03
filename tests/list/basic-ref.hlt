@@ -1,0 +1,29 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global ref<bytes> g1 = b"E"
+
+void run() {
+    local ref<list<ref<bytes>>> l
+    local ref<bytes> b1
+    local ref<bytes> b2
+    local ref<bytes> b3
+    local ref<bytes> b4
+
+    b1 = b"A"
+    b2 = b"B"
+
+    l = new list<ref<bytes>>
+    list.push_back l b1
+    list.push_back l b2
+    list.push_back l b"C"
+    list.push_back l b"D"
+    list.push_back l g1
+    call Hilti::print(l)
+}

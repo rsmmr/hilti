@@ -1,0 +1,21 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out | sort >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+init void f() {
+     call Hilti::print("Init function 1 called!")
+}
+
+init void g() {
+     call Hilti::print("Init function 2 called!")
+}
+
+void run() {
+     call Hilti::print("Run is running.")
+}
+

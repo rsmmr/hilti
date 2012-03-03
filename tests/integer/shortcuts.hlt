@@ -1,0 +1,63 @@
+#
+# @TEST-EXEC: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC: btest-diff output
+#
+# Check whether int<16>, int<32>, etc. turn into the same as int<n>.
+
+module Main
+
+void run() {
+    local int<8> i1
+    local int<8> i2
+    local int<8> i3
+
+    i1 = int.add 5 5
+    i2 = int.add 10 10
+    i3 = int.add i1 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<16> i1
+    local int<16> i2
+    local int<16> i3
+
+    i1 = int.add 5 5
+    i2 = int.add 10 10
+    i3 = int.add i1 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<32> i1
+    local int<32> i2
+    local int<32> i3
+
+    i1 = int.add 5 5
+    i2 = int.add 10 10
+    i3 = int.add i1 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<64> i1
+    local int<64> i2
+    local int<64> i3
+
+    i1 = int.add 5 5
+    i2 = int.add 10 10
+    i3 = int.add i1 i2
+}
+
+
+
+

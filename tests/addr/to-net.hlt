@@ -1,0 +1,21 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+     local net n
+     local addr a
+
+     n = 192.168.1.1
+     call Hilti::print (n)
+
+     a = 2001:0db8::1428:57ab
+     n = a
+     call Hilti::print (n)
+}
+

@@ -1,0 +1,40 @@
+#
+# @TEST-EXEC:  hilti-build -D %INPUT -o a.out
+# @TEST-EXEC:  HILTI_DEBUG=hilti-flow:hilti-trace ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+int<32> fibo(int<32> n) {
+	local int<32> f1
+    local int<32> f2
+    local bool cond
+
+    cond = int.slt n 2
+    if.else cond @done @recurse
+
+@recurse:
+	n = int.sub n 1
+	f1 = call fibo(n)
+
+	n = int.sub n 1
+	f2 = call fibo(n)
+
+    f1 = int.add f1 f2
+    return.result f1
+
+@done:
+   	return.result n
+}
+
+void run() {
+    local int<32> f
+
+    f = call fibo(10)
+
+    call Hilti::print (f)
+
+    return.void
+}

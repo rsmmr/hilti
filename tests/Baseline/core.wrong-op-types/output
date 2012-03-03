@@ -1,0 +1,4 @@
+>>> sum = int.add True 1
+wrong-op-types.hlt:14: error, operand 1 must be an integer
+
+wrong-op-types.hlt: 1 error found during validating

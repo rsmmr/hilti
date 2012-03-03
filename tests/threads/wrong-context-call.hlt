@@ -1,0 +1,24 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+
+module Main
+
+import Hilti
+
+context {
+    addr orig_h,
+    port orig_p,
+    addr resp_h,
+    port resp_p
+}
+
+scope Connection = { orig_h, orig_p, resp_h, resp_p }
+scope Originator = { orig_h }
+
+void Func() &scope = Originator {
+}
+
+void run() &scope=Connection {
+    call Func()
+}

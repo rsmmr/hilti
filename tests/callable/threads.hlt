@@ -1,0 +1,54 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out | sort >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+string foo(string s) {
+    local string tmp
+    local int<64> vid
+
+    vid = thread.id
+    tmp = call Hilti::fmt("vid %d - %s", (vid, s))
+    return.result tmp
+    }
+
+void do_call(ref<callable<string>> c) {
+    local string result
+    result = call c
+    call hilti::print (result)
+}
+
+void run() {
+
+    local ref<callable<string>> c1
+    local ref<callable<string>> c2
+    local ref<callable<string>> c3
+    local ref<callable<string>> c4
+    local ref<callable<string>> c5
+    local string result
+
+    c1 = new callable<string>
+    c2 = new callable<string>
+    c3 = new callable<string>
+    c4 = new callable<string>
+    c5 = new callable<string>
+
+    callable.bind c1 foo ("ICSI1")
+    callable.bind c2 foo ("ICSI2")
+    callable.bind c3 foo ("ICSI3")
+    callable.bind c4 foo ("ICSI4")
+    callable.bind c5 foo ("ICSI5")
+
+    thread.schedule do_call(c1) 1
+    thread.schedule do_call(c2) 2
+    thread.schedule do_call(c3) 3
+    thread.schedule do_call(c4) 4
+    thread.schedule do_call(c5) 5
+
+    return.void
+}
+

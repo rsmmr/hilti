@@ -23,6 +23,7 @@
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/PathV1.h>
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
+#include <llvm/Intrinsics.h>
 
 #include "../common.h"
 

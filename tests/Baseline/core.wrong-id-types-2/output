@@ -1,0 +1,4 @@
+>>> jump foo
+wrong-id-types.hlt:7: error, operand 1 must be of type label but is function (int<32>) -> void
+
+wrong-id-types.hlt: 1 error found during validating

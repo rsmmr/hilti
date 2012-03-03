@@ -1,0 +1,4 @@
+>>> a = new int<32>
+wrong-operators.hlt:12: error, operand 1 must be of type heaptype but is int<32>
+
+wrong-operators.hlt: 1 error found during validating

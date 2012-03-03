@@ -1,0 +1,23 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> i
+    local int<64> s
+    local ref<vector<int<32>>> v
+
+    v = new vector<int<32>>
+
+    vector.set v 0 10
+    vector.set v 2 11
+    vector.set v 4 12
+
+    i = vector.get v 5
+    call Hilti::print(i)
+}

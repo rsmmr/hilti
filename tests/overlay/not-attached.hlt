@@ -1,0 +1,27 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# This is supposed to throw an exception.
+
+module Main
+
+import Hilti
+
+type MyOverlay = overlay {
+    f1: int<32> at 0 unpack with Hilti::Packed::Int32Big,
+    f2: int<32> at 4 unpack with Hilti::Packed::Int32Big,
+    f3: int<32> after f2 unpack with Hilti::Packed::Int32Big,
+    f4: int<32> after f3 unpack with Hilti::Packed::Int32Big
+    }
+
+void run() {
+    local MyOverlay o
+    local int<32> i
+
+    i = overlay.get o "f3"
+
+}
+
+

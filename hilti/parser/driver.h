@@ -8,6 +8,8 @@
 #include "../common.h"
 #include "../function.h"
 #include "../variable.h"
+#include "../type.h"
+#include "../ctor.h"
 
 #undef YY_DECL
 #define	YY_DECL						                 \
@@ -21,8 +23,19 @@
 struct yystype {
     bool        bval;
     int64_t     ival;
+    double      dval;
     std::string sval;
     hilti::type::function::CallingConvention cc;
+
+    type::Enum::label_list enum_labels;
+    type::Enum::Label enum_label;
+    type::Bitset::label_list bitset_labels;
+    type::Bitset::Label bitset_label;
+    type::Struct::field_list struct_fields;
+    ctor::Map::element map_element;
+    ctor::Map::element_list map_elements;
+    ctor::RegExp::pattern re_pattern;
+    ctor::RegExp::pattern_list re_patterns;
 
     shared_ptr<hilti::Declaration> decl;
     shared_ptr<hilti::Statement> stmt;
@@ -34,15 +47,20 @@ struct yystype {
     shared_ptr<hilti::Module> module;
     shared_ptr<hilti::Function> func;
     shared_ptr<hilti::function::Parameter> param;
+    shared_ptr<hilti::statement::try_::Catch> catch_;
+    shared_ptr<hilti::type::struct_::Field> struct_field;
 
     hilti::function::parameter_list params;
     std::list<node_ptr<hilti::Statement>> stmts;
     std::list<node_ptr<hilti::Declaration>> decls;
     std::list<node_ptr<hilti::Type>> types;
     std::list<node_ptr<hilti::Expression>> exprs;
+    std::list<node_ptr<hilti::statement::try_::Catch>> catches;
+    std::list<string> strings;
 
     hilti::instruction::Operands operands;
 
+#if 0
     // Need this because the std::string doesn't allow the copy by default.
     yystype& operator=(const yystype& other) {
         ival = other.ival;
@@ -53,6 +71,7 @@ struct yystype {
         constant = other.constant;
         return *this;
     }
+#endif    
 };
 
 #define YYSTYPE yystype
@@ -85,7 +104,7 @@ public:
 
    // Report parsing errors.
    void error(const std::string& m, const hilti_parser::location& l);
-   
+
    void checkNotNull(shared_ptr<Node> node, string msg, const hilti_parser::location& l) {
        if ( ! node )
            error(msg, l);
@@ -110,6 +129,8 @@ public:
 
    shared_ptr<statement::Block> currentBlock() const  { return _context->blocks.back(); }
 
+   void disableLineMode();
+   void enableLineMode();
 
 private:
    std::string _sname;

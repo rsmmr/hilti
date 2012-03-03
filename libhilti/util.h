@@ -65,4 +65,19 @@ extern uint32_t hlt_hton32(uint32_t v);
 /// v: The value to convert.
 extern uint16_t hlt_hton16(uint16_t v);
 
+/// Converts a 64-bit value from host-order to network order.
+///
+/// v: The value to convert.
+extern uint64_t hlt_ntoh64(uint64_t v);
+
+/// Converts a 32-bit value from host-order to network order.
+///
+/// v: The value to convert.
+extern uint32_t hlt_ntoh32(uint32_t v);
+
+/// Converts a 16-bit value from host-order to network order.
+///
+/// v: The value to convert.
+extern uint16_t hlt_ntoh16(uint16_t v);
+
 #endif

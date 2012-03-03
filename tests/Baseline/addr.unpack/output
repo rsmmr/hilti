@@ -1,0 +1,6 @@
+addr=192.168.1.1 diff=4
+addr=2001:db8::1428:57ab diff=16
+addr=0.1.2.3 diff=4
+addr=3.2.1.0 diff=4
+addr=1:203:405:607:809:a0b:c0d:e0f diff=16
+addr=f0e:d0c:b0a:908:706:504:302:100 diff=16

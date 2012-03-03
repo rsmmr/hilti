@@ -1,0 +1,4 @@
+>>> i = struct.get a "b"
+wrong-args.hlt:19: error, target type must be bool, but is int<64>
+
+wrong-args.hlt: 1 error found during validating

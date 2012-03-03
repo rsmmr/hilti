@@ -95,9 +95,17 @@ void ScopeBuilder::visit(declaration::Type* t)
     if ( ! scope )
         return;
 
-    auto type = t->sharedPtr<Type>();
+    auto type = t->type();
     auto expr = shared_ptr<expression::Type>(new expression::Type(type, type->location()));
     scope->insert(t->id(), expr);
+
+    // Link in any type-specific scope the type may define.
+    auto tscope = t->type()->typeScope();
+
+    if ( tscope ) {
+        tscope->setParent(scope);
+        scope->addChild(t->id(), tscope);
+    }
 }
 
 void ScopeBuilder::visit(declaration::Constant* c)

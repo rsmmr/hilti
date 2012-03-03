@@ -1,0 +1,30 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+     local net n
+     local addr a
+     local bool b
+
+     b = equal 192.168.1.0/24 192.168.1.123
+     call Hilti::print (b)
+
+     b = equal 192.168.1.0/24 192.168.2.123
+     call Hilti::print (b)
+
+     b = equal 0.0.0.0/0 192.168.2.123
+     call Hilti::print (b)
+
+     b = equal 2001:0db8::1428:57ab/48 2001:0db8::1428:1234
+     call Hilti::print (b)
+
+     b = equal 2002:0db8::1428:57ab/48 2001:0db8::1428:1234
+     call Hilti::print (b)
+}
+

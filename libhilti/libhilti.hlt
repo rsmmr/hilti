@@ -42,11 +42,11 @@ declare "C-HILTI" int<64> timer_to_int64(any n)
 declare "C-HILTI" int<64> time_to_int64(any n)
 declare "C-HILTI" int<64> interval_to_int64(any n)
 
-# declare "C-HILTI" double double_to_double(any d)
+declare "C-HILTI" double double_to_double(any d)
 # declare "C-HILTI" double timer_to_double(any d)
 # declare "C-HILTI" double timer_mgr_to_double(any d)
-# declare "C-HILTI" double time_to_double(any d)
-# declare "C-HILTI" double interval_to_double(any d)
+declare "C-HILTI" double time_to_double(any d)
+declare "C-HILTI" double interval_to_double(any d)
 
 declare "C-HILTI" int<64> default_hash(any s)
 declare "C-HILTI" bool    default_equal(any s1, any s2)
@@ -60,6 +60,10 @@ declare "C-HILTI" int<64> struct_hash(any s)
 declare "C-HILTI" int<64> struct_equal(any s)
 
 declare "C-HILTI" any bytes_blockable(any s)
+
+###
+
+declare "C-HILTI" void exception_dtor(ref<exception> b)
 
 ###
 
@@ -109,7 +113,7 @@ declare "C-HILTI" void tuple_cctor(tuple<*> t)
 
 ###
 #
-# declare "C-HILTI" int<64> int_pow(int<64> base, int<64> exp)
+declare "C-HILTI" int<64> int_pow(int<64> base, int<64> exp)
 #
 # declare "C-HILTI" int<64> hton64(int<64> v)
 # declare "C-HILTI" int<32> hton32(int<32> v)
@@ -249,12 +253,12 @@ declare "C-HILTI" void debug_printf(string stream, string fmt, any args)
 #
 # ##
 #
-# declare "C-HILTI" time time_wall()
-# declare "C-HILTI" int<64> time_nsecs(time t)
+declare "C-HILTI" time time_wall()
+declare "C-HILTI" int<64> time_nsecs(time t)
 #
 # ##
 #
-# declare "C-HILTI" int<64> interval_nsecs(interval t)
+declare "C-HILTI" int<64> interval_nsecs(interval t)
 #
 # ##
 #

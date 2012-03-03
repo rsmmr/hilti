@@ -1,0 +1,23 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# Illegal arguments. These are all supposed to fail.
+
+module Main
+
+import Hilti
+
+type A = struct { bool a }
+type B = struct { bool b }
+
+void run() {
+    local ref<A> a
+    local ref<B> b
+
+    a = new A
+    b = new B
+
+    b = a
+}
+

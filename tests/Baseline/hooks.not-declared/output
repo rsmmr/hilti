@@ -1,0 +1,3 @@
+not-declared.hlt:11: parser error, hook was not declared
+not-declared.hlt:16: parser error, hook was not declared
+not-declared.hlt: 2 errors found during parsing

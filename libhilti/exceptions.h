@@ -15,21 +15,21 @@
 
 struct __hlt_type_info;
 
-/// The type of an exception.
+/// The type of an exception. Note that this must align with hlt.exception.type in libhilti.ll
 typedef struct hlt_exception_type {
     const char* name;                       //< Name of the exception.
     struct hlt_exception_type* parent;      //< The type this one derives from.
     const struct __hlt_type_info** argtype; //< The type of the exception's argument, or 0 if no argument.
 } hlt_exception_type;
 
-/// A HILTI exception.
+/// A HILTI exception instance.
 struct __hlt_exception {
     __hlt_gchdr __gchdr;
     hlt_exception_type* type;        //< The type of the exeception.
     // hlt_continuation* cont;       //< If the exeption is resumable, the continuation for doing so.
-    void *arg;                       //< The arguments of type ``type.argtype``, or 0 if none.
+    void *arg;                       //< The argument of type ``type->argtype``, or 0 if none.
     const char* location;            //< A string describing the location where the exception was raised.
-    hlt_vthread_id vid;              //< If a virtual thread raised the exeception, it's ID.
+    hlt_vthread_id vid;              //< If a virtual thread raised the exception, it's ID.
 };
 
 /// Instantiates a new exception.
@@ -43,12 +43,17 @@ struct __hlt_exception {
 ///
 /// Returns: The new exception. Note that this is a garbage collected value
 /// that must be released with hlt_exception_unref().
-extern hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const char* location);
+extern hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location);
 
 // extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location);
 
-/// Internal function that generated the output shown to the user when an
-/// exception is not caught and then aborts processing. This function is
+/// Internal function that checks whether an exception instance matches a
+/// given exception type or any of its base types. This function is used to
+/// find the right \c catch handler. If type is null, return true.
+extern int8_t __hlt_exception_match(hlt_exception*, hlt_exception_type* type);
+
+/// Internal function that generates the output shown to the user when an
+/// exception is not caught, and then aborts processing. This function is
 /// intended for use outside of threads.
 ///
 /// exception: The exception to print.
@@ -56,7 +61,7 @@ extern hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, c
 /// ctx: The current execution context.
 extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx);
 
-/// Internal function that generated the output shown to the user when an
+/// Internal function that generates the output shown to the user when an
 /// exception is not caught.  This function is intended for use outside of
 /// threads.
 ///
@@ -65,7 +70,7 @@ extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_e
 /// ctx: The current execution context.
 extern void __hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution_context* ctx);
 
-/// Internal function that generated the output shown to the user when an
+/// Internal function that generates the output shown to the user when an
 /// exception is not caught.  This function is intended for use when the
 /// exception was thrown in a thread.
 ///
@@ -84,11 +89,11 @@ extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context*
 #define __hlt_stringify2(arg) #arg
 #define __hlt_stringify(arg) __hlt_stringify2(arg)
 
-/// Macro to raise a HILTI exception from C code. It allocated a new
-/// exception object and stores at the given location. Note that the new
+/// Macro to raise a HILTI exception from C code. It allocates a new
+/// exception object and stores it at the given location. Note that the new
 /// object is memory managed and needs to be unref'ed eventually.
 ///
-/// This it is a macro so that it can automatically add the current source
+/// This is a macro so that it can automatically add the current source
 /// location to the exeption.
 ///
 /// dst: A pointer to the location where to store the raised exception.
@@ -100,8 +105,8 @@ extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context*
 /// arg: The exception's argument if the type takes any, or null if not.
 #define hlt_set_exception(dst, type, arg) __hlt_set_exception(dst, type, arg, __FILE__ ":" __hlt_stringify(__LINE__))
 
-/// Internal functiion raise a HILTI exception from C code. This should not
-/// be used directly, but only via the hlt_set_exception() macro.
+/// Internal function that raises a HILTI exception from C code. This should
+/// not be used directly, but only via the hlt_set_exception() macro.
 extern void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg, const char* location);
 
 /// \addtogroup predefined-exceptions

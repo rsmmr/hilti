@@ -1,0 +1,26 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> i32min
+    i32min = int.mul 1 -2147483648
+    call Hilti::print(i32min)
+
+    local int<32> i32max
+    i32max = int.mul 1 2147483647
+    call Hilti::print(i32max)
+
+    local int<64> i64min
+    i64min = int.mul 1 -9223372036854775808
+    call Hilti::print(i64min)
+
+    local int<64> i64max
+    i64max = int.mul 1 9223372036854775807
+    call Hilti::print(i64max)
+}

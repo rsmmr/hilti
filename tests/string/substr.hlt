@@ -1,0 +1,37 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local string s
+
+    s = string.substr "Foo!" 0 3
+    call Hilti::print (s)
+
+    s = string.substr "Foo!" 0 10
+    call Hilti::print (s)
+
+    s = string.substr "Foo!" 2 1
+    call Hilti::print (s)
+
+    s = string.substr "Foo!" 3 1
+    call Hilti::print (s)
+
+    s = string.substr "Foo!" 2 0
+    call Hilti::print (s)
+
+    s = string.substr "B\u00e4r!" 0 3
+    call Hilti::print (s)
+
+    s = string.substr "B\u00e4r!" 3 1
+    call Hilti::print (s)
+
+    s = string.substr "B\u00e4r!" 10 1
+    call Hilti::print (s)
+}
+

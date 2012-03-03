@@ -1,0 +1,39 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# A bunch of broken label references.
+
+module Main
+
+import Hilti
+
+type Foo = enum { A, BC, DEF }
+
+void run() {
+     call Hilti::print(A)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type Foo = enum { A, BC, DEF }
+
+void run() {
+     call Hilti::print(Undef)
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type Foo = enum { A, BC, DEF }
+
+void run() {
+     call Hilti::print(Packed::ASCIIZ)
+}

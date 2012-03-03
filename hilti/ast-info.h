@@ -33,6 +33,7 @@ struct AstInfo {
     typedef hilti::ID id;
     typedef hilti::Module module;
     typedef hilti::Node node;
+    typedef hilti::Scope scope;
     typedef hilti::Statement statement;
     typedef hilti::Type type;
     typedef hilti::Variable variable;

@@ -1,0 +1,19 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global ref<regexp> g = /ghi/
+
+void run() {
+    local ref<regexp> re
+    re = /abc/
+    call Hilti::print(re)
+    call Hilti::print(/def/)
+    call Hilti::print(/ghi/)
+    call Hilti::print(g)
+}

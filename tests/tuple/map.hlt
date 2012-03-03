@@ -1,0 +1,23 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<map<tuple<addr, port, addr, port, bool>, string>> conns
+    local bool exists
+
+    conns = new map<tuple<addr, port, addr, port, bool>, string>
+
+    map.insert conns (1.2.3.4, 123/tcp, 2.3.4.5, 456/tcp, True) "test"
+
+    call Hilti::print (conns)
+
+    exists = map.exists conns (1.2.3.4, 123/tcp, 2.3.4.5, 456/tcp, True)
+
+    call Hilti::print (exists)
+    }

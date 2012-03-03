@@ -1,0 +1,32 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<64> pos
+    pos = string.find "Foo!" "oo"
+    call Hilti::print (pos)
+    pos = string.find "Foo!" "OO"
+    call Hilti::print (pos)
+    pos = string.find "Foo!" "F"
+    call Hilti::print (pos)
+    pos = string.find "Foo!" "!"
+    call Hilti::print (pos)
+    pos = string.find "" "Foo"
+    call Hilti::print (pos)
+
+    pos = string.find "B\u00e4r!" "r!"
+    call Hilti::print (pos)
+
+    pos = string.find "B\u00e4r!" "\u00e4"
+    call Hilti::print (pos)
+
+    pos = string.find "" ""
+    call Hilti::print (pos)
+}
+

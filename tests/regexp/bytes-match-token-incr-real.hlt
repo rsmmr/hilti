@@ -1,0 +1,76 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global ref<regexp<&nosub>> re = /Foo*/
+
+iterator<bytes> do_match(ref<match_token_state> state, iterator<bytes> s, iterator<bytes> e ) {
+    local int<32> rc
+    local tuple<int<32>, iterator<bytes>> result
+    local iterator<bytes> eo
+    local ref<bytes> token
+
+    result = regexp.match_token_advance state s e
+
+    rc = tuple.index result 0
+    eo = tuple.index result 1
+    token = bytes.sub s eo
+
+    call Hilti::print("==> ", False)
+    call Hilti::print(rc)
+    call Hilti::print("==> ", False)
+    call Hilti::print(token)
+    call Hilti::print("")
+
+    return.result eo
+}
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> s
+    local iterator<bytes> e
+    local ref<match_token_state> state
+    local ref<bytes> token
+
+    call Hilti::print(re)
+    state = regexp.match_token_init re
+
+    b = b"Foo"
+    s = begin b
+    e = end b
+    e =call do_match(state, s, e)
+
+    b = b"oooo"
+    s = begin b
+    e = end b
+
+    bytes.freeze b
+    e = call do_match(state, s, e)
+
+    call Hilti::print("")
+
+    state = regexp.match_token_init re
+    b = b"Foo"
+    s = begin b
+    e = end b
+    s = call do_match(state, s, e)
+
+    bytes.append b b"ooo"
+    e = end b
+    s = call do_match(state, s, e)
+
+    bytes.append b b"ooX"
+    e = end b
+    e = call do_match(state, s, e)
+
+    s = begin b
+    token = bytes.sub s e
+    call Hilti::print("!==> ", False)
+    call Hilti::print(token)
+
+}

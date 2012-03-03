@@ -1,0 +1,55 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# A bunch of broken declarations. These are all supposed to fail.
+
+module Main
+
+int<32> run() {
+    local any foo
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+int<32> run() {
+    local int<*> foo
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+int<32> run() {
+    local tuple<*> foo
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+global int<*> t
+
+int<32> run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+global tuple<*> t
+
+int<32> run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+global any a
+
+int<32> run() {
+}
+

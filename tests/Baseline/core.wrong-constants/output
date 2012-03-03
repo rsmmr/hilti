@@ -1,0 +1,2 @@
+wrong-constants.hlt:10: parser error, cannot initialize constant of type int<32> with value of type string
+wrong-constants.hlt: 1 error found during parsing

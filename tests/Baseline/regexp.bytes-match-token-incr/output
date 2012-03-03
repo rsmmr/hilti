@@ -1,0 +1,33 @@
+Foo*
+Foo
+==> -1
+==> 
+
+Fooooo
+==> -1
+==> 
+
+Foooooooooo
+==> -1
+==> 
+
+Foooooooooo
+==> 1
+==> Foooooooooo
+
+Fooo
+==> -1
+==> 
+
+Foooobar
+==> 1
+==> Foooo
+
+F
+==> -1
+==> 
+
+FXbar
+==> 0
+==> 
+

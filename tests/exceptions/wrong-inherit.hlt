@@ -1,0 +1,64 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+
+module Main
+
+import Hilti
+
+type A = exception<string>
+type C = exception : A
+
+void run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type A = exception<string>
+type B = exception<bool> : A
+
+void run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type A = exception : A
+
+void run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type A = exception : B
+type B = exception : A
+
+void run() {
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+type A = exception : B
+type B = exception : C
+type C = exception : D
+type D = exception : A
+
+void run() {
+}
+
+

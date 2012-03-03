@@ -1,0 +1,4 @@
+>>> return.void
+wrong-returns.hlt:6: error, function must return a value
+
+wrong-returns: 1 error found during validating canonified module

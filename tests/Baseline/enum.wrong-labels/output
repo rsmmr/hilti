@@ -1,0 +1,3 @@
+/Users/robin/work/binpacpp/hilti2/tests/.tmp/enum.wrong-labels/wrong-labels.hlt:14-14: pass::IdResolver error, unknown ID A
+/Users/robin/work/binpacpp/hilti2/tests/.tmp/enum.wrong-labels/wrong-labels.hlt: Aborting due to resolver error.
+error running hiltic, aborting

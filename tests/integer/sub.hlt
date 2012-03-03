@@ -1,0 +1,61 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> i
+    i = int.sub 15 5
+    call Hilti::print (i)
+}
+
+### @TEST-START-NEXT
+
+# Signed
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> i
+    i = int.sub 3 -7
+    call Hilti::print (i)
+}
+
+### @TEST-START-NEXT
+
+# Underflow
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<8> i
+    local int<32> result
+    i = int.sub 0 246
+
+    result = int.zext i
+    call Hilti::print (result)
+}
+
+### @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<8> i
+    local int<8> result = 42
+    i = int.sub 100 result
+
+    result = int.zext i
+    call Hilti::print (result)
+}
+

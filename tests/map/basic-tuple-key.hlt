@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> v
+    local ref<map<tuple<string,int<64>>, int<32>>> m
+
+    m = new map<tuple<string,int<64>>, int<32>>
+
+    map.insert m ("Foo",1) 10
+    map.insert m ("Bar",2) 20
+    call Hilti::print(m)
+
+    v = map.get m ("Foo",1)
+    call Hilti::print(v)
+
+    v = map.get m ("Bar",2)
+    call Hilti::print(v)
+}

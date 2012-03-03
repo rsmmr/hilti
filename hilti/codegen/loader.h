@@ -89,26 +89,38 @@ protected:
    bool preferCctor() const { return _cctor; }
    bool preferPtr() const { return _cctor; }
 
-   virtual void visit(expression::Variable* p) override;
-   virtual void visit(expression::Parameter* p) override;
    virtual void visit(expression::CodeGen* c) override;
-
+   virtual void visit(expression::Coerced* e) override;
    virtual void visit(expression::Constant* e) override;
    virtual void visit(expression::Ctor* e) override;
-   virtual void visit(expression::Coerced* e) override;
-   virtual void visit(expression::Function* f) override;
+   virtual void visit(expression::Function* e) override;
+   virtual void visit(expression::Parameter* e) override;
+   virtual void visit(expression::Variable* e) override;
 
-   virtual void visit(variable::Local* v) override;
    virtual void visit(variable::Global* v) override;
+   virtual void visit(variable::Local* v) override;
 
-   virtual void visit(constant::Integer* c) override;
-   virtual void visit(constant::String* s) override;
+   virtual void visit(constant::Address* c) override;
+   virtual void visit(constant::Bitset* c) override;
    virtual void visit(constant::Bool* b) override;
+   virtual void visit(constant::Double* c) override;
+   virtual void visit(constant::Enum* c) override;
+   virtual void visit(constant::Integer* c) override;
+   virtual void visit(constant::Interval* c) override;
    virtual void visit(constant::Label* l) override;
-   virtual void visit(constant::Tuple* t) override;
-   virtual void visit(constant::Reference* t) override;
+   virtual void visit(constant::Network* c) override;
+   virtual void visit(constant::Port* c) override;
+   virtual void visit(constant::Reference* c) override;
+   virtual void visit(constant::String* c) override;
+   virtual void visit(constant::Time* c) override;
+   virtual void visit(constant::Tuple* c) override;
 
-   virtual void visit(ctor::Bytes* b) override;
+   virtual void visit(ctor::Bytes* c) override;
+   virtual void visit(ctor::List* c) override;
+   virtual void visit(ctor::Map* c) override;
+   virtual void visit(ctor::RegExp* c) override;
+   virtual void visit(ctor::Set* c) override;
+   virtual void visit(ctor::Vector* c) override;
 
 private:
    // Cctors/dtors the result as necessary.

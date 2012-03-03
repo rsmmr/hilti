@@ -1,0 +1,46 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out | sort >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void print_num(int<64> num) {
+    local string s
+    local int<64> vid
+
+    vid = thread.id
+
+    s = call Hilti::fmt("num %d vid %d", (num, vid))
+    call Hilti::print (s)
+    return.void
+}
+
+int<64> make_const(int<64> num) {
+    return.result num
+}
+
+void run() {
+    local int<64> count
+    local int<64> limit
+    local bool eq
+
+    call print_num(-1)
+
+    count = call make_const(1)
+    limit = call make_const(6)
+
+@loop:
+    eq = int.eq count limit
+    if.else eq @exit @cont
+
+@cont:
+    thread.schedule print_num(count) count
+    count = incr count
+    jump @loop
+
+@exit:
+    return.void
+}

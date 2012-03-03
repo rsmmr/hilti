@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Unpacking an empty object should throw an exception.
+
+module Main
+
+import Hilti
+
+void run() {
+    local iterator<bytes> p1
+    local iterator<bytes> p2
+    local ref<bytes> b
+    local tuple<int<32>, iterator<bytes>> t32
+    local Hilti::Packed e
+
+    b = b""
+
+    p1 = begin b
+    p2 = end b
+    t32 = unpack (p1,p2) Hilti::Packed::Int32
+    }
+

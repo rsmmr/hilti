@@ -27,6 +27,12 @@ public:
 protected:
    void visit(expression::ID* i) override;
    void visit(Declaration* d) override;
+   void visit(Function* f) override;
+   void visit(type::Unknown* t) override;
+   void visit(variable::Local* v) override;
+
+private:
+   std::set<string> _locals;
 };
 
 }

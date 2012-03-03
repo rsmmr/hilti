@@ -1,0 +1,31 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type Foo = struct {
+    string a,
+    bool b
+    }
+
+void run() {
+    local bool b
+    local ref<Foo> f1 = ("foo", True)
+    local ref<Foo> f2 = ("foo", True)
+    local ref<Foo> f3 = ("foo", False)
+
+    local ref<map<ref<Foo>, int<32>>> m
+
+    m = new map<ref<Foo>, int<32>>
+    map.insert m f1 42
+
+    b = map.exists m f2
+    call Hilti::print(b)
+
+    b = map.exists m f3
+    call Hilti::print(b)
+}

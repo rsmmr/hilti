@@ -1,0 +1,76 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+     local net a
+     local addr p
+     local Hilti::AddrFamily f
+
+     a = 255.255.255.255/0
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = 255.255.255.255/8
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = 255.255.255.255/16
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = 255.255.255.255/24
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = 255.255.255.255/32
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/0
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/8
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/56
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/64
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/72
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/120
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+     a = ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128
+     p = net.prefix a
+     call Hilti::print (a)
+     call Hilti::print (p)
+
+}
+

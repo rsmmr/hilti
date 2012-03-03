@@ -1,0 +1,26 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Make sure locals are initialized with their default values.
+
+module Main
+
+import Hilti
+
+type A = struct { string s }
+
+void run() {
+    local int<16> i
+    local string s
+    local bool b
+    local double d
+    local tuple<string, int<32>, double> t
+    local ref<A> r
+
+    local string output
+    output = call Hilti::fmt("|%d|%s|%s|%f|%s|%p|", (i, s, b, d, t, r))
+    call Hilti::print (output)
+}
+

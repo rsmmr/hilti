@@ -1,0 +1,4 @@
+>>> i = new A
+wrong-args.hlt:24: error, target type must be ref<struct { int<64> i, bool b, string test, double d }>
+
+wrong-args.hlt: 1 error found during validating

@@ -28,6 +28,7 @@ add_library (hilti
      type.cc
      visitor-interface.cc
      hilti.cc
+     expression.cc
 )
 
 target_link_libraries(hilti passes codegen instructions)

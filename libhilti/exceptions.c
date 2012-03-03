@@ -52,14 +52,20 @@ hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}
 
 void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt)
 {
+    if ( excpt->arg )
+        GC_DTOR_GENERIC(excpt->arg, *excpt->type->argtype);
 }
 
-hlt_exception* __hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)
+hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)
 {
     hlt_exception* excpt = hlt_malloc(sizeof(hlt_exception));
     excpt->type = type;
 //  excpt->cont = 0;
-    excpt->arg = arg;
+    /// excpt->arg = arg;
+
+    // FIXME: Arg needs to copied.
+    excpt->arg = 0;
+
     // FIXME: We don't see the vid yet, as we don't have access to the
     // current ctx at the moment.
     excpt->vid = HLT_VID_MAIN;
@@ -81,13 +87,16 @@ hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, co
 void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg, const char* location)
 {
     assert(dst);
-    *dst = __hlt_exception_new(type, arg, location);
+    *dst = hlt_exception_new(type, arg, location);
 }
 
-int8_t __hlt_exception_match_type(hlt_exception* excpt, hlt_exception_type* type)
+int8_t __hlt_exception_match(hlt_exception* excpt, hlt_exception_type* type)
 {
     if ( ! excpt )
         return 0;
+
+    if ( ! type )
+        return 1;
 
     for ( hlt_exception_type* t = excpt->type; t; t = t->parent ) {
         if ( t == type )

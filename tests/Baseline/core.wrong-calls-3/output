@@ -1,0 +1,4 @@
+>>> call foo (x, x)
+wrong-calls.hlt:8: error, wrong type for function argument 2 in call (is int<32>, expected int<16>)
+
+wrong-calls.hlt: 1 error found during validating

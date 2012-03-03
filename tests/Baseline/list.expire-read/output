@@ -1,0 +1,14 @@
+[A-0, B-0, C-5, D-5, E-10, F-10]
+
+[A-0, B-0, C-5, D-5, E-10, F-10]
+<timer_mgr at 1970-01-01T00:00:10.000000000Z / 6 active timers>
+
+[A-0, C-5, D-5, E-10, F-10]
+<timer_mgr at 1970-01-01T00:00:20.000000000Z / 5 active timers>
+
+[A-0, E-10, F-10]
+<timer_mgr at 1970-01-01T00:00:25.000000000Z / 3 active timers>
+
+[]
+<timer_mgr at 1970-01-01T00:00:50.000000000Z / 0 active timers>
+

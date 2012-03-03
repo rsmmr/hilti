@@ -32,6 +32,22 @@ string strjoin(const std::list<T>& l, string delim="")
     return result;
 }
 
+template<typename iterator>
+string strjoin(const iterator& begin, const iterator& end, string delim="")
+{
+    string result;
+    bool first = true;
+
+    for ( iterator i = begin; i != end; i++ ) {
+        if ( not first )
+            result += delim;
+        result += string(*i);
+        first = false;
+    }
+
+    return result;
+}
+
 extern string strreplace(const string& s, const string& o, const string& n);
 extern string strtolower(const string& s);
 extern string strtoupper(const string& s);

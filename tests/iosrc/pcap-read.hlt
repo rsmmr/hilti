@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  cp %DIR/trace.pcap .
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+
+    local ref<iosrc<Hilti::IOSrc::PcapOffline>> psrc
+    local tuple<time,ref<bytes>> pkt
+
+    psrc = new iosrc<Hilti::IOSrc::PcapOffline> "trace.pcap"
+
+@loop:
+    pkt = iosrc.read psrc
+    call Hilti::print (pkt, True)
+    jump @loop
+
+    return.void
+}
+

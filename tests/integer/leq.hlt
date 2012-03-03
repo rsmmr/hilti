@@ -1,0 +1,64 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+   local bool cond
+   cond = int.sleq 1 2
+   if.else cond @yes @no
+
+@yes:
+   call Hilti::print (1)
+   return.void
+
+@no:
+   call Hilti::print (0)
+   return.void
+}
+
+### @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+   local bool cond
+   cond = int.sleq 2 2
+   if.else cond @yes @no
+
+@yes:
+   call Hilti::print (1)
+   return.void
+
+@no:
+   call Hilti::print (0)
+   return.void
+}
+
+### @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+   local bool cond
+   cond = int.sleq 1 -5
+   if.else cond @yes @no
+
+@yes:
+   call Hilti::print (1)
+   return.void
+
+@no:
+   call Hilti::print (0)
+   return.void
+}
+
+

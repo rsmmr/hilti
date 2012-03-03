@@ -1,0 +1,37 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = struct {
+    int<64> i &default=100,
+    bool b,
+    string test &default="Hurz",
+    double d
+    }
+
+void run() {
+    local int<64> i
+    local string s
+    local double d
+    local ref<A> a
+    local bool b
+
+    a = new A
+
+    b = struct.is_set a "i"
+    call Hilti::print(b)
+
+    b = struct.is_set a "b"
+    call Hilti::print(b)
+
+    b = struct.is_set a "test"
+    call Hilti::print(b)
+
+    b = struct.is_set a "d"
+    call Hilti::print(b)
+}

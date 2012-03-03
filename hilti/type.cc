@@ -5,50 +5,134 @@
 #include "type.h"
 #include "variable.h"
 #include "function.h"
+#include "passes/printer.h"
 
 using namespace hilti;
+
+string Type::render()
+{
+    std::ostringstream s;
+    passes::Printer(s, true).run(sharedPtr<Node>());
+    return s.str();
+}
 
 type::trait::Trait::~Trait()
 {
 }
 
-string type::trait::parameter::Type::repr() const
-{
-    return _type->repr();
-}
-
+type::Address::~Address() {}
 type::Any::~Any() {}
-type::Unknown::~Unknown() {}
-type::TypeByName::~TypeByName() {}
-type::Unset::~Unset() {}
-type::Type::~Type() {}
+type::Bitset::~Bitset() {}
 type::Block::~Block() {}
-type::Module::~Module() {}
-type::Void::~Void() {}
-type::String::~String() {}
-type::Integer::~Integer() {}
 type::Bool::~Bool() {}
+type::Bytes::~Bytes() {}
+type::CAddr::~CAddr() {}
+type::Callable::~Callable() {}
+type::Channel::~Channel() {}
+type::Classifier::~Classifier() {}
+type::Double::~Double() {}
+type::Enum::~Enum() {}
+type::Exception::~Exception() {}
+type::File::~File() {}
+type::Hook::~Hook() {}
+type::IOSource::~IOSource() {}
+type::Integer::~Integer() {}
+type::Interval::~Interval() {}
 type::Label::~Label() {}
-type::Bytes::~Bytes() {};
+type::List::~List() {}
+type::Map::~Map() {}
+type::MatchTokenState::~MatchTokenState() {}
+type::Module::~Module() {}
+type::Network::~Network() {}
+type::Overlay::~Overlay() {}
+type::Port::~Port() {}
+type::RegExp::~RegExp() {}
+type::Set::~Set() {}
+type::String::~String() {}
+type::Struct::~Struct() {}
+type::Time::~Time() {}
+type::Timer::~Timer() {}
+type::TimerMgr::~TimerMgr() {}
+type::Type::~Type() {}
+type::TypeByName::~TypeByName() {}
+type::Unknown::~Unknown() {}
+type::Unset::~Unset() {}
+type::Vector::~Vector() {}
+type::Void::~Void() {}
 
-string type::trait::Parameterized::repr() const
+
+bool type::trait::Parameterized::equal(shared_ptr<hilti::Type> other) const
 {
-    if ( dynamic_cast<const hilti::Type*>(this)->wildcard() )
-        return reprPrefix() + "<*>";
+    auto pother = std::dynamic_pointer_cast<type::trait::Parameterized>(other);
+    assert(pother);
 
-    string t = reprPrefix() + "<";
+    auto params = parameters();
+    auto oparams = pother->parameters();
 
-    bool first = true;
+    if ( params.size() != oparams.size() )
+        return false;
 
-    for ( auto p : parameters() ) {
-        if ( ! first )
-            t += ",";
+    auto i1 = params.begin();
+    auto i2 = oparams.begin();
 
-        t += p->repr();
-        first = false;
+    for ( ; i1 != params.end(); ++i1, ++i2 ) {
+        if ( ! (*i1 && *i2) )
+            return false;
+
+        if ( typeid(**i1) != typeid(**i2) )
+            return false;
+
+        if ( ! (*i1)->_equal(*i2) )
+            return false;
     }
 
-    return t + ">";
+    return true;
+}
+
+type::TypedHeapType::TypedHeapType(const Location& l) : HeapType(l)
+{
+    setWildcard(true);
+}
+
+type::TypedHeapType::TypedHeapType(shared_ptr<Type> rtype, const Location& l) : HeapType(l)
+{
+    _argtype = rtype;
+    addChild(_argtype);
+}
+
+type::trait::Parameterized::parameter_list type::TypedHeapType::parameters() const
+{
+    parameter_list params;
+
+    if ( ! _argtype )
+        return params;
+
+    auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(_argtype));
+    params.push_back(p);
+    return params;
+}
+
+type::TypedValueType::TypedValueType(const Location& l) : ValueType(l)
+{
+    setWildcard(true);
+}
+
+type::TypedValueType::TypedValueType(shared_ptr<Type> rtype, const Location& l) : ValueType(l)
+{
+    _argtype = rtype;
+    addChild(_argtype);
+}
+
+type::trait::Parameterized::parameter_list type::TypedValueType::parameters() const
+{
+    parameter_list params;
+
+    if ( ! _argtype )
+        return params;
+
+    auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(_argtype));
+    params.push_back(p);
+    return params;
 }
 
 type::Function::Function(shared_ptr<hilti::function::Parameter> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l)
@@ -84,52 +168,75 @@ type::Tuple::Tuple(const type_list& types, const Location& l) : ValueType(l)
 {
     _types = types;
 
-    for ( auto t : types ) {
-        auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(t));
-        _parameters.push_back(p);
-        addChild(p);
+    for ( auto t : _types )
         addChild(t);
-    }
 }
 
-const type::Tuple::type_list& type::Tuple::typeList() const
+type::trait::Parameterized::parameter_list type::Tuple::parameters() const
+{
+    parameter_list params;
+
+    for ( auto t : _types ) {
+        auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(t));
+        params.push_back(p);
+    }
+
+    return params;
+}
+
+const type::Tuple::type_list type::Tuple::typeList() const
 {
     return _types;
 }
 
-type::Reference::Reference(const Location& l) : ValueType(l)
+type::trait::Parameterized::parameter_list type::Integer::parameters() const
 {
-    setWildcard(true);
+    parameter_list params;
+    auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Integer(_width));
+    params.push_back(p);
+    return params;
 }
 
-type::Reference::Reference(shared_ptr<Type> rtype, const Location& l) : ValueType(l)
+type::trait::Parameterized::parameter_list type::IOSource::parameters() const
 {
-    _rtype = rtype;
-    addChild(_rtype);
-
-    auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(rtype));
-    _parameters.push_back(p);
-    addChild(p);
+    parameter_list params;
+    auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Enum(_kind));
+    params.push_back(p);
+    return params;
 }
 
-type::Iterator::Iterator(const Location& l) : ValueType(l)
+type::trait::Parameterized::parameter_list type::Map::parameters() const
 {
-    setWildcard(true);
+    auto key = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(_key));
+    auto value = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(_value));
+
+    parameter_list params;
+    params.push_back(key);
+    params.push_back(value);
+
+    return params;
 }
 
-type::Iterator::Iterator(shared_ptr<Type> ttype, const Location& l) : ValueType(l)
+type::Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l) : TypedHeapType(arg, l)
 {
-    _ttype = ttype;
-    addChild(_ttype);
+    if ( base ) {
+        _base = ast::as<type::Exception>(base);
+        assert(_base);
+    }
+    else
+        _base = nullptr;
 
-    auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(ttype));
-    _parameters.push_back(p);
-    addChild(p);
+    addChild(_base);
 }
 
-shared_ptr<Type> type::Bytes::iterType() const
+shared_ptr<Type> type::Bytes::iterType()
 {
     return shared_ptr<Type>(new type::iterator::Bytes(location()));
+}
+
+shared_ptr<Type> type::IOSource::iterType()
+{
+    return std::make_shared<iterator::IOSource>(sharedPtr<Type>(), location());
 }
 
 // FIXME: We won't need this anymore with C++11 initializer lists.
@@ -171,5 +278,230 @@ std::vector<type::trait::Unpackable::Format> unpack_formats_bytes(makeVector(_un
 const std::vector<type::trait::Unpackable::Format>& type::Bytes::unpackFormats() const
 {
     return unpack_formats_bytes;
+}
+
+type::Bitset::Bitset(const label_list& labels, const Location& l) : ValueType(l)
+{
+    int next = 0;
+    for ( auto label : labels ) {
+        auto bit = label.second;
+
+        if ( bit < 0 )
+            bit = next;
+
+        next = std::max(next, bit + 1);
+
+        _labels.push_back(make_pair(label.first, bit));
+    }
+
+    _labels.sort();
+}
+
+shared_ptr<Scope> type::Bitset::typeScope()
+{
+    if ( _scope )
+        return _scope;
+
+    _scope = shared_ptr<Scope>(new Scope());
+
+    for ( auto label : _labels ) {
+        auto p = shared_from_this();
+        auto p2 = std::dynamic_pointer_cast<hilti::Type>(p);
+        constant::Bitset::bit_list bl;
+        bl.push_back(label.first);
+        auto val = shared_ptr<Constant>(new constant::Bitset(bl, p2, location()));
+        auto expr = shared_ptr<expression::Constant>(new expression::Constant(val, location()));
+        _scope->insert(label.first, expr);
+    }
+
+    return _scope;
+}
+
+int type::Bitset::labelBit(shared_ptr<ID> label) const
+{
+    for ( auto l : _labels ) {
+        if ( *l.first == *label )
+            return l.second;
+    }
+
+    throw ast::InternalError(util::fmt("unknown bitset label %s", label->pathAsString().c_str()), this);
+}
+
+bool type::Bitset::_equal(shared_ptr<Type> other) const
+{
+    auto bother = std::dynamic_pointer_cast<type::Bitset>(other);
+    assert(bother);
+
+    if ( _labels.size() != bother->_labels.size() )
+        return false;
+
+    auto i1 = _labels.begin();
+    auto i2 = bother->_labels.begin();
+
+    for ( ; i1 != _labels.end(); ++i1, ++i2 ) {
+        if ( i1->first != i2->first || i1->second != i2->second )
+            return false;
+    }
+
+    return true;
+}
+
+type::Enum::Enum(const label_list& labels, const Location& l) : ValueType(l)
+{
+    int next = 1;
+    for ( auto label : labels ) {
+        if ( *label.first == "Undef" )
+            throw ast::RuntimeError("enum label 'Undef' is already predefined", this);
+
+        auto i = label.second;
+
+        if ( i < 0 )
+            i = next;
+
+        next = std::max(next, i + 1);
+
+        _labels.push_back(make_pair(label.first, i));
+    }
+
+    _labels.push_back(make_pair(std::make_shared<ID>("Undef"), -1));
+    _labels.sort();
+}
+
+shared_ptr<Scope> type::Enum::typeScope()
+{
+    if ( _scope )
+        return _scope;
+
+    _scope = shared_ptr<Scope>(new Scope());
+
+    for ( auto label : _labels ) {
+        auto p = shared_from_this();
+        auto p2 = std::dynamic_pointer_cast<hilti::Type>(p);
+        auto val = shared_ptr<Constant>(new constant::Enum(label.first, p2, location()));
+        auto expr = shared_ptr<expression::Constant>(new expression::Constant(val, location()));
+        _scope->insert(label.first, expr);
+    }
+
+    return _scope;
+}
+
+int type::Enum::labelValue(shared_ptr<ID> label) const
+{
+    for ( auto l : _labels ) {
+        if ( *l.first == *label )
+            return l.second;
+    }
+
+    throw ast::InternalError(util::fmt("unknown enum label %s", label->pathAsString().c_str()), this);
+    return -1;
+}
+
+bool type::Enum::_equal(shared_ptr<Type> other) const
+{
+    auto eother = std::dynamic_pointer_cast<type::Enum>(other);
+    assert(eother);
+
+    if ( _labels.size() != eother->_labels.size() )
+        return false;
+
+    auto i1 = _labels.begin();
+    auto i2 = eother->_labels.begin();
+
+    for ( ; i1 != _labels.end(); ++i1, ++i2 ) {
+        if ( i1->first != i2->first || i1->second != i2->second )
+            return false;
+    }
+
+    return true;
+}
+
+type::trait::Parameterized::parameter_list type::RegExp::parameters() const
+{
+    parameter_list params;
+
+    for ( auto a : _attrs ) {
+        auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Attribute(a));
+        params.push_back(p);
+    }
+
+    return params;
+}
+
+type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_, bool internal, const Location& l)
+    : Node(l), _id(id), _type(type), _default(default_), _internal(internal)
+{
+    addChild(id);
+    addChild(type);
+    addChild(default_);
+}
+
+shared_ptr<Expression> type::struct_::Field::default_() const
+{
+    return _default;
+}
+
+type::Struct::Struct(const Location& l) : ValueType(l)
+{
+    setWildcard(true);
+}
+
+type::Struct::Struct(const field_list& fields, const Location& l) : ValueType(l)
+{
+    _fields = fields;
+
+    for ( auto f : _fields )
+        addChild(f);
+}
+
+const type::Struct::type_list type::Struct::typeList() const
+{
+    type_list types;
+
+    for ( auto f : _fields )
+        types.push_back(f->type());
+
+    return types;
+}
+
+bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
+{
+    auto other = ast::as<type::Struct>(ty);
+
+    if ( _fields.size() != other->_fields.size() )
+        return false;
+
+    auto i1 = _fields.begin();
+    auto i2 = other->_fields.begin();
+
+    for ( ; i1 != _fields.end(); ++i1, ++i2 ) {
+        auto f1 = *i1;
+        auto f2 = *i2;
+
+        if ( f1->id()->name() != f2->id()->name() )
+            return false;
+
+        if ( ! f1->type()->equal(f2->type()) )
+            return false;
+
+        if ( f1->default_() && ! f2->default_() )
+            return false;
+
+        if ( f2->default_() && ! f1->default_() )
+            return false;
+
+        // Comparing the expression by rendering them.
+        if ( f1->default_() && f2->default_() ) {
+            std::ostringstream e1;
+            passes::Printer(e1, true).run(f1->default_());
+
+            std::ostringstream e2;
+            passes::Printer(e2, true).run(f1->default_());
+
+            if ( e1.str() != e2.str() )
+                return false;
+        }
+    }
+
+    return true;
 }
 

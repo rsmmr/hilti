@@ -1,0 +1,44 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Division by zero is tested separately.
+
+module Main
+
+import Hilti
+
+void run() {
+    local double d
+    d = double.div 100.0 5.0
+    call Hilti::print (d)
+}
+
+### @TEST-START-NEXT
+
+# Signed
+
+module Main
+
+import Hilti
+
+void run() {
+    local double d
+    d = double.div -42.0 -3.0
+    call Hilti::print (d)
+}
+
+### @TEST-START-NEXT
+
+# Signed
+
+module Main
+
+import Hilti
+
+void run() {
+    local double d
+    d = double.div -42.0 3.0
+    call Hilti::print (d)
+}

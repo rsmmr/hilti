@@ -21,6 +21,9 @@ public:
    /// l: An associated location.
    Expression(const Location& l=Location::None) : ast::Expression<AstInfo>(l) {}
 
+   /// Returns a readable one-line representation of the expression.
+   string render() override;
+
    ACCEPT_VISITOR_ROOT();
 };
 

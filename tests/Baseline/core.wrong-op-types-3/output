@@ -1,0 +1,4 @@
+>>> foo = int.add 1 2
+wrong-op-types.hlt:5: error, operand 1 must be of integer type
+
+wrong-op-types.hlt: 1 error found during validating

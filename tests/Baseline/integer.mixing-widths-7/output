@@ -1,0 +1,4 @@
+>>> cond = int.slt i1 i2
+mixing-widths.hlt:8: error, operand 2 can't be coerced from integer of width 16 to one of width 8
+
+mixing-widths.hlt: 1 error found during validating

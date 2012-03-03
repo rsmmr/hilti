@@ -1,0 +1,35 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type Foo = enum { A, BC, DEF }
+
+void run() {
+     local Foo f1
+     local Foo f2
+     local bool b
+
+     b = equal f1 f2
+     call Hilti::print(b)
+
+     b = equal f1 Foo::Undef
+     call Hilti::print(b)
+
+     f1 = Foo::BC
+
+     b = equal f1 f2
+     call Hilti::print(b)
+
+     b = equal f1 Foo::BC
+     call Hilti::print(b)
+
+     f2 = Foo::BC
+
+     b = equal f1 f2
+     call Hilti::print(b)
+}

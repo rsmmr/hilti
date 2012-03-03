@@ -1,0 +1,4 @@
+before yield1
+after yield1
+after yield2
+Caught exception

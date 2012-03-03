@@ -103,7 +103,7 @@ public:
    /// Dumps out a debugging representation of the scope's binding.
    ///
    /// out: The stream to use.
-   void dump(std::ostream& out) const;
+   void dump(std::ostream& out);
 
 private:
    // Internal helpers doing the lookip opeations.
@@ -111,7 +111,7 @@ private:
    inline Value find(typename ID::component_list::const_iterator begin, typename ID::component_list::const_iterator end, bool traverse) const;
 
    // Recursive version of dump().
-   void dump(std::ostream& out, int level, std::set<const Scope*>* seen) const;
+   void dump(std::ostream& out, int level, std::set<const Scope*>* seen);
 
    shared_ptr<Scope<AstInfo>> _parent;
    scope_map _childs;
@@ -156,11 +156,13 @@ inline shared_ptr<typename AstInfo::scope_value> Scope<AstInfo>::find(typename I
     if ( val != _values.end() ) {
         if ( begin != end )
             // We have reached a leaf but not consumed the whole path.
-            return nullptr;
+            goto try_childs;
 
         // Found.
         return val->second;
     }
+
+try_childs:
 
     if ( ! traverse )
         return nullptr;
@@ -184,14 +186,14 @@ inline shared_ptr<typename AstInfo::scope_value> Scope<AstInfo>::find(shared_ptr
 }
 
 template<typename AstInfo>
-inline void Scope<AstInfo>::dump(std::ostream& out) const
+inline void Scope<AstInfo>::dump(std::ostream& out)
 {
     std::set<const Scope*> seen;
     return dump(out, 0, &seen);
 }
 
 template<typename AstInfo>
-inline void Scope<AstInfo>::dump(std::ostream& out, int level, std::set<const Scope*>* seen) const
+inline void Scope<AstInfo>::dump(std::ostream& out, int level, std::set<const Scope*>* seen)
 {
     string indent = "";
 

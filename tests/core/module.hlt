@@ -1,0 +1,39 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# A set of module-level parsing errors.
+
+# FIXME: These are already caught by the parser. We should have a
+# second set of checks for ASTs created directly in Python.
+
+# Two modules.
+module Main
+module Main
+
+# @TEST-START-NEXT
+# Struct before module declaration.
+struct foo { int<32> bar }
+
+# @TEST-START-NEXT
+# Global before module declaration.
+global int<32> foo
+
+# @TEST-START-NEXT
+# Function before module declaration.
+void foo() {}
+
+# @TEST-START-NEXT
+# Declare before module declaration.
+declare "C" void foo()
+
+# @TEST-START-NEXT
+# Just some garbage
+Foo Bar
+
+# @TEST-START-NEXT
+# Just some garbage after the module
+module Main
+
+Foo Bar
+

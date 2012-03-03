@@ -1,0 +1,29 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >>output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void func1(ref<bytes> f) {
+    call Hilti::print(f)
+    yield.until f
+    call Hilti::print(f)
+}
+
+void func2(ref<bytes> f) {
+    call Hilti::sleep(1.0)
+    yield
+    bytes.append f b" Part 2!"
+}
+
+void run() {
+    local ref<bytes> f = b"Part 1."
+
+    thread.schedule func1(f) 1
+    thread.schedule func2(f) 1
+
+    call Hilti::wait_for_threads()
+}

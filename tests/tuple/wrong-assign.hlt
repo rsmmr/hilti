@@ -1,0 +1,35 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# Some broken assigns. All are supposed to fail.
+
+module Main
+
+void run() {
+    local tuple<int<64>, bool> a
+
+    a = 42
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local tuple<int<64>, bool> a
+    local tuple<int<64>, string> b
+
+    a = b
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local tuple<int<64>, bool> a
+    local tuple<int<64>, string> b
+
+    a = (1,2)
+}

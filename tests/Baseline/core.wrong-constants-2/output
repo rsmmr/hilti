@@ -1,0 +1,2 @@
+wrong-constants.hlt:7: parser error, value must be a constant
+wrong-constants.hlt: 1 error found during parsing

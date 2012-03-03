@@ -52,5 +52,6 @@ void __hlt_config_init()
 
 void __hlt_config_done()
 {
-    hlt_free(_current_config);
+    // Handled outside of the normal memory management.
+    free(_current_config);
 }

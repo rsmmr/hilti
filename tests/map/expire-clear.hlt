@@ -1,0 +1,34 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local int<32> s
+    local bool b
+    local ref<timer_mgr> t
+    local ref<map<string, int<32>>> m
+
+    t = new timer_mgr
+    m = new map<string, int<32>> t
+    map.timeout m Hilti::ExpireStrategy::Access interval(20.0)
+
+    map.insert m "A-0" 1
+    map.insert m "B-0" 2
+    map.insert m "C-5" 1
+    map.insert m "D-5" 2
+    map.insert m "E-10" 1
+    map.insert m "F-10" 2
+
+    call Hilti::print(m)
+    call Hilti::print(t)
+
+    map.clear m
+
+    call Hilti::print(m)
+    call Hilti::print(t)
+}

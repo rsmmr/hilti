@@ -75,10 +75,23 @@ size_t hlt_util_memory_usage()
     return (r.ru_maxrss * 1024);
 }
 
+#define _flip(x) \
+    ((((x) & 0xff00000000000000LL) >> 56) | \
+    (((x) & 0x00ff000000000000LL) >> 40) | \
+    (((x) & 0x0000ff0000000000LL) >> 24) | \
+    (((x) & 0x000000ff00000000LL) >> 8) | \
+    (((x) & 0x00000000ff000000LL) << 8) | \
+    (((x) & 0x0000000000ff0000LL) << 24) | \
+    (((x) & 0x000000000000ff00LL) << 40) | \
+    (((x) & 0x00000000000000ffLL) << 56))
+
 uint64_t hlt_hton64(uint64_t v)
 {
-    void *p = &v;
-    return ((uint64_t)hlt_hton32(*(uint32_t*)p) << 32) | ((uint64_t)hlt_hton32(*(uint32_t*)(p + 4)));
+#if ! __BIG_ENDIAN__
+    return _flip(v);
+#else
+    return v;
+#endif
 }
 
 uint32_t hlt_hton32(uint32_t v)
@@ -87,6 +100,25 @@ uint32_t hlt_hton32(uint32_t v)
 }
 
 uint16_t hlt_hton16(uint16_t v)
+{
+    return ntohs(v);
+}
+
+uint64_t hlt_ntoh64(uint64_t v)
+{
+#if ! __BIG_ENDIAN__
+    return _flip(v);
+#else
+    return v;
+#endif
+}
+
+uint32_t hlt_ntoh32(uint32_t v)
+{
+    return ntohl(v);
+}
+
+uint16_t hlt_ntoh16(uint16_t v)
 {
     return ntohs(v);
 }

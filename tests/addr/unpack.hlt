@@ -1,0 +1,81 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> first
+    local iterator<bytes> last
+    local iterator<bytes> nfirst
+    local int<64> diff
+    local string out
+
+    local tuple<addr, iterator<bytes>> t
+    local addr a
+
+    b = b"\xc0\xa8\x01\x01"
+    first = begin b
+    last = end b
+
+    t = unpack (first,last) Hilti::Packed::IPv4Network
+
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
+    call Hilti::print(out)
+
+    b = b" \x01\x0d\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x14(W\xab"
+    first = begin b
+    last = end b
+
+    t = unpack (first,last) Hilti::Packed::IPv6Network
+
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+
+    out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
+    call Hilti::print(out)
+
+    b = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+
+    ####
+
+    first = begin b
+    last = end b
+
+    t = unpack (first,last) Hilti::Packed::IPv4Network
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+    out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
+    call Hilti::print(out)
+
+    t = unpack (first,last) Hilti::Packed::IPv4
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+    out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
+    call Hilti::print(out)
+
+    t = unpack (first,last) Hilti::Packed::IPv6Network
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+    out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
+    call Hilti::print(out)
+
+    t = unpack (first,last) Hilti::Packed::IPv6
+    a = tuple.index t 0
+    nfirst = tuple.index t 1
+    diff = bytes.diff first nfirst
+    out = call Hilti::fmt ("addr=%s diff=%d", (a, diff))
+    call Hilti::print(out)
+    }

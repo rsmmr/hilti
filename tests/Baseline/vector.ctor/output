@@ -1,0 +1,6 @@
+[0: True, 1: False, 2: True]
+[0: False, 1: True, 2: False]
+[0: foo, 1: bar]
+[0: 123, 1: 345]
+[0: 1, 1: 2, 2: 3]
+[]

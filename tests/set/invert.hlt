@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local bool b
+    local ref<set<tuple<addr,addr>>> m
+
+    m = new set<tuple<addr,addr>>
+    set.insert m (1.2.3.4, 2.3.4.5)
+
+    b = set.exists m (1.2.3.4, 2.3.4.5)
+    call Hilti::print (b)
+
+    b = set.exists m (2.3.4.5, 1.2.3.4)
+    call Hilti::print (b)
+}

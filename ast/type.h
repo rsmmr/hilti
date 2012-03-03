@@ -43,27 +43,39 @@ public:
 
    /// Returns true if two types are equivalent.
    ///
-   /// We do type comparisions via the return value of the repr() method: two
-   /// types are considered equivalent when their repr() methods return the
-   /// same string. Thus, every derived class must reimplement that method.
+   /// These rules are applied:
    ///
-   /// In addition, the equal operator implements two special cases:
-   ///
-   ///    - Types marked with setWildcard() match any other type.
-   ///
-   ///    - Types marked with setAny() match any other instance of the same
+   ///    - Types marked with setWildcard() match any other type of the same
    ///    Type class.
    ///
-   /// other: The other type to compare with.
+   ///    - Types marked with setAny() match any other type.
+   ///
+   ///    - If the two types are of the the same type class, the result of
+   ///      _equal() is passed on (which defaults to true).
+   ///
+   ///    - Otherwise, comparision fails.
    bool equal(shared_ptr<AIType> other) const {
        if ( _any || other->_any )
            return true;
 
-       if ( _wildcard || other->_wildcard )
-           return typeid(*this) == typeid(*other);
+       if ( typeid(*this) == typeid(*other) ) {
+           if ( _wildcard || other->_wildcard )
+               return true;
 
-       return repr() == other->repr();
+           return _equal(other);
+       }
+
+       return false;
    }
+
+   /// Compares two type instances of the same Type class. The default
+   /// implementation returns true, but can be overridden.
+   ///
+   /// other: The instance to compare with. It's guaranteed that this is of
+   /// the same type as \c *this.
+   ///
+   /// Note, when overriding, make sure to keep comparision commutative.
+   virtual bool _equal(shared_ptr<AIType> other) const { return true; }
 
    /// Returns the ID associated with the type, or null of none.
    shared_ptr<ID> id() const { return _id; }
@@ -71,10 +83,10 @@ public:
    /// Associated an ID with the type.
    void setID(shared_ptr<ID> id) {
        if ( _id )
-           removeChild(_id);
+           this->removeChild(_id);
 
        _id = id;
-       addChild(_id);
+       this->addChild(_id);
    }
 
    /// Returns true if the type has been marked a wildcard type. See
@@ -93,21 +105,6 @@ public:
    /// Marks the type as matching any other. When comparing types with
    /// operator==(), such a type will always match anything else.
    void setMatchesAny(bool any) { _any = any; }
-
-   /// Returns a one-line string representation of the type for comparison.
-   /// Two matching strings are assumed to indicate equivalent typesif their
-   /// repr() methods returns the same string. See operator==() for more
-   /// information and some special cases.
-   ///
-   /// Any derived class must override this. The returned string should also
-   /// be a readable representation of the type as its by default also used
-   /// for render().
-   virtual string repr() const { return this->overrider()->repr(); }
-
-   /// The default implementation returns the output of render().
-   void render(std::ostream& out) const /* override */ {
-       out << repr();
-   }
 
 private:
    bool operator==(const Type& other) const; // Disable.
@@ -178,7 +175,7 @@ public:
    /// Returns a string representation of the parameter for type comparision.
    string repr() const {
        auto id = _id ? (string(" ") + _id->pathAsString()).c_str() : "";
-       return util::fmt("%s%s%s", (_constant ? "const " : ""), _type->repr().c_str(), id);
+       return util::fmt("%s%s%s", (_constant ? "const " : ""), _type->render().c_str(), id);
    }
 
 private:
@@ -296,7 +293,7 @@ inline mixin::Function<AstInfo>::Function(Type* target, shared_ptr<Parameter> re
 
 template<typename AstInfo>
 string mixin::Function<AstInfo>::repr() const {
-   string s = _result->repr() + string(" (");
+   string s = _result->render() + string(" (");
 
    bool first = true;
    for ( auto a : _params ) {

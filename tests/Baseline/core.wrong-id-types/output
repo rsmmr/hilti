@@ -1,0 +1,4 @@
+>>> call bar 42
+wrong-id-types.hlt:12: error, operand 1 must be of type function but is int<32>
+
+wrong-id-types.hlt: 1 error found during validating

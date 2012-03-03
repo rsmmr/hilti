@@ -17,6 +17,16 @@ bool hilti::resolveAST(shared_ptr<Module> module, const path_list& libdirs)
     if ( ! id_resolver.run(module) )
         return false;
 
+#if 0
+    if ( ! hilti::dumpAST(module, std::cerr) )
+        return false;
+#endif
+
+#if 0
+    if ( ! hilti::printAST(module, std::cerr) )
+        return false;
+#endif
+
     passes::InstructionResolver instruction_resolver;
     if ( ! instruction_resolver.run(module) )
         return false;

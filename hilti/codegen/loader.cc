@@ -3,6 +3,10 @@
 
 #include "loader.h"
 #include "codegen.h"
+#include "util.h"
+
+#include "libhilti/enum.h"
+#include "libhilti/port.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -73,7 +77,9 @@ void Loader::visit(expression::Variable* v)
 
 void Loader::visit(variable::Local* v)
 {
-    auto name = v->id()->name();
+    auto name = v->internalName();
+    assert(name.size());
+
     auto addr = cg()->llvmLocal(name);
     setResult(addr, false, true);
 }
@@ -179,10 +185,149 @@ void Loader::visit(constant::Reference* r)
     setResult(val, false, false);
 }
 
-void Loader::visit(ctor::Bytes* b)
+static CodeGen::constant_list _loadAddressVal(CodeGen* cg, const constant::AddressVal& val)
+{
+    uint64_t a, b;
+
+    switch ( val.family ) {
+     case constant::AddressVal::IPv4: {
+        uint32_t* p = (uint32_t*) &val.in.in4.s_addr;
+        a = 0;
+        b = codegen::util::ntoh32(p[0]);
+        break;
+     }
+
+     case constant::AddressVal::IPv6: {
+        uint64_t* p = (uint64_t*) &val.in.in6.s6_addr;
+        a = codegen::util::ntoh64(p[0]);
+        b = codegen::util::ntoh64(p[1]);
+        break;
+     }
+
+     default:
+        assert(false);
+    }
+
+    CodeGen::constant_list elems;
+    elems.push_back(cg->llvmConstInt(a, 64));
+    elems.push_back(cg->llvmConstInt(b, 64));
+
+    return elems;
+}
+
+void Loader::visit(constant::Address* c)
+{
+    auto elems = _loadAddressVal(cg(), c->value());
+    auto val = cg()->llvmConstStruct(elems);
+    setResult(val, false, false);
+}
+
+void Loader::visit(constant::Network* c)
+{
+    auto elems = _loadAddressVal(cg(), c->prefix());
+    auto width = c->width();
+
+    if ( c->prefix().family == constant::AddressVal::IPv4 )
+        width += 96;
+
+    elems.push_back(cg()->llvmConstInt(width, 8));
+
+    auto val = cg()->llvmConstStruct(elems);
+    setResult(val, false, false);
+}
+
+void Loader::visit(constant::Double* c)
+{
+    auto val = cg()->llvmConstDouble(c->value());
+    setResult(val, false, false);
+}
+
+void Loader::visit(constant::Bitset* c)
+{
+    auto bstype = ast::as<type::Bitset>(c->type());
+    assert(bstype);
+
+    auto bits = c->value();
+
+    uint64_t i = 0;
+
+    for ( auto b : bits )
+        i |= (1 << bstype->labelBit(b));
+
+    auto val = cg()->llvmConstInt(i, 64);
+
+    setResult(val, false, false);
+}
+
+void Loader::visit(constant::Enum* c)
+{
+    auto etype = ast::as<type::Enum>(c->type());
+    assert(etype);
+
+    auto bits = c->value();
+
+    int i = etype->labelValue(c->value());
+    uint8_t flags = HLT_ENUM_HAS_VAL;
+
+    if ( i < 0 ) {
+        // Undef.
+        flags = HLT_ENUM_UNDEF;
+        i = 0;
+    }
+
+    CodeGen::constant_list elems;
+    elems.push_back(cg()->llvmConstInt(flags, 8));
+    elems.push_back(cg()->llvmConstInt(i, 64));
+
+    auto val = cg()->llvmConstStruct(elems);
+
+    setResult(val, false, false);
+}
+
+void Loader::visit(constant::Interval* c)
+{
+    auto val = cg()->llvmConstInt(c->value(), 64);
+    setResult(val, false, false);
+}
+
+void Loader::visit(constant::Time* c)
+{
+    auto val = cg()->llvmConstInt(c->value(), 64);
+    setResult(val, false, false);
+}
+
+void Loader::visit(constant::Port* c)
+{
+    auto p = c->value();
+
+    int proto = 0;
+
+    switch ( p.proto ) {
+     case constant::PortVal::TCP:
+        proto = HLT_PORT_TCP;
+        break;
+
+     case constant::PortVal::UDP:
+        proto = HLT_PORT_UDP;
+        break;
+
+     default:
+        internalError(c, "unknown port protocol");
+    }
+
+    CodeGen::constant_list elems;
+    elems.push_back(cg()->llvmConstInt(p.port, 16));
+    elems.push_back(cg()->llvmConstInt(p.proto, 8));
+    auto val = cg()->llvmConstStruct(elems, true);
+
+    setResult(val, false, false);
+}
+
+void Loader::visit(ctor::Bytes* c)
 {
     std::vector<llvm::Constant*> vec_data;
-    for ( auto c : b->value() )
+
+    for ( auto c : c->value() )
         vec_data.push_back(cg()->llvmConstInt(c, 8));
 
     auto array = cg()->llvmConstArray(cg()->llvmTypeInt(8), vec_data);
@@ -191,9 +336,96 @@ void Loader::visit(ctor::Bytes* b)
 
     CodeGen::value_list args;
     args.push_back(data);
-    args.push_back(cg()->llvmConstInt(b->value().size(), 64));
+    args.push_back(cg()->llvmConstInt(c->value().size(), 64));
 
     auto val = cg()->llvmCallC("hlt_bytes_new_from_data_copy", args, true);
 
     setResult(val, true, false);
+}
+
+static shared_ptr<Expression> _tmgrNull(CodeGen* cg)
+{
+    auto refTimerMgr = builder::reference::type(builder::timer_mgr::type());
+    auto null = cg->llvmConstNull(cg->llvmTypePtr(cg->llvmLibType("hlt.timger_mgr")));
+    return builder::codegen::create(refTimerMgr, null);
+}
+
+void Loader::visit(ctor::List* c)
+{
+    auto etype = ast::as<type::List>(c->type())->argType();
+    assert(etype);
+
+    auto op1 = builder::type::create(etype);
+    auto op2 = _tmgrNull(cg());
+
+    CodeGen::expr_list args = {op1, op2};
+    auto list = cg()->llvmCall("hlt::list_new", args);
+
+    auto listop = builder::codegen::create(c->type(), list);
+
+    for ( auto e : c->elements() ) {
+        e = e->coerceTo(etype);
+        CodeGen::expr_list args = { listop, e };
+        cg()->llvmCall("hlt::list_push_back", args);
+    }
+
+    setResult(list, true, false);
+}
+
+void Loader::visit(ctor::Set* c)
+{
+    auto etype = ast::as<type::List>(c->type())->argType();
+    assert(etype);
+
+    auto op1 = builder::type::create(etype);
+    auto op2 = _tmgrNull(cg());
+
+    CodeGen::expr_list args = {op1, op2};
+    auto set = cg()->llvmCall("hlt::set_new", args);
+
+    auto setop = builder::codegen::create(c->type(), set);
+
+    for ( auto e : c->elements() ) {
+        e = e->coerceTo(etype);
+        CodeGen::expr_list args = { setop, e };
+        cg()->llvmCall("hlt::set_insert", args);
+    }
+
+    setResult(set, true, false);
+}
+
+void Loader::visit(ctor::Vector* c)
+{
+    auto etype = ast::as<type::List>(c->type())->argType();
+    assert(etype);
+
+    auto op1 = builder::type::create(etype);
+    auto op2 = _tmgrNull(cg());
+
+    CodeGen::expr_list args = {op1, op2};
+    auto vec = cg()->llvmCall("hlt::vector_new", args);
+
+    auto vecop = builder::codegen::create(c->type(), vec);
+
+    for ( auto e : c->elements() ) {
+        e = e->coerceTo(etype);
+        CodeGen::expr_list args = { vecop, e };
+        cg()->llvmCall("hlt::vector_push_back", args);
+    }
+
+    setResult(vec, true, false);
+}
+
+void Loader::visit(ctor::Map* c)
+{
+    assert(false);
+    // Not implemented;
+    // setResult(val, true, false);
+}
+
+void Loader::visit(ctor::RegExp* c)
+{
+    assert(false);
+    // Not implemented.
+    // setResult(val, true, false);
 }

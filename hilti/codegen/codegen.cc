@@ -8,6 +8,7 @@
 
 #include "loader.h"
 #include "storer.h"
+#include "unpacker.h"
 #include "coercer.h"
 #include "builder.h"
 #include "stmt-builder.h"
@@ -22,6 +23,7 @@ CodeGen::CodeGen(const path_list& libdirs, int cg_debug_level)
     : _coercer(new Coercer(this)),
       _loader(new Loader(this)),
       _storer(new Storer(this)),
+      _unpacker(new Unpacker(this)),
       _stmt_builder(new StatementBuilder(this)),
       _type_builder(new TypeBuilder(this)),
       _debug_info_builder(new DebugInfoBuilder(this)),
@@ -222,7 +224,7 @@ llvm::Value* CodeGen::llvmGlobal(Variable* var)
         internalError(::util::fmt("undefined global %s", var->id()->name().c_str()));
 
     auto idx = i->second;
-    auto base = llvmCheckedCreateCall(_globals_base_func);
+    auto base = llvmCreateCall(_globals_base_func);
     return llvmGEP(base, llvmGEPIdx(0), idx);
 }
 
@@ -252,8 +254,13 @@ llvm::Value* CodeGen::llvmExecutionContext()
 
 llvm::Constant* CodeGen::llvmSizeOf(llvm::Constant* v)
 {
+    return llvmSizeOf(v->getType());
+}
+
+llvm::Constant* CodeGen::llvmSizeOf(llvm::Type* t)
+{
     // Computer size using the "portable sizeof" idiom ...
-    auto null = llvmConstNull(llvmTypePtr(v->getType()));
+    auto null = llvmConstNull(llvmTypePtr(t));
     auto addr = llvm::ConstantExpr::getGetElementPtr(null, llvmGEPIdx(1));
     return llvm::ConstantExpr::getPtrToInt(addr, llvmTypeInt(64));
 }
@@ -261,6 +268,48 @@ llvm::Constant* CodeGen::llvmSizeOf(llvm::Constant* v)
 void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value)
 {
     _storer->llvmStore(target, value, true);
+}
+
+std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
+                   shared_ptr<Type> type, shared_ptr<Expression> begin,
+                   shared_ptr<Expression> end, shared_ptr<Expression> fmt,
+                   shared_ptr<Expression> arg, const Location& location)
+{
+    UnpackArgs args;
+    args.type = type;
+    args.begin = begin ? llvmValue(begin) : nullptr;
+    args.end = end ? llvmValue(end) : nullptr;
+    args.fmt = fmt ? llvmValue(fmt) : nullptr;
+    args.arg = arg ? llvmValue(arg) : nullptr;
+    args.location = location;
+
+    UnpackResult result = _unpacker->llvmUnpack(args);
+
+    auto val = builder()->CreateLoad(result.value_ptr);
+    auto iter = builder()->CreateLoad(result.iter_ptr);
+
+    return std::make_pair(val, iter);
+}
+
+std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
+                   shared_ptr<Type> type, llvm::Value* begin,
+                   llvm::Value* end, llvm::Value* fmt,
+                   llvm::Value* arg, const Location& location)
+{
+    UnpackArgs args;
+    args.type = type;
+    args.begin = begin;
+    args.end = end;
+    args.fmt = fmt;
+    args.arg = arg;
+    args.location = location;
+
+    UnpackResult result = _unpacker->llvmUnpack(args);
+
+    auto val = builder()->CreateLoad(result.value_ptr);
+    auto iter = builder()->CreateLoad(result.iter_ptr);
+
+    return std::make_pair(val, iter);
 }
 
 llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
@@ -289,7 +338,7 @@ llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builde
     _functions.push_back(std::move(state));
 
     if ( push_builder )
-        pushBuilder("__entry");
+        pushBuilder("entry");
 
     return function;
 }
@@ -332,12 +381,12 @@ IRBuilder* CodeGen::pushBuilder(IRBuilder* builder)
     return builder;
 }
 
-IRBuilder* CodeGen::pushBuilder(string name)
+IRBuilder* CodeGen::pushBuilder(string name, bool reuse)
 {
-    return pushBuilder(newBuilder(name));
+    return pushBuilder(newBuilder(name, reuse));
 }
 
-IRBuilder* CodeGen::newBuilder(string name, bool reuse)
+IRBuilder* CodeGen::newBuilder(string name, bool reuse, bool create)
 {
     int cnt = 1;
 
@@ -349,7 +398,7 @@ IRBuilder* CodeGen::newBuilder(string name, bool reuse)
         if ( cnt == 1 )
             n = ::util::fmt(".%s", name.c_str());
         else
-            n = ::util::fmt(".%s.%d", name.c_str(), ++cnt);
+            n = ::util::fmt(".%s.%d", name.c_str(), cnt);
 
         auto b = _functions.back()->builders_by_name.find(n);
 
@@ -358,7 +407,12 @@ IRBuilder* CodeGen::newBuilder(string name, bool reuse)
 
         if ( reuse )
             return b->second;
+
+        ++cnt;
     }
+
+    if ( ! create )
+    return 0;
 
     auto block = llvm::BasicBlock::Create(llvmContext(), n, function());
     auto builder = newBuilder(block);
@@ -376,6 +430,11 @@ IRBuilder* CodeGen::newBuilder(llvm::BasicBlock* block, bool insert_at_beginning
 IRBuilder* CodeGen::builderForLabel(const string& name)
 {
     return newBuilder(name, true);
+}
+
+IRBuilder* CodeGen::haveBuilder(const string& name)
+{
+    return newBuilder(name, true, false);
 }
 
 void CodeGen::popBuilder()
@@ -481,7 +540,7 @@ void CodeGen::createGlobalsInitFunction()
         auto init = g->init() ? llvmValue(g->init(), g->type(), true) : llvmInitVal(g->type());
         assert(init);
         auto addr = llvmGlobal(g.get());
-        llvmCheckedCreateStore(init, addr);
+        llvmCreateStore(init, addr);
     }
 
     if ( ! functionEmpty() )
@@ -493,6 +552,8 @@ void CodeGen::createGlobalsInitFunction()
         _globals_init_func->removeFromParent();
         _globals_init_func = nullptr;
     }
+
+    llvmBuildExitBlock();
 
     popFunction();
 
@@ -523,6 +584,8 @@ void CodeGen::createGlobalsInitFunction()
         _globals_dtor_func->removeFromParent();
         _globals_dtor_func = nullptr;
     }
+
+    llvmBuildExitBlock();
 
     popFunction();
 }
@@ -648,7 +711,7 @@ llvm::Type* CodeGen::llvmType(shared_ptr<hilti::Type> type)
 
 llvm::Constant* CodeGen::llvmInitVal(shared_ptr<hilti::Type> type)
 {
-    llvm::Constant* val = lookupCachedConstant("type.init_val", type->repr());
+    llvm::Constant* val = lookupCachedConstant("type.init_val", type->render());
 
     if ( val )
         return val;
@@ -656,12 +719,12 @@ llvm::Constant* CodeGen::llvmInitVal(shared_ptr<hilti::Type> type)
     auto ti = typeInfo(type);
     assert(ti->init_val);
 
-    return cacheConstant("type.init_val", type->repr(), ti->init_val);
+    return cacheConstant("type.init_val", type->render(), ti->init_val);
 }
 
 llvm::Constant* CodeGen::llvmRtti(shared_ptr<hilti::Type> type)
 {
-    llvm::Constant* val = lookupCachedConstant("type.rtti", type->repr());
+    llvm::Constant* val = lookupCachedConstant("type.rtti", type->render());
 
     if ( val ) {
         auto v = llvm::cast<llvm::GlobalVariable>(val);
@@ -671,14 +734,14 @@ llvm::Constant* CodeGen::llvmRtti(shared_ptr<hilti::Type> type)
 
     // We add the global here first and cache it before we call llvmRtti() so
     // the recursive calls function properly.
-    string name = util::mangle(string("hlt_type_info_hlt_") + type->repr(), true, nullptr, "", false);
+    string name = util::mangle(string("hlt_type_info_hlt_") + type->render(), true, nullptr, "", false);
     llvm::Constant* cval = llvmConstNull(llvmTypePtr(llvmTypeRtti()));
     auto constant1 = llvmAddConst(name, cval, true);
     constant1->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
-    cacheConstant("type.rtti", type->repr(), constant1);
+    cacheConstant("type.rtti", type->render(), constant1);
 
     cval = _type_builder->llvmRtti(type);
-    name = util::mangle(string("type_info_val_") + type->repr(), true);
+    name = util::mangle(string("type_info_val_") + type->render(), true);
     auto constant2 = llvmAddConst(name, cval, true);
     constant2->setLinkage(llvm::GlobalValue::InternalLinkage);
 
@@ -696,6 +759,10 @@ llvm::Type* CodeGen::llvmTypeInt(int width) {
     return llvm::Type::getIntNTy(llvmContext(), width);
 }
 
+llvm::Type* CodeGen::llvmTypeDouble() {
+    return llvm::Type::getDoubleTy(llvmContext());
+}
+
 llvm::Type* CodeGen::llvmTypeString() {
     return llvmTypePtr(llvmLibType("hlt.string"));
 }
@@ -708,11 +775,61 @@ llvm::Type* CodeGen::llvmTypeExecutionContext() {
     return llvmLibType("hlt.execution_context");
 }
 
-llvm::Type* CodeGen::llvmTypeException() {
-    return llvmLibType("hlt.exception");
+llvm::Type* CodeGen::llvmTypeExceptionPtr() {
+    return llvmTypePtr(llvmLibType("hlt.exception"));
 }
 
-llvm::Type* CodeGen::llvmTypeRtti() {
+llvm::Constant* CodeGen::llvmExceptionTypeObject(shared_ptr<type::Exception> excpt)
+{
+    auto libtype = excpt ? excpt->libraryType() : "hlt_exception_unspecified";
+
+    if ( libtype.size() ) {
+        // If it's a libhilti exception, create an extern declaration
+        // pointing there.
+
+        auto glob = lookupCachedConstant("type-exception-lib", libtype);
+
+        if ( glob )
+            return glob;
+
+        auto g = llvmAddGlobal(libtype, llvmLibType("hlt.exception.type"), nullptr, true);
+        g->setConstant(true);
+        g->setInitializer(0);
+        g->setLinkage(llvm::GlobalValue::ExternalLinkage);
+
+        return cacheConstant("type-exception", libtype, g);
+    }
+
+    else {
+        // Otherwise, create the type (if we haven't already).
+
+        auto glob = lookupCachedConstant("type-exception", excpt->render());
+
+        if ( glob )
+            return  glob;
+
+        assert(excpt->id());
+
+        auto name = llvmConstAsciizPtr(excpt->id()->pathAsString());
+        auto base = llvmExceptionTypeObject(excpt->baseType());
+        auto arg  = excpt->argType() ? llvmRtti(excpt->argType()) : llvmConstNull(llvmTypePtr(llvmTypeRtti()));
+
+        base = llvm::ConstantExpr::getBitCast(base, llvmTypePtr());
+        arg = llvm::ConstantExpr::getBitCast(arg, llvmTypePtr());
+
+        constant_list elems;
+        elems.push_back(name);
+        elems.push_back(base);
+        elems.push_back(arg);
+        auto val = llvmConstStruct(llvmLibType("hlt.exception.type"), elems);
+        glob = llvmAddConst("exception", val);
+
+        return cacheConstant("type-exception", excpt->render(), glob);
+    }
+}
+
+llvm::Type* CodeGen::llvmTypeRtti()
+{
     return llvmLibType("hlt.type_info");
 }
 
@@ -724,10 +841,15 @@ llvm::Type* CodeGen::llvmTypeStruct(const string& name, const std::vector<llvm::
         return llvm::StructType::get(llvmContext(), fields, packed);
 }
 
-llvm::Constant* CodeGen::llvmConstInt(int64_t val, int64_t width)
+llvm::ConstantInt* CodeGen::llvmConstInt(int64_t val, int64_t width)
 {
     assert(width <= 64);
     return llvm::ConstantInt::get(llvm::Type::getIntNTy(llvmContext(), width), val);
+}
+
+llvm::Constant* CodeGen::llvmConstDouble(double val)
+{
+    return llvm::ConstantFP::get(llvm::Type::getDoubleTy(llvmContext()), val);
 }
 
 llvm::Constant* CodeGen::llvmGEPIdx(int64_t idx)
@@ -741,6 +863,12 @@ llvm::Constant* CodeGen::llvmConstNull(llvm::Type* t)
         t = llvmTypePtr(llvmTypeInt(8)); // Will return "i8 *" aka "void *".
 
     return llvm::Constant::getNullValue(t);
+}
+
+llvm::Constant* CodeGen::llvmConstBytesEnd()
+{
+    auto t = llvmLibType("hlt.iterator.bytes");
+    return llvmConstNull(t);
 }
 
 llvm::Constant* CodeGen::llvmConstArray(llvm::Type* t, const std::vector<llvm::Constant*>& elems)
@@ -757,6 +885,11 @@ llvm::Constant* CodeGen::llvmConstArray(const std::vector<llvm::Constant*>& elem
 
 llvm::Constant* CodeGen::llvmConstAsciiz(const string& str)
 {
+    auto c = lookupCachedConstant("const-asciiz", str);
+
+    if ( c )
+        return c;
+
     std::vector<llvm::Constant*> elems;
 
     for ( auto c : str )
@@ -764,25 +897,52 @@ llvm::Constant* CodeGen::llvmConstAsciiz(const string& str)
 
     elems.push_back(llvmConstInt(0, 8));
 
-    return llvmConstArray(llvmTypeInt(8), elems);
+    c = llvmConstArray(llvmTypeInt(8), elems);
+
+    return cacheConstant("const-asciiz", str, c);
 }
 
 llvm::Constant* CodeGen::llvmConstAsciizPtr(const string& str)
 {
+    auto c = lookupCachedConstant("const-asciiz-ptr", str);
+
+    if ( c )
+        return c;
+
     auto cval = llvmConstAsciiz(str);
     auto ptr = llvmAddConst("asciiz", cval);
-    return llvm::ConstantExpr::getBitCast(ptr, llvmTypePtr());
+
+    c = llvm::ConstantExpr::getBitCast(ptr, llvmTypePtr());
+
+    return cacheConstant("const-asciiz-ptr", str, c);
+
 }
 
-llvm::Constant* CodeGen::llvmConstStruct(const std::vector<llvm::Constant*>& elems, bool packed)
+llvm::Constant* CodeGen::llvmConstStruct(const constant_list& elems, bool packed)
 {
     if ( elems.size() )
         return llvm::ConstantStruct::getAnon(elems, packed);
+
     else {
         std::vector<llvm::Type*> empty;
         auto stype = llvmTypeStruct("", empty, packed);
         return llvmConstNull(stype);
     }
+}
+
+llvm::Constant* CodeGen::llvmConstStruct(llvm::Type* type, const constant_list& elems)
+{
+    return llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(type), elems);
+}
+
+llvm::Value* CodeGen::llvmEnum(const string& label)
+{
+    auto expr = _hilti_module->body()->scope()->lookup((std::make_shared<ID>(label)));
+
+    if ( ! expr )
+        throw ast::InternalError("llvmEnum: unknown enum label %s" + label);
+
+    return llvmValue(expr);
 }
 
 llvm::Constant* CodeGen::llvmCastConst(llvm::Constant* c, llvm::Type* t)
@@ -866,10 +1026,14 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
     llvm::BasicBlock& block(function()->getEntryBlock());
 
     auto builder = newBuilder(&block, true);
+
     auto local = builder->CreateAlloca(llvm_type, 0, name);
 
-    if ( init )
-        llvmCheckedCreateStore(init, local);
+    if ( init ) {
+        pushBuilder(builder);
+        llvmCreateStore(init, local);
+        popBuilder();
+    }
 
     _functions.back()->locals.insert(make_pair(name, std::make_pair(local, type)));
 
@@ -889,7 +1053,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
         auto i = _functions.back()->tmps.find(tname);
         if ( i != _functions.back()->tmps.end() ) {
             auto tmp = i->second.first;
-            llvmCheckedCreateStore(init, tmp);
+            llvmCreateStore(init, tmp);
             return tmp;
         }
     }
@@ -901,7 +1065,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
 
     if ( init )
         // Must be done in original block.
-        llvmCheckedCreateStore(init, tmp);
+        llvmCreateStore(init, tmp);
 
     _functions.back()->tmps.insert(make_pair(tname, std::make_pair(tmp, nullptr)));
 
@@ -994,7 +1158,7 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
         break;
 
      case type::function::HILTI_C:
-        llvm_args.push_back(std::make_pair(symbols::ArgException, llvmTypePtr((llvmTypePtr(llvmTypeException())))));
+        llvm_args.push_back(std::make_pair(symbols::ArgException, llvmTypePtr(llvmTypeExceptionPtr())));
         llvm_args.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext())));
         break;
 
@@ -1103,7 +1267,7 @@ void CodeGen::llvmReturn(llvm::Value* result)
     auto state = _functions.back().get();
 
     if ( ! state->exit_block )
-        state->exit_block = llvm::BasicBlock::Create(llvmContext(), "__exit", function());
+        state->exit_block = llvm::BasicBlock::Create(llvmContext(), ".exit", function());
 
     builder()->CreateBr(state->exit_block);
 
@@ -1111,7 +1275,7 @@ void CodeGen::llvmReturn(llvm::Value* result)
         state->exits.push_back(std::make_pair(block(), result));
 }
 
-void CodeGen::llvmBuildExitBlock(shared_ptr<Function> func)
+void CodeGen::llvmBuildExitBlock()
 {
     auto state = _functions.back().get();
 
@@ -1123,7 +1287,7 @@ void CodeGen::llvmBuildExitBlock(shared_ptr<Function> func)
     llvm::PHINode* phi = nullptr;
 
     if ( state->exits.size() ) {
-        auto rtype = llvmType(func->type()->result()->type());
+        auto rtype = state->function->getReturnType();
         phi = exit_builder->CreatePHI(rtype, state->exits.size());
 
         for ( auto e : state->exits )
@@ -1187,51 +1351,162 @@ llvm::Constant* CodeGen::llvmGEP(llvm::Constant* addr, llvm::Value* i1, llvm::Va
     return llvm::ConstantExpr::getGetElementPtr(addr, idx);
 }
 
-llvm::CallInst* CodeGen::llvmCallC(llvm::Value* llvm_func, const value_list& args, bool add_hiltic_args)
+llvm::CallInst* CodeGen::llvmCallC(llvm::Value* llvm_func, const value_list& args, bool add_hiltic_args, bool excpt_check)
 {
     value_list call_args = args;
 
     llvm::Value* excpt = nullptr;
 
     if ( add_hiltic_args ) {
-        excpt = llvmAddTmp("excpt", llvmTypePtr(llvmTypeException()), 0, true);
+        excpt = llvmAddTmp("excpt", llvmTypeExceptionPtr(), 0, true);
         call_args.push_back(excpt);
         call_args.push_back(llvmExecutionContext());
     }
 
-    auto result = llvmCheckedCreateCall(llvm_func, call_args);
+    auto result = llvmCreateCall(llvm_func, call_args);
 
-    if ( excpt )
-        llvmCheckCException(excpt);
+    if ( excpt_check )
+        llvmCheckException();
 
     return result;
 }
 
-llvm::CallInst* CodeGen::llvmCallC(const string& llvm_func, const value_list& args, bool add_hiltic_args)
+llvm::CallInst* CodeGen::llvmCallC(const string& llvm_func, const value_list& args, bool add_hiltic_args, bool excpt_check)
 {
-    return llvmCallC(llvmLibFunction(llvm_func), args, add_hiltic_args);
+    auto f = llvmLibFunction(llvm_func);
+    return llvmCallC(f, args, add_hiltic_args, excpt_check);
+}
+
+llvm::CallInst* CodeGen::llvmCallIntrinsic(llvm::Intrinsic::ID intr, std::vector<llvm::Type*> tys, const value_list& args)
+{
+    auto func = llvm::Intrinsic::getDeclaration(_module, intr, tys);
+    assert(func);
+    return llvmCreateCall(func, args);
 }
 
 void CodeGen::llvmRaiseException(const string& exception, shared_ptr<Node> node, llvm::Value* arg)
 {
-    /// TODO: Currently we just abort.
-    value_list no_args;
-    llvmCallC("hlt_abort", no_args, false);
+    return llvmRaiseException(exception, node->location(), arg);
 }
 
-void CodeGen::llvmRaiseException(const string& exception, const Location& l,  llvm::Value* arg)
+void CodeGen::llvmRaiseException(const string& exception, const Location& l, llvm::Value* arg)
 {
-    /// TODO: Currently we just abort.
-    value_list no_args;
-    llvmCallC("hlt_abort", no_args, false);
+    auto expr = _hilti_module->body()->scope()->lookup((std::make_shared<ID>(exception)));
+
+    if ( ! expr )
+        internalError(::util::fmt("unknown exception %s", exception.c_str()), l);
+
+    auto type = ast::as<expression::Type>(expr)->typeValue();
+    assert(type);
+
+    auto etype = ast::as<type::Exception>(type);
+    assert(etype);
+
+    CodeGen::value_list args;
+    args.push_back(llvmExceptionTypeObject(etype));
+    args.push_back(llvmConstNull());
+    args.push_back(llvmLocationString(l));
+
+    auto excpt = llvmCallC("hlt_exception_new", args, false, false);
+
+    llvmRaiseException(excpt);
 }
 
-llvm::CallInst* CodeGen::llvmCheckedCreateCall(llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name)
+void CodeGen::llvmRaiseException(llvm::Value* excpt)
+{
+    value_list args;
+    args.push_back(excpt);
+    args.push_back(llvmExecutionContext());
+    llvmCallC("__hlt_context_set_exception", args, false, false);
+    llvmTriggerExceptionHandling(true);
+}
+
+void CodeGen::llvmRethrowException()
+{
+    // This simply returns with a null value. The caller will check for a thrown exception.
+
+    auto rt = _functions.back()->function->getReturnType();
+
+    if ( rt->isVoidTy() )
+        llvmReturn();
+    else
+        llvmReturn(llvmConstNull(rt));
+}
+
+void CodeGen::llvmClearException()
+{
+    value_list args;
+    args.push_back(llvmExecutionContext());
+    llvmCallC("__hlt_context_clear_exception", args, false, false);
+}
+
+llvm::Value* CodeGen::llvmCurrentException()
+{
+    value_list args;
+    args.push_back(llvmExecutionContext());
+    return llvmCallC("__hlt_context_get_exception", args, false, false);
+}
+
+void CodeGen::llvmCheckException()
+{
+    llvmTriggerExceptionHandling(false);
+}
+
+void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
+{
+    if ( _in_check_exception )
+        // Make sure we don't recurse.
+        return;
+
+    ++_in_check_exception;
+
+    llvm::Value* is_null = nullptr;
+    IRBuilder* cont = nullptr;
+
+    if ( ! known_exception ) {
+        auto excpt = llvmCurrentException();
+        is_null = builder()->CreateIsNull(excpt);
+        cont = newBuilder("no-excpt");
+    }
+
+    if ( _functions.back()->catches.size() ) {
+        // At least one catch clause, check it.
+        if ( ! known_exception )
+            llvmCreateCondBr(is_null, cont, _functions.back()->catches.front());
+        else
+            llvmCreateBr(_functions.back()->catches.front());
+    }
+
+    else {
+        // No catches at all, unwind.
+        auto unwind = haveBuilder("unwind");
+
+        if ( ! unwind ) {
+            unwind = pushBuilder("unwind");
+            llvmRethrowException();
+            popBuilder();
+        }
+
+        if ( ! known_exception )
+            llvmCreateCondBr(is_null, cont, unwind);
+        else
+            llvmCreateBr(unwind);
+    }
+
+    pushBuilder(cont);
+
+    // Leave on stack.
+
+    --_in_check_exception;
+}
+
+
+llvm::CallInst* CodeGen::llvmCreateCall(llvm::Value *callee, llvm::ArrayRef<llvm::Value *> args, const llvm::Twine &name)
 {
     return util::checkedCreateCall(builder(), "CodeGen", callee, args, name);
 }
 
-llvm::CallInst* CodeGen::llvmCheckedCreateCall(llvm::Value *callee, const llvm::Twine &name)
+llvm::CallInst* CodeGen::llvmCreateCall(llvm::Value *callee, const llvm::Twine &name)
 {
     std::vector<llvm::Value*> no_params;
     return util::checkedCreateCall(builder(), "CodeGen", callee, no_params, name);
@@ -1255,7 +1530,7 @@ static void _dumpStore(llvm::Value *val, llvm::Value *ptr, const string& where, 
     ::util::abort_with_backtrace();
 }
 
-llvm::StoreInst* CodeGen::llvmCheckedCreateStore(llvm::Value *val, llvm::Value *ptr, bool isVolatile)
+llvm::StoreInst* CodeGen::llvmCreateStore(llvm::Value *val, llvm::Value *ptr, bool isVolatile)
 {
     auto ptype = ptr->getType();
     auto p = llvm::isa<llvm::PointerType>(ptype);
@@ -1268,6 +1543,17 @@ llvm::StoreInst* CodeGen::llvmCheckedCreateStore(llvm::Value *val, llvm::Value *
 
     return builder()->CreateStore(val, ptr, isVolatile);
 }
+
+llvm::BranchInst* CodeGen::llvmCreateBr(IRBuilder* b)
+{
+    return builder()->CreateBr(b->GetInsertBlock());
+}
+
+llvm::BranchInst* CodeGen::llvmCreateCondBr(llvm::Value* cond, IRBuilder* true_, IRBuilder* false_)
+{
+    return builder()->CreateCondBr(cond, true_->GetInsertBlock(), false_->GetInsertBlock());
+}
+
 
 llvm::Value* CodeGen::llvmInsertValue(llvm::Value* aggr, llvm::Value* val, unsigned int idx)
 {
@@ -1311,6 +1597,9 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
     auto name = util::mangle(func->id(), true, nullptr, "", false);
     auto llvm_func = llvmAddFunction(func, false, type::function::HILTI_C);
 
+    auto args = llvm_func->arg_begin();
+    auto excpt = args;
+
     pushFunction(llvm_func);
 
     expr_list params;
@@ -1319,17 +1608,23 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
         params.push_back(expr);
     }
 
-    auto result = llvmCall(func, params);
+    auto result = llvmCall(func, params, false); // No excpt check, we pass it right on.
+
+    // Copy exception over.
+    auto ctx_excpt = llvmCurrentException();
+    llvmCreateStore(ctx_excpt, excpt);
 
     if ( ftype->result()->type()->equal(shared_ptr<Type>(new type::Void())) )
-        builder()->CreateRetVoid();
+        llvmReturn();
     else
-        builder()->CreateRet(result);
+        llvmReturn(result);
+
+    llvmBuildExitBlock();
 
     popFunction();
 }
 
-llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args)
+llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args, bool excpt_check)
 {
     std::vector<llvm::Value*> llvm_args;
 
@@ -1406,7 +1701,7 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
         break;
 
      case type::function::HILTI_C: {
-        excpt = llvmAddTmp("excpt", llvmTypePtr(llvmTypeException()), 0, true);
+        excpt = llvmAddTmp("excpt", llvmTypeExceptionPtr(), 0, true);
         llvm_args.push_back(excpt);
         llvm_args.push_back(llvmExecutionContext());
         break;
@@ -1421,7 +1716,10 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
 
     // Do the call.
 
-    auto result = llvmCheckedCreateCall(llvm_func, llvm_args);
+    auto result = llvmCreateCall(llvm_func, llvm_args);
+
+    if ( excpt_check )
+        llvmCheckException();
 
     // Retrieve return value according to calling convention.
 
@@ -1432,7 +1730,6 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
 
      case type::function::HILTI_C:
         assert(excpt);
-        llvmCheckCException(excpt);
         // assert(false && "Do ABI stuff");
         break;
 
@@ -1444,16 +1741,18 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
         internalError("unknown calling convention in llvmCall");
     }
 
+    auto rtype = ftype->result()->type();
+    llvmCctor(result, rtype, false);
+
     return result;
-
 }
 
-llvm::CallInst* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list& args)
+llvm::CallInst* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list& args, bool excpt_check)
 {
-    return llvmCall(llvmFunction(func), func->type(), args);
+    return llvmCall(llvmFunction(func), func->type(), args, excpt_check);
 }
 
-llvm::CallInst* CodeGen::llvmCall(const string& name, const expr_list& args)
+llvm::CallInst* CodeGen::llvmCall(const string& name, const expr_list& args, bool excpt_check)
 {
     auto id = shared_ptr<ID>(new ID(name));
     auto expr = _hilti_module->body()->scope()->lookup(id);
@@ -1466,7 +1765,7 @@ llvm::CallInst* CodeGen::llvmCall(const string& name, const expr_list& args)
 
     auto func = ast::as<expression::Function>(expr)->function();
 
-    return llvmCall(func, args);
+    return llvmCall(func, args, excpt_check);
 }
 
 void CodeGen::llvmCheckCException(llvm::Value* excpt)
@@ -1508,7 +1807,7 @@ llvm::Value* CodeGen::llvmLocationString(const Location& l)
     if ( debugLevel() == 0 )
         return llvmConstNull();
 
-    return llvmConstAsciiz(string(l).c_str());
+    return llvmConstAsciizPtr(string(l).c_str());
 }
 
 void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
@@ -1529,7 +1828,7 @@ void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
     args.push_back(builder()->CreateBitCast(llvmConstAsciizPtr("HILTI: llvmDtor"), llvmTypePtr()));
-    llvmCallC("__hlt_object_dtor", args, false);
+    llvmCallC("__hlt_object_dtor", args, false, false);
 }
 
 void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
@@ -1550,14 +1849,14 @@ void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
     args.push_back(builder()->CreateBitCast(llvmConstAsciizPtr("HILTI: llvmCctor"), llvmTypePtr()));
-    llvmCallC("__hlt_object_cctor", args, false);
+    llvmCallC("__hlt_object_cctor", args, false, false);
 }
 
 void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone)
 {
     assert(ast::isA<type::ValueType>(type));
     llvmDtor(dst, type, true);
-    llvmCheckedCreateStore(val, dst);
+    llvmCreateStore(val, dst);
 
     if ( ! plusone )
         llvmCctor(dst, type, true);
@@ -1582,7 +1881,7 @@ void CodeGen::llvmDebugPrint(const string& stream, const string& msg)
     args.push_back(arg1);
     args.push_back(arg2);
 
-    llvmCallC("__hlt_debug_print", args, false);
+    llvmCallC("__hlt_debug_print", args, false, false);
 
 #if 0
     builder::tuple::element_list elems;
@@ -1596,8 +1895,32 @@ void CodeGen::llvmDebugPrint(const string& stream, const string& msg)
     args.push_back(arg1);
     args.push_back(arg2);
     args.push_back(arg3);
-    llvmCall("hlt::debug_printf", args);
+    llvmCall("hlt::debug_printf", args, false);
 #endif
+}
+
+llvm::Value* CodeGen::llvmSwitchEnumConst(llvm::Value* op, const case_list& cases, bool result, const Location& l)
+{
+    case_list ncases;
+
+    for ( auto c : cases ) {
+        assert(c._enums);
+
+        std::list<llvm::Value*> nops;
+
+        for ( auto op : c.op_enums ) {
+            auto sval = llvm::cast<llvm::ConstantStruct>(op);
+            auto val = llvmConstExtractValue(sval, 1);
+            auto ival = llvm::cast<llvm::ConstantInt>(val);
+
+            nops.push_back(llvmConstInt(ival->getZExtValue(), 64));
+        }
+
+        SwitchCase nc(c.label, nops, c.callback);
+        ncases.push_back(nc);
+    }
+
+    return llvmSwitch(op, ncases, result, l);
 }
 
 llvm::Value* CodeGen::llvmSwitch(llvm::Value* op, const case_list& cases, bool result, const Location& l)
@@ -1614,14 +1937,15 @@ llvm::Value* CodeGen::llvmSwitch(llvm::Value* op, const case_list& cases, bool r
     std::list<std::pair<llvm::Value*, llvm::BasicBlock*>> returns;
 
     for ( auto c : cases ) {
+        assert(! c._enums);
         auto b = pushBuilder(::util::fmt("switch-%s", c.label.c_str()));
         auto r = c.callback(this);
-        builder()->CreateBr(cont->GetInsertBlock());
+        llvmCreateBr(cont);
         popBuilder();
 
         returns.push_back(std::make_pair(r, b->GetInsertBlock()));
 
-        for ( auto op : c.ops )
+        for ( auto op : c.op_integers )
             switch_->addCase(op, b->GetInsertBlock());
     }
 
@@ -1638,4 +1962,229 @@ llvm::Value* CodeGen::llvmSwitch(llvm::Value* op, const case_list& cases, bool r
         phi->addIncoming(r.first, r.second);
 
     return phi;
+}
+
+static std::pair<int, shared_ptr<type::struct_::Field>> _getField(CodeGen* cg, shared_ptr<Type> type, const string& field)
+{
+    auto stype = ast::as<type::Struct>(type);
+
+    if ( ! stype )
+        cg->internalError("type is not a struct in _getField", type->location());
+
+    int i = 0;
+
+    for ( auto f : stype->fields() ) {
+        if ( f->id()->name() == field )
+            return std::make_pair(i, f);
+
+        ++i;
+    }
+
+    cg->internalError(::util::fmt("unknown struct field name '%s' in _getField", field.c_str()), type->location());
+
+    // Won't be reached.
+    return std::make_pair(0, nullptr);
+}
+
+llvm::Value* CodeGen::llvmStructNew(shared_ptr<Type> type)
+{
+    auto stype = ast::as <type::Struct>(type);
+    auto llvm_stype = llvmType(stype);
+
+    if ( ! stype->fields().size() )
+        // Empty struct are ok, we turn then into null pointers.
+        return llvmConstNull(llvm_stype);
+
+    auto s = llvmObjectNew(stype, llvm::cast<llvm::StructType>(llvm::cast<llvm::PointerType>(llvm_stype)->getElementType()));
+
+    // Initialize fields
+    auto zero = llvmGEPIdx(0);
+    auto mask = 0;
+
+    int j = 0;
+
+    for ( auto f : stype->fields() ) {
+
+        auto addr = llvmGEP(s, zero, llvmGEPIdx(j + 2));
+
+        if ( f->default_() ) {
+            // Initialize with default.
+            mask |= (1 << j);
+            auto llvm_default = llvmValue(f->default_(), f->type(), true);
+            llvmGCAssign(addr, llvm_default, f->type(), true);
+        }
+        else
+            // Initialize with null although we'll never access it. Better
+            // safe than sorry ...
+            llvmCreateStore(llvmConstNull(llvmType(f->type())), addr);
+
+        ++j;
+    }
+
+    // Set mask.
+    auto addr = llvmGEP(s, zero, llvmGEPIdx(1));
+    llvmCreateStore(llvmConstInt(mask, 32), addr);
+
+    return s;
+}
+
+llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, llvm::Value* default_, StructGetCallBack* cb, const Location& l)
+{
+    auto fd = _getField(this, stype, field);
+    auto idx = fd.first;
+    auto f = fd.second;
+
+    // Check whether field is set.
+    auto zero = llvmGEPIdx(0);
+    auto addr = llvmGEP(sval, zero, llvmGEPIdx(1));
+    auto mask = builder()->CreateLoad(addr);
+
+    auto bit = llvmConstInt(1 << idx, 32);
+    auto isset = builder()->CreateAnd(bit, mask);
+
+    auto block_ok = newBuilder("ok");
+    auto block_not_set = newBuilder("not_set");
+    auto block_done = newBuilder("done");
+
+    auto notzero = builder()->CreateICmpNE(isset, llvmConstInt(0, 32));
+    llvmCreateCondBr(notzero, block_ok, block_not_set);
+
+    pushBuilder(block_ok);
+
+    // Load field
+    addr = llvmGEP(sval, zero, llvmGEPIdx(idx + 2));
+    llvm::Value* result_ok = builder()->CreateLoad(addr);
+
+    if ( cb )
+        result_ok = (*cb)(this, result_ok);
+
+    llvmCreateBr(block_done);
+    popBuilder();
+
+    pushBuilder(block_not_set);
+
+    // Unset, raise exception if no default.
+
+    if ( ! default_ )
+        llvmRaiseException("hlt_exception_undefined_value", l);
+
+    llvmCreateBr(block_done);
+    popBuilder();
+
+    pushBuilder(block_done);
+
+    llvm::Value* result = nullptr;
+
+    if ( default_ ) {
+        auto phi = builder()->CreatePHI(result_ok->getType(), 2);
+        phi->addIncoming(result_ok, block_ok->GetInsertBlock());
+        phi->addIncoming(default_, block_not_set->GetInsertBlock());
+        result = phi;
+    }
+
+    else
+        result = result_ok;
+
+    llvmCctor(result, f->type(), false);
+
+    // Leave builder on stack.
+
+    return result;
+}
+
+void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, llvm::Value* val)
+{
+    auto fd = _getField(this, stype, field);
+    auto idx = fd.first;
+    auto f = fd.second;
+
+    // Set mask bit.
+    auto zero = llvmGEPIdx(0);
+    auto addr = llvmGEP(sval, zero, llvmGEPIdx(1));
+    auto mask = builder()->CreateLoad(addr);
+    auto bit = llvmConstInt(1 << idx, 32);
+    auto new_ = builder()->CreateOr(bit, mask);
+    llvmCreateStore(new_, addr);
+
+    addr = llvmGEP(sval, zero, llvmGEPIdx(idx + 2));
+    llvmGCAssign(addr, val, f->type(), true);
+}
+
+void CodeGen::llvmStructUnset(shared_ptr<Type> stype, llvm::Value* sval, const string& field)
+{
+    auto fd = _getField(this, stype, field);
+    auto idx = fd.first;
+    auto f = fd.second;
+
+    // Clear mask bit.
+    auto zero = llvmGEPIdx(0);
+    auto addr = llvmGEP(sval, zero, llvmGEPIdx(1));
+    auto mask = builder()->CreateLoad(addr);
+    auto bit = llvmConstInt(~(1 << idx), 32);
+    auto new_ = builder()->CreateAnd(bit, mask);
+    llvmCreateStore(new_, addr);
+
+    addr = llvmGEP(sval, zero, llvmGEPIdx(idx + 2));
+    llvmGCClear(addr, f->type());
+}
+
+llvm::Value* CodeGen::llvmStructIsSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field)
+{
+    auto fd = _getField(this, stype, field);
+    auto idx = fd.first;
+    auto f = fd.second;
+
+    // Check mask.
+    auto zero = llvmGEPIdx(0);
+    auto addr = llvmGEP(sval, zero, llvmGEPIdx(1));
+    auto mask = builder()->CreateLoad(addr);
+    auto bit = llvmConstInt(1 << idx, 32);
+    auto isset = builder()->CreateAnd(bit, mask);
+    auto notzero = builder()->CreateICmpNE(isset, llvmConstInt(0, 32));
+
+    return notzero;
+}
+
+llvm::Value* CodeGen::llvmTupleElement(shared_ptr<Type> ttype, llvm::Value* tval, int idx, bool cctor)
+{
+    assert(ttype || ! cctor);
+
+    // ttype can be null if cctor is false.
+
+    assert(false);
+    // Not yet implemented.
+}
+
+llvm::Value* CodeGen::llvmIterBytesEnd()
+{
+    return llvmConstNull(llvmLibType("hlt.iterator.bytes"));
+}
+
+#if 0
+llvm::Value* CodeGen::llvmMalloc(llvm::Type* ty)
+{
+    value_list args { llvmSizeOf(ty); }
+    auto result = llvmCallC("hlt_malloc", args, false, false);
+    return builder()->CreateBitCast(result, llvmTypePtr(ty));
+}
+#endif
+
+llvm::Value* CodeGen::llvmObjectNew(shared_ptr<Type> type, llvm::StructType* llvm_type)
+{
+    value_list args { llvmRtti(type), llvmSizeOf(llvm_type), llvmConstAsciizPtr("fill-me-in") };
+    auto result = llvmCallC("__hlt_object_new", args, false, false);
+    return builder()->CreateBitCast(result, llvmType(type));
+}
+
+shared_ptr<Type> CodeGen::typeByName(const string& name)
+{
+    auto expr = _hilti_module->body()->scope()->lookup(std::make_shared<ID>(name));
+
+    if ( ! expr )
+        internalError(string("unknown type ") + name + " in typeByName()");
+
+    if ( ! ast::isA<expression::Type>(expr) )
+        internalError(string("ID ") + name + " is not a type in typeByName()");
+
+    return ast::as<expression::Type>(expr)->typeValue();
 }

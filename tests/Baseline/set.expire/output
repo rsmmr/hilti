@@ -1,0 +1,10 @@
+{ C-5, B-0, D-5, E-10, A-0, F-10 }
+Advance to 10
+{ C-5, B-0, D-5, E-10, A-0, F-10 }
+Advance to 20
+{ C-5, D-5, E-10, F-10 }
+Advance to 25
+{ E-10, F-10 }
+Advance to 50
+{  }
+<timer_mgr at 1970-01-01T00:00:50.000000000Z / 0 active timers>

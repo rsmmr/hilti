@@ -1,0 +1,47 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    local bool b
+    b = string.cmp "Test1" "Test2"
+    call Hilti::print (b)
+
+    b = string.cmp "Test1" "Test1"
+    call Hilti::print (b)
+
+    b = string.cmp "" ""
+    call Hilti::print (b)
+
+    b = string.cmp "A" ""
+    call Hilti::print (b)
+
+    b = string.cmp "" "B"
+    call Hilti::print (b)
+
+    b = string.lt "Test1" "Test2"
+    call Hilti::print (b)
+
+    b = string.lt "Test2" "Test1"
+    call Hilti::print (b)
+
+    b = string.lt "Test1" "Test1"
+    call Hilti::print (b)
+
+    b = string.lt "" ""
+    call Hilti::print (b)
+
+    b = string.lt "A" ""
+    call Hilti::print (b)
+
+    b = string.lt "" "B"
+    call Hilti::print (b)
+
+
+}
+

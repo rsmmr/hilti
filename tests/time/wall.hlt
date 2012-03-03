@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out | sed 's/\(.....\).*/\1XXX/g' >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Can't really check the output of time.wall so we just make sure it
+# compiles and outputs something ...
+#
+module Main
+
+import Hilti
+
+void run() {
+    local time t
+    local string s
+
+    t = time.wall
+
+    s = call Hilti::fmt("d:%f %s", (t, t))
+    call Hilti::print (s)
+}
+

@@ -1,0 +1,41 @@
+#
+# @TEST-REQUIRES: which hilti-prof
+#
+# @TEST-EXEC:  hilti-build -F %INPUT -o a.out
+# @TEST-EXEC:  ./a.out -P
+# @TEST-EXEC:  hilti-prof hlt.prof.*.dat | canonify-hilti-prof >output
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+
+    local int<32> sum
+
+    local ref<timer_mgr> mgr
+    mgr = new timer_mgr
+
+    profiler.start "test" (Hilti::ProfileStyle::Standard, 5) mgr
+
+    timer_mgr.advance mgr time(10.0)
+    profiler.update "test"
+
+    sum = int.add 12 30
+
+    timer_mgr.advance mgr time(20.0)
+    profiler.update "test"
+
+    call Hilti::print (sum, True)
+
+    timer_mgr.advance mgr time(40.0)
+    profiler.update "test"
+
+    timer_mgr.advance mgr time(80.0)
+
+    profiler.stop "test"
+
+    return.void
+}
+

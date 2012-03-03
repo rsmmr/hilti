@@ -1,0 +1,10 @@
+RUN 1
+hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)
+RUN 2
+hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)
+RUN 3
+hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)
+RUN 4
+hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)
+RUN 5
+hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)

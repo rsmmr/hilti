@@ -1,0 +1,4 @@
+>>> jump foo
+wrong-id-types.hlt:9: error, operand 1 must be of type label but is struct { int<32> bar }
+
+wrong-id-types.hlt: 1 error found during validating

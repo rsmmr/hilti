@@ -1,11 +1,35 @@
 
 set(instructions
-    flow.h
-    integer.h
-    string.h
+    address.h
+    bitset.h
     bool.h
     bytes.h
+    caddr.h
+    callable.h
+    channel.h
+    classifier.h
+    double.h
+    enum.h
+    exception.h
+    file.h
+    flow.h
+    hook.h
+    integer.h
+    interval.h
+    iosrc.h
+    list.h
+    map.h
+    network.h
     operators.h
+    port.h
+    regexp.h
+    set.h
+    string.h
+    struct.h
+    time.h
+    timer-mgr.h
+    timer.h
+    vector.h
 )
 
 add_custom_command(

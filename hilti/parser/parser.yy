@@ -60,53 +60,105 @@ using namespace hilti;
 %}
 
 %token         END     0      "end of file"
+%token <sval>  COMMENT        "comment"
+%token <sval>  DOTTED_IDENT   "dotted identifier"
 %token <sval>  IDENT          "identifier"
 %token <sval>  LABEL_IDENT    "block label"
-%token <sval>  DOTTED_IDENT   "dotted identifier"
 %token <sval>  SCOPED_IDENT   "scoped identifier"
-%token <sval>  COMMENT        "comment"
+%token         NEWLINE        "newline"
 
 %token <ival>  CINTEGER       "integer"
 %token <bval>  CBOOL          "bool"
 %token <sval>  CSTRING        "string"
 %token <sval>  CBYTES         "bytes"
-%token         CNULL          "'null'"
+%token <sval>  CREGEXP        "regular expression"
+%token <sval>  CADDRESS       "address"
+%token <sval>  CPORT          "port"
+%token <dval>  CDOUBLE        "double"
 
-%token         GLOBAL         "'global'"
-%token         LOCAL          "'local'"
+%token <sval>  ATTR_DEFAULT   "'&default'"
+%token <sval>  ATTR_GROUP     "'&group'"
+%token <sval>  ATTR_LIBHILTI  "'&libhilti'"
+%token <sval>  ATTR_NOSUB     "'&nosub'"
+%token <sval>  ATTR_PRIORITY  "'&priority'"
+%token <sval>  ATTR_SCOPE     "'&scope'"
+
+%token         ADDR           "'addr'"
 %token         ANY            "'any'"
-%token         VOID           "'void'"
-%token         INT            "'int'"
+%token         BITSET         "'bitset'"
 %token         BOOL           "'bool'"
-%token         MODULE         "'module'"
-%token         STRING         "'string'"
-%token         IMPORT         "'import'"
+%token         BYTES          "'bytes'"
+%token         CADDR          "'caddr'"
+%token         CALLABLE       "'callable'"
+%token         CATCH          "'catch'"
+%token         CHANNEL        "'channel'"
+%token         CLASSIFIER     "'classifier'"
+%token         CNULL          "'null'"
 %token         CONST          "'const'"
 %token         DECLARE        "'declare'"
+%token         DOUBLE         "'double'"
+%token         ENUM           "'enum'"
+%token         EXCEPTION      "'exception'"
 %token         EXPORT         "'export'"
-%token         TUPLE          "'tuple'"
-%token         REF            "'ref'"
+%token         FILE           "'file'"
+%token         GLOBAL         "'global'"
+%token         HOOK           "'hook'"
+%token         IMPORT         "'import'"
+%token         INT            "'int'"
+%token         INTERVAL       "'interval'"
+%token         IOSRC          "'iosrc'"
 %token         ITER           "'iter'"
-%token         BYTES          "'bytes'"
+%token         LIST           "'list'"
+%token         LOCAL          "'local'"
+%token         MAP            "'map'"
+%token         MATCH_TOKEN_STATE "'match_token_state'"
+%token         MODULE         "'module'"
+%token         NET            "'net'"
+%token         OVERLAY        "'overlay'"
+%token         PORT           "'port'"
+%token         REF            "'ref'"
+%token         REGEXP         "'regexp'"
+%token         SET            "'set'"
+%token         STRING         "'string'"
+%token         STRUCT         "'struct'"
+%token         TIME           "'time'"
+%token         TIMER          "'timer'"
+%token         TIMERMGR       "'timer_mgr'"
+%token         TRY            "'try'"
+%token         TUPLE          "'tuple'"
+%token         TYPE           "'type'"
+%token         VECTOR         "'vector'"
+%token         VOID           "'void'"
 
-%token         NEWLINE        "newline"
-
-%type <decl>             global local function
-%type <decls>            opt_local_decls
-%type <type>             type
-%type <id>               local_id scoped_id mnemonic import opt_label label
-%type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor
-%type <exprs>            opt_tuple_elem_list tuple_elem_list tuple
-%type <types>            type_list
-%type <stmt>             stmt instruction
-%type <stmts>            stmt_list opt_stmt_list first_block more_blocks
+%type <bitset_label>     bitset_label
+%type <bitset_labels>    bitset_labels
 %type <block>            body blocks block_content
-%type <operands>         operands
-%type <params>           param_list opt_param_list
-%type <param>            param result
 %type <bval>             opt_tok_const
-%type <sval>             comment opt_comment
+%type <catch_>           catch_
+%type <catches>          catches
 %type <cc>               opt_cc
+%type <decl>             global local function type_decl
+%type <decls>            opt_local_decls
+%type <enum_label>       enum_label
+%type <enum_labels>      enum_labels
+%type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor
+%type <exprs>            opt_tuple_elem_list tuple_elem_list tuple exprs opt_exprs
+%type <id>               local_id scoped_id mnemonic import opt_label label
+%type <map_element>      map_elem
+%type <map_elements>     map_elems opt_map_elems
+%type <operands>         operands
+%type <param>            param result
+%type <params>           param_list opt_param_list
+%type <re_pattern>       re_pattern
+%type <re_patterns>      ctor_regexp
+%type <stmt>             stmt instruction try_catch
+%type <stmts>            stmt_list opt_stmt_list first_block more_blocks
+%type <strings>          attr_list opt_attr_list
+%type <struct_field>     struct_field
+%type <struct_fields>    struct_fields opt_struct_fields
+%type <sval>             comment opt_comment opt_exception_libtype attribute
+%type <type>             base_type type enum_ bitset exception opt_exception_base struct_
+%type <types>            type_list
 
 %%
 
@@ -158,6 +210,7 @@ global_decls  : global_decl global_decls
 global_decl   : global                           { driver.context()->module->body()->addDeclaration($1); }
               | stmt                             { driver.context()->module->body()->addStatement($1); }
               | function                         { driver.context()->module->body()->addDeclaration($1); }
+              | type_decl                        { driver.context()->module->body()->addDeclaration($1); }
               | import                           { driver.context()->module->import($1); }
               | export_                          { }
               | comment                          { }
@@ -167,13 +220,15 @@ opt_local_decls : local opt_local_decls          { $$ = $2; $$.push_front($1); }
               | /* empty */                      { $$ = statement::Block::decl_list(); }
               ;
 
-global        : GLOBAL type local_id eol          { $$ = builder::global::create($3, $2, 0, loc(@$)); }
-              | GLOBAL type local_id '=' expr eol { $$ = builder::global::create($3, $2, $5, loc(@$)); }
+global        : GLOBAL type local_id eol          { $$ = builder::global::variable($3, $2, 0, loc(@$)); }
+              | GLOBAL type local_id '=' expr eol { $$ = builder::global::variable($3, $2, $5, loc(@$)); }
               ;
 
-local         : LOCAL type local_id eol          { $$ = builder::local::create($3, $2, 0, loc(@$)); }
-              | LOCAL type local_id '=' expr eol { $$ = builder::local::create($3, $2, $5, loc(@$)); }
+local         : LOCAL type local_id eol          { $$ = builder::local::variable($3, $2, 0, loc(@$)); }
+              | LOCAL type local_id '=' expr eol { $$ = builder::local::variable($3, $2, $5, loc(@$)); }
               ;
+
+type_decl     : TYPE local_id '=' type eol       { $$ = builder::global::type($2, $4, driver.currentScope(), loc(@$)); }
 
 stmt          : instruction eol                  { $$ = $1; }
               ;
@@ -189,39 +244,141 @@ opt_stmt_list : stmt_list                        { $$ = $1; }
 
 instruction   : mnemonic operands                { $$ = builder::instruction::create($1, $2, loc(@$)); }
               | expr_lhs '=' mnemonic operands   { $4[0] = $1; $$ = builder::instruction::create($3, $4, loc(@$)); }
-              | expr_lhs '=' operands            { $3[0] = $1; $$ = builder::instruction::create("assign", $3, loc(@$)); }
+              | expr_lhs '=' expr                { $$ = builder::instruction::create("assign", make_ops($1, $3, nullptr, nullptr), loc(@$)); }
+              | try_catch                        { $$ = $1; }
 
 mnemonic      : local_id                         { $$ = $1; }
               | DOTTED_IDENT                     { $$ = builder::id::create($1, loc(@$)); }
+
+try_catch     : TRY body opt_nl catches          { $$ = builder::block::try_($2, $4, loc(@$)); }
+
+catches       : catches catch_ opt_nl            { $$ = $1; $$.push_back($2); }
+              | catch_                           { $$ = builder::block::catch_list(); $$.push_back($1); }
+
+catch_        : CATCH '(' type local_id ')' body { $$ = builder::block::catch_($3, $4, $6, loc(@$)); }
 
 operands      : /* empty */                      { $$ = make_ops(nullptr, nullptr, nullptr, nullptr); }
               | expr                             { $$ = make_ops(nullptr, $1, nullptr, nullptr); }
               | expr expr                        { $$ = make_ops(nullptr, $1, $2, nullptr); }
               | expr expr expr                   { $$ = make_ops(nullptr, $1, $2, $3); }
+              ;
 
-type          : ANY                              { $$ = builder::any::type(loc(@$)); }
-              | VOID                             { $$ = builder::void_::type(loc(@$)); }
-              | STRING                           { $$ = builder::string::type(loc(@$)); }
+base_type     : ANY                              { $$ = builder::any::type(loc(@$)); }
+              | ADDR                             { $$ = builder::address::type(loc(@$)); }
               | BOOL                             { $$ = builder::boolean::type(loc(@$)); }
               | BYTES                            { $$ = builder::bytes::type(loc(@$)); }
+              | CADDR                            { $$ = builder::caddr::type(loc(@$)); }
+              | CALLABLE                         { $$ = builder::callable::type(loc(@$)); }
+              | CLASSIFIER                       { $$ = builder::classifier::type(loc(@$)); }
+              | DOUBLE                           { $$ = builder::double_::type(loc(@$)); }
+              | FILE                             { $$ = builder::file::type(loc(@$)); }
+              | INTERVAL                         { $$ = builder::interval::type(loc(@$)); }
+              | MATCH_TOKEN_STATE                { $$ = builder::match_token_state::type(loc(@$)); }
+              | NET                              { $$ = builder::network::type(loc(@$)); }
+              | PORT                             { $$ = builder::port::type(loc(@$)); }
+              | STRING                           { $$ = builder::string::type(loc(@$)); }
+              | TIME                             { $$ = builder::time::type(loc(@$)); }
+              | TIMER                            { $$ = builder::timer::type(loc(@$)); }
+              | TIMERMGR                         { $$ = builder::timer_mgr::type(loc(@$)); }
+              | VOID                             { $$ = builder::void_::type(loc(@$)); }
+
+              | CHANNEL '<' type '>'             { $$ = builder::channel::type($3, loc(@$)); }
               | INT '<' CINTEGER '>'             { $$ = builder::integer::type($3, loc(@$)); }
-              | TUPLE '<' type_list '>'          { $$ = builder::tuple::type($3, loc(@$)); }
-              | TUPLE '<' '*' '>'                { $$ = builder::tuple::typeAny(loc(@$)); }
-              | REF '<' type '>'                 { $$ = builder::reference::type($3, loc(@$)); }
-              | REF '<' '*' '>'                  { $$ = builder::reference::typeAny(loc(@$)); }
-              | ITER '<' type '>'                { $$ = builder::iterator::type($3, loc(@$));
-                                                   driver.checkNotNull($$, "type not iterable", @$);
-                                                 }
+              | IOSRC '<' scoped_id '>'          { $$ = builder::iosource::type($3, loc(@$)); }
               | ITER '<' '*' '>'                 { $$ = builder::iterator::typeAny(loc(@$)); }
+              | ITER '<' type '>'                { $$ = builder::iterator::type($3, loc(@$)); }
+              | LIST '<' type '>'                { $$ = builder::list::type($3, loc(@$)); }
+              | MAP '<' type ',' type '>'        { $$ = builder::map::type($3, $5, loc(@$)); }
+              | REF '<' '*' '>'                  { $$ = builder::reference::typeAny(loc(@$)); }
+              | REF '<' type '>'                 { $$ = builder::reference::type($3, loc(@$)); }
+              | REGEXP '<' opt_attr_list '>'     { $$ = builder::regexp::type($3, loc(@$)); }
+              | SET  '<' type '>'                { $$ = builder::set::type($3, loc(@$)); }
+              | TUPLE '<' '*' '>'                { $$ = builder::tuple::typeAny(loc(@$)); }
+              | TUPLE '<' type_list '>'          { $$ = builder::tuple::type($3, loc(@$)); }
+              | VECTOR '<' type '>'              { $$ = builder::vector::type($3, loc(@$)); }
+
+              | bitset                           { $$ = $1; }
+              | enum_                            { $$ = $1; }
+              | exception                        { $$ = $1; }
+              | struct_                          { $$ = $1; }
               ;
+
+type          : base_type                        { $$ = $1; }
+              | scoped_id                        { $$ = builder::type::byName($1, loc(@$)); }
+
+enum_         : ENUM                             { driver.disableLineMode(); }
+                  '{' enum_labels '}'            { driver.enableLineMode(); $$ = builder::enum_::type($4, loc(@$)); }
+              ;
+
+enum_labels   : enum_labels ',' enum_label       { $$ = $1; $$.push_back($3); }
+              | enum_label                       { $$ = builder::enum_::label_list(); $$.push_back($1); }
+              ;
+
+enum_label    : local_id                         { $$ = std::make_pair($1, -1); }
+              | local_id '=' CINTEGER            { $$ = std::make_pair($1, $3); }
+              ;
+
+bitset        : BITSET                           { driver.disableLineMode(); }
+                 '{' bitset_labels '}'           { driver.enableLineMode(); $$ = builder::bitset::type($4, loc(@$)); }
+              ;
+
+bitset_labels : bitset_labels ',' bitset_label   { $$ = $1; $$.push_back($3); }
+              | bitset_label                     { $$ = builder::bitset::label_list(); $$.push_back($1); }
+              ;
+
+bitset_label  : local_id                         { $$ = std::make_pair($1, -1); }
+              | local_id '=' CINTEGER            { $$ = std::make_pair($1, $3); }
+              ;
+
+exception     : EXCEPTION '<' type '>' opt_exception_base opt_exception_libtype {
+                                                 $$ = builder::exception::type($5, $3, loc(@$));
+                                                 ast::as<type::Exception>($$)->setLibraryType($6);
+                                                 }
+              | EXCEPTION opt_exception_base opt_exception_libtype {
+                                                 $$ = builder::exception::type($2, nullptr, loc(@$));
+                                                 ast::as<type::Exception>($$)->setLibraryType($3);
+              }
+
+struct_       : STRUCT                           { driver.disableLineMode(); }
+                  '{' opt_struct_fields '}'      { driver.enableLineMode(); $$ = builder::struct_::type($4, loc(@$)); }
+
+opt_struct_fields : struct_fields                { $$ = $1; }
+              | /* empty */                      { $$ = builder::struct_::field_list(); }
+
+struct_fields : struct_fields ',' struct_field   { $$ = $1; $1.push_back($3); }
+              | struct_field                     { $$ = builder::struct_::field_list(); $$.push_back($1); }
+
+struct_field  : type local_id                    { $$ = builder::struct_::field($2, $1, nullptr, false, loc(@$)); }
+              | type local_id ATTR_DEFAULT '=' expr { $$ = builder::struct_::field($2, $1, $5, false, loc(@$)); }
+
+
+opt_exception_base : ':' type                    { $$ = $2; }
+              | /* empty */                      { $$ = nullptr; }
+
+opt_exception_libtype : ATTR_LIBHILTI '=' CSTRING { $$ = $3; }
+              | /* empty */                      { $$ = string(); }
+
+
+opt_attr_list : attr_list                        { $$ = $1; }
+              | /* empty */                      { $$ = std::list<string>(); }
+
+attr_list     : attr_list ',' attribute          { $$ = $1; $1.push_back($3); }
+              | attribute                        { $$ = std::list<string> {$1}; }
+
+attribute     : ATTR_DEFAULT                     { $$ = $1; }
+              | ATTR_GROUP                       { $$ = $1; }
+              | ATTR_LIBHILTI                    { $$ = $1; }
+              | ATTR_NOSUB                       { $$ = $1; }
+              | ATTR_SCOPE                       { $$ = $1; }
 
 type_list     : type ',' type_list               { $$ = $3; $$.push_front($1); }
               | type                             { $$ = builder::type_list(); $$.push_back($1); }
+              ;
 
 expr          : constant                         { $$ = $1; }
               | ctor                             { $$ = $1; }
               | scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
-              | type                             { $$ = builder::expression::type($1, loc(@$)); }
+              | base_type                        { $$ = builder::type::create($1, loc(@$)); }
               ;
 
 expr_lhs      : scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
@@ -229,14 +386,39 @@ expr_lhs      : scoped_id                        { $$ = builder::id::create($1, 
 
 constant      : CINTEGER                         { $$ = builder::integer::create($1, loc(@$)); }
               | CBOOL                            { $$ = builder::boolean::create($1, loc(@$)); }
+              | CDOUBLE                          { $$ = builder::double_::create($1, loc(@$)); }
               | CSTRING                          { $$ = builder::string::create($1, loc(@$)); }
               | CNULL                            { $$ = builder::reference::createNull(loc(@$)); }
               | LABEL_IDENT                      { $$ = builder::label::create($1, loc(@$)); }
+              | CADDRESS                         { $$ = builder::address::create($1, loc(@$)); }
+              | CADDRESS '/' CINTEGER            { $$ = builder::network::create($1, $3, loc(@$)); }
+              | CPORT                            { $$ = builder::port::create($1, loc(@$)); }
+              | INTERVAL '(' CDOUBLE ')'         { $$ = builder::interval::create($3, loc(@$)); }
+              | TIME '(' CDOUBLE ')'             { $$ = builder::time::create($3, loc(@$)); }
               | tuple                            { $$ = builder::tuple::create($1, loc(@$));  }
               ;
 
 ctor          : CBYTES                           { $$ = builder::bytes::create($1, loc(@$)); }
+              | LIST '(' opt_exprs ')'           { $$ = builder::list::create($3, loc(@$)); }
+              | SET '(' opt_exprs ')'            { $$ = builder::set::create($3, loc(@$)); }
+              | VECTOR '(' opt_exprs ')'         { $$ = builder::vector::create($3, loc(@$)); }
+              | MAP '(' opt_map_elems ')'        { $$ = builder::map::create($3, loc(@$)); }
+              | ctor_regexp                      { $$ = builder::regexp::create($1, loc(@$)); }
               ;
+
+ctor_regexp   : ctor_regexp '|' re_pattern       { $$ = $1; $$.push_back($3) }
+              | re_pattern                       { $$ = builder::regexp::re_pattern_list(); $$.push_back($1); }
+
+re_pattern    : CREGEXP                          { $$ = builder::regexp::pattern($1, ""); }
+              | CREGEXP IDENT                    { $$ = builder::regexp::pattern($1, $2); }
+
+opt_map_elems : map_elems                        { $$ = $1; }
+              | /* empty */                      { $$ = builder::map::element_list(); }
+
+map_elems     : map_elems ',' map_elem           { $$ = $1; $$.push_back($3); }
+              | map_elem                         { $$ = builder::map::element_list(); $$.push_back($1); }
+
+map_elem      : expr ':' expr                    { $$ = builder::map::element($1, $3); }
 
 import        : IMPORT local_id eol              { $$ = $2; }
               ;
@@ -245,7 +427,7 @@ export_       : EXPORT local_id eol              { driver.context()->module->exp
               | EXPORT type eol                  { driver.context()->module->exportType($2); }
               ;
 
-function      : opt_cc result local_id '(' opt_param_list ')' body        { $$ = builder::function::create($3, $2, $5, driver.context()->module, $1, $7, loc(@$)); }
+function      : opt_cc result local_id '(' opt_param_list ')' body opt_nl { $$ = builder::function::create($3, $2, $5, driver.context()->module, $1, $7, loc(@$)); }
               | DECLARE opt_cc result local_id '(' opt_param_list ')' eol { $$ = builder::function::create($4, $3, $6, driver.context()->module, $2, nullptr, loc(@$));
                                                                             driver.context()->module->exportID($4);
                                                                           }
@@ -275,7 +457,7 @@ opt_tok_const : CONST                            { $$ = true; }
 opt_default_expr : '=' expr                      { $$ = $2; }
               | /* empty */                      { $$ = node_ptr<Expression>(); }
 
-body          : opt_nl '{' opt_nl blocks opt_nl '}' opt_nl { $$ = $4; }
+body          : opt_nl '{' opt_nl blocks opt_nl '}' { $$ = $4; }
 
 blocks        :                                  { auto b = builder::block::create(driver.context()->module->body()->scope(), loc(@$));
                                                    driver.pushBlock(b);
@@ -320,6 +502,13 @@ tuple_elem_list : tuple_elem ',' tuple_elem_list { $$ = $3; $$.push_front($1); }
 
 tuple_elem    : expr                             { $$ = $1; }
               | '*'                              { $$ = builder::unset::create(); }
+
+opt_exprs     : exprs                            { $$ = $1; }
+              | /* empty */                      { $$ = builder::expression::list(); }
+
+exprs         : exprs ',' expr                   { $$ = $1; $$.push_back($3); }
+              | expr                             { $$ = builder::expression::list(); $$.push_back($1); }
+
 
 %%
 

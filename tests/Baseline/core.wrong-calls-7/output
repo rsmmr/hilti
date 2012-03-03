@@ -1,0 +1,8 @@
+>>> In function foo:
+wrong-calls.hlt:4: error, only functions using C-HILTI calling convention can take wildcard parameters
+
+>>> In function foo:
+wrong-calls.hlt:4: error, todo: C functions cannot have parameters at the moment
+
+
+2 errors found

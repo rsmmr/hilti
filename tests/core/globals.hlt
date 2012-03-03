@@ -1,0 +1,31 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global int<32> g1 = 42
+global ref<list<string>> g2
+global string g3 = "hurz"
+global ref<list<string>> g4 = list<string> ()
+
+void  run() {
+    g2 = new list<string>
+    list.push_back g2 "A"
+    list.push_back g2 "B"
+    list.push_back g2 "C"
+
+    list.push_back g4 "1"
+    list.push_back g4 "2"
+    list.push_back g4 "3"
+
+    call Hilti::print (g1, True)
+    call Hilti::print (g2, True)
+    call Hilti::print (g3, True)
+    call Hilti::print (g4, True)
+    return.void
+}
+

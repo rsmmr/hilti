@@ -20,157 +20,58 @@ const char* __hlt_make_location(const char* file, int line)
     snprintf(buffer, sizeof(buffer), "%s:%d", file, line);
     return buffer;
 }
+
+static void _dbg_mem_raw(const char* op, void* obj, uint64_t size, const char* type, const char* location, const char* aux)
+{
+    static char buf[128];
+
+    assert(obj);
+
+    if ( ! location )
+        location = "<no location>";
+
+    if ( aux )
+        snprintf(buf, sizeof(buf), " (%s)", aux);
+    else
+        buf[0] = '\0';
+
+    DBG_LOG("hilti-mem", "%10s %p %" PRIu64 " %" PRIu64 " %s %s%s", op, obj, size, 0, type, location, buf);
+}
+
+static void _dbg_mem_gc(const char* op, const hlt_type_info* ti, void* gcobj, const char* location, const char* aux)
+{
+    static char buf[128];
+
+    assert(gcobj);
+    assert(ti);
+
+    if ( ! location )
+        location = "<no location>";
+
+    if ( aux )
+        snprintf(buf, sizeof(buf), " (%s)", aux);
+    else
+        buf[0] = '\0';
+
+    __hlt_gchdr* hdr = (__hlt_gchdr*)gcobj;
+    DBG_LOG("hilti-mem", "%10s %p %" PRIu64 " %" PRIu64 " %s %s%s", op, gcobj, 0, hdr->ref_cnt, ti->tag, location, buf);
+}
+
+static void _internal_memory_error(void* gcobj, const char* func, const char* msg)
+{
+    fprintf(stderr, "internal memory error in %s for object %p: %s\n", func, gcobj, msg);
+    abort();
+}
+
 #endif
 
-static void __dbg_mem(const char* tag, void* p, size_t size, const char* postfix, const char* location)
+void* __hlt_malloc(uint64_t size, const char* type, const char* location)
 {
-    if ( ! location )
-        location = "";
-
-    if ( size )
-        DBG_LOG("hilti-mem", "%5s: %p (size %llu) %s %s", tag, p, size, postfix, location);
-    else
-        DBG_LOG("hilti-mem", "%5s: %p %s %s", tag, p, postfix, location);
-}
-
-static void __dbg_mem_obj(const char* tag, void* obj, const hlt_type_info* ti, size_t size, const char* postfix, int gc, const char* location)
-{
-    if ( ! location )
-        location = "";
-
-    if ( gc ) {
-        __hlt_gchdr* hdr = (__hlt_gchdr*)obj;
-        if ( size )
-            DBG_LOG("hilti-mem", "%5s: %p (%s, ref %" PRIu64 ", size %llu) %s %s", tag, hdr, ti ? ti->tag : "<no rtti>", hdr ? hdr->ref_cnt : 0, size, postfix, location);
-        else
-            DBG_LOG("hilti-mem", "%5s: %p (%s, ref %" PRIu64 ") %s %s", tag, hdr, ti ? ti->tag : "<no rtti>", hdr ? hdr->ref_cnt : 0, postfix, location);
-    }
-
-    else {
-        if ( size )
-            DBG_LOG("hilti-mem", "%5s: %p (%s, no ref, size %llu) %s %s", tag, obj, ti ? ti->tag : "<no rtti>", size, postfix, location);
-        else
-            DBG_LOG("hilti-mem", "%5s: %p (%s, no ref) %s %s", tag, obj, ti ? ti->tag : "<no rtti>", postfix, location);
-    }
-}
-
-void* __hlt_object_new(const hlt_type_info* ti, size_t size, const char* location)
-{
-    if ( ! location )
-        location = "";
-
-    __hlt_gchdr* hdr = (__hlt_gchdr*)hlt_calloc(1, size);
-    hdr->ref_cnt = 1;
-
-    __dbg_mem_obj("new", hdr, ti, size, "", ti->gc, location);
-
-    return hdr;
-}
-
-void __hlt_object_ref(const hlt_type_info* ti, void* obj)
-{
-    __hlt_gchdr* hdr = (__hlt_gchdr*)obj;;
+    void *p = calloc(1, size);
 
 #ifdef DEBUG
-    if ( ! ti->gc ) {
-        __dbg_mem_obj("ref", hdr, ti, 0, "OBJECT NOT GCed", ti->gc, 0);
-        abort();
-    }
-
-    if ( hdr->ref_cnt <= 0 ) {
-        __dbg_mem_obj("ref", hdr, ti, 0, "BAD REF COUNT", ti->gc, 0);
-        abort();
-    }
+    _dbg_mem_raw("malloc", p, size, type, location, 0);
 #endif
-
-    ++hdr->ref_cnt;
-
-    __dbg_mem_obj("ref", hdr, ti, 0, "", ti->gc, 0);
-
-}
-
-void __hlt_object_unref(const hlt_type_info* ti, void* obj)
-{
-    if ( ! obj )
-        return;
-
-    __hlt_gchdr* hdr = (__hlt_gchdr*)obj;
-
-#ifdef DEBUG
-    if ( ! ti->gc ) {
-        __dbg_mem_obj("unref", hdr, ti, 0, "OBJECT NOT GCed", ti->gc, 0);
-        abort();
-    }
-
-    if ( hdr->ref_cnt <= 0 ) {
-        __dbg_mem_obj("unref", hdr, ti, 0, "BAD REF COUNT", ti->gc, 0);
-        abort();
-    }
-#endif
-
-    // We explicitly set it to zero even if we're about to delete the object.
-    // That can catch some errors when the destroyed objects is still
-    // accessed later.
-    if ( --hdr->ref_cnt == 0 ) {
-        __dbg_mem_obj("unref", hdr, ti, 0, "-> delete", ti->gc, 0);
-
-        if ( ti->obj_dtor )
-            (*(ti->obj_dtor))(ti, obj);
-
-        hlt_free(obj);
-    }
-
-    else
-        __dbg_mem_obj("unref", hdr, ti, 0, "", ti->gc, 0);
-}
-
-void __hlt_object_dtor(const hlt_type_info* ti, void* obj, const char* location)
-{
-    typedef void (*fptr)(void *obj);
-
-    if ( ti && ti->dtor ) {
-        if ( ti->gc ) {
-            __hlt_gchdr* hdr = *(__hlt_gchdr**)obj;
-
-            if ( ! hdr )
-                return;
-
-            __dbg_mem_obj("dtor", hdr, ti, 0, "", ti->gc, location);
-            (*(ti->dtor))(ti, *(void**)obj);
-        }
-        else {
-            __dbg_mem_obj("dtor", obj, ti, 0, "", ti->gc, location);
-            (*(ti->dtor))(ti, obj);
-        }
-    }
-}
-
-void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location)
-{
-    typedef void (*fptr)(void *obj);
-
-    if ( ti && ti->cctor ) {
-        if ( ti->gc ) {
-            __hlt_gchdr* hdr = *(__hlt_gchdr**)obj;
-
-            if ( ! hdr )
-                return;
-
-            __dbg_mem_obj("cctor", hdr, ti, 0, "", ti->gc, location);
-            (*(ti->cctor))(ti, *(void**)obj);
-        }
-        else {
-            __dbg_mem_obj("cctor", obj, ti, 0, "", ti->gc, location);
-            (*(ti->cctor))(ti, obj);
-        }
-    }
-}
-
-void* hlt_malloc(size_t size)
-{
-    void *p = malloc(size);
-
-    __dbg_mem("malloc", p, size, "", 0);
 
     if ( ! p ) {
         fputs("out of memory in hlt_malloc, aborting", stderr);
@@ -180,11 +81,33 @@ void* hlt_malloc(size_t size)
     return p;
 }
 
-void* hlt_calloc(size_t count, size_t size)
+void* __hlt_realloc(void* p, uint64_t size, const char* type, const char* location)
+{
+#ifdef DEBUG
+    _dbg_mem_raw("free", p, size, type, location, "realloc");
+#endif
+
+    p = realloc(p, size);
+
+#ifdef DEBUG
+    _dbg_mem_raw("malloc", p, size, type, location, "realloc");
+#endif
+
+    if ( ! p ) {
+        fputs("out of memory in hlt_malloc, aborting", stderr);
+        exit(1);
+    }
+
+    return p;
+}
+
+void* __hlt_calloc(uint64_t count, uint64_t size, const char* type, const char* location)
 {
     void *p = calloc(count, size);
 
-    __dbg_mem("calloc", p, size, "", 0);
+#ifdef DEBUG
+    _dbg_mem_raw("calloc", p, count * size, type, location, 0);
+#endif
 
     if ( ! p ) {
         fputs("out of memory in hlt_calloc, aborting", stderr);
@@ -194,12 +117,146 @@ void* hlt_calloc(size_t count, size_t size)
     return p;
 }
 
-void hlt_free(void *memory)
+void __hlt_free(void *memory, const char* type, const char* location)
 {
     if ( ! memory )
         return;
 
-    __dbg_mem("free", memory, 0, "", 0);
+#ifdef DEBUG
+    _dbg_mem_raw("free", memory, 0, type, location, 0);
+#endif
 
     free(memory);
+}
+
+
+void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* location)
+{
+    __hlt_gchdr* hdr = (__hlt_gchdr*)__hlt_malloc(size, ti->tag, location);
+    hdr->ref_cnt = 1;
+
+#ifdef DEBUG
+    _dbg_mem_gc("new", ti, hdr, location, 0);
+#endif
+
+    return hdr;
+}
+
+void __hlt_object_ref(const hlt_type_info* ti, void* obj, const char* location)
+{
+    __hlt_gchdr* hdr = (__hlt_gchdr*)obj;;
+
+#ifdef DEBUG
+    if ( ! ti->gc )
+        _internal_memory_error(obj, "__hlt_object_ref", "object not garbage collected");
+
+    if ( hdr->ref_cnt <= 0 )
+        _internal_memory_error(obj, "__hlt_object_ref", "bad reference count");
+#endif
+
+    ++hdr->ref_cnt;
+
+#ifdef DEBUG
+    _dbg_mem_gc("ref", ti, obj, location, 0);
+#endif
+
+}
+
+void __hlt_object_unref(const hlt_type_info* ti, void* obj, const char* location)
+{
+    if ( ! obj )
+        return;
+
+    __hlt_gchdr* hdr = (__hlt_gchdr*)obj;
+
+#ifdef DEBUG
+    if ( ! ti->gc )
+        _internal_memory_error(obj, "__hlt_object_unref", "object not garbage collected");
+
+    if ( hdr->ref_cnt <= 0 )
+        _internal_memory_error(obj, "__hlt_object_unref", "bad reference count");
+#endif
+
+    // We explicitly set it to zero even if we're about to delete the object.
+    // That can catch some errors when the destroyed objects is still
+    // accessed later.
+    --hdr->ref_cnt;
+
+#ifdef DEBUG
+    const char* aux = 0;
+
+    if ( hdr->ref_cnt == 0 )
+        aux = "dtor";
+
+    _dbg_mem_gc("unref", ti, obj, location, aux);
+#endif
+
+    if ( hdr->ref_cnt == 0 ) {
+        if ( ti->obj_dtor )
+            (*(ti->obj_dtor))(ti, obj);
+
+        __hlt_free(obj, ti->tag, location);
+    }
+}
+
+void __hlt_object_dtor(const hlt_type_info* ti, void* obj, const char* location)
+{
+    typedef void (*fptr)(void *obj);
+
+    if ( ! obj )
+        return;
+
+    if ( ! (ti && ti->dtor) )
+        return;
+
+    if ( ti->gc ) {
+        __hlt_gchdr* hdr = *(__hlt_gchdr**)obj;
+
+        if ( ! hdr )
+            return;
+
+#ifdef DEBUG
+        _dbg_mem_gc("dtor", ti, *(void**)obj, location, 0);
+#endif
+
+        (*(ti->dtor))(ti, *(void**)obj);
+    }
+
+    else {
+#ifdef DEBUG
+        _dbg_mem_raw("dtor", obj, 0, ti->tag, location, 0);
+#endif
+        (*(ti->dtor))(ti, obj);
+    }
+}
+
+void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location)
+{
+    typedef void (*fptr)(void *obj);
+
+    if ( ! obj )
+        return;
+
+    if ( ! (ti && ti->cctor) )
+        return;
+
+    if ( ti->gc ) {
+        __hlt_gchdr* hdr = *(__hlt_gchdr**)obj;
+
+        if ( ! hdr )
+            return;
+
+#ifdef DEBUG
+        _dbg_mem_gc("cctor", ti, *(void**)obj, location, 0);
+#endif
+
+        (*(ti->cctor))(ti, *(void**)obj);
+    }
+
+    else {
+#ifdef DEBUG
+        _dbg_mem_raw("cctor", obj, 0, ti->tag, location, 0);
+#endif
+        (*(ti->cctor))(ti, obj);
+    }
 }

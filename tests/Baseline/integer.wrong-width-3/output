@@ -1,0 +1,2 @@
+wrong-width.hlt:5: error, maximum width for integer types is 64 bits
+wrong-width.hlt: 1 error found during validating

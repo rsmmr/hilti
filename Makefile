@@ -23,3 +23,6 @@ libhilti: mkdirs
 clean:
 	rm -rf build
 	( cd doc && make clean )
+
+tags:
+	update-tags

@@ -50,11 +50,16 @@
 #define HLT_TYPE_VOID     37
 #define HLT_TYPE_BYTES_DATA 38
 #define HLT_TYPE_BYTES_CHUNK 39
+#define HLT_TYPE_CLASSIFIER 40
+#define HLT_TYPE_IOSOURCE 41
+#define HLT_TYPE_MAP 42
+#define HLT_TYPE_SET 44
 
 #define HLT_TYPE_ITERATOR_BYTES  100
 #define HLT_TYPE_ITERATOR_VECTOR 101
 #define HLT_TYPE_ITERATOR_LIST   102
-#define HLT_TYPE_ITERATOR_PKTSRC 103
+#define HLT_TYPE_ITERATOR_SET    103
+#define HLT_TYPE_ITERATOR_MAP    104
 
 // Default context for numeric operations.
 #define HLT_CONVERT_NONE     0x00  // Not given, implies doing signed operations.

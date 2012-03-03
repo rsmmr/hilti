@@ -4,8 +4,16 @@
 #include "variable.h"
 #include "function.h"
 #include "instruction.h"
+#include "passes/printer.h"
 
 using namespace hilti;
+
+string Statement::render()
+{
+    std::ostringstream s;
+    passes::Printer(s, true).run(sharedPtr<Node>());
+    return s.str();
+}
 
 statement::Instruction::Instruction(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l)
     : Statement(l)
@@ -19,6 +27,27 @@ statement::Instruction::Instruction(shared_ptr<ID> id, const hilti::instruction:
 
     while ( _ops.size() < 4 )
         _ops.push_back(shared_ptr<Expression>());
+}
+
+string statement::Instruction::signature() const
+{
+    std::list<string> ops;
+
+    auto op = _ops.begin();
+
+    string target;
+
+    if ( op != _ops.end() ) {
+        if ( *op )
+            target = util::fmt(" -> %s", (*op)->type()->render().c_str());
+
+        while ( ++op != _ops.end() ) {
+            if ( *op )
+                ops.push_back((*op)->type()->render());
+        }
+    }
+
+    return util::fmt("%s: %s%s", _id->name().c_str(), util::strjoin(ops, ", ").c_str(), target.c_str());
 }
 
 void statement::Block::addStatement(shared_ptr<Statement> stmt)
@@ -98,12 +127,47 @@ bool statement::Block::terminated() const
 }
 
 statement::instruction::Resolved::Resolved(shared_ptr<hilti::Instruction> instruction, const hilti::instruction::Operands& ops, const Location& l)
-    : Instruction(instruction->id(), ops) {
+    : Instruction(instruction->id(), ops, l) {
            _instruction = instruction;
        }
 
 statement::instruction::Unresolved::Unresolved(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l)
-    : Instruction(id, ops) {}
+    : Instruction(id, ops, l) {}
 
 statement::instruction::Unresolved::Unresolved(const ::string& name, const hilti::instruction::Operands& ops, const Location& l)
-    : Instruction(shared_ptr<ID>(new ID(name)), ops) {}
+    : Instruction(shared_ptr<ID>(new ID(name)), ops, l) {}
+
+statement::try_::Catch::Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> block, const Location& l)
+    : Node(l)
+{
+    _id = id;
+    _block = block;
+
+    addChild(_id);
+    addChild(_block);
+
+    if ( id ) {
+        auto var = std::make_shared<variable::Local>(id, type, nullptr, l);
+        _decl = std::make_shared<declaration::Variable>(id, var, l);
+        addChild(_decl);
+
+        // Don't addChild type here, the variable will do it.
+    }
+
+    else {
+        _type = type;
+        addChild(_type);
+    }
+}
+
+statement::Try::Try(shared_ptr<Block> try_, const catch_list& catches, const Location& l)
+    : Statement(l)
+{
+    _try = try_;
+    _catches = catches;
+
+    addChild(try_);
+
+    for ( auto c : _catches )
+        addChild(c);
+}

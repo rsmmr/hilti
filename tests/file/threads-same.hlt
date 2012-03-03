@@ -1,0 +1,51 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out
+# @TEST-EXEC:  sort <output.log >output.log.sorted
+# @TEST-EXEC:  btest-diff output.log.sorted
+
+module Main
+
+import Hilti
+
+void print1(ref<file> f) {
+    file.write f "1"
+    return.void
+}
+
+void print2(ref<file> f) {
+    file.write f "2"
+    return.void
+}
+
+void print3(ref<file> f) {
+    file.write f "3"
+    return.void
+}
+
+void print4(ref<file> f) {
+    file.write f "4"
+    return.void
+}
+
+void print5(ref<file> f) {
+    file.write f "5"
+    return.void
+}
+
+void run() {
+
+    local ref<file> f
+    f = new file
+    file.open f "output.log"
+
+    thread.schedule print1(f) 1
+    thread.schedule print2(f) 2
+    thread.schedule print3(f) 3
+    thread.schedule print4(f) 4
+    thread.schedule print5(f) 5
+
+    return.void
+
+}
+

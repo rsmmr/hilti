@@ -1,0 +1,26 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+hook void my_hook(int<64> i) {
+    call Hilti::print("1st hook function.")
+    call Hilti::print(i)
+    return.void
+}
+
+hook void my_hook(int<64> i) {
+    call Hilti::print("2nd hook function.")
+    call Hilti::print(i)
+    return.void
+}
+
+void run() {
+    hook.run my_hook (42)
+    return.void
+}
+

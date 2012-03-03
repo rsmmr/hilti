@@ -1,0 +1,16 @@
+# Test parsing string constants.
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+    call Hilti::print ("Foo")
+    call Hilti::print ("\"xyz\"")
+    call Hilti::print ("x\"\"yz")
+}
+

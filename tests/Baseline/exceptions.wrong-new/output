@@ -1,0 +1,4 @@
+>>> e = new myException
+wrong-new.hlt:14: error, exception argument of type string missing
+
+wrong-new.hlt: 1 error found during validating

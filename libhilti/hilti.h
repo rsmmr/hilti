@@ -20,11 +20,13 @@
 #include "types.h"
 #include "config.h"
 #include "context.h"
+#include "globals.h"
 #include "debug.h"
 #include "memory.h"
 #include "init.h"
 #include "string_.h"
 #include "list.h"
+#include "addr.h"
 
 // Not yet ported to new compiler framework.
 

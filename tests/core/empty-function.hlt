@@ -1,0 +1,15 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Make sure empty functions works.
+
+module Main
+
+void foo(int<32> a) {}
+
+void run() {
+    call foo (42)
+}
+

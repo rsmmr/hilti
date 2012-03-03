@@ -150,11 +150,11 @@ public:
    /// childs. For each node, its render() output will be included.
    ///
    /// out: The stream to use.
-   void dump(std::ostream& out) const;
+   void dump(std::ostream& out);
 
    /// Returns a non-recursive textual representation of the node. The output
    /// of render() will be included.
-   operator string() const;
+   operator string();
 
    /// Cast operator converting into a Location.
    operator const Location&() const { return _location; }
@@ -175,6 +175,15 @@ public:
    template<typename T>
    shared_ptr<T> sharedPtr() {
        auto p = std::dynamic_pointer_cast<T>(shared_from_this());
+       assert(p);
+       return p;
+   }
+
+   /// Returns a shared_ptr for the node, cast to a sepcified type. The cast
+   /// must not fail, behaviour is undefined if it does.
+   template<typename T>
+   shared_ptr<const T> sharedPtr() const {
+       auto p = std::dynamic_pointer_cast<const T>(shared_from_this());
        assert(p);
        return p;
    }
@@ -205,15 +214,15 @@ public:
    /// Internal method. Overriden by the \c ACCEPT_* macros in visitor.h.
    virtual const char* acceptClass() const { return "<acceptClass not set>"; };
 
-   /// Method derived classes can overwrite to add custom output to #string
-   /// and #dump.
-   virtual void render(std::ostream& out) const { }
+   /// Returns a readable one-line representation of the node, if
+   /// implemented.
+   virtual string render() { return string("<node>"); }
 
 private:
    NodeBase& operator = (const NodeBase&); // No assignment.
 
    typedef std::set<const NodeBase*> node_set;
-   void dump(std::ostream& out, int level, node_set* seen) const;
+   void dump(std::ostream& out, int level, node_set* seen);
 
    NodeBase* _parent;
    Location _location;

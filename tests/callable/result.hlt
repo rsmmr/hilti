@@ -1,0 +1,31 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+string foo(string s) {
+    local string tmp
+    tmp = string.concat "Arg was " s
+    return.result tmp
+    }
+
+void run() {
+
+    local ref<callable<string>> c
+    local string result
+
+    c = new callable<string>
+
+    callable.bind c foo ("ICSI")
+
+    result = call c
+
+    call hilti::print (result)
+
+    return.void
+}
+

@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  hilti-build -v %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Note: This is actually expected to work because the location of
+# local's does indeed not matter. I don't see any harm in doing so
+# and short of forcing all locals to be defined right at the
+# firstning, it wouldn't be easy to change because IDs are only
+# resolved after all of the input has been parsed.
+
+module Main
+
+void run() {
+    x = 42
+    local int<64> x
+}

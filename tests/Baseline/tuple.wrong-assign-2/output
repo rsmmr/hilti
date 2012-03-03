@@ -1,0 +1,4 @@
+>>> a = assign b
+wrong-assign.hlt:8: error, operand 1 must be coercable to type of target, which is tuple<int<64>,bool>
+
+wrong-assign.hlt: 1 error found during validating

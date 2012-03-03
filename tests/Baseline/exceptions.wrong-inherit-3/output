@@ -1,0 +1,2 @@
+wrong-inherit.hlt:6: error, circuluar exception inheritance
+wrong-inherit.hlt: 1 error found during validating

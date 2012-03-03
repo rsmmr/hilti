@@ -1,0 +1,67 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# A series of integer operations, with load and stores in between.
+
+module Main
+
+import Hilti
+
+void print_bool(bool b) {
+     if.else b @one @zero
+
+@one:
+     call Hilti::print(1)
+     return.void
+
+@zero:
+     call Hilti::print(0)
+     return.void
+}
+
+
+void run() {
+    local double d1
+    local double d2
+    local double d3
+    local double d4
+    local bool b
+
+    d1 = double.add 42.0 84.0
+    call Hilti::print (d1)
+
+    d2 = double.sub d1 26.00
+    call Hilti::print (d2)
+
+    d3 = double.mul d1 d2
+    call Hilti::print (d3)
+
+    d3 = double.div d3 42.0
+    call Hilti::print (d3)
+
+    b = double.eq d3 d3
+    call print_bool (b)
+
+    b = double.eq d3 -42.0
+    call print_bool (b)
+
+    b = double.lt d2 d3
+    call print_bool (b)
+
+    b = double.lt d3 d2
+    call print_bool (b)
+
+    b = double.lt d3 d3
+    call print_bool (b)
+
+    d3 = double.mul d1 1000.0
+    call Hilti::print (d3)
+
+    d3 = double.add d1 1.0
+    call Hilti::print (d3)
+
+    return.void
+}
+

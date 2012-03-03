@@ -1,0 +1,4 @@
+>>> thread.set_context (192.160.0.1, 1234/tcp, 10.0.0.1, 80/tcp)
+wrong-context-usage.hlt:10: error, module does not define a thread context
+
+wrong-context-usage.hlt: 1 error found during validating

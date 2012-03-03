@@ -1,0 +1,99 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# A series of checks mixing different integer types. These should
+# all fail.
+
+module Main
+
+void run() {
+    local int<8>  i1
+    local int<16> i2
+    i1 = int.add i1 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<8>  i1
+    local int<16> i2
+    i1 = int.add i2 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<8>  i1
+    local int<16> i2
+    i1 = int.sub i2 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<8>  i1
+    local int<16> i2
+    i1 = int.mul i2 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<8>  i1
+    local int<16> i2
+    i1 = int.div i2 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local bool cond
+    local int<8>  i1
+    local int<16> i2
+    cond = int.eq i1 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local bool cond
+    local int<8>  i1
+    local int<16> i2
+    cond = int.slt i1 i2
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<8>  i1
+    local int<16> i2
+    i2 = int.trunc i1
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+void run() {
+    local int<8>  i1
+    local int<16> i2
+    i1 = int.zext i2
+}
+
+
+

@@ -1,0 +1,2 @@
+wrong-decls.hlt:5: error, cannot create local variable of type tuple<*>
+wrong-decls.hlt: 1 error found during validating

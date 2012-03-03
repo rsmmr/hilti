@@ -1,0 +1,27 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = struct { bool a }
+type B = struct { bool b }
+
+void run() {
+    local ref<A> a
+    local ref<B> b
+    local bool is
+
+    a = new A
+    b = Null
+
+    is = ref.cast.bool a
+    call Hilti::print(is)
+
+    is = ref.cast.bool b
+    call Hilti::print(is)
+}
+
