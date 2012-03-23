@@ -332,14 +332,17 @@ void Validator::visit(expression::CodeGen* e)
 
 void Validator::visit(expression::Constant* e)
 {
+    if ( ast::isA<type::Label>(e->type()) )
+        return;
+
     if ( ! ast::isA<type::ValueType>(e->type()) )
-        internalError(e, "constant expression's type should be of value type");
+        internalError(e, "constant expression's type needs to be of value type");
 }
 
 void Validator::visit(expression::Ctor* e)
 {
     if ( ! ast::isA<type::ValueType>(e->type()) )
-        internalError(e, "ctor expression's type should be of heap type");
+        internalError(e, "ctor expression's type need to be of heap type");
 }
 
 void Validator::visit(expression::Function* e)

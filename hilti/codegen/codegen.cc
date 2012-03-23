@@ -797,7 +797,7 @@ llvm::Constant* CodeGen::llvmExceptionTypeObject(shared_ptr<type::Exception> exc
         g->setInitializer(0);
         g->setLinkage(llvm::GlobalValue::ExternalLinkage);
 
-        return cacheConstant("type-exception", libtype, g);
+        return cacheConstant("type-exception-lib", libtype, g);
     }
 
     else {
@@ -1804,9 +1804,6 @@ void CodeGen::finishStatement()
 
 llvm::Value* CodeGen::llvmLocationString(const Location& l)
 {
-    if ( debugLevel() == 0 )
-        return llvmConstNull();
-
     return llvmConstAsciizPtr(string(l).c_str());
 }
 

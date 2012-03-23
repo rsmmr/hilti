@@ -1,4 +1,6 @@
 
+#include <util/util.h>
+
 #include "logger.h"
 
 using namespace ast;
@@ -15,7 +17,23 @@ void Logger::error(const string& message, const string& location) const
     }
 
     ++_errors;
-    doError(message, location, Error);
+    doError(message, nullptr, location, Error);
+}
+
+void Logger::error(const string& message, shared_ptr<NodeBase> node) const
+{
+    return error(message, node.get());
+}
+
+void Logger::error(const string& message, NodeBase* node) const
+{
+    if ( _forward ) {
+        _forward->error(message, node);
+        return;
+    }
+
+    ++_errors;
+    doError(message, node, node->location(), Error);
 }
 
 void Logger::internalError(const string& message, const string& location) const
@@ -26,7 +44,24 @@ void Logger::internalError(const string& message, const string& location) const
     }
 
     ++_errors;
-    doError(message, location, Internal);
+    doError(message, nullptr, location, Internal);
+    abort();
+}
+
+void Logger::internalError(const string& message, shared_ptr<NodeBase> node) const
+{
+    return internalError(message, node.get());
+}
+
+void Logger::internalError(const string& message, NodeBase* node) const
+{
+    if ( _forward ) {
+        _forward->internalError(message, node);
+        return;
+    }
+
+    ++_errors;
+    doError(message, node, node->location(), Internal);
     abort();
 }
 
@@ -38,7 +73,24 @@ void Logger::fatalError(const string& message, const string& location) const
     }
 
     ++_errors;
-    doError(message, location, Fatal);
+    doError(message, nullptr, location, Fatal);
+    throw FatalLoggerError(message);
+}
+
+void Logger::fatalError(const string& message, shared_ptr<NodeBase> node) const
+{
+    return fatalError(message, node.get());
+}
+
+void Logger::fatalError(const string& message, NodeBase* node) const
+{
+    if ( _forward ) {
+        _forward->fatalError(message, node);
+        return;
+    }
+
+    ++_errors;
+    doError(message, node, node->location(), Fatal);
     throw FatalLoggerError(message);
 }
 
@@ -50,10 +102,26 @@ void Logger::warning(const string& message, const string& location) const
     }
 
     ++_warnings;
-    doError(message, location, Warning);
+    doError(message, nullptr, location, Warning);
 }
 
-void Logger::doError(const string& message, const string& location, ErrorType type) const
+void Logger::warning(const string& message, shared_ptr<NodeBase> node) const
+{
+    return warning(message, node.get());
+}
+
+void Logger::warning(const string& message, NodeBase* node) const
+{
+    if ( _forward ) {
+        _forward->warning(message, node);
+        return;
+    }
+
+    ++_warnings;
+    doError(message, node, node->location(), Warning);
+}
+
+void Logger::doError(const string& message, NodeBase* node, const string& location, ErrorType type) const
 {
     string tag;
 
@@ -78,19 +146,23 @@ void Logger::doError(const string& message, const string& location, ErrorType ty
         assert(false);
     }
 
+    if ( node )
+        _output << ">>> " << node->render() << std::endl;
 
     if ( location.size() )
-        _output << location << ": ";
+        _output << ::util::basename(location) << ": ";
+
+    _output << tag << ", " << message;
 
     if ( _name.size() )
-        _output << _name << " ";
+        _output << " [" << _name << "]";
 
-    _output << tag << ", " << message << std::endl;
+    _output << std::endl;
 
 #if 0
     if ( type == Fatal || type == Internal )
         _output << "aborting." << std::endl;
-#endif        
+#endif
 }
 
 #ifdef DEBUG

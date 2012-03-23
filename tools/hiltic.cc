@@ -73,7 +73,7 @@ void version()
 void error(const string& file, const string& msg)
 {
     if ( file.size() )
-        cerr << file << ": ";
+        cerr << util::basename(file) << ": ";
 
     cerr << msg << endl;
     exit(1);

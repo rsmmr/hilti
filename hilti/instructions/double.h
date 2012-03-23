@@ -98,6 +98,14 @@ iBegin(double_, Div, "double.div")
     iOp2(optype::double_, true)
 
     iValidate {
+        auto cexpr = ast::as<expression::Constant>(op2);
+
+        if ( cexpr ) {
+            auto d = ast::as<constant::Double>(cexpr->constant())->value();
+
+            if ( d == 0 )
+                error(op2, "division by zero");
+        }
     }
 
     iDoc(R"(    
@@ -155,6 +163,14 @@ iBegin(double_, Mod, "double.mod")
     iOp2(optype::double_, true)
 
     iValidate {
+        auto cexpr = ast::as<expression::Constant>(op2);
+
+        if ( cexpr ) {
+            auto d = ast::as<constant::Double>(cexpr->constant())->value();
+
+            if ( d == 0 )
+                error(op2, "division by zero");
+        }
     }
 
     iDoc(R"(    

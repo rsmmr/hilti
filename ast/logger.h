@@ -50,9 +50,20 @@ public:
    void forwardLoggingTo(Logger* logger) { _forward = logger; }
 
    void fatalError(const string& message, const string& location = "") const;
+   void fatalError(const string& message, shared_ptr<NodeBase> node) const;
+   void fatalError(const string& message, NodeBase* node) const;
+
    void error(const string& message, const string& location = "") const;
+   void error(const string& message, shared_ptr<NodeBase> node) const;
+   void error(const string& message, NodeBase* node) const;
+
    void internalError(const string& message, const string& location = "") const;
+   void internalError(const string& message, shared_ptr<NodeBase> node) const;
+   void internalError(const string& message, NodeBase* node) const;
+
    void warning(const string& message, const string& location = "") const;
+   void warning(const string& message, shared_ptr<NodeBase> node) const;
+   void warning(const string& message, NodeBase* node) const;
 
    int errors() const { return _errors; }
    int warnings() const { return _warnings; }
@@ -86,7 +97,7 @@ private:
 
 protected:
    enum ErrorType { Warning, Error, Internal, Fatal };
-   virtual void doError(const string& message, const string& location, ErrorType type) const;
+   virtual void doError(const string& message, NodeBase* node, const string& location, ErrorType type) const;
 };
 
 }

@@ -217,12 +217,12 @@ public:
 
    /// Forwards to Logger.
    void error(NodeBase* node, string msg) const {
-       Logger::error(msg, node->location());
+       Logger::error(msg, node);
    }
 
    /// Forwards to Logger.
    void error(shared_ptr<NodeBase> node, string msg) const {
-       Logger::error(msg, node->location());
+       Logger::error(msg, node);
    }
 
    /// Forwards to Logger.
@@ -232,12 +232,12 @@ public:
 
    /// Forwards to Logger.
    void internalError(NodeBase* node, string msg) const {
-       Logger::internalError(msg, node->location());
+       Logger::internalError(msg, node);
    }
 
    /// Forwards to Logger.
    void internalError(shared_ptr<NodeBase> node, string msg) const {
-       Logger::internalError(msg, node->location());
+       Logger::internalError(msg, node);
    }
 
    /// Forwards to Logger.
@@ -247,12 +247,12 @@ public:
 
    /// Forwards to Logger.
    void fatalError(NodeBase* node, string msg) const {
-       Logger::fatalError(msg, node->location());
+       Logger::fatalError(msg, node);
    }
 
    /// Forwards to Logger.
    void fatalError(shared_ptr<NodeBase> node, string msg) const {
-       Logger::fatalError(msg, node->location());
+       Logger::fatalError(msg, node);
    }
 
    /// Forwards to Logger.
@@ -262,12 +262,12 @@ public:
 
    /// Forwards to Logger.
    void warning(NodeBase* node, string msg) const {
-       Logger::warning(msg, node->location());
+       Logger::warning(msg, node);
    }
 
    /// Forwards to Logger.
    void warning(shared_ptr<NodeBase> node, string msg) const {
-       Logger::warning(msg, node->location());
+       Logger::warning(msg, node);
    }
 
    /// Forwards to Logger.
