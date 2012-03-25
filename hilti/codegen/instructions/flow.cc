@@ -17,7 +17,12 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
 
 void StatementBuilder::visit(statement::instruction::flow::ReturnVoid* i)
 {
-    cg()->llvmReturn();
+    // Check if we are in a hook. If so, we return a boolean indicating that
+    // hook execution has not been stopped.
+    if ( ! current<declaration::Hook>() )
+        cg()->llvmReturn();
+    else
+        cg()->llvmReturn(cg()->llvmConstInt(0, 1));
 }
 
 void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params)

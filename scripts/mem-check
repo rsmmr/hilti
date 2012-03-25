@@ -1,0 +1,64 @@
+#! /usr/bin/env python
+#
+# Parses the output from HILTI_DEBUG=hilti-mem from stdin and reports on memory leaks.
+#
+# If -v is given, reports details for every leak.
+
+import sys
+import optparse
+
+optparser = optparse.OptionParser(usage="%prog [options] <input-file>")
+
+optparser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                     help="include detailed output for leaks")
+
+(options, args) = optparser.parse_args()
+
+if len(args) != 0:
+	optparser.error("too many arguments")
+
+objs = {}
+
+for line in sys.stdin:
+
+	if not line.startswith("[hilti-mem]"):
+		continue
+
+	m = line.split()
+
+	(dbg, op, addr, size, refcnt, type, location) = m[0:7]
+
+	if op == "free":
+		del objs[addr]
+		continue
+
+	try:
+		objs[addr] += [line]
+	except KeyError:
+		objs[addr] = [line]
+
+if not objs:
+	sys.exit(0)
+
+print "Leaks"
+print "====="
+print
+
+for (obj, log) in objs.items():
+	print "  ", log[0],
+
+if options.verbose:
+	print
+	print
+	print "Details"
+	print "======="
+	print
+
+	for (obj, log) in objs.items():
+		first = True
+		for line in log:
+			print ("/ " if first else "| "), line,
+			first = False
+		print ""
+
+sys.exit(1)

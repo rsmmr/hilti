@@ -58,7 +58,7 @@ void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt)
 
 hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)
 {
-    hlt_exception* excpt = hlt_malloc(sizeof(hlt_exception));
+    hlt_exception* excpt = GC_NEW(hlt_exception);
     excpt->type = type;
 //  excpt->cont = 0;
     /// excpt->arg = arg;

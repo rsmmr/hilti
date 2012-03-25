@@ -8,4 +8,4 @@ export string
 export ref<bytes>
 export iterator<bytes>
 export addr
-export exception
+export ref<exception>

@@ -36,6 +36,8 @@ struct yystype {
     ctor::Map::element_list map_elements;
     ctor::RegExp::pattern re_pattern;
     ctor::RegExp::pattern_list re_patterns;
+    Hook::attribute hook_attribute;
+    Hook::attribute_list hook_attributes;
 
     shared_ptr<hilti::Declaration> decl;
     shared_ptr<hilti::Statement> stmt;
@@ -56,22 +58,10 @@ struct yystype {
     std::list<node_ptr<hilti::Type>> types;
     std::list<node_ptr<hilti::Expression>> exprs;
     std::list<node_ptr<hilti::statement::try_::Catch>> catches;
+
     std::list<string> strings;
 
     hilti::instruction::Operands operands;
-
-#if 0
-    // Need this because the std::string doesn't allow the copy by default.
-    yystype& operator=(const yystype& other) {
-        ival = other.ival;
-        sval = other.sval;
-        stmt = other.stmt;
-        type= other.type;
-        expr = other.expr;
-        constant = other.constant;
-        return *this;
-    }
-#endif    
 };
 
 #define YYSTYPE yystype

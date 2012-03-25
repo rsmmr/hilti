@@ -62,8 +62,9 @@ string codegen::util::mangle(const string& name, bool global, shared_ptr<ID> par
     s = ::util::strreplace(s, "__", "x5fx5f");
 
     if ( parent ) {
-        auto mangled_parent = mangle(parent, global, nullptr, "", internal);
+        auto mangled_parent = mangle(parent, global, nullptr, prefix, internal);
         s = ::util::strtolower(mangled_parent) + "_" + s;
+        prefix = "";
     }
 
     if ( prefix.size() )

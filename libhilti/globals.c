@@ -7,13 +7,11 @@
 // Note: Global variables should be limited to a mininum, and must be ensured
 // that they are used in a thread-safe fashion.
 
+hlt_hook_state* __hlt_global_hook_state = 0;
+pthread_mutex_t __hlt_global_hook_state_lock;
+
 static hlt_execution_context* _global_execution_context = 0;
 static hlt_thread_mgr*        _global_thread_mgr = 0;
-
-#if 0
-static hlt_hook_state*        _global_hook_state = 0;
-static pthread_mutex_t        _global_hook_state_lock;
-#endif
 
 void __hlt_global_state_init()
 {

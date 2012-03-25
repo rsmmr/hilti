@@ -215,64 +215,66 @@ public:
    /// the current recursion level.
    string levelIndent() const;
 
+   void setCurrentLocationNode(shared_ptr<NodeBase> node) { _loc_node = node; }
+
    /// Forwards to Logger.
    void error(NodeBase* node, string msg) const {
-       Logger::error(msg, node);
+       Logger::error(msg, _loc_node ? _loc_node.get() : node);
    }
 
    /// Forwards to Logger.
    void error(shared_ptr<NodeBase> node, string msg) const {
-       Logger::error(msg, node);
+       Logger::error(msg, _loc_node ? _loc_node : node);
    }
 
    /// Forwards to Logger.
    void error(string msg) {
-       Logger::error(msg);
+       Logger::error(msg, _loc_node);
    }
 
    /// Forwards to Logger.
    void internalError(NodeBase* node, string msg) const {
-       Logger::internalError(msg, node);
+       Logger::internalError(msg, _loc_node ? _loc_node.get() : node);
    }
 
    /// Forwards to Logger.
    void internalError(shared_ptr<NodeBase> node, string msg) const {
-       Logger::internalError(msg, node);
+       Logger::internalError(msg, _loc_node ? _loc_node : node);
    }
 
    /// Forwards to Logger.
    void internalError(string msg) const {
-       Logger::internalError(msg);
+       Logger::internalError(msg, _loc_node);
    }
 
    /// Forwards to Logger.
    void fatalError(NodeBase* node, string msg) const {
-       Logger::fatalError(msg, node);
+       Logger::fatalError(msg, _loc_node ? _loc_node.get() : node);
    }
 
    /// Forwards to Logger.
    void fatalError(shared_ptr<NodeBase> node, string msg) const {
-       Logger::fatalError(msg, node);
+       Logger::fatalError(msg, _loc_node ? _loc_node : node);
    }
 
    /// Forwards to Logger.
    void fatalError(string msg) const {
-       Logger::fatalError(msg);
+       Logger::fatalError(msg, _loc_node);
    }
 
    /// Forwards to Logger.
    void warning(NodeBase* node, string msg) const {
-       Logger::warning(msg, node);
+       Logger::warning(msg, _loc_node ? _loc_node.get() : node);
    }
 
    /// Forwards to Logger.
    void warning(shared_ptr<NodeBase> node, string msg) const {
-       Logger::warning(msg, node);
+       Logger::warning(msg, _loc_node ? _loc_node : node);
    }
 
    /// Forwards to Logger.
    void warning(string msg) const {
-       Logger::warning(msg);
+       Logger::warning(msg, _loc_node);
    }
 
 protected:
@@ -349,6 +351,8 @@ private:
    Arg2 _arg2;
    int _errors = 0;
    int _level = 0;
+
+   shared_ptr<NodeBase> _loc_node = nullptr;
 
    bool _result_set = false;
    Result _result;

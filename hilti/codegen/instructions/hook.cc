@@ -12,7 +12,7 @@ void StatementBuilder::visit(statement::instruction::hook::DisableGroup* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(builder::boolean::create(0));
-    cg()->llvmCall("hlt::hook)_group_enable", args);
+    cg()->llvmCall("hlt::hook_group_enable", args);
 }
 
 void StatementBuilder::visit(statement::instruction::hook::EnableGroup* i)
@@ -20,7 +20,7 @@ void StatementBuilder::visit(statement::instruction::hook::EnableGroup* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(builder::boolean::create(1));
-    cg()->llvmCall("hlt::hook)_group_enable", args);
+    cg()->llvmCall("hlt::hook_group_enable", args);
 }
 
 void StatementBuilder::visit(statement::instruction::hook::GroupEnabled* i)
@@ -35,25 +35,41 @@ void StatementBuilder::visit(statement::instruction::hook::GroupEnabled* i)
 
 void StatementBuilder::visit(statement::instruction::hook::Run* i)
 {
-    // TODO: Not implemented.
-    assert(false);
-/*
-    def _codegen(self, cg):
-        # This is canonified away.
-        assert False
+    CodeGen::expr_list params;
+    prepareCall(i->op1(), i->op2(), &params);
 
-*/
+    auto func = ast::as<expression::Function>(i->op1())->function();
+    auto has_result = (! ast::isA<type::Void>(func->type()->result()->type()));
+    auto hook = ast::as<Hook>(func);
+    assert(hook);
+
+    llvm::Value* result = nullptr;
+
+    if ( has_result )
+        result = cg()->llvmAddTmp("hook.rval", cg()->llvmType(i->target()->type()), nullptr, true);
+
+    auto stopped = cg()->llvmRunHook(hook, params, result);
+
+    if ( has_result ) {
+        auto cont = cg()->newBuilder("cont");
+        auto load_result = cg()->pushBuilder("result");
+        auto rtype = func->type()->result()->type();
+
+        cg()->llvmCctor(result, rtype, true);
+        cg()->llvmStore(i, builder()->CreateLoad(result));
+        cg()->llvmCreateBr(cont);
+        cg()->popBuilder();
+        cg()->llvmCreateCondBr(stopped, load_result, cont);
+        cg()->pushBuilder(cont); // Leave on stack.
+    }
 }
 
 void StatementBuilder::visit(statement::instruction::hook::Stop* i)
 {
-    // TODO: Not implemented.
-    assert(false);
-/*
-    def _codegen(self, cg):
-        # This is canonified away.
-        assert False
+    if ( i->op1() )
+        // Store result in last parameter.
+        cg()->llvmCreateStore(cg()->llvmValue(i->op1()), --cg()->function()->arg_end());
 
-*/
+    cg()->llvmReturn(cg()->llvmConstInt(1, 1)); // Return true.
 }
 

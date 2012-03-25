@@ -24,8 +24,8 @@ typedef struct
     /// Stack size for worker threads.
     size_t stack_size;
 
-    /// Where debug output is to be sent. Default is stderr.
-    FILE* debug_out;
+    /// File where debug output is to be sent. Default is stderr.
+    const char* debug_out;
 
     /// Colon-separated list of debug stream.
     const char* debug_streams;

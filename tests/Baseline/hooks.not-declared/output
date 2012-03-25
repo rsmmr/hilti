@@ -1,3 +1,4 @@
-not-declared.hlt:11: parser error, hook was not declared
-not-declared.hlt:16: parser error, hook was not declared
-not-declared.hlt: 2 errors found during parsing
+not-declared.hlt:10-15: error, external hook Test::my_hook not declared [pass::Validator]
+not-declared.hlt:15-20: error, external hook Test::my_hook not declared [pass::Validator]
+not-declared.hlt: Aborting due to verification error.
+error running hiltic, aborting

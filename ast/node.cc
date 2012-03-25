@@ -9,6 +9,16 @@ void NodeBase::addChild(node_ptr<NodeBase> node) {
     if ( ! node )
         return;
 
+#if 0
+    // Make sure we don't get loop.
+    for ( auto p = this; p; p = p->_parent ) {
+        if ( p == node.get() ) {
+            fprintf(stderr, "internal error in addChild(): recursive node detected\n");
+            abort();
+        }
+    }
+#endif
+
     _childs.push_back(node);
 
     auto n = dynamic_cast<NodeBase*>(node.get());

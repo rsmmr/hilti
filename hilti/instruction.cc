@@ -146,6 +146,28 @@ InstructionRegistry::instr_list InstructionRegistry::byName(const string& name) 
 
 bool Instruction::matchesOperands(const instruction::Operands& ops)
 {
+#if 0
+    fprintf(stderr, "--- %s\n", string(*this).c_str());
+    fprintf(stderr, "0 %s | %s\n", ops[0] ? ops[0]->render().c_str() : "-", __typeOp0() ? __typeOp0()->render().c_str() : "-");
+    fprintf(stderr, "1 %s | %s\n", ops[1] ? ops[1]->render().c_str() : "-", __typeOp1() ? __typeOp1()->render().c_str() : "-");
+
+    fprintf(stderr, "match: 0->%d 1->%d\n", (int)__matchOp0(ops[0]), (int)__matchOp0(ops[1]));
+
+    if ( ! ops[1] )
+        fprintf(stderr, " A %d\n", (int)ast::isA<type::OptionalArgument>(__typeOp1()));
+
+    if ( ! __typeOp1()->equal(ops[1]->type()) )
+        fprintf(stderr, " B F\n");
+
+    //if ( ops[1]->isConstant() && ! constant )
+    //    fprintf(stderr, " C F\n");
+
+    if ( ! ops[1] && ! __defaultOp1() )
+        fprintf(stderr, " D F\n");
+
+    fprintf(stderr, "+++\n");
+#endif
+
     if ( ! __matchOp0(ops[0]) )
         return false;
 
@@ -164,7 +186,10 @@ bool Instruction::matchesOperands(const instruction::Operands& ops)
 void Instruction::error(Node* op, string msg) const
 {
     assert(_validator);
-    _validator->error(op, msg);
+    if ( op )
+        _validator->error(op, msg);
+    else
+        _validator->error(msg);
 }
 
 bool Instruction::canCoerceTo(shared_ptr<Expression> op, shared_ptr<Type> target) const
@@ -251,6 +276,97 @@ bool Instruction::isConstant(shared_ptr<Expression> op) const
     return false;
 }
 
+bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_ptr<Expression> args) const
+{
+    if ( ! args->isConstant() ) {
+        // Currently, we don't support non-constasnt tuples, though is in principle, that should work.
+        error(args, "deficiency: can only call with constant tuple argument currently");
+        return 1;
+    }
+
+    auto ops = ast::as<constant::Tuple>(ast::as<expression::Constant>(args)->constant())->value();
+
+    auto proto = func->parameters();
+
+    int i = 0;
+
+    auto p = proto.begin();
+    auto o = ops.begin();
+
+    while ( o != ops.end() && p != proto.end() ) {
+        if ( ! (*o)->canCoerceTo((*p)->type()) ) {
+            auto have = (*o)->type()->render();
+            auto want = (*p)->type()->render();
+            error(i, util::fmt("type of parameter %d does not match function, have %s but expected %s", i, have.c_str(), want.c_str()));
+            return false;
+        }
+
+        ++i;
+        ++o;
+        ++p;
+    }
+
+    if ( p == proto.end() && o == ops.end() )
+        return true;
+
+    if ( o != ops.end() ) {
+        error(i, util::fmt("too many arguments given, expected %d but got %d", proto.size(), ops.size()));
+        return false;
+    }
+
+    // Remaining ones must have defaults.
+    while ( p != proto.end() ) {
+        if ( ! (*p)->defaultValue() ) {
+            error(i, util::fmt("too few arguments given, expected %d but got %d", proto.size(), ops.size()));
+            return false;
+        }
+
+        ++p;
+    }
+
+    return true;
+}
+
+bool Instruction::checkCallResult(shared_ptr<type::Function> func, shared_ptr<Type> ty) const
+{
+    auto rtype = func->result()->type();
+
+    if ( ! ty ) {
+        if ( ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype) )
+            return true;
+    }
+
+    if ( ty && Coercer().canCoerceTo(ty, rtype) )
+        return true;
+
+    auto have = ty ? ty->render() : string("none");
+    auto want = rtype->render();
+
+    error(ty, util::fmt("return type does not match function, have %s but expected %s", have.c_str(), want.c_str()));
+
+    return false;
+}
+
+bool Instruction::checkCallResult(shared_ptr<type::Function> func, shared_ptr<Expression> op) const
+{
+    auto rtype = func->result()->type();
+
+    if ( ! op ) {
+        if ( ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype) )
+            return true;
+    }
+
+    if ( op && op->canCoerceTo(rtype) )
+        return true;
+
+    auto have = op ? op->type()->render() : string("none");
+    auto want = rtype->render();
+
+    error(op, util::fmt("return type does not match function, have %s but expected %s", have.c_str(), want.c_str()));
+
+    return false;
+}
+
 shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(shared_ptr<Instruction> instr, shared_ptr<statement::Instruction> stmt)
 {
     instruction::Operands new_ops;
@@ -269,4 +385,3 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
 
     return (*instr->factory())(instr, new_ops, stmt->location());
 }
-

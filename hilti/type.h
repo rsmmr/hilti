@@ -242,6 +242,25 @@ inline const T* asTrait(const hilti::Type* t) { return dynamic_cast<const T*>(t)
 template<typename T>
 inline T* asTrait(shared_ptr<hilti::Type> t) { return std::dynamic_pointer_cast<T>(t); }
 
+/// An interal Type-derived class that allows us to specify an optional
+/// parameters in an instruction's signature.
+class OptionalArgument : public hilti::Type
+{
+public:
+   OptionalArgument(shared_ptr<Type> arg) { _arg = arg; }
+
+   string render() override {
+       return string("[ " + _arg->render() + " ]");
+   }
+
+   bool equal(shared_ptr<hilti::Type> other) const override {
+       return other ? _arg->equal(other) : true;
+   }
+
+private:
+   shared_ptr<Type> _arg;
+};
+
 /// Base class for types that a user can instantiate.
 class HiltiType : public hilti::Type
 {
@@ -747,7 +766,7 @@ public:
        return _rtype->equal(std::dynamic_pointer_cast<Type>(other)->_rtype);
    }
 
-   ACCEPT_VISITOR(Type);
+   ACCEPT_VISITOR(hilti::Type);
 
 private:
    node_ptr<hilti::Type> _rtype;
@@ -773,7 +792,7 @@ public:
 
    /// Returns the base exception type this one is derived from. Returns null
    /// for the top-level base exception.
-   shared_ptr<Exception> baseType() const { return _base; }
+   shared_ptr<Type> baseType() const { return _base; }
 
    /// Marks this type as defined by libhilti under the given name. Setting
    /// an empty name unmarks.
@@ -786,7 +805,7 @@ public:
    ACCEPT_VISITOR(Type);
 
 private:
-   node_ptr<Exception> _base = nullptr;
+   node_ptr<Type> _base = nullptr;
    string _libtype;
 };
 
@@ -848,6 +867,7 @@ typedef ast::type::mixin::Function<AstInfo>::parameter_list parameter_list;
 enum CallingConvention {
     DEFAULT,    /// Place-holder for chosing a default automatically.
     HILTI,      /// Internal convention for calls between HILTI functions.
+    HOOK,       /// Internal convention for hooks.
     HILTI_C,    /// C-compatible calling convention, but with extra HILTI run-time parameters.
     C           /// C-compatable calling convention, with no messing around with parameters.
 };
@@ -874,6 +894,11 @@ public:
    /// Returns the function's calling convention.
    hilti::type::function::CallingConvention callingConvention() const { return _cc; }
 
+   /// Sets the function's calling convention.
+   void setCallingConvention(hilti::type::function::CallingConvention cc) { _cc = cc; }
+
+   bool _equal(shared_ptr<hilti::Type> other) const override;
+
    ACCEPT_VISITOR(hilti::Type);
 
 private:
@@ -892,7 +917,7 @@ public:
    ///
    /// l: Associated location.
    Hook(shared_ptr<hilti::type::function::Parameter> result, const function::parameter_list& args, const Location& l=Location::None)
-       : Function(result, args, function::HILTI, l) {}
+       : Function(result, args, function::HOOK, l) {}
 
    /// Constructor for a hook type that matches any other hook type (i.e., a
    /// wildcard type).

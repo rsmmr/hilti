@@ -11,6 +11,27 @@
 #include "string_.h"
 #include "module/module.h"
 
+static FILE* _debug_out()
+{
+    static FILE* debug_out = 0;
+
+    if ( debug_out )
+        return debug_out;
+
+    /// TODO: Should use mutex here.
+
+    debug_out = fopen(hlt_config_get()->debug_out, "w");
+
+    if ( ! debug_out ) {
+        fprintf(stderr, "hilti: cannot open %s for writing. Aborting.\n", hlt_config_get()->debug_out);
+        exit(1);
+        }
+
+    setvbuf(debug_out, 0, _IOLBF, 0);
+
+    return debug_out;
+}
+
 static int _want_stream(const char* s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const char* dbg = hlt_config_get()->debug_streams;
@@ -94,7 +115,7 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     int old_state;
 //    hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
 
-    FILE* out = hlt_config_get()->debug_out;
+    FILE* out = _debug_out();
     flockfile(out);
 
     hlt_string p = hlt_string_from_asciiz(prefix, excpt, ctx);
@@ -142,7 +163,7 @@ void __hlt_debug_printf_internal(const char* s, const char* fmt, ...)
     int old_state;
 //    hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
 
-    FILE* out = hlt_config_get()->debug_out;
+    FILE* out = _debug_out();
     flockfile(out);
 
     fputs(buffer, out);

@@ -592,7 +592,7 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
 
     auto ftype = _sptr(new hilti::type::Function(result, params, cc, l));
     auto func = _sptr(new Function(id, ftype, module, body, l));
-    return _sptr(new declaration::Function(id, func, l));
+    return _sptr(new declaration::Function(func, l));
 }
 
 /// Instantiates an AST node representing a function parameter for its type description.
@@ -622,6 +622,97 @@ inline shared_ptr<hilti::function::Parameter> parameter(shared_ptr<ID> id, share
 /// Returns: The result node.
 inline shared_ptr<hilti::function::Parameter> result(shared_ptr<Type> type, bool constant, Location l=Location::None) {
     return _sptr(new hilti::function::Parameter(type, constant, l));
+}
+
+}
+
+namespace hook {
+
+typedef hilti::function::parameter_list parameter_list;
+
+typedef Hook::attribute hook_attribute;
+typedef std::list<hook_attribute> attribute_list;
+
+/// Instantiates an AST node representating the declaration of a hook implementation.
+///
+/// id: The name of the hook.
+///
+/// result: The parameter representing the return value.
+///
+/// params: The parameters to the hook.
+///
+/// module: The module the hook implementation is declared in.
+///
+/// body: The body of the function. Can be null to declare a function with
+/// giving it a body (for prototyping a hook).
+///
+/// priority: The hook's priority, should default to 0.
+///
+/// group: The hook's group, 0 for none.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The hook node.
+inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
+                                            shared_ptr<hilti::function::Parameter> result,
+                                            const hilti::function::parameter_list& params,
+                                            shared_ptr<Module> module,
+                                            shared_ptr<statement::Block> body,
+                                            int64_t priority, int64_t group,
+                                            const Location& l=Location::None)
+{
+    auto ftype = _sptr(new hilti::type::Hook(result, params, l));
+    auto func = _sptr(new Hook(id, ftype, module, priority, group, body, l));
+    return _sptr(new declaration::Hook(func, l));
+}
+
+/// Instantiates an AST node representating the declaration of a hook implementation.
+///
+/// id: The name of the hook.
+///
+/// result: The parameter representing the return value.
+///
+/// params: The parameters to the hook.
+///
+/// module: The module the hook implementation is declared in.
+///
+/// body: The body of the function. Can be null to declare a function with
+/// giving it a body (for prototyping a hook).
+///
+/// attrs: The attributes defined for the hook.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The hook node.
+inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
+                                            shared_ptr<hilti::function::Parameter> result,
+                                            const hilti::function::parameter_list& params,
+                                            shared_ptr<Module> module,
+                                            shared_ptr<statement::Block> body,
+                                            const attribute_list& attrs,
+                                            const Location& l=Location::None)
+{
+    auto ftype = _sptr(new hilti::type::Hook(result, params, l));
+    auto func = _sptr(new Hook(id, ftype, module, attrs, body, l));
+    return _sptr(new declaration::Hook(func, l));
+}
+
+/// Returns a hook attribute list for use with create().
+inline attribute_list attributes()
+{
+    return attribute_list();
+}
+
+/// Returns a hook attribute for use with create().
+///
+/// name: The name of attributes, which must be \c &priority or \c &group.
+///
+/// val: The attributes value.
+///
+/// Returns: The attribute.
+inline hook_attribute attribute(const ::string& name, int64_t val)
+{
+    return std::make_pair(name, val);
 }
 
 }

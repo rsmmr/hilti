@@ -78,8 +78,8 @@ struct TypeInfo {
     llvm::Type* llvm_type = nullptr;
 
     /// The name of a library type to use. This is can be given instead of \a
-    /// llvm_type. For heap types, a \a pointer to this type will then be
-    /// used.
+    /// llvm_type. With reference types, a \a pointer to this type will then
+    /// be used.
     string lib_type = "";
 
     /// For DynamicTypes, a pointer map for garbage collection. Can be null if

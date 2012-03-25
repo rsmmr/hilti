@@ -115,6 +115,7 @@ public:
    ///
    /// Returns: The value type.
    shared_ptr<Type> mapValueType(shared_ptr<Type> ty) const;
+
 };
 
 /// Base class for defining a HILTI instruction. Note that one shouldn't
@@ -134,6 +135,9 @@ public:
    /// instances of Statement-derived classes corresponding to an instruction
    /// of this type with arguments bound.
    stmt_factory factory() const { return _factory; }
+
+   /// Returns the current validator.
+   passes::Validator* validator() const { return _validator; }
 
    /// Validates whether a set of arguments are valid for the instruction.
    /// Errors are reported via the given passes::Validator instance (which is
@@ -268,6 +272,17 @@ public:
    ///
    /// Returns: True if the expression is an instance of expression::Constant.
    bool isConstant(shared_ptr<Expression> op) const;
+
+   /// Checks whether call parameters are compatible with a function. If not,
+   /// an error is reported.
+   bool checkCallParameters(shared_ptr<type::Function> func, shared_ptr<Expression> args) const;
+
+   /// Checks whether a return expression is compatible with a function's
+   /// return type.
+   bool checkCallResult(shared_ptr<type::Function> func, shared_ptr<Expression> expr) const;
+
+   /// Checks whether a return type is compatible with a function's prototype.
+   bool checkCallResult(shared_ptr<type::Function> func, shared_ptr<Type> ty) const;
 
    ACCEPT_VISITOR_ROOT();
 

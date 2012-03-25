@@ -4,28 +4,8 @@
 
 namespace optype {
 
-/// An interal Type-derived class that allows us to specify an optional
-/// parameters in an instruction's signature.
-class _OptionalArgument : public Type
-{
-public:
-   _OptionalArgument(shared_ptr<Type> arg) { _arg = arg; }
-
-   string render() override {
-       return string("optional " + _arg->render());
-   }
-
-   bool _equal(shared_ptr<hilti::Type> other) const override {
-       return other ? _arg->equal(other) : true;
-   }
-
-private:
-   shared_ptr<Type> _arg;
-};
-
-
 inline shared_ptr<Type> optional(shared_ptr<Type> arg) {
-    return std::make_shared<_OptionalArgument>(arg);
+    return std::make_shared<type::OptionalArgument>(arg);
 }
 
 static shared_ptr<Type> any(new type::Any());
@@ -98,7 +78,7 @@ static shared_ptr<Type> typeBytes(new type::Type(bytes));
 static shared_ptr<Type> typeCallable(new type::Type(callable));
 static shared_ptr<Type> typeChannel(new type::Type(channel));
 static shared_ptr<Type> typeClassifier(new type::Type(classifier));
-static shared_ptr<Type> typeException(exception);
+static shared_ptr<Type> typeException(new type::Type(exception));
 static shared_ptr<Type> typeFile(new type::Type(file));
 static shared_ptr<Type> typeIOSource(new type::Type(iosource));
 static shared_ptr<Type> typeList(new type::Type(list));

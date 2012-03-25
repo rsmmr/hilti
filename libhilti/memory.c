@@ -69,14 +69,14 @@ void* __hlt_malloc(uint64_t size, const char* type, const char* location)
 {
     void *p = calloc(1, size);
 
-#ifdef DEBUG
-    _dbg_mem_raw("malloc", p, size, type, location, 0);
-#endif
-
     if ( ! p ) {
         fputs("out of memory in hlt_malloc, aborting", stderr);
         exit(1);
     }
+
+#ifdef DEBUG
+    _dbg_mem_raw("malloc", p, size, type, location, 0);
+#endif
 
     return p;
 }
@@ -84,19 +84,20 @@ void* __hlt_malloc(uint64_t size, const char* type, const char* location)
 void* __hlt_realloc(void* p, uint64_t size, const char* type, const char* location)
 {
 #ifdef DEBUG
-    _dbg_mem_raw("free", p, size, type, location, "realloc");
+    if ( p )
+        _dbg_mem_raw("free", p, size, type, location, "realloc");
 #endif
 
     p = realloc(p, size);
-
-#ifdef DEBUG
-    _dbg_mem_raw("malloc", p, size, type, location, "realloc");
-#endif
 
     if ( ! p ) {
         fputs("out of memory in hlt_malloc, aborting", stderr);
         exit(1);
     }
+
+#ifdef DEBUG
+    _dbg_mem_raw("malloc", p, size, type, location, "realloc");
+#endif
 
     return p;
 }
@@ -105,14 +106,14 @@ void* __hlt_calloc(uint64_t count, uint64_t size, const char* type, const char* 
 {
     void *p = calloc(count, size);
 
-#ifdef DEBUG
-    _dbg_mem_raw("calloc", p, count * size, type, location, 0);
-#endif
-
     if ( ! p ) {
         fputs("out of memory in hlt_calloc, aborting", stderr);
         exit(1);
     }
+
+#ifdef DEBUG
+    _dbg_mem_raw("calloc", p, count * size, type, location, 0);
+#endif
 
     return p;
 }

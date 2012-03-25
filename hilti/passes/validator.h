@@ -56,6 +56,7 @@ protected:
    void visit(declaration::Variable* v) override;
 
    void visit(declaration::Function* f) override;
+   void visit(declaration::Hook* f) override;
 
    void visit(type::function::Parameter* p) override;
 

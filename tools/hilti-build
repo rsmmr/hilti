@@ -180,6 +180,8 @@ def runHiltic(inputs, output):
     else:
         flags += runConfig(HiltiConfig, "--hiltic-flags").split()
 
+    flags += ["-I ."]
+
     flags = uniqueArgs(flags)
 
     inputs = " ".join(inputs)

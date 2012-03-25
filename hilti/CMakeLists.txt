@@ -23,6 +23,8 @@ add_library (hilti
      ctor.cc
      constant-coercer.cc
      coercer.cc
+     declaration.cc
+     function.cc
      instruction.cc
      statement.cc
      type.cc

@@ -6,13 +6,14 @@ using namespace hilti::passes;
 shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
 {
     auto id = decl->id();
+    auto is_hook = dynamic_cast<declaration::Hook*>(decl);
 
     if ( ! id ) {
         error(decl, "declaration without an ID");
         return 0;
     }
 
-    if ( id->isScoped() ) {
+    if ( id->isScoped() && ! is_hook ) {
         error(decl, "declared ID cannot have a scope");
         return 0;
     }
@@ -26,7 +27,7 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
 
     auto scope = block->scope();
 
-    if ( scope->has(decl->id(), false) ) {
+    if ( (! is_hook) && scope->has(decl->id(), false) ) {
         error(decl, util::fmt("ID %s already declared", decl->id()->name().c_str()));
         return 0;
     }
@@ -129,7 +130,9 @@ void ScopeBuilder::visit(declaration::Function* f)
 
     auto func = f->function()->sharedPtr<Function>();
     auto expr = shared_ptr<expression::Function>(new expression::Function(func, func->location()));
-    scope->insert(f->id(), expr);
+
+    if ( ! f->id()->isScoped() )
+        scope->insert(f->id(), expr);
 
     if ( ! func->body() )
         // Just a declaration without implementation.

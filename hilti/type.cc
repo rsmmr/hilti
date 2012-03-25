@@ -219,13 +219,7 @@ type::trait::Parameterized::parameter_list type::Map::parameters() const
 
 type::Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l) : TypedHeapType(arg, l)
 {
-    if ( base ) {
-        _base = ast::as<type::Exception>(base);
-        assert(_base);
-    }
-    else
-        _base = nullptr;
-
+    _base = base;
     addChild(_base);
 }
 
@@ -505,3 +499,26 @@ bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
     return true;
 }
 
+bool type::Function::_equal(shared_ptr<hilti::Type> o) const
+{
+    auto other = ast::as<type::Function>(o);
+
+    if ( ((*result()) != (*other->result())) )
+        return false;
+
+    auto p1 = parameters();
+    auto p2 = other->parameters();
+
+    if ( p1.size() != p2.size() )
+        return false;
+
+    auto i = p1.begin();
+    auto j = p2.begin();
+
+    while ( i != p1.end() ) {
+        if ( *(*i++) != *(*j++) )
+            return false;
+    }
+
+    return true;
+}

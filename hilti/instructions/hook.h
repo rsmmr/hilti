@@ -59,7 +59,7 @@
 ///       }
 ///    
 ///       ...
-///    
+///
 ///       hook.run my_hook2 (42)
 ///    
 ///       ...
@@ -155,16 +155,14 @@ iBegin(hook, GroupEnabled, "hook.group_enabled")
 iEnd
 
 iBegin(hook, Run, "hook.run")
-    iTarget(optype::any)
+    iTarget(optype::optional(optype::any))
     iOp1(optype::hook, true)
     iOp2(optype::tuple, true)
 
     iValidate {
-        // auto ty_target = as<type::[type]>(target->type());
-        // auto ty_op1 = as<type::hook>(op1->type());
-        // auto ty_op2 = as<type::tuple>(op2->type());
-
-        // TODO: Check target.
+        auto htype = as<type::Hook>(op1->type());
+        checkCallParameters(htype, op2);
+        checkCallResult(htype, target ? target->type() : nullptr);
     }
 
     iDoc(R"(    
@@ -175,12 +173,18 @@ iBegin(hook, Run, "hook.run")
 iEnd
 
 iBegin(hook, Stop, "hook.stop")
-    iOp1(optype::any, true)
+    iTerminator()
+    iOp1(optype::optional(optype::any), true)
 
     iValidate {
-        // auto ty_op1 = as<type::[type]>(op1->type());
+        auto hook = validator()->current<declaration::Hook>();
 
-        // TODO: Check argument.
+        if ( ! hook ) {
+            error(nullptr, "hook.stop must only be used inside a hook");
+            return;
+        }
+
+        checkCallResult(hook->hook()->type(), op1);
     }
 
     iDoc(R"(    

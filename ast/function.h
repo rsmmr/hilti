@@ -31,7 +31,6 @@ public:
    ///
    /// l: Location associated with the node.
    Function(shared_ptr<ID> id, shared_ptr<FunctionType> ftype, shared_ptr<Module> module, shared_ptr<Statement> body = nullptr, const Location& l=Location::None) : Node(l) {
-       assert(! id->isScoped());
        _id = id;
        this->addChild(_id);
 

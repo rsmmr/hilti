@@ -56,7 +56,7 @@ void StatementBuilder::visit(statement::Block* b)
             comment.str(string());
             printer.run(s);
             passes::Printer p(comment, true);
-            cg()->llvmInsertComment(comment.str());
+            cg()->llvmInsertComment(comment.str() + " (" + string(s->location()) + ")");
 
             // Send it also to the hilti-trace debug stream.
             cg()->llvmDebugPrint("hilti-trace", comment.str());
@@ -171,6 +171,8 @@ void StatementBuilder::visit(declaration::Variable* v)
 
 void StatementBuilder::visit(declaration::Function* f)
 {
+    auto hook_decl = dynamic_cast<declaration::Hook*>(f);
+
     auto func = f->function();
     auto ftype = func->type();
 
@@ -178,9 +180,9 @@ void StatementBuilder::visit(declaration::Function* f)
         // No implementation, nothing to do here.
         return;
 
-    assert(ftype->callingConvention() == type::function::HILTI);
+    assert(ftype->callingConvention() == type::function::HILTI || ftype->callingConvention() == type::function::HOOK);
 
-    auto llvm_func = cg()->llvmFunction(func);
+    auto llvm_func = cg()->llvmFunction(func, true);
 
     cg()->pushFunction(llvm_func);
 
@@ -195,13 +197,32 @@ void StatementBuilder::visit(declaration::Function* f)
         cg()->llvmAddLocal("__shadow_" + p->id()->name(), p->type(), init);
     }
 
+    if ( hook_decl ) {
+        // If a hook, first check whether its group is enabled.
+        CodeGen::expr_list args { builder::integer::create(hook_decl->hook()->group()) };
+        auto cont = cg()->llvmCall("hlt::hook_group_is_enabled", args, false);
+
+        auto disabled = cg()->pushBuilder("disabled");
+        cg()->llvmReturn(cg()->llvmConstInt(0, 1)); // Return false.
+        cg()->popBuilder();
+
+        auto enabled = cg()->newBuilder("enabled");
+        cg()->llvmCreateCondBr(cont, enabled, disabled);
+
+        cg()->pushBuilder(enabled); // Leave on stack.
+    }
+
     call(func->body());
 
     cg()->llvmBuildExitBlock();
 
     cg()->popFunction();
 
-    if ( f->exported() )
+    if ( f->exported() && func->type()->callingConvention() == type::function::HILTI )
         cg()->llvmBuildCWrapper(func, llvm_func);
+
+    // If it's a hook, add meta information about the implementation.
+    if ( hook_decl )
+        cg()->llvmAddHookMetaData(hook_decl->hook(), llvm_func);
 }
 

@@ -40,7 +40,8 @@ static struct option long_options[] = {
 #ifdef DEBUG
 static void _check_leaks(const char* prog)
 {
-#ifdef DARWIN
+#if 0 // Disable for now. We have our own leak checking.
+# ifdef DARWIN
     int do_leaks = (getenv("HILTI_LEAKS") || getenv("HILTI_LEAKS_QUIET"));
     int do_leaks_quiet = (getenv("HILTI_LEAKS_QUIET") != 0);
 
@@ -84,6 +85,7 @@ static void _check_leaks(const char* prog)
         }
     }
 #endif
+#endif
 }
 #endif
 
@@ -122,6 +124,7 @@ int main(int argc, char **argv)
     hlt_config cfg = *hlt_config_get();
     cfg.num_workers = threads;
     cfg.profiling = profiling;
+    cfg.debug_out = "hlt-debug.log";
     hlt_config_set(&cfg);
 
     hlt_init();

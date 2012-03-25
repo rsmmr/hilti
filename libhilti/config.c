@@ -25,7 +25,7 @@ const hlt_config* hlt_config_get()
         _current_config->time_idle = 0.1;
         _current_config->time_terminate = 1.0;
         _current_config->stack_size = 268435456;
-        _current_config->debug_out = stderr;
+        _current_config->debug_out = "/dev/stderr";
         _current_config->debug_streams = getenv("HILTI_DEBUG");
         _current_config->profiling = 0;
         _current_config->vid_schedule_min = 1;

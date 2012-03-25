@@ -146,8 +146,11 @@ void Logger::doError(const string& message, NodeBase* node, const string& locati
         assert(false);
     }
 
-    if ( node )
-        _output << ">>> " << node->render() << std::endl;
+    if ( node ) {
+        auto r = node->render();
+        if ( r != "<node>" )
+            _output << std::endl << ">>> " << r << std::endl;
+    }
 
     if ( location.size() )
         _output << ::util::basename(location) << ": ";

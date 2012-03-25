@@ -6,6 +6,12 @@ iBegin(flow, ReturnResult, "return.result")
     iOp1(optype::any, true)
 
     iValidate {
+        auto hook = validator()->current<declaration::Hook>();
+
+        if ( hook ) {
+            error(nullptr, "return.result must not be used inside a hook; use hook.stop instead");
+            return;
+        }
     }
 
     iDoc("")

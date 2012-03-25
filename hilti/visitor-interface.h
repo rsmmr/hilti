@@ -9,6 +9,7 @@ class Ctor;
 class Declaration;
 class Expression;
 class Function;
+class Hook;
 class ID;
 class Instruction;
 class Module;
@@ -32,7 +33,6 @@ namespace type {
    class Enum;
    class Exception;
    class File;
-   class Function;
    class Function;
    class Hook;
    class IOSource;
@@ -138,6 +138,7 @@ namespace expression {
 namespace declaration {
    class Constant;
    class Function;
+   class Hook;
    class Type;
    class Variable;
 }
@@ -194,6 +195,7 @@ public:
 
    // Functions.
    virtual void visit(Function* f)          {}
+   virtual void visit(Hook* f)              {}
    virtual void visit(type::function::Parameter* p) {}
 
    // Types.
@@ -303,6 +305,7 @@ public:
    virtual void visit(Declaration* d)           {}
    virtual void visit(declaration::Constant* d) {}
    virtual void visit(declaration::Function* d) {}
+   virtual void visit(declaration::Hook* d) {}
    virtual void visit(declaration::Type* d)     {}
    virtual void visit(declaration::Variable* d) {}
 

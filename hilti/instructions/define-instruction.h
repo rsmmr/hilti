@@ -36,7 +36,7 @@
              cls(shared_ptr<hilti::Instruction> instruction, \
                  const hilti::instruction::Operands& ops,  \
                  const Location& l=Location::None)  \
-                : instruction::Resolved(instruction, ops) {} \
+                : instruction::Resolved(instruction, ops, l) {} \
             ACCEPT_VISITOR(instruction::Resolved)   \
         };                                          \
        }                                            \
@@ -71,10 +71,9 @@
        }                                                 \
                                                          \
        bool __matchOp##nr(shared_ptr<Expression> op) override {        \
-           if ( ! op ) return false;                                   \
+           if ( ! op ) return __defaultOp##nr() || ast::isA<type::OptionalArgument>(ty); \
            if ( ! ty->equal(op->type()) ) return false;                \
            if ( op->isConstant() && ! constant ) return false;         \
-           if ( ! op && ! __defaultOp##nr() ) return false;            \
            return true;                                                \
            }
 

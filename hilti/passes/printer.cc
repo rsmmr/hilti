@@ -243,10 +243,19 @@ void Printer::visit(declaration::Function* f)
     auto func = f->function();
     auto ftype = func->type();
 
+    shared_ptr<Hook> hook = nullptr;
+
+    auto hook_decl = dynamic_cast<declaration::Hook *>(f);
+    if ( hook_decl )
+        hook = hook_decl->hook();
+    
     bool has_impl = static_cast<bool>(func->body());
 
     if ( ! has_impl )
         p << "declare ";
+
+    if ( hook )
+        p << "hook ";
 
     switch ( ftype->callingConvention() ) {
      case type::function::HILTI_C:
@@ -258,6 +267,7 @@ void Printer::visit(declaration::Function* f)
         break;
 
      case type::function::HILTI:
+     case type::function::HOOK:
         // Default.
         break;
 
@@ -268,6 +278,14 @@ void Printer::visit(declaration::Function* f)
     p << ftype->result() << " " << f->id() << '(';
     printList(ftype->parameters(), ",");
     p << ')' << endl;
+
+    if ( hook ) {
+        if ( hook->priority() != 0 )
+            p << "&priority=" << hook->priority() << " ";
+
+        if ( hook->group() != 0 )
+            p << "&group=" << hook->group() << " ";
+    }
 
     if ( has_impl ) {
         p << '{' << endl;
@@ -351,10 +369,14 @@ void Printer::visit(type::Bool* b)
     p << "bool";
 }
 
-void Printer::visit(type::Reference* r)
+void Printer::visit(type::Reference* t)
 {
     Printer& p = *this;
-    p << "ref<" << r->argType() << ">";
+
+    if ( t->argType() )
+        p << "ref<" << t->argType() << ">";
+    else
+        p << "ref<*>";
 }
 
 void Printer::visit(type::Exception* e)
@@ -388,7 +410,7 @@ void Printer::visit(type::Tuple* t)
 void Printer::visit(type::Type* t)
 {
     Printer& p = *this;
-
+    assert(t->typeType());
     p << t->typeType();
 }
 
@@ -490,7 +512,11 @@ void Printer::visit(type::Callable* t)
 void Printer::visit(type::Channel* t)
 {
     Printer& p = *this;
-    p << "channel<" << t->argType() << ">";
+
+    if ( t->argType() )
+        p << "channel<" << t->argType() << ">";
+    else
+        p << "channel<*>";
 }
 
 void Printer::visit(type::Classifier* t)
@@ -508,32 +534,54 @@ void Printer::visit(type::File* t)
 void Printer::visit(type::IOSource* t)
 {
     Printer& p = *this;
-    p << "iosrc<" << t->kind() << ">";
+
+    if ( t->kind() )
+        p << "iosrc<" << t->kind() << ">";
+    else
+        p << "iosrc<*>";
 }
 
 void Printer::visit(type::List* t)
 {
     Printer& p = *this;
-    p << "list<" << t->argType() << ">";
+
+    if ( t->argType() )
+        p << "list<" << t->argType() << ">";
+    else
+        p << "list<*>";
 }
 
 void Printer::visit(type::Map* t)
 {
     Printer& p = *this;
-    p << "map<" << t->keyType() << ", " << t->valueType() << ">";
+
+    assert(! (t->keyType() || t->valueType()) || (t->keyType() && t->valueType()));
+
+    if ( t->keyType() )
+        p << "map<" << t->keyType() << ", " << t->valueType() << ">";
+    else
+        p << "map<*>";
 }
 
 
 void Printer::visit(type::Vector* t)
 {
     Printer& p = *this;
-    p << "vector<" << t->argType() << ">";
+
+    if ( t->argType() )
+        p << "vector<" << t->argType() << ">";
+    else
+        p << "vector<*>";
 }
 
 void Printer::visit(type::Set* t)
 {
     Printer& p = *this;
-    p << "set<" << t->argType() << ">";
+
+    if ( t->argType() )
+        p << "set<" << t->argType() << ">";
+    else
+        p << "set<*>";
 }
 
 void Printer::visit(type::Overlay* t)
@@ -594,7 +642,11 @@ void Printer::visit(type::TimerMgr* t)
 void Printer::visit(type::Iterator* t)
 {
     Printer& p = *this;
-    p << "iterator<" << t->argType() << ">";
+
+    if ( t->argType() )
+        p << "iterator<" << t->argType() << ">";
+    else
+        p << "iterator<*>";
 }
 
 void Printer::visit(constant::Integer* i)

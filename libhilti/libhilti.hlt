@@ -239,8 +239,8 @@ declare "C-HILTI" void debug_printf(string stream, string fmt, any args)
 #
 # ##
 #
-# declare "C-HILTI" void hook_group_enable(int<64> group, bool enabled)
-# declare "C-HILTI" bool hook_group_is_enabled(int<64> group)
+declare "C-HILTI" void hook_group_enable(int<64> group, bool enabled)
+declare "C-HILTI" bool hook_group_is_enabled(int<64> group)
 #
 # ##
 #

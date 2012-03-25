@@ -54,7 +54,7 @@ public:
    ///      _equal() is passed on (which defaults to true).
    ///
    ///    - Otherwise, comparision fails.
-   bool equal(shared_ptr<AIType> other) const {
+   virtual bool equal(shared_ptr<AIType> other) const {
        if ( _any || other->_any )
            return true;
 
@@ -177,6 +177,9 @@ public:
        auto id = _id ? (string(" ") + _id->pathAsString()).c_str() : "";
        return util::fmt("%s%s%s", (_constant ? "const " : ""), _type->render().c_str(), id);
    }
+
+   bool operator==(const Parameter& other) { return repr() == other.repr(); }
+   bool operator!=(const Parameter& other) { return repr() != other.repr(); }
 
 private:
    void Init(shared_ptr<ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value = nullptr);

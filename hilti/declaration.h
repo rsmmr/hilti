@@ -84,15 +84,29 @@ class Function : public hilti::Declaration, public ast::declaration::mixin::Func
 public:
    /// Constructor.
    ///
-   /// id: The name of declared function.
-   /// 
    /// func: The declared function.
    ///
    /// l: An associated location.
-   Function(shared_ptr<hilti::ID> id, shared_ptr<hilti::Function> func, const Location& l=Location::None)
-       : hilti::Declaration(id, l), ast::declaration::mixin::Function<AstInfo>(this, func) {}
+   Function(shared_ptr<hilti::Function> func, const Location& l=Location::None);
 
    ACCEPT_VISITOR(hilti::Declaration);
+};
+
+/// AST node for declaring a hook. A hook implementation is just a
+/// specialized function.
+class Hook : public Function
+{
+public:
+   /// Constructor.
+   ///
+   /// hook: The hook.
+   ///
+   /// l: An associated location.
+   Hook(shared_ptr<hilti::Hook> hook, const Location& l=Location::None);
+
+   shared_ptr<hilti::Hook> hook() const;
+
+   ACCEPT_VISITOR(Function);
 };
 
 }

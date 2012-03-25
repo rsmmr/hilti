@@ -83,13 +83,13 @@ shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
         ti->init_val = cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmLibType(ti->lib_type)));
 
     if ( ! ti->llvm_type && ti->lib_type.size() ) {
-        if ( ast::isA<type::HeapType>(type) )
-            ti->llvm_type = cg()->llvmTypePtr(cg()->llvmLibType(ti->lib_type));
-        else
-            ti->llvm_type = cg()->llvmLibType(ti->lib_type);
+        ti->llvm_type = cg()->llvmLibType(ti->lib_type);
+
+        if ( ast::isA<type::Reference>(type) )
+            ti->llvm_type = cg()->llvmTypePtr(ti->llvm_type);
     }
 
-    if ( ti->llvm_type && ! ti->init_val && ast::isA<type::ValueType>(type) ) 
+    if ( ti->llvm_type && ! ti->init_val && ast::isA<type::ValueType>(type) )
         ti->init_val = cg()->llvmConstNull(ti->llvm_type);
 
     if ( ! ti )

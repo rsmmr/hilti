@@ -137,13 +137,15 @@ using namespace hilti;
 %type <catch_>           catch_
 %type <catches>          catches
 %type <cc>               opt_cc
-%type <decl>             global local function type_decl
+%type <decl>             global local function hook type_decl
 %type <decls>            opt_local_decls
 %type <enum_label>       enum_label
 %type <enum_labels>      enum_labels
 %type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor
 %type <exprs>            opt_tuple_elem_list tuple_elem_list tuple exprs opt_exprs
 %type <id>               local_id scoped_id mnemonic import opt_label label
+%type <hook_attribute>   hook_attr
+%type <hook_attributes>  opt_hook_attrs
 %type <map_element>      map_elem
 %type <map_elements>     map_elems opt_map_elems
 %type <operands>         operands
@@ -210,6 +212,7 @@ global_decls  : global_decl global_decls
 global_decl   : global                           { driver.context()->module->body()->addDeclaration($1); }
               | stmt                             { driver.context()->module->body()->addStatement($1); }
               | function                         { driver.context()->module->body()->addDeclaration($1); }
+              | hook                             { driver.context()->module->body()->addDeclaration($1); }
               | type_decl                        { driver.context()->module->body()->addDeclaration($1); }
               | import                           { driver.context()->module->import($1); }
               | export_                          { }
@@ -234,8 +237,10 @@ stmt          : instruction eol                  { $$ = $1; }
               ;
 
 stmt_list     : stmt stmt_list                   { $$ = $2; $$.push_front($1); }
+              | local stmt_list                  { $$ = $2; driver.currentBlock()->addDeclaration($1); }
               | comment stmt_list                { $$ = $2; }
               | stmt                             { $$ = builder::block::statement_list(); $$.push_back($1); }
+              | local                            { $$ = builder::block::statement_list(); driver.currentBlock()->addDeclaration($1); }
               | comment                          { $$ = builder::block::statement_list(); }
               ;
 
@@ -432,6 +437,19 @@ function      : opt_cc result local_id '(' opt_param_list ')' body opt_nl { $$ =
                                                                             driver.context()->module->exportID($4);
                                                                           }
               ;
+
+hook          : HOOK result scoped_id '(' opt_param_list ')' opt_hook_attrs body opt_nl { $$ = builder::hook::create($3, $2, $5, driver.context()->module, $8, $7, loc(@$)); }
+              | DECLARE HOOK result local_id '(' opt_param_list ')' eol                 { $$ = builder::hook::create($4, $3, $6, driver.context()->module, nullptr, builder::hook::attributes(), loc(@$));
+                                                                                          if ( ! $4->isScoped() )
+                                                                                              driver.context()->module->exportID($4);
+                                                                                        }
+              ;
+
+opt_hook_attrs : hook_attr opt_hook_attrs        { $$ = $2; $$.push_back($1); }
+               | /* empty */                     { $$ = builder::hook::attributes(); }
+
+hook_attr     : ATTR_PRIORITY '=' CINTEGER       { $$ = builder::hook::attribute($1, $3); }
+              | ATTR_GROUP '=' CINTEGER          { $$ = builder::hook::attribute($1, $3); }
 
 opt_cc        : CSTRING                          { if ( $1 == "HILTI" ) $$ = type::function::HILTI;
                                                    else if ( $1 == "C-HILTI" ) $$ = type::function::HILTI_C;

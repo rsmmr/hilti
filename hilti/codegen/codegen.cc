@@ -735,6 +735,8 @@ llvm::Constant* CodeGen::llvmRtti(shared_ptr<hilti::Type> type)
     // We add the global here first and cache it before we call llvmRtti() so
     // the recursive calls function properly.
     string name = util::mangle(string("hlt_type_info_hlt_") + type->render(), true, nullptr, "", false);
+    name = ::util::strreplace(name, "_ref", "");
+
     llvm::Constant* cval = llvmConstNull(llvmTypePtr(llvmTypeRtti()));
     auto constant1 = llvmAddConst(name, cval, true);
     constant1->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
@@ -811,7 +813,7 @@ llvm::Constant* CodeGen::llvmExceptionTypeObject(shared_ptr<type::Exception> exc
         assert(excpt->id());
 
         auto name = llvmConstAsciizPtr(excpt->id()->pathAsString());
-        auto base = llvmExceptionTypeObject(excpt->baseType());
+        auto base = llvmExceptionTypeObject(ast::as<type::Exception>(excpt->baseType()));
         auto arg  = excpt->argType() ? llvmRtti(excpt->argType()) : llvmConstNull(llvmTypePtr(llvmTypeRtti()));
 
         base = llvm::ConstantExpr::getBitCast(base, llvmTypePtr());
@@ -1029,11 +1031,9 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
 
     auto local = builder->CreateAlloca(llvm_type, 0, name);
 
-    if ( init ) {
-        pushBuilder(builder);
+    if ( init )
+        // Use current builder here.
         llvmCreateStore(init, local);
-        popBuilder();
-    }
 
     _functions.back()->locals.insert(make_pair(name, std::make_pair(local, type)));
 
@@ -1084,10 +1084,12 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
 {
     auto llvm_linkage = internal ? llvm::Function::InternalLinkage : llvm::Function::ExternalLinkage;
     auto llvm_cc = llvm::CallingConv::Fast;
+    auto orig_rtype = rtype;
 
     // Determine the function's LLVM calling convention.
     switch ( cc ) {
      case type::function::HILTI:
+     case type::function::HOOK:
         llvm_cc = llvm::CallingConv::Fast;
         break;
 
@@ -1115,9 +1117,27 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
 
     std::vector<std::pair<string, llvm::Type*>> llvm_args;
 
-    // TODO: Adapt return value.
-    //
-    // XXX
+    // Adapt the return type according to calling convention.
+    switch ( cc ) {
+     case type::function::HILTI:
+        break;
+
+     case type::function::HOOK:
+        // Hooks always return a boolean.
+        rtype = llvmTypeInt(1);
+        break;
+
+     case type::function::HILTI_C:
+        // TODO: Do ABI stuff.
+        break;
+
+     case type::function::C:
+        // TODO: Do ABI stuff.
+        break;
+
+     default:
+        internalError("unknown calling convention in llvmAddFunction");
+    }
 
     // Adapt parameters according to calling conventions.
     for ( auto p : params ) {
@@ -1125,6 +1145,7 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
 
         switch ( cc ) {
          case type::function::HILTI:
+         case type::function::HOOK:
             llvm_args.push_back(make_pair(p.first, arg_llvm_type));
             break;
 
@@ -1155,6 +1176,15 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
     switch ( cc ) {
      case type::function::HILTI:
         llvm_args.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext())));
+        break;
+
+     case type::function::HOOK:
+        llvm_args.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext())));
+
+        // Hooks with return value get an additional pointer to an instance
+        // receiving it.
+        if ( ! orig_rtype->isVoidTy() )
+            llvm_args.push_back(std::make_pair("__rval", llvmTypePtr(orig_rtype)));
         break;
 
      case type::function::HILTI_C:
@@ -1208,7 +1238,7 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
     return func;
 }
 
-llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool internal, type::function::CallingConvention cc)
+llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool internal, type::function::CallingConvention cc, const string& force_name)
 {
     if ( cc == type::function::DEFAULT )
         cc = func->type()->callingConvention();
@@ -1218,29 +1248,114 @@ llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool interna
     for ( auto p : func->type()->parameters() )
         params.push_back(make_pair(p->id()->name(), p->type()));
 
-    auto name = util::mangle(func->id(), true, func->module()->id(), "", internal);
+    auto name = force_name.size() ? force_name : util::mangle(func->id(), true, func->module()->id(), "", internal);
+
     auto rtype = llvmType(func->type()->result()->type());
 
     return llvmAddFunction(name, rtype, params, internal, cc);
 }
 
-llvm::Function* CodeGen::llvmFunction(shared_ptr<Function> func)
+llvm::Function* CodeGen::llvmFunction(shared_ptr<Function> func, bool force_new)
 {
     bool internal = true;
 
-    if ( func->module()->exported(func->id()) && func->type()->callingConvention() != type::function::HILTI )
+    if ( func->module()->exported(func->id()) )
         internal = false;
 
     if ( func->type()->callingConvention() != type::function::HILTI )
         internal = false;
 
-    auto name = util::mangle(func->id(), true, func->module()->id(), "", internal);
-    auto llvm_func = _module->getFunction(name);
+    string prefix;
 
-    if ( llvm_func )
-        return llvm_func;
+    if ( ast::isA<Hook>(func) )
+        prefix = ".hlt.hook";
+    else if ( func->type()->callingConvention() == type::function::HILTI && ! internal )
+        prefix = "hlt.";
 
-    return llvmAddFunction(func, internal);
+    int cnt = 0;
+
+    string name;
+
+    while ( true ) {
+        name = util::mangle(func->id(), true, func->module()->id(), prefix, internal);
+
+        if ( ++cnt > 1 )
+            name += ::util::fmt(".%d", cnt);
+
+        auto llvm_func = _module->getFunction(name);
+
+        if ( ! llvm_func )
+            break;
+
+        if ( ! force_new )
+            return llvm_func;
+    }
+
+    return llvmAddFunction(func, internal, type::function::DEFAULT, name);
+}
+
+llvm::Function* CodeGen::llvmFunctionHookRun(shared_ptr<Hook> hook)
+{
+    auto cname = util::mangle(hook->id(), true, hook->module()->id(), "hook.run", true);
+    auto fval = lookupCachedValue("function-hook", cname);
+
+    if ( fval )
+        return llvm::cast<llvm::Function>(fval);
+
+    auto func = llvmAddFunction(hook, false, type::function::HOOK, cname);
+
+    // Add meta information for the hook.
+    std::vector<llvm::Value *> vals;
+
+    // MD node for the hook's name.
+    auto name = hook->id()->pathAsString();
+
+    if ( ! hook->id()->isScoped() )
+        name = _hilti_module->id()->name() + "::" + name;
+
+    // Record the name.
+    vals.push_back(llvm::MDString::get(llvmContext(), name));
+
+    // Record the the function we want to call for running the hook.
+    vals.push_back(func);
+
+    // Returnd the return type, if we have one.
+    auto rtype = hook->type()->result()->type();
+    if ( ! ast::isA<type::Void>(rtype) )
+        vals.push_back(llvmConstNull(llvmType(rtype)));
+
+    // Create the global hook declaration node and add our vals as subnode in
+    // there. The linker will merge all the top-level entries.
+    auto md  = _module->getOrInsertNamedMetadata(symbols::MetaHookDecls);
+    md->addOperand(llvm::MDNode::get(llvmContext(), vals));
+
+    cacheValue("function-hook", cname, func);
+    return func;
+}
+
+void CodeGen::llvmAddHookMetaData(shared_ptr<Hook> hook, llvm::Value *llvm_func)
+{
+    std::vector<llvm::Value *> vals;
+
+    // Record the hook's name.
+    auto name = hook->id()->pathAsString();
+
+    if ( ! hook->id()->isScoped() )
+        name = _hilti_module->id()->name() + "::" + name;
+
+    vals.push_back(llvm::MDString::get(llvmContext(), name));
+
+    // Record the function we want to have called when running the hook.
+    vals.push_back(llvm_func);
+
+    // Record priority and group.
+    vals.push_back(llvmConstInt(hook->priority(), 64));
+    vals.push_back(llvmConstInt(hook->group(), 64));
+
+    // Create/get the global hook implementation node and add our vals as
+    // subnode in there. The linker will merge all the top-level entries.
+    auto md  = llvmModule()->getOrInsertNamedMetadata(symbols::MetaHookImpls);
+    md->addOperand(llvm::MDNode::get(llvmContext(), vals));
 }
 
 llvm::Function* CodeGen::llvmFunction(shared_ptr<ID> id)
@@ -1461,18 +1576,20 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
     ++_in_check_exception;
 
     llvm::Value* is_null = nullptr;
-    IRBuilder* cont = nullptr;
+    IRBuilder* cont = 0;
 
     if ( ! known_exception ) {
         auto excpt = llvmCurrentException();
         is_null = builder()->CreateIsNull(excpt);
-        cont = newBuilder("no-excpt");
     }
 
     if ( _functions.back()->catches.size() ) {
         // At least one catch clause, check it.
-        if ( ! known_exception )
+        if ( ! known_exception ) {
+            cont = newBuilder("no-excpt");
             llvmCreateCondBr(is_null, cont, _functions.back()->catches.front());
+        }
+
         else
             llvmCreateBr(_functions.back()->catches.front());
     }
@@ -1487,13 +1604,17 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
             popBuilder();
         }
 
-        if ( ! known_exception )
+        if ( ! known_exception ) {
+            cont = newBuilder("no-excpt");
             llvmCreateCondBr(is_null, cont, unwind);
+        }
+
         else
             llvmCreateBr(unwind);
     }
 
-    pushBuilder(cont);
+    if ( cont )
+        pushBuilder(cont);
 
     // Leave on stack.
 
@@ -1626,12 +1747,26 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
 
 llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args, bool excpt_check)
 {
+    auto result = llvmDoCall(llvm_func, nullptr, ftype, args, nullptr, excpt_check);
+    auto ci = llvm::cast<llvm::CallInst>(result);
+    assert(ci);
+    return ci;
+}
+
+llvm::Value* CodeGen::llvmRunHook(shared_ptr<Hook> hook, const expr_list& args, llvm::Value* result)
+{
+    return llvmDoCall(nullptr, hook, hook->type(), args, result, true);
+}
+
+llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list& args, llvm::Value* hook_result, bool excpt_check)
+{
     std::vector<llvm::Value*> llvm_args;
 
     // Prepare return value according to calling convention.
 
     switch ( ftype->callingConvention() ) {
      case type::function::HILTI:
+     case type::function::HOOK:
         // Can pass directly.
         break;
 
@@ -1664,6 +1799,7 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
 
         switch ( ftype->callingConvention() ) {
          case type::function::HILTI:
+         case type::function::HOOK:
             // Can pass directly but need context.
             llvm_args.push_back(arg_value);
             break;
@@ -1700,6 +1836,13 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
         llvm_args.push_back(llvmExecutionContext());
         break;
 
+     case type::function::HOOK:
+        llvm_args.push_back(llvmExecutionContext());
+
+        if ( hook_result )
+            llvm_args.push_back(hook_result);
+        break;
+
      case type::function::HILTI_C: {
         excpt = llvmAddTmp("excpt", llvmTypeExceptionPtr(), 0, true);
         llvm_args.push_back(excpt);
@@ -1713,6 +1856,11 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
      default:
         internalError("unknown calling convention in llvmCall");
     }
+
+    // If it's a hook, redirect the call to the function that the linker will
+    // create.
+    if ( hook )
+        llvm_func = llvmFunctionHookRun(hook);
 
     // Do the call.
 
@@ -1728,6 +1876,9 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
         // Can take it directly.
         break;
 
+     case type::function::HOOK:
+        break;
+
      case type::function::HILTI_C:
         assert(excpt);
         // assert(false && "Do ABI stuff");
@@ -1741,8 +1892,10 @@ llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Funct
         internalError("unknown calling convention in llvmCall");
     }
 
-    auto rtype = ftype->result()->type();
-    llvmCctor(result, rtype, false);
+    if ( ! hook ) {
+        auto rtype = ftype->result()->type();
+        llvmCctor(result, rtype, false);
+    }
 
     return result;
 }

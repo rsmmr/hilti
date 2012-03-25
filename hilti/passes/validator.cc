@@ -43,7 +43,9 @@ void Validator::visit(statement::Try* s)
 
 void Validator::visit(statement::instruction::Resolved* s)
 {
+    setCurrentLocationNode(s->sharedPtr<statement::Instruction>());
     s->instruction()->validate(this, s->operands());
+    setCurrentLocationNode(nullptr);
 }
 
 void Validator::visit(statement::instruction::Unresolved* s)
@@ -63,11 +65,23 @@ void Validator::visit(declaration::Variable* v)
 {
 }
 
-
 void Validator::visit(declaration::Function* f)
 {
 }
 
+void Validator::visit(declaration::Hook* f)
+{
+    auto block = current<statement::Block>();
+    assert(block);
+
+    auto other = block->scope()->lookup(f->id());
+
+    if ( f->id()->isScoped() && ! other )
+        error(f, util::fmt("external hook %s not declared", f->id()->pathAsString().c_str()));
+
+    if ( other && ! f->hook()->type()->equal(other->type()) )
+        error(f, util::fmt("inconsistent definitions for hook %s", f->id()->pathAsString().c_str()));
+}
 
 void Validator::visit(type::function::Parameter* p)
 {
