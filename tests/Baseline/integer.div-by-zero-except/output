@@ -1,1 +1,1 @@
-hilti: uncaught exception, DivisionByZero (from div-by-zero-except.hlt:15)
+hilti: uncaught exception, DivisionByZero (from /Users/robin/work/binpacpp/hilti2/tests/.tmp/integer.div-by-zero-except/div-by-zero-except.hlt:11-13)

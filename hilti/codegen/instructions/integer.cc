@@ -6,6 +6,26 @@
 using namespace hilti;
 using namespace codegen;
 
+void StatementBuilder::visit(statement::instruction::integer::Incr* i)
+{
+    auto width = as<type::Integer>(i->op1()->type())->width();
+    auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
+
+    auto result = builder()->CreateAdd(op1, cg()->llvmConstInt(1, width));
+
+    cg()->llvmStore(i, result);
+}
+
+void StatementBuilder::visit(statement::instruction::integer::Decr* i)
+{
+    auto width = as<type::Integer>(i->op1()->type())->width();
+    auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
+
+    auto result = builder()->CreateSub(op1, cg()->llvmConstInt(1, width));
+
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::integer::Add* i)
 {
     auto op1 = cg()->llvmValue(i->op1(), i->target()->type());
@@ -80,18 +100,19 @@ void StatementBuilder::visit(statement::instruction::integer::Div* i)
     auto ok = cg()->newBuilder("ok");
     auto excpt = cg()->newBuilder("div_by_zero");
 
-    auto width = as<type::Integer>(i->op1()->type())->width();
+    auto width = as<type::Integer>(i->target()->type())->width();
     auto is_zero = builder()->CreateICmpNE(op2, cg()->llvmConstInt(0, width));
     cg()->llvmCreateCondBr(is_zero, ok, excpt);
+
+    cg()->pushBuilder(excpt);
+    cg()->llvmRaiseException("Hilti::DivisionByZero", i->op2());
+    cg()->popBuilder();
 
     cg()->pushBuilder(ok);
     auto result = builder()->CreateSDiv(op1, op2);
     cg()->llvmStore(i, result);
-    cg()->popBuilder();
 
-    cg()->pushBuilder(excpt);
-    cg()->llvmRaiseException("hlt_exception_division_by_zero", i->op2());
-    cg()->popBuilder();
+    // Leave builder on stack.
 }
 
 void StatementBuilder::visit(statement::instruction::integer::Eq* i)
@@ -130,14 +151,15 @@ void StatementBuilder::visit(statement::instruction::integer::Mod* i)
     auto is_zero = builder()->CreateICmpNE(op2, cg()->llvmConstInt(0, width));
     cg()->llvmCreateCondBr(is_zero, ok, excpt);
 
+    cg()->pushBuilder(excpt);
+    cg()->llvmRaiseException("Hilti::DivisionByZero", i->op2());
+    cg()->popBuilder();
+
     cg()->pushBuilder(ok);
     auto result = builder()->CreateSRem(op1, op2);
     cg()->llvmStore(i, result);
-    cg()->popBuilder();
 
-    cg()->pushBuilder(excpt);
-    cg()->llvmRaiseException("hlt_exception_division_by_zero", i->op2());
-    cg()->popBuilder();
+    // Leave builder on stack.
 }
 
 void StatementBuilder::visit(statement::instruction::integer::Mul* i)
@@ -172,7 +194,7 @@ void StatementBuilder::visit(statement::instruction::integer::Pow* i)
     args.push_back(op1);
     args.push_back(op2);
 
-    auto pow = cg()->llvmCallC("hlt_int_pow", args, true);
+    auto pow = cg()->llvmCallC("hlt::int_pow", args, true);
 
     auto width = as<type::Integer>(i->target()->type())->width();
     auto result = builder()->CreateTrunc(pow, cg()->llvmTypeInt(width));
@@ -191,7 +213,7 @@ void StatementBuilder::visit(statement::instruction::integer::SExt* i)
 
     llvm::Value* result = 0;
 
-    if ( ty_target->width() < ty_op1->width() )
+    if ( ty_target->width() > ty_op1->width() )
         result = builder()->CreateSExt(op1, cg()->llvmTypeInt(ty_target->width()));
     else
         result = op1;
@@ -295,7 +317,7 @@ void StatementBuilder::visit(statement::instruction::integer::Trunc* i)
 
     llvm::Value* result = 0;
 
-    if ( ty_target->width() > ty_op1->width() )
+    if ( ty_target->width() < ty_op1->width() )
         result = builder()->CreateTrunc(op1, cg()->llvmTypeInt(ty_target->width()));
     else
         result = op1;
@@ -357,7 +379,7 @@ void StatementBuilder::visit(statement::instruction::integer::ZExt* i)
 
     llvm::Value* result = 0;
 
-    if ( ty_target->width() < ty_op1->width() )
+    if ( ty_target->width() > ty_op1->width() )
         result = builder()->CreateZExt(op1, cg()->llvmTypeInt(ty_target->width()));
     else
         result = op1;

@@ -29,6 +29,32 @@
 ///     33..64  int64_t
 ///     ======  =======
 
+iBegin(integer, Incr, "incr")
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+
+    iValidate {
+        canCoerceTo(op1, target);
+    }
+
+    iDoc(R"(
+        Increments *op1* by one.
+    )")
+iEnd
+
+iBegin(integer, Decr, "decr")
+    iTarget(optype::integer);
+    iOp1(optype::integer, true);
+
+    iValidate {
+        canCoerceTo(op1, target);
+    }
+
+    iDoc(R"(
+        Decrements *op1* by one.
+    )")
+iEnd
+
 iBegin(integer, Add, "int.add")
     iTarget(optype::integer)
     iOp1(optype::integer, true)

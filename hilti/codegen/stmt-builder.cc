@@ -162,7 +162,7 @@ void StatementBuilder::visit(declaration::Variable* v)
         // GLobals are taken care of directly by the CodeGen.
         return;
 
-    auto init = local->init() ? cg()->llvmValue(local->init(), nullptr, true) : nullptr;
+    auto init = local->init() ? cg()->llvmValue(local->init(), local->type(), true) : nullptr;
     auto name = local->internalName();
     assert(name.size());
 
