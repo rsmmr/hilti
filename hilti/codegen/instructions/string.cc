@@ -68,6 +68,8 @@ void StatementBuilder::visit(statement::instruction::string::Length* i)
     args.push_back(i->op1());
 
     auto result = cg()->llvmCall("hlt::string_len", args);
+
+    cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::string::Lt* i)
