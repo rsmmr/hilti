@@ -1,4 +1,8 @@
->>> i1 = int.add i2 i2
-mixing-widths.hlt:7: error, operand 1 can't be coerced from integer of width 16 to one of width 8
 
-mixing-widths.hlt: 1 error found during validating
+>>> i1 = int.add i2 i2
+mixing-widths.hlt:7-7: error, operand type int<16> is not compatible with target type int<8> [pass::Validator]
+
+>>> i1 = int.add i2 i2
+mixing-widths.hlt:7-7: error, operand type int<16> is not compatible with target type int<8> [pass::Validator]
+mixing-widths.hlt: Aborting due to verification error.
+error running hiltic, aborting

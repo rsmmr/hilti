@@ -1,4 +1,5 @@
->>> i = int.div 100 0
-div-by-zero-const.hlt:14: error, operand 2 must not be zero
 
-div-by-zero-const.hlt: 1 error found during validating
+>>> i = int.div 100 0
+div-by-zero-const.hlt:13-13: error, Division by zero [pass::Validator]
+div-by-zero-const.hlt: Aborting due to verification error.
+error running hiltic, aborting
