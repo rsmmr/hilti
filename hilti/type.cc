@@ -248,22 +248,22 @@ shared_ptr<T> sharedPtr(T* t)
 }
 
 type::trait::Unpackable::Format _unpack_formats_bytes[] = {
-    { "BytesRunLength", sharedPtr(new type::TypeByName("Hilti::Packed")), false,
+    { "BytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
       "A series of bytes preceded by an uint indicating its length." },
 
-    { "BytesFixed", sharedPtr(new type::Integer(64)), false,
+    { "BytesFixed", std::make_shared<type::Integer>(64), false,
       "A series of bytes of fixed length specified by an additional integer argument" },
 
-    { "BytesDelim", sharedPtr(new type::Reference(type::Bytes())), false,
+    { "BytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), false,
       "A series of bytes delimited by a final byte-sequence specified by an additional argument." },
 
-    { "SkipBytesRunLength", sharedPtr(new type::TypeByName("Hilti::Packed")), false,
+    { "SkipBytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
       "Like BytesRunLength, but does not return unpacked value." },
 
-    { "SkipBytesFixed", sharedPtr(new type::Integer(64)), false,
+    { "SkipBytesFixed", std::make_shared<type::Integer>(64), false,
       "Like BytesFixed, but does not return unpacked value." },
 
-    { "SkipBytesDelim", sharedPtr(new type::Reference(type::Bytes())), false,
+    { "SkipBytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), false,
       "Like BytesDelim, but does not return unpacked value." },
 };
 
@@ -521,4 +521,38 @@ bool type::Function::_equal(shared_ptr<hilti::Type> o) const
     }
 
     return true;
+}
+
+type::trait::Unpackable::Format _unpack_formats_integer[] = {
+    { "Int8", std::make_shared<type::Tuple>(), true, "8-bit signed integer in host byte order." },
+    { "Int16", std::make_shared<type::Tuple>(), true, "16-bit signed integer in host byte order." },
+    { "Int32", std::make_shared<type::Tuple>(), true, "32-bit signed integer in host byte order." },
+    { "Int64", std::make_shared<type::Tuple>(), true, "64-bit signed integer in host byte order." },
+    { "Int8Big", std::make_shared<type::Tuple>(), true, "8-bit signed integer in big-endian byte order." },
+    { "Int16Big", std::make_shared<type::Tuple>(), true, "16-bit signed integer in big-endian byte order." },
+    { "Int32Big", std::make_shared<type::Tuple>(), true, "32-bit signed integer in big-endian byte order." },
+    { "Int64Big", std::make_shared<type::Tuple>(), true, "64-bit signed integer in big-endian byte order." },
+    { "Int8Little", std::make_shared<type::Tuple>(), true, "8-bit signed integer in little-endian byte order." },
+    { "Int16Little", std::make_shared<type::Tuple>(), true, "16-bit signed integer in little-endian byte order." },
+    { "Int32Little", std::make_shared<type::Tuple>(), true, "32-bit signed integer in little-endian byte order." },
+    { "Int64Little", std::make_shared<type::Tuple>(), true, "64-bit signed integer in little-endian byte order." },
+    { "UInt8", std::make_shared<type::Tuple>(), true, "8-bit unsigned integer in host byte order." },
+    { "UInt16", std::make_shared<type::Tuple>(), true, "16-bit unsigned integer in host byte order." },
+    { "UInt32", std::make_shared<type::Tuple>(), true, "32-bit unsigned integer in host byte order." },
+    { "UInt64", std::make_shared<type::Tuple>(), true, "64-bit unsigned integer in host byte order." },
+    { "UInt8Big", std::make_shared<type::Tuple>(), true, "8-bit unsigned integer in big-endian byte order." },
+    { "UInt16Big", std::make_shared<type::Tuple>(), true, "16-bit unsigned integer in big-endian byte order." },
+    { "UInt32Big", std::make_shared<type::Tuple>(), true, "32-bit unsigned integer in big-endian byte order." },
+    { "UInt64Big", std::make_shared<type::Tuple>(), true, "64-bit unsigned integer in big-endian byte order." },
+    { "UInt8Little", std::make_shared<type::Tuple>(), true, "8-bit unsigned integer in little-endian byte order." },
+    { "UInt16Little", std::make_shared<type::Tuple>(), true, "16-bit unsigned integer in little-endian byte order." },
+    { "UInt32Little", std::make_shared<type::Tuple>(), true, "32-bit unsigned integer in little-endian byte order." },
+    { "UInt64Little", std::make_shared<type::Tuple>(), true, "64-bit unsigned integer in little-endian byte order." }
+};
+
+std::vector<type::trait::Unpackable::Format> unpack_formats_integer(makeVector(_unpack_formats_integer));
+
+const std::vector<type::trait::Unpackable::Format>& type::Integer::unpackFormats() const
+{
+    return unpack_formats_integer;
 }

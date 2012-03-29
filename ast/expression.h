@@ -237,7 +237,7 @@ public:
    /// Coerces constant into a constant of a given target type.
    ///
    /// The implementation first asks the ConstantCoercer to do the operation.
-   /// If that can't, it then forwards to the normal Expression::coerceTo().
+   /// If that can't, it then uses the normal expression coercion.
    ///
    /// target: The target type.
    ///

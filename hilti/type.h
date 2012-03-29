@@ -203,6 +203,9 @@ public:
        /// ``Hilti::Packed::Bool``.
        string enumName;
 
+       /// The type of the unpacked element.
+       shared_ptr<hilti::Type> result_type;
+
        /// The type for the 2nd unpack argument, or null if not used.
        shared_ptr<hilti::Type> arg_type;
 
@@ -681,7 +684,8 @@ public:
 
 
 /// Type for integer values.
-class Integer : public ValueType, public trait::Parameterized {
+class Integer : public ValueType, public trait::Parameterized, public trait::Unpackable
+{
 public:
    /// Constructor.
    ///
@@ -708,6 +712,8 @@ public:
    }
 
    parameter_list parameters() const override;
+
+   const std::vector<Format>& unpackFormats() const override;
 
    ACCEPT_VISITOR(Type);
 

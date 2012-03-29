@@ -23,7 +23,7 @@ void run() {
     j = int.ashr i 2
     call Hilti::print (j)
 
-    call Hilti::print ("")
+  XXX  call Hilti::print ("")
 
     j = int.shl i 0
     call Hilti::print (j)
@@ -34,7 +34,7 @@ void run() {
     j = int.ashr i 0
     call Hilti::print (j)
 
-    call Hilti::print ("")
+  XXX  call Hilti::print ("")
 
     j2 = int.shl i2 2
     call Hilti::print (j2)

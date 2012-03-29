@@ -1514,6 +1514,26 @@ public:
    /// is not set.
    llvm::Value* llvmTupleElement(shared_ptr<Type> ttype, llvm::Value* tval, int idx, bool cctor);
 
+   typedef std::list<std::pair<shared_ptr<Type>, llvm::Value*>> element_list;
+
+   /// Creates a tuple from a givem list of elements. The returned tuple will
+   /// have the cctor called for all its members.
+   ///
+   /// elems: The tuple elements.
+   ///
+   /// Returns: The new tuple.
+   llvm::Value* llvmTuple(const element_list& elems);
+
+   /// Creates a tuple from a givem list of elements. The returned tuple will
+   /// have the cctor called for all its members.
+   ///
+   /// ttype: The type of the type (i.e., type::Tuple).
+   ///
+   /// elems: The tuple elements.
+   ///
+   /// Returns: The new tuple.
+   llvm::Value* llvmTuple(shared_ptr<Type> ttype, const value_list& elems);
+
    /// Returns a a generic \a bytes end position.
    llvm::Value* llvmIterBytesEnd();
 

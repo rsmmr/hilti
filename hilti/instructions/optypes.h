@@ -92,6 +92,7 @@ static shared_ptr<Type> typeTimer(new type::Type(timer));
 static shared_ptr<Type> typeTimerMgr(new type::Type(timerMgr));
 static shared_ptr<Type> typeVector(new type::Type(vector));
 
+
 }
 
 #endif

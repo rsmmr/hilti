@@ -13,8 +13,8 @@ void ConstantCoercer::visit(constant::Integer* i)
 
     auto dst_i = ast::as<type::Integer>(arg1());
 
-    if ( dst_i && i->value() <=  (2l << (dst_i->width() - 1) - 1)
-               && i->value() >= -(2l << (dst_i->width() - 1)) ) {
+    if ( dst_i && i->value() <=   1l << dst_i->width()
+               && i->value() >= -(1l << dst_i->width()) ) {
         auto c = new constant::Integer(i->value(), dst_i->width(), i->location());
         setResult(shared_ptr<Constant>(c));
         return;
