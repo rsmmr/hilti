@@ -29,6 +29,7 @@ add_library(cg-instructions
     time.cc
     timer-mgr.cc
     timer.cc
+    tuple.cc
     vector.cc
 )
     

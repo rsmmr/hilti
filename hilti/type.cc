@@ -166,7 +166,8 @@ type::Tuple::Tuple(const Location& l) : ValueType(l)
 
 type::Tuple::Tuple(const type_list& types, const Location& l) : ValueType(l)
 {
-    _types = types;
+    for ( auto t : types )
+        _types.push_back(t);
 
     for ( auto t : _types )
         addChild(t);
@@ -184,9 +185,14 @@ type::trait::Parameterized::parameter_list type::Tuple::parameters() const
     return params;
 }
 
-const type::Tuple::type_list type::Tuple::typeList() const
+const type::trait::TypeList::type_list type::Tuple::typeList() const
 {
-    return _types;
+    type::trait::TypeList::type_list types;
+
+    for ( auto t : _types ) 
+        types.push_back(t);
+
+    return types;
 }
 
 type::trait::Parameterized::parameter_list type::Integer::parameters() const
@@ -447,9 +453,9 @@ type::Struct::Struct(const field_list& fields, const Location& l) : ValueType(l)
         addChild(f);
 }
 
-const type::Struct::type_list type::Struct::typeList() const
+const type::trait::TypeList::type_list type::Struct::typeList() const
 {
-    type_list types;
+    type::trait::TypeList::type_list types;
 
     for ( auto f : _fields )
         types.push_back(f->type());

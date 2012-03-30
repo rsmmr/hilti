@@ -109,11 +109,11 @@ extern void __hlt_free(void *ptr, const char* type, const char* location);
 
 // Internal function to increaes a memory managed object's reference count by
 // one. Not to be used directly from user code.
-extern void __hlt_object_ref(const hlt_type_info* ti, void* obj, const char* location);
+extern void __hlt_object_ref(const hlt_type_info* ti, void* obj);
 
 // Internal function to decrease a memory managed object's reference count by
 // one. Not to be used directly from user code.
-extern void __hlt_object_unref(const hlt_type_info* ti, void* obj, const char* location);
+extern void __hlt_object_unref(const hlt_type_info* ti, void* obj);
 
 /// XXX
 extern void __hlt_object_dtor(const hlt_type_info* ti, void* obj, const char* location);

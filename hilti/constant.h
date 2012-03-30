@@ -142,7 +142,7 @@ public:
    Tuple(const element_list& elems, const Location& l=Location::None);
 
    /// Returns a list of the constant's elements.
-   const element_list& value() const { return _elems; }
+   const std::list<shared_ptr<Expression>> value() const;
 
    /// Returns the type of the constant.
    shared_ptr<Type> type() const override;

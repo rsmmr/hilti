@@ -31,7 +31,7 @@ iEnd
 iBegin(operator_, Unpack, "unpack")
     iTarget(optype::tuple)
     iOp1(optype::tuple, true)
-    iOp2(optype::tuple, true)
+    iOp2(optype::enum_, true)
     iOp3(optype::optional(optype::any), true)
 
     iValidate {

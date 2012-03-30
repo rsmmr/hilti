@@ -273,7 +273,8 @@ void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value
 std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
                    shared_ptr<Type> type, shared_ptr<Expression> begin,
                    shared_ptr<Expression> end, shared_ptr<Expression> fmt,
-                   shared_ptr<Expression> arg, const Location& location)
+                   shared_ptr<Expression> arg,
+                   const Location& location)
 {
     UnpackArgs args;
     args.type = type;
@@ -281,6 +282,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
     args.end = end ? llvmValue(end) : nullptr;
     args.fmt = fmt ? llvmValue(fmt) : nullptr;
     args.arg = arg ? llvmValue(arg) : nullptr;
+    args.arg_type = arg ? arg->type() : nullptr;
     args.location = location;
 
     UnpackResult result = _unpacker->llvmUnpack(args);
@@ -294,7 +296,8 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
 std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
                    shared_ptr<Type> type, llvm::Value* begin,
                    llvm::Value* end, llvm::Value* fmt,
-                   llvm::Value* arg, const Location& location)
+                   llvm::Value* arg, shared_ptr<Type> arg_type,
+                   const Location& location)
 {
     UnpackArgs args;
     args.type = type;
@@ -302,6 +305,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
     args.end = end;
     args.fmt = fmt;
     args.arg = arg;
+    args.arg_type = arg_type;
     args.location = location;
 
     UnpackResult result = _unpacker->llvmUnpack(args);
@@ -1960,6 +1964,16 @@ llvm::Value* CodeGen::llvmLocationString(const Location& l)
     return llvmConstAsciizPtr(string(l).c_str());
 }
 
+llvm::Value* CodeGen::llvmCurrentLocation(const string& addl)
+{
+    string s = string(_stmt_builder->currentLocation());
+
+    if ( addl.size() )
+        s += " [" + addl + "]";
+
+    return llvmConstAsciizPtr(s);
+}
+
 void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
 {
     auto ti = typeInfo(type);
@@ -1974,10 +1988,11 @@ void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
         val = tmp;
     }
 
+
     value_list args;
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
-    args.push_back(builder()->CreateBitCast(llvmConstAsciizPtr("HILTI: llvmDtor"), llvmTypePtr()));
+    args.push_back(builder()->CreateBitCast(llvmCurrentLocation("llvmDtor"), llvmTypePtr()));
     llvmCallC("__hlt_object_dtor", args, false, false);
 }
 
@@ -1998,7 +2013,7 @@ void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
     value_list args;
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
-    args.push_back(builder()->CreateBitCast(llvmConstAsciizPtr("HILTI: llvmCctor"), llvmTypePtr()));
+    args.push_back(builder()->CreateBitCast(llvmCurrentLocation("llvmCtor"), llvmTypePtr()));
     llvmCallC("__hlt_object_cctor", args, false, false);
 }
 
@@ -2295,14 +2310,30 @@ llvm::Value* CodeGen::llvmStructIsSet(shared_ptr<Type> stype, llvm::Value* sval,
     return notzero;
 }
 
-llvm::Value* CodeGen::llvmTupleElement(shared_ptr<Type> ttype, llvm::Value* tval, int idx, bool cctor)
+llvm::Value* CodeGen::llvmTupleElement(shared_ptr<Type> type, llvm::Value* tval, int idx, bool cctor)
 {
-    assert(ttype || ! cctor);
+    auto ttype = ast::as<type::Tuple>(type);
+    assert(ttype);
 
     // ttype can be null if cctor is false.
+    assert(ttype || ! cctor);
 
-    assert(false);
-    // Not yet implemented.
+    shared_ptr<Type> elem_type;
+
+    if ( ttype ) {
+        int i = 0;
+        for ( auto t : ttype->typeList() ) {
+            if ( i++ == idx )
+                elem_type = t;
+        }
+    }
+
+    auto result = llvmExtractValue(tval, idx);
+
+    if ( cctor )
+        llvmCctor(result, elem_type, false);
+
+    return result;
 }
 
 llvm::Value* CodeGen::llvmIterBytesEnd()
@@ -2338,3 +2369,44 @@ shared_ptr<Type> CodeGen::typeByName(const string& name)
 
     return ast::as<expression::Type>(expr)->typeValue();
 }
+
+   /// Creates a tuple from a givem list of elements. The returned tuple will
+   /// have the cctor called for all its members.
+   ///
+   /// elems: The tuple elements.
+   ///
+   /// Returns: The new tuple.
+llvm::Value* CodeGen::llvmTuple(shared_ptr<Type> type, const element_list& elems, bool cctor)
+{
+    auto ttype = ast::as<type::Tuple>(type);
+    auto t = ttype->typeList().begin();
+
+    value_list vals;
+
+    for ( auto e : elems ) {
+        auto op = builder::codegen::create(e.first, e.second);
+        vals.push_back(llvmValue(op, *t++, cctor));
+    }
+
+    return llvmTuple(vals);
+}
+
+llvm::Value* CodeGen::llvmTuple(shared_ptr<Type> type, const expression_list& elems, bool cctor)
+{
+    auto ttype = ast::as<type::Tuple>(type);
+    auto e = elems.begin();
+
+    value_list vals;
+
+    for ( auto t : ttype->typeList() )
+        vals.push_back(llvmValue(*e++, t, cctor));
+
+    return llvmTuple(vals);
+}
+
+llvm::Value* CodeGen::llvmTuple(const value_list& elems)
+{
+    return llvmValueStruct(elems);
+}
+
+

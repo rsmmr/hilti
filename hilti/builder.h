@@ -11,7 +11,7 @@ namespace builder {
 template<typename T>
 shared_ptr<T> _sptr(T* ptr) { return shared_ptr<T>(ptr); }
 
-typedef std::list<node_ptr<hilti::Type>> type_list;
+typedef std::list<shared_ptr<hilti::Type>> type_list;
 
 namespace any {
 

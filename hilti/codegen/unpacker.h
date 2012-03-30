@@ -32,6 +32,10 @@ struct UnpackArgs {
     /// nullptr if not.
     llvm::Value* arg = nullptr;
 
+    /// Type of the additional format-specific parameter. nullptr if not
+    /// used.
+    shared_ptr<Type> arg_type = nullptr;
+
     /// A location associagted with the unpack operaton.
     Location location = Location::None;
 };

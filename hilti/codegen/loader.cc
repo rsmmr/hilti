@@ -170,11 +170,7 @@ void Loader::visit(constant::Label* l)
 
 void Loader::visit(constant::Tuple* t)
 {
-    std::vector<llvm::Value *> elems;
-    for ( auto e : t->value() )
-        elems.push_back(cg()->llvmValue(e));
-
-    auto result = cg()->llvmValueStruct(elems);
+    auto result = cg()->llvmTuple(t->type(), t->value(), false);
     setResult(result, false, false);
 }
 

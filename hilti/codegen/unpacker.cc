@@ -108,7 +108,7 @@ static void _bytesUnpackFixed(CodeGen* cg, const UnpackArgs& args, const UnpackR
 
 static void _bytesUnpackRunLength(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool skip)
 {
-    auto len = cg->llvmUnpack(builder::integer::type(64), args.begin, args.end, args.arg, nullptr, args.location);
+    auto len = cg->llvmUnpack(builder::integer::type(64), args.begin, args.end, args.arg, nullptr, nullptr, args.location);
 
     UnpackArgs nargs = args;
     nargs.arg = len.first;
@@ -228,8 +228,61 @@ void Unpacker::visit(type::Bytes* t)
     cg()->llvmSwitchEnumConst(args.fmt, cases);
 }
 
+static llvm::Value* _castToWidth(CodeGen* cg, llvm::Value* val, int twidth, bool sign)
+{
+    int width = llvm::cast<llvm::IntegerType>(val->getType())->getBitWidth();
+    auto ttype = cg->llvmTypeInt(twidth);
+
+    if ( width < twidth ) {
+        if ( sign )
+            val = cg->builder()->CreateSExt(val, ttype);
+        else
+            val = cg->builder()->CreateZExt(val, ttype);
+    }
+
+    if ( width > twidth )
+        val = cg->builder()->CreateTrunc(val, ttype);
+
+    return val;
+}
+
 static void _integerUnpack(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, int width, bool sign, system::ByteOrder order, const std::list<int> bytes)
 {
+    auto twidth = ast::as<type::Integer>(args.type)->width();
+    auto ttype = cg->llvmTypeInt(twidth);
+    auto itype = cg->llvmTypeInt(width);
+
+    // Copy the start iterator.
+    cg->llvmCreateStore(args.begin, result.iter_ptr);
+
+    llvm::Value* unpacked = cg->llvmConstNull(ttype);
+
+    // Extract the bytes.
+    for ( auto i : bytes ) {
+        llvm::Value* byte = cg->llvmCallC("__hlt_bytes_extract_one", { result.iter_ptr, args.end }, true);
+
+        byte = cg->builder()->CreateZExt(byte, itype);
+
+        if ( i )
+            byte = cg->builder()->CreateShl(byte, cg->llvmConstInt(i * 8, width));
+
+        unpacked = cg->builder()->CreateOr(unpacked, byte);
+    }
+
+    unpacked = _castToWidth(cg, unpacked, twidth, sign);
+
+    // Select subset of bits if requested.
+    if ( args.arg ) {
+        auto low = cg->llvmTupleElement(args.arg_type, args.arg, 0, false);
+        auto high = cg->llvmTupleElement(args.arg_type, args.arg, 0, false);
+
+        low = _castToWidth(cg, low, twidth, sign);
+        high = _castToWidth(cg, high, twidth, sign);
+
+        unpacked = cg->llvmExtractBits(unpacked, low, high);
+    }
+
+    cg->llvmCreateStore(unpacked, result.value_ptr);
 }
 
 void Unpacker::visit(type::Integer* t)

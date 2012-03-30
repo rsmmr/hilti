@@ -512,6 +512,9 @@ public:
    /// arg: Additional format-specific parameter, required by some formats;
    /// nullptr if not.
    ///
+   /// arg_type: Type of additional format-specific parameter; nullptr if not
+   /// used.
+   ///
    /// l: A location associagted with the unpack operaton.
    ///
    /// Returns: A pair in which the first element is the unpacked value and
@@ -519,7 +522,7 @@ public:
    std::pair<llvm::Value*, llvm::Value*> llvmUnpack(
                    shared_ptr<Type> type, llvm::Value* begin,
                    llvm::Value* end, llvm::Value* fmt,
-                   llvm::Value* arg = nullptr,
+                   llvm::Value* arg = nullptr, shared_ptr<Type> arg_type = nullptr,
                    const Location& location = Location::None);
 
    /// Returns a global's index in the module-wide array of globals. Each
@@ -1509,30 +1512,51 @@ public:
    /// idx: The index of the element to extract.
    ///
    /// cctor: True if the returned value should have its cctor called already.
-   /// 
+   ///
    /// Returns: The field's value, or the default if provided and the field
    /// is not set.
    llvm::Value* llvmTupleElement(shared_ptr<Type> ttype, llvm::Value* tval, int idx, bool cctor);
 
    typedef std::list<std::pair<shared_ptr<Type>, llvm::Value*>> element_list;
 
-   /// Creates a tuple from a givem list of elements. The returned tuple will
-   /// have the cctor called for all its members.
+   /// Creates a tuple from a givem list of elements. All elements are
+   /// coerced to the match the given tuple type.
+   ///
+   /// ttype: The target tuple type.
    ///
    /// elems: The tuple elements.
    ///
+   /// cctor: If true, the returned value will have the cctor applied for all
+   /// tuple elements.
+   ///
    /// Returns: The new tuple.
-   llvm::Value* llvmTuple(const element_list& elems);
+   llvm::Value* llvmTuple(shared_ptr<Type> ttype, const element_list& elems, bool cctor);
 
-   /// Creates a tuple from a givem list of elements. The returned tuple will
-   /// have the cctor called for all its members.
+   typedef std::list<shared_ptr<Expression>> expression_list;
+
+   /// Creates a tuple from a givem list of elements. All elements are
+   /// coerced to the match the given tuple type.
    ///
-   /// ttype: The type of the type (i.e., type::Tuple).
+   /// ttype: The target tuple type.
+   ///
+   /// elems: The tuple elements.
+   ///
+   /// cctor: If true, the returned value will have the cctor applied for all
+   /// tuple elements.
+   ///
+   /// Returns: The new tuple.
+   llvm::Value* llvmTuple(shared_ptr<Type> ttype, const expression_list& elems, bool cctor);
+
+   /// Creates a tuple from a givem list of elements. Note that there's no
+   /// coercion, the LLVM types of the given tuple determine the type of the
+   /// tuple directly. There's is also no cctor called for tuple elements
+   /// (because we don't have their type infomration). If possible, you
+   /// should use one of the other llvmTuple() variants.
    ///
    /// elems: The tuple elements.
    ///
    /// Returns: The new tuple.
-   llvm::Value* llvmTuple(shared_ptr<Type> ttype, const value_list& elems);
+   llvm::Value* llvmTuple(const value_list& elems);
 
    /// Returns a a generic \a bytes end position.
    llvm::Value* llvmIterBytesEnd();
@@ -1598,6 +1622,13 @@ private:
    // In debug mode, returns an LLVM i8* value pointing to a string
    // describing the given location. In non-debug, returns 0.
    llvm::Value* llvmLocationString(const Location& l);
+
+   // Returns a string with the location we're currently compiling in the
+   // source file, if known (and if not, returns a place holder string).
+   //
+   // addl: An optional additional string to be included in the location
+   // string.
+   llvm::Value* llvmCurrentLocation(const string& addl="");
 
    friend class util::IRInserter;
    const string& nextComment() const { // Used by the util::IRInserter.
@@ -1667,7 +1698,7 @@ private:
 
        // Stack of current catch clauses. When an exception occurs we jump to
        // top-most, which either handles it or forwards to the one just
-       // beneath it. If not can handles, the last one unwinds further. 
+       // beneath it. If not can handles, the last one unwinds further.
        builder_list catches;
    };
 
