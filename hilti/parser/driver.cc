@@ -1,9 +1,9 @@
 
 #include <iostream>
 
-#include "driver.h"
-#include "parser.h"
-#include "scanner.h"
+#include "parser/driver.h"
+#include "parser/scanner.h"
+#include "autogen/parser.h"
 
 #include "../builder.h"
 

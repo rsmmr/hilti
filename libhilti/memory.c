@@ -27,8 +27,8 @@ static void _dbg_mem_raw(const char* op, void* obj, uint64_t size, const char* t
 
     assert(obj);
 
-    if ( ! location )
-        location = "<no location>";
+    if ( ! (location && *location) )
+        location = "-";
 
     if ( aux )
         snprintf(buf, sizeof(buf), " (%s)", aux);
@@ -45,8 +45,8 @@ static void _dbg_mem_gc(const char* op, const hlt_type_info* ti, void* gcobj, co
     assert(gcobj);
     assert(ti);
 
-    if ( ! location )
-        location = "<no location>";
+    if ( ! (location && *location) )
+        location = "-";
 
     if ( aux )
         snprintf(buf, sizeof(buf), " (%s)", aux);

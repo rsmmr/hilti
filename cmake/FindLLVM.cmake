@@ -88,6 +88,8 @@ else ()
   set(llvm_libs "core bitreader bitwriter linker asmparser")
   exec_program(${LLVM_CONFIG_EXEC} ARGS --libs ${llvm_libs} OUTPUT_VARIABLE LLVM_LIBS)
 
+  set(LLVM_LIBS "${LLVM_LIBS} -Wl,-rpath,${LLVM_LIB_DIR}")
+
   # FIND_LLVM_LIBS( ${LLVM_CONFIG_EXEC} "jit native" LLVM_LIBS_JIT LLVM_LIBS_JIT_OBJECTS )
   # STRING(REPLACE " -lLLVMCore -lLLVMSupport -lLLVMSystem" "" LLVM_LIBS_JIT ${LLVM_LIBS_JIT_RAW})
 

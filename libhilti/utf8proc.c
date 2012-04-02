@@ -40,6 +40,8 @@
  *  Implementation of libutf8proc.
  */
 
+#ifndef LIBHILTI
+#endif
 
 #include "hilti.h"
 

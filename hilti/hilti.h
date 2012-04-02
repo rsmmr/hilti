@@ -104,6 +104,8 @@ inline shared_ptr<Module> loadModule(string path, const path_list& libdirs)
     if ( ! util::endsWith(path, ".hlt") )
         path += ".hlt";
 
+    path = util::strtolower(path);
+
     string full_path = util::findInPaths(path, libdirs);
 
     if ( full_path.size() == 0 ) {

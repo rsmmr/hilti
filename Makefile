@@ -6,10 +6,10 @@
 all: debug
 
 debug: mkdirs libhilti
-	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug ..; make )
+	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug ..; $(MAKE) )
 
 release: mkdirs libhilti
-	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=RelWithDebInfo ..; make )
+	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=RelWithDebInfo ..; $(MAKE) )
 
 mkdirs:
 	test -d build || mkdir build
@@ -17,12 +17,12 @@ mkdirs:
 	test -d build/libhilti-release || mkdir build/libhilti-release
 
 libhilti: mkdirs
-	( cd build/libhilti-release; test -e Makefile || cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo ../../libhilti; make )
-	( cd build/libhilti-debug;   test -e Makefile || cmake -D CMAKE_BUILD_TYPE=Debug          ../../libhilti; make )
+	( cd build/libhilti-release; test -e Makefile || cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo ../../libhilti; $(MAKE) )
+	( cd build/libhilti-debug;   test -e Makefile || cmake -D CMAKE_BUILD_TYPE=Debug          ../../libhilti; $(MAKE) )
 
 clean:
 	rm -rf build
-	( cd doc && make clean )
+	( cd doc && $(MAKE) clean )
 
 tags:
 	update-tags

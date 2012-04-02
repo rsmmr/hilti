@@ -18,7 +18,7 @@
 targets="instructions.h instructions-declare.h instructions-visits.h instructions-register.cc instructions-stmt-builder.h"
 
 if [ $# -le 2 ]; then
-    echo "usage: `basename $0` <source-directory> <target-directory> *.h"
+    echo "usage: `basename $0` <current-source-directory> <target-directory> *.h"
     exit 1
 fi
 
@@ -40,7 +40,7 @@ cat $hdrs | grep -h '^[\t ]*iBegin' | sed 's/.*(\(.*\) *, ".*)/\1/g' | sed 's/, 
 
 cat >$dst/instructions-register.cc.$$ <<EOF
 
-#include "../hilti.h"
+#include "hilti.h"
 #include "autogen/instructions.h"
 
 using namespace hilti;
@@ -67,7 +67,7 @@ cat >$dst/instructions.h.$$ <<EOF
 EOF
 
 for h in $hdrs; do
-    echo "#include \"instructions/$h\"" >>$dst/instructions.h.$$
+    echo "#include \"$h\"" >>$dst/instructions.h.$$
 done
 
 echo >>$dst/instructions.h.$$

@@ -5,7 +5,7 @@
 %{
 namespace hilti_parser { class Parser; }
 
-#include "driver.h"
+#include "parser/driver.h"
 
 %}
 
@@ -28,8 +28,8 @@ namespace hilti_parser { class Parser; }
 %union {}
 
 %{
-#include "scanner.h"
-#include "../builder.h"
+#include "parser/scanner.h"
+#include "builder.h"
 
 #undef yylex
 #define yylex driver.scanner()->lex
