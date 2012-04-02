@@ -7,11 +7,12 @@ MESSAGE(STATUS "Adapting compiler settings")
 
 set(clang_debug_flags  "-DDEBUG  -Wno-error=unused-function -Werror -O0")
 
-set(clang_cflags       "-fno-color-diagnostics")
-set(clang_cxxflags     "${cflags} -stdlib=libc++ -std=c++0x")
+set(clang_cflags       " -lc++abi -Qunused-arguments -fno-color-diagnostics -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+set(clang_cxxflags     "${clang_cflags} -stdlib=libc++ -std=c++0x")
 
 set(CMAKE_C_FLAGS      "${CMAKE_C_FLAGS}   ${clang_cflags}")
 set(CMAKE_CXX_FLAGS    "${CMAKE_CXX_FLAGS} ${clang_cxxflags}")
+# set(CMAKE_LD_FLAGS     "${CMAKE_LD_FLAGS}")
 
 if ( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )
     # Changing CMAKE_C_FLAGS_DEBUG does not have any effect here?

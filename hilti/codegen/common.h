@@ -2,9 +2,6 @@
 #ifndef HILTI_CODEGEN_COMMON_H
 #define HILTI_CODEGEN_COMMON_H
 
-#define __STDC_LIMIT_MACROS     // LLVM needs these.
-#define __STDC_CONSTANT_MACROS
-
 #include <llvm/LLVMContext.h>
 #include <llvm/Metadata.h>
 #include <llvm/Module.h>

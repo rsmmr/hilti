@@ -1,7 +1,4 @@
 
-#define __STDC_LIMIT_MACROS     // LLVM needs these.
-#define __STDC_CONSTANT_MACROS
-
 #include <getopt.h>
 #include <iostream>
 #include <fstream>

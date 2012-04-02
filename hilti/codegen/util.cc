@@ -1,4 +1,6 @@
 
+#include <arpa/inet.h>
+
 #include <util/util.h>
 
 #include "../id.h"

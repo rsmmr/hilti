@@ -1,7 +1,6 @@
 %skeleton "lalr1.cc"                          /*  -*- C++ -*- */
 %require "2.3"
 %defines
-%define "parser_class_name" "Parser"
 
 %{
 namespace hilti_parser { class Parser; }
@@ -411,7 +410,7 @@ ctor          : CBYTES                           { $$ = builder::bytes::create($
               | ctor_regexp                      { $$ = builder::regexp::create($1, loc(@$)); }
               ;
 
-ctor_regexp   : ctor_regexp '|' re_pattern       { $$ = $1; $$.push_back($3) }
+ctor_regexp   : ctor_regexp '|' re_pattern       { $$ = $1; $$.push_back($3); }
               | re_pattern                       { $$ = builder::regexp::re_pattern_list(); $$.push_back($1); }
 
 re_pattern    : CREGEXP                          { $$ = builder::regexp::pattern($1, ""); }
