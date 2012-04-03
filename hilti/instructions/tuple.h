@@ -32,15 +32,21 @@ iBegin(tuple, Index, "tuple.index")
 
     iValidate {
         auto ty_target = target->type();
+        auto ttype = ast::as<type::Tuple>(op1->type());
 
         isConstant(op2);
 
         auto c = ast::as<expression::Constant>(op2)->constant();
         auto idx = ast::as<constant::Integer>(c)->value();
 
+        if ( idx < 0 || idx >= ttype->typeList().size() ) {
+            error(op2, "tuple index out of range");
+            return;
+        }
+
         int i = 0;
-        for ( auto t : ast::as<type::Tuple>(op1->type())->typeList() ) {
-            if ( i == idx )
+        for ( auto t : ttype->typeList() ) {
+            if ( i++ == idx )
                 canCoerceTo(t, target);
         }
     }

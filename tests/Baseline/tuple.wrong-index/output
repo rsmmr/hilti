@@ -1,4 +1,5 @@
->>> b = tuple.index a 2
-wrong-index.hlt:14: error, operand 2 is out of range
 
-wrong-index.hlt: 1 error found during validating
+>>> b = tuple.index a 2
+wrong-index.hlt:13-13: error, tuple index out of range [pass::Validator]
+wrong-index.hlt: Aborting due to verification error.
+error running hiltic, aborting

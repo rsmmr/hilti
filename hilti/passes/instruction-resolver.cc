@@ -18,15 +18,23 @@ void InstructionResolver::visit(statement::Instruction* s)
     switch ( matches.size() ) {
      case 0:
          if ( ! theInstructionRegistry->has(s->id()->name()) ) {
+             // Not a known instruction. See if this is a legal ID. If so,
+             // replace with an assign expression.
 
              auto body = current<statement::Block>();
 
              if ( body->scope()->lookup(s->id()) ) {
-                 hilti::instruction::Operands ops;
-                 /// ops.push_back(s->operands().front()); // Target. XXX Doesn't work, infinite loop in ast it seems.
-                 ops.push_back(builder::id::create(s->id(), s->location())); // Op1.
-                 auto i = std::make_shared<statement::Instruction>(std::make_shared<ID>("assign"), ops, s->location());
-                 instr->parent()->replaceChild(instr, i);
+                 auto assign = std::make_shared<ID>("assign");
+                 instruction::Operands ops = { instr->target(), builder::id::create(s->id()), nullptr, nullptr };
+                 auto matches = theInstructionRegistry->getMatching(assign, ops);
+
+                 if ( matches.size() != 1 ) {
+                     error(s, util::fmt("unsupporte assign operation (%d)", matches.size()));
+                     return;
+                 }
+
+                 auto as = (*matches.front()->factory())(matches.front(), ops, instr->location());
+                 instr->parent()->replaceChild(instr, as);
                  return;
              }
 

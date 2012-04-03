@@ -192,9 +192,10 @@ void StatementBuilder::visit(declaration::Function* f)
         if ( p->constant() )
             continue;
 
+        auto shadow = "__shadow_" + p->id()->name();
         auto init = cg()->llvmParameter(p);
-        cg()->llvmCctor(init, p->type(), false);
-        cg()->llvmAddLocal("__shadow_" + p->id()->name(), p->type(), init);
+        cg()->llvmAddLocal(shadow, p->type(), init);
+        cg()->llvmCctor(cg()->llvmLocal(shadow), p->type(), true);
     }
 
     if ( hook_decl ) {

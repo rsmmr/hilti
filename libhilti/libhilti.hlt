@@ -67,6 +67,7 @@ declare "C-HILTI" void exception_dtor(ref<exception> b)
 
 ###
 
+declare "C-HILTI" void string_dtor(string s)
 declare "C-HILTI" int<64> string_len(string s)
 declare "C-HILTI" string string_concat(string s1, string s2)
 declare "C-HILTI" int<8> string_cmp(string s1, string s2)

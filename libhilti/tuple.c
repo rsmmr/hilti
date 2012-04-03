@@ -29,7 +29,6 @@ void hlt_tuple_cctor(hlt_type_info* ti, void* obj, const char* location)
 
 hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_string prefix = hlt_string_from_asciiz("(", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz(")", excpt, ctx);
     hlt_string separator = hlt_string_from_asciiz(",", excpt, ctx);
 
@@ -41,11 +40,7 @@ hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32
 
     int i;
     hlt_string t = 0;
-    hlt_string s = hlt_string_from_asciiz("", excpt, ctx);
-
-    s = hlt_string_concat(s, prefix, excpt, ctx);
-    if ( *excpt )
-        goto error;
+    hlt_string s = hlt_string_from_asciiz("(", excpt, ctx);
 
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
     for ( i = 0; i < type->num_params; i++ ) {
@@ -82,6 +77,7 @@ hlt_string hlt_tuple_to_string(const hlt_type_info* type, const char* obj, int32
     }
 
     result = hlt_string_concat(s, postfix, excpt, ctx);
+    GC_DTOR(s, hlt_string);
 
 error:
     if ( ! result )
@@ -89,7 +85,6 @@ error:
 
     GC_DTOR(t, hlt_string);
 
-    GC_DTOR(prefix, hlt_string);
     GC_DTOR(postfix, hlt_string);
     GC_DTOR(separator, hlt_string);
 

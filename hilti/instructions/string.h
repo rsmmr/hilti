@@ -20,6 +20,20 @@
 ///
 /// \cproto hlt_string
 
+iBegin(string, Equal, "equal")
+    iTarget(optype::boolean)
+    iOp1(optype::string, true);
+    iOp2(optype::string, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Returns true if *op1* is equal to *op2*.
+    )")
+
+iEnd
+
 iBegin(string, Cmp, "string.cmp")
     iTarget(optype::boolean)
     iOp1(optype::string, true);

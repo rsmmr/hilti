@@ -29,6 +29,21 @@
 ///     33..64  int64_t
 ///     ======  =======
 
+
+iBegin(integer, Equal, "equal")
+    iTarget(optype::boolean)
+    iOp1(optype::integer, true);
+    iOp2(optype::integer, true);
+
+    iValidate {
+        canCoerceTypes(op1, op2);
+    }
+
+    iDoc(R"(
+        Returns true if *op1* is equal to *op2*.
+    )")
+iEnd
+
 iBegin(integer, Incr, "incr")
     iTarget(optype::integer);
     iOp1(optype::integer, true);

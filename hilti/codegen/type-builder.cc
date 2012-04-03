@@ -227,6 +227,7 @@ void TypeBuilder::visit(type::String* s)
 {
     TypeInfo* ti = new TypeInfo(s);
     ti->id = HLT_TYPE_STRING;
+    ti->obj_dtor = "hlt::string_dtor";
     ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
     ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
     ti->c_prototype = "hlt_string";

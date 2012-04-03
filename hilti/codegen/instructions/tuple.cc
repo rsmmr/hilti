@@ -36,7 +36,8 @@ void StatementBuilder::visit(statement::instruction::tuple::Equal* i)
         auto o1 = builder::codegen::create(t, e1);
         auto o2 = builder::codegen::create(t, e2);
 
-        auto instrs = theInstructionRegistry->getMatching(equal, { o0, o1, o2 });
+        auto instrs = theInstructionRegistry->getMatching(equal, { o0, o1, o2, nullptr });
+        fprintf(stderr, "%d %lu\n",n, instrs.size());
         assert(instrs.size() == 1);
         auto instr = instrs.front();
 
@@ -74,7 +75,20 @@ void StatementBuilder::visit(statement::instruction::tuple::Index* i)
     assert(c);
 
     auto idx = ast::as<constant::Integer>(c)->value();
+
+    auto ttype = ast::as<type::Tuple>(i->op1()->type());
+
+    int n = 0;
+    shared_ptr<Type> etype;
+    for ( auto t : ttype->typeList() ) {
+        if ( n++ == idx )
+            etype = t;
+    }
+
+    assert(etype);
+
     auto result = cg()->llvmTupleElement(i->op1()->type(), op1, idx, true);
+    result = cg()->llvmCoerceTo(result, etype, i->target()->type());
 
     cg()->llvmStore(i, result);
 }

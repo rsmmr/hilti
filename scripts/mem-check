@@ -33,32 +33,52 @@ for line in sys.stdin:
 		continue
 
 	try:
-		objs[addr] += [line]
+		objs[addr] += [(op, line)]
 	except KeyError:
-		objs[addr] = [line]
+		objs[addr] = [(op, line)]
 
-if not objs:
+leaks = 0
+
+for lines in objs.values():
+    for (op, line) in lines:
+        if op == "dtor" or op == "cctor":
+            continue
+
+        leaks += 1
+
+if not leaks:
 	sys.exit(0)
 
 print "Leaks"
 print "====="
 print
 
-for (obj, log) in objs.items():
-	print "  ", log[0],
+for (obj, lines) in objs.items():
 
+    (op, line) = lines[0]
+
+    if op == "dtor" or op == "cctor":
+        continue
+
+    print "  ", line,
+    
 if options.verbose:
-	print
-	print
-	print "Details"
-	print "======="
-	print
+    print
+    print
+    print "Details"
+    print "======="
+    print
 
-	for (obj, log) in objs.items():
-		first = True
-		for line in log:
-			print ("/ " if first else "| "), line,
-			first = False
-		print ""
+    for (obj, lines) in objs.items():
+        first = True
+        for (op, line) in lines:
+            if op == "dtor" or op == "cctor":
+                continue
+
+            print ("/ " if first else "| "), line,
+            first = False
+
+        if not first:
+            print ""
 
 sys.exit(1)

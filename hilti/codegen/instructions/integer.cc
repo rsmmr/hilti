@@ -6,6 +6,17 @@
 using namespace hilti;
 using namespace codegen;
 
+void StatementBuilder::visit(statement::instruction::integer::Equal* i)
+{
+    auto t = coerceTypes(i->op1(), i->op2());
+    auto op1 = cg()->llvmValue(i->op1(), t);
+    auto op2 = cg()->llvmValue(i->op2(), t);
+
+    auto result = builder()->CreateICmpEQ(op1, op2);
+
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::integer::Incr* i)
 {
     auto width = as<type::Integer>(i->op1()->type())->width();
