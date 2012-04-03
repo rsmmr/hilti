@@ -15,6 +15,7 @@
 #include "type-builder.h"
 #include "debug-info-builder.h"
 #include "passes/collector.h"
+#include "abi.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -65,6 +66,7 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
         }
 
         _module = new ::llvm::Module(util::mangle(hltmod->id(), false), llvmContext());
+        _abi = std::move(ABI::createABI(_module));
 
         createInitFunction();
 
@@ -1207,6 +1209,8 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
     for ( auto a : llvm_args )
         func_args.push_back(a.second);
 
+    abi()->adaptFunctionType(&rtype, &func_args);
+
     auto ftype = llvm::FunctionType::get(rtype, func_args, false);
     func = llvm::Function::Create(ftype, llvm_linkage, name, _module);
 
@@ -1866,6 +1870,9 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
     if ( hook )
         llvm_func = llvmFunctionHookRun(hook);
 
+    // Apply calling convention.
+    abi()->adaptFunctionCall(&llvm_args);
+
     // Do the call.
 
     auto result = llvmCreateCall(llvm_func, llvm_args);
@@ -1875,26 +1882,7 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
 
     // Retrieve return value according to calling convention.
 
-    switch ( ftype->callingConvention() ) {
-     case type::function::HILTI:
-        // Can take it directly.
-        break;
-
-     case type::function::HOOK:
-        break;
-
-     case type::function::HILTI_C:
-        assert(excpt);
-        // assert(false && "Do ABI stuff");
-        break;
-
-     case type::function::C:
-        // Don't mess with result.
-        break;
-
-     default:
-        internalError("unknown calling convention in llvmCall");
-    }
+    abi()->getFunctionResult(result);
 
     if ( ! hook ) {
         auto rtype = ftype->result()->type();
@@ -2408,5 +2396,3 @@ llvm::Value* CodeGen::llvmTuple(const value_list& elems)
 {
     return llvmValueStruct(elems);
 }
-
-

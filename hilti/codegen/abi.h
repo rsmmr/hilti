@@ -2,72 +2,66 @@
 #ifndef HILTI_CODEGEN_ABI_H
 #define HILTI_CODEGEN_ABI_H
 
-// This file is not yet used.
+#include "common.h"
 
 namespace llvm { class Value; }
 
 namespace hilti {
 namespace codegen {
-namespace abi {
 
-class Argument {
+/// Nase class providing the ABI interface.
+class ABI
+{
 public:
-   enum CType {
-       VOID,
-       SINT8, SINT16, SINT32, SINT64,
-       UINT8, UINT16, UINT32, UINT64,
-       SCHAR,
-       UCHAR,
-       FLOAT,
-       DOUBLE,
-       STRUCT,
-       POINTER
-   };
+   typedef llvm::Value* argument;
+   typedef std::vector<argument> argument_list;
 
-   enum Action {
-       UNKNOWN,  /// Action not yet determined.
-       DIRECT,   /// Pass value directly.
-       INDIRECT, /// Pass as pointer to struct.
-       EXPAND,   /// Expand aggregate into series of individual (direct) arguments.
-   };
+   typedef llvm::Type* argument_type;
+   typedef std::vector<argument_type> argument_type_list;
 
-   Argument(CType type, llvm::Value* value) {
-       _type = type;
-       _value = value;
+   /// XXX
+   virtual void adaptFunctionType(argument_type* rtype, argument_type_list* args)
+        { /* Nop by default */ }
+
+   /// XXX
+   virtual void adaptFunctionCall(argument_list* args)
+        { /* Nop by default */ }
+
+   /// XXX
+   virtual llvm::Value* getFunctionResult(llvm::CallInst* call) {
+        // Pass through by default
+        return call;
    }
 
-   // For structs.
-   Argument(CType type, llvm::Value* value, const argument_list& fields) {
-       _type = type;
-       _fields = fields;
-   }
+   /// XXX
+   const string& targetTriple() const { return _triple; }
 
-   CType type() const { return _type; }
+   /// XXX
+   static unique_ptr<ABI> createABI(llvm::Module* module);
 
-   llvm::Value* value() const { return _value; }
-   void setValue(llvm::Value* value) { _value = value; }
-
-   // For structs.
-   shared_ptr<Argument> fields() const { return _fields; }
-
-   Action action() const  { return _action; }
-   void setAction(Action action) const { _action = action; }
-
-   int alignment() const { return _alignment; }
-   void setAlignment(int alignment) { _alignment = alignment; }
+protected:
+   ABI() {}
 
 private:
-   CType _type;
-   llvm::Value* _value;
-   argument_list _fields;
-   Action _action = UNKNOWN;
-   int _alignment = 0;
+   string _triple;
 };
 
-extern const string& targetTriple();
-extern bool isSupportedArchitecture();
-extern bool isLittleEndian();
-extern bool applyCallingConvention(shared_ptr<Argument> result, const std::list<shared_ptr<Argument>>& arguments);
+namespace abi {
+
+class X86_64 : public ABI
+{
+public:
+   enum Flavor { DEFAULT, DARWIN };
+
+   X86_64(Flavor flavor) { _flavor = flavor; }
+
+   void adaptFunctionType(ABI::argument_type* rtype, ABI::argument_type_list* args) override;
+   void adaptFunctionCall(argument_list* args) override;
+   llvm::Value* getFunctionResult(llvm::CallInst* call) override;
+
+private:
+   Flavor _flavor;
+};
 
 }
 }

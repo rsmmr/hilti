@@ -1,52 +1,46 @@
 
 #include "abi.h"
 
-inline static bool isArch(const char* arch) {
-    return targetTriple().startswith(arch);
-}
+using namespace hilti;
+using namespace codegen;
 
-inline static bool isDarwin() {
-    return targetTriple().find("-darwin-") != string::npos;
-}
 
-const string& targetTriple()
+unique_ptr<ABI> ABI::createABI(llvm::Module* module)
 {
-    static string triple = "";
+    string striple = llvm::sys::getDefaultTargetTriple();
+    llvm::Triple triple(striple);
 
-    if ( triple.size() == 0 )
-        triple = llvm::Module::getTargetTriple();
+    unique_ptr<ABI> abi;
 
-    return triple;
-}
+    if ( triple.getArch() == llvm::Triple::x86_64 ) {
+        abi::X86_64::Flavor flavor = abi::X86_64::DEFAULT;
 
-bool isLittleEndian()
-{
-    return llvm::Module::getEndianness() == llvm::Module::LittleEndianess;
-}
+        if ( triple.isOSDarwin() )
+            flavor = abi::X86_64::DARWIN;
 
-bool x86_64_applyCallingConvection(shared_ptr<Argument> result, const std::list<shared_ptr<Argument>>& arguments)
-{
-    // FIXME.
-    result.setAction(Argument::DIRECT);
-
-    for ( arg : arguments ) {
-        arg.setAction(Argument::DIRECT);
+        abi = unique_ptr<ABI>(new abi::X86_64(flavor));
     }
 
-    return true;
+
+    if ( ! abi ) {
+        fprintf(stderr, "unsupported platform %s\n", striple.c_str());
+        exit(1);
+    }
+
+    abi->_triple = striple;
+    return abi;
 }
 
-bool isSupportedArchitecture()
+void abi::X86_64::adaptFunctionType(argument_type* rtype, argument_type_list* args)
 {
-    return isArch("x86_64");
 }
 
-bool applyCallingConvention(shared_ptr<Argument> result, const std::list<shared_ptr<Argument>>& arguments)
+void abi::X86_64::adaptFunctionCall(argument_list* args)
 {
-    if ( isArch("x86_64") )
-        return x86_64_applyCallingConvention(result, arguments);
-
-    assert(false);
 }
 
+llvm::Value* abi::X86_64::getFunctionResult(llvm::CallInst* call)
+{
+    return call;
+}
 

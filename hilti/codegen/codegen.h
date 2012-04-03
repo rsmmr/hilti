@@ -22,6 +22,8 @@ namespace passes { class Collector; }
 
 namespace codegen {
 
+class ABI;
+
 namespace util { class IRInserter; }
 
 class TypeInfo;
@@ -326,6 +328,9 @@ public:
    ///
    /// name: The fully qualified name of the type.
    shared_ptr<Type> typeByName(const string& name);
+
+   /// Returns the ABI module to use for the current compilation.
+   ABI* abi() const { return _abi.get(); }
 
    /// Adds a comment just before the next instruction that will be printed
    /// out by the AssemblyAnnotationWriter.
@@ -1667,6 +1672,7 @@ private:
    unique_ptr<TypeBuilder>  _type_builder;
    unique_ptr<DebugInfoBuilder> _debug_info_builder;
    unique_ptr<passes::Collector> _collector;
+   unique_ptr<ABI> _abi;
 
    shared_ptr<hilti::Module> _hilti_module = nullptr;
    llvm::Module* _libhilti = nullptr;
