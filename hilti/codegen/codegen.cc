@@ -66,7 +66,7 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
         }
 
         _module = new ::llvm::Module(util::mangle(hltmod->id(), false), llvmContext());
-        _abi = std::move(ABI::createABI(_module));
+        _abi = std::move(ABI::createABI(this));
 
         createInitFunction();
 
@@ -1205,20 +1205,8 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
         internalError("unknown calling convention in llvmAddFunction");
     }
 
-    std::vector<llvm::Type*> func_args;
-    for ( auto a : llvm_args )
-        func_args.push_back(a.second);
-
-    abi()->adaptFunctionType(&rtype, &func_args);
-
-    auto ftype = llvm::FunctionType::get(rtype, func_args, false);
-    func = llvm::Function::Create(ftype, llvm_linkage, name, _module);
-
+    func = abi()->createFunction(name, rtype, llvm_args, llvm_linkage, _module);
     func->setCallingConv(llvm_cc);
-
-    auto i = llvm_args.begin();
-    for ( auto a = func->arg_begin(); a != func->arg_end(); ++a, ++i )
-        a->setName(i->first);
 
     return func;
 }
@@ -1871,18 +1859,14 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
         llvm_func = llvmFunctionHookRun(hook);
 
     // Apply calling convention.
-    abi()->adaptFunctionCall(&llvm_args);
+    auto orig_args = llvm_args;
+    auto func = llvm::cast<llvm::Function>(llvm_func);
+    auto rtype = func->getReturnType();
 
-    // Do the call.
-
-    auto result = llvmCreateCall(llvm_func, llvm_args);
+    auto result = abi()->createCall(func, llvm_args);
 
     if ( excpt_check )
         llvmCheckException();
-
-    // Retrieve return value according to calling convention.
-
-    abi()->getFunctionResult(result);
 
     if ( ! hook ) {
         auto rtype = ftype->result()->type();

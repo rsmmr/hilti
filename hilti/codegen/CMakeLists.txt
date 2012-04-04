@@ -1,7 +1,8 @@
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_BINARY_DIR}/libffi)
 
 add_subdirectory(instructions)
+add_subdirectory(libffi)
 
 add_library(codegen
     abi.cc
@@ -18,4 +19,4 @@ add_library(codegen
     asm-annotater.cc
 )
 
-target_link_libraries(codegen cg-instructions)
+target_link_libraries(codegen cg-instructions hilti-ffi)
