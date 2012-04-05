@@ -324,8 +324,12 @@ llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
     auto func = function();
 
     for ( auto arg = func->arg_begin(); arg != func->arg_end(); arg++ ) {
-        if ( arg->getName() == name )
-            return arg;
+        if ( arg->getName() == name ) {
+            if ( arg->hasByValAttr() )
+                return builder()->CreateLoad(arg);
+            else
+                return arg;
+        }
     }
 
     internalError("unknown parameter name " + name);
@@ -1398,7 +1402,7 @@ void CodeGen::llvmBuildExitBlock()
     llvm::PHINode* phi = nullptr;
 
     if ( state->exits.size() ) {
-        auto rtype = state->function->getReturnType();
+        auto rtype = state->exits.front().second->getType();
         phi = exit_builder->CreatePHI(rtype, state->exits.size());
 
         for ( auto e : state->exits )
@@ -1409,8 +1413,17 @@ void CodeGen::llvmBuildExitBlock()
     llvmBuildFunctionCleanup();
     popBuilder();
 
-    if ( phi )
-        exit_builder->CreateRet(phi);
+    if ( phi ) {
+        if ( state->function->hasStructRetAttr() ) {
+            // Need to store in argument.
+            exit_builder->CreateStore(phi, state->function->arg_begin());
+            exit_builder->CreateRetVoid();
+        }
+        
+        else
+            exit_builder->CreateRet(phi);
+    }
+
     else
         exit_builder->CreateRetVoid();
 
@@ -1741,12 +1754,10 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
     popFunction();
 }
 
-llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args, bool excpt_check)
+llvm::Value* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args, bool excpt_check)
 {
     auto result = llvmDoCall(llvm_func, nullptr, ftype, args, nullptr, excpt_check);
-    auto ci = llvm::cast<llvm::CallInst>(result);
-    assert(ci);
-    return ci;
+    return result;
 }
 
 llvm::Value* CodeGen::llvmRunHook(shared_ptr<Hook> hook, const expr_list& args, llvm::Value* result)
@@ -1876,12 +1887,12 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
     return result;
 }
 
-llvm::CallInst* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list& args, bool excpt_check)
+llvm::Value* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list& args, bool excpt_check)
 {
     return llvmCall(llvmFunction(func), func->type(), args, excpt_check);
 }
 
-llvm::CallInst* CodeGen::llvmCall(const string& name, const expr_list& args, bool excpt_check)
+llvm::Value* CodeGen::llvmCall(const string& name, const expr_list& args, bool excpt_check)
 {
     auto id = shared_ptr<ID>(new ID(name));
     auto expr = _hilti_module->body()->scope()->lookup(id);

@@ -946,7 +946,7 @@ public:
    /// that it won't, or if for some other reason you know it's not an issue.
    ///
    /// Returns: The call instruction created.
-   llvm::CallInst* llvmCall(shared_ptr<Function> func, const expr_list& args, bool excpt_check=true);
+   llvm::Value* llvmCall(shared_ptr<Function> func, const expr_list& args, bool excpt_check=true);
 
    /// Generates an LLVM call to a HILTI function. This method handles all
    /// calling conventions. The return value will have its cctor function
@@ -965,7 +965,7 @@ public:
    /// that it won't, or if for some other reason you know it's not an issue.
    ///
    /// Returns: The call instruction created.
-   llvm::CallInst* llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args, bool excpt_check=true);
+   llvm::Value* llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args, bool excpt_check=true);
 
    /// Triggers execution of a HILTI hook.
    ///
@@ -1009,7 +1009,7 @@ public:
    /// that it won't, or if for some other reason you know it's not an issue.
    ///
    /// Returns: The call instruction created.
-   llvm::CallInst* llvmCall(const string& name, const expr_list& args, bool excpt_check=true);
+   llvm::Value* llvmCall(const string& name, const expr_list& args, bool excpt_check=true);
 
    /// Generates the code for a HILTI \c return or \c return.void statement.
    /// This methods must be used instead of a plain LLVM \c return
