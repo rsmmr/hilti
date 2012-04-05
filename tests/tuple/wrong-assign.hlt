@@ -23,13 +23,3 @@ void run() {
     a = b
 }
 
-# @TEST-START-NEXT
-
-module Main
-
-void run() {
-    local tuple<int<64>, bool> a
-    local tuple<int<64>, string> b
-
-    a = (1,2)
-}

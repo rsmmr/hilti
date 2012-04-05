@@ -161,7 +161,7 @@ public:
 class TypeList : public Trait
 {
 public:
-   typedef std::list<node_ptr<hilti::Type>> type_list;
+   typedef std::list<shared_ptr<hilti::Type>> type_list;
 
    /// Returns the ordered list of subtypes.
    virtual const type_list typeList() const = 0;
@@ -202,6 +202,9 @@ public:
        /// The fully-qualified name of a ``Hilti::Packed`` constant (i.e.,
        /// ``Hilti::Packed::Bool``.
        string enumName;
+
+       /// The type of the unpacked element.
+       shared_ptr<hilti::Type> result_type;
 
        /// The type for the 2nd unpack argument, or null if not used.
        shared_ptr<hilti::Type> arg_type;
@@ -681,7 +684,8 @@ public:
 
 
 /// Type for integer values.
-class Integer : public ValueType, public trait::Parameterized {
+class Integer : public ValueType, public trait::Parameterized, public trait::Unpackable
+{
 public:
    /// Constructor.
    ///
@@ -709,6 +713,8 @@ public:
 
    parameter_list parameters() const override;
 
+   const std::vector<Format>& unpackFormats() const override;
+
    ACCEPT_VISITOR(Type);
 
 private:
@@ -718,7 +724,7 @@ private:
 /// Type for tuples.
 class Tuple : public ValueType, public trait::Parameterized, public trait::TypeList {
 public:
-   typedef trait::TypeList::type_list type_list;
+   typedef std::list<shared_ptr<hilti::Type>> type_list;
 
    /// Constructor.
    ///
@@ -732,7 +738,7 @@ public:
    /// l: Associated location.
    Tuple(const Location& l=Location::None);
 
-   const type_list typeList() const override;
+   const trait::TypeList::type_list typeList() const override;
    parameter_list parameters() const override;
 
    bool _equal(shared_ptr<hilti::Type> other) const override {
@@ -742,7 +748,7 @@ public:
    ACCEPT_VISITOR(Type);
 
 private:
-   type_list _types;
+   std::list<node_ptr<hilti::Type>> _types;
 };
 
 /// Type for types.
@@ -1391,7 +1397,6 @@ class Struct : public ValueType, public trait::TypeList
 {
 public:
    typedef std::list<node_ptr<struct_::Field>> field_list;
-   typedef trait::TypeList::type_list type_list;
 
    /// Constructor.
    ///
@@ -1410,7 +1415,7 @@ public:
    /// Returns the list of fields.
    const field_list& fields() const { return _fields; }
 
-   const type_list typeList() const override;
+   const trait::TypeList::type_list typeList() const override;
 
    bool _equal(shared_ptr<hilti::Type> other) const override;
 

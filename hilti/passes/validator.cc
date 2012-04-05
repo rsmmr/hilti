@@ -43,9 +43,9 @@ void Validator::visit(statement::Try* s)
 
 void Validator::visit(statement::instruction::Resolved* s)
 {
-    setCurrentLocationNode(s->sharedPtr<statement::Instruction>());
+    pushCurrentLocationNode(s);
     s->instruction()->validate(this, s->operands());
-    setCurrentLocationNode(nullptr);
+    popCurrentLocationNode();
 }
 
 void Validator::visit(statement::instruction::Unresolved* s)

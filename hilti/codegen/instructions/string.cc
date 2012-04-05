@@ -6,6 +6,17 @@
 using namespace hilti;
 using namespace codegen;
 
+void StatementBuilder::visit(statement::instruction::string::Equal* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+
+    auto cmp = cg()->llvmCall("hlt::string_cmp", args);
+    auto result = builder()->CreateICmpEQ(cmp, cg()->llvmConstInt(0, 8));
+
+    cg()->llvmStore(i, result);
+}
 
 void StatementBuilder::visit(statement::instruction::string::Cmp* i)
 {
@@ -68,6 +79,8 @@ void StatementBuilder::visit(statement::instruction::string::Length* i)
     args.push_back(i->op1());
 
     auto result = cg()->llvmCall("hlt::string_len", args);
+
+    cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::string::Lt* i)

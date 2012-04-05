@@ -246,7 +246,7 @@ bool Instruction::hasType(shared_ptr<Expression> op, shared_ptr<Type> target) co
 
 bool Instruction::equalTypes(shared_ptr<Type> ty1, shared_ptr<Type> ty2) const
 {
-    if ( ty1 == ty2 )
+    if ( ty1->equal(ty2) )
         return true;
 
     error(ty1, util::fmt("types %s and %s do not match",
@@ -257,7 +257,7 @@ bool Instruction::equalTypes(shared_ptr<Type> ty1, shared_ptr<Type> ty2) const
 
 bool Instruction::equalTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const
 {
-    if ( op1->type() == op2->type() )
+    if ( op1->type()->equal(op2->type()) )
         return true;
 
     error(op1, util::fmt("operand types %s and %s do not match",

@@ -105,9 +105,11 @@ inline shared_ptr<typename AstInfo::expression> ExpressionOverrider<AstInfo>::_c
     if ( this->object()->type()->equal(target) )
         return this->object();
 
+#if 0
     std::cerr << util::fmt("cannot coerce expression of type %s to type %s",
                            this->object()->type()->render().c_str(),
                            target->render().c_str()) << std::endl;
+#endif
 
     assert(this->object()->canCoerceTo(target));
     auto coerced = new CoercedExpression(this->object(), target, this->object()->location());
@@ -193,6 +195,8 @@ public:
    typedef typename AstInfo::constant_expression ConstantExpression;
    typedef typename AstInfo::constant AIConstant;
    typedef typename AstInfo::constant_coercer ConstantCoercer;
+   typedef typename AstInfo::coercer Coercer;
+   typedef typename AstInfo::coerced_expression CoercedExpression;
 
    /// Constructor.
    ///
@@ -215,7 +219,7 @@ public:
    /// Checks whether the constant can be coerced into a given target type.
    ///
    /// The implementation first trys the ConstantCoercer. If that can't
-   /// handle the coercion, it then tries the normal Expression::canCoerceTo().
+   /// handle the coercion, it then tries the normal expression coercion.
    ///
    /// target: The target type.
    ///
@@ -227,13 +231,13 @@ public:
        if ( ConstantCoercer().canCoerceTo(_constant, target) )
            return true;
 
-       return this->object()->AstInfo::expression::canCoerceTo(target);
+       return Coercer().canCoerceTo(this->object()->type(), target);
    }
 
    /// Coerces constant into a constant of a given target type.
    ///
    /// The implementation first asks the ConstantCoercer to do the operation.
-   /// If that can't, it then forwards to the normal Expression::coerceTo().
+   /// If that can't, it then uses the normal expression coercion.
    ///
    /// target: The target type.
    ///
@@ -250,7 +254,9 @@ public:
            return shared_ptr<ConstantExpression>(cexpr);
        }
 
-       return this->object()->AstInfo::expression::coerceTo(target);
+       assert(this->object()->canCoerceTo(target));
+       auto coerced2 = new CoercedExpression(this->object(), target, this->object()->location());
+       return shared_ptr<typename AstInfo::expression>(coerced2);
    }
 
    /// Always returns true. This is a constant expression.

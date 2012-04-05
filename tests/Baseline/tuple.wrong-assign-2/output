@@ -1,4 +1,5 @@
->>> a = assign b
-wrong-assign.hlt:8: error, operand 1 must be coercable to type of target, which is tuple<int<64>,bool>
 
-wrong-assign.hlt: 1 error found during validating
+>>> a = assign b
+wrong-assign.hlt:8-8: error, operand not compatible with target [pass::Validator]
+wrong-assign.hlt: Aborting due to verification error.
+error running hiltic, aborting

@@ -925,7 +925,7 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
             else {
                 int n = hlt_util_uitoa_n(c, hex + 2, 3, 16, 1);
                 strcpy(buffer + i, hex);
-                i += n;
+                i += sizeof(hex) - 1;
             }
         }
     }

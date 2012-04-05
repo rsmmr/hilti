@@ -19,6 +19,11 @@
 #include "memory.h"
 #include "utf8proc.h"
 
+void hlt_string_dtor(hlt_type_info* ti, hlt_string* s)
+{
+    // Nothing to do.
+}
+
 hlt_string hlt_string_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string s = *((hlt_string*)obj);

@@ -1,4 +1,5 @@
->>> b = tuple.index a 1
-wrong-index.hlt:7: error, target type must be bool but is int<32>
 
-wrong-index.hlt: 1 error found during validating
+>>> b = tuple.index a 1
+wrong-index.hlt:7-7: error, type bool is not compatible with target type int<32> [pass::Validator]
+wrong-index.hlt: Aborting due to verification error.
+error running hiltic, aborting

@@ -2,72 +2,76 @@
 #ifndef HILTI_CODEGEN_ABI_H
 #define HILTI_CODEGEN_ABI_H
 
-// This file is not yet used.
+#include "common.h"
+#include "type-builder.h"
+
+// This is generated in build/.
+#include <codegen/libffi/ffi.h>
 
 namespace llvm { class Value; }
 
 namespace hilti {
 namespace codegen {
-namespace abi {
 
-class Argument {
+class CodeGen;
+
+/// Nase class providing the ABI interface.
+class ABI
+{
 public:
-   enum CType {
-       VOID,
-       SINT8, SINT16, SINT32, SINT64,
-       UINT8, UINT16, UINT32, UINT64,
-       SCHAR,
-       UCHAR,
-       FLOAT,
-       DOUBLE,
-       STRUCT,
-       POINTER
-   };
+   typedef std::vector<std::pair<string, llvm::Type*>> arg_list;
 
-   enum Action {
-       UNKNOWN,  /// Action not yet determined.
-       DIRECT,   /// Pass value directly.
-       INDIRECT, /// Pass as pointer to struct.
-       EXPAND,   /// Expand aggregate into series of individual (direct) arguments.
-   };
+   /// XXX
+   virtual llvm::Function* createFunction(const string& name, llvm::Type* rtype, const arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module) = 0;
 
-   Argument(CType type, llvm::Value* value) {
-       _type = type;
-       _value = value;
-   }
+   /// XXX
+   virtual llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args) = 0;
 
-   // For structs.
-   Argument(CType type, llvm::Value* value, const argument_list& fields) {
-       _type = type;
-       _fields = fields;
-   }
+   /// XXX
+   CodeGen* cg() const { return _cg; }
 
-   CType type() const { return _type; }
+   /// XXX
+   const string& targetTriple() const { return _triple; }
 
-   llvm::Value* value() const { return _value; }
-   void setValue(llvm::Value* value) { _value = value; }
+   /// XXX
+   static unique_ptr<ABI> createABI(CodeGen* cg);
 
-   // For structs.
-   shared_ptr<Argument> fields() const { return _fields; }
+protected:
+   ABI() {}
 
-   Action action() const  { return _action; }
-   void setAction(Action action) const { _action = action; }
-
-   int alignment() const { return _alignment; }
-   void setAlignment(int alignment) { _alignment = alignment; }
+   typedef std::vector<llvm::Type*> argument_type_list;
+   ffi_cif* getCIF(const string& name, llvm::Type* rtype, const ABI::argument_type_list& args);
 
 private:
-   CType _type;
-   llvm::Value* _value;
-   argument_list _fields;
-   Action _action = UNKNOWN;
-   int _alignment = 0;
+   string _triple;
+   CodeGen* _cg = nullptr;
+
+   typedef std::map<string, ffi_cif*> cif_map;
+   cif_map _cifs;
 };
 
-extern const string& targetTriple();
-extern bool isSupportedArchitecture();
-extern bool isLittleEndian();
-extern bool applyCallingConvention(shared_ptr<Argument> result, const std::list<shared_ptr<Argument>>& arguments);
+namespace abi {
+
+/// ABI for X86_64.
+///
+/// \todo The only ABI-specific transformation we currently do is adjusting
+/// the return value to be passed via a hidding parameter if it needs to be.
+/// We don't handle call arguments yet that need to be passed in memory.
+class X86_64 : public ABI
+{
+public:
+   enum Flavor { DEFAULT, DARWIN };
+
+   X86_64(Flavor flavor) { _flavor = flavor; }
+
+   llvm::Function* createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module) override;
+   llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args) override;
+
+private:
+   bool returnInMemory(ffi_cif* cif);
+
+   Flavor _flavor;
+};
 
 }
 }

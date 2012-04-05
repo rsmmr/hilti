@@ -15,6 +15,7 @@
 #include "type-builder.h"
 #include "debug-info-builder.h"
 #include "passes/collector.h"
+#include "abi.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -65,6 +66,7 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
         }
 
         _module = new ::llvm::Module(util::mangle(hltmod->id(), false), llvmContext());
+        _abi = std::move(ABI::createABI(this));
 
         createInitFunction();
 
@@ -273,7 +275,8 @@ void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value
 std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
                    shared_ptr<Type> type, shared_ptr<Expression> begin,
                    shared_ptr<Expression> end, shared_ptr<Expression> fmt,
-                   shared_ptr<Expression> arg, const Location& location)
+                   shared_ptr<Expression> arg,
+                   const Location& location)
 {
     UnpackArgs args;
     args.type = type;
@@ -281,6 +284,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
     args.end = end ? llvmValue(end) : nullptr;
     args.fmt = fmt ? llvmValue(fmt) : nullptr;
     args.arg = arg ? llvmValue(arg) : nullptr;
+    args.arg_type = arg ? arg->type() : nullptr;
     args.location = location;
 
     UnpackResult result = _unpacker->llvmUnpack(args);
@@ -294,7 +298,8 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
 std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
                    shared_ptr<Type> type, llvm::Value* begin,
                    llvm::Value* end, llvm::Value* fmt,
-                   llvm::Value* arg, const Location& location)
+                   llvm::Value* arg, shared_ptr<Type> arg_type,
+                   const Location& location)
 {
     UnpackArgs args;
     args.type = type;
@@ -302,6 +307,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
     args.end = end;
     args.fmt = fmt;
     args.arg = arg;
+    args.arg_type = arg_type;
     args.location = location;
 
     UnpackResult result = _unpacker->llvmUnpack(args);
@@ -318,8 +324,12 @@ llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
     auto func = function();
 
     for ( auto arg = func->arg_begin(); arg != func->arg_end(); arg++ ) {
-        if ( arg->getName() == name )
-            return arg;
+        if ( arg->getName() == name ) {
+            if ( arg->hasByValAttr() )
+                return builder()->CreateLoad(arg);
+            else
+                return arg;
+        }
     }
 
     internalError("unknown parameter name " + name);
@@ -1199,18 +1209,8 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
         internalError("unknown calling convention in llvmAddFunction");
     }
 
-    std::vector<llvm::Type*> func_args;
-    for ( auto a : llvm_args )
-        func_args.push_back(a.second);
-
-    auto ftype = llvm::FunctionType::get(rtype, func_args, false);
-    func = llvm::Function::Create(ftype, llvm_linkage, name, _module);
-
+    func = abi()->createFunction(name, rtype, llvm_args, llvm_linkage, _module);
     func->setCallingConv(llvm_cc);
-
-    auto i = llvm_args.begin();
-    for ( auto a = func->arg_begin(); a != func->arg_end(); ++a, ++i )
-        a->setName(i->first);
 
     return func;
 }
@@ -1402,7 +1402,7 @@ void CodeGen::llvmBuildExitBlock()
     llvm::PHINode* phi = nullptr;
 
     if ( state->exits.size() ) {
-        auto rtype = state->function->getReturnType();
+        auto rtype = state->exits.front().second->getType();
         phi = exit_builder->CreatePHI(rtype, state->exits.size());
 
         for ( auto e : state->exits )
@@ -1413,8 +1413,17 @@ void CodeGen::llvmBuildExitBlock()
     llvmBuildFunctionCleanup();
     popBuilder();
 
-    if ( phi )
-        exit_builder->CreateRet(phi);
+    if ( phi ) {
+        if ( state->function->hasStructRetAttr() ) {
+            // Need to store in argument.
+            exit_builder->CreateStore(phi, state->function->arg_begin());
+            exit_builder->CreateRetVoid();
+        }
+        
+        else
+            exit_builder->CreateRet(phi);
+    }
+
     else
         exit_builder->CreateRetVoid();
 
@@ -1745,12 +1754,10 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
     popFunction();
 }
 
-llvm::CallInst* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args, bool excpt_check)
+llvm::Value* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list& args, bool excpt_check)
 {
     auto result = llvmDoCall(llvm_func, nullptr, ftype, args, nullptr, excpt_check);
-    auto ci = llvm::cast<llvm::CallInst>(result);
-    assert(ci);
-    return ci;
+    return result;
 }
 
 llvm::Value* CodeGen::llvmRunHook(shared_ptr<Hook> hook, const expr_list& args, llvm::Value* result)
@@ -1862,35 +1869,15 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
     if ( hook )
         llvm_func = llvmFunctionHookRun(hook);
 
-    // Do the call.
+    // Apply calling convention.
+    auto orig_args = llvm_args;
+    auto func = llvm::cast<llvm::Function>(llvm_func);
+    auto rtype = func->getReturnType();
 
-    auto result = llvmCreateCall(llvm_func, llvm_args);
+    auto result = abi()->createCall(func, llvm_args);
 
     if ( excpt_check )
         llvmCheckException();
-
-    // Retrieve return value according to calling convention.
-
-    switch ( ftype->callingConvention() ) {
-     case type::function::HILTI:
-        // Can take it directly.
-        break;
-
-     case type::function::HOOK:
-        break;
-
-     case type::function::HILTI_C:
-        assert(excpt);
-        // assert(false && "Do ABI stuff");
-        break;
-
-     case type::function::C:
-        // Don't mess with result.
-        break;
-
-     default:
-        internalError("unknown calling convention in llvmCall");
-    }
 
     if ( ! hook ) {
         auto rtype = ftype->result()->type();
@@ -1900,12 +1887,12 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
     return result;
 }
 
-llvm::CallInst* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list& args, bool excpt_check)
+llvm::Value* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list& args, bool excpt_check)
 {
     return llvmCall(llvmFunction(func), func->type(), args, excpt_check);
 }
 
-llvm::CallInst* CodeGen::llvmCall(const string& name, const expr_list& args, bool excpt_check)
+llvm::Value* CodeGen::llvmCall(const string& name, const expr_list& args, bool excpt_check)
 {
     auto id = shared_ptr<ID>(new ID(name));
     auto expr = _hilti_module->body()->scope()->lookup(id);
@@ -1960,6 +1947,16 @@ llvm::Value* CodeGen::llvmLocationString(const Location& l)
     return llvmConstAsciizPtr(string(l).c_str());
 }
 
+llvm::Value* CodeGen::llvmCurrentLocation(const string& addl)
+{
+    string s = string(_stmt_builder->currentLocation());
+
+    if ( addl.size() )
+        s += " [" + addl + "]";
+
+    return llvmConstAsciizPtr(s);
+}
+
 void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
 {
     auto ti = typeInfo(type);
@@ -1974,10 +1971,11 @@ void CodeGen::llvmDtor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
         val = tmp;
     }
 
+
     value_list args;
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
-    args.push_back(builder()->CreateBitCast(llvmConstAsciizPtr("HILTI: llvmDtor"), llvmTypePtr()));
+    args.push_back(builder()->CreateBitCast(llvmCurrentLocation("llvmDtor"), llvmTypePtr()));
     llvmCallC("__hlt_object_dtor", args, false, false);
 }
 
@@ -1998,7 +1996,7 @@ void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
     value_list args;
     args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(val, llvmTypePtr()));
-    args.push_back(builder()->CreateBitCast(llvmConstAsciizPtr("HILTI: llvmCctor"), llvmTypePtr()));
+    args.push_back(builder()->CreateBitCast(llvmCurrentLocation("llvmCtor"), llvmTypePtr()));
     llvmCallC("__hlt_object_cctor", args, false, false);
 }
 
@@ -2295,14 +2293,30 @@ llvm::Value* CodeGen::llvmStructIsSet(shared_ptr<Type> stype, llvm::Value* sval,
     return notzero;
 }
 
-llvm::Value* CodeGen::llvmTupleElement(shared_ptr<Type> ttype, llvm::Value* tval, int idx, bool cctor)
+llvm::Value* CodeGen::llvmTupleElement(shared_ptr<Type> type, llvm::Value* tval, int idx, bool cctor)
 {
-    assert(ttype || ! cctor);
+    auto ttype = ast::as<type::Tuple>(type);
+    assert(ttype);
 
     // ttype can be null if cctor is false.
+    assert(ttype || ! cctor);
 
-    assert(false);
-    // Not yet implemented.
+    shared_ptr<Type> elem_type;
+
+    if ( ttype ) {
+        int i = 0;
+        for ( auto t : ttype->typeList() ) {
+            if ( i++ == idx )
+                elem_type = t;
+        }
+    }
+
+    auto result = llvmExtractValue(tval, idx);
+
+    if ( cctor )
+        llvmCctor(result, elem_type, false);
+
+    return result;
 }
 
 llvm::Value* CodeGen::llvmIterBytesEnd()
@@ -2337,4 +2351,43 @@ shared_ptr<Type> CodeGen::typeByName(const string& name)
         internalError(string("ID ") + name + " is not a type in typeByName()");
 
     return ast::as<expression::Type>(expr)->typeValue();
+}
+
+   /// Creates a tuple from a givem list of elements. The returned tuple will
+   /// have the cctor called for all its members.
+   ///
+   /// elems: The tuple elements.
+   ///
+   /// Returns: The new tuple.
+llvm::Value* CodeGen::llvmTuple(shared_ptr<Type> type, const element_list& elems, bool cctor)
+{
+    auto ttype = ast::as<type::Tuple>(type);
+    auto t = ttype->typeList().begin();
+
+    value_list vals;
+
+    for ( auto e : elems ) {
+        auto op = builder::codegen::create(e.first, e.second);
+        vals.push_back(llvmValue(op, *t++, cctor));
+    }
+
+    return llvmTuple(vals);
+}
+
+llvm::Value* CodeGen::llvmTuple(shared_ptr<Type> type, const expression_list& elems, bool cctor)
+{
+    auto ttype = ast::as<type::Tuple>(type);
+    auto e = elems.begin();
+
+    value_list vals;
+
+    for ( auto t : ttype->typeList() )
+        vals.push_back(llvmValue(*e++, t, cctor));
+
+    return llvmTuple(vals);
+}
+
+llvm::Value* CodeGen::llvmTuple(const value_list& elems)
+{
+    return llvmValueStruct(elems);
 }

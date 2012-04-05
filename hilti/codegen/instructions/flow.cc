@@ -11,7 +11,7 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
 {
     auto func = current<declaration::Function>();
     auto rtype = as<type::Function>(func->function()->type())->result()->type();
-    auto op1 = cg()->llvmValue(i->op1(), rtype, true);
+    auto op1 = cg()->llvmValue(i->op1(), rtype, false);
     cg()->llvmReturn(op1);
 }
 

@@ -157,6 +157,15 @@ public:
        return t;
    }
 
+   Location currentLocation() {
+       for ( auto i = _current.rbegin(); i != _current.rend(); i++ ) {
+           if ( (*i)->location() != Location::None )
+               return (*i)->location();
+       }
+
+       return Location::None;
+   }
+
    /// Returns the closest higher-level instance of a given type (excluding
    /// the current one). This method must only be called during an ongoing
    /// visiting process from another visit method. It will return a
@@ -215,66 +224,75 @@ public:
    /// the current recursion level.
    string levelIndent() const;
 
-   void setCurrentLocationNode(shared_ptr<NodeBase> node) { _loc_node = node; }
+   /// XXX
+   void pushCurrentLocationNode(shared_ptr<NodeBase> node) { _loc_nodes.push_back(node.get()); }
+
+   /// XXXX
+   void pushCurrentLocationNode(NodeBase* node) { _loc_nodes.push_back(node); }
+
+   /// XXX
+   void popCurrentLocationNode() { _loc_nodes.pop_back(); }
+
+   const NodeBase* currentLocationNode() const { return _loc_nodes.back(); }
 
    /// Forwards to Logger.
    void error(NodeBase* node, string msg) const {
-       Logger::error(msg, _loc_node ? _loc_node.get() : node);
+       Logger::error(msg, _loc_nodes.back() ? _loc_nodes.back() : node);
    }
 
    /// Forwards to Logger.
    void error(shared_ptr<NodeBase> node, string msg) const {
-       Logger::error(msg, _loc_node ? _loc_node : node);
+       Logger::error(msg, _loc_nodes.back() ? _loc_nodes.back() : node.get());
    }
 
    /// Forwards to Logger.
    void error(string msg) {
-       Logger::error(msg, _loc_node);
+       Logger::error(msg, _loc_nodes.back());
    }
 
    /// Forwards to Logger.
    void internalError(NodeBase* node, string msg) const {
-       Logger::internalError(msg, _loc_node ? _loc_node.get() : node);
+       Logger::internalError(msg, _loc_nodes.back() ? _loc_nodes.back() : node);
    }
 
    /// Forwards to Logger.
    void internalError(shared_ptr<NodeBase> node, string msg) const {
-       Logger::internalError(msg, _loc_node ? _loc_node : node);
+       Logger::internalError(msg, _loc_nodes.back() ? _loc_nodes.back() : node.get());
    }
 
    /// Forwards to Logger.
    void internalError(string msg) const {
-       Logger::internalError(msg, _loc_node);
+       Logger::internalError(msg, _loc_nodes.back());
    }
 
    /// Forwards to Logger.
    void fatalError(NodeBase* node, string msg) const {
-       Logger::fatalError(msg, _loc_node ? _loc_node.get() : node);
+       Logger::fatalError(msg, _loc_nodes.back() ? _loc_nodes.back() : node);
    }
 
    /// Forwards to Logger.
    void fatalError(shared_ptr<NodeBase> node, string msg) const {
-       Logger::fatalError(msg, _loc_node ? _loc_node : node);
+       Logger::fatalError(msg, _loc_nodes.back() ? _loc_nodes.back() : node.get());
    }
 
    /// Forwards to Logger.
    void fatalError(string msg) const {
-       Logger::fatalError(msg, _loc_node);
+       Logger::fatalError(msg, _loc_nodes.back());
    }
 
    /// Forwards to Logger.
    void warning(NodeBase* node, string msg) const {
-       Logger::warning(msg, _loc_node ? _loc_node.get() : node);
+       Logger::warning(msg, _loc_nodes.back() ? _loc_nodes.back() : node);
    }
 
    /// Forwards to Logger.
    void warning(shared_ptr<NodeBase> node, string msg) const {
-       Logger::warning(msg, _loc_node ? _loc_node : node);
+       Logger::warning(msg, _loc_nodes.back() ? _loc_nodes.back() : node.get());
    }
 
    /// Forwards to Logger.
    void warning(string msg) const {
-       Logger::warning(msg, _loc_node);
+       Logger::warning(msg, _loc_nodes.back());
    }
 
 protected:
@@ -352,7 +370,7 @@ private:
    int _errors = 0;
    int _level = 0;
 
-   shared_ptr<NodeBase> _loc_node = nullptr;
+   std::list<NodeBase *> _loc_nodes = { nullptr }; // Initial null element.
 
    bool _result_set = false;
    Result _result;

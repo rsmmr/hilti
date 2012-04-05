@@ -29,6 +29,7 @@ set(instructions
     time.h
     timer-mgr.h
     timer.h
+    tuple.h
     vector.h
 )
 

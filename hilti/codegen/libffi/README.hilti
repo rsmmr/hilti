@@ -1,0 +1,16 @@
+
+
+This is cloned from https://github.com/LuaDist/libffi.
+
+The only reason to use that instead of the master repository is that
+the Lua version has been CMakefied.
+
+It may potentially be modified to interface our code generator to some
+of the low-level code.
+
+The CMakeLists.txt has also been tweaked a bit further.
+
+Note that we don't actually use libffi at runtime. We only include it
+to leverage some of the its ABI knowledge to generate ABI-conforming
+function signatures and calls.
+

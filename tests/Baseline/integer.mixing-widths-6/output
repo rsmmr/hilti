@@ -1,4 +1,5 @@
->>> cond = int.eq i1 i2
-mixing-widths.hlt:8: error, operand 2 can't be coerced from integer of width 16 to one of width 8
 
-mixing-widths.hlt: 1 error found during validating
+>>> cond = int.eq i1 i2
+mixing-widths.hlt:8-8: error, operand types int<8> and int<16> are not compatible [pass::Validator]
+mixing-widths.hlt: Aborting due to verification error.
+error running hiltic, aborting

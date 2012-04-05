@@ -143,7 +143,7 @@ void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char* locat
     return hdr;
 }
 
-void __hlt_object_ref(const hlt_type_info* ti, void* obj, const char* location)
+void __hlt_object_ref(const hlt_type_info* ti, void* obj)
 {
     __hlt_gchdr* hdr = (__hlt_gchdr*)obj;;
 
@@ -158,12 +158,12 @@ void __hlt_object_ref(const hlt_type_info* ti, void* obj, const char* location)
     ++hdr->ref_cnt;
 
 #ifdef DEBUG
-    _dbg_mem_gc("ref", ti, obj, location, 0);
+    _dbg_mem_gc("ref", ti, obj, 0, 0);
 #endif
 
 }
 
-void __hlt_object_unref(const hlt_type_info* ti, void* obj, const char* location)
+void __hlt_object_unref(const hlt_type_info* ti, void* obj)
 {
     if ( ! obj )
         return;
@@ -189,14 +189,14 @@ void __hlt_object_unref(const hlt_type_info* ti, void* obj, const char* location
     if ( hdr->ref_cnt == 0 )
         aux = "dtor";
 
-    _dbg_mem_gc("unref", ti, obj, location, aux);
+    _dbg_mem_gc("unref", ti, obj, 0, aux);
 #endif
 
     if ( hdr->ref_cnt == 0 ) {
         if ( ti->obj_dtor )
             (*(ti->obj_dtor))(ti, obj);
 
-        __hlt_free(obj, ti->tag, location);
+        __hlt_free(obj, ti->tag, "unref");
     }
 }
 

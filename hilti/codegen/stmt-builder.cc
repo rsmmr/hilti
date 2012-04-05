@@ -162,7 +162,7 @@ void StatementBuilder::visit(declaration::Variable* v)
         // GLobals are taken care of directly by the CodeGen.
         return;
 
-    auto init = local->init() ? cg()->llvmValue(local->init(), nullptr, true) : nullptr;
+    auto init = local->init() ? cg()->llvmValue(local->init(), local->type(), true) : nullptr;
     auto name = local->internalName();
     assert(name.size());
 
@@ -192,9 +192,10 @@ void StatementBuilder::visit(declaration::Function* f)
         if ( p->constant() )
             continue;
 
+        auto shadow = "__shadow_" + p->id()->name();
         auto init = cg()->llvmParameter(p);
-        cg()->llvmCctor(init, p->type(), false);
-        cg()->llvmAddLocal("__shadow_" + p->id()->name(), p->type(), init);
+        cg()->llvmAddLocal(shadow, p->type(), init);
+        cg()->llvmCctor(cg()->llvmLocal(shadow), p->type(), true);
     }
 
     if ( hook_decl ) {

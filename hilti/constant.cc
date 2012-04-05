@@ -37,6 +37,17 @@ shared_ptr<Type> constant::Tuple::type() const
     return shared_ptr<type::Tuple>(new type::Tuple(types, location()));
 }
 
+const std::list<shared_ptr<Expression>> constant::Tuple::value() const
+{
+    std::list<shared_ptr<Expression>> l;
+
+    for ( auto e : _elems )
+        l.push_back(e);
+
+    return l;
+}
+
+
 shared_ptr<Type> constant::Reference::type() const
 {
     return shared_ptr<type::Reference>(new type::Reference(location()));

@@ -8,6 +8,20 @@
 ///
 /// \cproto int8_t
 
+iBegin(boolean, Equal, "equal")
+    iTarget(optype::boolean)
+    iOp1(optype::boolean, true);
+    iOp2(optype::boolean, true);
+
+    iValidate {
+    }
+
+    iDoc(R"(
+        Returns true if *op1* is equal to *op2*.
+    )")
+
+iEnd
+
 iBegin(boolean, And, "bool.and")
     iTarget(optype::boolean)
     iOp1(optype::boolean, true)

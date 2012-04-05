@@ -1,4 +1,5 @@
->>> i2 = int.trunc i1
-mixing-widths.hlt:7: error, width of integer operand too small
 
-mixing-widths.hlt: 1 error found during validating
+>>> i2 = int.trunc i1
+mixing-widths.hlt:7-7: error, width of operand cannot be smaller than that of target [pass::Validator]
+mixing-widths.hlt: Aborting due to verification error.
+error running hiltic, aborting

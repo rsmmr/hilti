@@ -19,6 +19,8 @@
 #include <llvm/Support/FormattedStream.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/PathV1.h>
+#include <llvm/Support/Host.h>
+#include <llvm/ADT/Triple.h>
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
 #include <llvm/Intrinsics.h>
 

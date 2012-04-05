@@ -110,13 +110,6 @@ bool util::endsWith(const string& s, const string& suffix)
     return (i == (s.length() - suffix.size()));
 }
 
-///    \\             Backslash
-///    \\n            Line feed
-///    \\r            Carriage return
-///    \\t            Tabulator
-///    \\uXXXX        16-bit Unicode codepoint
-///    \\UXXXXXXXX    32-bit Unicode codepoint
-///    \\xXX          8-bit hex value
 string util::expandEscapes(const string& s)
 {
     string d;

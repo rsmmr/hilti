@@ -52,10 +52,11 @@ struct yystype {
     shared_ptr<hilti::statement::try_::Catch> catch_;
     shared_ptr<hilti::type::struct_::Field> struct_field;
 
+    std::list<shared_ptr<hilti::Type>> types;
+
     hilti::function::parameter_list params;
     std::list<node_ptr<hilti::Statement>> stmts;
     std::list<node_ptr<hilti::Declaration>> decls;
-    std::list<node_ptr<hilti::Type>> types;
     std::list<node_ptr<hilti::Expression>> exprs;
     std::list<node_ptr<hilti::statement::try_::Catch>> catches;
 

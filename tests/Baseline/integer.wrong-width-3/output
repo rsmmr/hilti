@@ -1,2 +1,5 @@
-wrong-width.hlt:5: error, maximum width for integer types is 64 bits
-wrong-width.hlt: 1 error found during validating
+
+>>> int<128>
+wrong-width.hlt:5-5: error, integer type's width must be 8, 16, 32, or 64. [pass::Validator]
+wrong-width.hlt: Aborting due to verification error.
+error running hiltic, aborting
