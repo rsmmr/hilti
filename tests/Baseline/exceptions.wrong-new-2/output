@@ -1,4 +1,5 @@
->>> e = new myException 42
-wrong-new.hlt:10: error, exception argument must be of type string
 
-wrong-new.hlt: 1 error found during validating
+>>> e = new myException 42
+wrong-new.hlt:10-10: error, operand type int<64> is not compatible with type string [pass::Validator]
+wrong-new.hlt: Aborting due to verification error.
+error running hiltic, aborting

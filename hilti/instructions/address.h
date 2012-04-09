@@ -9,6 +9,8 @@
 ///
 /// \cproto hlt_addr
 
+#include "instructions/define-instruction.h"
+
 iBegin(address, Equal, "equal")
     iTarget(optype::boolean);
     iOp1(optype::address, true);

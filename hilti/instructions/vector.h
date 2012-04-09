@@ -29,6 +29,8 @@
 /// \cproto hlt_vector_iter
 ///
 
+#include "instructions/define-instruction.h"
+
 iBegin(iterVector, Begin, "begin")
     iTarget(optype::iterVector);
     iOp1(optype::refVector, true);

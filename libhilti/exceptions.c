@@ -52,22 +52,26 @@ hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}
 
 void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt)
 {
-    if ( excpt->arg )
+    if ( excpt->arg ) {
         GC_DTOR_GENERIC(excpt->arg, *excpt->type->argtype);
+        hlt_free(excpt->arg);
+    }
 }
 
 hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)
 {
     hlt_exception* excpt = GC_NEW(hlt_exception);
     excpt->type = type;
-//  excpt->cont = 0;
-    /// excpt->arg = arg;
 
-    // FIXME: Arg needs to copied.
-    excpt->arg = 0;
+    if ( arg ) {
+        excpt->arg = hlt_malloc((*type->argtype)->size);
+        memcpy(excpt->arg, arg, (*type->argtype)->size);
+        GC_CCTOR_GENERIC(excpt->arg, *type->argtype);
+    }
 
-    // FIXME: We don't see the vid yet, as we don't have access to the
-    // current ctx at the moment.
+    else
+        arg = 0;
+
     excpt->vid = HLT_VID_MAIN;
     excpt->location = location;
     return excpt;
@@ -118,9 +122,10 @@ static void __exception_print(const char* prefix, hlt_exception* exception, hlt_
     fprintf(stderr, "%s%s", prefix, exception->type->name);
 
     if ( exception->arg ) {
-        hlt_string arg = hlt_string_from_object(*exception->type->argtype, &exception->arg, &excpt, ctx);
+        hlt_string arg = hlt_string_from_object(*exception->type->argtype, exception->arg, &excpt, ctx);
         fprintf(stderr, " with argument ");
         hlt_string_print(stderr, arg, 0, &excpt, ctx);
+        GC_DTOR(arg, hlt_string);
     }
 
 //    if ( exception->cont )

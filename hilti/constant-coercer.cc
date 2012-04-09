@@ -26,6 +26,13 @@ void ConstantCoercer::visit(constant::Integer* i)
         auto c = new constant::Bool(i->value() != 0, i->location());
         setResult(shared_ptr<Constant>(c));
     }
+
+    auto dst_d = ast::as<type::Double>(arg1());
+
+    if ( dst_d ) {
+        auto c = new constant::Double(i->value(), i->location());
+        setResult(shared_ptr<Constant>(c));
+    }
 }
 
 void ConstantCoercer::visit(constant::Tuple* t)

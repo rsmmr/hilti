@@ -15,10 +15,12 @@ void BlockNormalizer::visit(statement::Block* b)
 
     auto p = current<statement::Block>();
 
-    auto p1 = current<statement::Block>();
-    auto p2 = parent<statement::Block>();
-
     if ( ! p )
+        return;
+
+    if ( ! (p->parent() && ast::isA<Function>(p->parent()->sharedPtr<Node>())) )
+        // Don't normalize nested blocks, the code generator needs to take
+        // care of those.
         return;
 
     // Find ourselves in parent's list.
@@ -59,6 +61,7 @@ void BlockNormalizer::visit(statement::Block* b)
 
         terminator = shared_ptr<hilti::statement::instruction::Unresolved>(
             new hilti::statement::instruction::Unresolved("jump", ops, b->location()));
+        terminator->setInternal();
     }
 
     else {
@@ -67,6 +70,7 @@ void BlockNormalizer::visit(statement::Block* b)
 
         terminator = shared_ptr<hilti::statement::instruction::Unresolved>(
             new hilti::statement::instruction::Unresolved("return.void", no_ops, b->location()));
+        terminator->setInternal();
     }
 
     assert(terminator);

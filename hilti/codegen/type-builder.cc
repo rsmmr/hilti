@@ -79,6 +79,8 @@ shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
 
     shared_ptr<TypeInfo> ti(_typeInfo(type));
 
+    assert(ti);
+
     if ( ! ti->init_val && ti->lib_type.size() )
         ti->init_val = cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmLibType(ti->lib_type)));
 
@@ -152,11 +154,18 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
 
     auto ti = typeInfo(type);
 
+    llvm::Constant* sizeof_ = nullptr;
+
+    if ( ti->init_val )
+        sizeof_ = llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->init_val), cg()->llvmTypeInt(16));
+    else
+        sizeof_ = cg()->llvmConstInt(0, 16);
+
     // Ok if not the right type here.
     shared_ptr<type::trait::Parameterized> ptype = std::dynamic_pointer_cast<type::trait::Parameterized>(ti->type);
 
     vals.push_back(cg()->llvmConstInt(ti->id, 16));
-    vals.push_back(llvm::ConstantExpr::getTrunc(cg()->llvmSizeOf(ti->init_val), cg()->llvmTypeInt(16)));
+    vals.push_back(sizeof_);
     vals.push_back(cg()->llvmConstAsciizPtr(ti->name));
     vals.push_back(cg()->llvmConstInt((ptype ? ptype->parameters().size() : 0), 16));
     vals.push_back(cg()->llvmConstInt(gc, 16));
@@ -258,6 +267,10 @@ void TypeBuilder::visit(type::Exception* e)
     ti->dtor = "hlt::exception_dtor";
     ti->c_prototype = "hlt_exception*";
     ti->lib_type = "hlt.exception";
+
+    // Aux points to the exception's type object.
+    // ti->aux = cg()->llvmExceptionTypeObject(e->sharedPtr<type::Exception>());
+
     // ti->to_string = "hlt::exception_to_string";
     // ti->hash = "hlt::bool_hash";
     // ti->equal = "hlt::bool_equal";
@@ -392,9 +405,9 @@ llvm::Function* TypeBuilder::_makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, b
         auto elem = cg->llvmExtractValue(tval, idx++);
 
         if ( dtor )
-            cg->llvmDtor(elem, et, false);
+            cg->llvmDtor(elem, et, false, "tuple");
         else
-            cg->llvmCctor(elem, et, false);
+            cg->llvmCctor(elem, et, false, "tuple");
     }
 
     cg->popFunction();

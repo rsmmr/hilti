@@ -25,12 +25,12 @@ void run() {
             call Hilti::print ("Cannot be reached")
           }
 
-          catch myException1 {
+          catch ( ref<myException1> e ) {
               call Hilti::print ("Caught it 1!")
           }
      }
 
-     catch myException2 {
+     catch ( ref<myException2> e ) {
        call Hilti::print ("Caught it 2!")
      }
 
@@ -64,12 +64,12 @@ void run() {
             call Hilti::print ("Cannot be reached")
           }
 
-          catch myException1 {
+          catch ( ref<myException1> e ) {
               call Hilti::print ("Caught it 1!")
           }
      }
 
-     catch myException2 {
+     catch ( ref<myException2> e ) {
        call Hilti::print ("Caught it 2!")
      }
 

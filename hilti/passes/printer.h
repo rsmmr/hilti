@@ -50,8 +50,8 @@ protected:
    void visit(statement::try_::Catch* s) override;
 
    void visit(declaration::Variable* v) override;
-
    void visit(declaration::Function* f) override;
+   void visit(declaration::Type* t) override;
 
    void visit(type::function::Parameter* p) override;
 
@@ -79,6 +79,7 @@ protected:
    void visit(type::MatchTokenState* t) override;
    void visit(type::Network* t) override;
    void visit(type::Overlay* t) override;
+   void visit(type::OptionalArgument* t) override;
    void visit(type::Port* t) override;
    void visit(type::Reference* t) override;
    void visit(type::RegExp* t) override;
@@ -96,6 +97,7 @@ protected:
 
    void visit(expression::Block* e) override;
    void visit(expression::CodeGen* e) override;
+   void visit(expression::Coerced* e) override;
    void visit(expression::Constant* e) override;
    void visit(expression::Ctor* e) override;
    void visit(expression::Function* e) override;
@@ -164,9 +166,23 @@ private:
 
    string scopedID(Expression* expr, shared_ptr<ID> id);
 
+   // Prints a type's ID if we have it and doing so was not disabled via,
+   // disableTypeIDs(). If that's both the case returns true, else false
+   bool printTypeID(shared_ptr<Type> t) { return printTypeID(t.get()); }
+   bool printTypeID(Type* t);
+
+   // Disables printing IDs for declared types. Calls to this method must match
+   // those of enableTypeIDs().
+   void disableTypeIDs() { --_print_type_ids; }
+
+   // Enables printing IDs for declared types. Calls to this method must
+   // match those of enableTypeIDs().
+   void enableTypeIDs() { ++_print_type_ids; }
+
    std::ostream& _out;
    bool _single_line;
    int _indent = 0;
+   int _print_type_ids = 1;
 };
 
 // Mimic the ostream interface.

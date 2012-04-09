@@ -17,7 +17,7 @@ codegen::Coercer::~Coercer()
 
 llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst)
 {
-    if ( src->equal(dst) )
+    if ( src->equal(dst) || dst->equal(src) )
         return value;
 
     setArg1(value);

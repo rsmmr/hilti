@@ -41,7 +41,7 @@ void StatementBuilder::visit(statement::instruction::vector::Get* i)
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(etype)));
     auto result = builder()->CreateLoad(casted);
 
-    cg()->llvmCctor(voidp, etype, true);
+    cg()->llvmCctor(voidp, etype, true, "vector.get");
     cg()->llvmStore(i, result);
 }
 

@@ -23,6 +23,8 @@
 ///
 /// \cproto hlt_time
 
+#include "instructions/define-instruction.h"
+
 iBegin(time, Equal, "equal")
     iTarget(optype::boolean)
     iOp1(optype::time, true);

@@ -1,1 +1,2 @@
-hilti: uncaught exception, myException (from excpt-uncaught.hlt:17)
+
+hilti: uncaught exception, myException (from /Users/robin/work/binpacpp/hilti2/tests/.tmp/callable.excpt-uncaught/excpt-uncaught.hlt:16-16)

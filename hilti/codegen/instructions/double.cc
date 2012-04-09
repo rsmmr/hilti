@@ -138,6 +138,7 @@ void StatementBuilder::visit(statement::instruction::double_::Mul* i)
     cg()->llvmStore(i, result);
 }
 
+#if 0
 void StatementBuilder::visit(statement::instruction::double_::PowInt* i)
 {
     llvm::Value* result = 0;
@@ -157,6 +158,7 @@ void StatementBuilder::visit(statement::instruction::double_::PowInt* i)
 
     cg()->llvmStore(i, result);
 }
+#endif
 
 void StatementBuilder::visit(statement::instruction::double_::PowDouble* i)
 {

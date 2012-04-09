@@ -28,19 +28,17 @@ void run() {
 
     result = "init"
 
-    c = new callable<string>
-
-    callable.bind c foo ("ICSI")
+    c = new callable<string> foo ("ICSI")
 
     try {
         result = call c
     }
 
-    catch myException {
+    catch ( myException e ) {
        call Hilti::print ("Caught it!")
     }
 
-    call hilti::print (result)
+    call Hilti::print (result)
 
     return.void
 }

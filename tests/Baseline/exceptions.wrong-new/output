@@ -1,4 +1,5 @@
->>> e = new myException
-wrong-new.hlt:14: error, exception argument of type string missing
 
-wrong-new.hlt: 1 error found during validating
+>>> e = new myException
+wrong-new.hlt:13-13: error, exception takes an argument of type string [pass::Validator]
+wrong-new.hlt: Aborting due to verification error.
+error running hiltic, aborting

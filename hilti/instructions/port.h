@@ -8,6 +8,8 @@
 ///
 /// \cproto hlt_port
 
+#include "instructions/define-instruction.h"
+
 iBegin(port, Equal, "equal")
     iTarget(optype::boolean)
     iOp1(optype::port, true);

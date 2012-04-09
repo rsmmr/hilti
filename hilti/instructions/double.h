@@ -8,6 +8,8 @@
 ///
 /// \cproto double
 
+#include "instructions/define-instruction.h"
+
 iBegin(double_, Equal, "equal")
     iTarget(optype::boolean)
     iOp1(optype::double_, true);
@@ -191,22 +193,6 @@ iBegin(double_, Mul, "double.mul")
     iDoc(R"(    
         Multiplies *op1* with *op2*. If the product overflows the range of the
         double type, the result in undefined.
-    )")
-
-iEnd
-
-iBegin(double_, PowInt, "double.pow")
-    iTarget(optype::double_)
-    iOp1(optype::double_, true)
-    iOp2(optype::integer, true)
-
-    iValidate {
-        canCoerceTo(op2, optype::int32);
-    }
-
-    iDoc(R"(    
-        Raises *op1* to the power *op2*. If the product overflows the range of
-        the double type, the result in undefined.
     )")
 
 iEnd

@@ -11,6 +11,9 @@ declare "C-HILTI" string fmt(string fmt, tuple<*> vals)
 
 # FIXME: Add the other internal exceptions here as well.
 
+# Top-level root exception.
+type Exception = exception &libhilti="hlt_exception_unspecified"
+
 # Raised when a division by zero is attempted.
 type DivisionByZero = exception<string> &libhilti="hlt_exception_division_by_zero"
 
@@ -24,6 +27,9 @@ type WouldBlock = exception<string> &libhilti="hlt_exception_would_block"
 ## Raised when for a hook declared as returning a value, no
 ## implementation has already done so.
 type NoHookResult = exception<string> &libhilti="hlt_exception_no_hook_result"
+
+# Raised for invalid values.
+type ValueError = exception<string> &libhilti="hlt_exception_value_error"
 
 ## Defines the valid formats for the ref:op:`unpack` operator. 
 type Packed = enum {
@@ -84,7 +90,9 @@ type Packed = enum {
     BytesDelim,        # A series of bytes delimited by a final byte-sequence specified by an additional argument.
 
     # Variants just advancing the iterator but not returning any value.
-    SkipBytesRunLength, SkipBytesFixed, SkipBytesDelim
+    SkipBytesRunLength,
+    SkipBytesFixed,
+    SkipBytesDelim
 
     # %doc-packed-bytes-end
 

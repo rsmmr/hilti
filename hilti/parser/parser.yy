@@ -187,7 +187,7 @@ opt_comment   : empty_lines comment              { $$ = $2; }
               | empty_lines                      { $$ = ""; }
               ;
 
-opt_nl        : NEWLINE
+opt_nl        : NEWLINE opt_nl
               | /* empty */
               ;
 
@@ -260,6 +260,7 @@ catches       : catches catch_ opt_nl            { $$ = $1; $$.push_back($2); }
               | catch_                           { $$ = builder::block::catch_list(); $$.push_back($1); }
 
 catch_        : CATCH '(' type local_id ')' body { $$ = builder::block::catch_($3, $4, $6, loc(@$)); }
+              | CATCH body                       { $$ = builder::block::catchAll($2, loc(@$)); }
 
 operands      : /* empty */                      { $$ = make_ops(nullptr, nullptr, nullptr, nullptr); }
               | expr                             { $$ = make_ops(nullptr, $1, nullptr, nullptr); }
@@ -272,7 +273,6 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | BOOL                             { $$ = builder::boolean::type(loc(@$)); }
               | BYTES                            { $$ = builder::bytes::type(loc(@$)); }
               | CADDR                            { $$ = builder::caddr::type(loc(@$)); }
-              | CALLABLE                         { $$ = builder::callable::type(loc(@$)); }
               | CLASSIFIER                       { $$ = builder::classifier::type(loc(@$)); }
               | DOUBLE                           { $$ = builder::double_::type(loc(@$)); }
               | FILE                             { $$ = builder::file::type(loc(@$)); }
@@ -300,6 +300,8 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | TUPLE '<' '*' '>'                { $$ = builder::tuple::typeAny(loc(@$)); }
               | TUPLE '<' type_list '>'          { $$ = builder::tuple::type($3, loc(@$)); }
               | VECTOR '<' type '>'              { $$ = builder::vector::type($3, loc(@$)); }
+              | CALLABLE '<' type '>'            { $$ = builder::callable::type($3, loc(@$)); }
+              | CALLABLE '<' '*' '>'             { $$ = builder::callable::typeAny(loc(@$)); }
 
               | bitset                           { $$ = $1; }
               | enum_                            { $$ = $1; }
@@ -440,7 +442,7 @@ function      : opt_cc result local_id '(' opt_param_list ')' body opt_nl { $$ =
 hook          : HOOK result scoped_id '(' opt_param_list ')' opt_hook_attrs body opt_nl { $$ = builder::hook::create($3, $2, $5, driver.context()->module, $8, $7, loc(@$)); }
               | DECLARE HOOK result local_id '(' opt_param_list ')' eol                 { $$ = builder::hook::create($4, $3, $6, driver.context()->module, nullptr, builder::hook::attributes(), loc(@$));
                                                                                           if ( ! $4->isScoped() )
-                                                                                              driver.context()->module->exportID($4);
+                                                                                              driver.context()->module->exportID($4, true);
                                                                                         }
               ;
 

@@ -15,14 +15,14 @@ auto hilti::theInstructionRegistry = unique_ptr<InstructionRegistry>(new Instruc
 
 shared_ptr<Type> InstructionHelper::typedType(shared_ptr<Expression> op) const
 {
-    auto t = ast::as<type::Type>(op);
+    auto t = ast::as<type::Type>(op->type());
     assert(t);
     return t->typeType();
 }
 
 shared_ptr<Type> InstructionHelper::referencedType(shared_ptr<Expression> op) const
 {
-    auto t = ast::as<type::Reference>(op);
+    auto t = ast::as<type::Reference>(op->type());
     assert(t);
     return t->argType();
 }
@@ -47,7 +47,7 @@ shared_ptr<Type> InstructionHelper::elementType(shared_ptr<Type> ty) const
 
 shared_ptr<Type> InstructionHelper::iteratedType(shared_ptr<Expression> op) const
 {
-    auto t = ast::as<type::Iterator>(op);
+    auto t = ast::as<type::Iterator>(op->type());
     assert(t);
     return t->argType();
 }
@@ -116,6 +116,9 @@ void InstructionRegistry::addInstruction(shared_ptr<Instruction> ins)
 
 InstructionRegistry::instr_list InstructionRegistry::getMatching(shared_ptr<ID> id, const instruction::Operands& ops) const
 {
+    // We try this twice. First, without coerce, then with. To ambiguity, we
+    // prefer matches from the former.
+
     instr_list matches;
 
     auto m = _instructions.equal_range(id->name());
@@ -123,7 +126,17 @@ InstructionRegistry::instr_list InstructionRegistry::getMatching(shared_ptr<ID> 
     for ( auto n = m.first; n != m.second; ++n ) {
         shared_ptr<Instruction> instr = n->second;
 
-        if ( instr->matchesOperands(ops) )
+        if ( instr->matchesOperands(ops, false) )
+            matches.push_back(instr);
+    }
+
+    if ( matches.size() )
+        return matches;
+
+    for ( auto n = m.first; n != m.second; ++n ) {
+        shared_ptr<Instruction> instr = n->second;
+
+        if ( instr->matchesOperands(ops, true) )
             matches.push_back(instr);
     }
 
@@ -144,7 +157,7 @@ InstructionRegistry::instr_list InstructionRegistry::byName(const string& name) 
     return matches;
 }
 
-bool Instruction::matchesOperands(const instruction::Operands& ops)
+bool Instruction::matchesOperands(const instruction::Operands& ops, bool coerce)
 {
 #if 0
     fprintf(stderr, "--- %s\n", string(*this).c_str());
@@ -168,16 +181,16 @@ bool Instruction::matchesOperands(const instruction::Operands& ops)
     fprintf(stderr, "+++\n");
 #endif
 
-    if ( ! __matchOp0(ops[0]) )
+    if ( ! __matchOp0(ops[0], coerce) )
         return false;
 
-    if ( ! __matchOp1(ops[1]) )
+    if ( ! __matchOp1(ops[1], coerce) )
         return false;
 
-    if ( ! __matchOp2(ops[2]) )
+    if ( ! __matchOp2(ops[2], coerce) )
         return false;
 
-    if ( ! __matchOp3(ops[3]) )
+    if ( ! __matchOp3(ops[3], coerce) )
         return false;
 
     return true;
@@ -380,8 +393,34 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
 
     for ( int i = 0; i < _num_ops; i++ ) {
         auto op = stmt->operands()[i];
+
+        if ( op && instr ) {
+        
+            switch ( i ) {
+             case 1:
+                if ( instr->__typeOp1() )
+                    op = op->coerceTo(instr->__typeOp1());
+                break;
+
+             case 2:
+                if ( instr->__typeOp2() )
+                    op = op->coerceTo(instr->__typeOp2());
+                break;
+
+             case 3:
+                if ( instr->__typeOp3() )
+                    op = op->coerceTo(instr->__typeOp3());
+                break;
+            }
+        }
+
         new_ops.push_back(op ? op : defaults[i]);
     }
 
-    return (*instr->factory())(instr, new_ops, stmt->location());
+    auto resolved = (*instr->factory())(instr, new_ops, stmt->location());
+
+    if ( stmt->internal() )
+        resolved->setInternal();
+
+    return resolved;
 }

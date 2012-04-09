@@ -167,6 +167,12 @@ extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char
    }
 
 /// XXX
+#define GC_CCTOR_GENERIC(objptr, ti) \
+   { \
+       __hlt_object_cctor(ti, objptr, __hlt_make_location(__FILE__,__LINE__)); \
+   }
+
+/// XXX
 #define GC_CLEAR(obj, tag) \
    { \
        __hlt_object_dtor(hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \

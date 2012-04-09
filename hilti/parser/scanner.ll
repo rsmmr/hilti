@@ -115,7 +115,7 @@ True                  yylval->bval = 1; return token::CBOOL;
 
 [-+]?{digits}\.{digits} yylval->dval = strtod(yytext, 0); return token::CDOUBLE;
 
-{int}                 yylval->ival = atoi(yytext); return token::CINTEGER;
+{int}                 yylval->ival = strtoll(yytext, 0, 10); return token::CINTEGER;
 {regexp}              yylval->sval = util::expandEscapes(string(yytext, 2, strlen(yytext) - 2)); return token::CREGEXP;
 {string}              yylval->sval = util::expandEscapes(string(yytext, 1, strlen(yytext) - 2)); return token::CSTRING;
 b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strlen(yytext) - 3)); return token::CBYTES;

@@ -16,7 +16,7 @@ string foo(string s) {
 void do_call(ref<callable<string>> c) {
     local string result
     result = call c
-    call hilti::print (result)
+    call Hilti::print (result)
 }
 
 void run() {
@@ -26,13 +26,9 @@ void run() {
     local ref<callable<string>> c3
     local string result
 
-    c1 = new callable<string>
-    c2 = new callable<string>
-    c3 = new callable<string>
-
-    callable.bind c1 foo ("ICSI1")
-    callable.bind c2 foo ("ICSI2")
-    callable.bind c3 foo ("ICSI3")
+    c1 = new callable<string> foo ("ICSI1")
+    c2 = new callable<string> foo ("ICSI2")
+    c3 = new callable<string> foo ("ICSI3")
 
     call do_call(c1)
     call do_call(c2)

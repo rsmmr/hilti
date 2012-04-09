@@ -1,4 +1,6 @@
 
+#include "instructions/define-instruction.h"
+
 iBegin(caddr, Function, "caddr.function")
     iTarget(optype::tuple)
     iOp1(optype::function, true)

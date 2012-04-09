@@ -25,6 +25,8 @@
 /// \cproto hlt_bytes_iter
 ///
 
+#include "instructions/define-instruction.h"
+
 iBegin(bytes, New, "new")
     iTarget(optype::refBytes)
     iOp1(optype::typeBytes, true);

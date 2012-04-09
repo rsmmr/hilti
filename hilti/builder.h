@@ -63,7 +63,7 @@ namespace integer {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::Constant> create(int i, const Location& l=Location::None)
+inline shared_ptr<expression::Constant> create(int64_t i, const Location& l=Location::None)
 {
     auto c = _sptr(new constant::Integer(i, 64, l));
     return _sptr(new expression::Constant(c, l));
@@ -757,6 +757,11 @@ inline shared_ptr<statement::try_::Catch> catch_(shared_ptr<Type> type, shared_p
     return _sptr(new statement::try_::Catch(type, id, block, l));
 }
 
+inline shared_ptr<statement::try_::Catch> catchAll(shared_ptr<statement::Block> block, const Location& l)
+{
+    return _sptr(new statement::try_::Catch(nullptr, nullptr, block, l));
+}
+
 inline shared_ptr<statement::Try> try_(shared_ptr<statement::Block> block, const catch_list& catches, const Location& l=Location::None)
 {
     return _sptr(new hilti::statement::Try(block, catches, l));
@@ -1024,10 +1029,21 @@ namespace callable {
 
 /// Instantiates a type::Callable type.
 ///
+/// rtype: The callable return type.
+///
 /// l: Location associated with the type.
 ///
 /// Returns: The type node.
-inline shared_ptr<hilti::type::Callable> type(const Location& l=Location::None) {
+inline shared_ptr<hilti::type::Callable> type(shared_ptr<hilti::Type> rtype, const Location& l=Location::None) {
+    return _sptr(new hilti::type::Callable(rtype, l));
+}
+
+/// Instantiates a type::Callable wildcard type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Callable> typeAny(const Location& l=Location::None) {
     return _sptr(new hilti::type::Callable(l));
 }
 

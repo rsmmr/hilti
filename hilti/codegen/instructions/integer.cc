@@ -201,11 +201,11 @@ void StatementBuilder::visit(statement::instruction::integer::Pow* i)
     op1 = builder()->CreateZExt(op1, cg()->llvmTypeInt(64));
     op2 = builder()->CreateZExt(op2, cg()->llvmTypeInt(64));
 
-    CodeGen::value_list args;
-    args.push_back(op1);
-    args.push_back(op2);
+    CodeGen::expr_list args;
+    args.push_back(builder::codegen::create(builder::integer::type(64), op1));
+    args.push_back(builder::codegen::create(builder::integer::type(64), op2));
 
-    auto pow = cg()->llvmCallC("hlt::int_pow", args, true);
+    auto pow = cg()->llvmCall("hlt::int_pow", args);
 
     auto width = as<type::Integer>(i->target()->type())->width();
     auto result = builder()->CreateTrunc(pow, cg()->llvmTypeInt(width));
@@ -342,7 +342,7 @@ void StatementBuilder::visit(statement::instruction::integer::Sqeq* i)
     auto op1 = cg()->llvmValue(i->op1(), t);
     auto op2 = cg()->llvmValue(i->op2(), t);
 
-    auto result = builder()->CreateICmpUGE(op1, op2);
+    auto result = builder()->CreateICmpSGE(op1, op2);
 
     cg()->llvmStore(i, result);
 }

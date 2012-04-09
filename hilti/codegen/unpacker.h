@@ -16,12 +16,13 @@ struct UnpackArgs {
     /// type::trait::Unpackable, or a reference of one.
     shared_ptr<Type> type = nullptr;
 
-    /// A byte iterator marking the first input byte.
+    /// A byte iterator marking the first input byte. It will not have its
+    /// ctor applied.
     llvm::Value* begin = nullptr;
 
     /// A byte iterator marking the position one beyond the last consumable
     /// input byte. *end* may be null to indicate unpacking until the end of
-    /// the bytes object is encountered.
+    /// the bytes object is encountered.  It will not have its ctor applied.
     llvm::Value* end = nullptr;
 
     /// Specifies the binary format of the input bytes as one of the
@@ -42,11 +43,11 @@ struct UnpackArgs {
 
 struct UnpackResult {
     /// A pointer to an object of \a type's LLVM type storing the
-    /// unpacked object.
+    /// unpacked object. The value must have its cctor applied.
     llvm::Value* value_ptr = nullptr;
 
     /// A pointer to a bytes iterator where storing the position just after
-    /// the last one consumed.
+    /// the last one consumed. The iterator must have its cctor applied.
     llvm::Value* iter_ptr = nullptr;
 };
 
@@ -66,8 +67,9 @@ public:
    /// args: The arguments to the unpack operation.
    ///
    /// Returns: A pair in which the first value is the unpacked value, and
-   /// the second a byte iterator pointing one beyond the last consumed
-   /// input byte (which can't be further than *end*).
+   /// the second a byte iterator pointing one beyond the last consumed input
+   /// byte (which can't be further than *end*). Both tuples elements will
+   /// have their cctor applied.
    UnpackResult llvmUnpack(const UnpackArgs& args);
 
 protected:

@@ -20,7 +20,7 @@ void run() {
          call Hilti::print (i)
      }
 
-     catch Hilti::DivisionByZero {
+     catch ( ref<Hilti::DivisionByZero> e ) {
        call Hilti::print ("Caught it!")
      }
 

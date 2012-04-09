@@ -11,5 +11,11 @@ string Expression::render()
 {
     std::ostringstream s;
     passes::Printer(s, true).run(sharedPtr<Node>());
-    return s.str();
+
+    string r = s.str();
+
+    if ( scope().size() )
+        r = r + " " + util::fmt("[scope: %s]", scope().c_str());
+
+    return r;
 }

@@ -11,12 +11,30 @@
 }
 
 ; The per-thread execution context.
-; Adapt codegen::hlt::ExecutionContext and hlt_execution_context when making changes here.
+; Adapt codegen::hlt::ExecutionContext::Globals and hlt_execution_context when making changes here!
 %hlt.execution_context = type {
     %hlt.gchdr,
     %hlt.vid,
     i64,
+    %hlt.exception.type*,
     i8*  ;; Start of globals (right here, pointer content isn't used.)
+}
+
+; The static description of a callable instance. This is function
+; specific but parameter specific.
+; Adapt hlt_callable_func when making changes here!
+%hlt.callable.func = type {
+    i8*, ;; Function pointer for call.
+    i8*, ;; Function pointer for call that discards result.
+    i8*  ;; Function pointer for dtor.
+}
+
+; A callable object.
+; Adapt hlt_callable when making changes here!
+%hlt.callable = type {
+    %hlt.gchdr,
+    %hlt.callable.func*
+    ;; Arguments will follow here.
 }
 
 ; Run-time type information. We don't declare the fields here as we
@@ -67,7 +85,7 @@
 %hlt.exception.type = type {
     i8*,
     i8*,
-    i8*
+    i8**
 }
 
 ; Types we don't specify further at the LLVM level.
@@ -80,12 +98,16 @@ declare void @__hlt_object_ref(%hlt.type_info*, i8 *)
 declare void @__hlt_object_unref(%hlt.type_info*, i8 *)
 declare void @__hlt_object_dtor(%hlt.type_info*, i8 *, i8*)
 declare void @__hlt_object_cctor(%hlt.type_info*, i8 *, i8*)
+declare i8* @__hlt_object_new(%hlt.type_info*, i64, i8*)
 
 declare void @__hlt_debug_print(i8*, i8*)
 
 declare %hlt.string* @hlt_string_from_data(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 declare %hlt.bytes*  @hlt_bytes_new_from_data_copy(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 
+declare i8 @__hlt_bytes_extract_one(%hlt.iterator.bytes*, %hlt.iterator.bytes, %hlt.exception**, %hlt.execution_context*)
+
+declare void            @__hlt_exception_print_uncaught_abort(%hlt.exception*, %hlt.execution_context*)
 declare i8              @__hlt_exception_match(%hlt.exception*, %hlt.exception.type*)
 declare %hlt.exception* @hlt_exception_new(%hlt.exception.type*, i8*, i8*)
 

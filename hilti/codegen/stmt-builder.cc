@@ -72,47 +72,57 @@ void StatementBuilder::visit(statement::Block* b)
 
 void StatementBuilder::visit(statement::Try* t)
 {
+    // Block for try block.
+    auto try_ = cg()->newBuilder("try");
+    cg()->llvmCreateBr(try_);
+
     // Block for normal continuation.
     auto normal_cont = cg()->newBuilder("try-cont");
 
     for ( auto c : t->catches() ) {
         // Build code for catch block.
         auto builder = cg()->pushBuilder("catch-match");
+
         call(c);
         cg()->pushExceptionHandler(builder);
 
         // The Catch() will have left the builder on the stack that handles
-        // fully catching the excepetion.  Add a branch and remove it.
-        cg()->llvmClearException();
+        // fully catching the excepetion.  Add a branch (but don't remove
+        // builder, there may have been pushed more than ours in the
+        // meantime),
         cg()->llvmCreateBr(normal_cont);
-        cg()->popBuilder();
-
-        cg()->popBuilder();
     }
 
+    cg()->pushBuilder(try_);
     call(t->block());
     cg()->llvmCreateBr(normal_cont);
+
+    // Leave try_ on stack. After generating the block body it's potentially
+    // not the top-most anymore.
 
     // Remove all our handlers.
     for ( auto c : t->catches() )
         cg()->popExceptionHandler();
+
+    cg()->pushBuilder(normal_cont); // Leave on stack.
 }
 
 void StatementBuilder::visit(statement::try_::Catch* c)
 {
-    // Create block for our code. Filled below.
-    auto match = cg()->newBuilder("catch-block");
-
     // Create block for passing on to other handlers.
-    auto no_match = cg()->pushBuilder();
+    IRBuilder* no_match = nullptr;
 
-    if ( cg()->topExceptionHandler() )
+    if ( cg()->topExceptionHandler() ) {
+        no_match = cg()->pushBuilder("next-handler");
         cg()->llvmCreateBr(cg()->topExceptionHandler());
+        cg()->popBuilder();
+    }
 
-    else
+    else {
+        no_match = cg()->pushBuilder("rethrow");
         cg()->llvmRethrowException();
-
-    cg()->popBuilder();
+        cg()->popBuilder();
+    }
 
     // In the original block, check if it's our exception.
 
@@ -128,6 +138,9 @@ void StatementBuilder::visit(statement::try_::Catch* c)
     args.push_back(cg()->llvmExceptionTypeObject(etype));
     auto ours = cg()->llvmCallC("__hlt_exception_match", args, false, false);
 
+    // Create block for our code.
+    auto match = cg()->newBuilder("caught-excpt");
+
     auto cond = builder()->CreateICmpNE(ours, cg()->llvmConstInt(0, 8));
     cg()->llvmCreateCondBr(cond, match, no_match);
 
@@ -139,10 +152,12 @@ void StatementBuilder::visit(statement::try_::Catch* c)
         auto name = c->var()->internalName();
         auto addr = cg()->llvmAddLocal(name, c->type());
 
-        // Can't init the local directly as they might end up in the wrong
+        // Can't init the local directly as that might end up in the wrong
         // block.
         cg()->llvmGCAssign(addr, cexcpt, c->type(), false);
     }
+
+    cg()->llvmClearException();
 
     call(c->block());
 
@@ -195,7 +210,7 @@ void StatementBuilder::visit(declaration::Function* f)
         auto shadow = "__shadow_" + p->id()->name();
         auto init = cg()->llvmParameter(p);
         cg()->llvmAddLocal(shadow, p->type(), init);
-        cg()->llvmCctor(cg()->llvmLocal(shadow), p->type(), true);
+        cg()->llvmCctor(cg()->llvmLocal(shadow), p->type(), true, "shadow-local");
     }
 
     if ( hook_decl ) {
@@ -204,7 +219,7 @@ void StatementBuilder::visit(declaration::Function* f)
         auto cont = cg()->llvmCall("hlt::hook_group_is_enabled", args, false);
 
         auto disabled = cg()->pushBuilder("disabled");
-        cg()->llvmReturn(cg()->llvmConstInt(0, 1)); // Return false.
+        cg()->llvmReturn(0, cg()->llvmConstInt(0, 1)); // Return false.
         cg()->popBuilder();
 
         auto enabled = cg()->newBuilder("enabled");
@@ -214,8 +229,6 @@ void StatementBuilder::visit(declaration::Function* f)
     }
 
     call(func->body());
-
-    cg()->llvmBuildExitBlock();
 
     cg()->popFunction();
 

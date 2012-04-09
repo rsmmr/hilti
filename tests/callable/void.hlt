@@ -12,15 +12,11 @@ void foo() {
     }
 
 void run() {
-
     local ref<callable<void>> c
 
-    c = new callable<void>
-
-    callable.bind c foo ()
+    c = new callable<void> foo ()
 
     call c
 
     return.void
 }
-

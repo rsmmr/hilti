@@ -3,12 +3,8 @@
 # @TEST-EXEC:      btest-diff output
 #
 # Using an invalid unpack format.
-
-# This test uses a constant, which shouldn't compile.
 #
-# FIXME: Currently, we get only an internal error. Still need to
-# extlast the checker for this, but I'm waiting until we have the new
-# cabilities for specifying signatures.
+# This test uses a constant, which shouldn't compile.
 #
 # @TEST-IGNORE
 

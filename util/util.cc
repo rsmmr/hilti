@@ -131,6 +131,10 @@ string util::expandEscapes(const string& s)
             d += '\\';
             break;
 
+         case '"':
+            d += '"';
+            break;
+
          case 'n':
             d += '\n';
             break;
@@ -198,6 +202,88 @@ string util::expandEscapes(const string& s)
     }
 
     return d;
+}
+
+string util::escapeUTF8(const string& s)
+{
+    const unsigned char* p = (const unsigned char*)s.data();
+    const unsigned char* e = p + s.size();
+
+    string esc;
+
+    while ( p < e ) {
+        int32_t cp;
+
+        ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &cp);
+
+        if ( n < 0 ) {
+            esc += "<illegal UTF8 sequence>";
+            break;
+        }
+
+        if ( cp == '\\' )
+            esc += "\\\\";
+
+        else if ( cp == '"' )
+            esc += "\\\"";
+
+        else if ( cp == '\n' )
+            esc += "\\n";
+
+        else if ( cp == '\r' )
+            esc += "\\t";
+
+        else if ( cp == '\t' )
+            esc += "\\t";
+
+        else if ( cp >= 65536 )
+            esc += fmt("\\U%08x", cp);
+
+        else if ( ! isprint((char)cp) )
+            esc += fmt("\\u%04x", cp);
+
+        else
+            esc += (char)cp;
+
+        p += n;
+    }
+
+    return esc;
+}
+
+string util::escapeBytes(const string& s)
+{
+    const unsigned char* p = (const unsigned char*)s.data();
+    const unsigned char* e = p + s.size();
+
+    string esc;
+
+    while ( p < e ) {
+        if ( *p == '\\' )
+            esc += "\\\\";
+
+        else if ( *p == '"' )
+            esc += "\\\"";
+
+        else if ( *p == '\n' )
+            esc += "\\n";
+
+        else if ( *p == '\r' )
+            esc += "\\t";
+
+        else if ( *p == '\t' )
+            esc += "\\t";
+
+        else if ( isprint(*p) )
+            esc += *p;
+
+        else
+            esc += fmt("\\x%02x", *p);
+
+        ++p;
+    }
+
+    return esc;
 }
 
 string util::pathJoin(const string& p1, const string& p2)

@@ -1,6 +1,8 @@
 
 // Instructions controlling flow.
 
+#include "instructions/define-instruction.h"
+
 iBegin(flow, ReturnResult, "return.result")
     iTerminator()
     iOp1(optype::any, true)
@@ -39,6 +41,25 @@ iBegin(flow, CallResult, "call")
     iTarget(optype::any)
     iOp1(optype::function, true)
     iOp2(optype::tuple, true)
+
+    iValidate {
+    }
+
+    iDoc("")
+iEnd
+
+iBegin(flow, CallCallableResult, "call")
+    iTarget(optype::any)
+    iOp1(optype::refCallable, true)
+
+    iValidate {
+    }
+
+    iDoc("")
+iEnd
+
+iBegin(flow, CallCallableVoid, "call")
+    iOp1(optype::refCallable, true)
 
     iValidate {
     }

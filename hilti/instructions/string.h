@@ -20,6 +20,8 @@
 ///
 /// \cproto hlt_string
 
+#include "instructions/define-instruction.h"
+
 iBegin(string, Equal, "equal")
     iTarget(optype::boolean)
     iOp1(optype::string, true);

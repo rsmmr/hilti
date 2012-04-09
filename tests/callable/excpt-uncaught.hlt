@@ -26,13 +26,11 @@ void run() {
     local ref<callable<string>> c
     local string result
 
-    c = new callable<string>
-
-    callable.bind c foo ("ICSI")
+    c = new callable<string> foo ("ICSI")
 
     result = call c
 
-    call hilti::print (result)
+    call Hilti::print (result)
 
     return.void
 }

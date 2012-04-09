@@ -1,2 +1,5 @@
-wrong-inherit.hlt:11: error, exception argument type must match that of parent, which is string
-wrong-inherit.hlt: 1 error found during validating
+
+>>> exception : A
+wrong-inherit.hlt:10-10: error, exception type must have same argument type as its parent, which has string [pass::Validator]
+wrong-inherit.hlt: Aborting due to verification error.
+error running hiltic, aborting

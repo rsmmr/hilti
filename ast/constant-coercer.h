@@ -14,6 +14,7 @@ class ConstantCoercer : public Visitor<AstInfo, shared_ptr<typename AstInfo::con
 public:
    typedef typename AstInfo::type Type;
    typedef typename AstInfo::constant Constant;
+   typedef typename AstInfo::optional_type OptionalType;
 
    ConstantCoercer() {};
    virtual ~ConstantCoercer() {};
@@ -59,6 +60,9 @@ inline shared_ptr<typename AstInfo::constant> ConstantCoercer<AstInfo>::coerceTo
 
     if ( dst->matchesAny() )
         return constant;
+
+    if ( isA<OptionalType>(dst) )
+        return coerceTo(constant, ast::as<OptionalType>(dst)->argType());
 
     this->setDefaultResult(nullptr);
     shared_ptr<typename AstInfo::constant> result;

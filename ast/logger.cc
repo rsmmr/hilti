@@ -152,6 +152,7 @@ void Logger::doError(const string& message, NodeBase* node, const string& locati
             _output << std::endl << ">>> " << r << std::endl;
     }
 
+
     if ( location.size() )
         _output << ::util::basename(location) << ": ";
 

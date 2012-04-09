@@ -76,7 +76,7 @@ void StatementBuilder::visit(statement::instruction::map::Get* i)
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(vtype)));
     auto result = builder()->CreateLoad(casted);
 
-    cg()->llvmCctor(voidp, vtype, true);
+    cg()->llvmCctor(voidp, vtype, true, "map.get");
     cg()->llvmStore(i, result);
 }
 
@@ -96,7 +96,7 @@ void StatementBuilder::visit(statement::instruction::map::GetDefault* i)
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(vtype)));
     auto result = builder()->CreateLoad(casted);
 
-    cg()->llvmCctor(voidp, vtype, true);
+    cg()->llvmCctor(voidp, vtype, true, "map.get_default");
     cg()->llvmStore(i, result);
 }
 

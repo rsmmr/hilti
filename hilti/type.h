@@ -260,6 +260,8 @@ public:
        return other ? _arg->equal(other) : true;
    }
 
+   shared_ptr<hilti::Type> argType() const { return _arg; }
+
 private:
    shared_ptr<Type> _arg;
 };
@@ -800,6 +802,12 @@ public:
    /// for the top-level base exception.
    shared_ptr<Type> baseType() const { return _base; }
 
+   /// Sets the base exception type this one is derived from.
+   void setBaseType(shared_ptr<Type> base) { _base = base; }
+
+   /// Returns true if this is the top-level root type.
+   bool isRootType() const { return _libtype == "hlt_exception_unspecified"; }
+
    /// Marks this type as defined by libhilti under the given name. Setting
    /// an empty name unmarks.
    void setLibraryType(const string& name) { _libtype = name; }
@@ -968,14 +976,23 @@ public:
 
 /// Type for callable instances.
 ///
-class Callable : public HeapType
+class Callable : public TypedHeapType
 {
 public:
    /// Constructor.
    ///
+   /// rtype: The callable's return type. This must be a value type.
+   ///
    /// l: Associated location.
-   Callable(const Location& l=Location::None) : HeapType(l) {}
-   virtual ~Callable();
+   Callable(shared_ptr<Type> rtype, const Location& l=Location::None) : TypedHeapType(rtype, l) {}
+
+   /// Constructor for wildcard callable type..
+   ///
+   /// l: Associated location.
+   Callable(const Location& l=Location::None) : TypedHeapType(l) {}
+
+   /// Destructor.
+   ~Callable();
 
    ACCEPT_VISITOR(Type);
 };

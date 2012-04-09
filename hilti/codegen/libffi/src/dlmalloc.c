@@ -513,7 +513,8 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
 #endif  /* MMAP_CLEARS */
 #ifndef HAVE_MREMAP
 #ifdef linux
-#define HAVE_MREMAP 1
+/* Set to zero to make it compile. -Robin */
+#define HAVE_MREMAP 0 
 #else   /* linux */
 #define HAVE_MREMAP 0
 #endif  /* linux */

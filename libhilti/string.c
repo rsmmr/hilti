@@ -404,25 +404,35 @@ hlt_string hlt_string_decode(hlt_bytes* b, hlt_string charset, hlt_exception** e
     if ( ch == UTF8 ) {
         // Data is already in UTF-8, just need to copy it into a string.
         hlt_iterator_bytes begin = hlt_bytes_begin(b, excpt, ctx);
-        const hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
-        const int8_t* raw = hlt_bytes_sub_raw(begin, end, excpt, ctx);
+        hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
+        int8_t* raw = hlt_bytes_sub_raw(begin, end, excpt, ctx);
         const hlt_string dst = hlt_string_from_data(raw, hlt_bytes_len(b, excpt, ctx), excpt, ctx);
+        hlt_free(raw);
+        GC_DTOR(begin, hlt_iterator_bytes);
+        GC_DTOR(end, hlt_iterator_bytes);
         return dst;
     }
 
     if ( ch == ASCII ) {
         // Convert all bytes to 7-bit codepoints.
         hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
+        hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
         hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + hlt_bytes_len(b, excpt, ctx));
         dst->len = len;
         int8_t* p = dst->bytes;
 
         hlt_iterator_bytes i = hlt_bytes_begin(b, excpt, ctx);
-        while ( ! hlt_iterator_bytes_eq(i, hlt_bytes_end(b, excpt, ctx), excpt, ctx) ) {
+        hlt_iterator_bytes j;
+        while ( ! hlt_iterator_bytes_eq(i, end, excpt, ctx) ) {
             char c = hlt_iterator_bytes_deref(i, excpt, ctx);
             *p++ = (c & 0x7f) == c ? c : '?';
-            i = hlt_iterator_bytes_incr(i, excpt, ctx);
+            j = hlt_iterator_bytes_incr(i, excpt, ctx);
+            GC_DTOR(i, hlt_iterator_bytes);
+            i = j;
         }
+
+        GC_DTOR(i, hlt_iterator_bytes);
+        GC_DTOR(end, hlt_iterator_bytes);
 
         return dst;
     }

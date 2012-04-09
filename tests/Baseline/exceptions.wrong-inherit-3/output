@@ -1,2 +1,5 @@
-wrong-inherit.hlt:6: error, circuluar exception inheritance
-wrong-inherit.hlt: 1 error found during validating
+
+>>> A
+wrong-inherit.hlt:6-6: fatal error, circuluar exception inheritance [pass::Validator]
+wrong-inherit.hlt: Aborting due to verification error.
+error running hiltic, aborting

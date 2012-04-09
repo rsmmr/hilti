@@ -8,6 +8,8 @@
 ///
 /// \cproto int8_t
 
+#include "instructions/define-instruction.h"
+
 iBegin(boolean, Equal, "equal")
     iTarget(optype::boolean)
     iOp1(optype::boolean, true);

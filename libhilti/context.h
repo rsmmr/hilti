@@ -30,7 +30,7 @@ struct hlt_worker_thread;
 /// thread-global variables.
 ///
 /// When changing this, adapt ``hlt.execution_context`` in ``libhilti.ll``
-/// and ``codegen::hlt::ExecutionContext`` in ``codegen/codegen.cc``.
+/// and ``codegen::hlt::ExecutionContext::Globals``.
 struct __hlt_execution_context {
     __hlt_gchdr __gch;                /// Header for garbage collection.
     hlt_vthread_id vid;               /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.

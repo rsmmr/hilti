@@ -25,6 +25,8 @@
 /// \cproto hlt_set_iter
 ///
 
+#include "instructions/define-instruction.h"
+
 iBegin(iterSet, Begin, "begin")
     iTarget(optype::iterSet);
     iOp1(optype::refSet, true);

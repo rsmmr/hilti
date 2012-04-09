@@ -22,9 +22,9 @@ void run() {
     local iterator<bytes> p1
     local iterator<bytes> p2
     local iterator<bytes> p3
-    local tuple<int32, iterator<bytes>> t32
-    local int32 i32
-    local int64 diff
+    local tuple<int<32>, iterator<bytes>> t32
+    local int<32> i32
+    local int<64> diff
     local string out
 
     b = b\"%s\"

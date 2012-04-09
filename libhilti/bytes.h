@@ -152,6 +152,15 @@ extern void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, 
 /// Returns: The position where the byte is found, or ~~hlt_bytes_end if not found.
 extern hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Matches a bytes objects against the sequence started by an interator. 
+///
+/// pos: The position where to match *b* againt.
+/// b: The bytes to search.
+/// \hlt_c
+///
+/// Returns: True if bytes a position *pos* start with b.
+extern int8_t hlt_bytes_match_at(hlt_iterator_bytes pos, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Returns a subsequence of a bytes object.
 ///
 /// start: The start of the subsequence.

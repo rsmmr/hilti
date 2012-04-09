@@ -5,8 +5,8 @@
 #include "common.h"
 #include "type-builder.h"
 
-// This is generated in build/.
-#include <codegen/libffi/ffi.h>
+#include <ffi.h>
+#undef X86_64
 
 namespace llvm { class Value; }
 
@@ -22,10 +22,10 @@ public:
    typedef std::vector<std::pair<string, llvm::Type*>> arg_list;
 
    /// XXX
-   virtual llvm::Function* createFunction(const string& name, llvm::Type* rtype, const arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module) = 0;
+   virtual llvm::Function* createFunction(const string& name, llvm::Type* rtype, const arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc) = 0;
 
    /// XXX
-   virtual llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args) = 0;
+   virtual llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args, type::function::CallingConvention cc) = 0;
 
    /// XXX
    CodeGen* cg() const { return _cg; }
@@ -35,6 +35,11 @@ public:
 
    /// XXX
    static unique_ptr<ABI> createABI(CodeGen* cg);
+
+   enum ByteOrder { LittleEndian, BigEndian };
+
+   /// XXXX
+   virtual ByteOrder byteOrder() const;
 
 protected:
    ABI() {}
@@ -64,8 +69,8 @@ public:
 
    X86_64(Flavor flavor) { _flavor = flavor; }
 
-   llvm::Function* createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module) override;
-   llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args) override;
+   llvm::Function* createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc) override;
+   llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args, type::function::CallingConvention cc) override;
 
 private:
    bool returnInMemory(ffi_cif* cif);

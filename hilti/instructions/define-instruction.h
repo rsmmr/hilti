@@ -70,9 +70,13 @@
            return ty;                                    \
        }                                                 \
                                                          \
-       bool __matchOp##nr(shared_ptr<Expression> op) override {        \
+       bool __matchOp##nr(shared_ptr<Expression> op, bool coerce) override {        \
            if ( ! op ) return __defaultOp##nr() || ast::isA<type::OptionalArgument>(ty); \
-           if ( ! ty->equal(op->type()) ) return false;                \
+           if ( coerce ) {                                             \
+               if ( ! op->canCoerceTo(ty) ) return false;              \
+           }                                                           \
+           else                                                        \
+               if ( ! ty->equal(op->type()) ) return false;            \
            if ( op->isConstant() && ! constant ) return false;         \
            return true;                                                \
            }

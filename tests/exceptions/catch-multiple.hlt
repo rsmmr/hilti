@@ -22,7 +22,7 @@ void run() {
        call Hilti::print ("Cannot be reached")
      }
 
-     catch myException {
+     catch ( ref<myException> e ) {
        call Hilti::print ("Caught the right one!")
      }
 
@@ -60,7 +60,7 @@ void run() {
        call Hilti::print ("Caught the wrong one!")
      }
 
-     catch myException {
+     catch ( ref<myException> e ) {
        call Hilti::print ("Caught the right one!")
      }
 

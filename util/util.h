@@ -76,6 +76,22 @@ extern bool endsWith(const string& s, const string& suffix);
 /// Raises: std::runtime_error - Raised when an illegal sequence was found.
 extern string expandEscapes(const string& s);
 
+/// Escapes non-printable and control characters in an UTF8 string. This
+/// produces a string that can be reverted by expandEscapes().
+///
+/// str: string - The string to escape.
+///
+/// Returns: The escaped string.
+extern string escapeUTF8(const string& s);
+
+/// Escapes non-printable characters in a raw string. This produces a string
+/// that can be reverted by expandEscapes().
+///
+/// str: string - The string to escape.
+///
+/// Returns: The escaped string.
+extern string escapeBytes(const string& s);
+
 extern bool pathExists(const string& path);
 extern bool pathIsFile(const string& path);
 extern bool pathIsDir(const string& path);

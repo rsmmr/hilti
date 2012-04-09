@@ -125,15 +125,15 @@ endif ()
 # Generate headers
 configure_file (
 	"${PROJECT_SOURCE_DIR}/include/ffi.h.in"
-	"${PROJECT_BINARY_DIR}/ffi.h"
+	"${ffi}/ffi.h"
 )
 configure_file (
 	"${PROJECT_SOURCE_DIR}/fficonfig.cmake.in"
-	"${PROJECT_BINARY_DIR}/fficonfig.h"
+	"${ffi}/fficonfig.h"
 )
 configure_file (
 	"${PROJECT_SOURCE_DIR}/src/x86/ffitarget.h"
-	"${PROJECT_BINARY_DIR}/ffitarget.h"
+	"${ffi}/ffitarget.h"
 )
 
 # Use C to compile the assembly (this way preprocessor is used)

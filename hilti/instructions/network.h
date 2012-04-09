@@ -9,6 +9,8 @@
 ///
 /// \cproto hlt_net
 
+#include "instructions/define-instruction.h"
+
 iBegin(network, Equal, "equal")
     iTarget(optype::boolean)
     iOp1(optype::network, true);

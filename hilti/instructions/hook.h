@@ -116,6 +116,8 @@
 /// Note that groups are indeed fully global, and enabling/disabling is
 /// visible across all threads.
 
+#include "instructions/define-instruction.h"
+
 iBegin(hook, DisableGroup, "hook.disable_group")
     iOp1(optype::int64, true)
 

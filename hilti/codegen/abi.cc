@@ -34,6 +34,19 @@ unique_ptr<ABI> ABI::createABI(CodeGen* cg)
     return abi;
 }
 
+ABI::ByteOrder ABI::byteOrder() const
+{
+    if ( llvm::sys::isLittleEndianHost() )
+        return LittleEndian;
+
+    if ( llvm::sys::isBigEndianHost() )
+        return BigEndian;
+
+    cg()->internalError("unknown endianess of target arch");
+    assert(false);
+    return BigEndian; // Cannot be reached but make compiler happy.
+}
+
 // Converts LLVM type into libffi's description.
 static ffi_type* _llvmToCif(CodeGen* cg, llvm::Type* type)
 {
@@ -139,9 +152,10 @@ bool abi::X86_64::returnInMemory(ffi_cif* cif)
 
 /// X86_64 ABI.
 
-/// FIXME: We currently just generally pass structures in memory.
+/// FIXME: We currently just generally pass structures in memory for HILTI
+/// calling convention. For HILTI_C cc we leave them untouched.
 
-llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module)
+llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
 {
     std::vector<string> arg_names;
     std::vector<llvm::Type*> arg_types;
@@ -174,7 +188,7 @@ llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtyp
         auto llvm_type = arg_types[i];
         auto ffi_type = ffi_arg_types[i];
 
-        if ( ffi_type->type == FFI_TYPE_STRUCT ) {
+        if ( ffi_type->type == FFI_TYPE_STRUCT && cc == type::function::HILTI ) {
             // FIXME: We cheat for now and pass all structs in memory. We
             // should mimic the code from libffi/src/x86/ffi64.c here instead
             // (if we can?!).
@@ -209,7 +223,7 @@ llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtyp
     return func;
 }
 
-llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::Value *> args)
+llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::Value *> args, type::function::CallingConvention cc)
 {
     ABI::argument_type_list dummy;
 
@@ -236,7 +250,7 @@ llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::V
         auto llvm_val = args[i];
         auto ffi_type = ffi_arg_types[i];
 
-        if ( ffi_type->type == FFI_TYPE_STRUCT ) {
+        if ( ffi_type->type == FFI_TYPE_STRUCT && cc == type::function::HILTI ) {
             // FIXME: We cheat for now and pass all structs in memory. We
             // should mimic the code from libffi/src/x86/ffi64.c here instead
             // (if we can?!).

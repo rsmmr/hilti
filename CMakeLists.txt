@@ -9,20 +9,34 @@ set(PROJECT_VERSION "0.2")
 
 include(FindRequiredPackage)
 
+set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
+set(pch     "${CMAKE_CURRENT_BINARY_DIR}/autogen/pch")
+set(ffi     "${CMAKE_CURRENT_BINARY_DIR}/autogen/ffi")
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${pch})
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${ffi})
+
 FindRequiredPackage(FLEX)
 FindRequiredPackage(BISON)
 FindRequiredPackage(LLVM)
 
 include(DefaultCompilerSettings)
+include(PCHSupport_26)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Dnullptr=0 -I${LLVM_INCLUDE_DIR}")
-
-set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
-execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/hilti ${CMAKE_CURRENT_BINARY_DIR})
 
 include(ShowCompilerSettings)
+
+include ( CheckIncludeFiles )
+check_include_files ( alloca.h HAVE_ALLOCA_H )
+
+### Build libffi.
+
+include_directories(${ffi})
+add_subdirectory(hilti/codegen/libffi)
 
 ### Generate the Bison/Flex parser.
 
@@ -72,6 +86,7 @@ set(instructions
     hilti/instructions/time.h
     hilti/instructions/timer-mgr.h
     hilti/instructions/timer.h
+    hilti/instructions/tuple.h
     hilti/instructions/vector.h
 )
 
@@ -98,6 +113,17 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-declare.h PROPERTIES GENERAT
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-visits.h PROPERTIES GENERATED 1)
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-stmt-builder.h PROPERTIES GENERATED 1)
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-register.cc PROPERTIES GENERATED 1)
+
+# For fast compilation, precompile the instructions header files.
+
+foreach(hdr ${instructions})
+    get_filename_component(basename ${hdr} NAME)
+    get_filename_component(abshdr ${hdr} ABSOLUTE)
+
+    ADD_PRECOMPILED_HEADER(${pch}/${basename}.pch ${abshdr} instructions_autogen)
+
+    set(instructions_pch ${instructions_pch} ${pch}/${basename}.pch)
+endforeach ()
 
 ### Build libhilti.
 
@@ -135,6 +161,7 @@ add_library (hilti
     hilti/passes/scope-builder.cc
     hilti/passes/validator.cc
 
+    hilti/codegen/abi.cc
     hilti/codegen/asm-annotater.cc
     hilti/codegen/codegen.cc
     hilti/codegen/coercer.cc
@@ -168,6 +195,7 @@ add_library (hilti
     hilti/codegen/instructions/time.cc
     hilti/codegen/instructions/timer-mgr.cc
     hilti/codegen/instructions/timer.cc
+    hilti/codegen/instructions/tuple.cc
     hilti/codegen/instructions/vector.cc
     hilti/codegen/linker.cc
     hilti/codegen/loader.cc
@@ -182,6 +210,9 @@ add_library (hilti
     ${autogen}/scanner.cc
     ${autogen}/parser.cc
     ${autogen}/instructions-register.cc
+
+    ### ${instructions_pch} Activate to generate PCH. But we need to remove
+    ### the -l* options from the PCH command line.
 )
 
 ADD_DEPENDENCIES(hilti generate_parser)

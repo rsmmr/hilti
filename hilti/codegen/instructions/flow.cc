@@ -12,7 +12,7 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
     auto func = current<declaration::Function>();
     auto rtype = as<type::Function>(func->function()->type())->result()->type();
     auto op1 = cg()->llvmValue(i->op1(), rtype, false);
-    cg()->llvmReturn(op1);
+    cg()->llvmReturn(func->function()->type()->result()->type(), op1);
 }
 
 void StatementBuilder::visit(statement::instruction::flow::ReturnVoid* i)
@@ -22,7 +22,7 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnVoid* i)
     if ( ! current<declaration::Hook>() )
         cg()->llvmReturn();
     else
-        cg()->llvmReturn(cg()->llvmConstInt(0, 1));
+        cg()->llvmReturn(0, cg()->llvmConstInt(0, 1));
 }
 
 void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params)
@@ -83,6 +83,28 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
     auto func = cg()->llvmValue(i->op1(), false);
     auto ftype = ast::as<type::Function>(i->op1()->type());
     auto result = cg()->llvmCall(func, ftype, params);
+    cg()->llvmStore(i->target(), result);
+}
+
+void StatementBuilder::visit(statement::instruction::flow::CallCallableVoid* i)
+{
+    auto ctype = ast::as<type::Callable>(referencedType(i->op1()));
+
+    CodeGen::expr_list params;
+    auto op1 = cg()->llvmValue(i->op1());
+
+    cg()->llvmCallableRun(ctype, op1);
+}
+
+void StatementBuilder::visit(statement::instruction::flow::CallCallableResult* i)
+{
+    auto ctype = ast::as<type::Callable>(referencedType(i->op1()));
+
+    CodeGen::expr_list params;
+    auto op1 = cg()->llvmValue(i->op1());
+
+    auto result = cg()->llvmCallableRun(ctype, op1);
+
     cg()->llvmStore(i->target(), result);
 }
 

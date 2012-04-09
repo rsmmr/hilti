@@ -57,7 +57,7 @@ void Validator::visit(statement::try_::Catch* s)
 {
     static shared_ptr<Type> refException(new type::Reference(shared_ptr<Type>(new type::Exception())));
 
-    if ( s->type() && s->type() != refException )
+    if ( s->type() && ! s->type()->equal(refException) )
         error(s, "exception argument must be of type ref<exception>");
 }
 
@@ -140,10 +140,45 @@ void Validator::visit(type::Enum* t)
 void Validator::visit(type::Exception* t)
 {
     if ( t->argType() && ! ast::isA<type::ValueType>(t->argType()) )
-        error(t, "exception value must be of value type");
+        error(t, "exception argument type must be of value type");
 
-    if ( t->baseType() && ! ast::isA<type::Exception>(t->baseType()) )
+    auto btype = ast::as<type::Exception>(t->baseType());
+
+    if ( t->baseType() && ! btype ) {
         error(t, "exception base type must be another exception type");
+        return;
+    }
+
+    if ( t->baseType() && btype->argType() && ! t->argType() ) {
+        error(t, ::util::fmt("exception type must have same argument type as its parent, which has %s", btype->argType()->render().c_str()));
+        return;
+    }
+
+    if ( t->argType() && t->baseType() && ! btype->argType() ) {
+        error(t, "exception type must not have an argument type because its parent type does not either");
+        return;
+    }
+
+    if ( t->argType() && t->baseType() && btype->argType() && ! t->argType()->equal(btype->argType()) ) {
+        error(t, ::util::fmt("exception type must have same argument type as its parent type, which has %s", btype->argType()->render().c_str()));
+        return;
+    }
+
+    // Check for cycles in inheritance chain.
+    std::set<shared_ptr<hilti::Type>> seen;
+
+    for ( shared_ptr<hilti::Type> c = t->sharedPtr<hilti::Type>(); c; c = ast::as<type::Exception>(c)->baseType() ) {
+        for ( auto o : seen ) {
+            if ( c == o  ) { // Really a pointer comparision here, no structural equivalence.
+                // Break the cycle here so that printing works. Then abort
+                // AST visiting right here.
+                t->setBaseType(nullptr);
+                fatalError(t, "circuluar exception inheritance");
+            }
+        }
+
+        seen.insert(c);
+    }
 }
 
 void Validator::visit(type::File* t)

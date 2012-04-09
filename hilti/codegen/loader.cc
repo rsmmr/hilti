@@ -23,7 +23,7 @@ llvm::Value* Loader::normResult(const _LoadResult& result, shared_ptr<Type> type
 {
     if ( cctor ) {
         if ( ! result.cctor )
-            cg()->llvmCctor(result.value, type, result.is_ptr);
+            cg()->llvmCctor(result.value, type, result.is_ptr, "loader.normResult");
     }
 
     else {
@@ -151,8 +151,18 @@ void Loader::visit(constant::Integer* c)
 
 void Loader::visit(constant::String* s)
 {
-    auto addr = cg()->llvmStringPtr(s->value());
-    setResult(addr, false, true);
+    if ( s->value().size() != 0 ) {
+        auto addr = cg()->llvmStringPtr(s->value());
+        setResult(addr, false, true);
+    }
+
+    else {
+        // The empty string can be represented by a null pointer but
+        // llvmStringPtr() always creates a new object as it needs to return
+        // a pointer.
+        auto addr = cg()->llvmConstNull(cg()->llvmTypeString());
+        setResult(addr, true, false);
+    }
 }
 
 void Loader::visit(constant::Bool* b)

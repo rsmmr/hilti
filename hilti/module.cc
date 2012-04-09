@@ -16,7 +16,7 @@ Module::Module(shared_ptr<ID> id, const string& path, const Location& l)
 
     // Implicitly always export Main::run().
     if ( util::strtolower(id->name()) == "main" )
-        exportID("run");
+        exportID("run", true);
 
     _modules.insert(make_pair(path, this));
 }

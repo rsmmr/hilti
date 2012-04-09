@@ -182,13 +182,13 @@ public:
        }
 
    /// Returns true if this is a catch-all clause.
-   bool catchAll() const { return _type.get() == nullptr; }
+   bool catchAll() const { return _type.get() == nullptr && _id.get() == nullptr; }
 
    ACCEPT_VISITOR_ROOT();
 
 private:
    node_ptr<Type> _type = nullptr;
-   node_ptr<ID> _id;
+   node_ptr<ID> _id = nullptr;
    node_ptr<Block> _block;
    node_ptr<declaration::Variable> _decl = nullptr;
 };
@@ -250,6 +250,12 @@ public:
    /// Returns a text representation of the instructions operand signature.
    string signature() const;
 
+   /// Returns true if this function has been marked as internally added.
+   bool internal() const { return _internal; }
+
+   /// Marks this function as internally added.
+   void setInternal() { _internal = true; }
+
    ACCEPT_VISITOR(Statement);
 
    /// Constructor.
@@ -264,6 +270,7 @@ public:
    Instruction(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l=Location::None);
 
 private:
+   bool _internal = false;
    node_ptr<ID> _id;
    hilti::instruction::Operands _ops;
 };

@@ -1,2 +1,2 @@
 A
-hilti: uncaught exception, myException (from throw.hlt:18)
+hilti: uncaught exception, myException (from /Users/robin/work/binpacpp/hilti2/tests/.tmp/exceptions.throw/throw.hlt:17-17)

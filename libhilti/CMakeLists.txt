@@ -15,7 +15,7 @@ include(DefaultCompilerSettings)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -D_GNU_SOURCE")
 
-set(SRCS config.c context.c debug.c globals.c init.c memory.c int.c
+set(SRCS callable.c config.c context.c debug.c globals.c init.c memory.c int.c
     tuple.c string.c utf8proc.c bytes.c exceptions.c util.c print.c
     bool.c list.c addr.c bitset.c caddr.c double.c enum.c interval.c
     net.c port.c time.c hook.c threading.c

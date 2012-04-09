@@ -67,6 +67,10 @@ declare "C-HILTI" void exception_dtor(ref<exception> b)
 
 ###
 
+declare "C-HILTI" void callable_dtor(ref<callable<*>> b)
+
+###
+
 declare "C-HILTI" void string_dtor(string s)
 declare "C-HILTI" int<64> string_len(string s)
 declare "C-HILTI" string string_concat(string s1, string s2)
@@ -89,6 +93,7 @@ declare "C-HILTI" iterator<bytes> bytes_offset(ref<bytes> b, int<64> offset)
 declare "C-HILTI" iterator<bytes> bytes_begin(ref<bytes> b)
 declare "C-HILTI" iterator<bytes> bytes_end(ref<bytes> b)
 declare "C-HILTI" int<8> bytes_cmp(ref<bytes> b1, ref<bytes> b2)
+declare "C-HILTI" bool bytes_match_at(iterator<bytes> pos, ref<bytes> b)
 declare "C-HILTI" ref<bytes> bytes_copy(ref<bytes> b)
 declare "C-HILTI" void bytes_trim(ref<bytes> b, iterator<bytes> pos)
 

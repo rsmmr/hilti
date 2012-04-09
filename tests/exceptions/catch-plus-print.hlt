@@ -17,23 +17,19 @@ void foo() {
 
 void run() {
 
-    local ref<callable<string>> c
     local string result
 
     result = "init"
-
-    nop
 
     try {
         call foo ()
     }
 
-    catch myException {
+    catch ( ref<myException> e ) {
        call Hilti::print ("Caught it!")
     }
 
-    nop
-    call hilti::print (result)
+    call Hilti::print (result)
 
     return.void
 }

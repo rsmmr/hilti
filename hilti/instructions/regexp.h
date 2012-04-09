@@ -9,6 +9,8 @@
 /// \cproto hlt_regexp*
 ///
 
+#include "instructions/define-instruction.h"
+
 iBegin(regexp, New, "new")
     iTarget(optype::refRegExp)
     iOp1(optype::typeRegExp, true)

@@ -21,6 +21,10 @@ public:
 
 protected:
    virtual void visit(statement::Block* b);
+
+private:
+   int block_level = 0;
+
 };
 
 }

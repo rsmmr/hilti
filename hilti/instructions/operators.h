@@ -1,4 +1,6 @@
 
+#include "instructions/define-instruction.h"
+
 iBegin(operator_, Assign, "assign")
     iTarget(optype::any)
     iOp1(optype::any, true)

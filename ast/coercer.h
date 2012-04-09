@@ -15,6 +15,7 @@ class Coercer : public Visitor<AstInfo, bool, shared_ptr<typename AstInfo::type>
 public:
    typedef typename AstInfo::type Type;
    typedef typename AstInfo::any_type AnyType;
+   typedef typename AstInfo::optional_type OptionalType;
 
    Coercer() { this->setDefaultResult(false); }
 
@@ -39,11 +40,15 @@ public:
 template<typename AstInfo>
 inline bool Coercer<AstInfo>::canCoerceTo(shared_ptr<Type> src, shared_ptr<Type> dst)
 {
-    if ( src->equal(dst) )
+    // Sometimes comparision isn't fully symmetrics, like with optional arguments.
+    if ( src->equal(dst) || dst->equal(src) )
         return true;
 
     if ( isA<AnyType>(src) )
         return true;
+
+    if ( isA<OptionalType>(dst) )
+        return canCoerceTo(src, ast::as<OptionalType>(dst)->argType());
 
     bool result;
     bool success = this->processOne(src, &result, dst);

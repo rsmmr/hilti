@@ -96,8 +96,11 @@ public:
    /// that information.
    ///
    /// id: The exported ID.
-   void exportID(shared_ptr<ID> id) {
-       _exported_ids.push_back(id);
+   ///
+   /// implicit: True if this an implicitly exported ID. It will accordingly
+   /// be included (or not) by exportedIDs().
+   void exportID(shared_ptr<ID> id, bool implicit=false) {
+       _exported_ids.push_back(std::make_pair(id, implicit));
        _exported.insert(id->name());
    }
 
@@ -107,9 +110,9 @@ public:
    /// that information.
    ///
    /// id: The exported name.
-   void exportID(const string& name) {
+   void exportID(const string& name, bool implicit=false) {
        auto id = shared_ptr<ID>(new ID(name));
-       exportID(id);
+       exportID(id, implicit);
    }
 
    /// Exports a Type for access by other modules.  The AST node does not do
@@ -133,7 +136,17 @@ public:
    }
 
    /// Returns the list of IDs exported with exportID().
-   const id_list& exportedIDs() const { return _exported_ids; }
+   ///
+   /// implicit: True if implicitly supported IDs are to be included.
+   const id_list exportedIDs(bool implicit) const {
+       id_list ids;
+
+       for ( auto id : _exported_ids )
+           if ( id.second == false || implicit )
+               ids.push_back(id.first);
+
+       return ids;
+   }
 
    /// Returns the list of types exported with exportType().
    const type_list& exportedTypes() const { return _exported_types; }
@@ -144,7 +157,8 @@ private:
    node_ptr<BodyStatement> _body;
    id_list _imported;
 
-   id_list _exported_ids;
+   typedef std::list<std::pair<node_ptr<ID>, bool>> internal_id_list;
+   internal_id_list _exported_ids;
    type_list _exported_types;
 
    typedef std::set<string> string_set;

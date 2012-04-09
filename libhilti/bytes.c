@@ -30,7 +30,7 @@ struct __hlt_bytes_chunk {
     int8_t* start;            // Pointer to first data byte inside block.
     int8_t* end;              // Pointer one beyond the last data byte.
     __hlt_bytes_chunk* next;  // Successor in bytes object.
-    __hlt_bytes_chunk* prev;  // Predecessor in bytes object.
+    __hlt_bytes_chunk* prev;  // Predecessor in bytes object. NOTE: No ref'cnt here to avoid cylces.
 
     int8_t owner;             // True if we "own" the data, i.e., allocated it.
     int8_t frozen;            // True if the object has been frozen.
@@ -40,7 +40,7 @@ struct __hlt_bytes_chunk {
 struct __hlt_bytes {
     __hlt_gchdr __gchdr;     // Header for memory management.
     __hlt_bytes_chunk* head; // First chunk.
-    __hlt_bytes_chunk* tail; // Last chunk.
+    __hlt_bytes_chunk* tail; // Last chunk.  NOTE: No ref'cnt here to avoid cylces.
     // hlt_thread_mgr_blockable blockable; // For blocking until changed.
 };
 
@@ -59,13 +59,13 @@ void __hlt_bytes_chunk_dtor(hlt_type_info* ti, __hlt_bytes_chunk* c)
 {
     GC_CLEAR(c->bytes, __hlt_bytes_data);
     GC_CLEAR(c->next, __hlt_bytes_chunk);
-    GC_CLEAR(c->prev, __hlt_bytes_chunk);
+    c->prev = 0;
 }
 
 void hlt_bytes_dtor(hlt_type_info* ti, hlt_bytes* b)
 {
     GC_CLEAR(b->head, __hlt_bytes_chunk);
-    GC_CLEAR(b->tail, __hlt_bytes_chunk);
+    b->tail = 0;
 }
 
 void hlt_iterator_bytes_dtor(hlt_type_info* ti, hlt_iterator_bytes* p)
@@ -120,31 +120,29 @@ static void add_chunk(hlt_bytes* b, __hlt_bytes_chunk* c)
         return;
     }
 
+    GC_CLEAR(c->next, __hlt_bytes_chunk);
+
     if ( b->tail ) {
         assert(b->head);
-        GC_ASSIGN(c->prev, b->tail, __hlt_bytes_chunk);
-        GC_CLEAR(c->next, __hlt_bytes_chunk);
-        GC_ASSIGN(b->tail->next, c, __hlt_bytes_chunk);
-        GC_ASSIGN(b->tail, c, __hlt_bytes_chunk);
+        assert(!b->tail->next);
+        c->prev = b->tail;
+        b->tail->next = c; // Consumes ref cnt.
+        b->tail = c; // Not ref cnt.
     }
 
     else {
         assert( ! b->head );
-        GC_CLEAR(c->prev, __hlt_bytes_chunk);
-        GC_CLEAR(c->next, __hlt_bytes_chunk);
-        GC_ASSIGN(b->head, c, __hlt_bytes_chunk);
-        GC_ASSIGN(b->tail, c, __hlt_bytes_chunk);
+        c->prev = 0;
+        b->head = c; // Consumes ref cnt.
+        b->tail = c; // Not ref cnt.
     }
-
-    // Delete refernece passed in.
-    GC_CLEAR(c, __hlt_bytes_chunk);
 
     // We added data, so the first chunk must not be empty anymore because
     // that would signal an empty bytes object.
     if ( is_empty_chunk(b->head) ) {
         // Remove first chunk (cannot be tail at this point).
         assert(b->head != b->tail);
-        GC_CLEAR(b->head->next->prev, __hlt_bytes_chunk);
+        b->head->next->prev = 0;
         GC_ASSIGN(b->head, b->head->next, __hlt_bytes_chunk);
     }
 
@@ -157,7 +155,7 @@ hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
 
     __hlt_bytes_chunk* dst = GC_NEW(__hlt_bytes_chunk);
     GC_ASSIGN(b->head, dst, __hlt_bytes_chunk);
-    GC_ASSIGN(b->tail, dst, __hlt_bytes_chunk);
+    b->tail = dst;
 
     GC_CLEAR(dst->bytes, __hlt_bytes_data);
     dst->start = &empty_sentinel;
@@ -189,10 +187,10 @@ hlt_bytes* hlt_bytes_new_from_data(int8_t* data, hlt_bytes_size len, hlt_excepti
 
 hlt_bytes* hlt_bytes_new_from_data_copy(const int8_t* data, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    int8_t* copy = hlt_malloc(len);
     hlt_bytes* b = hlt_bytes_new(excpt, ctx);
 
     if ( len > 0 ) {
+        int8_t* copy = hlt_malloc(len);
         memcpy(copy, data, len);
         b->head->bytes = GC_NEW(__hlt_bytes_data);
         b->head->bytes->data = copy;
@@ -304,7 +302,7 @@ int8_t __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt
         dst->owner = 0;
         dst->frozen = 0;
         add_chunk(b, dst);
-        return ! owner;
+        return 1;
     }
 }
 
@@ -327,6 +325,9 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
 
     // hlt_thread_mgr_unblock(&b->blockable, ctx);
 
+#if 0
+    /// FIXME: This isn't working I believe.
+
     // Special case: if the other object has only one chunk, pass it on to
     // the *_raw version which might decide to copy the data over.
     if ( other->head == other->tail ) {
@@ -337,6 +338,9 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
 
         return;
     }
+#endif
+
+    // XX Leak triggered by code below.
 
     for ( const __hlt_bytes_chunk* src = other->head; src; src = src->next ) {
         __hlt_bytes_chunk* dst = GC_NEW(__hlt_bytes_chunk);
@@ -362,6 +366,7 @@ hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception**
         int8_t* p = memchr(c->start, chr, c->end - c->start);
         if ( p ) {
             hlt_iterator_bytes i = { c, p };
+            GC_CCTOR(c, __hlt_bytes_chunk);
             return i;
         }
     }
@@ -374,7 +379,7 @@ static inline int8_t is_end(hlt_iterator_bytes pos)
     return pos.chunk == 0 || (!pos.cur) || pos.cur >= pos.chunk->end;
 }
 
-static inline void normalize_pos(hlt_iterator_bytes* pos)
+static inline void normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
 {
     if ( ! pos->chunk )
         return;
@@ -382,8 +387,15 @@ static inline void normalize_pos(hlt_iterator_bytes* pos)
     // If the pos was previously an end position but now new data has been
     // added, adjust it so that it's pointing to the next byte.
     if ( (! pos->cur || pos->cur >= pos->chunk->end) && pos->chunk->next ) {
-        //GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
-        pos->chunk = pos->chunk->next;
+
+        // The ref cnt must only be adjusted if the HILTI layer will see the
+        // normalized iterator.
+        if ( adj_refcnt ) {
+            GC_ASSIGN(pos->chunk, pos->chunk->next, __hlt_bytes_chunk);
+        }
+        else
+            pos->chunk = pos->chunk->next;
+
         pos->cur = pos->chunk->start;
     }
 
@@ -393,13 +405,18 @@ hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execution_con
 {
     hlt_iterator_bytes begin = hlt_bytes_begin(b, excpt, ctx);
     hlt_iterator_bytes end = hlt_bytes_end(b, excpt, ctx);
-    return hlt_bytes_sub(begin, end, excpt, ctx);
+
+    hlt_bytes* s = hlt_bytes_sub(begin, end, excpt, ctx);
+
+    GC_DTOR(begin, hlt_iterator_bytes);
+    GC_DTOR(end, hlt_iterator_bytes);
+    return s;
 }
 
 hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&start);
-    normalize_pos(&end);
+    normalize_pos(&start, 0);
+    normalize_pos(&end, 0);
 
     if ( hlt_iterator_bytes_eq(start, end, excpt, ctx) )
         // Return an empty bytes object.
@@ -470,8 +487,8 @@ hlt_bytes* hlt_bytes_sub(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_e
 
 static int8_t* hlt_bytes_sub_raw_internal(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&start);
-    normalize_pos(&end);
+    normalize_pos(&start, 0);
+    normalize_pos(&end, 0);
 
     hlt_bytes_size len = hlt_iterator_bytes_diff(start, end, excpt, ctx);
 
@@ -526,11 +543,82 @@ static int8_t* hlt_bytes_sub_raw_internal(hlt_iterator_bytes start, hlt_iterator
     return mem;
 }
 
+int8_t hlt_bytes_match_at(hlt_iterator_bytes pos, hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    normalize_pos(&pos, 0);
+
+    if ( is_end(pos) )
+        return hlt_bytes_len(b, excpt, ctx) == 0;
+
+    if ( hlt_bytes_len(b, excpt, ctx) == 0 )
+        return 0;
+
+    // No need for ref'cnt, we don't keep them.
+    hlt_iterator_bytes c1 = pos;
+    hlt_iterator_bytes c2 = { b->head, b->head->start };
+
+    while ( 1 ) {
+        // Extract bytes.
+        int8_t b1 = *(c1.cur);
+        int8_t b2 = *(c2.cur);
+
+        if ( b1 != b2 )
+            return 0;
+
+        // Increase iterator 1.
+
+        int8_t end1 = 0;
+        int8_t end2 = 0;
+
+        if ( c1.cur < c1.chunk->end - 1 )
+            ++c1.cur;
+
+        else {
+            if ( c1.chunk->next ) {
+                c1.chunk = c1.chunk->next;
+                c1.cur = c1.chunk->start;
+            }
+            else {
+                c1.cur = c1.chunk->end;
+                end1 = 1;
+            }
+        }
+
+        // Increase iterator 2.
+
+        if ( c2.cur < c2.chunk->end - 1 )
+            ++c2.cur;
+
+        else {
+            if ( c2.chunk->next ) {
+                c2.chunk = c2.chunk->next;
+                c2.cur = c2.chunk->start;
+            }
+            else {
+                c2.cur = c2.chunk->end;
+                end2 = 1;
+            }
+        }
+
+        // End of pattern reached?
+        if ( end2 )
+            // Found.
+            return 1;
+
+        // End of input reached?
+        if ( end1 )
+            // Not found.
+            return 0;
+    }
+
+    // Can't be reached.
+    assert(0);
+}
 
 int8_t* hlt_bytes_sub_raw(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&start);
-    normalize_pos(&end);
+    normalize_pos(&start, 0);
+    normalize_pos(&end, 0);
 
     // The easy case: start and end are within the same chunk.
     if ( start.chunk == end.chunk ) {
@@ -565,8 +653,8 @@ int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt, hlt_executio
 
 int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(pos);
-    normalize_pos(&end);
+    normalize_pos(pos, 0);
+    normalize_pos(&end, 0);
 
     if ( is_end(*pos) || hlt_iterator_bytes_eq(*pos, end, excpt, ctx) ) {
         hlt_set_exception(excpt, &hlt_exception_would_block, 0);
@@ -678,14 +766,14 @@ void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_ex
 
 void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&pos);
+    normalize_pos(&pos, 0);
 
     if ( ! (pos.chunk && pos.cur) )
         return;
 
     GC_ASSIGN(b->head, pos.chunk, __hlt_bytes_chunk);
     GC_ASSIGN(b->head->bytes, pos.chunk->bytes, __hlt_bytes_data);
-    GC_CLEAR(b->head->prev, __hlt_bytes_chunk);
+    b->head->prev = 0;
     b->head->start = pos.cur;
 }
 
@@ -704,13 +792,13 @@ hlt_iterator_bytes hlt_iterator_bytes_copy(hlt_iterator_bytes pos, hlt_exception
     hlt_iterator_bytes copy;
     GC_INIT(copy.chunk, pos.chunk, __hlt_bytes_chunk);
     copy.cur = pos.cur;
-    normalize_pos(&copy);
+    normalize_pos(&copy, 1);
     return copy;
 }
 
 int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&pos);
+    normalize_pos(&pos, 0);
 
     if ( ! pos.chunk )
         return 0;
@@ -724,7 +812,7 @@ int8_t hlt_iterator_bytes_is_frozen(hlt_iterator_bytes pos, hlt_exception** excp
 
 int8_t hlt_iterator_bytes_deref(hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&pos);
+    normalize_pos(&pos, 0);
 
     if ( is_end(pos) ) {
         // Position is out range.
@@ -763,7 +851,7 @@ hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes old, hlt_exception
 
 hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes old, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&old);
+    normalize_pos(&old, 0);
 
     hlt_iterator_bytes pos = hlt_iterator_bytes_copy(old, excpt, ctx);
 
@@ -831,8 +919,8 @@ void hlt_iterator_bytes_decr(hlt_iterator_bytes* pos, hlt_exception** excpt, hlt
 
 int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&pos1);
-    normalize_pos(&pos2);
+    normalize_pos(&pos1, 0);
+    normalize_pos(&pos2, 0);
 
     if ( is_end(pos1) && is_end(pos2) )
         return 1;
@@ -843,8 +931,8 @@ int8_t hlt_iterator_bytes_eq(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, h
 // Returns the number of bytes from pos1 to pos2 (not counting pos2).
 hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_bytes pos2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&pos1);
-    normalize_pos(&pos2);
+    normalize_pos(&pos1, 0);
+    normalize_pos(&pos2, 0);
 
     if ( hlt_iterator_bytes_eq(pos1, pos2, excpt, ctx) )
         return 0;
@@ -976,8 +1064,8 @@ void* hlt_bytes_blockable(const hlt_type_info* type, const void* obj, hlt_except
 
 void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&start);
-    normalize_pos(&end);
+    normalize_pos(&start, 0);
+    normalize_pos(&end, 0);
 
     if ( ! cookie ) {
 
@@ -1033,21 +1121,41 @@ int8_t hlt_bytes_cmp(const hlt_bytes* b1, const hlt_bytes* b2, hlt_exception** e
     hlt_iterator_bytes p1 = hlt_bytes_begin(b1, excpt, ctx);
     hlt_iterator_bytes p2 = hlt_bytes_begin(b2, excpt, ctx);
 
+    int8_t result = 0;
+
     while ( 1 ) {
 
-        if ( is_end(p1) )
-            return is_end(p2) ? 0 : 1;
+        if ( is_end(p1) ) {
+            result = is_end(p2) ? 0 : 1;
+            goto done;
+        }
 
-        if ( is_end(p2) )
-            return -1;
+        if ( is_end(p2) ) {
+            result = -1;
+            goto done;
+        }
 
         int8_t c1 = hlt_iterator_bytes_deref(p1, excpt, ctx);
         int8_t c2 = hlt_iterator_bytes_deref(p2, excpt, ctx);
 
-        if ( c1 != c2 )
-            return c1 > c2 ? -1 : 1;
+        if ( c1 != c2 ) {
+            result = c1 > c2 ? -1 : 1;
+            goto done;
+        }
 
-        p1 = hlt_iterator_bytes_incr(p1, excpt, ctx);
-        p2 = hlt_iterator_bytes_incr(p2, excpt, ctx);
+        hlt_iterator_bytes np1 = hlt_iterator_bytes_incr(p1, excpt, ctx);
+        hlt_iterator_bytes np2 = hlt_iterator_bytes_incr(p2, excpt, ctx);
+
+        GC_DTOR(p1, hlt_iterator_bytes);
+        GC_DTOR(p2, hlt_iterator_bytes);
+
+        p1 = np1;
+        p2 = np2;
     }
+
+done:
+    GC_DTOR(p1, hlt_iterator_bytes);
+    GC_DTOR(p2, hlt_iterator_bytes);
+
+    return result;
 }

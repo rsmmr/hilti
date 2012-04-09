@@ -46,6 +46,7 @@ namespace type {
    class Module;
    class Network;
    class Overlay;
+   class OptionalArgument;
    class Port;
    class Reference;
    class RegExp;
@@ -224,6 +225,7 @@ public:
    virtual void visit(type::MatchTokenState* t) {}
    virtual void visit(type::Network* t)     {}
    virtual void visit(type::Overlay* t)     {}
+   virtual void visit(type::OptionalArgument* t) {}
    virtual void visit(type::Port* t)        {}
    virtual void visit(type::Reference* t)   {}
    virtual void visit(type::RegExp* t)      {}

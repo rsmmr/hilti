@@ -310,7 +310,7 @@ protected:
    /// ops: The operands to match the signature against.
    ///
    /// Returns: True if the operands match the instruction's signature.
-   bool matchesOperands(const instruction::Operands& ops);
+   bool matchesOperands(const instruction::Operands& ops, bool coerce);
 
    // For internal use only. Will be overridden automagically via macros.
    virtual void __validate(const hilti::instruction::Operands& ops) const {}
@@ -319,16 +319,16 @@ protected:
    virtual const char* __doc() const { return "No documentation."; }
 
    // For internal use only. Will be overridden automagically via macros.
-   virtual bool __matchOp0(shared_ptr<Expression> op) { return op.get() == nullptr; }
+   virtual bool __matchOp0(shared_ptr<Expression> op, bool coerce) { return op.get() == nullptr; }
 
    // For internal use only. Will be overridden automagically via macros.
-   virtual bool __matchOp1(shared_ptr<Expression> op) { return op.get() == nullptr; }
+   virtual bool __matchOp1(shared_ptr<Expression> op, bool coerce) { return op.get() == nullptr; }
 
    // For internal use only. Will be overridden automagically via macros.
-   virtual bool __matchOp2(shared_ptr<Expression> op) { return op.get() == nullptr; }
+   virtual bool __matchOp2(shared_ptr<Expression> op, bool coerce) { return op.get() == nullptr; }
 
    // For internal use only. Will be overridden automagically via macros.
-   virtual bool __matchOp3(shared_ptr<Expression> op) { return op.get() == nullptr; }
+   virtual bool __matchOp3(shared_ptr<Expression> op, bool coerce) { return op.get() == nullptr; }
 
    // For internal use only. Will be overridden automagically via macros.
    virtual shared_ptr<Type> __typeOp0() const  { return nullptr; }
@@ -403,7 +403,9 @@ public:
    /// Instantiates a statement::Instruction for an instruction/operand
    /// combination. Each instructions has its own class derived from
    /// statement::instruction::Resolved. This method instantiates a object of
-   /// that class and initializes its operands with those of \a stmt.
+   /// that class and initializes its operands with those of \a stmt. The
+   /// methods coerces the resolved statements' operands to the types
+   /// requested by the instruction's signature.
    ///
    /// instr: The instruction to instantiate a statement for.
    ///

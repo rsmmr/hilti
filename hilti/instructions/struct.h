@@ -8,6 +8,8 @@
 ///
 ///
 
+#include "instructions/define-instruction.h"
+
 static shared_ptr<type::struct_::Field> _structField(const Instruction* i, shared_ptr<Expression> op, shared_ptr<Expression> field)
 {
     auto stype = ast::as<type::Struct>(i->referencedType(op));

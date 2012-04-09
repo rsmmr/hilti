@@ -55,7 +55,7 @@ void StatementBuilder::visit(statement::instruction::hook::Run* i)
         auto load_result = cg()->pushBuilder("result");
         auto rtype = func->type()->result()->type();
 
-        cg()->llvmCctor(result, rtype, true);
+        cg()->llvmCctor(result, rtype, true, "hook.run");
         cg()->llvmStore(i, builder()->CreateLoad(result));
         cg()->llvmCreateBr(cont);
         cg()->popBuilder();
@@ -70,6 +70,6 @@ void StatementBuilder::visit(statement::instruction::hook::Stop* i)
         // Store result in last parameter.
         cg()->llvmCreateStore(cg()->llvmValue(i->op1()), --cg()->function()->arg_end());
 
-    cg()->llvmReturn(cg()->llvmConstInt(1, 1)); // Return true.
+    cg()->llvmReturn(0, cg()->llvmConstInt(1, 1)); // Return true.
 }
 
