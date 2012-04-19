@@ -1,0 +1,25 @@
+From e3fb3aa8f3ebecee16e056678055db99dbb6c7ce Mon Sep 17 00:00:00 2001
+From: Robin Sommer <robin@icir.org>
+Date: Tue, 3 Apr 2012 08:31:52 -0700
+Subject: [PATCH] Preventing install from chowning to root.
+
+---
+ Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 79385b2..1dcbca4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -37,7 +37,7 @@ do-installhdrs:
+ 	mkdir -p $(HEADER_DIR)/c++/v1/ext
+ 	rsync -r --exclude=".*" --exclude="support" $(SRCDIRS)/include/* \
+ 	  $(HEADER_DIR)/c++/v1/
+-	chown -R root:wheel $(HEADER_DIR)/c++
++	# chown -R root:wheel $(HEADER_DIR)/c++
+ 	chmod 755 $(HEADER_DIR)/c++/v1
+ 	chmod 644 $(HEADER_DIR)/c++/v1/*
+ 	chmod 755 $(HEADER_DIR)/c++/v1/ext
+-- 
+1.7.6
+
