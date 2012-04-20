@@ -1,8 +1,8 @@
 #! /usr/bin/env bash
 #
-# Note: we used libcxxrt instead of libc++abi currently because the latter
+# Note: we use libcxxrt instead of libc++abi currently because the latter
 # causes trouble on Linux with libc++ (specfically, cerr doesn't work.)
-# Once can however switch between the two by changing USE_LIBCXXRT below.
+# One can however switch between the two by changing USE_LIBCXXRT below.
 
 USE_LIBCXXRT=1
 
@@ -25,25 +25,6 @@ src=$2
 prefix=$3
 
 export PATH=$prefix/bin:$PATH
-
-#XXXXXX Remove
-
-make -j 4 clean
-
-if [ "$install" != "" ]; then
-        LDFLAGS="-lc++ -lcxxrt -L$prefix/lib -Wl,-rpath,$prefix/lib" \
-        CFLAGS="-L$prefix/lib" CXXFLAGS="-L$prefix/lib" \
-        CC=clang CXX=clang++ \
-        ./configure --prefix=$prefix --enable-optimized --enable-libcpp
-fi
-
-make -j 4
-make install
-
-
-exit 
-
-#XXXXXX
 
 if [ "$update" != "" ]; then
     for d in $prefix $prefix/bin $src; do
@@ -95,7 +76,7 @@ for i in $patches/*; do
     ( cd `echo $b | awk -v src=$src -F - '{printf("%s/%s/%s", src, $1, $2);}'` && pwd && cat $i | git am -3 )
 done
 
-# To boostrap, compile and install LLVM and clang initially without libc++.
+# To bootstrap, compile and install LLVM and clang initially without libc++.
 cd $src
 
 if [ "$install" != "" ]; then
@@ -140,8 +121,6 @@ else
         ln -s $prefix/lib/libcxxrt.so.1.0 $prefix/lib/libcxxrt.so
     fi
 fi
-
-exit 1
 
 # Now compile LLVM/clang with the new libaries.
 
