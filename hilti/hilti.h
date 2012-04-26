@@ -35,6 +35,9 @@ namespace llvm { class Module; }
 
 namespace hilti {
 
+/// Initializes the HILTI system. Must be called before any other function.
+void init();
+
 /// Parses HILTI source code into a module AST. Any errors are written out to
 /// stderr. Note that before the AST can be used further, it needs to go
 /// through resolveAST(). The exception is printAST(), which always works.

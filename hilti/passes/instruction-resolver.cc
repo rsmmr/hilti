@@ -10,14 +10,14 @@ InstructionResolver::~InstructionResolver()
 
 void InstructionResolver::visit(statement::Instruction* s)
 {
-    auto matches = theInstructionRegistry->getMatching(s->id(), s->operands());
+    auto matches = InstructionRegistry::globalRegistry()->getMatching(s->id(), s->operands());
     auto instr = s->sharedPtr<statement::Instruction>();
 
     string error_msg;
 
     switch ( matches.size() ) {
      case 0:
-         if ( ! theInstructionRegistry->has(s->id()->name()) ) {
+         if ( ! InstructionRegistry::globalRegistry()->has(s->id()->name()) ) {
              // Not a known instruction. See if this is a legal ID. If so,
              // replace with an assign expression.
 
@@ -26,7 +26,7 @@ void InstructionResolver::visit(statement::Instruction* s)
              if ( body->scope()->lookup(s->id()) ) {
                  auto assign = std::make_shared<ID>("assign");
                  instruction::Operands ops = { instr->target(), builder::id::create(s->id()), nullptr, nullptr };
-                 auto matches = theInstructionRegistry->getMatching(assign, ops);
+                 auto matches = InstructionRegistry::globalRegistry()->getMatching(assign, ops);
 
                  if ( matches.size() != 1 ) {
                      error(s, util::fmt("unsupporte assign operation (%d)", matches.size()));
@@ -49,7 +49,7 @@ void InstructionResolver::visit(statement::Instruction* s)
 
      case 1: {
          // Everthing is fine. Replace with the actual instruction.
-         auto new_stmt = theInstructionRegistry->resolveStatement(*matches.begin(), instr);
+         auto new_stmt = InstructionRegistry::globalRegistry()->resolveStatement(*matches.begin(), instr);
          instr->parent()->replaceChild(instr, new_stmt);
          return;
      }
@@ -63,7 +63,7 @@ void InstructionResolver::visit(statement::Instruction* s)
 
     error_msg += "  expected one of:\n";
 
-    for ( auto a : theInstructionRegistry->byName(s->id()->name()) )
+    for ( auto a : InstructionRegistry::globalRegistry()->byName(s->id()->name()) )
         error_msg += "    " + string(*a) + "\n";
 
     error(s, error_msg);

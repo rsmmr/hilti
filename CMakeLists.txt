@@ -96,23 +96,32 @@ add_custom_command(
             ${autogen}/instructions-visits.h
             ${autogen}/instructions-stmt-builder.h
             ${autogen}/instructions-register.cc
-   COMMAND  ${CMAKE_CURRENT_SOURCE_DIR}/scripts/make-instructions ${CMAKE_CURRENT_SOURCE_DIR} ${autogen} ${instructions}
+   COMMAND  ${CMAKE_CURRENT_SOURCE_DIR}/scripts/make-instructions -h ${CMAKE_CURRENT_SOURCE_DIR} ${autogen} ${instructions}
    DEPENDS  hilti/instructions/define-instruction.h ${instructions} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/make-instructions
 )
 
-add_custom_target(instructions_autogen
-    DEPENDS ${autogen}/instructions.h
-            ${autogen}/instructions-declare.h
-            ${autogen}/instructions-visits.h
-            ${autogen}/instructions-stmt-builder.h
-            ${autogen}/instructions-register.cc
-)
+foreach(hdr ${instructions})
+
+   string(REPLACE ".h" ".cc" cc "${hdr}")
+   string(REPLACE "hilti/instructions/" "${autogen}/instructions/" cc "${cc}")
+
+   set(instructions_cc ${instructions_cc} ${cc})
+
+   add_custom_command(
+       OUTPUT   ${cc}
+       COMMAND  ${CMAKE_CURRENT_SOURCE_DIR}/scripts/make-instructions -cc ${CMAKE_CURRENT_SOURCE_DIR} ${autogen} ${hdr}
+       DEPENDS  hilti/instructions/define-instruction.h ${hdr} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/make-instructions
+   )
+
+   SET_SOURCE_FILES_PROPERTIES(${cc} PROPERTIES GENERATED 1)
+
+endforeach ()
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions.h PROPERTIES GENERATED 1)
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-declare.h PROPERTIES GENERATED 1)
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-visits.h PROPERTIES GENERATED 1)
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-stmt-builder.h PROPERTIES GENERATED 1)
-SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-register.cc PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-register.cc  PROPERTIES GENERATED 1)
 
 # For fast compilation, precompile the instructions header files.
 
@@ -207,9 +216,15 @@ add_library (hilti
 
     libhilti/utf8proc.c
 
+    ${autogen}/instructions.h
+    ${autogen}/instructions-declare.h
+    ${autogen}/instructions-visits.h
+    ${autogen}/instructions-stmt-builder.h
+    ${autogen}/instructions-register.cc
+
     ${autogen}/scanner.cc
     ${autogen}/parser.cc
-    ${autogen}/instructions-register.cc
+    ${instructions_cc}
 
     ### ${instructions_pch} Activate to generate PCH. But we need to remove
     ### the -l* options from the PCH command line.
@@ -217,6 +232,7 @@ add_library (hilti
 
 ADD_DEPENDENCIES(hilti generate_parser)
 ADD_DEPENDENCIES(hilti instructions_autogen)
+ADD_DEPENDENCIES(hilti hilti-ffi)
 
 ## Tools
 

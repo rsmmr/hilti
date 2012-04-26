@@ -2,62 +2,94 @@
 #
 # Autogenerates files with support code implementing instructions.
 #
-# In a parallel build, cmake sometimes starts this twice in parallel.
-# We protect against that somewhat by using PIDs in file names,
-# which seems to work, even though in principle there's still a small
-# race condition left.
+# This creates
 #
-# This creates:
+#     With -h:
+#       instructions.h
+#       instructions-declare.h
+#       instructions-visits.h
+#       instructions-stmt-builder.h
+#       instructions-register.cc
 #
-#     instructions.h
-#     instructions-declare.h
-#     instructions-visits.h
-#     instructions-stmt-builder.h
-#     instructions-register.cc
+#     With -cc:
+#       foo.cc
 
-targets="instructions.h instructions-declare.h instructions-visits.h instructions-register.cc instructions-stmt-builder.h"
+
+function getInstructions
+{
+    grep -h '^[\t ]*iBegin' | sed 's/.*(\(.*\) *, ".*)/\1/g' | sed 's/, /::/g' | sort
+}
+
+
+targets="instructions.h instructions-declare.h instructions-visits.h instructions-stmt-builder.h instructions-register.cc"
 
 if [ $# -le 2 ]; then
-    echo "usage: `basename $0` <current-source-directory> <target-directory> *.h"
+    echo "usage: `basename $0` -h  <current-source-directory> <target-directory> *.h"
+    echo "                     -cc <current-source-directory> <target-directory> foo.h"
     exit 1
 fi
 
-src=$1
-dst=$2
+kind=$1
+src=$2
+dst=$3
 shift
 shift
-
-hdrs=$@
-
-tmp=$dst/make-instructions.tmp.$$
+shift
 
 cd $src
 
+hdrs=$@
+tmp=$dst/make-instructions.tmp
+
 ## Get the names of all instruction classes (e.g., "integer::Add").
-cat $hdrs | grep -h '^[\t ]*iBegin' | sed 's/.*(\(.*\) *, ".*)/\1/g' | sed 's/, /::/g' | sort >$tmp
+cat $hdrs | getInstructions >$tmp
 
-##### Create instructions-register.cc that registers all instructions with the InstructionRegistry.
+if [ "$kind" == "-cc" ]; then
 
-cat >$dst/instructions-register.cc.$$ <<EOF
+    ##### Create instructions/*.cc that registers all instructions with the InstructionRegistry.
+
+    mkdir -p $dst/instructions
+
+    for hdr in $hdrs; do
+        cc=$dst/instructions/`echo $hdr | sed 's#.*/\([^/]*\)\.h#\1.cc#g'`
+
+        cat >$cc <<EOF
 
 #include "hilti.h"
-#include "autogen/instructions.h"
 
-using namespace hilti;
+#include "instructions/define-instruction.h"
+#include "$hdr"
 
-void InstructionRegistry::addAll()
-{
 EOF
 
-cat $tmp | while read line; do
-    echo "    implementInstruction($line);" >>$dst/instructions-register.cc.$$
-done
-
-echo '}' >>$dst/instructions-register.cc.$$
+        cat $hdr | getInstructions | while read line; do
+            name=`echo $line | sed 's/::/_/g'`
+            args="$line"
+            echo "IMPLEMENT_INSTRUCTION($name, $args);" >>$cc
+        done
+    done
+fi
 
 ##### Create instructions.h that includes all the instruction *.h files.
 
-cat >$dst/instructions.h.$$ <<EOF
+if [ "$kind" == "-h" ]; then
+
+    LOCK=$dst/lock
+    TIMESTAMP=$dst/timestamp
+    now=`date +%s`
+
+    lockfile -1 $LOCK
+    trap "rm -f $LOCK" EXIT
+
+    if [ -e $TIMESTAMP ]; then
+        ts=`cat $TIMESTAMP`
+        if [ $ts -gt $now ]; then
+            # Updated since we started.
+            exit 0;
+        fi
+    fi
+
+    cat >$dst/instructions.h <<EOF
 
 #ifndef HILTI_INSTRUCTIONS_INSTRUCTIONS_H
 #define HILTI_INSTRUCTIONS_INSTRUCTIONS_H
@@ -66,42 +98,49 @@ cat >$dst/instructions.h.$$ <<EOF
 
 EOF
 
-for h in $hdrs; do
-    echo "#include \"$h\"" >>$dst/instructions.h.$$
-done
+    for h in $hdrs; do
+        echo "#include \"$h\"" >>$dst/instructions.h
+    done
 
-echo >>$dst/instructions.h.$$
-echo "#endif" >>$dst/instructions.h.$$
+    echo >>$dst/instructions.h
+    echo "#endif" >>$dst/instructions.h
 
-#### Create instructions-declare.h that declares all instruction statement classes, and 
-#### instructions-visits.h with visit() methods for all instruction statement classes, and
-#### instructions-stmt-builder.h with visit() methods for the statement builder.
+    #### Create instructions-declare.h that declares all instruction statement classes, and 
+    #### instructions-visits.h with visit() methods for all instruction statement classes, and
+    #### instructions-stmt-builder.h with visit() methods for the statement builder.
+    #### instructions-register.cc with calls to instructions register functions.
 
-cat </dev/null >$dst/instructions-declare.h.$$
-cat </dev/null >$dst/instructions-visits.h.$$
-cat </dev/null >$dst/instructions-stmt-builder.h.$$
+    cat </dev/null >$dst/instructions-declare.h
+    cat </dev/null >$dst/instructions-visits.h
+    cat </dev/null >$dst/instructions-stmt-builder.h
 
-cat $tmp | while read line; do
-    ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
-    cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
-    echo "namespace statement { namespace instruction { namespace $ns { class $cls; } } };" >>$dst/instructions-declare.h.$$
-    echo "       virtual void visit(statement::instruction::$ns::$cls* i) {}" >>$dst/instructions-visits.h.$$
-    echo "       void visit(statement::instruction::$ns::$cls* i) override;" >>$dst/instructions-stmt-builder.h.$$
-done
+    cat >$dst/instructions-register.cc <<EOF
+void __registerAllInstructions()
+{
+EOF
+
+    cat $tmp | while read line; do
+        ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
+        cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
+        echo "namespace statement { namespace instruction { namespace $ns { class $cls; } } };" >>$dst/instructions-declare.h
+        echo "       virtual void visit(statement::instruction::$ns::$cls* i) {}" >>$dst/instructions-visits.h
+        echo "       void visit(statement::instruction::$ns::$cls* i) override;" >>$dst/instructions-stmt-builder.h
+
+        name=`echo $line | sed 's/::/_/g'`
+        echo "    extern void __register_$name(); __register_$name();" >>$dst/instructions-register.cc
+    done
+
+    cat >>$dst/instructions-register.cc <<EOF
+}
+EOF
+
+    date +%s >$TIMESTAMP
+
+fi
 
 #### Cleanup.
 
 rm -f $tmp
-
-### Move to its right place.
-
-for t in $targets; do
-    mv $dst/$t.$$ $dst/$t
-done
-
-
-
-
 
 
 

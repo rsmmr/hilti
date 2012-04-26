@@ -264,6 +264,8 @@ int main(int argc, char** argv)
         output = "/dev/stdout";
     }
 
+    hilti::init();
+
     std::list<string> inputs;
 
     while ( optind < argc )

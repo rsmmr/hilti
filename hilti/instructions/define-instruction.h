@@ -14,8 +14,8 @@
 #define __unique(l) __cat(register_, l)
 
 /// Registers an instruction with the InstructionRegistry.
-#define implementInstruction(cls) \
-   addInstruction(shared_ptr<Instruction>(new typename instruction::cls));
+#define IMPLEMENT_INSTRUCTION(name, cls) \
+   void __register_##name() { InstructionRegistry::globalRegistry()->addInstruction(std::make_shared<instruction::cls>()); }
 
 /// Begins the definition of an instruction.
 ///

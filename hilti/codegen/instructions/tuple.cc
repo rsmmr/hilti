@@ -36,7 +36,7 @@ void StatementBuilder::visit(statement::instruction::tuple::Equal* i)
         auto o1 = builder::codegen::create(t, e1);
         auto o2 = builder::codegen::create(t, e2);
 
-        auto instrs = theInstructionRegistry->getMatching(equal, { o0, o1, o2, nullptr });
+        auto instrs = InstructionRegistry::globalRegistry()->getMatching(equal, { o0, o1, o2, nullptr });
         // fprintf(stderr, "%d %lu\n",n, instrs.size());
         assert(instrs.size() == 1);
         auto instr = instrs.front();

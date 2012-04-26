@@ -12,9 +12,6 @@ namespace hilti {
 
 namespace statement { namespace instruction { class Resolved; } }
 
-class InstructionRegistry;
-extern unique_ptr<InstructionRegistry> theInstructionRegistry;
-
 namespace instruction {
 
 typedef std::vector<node_ptr<Expression>> Operands;
@@ -369,7 +366,7 @@ protected:
 class InstructionRegistry
 {
 public:
-   InstructionRegistry() { addAll(); };
+   InstructionRegistry() {};
    ~InstructionRegistry() {}
 
    typedef std::list<shared_ptr<Instruction>> instr_list;
@@ -412,23 +409,17 @@ public:
    /// stmts: The statement to take the operands from.
    shared_ptr<statement::instruction::Resolved> resolveStatement(shared_ptr<Instruction> instr, shared_ptr<statement::Instruction> stmt);
 
-   /// Internal helper class to register an instruction with the registry.
-   class Register
-   {
-   public:
-      /// Constructor.
-      ///
-      /// ins: The instruction to register.
-      Register(shared_ptr<Instruction> ins) { theInstructionRegistry->addInstruction(ins); }
-   };
+   /// Registers an instruction with the registry. This will be called from
+   /// the IMPLEMENT_INSTRUCTION macro.
+   void addInstruction(shared_ptr<Instruction> ins);
+
+   /// Return the singleton for the global instruction registry.
+   static InstructionRegistry* globalRegistry();
 
 private:
-   friend class Register;
-
-   void addInstruction(shared_ptr<Instruction> ins);
-   void addAll(); // This is implemented in instructions/all.cc
-
    instr_map _instructions;
+
+   static InstructionRegistry* _registry; // Singleton.
 };
 
 }

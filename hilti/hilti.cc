@@ -1,6 +1,14 @@
 
 #include "hilti.h"
 
+// Auto-generated in ${autogen}/instructions-register.cc
+extern void __registerAllInstructions();
+
+void hilti::init()
+{
+    __registerAllInstructions();
+}
+
 bool hilti::resolveAST(shared_ptr<Module> module, const path_list& libdirs)
 {
     passes::ScopeBuilder scope_builder(libdirs);

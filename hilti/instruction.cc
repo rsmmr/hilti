@@ -10,8 +10,15 @@ using namespace hilti;
 
 const int _num_ops = 4; // Number of operands we support, including target.
 
-auto hilti::theInstructionRegistry = unique_ptr<InstructionRegistry>(new InstructionRegistry);
+hilti::InstructionRegistry* InstructionRegistry::_registry = nullptr;
 
+InstructionRegistry* InstructionRegistry::globalRegistry()
+{
+    if ( ! _registry )
+        _registry = new InstructionRegistry();
+
+    return _registry;
+}
 
 shared_ptr<Type> InstructionHelper::typedType(shared_ptr<Expression> op) const
 {
@@ -424,3 +431,4 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
 
     return resolved;
 }
+
