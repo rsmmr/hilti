@@ -12,15 +12,34 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 include(EnableLLVMBitcode)
 include(DefaultCompilerSettings)
 
+set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
+
+set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic")
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -D_GNU_SOURCE")
+
+### Generate the C prototypes.
+
+add_custom_command(
+    OUTPUT   ${autogen}/hilti-hlt.h
+    COMMAND  ${hiltic} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/hilti.hlt -o ${autogen}/hilti-hlt.h
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/hilti.hlt ${hiltic}
+)
+
+SET_SOURCE_FILES_PROPERTIES(${autogen}/hilti-hlt.h PROPERTIES GENERATED 1)
+
+### Generate the library.
 
 set(SRCS callable.c config.c context.c debug.c globals.c init.c memory.c int.c
     tuple.c string.c utf8proc.c bytes.c exceptions.c util.c print.c
     bool.c addr.c bitset.c caddr.c double.c enum.c interval.c
     net.c port.c time.c hook.c timer.c threading.c
-    
+
     module/fmt.c
+
+    ${autogen}/hilti-hlt.h
     )
 
 if ( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )

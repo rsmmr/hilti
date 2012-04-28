@@ -15,18 +15,18 @@ void ProtoGen::generatePrototypes(shared_ptr<hilti::Module> module)
     modname = ::util::strreplace(modname, "-", "_");
     modname = ::util::strreplace(modname, ".", "_");
 
-    auto ifdefname = ::util::fmt("HILTI_%s_HLT_H", modname.c_str());
+    auto ifdefname = ::util::fmt("%s_HLT_H", modname.c_str());
 
     out << "/* Automatically generated. Do not edit. */" << std::endl;
     out << std::endl;
-    out << "#ifndef " << modname << std::endl;
-    out << "#define " << modname << std::endl;
+    out << "#ifndef " << ifdefname << std::endl;
+    out << "#define " << ifdefname << std::endl;
     out << std::endl;
     out << "#include <hilti.h>" << std::endl;
     out << std::endl;
 
     // Generate body.
-    processOne(module);
+    processAllPreOrder(module);
 
     // Generator footer.
     out << "#endif" << std::endl;
@@ -35,7 +35,9 @@ void ProtoGen::generatePrototypes(shared_ptr<hilti::Module> module)
 
 void ProtoGen::visit(type::Enum* t)
 {
-    if ( ! in<declaration::Type>() )
+    auto decl = current<declaration::Type>();
+
+    if ( ! decl )
         return;
 
     std::ostream& out = output();
@@ -45,11 +47,12 @@ void ProtoGen::visit(type::Enum* t)
         if ( *l.first == "Undef" )
             continue;
 
-        auto scope = current<Module>()->id()->name();
-        auto id = ::util::strtoupper(l.first->pathAsString());
+        auto mod = current<Module>()->id()->name();
+        auto scope = decl->id()->name();
+        auto id = l.first->pathAsString();
         auto value = t->labelValue(l.first);
 
-        auto proto = ::util::fmt("static const hlt_enum %s_%s = { 0, %d };", scope.c_str(), id.c_str(), value);
+        auto proto = ::util::fmt("static const hlt_enum %s_%s_%s = { 0, %d };", mod.c_str(), scope.c_str(), id.c_str(), value);
 
         out << proto.c_str() << std::endl;
     }

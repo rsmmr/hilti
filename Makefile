@@ -5,20 +5,26 @@
 
 all: debug
 
-debug: mkdirs libhilti
+debug: mkdirs hilti-debug libhilti-debug
+
+release: mkdirs hilti-release libhilti-releae
+
+hilti-debug:
 	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug ..; $(MAKE) )
 
-release: mkdirs libhilti
+hilti-release:
 	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=RelWithDebInfo ..; $(MAKE) )
+
+libhilti-release: mkdirs
+	( cd build/libhilti-release; test -e Makefile || cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo ../../libhilti; $(MAKE) )
+
+libhilti-debug: mkdirs
+	( cd build/libhilti-debug;   test -e Makefile || cmake -D CMAKE_BUILD_TYPE=Debug          ../../libhilti; $(MAKE) )
 
 mkdirs:
 	test -d build || mkdir build
 	test -d build/libhilti-debug || mkdir build/libhilti-debug
 	test -d build/libhilti-release || mkdir build/libhilti-release
-
-libhilti: mkdirs
-	( cd build/libhilti-release; test -e Makefile || cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo ../../libhilti; $(MAKE) )
-	( cd build/libhilti-debug;   test -e Makefile || cmake -D CMAKE_BUILD_TYPE=Debug          ../../libhilti; $(MAKE) )
 
 clean:
 	rm -rf build
