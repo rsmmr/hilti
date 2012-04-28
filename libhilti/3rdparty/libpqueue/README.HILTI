@@ -1,0 +1,13 @@
+
+For HILTI, we adapated libpqueue a bit:
+
+- pqueue_pri_t is defined as hlt_time.
+
+- The comparision/accessor functions are hard-coded as inline function to work
+  directly with the libhilti/timer.h data structures. 
+
+- We use the HILTI memory management functions.
+
+- The output functionality is removed.
+
+
