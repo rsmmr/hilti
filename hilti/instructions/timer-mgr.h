@@ -11,7 +11,7 @@ iBegin(timer_mgr, New, "new")
     iOp1(optype::typeTimerMgr, true);
 
     iValidate {
-        hasType(target, typedType(op1));
+        equalTypes(referencedType(target), typedType(op1));
     }
 
     iDoc(R"(

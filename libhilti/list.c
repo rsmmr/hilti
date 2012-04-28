@@ -1,14 +1,13 @@
-// $Id$
 //
-// The list implementation is pretty much a standard double-linked list, with
-// an additional free-list to avoid allocating a new node for each element.
-// However, we don't recycle earased nodes back into the free-list; that
-// allows us to keep iterator valid even if a list changes. The GC will take
-// of freeing nodes eventually.
-
-#include "hilti.h"
+// The list implementation is pretty much a standard double-linked list.
+//
+// NOTE: Unlike the old libhilti list implementation, there's no free list
+// because that doesn't work well with ref'cnt. If we get a problem with to
+// many small allocations, we could let the list do its own mem mgt though.
 
 #include <string.h>
+
+#include "list.h"
 
 struct hlt_timer_mgr;
 
@@ -19,30 +18,28 @@ static const uint32_t InitialCapacity = 2;
 static const float GrowthFactor = 1.5;
 
 struct __hlt_list_node {
-    __hlt_list_node* prev;  // Predecessor node.
-    __hlt_list_node* next;  // Successor node.
-    // hlt_timer* timer;       // The entry's timer, or null if none is set.
+    __hlt_gchdr __gchdr;      // Header for memory management.
+    __hlt_list_node* next;  // Successor node. Memory-managed.
+    __hlt_list_node* prev;  // Predecessor node. Not memory-managed to avoid cycles.
+    hlt_timer* timer;       // The entry's timer, or null if none is set.
     int64_t invalid;        // True if node has been invalidated.
                             // FIXME: int64_t to align the data; how else to do that?
     char data[];            // Node data starts here, with size determined by elem type.
 };
 
 struct __hlt_list {
-    __hlt_list_node* head;       // First list element.
-    __hlt_list_node* tail;       // Last list element.
-    __hlt_list_node* free;       // First node is free array.
-    uint16_t available;          // Number of nodes still available in free array.
+    __hlt_gchdr __gchdr;      // Header for memory management.
+    __hlt_list_node* head;       // First list element. Memory-managed.
+    __hlt_list_node* tail;       // Last list element. Not memory-managed to avoid cycles.
     int64_t size;                // Current list size.
     const hlt_type_info* type;   // Element type.
-    struct hlt_timer_mgr* tmgr;         // The timer manager or null.
-    //hlt_interval timeout;        // The timeout value, or 0 if disabled
-    //hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
-    int timeout;        // The timeout value, or 0 if disabled
-    int strategy;
+    struct hlt_timer_mgr* tmgr;  // The timer manager or null.
+    hlt_interval timeout;        // The timeout value, or 0 if disabled.
+    hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
 };
 
 // Inserts n after node pos. If pos is null, inserts at front. n must be all
-// zero-initialized.
+// zero-initialized and already ref'ed.
 static void _link(hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos)
 {
     if ( pos ) {
@@ -51,26 +48,27 @@ static void _link(hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos)
         else
             l->tail = n;
 
-        n->next = pos->next;
-        pos->next = n;
+        GC_ASSIGN(n->next, pos->next, __hlt_list_node);
+        GC_ASSIGN(pos->next, n, __hlt_list_node);
         n->prev = pos;
     }
 
     else {
         // Insert at head.
-        n->next = l->head;
+        GC_ASSIGN(n->next, l->head, __hlt_list_node);
+        GC_ASSIGN(l->head, n, __hlt_list_node);
+
         if ( l->head )
             l->head->prev = n;
         else
             l->tail = n;
-        l->head = n;
     }
 
     ++l->size;
 }
 
 // Unlinks the node from the list and invalidates it, including stopping its
-// timer. Returns the same node n. 
+// timer. Returns the same node n, which will still be ref'ed.
 static __hlt_list_node* _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( n->next )
@@ -79,43 +77,29 @@ static __hlt_list_node* _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception**
         l->tail = n->prev;
 
     if ( n->prev )
-        n->prev->next = n->next;
+        GC_ASSIGN(n->prev->next, n->next, __hlt_list_node);
     else
-        l->head = n->next;
+        GC_ASSIGN(l->head, n->next, __hlt_list_node);
 
     n->prev = n->next = 0;
     n->invalid = 1;
     --l->size;
 
-//    if ( n->timer && ctx )
-//        hlt_timer_cancel(n->timer, excpt, ctx);
+    if ( n->timer && ctx )
+        hlt_timer_cancel(n->timer, excpt, ctx);
 
-//    n->timer = 0;
+    GC_CLEAR(n->timer, hlt_timer);
     return n;
 }
 
+/// Returns a ref'ed node.
 static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! l->available ) {
-        // Need to allocate more nodes.
-        int64_t c = (l->size+1) * GrowthFactor;
-
-        l->free = hlt_calloc(c, sizeof(__hlt_list_node) + l->type->size);
-        if ( ! l->free )
-            return 0;
-
-        l->available = c;
-    }
-
-    // Take one node from the free list.
-    __hlt_list_node* n = l->free;
-    l->free = ((void*)l->free) + sizeof(__hlt_list_node) + l->type->size;
-    --l->available;
+    __hlt_list_node* = GC_NEW_CUSTOM_SIZE(__hlt_list_node, sizeof(__hlt_list_node) + l->type->size);
 
     // Init node (note that the memory is zero-initialized).
     memcpy(&n->data, val, l->type->size);
 
-#if 0
     // Start timer if needed.
     if ( l->tmgr && l->timeout ) {
         __hlt_list_timer_cookie cookie = { l, n };
@@ -123,14 +107,12 @@ static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt
         hlt_time t = hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout;
         hlt_timer_mgr_schedule(l->tmgr, t, n->timer, excpt, ctx);
     }
-#endif
 
     return n;
 }
 
 static inline void _access(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-#if 0
     if ( ! l->tmgr || ! hlt_enum_equal(l->strategy, Hilti_ExpireStrategy_Access, excpt, ctx) || l->timeout == 0 )
         return;
 
@@ -139,35 +121,20 @@ static inline void _access(hlt_list* l, __hlt_list_node* n, hlt_exception** excp
 
     hlt_time t = hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout;
     hlt_timer_update(n->timer, t, excpt, ctx);
-#endif
 }
 
 hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_list* l = hlt_malloc(sizeof(hlt_list));
-    if ( ! l ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
-
-    l->free = hlt_calloc(InitialCapacity, sizeof(__hlt_list_node) + elemtype->size);
-    if ( ! l->free ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
-
+    hlt_list* l = GC_NEW(hlt_list);
     l->head = l->tail = 0;
-    l->available = InitialCapacity;
     l->size = 0;
     l->type = elemtype;
-    // l->tmgr = tmgr;
+    l->tmgr = tmgr;
     l->timeout = 0.0;
-    // l->strategy = hlt_enum_unset(excpt, ctx);
-
+    l->strategy = hlt_enum_unset(excpt, ctx);
     return l;
 }
 
-#if 0
 void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! l->tmgr ) {
@@ -178,7 +145,6 @@ void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_
     l->timeout = timeout;
     l->strategy = strategy;
 }
-#endif
 
 void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -253,7 +219,7 @@ int64_t hlt_list_size(hlt_list* l, hlt_exception** excpt, hlt_execution_context*
     return l->size;
 }
 
-void hlt_list_erase(hlt_list_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_erase(hlt_list_iterator i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
@@ -273,7 +239,7 @@ void hlt_list_list_expire(__hlt_list_timer_cookie cookie)
     _unlink(cookie.list, cookie.node, 0, 0);
 }
 
-void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iterator i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
@@ -295,23 +261,23 @@ void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iter i, hlt_
         _link(i.list, n, i.node->prev);
 }
 
-hlt_list_iter hlt_list_begin(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_list_iterator hlt_list_begin(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_list_iter i;
-    i.list = l;
-    i.node = l->head;
+    hlt_list_iterator i;
+    GC_INIT(i.list, l, hlt_list_iterator);
+    GC_INIT(i.node, l->head, hlt_list_iterator);
     return i;
 }
 
-hlt_list_iter hlt_list_end(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_list_iterator hlt_list_end(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_list_iter i;
-    i.list = l;
+    hlt_list_iterator i;
+    GC_INIT(i.list, l, hlt_list_iterator);
     i.node = 0;
     return i;
 }
 
-hlt_list_iter hlt_list_iter_incr(hlt_list_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_list_iterator hlt_list_iterator_incr(hlt_list_iterator i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( (i.node && i.node->invalid) || ! i.list ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
@@ -322,14 +288,14 @@ hlt_list_iter hlt_list_iter_incr(hlt_list_iter i, hlt_exception** excpt, hlt_exe
         // End of list.
         return i;
 
-    hlt_list_iter j;
-    j.list = i.list;
-    j.node = i.node->next;
+    hlt_list_iterator j;
+    GC_INIT(j.list, i.list, hlt_list_iterator);
+    GC_INIT(j.node, i.node->next, hlt_list_iterator);
 
     return j;
 }
 
-void* hlt_list_iter_deref(const hlt_list_iter i, hlt_exception** excpt, hlt_execution_context* ctx)
+void* hlt_list_iterator_deref(const hlt_list_iterator i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! i.list || ! i.node || i.node->invalid ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
@@ -340,14 +306,14 @@ void* hlt_list_iter_deref(const hlt_list_iter i, hlt_exception** excpt, hlt_exec
     return &i.node->data;
 }
 
-int8_t hlt_list_iter_eq(const hlt_list_iter i1, const hlt_list_iter i2, hlt_exception** excpt, hlt_execution_context* ctx)
+int8_t hlt_list_iterator_eq(const hlt_list_iterator i1, const hlt_list_iterator i2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( i1.node )
         _access(i1.list, i1.node, excpt, ctx);
 
     if ( i2.node )
         _access(i2.list, i2.node, excpt, ctx);
-        
+
     return i1.list == i2.list && i1.node == i2.node;
 }
 

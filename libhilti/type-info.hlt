@@ -9,3 +9,6 @@ export ref<bytes>
 export iterator<bytes>
 export addr
 export ref<exception>
+export ref<timer>
+export ref<callable>
+export ref<timer_mgr>

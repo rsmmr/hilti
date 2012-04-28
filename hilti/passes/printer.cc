@@ -844,11 +844,11 @@ static void _printAddr(Printer& p, const constant::AddressVal& addr)
     switch ( addr.family ) {
 
      case constant::AddressVal::IPv4:
-        result = inet_ntop(AF_INET, &addr.in.in4, buffer, INET_ADDRSTRLEN);
+        result = inet_ntop(AF_INET, &addr.in.in4, buffer, INET6_ADDRSTRLEN);
         break;
 
      case constant::AddressVal::IPv6:
-        result = inet_ntop(AF_INET6, &addr.in.in6, buffer, INET_ADDRSTRLEN);
+        result = inet_ntop(AF_INET6, &addr.in.in6, buffer, INET6_ADDRSTRLEN);
         break;
 
      default:
