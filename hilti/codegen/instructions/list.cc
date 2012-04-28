@@ -83,9 +83,11 @@ void StatementBuilder::visit(statement::instruction::list::PopBack* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
 
-    auto voidp = cg()->llvmCall("hlt::list_pop_back", args);
+    auto voidp = cg()->llvmCall("hlt::list_back", args);
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(etype)));
     auto result = builder()->CreateLoad(casted);
+
+    cg()->llvmCall("hlt::list_pop_back", args);
 
     cg()->llvmCctor(voidp, etype, true, "list.pop_back");
     cg()->llvmStore(i, result);
@@ -98,9 +100,11 @@ void StatementBuilder::visit(statement::instruction::list::PopFront* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
 
-    auto voidp = cg()->llvmCall("hlt::list_pop_front", args);
+    auto voidp = cg()->llvmCall("hlt::list_front", args);
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(etype)));
     auto result = builder()->CreateLoad(casted);
+
+    cg()->llvmCall("hlt::list_pop_front", args);
 
     cg()->llvmCctor(voidp, etype, true, "list.pop_front");
     cg()->llvmStore(i, result);

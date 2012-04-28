@@ -25,12 +25,13 @@
 #define HILTI_TIMER_H
 
 #include "time_.h"
+#include "list.h"
 #include "context.h"
 #include "exceptions.h"
 #include "callable.h"
 
-typedef struct __hlt_timer hlt_timer;         ///< Type for representing a HILTI timer.
-typedef struct __hlt_timer_mgr hlt_timer_mgr; ///< Type for representing a HILTI timer manager.
+typedef struct __hlt_timer hlt_timer;       ///< Type for representing a HILTI timer.
+typedef struct hlt_timer_mgr hlt_timer_mgr; ///< Type for representing a HILTI timer manager.
 
 // Todo: We store the timer manager with every timer. That's kind of a waste,
 // but it makes handing timers around much easier. Need to recheck eventually
@@ -43,8 +44,8 @@ struct __hlt_timer {
     int16_t type;        // One of HLT_TIMER_* indicating the timer's type.
     union {              // The timer's payload cookie corresponding to its type.
         hlt_callable* function;
-#if 0
         __hlt_list_timer_cookie list;
+#if 0
         __hlt_map_timer_cookie map;
         __hlt_set_timer_cookie set;
         __hlt_list_timer_cookie list;
@@ -175,7 +176,6 @@ extern int64_t hlt_timer_mgr_to_int64(const hlt_type_info* type, const void* obj
 /// Returns: The new timer object.
 extern hlt_timer* __hlt_timer_new_function(hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx);
 
-#if 0
 /// Instantiates a new timer object that will expire a list entry when it
 /// fires.
 ///
@@ -186,6 +186,7 @@ extern hlt_timer* __hlt_timer_new_function(hlt_callable* func, hlt_exception** e
 /// Returns: The new timer object.
 extern hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
+#if 0
 /// Instantiates a new timer object that will expire a map entry when it
 /// fires.
 ///
@@ -195,16 +196,6 @@ extern hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_excep
 ///
 /// Returns: The new timer object.
 extern hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
-
-/// Instantiates a new timer object that will expire a list entry when it
-/// fires.
-///
-/// cookie: A list-specific cookie to identify the item to be expired.
-///
-/// excpt: &
-///
-/// Returns: The new timer object.
-extern hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Instantiates a new timer object that will expire a vector entry when it
 /// fires.

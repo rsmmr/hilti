@@ -54,6 +54,7 @@
 #define HLT_TYPE_IOSOURCE 41
 #define HLT_TYPE_MAP 42
 #define HLT_TYPE_SET 44
+#define HLT_TYPE_LIST_NODE 45
 
 #define HLT_TYPE_ITERATOR_BYTES  100
 #define HLT_TYPE_ITERATOR_VECTOR 101
@@ -139,6 +140,7 @@ struct __hlt_type_info {
 
 /// Macro to define type information for an internal garbage collected type.
 #define __HLT_RTTI_GC_TYPE(id, type) \
+   void id##_dtor(hlt_type_info*, id*); \
    static const hlt_type_info __hlt_type_info_##id = { \
        type, \
        sizeof(id), \

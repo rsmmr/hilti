@@ -32,11 +32,11 @@ extern void hlt_list_push_front(hlt_list* l, const hlt_type_info* type, void* va
 // Inserts an element at the end.
 extern void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Removes and returns an element from the front of the list.
-extern void* hlt_list_pop_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
+// Removes an element from the front of the list.
+extern void hlt_list_pop_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Removes and returns an element from the end of the list.
-extern void* hlt_list_pop_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
+// Removes an element from the end of the list.
+extern void hlt_list_pop_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Returns the first element of the list.
 extern void* hlt_list_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);

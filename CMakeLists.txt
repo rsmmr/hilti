@@ -208,6 +208,7 @@ add_library (hilti
     hilti/codegen/instructions/vector.cc
     hilti/codegen/linker.cc
     hilti/codegen/loader.cc
+    hilti/codegen/protogen.cc
     hilti/codegen/stmt-builder.cc
     hilti/codegen/storer.cc
     hilti/codegen/type-builder.cc

@@ -20,9 +20,9 @@ bool output_hilti = false;
 bool output_llvm = false;
 bool output_llvm_individually = false;
 bool output_bitcode = false;
+bool output_prototypes = false;
 bool dump_ast = false;
 bool verify = true;
-
 
 string output;
 path_list paths;
@@ -33,6 +33,7 @@ static struct option long_options[] = {
     { "debug",   no_argument, 0, 'd' },
     { "help",    no_argument, 0, 'h' },
     { "print",   no_argument, 0, 'p' },
+    { "prototypes", no_argument, 0, 'P' },
     { "output",  required_argument, 0, 'o' },
     { "version", no_argument, 0, 'v' },
     { 0, 0, 0, 0 }
@@ -56,7 +57,8 @@ void usage()
             "  -V | --llvm-first     Like -L, but print each file individually to stdout and don't link.\n"
             "  -o | --output <file>  Specify output file.                    [Default: stdout].\n"
             "  -p | --print          Just output all parsed HILTI code again.\n"
-            "  -P | --print-always   Like -p, but don't verify correctness first.\n"
+            "  -P | --prototypes     Generate C prototypes for HILTI module.\n"
+            "  -W | --print-always   Like -p, but don't verify correctness first.\n"
             "  -I | --import <dir>   Search library files in <dir>. Can be given multiple times.\n"
             "  -v | --version        Print version information.\n"
             "\n";
@@ -148,6 +150,15 @@ llvm::Module* compileHILTI(string path)
             error(path, "Aborting due to printer error.");
     }
 
+    if ( output_prototypes ) {
+        ofstream out;
+        openOutputStream(out, output);
+
+        hilti::generatePrototypes(module, out);
+
+        return nullptr;
+    }
+
     llvm::Module* llvm_module = hilti::compileModule(module, paths, verify, debug, 0, debug_cg);
 
     if ( ! llvm_module )
@@ -207,6 +218,11 @@ int main(int argc, char** argv)
             break;
 
          case 'P':
+            output_prototypes = true;
+            ++num_output_types;
+            break;
+
+         case 'W':
             output_hilti = true;
             verify = false;
             ++num_output_types;
@@ -299,7 +315,7 @@ int main(int argc, char** argv)
             modules.push_back(module);
     }
 
-    if ( output_hilti || output_llvm_individually )
+    if ( output_hilti || output_llvm_individually || output_prototypes )
         // Done.
         return 0;
 

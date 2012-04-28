@@ -8,8 +8,9 @@
 #include <string.h>
 
 #include "list.h"
-
-struct hlt_timer_mgr;
+#include "timer.h"
+#include "interval.h"
+#include "enum.h"
 
 // Initial allocation size for the free list.
 static const uint32_t InitialCapacity = 2;
@@ -18,10 +19,11 @@ static const uint32_t InitialCapacity = 2;
 static const float GrowthFactor = 1.5;
 
 struct __hlt_list_node {
-    __hlt_gchdr __gchdr;      // Header for memory management.
+    __hlt_gchdr __gchdr;    // Header for memory management.
     __hlt_list_node* next;  // Successor node. Memory-managed.
     __hlt_list_node* prev;  // Predecessor node. Not memory-managed to avoid cycles.
     hlt_timer* timer;       // The entry's timer, or null if none is set.
+    const hlt_type_info* type;  // FIXME: Do we get around storing this with each node?
     int64_t invalid;        // True if node has been invalidated.
                             // FIXME: int64_t to align the data; how else to do that?
     char data[];            // Node data starts here, with size determined by elem type.
@@ -37,6 +39,21 @@ struct __hlt_list {
     hlt_interval timeout;        // The timeout value, or 0 if disabled.
     hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
 };
+
+__HLT_RTTI_GC_TYPE(__hlt_list_node,  HLT_TYPE_LIST_NODE)
+
+void __hlt_list_node_dtor(hlt_type_info* ti, __hlt_list_node* n)
+{
+    GC_DTOR(n->next, __hlt_list_node);
+    GC_DTOR(n->timer, hlt_timer);
+    GC_DTOR_GENERIC(&n->data, n->type);
+}
+
+void __hlt_list_dtor(hlt_type_info* ti, hlt_list* l)
+{
+    GC_DTOR(l->head, __hlt_list_node);
+    GC_DTOR(l->tmgr, hlt_timer_mgr);
+}
 
 // Inserts n after node pos. If pos is null, inserts at front. n must be all
 // zero-initialized and already ref'ed.
@@ -68,20 +85,24 @@ static void _link(hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos)
 }
 
 // Unlinks the node from the list and invalidates it, including stopping its
-// timer. Returns the same node n, which will still be ref'ed.
-static __hlt_list_node* _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_execution_context* ctx)
+// timer.
+static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( n->next )
         n->next->prev = n->prev;
     else
         l->tail = n->prev;
 
-    if ( n->prev )
+    if ( n->prev ) {
         GC_ASSIGN(n->prev->next, n->next, __hlt_list_node);
-    else
+    }
+    else {
         GC_ASSIGN(l->head, n->next, __hlt_list_node);
+    }
 
-    n->prev = n->next = 0;
+    GC_CLEAR(n->next, __hlt_list_node);
+
+    n->prev = 0;
     n->invalid = 1;
     --l->size;
 
@@ -89,16 +110,16 @@ static __hlt_list_node* _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception**
         hlt_timer_cancel(n->timer, excpt, ctx);
 
     GC_CLEAR(n->timer, hlt_timer);
-    return n;
 }
 
-/// Returns a ref'ed node.
+// Returns a ref'ed node.
 static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    __hlt_list_node* = GC_NEW_CUSTOM_SIZE(__hlt_list_node, sizeof(__hlt_list_node) + l->type->size);
+    __hlt_list_node* n = GC_NEW_CUSTOM_SIZE(__hlt_list_node, sizeof(__hlt_list_node) + l->type->size);
 
     // Init node (note that the memory is zero-initialized).
     memcpy(&n->data, val, l->type->size);
+    GC_CTOR_GENERIC(&n->data, l->type);
 
     // Start timer if needed.
     if ( l->tmgr && l->timeout ) {
@@ -109,6 +130,12 @@ static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt
     }
 
     return n;
+}
+
+// Returns true if the node has been marked invalid.
+static int _invalid_node(__hlt_list_node* n)
+{
+    return n->invalid;
 }
 
 static inline void _access(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -172,24 +199,24 @@ void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_e
     _link(l, n, l->tail);
 }
 
-void* hlt_list_pop_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_pop_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! l->head ) {
         hlt_set_exception(excpt, &hlt_exception_underflow, 0);
         return 0;
     }
 
-    return &(_unlink(l, l->head, excpt, ctx)->data);
+    _unlink(l, l->head, excpt, ctx);
 }
 
-void* hlt_list_pop_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_list_pop_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! l->tail ) {
         hlt_set_exception(excpt, &hlt_exception_underflow, 0);
         return 0;
     }
 
-    return &(_unlink(l, l->tail, excpt, ctx)->data);
+    _unlink(l, l->tail, excpt, ctx);
 }
 
 void* hlt_list_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -200,6 +227,9 @@ void* hlt_list_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* 
     }
 
     _access(l, l->head, excpt, ctx);
+
+    GC_CTOR_GENERIC(&l->head->data, n->type);
+
     return &l->head->data;
 }
 
@@ -211,6 +241,9 @@ void* hlt_list_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context* c
     }
 
     _access(l, l->tail, excpt, ctx);
+
+    GC_CTOR_GENERIC(&l->tail->data, n->type);
+
     return &l->tail->data;
 }
 
@@ -221,7 +254,7 @@ int64_t hlt_list_size(hlt_list* l, hlt_exception** excpt, hlt_execution_context*
 
 void hlt_list_erase(hlt_list_iterator i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( (i.node && i.node->invalid) || ! i.list ) {
+    if ( (i.node && _invalid_node(i.node) || ! i.list ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return;
     }
@@ -241,7 +274,7 @@ void hlt_list_list_expire(__hlt_list_timer_cookie cookie)
 
 void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iterator i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( (i.node && i.node->invalid) || ! i.list ) {
+    if ( (i.node && _invalid_node(i.node)) || ! i.list ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return;
     }
@@ -279,7 +312,7 @@ hlt_list_iterator hlt_list_end(hlt_list* l, hlt_exception** excpt, hlt_execution
 
 hlt_list_iterator hlt_list_iterator_incr(hlt_list_iterator i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( (i.node && i.node->invalid) || ! i.list ) {
+    if ( (i.node && _invalid_node(i.node)) || ! i.list ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return i;
     }
@@ -297,12 +330,15 @@ hlt_list_iterator hlt_list_iterator_incr(hlt_list_iterator i, hlt_exception** ex
 
 void* hlt_list_iterator_deref(const hlt_list_iterator i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! i.list || ! i.node || i.node->invalid ) {
+    if ( ! i.list || ! i.node || _invalid_node(i.node) ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return 0;
     }
 
     _access(i.list, i.node, excpt, ctx);
+
+    GC_CTOR_GENERIC(&i.node->data, n->type);
+
     return &i.node->data;
 }
 

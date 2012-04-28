@@ -44,9 +44,6 @@ struct __hlt_bytes {
     // hlt_thread_mgr_blockable blockable; // For blocking until changed.
 };
 
-void __hlt_bytes_chunk_dtor(hlt_type_info* ti, __hlt_bytes_chunk* c);
-void __hlt_bytes_data_dtor(hlt_type_info* ti, __hlt_bytes_data* d);
-
 __HLT_RTTI_GC_TYPE(__hlt_bytes_data,  HLT_TYPE_BYTES_DATA)
 __HLT_RTTI_GC_TYPE(__hlt_bytes_chunk, HLT_TYPE_BYTES_CHUNK)
 

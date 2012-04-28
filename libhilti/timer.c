@@ -14,7 +14,7 @@
 #define HLT_TIMER_VECTOR   5
 #define HLT_TIMER_PROFILER 6
 
-struct __hlt_timer_mgr {
+struct hlt_timer_mgr {
     __hlt_gchdr __gchdr; // Header for memory management.
     hlt_time time;       // The current time.
     pqueue_t* timers;    // Priority list of all timers.
@@ -27,6 +27,10 @@ void hlt_timer_dtor(hlt_type_info* ti, hlt_timer* timer)
         GC_DTOR(timer->cookie.function, hlt_callable);
         break;
 
+      case HLT_TIMER_LIST:
+        // GC_DTOR(timer->cookie.list, __hlt_list_timer_cookie);
+        break;
+
 #if 0
       case HLT_TIMER_MAP:
         GC_DTOR(timer->cookie.map, __hlt_map_timer_cookie);
@@ -34,10 +38,6 @@ void hlt_timer_dtor(hlt_type_info* ti, hlt_timer* timer)
 
       case HLT_TIMER_SET:
         GC_DTOR(timer->cookie.set, __hlt_set_timer_cookie);
-        break;
-
-      case HLT_TIMER_LIST:
-        GC_DTOR(timer->cookie.set, __hlt_list_timer_cookie);
         break;
 
       case HLT_TIMER_VECTOR:
@@ -69,6 +69,10 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
         hlt_callable_run(timer->cookie.function, excpt, ctx);
         break;
 
+      case HLT_TIMER_LIST:
+        hlt_list_list_expire(timer->cookie.list);
+        break;
+
 #if 0
       case HLT_TIMER_MAP:
         hlt_list_map_expire(timer->cookie.map);
@@ -76,10 +80,6 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
 
       case HLT_TIMER_SET:
         hlt_list_set_expire(timer->cookie.set);
-        break;
-
-      case HLT_TIMER_LIST:
-        hlt_list_list_expire(timer->cookie.list);
         break;
 
       case HLT_TIMER_VECTOR:
@@ -108,7 +108,7 @@ hlt_timer* __hlt_timer_new_function(hlt_callable* func, hlt_exception** excpt, h
     return timer;
 }
 
-#if 0
+extern hlt_type_info* hlt_type_info___hlt_list_timer_cookie;
 
 hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -119,6 +119,8 @@ hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** 
     GC_INIT(timer->cookie.list, cookie, __hlt_list_timer_cookie);
     return timer;
 }
+
+#if 0
 
 hlt_timer* __hlt_timer_new_vector(__hlt_vector_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
