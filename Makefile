@@ -15,10 +15,10 @@ hilti-debug:
 hilti-release:
 	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=RelWithDebInfo ..; $(MAKE) )
 
-libhilti-release: mkdirs
+libhilti-release: hilti-debug
 	( cd build/libhilti-release; test -e Makefile || cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo ../../libhilti; $(MAKE) )
 
-libhilti-debug: mkdirs
+libhilti-debug: hilti-release
 	( cd build/libhilti-debug;   test -e Makefile || cmake -D CMAKE_BUILD_TYPE=Debug          ../../libhilti; $(MAKE) )
 
 mkdirs:

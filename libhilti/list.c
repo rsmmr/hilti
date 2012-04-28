@@ -7,6 +7,7 @@
 
 #include <string.h>
 
+#include "autogen/hilti-hlt.h"
 #include "list.h"
 #include "timer.h"
 #include "interval.h"
@@ -150,7 +151,7 @@ static inline void _access(hlt_list* l, __hlt_list_node* n, hlt_exception** excp
     hlt_timer_update(n->timer, t, excpt, ctx);
 }
 
-hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_list* l = GC_NEW(hlt_list);
     l->head = l->tail = 0;
@@ -203,7 +204,7 @@ void hlt_list_pop_front(hlt_list* l, hlt_exception** excpt, hlt_execution_contex
 {
     if ( ! l->head ) {
         hlt_set_exception(excpt, &hlt_exception_underflow, 0);
-        return 0;
+        return;
     }
 
     _unlink(l, l->head, excpt, ctx);
@@ -213,7 +214,7 @@ void hlt_list_pop_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context
 {
     if ( ! l->tail ) {
         hlt_set_exception(excpt, &hlt_exception_underflow, 0);
-        return 0;
+        return;
     }
 
     _unlink(l, l->tail, excpt, ctx);
@@ -228,7 +229,7 @@ void* hlt_list_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* 
 
     _access(l, l->head, excpt, ctx);
 
-    GC_CTOR_GENERIC(&l->head->data, n->type);
+    GC_CCTOR_GENERIC(&l->head->data, l->type);
 
     return &l->head->data;
 }
@@ -242,7 +243,7 @@ void* hlt_list_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context* c
 
     _access(l, l->tail, excpt, ctx);
 
-    GC_CTOR_GENERIC(&l->tail->data, n->type);
+    GC_CCTOR_GENERIC(&l->tail->data, l->type);
 
     return &l->tail->data;
 }
@@ -254,7 +255,7 @@ int64_t hlt_list_size(hlt_list* l, hlt_exception** excpt, hlt_execution_context*
 
 void hlt_list_erase(hlt_list_iterator i, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( (i.node && _invalid_node(i.node) || ! i.list ) {
+    if ( (i.node && _invalid_node(i.node)) || ! i.list ) {
         hlt_set_exception(excpt, &hlt_exception_invalid_iterator, 0);
         return;
     }
@@ -297,15 +298,15 @@ void hlt_list_insert(const hlt_type_info* type, void* val, hlt_list_iterator i, 
 hlt_list_iterator hlt_list_begin(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_list_iterator i;
-    GC_INIT(i.list, l, hlt_list_iterator);
-    GC_INIT(i.node, l->head, hlt_list_iterator);
+    GC_INIT(i.list, l, hlt_iterator_list);
+    GC_INIT(i.node, l->head, hlt_iterator_list);
     return i;
 }
 
 hlt_list_iterator hlt_list_end(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_list_iterator i;
-    GC_INIT(i.list, l, hlt_list_iterator);
+    GC_INIT(i.list, l, hlt_iterator_list);
     i.node = 0;
     return i;
 }
@@ -322,8 +323,8 @@ hlt_list_iterator hlt_list_iterator_incr(hlt_list_iterator i, hlt_exception** ex
         return i;
 
     hlt_list_iterator j;
-    GC_INIT(j.list, i.list, hlt_list_iterator);
-    GC_INIT(j.node, i.node->next, hlt_list_iterator);
+    GC_INIT(j.list, i.list, hlt_iterator_list);
+    GC_INIT(j.node, i.node->next, hlt_iterator_list);
 
     return j;
 }
@@ -337,7 +338,7 @@ void* hlt_list_iterator_deref(const hlt_list_iterator i, hlt_exception** excpt, 
 
     _access(i.list, i.node, excpt, ctx);
 
-    GC_CTOR_GENERIC(&i.node->data, n->type);
+    GC_CTOR_GENERIC(&i.node->data, i.node->type);
 
     return &i.node->data;
 }

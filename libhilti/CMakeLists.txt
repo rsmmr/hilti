@@ -35,7 +35,7 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/hilti-hlt.h PROPERTIES GENERATED 1)
 set(SRCS callable.c config.c context.c debug.c globals.c init.c memory.c int.c
     tuple.c string.c utf8proc.c bytes.c exceptions.c util.c print.c
     bool.c addr.c bitset.c caddr.c double.c enum.c interval.c
-    net.c port.c time.c hook.c timer.c threading.c
+    net.c port.c time.c hook.c timer.c threading.c list.c
 
     module/fmt.c
 

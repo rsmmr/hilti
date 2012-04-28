@@ -15,4 +15,6 @@ extern const hlt_type_info* hlt_type_info_hlt_exception;
 extern const hlt_type_info* hlt_type_info_hlt_callable;
 extern const hlt_type_info* hlt_type_info_hlt_timer;
 extern const hlt_type_info* hlt_type_info_hlt_timer_mgr;
+extern const hlt_type_info* hlt_type_info_hlt_list;
+extern const hlt_type_info* hlt_type_info_hlt_iterator_list;
 #endif

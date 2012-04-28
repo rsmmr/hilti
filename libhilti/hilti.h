@@ -27,6 +27,7 @@
 #include "string_.h"
 #include "list.h"
 #include "addr.h"
+#include "enum.h"
 
 // Not yet ported to new compiler framework.
 
