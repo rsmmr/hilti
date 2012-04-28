@@ -37,8 +37,9 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
         // tuple, we use its element directly to avoid generating a struct first
         // just to then disassemble it again (LLVM should be able to optimize the
         // overhead in any case, but it's better readable this way.)
+
         for ( auto a : ast::as<constant::Tuple>(expr->constant())->value() ) {
-            call_params->push_back(a);
+            call_params->push_back(a->coerceTo((*p)->type()));
             ++p;
         }
     }

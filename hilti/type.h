@@ -766,6 +766,13 @@ public:
        _rtype = type; addChild(_rtype);
    }
 
+   /// Constructor for wildcard type.
+   ///
+   /// l: Associated location.
+   Type(const Location& l=Location::None) : hilti::Type() {
+       setWildcard(true);
+   }
+
    ~Type();
 
    shared_ptr<hilti::Type> typeType() const { return _rtype; }

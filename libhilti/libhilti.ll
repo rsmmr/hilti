@@ -91,6 +91,9 @@
 ; Types we don't specify further at the LLVM level.
 %hlt.bytes = type {};
 %hlt.exception = type {};
+%hlt.timer = type {};
+%hlt.timer_mgr = type {};
+%hlt.list = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.
 
@@ -114,6 +117,8 @@ declare %hlt.exception* @hlt_exception_new(%hlt.exception.type*, i8*, i8*)
 declare %hlt.exception* @__hlt_context_get_exception(%hlt.execution_context*)
 declare void            @__hlt_context_set_exception(%hlt.exception*, %hlt.execution_context*)
 declare void            @__hlt_context_clear_exception(%hlt.execution_context*)
+
+declare %hlt.timer*     @__hlt_timer_new_function(%hlt.callable*, %hlt.exception**, %hlt.execution_context*)
 
 declare i8* @hlt_malloc(i64)
 

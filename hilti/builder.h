@@ -416,6 +416,26 @@ inline shared_ptr<hilti::Type> byName(shared_ptr<ID> id, const Location& l=Locat
     return _sptr(new hilti::type::Unknown(id, l));
 }
 
+/// Instantiates a type::Type type.
+///
+/// ttype: The typed type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Type> type(shared_ptr<hilti::Type> ttype, const Location& l=Location::None) {
+    return _sptr(new hilti::type::Type(ttype, l));
+}
+
+/// Instantiates wildcard type::Type type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Type> typeAny(const Location& l=Location::None) {
+    return _sptr(new hilti::type::Type(l));
+}
+
 }
 
 

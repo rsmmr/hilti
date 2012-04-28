@@ -7,6 +7,7 @@
 #define HILTI_TYPE_INFO_H
 
 extern const hlt_type_info* hlt_type_info_hlt_int_32;
+extern const hlt_type_info* hlt_type_info_hlt_int_64;
 extern const hlt_type_info* hlt_type_info_hlt_string;
 extern const hlt_type_info* hlt_type_info_hlt_bytes;
 extern const hlt_type_info* hlt_type_info_hlt_addr;
@@ -14,6 +15,7 @@ extern const hlt_type_info* hlt_type_info_hlt_iterator_bytes;
 extern const hlt_type_info* hlt_type_info_hlt_exception;
 extern const hlt_type_info* hlt_type_info_hlt_callable;
 extern const hlt_type_info* hlt_type_info_hlt_timer;
+extern const hlt_type_info* hlt_type_info_hlt_time;
 extern const hlt_type_info* hlt_type_info_hlt_timer_mgr;
 extern const hlt_type_info* hlt_type_info_hlt_list;
 extern const hlt_type_info* hlt_type_info_hlt_iterator_list;

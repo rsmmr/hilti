@@ -740,6 +740,7 @@ llvm::GlobalVariable *CodeGen::llvmRttiPtr(shared_ptr<hilti::Type> type)
     // the recursive calls function properly.
     string name = util::mangle(string("hlt_type_info_hlt_") + type->render(), true, nullptr, "", false);
     name = ::util::strreplace(name, "_ref", "");
+    name = ::util::strreplace(name, "_any", "");
 
     llvm::Constant* cval = llvmConstNull(llvmTypePtr(llvmTypeRtti()));
     auto constant1 = llvmAddConst(name, cval, true);

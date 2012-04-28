@@ -8,18 +8,17 @@ using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::timer::New* i)
 {
-    assert(false);
-    // Not ye implemented.
+    CodeGen::expr_list params;
+    prepareCall(i->op2(), i->op3(), &params);
 
-/*
-        func = cg.lookupFunction(self.op2())
-        args = self.op3()
-        cont = cg.llvmMakeCallable(func, args)
+    auto func = cg()->llvmValue(i->op2(), false);
+    auto ftype = ast::as<type::Function>(i->op2()->type());
+    auto callable = cg()->llvmCallableBind(func, ftype, params);
 
-        result = cg.llvmCallCInternal("__hlt_timer_new_function", [cont, cg.llvmFrameExceptionAddr(), cg.llvmCurrentExecutionContextPtr()])
-        cg.llvmExceptionTest()
-        cg.llvmStoreInTarget(self, result)
-*/
+    CodeGen::value_list args = { callable };
+    auto timer = cg()->llvmCallC("__hlt_timer_new_function", args, true);
+
+    cg()->llvmStore(i->target(), timer);
 }
 
 void StatementBuilder::visit(statement::instruction::timer::Cancel* i)

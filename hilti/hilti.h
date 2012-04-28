@@ -102,46 +102,12 @@ inline bool validateAST(shared_ptr<Module> module)
 /// libdirs: List of directories to search for relative paths. The current
 /// directly will be tried first.
 ///
+/// import: True if this load is triggered recurisvely by an import
+/// statement. In that case the returned module may not be fully resolved.
+/// Should be used ony for internal purposes.
+///
 /// Returns: The parsed AST, or null if errors are encountered.
-inline shared_ptr<Module> loadModule(string path, const path_list& libdirs)
-{
-    if ( ! util::endsWith(path, ".hlt") )
-        path += ".hlt";
-
-    path = util::strtolower(path);
-
-    string full_path = util::findInPaths(path, libdirs);
-
-    if ( full_path.size() == 0 ) {
-        std::cerr << "cannot find " + path << std::endl;
-        return nullptr;
-    }
-
-    shared_ptr<Module> module = Module::getExistingModule(full_path);
-
-    if ( module )
-        return module;
-
-    std::ifstream in(full_path);
-
-    if ( in.fail() ) {
-        std::cerr << "cannot open " + full_path << " for reading" << std::endl;
-        return nullptr;
-    }
-
-    module = hilti::parseStream(in, full_path);
-
-    if ( ! module )
-        return nullptr;
-
-    if ( ! resolveAST(module, libdirs) )
-        return nullptr;
-
-    if ( ! validateAST(module) )
-        return nullptr;
-
-    return module;
-}
+shared_ptr<Module> loadModule(string path, const path_list& libdirs, bool import=false);
 
 /// Reads a HILTI module from its source file and returns the parsed AST. The
 /// function searches the module file in the paths given and reads it in. It
@@ -152,10 +118,14 @@ inline shared_ptr<Module> loadModule(string path, const path_list& libdirs)
 /// libdirs: List of directories to search for relative paths. The current
 /// directly will be tried first.
 ///
+/// import: True if this load is triggered recurisvely by an import
+/// statement. In that case the returned module may not be fully resolved.
+/// Should be used ony for internal purposes.
+///
 /// Returns: The parsed AST, or null if errors are encountered.
-inline shared_ptr<Module> loadModule(shared_ptr<ID> id, const path_list& libdirs)
+inline shared_ptr<Module> loadModule(shared_ptr<ID> id, const path_list& libdirs, bool import=false)
 {
-    return loadModule(id->name(), libdirs);
+    return loadModule(id->name(), libdirs, import);
 }
 
 /// Dumps out an AST in (somewhat) readable for for debugging.

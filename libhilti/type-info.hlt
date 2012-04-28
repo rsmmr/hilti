@@ -7,8 +7,10 @@ module LibHILTIRtti
 export string
 export ref<bytes>
 export iterator<bytes>
+export iterator<list<*>>
 export addr
 export ref<exception>
 export ref<timer>
-export ref<callable>
 export ref<timer_mgr>
+export time
+export int<64>

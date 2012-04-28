@@ -4,6 +4,8 @@
 
 module hlt
 
+import Hilti
+
 # Conversion function. Note that these must be declated with an "any"
 # parameter to make their C signatures compatible. They will nevertheless get
 # only parameters of "their" type.
@@ -43,8 +45,8 @@ declare "C-HILTI" int<64> time_to_int64(any n)
 declare "C-HILTI" int<64> interval_to_int64(any n)
 
 declare "C-HILTI" double double_to_double(any d)
-# declare "C-HILTI" double timer_to_double(any d)
-# declare "C-HILTI" double timer_mgr_to_double(any d)
+declare "C-HILTI" double timer_to_double(any d)
+declare "C-HILTI" double timer_mgr_to_double(any d)
 declare "C-HILTI" double time_to_double(any d)
 declare "C-HILTI" double interval_to_double(any d)
 
@@ -150,22 +152,26 @@ declare "C-HILTI" int<64> int_pow(int<64> base, int<64> exp)
 #
 # ##
 #
-# declare "C-HILTI" ref<list<*>> list_new(type list_type, ref<timer_mgr> mgr)
-# declare "C-HILTI" void list_timeout(ref<list<*>> m, Hilti::ExpireStrategy s, interval timeout)
-# declare "C-HILTI" void list_push_front(ref<list<*>> l, any val)
-# declare "C-HILTI" void list_push_back(ref<list<*>> l, any val)
-# declare "C-HILTI" void list_pop_front(ref<list<*>> l)
-# declare "C-HILTI" void list_pop_back(ref<list<*>> l)
-# declare "C-HILTI" any list_front(ref<list<*>> l)
-# declare "C-HILTI" any list_back(ref<list<*>> l)
-# declare "C-HILTI" int<64> list_size(ref<list<*>> l)
-# declare "C-HILTI" void list_erase(iterator<list<*>> i)
-# declare "C-HILTI" void list_insert(any val, iterator<list<*>> i)
-# declare "C-HILTI" iterator<list<*>> list_begin(ref<list<*>> l)
-# declare "C-HILTI" iterator<list<*>> list_end(ref<list<*>> l)
-# declare "C-HILTI" iterator<list<*>> list_iter_incr(iterator<list<*>> i)
-# declare "C-HILTI" any list_iter_deref(iterator<list<*>> i)
-# declare "C-HILTI" bool list_iter_eq(iterator<list<*>> i1, iterator<list<*>> i2)
+declare "C-HILTI" void list_dtor(ref<list<*>> l)
+declare "C-HILTI" ref<list<*>> list_new(type list_type, ref<timer_mgr> mgr)
+declare "C-HILTI" void list_timeout(ref<list<*>> m, Hilti::ExpireStrategy s, interval timeout)
+declare "C-HILTI" void list_push_front(ref<list<*>> l, any val)
+declare "C-HILTI" void list_push_back(ref<list<*>> l, any val)
+declare "C-HILTI" void list_pop_front(ref<list<*>> l)
+declare "C-HILTI" void list_pop_back(ref<list<*>> l)
+declare "C-HILTI" any list_front(ref<list<*>> l)
+declare "C-HILTI" any list_back(ref<list<*>> l)
+declare "C-HILTI" int<64> list_size(ref<list<*>> l)
+declare "C-HILTI" void list_erase(iterator<list<*>> i)
+declare "C-HILTI" void list_insert(any val, iterator<list<*>> i)
+
+declare "C-HILTI" void iterator_list_cctor(iterator<list<*>> pos)
+declare "C-HILTI" void iterator_list_dtor(iterator<list<*>> pos)
+declare "C-HILTI" iterator<list<*>> list_begin(ref<list<*>> l)
+declare "C-HILTI" iterator<list<*>> list_end(ref<list<*>> l)
+declare "C-HILTI" iterator<list<*>> list_iter_incr(iterator<list<*>> i)
+declare "C-HILTI" any list_iter_deref(iterator<list<*>> i)
+declare "C-HILTI" bool list_iter_eq(iterator<list<*>> i1, iterator<list<*>> i2)
 #
 # ##
 #
@@ -185,13 +191,15 @@ declare "C-HILTI" int<64> int_pow(int<64> base, int<64> exp)
 #
 # ##
 #
-# declare "C-HILTI" void timer_update(ref<timer> t, time tim)
-# declare "C-HILTI" void timer_cancel(ref<timer> t)
-# declare "C-HILTI" ref<timer_mgr> timer_mgr_new()
-# declare "C-HILTI" void timer_mgr_schedule(ref<timer_mgr> mgr, time t, ref<timer> t)
-# declare "C-HILTI" int<32> timer_mgr_advance(ref<timer_mgr> mgr, time tim)
-# declare "C-HILTI" time timer_mgr_current(ref<timer_mgr> mgr)
-# declare "C-HILTI" void timer_mgr_expire(ref<timer_mgr> mgr, bool fire)
+declare "C-HILTI" void timer_dtor(ref<timer> t)
+declare "C-HILTI" void timer_mgr_dtor(ref<timer_mgr> mgr)
+declare "C-HILTI" void timer_update(ref<timer> t, time tim)
+declare "C-HILTI" void timer_cancel(ref<timer> t)
+declare "C-HILTI" ref<timer_mgr> timer_mgr_new()
+declare "C-HILTI" void timer_mgr_schedule(ref<timer_mgr> mgr, time t, ref<timer> t)
+declare "C-HILTI" int<32> timer_mgr_advance(ref<timer_mgr> mgr, time tim)
+declare "C-HILTI" time timer_mgr_current(ref<timer_mgr> mgr)
+declare "C-HILTI" void timer_mgr_expire(ref<timer_mgr> mgr, bool fire)
 #
 # ##
 #

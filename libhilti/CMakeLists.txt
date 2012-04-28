@@ -38,6 +38,8 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory.c int.c
     net.c port.c time.c hook.c timer.c threading.c list.c
 
     module/fmt.c
+    
+    3rdparty/libpqueue/src/pqueue.c
 
     ${autogen}/hilti-hlt.h
     )

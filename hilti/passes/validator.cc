@@ -227,7 +227,7 @@ void Validator::visit(type::Iterator* t)
 
 void Validator::visit(type::List* t)
 {
-    if ( ! t->argType() )
+    if ( ! t->argType() && ! in<type::Function>() )
         error(t, "no type for list elements given");
 
     if ( t->argType() && ! ast::isA<type::ValueType>(t->argType()) )

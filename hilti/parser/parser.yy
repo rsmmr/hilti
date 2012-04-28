@@ -292,6 +292,7 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | ITER '<' '*' '>'                 { $$ = builder::iterator::typeAny(loc(@$)); }
               | ITER '<' type '>'                { $$ = builder::iterator::type($3, loc(@$)); }
               | LIST '<' type '>'                { $$ = builder::list::type($3, loc(@$)); }
+              | LIST '<' '*' '>'                 { $$ = builder::list::typeAny(loc(@$)); }
               | MAP '<' type ',' type '>'        { $$ = builder::map::type($3, $5, loc(@$)); }
               | REF '<' '*' '>'                  { $$ = builder::reference::typeAny(loc(@$)); }
               | REF '<' type '>'                 { $$ = builder::reference::type($3, loc(@$)); }
@@ -302,6 +303,7 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | VECTOR '<' type '>'              { $$ = builder::vector::type($3, loc(@$)); }
               | CALLABLE '<' type '>'            { $$ = builder::callable::type($3, loc(@$)); }
               | CALLABLE '<' '*' '>'             { $$ = builder::callable::typeAny(loc(@$)); }
+              | TYPE                             { $$ = builder::type::typeAny(loc(@$)); }
 
               | bitset                           { $$ = $1; }
               | enum_                            { $$ = $1; }

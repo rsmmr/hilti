@@ -53,3 +53,91 @@ bool hilti::resolveAST(shared_ptr<Module> module, const path_list& libdirs)
 
     return true;
 }
+
+shared_ptr<Module> loadModule(string path, const path_list& libdirs)
+{
+    if ( ! util::endsWith(path, ".hlt") )
+        path += ".hlt";
+
+    path = util::strtolower(path);
+
+    string full_path = util::findInPaths(path, libdirs);
+
+    if ( full_path.size() == 0 ) {
+        std::cerr << "cannot find " + path << std::endl;
+        return nullptr;
+    }
+
+    shared_ptr<Module> module = Module::getExistingModule(full_path);
+
+    if ( module )
+        return module;
+
+    std::ifstream in(full_path);
+
+    if ( in.fail() ) {
+        std::cerr << "cannot open " + full_path << " for reading" << std::endl;
+        return nullptr;
+    }
+
+    module = hilti::parseStream(in, full_path);
+
+    if ( ! module )
+        return nullptr;
+
+    if ( ! resolveAST(module, libdirs) )
+        return nullptr;
+
+    if ( ! validateAST(module) )
+        return nullptr;
+
+    return module;
+}
+
+shared_ptr<Module> hilti::loadModule(string path, const path_list& libdirs, bool import)
+{
+    if ( ! util::endsWith(path, ".hlt") )
+        path += ".hlt";
+
+    path = util::strtolower(path);
+
+    string full_path = util::findInPaths(path, libdirs);
+
+    if ( full_path.size() == 0 ) {
+        std::cerr << "cannot find " + path << std::endl;
+        return nullptr;
+    }
+
+    shared_ptr<Module> module = Module::getExistingModule(full_path);
+
+    if ( module )
+        return module;
+
+    std::ifstream in(full_path);
+
+    if ( in.fail() ) {
+        std::cerr << "cannot open " + full_path << " for reading" << std::endl;
+        return nullptr;
+    }
+
+    module = hilti::parseStream(in, full_path);
+
+    if ( ! module )
+        return nullptr;
+
+    passes::ScopeBuilder scope_builder(libdirs);
+
+    if ( ! scope_builder.run(module) )
+        return nullptr;
+
+    if ( import )
+        return module;
+
+    if ( ! resolveAST(module, libdirs) )
+        return nullptr;
+
+    if ( ! validateAST(module) )
+        return nullptr;
+
+    return module;
+}

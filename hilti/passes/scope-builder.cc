@@ -40,7 +40,7 @@ void ScopeBuilder::visit(Module* m)
     // TODO. Insert module name into scope.
 
     for ( auto i : m->importedIDs() ) {
-        shared_ptr<Module> other = hilti::loadModule(i, _libdirs);
+        shared_ptr<Module> other = hilti::loadModule(i, _libdirs, true);
         if ( ! other )
             fatalError("import failed");
 
