@@ -152,9 +152,10 @@ bool abi::X86_64::returnInMemory(ffi_cif* cif)
 
 /// X86_64 ABI.
 
+#include "libffi/src/x86/ffi64.h"
+
 /// FIXME: We currently just generally pass structures in memory for HILTI
 /// calling convention. For HILTI_C cc we leave them untouched.
-
 llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
 {
     std::vector<string> arg_names;

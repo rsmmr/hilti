@@ -33,47 +33,10 @@
 
 #ifdef __x86_64__
 
-#define MAX_GPR_REGS 6
-#define MAX_SSE_REGS 8
-
-struct register_args
-{
-  /* Registers for argument passing.  */
-  UINT64 gpr[MAX_GPR_REGS];
-  __int128_t sse[MAX_SSE_REGS];
-};
+#include "ffi64.h"
 
 extern void ffi_call_unix64 (void *args, unsigned long bytes, unsigned flags,
 			     void *raddr, void (*fnaddr)(void), unsigned ssecount);
-
-/* All reference to register classes here is identical to the code in
-   gcc/config/i386/i386.c. Do *not* change one without the other.  */
-
-/* Register class used for passing given 64bit part of the argument.
-   These represent classes as documented by the PS ABI, with the exception
-   of SSESF, SSEDF classes, that are basically SSE class, just gcc will
-   use SF or DFmode move instead of DImode to avoid reformating penalties.
-
-   Similary we play games with INTEGERSI_CLASS to use cheaper SImode moves
-   whenever possible (upper half does contain padding).  */
-enum x86_64_reg_class
-  {
-    X86_64_NO_CLASS,
-    X86_64_INTEGER_CLASS,
-    X86_64_INTEGERSI_CLASS,
-    X86_64_SSE_CLASS,
-    X86_64_SSESF_CLASS,
-    X86_64_SSEDF_CLASS,
-    X86_64_SSEUP_CLASS,
-    X86_64_X87_CLASS,
-    X86_64_X87UP_CLASS,
-    X86_64_COMPLEX_X87_CLASS,
-    X86_64_MEMORY_CLASS
-  };
-
-#define MAX_CLASSES 4
-
-#define SSE_CLASS_P(X)	((X) >= X86_64_SSE_CLASS && X <= X86_64_SSEUP_CLASS)
 
 /* x86-64 register passing implementation.  See x86-64 ABI for details.  Goal
    of this code is to classify each 8bytes of incoming argument by the register
@@ -284,8 +247,8 @@ classify_argument (ffi_type *type, enum x86_64_reg_class classes[],
    class.  Return zero iff parameter should be passed in memory, otherwise
    the number of registers.  */
 
-static int
-examine_argument (ffi_type *type, enum x86_64_reg_class classes[MAX_CLASSES],
+int
+ffi64_examine_argument (ffi_type *type, enum x86_64_reg_class classes[MAX_CLASSES],
 		  _Bool in_return, int *pngpr, int *pnsse)
 {
   int i, n, ngpr, nsse;
@@ -338,7 +301,7 @@ ffi_prep_cif_machdep (ffi_cif *cif)
   flags = cif->rtype->type;
   if (flags != FFI_TYPE_VOID)
     {
-      n = examine_argument (cif->rtype, classes, 1, &ngpr, &nsse);
+      n = ffi64_examine_argument (cif->rtype, classes, 1, &ngpr, &nsse);
       if (n == 0)
 	{
 	  /* The return value is passed in memory.  A pointer to that
@@ -368,7 +331,7 @@ ffi_prep_cif_machdep (ffi_cif *cif)
      not, add it's size to the stack byte count.  */
   for (bytes = 0, i = 0, avn = cif->nargs; i < avn; i++)
     {
-      if (examine_argument (cif->arg_types[i], classes, 0, &ngpr, &nsse) == 0
+      if (ffi64_examine_argument (cif->arg_types[i], classes, 0, &ngpr, &nsse) == 0
 	  || gprcount + ngpr > MAX_GPR_REGS
 	  || ssecount + nsse > MAX_SSE_REGS)
 	{
@@ -435,7 +398,7 @@ ffi_call (ffi_cif *cif, void (*fn)(void), void *rvalue, void **avalue)
       size_t size = arg_types[i]->size;
       int n;
 
-      n = examine_argument (arg_types[i], classes, 0, &ngpr, &nsse);
+      n = ffi64_examine_argument (arg_types[i], classes, 0, &ngpr, &nsse);
       if (n == 0
 	  || gprcount + ngpr > MAX_GPR_REGS
 	  || ssecount + nsse > MAX_SSE_REGS)
@@ -536,7 +499,7 @@ ffi_closure_unix64_inner(ffi_closure *closure, void *rvalue,
   if (ret != FFI_TYPE_VOID)
     {
       enum x86_64_reg_class classes[MAX_CLASSES];
-      int n = examine_argument (cif->rtype, classes, 1, &ngpr, &nsse);
+      int n = ffi64_examine_argument (cif->rtype, classes, 1, &ngpr, &nsse);
       if (n == 0)
 	{
 	  /* The return value goes in memory.  Arrange for the closure
@@ -565,7 +528,7 @@ ffi_closure_unix64_inner(ffi_closure *closure, void *rvalue,
       enum x86_64_reg_class classes[MAX_CLASSES];
       int n;
 
-      n = examine_argument (arg_types[i], classes, 0, &ngpr, &nsse);
+      n = ffi64_examine_argument (arg_types[i], classes, 0, &ngpr, &nsse);
       if (n == 0
 	  || gprcount + ngpr > MAX_GPR_REGS
 	  || ssecount + nsse > MAX_SSE_REGS)
