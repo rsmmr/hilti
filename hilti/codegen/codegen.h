@@ -886,7 +886,7 @@ public:
    /// new one. Note that no type-check is done.
    ///
    /// Returns: The new temporary variable.
-   llvm::Value* llvmAddTmp(const string& name, llvm::Type* type, llvm::Value* init = 0, bool reuse = false);
+   llvm::Value* llvmAddTmp(const string& name, llvm::Type* type, llvm::Value* init = 0, bool reuse = false, int alignment = 0);
 
    /// Adds a new local temporary variable to the current LLVM function.
    /// Temporaries don't correspond to a user-defined variable but are

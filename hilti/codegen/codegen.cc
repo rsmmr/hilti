@@ -1066,7 +1066,7 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
     return local;
 }
 
-llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Value* init, bool reuse)
+llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Value* init, bool reuse, int alignment)
 {
     if ( ! init )
         init = llvmConstNull(type);
@@ -1086,6 +1086,9 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
 
     auto tmp_builder = newBuilder(&block, true);
     auto tmp = tmp_builder->CreateAlloca(type, 0, tname);
+
+    if ( alignment )
+        tmp->SetAlignment(alignment);
 
     if ( init )
         // Must be done in original block.

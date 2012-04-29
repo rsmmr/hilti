@@ -3,6 +3,8 @@
 #include "codegen.h"
 #include "abi.h"
 
+#include "libffi/src/x86/ffi64.h"
+
 using namespace hilti;
 using namespace codegen;
 
@@ -136,6 +138,11 @@ ffi_cif* ABI::getCIF(const string& name, llvm::Type* rtype, const argument_type_
     return cif;
 }
 
+// TODO: This function mimics a subpart of what libffi is doing. However, it
+// remains unclear of this is sufficient: we just determine which arguments
+// are passed in registers and which aren't, but we don't do the register
+// assignment ourselves but hope that LLVM takes care of that correctly and
+// in alignment with what the FFI code would do ...
 abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
 {
     ClassifiedArguments cargs;
@@ -155,18 +162,51 @@ abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& na
     cargs.return_in_mem = (cif->rtype->type == FFI_TYPE_STRUCT && (cif->flags & 0xff) == FFI_TYPE_VOID);
     cargs.return_type = rtype;
 
+    // The following logic follows ffi_call() in libffi/src/x86/ffi64.c.
+
+    enum x86_64_reg_class classes[MAX_CLASSES];
+
+    int gprcount = 0;
+    int ssecount = 0;
+    int ngpr = 0;
+    int nsse = 0;
+
+    // If the return value is passed in memory, that takes a register.
+    if ( cargs.return_in_mem )
+        ++gprcount;
+
     for ( int i = 0; i < args.size(); i++ ) {
-        auto llvm_type = arg_types[i];
-        auto ffi_type = ffi_arg_types[i];
-
         bool arg_in_mem = false;
-        llvm::Type* new_llvm_type = llvm_type;
+        llvm::Type* new_llvm_type = args[i].second;
 
-        if ( ffi_type->type == FFI_TYPE_STRUCT && cc == type::function::HILTI ) {
-            // FIXME: We cheat for now and pass all structs in memory. We
-            // should mimic the code from libffi/src/x86/ffi64.c here instead
-            // (if we can?!).
+        int n = ffi64_examine_argument (ffi_arg_types[i], classes, 0, &ngpr, &nsse);
+
+        if ( n == 0 || gprcount + ngpr > MAX_GPR_REGS || ssecount + nsse > MAX_SSE_REGS )
+            // Argument is passed in memory.
             arg_in_mem = true;
+
+        else {
+            // The argument is passed entirely in registers.
+            for ( int j = 0; j < n; j++) {
+                switch ( classes[j] ) {
+                 case X86_64_INTEGER_CLASS:
+                 case X86_64_INTEGERSI_CLASS:
+                    gprcount++;
+                    break;
+
+                 case X86_64_SSE_CLASS:
+                 case X86_64_SSEDF_CLASS:
+                    ssecount++;
+                    break;
+
+                 case X86_64_SSESF_CLASS:
+                    ssecount++;
+                    break;
+
+                 default:
+                    abort();
+                }
+            }
         }
 
         cargs.args_in_mem.push_back(arg_in_mem);
@@ -252,7 +292,7 @@ llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::V
 
     if ( cargs.return_in_mem ) {
         // Add initial parameter for return value.
-        agg_ret = cg()->llvmAddTmp("agg.sret", cargs.return_type, nullptr, true);
+        agg_ret = cg()->llvmAddTmp("agg.sret", cargs.return_type, nullptr, true, 8);
         nargs.push_back(agg_ret);
     }
 
@@ -263,7 +303,7 @@ llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::V
         auto llvm_type = cargs.arg_types[i];
 
         if ( cargs.args_in_mem[i] ) {
-            auto agg = cg()->llvmAddTmp("agg.arg", llvm_type, llvm_val);
+            auto agg = cg()->llvmAddTmp("agg.arg", llvm_type, llvm_val, false, 8);
             nargs.push_back(agg);
         }
 
