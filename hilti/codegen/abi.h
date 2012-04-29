@@ -50,9 +50,6 @@ protected:
 private:
    string _triple;
    CodeGen* _cg = nullptr;
-
-   typedef std::map<string, ffi_cif*> cif_map;
-   cif_map _cifs;
 };
 
 namespace abi {
@@ -73,9 +70,20 @@ public:
    llvm::Value* createCall(llvm::Function *callee, std::vector<llvm::Value *> args, type::function::CallingConvention cc) override;
 
 private:
-   bool returnInMemory(ffi_cif* cif);
+   struct ClassifiedArguments {
+       bool return_in_mem;                 // True if result is passed via pointer.
+       llvm::Type* return_type;            // ABI type of the return value (not yet a pointer if passed in mem).
+       std::vector<bool> args_in_mem;      // One per arguments, each true if passed via pointer.
+       std::vector<llvm::Type*> arg_types; // Final ABI type of argument (not yet a pointer if passed in mem).
+   };
+
+   ClassifiedArguments classifyArguments(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc);
+   ClassifiedArguments classifyArguments(const string& name); // The other variant must have been called for the same name already.
 
    Flavor _flavor;
+
+   typedef std::map<string, ClassifiedArguments> ca_map;
+   ca_map _classified_arguments;
 };
 
 }

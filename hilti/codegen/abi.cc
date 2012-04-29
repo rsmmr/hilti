@@ -118,11 +118,6 @@ static ffi_type* _llvmToCif(CodeGen* cg, llvm::Type* type)
 
 ffi_cif* ABI::getCIF(const string& name, llvm::Type* rtype, const argument_type_list& args)
 {
-    auto i = _cifs.find(name);
-
-    if ( i != _cifs.end() )
-        return (*i).second;
-
     assert(rtype);
 
     auto rtype_ffi = _llvmToCif(cg(), rtype);
@@ -138,16 +133,55 @@ ffi_cif* ABI::getCIF(const string& name, llvm::Type* rtype, const argument_type_
     auto rc = ffi_prep_cif(cif, FFI_DEFAULT_ABI, nargs, rtype_ffi, args_ffi);
     assert(rc == FFI_OK);
 
-    _cifs.insert(std::make_pair(name, cif));
-
     return cif;
 }
 
-bool abi::X86_64::returnInMemory(ffi_cif* cif)
+abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
 {
-    // From libffi/src/x86/ffi64.c.
-    return (cif->rtype->type == FFI_TYPE_STRUCT
-            && (cif->flags & 0xff) == FFI_TYPE_VOID);
+    ClassifiedArguments cargs;
+
+    std::vector<llvm::Type*> arg_types;
+
+    for ( auto a : args )
+        arg_types.push_back(a.second);
+
+    auto cif = getCIF(name, rtype, arg_types);
+    auto ffi_avn = cif->nargs;
+    auto ffi_arg_types = cif->arg_types;
+
+    assert(ffi_avn == args.size());
+
+    // From ffi64.c.
+    cargs.return_in_mem = (cif->rtype->type == FFI_TYPE_STRUCT && (cif->flags & 0xff) == FFI_TYPE_VOID);
+    cargs.return_type = rtype;
+
+    for ( int i = 0; i < args.size(); i++ ) {
+        auto llvm_type = arg_types[i];
+        auto ffi_type = ffi_arg_types[i];
+
+        bool arg_in_mem = false;
+        llvm::Type* new_llvm_type = llvm_type;
+
+        if ( ffi_type->type == FFI_TYPE_STRUCT && cc == type::function::HILTI ) {
+            // FIXME: We cheat for now and pass all structs in memory. We
+            // should mimic the code from libffi/src/x86/ffi64.c here instead
+            // (if we can?!).
+            arg_in_mem = true;
+        }
+
+        cargs.args_in_mem.push_back(arg_in_mem);
+        cargs.arg_types.push_back(new_llvm_type);
+    }
+
+    _classified_arguments.insert(std::make_pair(name, cargs));
+    return cargs;
+}
+
+abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& name)
+{
+    auto i = _classified_arguments.find(name);
+    assert(i != _classified_arguments.end());
+    return (*i).second;
 }
 
 /// X86_64 ABI.
@@ -158,63 +192,47 @@ bool abi::X86_64::returnInMemory(ffi_cif* cif)
 /// calling convention. For HILTI_C cc we leave them untouched.
 llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
 {
-    std::vector<string> arg_names;
-    std::vector<llvm::Type*> arg_types;
-
-    for ( auto a : args ) {
-        arg_names.push_back(a.first);
-        arg_types.push_back(a.second);
-    }
-
-    auto cif = getCIF(name, rtype, arg_types);
-    auto ret_in_mem = returnInMemory(cif);
-
-    auto ffi_avn = cif->nargs;
-    auto ffi_arg_types = cif->arg_types;
+    auto cargs = classifyArguments(name, rtype, args, linkage, module, cc);
 
     std::vector<llvm::Type*> ntypes;
     std::vector<string> nnames;
     std::vector<int> byvals;
+    int arg_base = 0;
 
-    if ( ret_in_mem ) {
+    if ( cargs.return_in_mem ) {
         // Move return type to new first paramter.
         ntypes.push_back(rtype->getPointerTo());
         nnames.push_back("agg.sret");
         rtype = llvm::Type::getVoidTy(cg()->llvmContext());
+        arg_base = 1;
     }
 
-    for ( int i = 0; i < ffi_avn; ++i ) {
+    assert(cargs.args_in_mem.size() == args.size());
 
-        auto name = arg_names[i];
-        auto llvm_type = arg_types[i];
-        auto ffi_type = ffi_arg_types[i];
-
-        if ( ffi_type->type == FFI_TYPE_STRUCT && cc == type::function::HILTI ) {
-            // FIXME: We cheat for now and pass all structs in memory. We
-            // should mimic the code from libffi/src/x86/ffi64.c here instead
-            // (if we can?!).
-            byvals.push_back(ntypes.size());
-            ntypes.push_back(llvm_type->getPointerTo());
-            nnames.push_back(name);
+    for ( int i = 0; i < args.size(); i++ ) {
+        if ( cargs.args_in_mem[i] ) {
+            byvals.push_back(i);
+            ntypes.push_back(cargs.arg_types[i]->getPointerTo());
+            nnames.push_back(args[i].first);
         }
 
         else {
-            ntypes.push_back(llvm_type);
-            nnames.push_back(name);
+            ntypes.push_back(cargs.arg_types[i]);
+            nnames.push_back(args[i].first);
         }
     }
 
     auto ftype = llvm::FunctionType::get(rtype, ntypes, false);
     auto func = llvm::Function::Create(ftype, linkage, name, module);
 
-    if ( ret_in_mem ) {
+    if ( cargs.return_in_mem ) {
         func->addAttribute(1, llvm::Attribute::StructRet);
         func->addAttribute(1, llvm::Attribute::NoAlias);
     }
 
     for ( auto i : byvals ) {
-        func->addAttribute(i+1, llvm::Attribute::ByVal);
-        func->addAttribute(i+1, llvm::Attribute::NoAlias);
+        func->addAttribute(i + 1 + arg_base, llvm::Attribute::ByVal);
+        func->addAttribute(i + 1 + arg_base, llvm::Attribute::NoAlias);
     }
 
     auto i = nnames.begin();
@@ -226,36 +244,26 @@ llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtyp
 
 llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::Value *> args, type::function::CallingConvention cc)
 {
-    ABI::argument_type_list dummy;
-
-    // Returns cached copy.
-    auto cif = getCIF(callee->getName(), 0, dummy);
-    auto ret_in_mem = returnInMemory(cif);
-
-    auto ffi_avn = cif->nargs;
-    auto ffi_arg_types = cif->arg_types;
+    auto cargs = classifyArguments(callee->getName());
 
     std::vector<llvm::Value*> nargs;
 
     llvm::Value* agg_ret = nullptr;
 
-    if ( ret_in_mem ) {
+    if ( cargs.return_in_mem ) {
         // Add initial parameter for return value.
-        auto rtype = llvm::cast<llvm::PointerType>(callee->arg_begin()->getType())->getElementType();
-        agg_ret = cg()->llvmAddTmp("agg.sret", rtype, nullptr, true);
+        agg_ret = cg()->llvmAddTmp("agg.sret", cargs.return_type, nullptr, true);
         nargs.push_back(agg_ret);
     }
 
-    for ( int i = 0; i < ffi_avn; ++i ) {
+    assert(cargs.args_in_mem.size() == args.size());
 
+    for ( int i = 0; i < args.size(); i++ ) {
         auto llvm_val = args[i];
-        auto ffi_type = ffi_arg_types[i];
+        auto llvm_type = cargs.arg_types[i];
 
-        if ( ffi_type->type == FFI_TYPE_STRUCT && cc == type::function::HILTI ) {
-            // FIXME: We cheat for now and pass all structs in memory. We
-            // should mimic the code from libffi/src/x86/ffi64.c here instead
-            // (if we can?!).
-            auto agg = cg()->llvmAddTmp("agg.arg", llvm_val->getType(), llvm_val);
+        if ( cargs.args_in_mem[i] ) {
+            auto agg = cg()->llvmAddTmp("agg.arg", llvm_type, llvm_val);
             nargs.push_back(agg);
         }
 
@@ -263,10 +271,9 @@ llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::V
             nargs.push_back(llvm_val);
     }
 
-    // Add hidden argument at the front that will receive the return value.
     llvm::Value* result = cg()->llvmCreateCall(callee, nargs);
 
-    if ( ret_in_mem )
+    if ( cargs.return_in_mem )
         result = cg()->builder()->CreateLoad(agg_ret);
 
     return result;
