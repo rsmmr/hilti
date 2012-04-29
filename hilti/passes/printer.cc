@@ -906,14 +906,14 @@ void Printer::visit(constant::Interval* c)
 {
     Printer& p = *this;
 
-    p << "interval(" << (c->value() / 1e9) << ")";
+    p << "interval(" << std::showpoint << (c->value() / 1e9) << ")";
 }
 
 void Printer::visit(constant::Time* c)
 {
     Printer& p = *this;
 
-    p << "time(" << (c->value() / 1e9) << ")";
+    p << "time(" << std::showpoint << (c->value() / 1e9) << ")";
 }
 
 void Printer::visit(constant::Port* c)

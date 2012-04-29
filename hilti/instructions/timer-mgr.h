@@ -51,7 +51,7 @@ iEnd
 
 iBegin(timer_mgr, Expire, "timer_mgr.expire")
     iOp1(optype::refTimerMgr, false)
-    iOp2(optype::boolean, false)
+    iOp2(optype::boolean, true)
 
     iValidate {
     }

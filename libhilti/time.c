@@ -31,11 +31,11 @@ hlt_string hlt_time_to_string(const hlt_type_info* type, const void* obj, int32_
     time_t secs = val / 1000000000;
     double frac = (val % 1000000000) / 1e9;
 
-    snprintf(buffer, sizeof(buffer2), ".%.9fZ", frac);
+    snprintf(buffer, sizeof(buffer), ".%.9fZ", frac);
 
     struct tm tm;
     size_t len = strftime(buffer2, sizeof(buffer2), "%Y-%m-%dT%H:%M:%S", gmtime_r(&secs, &tm));
-    strncpy(buffer2 + len, buffer, sizeof(buffer2) - len);
+    strncpy(buffer2 + len, buffer + 2, sizeof(buffer2) - len);
 
     return hlt_string_from_asciiz(buffer2, excpt, ctx);
 }

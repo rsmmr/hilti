@@ -17,8 +17,10 @@ void StatementBuilder::visit(statement::instruction::timer::New* i)
 
     CodeGen::value_list args = { callable };
     auto timer = cg()->llvmCallC("__hlt_timer_new_function", args, true);
+    cg()->llvmDtor(callable, builder::reference::type(builder::callable::typeAny()), false, "timer.new");
 
     cg()->llvmStore(i->target(), timer);
+
 }
 
 void StatementBuilder::visit(statement::instruction::timer::Cancel* i)

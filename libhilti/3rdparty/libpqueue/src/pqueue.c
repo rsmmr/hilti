@@ -65,6 +65,7 @@ pqueue_init(size_t n)
 
     /* Need to allocate n+1 elements since element 0 isn't used. */
     if (!(q->d = hlt_malloc((n + 1) * sizeof(void *)))) {
+        hlt_free(q);
         return NULL;
     }
 
@@ -78,8 +79,8 @@ pqueue_init(size_t n)
 void
 pqueue_free(pqueue_t *q)
 {
-    free(q->d);
-    free(q);
+    hlt_free(q->d);
+    hlt_free(q);
 }
 
 size_t
@@ -244,7 +245,7 @@ pqueue_dump(pqueue_t *q,
                 "%d\t%d\t%d\t%d\t%ul\t",
                 i,
                 left(i), right(i), parent(i),
-                maxchild(q, i));
+                (unsigned int)maxchild(q, i));
         print(out, q->d[i]);
     }
 }

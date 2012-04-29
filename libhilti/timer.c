@@ -208,7 +208,7 @@ hlt_string hlt_timer_to_string(const hlt_type_info* type, const void* obj, int32
     hlt_string prefix = hlt_string_from_asciiz("<timer scheduled at ", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz(">", excpt, ctx);
 
-    hlt_string s = hlt_time_to_string(&hlt_type_info_hlt_time, &timer->time, options, excpt, ctx);
+    hlt_string s = hlt_time_to_string(hlt_type_info_hlt_time, &timer->time, options, excpt, ctx);
     hlt_string t = hlt_string_concat(prefix, s, excpt, ctx);
     hlt_string u = hlt_string_concat(t, postfix, excpt, ctx);
 
@@ -224,14 +224,14 @@ double hlt_timer_to_double(const hlt_type_info* type, const void* obj, int32_t o
 {
     assert(type->type == HLT_TYPE_TIMER);
     hlt_timer* t = *((hlt_timer **)obj);
-    return hlt_time_to_double(&hlt_type_info_hlt_time, &t->time, options, excpt, ctx);
+    return hlt_time_to_double(hlt_type_info_hlt_time, &t->time, options, excpt, ctx);
 }
 
 int64_t hlt_timer_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER);
     hlt_timer* t = *((hlt_timer **)obj);
-    return hlt_time_to_int64(&hlt_type_info_hlt_time, &t->time, options, excpt, ctx);
+    return hlt_time_to_int64(hlt_type_info_hlt_time, &t->time, options, excpt, ctx);
 }
 
 hlt_timer_mgr* hlt_timer_mgr_new(hlt_exception** excpt, hlt_execution_context* ctx)
@@ -341,10 +341,10 @@ hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, i
 
     int64_t size = pqueue_size(mgr->timers);
 
-    hlt_string size_str = hlt_int_to_string(&hlt_type_info_hlt_int_64, &size, options, excpt, ctx);
-    hlt_string time_str = hlt_time_to_string(&hlt_type_info_hlt_time, &mgr->time, options, excpt, ctx);
+    hlt_string size_str = hlt_int_to_string(hlt_type_info_hlt_int_64, &size, options, excpt, ctx);
+    hlt_string time_str = hlt_time_to_string(hlt_type_info_hlt_time, &mgr->time, options, excpt, ctx);
 
-    hlt_string prefix = hlt_string_from_asciiz("<timer mgr at ", excpt, ctx);
+    hlt_string prefix = hlt_string_from_asciiz("<timer_mgr at ", excpt, ctx);
     hlt_string middle = hlt_string_from_asciiz(" / ", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz(" active timers>", excpt, ctx);
 
@@ -357,6 +357,7 @@ hlt_string hlt_timer_mgr_to_string(const hlt_type_info* type, const void* obj, i
     GC_DTOR(time_str, hlt_string);
     GC_DTOR(prefix, hlt_string);
     GC_DTOR(middle, hlt_string);
+    GC_DTOR(postfix, hlt_string);
     GC_DTOR(s, hlt_string);
     GC_DTOR(t, hlt_string);
     GC_DTOR(u, hlt_string);
@@ -368,12 +369,12 @@ double hlt_timer_mgr_to_double(const hlt_type_info* type, const void* obj, int32
 {
     assert(type->type == HLT_TYPE_TIMER_MGR);
     hlt_timer_mgr* mgr = *((hlt_timer_mgr **)obj);
-    return hlt_time_to_double(&hlt_type_info_hlt_time, &mgr->time, options, excpt, ctx);
+    return hlt_time_to_double(hlt_type_info_hlt_time, &mgr->time, options, excpt, ctx);
 }
 
 int64_t hlt_timer_mgr_to_int64(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(type->type == HLT_TYPE_TIMER_MGR);
     hlt_timer_mgr* mgr = *((hlt_timer_mgr **)obj);
-    return hlt_time_to_int64(&hlt_type_info_hlt_time, &mgr->time, options, excpt, ctx);
+    return hlt_time_to_int64(hlt_type_info_hlt_time, &mgr->time, options, excpt, ctx);
 }

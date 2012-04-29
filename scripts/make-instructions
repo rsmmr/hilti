@@ -21,8 +21,6 @@ function getInstructions
 }
 
 
-targets="instructions.h instructions-declare.h instructions-visits.h instructions-stmt-builder.h instructions-register.cc"
-
 if [ $# -le 2 ]; then
     echo "usage: `basename $0` -h  <current-source-directory> <target-directory> *.h"
     echo "                     -cc <current-source-directory> <target-directory> foo.h"
@@ -39,7 +37,7 @@ shift
 cd $src
 
 hdrs=$@
-tmp=$dst/make-instructions.tmp
+tmp=$dst/make-instructions.tmp.$$
 
 ## Get the names of all instruction classes (e.g., "integer::Add").
 cat $hdrs | getInstructions >$tmp

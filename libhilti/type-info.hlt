@@ -14,3 +14,4 @@ export ref<timer>
 export ref<timer_mgr>
 export time
 export int<64>
+export ref<callable<*>>
