@@ -46,6 +46,14 @@ public:
    /// Returns: The type's type.
    shared_ptr<Type> referencedType(shared_ptr<Expression> op) const;
 
+   /// For a type type::Reference, returns the corresponding referenceType().
+   /// Passing an expression of a different type is an error.
+   ///
+   /// ty: The type::Reference.
+   ///
+   /// Returns: The type's type.
+   shared_ptr<Type> referencedType(shared_ptr<Type> ty) const;
+
    /// For an expression of type type::Container or type::Reference pointing
    /// to a container, returns the corresponding argType(). Passing an
    /// expression of a different type is an error.

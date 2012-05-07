@@ -94,3 +94,18 @@ void ConstantCoercer::visit(constant::Reference* r)
         setResult(shared_ptr<Constant>(c));
     }
 }
+
+void ConstantCoercer::visit(constant::Address* i)
+{
+    setResult(nullptr);
+
+    auto dst_net = ast::as<type::Network>(arg1());
+
+    if ( dst_net ) {
+        auto w = (i->value().family == constant::AddressVal::IPv4 ? 32 : 128);
+        auto c = new constant::Network(i->value(), w, i->location());
+        setResult(shared_ptr<Constant>(c));
+        return;
+    }
+}
+

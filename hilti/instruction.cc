@@ -34,6 +34,13 @@ shared_ptr<Type> InstructionHelper::referencedType(shared_ptr<Expression> op) co
     return t->argType();
 }
 
+shared_ptr<Type> InstructionHelper::referencedType(shared_ptr<Type> ty) const
+{
+    auto t = ast::as<type::Reference>(ty);
+    assert(t);
+    return t->argType();
+}
+
 shared_ptr<Type> InstructionHelper::elementType(shared_ptr<Expression> op) const
 {
     return elementType(op->type());

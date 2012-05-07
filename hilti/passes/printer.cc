@@ -462,8 +462,10 @@ void Printer::visit(type::Type* t)
         return;
 
     Printer& p = *this;
-    assert(t->typeType());
-    p << t->typeType();
+    if ( t->typeType() )
+        p << t->typeType();
+    else
+        p << "(no type)";
 }
 
 void Printer::visit(type::Address* c)

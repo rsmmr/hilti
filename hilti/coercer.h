@@ -16,6 +16,7 @@ namespace hilti {
 class Coercer : public ast::Coercer<AstInfo>
 {
 public:
+   void visit(type::Address* t);
    void visit(type::Integer* i);
    void visit(type::Reference* r);
    void visit(type::Tuple* t);

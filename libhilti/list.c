@@ -86,12 +86,13 @@ static void _link(hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos)
     else {
         // Insert at head.
         GC_ASSIGN(n->next, l->head, __hlt_list_node);
-        GC_ASSIGN(l->head, n, __hlt_list_node);
 
         if ( l->head )
             l->head->prev = n;
         else
             l->tail = n;
+
+        GC_ASSIGN(l->head, n, __hlt_list_node);
     }
 
     ++l->size;
@@ -371,7 +372,7 @@ hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_
 {
     hlt_string prefix = hlt_string_from_asciiz("[", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz("]", excpt, ctx);
-    hlt_string separator = hlt_string_from_asciiz(",", excpt, ctx);
+    hlt_string separator = hlt_string_from_asciiz(", ", excpt, ctx);
 
     const hlt_list* l = *((const hlt_list**)obj);
     hlt_string s = prefix;

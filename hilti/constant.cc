@@ -81,6 +81,11 @@ constant::Network::Network(const string& prefix, int width, const Location& l)
 {
 }
 
+constant::Network::Network(const AddressVal& addr, int width, const Location& l)
+    : Constant(l), _addr(addr), _width(width)
+{
+}
+
 constant::Network::Network(const string& cidr, const Location& l)
 {
     auto i = cidr.find('/');

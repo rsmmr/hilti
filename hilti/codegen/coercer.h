@@ -36,6 +36,7 @@ public:
    llvm::Value* llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst);
 
 protected:
+   void visit(type::Address* t) override;
    void visit(type::Integer* t) override;
    void visit(type::Tuple* t) override;
 };

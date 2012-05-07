@@ -217,6 +217,13 @@ public:
    /// Throws: ConstantParseError if the \a cidr isn't parseable.
    Network(const string& cidr, const Location& l=Location::None);
 
+   /// Constructor.
+   ///
+   /// addr: The address representing the network prefix.
+   ///
+   /// l: An associated location.
+   Network(const AddressVal& addr, int width, const Location& l=Location::None);
+
    /// Returns the network prefix.
    const AddressVal& prefix() const { return _addr; }
 

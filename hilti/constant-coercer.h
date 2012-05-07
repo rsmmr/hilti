@@ -17,9 +17,10 @@ namespace hilti {
 class ConstantCoercer : public ast::ConstantCoercer<AstInfo>
 {
 public:
+   void visit(constant::Address* i) override;
    void visit(constant::Integer* i) override;
-   void visit(constant::Tuple* t) override;
    void visit(constant::Reference* r) override;
+   void visit(constant::Tuple* t) override;
 };
 
 

@@ -7,6 +7,7 @@
 
 #include "addr.h"
 #include "string_.h"
+#include "util.h"
 
 static inline int is_v4(const hlt_addr addr)
 {
@@ -19,16 +20,18 @@ hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_
 
     hlt_addr addr = *((hlt_addr *)obj);
 
-    char buffer[128];
-
     if ( is_v4(addr) ) {
         unsigned long a = (unsigned long)addr.a2;
         struct in_addr sa = { hlt_hton32(a) };
 
-        if ( ! inet_ntop(AF_INET, &sa, buffer, 128) ) {
+        char buffer[INET_ADDRSTRLEN];
+
+        if ( ! inet_ntop(AF_INET, &sa, buffer, sizeof(buffer)) ) {
             hlt_set_exception(excpt, &hlt_exception_os_error, 0);
             return 0;
         }
+
+        return hlt_string_from_asciiz(buffer, excpt, ctx);
     }
 
     else {
@@ -40,13 +43,15 @@ hlt_string hlt_addr_to_string(const hlt_type_info* type, const void* obj, int32_
         a = hlt_hton64(addr.a2);
         memcpy(((char*)&sa) + 8, &a, 8);
 
-        if ( ! inet_ntop(AF_INET6, &sa, buffer, 128) ) {
+        char buffer[INET6_ADDRSTRLEN];
+
+        if ( ! inet_ntop(AF_INET6, &sa, buffer, sizeof(buffer)) ) {
             hlt_set_exception(excpt, &hlt_exception_os_error, 0);
             return 0;
         }
-    }
 
-    return hlt_string_from_asciiz(buffer, excpt, ctx);
+        return hlt_string_from_asciiz(buffer, excpt, ctx);
+    }
 }
 
 hlt_addr hlt_addr_from_asciiz(const char* s, hlt_exception** excpt, hlt_execution_context* ctx)

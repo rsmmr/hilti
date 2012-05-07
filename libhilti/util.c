@@ -75,15 +75,23 @@ size_t hlt_util_memory_usage()
     return (r.ru_maxrss * 1024);
 }
 
-#define _flip(x) \
-    ((((x) & 0xff00000000000000LL) >> 56) | \
-    (((x) & 0x00ff000000000000LL) >> 40) | \
-    (((x) & 0x0000ff0000000000LL) >> 24) | \
-    (((x) & 0x000000ff00000000LL) >> 8) | \
-    (((x) & 0x00000000ff000000LL) << 8) | \
-    (((x) & 0x0000000000ff0000LL) << 24) | \
-    (((x) & 0x000000000000ff00LL) << 40) | \
-    (((x) & 0x00000000000000ffLL) << 56))
+static inline uint64_t _flip(uint64_t v)
+{
+    union {
+        uint64_t ui64;
+        unsigned char c[8];
+    } x;
+
+    char c;
+
+    x.ui64 = v;
+    c = x.c[0]; x.c[0] = x.c[7]; x.c[7] = c;
+    c = x.c[1]; x.c[1] = x.c[6]; x.c[6] = c;
+    c = x.c[2]; x.c[2] = x.c[5]; x.c[5] = c;
+    c = x.c[3]; x.c[3] = x.c[4]; x.c[4] = c;
+
+    return x.ui64;
+}
 
 uint64_t hlt_hton64(uint64_t v)
 {

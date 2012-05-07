@@ -16,7 +16,7 @@ void StatementBuilder::visit(statement::instruction::list::New* i)
     if ( ! op2 ) {
         auto tmgr = builder::timer_mgr::type();
         auto rtmgr = builder::reference::type(tmgr);
-        auto n = cg()->llvmConstNull(cg()->llvmTypePtr());
+        auto n = cg()->llvmConstNull(cg()->llvmType(rtmgr));
 
         op2 = builder::codegen::create(rtmgr, n);
     }

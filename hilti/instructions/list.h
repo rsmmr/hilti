@@ -88,7 +88,7 @@ iBegin(list, New, "new")
     iOp2(optype::optional(optype::refTimerMgr), true)
 
     iValidate {
-        hasType(target, typedType(op1));
+        equalTypes(referencedType(target), typedType(op1));
     }
 
     iDoc(R"(
@@ -103,7 +103,7 @@ iBegin(list, Back, "list.back")
     iOp1(optype::refList, true)
 
     iValidate {
-        canCoerceTo(referencedType(op1), target);
+        canCoerceTo(elementType(referencedType(op1)), target);
     }
 
     iDoc(R"(    
@@ -130,7 +130,7 @@ iBegin(list, Front, "list.front")
     iOp1(optype::refList, true)
 
     iValidate {
-        canCoerceTo(referencedType(op1), target);
+        canCoerceTo(elementType(referencedType(op1)), target);
     }
 
     iDoc(R"(    
@@ -161,7 +161,7 @@ iBegin(list, PopBack, "list.pop_back")
     iOp1(optype::refList, true)
 
     iValidate {
-        canCoerceTo(referencedType(op1), target);
+        canCoerceTo(elementType(referencedType(op1)), target);
     }
 
     iDoc(R"(    
@@ -176,7 +176,7 @@ iBegin(list, PopFront, "list.pop_front")
     iOp1(optype::refList, true)
 
     iValidate {
-        canCoerceTo(referencedType(op1), target);
+        canCoerceTo(elementType(referencedType(op1)), target);
     }
 
     iDoc(R"(    
@@ -191,7 +191,7 @@ iBegin(list, PushBack, "list.push_back")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, referencedType(op1));
+        canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
     iDoc(R"(    
@@ -205,7 +205,7 @@ iBegin(list, PushFront, "list.push_front")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, referencedType(op1));
+        canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
     iDoc(R"(    

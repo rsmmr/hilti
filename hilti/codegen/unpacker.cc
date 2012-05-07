@@ -443,7 +443,7 @@ void Unpacker::visit(type::Integer* t)
     ));
 
     cases.push_back(CodeGen::SwitchCase(
-        "uint32b", u32b, 
+        "uint32b", u32b,
         [&] (CodeGen* cg) -> llvm::Value* { _integerUnpack(cg, args, result, 32, false, ABI::BigEndian, {3, 2, 1, 0}); return nullptr; }
     ));
 
@@ -454,3 +454,126 @@ void Unpacker::visit(type::Integer* t)
 
     cg()->llvmSwitchEnumConst(args.fmt, cases);
 }
+
+static void _addrUnpack4(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool nbo)
+{
+    auto iter_type = builder::iterator::typeBytes();
+
+    auto fmt = cg->llvmEnum(nbo ? "Hilti::Packed::Int32Big" : "Hilti::Packed::Int32");
+    auto a = cg->llvmConstInt(0, 64);
+    auto b = cg->llvmUnpack(builder::integer::type(32), args.begin, args.end, fmt, nullptr, nullptr, args.location);
+
+    CodeGen::value_list vals = { a, cg->builder()->CreateZExt(b.first, cg->llvmTypeInt(64)) };
+    auto addr = cg->llvmValueStruct(vals);
+
+    cg->llvmCreateStore(addr, result.value_ptr);
+    cg->llvmGCAssign(result.iter_ptr, b.second, iter_type, true);
+}
+
+static void _addrUnpack6(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool nbo)
+{
+    auto iter_type = builder::iterator::typeBytes();
+
+    auto fmt = cg->llvmEnum(nbo ? "Hilti::Packed::Int64Big" : "Hilti::Packed::Int64");
+    auto a = cg->llvmUnpack(builder::integer::type(64), args.begin, args.end, fmt, nullptr, nullptr, args.location);
+    auto b = cg->llvmUnpack(builder::integer::type(64), a.second, args.end, fmt, nullptr, nullptr, args.location);
+    cg->llvmDtor(a.second, iter_type, false, "unpack.addr");
+
+    CodeGen::value_list vals;
+
+    if ( ! nbo )
+        vals = { b.first, a.first };
+    else
+        vals = { a.first, b.first };
+
+    auto addr = cg->llvmValueStruct(vals);
+
+    cg->llvmCreateStore(addr, result.value_ptr);
+    cg->llvmGCAssign(result.iter_ptr, b.second, iter_type, true);
+}
+
+void Unpacker::visit(type::Address* t)
+{
+    auto args = arg1();
+    auto result = arg2();
+
+    std::list<llvm::ConstantInt*> a;
+
+    CodeGen::case_list cases;
+
+    cases.push_back(CodeGen::SwitchCase(
+        "addr-ipv4",
+        cg()->llvmEnum("Hilti::Packed::IPv4"),
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack4(cg, args, result, false); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "addr-ipv4-network",
+        cg()->llvmEnum("Hilti::Packed::IPv4Network"),
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack4(cg, args, result, true); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "addr-ipv6",
+        cg()->llvmEnum("Hilti::Packed::IPv6"),
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack6(cg, args, result, false); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "addr-ipv6-network",
+        cg()->llvmEnum("Hilti::Packed::IPv6Network"),
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack6(cg, args, result, true); return nullptr; }
+    ));
+
+    cg()->llvmSwitchEnumConst(args.fmt, cases);
+}
+
+static void _portUnpackTCP(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool nbo)
+{
+}
+
+static void _portUnpackUDP(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool nbo)
+{
+}
+
+void Unpacker::visit(type::Port* t)
+{
+    auto args = arg1();
+    auto result = arg2();
+
+    std::list<llvm::ConstantInt*> a;
+
+    CodeGen::case_list cases;
+
+    cases.push_back(CodeGen::SwitchCase(
+        "port-tcp",
+        cg()->llvmEnum("Hilti::Packed::PortTCP"),
+        [&] (CodeGen* cg) -> llvm::Value* { _portUnpackTCP(cg, args, result, false); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "port-tcp-network",
+        cg()->llvmEnum("Hilti::Packed::PortTCPNetwork"),
+        [&] (CodeGen* cg) -> llvm::Value* { _portUnpackTCP(cg, args, result, true); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "port-udp",
+        cg()->llvmEnum("Hilti::Packed::PortUDP"),
+        [&] (CodeGen* cg) -> llvm::Value* { _portUnpackUDP(cg, args, result, false); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "port-udp-network",
+        cg()->llvmEnum("Hilti::Packed::PortUDPNetwork"),
+        [&] (CodeGen* cg) -> llvm::Value* { _portUnpackUDP(cg, args, result, true); return nullptr; }
+    ));
+
+    cg()->llvmSwitchEnumConst(args.fmt, cases);
+}
+
+void Unpacker::visit(type::Bool* t)
+{
+    assert(false);
+}
+

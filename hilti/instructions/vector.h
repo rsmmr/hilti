@@ -105,7 +105,7 @@ iBegin(vector, New, "new")
     iOp2(optype::optional(optype::refTimerMgr), true);
 
     iValidate {
-        hasType(target, typedType(op1));
+        equalTypes(referencedType(target), typedType(op1));
     }
 
     iDoc(R"(

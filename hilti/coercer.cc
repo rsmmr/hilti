@@ -66,3 +66,15 @@ void Coercer::visit(type::Tuple* t)
 
     setResult(true);
 }
+
+void Coercer::visit(type::Address* t)
+{
+    setResult(false);
+
+    auto dst_net = ast::as<type::Network>(arg1());
+
+    if ( dst_net ) {
+        setResult(true);
+        return;
+    }
+}

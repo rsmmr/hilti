@@ -76,6 +76,9 @@ protected:
    virtual void visit(type::Reference* t) override;
    virtual void visit(type::Bytes* t) override;
    virtual void visit(type::Integer* t) override;
+   virtual void visit(type::Address* t) override;
+   virtual void visit(type::Port* t) override;
+   virtual void visit(type::Bool* t) override;
 };
 
 }

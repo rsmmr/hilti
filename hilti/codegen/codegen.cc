@@ -1088,7 +1088,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
     auto tmp = tmp_builder->CreateAlloca(type, 0, tname);
 
     if ( alignment )
-        tmp->SetAlignment(alignment);
+        tmp->setAlignment(alignment);
 
     if ( init )
         // Must be done in original block.
@@ -1168,31 +1168,42 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
 
     // Adapt parameters according to calling conventions.
     for ( auto p : params ) {
-        auto arg_llvm_type = llvmType(p.second);
 
         switch ( cc ) {
          case type::function::HILTI:
-         case type::function::HOOK:
-            llvm_args.push_back(make_pair(p.first, arg_llvm_type));
-            break;
+         case type::function::HOOK: {
+             auto arg_llvm_type = llvmType(p.second);
+             llvm_args.push_back(make_pair(p.first, arg_llvm_type));
+             break;
+         }
 
          case type::function::HILTI_C: {
-            auto ptype = p.second;
-            shared_ptr<TypeInfo> pti = typeInfo(ptype);
+             auto ptype = p.second;
 
-            if ( pti->pass_type_info ) {
-                llvm_args.push_back(make_tuple(string("ti_") + p.first, llvmTypePtr(llvmTypeRtti())));
-                llvm_args.push_back(make_tuple(p.first, llvmTypePtr()));
-            }
+             if ( ast::isA<hilti::type::Type>(ptype) )
+                 // Pass just RTTI for type arguments.
+                 llvm_args.push_back(make_tuple(string("ti_") + p.first, llvmTypePtr(llvmTypeRtti())));
 
-            else
-                llvm_args.push_back(make_tuple(p.first, arg_llvm_type));
+             else {
+                 shared_ptr<TypeInfo> pti = typeInfo(ptype);
+                 if ( pti->pass_type_info ) {
+                     llvm_args.push_back(make_tuple(string("ti_") + p.first, llvmTypePtr(llvmTypeRtti())));
+                     llvm_args.push_back(make_tuple(p.first, llvmTypePtr()));
+                 }
+
+                 else {
+                     auto arg_llvm_type = llvmType(p.second);
+                     llvm_args.push_back(make_tuple(p.first, arg_llvm_type));
+                 }
+             }
 
              break;
          }
-         case type::function::C:
-            llvm_args.push_back(make_tuple(p.first, arg_llvm_type));
-            break;
+         case type::function::C: {
+             auto arg_llvm_type = llvmType(p.second);
+             llvm_args.push_back(make_tuple(p.first, arg_llvm_type));
+             break;
+         }
 
      default:
             internalError("unknown calling convention in llvmAddFunction");
@@ -2049,43 +2060,62 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
 
     for ( auto p : ftype->parameters() ) {
         auto ptype = p->type();
-        shared_ptr<TypeInfo> pti = typeInfo(ptype);
 
         auto coerced = (*arg)->coerceTo(ptype);
         auto arg_type = coerced->type();
-        auto arg_llvm_type = llvmType(arg_type);
-        auto arg_value = llvmValue(coerced);
-
-        ++arg;
 
         switch ( ftype->callingConvention() ) {
          case type::function::HILTI:
-         case type::function::HOOK:
+         case type::function::HOOK: {
+            assert(! ast::isA<hilti::type::Type>(arg_type)); // Not supported.
+
             // Can pass directly but need context.
+            auto arg_value = llvmValue(coerced);
             llvm_args.push_back(arg_value);
-            break;
-
-         case type::function::HILTI_C: {
-            if ( pti->pass_type_info ) {
-                auto rtti = llvmRtti(arg_type);
-                llvm_args.push_back(rtti);
-                auto tmp = llvmAddTmp("arg", arg_llvm_type, arg_value);
-                llvm_args.push_back(builder()->CreateBitCast(tmp, llvmTypePtr()));
-            }
-            else
-                llvm_args.push_back(arg_value);
-
             break;
          }
 
-         case type::function::C:
+         case type::function::HILTI_C: {
+             if ( ast::isA<hilti::type::Type>(arg_type) ) {
+                 // Pass just RTTI for type arguments.
+                 auto tty = ast::as<hilti::type::Type>((*arg)->type());
+                 assert(tty);
+                 auto rtti = llvmRtti(tty->typeType());
+                 llvm_args.push_back(rtti);
+                 break;
+             }
+
+             auto arg_value = llvmValue(coerced);
+
+             if ( typeInfo(ptype)->pass_type_info ) {
+                 auto rtti = llvmRtti(arg_type);
+                 auto arg_llvm_type = llvmType(arg_type);
+
+                 llvm_args.push_back(rtti);
+                 auto tmp = llvmAddTmp("arg", arg_llvm_type, arg_value);
+                 llvm_args.push_back(builder()->CreateBitCast(tmp, llvmTypePtr()));
+                 break;
+             }
+
+             llvm_args.push_back(arg_value);
+
+             break;
+         }
+
+         case type::function::C: {
+            assert(! ast::isA<hilti::type::Type>(arg_type)); // Not supported.
+
             // Don't mess with arguments.
+            auto arg_value = llvmValue(coerced);
             llvm_args.push_back(arg_value);
             break;
+         }
 
          default:
             internalError("unknown calling convention in llvmCall");
         }
+
+        ++arg;
     }
 
     // Add additional parameters our calling convention may need.

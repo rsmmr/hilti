@@ -56,4 +56,24 @@ void codegen::Coercer::visit(type::Tuple* t)
 
 }
 
+void codegen::Coercer::visit(type::Address* t)
+{
+    auto val = arg1();
+    auto dst = arg2();
 
+    shared_ptr<type::Network> dst_net = ast::as<type::Network>(dst);
+
+    if ( dst_net ) {
+        auto a = cg()->llvmExtractValue(val, 0);
+        auto b = cg()->llvmExtractValue(val, 1);
+        auto w = cg()->llvmConstInt(128, 8);
+
+        CodeGen::value_list vals = { a, b, w };
+        auto net = cg()->llvmValueStruct(vals);
+
+        setResult(net);
+        return;
+    }
+
+    assert(false);
+}

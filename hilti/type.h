@@ -515,13 +515,15 @@ public:
 };
 
 /// Type for IP addresses.
-class Address : public ValueType {
+class Address : public ValueType, public trait::Unpackable {
 public:
    /// Constructor.
    ///
    /// l: Associated location.
    Address(const Location& l=Location::None) : ValueType(l) {}
    virtual ~Address();
+
+   const std::vector<Format>& unpackFormats() const override;
 
    ACCEPT_VISITOR(Type);
 };
@@ -539,13 +541,15 @@ public:
 };
 
 /// Type for ports.
-class Port : public ValueType {
+class Port : public ValueType, public trait::Unpackable {
 public:
    /// Constructor.
    ///
    /// l: Associated location.
    Port(const Location& l=Location::None) : ValueType(l) {}
    virtual ~Port();
+
+   const std::vector<Format>& unpackFormats() const override;
 
    ACCEPT_VISITOR(Type);
 };
@@ -649,13 +653,15 @@ public:
 };
 
 /// Type for booleans.
-class Bool : public ValueType {
+class Bool : public ValueType, public trait::Unpackable {
 public:
    /// Constructor.
    ///
    /// l: Associated location.
    Bool(const Location& l=Location::None) : ValueType(l) {}
    virtual ~Bool();
+
+   const std::vector<Format>& unpackFormats() const override;
 
    ACCEPT_VISITOR(Type);
 };

@@ -562,3 +562,59 @@ const std::vector<type::trait::Unpackable::Format>& type::Integer::unpackFormats
 {
     return unpack_formats_integer;
 }
+
+type::trait::Unpackable::Format _unpack_formats_addr[] = {
+    { "IPv4", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+      "32-bit IPv4 address stored in host byte order." },
+
+    { "IPv4Network", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+      "32-bit IPv4 address stored in network byte order." },
+
+    { "IPv6", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+      "128-bit IPv6 address stored in host byte order." },
+
+    { "IPv6Network", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+      "128-bit IPv6 address stored in network byte order." },
+};
+
+std::vector<type::trait::Unpackable::Format> unpack_formats_addr(makeVector(_unpack_formats_addr));
+
+const std::vector<type::trait::Unpackable::Format>& type::Address::unpackFormats() const
+{
+    return unpack_formats_addr;
+}
+
+type::trait::Unpackable::Format _unpack_formats_port[] = {
+    { "PortTCP", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+      "A 16-bit TCP port value stored in host byte order." },
+
+    { "PortTCPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+      "A 16-bit TCP port value stored in network byte order." },
+
+    { "PortUDP", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+      "A 16-bit UDP port value stored in host byte order." },
+
+    { "PortUDPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+      "A 16-bit UDP port value stored in network byte order." },
+};
+
+std::vector<type::trait::Unpackable::Format> unpack_formats_port(makeVector(_unpack_formats_port));
+
+const std::vector<type::trait::Unpackable::Format>& type::Port::unpackFormats() const
+{
+    return unpack_formats_port;
+}
+
+type::trait::Unpackable::Format _unpack_formats_bool[] = {
+    { "Bool", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+      "A single bytes." }
+};
+
+std::vector<type::trait::Unpackable::Format> unpack_formats_bool(makeVector(_unpack_formats_bool));
+
+const std::vector<type::trait::Unpackable::Format>& type::Bool::unpackFormats() const
+{
+    return unpack_formats_bool;
+}
+
+
