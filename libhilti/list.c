@@ -92,7 +92,7 @@ static void _link(hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos)
         else
             l->tail = n;
 
-        GC_ASSIGN(l->head, n, __hlt_list_node);
+        GC_ASSIGN_REFED(l->head, n, __hlt_list_node);
     }
 
     ++l->size;
@@ -407,6 +407,8 @@ hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_
             if ( *excpt )
                 goto error;
         }
+
+        prefix = 0;
     }
 
     result = hlt_string_concat(s, postfix, excpt, ctx);

@@ -134,6 +134,14 @@ extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char
    }
 
 /// XXX
+#define GC_ASSIGN_REFED(obj, val, tag) \
+   { \
+   tag* tmp = val; \
+   __hlt_object_dtor(hlt_type_info_##tag, (void*)&obj, __hlt_make_location(__FILE__,__LINE__)); \
+   obj = tmp; \
+   }
+
+/// XXX
 #define GC_INIT(obj, val, tag) \
    { \
    obj = val; \
