@@ -343,11 +343,12 @@ void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value)
     _storer->llvmStore(instr->target(), value, true);
 }
 
-llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builder, bool abort_on_excpt)
+llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builder, bool abort_on_excpt, bool is_init_func)
 {
     unique_ptr<FunctionState> state(new FunctionState);
     state->function = function;
     state->abort_on_excpt = abort_on_excpt;
+    state->is_init_func = is_init_func;
     _functions.push_back(std::move(state));
 
     if ( push_builder )
@@ -466,7 +467,7 @@ void CodeGen::createInitFunction()
     CodeGen::parameter_list no_params;
     _module_init_func = llvmAddFunction(name, llvmTypeVoid(), no_params, false, type::function::HILTI_C);
 
-    pushFunction(_module_init_func);
+    pushFunction(_module_init_func, true, false, true);
 }
 
 void CodeGen::finishInitFunction()
@@ -529,26 +530,13 @@ void CodeGen::createGlobalsInitFunction()
     CodeGen::parameter_list no_params;
     _globals_init_func = llvmAddFunction(name, llvmTypeVoid(), no_params, false, type::function::HILTI_C);
 
-    pushFunction(_globals_init_func, true, true);
+    pushFunction(_globals_init_func, true, true, true);
 
     // Init the global string constants.
     for ( auto gs : _global_strings ) {
-        auto str = gs.first;
-        auto glob = gs.second;
-
-        std::vector<llvm::Constant*> vec_data;
-        for ( auto c : str )
-            vec_data.push_back(llvmConstInt(c, 8));
-
-        auto array = llvmConstArray(llvmTypeInt(8), vec_data);
-        llvm::Constant* data = llvmAddConst("string", array);
-        data = llvm::ConstantExpr::getBitCast(data, llvmTypePtr());
-
-        value_list args;
-        args.push_back(data);
-        args.push_back(llvmConstInt(str.size(), 64));
-        auto s = llvmCallC(llvmLibFunction("hlt_string_from_data"), args, true);
-        builder()->CreateStore(s, glob);
+        auto s = llvmStringFromData(gs.first);
+        builder()->CreateStore(s, gs.second);
+        finishStatement(); // Add cleanup.
     }
 
     // Init user defined globals.
@@ -557,6 +545,7 @@ void CodeGen::createGlobalsInitFunction()
         assert(init);
         auto addr = llvmGlobal(g.get());
         llvmCreateStore(init, addr);
+        finishStatement(); // Add cleanup.
     }
 
     if ( functionEmpty() ) {
@@ -963,8 +952,35 @@ llvm::Constant* CodeGen::llvmCastConst(llvm::Constant* c, llvm::Type* t)
     return llvm::ConstantExpr::getBitCast(c, t);
 }
 
+llvm::Value* CodeGen::llvmStringFromData(const string& str)
+{
+    std::vector<llvm::Constant*> vec_data;
+    for ( auto c : str )
+        vec_data.push_back(llvmConstInt(c, 8));
+
+    auto array = llvmConstArray(llvmTypeInt(8), vec_data);
+    llvm::Constant* data = llvmAddConst("string", array);
+    data = llvm::ConstantExpr::getBitCast(data, llvmTypePtr());
+
+    value_list args;
+    args.push_back(data);
+    args.push_back(llvmConstInt(str.size(), 64));
+    return llvmCallC(llvmLibFunction("hlt_string_from_data"), args, true);
+}
+
 llvm::Value* CodeGen::llvmStringPtr(const string& s)
 {
+    // If we're currently buildign the init function, we create the new value
+    // directly and without caching, because otherwise we'd be telling the
+    // init function to create, which it wouldn't do because it's already
+    // running. Clear? :)
+
+    if ( _functions.back()->is_init_func ) {
+        auto data = llvmAddTmp("string", llvmTypeString(), llvmStringFromData(s));
+        llvmDtorAfterInstruction(data, builder::string::type(), true);
+        return data;
+    }
+
     // While we can represent empty string as a nullptr, we also create an
     // object here in that case because we need to return a pointer.
 

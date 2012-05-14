@@ -146,7 +146,7 @@ public:
    ///
    /// abort_on_excpt: If true, exceptions in this function will immeidately
    /// abort execution rather than triggering normal handling. 
-   llvm::Function* pushFunction(llvm::Function* function, bool push_builder=true, bool abort_on_excpt=false);
+   llvm::Function* pushFunction(llvm::Function* function, bool push_builder=true, bool abort_on_excpt=false, bool is_init_func=false);
 
    /// Removes the current LLVM function from the stack of function being
    /// generated. Calls to this function must match with those to
@@ -417,9 +417,7 @@ public:
    /// Returns: The function with the corresponding signature.
    llvm::Function* llvmFunctionHookRun(shared_ptr<Hook> hook);
 
-   /// Returns the LLVM value for a HILTI expression. The value will have its
-   /// cctor function called already (if necessary) to create a new copy. If
-   /// that isn't needed, llvmDtor() must be called on the result.
+   /// Returns the LLVM value for a HILTI expression.
    ///
    /// This method branches out the Loader to do its work.
    ///
@@ -1689,6 +1687,9 @@ private:
    // object.
    llvm::Value* llvmCallableMakeFuncs(llvm::Function* llvm_func, shared_ptr<type::Function> ftype, bool excpt_check, llvm::StructType* sty, const string& name);
 
+   // Helper for calling hlt_string_from_data().
+   llvm::Value* llvmStringFromData(const string& s);
+
    friend class util::IRInserter;
    const string& nextComment() const { // Used by the util::IRInserter.
        return _functions.back()->next_comment;
@@ -1757,6 +1758,7 @@ private:
        dtor_list dtors_after_ins;
        string next_comment;
        bool abort_on_excpt;
+       bool is_init_func;
 
        // Stack of current catch clauses. When an exception occurs we jump to
        // top-most, which either handles it or forwards to the one just

@@ -1150,14 +1150,16 @@ typedef ctor::List::element_list element_list;
 
 /// Instantiates an AST expression node representing a list ctor.
 ///
+/// etype: The type of the the list's elements.
+///
 /// elems: The list of elements.
 ///
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(const element_list& elems, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None)
 {
-    auto c = _sptr(new ctor::List(elems, l));
+    auto c = _sptr(new ctor::List(etype, elems, l));
     return _sptr(new hilti::expression::Ctor(c, l));
 }
 
@@ -1189,14 +1191,16 @@ typedef ctor::Set::element_list element_list;
 
 /// Instantiates an AST expression node representing a set ctor.
 ///
+/// etype: The type of the sets's elements.
+///
 /// elems: The list of elements.
 ///
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(const element_list& elems, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None)
 {
-    auto c = _sptr(new ctor::Set(elems, l));
+    auto c = _sptr(new ctor::Set(etype, elems, l));
     return _sptr(new hilti::expression::Ctor(c, l));
 }
 
@@ -1228,14 +1232,16 @@ typedef ctor::Vector::element_list element_list;
 
 /// Instantiates an AST expression node representing a vector ctor.
 ///
+/// etype: The type of vector's elements.
+///
 /// elems: The list of elements.
 ///
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(const element_list& elems, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None)
 {
-    auto c = _sptr(new ctor::Vector(elems, l));
+    auto c = _sptr(new ctor::Vector(etype, elems, l));
     return _sptr(new hilti::expression::Ctor(c, l));
 }
 
@@ -1273,14 +1279,18 @@ typedef ctor::Map::element_list element_list;
 
 /// Instantiates an AST expression node representing a map ctor.
 ///
+/// ktype: The type of the map's index values.
+///
+/// vtype: The type of the map's values.
+///
 /// elems: The list of elements.
 ///
 /// l: Location associated with the instance.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Ctor> create(const element_list& elems, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Ctor> create(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l=Location::None)
 {
-    auto c = _sptr(new ctor::Map(elems, l));
+    auto c = _sptr(new ctor::Map(ktype, vtype, elems, l));
     return _sptr(new hilti::expression::Ctor(c, l));
 }
 

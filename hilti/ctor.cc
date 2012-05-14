@@ -12,78 +12,61 @@ shared_ptr<Type> ctor::Bytes::type() const
     return shared_ptr<type::Reference>(new type::Reference(b, location()));
 }
 
-ctor::List::List(const element_list& elems, const Location& l) : Ctor(l)
+ctor::List::List(shared_ptr<Type> etype, const element_list& elems, const Location& l) : Ctor(l)
 {
+    assert(etype);
+
     _elems = elems;
+    _type = std::make_shared<type::List>(etype);
+    _type = std::make_shared<type::Reference>(_type);
 
     for ( auto e : _elems )
         addChild(e);
 
-    if ( elems.size() )
-        _type = std::make_shared<type::List>(elems.front()->type(), l);
-    else
-        // Wildcard type.
-        _type = std::make_shared<type::List>(l);
-
-    _type = std::make_shared<type::Reference>(_type);
-
     addChild(_type);
 }
 
-ctor::Vector::Vector(const element_list& elems, const Location& l) : Ctor(l)
+ctor::Vector::Vector(shared_ptr<Type> etype, const element_list& elems, const Location& l) : Ctor(l)
 {
+    assert(etype);
+
     _elems = elems;
+    _type = std::make_shared<type::Vector>(etype);
+    _type = std::make_shared<type::Reference>(_type);
 
     for ( auto e : _elems )
         addChild(e);
 
-    if ( elems.size() )
-        _type = std::make_shared<type::Vector>(elems.front()->type(), l);
-    else
-        // Wildcard type.
-        _type = std::make_shared<type::Vector>(l);
-
-    _type = std::make_shared<type::Reference>(_type);
-
     addChild(_type);
 }
 
-ctor::Set::Set(const element_list& elems, const Location& l) : Ctor(l)
+ctor::Set::Set(shared_ptr<Type> etype, const element_list& elems, const Location& l) : Ctor(l)
 {
+    assert(etype);
+
     _elems = elems;
+    _type = std::make_shared<type::Set>(etype);
+    _type = std::make_shared<type::Reference>(_type);
 
     for ( auto e : _elems )
         addChild(e);
 
-    if ( elems.size() )
-        _type = std::make_shared<type::Set>(elems.front()->type(), l);
-    else
-        // Wildcard type.
-        _type = std::make_shared<type::Set>(l);
-
-    _type = std::make_shared<type::Reference>(_type);
-
     addChild(_type);
 }
 
-ctor::Map::Map(const element_list& elems, const Location& l) : Ctor(l)
+ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l) : Ctor(l)
 {
+    assert(ktype);
+    assert(vtype);
+
     _elems = elems;
+    _type = std::make_shared<type::Map>(ktype, vtype, l);
+    _type = std::make_shared<type::Reference>(_type);
 
     for ( auto e : _elems ) {
         addChild(e.first);
         addChild(e.second);
     }
-
-    if ( elems.size() ) {
-        auto front = elems.front();
-        _type = std::make_shared<type::Map>(front.first->type(), front.second->type(), l);
-    }
-    else
-        // Wildcard type.
-        _type = std::make_shared<type::Map>(l);
-
-    _type = std::make_shared<type::Reference>(_type);
 
     addChild(_type);
 }

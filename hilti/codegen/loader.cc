@@ -352,13 +352,14 @@ void Loader::visit(ctor::Bytes* c)
 static shared_ptr<Expression> _tmgrNull(CodeGen* cg)
 {
     auto refTimerMgr = builder::reference::type(builder::timer_mgr::type());
-    auto null = cg->llvmConstNull(cg->llvmTypePtr(cg->llvmLibType("hlt.timger_mgr")));
+    auto null = cg->llvmConstNull(cg->llvmTypePtr(cg->llvmLibType("hlt.timer_mgr")));
     return builder::codegen::create(refTimerMgr, null);
 }
 
 void Loader::visit(ctor::List* c)
 {
-    auto etype = ast::as<type::List>(c->type())->argType();
+    auto rtype = ast::as<type::Reference>(c->type())->argType();
+    auto etype = ast::as<type::List>(rtype)->argType();
     assert(etype);
 
     auto op1 = builder::type::create(etype);
@@ -380,7 +381,8 @@ void Loader::visit(ctor::List* c)
 
 void Loader::visit(ctor::Set* c)
 {
-    auto etype = ast::as<type::List>(c->type())->argType();
+    auto rtype = ast::as<type::Reference>(c->type())->argType();
+    auto etype = ast::as<type::Set>(rtype)->argType();
     assert(etype);
 
     auto op1 = builder::type::create(etype);
@@ -402,7 +404,8 @@ void Loader::visit(ctor::Set* c)
 
 void Loader::visit(ctor::Vector* c)
 {
-    auto etype = ast::as<type::List>(c->type())->argType();
+    auto rtype = ast::as<type::Reference>(c->type())->argType();
+    auto etype = ast::as<type::Vector>(rtype)->argType();
     assert(etype);
 
     auto op1 = builder::type::create(etype);

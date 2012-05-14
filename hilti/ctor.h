@@ -59,10 +59,12 @@ public:
 
    /// Constructor.
    ///
+   /// etype: The type of the the list's elements.
+   ///
    /// elems: The elements for the instance being constructed.
    ///
    /// l: An associated location.
-   List(const element_list& elems, const Location& l=Location::None);
+   List(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None);
 
    /// Returns the initialization value.
    const element_list& elements() const { return _elems; }
@@ -87,10 +89,12 @@ public:
 
    /// Constructor.
    ///
+   /// etype: The type of the the vector's elements.
+   ///
    /// elems: The elements for the instance being constructed.
    ///
    /// l: An associated location.
-   Vector(const element_list& elems, const Location& l=Location::None);
+   Vector(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None);
 
    /// Returns the initialization value.
    const element_list& elements() const { return _elems; }
@@ -115,10 +119,12 @@ public:
 
    /// Constructor.
    ///
+   /// etype: The type of the the set's elements.
+   ///
    /// elems: The elements for the instance being constructed.
    ///
    /// l: An associated location.
-   Set(const element_list& elems, const Location& l=Location::None);
+   Set(shared_ptr<Type> etype, const element_list& elems, const Location& l=Location::None);
 
    /// Returns the initialization value.
    const element_list& elements() const { return _elems; }
@@ -144,10 +150,14 @@ public:
 
    /// Constructor.
    ///
+   /// ktype: The type of the map's index values.
+   ///
+   /// vtype: The type of the map's values.
+   ///
    /// elems: The elements for the instance being constructed.
    ///
    /// l: An associated location.
-   Map(const element_list& elems, const Location& l=Location::None);
+   Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l=Location::None);
 
    /// Returns the initialization value.
    const element_list& elements() const { return _elems; }

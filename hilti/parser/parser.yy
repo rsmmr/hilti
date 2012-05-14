@@ -407,11 +407,11 @@ constant      : CINTEGER                         { $$ = builder::integer::create
               ;
 
 ctor          : CBYTES                           { $$ = builder::bytes::create($1, loc(@$)); }
-              | LIST '(' opt_exprs ')'           { $$ = builder::list::create($3, loc(@$)); }
-              | SET '(' opt_exprs ')'            { $$ = builder::set::create($3, loc(@$)); }
-              | VECTOR '(' opt_exprs ')'         { $$ = builder::vector::create($3, loc(@$)); }
-              | MAP '(' opt_map_elems ')'        { $$ = builder::map::create($3, loc(@$)); }
               | ctor_regexp                      { $$ = builder::regexp::create($1, loc(@$)); }
+              | LIST   '<' type '>' '(' opt_exprs ')' { $$ = builder::list::create($3, $6, loc(@$)); }
+              | SET    '<' type '>' '(' opt_exprs ')' { $$ = builder::set::create($3, $6, loc(@$)); }
+              | VECTOR '<' type '>' '(' opt_exprs ')' { $$ = builder::vector::create($3, $6, loc(@$)); }
+              | MAP    '<' type ',' type '>' '(' opt_map_elems ')' { $$ = builder::map::create($3, $5, $8, loc(@$)); }
               ;
 
 ctor_regexp   : ctor_regexp '|' re_pattern       { $$ = $1; $$.push_back($3); }

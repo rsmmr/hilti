@@ -79,7 +79,7 @@ static void _link(hlt_list* l, __hlt_list_node* n, __hlt_list_node* pos)
             l->tail = n;
 
         GC_ASSIGN(n->next, pos->next, __hlt_list_node);
-        GC_ASSIGN(pos->next, n, __hlt_list_node);
+        GC_ASSIGN_REFED(pos->next, n, __hlt_list_node);
         n->prev = pos;
     }
 
@@ -114,8 +114,7 @@ static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_
         GC_ASSIGN(l->head, n->next, __hlt_list_node);
     }
 
-    GC_CLEAR(n->next, __hlt_list_node);
-
+    n->next = 0;
     n->prev = 0;
     n->invalid = 1;
     --l->size;
@@ -130,6 +129,7 @@ static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_
 static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     __hlt_list_node* n = GC_NEW_CUSTOM_SIZE(__hlt_list_node, sizeof(__hlt_list_node) + l->type->size);
+    n->type = l->type;
 
     // Init node (note that the memory is zero-initialized).
     memcpy(&n->data, val, l->type->size);
