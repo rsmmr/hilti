@@ -62,7 +62,6 @@ shared_ptr<Type> InstructionHelper::elementType(shared_ptr<Type> ty) const
 shared_ptr<Type> InstructionHelper::iteratedType(shared_ptr<Expression> op) const
 {
     auto t = ast::as<type::Iterator>(op->type());
-    assert(t);
     return t->argType();
 }
 
@@ -174,11 +173,13 @@ InstructionRegistry::instr_list InstructionRegistry::byName(const string& name) 
 bool Instruction::matchesOperands(const instruction::Operands& ops, bool coerce)
 {
 #if 0
-    fprintf(stderr, "--- %s\n", string(*this).c_str());
+    fprintf(stderr, "--- %s  coerce %d\n", string(*this).c_str(), coerce);
     fprintf(stderr, "0 %s | %s\n", ops[0] ? ops[0]->render().c_str() : "-", __typeOp0() ? __typeOp0()->render().c_str() : "-");
     fprintf(stderr, "1 %s | %s\n", ops[1] ? ops[1]->render().c_str() : "-", __typeOp1() ? __typeOp1()->render().c_str() : "-");
+    fprintf(stderr, "2 %s | %s\n", ops[2] ? ops[2]->render().c_str() : "-", __typeOp2() ? __typeOp2()->render().c_str() : "-");
+    fprintf(stderr, "3 %s | %s\n", ops[3] ? ops[3]->render().c_str() : "-", __typeOp3() ? __typeOp3()->render().c_str() : "-");
 
-    fprintf(stderr, "match: 0->%d 1->%d\n", (int)__matchOp0(ops[0]), (int)__matchOp0(ops[1]));
+    fprintf(stderr, "match: 0->%d 1->%d 2->%d 3->%d\n", (int)__matchOp0(ops[0], coerce), (int)__matchOp1(ops[1], coerce), (int)__matchOp2(ops[2], coerce),  (int)__matchOp3(ops[3], coerce));
 
     if ( ! ops[1] )
         fprintf(stderr, " A %d\n", (int)ast::isA<type::OptionalArgument>(__typeOp1()));

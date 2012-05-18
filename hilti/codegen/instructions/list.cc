@@ -67,7 +67,7 @@ void StatementBuilder::visit(statement::instruction::list::Front* i)
 
 void StatementBuilder::visit(statement::instruction::list::Insert* i)
 {
-    auto etype = ast::as<type::List>(iteratedType(i->op1()))->argType();
+    auto etype = ast::as<type::List>(iteratedType(i->op2()))->argType();
     auto op1 = i->op1()->coerceTo(etype);
 
     CodeGen::expr_list args;
@@ -172,7 +172,7 @@ void StatementBuilder::visit(statement::instruction::iterList::Incr* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    auto result = cg()->llvmCall("hlt::list_iter_incr", args);
+    auto result = cg()->llvmCall("hlt::iterator_list_incr", args);
 
     cg()->llvmStore(i, result);
 }
@@ -182,16 +182,19 @@ void StatementBuilder::visit(statement::instruction::iterList::Equal* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
-    auto result = cg()->llvmCall("hlt::list_iter_eq", args);
+    auto result = cg()->llvmCall("hlt::iterator_list_eq", args);
 
     cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::iterList::Deref* i)
 {
+    auto etype = ast::as<type::List>(iteratedType(i->op1()))->argType();
+
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    auto result = cg()->llvmCall("hlt::list_iter_deref", args);
+    auto voidp = cg()->llvmCall("hlt::iterator_list_deref", args);
+    auto casted = cg()->builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(etype)));
 
-    cg()->llvmStore(i, result);
+    cg()->llvmStore(i, cg()->builder()->CreateLoad(casted));
 }

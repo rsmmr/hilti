@@ -32,7 +32,7 @@ void run() {
     list.insert 50 c
     call Hilti::print(l)
 
-    c = incr c
+    c = incr c   XXX without the increments it works XXX
     c = incr c
     c = incr c
     list.insert 350 c

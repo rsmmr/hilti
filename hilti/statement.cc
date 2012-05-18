@@ -42,8 +42,10 @@ string statement::Instruction::signature() const
             target = util::fmt(" -> %s", (*op)->type()->render().c_str());
 
         while ( ++op != _ops.end() ) {
-            if ( *op )
-                ops.push_back((*op)->type()->render());
+            if ( *op ) {
+                auto o = (*op)->type()->render();
+                ops.push_back(o);
+            }
         }
     }
 

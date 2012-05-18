@@ -146,9 +146,9 @@ declare "C-HILTI" int<64> int_pow(int<64> base, int<64> exp)
 # declare "C-HILTI" iterator<vector<*>> vector_begin(ref<vector<*>> v)
 # declare "C-HILTI" iterator<vector<*>> vector_end(ref<vector<*>> v)
 #
-# declare "C-HILTI" iterator<vector<*>> vector_iter_incr(iterator<vector<*>> i)
-# declare "C-HILTI" any vector_iter_deref(iterator<vector<*>> i)
-# declare "C-HILTI" bool vector_iter_eq(iterator<vector<*>> i1, iterator<vector<*>> i2)
+# declare "C-HILTI" iterator<vector<*>> iterator_vector_incr(iterator<vector<*>> i)
+# declare "C-HILTI" any iterator_vector_deref(iterator<vector<*>> i)
+# declare "C-HILTI" bool iterator_vector_eq(iterator<vector<*>> i1, iterator<vector<*>> i2)
 #
 # ##
 #
@@ -169,9 +169,9 @@ declare "C-HILTI" void iterator_list_cctor(iterator<list<*>> pos)
 declare "C-HILTI" void iterator_list_dtor(iterator<list<*>> pos)
 declare "C-HILTI" iterator<list<*>> list_begin(ref<list<*>> l)
 declare "C-HILTI" iterator<list<*>> list_end(ref<list<*>> l)
-declare "C-HILTI" iterator<list<*>> list_iter_incr(iterator<list<*>> i)
-declare "C-HILTI" any list_iter_deref(iterator<list<*>> i)
-declare "C-HILTI" bool list_iter_eq(iterator<list<*>> i1, iterator<list<*>> i2)
+declare "C-HILTI" iterator<list<*>> iterator_list_incr(iterator<list<*>> i)
+declare "C-HILTI" any iterator_list_deref(iterator<list<*>> i)
+declare "C-HILTI" bool iterator_list_eq(iterator<list<*>> i1, iterator<list<*>> i2)
 #
 # ##
 #
@@ -216,9 +216,9 @@ declare "C-HILTI" void timer_mgr_expire(ref<timer_mgr> mgr, bool fire)
 #
 # declare "C-HILTI" iterator<map<*>> map_begin(ref<map<*>> v)
 # declare "C-HILTI" iterator<map<*>> map_end()
-# declare "C-HILTI" iterator<map<*>> map_iter_incr(iterator<map<*>> i)
-# declare "C-HILTI" any map_iter_deref(type result, iterator<map<*>> i)
-# declare "C-HILTI" bool map_iter_eq(iterator<map<*>> i1, iterator<map<*>> i2)
+# declare "C-HILTI" iterator<map<*>> iterator_map_incr(iterator<map<*>> i)
+# declare "C-HILTI" any iterator_map_deref(type result, iterator<map<*>> i)
+# declare "C-HILTI" bool iterator_map_eq(iterator<map<*>> i1, iterator<map<*>> i2)
 #
 # ##
 #
@@ -232,9 +232,9 @@ declare "C-HILTI" void timer_mgr_expire(ref<timer_mgr> mgr, bool fire)
 #
 # declare "C-HILTI" iterator<set<*>> set_begin(ref<set<*>> v)
 # declare "C-HILTI" iterator<set<*>> set_end()
-# declare "C-HILTI" iterator<set<*>> set_iter_incr(iterator<set<*>> i)
-# declare "C-HILTI" any set_iter_deref(iterator<set<*>> i)
-# declare "C-HILTI" bool set_iter_eq(iterator<set<*>> i1, iterator<set<*>> i2)
+# declare "C-HILTI" iterator<set<*>> iterator_set_incr(iterator<set<*>> i)
+# declare "C-HILTI" any iterator_set_deref(iterator<set<*>> i)
+# declare "C-HILTI" bool iterator_set_eq(iterator<set<*>> i1, iterator<set<*>> i2)
 #
 # ##
 #

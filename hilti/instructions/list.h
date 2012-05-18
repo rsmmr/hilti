@@ -59,7 +59,7 @@ iBegin(iterList, Equal, "equal")
     iOp2(optype::iterList, true);
 
     iValidate {
-        equalTypes(target, op1);
+        equalTypes(op1, op2);
     }
 
     iDoc(R"(
@@ -141,7 +141,7 @@ iBegin(list, Front, "list.front")
 iEnd
 
 iBegin(list, Insert, "list.insert")
-    iOp1(optype::any, false)
+    iOp1(optype::any, true)
     iOp2(optype::iterList, true)
 
     iValidate {

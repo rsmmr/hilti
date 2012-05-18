@@ -38,6 +38,20 @@ void Coercer::visit(type::Reference* r)
     }
 }
 
+void Coercer::visit(type::Iterator* i)
+{
+    setResult(false);
+
+    auto dst_iter = ast::as<type::Iterator>(arg1());
+
+    std::cerr << "X " << i->render() << std::endl;
+
+    if ( dst_iter ) {
+        setResult(dst_iter->wildcard());
+        return;
+    }
+}
+
 void Coercer::visit(type::Tuple* t)
 {
     setResult(false);

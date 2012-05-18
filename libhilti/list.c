@@ -311,15 +311,15 @@ void hlt_list_insert(const hlt_type_info* type, void* val, hlt_iterator_list i, 
 hlt_iterator_list hlt_list_begin(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iterator_list i;
-    GC_INIT(i.list, l, hlt_iterator_list);
-    GC_INIT(i.node, l->head, hlt_iterator_list);
+    GC_INIT(i.list, l, hlt_list);
+    GC_INIT(i.node, l->head, __hlt_list_node);
     return i;
 }
 
 hlt_iterator_list hlt_list_end(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iterator_list i;
-    GC_INIT(i.list, l, hlt_iterator_list);
+    GC_INIT(i.list, l, hlt_list);
     i.node = 0;
     return i;
 }
@@ -331,13 +331,15 @@ hlt_iterator_list hlt_iterator_list_incr(hlt_iterator_list i, hlt_exception** ex
         return i;
     }
 
-    if ( ! i.node )
+    if ( ! i.node ) {
         // End of list.
+        GC_CCTOR(i, hlt_iterator_list);
         return i;
+    }
 
     hlt_iterator_list j;
-    GC_INIT(j.list, i.list, hlt_iterator_list);
-    GC_INIT(j.node, i.node->next, hlt_iterator_list);
+    GC_INIT(j.list, i.list, hlt_list);
+    GC_INIT(j.node, i.node->next, __hlt_list_node);
 
     return j;
 }

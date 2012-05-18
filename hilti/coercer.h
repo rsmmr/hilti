@@ -19,6 +19,7 @@ public:
    void visit(type::Address* t);
    void visit(type::Integer* i);
    void visit(type::Reference* r);
+   void visit(type::Iterator* i);
    void visit(type::Tuple* t);
 };
 
