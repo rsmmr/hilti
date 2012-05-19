@@ -161,6 +161,7 @@ struct __hlt_type_info {
 #define __HLT_DECLARE_RTTI_GC_TYPE(id) \
    extern const hlt_type_info* hlt_type_info_##id; \
 
+
 // Include prototypes for compiler-generated type information.
 #include "type-info.h"
 

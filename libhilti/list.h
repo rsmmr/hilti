@@ -19,6 +19,7 @@ struct hlt_timer_mgr;
 
 /// Cookie for entry expiration timers.
 typedef struct __hlt_iterator_list __hlt_list_timer_cookie;
+__HLT_DECLARE_RTTI_GC_TYPE(__hlt_list_timer_cookie);
 
 // Creates a new list.
 extern hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx);

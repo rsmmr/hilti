@@ -3,7 +3,8 @@
 # Canonifies a test's output before running test-diff.
 
 # Remove absolute paths and line numbers from exception information.
-sed 's#(from .*/\([^/]\{1,\}\):\([0-9]\{1,\}\)-\([0-9]\{1,\}\)#(from XXX/\1:XXX#g'
+# sed 's#(from .*/\([^/]\{1,\}\):\([0-9]\{1,\}\)-\([0-9]\{1,\}\)#(from XXX/\1:XXX#g'
+sed 's#(from .*/\([^/]\{1,\}\):\([0-9]\{1,\}\)#(from XXX/\1:XXX#g'
 
 #sed 's#from filtered-#from #g' | \
 #sed 's#addr:0x[0-9a-z]*#addr:XXX#g'

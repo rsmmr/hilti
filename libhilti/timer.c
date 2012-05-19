@@ -28,7 +28,7 @@ void hlt_timer_dtor(hlt_type_info* ti, hlt_timer* timer)
         break;
 
       case HLT_TIMER_LIST:
-        // GC_DTOR(timer->cookie.list, __hlt_list_timer_cookie);
+        GC_DTOR(timer->cookie.list, hlt_iterator_list);
         break;
 
 #if 0

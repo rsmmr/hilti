@@ -35,9 +35,13 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
     return scope;
 }
 
-void ScopeBuilder::visit(Module* m)
+bool ScopeBuilder::run(shared_ptr<Node> module)
 {
-    // TODO. Insert module name into scope.
+    auto m = ast::as<Module>(module);
+    m->body()->scope()->clear();
+
+    if ( !  processAllPreOrder(module) )
+        return true;
 
     for ( auto i : m->importedIDs() ) {
         shared_ptr<Module> other = hilti::loadModule(i, _libdirs, true);
@@ -47,6 +51,11 @@ void ScopeBuilder::visit(Module* m)
         m->body()->scope()->addChild(other->id(), other->body()->scope());
     }
 
+    return true;
+}
+
+void ScopeBuilder::visit(Module* m)
+{
 }
 
 void ScopeBuilder::visit(statement::Block* b)

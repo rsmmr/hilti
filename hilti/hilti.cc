@@ -130,9 +130,6 @@ shared_ptr<Module> hilti::loadModule(string path, const path_list& libdirs, bool
     if ( ! scope_builder.run(module) )
         return nullptr;
 
-    if ( import )
-        return module;
-
     if ( ! resolveAST(module, libdirs) )
         return nullptr;
 

@@ -79,7 +79,12 @@ shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
 
     shared_ptr<TypeInfo> ti(_typeInfo(type));
 
-    assert(ti);
+#ifdef DEBUG
+    if ( ! ti ) {
+        fprintf(stderr, "No type info for %s\n", type->render().c_str());
+        abort();
+    }
+#endif
 
     if ( ! ti->init_val && ti->lib_type.size() )
         ti->init_val = cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmLibType(ti->lib_type)));
@@ -89,6 +94,14 @@ shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
 
         if ( ast::isA<type::Reference>(type) )
             ti->llvm_type = cg()->llvmTypePtr(ti->llvm_type);
+    }
+
+    if ( type::hasTrait<type::trait::GarbageCollected>(type) ) {
+        if ( ! ti->cctor_func )
+            ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
+
+        if ( ! ti->dtor_func )
+            ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
     }
 
     if ( ti->llvm_type && ! ti->init_val && ast::isA<type::ValueType>(type) )
@@ -748,6 +761,7 @@ void TypeBuilder::visit(type::List* t)
     ti->c_prototype = "hlt_list*";
     ti->lib_type = "hlt.list";
     ti->to_string = "hlt::list_to_string";
+
     setResult(ti);
 }
 

@@ -23,9 +23,7 @@ public:
    /// Fills an AST's scopes based o the declarations found in the ast.
    ///
    /// module: The AST to process.
-   bool run(shared_ptr<Node> module) override {
-       return processAllPreOrder(module);
-   }
+   bool run(shared_ptr<Node> module) override;
 
 protected:
    void visit(Module* m) override;

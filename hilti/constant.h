@@ -383,7 +383,7 @@ public:
    ///
    /// Throws: ConstantParseError if the \a time isn't parseable.
    Time(uint64_t time, const Location& l=Location::None) : Constant(l) {
-       _time = time;
+       _time = (uint64_t) (time * 1e9);
    }
 
    /// Returns the time as nano seconds since the epoch.
@@ -423,7 +423,7 @@ public:
    ///
    /// Throws: ConstantParseError if the \a interv isn't parseable.
    Interval(double interv, const Location& l=Location::None) : Constant(l) {
-       _interv = interv;
+       _interv = (uint64_t) (interv * 1e9);
    }
 
    /// Returns the interval in nano seconds.

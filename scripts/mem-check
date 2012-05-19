@@ -53,19 +53,16 @@ print "Leaks"
 print "====="
 print
 
-leaks = False
-
 for (obj, lines) in objs.items():
 
     (op, line) = lines[0]
 
-    if op == "dtor" or op == "cctor":
-        continue
+    for (op, line) in lines:
+        if op == "dtor" or op == "cctor":
+            continue
 
-    leaks = True
-
-if not leaks:
-    sys.exit(0)
+        print " ", line,
+        break
 
 if options.verbose:
     print

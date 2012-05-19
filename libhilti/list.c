@@ -23,7 +23,7 @@ struct __hlt_list_node {
     __hlt_gchdr __gchdr;    // Header for memory management.
     __hlt_list_node* next;  // Successor node. Memory-managed.
     __hlt_list_node* prev;  // Predecessor node. Not memory-managed to avoid cycles.
-    hlt_timer* timer;       // The entry's timer, or null if none is set.
+    hlt_timer* timer;       // The entry's timer, or null if none is set. Not memory-managed to avoid cycles.
     const hlt_type_info* type;  // FIXME: Do we get around storing this with each node?
     int64_t invalid;        // True if node has been invalidated.
                             // FIXME: int64_t to align the data; how else to do that?
@@ -31,7 +31,7 @@ struct __hlt_list_node {
 };
 
 struct __hlt_list {
-    __hlt_gchdr __gchdr;      // Header for memory management.
+    __hlt_gchdr __gchdr;         // Header for memory management.
     __hlt_list_node* head;       // First list element. Memory-managed.
     __hlt_list_node* tail;       // Last list element. Not memory-managed to avoid cycles.
     int64_t size;                // Current list size.
@@ -46,8 +46,8 @@ __HLT_RTTI_GC_TYPE(__hlt_list_node,  HLT_TYPE_LIST_NODE)
 void __hlt_list_node_dtor(hlt_type_info* ti, __hlt_list_node* n)
 {
     GC_DTOR(n->next, __hlt_list_node);
-    GC_DTOR(n->timer, hlt_timer);
     GC_DTOR_GENERIC(&n->data, n->type);
+    n->next = 0;
 }
 
 void hlt_list_dtor(hlt_type_info* ti, hlt_list* l)
@@ -114,7 +114,7 @@ static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_
         GC_ASSIGN(l->head, n->next, __hlt_list_node);
     }
 
-    n->next = 0;
+    GC_CLEAR(n->next, __hlt_list_node);
     n->prev = 0;
     n->invalid = 1;
     --l->size;
@@ -122,7 +122,7 @@ static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_
     if ( n->timer && ctx )
         hlt_timer_cancel(n->timer, excpt, ctx);
 
-    GC_CLEAR(n->timer, hlt_timer);
+    n->timer = 0;
 }
 
 // Returns a ref'ed node.
@@ -138,9 +138,10 @@ static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt
     // Start timer if needed.
     if ( l->tmgr && l->timeout ) {
         __hlt_list_timer_cookie cookie = { l, n };
-        n->timer = __hlt_timer_new_list(cookie, excpt, ctx);
+        n->timer = __hlt_timer_new_list(cookie, excpt, ctx); // Not memory-managed on our end.
         hlt_time t = hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout;
         hlt_timer_mgr_schedule(l->tmgr, t, n->timer, excpt, ctx);
+        GC_DTOR(n->timer, hlt_timer);
     }
 
     return n;
@@ -167,10 +168,10 @@ static inline void _access(hlt_list* l, __hlt_list_node* n, hlt_exception** excp
 hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_list* l = GC_NEW(hlt_list);
+    GC_INIT(l->tmgr, tmgr, hlt_timer_mgr);
     l->head = l->tail = 0;
     l->size = 0;
     l->type = elemtype;
-    l->tmgr = tmgr;
     l->timeout = 0.0;
     l->strategy = hlt_enum_unset(excpt, ctx);
     return l;

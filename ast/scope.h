@@ -100,6 +100,9 @@ public:
    // id: The ID to remove. It must not be scoped.
    bool remove(shared_ptr<ID> id);
 
+   // Removes all entries from the scope.
+   void clear();
+
    /// Dumps out a debugging representation of the scope's binding.
    ///
    /// out: The stream to use.
@@ -140,6 +143,13 @@ inline bool Scope<AstInfo>::remove(shared_ptr<ID> id)
 
     _values.erase(i);
     return true;
+}
+
+template<typename AstInfo>
+inline void Scope<AstInfo>::clear()
+{
+    _childs.clear();
+    _values.clear();
 }
 
 template<typename AstInfo>

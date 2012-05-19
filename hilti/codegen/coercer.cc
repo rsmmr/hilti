@@ -20,6 +20,9 @@ llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti
     if ( src->equal(dst) || dst->equal(src) )
         return value;
 
+    if ( ast::isA<type::OptionalArgument>(dst) )
+        return llvmCoerceTo(value, src, ast::as<type::OptionalArgument>(dst)->argType());
+
     setArg1(value);
     setArg2(dst);
 
