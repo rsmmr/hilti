@@ -1000,6 +1000,16 @@ public:
    /// Returns: The return value for callables that have, or null for ones without.
    llvm::Value* llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable);
 
+   /// Calls a HILTI function inside a fiber.
+   ///
+   /// fiber: The fiber to run the function in.
+   ///
+   /// The other arguments are the same as with the corresponding llvmCall()
+   /// method.
+   ///
+   /// Returns: The value the function returned.
+   llvm::Value* llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true);
+
    /// Triggers execution of a HILTI hook.
    ///
    /// hook: The hook.
@@ -1759,6 +1769,7 @@ private:
        string next_comment;
        bool abort_on_excpt;
        bool is_init_func;
+       llvm::Value* context;
 
        // Stack of current catch clauses. When an exception occurs we jump to
        // top-most, which either handles it or forwards to the one just

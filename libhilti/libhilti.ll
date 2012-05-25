@@ -17,6 +17,7 @@
     %hlt.vid,
     i64,
     %hlt.exception.type*,
+    %hlt.fiber*,
     i8*  ;; Start of globals (right here, pointer content isn't used.)
 }
 
@@ -94,6 +95,7 @@
 %hlt.timer = type {};
 %hlt.timer_mgr = type {};
 %hlt.list = type {};
+%hlt.fiber = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.
 
@@ -123,6 +125,11 @@ declare %hlt.timer*     @__hlt_timer_new_function(%hlt.callable*, %hlt.exception
 declare i8* @hlt_malloc(i64)
 
 declare void @hlt_abort()
+
+declare i8   @hlt_fiber_start(%hlt.fiber*, i8*, i8*)
+declare void @hlt_fiber_return(%hlt.fiber*)
+declare void @hlt_fiber_yield(%hlt.fiber*)
+declare i8   @hlt_fiber_resume(%hlt.fiber*)
 
 ;;; Exception types used by the code generator.
 @hlt_exception_unspecified = external constant %hlt.exception.type

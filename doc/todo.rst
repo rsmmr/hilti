@@ -111,6 +111,10 @@ HILTI Level
 LLVM Level
 ~~~~~~~~~~
 
+  - We could examine function calls for whether they can yield. If
+    not, we may not need to execute inside a fiber. This 
+    would accelerate the top-level C function.
+
 Misc
 ----
 

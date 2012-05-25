@@ -247,6 +247,11 @@ llvm::Value* CodeGen::llvmValue(shared_ptr<Constant> constant)
 
 llvm::Value* CodeGen::llvmExecutionContext()
 {
+    auto ctx = _functions.back()->context;
+
+    if ( ctx )
+        return ctx;
+
     for ( auto arg = function()->arg_begin(); arg != function()->arg_end(); ++arg ) {
         if ( arg->getName() == symbols::ArgExecutionContext )
             return arg;
@@ -349,6 +354,7 @@ llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builde
     state->function = function;
     state->abort_on_excpt = abort_on_excpt;
     state->is_init_func = is_init_func;
+    state->context = nullptr;
     _functions.push_back(std::move(state));
 
     if ( push_builder )
@@ -1871,6 +1877,76 @@ llvm::Value* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function
     return result;
 }
 
+
+llvm::Value* CodeGen::llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
+{
+    // Create a struct value with all the arguments, plus the current context.
+
+    CodeGen::type_list stypes;
+
+    for ( auto a : args )
+        stypes.push_back(llvmType(a->type()));
+
+    stypes.push_back(llvmTypePtr(llvmTypeExecutionContext()));
+
+    auto sty = llvm::cast<llvm::StructType>(llvmTypeStruct("", stypes));
+    llvm::Value* sval = llvmConstNull(sty);
+
+    for ( int i = 0; i < args.size(); ++i ) {
+        auto val = llvmValue(args[i]);
+        sval = llvmInsertValue(sval, val, i);
+    }
+
+    sval = llvmInsertValue(sval, llvmExecutionContext(), args.size());
+
+    // Create a function that receives the parameter struct and then calls the actual function.
+    auto name = llvm_func->getName().str();
+
+    llvm::Function* func = nullptr;
+
+    llvm::Value* f = lookupCachedValue("fiber-func", name);
+
+    if ( f )
+        func = llvm::cast<llvm::Function>(f);
+
+    if ( ! func) {
+        llvm_parameter_list params = { std::make_pair("fiber.args", llvmTypePtr(sty)) };
+        func = llvmAddFunction(string(".fiber.run") + name, llvmTypeVoid(), params, true, type::function::C);
+
+        pushFunction(func);
+
+        auto fsval = builder()->CreateLoad(func->arg_begin());
+
+        expr_list fargs;
+
+        for ( int i = 0; i < args.size(); ++i ) {
+            auto val = llvmExtractValue(fsval, i);
+            fargs.push_back(builder::codegen::create(args[i]->type(), val));
+        }
+
+        _functions.back()->context = llvmExtractValue(fsval, args.size());
+        auto result = llvmCall(llvm_func, ftype, fargs, excpt_check);
+
+        // if ( rtype->equal(builder::void_::type()) )
+        builder()->CreateRetVoid();
+
+        popFunction();
+
+        cacheValue("fiber-func", name, func);
+    }
+
+    // Start the fiber.
+
+    auto tmp = llvmAddTmp("fiber.arg", sty, sval, true);
+    auto funcp = builder()->CreateBitCast(func, llvmTypePtr());
+    auto svalp = builder()->CreateBitCast(sval, llvmTypePtr());
+
+    value_list cargs { fiber, funcp, svalp };
+    auto result = llvmCallC("hlt_fiber_start", cargs, false, false);
+
+    return result;
+}
+
 llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
 {
     auto llvm_func = llvm::cast<llvm::Function>(llvm_func_val);
@@ -2756,3 +2832,4 @@ llvm::Value* CodeGen::llvmTuple(const value_list& elems)
 {
     return llvmValueStruct(elems);
 }
+

@@ -32,24 +32,48 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/hilti-hlt.h PROPERTIES GENERATED 1)
 
 ### Generate the library.
 
+ENABLE_LANGUAGE(ASM)
+
 set(SRCS callable.c config.c context.c debug.c globals.c init.c memory.c int.c
     tuple.c string.c utf8proc.c bytes.c exceptions.c util.c print.c
     bool.c addr.c bitset.c caddr.c double.c enum.c interval.c
-    net.c port.c time.c hook.c timer.c threading.c list.c
+    net.c port.c time.c hook.c timer.c threading.c list.c fiber.c
 
     module/fmt.c
-    
+
     3rdparty/libpqueue/src/pqueue.c
+    3rdparty/libtask/context.c
 
     ${autogen}/hilti-hlt.h
     )
 
+# Need to compile this ASM file separately as we can't turn it into
+# bitcode.
+add_custom_command(
+    OUTPUT   ${CMAKE_CURRENT_BINARY_DIR}/asm.o
+    COMMAND  ${LLVM_CLANG_EXEC} -c ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libtask/asm.S -o ${CMAKE_CURRENT_BINARY_DIR}/asm.o
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libtask/asm.S
+)
+
+add_custom_command(
+    OUTPUT   ${CMAKE_CURRENT_BINARY_DIR}/libhilti-rt-native.a
+    COMMAND  ar cr ${CMAKE_CURRENT_BINARY_DIR}/libhilti-rt-native.a ${CMAKE_CURRENT_BINARY_DIR}/asm.o
+    DEPENDS  ${CMAKE_CURRENT_BINARY_DIR}/asm.o
+)
+
+add_custom_target(build_asm
+                  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libhilti-rt-native.a)
+
 if ( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )
     add_library(hilti-rt-dbg      STATIC ${SRCS})
     add_library(hilti-rt-main-dbg STATIC main.c ${SRCS})
+    add_dependencies(hilti-rt-dbg      build_asm)
+    add_dependencies(hilti-rt-main-dbg build_asm)
 else ()
     add_library(hilti-rt          STATIC ${SRCS})
     add_library(hilti-rt-main     STATIC main.c ${SRCS})
+    add_dependencies(hilti-rt      build_asm)
+    add_dependencies(hilti-rt-main build_asm)
 endif ()
 
 include(ShowCompilerSettings)

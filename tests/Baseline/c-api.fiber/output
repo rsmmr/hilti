@@ -1,0 +1,7 @@
+Init
+In fiber (p=0x1234567890)
+Fiber yielded
+Back in fiber
+Fiber yielded again
+Done with fiber
+Fiber finished

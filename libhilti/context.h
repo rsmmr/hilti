@@ -7,9 +7,9 @@
 #include "memory.h"
 #include "types.h"
 #include "rtti.h"
+#include "fiber.h"
 
 #if 0
-#include "continuation.h"
 #include "profiler.h"
 #endif
 
@@ -35,11 +35,10 @@ struct __hlt_execution_context {
     __hlt_gchdr __gch;                /// Header for garbage collection.
     hlt_vthread_id vid;               /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
     hlt_exception* excpt;             /// The currently raised exception, or 0 if none.
+    hlt_fiber* fiber;                 /// The fiber to use for executing code inside this context.
 
 #if 0
     struct hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
-    hlt_continuation* yield;          /// A continuation to call when a ``yield`` statement is executed.
-    hlt_continuation* resume;         /// A continuation to call when resuming after a ``yield`` statement. Is set by the ``yield``.
 
     /// We keep an array of callable registered for execution but not
     /// processed yet.

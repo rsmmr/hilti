@@ -124,7 +124,7 @@ while [ "$1" != "" ]; do
             ## This is a hack. Eventually, cmake should replace this directlt *.in style.
             ## papi_libs=`cat $base/libhilti/$builddir/papi-libs.cfg`
             # echo "-lc -lm -lpthread $papi_libs $pcap_libs"
-            echo ""
+            echo "$base/build/libhilti-${build_mode}/libhilti-rt-native.a"
             shift;;
 
         --cflags | --cxxflags)
