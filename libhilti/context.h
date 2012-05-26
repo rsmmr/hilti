@@ -35,7 +35,8 @@ struct __hlt_execution_context {
     __hlt_gchdr __gch;                /// Header for garbage collection.
     hlt_vthread_id vid;               /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
     hlt_exception* excpt;             /// The currently raised exception, or 0 if none.
-    hlt_fiber* fiber;                 /// The fiber to use for executing code inside this context.
+    hlt_fiber* fiber;                 /// The current fiber to use for executing code inside this context.
+    hlt_free_list fiber_pool;         /// The pool of fiber objects for this context.
 
 #if 0
     struct hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
@@ -91,7 +92,14 @@ extern void __hlt_context_clear_exception(hlt_execution_context* ctx);
 ///
 /// ctx: The context.
 ///
-/// Returns: The exception.
+/// Returns: The fiber.
 extern hlt_fiber* __hlt_context_get_fiber(hlt_execution_context* ctx);
+
+/// Sets the fiber field in an execution context.
+///
+/// ctx: The context.
+///
+/// fiber: The fiber.
+extern void __hlt_context_set_fiber(hlt_execution_context* ctx, hlt_fiber* fiber);
 
 #endif

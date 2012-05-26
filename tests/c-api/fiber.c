@@ -9,8 +9,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "fiber.h"
-#include "context.h"
+#include <hilti.h>
 
 void fiber_yielded(hlt_fiber* f)
 {
@@ -41,11 +40,13 @@ void fiber_func(hlt_fiber* fiber, void* p)
 
 int main(int argc, char** argv)
 {
-    hlt_fiber* fiber = hlt_fiber_create(10240);
+    hlt_init();
+
+    hlt_fiber* fiber = hlt_fiber_create(fiber_func, hlt_global_execution_context(), (void*)0x1234567890);
 
     fprintf(stderr, "Init\n");
 
-    switch ( hlt_fiber_start(fiber, fiber_func, (void*)0x1234567890) ) {
+    switch ( hlt_fiber_start(fiber) ) {
      case 0:
         // Fiber yielded.
         fprintf(stderr, "Fiber yielded\n");

@@ -1,4 +1,3 @@
-// $Id$
 
 #include <stdio.h>
 
@@ -30,6 +29,11 @@ void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
     }
 
     GC_DTOR(ctx->excpt, hlt_exception);
+
+    if ( ctx->fiber )
+        hlt_fiber_delete(ctx->fiber);
+
+    hlt_free_list_destroy(&ctx->fiber_pool);
 }
 
 __HLT_RTTI_GC_TYPE(hlt_execution_context, HLT_TYPE_CONTEXT)
@@ -50,7 +54,8 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
     }
 
     ctx->excpt = 0;
-    ctx->fiber = hlt_fiber_create(hlt_config_get()->stack_size);
+    ctx->fiber = 0;
+    hlt_free_list_init(&ctx->fiber_pool);
 
     return ctx;
 }
@@ -73,4 +78,9 @@ void __hlt_context_clear_exception(hlt_execution_context* ctx)
 hlt_fiber* __hlt_context_get_fiber(hlt_execution_context* ctx)
 {
     return ctx->fiber;
+}
+
+void __hlt_context_set_fiber(hlt_execution_context* ctx, hlt_fiber* fiber)
+{
+    ctx->fiber = fiber;
 }

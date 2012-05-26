@@ -261,3 +261,52 @@ void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location
         (*(ti->cctor))(ti, obj);
     }
 }
+
+void hlt_free_list_init(hlt_free_list* list)
+{
+    list->pool = 0;
+}
+
+void* hlt_free_list_alloc(hlt_free_list* list, size_t size)
+{
+#ifdef DEBUG
+    assert(size == list->size || ! list->size);
+#endif
+
+    __hlt_free_list_block* b = 0;
+
+    if ( list->pool ) {
+        b = list->pool;
+        list->pool = list->pool->next;
+    }
+    else {
+        b = (__hlt_free_list_block*) hlt_malloc(sizeof(__hlt_free_list_block) + size);
+#ifdef DEBUG
+        list->size = size;
+#endif
+    }
+
+    return ((char *)b) + sizeof(__hlt_free_list_block*);
+}
+
+void hlt_free_list_free(hlt_free_list* list, void* p, size_t size)
+{
+#ifdef DEBUG
+    assert(size == list->size);
+#endif
+
+    __hlt_free_list_block* b = (__hlt_free_list_block*) (((char *)p) - sizeof(__hlt_free_list_block*));
+    b->next = list->pool;
+    list->pool = b;
+}
+
+void hlt_free_list_destroy(hlt_free_list* list)
+{
+    __hlt_free_list_block* b = list->pool;
+
+    while ( b ) {
+        __hlt_free_list_block* tmp = b->next;
+        hlt_free(b);
+        b = tmp;
+    }
+}

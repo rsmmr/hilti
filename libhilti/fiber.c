@@ -8,19 +8,26 @@
 
 #include "fiber.h"
 #include "memory.h"
+#include "context.h"
 
 #include "3rdparty/libtask/taskimpl.h"
+
+// TODO: This should be customizable, however the we'll need separate free
+// lists.
+static const int STACK_SIZE = 8192;
 
 enum __hlt_fiber_state { INIT=1, RUNNING=2, FINISHED=3, YIELDED=4 };
 
 struct __hlt_fiber {
+    enum __hlt_fiber_state state;
     ucontext_t uctx;
     jmp_buf fiber;
     jmp_buf parent;
     void* cookie;
     void* result;
+    hlt_execution_context* context;
     hlt_fiber_func run;
-    enum __hlt_fiber_state state;
+    char stack[STACK_SIZE];
 };
 
 static void _fiber_trampoline(unsigned int y, unsigned int x)
@@ -39,9 +46,9 @@ static void _fiber_trampoline(unsigned int y, unsigned int x)
     hlt_fiber_return(fiber);
 }
 
-hlt_fiber* hlt_fiber_create(int stack)
+hlt_fiber* hlt_fiber_create(hlt_fiber_func func, hlt_execution_context* ctx, void* p)
 {
-    hlt_fiber* fiber = (hlt_fiber*) hlt_malloc(sizeof(hlt_fiber));
+    hlt_fiber* fiber = (hlt_fiber*) hlt_free_list_alloc(&ctx->fiber_pool, sizeof(hlt_fiber));
 
     if ( getcontext(&fiber->uctx) < 0 ) {
         fprintf(stderr, "getcontext failed in hlt_fiber_create\n");
@@ -49,24 +56,13 @@ hlt_fiber* hlt_fiber_create(int stack)
     }
 
     fiber->state = INIT;
-    fiber->uctx.uc_link = 0;
-    fiber->uctx.uc_stack.ss_sp = hlt_malloc(stack);
-    fiber->uctx.uc_stack.ss_size = stack;
-    fiber->uctx.uc_stack.ss_flags = 0;
-
-    return fiber;
-}
-
-void hlt_fiber_delete(hlt_fiber* fiber)
-{
-    hlt_free(fiber->uctx.uc_stack.ss_sp);
-    hlt_free(fiber);
-}
-
-int8_t hlt_fiber_start(hlt_fiber* fiber, hlt_fiber_func func, void* p)
-{
-    fiber->cookie = p;
     fiber->run = func;
+    fiber->cookie = p;
+    fiber->context = ctx;
+    fiber->uctx.uc_link = 0;
+    fiber->uctx.uc_stack.ss_sp = &fiber->stack;
+    fiber->uctx.uc_stack.ss_size = STACK_SIZE;
+    fiber->uctx.uc_stack.ss_flags = 0;
 
     // Magic from from libtask/task.c to turn the pointer into two words.
     unsigned long z = (unsigned long)fiber;
@@ -76,6 +72,16 @@ int8_t hlt_fiber_start(hlt_fiber* fiber, hlt_fiber_func func, void* p)
 
     makecontext(&fiber->uctx, (void (*)())_fiber_trampoline, 2, y, x);
 
+    return fiber;
+}
+
+void hlt_fiber_delete(hlt_fiber* fiber)
+{
+    hlt_free_list_free(&fiber->context->fiber_pool, fiber, sizeof(hlt_fiber));
+}
+
+int8_t hlt_fiber_start(hlt_fiber* fiber)
+{
     if ( ! _setjmp(fiber->parent) ) {
         fiber->state = RUNNING;
         setcontext(&fiber->uctx);
@@ -139,4 +145,9 @@ void hlt_fiber_set_result_ptr(hlt_fiber* fiber, void* p)
 void* hlt_fiber_get_result_ptr(hlt_fiber* fiber)
 {
     return fiber->result;
+}
+
+extern hlt_execution_context* hlt_fiber_context(hlt_fiber* fiber)
+{
+    return fiber->context;
 }

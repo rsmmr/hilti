@@ -28,6 +28,7 @@
 #include "list.h"
 #include "addr.h"
 #include "enum.h"
+#include "fiber.h"
 
 // Not yet ported to new compiler framework.
 
