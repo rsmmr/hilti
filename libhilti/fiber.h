@@ -56,4 +56,17 @@ extern void hlt_fiber_yield(hlt_fiber* fiber);
 /// Returns: 1: fiber has finished. 0: fiber has yielded.
 extern int8_t hlt_fiber_resume(hlt_fiber* fiber);
 
+/// Saves a pointer in the fiber indicating where a return value should be stored.
+///
+/// ptr: The pointer.
+///
+extern void hlt_fiber_set_result_ptr(hlt_fiber* fiber, void* p);
+
+/// Returns a previously saved pointer from the fiber indicating where a
+/// return value should be stored.
+///
+/// Returns: The pointer.
+extern void* hlt_fiber_get_result_ptr(hlt_fiber* fiber);
+
+
 #endif

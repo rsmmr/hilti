@@ -31,6 +31,9 @@ type NoHookResult = exception<string> &libhilti="hlt_exception_no_hook_result"
 # Raised for invalid values.
 type ValueError = exception<string> &libhilti="hlt_exception_value_error"
 
+# Raised when a HILTI function called from C yields.
+type Yield = exception<string> &libhilti="hlt_exception_yield"
+
 ## Defines the valid formats for the ref:op:`unpack` operator. 
 type Packed = enum {
     # String

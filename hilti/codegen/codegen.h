@@ -1127,6 +1127,19 @@ public:
    /// exception (i.e., usually the \c excpt parameter).
    void llvmCheckCException(llvm::Value* excpt);
 
+   /// Creates a new exception instance.
+   ///
+   /// exception: The name of the exception's type. The name must define an
+   /// exception type in \c libhilti.ll.
+   ///
+   /// node: A node to associate with the exception as its source. We use the
+   /// node location information.
+   ///
+   /// arg: The exception's argument if the type takes one, or null if not.
+   ///
+   /// Returns: The exception instance.
+   llvm::Value* llvmExceptionNew(const string& exception, const Location& l, llvm::Value* arg);
+
    /// Generates code to raise an exception. When executed, the code will
    /// *not* return control back to the current block.
    ///
@@ -1137,9 +1150,6 @@ public:
    /// node location information.
    ///
    /// arg: The exception's argument if the type takes one, or null if not.
-   ///
-   /// \todo As we have not implemented exception yet, this currently just
-   /// aborts execution.
    void llvmRaiseException(const string& exception, shared_ptr<Node> node, llvm::Value* arg = nullptr);
 
    /// Generates code to raise an exception. When executed, the code will
@@ -1151,9 +1161,6 @@ public:
    /// loc: Location information to associate with the exception.
    ///
    /// arg: The exception's argument if the type takes one, or null if not.
-   ///
-   /// \todo As we have not implemented exception yet, this currently just
-   /// aborts execution.
    void llvmRaiseException(const string& exception, const Location& l,  llvm::Value* arg = nullptr);
 
    /// Generates code to raise an exception. When executed, the code will
@@ -1174,6 +1181,9 @@ public:
 
    /// Extracts the current exception from the execution context.
    llvm::Value* llvmCurrentException();
+
+   /// Extracts the current fiber from the execution context.
+   llvm::Value* llvmCurrentFiber();
 
    /// Checks whether a connection has been raised and if so, triggers
    /// handling. Control flow may not return in that case if stack unwinding

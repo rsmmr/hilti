@@ -69,3 +69,8 @@ void __hlt_context_clear_exception(hlt_execution_context* ctx)
 {
     GC_CLEAR(ctx->excpt, hlt_exception);
 }
+
+hlt_fiber* __hlt_context_get_fiber(hlt_execution_context* ctx)
+{
+    return ctx->fiber;
+}

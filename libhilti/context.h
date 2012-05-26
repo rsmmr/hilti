@@ -87,4 +87,11 @@ extern hlt_exception* __hlt_context_get_exception(hlt_execution_context* ctx);
 /// ctx: The context.
 extern void __hlt_context_clear_exception(hlt_execution_context* ctx);
 
+/// Returns the fiber field from an execution context.
+///
+/// ctx: The context.
+///
+/// Returns: The exception.
+extern hlt_fiber* __hlt_context_get_fiber(hlt_execution_context* ctx);
+
 #endif

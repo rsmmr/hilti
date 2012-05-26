@@ -18,6 +18,7 @@ struct __hlt_fiber {
     jmp_buf fiber;
     jmp_buf parent;
     void* cookie;
+    void* result;
     hlt_fiber_func run;
     enum __hlt_fiber_state state;
 };
@@ -130,3 +131,12 @@ void hlt_fiber_return(hlt_fiber* fiber)
     }
 }
 
+void hlt_fiber_set_result_ptr(hlt_fiber* fiber, void* p)
+{
+    fiber->result = p;
+}
+
+void* hlt_fiber_get_result_ptr(hlt_fiber* fiber)
+{
+    return fiber->result;
+}
