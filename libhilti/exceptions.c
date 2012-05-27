@@ -56,6 +56,9 @@ void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt)
         GC_DTOR_GENERIC(excpt->arg, *excpt->type->argtype);
         hlt_free(excpt->arg);
     }
+
+    if ( excpt->fiber )
+        hlt_fiber_delete(excpt->fiber);
 }
 
 hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location)
@@ -72,14 +75,32 @@ hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char
     else
         arg = 0;
 
+    excpt->fiber = 0;
     excpt->vid = HLT_VID_MAIN;
     excpt->location = location;
     return excpt;
 }
 
+hlt_exception* hlt_exception_new_yield(hlt_fiber* fiber, const char* location)
+{
+   hlt_exception* excpt = hlt_exception_new(&hlt_exception_yield, 0, location);
+   excpt->fiber = fiber;
+   return excpt;
+}
+
 void* hlt_exception_arg(hlt_exception* excpt)
 {
     return excpt->arg;
+}
+
+hlt_fiber* __hlt_exception_fiber(hlt_exception* excpt)
+{
+    return excpt->fiber;
+}
+
+void __hlt_exception_clear_fiber(hlt_exception* excpt)
+{
+    excpt->fiber = 0;
 }
 
 #if 0

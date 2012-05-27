@@ -115,10 +115,13 @@ declare i8 @__hlt_bytes_extract_one(%hlt.iterator.bytes*, %hlt.iterator.bytes, %
 declare void            @__hlt_exception_print_uncaught_abort(%hlt.exception*, %hlt.execution_context*)
 declare i8              @__hlt_exception_match(%hlt.exception*, %hlt.exception.type*)
 declare %hlt.exception* @hlt_exception_new(%hlt.exception.type*, i8*, i8*)
+declare %hlt.exception* @hlt_exception_new_yield(%hlt.fiber*, i8*)
 declare i8*             @hlt_exception_arg(%hlt.exception*)
+declare %hlt.fiber*     @__hlt_exception_fiber(%hlt.exception*)
+declare void            @__hlt_exception_clear_fiber(%hlt.exception*)
 
 declare %hlt.exception* @__hlt_context_get_exception(%hlt.execution_context*)
-declare void            @__hlt_context_set_exception(%hlt.exception*, %hlt.execution_context*)
+declare void            @__hlt_context_set_exception(%hlt.execution_context*, %hlt.exception*)
 declare void            @__hlt_context_clear_exception(%hlt.execution_context*)
 declare %hlt.fiber*     @__hlt_context_get_fiber(%hlt.execution_context*)
 

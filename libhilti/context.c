@@ -60,7 +60,7 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
     return ctx;
 }
 
-void __hlt_context_set_exception(hlt_exception* excpt, hlt_execution_context* ctx)
+void __hlt_context_set_exception(hlt_execution_context* ctx, hlt_exception* excpt)
 {
     GC_ASSIGN(ctx->excpt, excpt, hlt_exception);
 }

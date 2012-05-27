@@ -109,6 +109,12 @@ void StatementBuilder::visit(statement::instruction::flow::CallCallableResult* i
     cg()->llvmStore(i->target(), result);
 }
 
+void StatementBuilder::visit(statement::instruction::flow::Yield* i)
+{
+    auto fiber = cg()->llvmCurrentFiber();
+    cg()->llvmFiberYield(fiber);
+}
+
 void StatementBuilder::visit(statement::instruction::flow::IfElse* i)
 {
     auto btype = shared_ptr<Type>(new type::Bool());

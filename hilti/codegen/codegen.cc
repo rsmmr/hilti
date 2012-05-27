@@ -1604,9 +1604,12 @@ llvm::Value* CodeGen::llvmExceptionNew(const string& exception, const Location& 
     auto etype = ast::as<type::Exception>(type);
     assert(etype);
 
+    if ( arg )
+        arg = builder()->CreateBitCast(arg, llvmTypePtr());
+
     CodeGen::value_list args;
     args.push_back(llvmExceptionTypeObject(etype));
-    args.push_back(llvmConstNull());
+    args.push_back(arg ? arg : llvmConstNull());
     args.push_back(llvmLocationString(l));
 
     return llvmCallC("hlt_exception_new", args, false, false);
@@ -1618,6 +1621,12 @@ llvm::Value* CodeGen::llvmExceptionArgument(llvm::Value* excpt)
     return llvmCallC("hlt_exception_arg", args, false, false);
 }
 
+llvm::Value* CodeGen::llvmExceptionFiber(llvm::Value* excpt)
+{
+    value_list args = { excpt };
+    return llvmCallC("__hlt_exception_fiber", args, false, false);
+}
+
 void CodeGen::llvmRaiseException(const string& exception, const Location& l, llvm::Value* arg)
 {
     auto excpt = llvmExceptionNew(exception, l, arg);
@@ -1627,8 +1636,8 @@ void CodeGen::llvmRaiseException(const string& exception, const Location& l, llv
 void CodeGen::llvmRaiseException(llvm::Value* excpt, bool dtor)
 {
     value_list args;
-    args.push_back(excpt);
     args.push_back(llvmExecutionContext());
+    args.push_back(excpt);
     llvmCallC("__hlt_context_set_exception", args, false, false);
 
     if ( dtor ) {
@@ -1899,6 +1908,8 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
     pushFunction(llvm_func);
     _functions.back()->context = llvmGlobalExecutionContext();
 
+    llvmClearException();
+
     expr_list params;
 
     auto arg = llvm_func->arg_begin();
@@ -1929,9 +1940,15 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
     pushFunction(llvm_func);
     _functions.back()->context = llvmGlobalExecutionContext();
 
+    llvmClearException();
+
     auto yield_excpt = llvm_func->arg_begin();
-    auto fiber = llvmExceptionArgument(yield_excpt);
+    auto fiber = llvmExceptionFiber(yield_excpt);
     fiber = builder()->CreateBitCast(fiber, llvmTypePtr(llvmLibType("hlt.fiber")));
+
+    value_list eargs = { yield_excpt };
+    llvmCallC("__hlt_exception_clear_fiber", eargs, false, false);
+
     result = llvmFiberStart(fiber, rtype);
 
     // Copy exception over.
@@ -2056,8 +2073,10 @@ llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
     llvmCreateCondBr(is_null, yield, done);
 
     pushBuilder(yield);
-    auto excpt = llvmExceptionNew("Hilti::Yield", Location::None, fiber);
-    value_list eargs = { excpt, llvmExecutionContext() };
+
+    CodeGen::value_list args = { fiber, llvmLocationString(Location::None) };
+    auto excpt = llvmCallC("hlt_exception_new_yield", args, false, false);
+    value_list eargs = { llvmExecutionContext(), excpt };
     llvmCallC("__hlt_context_set_exception", eargs, false, false);
     llvmCreateBr(done);
     popBuilder();
@@ -2071,6 +2090,12 @@ llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
         return nullptr;
 
     // Leave builder on stack.
+}
+
+void CodeGen::llvmFiberYield(llvm::Value* fiber)
+{
+    CodeGen::value_list cargs { fiber };
+    llvmCallC("hlt_fiber_yield", { fiber }, false, false);
 }
 
 llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)

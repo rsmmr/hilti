@@ -126,7 +126,7 @@ void ProtoGen::visit(declaration::Function* f)
 
     out << "hlt_exception** excpt);" << std::endl;
 
-    out << mapType(result) << ' ' << name2 << '(';
+    out << mapType(result) << ' ' << name2 << "(hlt_exception* yield_excpt, ";
     out << "hlt_exception** excpt);" << std::endl;
 }
 

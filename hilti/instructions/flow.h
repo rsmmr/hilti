@@ -67,6 +67,19 @@ iBegin(flow, CallCallableVoid, "call")
     iDoc("")
 iEnd
 
+iBegin(flow, Yield, "yield")
+    iValidate {
+    }
+
+    iDoc(R"(
+        Yields processing back to the current scheduler, to be resumed later.
+        If running in a virtual thread other than zero, this instruction yields
+        to other virtual threads running within the same physical thread. If
+        running in virtual thread zero (or in non-threading mode), returns
+        execution back to the calling C function (see interfacing with C).
+    )")
+iEnd
+
 iBegin(flow, IfElse, "if.else")
     iTerminator()
     iOp1(optype::boolean, true)

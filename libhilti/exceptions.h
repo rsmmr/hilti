@@ -26,7 +26,7 @@ typedef struct hlt_exception_type {
 struct __hlt_exception {
     __hlt_gchdr __gchdr;
     hlt_exception_type* type;        //< The type of the exeception.
-    // hlt_continuation* cont;       //< If the exeption is resumable, the continuation for doing so.
+    hlt_fiber* fiber;                //< If the exeption is resumable, the fiber for doing so.
     void *arg;                       //< The argument of type ``type->argtype``, or 0 if none.
     const char* location;            //< A string describing the location where the exception was raised.
     hlt_vthread_id vid;              //< If a virtual thread raised the exception, it's ID.
@@ -45,8 +45,25 @@ struct __hlt_exception {
 /// that must be released with hlt_exception_unref().
 extern hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location);
 
+/// Instantiates a new yield exception.
+///
+/// fiber: The fiber to resume later.
+///
+/// location: An optional string describing a location associated with the
+/// exception, or null of none.
+///
+/// Returns: The new exception. Note that this is a garbage collected value
+/// that must be released with hlt_exception_unref().
+extern hlt_exception* hlt_exception_new_yield(hlt_fiber* fiber, const char* location);
+
 /// Returns the exception's argument.
 extern void* hlt_exception_arg(hlt_exception* excpt);
+
+/// Returns the exception's fiber for resuming if set, or null if not.
+extern hlt_fiber* __hlt_exception_fiber(hlt_exception* excpt);
+
+/// Clears the exception's fiber field. Note that it doesn't destroy the fiber.
+extern void __hlt_exception_clear_fiber(hlt_exception* excpt);
 
 // extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location);
 

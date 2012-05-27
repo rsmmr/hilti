@@ -1043,6 +1043,15 @@ inline shared_ptr<hilti::type::Exception> type(shared_ptr<Type> base, shared_ptr
     return _sptr(new hilti::type::Exception(base, arg, l));
 }
 
+/// Instantiates a type::Exception wildcard type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Exception> typeAny(const Location& l=Location::None) {
+    return _sptr(new hilti::type::Exception(l));
+}
+
 }
 
 namespace callable {

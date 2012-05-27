@@ -1034,6 +1034,13 @@ public:
    /// Returns: If the fiber returns a value, the value. Otherwise, null.
    llvm::Value* llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype);
 
+   /// Yields from inside a fiber. Must be used only when we indeed are
+   /// inside a fiber. When processing is resumed, execution wil continue
+   /// right after the code generaged by this method.
+   ///
+   /// fiber: The fiber we are currently running inside.
+   void llvmFiberYield(llvm::Value* fiber);
+
    /// Triggers execution of a HILTI hook.
    ///
    /// hook: The hook.
@@ -1166,8 +1173,13 @@ public:
 
    /// Returns the exception's argument as a void pointer.
    ///
-   /// expt: A pointer to the exception to retrieve the argument from.
+   /// excpt: A pointer to the exception to retrieve the argument from.
    llvm::Value* llvmExceptionArgument(llvm::Value* excpt);
+
+   /// Returns the exception's fiber if resumable, or an LLVM null value if not.
+   ///
+   /// excpt: A pointer to the exception to retrieve the fiber from.
+   llvm::Value* llvmExceptionFiber(llvm::Value* excpt);
 
    /// Generates code to raise an exception. When executed, the code will
    /// *not* return control back to the current block.
