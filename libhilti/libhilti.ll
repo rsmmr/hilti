@@ -115,11 +115,14 @@ declare i8 @__hlt_bytes_extract_one(%hlt.iterator.bytes*, %hlt.iterator.bytes, %
 declare void            @__hlt_exception_print_uncaught_abort(%hlt.exception*, %hlt.execution_context*)
 declare i8              @__hlt_exception_match(%hlt.exception*, %hlt.exception.type*)
 declare %hlt.exception* @hlt_exception_new(%hlt.exception.type*, i8*, i8*)
+declare i8*             @hlt_exception_arg(%hlt.exception*)
 
 declare %hlt.exception* @__hlt_context_get_exception(%hlt.execution_context*)
 declare void            @__hlt_context_set_exception(%hlt.exception*, %hlt.execution_context*)
 declare void            @__hlt_context_clear_exception(%hlt.execution_context*)
 declare %hlt.fiber*     @__hlt_context_get_fiber(%hlt.execution_context*)
+
+declare %hlt.execution_context* @hlt_global_execution_context();
 
 declare %hlt.timer*     @__hlt_timer_new_function(%hlt.callable*, %hlt.exception**, %hlt.execution_context*)
 
@@ -127,12 +130,14 @@ declare i8* @hlt_malloc(i64)
 
 declare void @hlt_abort()
 
-declare i8    @hlt_fiber_start(%hlt.fiber*, i8*, i8*)
-declare void  @hlt_fiber_return(%hlt.fiber*)
-declare void  @hlt_fiber_yield(%hlt.fiber*)
-declare i8    @hlt_fiber_resume(%hlt.fiber*)
-declare i8*   @hlt_fiber_get_result_ptr(%hlt.fiber*)
-declare void  @hlt_fiber_set_result_ptr(%hlt.fiber*, i8*)
+declare %hlt.fiber* @hlt_fiber_create(i8*, %hlt.execution_context*, i8*)
+declare void        @hlt_fiber_delete(%hlt.fiber*)
+declare i8          @hlt_fiber_start(%hlt.fiber*)
+declare void        @hlt_fiber_return(%hlt.fiber*)
+declare void        @hlt_fiber_yield(%hlt.fiber*)
+declare i8*         @hlt_fiber_get_result_ptr(%hlt.fiber*)
+declare void        @hlt_fiber_set_result_ptr(%hlt.fiber*, i8*)
+declare %hlt.execution_context* @hlt_fiber_context(%hlt.fiber*)
 
 ;;; Exception types used by the code generator.
 @hlt_exception_unspecified = external constant %hlt.exception.type

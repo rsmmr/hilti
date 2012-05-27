@@ -45,6 +45,9 @@ struct __hlt_exception {
 /// that must be released with hlt_exception_unref().
 extern hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char* location);
 
+/// Returns the exception's argument.
+extern void* hlt_exception_arg(hlt_exception* excpt);
+
 // extern hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location);
 
 /// Internal function that checks whether an exception instance matches a
@@ -108,6 +111,7 @@ extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context*
 /// Internal function that raises a HILTI exception from C code. This should
 /// not be used directly, but only via the hlt_set_exception() macro.
 extern void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg, const char* location);
+
 
 /// \addtogroup predefined-exceptions
 /// @{

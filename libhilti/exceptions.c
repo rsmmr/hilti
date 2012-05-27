@@ -77,6 +77,11 @@ hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char
     return excpt;
 }
 
+void* hlt_exception_arg(hlt_exception* excpt)
+{
+    return excpt->arg;
+}
+
 #if 0
 hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, const char* location)
 {

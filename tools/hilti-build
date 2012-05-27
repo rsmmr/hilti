@@ -166,7 +166,7 @@ def compileC(input, output, cxx):
         error("error compiling %s, aborting" % input)
 
 # Compile HILTI and LLVM files.
-def runHiltic(inputs, output):
+def runHiltic(inputs, output, proto=False):
     try:
         flags = os.environ.get("HILTICFLAGS", "").split()
     except:
@@ -186,7 +186,11 @@ def runHiltic(inputs, output):
 
     inputs = " ".join(inputs)
     path = runConfig(HiltiConfig, "--hiltic-binary")
-    hiltic = "%s %s -b -o %s %s" % (path, flags, output, inputs)
+
+    if not proto:
+        hiltic = "%s %s -b -o %s %s" % (path, flags, output, inputs)
+    else:
+        hiltic = "%s %s -P -o %s %s" % (path, flags, output, inputs)
 
     if not execute(hiltic):
         error("error running hiltic, aborting")
@@ -251,8 +255,8 @@ Input files may be end in one of the following extensions:
                          help="Output information about intermediary steps.")
     optparser.add_option("-O", "--optimize", action="store_true", dest="optimize", default=False,
                          help="Apply optimizations.")
-#    optparser.add_option("-P", "--prototypes", action="store_true", dest="proto", default=False,
-#                         help="Generate just prototypes for all *.hlt files (including generated ones).")
+    optparser.add_option("-P", "--prototypes", action="store_true", dest="proto", default=False,
+                         help="Generate just prototypes for all *.hlt files (including generated ones).")
     optparser.add_option("-b", "--bc", action="store_true", dest="bitcode", default=False,
                          help="Produce a bitcode file for JITing rather than an executable.")
     optparser.add_option("-d", "--debug", action="count", dest="debug", default=0,
@@ -269,7 +273,7 @@ Input files may be end in one of the following extensions:
     if len(args) < 1:
         optparser.error("no input file specified")
 
-    if not options.output and not options.print_llvm: # and not options.proto:
+    if not options.output and not options.print_llvm and not options.proto:
         optparser.error("no output file specified")
 
     if options.time:
@@ -300,6 +304,13 @@ for input in inputs:
 
     else:
         error("unsupported input file %s" % input)
+
+if Options.proto:
+    for input in files[".hlt"]:
+        output = Options.output if Options.output else os.path.basename(input) + ".h"
+        runHiltic([input], output, proto=True)
+
+    sys.exit(0)
 
 for input in files[".c"]:
     verbose("compiling %s ..." % input)

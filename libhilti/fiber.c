@@ -82,34 +82,25 @@ void hlt_fiber_delete(hlt_fiber* fiber)
 
 int8_t hlt_fiber_start(hlt_fiber* fiber)
 {
+    int init = (fiber->state == INIT);
+
+    __hlt_context_set_fiber(fiber->context, fiber);
+
     if ( ! _setjmp(fiber->parent) ) {
         fiber->state = RUNNING;
-        setcontext(&fiber->uctx);
+
+        if ( init )
+            setcontext(&fiber->uctx);
+        else
+            _longjmp(fiber->fiber, 1);
+
         abort();
     }
 
     switch ( fiber->state ) {
      case FINISHED:
-        return 1;
-
-     case YIELDED:
-        return 0;
-
-     default:
-        abort();
-    }
-}
-
-int8_t hlt_fiber_resume(hlt_fiber* fiber)
-{
-    if ( ! _setjmp(fiber->parent) ) {
-        fiber->state = RUNNING;
-        _longjmp(fiber->fiber, 1);
-        abort();
-    }
-
-    switch ( fiber->state ) {
-     case FINISHED:
+        __hlt_context_set_fiber(fiber->context, 0);
+        hlt_fiber_delete(fiber);
         return 1;
 
      case YIELDED:
@@ -132,6 +123,7 @@ void hlt_fiber_yield(hlt_fiber* fiber)
 void hlt_fiber_return(hlt_fiber* fiber)
 {
     if ( ! _setjmp(fiber->fiber) ) {
+        __hlt_context_set_fiber(fiber->context, 0);
         fiber->state = FINISHED;
         _longjmp(fiber->parent, 1);
     }

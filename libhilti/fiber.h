@@ -31,8 +31,11 @@ extern hlt_fiber* hlt_fiber_create(hlt_fiber_func func, struct __hlt_execution_c
 /// fiber: The fiber to destroy.
 extern void hlt_fiber_delete(hlt_fiber* fiber);
 
-/// Starts processing inside a fiber. This function will return only when the
-/// fiber finished or yielded.
+/// Starts (or resumes) processing inside a fiber. If the fiber is freshly
+/// created with hlt_fiber_create, processing will be kicked off; if it has
+/// yielded via hlt_fiver_yield(), processing will continue where it left
+/// off. This function returns only when the fiber finished or yielded. If
+/// finished, the fiber will be deleted and must not be used anymore. 
 ///
 /// fiber: The fiber
 ///
@@ -50,14 +53,6 @@ extern void hlt_fiber_return(hlt_fiber* fiber);
 ///
 /// fiber: The fiber
 extern void hlt_fiber_yield(hlt_fiber* fiber);
-
-/// Resumes a fiber where hlt_fiber_yield() left off. Behaviour is undefined
-/// if yield hasn't been called yet since the most recent hlt_fiber_start().
-///
-/// fiber: The fiber
-///
-/// Returns: 1: fiber has finished. 0: fiber has yielded.
-extern int8_t hlt_fiber_resume(hlt_fiber* fiber);
 
 /// Saves a pointer in the fiber indicating where a return value should be stored.
 ///
