@@ -11,7 +11,7 @@ LOG="hlt-debug.log"
 
 if [ ! -e $LOG ]; then
     # No log file, that's ok.
-    return 0
+    exit 0
 fi
 
 cat $LOG | `dirname $0`/../../scripts/mem-check -v >&2

@@ -13,7 +13,7 @@
 
 void fiber_yielded(hlt_fiber* f)
 {
-    switch ( hlt_fiber_resume(f) ) {
+    switch ( hlt_fiber_start(f) ) {
      case 0:
         fprintf(stderr, "Fiber yielded again\n");
         fiber_yielded(f);
