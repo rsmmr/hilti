@@ -230,7 +230,6 @@ void TypeBuilder::visit(type::Any* a)
 {
     TypeInfo* ti = new TypeInfo(a);
     ti->id = HLT_TYPE_ANY;
-    ti->c_prototype = "void *";
     ti->llvm_type = cg()->llvmTypePtr();
     ti->pass_type_info = true;
     setResult(ti);
@@ -240,7 +239,6 @@ void TypeBuilder::visit(type::Void* a)
 {
     TypeInfo* ti = new TypeInfo(a);
     ti->id = HLT_TYPE_VOID;
-    ti->c_prototype = "void";
     ti->llvm_type = cg()->llvmTypeVoid();
     setResult(ti);
 }
@@ -252,7 +250,6 @@ void TypeBuilder::visit(type::String* s)
     ti->obj_dtor = "hlt::string_dtor";
     ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
     ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
-    ti->c_prototype = "hlt_string";
     ti->init_val = cg()->llvmConstNull(cg()->llvmTypeString());
     ti->to_string = "hlt::string_to_string";
     // ti->hash = "hlt::string_hash";
@@ -264,7 +261,6 @@ void TypeBuilder::visit(type::Bool* b)
 {
     TypeInfo* ti = new TypeInfo(b);
     ti->id = HLT_TYPE_BOOL;
-    ti->c_prototype = "int8_t";
     ti->init_val = cg()->llvmConstInt(0, 1);
     ti->to_string = "hlt::bool_to_string";
     ti->to_int64 = "hlt::bool_to_int64";
@@ -278,7 +274,6 @@ void TypeBuilder::visit(type::Exception* e)
     TypeInfo* ti = new TypeInfo(e);
     ti->id = HLT_TYPE_EXCEPTION;
     ti->dtor = "hlt::exception_dtor";
-    ti->c_prototype = "hlt_exception*";
     ti->lib_type = "hlt.exception";
 
     // Aux points to the exception's type object.
@@ -296,7 +291,6 @@ void TypeBuilder::visit(type::iterator::Bytes* i)
     ti->id = HLT_TYPE_ITERATOR_BYTES;
     ti->dtor = "hlt::iterator_bytes_dtor";
     ti->cctor = "hlt::iterator_bytes_cctor";
-    ti->c_prototype = "hlt_iterator_bytes";
     ti->init_val = cg()->llvmConstNull(cg()->llvmLibType("hlt.iterator.bytes"));
     setResult(ti);
 }
@@ -307,7 +301,6 @@ void TypeBuilder::visit(type::iterator::List* i)
     ti->id = HLT_TYPE_ITERATOR_LIST;
     ti->dtor = "hlt::iterator_list_dtor";
     ti->cctor = "hlt::iterator_list_cctor";
-    ti->c_prototype = "hlt_iterator_list";
     ti->init_val = cg()->llvmConstNull(cg()->llvmLibType("hlt.iterator.list"));
     setResult(ti);
 }
@@ -318,7 +311,6 @@ void TypeBuilder::visit(type::iterator::Set* i)
     ti->id = HLT_TYPE_ITERATOR_SET;
     ti->dtor = "hlt::iterator_set_dtor";
     ti->cctor = "hlt::iterator_set_cctor";
-    ti->c_prototype = "hlt_iterator_set";
     ti->init_val = cg()->llvmConstNull(cg()->llvmLibType("hlt.iterator.set"));
     setResult(ti);
 }
@@ -329,7 +321,6 @@ void TypeBuilder::visit(type::iterator::Map* i)
     ti->id = HLT_TYPE_ITERATOR_MAP;
     ti->dtor = "hlt::iterator_map_dtor";
     ti->cctor = "hlt::iterator_map_cctor";
-    ti->c_prototype = "hlt_iterator_map";
     ti->init_val = cg()->llvmConstNull(cg()->llvmLibType("hlt.iterator.map"));
     setResult(ti);
 }
@@ -340,7 +331,6 @@ void TypeBuilder::visit(type::iterator::Vector* i)
     ti->id = HLT_TYPE_ITERATOR_VECTOR;
     ti->dtor = "hlt::iterator_vector_dtor";
     ti->cctor = "hlt::iterator_vector_cctor";
-    ti->c_prototype = "hlt_iterator_vector";
     ti->init_val = cg()->llvmConstNull(cg()->llvmLibType("hlt.iterator.vector"));
     setResult(ti);
 }
@@ -354,17 +344,6 @@ void TypeBuilder::visit(type::Integer* i)
     ti->to_int64 = "hlt::int_to_int64";
     // ti->hash = "hlt::default_hash";
     // ti->equal = "hlt::default_equal";
-
-    if ( i->width() <= 8 )
-        ti->c_prototype = "int8_t";
-    else if ( i->width() <= 16 )
-        ti->c_prototype = "int16_t";
-    else if ( i->width() <= 32 )
-        ti->c_prototype = "int16_t";
-    else if ( i->width() <= 64 )
-        ti->c_prototype = "int16_t";
-    else
-        assert(false);
 
     setResult(ti);
 }
@@ -463,7 +442,6 @@ void TypeBuilder::visit(type::Tuple* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_TUPLE;
     ti->ptr_map = PointerMap(cg(), t).llvmMap();
-    ti->c_prototype = "hlt_tuple";
     ti->init_val = init_val;
     ti->pass_type_info = t->wildcard();
     ti->to_string = "hlt::tuple_to_string";
@@ -506,7 +484,6 @@ void TypeBuilder::visit(type::Reference* b)
     TypeInfo* ti = new TypeInfo(b);
     ti->id = HLT_TYPE_ANY;
     ti->init_val = cg()->llvmConstNull();
-    ti->c_prototype = "void*";
     setResult(ti);
 }
 
@@ -518,7 +495,6 @@ void TypeBuilder::visit(type::Address* t)
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_ADDR;
-    ti->c_prototype = "hlt_addr";
     ti->init_val = cg()->llvmConstStruct(default_);
     ti->to_string = "hlt::addr_to_string";
     // ti->hash = "hlt::default_hash";
@@ -535,7 +511,6 @@ void TypeBuilder::visit(type::Network* t)
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_NET;
-    ti->c_prototype = "hlt_net";
     ti->init_val = cg()->llvmConstStruct(default_);
     ti->to_string = "hlt::net_to_string";
     // ti->hash = "hlt::default_hash";
@@ -547,7 +522,6 @@ void TypeBuilder::visit(type::CAddr* t)
 {
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_CADDR;
-    ti->c_prototype = "void *";
     ti->to_string = "hlt::caddr_to_string";
     setResult(ti);
 }
@@ -556,7 +530,6 @@ void TypeBuilder::visit(type::Double* t)
 {
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_DOUBLE;
-    ti->c_prototype = "hlt_double";
     ti->init_val = cg()->llvmConstDouble(0);
     ti->to_string = "hlt::double_to_string";
     ti->to_double = "hlt::double_to_double";
@@ -569,7 +542,6 @@ void TypeBuilder::visit(type::Bitset* t)
 {
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_BITSET;
-    ti->c_prototype = "hlt_bitset";
     ti->init_val = cg()->llvmConstInt(0, 64);
     ti->to_string = "hlt::bitset_to_string";
     ti->to_int64 = "hlt::bitset_to_int64";
@@ -612,7 +584,6 @@ void TypeBuilder::visit(type::Enum* t)
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_ENUM;
-    ti->c_prototype = "hlt_enum";
     ti->init_val = cg()->llvmConstStruct(default_);
     ti->to_string = "hlt::enum_to_string";
     ti->to_int64 = "hlt::enum_to_int64";
@@ -651,7 +622,6 @@ void TypeBuilder::visit(type::Interval* t)
 {
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_INTERVAL;
-    ti->c_prototype = "hlt_interval";
     ti->init_val = cg()->llvmConstInt(0, 64);
     ti->to_string = "hlt::interval_to_string";
     // ti->hash = "hlt::default_hash";
@@ -662,7 +632,6 @@ void TypeBuilder::visit(type::Time* t)
 {
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_TIME;
-    ti->c_prototype = "hlt_time";
     ti->init_val = cg()->llvmConstInt(0, 64);
     ti->to_string = "hlt::time_to_string";
     // ti->hash = "hlt::default_hash";
@@ -678,7 +647,6 @@ void TypeBuilder::visit(type::Port* t)
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_PORT;
-    ti->c_prototype = "hlt_port";
     ti->init_val = cg()->llvmConstStruct(default_, true);
     ti->to_string = "hlt::port_to_string";
     ti->to_int64 = "hlt::port_to_int64";
@@ -693,7 +661,6 @@ void TypeBuilder::visit(type::Bytes* b)
     TypeInfo* ti = new TypeInfo(b);
     ti->id = HLT_TYPE_BYTES;
     ti->dtor = "hlt::bytes_dtor";
-    ti->c_prototype = "hlt_bytes*";
     ti->lib_type = "hlt.bytes";
     ti->to_string = "hlt::bytes_to_string";
     // ti->hash = "hlt::bool_hash";
@@ -706,7 +673,6 @@ void TypeBuilder::visit(type::Callable* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_CALLABLE;
     ti->dtor = "hlt::callable_dtor";
-    ti->c_prototype = "hlt_callable*";
     ti->lib_type = "hlt.callable";
     setResult(ti);
 }
@@ -716,7 +682,6 @@ void TypeBuilder::visit(type::Channel* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_CHANNEL;
     ti->dtor = "hlt::channel_dtor";
-    ti->c_prototype = "hlt_channel*";
     ti->lib_type = "hlt.channel";
     ti->to_string = "hlt::channel_to_string";
     setResult(ti);
@@ -727,7 +692,6 @@ void TypeBuilder::visit(type::Classifier* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_CLASSIFIER;
     ti->dtor = "hlt::classifier_dtor";
-    ti->c_prototype = "hlt_classifier*";
     ti->lib_type = "hlt.classifier";
     setResult(ti);
 }
@@ -737,7 +701,6 @@ void TypeBuilder::visit(type::File* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_FILE;
     ti->dtor = "hlt::file_dtor";
-    ti->c_prototype = "hlt_file*";
     ti->lib_type = "hlt.file";
     ti->to_string = "hlt::file_to_string";
     setResult(ti);
@@ -748,7 +711,6 @@ void TypeBuilder::visit(type::IOSource* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_IOSOURCE;
     ti->dtor = "hlt::iosrc_dtor";
-    ti->c_prototype = "hlt_iosrc*";
     ti->lib_type = "hlt.iosrc";
     setResult(ti);
 }
@@ -758,7 +720,6 @@ void TypeBuilder::visit(type::List* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_LIST;
     ti->dtor = "hlt::list_dtor";
-    ti->c_prototype = "hlt_list*";
     ti->lib_type = "hlt.list";
     ti->to_string = "hlt::list_to_string";
 
@@ -770,7 +731,6 @@ void TypeBuilder::visit(type::Map* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_MAP;
     ti->dtor = "hlt::map_dtor";
-    ti->c_prototype = "hlt_map*";
     ti->lib_type = "hlt.map";
     ti->to_string = "hlt::map_to_string";
     setResult(ti);
@@ -781,7 +741,6 @@ void TypeBuilder::visit(type::Vector* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_VECTOR;
     ti->dtor = "hlt::vector_dtor";
-    ti->c_prototype = "hlt_vector*";
     ti->lib_type = "hlt.vector";
     ti->to_string = "hlt::vector_to_string";
     setResult(ti);
@@ -792,7 +751,6 @@ void TypeBuilder::visit(type::Set* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_SET;
     ti->dtor = "hlt::set_dtor";
-    ti->c_prototype = "hlt_set*";
     ti->lib_type = "hlt.set";
     ti->to_string = "hlt::set_to_string";
     setResult(ti);
@@ -803,7 +761,6 @@ void TypeBuilder::visit(type::Overlay* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_OVERLAY;
     ti->dtor = "hlt::overlay_dtor";
-    ti->c_prototype = "hlt_overlay";
     ti->lib_type = "hlt.overlay";
     ti->to_string = "hlt::overlay_to_string";
     setResult(ti);
@@ -814,7 +771,6 @@ void TypeBuilder::visit(type::RegExp* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_REGEXP;
     ti->dtor = "hlt::regexp_dtor";
-    ti->c_prototype = "hlt_regexp*";
     ti->lib_type = "hlt.regexp";
     ti->to_string = "hlt::regexp_to_string";
     setResult(ti);
@@ -825,7 +781,6 @@ void TypeBuilder::visit(type::MatchTokenState* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_MATCH_TOKEN_STATE;
     ti->dtor = "hlt::match_token_state_dtor";
-    ti->c_prototype = "hlt_match_token_state*";
     ti->lib_type = "hlt.match_token_state";
     setResult(ti);
 }
@@ -835,7 +790,6 @@ void TypeBuilder::visit(type::Struct* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_STRUCT;
     ti->dtor = "hlt::struct_dtor";
-    ti->c_prototype = "void*";
     ti->to_string = "hlt::struct_to_string";
     // ti->hash = "hlt::struct_hash";
     // ti->equal = "hlt::struct_equal";
@@ -890,7 +844,6 @@ void TypeBuilder::visit(type::Timer* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_TIMER;
     ti->dtor = "hlt::timer_dtor";
-    ti->c_prototype = "hlt_timer*";
     ti->lib_type = "hlt.timer";
     ti->to_string = "hlt::timer_to_string";
     ti->to_int64 = "hlt::timer_to_int64";
@@ -903,7 +856,6 @@ void TypeBuilder::visit(type::TimerMgr* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_TIMER_MGR;
     ti->dtor = "hlt::timer_mgr_dtor";
-    ti->c_prototype = "hlt_timer_mgr*";
     ti->lib_type = "hlt.timer_mgr";
     ti->to_string = "hlt::timer_mgr_to_string";
     setResult(ti);

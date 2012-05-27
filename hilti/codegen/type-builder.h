@@ -96,9 +96,6 @@ struct TypeInfo {
    /// information for this type.
     bool pass_type_info = false;
 
-    /// The C prototype for the type to use in header files.
-    string c_prototype = "<no prototype>";
-
     /// The name of an internal libhilti function that converts a value of the
     /// type into a readable string representation. See ``hilti-intern.h`` for
     /// for the function's complete C signature. Empty string if not

@@ -261,6 +261,11 @@ llvm::Value* CodeGen::llvmExecutionContext()
     return 0;
 }
 
+llvm::Value* CodeGen::llvmGlobalExecutionContext()
+{
+    return llvmCallC("hlt_global_execution_context", {}, false, false);
+}
+
 llvm::Constant* CodeGen::llvmSizeOf(llvm::Constant* v)
 {
     return llvmSizeOf(v->getType());
@@ -1129,7 +1134,7 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Value* init, bool reu
     return llvmAddTmp(name, init->getType(), init, reuse);
 }
 
-llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, parameter_list params, bool internal, type::function::CallingConvention cc)
+llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, parameter_list params, bool internal, type::function::CallingConvention cc, bool skip_ctx)
 {
     auto llvm_linkage = internal ? llvm::Function::InternalLinkage : llvm::Function::ExternalLinkage;
     auto llvm_cc = llvm::CallingConv::Fast;
@@ -1249,7 +1254,9 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
 
      case type::function::HILTI_C:
         llvm_args.push_back(std::make_pair(symbols::ArgException, llvmTypePtr(llvmTypeExceptionPtr())));
-        llvm_args.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext())));
+
+        if ( ! skip_ctx )
+            llvm_args.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr(llvmTypeExecutionContext())));
         break;
 
      case type::function::C:
@@ -1288,7 +1295,7 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
     return func;
 }
 
-llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool internal, type::function::CallingConvention cc, const string& force_name)
+llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool internal, type::function::CallingConvention cc, const string& force_name, bool skip_ctx)
 {
     if ( cc == type::function::DEFAULT )
         cc = func->type()->callingConvention();
@@ -1302,7 +1309,7 @@ llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool interna
 
     auto rtype = llvmType(func->type()->result()->type());
 
-    return llvmAddFunction(name, rtype, params, internal, cc);
+    return llvmAddFunction(name, rtype, params, internal, cc, skip_ctx);
 }
 
 llvm::Function* CodeGen::llvmFunction(shared_ptr<Function> func, bool force_new)
@@ -1605,6 +1612,12 @@ llvm::Value* CodeGen::llvmExceptionNew(const string& exception, const Location& 
     return llvmCallC("hlt_exception_new", args, false, false);
 }
 
+llvm::Value* CodeGen::llvmExceptionArgument(llvm::Value* excpt)
+{
+    value_list args = { excpt };
+    return llvmCallC("hlt_exception_arg", args, false, false);
+}
+
 void CodeGen::llvmRaiseException(const string& exception, const Location& l, llvm::Value* arg)
 {
     auto excpt = llvmExceptionNew(exception, l, arg);
@@ -1658,6 +1671,26 @@ llvm::Value* CodeGen::llvmCurrentFiber()
     args.push_back(llvmExecutionContext());
     return llvmCallC("__hlt_context_get_fiber", args, false, false);
 }
+
+#if 0
+llvm::Value* CodeGen::llvmSetCurrentFiber(llvm::Value* fiber)
+{
+    value_list args;
+    args.push_back(llvmExecutionContext());
+    args.push_back(fiber);
+    return llvmCallC("__hlt_context_set_fiber", args, false, false);
+}
+
+llvm::Value* CodeGen::llvmClearCurrentFiber()
+{
+    value_list args;
+    args.push_back(llvmExecutionContext());
+    args.push_back(llvmConstNull(llvmTypePtr(llvmLibType("hlt.fiber"))));
+    return llvmCallC("__hlt_context_set_fiber", args, false, false);
+}
+
+#endif
+
 
 void CodeGen::llvmCheckCException(llvm::Value* excpt)
 {
@@ -1846,6 +1879,7 @@ llvm::Constant* CodeGen::llvmConstExtractValue(llvm::Constant* aggr, unsigned in
 void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* internal)
 {
     auto ftype = func->type();
+    auto rtype = ftype->result()->type();
 
     if ( ! func->body() )
         // No implementation, nothing to do here.
@@ -1854,12 +1888,16 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
     assert(ftype->callingConvention() == type::function::HILTI);
     assert(func->body());
 
-    auto name = util::mangle(func->id(), true, nullptr, "", false);
-    auto llvm_func = llvmAddFunction(func, false, type::function::HILTI_C);
+    // Build the entry function.
+
+        // Name must match with ProtoGen::visit(declaration::Function* f).
+    auto name = util::mangle(func->id(), true, func->module()->id(), "", false);
+    auto llvm_func = llvmAddFunction(func, false, type::function::HILTI_C, name, true);
 
     auto args = llvm_func->arg_begin();
 
     pushFunction(llvm_func);
+    _functions.back()->context = llvmGlobalExecutionContext();
 
     expr_list params;
 
@@ -1867,19 +1905,46 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
     for ( auto a : ftype->parameters() )
         params.push_back(builder::codegen::create(a->type(), arg++));
 
-    auto fiber = llvmCurrentFiber();
-    auto result = llvmCallInFiber(fiber, llvmFunction(func), ftype, params, false);
+    auto result = llvmCallInNewFiber(llvmFunction(func), ftype, params);
 
     // Copy exception over.
     auto ctx_excpt = llvmCurrentException();
     llvmCreateStore(ctx_excpt, arg);
 
-    if ( ftype->result()->type()->equal(shared_ptr<Type>(new type::Void())) )
+    if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
     else
-        llvmReturn(func->type()->result()->type(), result);
+        llvmReturn(rtype, result);
 
     popFunction();
+
+    // Build the resume function.
+
+        // Name must match with ProtoGen::visit(declaration::Function* f).
+    name = util::mangle(func->id()->name() + "_resume", true, func->module()->id(), "", false);
+
+    parameter_list fparams = { std::make_pair("yield_excpt", builder::reference::type(builder::exception::typeAny())) };
+    llvm_func = llvmAddFunction(name, llvm_func->getReturnType(), fparams, false, type::function::HILTI_C, true);
+
+    pushFunction(llvm_func);
+    _functions.back()->context = llvmGlobalExecutionContext();
+
+    auto yield_excpt = llvm_func->arg_begin();
+    auto fiber = llvmExceptionArgument(yield_excpt);
+    fiber = builder()->CreateBitCast(fiber, llvmTypePtr(llvmLibType("hlt.fiber")));
+    result = llvmFiberStart(fiber, rtype);
+
+    // Copy exception over.
+    ctx_excpt = llvmCurrentException();
+    llvmCreateStore(ctx_excpt, ++llvm_func->arg_begin());
+
+    if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
+        llvmReturn();
+    else
+        llvmReturn(rtype, result);
+
+    popFunction();
+
 }
 
 llvm::Value* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
@@ -1889,7 +1954,7 @@ llvm::Value* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function
 }
 
 
-llvm::Value* CodeGen::llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
+llvm::Value* CodeGen::llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args)
 {
     auto rtype = ftype->result()->type();
 
@@ -1900,8 +1965,6 @@ llvm::Value* CodeGen::llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func
     for ( auto a : args )
         stypes.push_back(llvmType(a->type()));
 
-    stypes.push_back(llvmTypePtr(llvmTypeExecutionContext()));
-
     auto sty = llvm::cast<llvm::StructType>(llvmTypeStruct("", stypes));
     llvm::Value* sval = llvmConstNull(sty);
 
@@ -1909,8 +1972,6 @@ llvm::Value* CodeGen::llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func
         auto val = llvmValue(args[i]);
         sval = llvmInsertValue(sval, val, i);
     }
-
-    sval = llvmInsertValue(sval, llvmExecutionContext(), args.size());
 
     // Create a function that receives the parameter struct and then calls the actual function.
     auto name = llvm_func->getName().str();
@@ -1935,6 +1996,9 @@ llvm::Value* CodeGen::llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func
         auto fiber = func->arg_begin();
         auto fsval = builder()->CreateLoad(++func->arg_begin());
 
+        value_list cargs { fiber };
+        _functions.back()->context = llvmCallC("hlt_fiber_context", cargs, false, false);
+
         expr_list fargs;
 
         for ( int i = 0; i < args.size(); ++i ) {
@@ -1942,8 +2006,9 @@ llvm::Value* CodeGen::llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func
             fargs.push_back(builder::codegen::create(args[i]->type(), val));
         }
 
-        _functions.back()->context = llvmExtractValue(fsval, args.size());
-        auto result = llvmCall(llvm_func, ftype, fargs, excpt_check);
+        auto result = llvmCall(llvm_func, ftype, fargs, false);
+
+        _functions.back()->context = nullptr;
 
         if ( ! rtype->equal(builder::void_::type()) ) {
             value_list args = { fiber };
@@ -1959,8 +2024,20 @@ llvm::Value* CodeGen::llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func
         cacheValue("fiber-func", name, func);
     }
 
-    // Start the fiber.
+    // Create the fiber and start it.
 
+    auto tmp = llvmAddTmp("fiber.arg", sty, sval, true);
+    auto funcp = builder()->CreateBitCast(func, llvmTypePtr());
+    auto svalp = builder()->CreateBitCast(tmp, llvmTypePtr());
+
+    value_list cargs { funcp, llvmExecutionContext(), svalp };
+    auto fiber = llvmCallC("hlt_fiber_create", cargs, false, false);
+
+    return llvmFiberStart(fiber, rtype);
+}
+
+llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
+{
     llvm::Value* rptr = 0;
 
     if ( ! rtype->equal(builder::void_::type()) ) {
@@ -1969,12 +2046,8 @@ llvm::Value* CodeGen::llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func
         llvmCallC("hlt_fiber_set_result_ptr", { fiber, rptr_casted }, false, false);
     }
 
-    auto tmp = llvmAddTmp("fiber.arg", sty, sval, true);
-    auto funcp = builder()->CreateBitCast(func, llvmTypePtr());
-    auto svalp = builder()->CreateBitCast(tmp, llvmTypePtr());
-
-    value_list cargs { fiber, funcp, svalp };
-    auto result = llvmCallC("hlt_fiber_start", cargs, false, false);
+    value_list cargs { fiber };
+    auto result = llvmCallC("hlt_fiber_start", { fiber }, false, false);
 
     auto is_null = builder()->CreateIsNull(result);
     auto done = newBuilder("done");
@@ -1983,7 +2056,7 @@ llvm::Value* CodeGen::llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func
     llvmCreateCondBr(is_null, yield, done);
 
     pushBuilder(yield);
-    auto excpt = llvmExceptionNew("Hilti::Yield", Location::None, nullptr);
+    auto excpt = llvmExceptionNew("Hilti::Yield", Location::None, fiber);
     value_list eargs = { excpt, llvmExecutionContext() };
     llvmCallC("__hlt_context_set_exception", eargs, false, false);
     llvmCreateBr(done);

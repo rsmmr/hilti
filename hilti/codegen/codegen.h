@@ -438,6 +438,11 @@ public:
    /// Returns: The LLVM value.
    llvm::Value* llvmExecutionContext();
 
+   /// Returns the LLVM value for the global execution context.
+   ///
+   /// Returns: The LLVM value.
+   llvm::Value* llvmGlobalExecutionContext();
+
    /// Returns the size of an LLVM constant. This is a helper function
    /// implementing a \c sizeof operator, which LLVM does not provide out of
    /// the box.
@@ -923,8 +928,10 @@ public:
    /// force_name: If given, the function will have this name instead of the
    /// one normally derived from *func* implicitly.
    ///
+   /// skip_ctx: For cc HILTI-C, do not add the context parameter.
+   ///
    /// Returns: The new function.
-   llvm::Function* llvmAddFunction(shared_ptr<Function> func, bool internal, type::function::CallingConvention cc = type::function::DEFAULT, const string& force_name = "");
+   llvm::Function* llvmAddFunction(shared_ptr<Function> func, bool internal, type::function::CallingConvention cc = type::function::DEFAULT, const string& force_name = "", bool skip_ctx=false);
 
    /// Adds a new LLVM function to the current module.
    ///
@@ -940,8 +947,10 @@ public:
    ///
    /// cc: The calling convention the created function is to use.
    ///
+   /// skip_ctx: For cc HILTI-C, do not add the context parameter.
+   ///
    /// Returns: The new function.
-   llvm::Function* llvmAddFunction(const string& name, llvm::Type* rtype, parameter_list params, bool internal, type::function::CallingConvention cc);
+   llvm::Function* llvmAddFunction(const string& name, llvm::Type* rtype, parameter_list params, bool internal, type::function::CallingConvention cc, bool skip_ctx=false);
 
    /// XXX.
    llvm::Function* llvmAddFunction(const string& name, llvm::Type* rtype, llvm_parameter_list params, bool internal, bool force_name=false);
@@ -1000,15 +1009,30 @@ public:
    /// Returns: The return value for callables that have, or null for ones without.
    llvm::Value* llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Value* callable);
 
-   /// Calls a HILTI function inside a fiber.
+   /// Calls a HILTI function inside a newly created fiber. If the fiber
+   /// throws an exception, that will be set in the current context,
+   /// including a YieldException if the fiber has yielded. However, we don't
+   /// perform any excpeption handling, the caller needs to do that if
+   /// desired.
    ///
-   /// fiber: The fiber to run the function in.
-   ///
-   /// The other arguments are the same as with the corresponding llvmCall()
+   /// The arguments are the same as with the corresponding llvmCall()
    /// method.
    ///
-   /// Returns: The value the function returned.
-   llvm::Value* llvmCallInFiber(llvm::Value* fiber, llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check=true);
+   /// Returns: If the functin returns a value, the value. Otherwise, null.
+   llvm::Value* llvmCallInNewFiber(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args);
+
+   /// Starts, or resumes, a fiber. If the fiber throws an exception, that
+   /// will be set in the current context, including a YieldException if the
+   /// fiber has yielded. However, we don't perform any excpeption handling,
+   /// the caller needs to do that if desired.
+   ///
+   /// fiber: The fiber. If not run before, its processing will kick off. If
+   /// it has yielded, it will resume where left off.
+   ///
+   /// rtype: The type of the fiber's result if it returns one; null if not.
+   ///
+   /// Returns: If the fiber returns a value, the value. Otherwise, null.
+   llvm::Value* llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype);
 
    /// Triggers execution of a HILTI hook.
    ///
@@ -1140,6 +1164,11 @@ public:
    /// Returns: The exception instance.
    llvm::Value* llvmExceptionNew(const string& exception, const Location& l, llvm::Value* arg);
 
+   /// Returns the exception's argument as a void pointer.
+   ///
+   /// expt: A pointer to the exception to retrieve the argument from.
+   llvm::Value* llvmExceptionArgument(llvm::Value* excpt);
+
    /// Generates code to raise an exception. When executed, the code will
    /// *not* return control back to the current block.
    ///
@@ -1184,6 +1213,14 @@ public:
 
    /// Extracts the current fiber from the execution context.
    llvm::Value* llvmCurrentFiber();
+
+#if 0 // Not used, runtime takes care of it.
+   /// Sets the current fiber in the execution context.
+   llvm::Value* llvmSetCurrentFiber(llvm::Value* fiber);
+
+   /// Clears the current fiber in the execution context.
+   llvm::Value* llvmClearCurrentFiber();
+#endif
 
    /// Checks whether a connection has been raised and if so, triggers
    /// handling. Control flow may not return in that case if stack unwinding

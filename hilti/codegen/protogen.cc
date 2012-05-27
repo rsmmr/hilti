@@ -1,9 +1,55 @@
 
 #include "protogen.h"
 #include "module.h"
+#include "util.h"
 
 using namespace hilti;
 using namespace codegen;
+
+protogen::TypeMapper::~TypeMapper()
+{
+}
+
+string protogen::TypeMapper::mapType(shared_ptr<Type> type)
+{
+    setDefaultResult("<no C type defined>");
+
+    string ctype;
+    processOne(type, &ctype);
+    return ctype;
+}
+
+void protogen::TypeMapper::visit(type::Reference* t)
+{
+    if ( t->wildcard() )
+        setResult("void *");
+    else
+        setResult(mapType(t->argType()));
+}
+
+void protogen::TypeMapper::visit(type::Integer* t)
+{
+    if ( t->width() <= 8 )
+        setResult("int8_t");
+    else if ( t->width() <= 16 )
+        setResult("int16_t");
+    else if ( t->width() <= 32 )
+        setResult("int32_t");
+    else if ( t->width() <= 64 )
+        setResult("int64_t");
+    else
+        assert(false);
+}
+
+void protogen::TypeMapper::visit(type::Tuple* t)
+{
+    // TODO.
+}
+
+void protogen::TypeMapper::visit(type::Struct* t)
+{
+    // TODO.
+}
 
 void ProtoGen::generatePrototypes(shared_ptr<hilti::Module> module)
 {
@@ -56,6 +102,32 @@ void ProtoGen::visit(type::Enum* t)
 
         out << proto.c_str() << std::endl;
     }
+}
+
+void ProtoGen::visit(declaration::Function* f)
+{
+    auto func = f->function();
+
+    if ( ! (f->exported() && func->type()->callingConvention() == type::function::HILTI) )
+        return;
+
+    std::ostream& out = output();
+
+    // These must match what CodeGen::llvmBuildCWrapper() generates.
+    auto name1 = util::mangle(func->id(), true, func->module()->id(), "", false);
+    auto name2 = util::mangle(func->id()->name() + "_resume", true, func->module()->id(), "", false);
+
+    auto result = func->type()->result()->type();
+
+    out << mapType(result) << ' ' << name1 << '(';
+
+    for ( auto p : func->type()->parameters() )
+        out << mapType(p->type()) << " " << p->id()->name() << ", ";
+
+    out << "hlt_exception** excpt);" << std::endl;
+
+    out << mapType(result) << ' ' << name2 << '(';
+    out << "hlt_exception** excpt);" << std::endl;
 }
 
 
