@@ -143,7 +143,7 @@ struct __hlt_type_info {
 /// Macro to define type information for an internal garbage collected type.
 #define __HLT_RTTI_GC_TYPE(id, type) \
    void id##_dtor(hlt_type_info*, id*); \
-   static const hlt_type_info __hlt_type_info_##id = { \
+   const hlt_type_info __hlt_type_info_##id = { \
        type, \
        sizeof(id), \
        #id, \

@@ -76,7 +76,7 @@ iBegin(iterVector, Equal, "equal")
     iOp2(optype::iterVector, true);
 
     iValidate {
-        equalTypes(target, op1);
+        equalTypes(op1, op2);
     }
 
     iDoc(R"(
@@ -120,7 +120,7 @@ iBegin(vector, Get, "vector.get")
     iOp2(optype::int64, true)
 
     iValidate {
-        canCoerceTo(referencedType(op1), target);
+        canCoerceTo(elementType(referencedType(op1)), target);
     }
 
     iDoc(R"(    
@@ -134,7 +134,7 @@ iBegin(vector, PushBack, "vector.push_back")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, referencedType(op1));
+        canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
     iDoc(R"(    
@@ -166,7 +166,7 @@ iBegin(vector, Set, "vector.set")
     iOp3(optype::any, true)
 
     iValidate {
-        canCoerceTo(op3, referencedType(op1));
+        canCoerceTo(op3, elementType(referencedType(op1)));
     }
 
     iDoc(R"(    

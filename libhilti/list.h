@@ -76,6 +76,6 @@ extern hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj,
 /// Called by an expiring timer to remove an element from the list.
 ///
 /// cookie: The cookie identifying the element to be removed.
-extern void hlt_list_list_expire(__hlt_list_timer_cookie cookie);
+extern void hlt_list_expire(__hlt_list_timer_cookie cookie);
 
 #endif

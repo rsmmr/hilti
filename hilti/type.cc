@@ -213,10 +213,14 @@ type::trait::Parameterized::parameter_list type::IOSource::parameters() const
 
 type::trait::Parameterized::parameter_list type::Map::parameters() const
 {
+    parameter_list params;
+
+    if ( wildcard() )
+        return params;
+
     auto key = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(_key));
     auto value = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(_value));
 
-    parameter_list params;
     params.push_back(key);
     params.push_back(value);
 

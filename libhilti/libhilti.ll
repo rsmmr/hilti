@@ -96,6 +96,9 @@
 %hlt.timer_mgr = type {};
 %hlt.list = type {};
 %hlt.fiber = type {};
+%hlt.vector = type {};
+%hlt.set = type {};
+%hlt.map = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.
 

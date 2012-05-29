@@ -137,10 +137,12 @@ static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt
 
     // Start timer if needed.
     if ( l->tmgr && l->timeout ) {
+        GC_CCTOR(l, hlt_list);
         __hlt_list_timer_cookie cookie = { l, n };
-        n->timer = __hlt_timer_new_list(cookie, excpt, ctx); // Not memory-managed on our end.
+        n->timer = __hlt_timer_new_list(cookie, excpt, ctx);
         hlt_time t = hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout;
         hlt_timer_mgr_schedule(l->tmgr, t, n->timer, excpt, ctx);
+        GC_DTOR(n->timer, hlt_timer); // Not memory-managed on our end.
     }
 
     return n;
@@ -281,7 +283,7 @@ void hlt_list_erase(hlt_iterator_list i, hlt_exception** excpt, hlt_execution_co
     _unlink(i.list, i.node, excpt, ctx);
 }
 
-void hlt_list_list_expire(__hlt_list_timer_cookie cookie)
+void hlt_list_expire(__hlt_list_timer_cookie cookie)
 {
     _unlink(cookie.list, cookie.node, 0, 0);
 }

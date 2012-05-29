@@ -19,4 +19,11 @@ extern const hlt_type_info* hlt_type_info_hlt_time;
 extern const hlt_type_info* hlt_type_info_hlt_timer_mgr;
 extern const hlt_type_info* hlt_type_info_hlt_list;
 extern const hlt_type_info* hlt_type_info_hlt_iterator_list;
+extern const hlt_type_info* hlt_type_info_hlt_vector;
+extern const hlt_type_info* hlt_type_info_hlt_iterator_vector;
+extern const hlt_type_info* hlt_type_info_hlt_set;
+extern const hlt_type_info* hlt_type_info_hlt_iterator_set;
+extern const hlt_type_info* hlt_type_info_hlt_map;
+extern const hlt_type_info* hlt_type_info_hlt_iterator_map;
+
 #endif

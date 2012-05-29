@@ -236,10 +236,10 @@ void Validator::visit(type::List* t)
 
 void Validator::visit(type::Map* t)
 {
-    if ( ! t->valueType() )
+    if ( ! t->valueType() && ! in<type::Function>() )
         error(t, "no type for map elements given");
 
-    if ( ! t->keyType() )
+    if ( ! t->keyType() && ! in<type::Function>() )
         error(t, "no type for map index given");
 
     if ( t->valueType() && ! ast::isA<type::ValueType>(t->valueType()) )
@@ -287,7 +287,7 @@ void Validator::visit(type::RegExp* t)
 
 void Validator::visit(type::Set* t)
 {
-    if ( ! t->argType() )
+    if ( ! t->argType() && ! in<type::Function>() )
         error(t, "no type for set elements given");
 
     if ( t->argType() && ! ast::isA<type::ValueType>(t->argType()) )
@@ -359,7 +359,7 @@ void Validator::visit(type::Unknown* t)
 
 void Validator::visit(type::Vector* t)
 {
-    if ( ! t->argType() )
+    if ( ! t->argType() && ! in<type::Function>() )
         error(t, "no type for vector elements given");
 
     if ( t->argType() && ! ast::isA<type::ValueType>(t->argType()) )

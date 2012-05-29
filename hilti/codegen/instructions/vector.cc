@@ -2,6 +2,7 @@
 #include <hilti.h>
 
 #include "../stmt-builder.h"
+#include "../type-builder.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -9,20 +10,20 @@ using namespace codegen;
 void StatementBuilder::visit(statement::instruction::vector::New* i)
 {
     auto etype = ast::as<type::Vector>(typedType(i->op1()))->argType();
-    auto op1 = builder::type::create(etype);
+    auto def = builder::codegen::create(etype, cg()->typeInfo(etype)->init_val);
 
     shared_ptr<Expression> op2 = i->op2();
 
     if ( ! op2 ) {
         auto tmgr = builder::timer_mgr::type();
         auto rtmgr = builder::reference::type(tmgr);
-        auto n = cg()->llvmConstNull(cg()->llvmTypePtr());
+        auto n = cg()->llvmConstNull(cg()->llvmType(rtmgr));
 
         op2 = builder::codegen::create(rtmgr, n);
     }
 
     CodeGen::expr_list args;
-    args.push_back(op1);
+    args.push_back(def);
     args.push_back(op2);
     auto result = cg()->llvmCall("hlt::vector_new", args);
     cg()->llvmStore(i, result);
@@ -41,7 +42,6 @@ void StatementBuilder::visit(statement::instruction::vector::Get* i)
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(etype)));
     auto result = builder()->CreateLoad(casted);
 
-    cg()->llvmCctor(voidp, etype, true, "vector.get");
     cg()->llvmStore(i, result);
 }
 
@@ -119,7 +119,7 @@ void StatementBuilder::visit(statement::instruction::iterVector::Incr* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    auto result = cg()->llvmCall("hlt::vector_iter_incr", args);
+    auto result = cg()->llvmCall("hlt::iterator_vector_incr", args);
 
     cg()->llvmStore(i, result);
 }
@@ -129,16 +129,19 @@ void StatementBuilder::visit(statement::instruction::iterVector::Equal* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
-    auto result = cg()->llvmCall("hlt::vector_iter_eq", args);
+    auto result = cg()->llvmCall("hlt::iterator_vector_eq", args);
 
     cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::iterVector::Deref* i)
 {
+    auto etype = ast::as<type::Vector>(iteratedType(i->op1()))->argType();
+
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    auto result = cg()->llvmCall("hlt::vector_iter_deref", args);
+    auto voidp = cg()->llvmCall("hlt::iterator_vector_deref", args);
+    auto casted = cg()->builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(etype)));
 
-    cg()->llvmStore(i, result);
+    cg()->llvmStore(i, cg()->builder()->CreateLoad(casted));
 }

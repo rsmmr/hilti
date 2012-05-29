@@ -123,6 +123,16 @@ hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt
     return dst;
 }
 
+hlt_string hlt_string_concat_and_unref(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_string s = hlt_string_concat(s1, s2, excpt, ctx);
+
+    GC_DTOR(s1, hlt_string);
+    GC_DTOR(s2, hlt_string);
+
+    return s;
+}
+
 hlt_string hlt_string_substr(hlt_string s, hlt_string_size pos, hlt_string_size len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     int32_t dummy;

@@ -44,8 +44,6 @@ void Coercer::visit(type::Iterator* i)
 
     auto dst_iter = ast::as<type::Iterator>(arg1());
 
-    std::cerr << "X " << i->render() << std::endl;
-
     if ( dst_iter ) {
         setResult(dst_iter->wildcard());
         return;

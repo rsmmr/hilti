@@ -5,13 +5,21 @@
 module LibHILTIRtti
 
 export string
-export ref<bytes>
-export iterator<bytes>
-export iterator<list<*>>
 export addr
+export time
+export int<64>
+
+export ref<bytes>
 export ref<exception>
 export ref<timer>
 export ref<timer_mgr>
-export time
-export int<64>
 export ref<callable<*>>
+export ref<vector<*>>
+export ref<set<*>>
+export ref<map<*>>
+
+export iterator<bytes>
+export iterator<list<*>>
+export iterator<vector<*>>
+export iterator<set<*>>
+export iterator<map<*>>

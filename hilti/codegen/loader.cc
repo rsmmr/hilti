@@ -4,6 +4,7 @@
 #include "loader.h"
 #include "codegen.h"
 #include "util.h"
+#include "type-builder.h"
 
 #include "libhilti/enum.h"
 #include "libhilti/port.h"
@@ -408,10 +409,10 @@ void Loader::visit(ctor::Vector* c)
     auto etype = ast::as<type::Vector>(rtype)->argType();
     assert(etype);
 
-    auto op1 = builder::type::create(etype);
+    auto def = builder::codegen::create(etype, cg()->typeInfo(etype)->init_val);
     auto op2 = _tmgrNull(cg());
 
-    CodeGen::expr_list args = {op1, op2};
+    CodeGen::expr_list args = {def, op2};
     auto vec = cg()->llvmCall("hlt::vector_new", args);
 
     auto vecop = builder::codegen::create(c->type(), vec);

@@ -20,7 +20,7 @@ void StatementBuilder::visit(statement::instruction::map::New* i)
     if ( ! op3 ) {
         auto tmgr = builder::timer_mgr::type();
         auto rtmgr = builder::reference::type(tmgr);
-        auto n = cg()->llvmConstNull(cg()->llvmTypePtr());
+        auto n = cg()->llvmConstNull(cg()->llvmType(rtmgr));
 
         op3 = builder::codegen::create(rtmgr, n);
     }
@@ -76,7 +76,6 @@ void StatementBuilder::visit(statement::instruction::map::Get* i)
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(vtype)));
     auto result = builder()->CreateLoad(casted);
 
-    cg()->llvmCctor(voidp, vtype, true, "map.get");
     cg()->llvmStore(i, result);
 }
 
@@ -96,7 +95,6 @@ void StatementBuilder::visit(statement::instruction::map::GetDefault* i)
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(vtype)));
     auto result = builder()->CreateLoad(casted);
 
-    cg()->llvmCctor(voidp, vtype, true, "map.get_default");
     cg()->llvmStore(i, result);
 }
 
@@ -166,7 +164,7 @@ void StatementBuilder::visit(statement::instruction::iterMap::Incr* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    auto result = cg()->llvmCall("hlt::map_iter_incr", args);
+    auto result = cg()->llvmCall("hlt::iterator_map_incr", args);
 
     cg()->llvmStore(i, result);
 }
@@ -176,7 +174,7 @@ void StatementBuilder::visit(statement::instruction::iterMap::Equal* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
-    auto result = cg()->llvmCall("hlt::map_iter_eq", args);
+    auto result = cg()->llvmCall("hlt::iterator_map_eq", args);
 
     cg()->llvmStore(i, result);
 }
@@ -185,7 +183,8 @@ void StatementBuilder::visit(statement::instruction::iterMap::Deref* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    auto result = cg()->llvmCall("hlt::map_iter_deref", args);
+    auto voidp = cg()->llvmCall("hlt::iterator_map_deref", args);
+    auto casted = cg()->builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(i->target()->type())));
 
-    cg()->llvmStore(i, result);
+    cg()->llvmStore(i, cg()->builder()->CreateLoad(casted));
 }

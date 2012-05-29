@@ -3,6 +3,8 @@
 #include "int.h"
 #include "string_.h"
 #include "timer.h"
+#include "vector.h"
+#include "map_set.h"
 
 #include "3rdparty/libpqueue/src/pqueue.h"
 
@@ -13,6 +15,9 @@
 #define HLT_TIMER_LIST     4
 #define HLT_TIMER_VECTOR   5
 #define HLT_TIMER_PROFILER 6
+
+__HLT_DECLARE_RTTI_GC_TYPE(__hlt_map_timer_cookie)
+__HLT_DECLARE_RTTI_GC_TYPE(__hlt_set_timer_cookie)
 
 struct __hlt_timer_mgr {
     __hlt_gchdr __gchdr; // Header for memory management.
@@ -31,7 +36,6 @@ void hlt_timer_dtor(hlt_type_info* ti, hlt_timer* timer)
         GC_DTOR(timer->cookie.list, hlt_iterator_list);
         break;
 
-#if 0
       case HLT_TIMER_MAP:
         GC_DTOR(timer->cookie.map, __hlt_map_timer_cookie);
         break;
@@ -41,8 +45,10 @@ void hlt_timer_dtor(hlt_type_info* ti, hlt_timer* timer)
         break;
 
       case HLT_TIMER_VECTOR:
-        GC_DTOR(timer->cookie.vector, __hlt_vector_timer_cookie);
+        GC_DTOR(timer->cookie.vector, hlt_iterator_vector);
         break;
+
+#if 0
 
       case HLT_TIMER_PROFILER:
         GC_DTOR(timer->cookie.profiler, __hlt_profiler_timer_cookie);
@@ -70,22 +76,22 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
         break;
 
       case HLT_TIMER_LIST:
-        hlt_list_list_expire(timer->cookie.list);
+        hlt_list_expire(timer->cookie.list);
         break;
 
-#if 0
       case HLT_TIMER_MAP:
-        hlt_list_map_expire(timer->cookie.map);
+        hlt_map_expire(timer->cookie.map);
         break;
 
       case HLT_TIMER_SET:
-        hlt_list_set_expire(timer->cookie.set);
+        hlt_set_expire(timer->cookie.set);
         break;
 
       case HLT_TIMER_VECTOR:
-        hlt_list_vector_expire(timer->cookie.vector);
+        hlt_vector_expire(timer->cookie.vector);
         break;
 
+#if 0
       case HLT_TIMER_PROFILER:
         hlt_profiler_timer_expire(timer->cookie.profiler, excpt, ctx);
         break;
@@ -114,11 +120,9 @@ hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** 
     timer->mgr = 0;
     timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_LIST;
-    GC_INIT(timer->cookie.list, cookie, hlt_iterator_list); // It's really an iterator.
+    timer->cookie.list = cookie;
     return timer;
 }
-
-#if 0
 
 hlt_timer* __hlt_timer_new_vector(__hlt_vector_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -126,7 +130,7 @@ hlt_timer* __hlt_timer_new_vector(__hlt_vector_timer_cookie cookie, hlt_exceptio
     timer->mgr = 0;
     timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_VECTOR;
-    GC_INIT(timer->cookie.vector, cookie, __hlt_vector_timer_cookie);
+    timer->cookie.vector = cookie;
     return timer;
 }
 
@@ -136,7 +140,7 @@ hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_exception** ex
     timer->mgr = 0;
     timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_MAP;
-    GC_INIT(timer->cookie.map, cookie, __hlt_map_timer_cookie);
+    timer->cookie.map = cookie;
     return timer;
 }
 
@@ -146,9 +150,11 @@ hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** ex
     timer->mgr = 0;
     timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_SET;
-    GC_INIT(timer->cookie.set, cookie, __hlt_set_timer_cookie);
+    timer->cookie.set = cookie;
     return timer;
 }
+
+#if 0
 
 hlt_timer* __hlt_timer_new_profiler(__hlt_profiler_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -178,8 +184,9 @@ void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt, hlt_e
         pqueue_change_priority(timer->mgr->timers, t, timer);
 
     else {
-        hlt_timer_cancel(timer, excpt, ctx);
+        pqueue_remove(timer->mgr->timers, timer);
         __hlt_timer_fire(timer, excpt, ctx);
+        GC_DTOR(timer, hlt_timer);
     }
 }
 

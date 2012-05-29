@@ -16,7 +16,7 @@ void StatementBuilder::visit(statement::instruction::set::New* i)
     if ( ! op2 ) {
         auto tmgr = builder::timer_mgr::type();
         auto rtmgr = builder::reference::type(tmgr);
-        auto n = cg()->llvmConstNull(cg()->llvmTypePtr());
+        auto n = cg()->llvmConstNull(cg()->llvmType(rtmgr));
 
         op2 = builder::codegen::create(rtmgr, n);
     }
@@ -110,7 +110,7 @@ void StatementBuilder::visit(statement::instruction::iterSet::Incr* i)
 {
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    auto result = cg()->llvmCall("hlt::set_iter_incr", args);
+    auto result = cg()->llvmCall("hlt::iterator_set_incr", args);
 
     cg()->llvmStore(i, result);
 }
@@ -120,16 +120,19 @@ void StatementBuilder::visit(statement::instruction::iterSet::Equal* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
-    auto result = cg()->llvmCall("hlt::set_iter_eq", args);
+    auto result = cg()->llvmCall("hlt::iterator_set_eq", args);
 
     cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::iterSet::Deref* i)
 {
+    auto etype = ast::as<type::Set>(iteratedType(i->op1()))->argType();
+
     CodeGen::expr_list args;
     args.push_back(i->op1());
-    auto result = cg()->llvmCall("hlt::set_iter_deref", args);
+    auto voidp = cg()->llvmCall("hlt::iterator_set_deref", args);
+    auto casted = cg()->builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(etype)));
 
-    cg()->llvmStore(i, result);
+    cg()->llvmStore(i, cg()->builder()->CreateLoad(casted));
 }

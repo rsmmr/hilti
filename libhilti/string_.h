@@ -67,6 +67,20 @@ extern hlt_string_size hlt_string_len(hlt_string s, hlt_exception** excpt, hlt_e
 /// Returns: The concatenation.
 extern hlt_string hlt_string_concat(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Concatenates two strings and returns the result. This variant of
+/// hlt_string_concat takes ownership of the two strings passed in.
+///
+/// s1: The first string. Function takes ownership of the reference passed
+/// in.
+///
+/// s2: The second string. Function takes ownership of the reference passed
+/// in.
+///
+/// \hlt_c
+///
+/// Returns: The concatenation.
+extern hlt_string hlt_string_concat_and_unref(hlt_string s1, hlt_string s2, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Extracts a substring from a string.
 ///
 /// s: The string to extract from.

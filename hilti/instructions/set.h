@@ -72,7 +72,7 @@ iBegin(iterSet, Equal, "equal")
     iOp2(optype::iterSet, true);
 
     iValidate {
-        equalTypes(target, op1);
+        equalTypes(op1, op2);
     }
 
     iDoc(R"(
@@ -130,7 +130,7 @@ iBegin(set, Exists, "set.exists")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, referencedType(op1));
+        canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
     iDoc(R"(
@@ -145,7 +145,7 @@ iBegin(set, Insert, "set.insert")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, referencedType(op1));
+        canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
     iDoc(R"(
@@ -160,7 +160,7 @@ iBegin(set, Remove, "set.remove")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, referencedType(op1));
+        canCoerceTo(op2, elementType(referencedType(op1)));
     }
 
     iDoc(R"(

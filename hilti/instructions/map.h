@@ -73,7 +73,7 @@ iBegin(iterMap, Equal, "equal")
     iOp2(optype::iterMap, true);
 
     iValidate {
-        equalTypes(target, op1);
+        equalTypes(op1, op2);
     }
 
     iDoc(R"(
@@ -146,7 +146,7 @@ iBegin(map, Exists, "map.exists")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, mapValueType(op1));
+        canCoerceTo(op2, mapValueType(referencedType(op1)));
     }
 
     iDoc(R"(    
@@ -162,8 +162,8 @@ iBegin(map, Get, "map.get")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, mapKeyType(op1));
-        canCoerceTo(mapValueType(op1), target);
+        canCoerceTo(op2, mapKeyType(referencedType(op1)));
+        canCoerceTo(mapValueType(referencedType(op1)), target);
     }
 
     iDoc(R"(    
@@ -180,9 +180,9 @@ iBegin(map, GetDefault, "map.get_default")
     iOp3(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, mapKeyType(op1));
-        canCoerceTo(op3, mapValueType(op1));
-        canCoerceTo(mapValueType(op1), target);
+        canCoerceTo(op2, mapKeyType(referencedType(op1)));
+        canCoerceTo(op3, mapValueType(referencedType(op1)));
+        canCoerceTo(mapValueType(referencedType(op1)), target);
     }
 
     iDoc(R"(    
@@ -198,8 +198,8 @@ iBegin(map, Insert, "map.insert")
     iOp3(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, mapKeyType(op1));
-        canCoerceTo(op3, mapValueType(op1));
+        canCoerceTo(op2, mapKeyType(referencedType(op1)));
+        canCoerceTo(op3, mapValueType(referencedType(op1)));
     }
 
     iDoc(R"(    
@@ -214,7 +214,7 @@ iBegin(map, Remove, "map.remove")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, mapKeyType(op1));
+        canCoerceTo(op2, mapKeyType(referencedType(op1)));
     }
 
     iDoc(R"(    

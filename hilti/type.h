@@ -1224,7 +1224,7 @@ public:
    virtual ~Vector();
 
    shared_ptr<hilti::Type> iterType() override {
-       return std::make_shared<iterator::List>(this->sharedPtr<Type>(), location());
+       return std::make_shared<iterator::Vector>(this->sharedPtr<Type>(), location());
    }
 
    ACCEPT_VISITOR(Type);
@@ -1248,7 +1248,7 @@ public:
    virtual ~Set();
 
    shared_ptr<hilti::Type> iterType() override {
-       return std::make_shared<iterator::List>(this->sharedPtr<Type>(), location());
+       return std::make_shared<iterator::Set>(this->sharedPtr<Type>(), location());
    }
 
    ACCEPT_VISITOR(Type);
@@ -1269,7 +1269,7 @@ public:
        : HeapType(l) { _key = key; _value = value; addChild(_key); addChild(_value); }
 
    /// Constructor for a wildcard map type.
-   Map(const Location& l=Location::None) : HeapType(l) {}
+   Map(const Location& l=Location::None) : HeapType(l) { setWildcard(true); }
 
    virtual ~Map();
 

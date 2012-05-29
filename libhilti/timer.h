@@ -26,6 +26,8 @@
 
 #include "time_.h"
 #include "list.h"
+#include "vector.h"
+#include "map_set.h"
 #include "context.h"
 #include "exceptions.h"
 #include "callable.h"
@@ -45,11 +47,10 @@ struct __hlt_timer {
     union {              // The timer's payload cookie corresponding to its type.
         hlt_callable* function;
         __hlt_list_timer_cookie list;
-#if 0
         __hlt_map_timer_cookie map;
         __hlt_set_timer_cookie set;
-        __hlt_list_timer_cookie list;
         __hlt_vector_timer_cookie vector;
+#if 0
         __hlt_profiler_timer_cookie profiler;
 #endif
     } cookie;
@@ -179,18 +180,19 @@ extern hlt_timer* __hlt_timer_new_function(hlt_callable* func, hlt_exception** e
 /// Instantiates a new timer object that will expire a list entry when it
 /// fires.
 ///
-/// cookie: A list-specific cookie to identify the item to be expired.
+/// cookie: A list-specific cookie to identify the item to be expired. The
+/// function takes ownership (i.e., it must have been ref'ed already.)
 ///
 /// excpt: &
 ///
 /// Returns: The new timer object.
 extern hlt_timer* __hlt_timer_new_list(__hlt_list_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
-#if 0
 /// Instantiates a new timer object that will expire a map entry when it
 /// fires.
 ///
-/// cookie: A map-specific cookie to identify the item to be expired.
+/// cookie: A map-specific cookie to identify the item to be expired. The
+/// function takes ownership (i.e., it must have been ref'ed already.)
 ///
 /// excpt: &
 ///
@@ -200,7 +202,8 @@ extern hlt_timer* __hlt_timer_new_map(__hlt_map_timer_cookie cookie, hlt_excepti
 /// Instantiates a new timer object that will expire a vector entry when it
 /// fires.
 ///
-/// cookie: A vector-specific cookie to identify the item to be expired.
+/// cookie: A vector-specific cookie to identify the item to be expired. The
+/// function takes ownership (i.e., it must have been ref'ed already.)
 ///
 /// excpt: &
 ///
@@ -210,17 +213,20 @@ extern hlt_timer* __hlt_timer_new_vector(__hlt_vector_timer_cookie cookie, hlt_e
 /// Instantiates a new timer object that will expire a set entry when it
 /// fires.
 ///
-/// cookie: A set-specific cookie to identify the item to be expired.
+/// cookie: A set-specific cookie to identify the item to be expired. The
+/// function takes ownership (i.e., it must have been ref'ed already.)
 ///
 /// excpt: &
 ///
 /// Returns: The new timer object.
 extern hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
+#if 0
 /// Instantiates a new timer object that will record a profiler snapshot when it
 /// fires.
 ///
 /// cookie: A profiler-specific cookie to identify the profiler to snapshot.
+/// The function takes ownership (i.e., it must have been ref'ed already.)
 ///
 /// excpt: &
 ///
