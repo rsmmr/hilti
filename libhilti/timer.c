@@ -14,7 +14,7 @@
 #define HLT_TIMER_VECTOR   5
 #define HLT_TIMER_PROFILER 6
 
-struct hlt_timer_mgr {
+struct __hlt_timer_mgr {
     __hlt_gchdr __gchdr; // Header for memory management.
     hlt_time time;       // The current time.
     pqueue_t* timers;    // Priority list of all timers.

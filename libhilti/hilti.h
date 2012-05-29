@@ -29,6 +29,8 @@
 #include "addr.h"
 #include "enum.h"
 #include "fiber.h"
+#include "vector.h"
+#include "map_set.h"
 
 // Not yet ported to new compiler framework.
 

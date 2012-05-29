@@ -2,7 +2,7 @@
 // The list implementation is pretty much a standard double-linked list.
 //
 // NOTE: Unlike the old libhilti list implementation, there's no free list
-// because that doesn't work well with ref'cnt. If we get a problem with to
+// because that doesn't work well with ref'cnt. If we get a problem with too
 // many small allocations, we could let the list do its own mem mgt though.
 
 #include <string.h>
@@ -36,7 +36,7 @@ struct __hlt_list {
     __hlt_list_node* tail;       // Last list element. Not memory-managed to avoid cycles.
     int64_t size;                // Current list size.
     const hlt_type_info* type;   // Element type.
-    struct hlt_timer_mgr* tmgr;  // The timer manager or null.
+    hlt_timer_mgr* tmgr;         // The timer manager or null.
     hlt_interval timeout;        // The timeout value, or 0 if disabled.
     hlt_enum strategy;           // Expiration strategy if set; zero otherwise.
 };
@@ -141,7 +141,6 @@ static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt
         n->timer = __hlt_timer_new_list(cookie, excpt, ctx); // Not memory-managed on our end.
         hlt_time t = hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout;
         hlt_timer_mgr_schedule(l->tmgr, t, n->timer, excpt, ctx);
-        GC_DTOR(n->timer, hlt_timer);
     }
 
     return n;
@@ -165,7 +164,7 @@ static inline void _access(hlt_list* l, __hlt_list_node* n, hlt_exception** excp
     hlt_timer_update(n->timer, t, excpt, ctx);
 }
 
-hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_list* hlt_list_new(const hlt_type_info* elemtype, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_list* l = GC_NEW(hlt_list);
     GC_INIT(l->tmgr, tmgr, hlt_timer_mgr);

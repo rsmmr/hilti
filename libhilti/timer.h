@@ -31,7 +31,7 @@
 #include "callable.h"
 
 typedef struct __hlt_timer hlt_timer;       ///< Type for representing a HILTI timer.
-typedef struct hlt_timer_mgr hlt_timer_mgr; ///< Type for representing a HILTI timer manager.
+typedef struct __hlt_timer_mgr hlt_timer_mgr; ///< Type for representing a HILTI timer manager.
 
 // Todo: We store the timer manager with every timer. That's kind of a waste,
 // but it makes handing timers around much easier. Need to recheck eventually

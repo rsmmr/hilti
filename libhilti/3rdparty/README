@@ -1,7 +1,8 @@
 HILTI's run-time library leverages the following 3rd party libraries:
 
     - libpqueue: https://github.com/vy/libpqueue
-    - libtask:   http://swtch.com/libtask/
+    - libtask:   http://swtch.com/libtask
+    - khash:     http://www.freewebs.com/attractivechaos
 
 Note that we sometimes adapt the source somewhat, and/or we may use
 only a subset of the functionality they provide. See README.hilti in

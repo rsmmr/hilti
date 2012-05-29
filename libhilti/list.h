@@ -4,7 +4,6 @@
 #define HILTI_LIST_H
 
 #include "exceptions.h"
-#include "rtti.h"
 
 typedef struct __hlt_list hlt_list;
 typedef struct __hlt_list_node __hlt_list_node;
@@ -15,14 +14,13 @@ struct __hlt_iterator_list {
     __hlt_list_node* node; // null if at end position.
 };
 
-struct hlt_timer_mgr;
+struct __hlt_timer_mgr;
 
 /// Cookie for entry expiration timers.
 typedef struct __hlt_iterator_list __hlt_list_timer_cookie;
-__HLT_DECLARE_RTTI_GC_TYPE(__hlt_list_timer_cookie);
 
 // Creates a new list.
-extern hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_list* hlt_list_new(const hlt_type_info* elemtype, struct __hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Actives automatic expiration of list entries.
 // extern void hlt_list_timeout(hlt_list* l, hlt_enum strategy, hlt_interval timeout, hlt_exception** excpt, hlt_execution_context* ctx);
