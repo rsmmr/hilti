@@ -59,13 +59,15 @@ void StatementBuilder::visit(statement::instruction::map::Exists* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(op2);
-    cg()->llvmCall("hlt::map_exists", args);
+    auto result = cg()->llvmCall("hlt::map_exists", args);
+
+    cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::map::Get* i)
 {
     auto ktype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
-    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
+    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->valueType();
     auto op2 = i->op2()->coerceTo(ktype);
 
     CodeGen::expr_list args;
@@ -82,7 +84,7 @@ void StatementBuilder::visit(statement::instruction::map::Get* i)
 void StatementBuilder::visit(statement::instruction::map::GetDefault* i)
 {
     auto ktype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
-    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
+    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->valueType();
     auto op2 = i->op2()->coerceTo(ktype);
     auto op3 = i->op3()->coerceTo(vtype);
 
@@ -101,7 +103,7 @@ void StatementBuilder::visit(statement::instruction::map::GetDefault* i)
 void StatementBuilder::visit(statement::instruction::map::Insert* i)
 {
     auto ktype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
-    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->keyType();
+    auto vtype = ast::as<type::Map>(referencedType(i->op1()))->valueType();
     auto op2 = i->op2()->coerceTo(ktype);
     auto op3 = i->op3()->coerceTo(vtype);
 

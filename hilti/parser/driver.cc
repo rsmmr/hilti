@@ -50,3 +50,13 @@ void Driver::enableLineMode()
 {
     _scanner->enableLineMode();
 }
+
+void Driver::disablePatternMode()
+{
+    _scanner->disablePatternMode();
+}
+
+void Driver::enablePatternMode()
+{
+    _scanner->enablePatternMode();
+}

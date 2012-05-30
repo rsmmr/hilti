@@ -104,6 +104,15 @@ shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
             ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
     }
 
+    if ( type::hasTrait<type::trait::Hashable>(type) &&
+         ast::isA<type::ValueType>(type) ) {
+        if ( ti->hash == "" )
+            ti->hash = "hlt::default_hash";
+
+        if ( ti->equal == "" )
+            ti->equal = "hlt::default_equal";
+    }
+
     if ( ti->llvm_type && ! ti->init_val && ast::isA<type::ValueType>(type) )
         ti->init_val = cg()->llvmConstNull(ti->llvm_type);
 
@@ -252,8 +261,8 @@ void TypeBuilder::visit(type::String* s)
     ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
     ti->init_val = cg()->llvmConstNull(cg()->llvmTypeString());
     ti->to_string = "hlt::string_to_string";
-    // ti->hash = "hlt::string_hash";
-    // ti->equal = "hlt::string_equal";
+    ti->hash = "hlt::string_hash";
+    ti->equal = "hlt::string_equal";
     setResult(ti);
 }
 
@@ -264,8 +273,6 @@ void TypeBuilder::visit(type::Bool* b)
     ti->init_val = cg()->llvmConstInt(0, 1);
     ti->to_string = "hlt::bool_to_string";
     ti->to_int64 = "hlt::bool_to_int64";
-    // ti->hash = "hlt::bool_hash";
-    // ti->equal = "hlt::bool_equal";
     setResult(ti);
 }
 
@@ -280,8 +287,6 @@ void TypeBuilder::visit(type::Exception* e)
     // ti->aux = cg()->llvmExceptionTypeObject(e->sharedPtr<type::Exception>());
 
     // ti->to_string = "hlt::exception_to_string";
-    // ti->hash = "hlt::bool_hash";
-    // ti->equal = "hlt::bool_equal";
     setResult(ti);
 }
 
@@ -342,8 +347,6 @@ void TypeBuilder::visit(type::Integer* i)
     ti->init_val = cg()->llvmConstInt(0, i->width());
     ti->to_string = "hlt::int_to_string";
     ti->to_int64 = "hlt::int_to_int64";
-    // ti->hash = "hlt::default_hash";
-    // ti->equal = "hlt::default_equal";
 
     setResult(ti);
 }
@@ -445,8 +448,8 @@ void TypeBuilder::visit(type::Tuple* t)
     ti->init_val = init_val;
     ti->pass_type_info = t->wildcard();
     ti->to_string = "hlt::tuple_to_string";
-    // ti->hash = "hlt::tuple_hash";
-    // ti->equal = "hlt::tuple_equal";
+    ti->hash = "hlt::tuple_hash";
+    ti->equal = "hlt::tuple_equal";
     ti->aux = aux;
     // ti->cctor_func = make_tuple_cctor(cg(), t);
 
@@ -497,8 +500,6 @@ void TypeBuilder::visit(type::Address* t)
     ti->id = HLT_TYPE_ADDR;
     ti->init_val = cg()->llvmConstStruct(default_);
     ti->to_string = "hlt::addr_to_string";
-    // ti->hash = "hlt::default_hash";
-    // ti->equal = "hlt::default_equal";
     setResult(ti);
 }
 
@@ -513,8 +514,6 @@ void TypeBuilder::visit(type::Network* t)
     ti->id = HLT_TYPE_NET;
     ti->init_val = cg()->llvmConstStruct(default_);
     ti->to_string = "hlt::net_to_string";
-    // ti->hash = "hlt::default_hash";
-    // ti->equal = "hlt::default_equal";
     setResult(ti);
 }
 
@@ -533,8 +532,6 @@ void TypeBuilder::visit(type::Double* t)
     ti->init_val = cg()->llvmConstDouble(0);
     ti->to_string = "hlt::double_to_string";
     ti->to_double = "hlt::double_to_double";
-    // ti->hash = "hlt::default_hash";
-    // ti->equal = "hlt::default_equal";
     setResult(ti);
 }
 
@@ -545,8 +542,6 @@ void TypeBuilder::visit(type::Bitset* t)
     ti->init_val = cg()->llvmConstInt(0, 64);
     ti->to_string = "hlt::bitset_to_string";
     ti->to_int64 = "hlt::bitset_to_int64";
-    // ti->hash = "hlt::default_hash";
-    // ti->equal = "hlt::default_equal";
 
     // Aux information is a list of tuple <uint8_t, const char*>.
     CodeGen::constant_list tuples;
@@ -587,8 +582,6 @@ void TypeBuilder::visit(type::Enum* t)
     ti->init_val = cg()->llvmConstStruct(default_);
     ti->to_string = "hlt::enum_to_string";
     ti->to_int64 = "hlt::enum_to_int64";
-    // ti->hash = "hlt::default_hash";
-    // ti->equal = "hlt::default_equal";
 
     // Aux information is a list of tuple <uint64_t, const char*>.
     CodeGen::constant_list tuples;
@@ -624,8 +617,6 @@ void TypeBuilder::visit(type::Interval* t)
     ti->id = HLT_TYPE_INTERVAL;
     ti->init_val = cg()->llvmConstInt(0, 64);
     ti->to_string = "hlt::interval_to_string";
-    // ti->hash = "hlt::default_hash";
-    // ti->equal = "hlt::default_equal";
     setResult(ti);}
 
 void TypeBuilder::visit(type::Time* t)
@@ -634,8 +625,6 @@ void TypeBuilder::visit(type::Time* t)
     ti->id = HLT_TYPE_TIME;
     ti->init_val = cg()->llvmConstInt(0, 64);
     ti->to_string = "hlt::time_to_string";
-    // ti->hash = "hlt::default_hash";
-    // ti->equal = "hlt::default_equal";
     setResult(ti);
 }
 
@@ -650,8 +639,6 @@ void TypeBuilder::visit(type::Port* t)
     ti->init_val = cg()->llvmConstStruct(default_, true);
     ti->to_string = "hlt::port_to_string";
     ti->to_int64 = "hlt::port_to_int64";
-    // ti->hash = "hlt::default_hash";
-    // ti->equal = "hlt::default_equal";
 
     setResult(ti);
 }
@@ -663,8 +650,8 @@ void TypeBuilder::visit(type::Bytes* b)
     ti->dtor = "hlt::bytes_dtor";
     ti->lib_type = "hlt.bytes";
     ti->to_string = "hlt::bytes_to_string";
-    // ti->hash = "hlt::bool_hash";
-    // ti->equal = "hlt::bool_equal";
+    ti->hash = "hlt::bytes_hash";
+    ti->equal = "hlt::bytes_equal";
     setResult(ti);
 }
 
@@ -791,8 +778,8 @@ void TypeBuilder::visit(type::Struct* t)
     ti->id = HLT_TYPE_STRUCT;
     ti->dtor = "hlt::struct_dtor";
     ti->to_string = "hlt::struct_to_string";
-    // ti->hash = "hlt::struct_hash";
-    // ti->equal = "hlt::struct_equal";
+    ti->hash = "hlt::struct_hash";
+    ti->equal = "hlt::struct_equal";
 
     /// Create the struct type.
     string sname = t->id() ? t->id()->pathAsString() : string("struct");

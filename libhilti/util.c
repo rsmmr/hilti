@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include <time.h>
 #include <unistd.h>
@@ -8,6 +9,7 @@
 
 #include "util.h"
 #include "globals.h"
+#include "rtti.h"
 // #include "threading.h"
 
 void hlt_util_nanosleep(uint64_t nsecs)
@@ -135,4 +137,28 @@ void hlt_abort()
 {
     fprintf(stderr, "internal HILTI error: hlt_abort() called");
     abort();
+}
+
+hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len)
+{
+    // This is copied and adapted from hhash.h
+    if ( ! len )
+        return 0;
+
+	hlt_hash h = 0;
+    while ( len-- )
+        h = (h << 5) - h + *s++;
+
+	return h;
+}
+
+hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_hash hash = hlt_hash_bytes(obj, type->size);
+    return hash;
+}
+
+int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return memcmp(obj1, obj2, type1->size) == 0;
 }

@@ -262,9 +262,12 @@ void __hlt_object_cctor(const hlt_type_info* ti, void* obj, const char* location
     }
 }
 
-void hlt_free_list_init(hlt_free_list* list)
+hlt_free_list* hlt_free_list_new()
 {
+    hlt_free_list* list = hlt_malloc(sizeof(hlt_free_list));
     list->pool = 0;
+    list->size = 0;
+    return list;
 }
 
 void* hlt_free_list_alloc(hlt_free_list* list, size_t size)
@@ -300,7 +303,7 @@ void hlt_free_list_free(hlt_free_list* list, void* p, size_t size)
     list->pool = b;
 }
 
-void hlt_free_list_destroy(hlt_free_list* list)
+void hlt_free_list_delete(hlt_free_list* list)
 {
     __hlt_free_list_block* b = list->pool;
 
@@ -309,4 +312,6 @@ void hlt_free_list_destroy(hlt_free_list* list)
         hlt_free(b);
         b = tmp;
     }
+
+    hlt_free(list);
 }

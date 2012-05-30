@@ -347,26 +347,4 @@ extern void* hlt_iterator_set_deref(hlt_iterator_set i, hlt_exception** excpt, h
 /// Returns: True if both iterators are equal.
 extern int8_t hlt_iterator_set_eq(hlt_iterator_set i1, hlt_iterator_set i2, hlt_exception** excpt, hlt_execution_context* ctx);
 
-////////// Other helpers.
-
-/// Calculates a hash value for a sequence of bytes.
-///
-/// s: The bytes.
-///
-/// len: The number of bytes to include, starting at *s*.
-///
-/// Returns: The hash value.
-static inline hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len)
-{
-    // This is copied and adapted from hhash.h
-    if ( ! len )
-        return 0;
-
-	hlt_hash h = 0;
-    while ( len-- )
-        h = (h << 5) - h + *s++;
-
-	return h;
-}
-
 #endif

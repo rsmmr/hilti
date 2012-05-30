@@ -61,7 +61,7 @@ namespace symbols {
 /// at the C layer in libhilti.
 namespace hlt {
     /// Fields in %hlt.execution_context.
-    enum ExecutionContext { Globals = 4 };
+    enum ExecutionContext { Globals = 6 };
 
     /// Fields in %hlt.exception.
     enum Exception { Name = 0 };

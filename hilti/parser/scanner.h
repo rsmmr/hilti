@@ -19,6 +19,8 @@ public:
 
    void disableLineMode();
    void enableLineMode();
+   void disablePatternMode();
+   void enablePatternMode();
 };
 
 }

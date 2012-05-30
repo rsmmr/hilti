@@ -87,11 +87,15 @@ iBegin(iterMap, Deref, "deref")
     iOp1(optype::iterMap, true);
 
     iValidate {
-        canCoerceTo(mapValueType(iteratedType(op1)), target);
+        auto kt = mapKeyType(iteratedType(op1));
+        auto vt = mapValueType(iteratedType(op1));
+
+        builder::type_list tt = { kt, vt };
+        canCoerceTo(builder::tuple::type(tt), target);
     }
 
     iDoc(R"(
-        Returns the map *op1* is referencing.
+        Returns a tuple ``(key,value)`` representing the map entry *op1* is referencing.
     )")
 
 iEnd
@@ -146,7 +150,7 @@ iBegin(map, Exists, "map.exists")
     iOp2(optype::any, true)
 
     iValidate {
-        canCoerceTo(op2, mapValueType(referencedType(op1)));
+        canCoerceTo(op2, mapKeyType(referencedType(op1)));
     }
 
     iDoc(R"(    

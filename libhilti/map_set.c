@@ -137,17 +137,6 @@ void __hlt_set_timer_cookie_dtor(hlt_type_info* ti, __hlt_set_timer_cookie* c)
     GC_DTOR(c->set, hlt_set);
 }
 
-hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
-{
-    hlt_hash hash = hlt_hash_bytes(obj, type->size);
-    return hash;
-}
-
-int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
-{
-    return memcmp(obj1, obj2, type1->size) == 0;
-}
-
 // Does not ref copied element.
 static inline void* _to_voidp(const hlt_type_info* type, void* data)
 {
@@ -391,6 +380,9 @@ void hlt_map_clear(hlt_map* m, hlt_exception** excpt, hlt_execution_context* ctx
 
 void hlt_map_default(hlt_map* m, const hlt_type_info* tdef, void* def, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    GC_DTOR_GENERIC(m->def, tdef);
+    hlt_free(m->def);
+
     m->have_def = 1;
     m->def = _to_voidp(tdef, def);
     GC_CCTOR_GENERIC(m->def, tdef);

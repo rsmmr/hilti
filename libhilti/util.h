@@ -4,6 +4,8 @@
 
 #include <stdint.h>
 
+#include "types.h"
+
 // #include "threading.h"
 
 /// Sleeps for a given amount of nano-seconds.
@@ -79,5 +81,20 @@ extern uint32_t hlt_ntoh32(uint32_t v);
 ///
 /// v: The value to convert.
 extern uint16_t hlt_ntoh16(uint16_t v);
+
+/// Calculates a hash value for a sequence of bytes.
+///
+/// s: The bytes.
+///
+/// len: The number of bytes to include, starting at *s*.
+///
+/// Returns: The hash value.
+hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len);
+
+/// Default hash function hashing a value by value.
+hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Default comparision function comparing a value by value.
+int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 #endif

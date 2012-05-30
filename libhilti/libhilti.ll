@@ -18,6 +18,7 @@
     i64,
     %hlt.exception.type*,
     %hlt.fiber*,
+    i8*,
     i8*  ;; Start of globals (right here, pointer content isn't used.)
 }
 

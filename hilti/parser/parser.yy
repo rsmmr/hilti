@@ -150,14 +150,14 @@ using namespace hilti;
 %type <operands>         operands
 %type <param>            param result
 %type <params>           param_list opt_param_list
-%type <re_pattern>       re_pattern
+%type <re_pattern>       re_pattern 
 %type <re_patterns>      ctor_regexp
 %type <stmt>             stmt instruction try_catch
 %type <stmts>            stmt_list opt_stmt_list first_block more_blocks
 %type <strings>          attr_list opt_attr_list
 %type <struct_field>     struct_field
 %type <struct_fields>    struct_fields opt_struct_fields
-%type <sval>             comment opt_comment opt_exception_libtype attribute
+%type <sval>             comment opt_comment opt_exception_libtype attribute re_pattern_constant
 %type <type>             base_type type enum_ bitset exception opt_exception_base struct_
 %type <types>            type_list
 
@@ -420,8 +420,10 @@ ctor          : CBYTES                           { $$ = builder::bytes::create($
 ctor_regexp   : ctor_regexp '|' re_pattern       { $$ = $1; $$.push_back($3); }
               | re_pattern                       { $$ = builder::regexp::re_pattern_list(); $$.push_back($1); }
 
-re_pattern    : CREGEXP                          { $$ = builder::regexp::pattern($1, ""); }
-              | CREGEXP IDENT                    { $$ = builder::regexp::pattern($1, $2); }
+re_pattern    : re_pattern_constant              { $$ = builder::regexp::pattern($1, ""); }
+              | re_pattern_constant IDENT        { $$ = builder::regexp::pattern($1, $2); }
+
+re_pattern_constant : '/' { driver.enablePatternMode(); } CREGEXP { driver.disablePatternMode(); } '/' { $$ = $3; }
 
 opt_map_elems : map_elems                        { $$ = $1; }
               | /* empty */                      { $$ = builder::map::element_list(); }

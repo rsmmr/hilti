@@ -16,6 +16,7 @@
 %option prefix="Hilti"
 %option noyywrap nounput batch debug yylineno
 
+%x RE
 %s IGNORE_NL
 
 %{
@@ -24,7 +25,6 @@
 
 id      [a-zA-Z_][a-zA-Z_0-9]*
 string  \"(\\.|[^\\"])*\"
-regexp  \/(\\.|[^\\\/])*\/
 int     [+-]?[0-9]+
 blank   [ \t]
 comment [ \t]*#[^\n]*
@@ -49,6 +49,9 @@ address ("::")?({digits}"."){3}{digits}|({hexs}:){7}{hexs}|0x{hexs}({hexs}|:)*":
 
 <IGNORE_NL>[\n]+      yylloc->lines(yyleng);
 <IGNORE_NL>{comment}  /* Eat in non-newline mode. */
+
+<RE>(\\.|[^\\\/])*    yylval->sval = yytext; return token::CREGEXP;
+<RE>[/\\\n]	          return (token_type) yytext[0];
 
 \"C-HILTI\"           yylval->sval = string(yytext, 1, strlen(yytext) - 2); return token::CSTRING;
 \"C\"                 yylval->sval = string(yytext, 1, strlen(yytext) - 2); return token::CSTRING;
@@ -116,7 +119,6 @@ True                  yylval->bval = 1; return token::CBOOL;
 [-+]?{digits}\.{digits} yylval->dval = strtod(yytext, 0); return token::CDOUBLE;
 
 {int}                 yylval->ival = strtoll(yytext, 0, 10); return token::CINTEGER;
-{regexp}              yylval->sval = util::expandEscapes(string(yytext, 2, strlen(yytext) - 2)); return token::CREGEXP;
 {string}              yylval->sval = util::expandEscapes(string(yytext, 1, strlen(yytext) - 2)); return token::CSTRING;
 b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strlen(yytext) - 3)); return token::CBYTES;
 
@@ -143,6 +145,16 @@ void hilti_parser::Scanner::disableLineMode()
 }
 
 void hilti_parser::Scanner::enableLineMode()
+{
+    yy_pop_state();
+}
+
+void hilti_parser::Scanner::enablePatternMode()
+{
+    yy_push_state(RE);
+}
+
+void hilti_parser::Scanner::disablePatternMode()
 {
     yy_pop_state();
 }

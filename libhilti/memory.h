@@ -199,11 +199,10 @@ typedef struct {
 #endif
 } hlt_free_list;
 
-/// Create a new free list managing memory objects. Note that it creates the
-/// free list in place at the address passed in.
+/// Creates a new free list managing memory objects.
 ///
-/// list: A pointer to a free list object to initialize.
-void hlt_free_list_init(hlt_free_list* list);
+/// Returns: A pointer to the new free list object.
+hlt_free_list* hlt_free_list_new();
 
 /// Allocates a new chunk of memory. If the free list has currently unused
 /// blocks, one of them will be returned; otherwise, a new one will be
@@ -230,10 +229,10 @@ void* hlt_free_list_alloc(hlt_free_list* list, size_t size);
 /// p: The memory to return to the pool.
 void hlt_free_list_free(hlt_free_list* list, void* p, size_t size);
 
-/// Destroys a free list, freeing all resources still pooled (but not those
-/// currently handed out). Does not free the free-list objects itself.
+/// Deletes a free list, freeing all resources still pooled (but not those
+/// currently handed out) as well as the the free list itself.
 ///
 /// list: The list to destroy.
-void hlt_free_list_destroy(hlt_free_list* list);
+void hlt_free_list_deletes(hlt_free_list* list);
 
 #endif

@@ -122,6 +122,8 @@ public:
 
    void disableLineMode();
    void enableLineMode();
+   void disablePatternMode();
+   void enablePatternMode();
 
 private:
    std::string _sname;

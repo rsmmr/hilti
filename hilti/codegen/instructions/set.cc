@@ -43,7 +43,7 @@ void StatementBuilder::visit(statement::instruction::set::Exists* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(op2);
-    auto result = cg()->llvmCall("hlt::set_exits", args);
+    auto result = cg()->llvmCall("hlt::set_exists", args);
 
     cg()->llvmStore(i, result);
 }

@@ -18,6 +18,7 @@
 #include "exceptions.h"
 #include "string_.h"
 #include "globals.h"
+#include "util.h"
 
 typedef struct {
     __hlt_gchdr __gchdr; // Header for memory management.
@@ -1026,7 +1027,6 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
     return dst;
 }
 
-#if 0
 hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b = *((hlt_bytes**)obj);
@@ -1038,7 +1038,6 @@ hlt_hash hlt_bytes_hash(const hlt_type_info* type, const void* obj, hlt_exceptio
 
     return hash;
 }
-#endif
 
 int8_t hlt_bytes_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
 {

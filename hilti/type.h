@@ -277,7 +277,7 @@ public:
 };
 
 /// Base class for types that are stored on the stack and value-copied.
-class ValueType : public HiltiType
+class ValueType : public HiltiType, public trait::Hashable
 {
 public:
    /// Constructor.
@@ -955,7 +955,7 @@ public:
 
 /// Type for bytes instances.
 ///
-class Bytes : public HeapType, public trait::Iterable, public trait::Unpackable
+class Bytes : public HeapType, public trait::Iterable, public trait::Unpackable, public trait::Hashable
 {
 public:
    /// Constructor.
@@ -1423,7 +1423,7 @@ private:
 }
 
 /// Type for structs.
-class Struct : public ValueType, public trait::TypeList
+class Struct : public ValueType, public trait::TypeList, public trait::Hashable
 {
 public:
    typedef std::list<node_ptr<struct_::Field>> field_list;

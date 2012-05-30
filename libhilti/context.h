@@ -36,7 +36,7 @@ struct __hlt_execution_context {
     hlt_vthread_id vid;               /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
     hlt_exception* excpt;             /// The currently raised exception, or 0 if none.
     hlt_fiber* fiber;                 /// The current fiber to use for executing code inside this context.
-    hlt_free_list fiber_pool;         /// The pool of fiber objects for this context.
+    hlt_free_list* fiber_pool;        /// The pool of fiber objects for this context.
 
 #if 0
     struct hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
