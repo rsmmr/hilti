@@ -1,4 +1,6 @@
 
+#include <algorithm>
+
 #include "../hilti.h"
 
 #include "loader.h"
@@ -192,7 +194,7 @@ void Loader::visit(constant::Reference* r)
     setResult(val, false, false);
 }
 
-static CodeGen::constant_list _loadAddressVal(CodeGen* cg, const constant::AddressVal& val)
+static CodeGen::constant_list _loadAddressVal(CodeGen* cg, const constant::AddressVal& val, int width)
 {
     uint64_t a, b;
 
@@ -215,6 +217,16 @@ static CodeGen::constant_list _loadAddressVal(CodeGen* cg, const constant::Addre
         assert(false);
     }
 
+    if ( width > 0 )
+        a &= (0xFFFFFFFFFFFFFFFFu << (64 - (std::min(64, width))));
+    else
+        a = 0;
+
+    if ( width <= 64 )
+        b = 0;
+    else
+        b &= (0xFFFFFFFFFFFFFFFFu << (64 - (width - 64)));
+
     CodeGen::constant_list elems;
     elems.push_back(cg->llvmConstInt(a, 64));
     elems.push_back(cg->llvmConstInt(b, 64));
@@ -224,18 +236,19 @@ static CodeGen::constant_list _loadAddressVal(CodeGen* cg, const constant::Addre
 
 void Loader::visit(constant::Address* c)
 {
-    auto elems = _loadAddressVal(cg(), c->value());
+    auto elems = _loadAddressVal(cg(), c->value(), 128);
     auto val = cg()->llvmConstStruct(elems);
     setResult(val, false, false);
 }
 
 void Loader::visit(constant::Network* c)
 {
-    auto elems = _loadAddressVal(cg(), c->prefix());
     auto width = c->width();
 
     if ( c->prefix().family == constant::AddressVal::IPv4 )
         width += 96;
+
+    auto elems = _loadAddressVal(cg(), c->prefix(), width);
 
     elems.push_back(cg()->llvmConstInt(width, 8));
 

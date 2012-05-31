@@ -304,6 +304,7 @@ void Validator::visit(type::String* t)
 void Validator::visit(type::Struct* t)
 {
     for ( auto f : t->fields() ) {
+
         if ( ! f->type() ) {
             error(f, "struct has field without type");
             continue;
@@ -348,7 +349,7 @@ void Validator::visit(type::Tuple* t)
     }
 }
 
-void Validator::visit(type::Type* t)
+void Validator::visit(type::TypeType* t)
 {
 }
 

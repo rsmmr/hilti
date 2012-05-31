@@ -233,7 +233,7 @@ void StatementBuilder::visit(declaration::Function* f)
     cg()->popFunction();
 
     if ( f->exported() && func->type()->callingConvention() == type::function::HILTI )
-        cg()->llvmBuildCWrapper(func, llvm_func);
+        cg()->llvmBuildCWrapper(func);
 
     // If it's a hook, add meta information about the implementation.
     if ( hook_decl )

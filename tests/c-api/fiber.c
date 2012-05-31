@@ -64,6 +64,8 @@ int main(int argc, char** argv)
 
     hlt_fiber_delete(fiber);
 
+    // hlt_done();
+
     return 0;
 }
 

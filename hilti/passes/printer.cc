@@ -456,7 +456,7 @@ void Printer::visit(type::Tuple* t)
     p << ">";
 }
 
-void Printer::visit(type::Type* t)
+void Printer::visit(type::TypeType* t)
 {
     if ( printTypeID(t) )
         return;

@@ -74,23 +74,23 @@ static shared_ptr<Type> refTimer(new type::Reference(timer));
 static shared_ptr<Type> refTimerMgr(new type::Reference(timerMgr));
 static shared_ptr<Type> refVector(new type::Reference(vector));
 
-static shared_ptr<Type> typeBytes(new type::Type(bytes));
-static shared_ptr<Type> typeCallable(new type::Type(callable));
-static shared_ptr<Type> typeChannel(new type::Type(channel));
-static shared_ptr<Type> typeClassifier(new type::Type(classifier));
-static shared_ptr<Type> typeException(new type::Type(exception));
-static shared_ptr<Type> typeFile(new type::Type(file));
-static shared_ptr<Type> typeIOSource(new type::Type(iosource));
-static shared_ptr<Type> typeList(new type::Type(list));
-static shared_ptr<Type> typeMap(new type::Type(map));
-static shared_ptr<Type> typeMatchTokenState(new type::Type(matchTokenState));
-static shared_ptr<Type> typeOverlay(new type::Type(overlay));
-static shared_ptr<Type> typeRegExp(new type::Type(regexp));
-static shared_ptr<Type> typeSet(new type::Type(set));
-static shared_ptr<Type> typeStruct(new type::Type(struct_));
-static shared_ptr<Type> typeTimer(new type::Type(timer));
-static shared_ptr<Type> typeTimerMgr(new type::Type(timerMgr));
-static shared_ptr<Type> typeVector(new type::Type(vector));
+static shared_ptr<Type> typeBytes(new type::TypeType(bytes));
+static shared_ptr<Type> typeCallable(new type::TypeType(callable));
+static shared_ptr<Type> typeChannel(new type::TypeType(channel));
+static shared_ptr<Type> typeClassifier(new type::TypeType(classifier));
+static shared_ptr<Type> typeException(new type::TypeType(exception));
+static shared_ptr<Type> typeFile(new type::TypeType(file));
+static shared_ptr<Type> typeIOSource(new type::TypeType(iosource));
+static shared_ptr<Type> typeList(new type::TypeType(list));
+static shared_ptr<Type> typeMap(new type::TypeType(map));
+static shared_ptr<Type> typeMatchTokenState(new type::TypeType(matchTokenState));
+static shared_ptr<Type> typeOverlay(new type::TypeType(overlay));
+static shared_ptr<Type> typeRegExp(new type::TypeType(regexp));
+static shared_ptr<Type> typeSet(new type::TypeType(set));
+static shared_ptr<Type> typeStruct(new type::TypeType(struct_));
+static shared_ptr<Type> typeTimer(new type::TypeType(timer));
+static shared_ptr<Type> typeTimerMgr(new type::TypeType(timerMgr));
+static shared_ptr<Type> typeVector(new type::TypeType(vector));
 
 
 }

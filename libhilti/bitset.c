@@ -32,14 +32,10 @@ hlt_string hlt_bitset_to_string(const hlt_type_info* type, const void* obj, int3
             str = hlt_string_from_asciiz(labels->name, excpt, ctx);
 
         else {
-            hlt_string tmp = str;
-            str = hlt_string_concat(str, sep, excpt, ctx);
-            GC_DTOR(tmp, hlt_string);
-            tmp = str;
-            hlt_string tmp2 = hlt_string_from_asciiz(labels->name, excpt, ctx);
-            str = hlt_string_concat(str, tmp2, excpt, ctx);
-            GC_DTOR(tmp, hlt_string);
-            GC_DTOR(tmp2, hlt_string);
+            GC_CCTOR(sep, hlt_string);
+            str = hlt_string_concat_and_unref(str, sep, excpt, ctx);
+            hlt_string n = hlt_string_from_asciiz(labels->name, excpt, ctx);
+            str = hlt_string_concat_and_unref(str, n, excpt, ctx);
         }
 
         ++labels;

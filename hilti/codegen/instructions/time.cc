@@ -40,7 +40,7 @@ void StatementBuilder::visit(statement::instruction::time::AsInt* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
 
-    auto result = cg()->builder()->CreateUDiv(op1, cg()->llvmConstInt(1000000000, 1e9));
+    auto result = cg()->builder()->CreateUDiv(op1, cg()->llvmConstInt(1000000000, 64));
     cg()->llvmStore(i, result);
 }
 

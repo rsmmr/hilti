@@ -1207,7 +1207,7 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
          case type::function::HILTI_C: {
              auto ptype = p.second;
 
-             if ( ast::isA<hilti::type::Type>(ptype) )
+             if ( ast::isA<hilti::type::TypeType>(ptype) )
                  // Pass just RTTI for type arguments.
                  llvm_args.push_back(make_tuple(string("ti_") + p.first, llvmTypePtr(llvmTypeRtti())));
 
@@ -1885,14 +1885,24 @@ llvm::Constant* CodeGen::llvmConstExtractValue(llvm::Constant* aggr, unsigned in
     return llvm::ConstantExpr::getExtractValue(aggr, vec);
 }
 
-void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* internal)
+std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Function> func)
 {
+    auto rf1 = lookupCachedValue("c-wrappers", "entry");
+    auto rf2 = lookupCachedValue("c-wrappers", "resume");
+
+    if ( rf1 ) {
+        assert(rf2);
+        return std::make_pair(rf1, rf2);
+    }
+
     auto ftype = func->type();
     auto rtype = ftype->result()->type();
 
-    if ( ! func->body() )
+    if ( ! func->body() ) {
         // No implementation, nothing to do here.
-        return;
+        internalError("llvmBuildCWrapper: not implemented for function without body; should return prototypes.");
+        return std::make_pair((llvm::Value*)nullptr, (llvm::Value*)nullptr);
+    }
 
     assert(ftype->callingConvention() == type::function::HILTI);
     assert(func->body());
@@ -1902,6 +1912,7 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
         // Name must match with ProtoGen::visit(declaration::Function* f).
     auto name = util::mangle(func->id(), true, func->module()->id(), "", false);
     auto llvm_func = llvmAddFunction(func, false, type::function::HILTI_C, name, true);
+    rf1 = llvm_func;
 
     auto args = llvm_func->arg_begin();
 
@@ -1936,6 +1947,7 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
 
     parameter_list fparams = { std::make_pair("yield_excpt", builder::reference::type(builder::exception::typeAny())) };
     llvm_func = llvmAddFunction(name, llvm_func->getReturnType(), fparams, false, type::function::HILTI_C, true);
+    rf2 = llvm_func;
 
     pushFunction(llvm_func);
     _functions.back()->context = llvmGlobalExecutionContext();
@@ -1962,6 +1974,10 @@ void CodeGen::llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* inter
 
     popFunction();
 
+    cacheValue("c-wrappers", "entry", rf1);
+    cacheValue("c-wrappers", "resume", rf2);
+
+    return std::make_pair(rf1, rf2);
 }
 
 llvm::Value* CodeGen::llvmCall(llvm::Value* llvm_func, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
@@ -2310,7 +2326,7 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
         switch ( ftype->callingConvention() ) {
          case type::function::HILTI:
          case type::function::HOOK: {
-            assert(! ast::isA<hilti::type::Type>(arg_type)); // Not supported.
+            assert(! ast::isA<hilti::type::TypeType>(arg_type)); // Not supported.
 
             // Can pass directly but need context.
             auto arg_value = llvmValue(coerced);
@@ -2319,9 +2335,9 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
          }
 
          case type::function::HILTI_C: {
-             if ( ast::isA<hilti::type::Type>(arg_type) ) {
+             if ( ast::isA<hilti::type::TypeType>(arg_type) ) {
                  // Pass just RTTI for type arguments.
-                 auto tty = ast::as<hilti::type::Type>((*arg)->type());
+                 auto tty = ast::as<hilti::type::TypeType>((*arg)->type());
                  assert(tty);
                  auto rtti = llvmRtti(tty->typeType());
                  llvm_args.push_back(rtti);
@@ -2346,7 +2362,7 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
          }
 
          case type::function::C: {
-            assert(! ast::isA<hilti::type::Type>(arg_type)); // Not supported.
+            assert(! ast::isA<hilti::type::TypeType>(arg_type)); // Not supported.
 
             // Don't mess with arguments.
             auto arg_value = llvmValue(coerced);

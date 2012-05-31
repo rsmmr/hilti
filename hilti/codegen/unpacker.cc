@@ -574,6 +574,5 @@ void Unpacker::visit(type::Port* t)
 
 void Unpacker::visit(type::Bool* t)
 {
-    assert(false);
 }
 

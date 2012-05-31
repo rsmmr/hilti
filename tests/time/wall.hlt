@@ -1,6 +1,6 @@
 #
 # @TEST-EXEC:  hilti-build %INPUT -o a.out
-# @TEST-EXEC:  ./a.out | sed 's/\(.....\).*/\1XXX/g' >output 2>&1
+# @TEST-EXEC:  ./a.out | sed 's/\(...\).*/\1XXX.../g' >output 2>&1
 # @TEST-EXEC:  btest-diff output
 #
 # Can't really check the output of time.wall so we just make sure it

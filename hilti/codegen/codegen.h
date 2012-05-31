@@ -1542,8 +1542,10 @@ public:
    /// constant and then generate just the code for the corresponding branch.
    llvm::Value* llvmSwitchEnumConst(llvm::Value* op, const case_list& cases, bool result = false, const Location& l=Location::None);
 
-   // Create the externally visible C function wrapping a HILTI function *internal*.
-   void llvmBuildCWrapper(shared_ptr<Function> func, llvm::Function* internal);
+   // Create the externally visible C functions wrapping a HILTI function.
+   //
+   // Returns: the tuple for main entry function and resume functions.
+   std::pair<llvm::Value*, llvm::Value*> llvmBuildCWrapper(shared_ptr<Function> func);
 
    // Builds code that needs to run just before the current function returns.
    void llvmBuildFunctionCleanup();

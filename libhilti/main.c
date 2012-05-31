@@ -124,7 +124,6 @@ int main(int argc, char **argv)
     hlt_config cfg = *hlt_config_get();
     cfg.num_workers = threads;
     cfg.profiling = profiling;
-    cfg.debug_out = "hlt-debug.log";
     hlt_config_set(&cfg);
 
     hlt_init();

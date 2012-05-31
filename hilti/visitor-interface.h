@@ -57,7 +57,7 @@ namespace type {
    class Timer;
    class TimerMgr;
    class Tuple;
-   class Type;
+   class TypeType;
    class Unknown;
    class Unset;
    class Vector;
@@ -236,7 +236,7 @@ public:
    virtual void visit(type::Timer* t)       {}
    virtual void visit(type::TimerMgr* t)    {}
    virtual void visit(type::Tuple* t)       {}
-   virtual void visit(type::Type* t)        {}
+   virtual void visit(type::TypeType* t)    {}
    virtual void visit(type::Unknown* t)     {}
    virtual void visit(type::Unset* t)       {}
    virtual void visit(type::Vector* t)      {}

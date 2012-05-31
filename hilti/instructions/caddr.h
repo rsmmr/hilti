@@ -6,11 +6,12 @@ iBegin(caddr, Function, "caddr.function")
     iOp1(optype::function, true)
 
     iValidate {
-        //auto ty_target = as<type::(caddr,caddr)>(target->type());
-        //auto ty_op1 = as<type::function>(op1->type());
-        //
-        // TODO: Make sure we have an (caddr, caddr) tuple.
+        auto ty_target = as<type::Tuple>(target->type());
 
+        auto cat = builder::caddr::type();
+        builder::type_list tt = { cat, cat };
+
+        equalTypes(builder::tuple::type(tt), ty_target);
     }
 
     iDoc(R"(    

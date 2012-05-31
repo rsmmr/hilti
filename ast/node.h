@@ -16,6 +16,12 @@ namespace ast {
 
 class NodeBase;
 
+#ifdef DEBUG
+#define __checkCast(p, _p) if ( (! p) && *_p ) { fprintf(stderr, "failed cast in ast::Node: got object of type %s\n", typeid(*((*_p).get())).name()); abort(); }
+#else
+#define __checkCast(p, _p)
+#endif
+
 /// A shared pointer to a Node. This pointer operates similar to a
 /// shared_ptr: a node will generally be deleted once no node_ptr refers to
 /// it anymore. There's a major difference though: if a node_ptr is copied,
@@ -46,7 +52,7 @@ public:
 
    explicit node_ptr(shared_ptr<ptr> p) { _p = p; }
 
-   T* get() const { assert(_p); auto p = std::dynamic_pointer_cast<T>(*_p).get(); assert(p || !*_p); return p; }
+   T* get() const { assert(_p); auto p = std::dynamic_pointer_cast<T>(*_p).get(); __checkCast(p, _p); return p; }
 
    T* operator->() const { return get(); }
    T& operator*() const  { return *get(); }
@@ -56,7 +62,7 @@ public:
    // Dynamically casts the pointer to a shared_ptr of given type. Returns a
    // nullptr if the dynamic cast fails
    template<typename S>
-   operator shared_ptr<S>() const { auto p = std::dynamic_pointer_cast<S>(*_p); assert(p || !*_p); return p;}
+   operator shared_ptr<S>() const { auto p = std::dynamic_pointer_cast<S>(*_p); __checkCast(p, _p) return p;}
 
    node_ptr<T>& operator=(const node_ptr<T>& other) { _p = other._p; return *this; }
 

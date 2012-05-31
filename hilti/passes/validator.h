@@ -94,7 +94,7 @@ protected:
    void visit(type::Timer* t) override;
    void visit(type::TimerMgr* t) override;
    void visit(type::Tuple* t) override;
-   void visit(type::Type* t) override;
+   void visit(type::TypeType* t) override;
    void visit(type::Unknown* t) override;
    void visit(type::Vector* t) override;
    void visit(type::Void* t) override;

@@ -22,7 +22,7 @@ InstructionRegistry* InstructionRegistry::globalRegistry()
 
 shared_ptr<Type> InstructionHelper::typedType(shared_ptr<Expression> op) const
 {
-    auto t = ast::as<type::Type>(op->type());
+    auto t = ast::as<type::TypeType>(op->type());
     assert(t);
     return t->typeType();
 }

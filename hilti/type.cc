@@ -53,7 +53,7 @@ type::Struct::~Struct() {}
 type::Time::~Time() {}
 type::Timer::~Timer() {}
 type::TimerMgr::~TimerMgr() {}
-type::Type::~Type() {}
+type::TypeType::~TypeType() {}
 type::TypeByName::~TypeByName() {}
 type::Unknown::~Unknown() {}
 type::Unset::~Unset() {}

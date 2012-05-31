@@ -405,7 +405,9 @@ constant      : CINTEGER                         { $$ = builder::integer::create
               | CADDRESS '/' CINTEGER            { $$ = builder::network::create($1, $3, loc(@$)); }
               | CPORT                            { $$ = builder::port::create($1, loc(@$)); }
               | INTERVAL '(' CDOUBLE ')'         { $$ = builder::interval::create($3, loc(@$)); }
+              | INTERVAL '(' CINTEGER ')'        { $$ = builder::interval::create($3, loc(@$)); }
               | TIME '(' CDOUBLE ')'             { $$ = builder::time::create($3, loc(@$)); }
+              | TIME '(' CINTEGER ')'            { $$ = builder::time::create($3, loc(@$)); }
               | tuple                            { $$ = builder::tuple::create($1, loc(@$));  }
               ;
 

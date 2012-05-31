@@ -760,7 +760,7 @@ private:
 };
 
 /// Type for types.
-class Type : public hilti::Type
+class TypeType : public hilti::Type
 {
 public:
    /// Constructor.
@@ -768,23 +768,23 @@ public:
    /// type; The represented type.
    ///
    /// l: Associated location.
-   Type(shared_ptr<hilti::Type> type, const Location& l=Location::None) : hilti::Type(l) {
+   TypeType(shared_ptr<hilti::Type> type, const Location& l=Location::None) : hilti::Type(l) {
        _rtype = type; addChild(_rtype);
    }
 
    /// Constructor for wildcard type.
    ///
    /// l: Associated location.
-   Type(const Location& l=Location::None) : hilti::Type() {
+   TypeType(const Location& l=Location::None) : hilti::Type() {
        setWildcard(true);
    }
 
-   ~Type();
+   ~TypeType();
 
    shared_ptr<hilti::Type> typeType() const { return _rtype; }
 
    bool _equal(shared_ptr<hilti::Type> other) const override {
-       return _rtype->equal(std::dynamic_pointer_cast<Type>(other)->_rtype);
+       return _rtype->equal(std::dynamic_pointer_cast<TypeType>(other)->_rtype);
    }
 
    ACCEPT_VISITOR(hilti::Type);
@@ -1406,7 +1406,7 @@ public:
    Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_=nullptr, bool internal=false, const Location& l=Location::None);
 
    shared_ptr<ID> id() const { return _id; }
-   shared_ptr<Type> type() const { return _type; }
+   shared_ptr<hilti::Type> type() const { return _type; }
    shared_ptr<Expression> default_() const;
    bool internal() const { return _internal; }
 
@@ -1414,7 +1414,7 @@ public:
 
 private:
    node_ptr<ID> _id;
-   node_ptr<Type> _type;
+   node_ptr<hilti::Type> _type;
    node_ptr<Expression> _default;
    bool _internal;
 };

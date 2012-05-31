@@ -617,6 +617,8 @@ void TypeBuilder::visit(type::Interval* t)
     ti->id = HLT_TYPE_INTERVAL;
     ti->init_val = cg()->llvmConstInt(0, 64);
     ti->to_string = "hlt::interval_to_string";
+    ti->to_double = "hlt::interval_to_double";
+    ti->to_int64 = "hlt::interval_to_int64";
     setResult(ti);}
 
 void TypeBuilder::visit(type::Time* t)
@@ -625,6 +627,8 @@ void TypeBuilder::visit(type::Time* t)
     ti->id = HLT_TYPE_TIME;
     ti->init_val = cg()->llvmConstInt(0, 64);
     ti->to_string = "hlt::time_to_string";
+    ti->to_double = "hlt::time_to_double";
+    ti->to_int64 = "hlt::time_to_int64";
     setResult(ti);
 }
 

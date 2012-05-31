@@ -52,7 +52,7 @@ struct AstInfo {
     typedef hilti::type::Block block_type;
     typedef hilti::type::Function function_type;
     typedef hilti::type::Module module_type;
-    typedef hilti::type::Type type_type;
+    typedef hilti::type::TypeType type_type;
     typedef hilti::type::Unknown unknown_type;
     typedef hilti::type::function::Parameter parameter;
 
