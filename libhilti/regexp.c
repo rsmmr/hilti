@@ -26,6 +26,8 @@ void hlt_regexp_dtor(hlt_type_info* ti, hlt_regexp* re)
     for ( int i = 0; i < re->num; i++ )
         GC_DTOR(re->patterns[i], hlt_string);
 
+    hlt_free(re->patterns);
+
     if ( re->num > 0 )
         jrx_regfree(&re->regexp);
 }
@@ -137,7 +139,7 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
     const hlt_regexp* re = *((const hlt_regexp**)obj);
 
     if ( ! re->num )
-        return 0;
+        return hlt_string_from_asciiz("<no pattern>", excpt, ctx);
 
     if ( re->num == 1 )
         return re->patterns[0];
@@ -375,14 +377,12 @@ hlt_regexp_span hlt_regexp_bytes_span(hlt_regexp* re, const hlt_iterator_bytes b
     return result;
 }
 
-extern const hlt_type_info hlt_type_info_tuple_iterator_bytes_iterator_bytes;
-
 static inline void _set_group(hlt_vector* vec, hlt_iterator_bytes begin, int i, jrx_offset so, jrx_offset eo, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_regexp_range span;
     span.begin = hlt_iterator_bytes_incr_by(begin, so, excpt, ctx);
     span.end = hlt_iterator_bytes_incr_by(begin, eo, excpt, ctx);
-    hlt_vector_set(vec, i, &hlt_type_info_tuple_iterator_bytes_iterator_bytes, &span, excpt, ctx);
+    hlt_vector_set(vec, i, hlt_type_info_hlt_tuple_iterator_bytes_iterator_bytes, &span, excpt, ctx);
 }
 
 hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -396,7 +396,7 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_bytes beg
     hlt_regexp_range def_span;
     def_span.begin = def_span.end = hlt_bytes_generic_end(excpt, ctx);
 
-    hlt_vector* vec = hlt_vector_new(&hlt_type_info_tuple_iterator_bytes_iterator_bytes, &def_span, 0, excpt, ctx);
+    hlt_vector* vec = hlt_vector_new(hlt_type_info_hlt_tuple_iterator_bytes_iterator_bytes, &def_span, 0, excpt, ctx);
 
     GC_DTOR(def_span.begin, hlt_iterator_bytes);
     GC_DTOR(def_span.end, hlt_iterator_bytes);

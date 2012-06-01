@@ -27,5 +27,6 @@ extern const hlt_type_info* hlt_type_info_hlt_iterator_set;
 extern const hlt_type_info* hlt_type_info_hlt_map;
 extern const hlt_type_info* hlt_type_info_hlt_iterator_map;
 extern const hlt_type_info* hlt_type_info_hlt_file;
+extern const hlt_type_info* hlt_type_info_hlt_tuple_iterator_bytes_iterator_bytes;
 
 #endif

@@ -24,3 +24,5 @@ export iterator<list<*>>
 export iterator<vector<*>>
 export iterator<set<*>>
 export iterator<map<*>>
+
+export tuple<iterator<bytes>, iterator<bytes>>

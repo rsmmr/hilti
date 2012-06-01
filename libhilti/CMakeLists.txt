@@ -9,8 +9,6 @@ project(libhilti C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
-add_subdirectory(justrx) # Must come before EnableLLVMBitcode.
-
 include(EnableLLVMBitcode)
 include(DefaultCompilerSettings)
 
@@ -19,8 +17,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
 set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -D_GNU_SOURCE")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -std=gnu89 -D_GNU_SOURCE")
 
 ### Generate the C prototypes.
 
@@ -44,6 +42,17 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory.c int.c
     system.c
 
     module/fmt.c
+
+    justrx/src/ccl.c
+    justrx/src/dfa-interpreter-min.c
+    justrx/src/dfa-interpreter-std.c
+    justrx/src/dfa.c
+    justrx/src/jlocale.c
+    justrx/src/jrx.c
+    justrx/src/nfa.c
+    justrx/src/re-parse.c
+    justrx/src/re-scan.c
+    justrx/src/util.c
 
     3rdparty/libpqueue/src/pqueue.c
     3rdparty/libtask/context.c

@@ -421,13 +421,18 @@ bool type::Enum::_equal(shared_ptr<Type> other) const
 
 type::trait::Parameterized::parameter_list type::RegExp::parameters() const
 {
-    parameter_list params;
+    uint64_t flags = 0;
 
     for ( auto a : _attrs ) {
-        auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Attribute(a));
-        params.push_back(p);
+        if ( a == "&nosub" )
+            flags |= 1;
+        else {
+            fprintf(stderr, "unknown regexp attribute '%s'", a.c_str());
+            abort();
+        }
     }
 
+    parameter_list params = { shared_ptr<trait::parameter::Base>(new trait::parameter::Integer(flags)) };
     return params;
 }
 

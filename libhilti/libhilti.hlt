@@ -183,6 +183,8 @@ declare "C-HILTI" bool iterator_list_eq(iterator<list<*>> i1, iterator<list<*>> 
 #
 # ##
 #
+declare "C-HILTI" void regexp_dtor(ref<regexp> re)
+declare "C-HILTI" void match_token_state_dtor(ref<match_token_state> ms)
 declare "C-HILTI" ref<regexp> regexp_new(type regexp_type)
 declare "C-HILTI" void regexp_compile(ref<regexp> re, string pattern)
 declare "C-HILTI" void regexp_compile_set(ref<regexp> re, ref<list<string>> patterns)
