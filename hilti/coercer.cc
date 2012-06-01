@@ -90,3 +90,8 @@ void Coercer::visit(type::Address* t)
         return;
     }
 }
+
+void Coercer::visit(type::Unset* t)
+{
+    setResult(true);
+}

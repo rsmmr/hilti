@@ -43,6 +43,7 @@ void codegen::Coercer::visit(type::Integer* t)
         auto width = llvm::cast<llvm::IntegerType>(val->getType())->getBitWidth();
         auto result = builder()->CreateICmpEQ(val, cg()->llvmConstInt(0, width));
         setResult(result);
+        return;
     }
 
     assert(false);

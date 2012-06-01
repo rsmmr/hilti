@@ -9,6 +9,8 @@ project(libhilti C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
+add_subdirectory(justrx) # Must come before EnableLLVMBitcode.
+
 include(EnableLLVMBitcode)
 include(DefaultCompilerSettings)
 
@@ -17,7 +19,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
 set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -D_GNU_SOURCE")
 
 ### Generate the C prototypes.
@@ -38,7 +40,7 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory.c int.c
     tuple.c string.c utf8proc.c bytes.c exceptions.c util.c print.c
     bool.c addr.c bitset.c caddr.c double.c enum.c interval.c
     net.c port.c time.c hook.c timer.c threading.c list.c fiber.c
-    vector.c map_set.c
+    vector.c map_set.c struct.c
 
     module/fmt.c
 

@@ -34,6 +34,9 @@ type ValueError = exception<string> &libhilti="hlt_exception_value_error"
 # Raised when a HILTI function called from C yields.
 type Yield = exception<string> &libhilti="hlt_exception_yield"
 
+# Raised when a value is accessed that isn't set.
+type UndefinedValue = exception<string> &libhilti="hlt_exception_undefined_value"
+
 ## Defines the valid formats for the ref:op:`unpack` operator. 
 type Packed = enum {
     # String

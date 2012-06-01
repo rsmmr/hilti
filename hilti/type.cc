@@ -444,12 +444,12 @@ shared_ptr<Expression> type::struct_::Field::default_() const
     return _default;
 }
 
-type::Struct::Struct(const Location& l) : ValueType(l)
+type::Struct::Struct(const Location& l) : HeapType(l)
 {
     setWildcard(true);
 }
 
-type::Struct::Struct(const field_list& fields, const Location& l) : ValueType(l)
+type::Struct::Struct(const field_list& fields, const Location& l) : HeapType(l)
 {
     _fields = fields;
 
@@ -465,6 +465,18 @@ const type::trait::TypeList::type_list type::Struct::typeList() const
         types.push_back(f->type());
 
     return types;
+}
+
+type::trait::Parameterized::parameter_list type::Struct::parameters() const
+{
+    type::trait::Parameterized::parameter_list params;
+
+    for ( auto f : _fields ) {
+        auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Type(f->type()));
+        params.push_back(p);
+    }
+
+    return params;
 }
 
 bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const

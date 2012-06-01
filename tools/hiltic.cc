@@ -33,6 +33,7 @@ static struct option long_options[] = {
     { "debug",   no_argument, 0, 'd' },
     { "help",    no_argument, 0, 'h' },
     { "print",   no_argument, 0, 'p' },
+    { "print-always",   no_argument, 0, 'W' },
     { "prototypes", no_argument, 0, 'P' },
     { "output",  required_argument, 0, 'o' },
     { "version", no_argument, 0, 'v' },
@@ -148,6 +149,8 @@ llvm::Module* compileHILTI(string path)
 
         if ( ! success )
             error(path, "Aborting due to printer error.");
+
+        return nullptr;
     }
 
     if ( output_prototypes ) {
@@ -185,7 +188,7 @@ int main(int argc, char** argv)
     int num_output_types = 0;
 
     while ( true ) {
-        int c = getopt_long(argc, argv, "AdDhpPblLVo:vI:", long_options, 0);
+        int c = getopt_long(argc, argv, "AdDhpPWblLVo:vI:", long_options, 0);
 
         if ( c < 0 )
             break;

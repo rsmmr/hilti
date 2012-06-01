@@ -610,7 +610,7 @@ public:
    /// type: The type to return the information for.
    ///
    /// Returns: The object with the type's information.
-   shared_ptr<TypeInfo> typeInfo(shared_ptr<hilti::Type> type);
+   TypeInfo* typeInfo(shared_ptr<hilti::Type> type);
 
    /// Returns the LLVM type that corresponds to a HILTI type.
    ///
@@ -1593,8 +1593,20 @@ public:
    ///
    /// field: The name of the field to set.
    ///
-   /// val: The value to set the field to. The value must have its cctor called already.
+   /// val: The value to set the field to. The value must not have its cctor called yet.
    void llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, llvm::Value* val);
+
+   /// Sets a struct field. This version gets an expression and coerce the
+   /// type as necessary.
+   ///
+   /// stype: The type, which must be a \a type::Struct.
+   ///
+   /// sval: The struct instance.
+   ///
+   /// field: The name of the field to set.
+   ///
+   /// val: The value to set the field to.
+   void llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, shared_ptr<Expression> val);
 
    /// Unsets a struct field.
    ///

@@ -687,7 +687,7 @@ llvm::Type* CodeGen::lookupCachedType(const string& component, const string& key
     return (i != _type_cache.end()) ? i->second : nullptr;
 }
 
-shared_ptr<codegen::TypeInfo> CodeGen::typeInfo(shared_ptr<hilti::Type> type)
+codegen::TypeInfo* CodeGen::typeInfo(shared_ptr<hilti::Type> type)
 {
     return _type_builder->typeInfo(type);
 }
@@ -1212,7 +1212,7 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
                  llvm_args.push_back(make_tuple(string("ti_") + p.first, llvmTypePtr(llvmTypeRtti())));
 
              else {
-                 shared_ptr<TypeInfo> pti = typeInfo(ptype);
+                 TypeInfo* pti = typeInfo(ptype);
                  if ( pti->pass_type_info ) {
                      llvm_args.push_back(make_tuple(string("ti_") + p.first, llvmTypePtr(llvmTypeRtti())));
                      llvm_args.push_back(make_tuple(p.first, llvmTypePtr()));
@@ -2822,7 +2822,7 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     // Unset, raise exception if no default.
 
     if ( ! default_ )
-        llvmRaiseException("hlt_exception_undefined_value", l);
+        llvmRaiseException("Hilti::UndefinedValue", l);
 
     llvmCreateBr(block_done);
     popBuilder();
@@ -2848,6 +2848,13 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     return result;
 }
 
+void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, shared_ptr<Expression> val)
+{
+    auto fd = _getField(this, stype, field);
+    auto lval = llvmCoerceTo(llvmValue(val), val->type(), fd.second->type());
+    return llvmStructSet(stype, sval, field, lval);
+}
+
 void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, llvm::Value* val)
 {
     auto fd = _getField(this, stype, field);
@@ -2863,7 +2870,7 @@ void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const str
     llvmCreateStore(new_, addr);
 
     addr = llvmGEP(sval, zero, llvmGEPIdx(idx + 2));
-    llvmGCAssign(addr, val, f->type(), true);
+    llvmGCAssign(addr, val, f->type(), false);
 }
 
 void CodeGen::llvmStructUnset(shared_ptr<Type> stype, llvm::Value* sval, const string& field)

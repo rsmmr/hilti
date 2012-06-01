@@ -148,11 +148,15 @@ void __hlt_object_ref(const hlt_type_info* ti, void* obj)
     __hlt_gchdr* hdr = (__hlt_gchdr*)obj;;
 
 #ifdef DEBUG
-    if ( ! ti->gc )
+    if ( ! ti->gc ) {
+        _dbg_mem_gc("! ref", ti, obj, 0, 0);
         _internal_memory_error(obj, "__hlt_object_ref", "object not garbage collected");
+    }
 
-    if ( hdr->ref_cnt <= 0 )
+    if ( hdr->ref_cnt <= 0 ) {
+        _dbg_mem_gc("! ref", ti, obj, 0, 0);
         _internal_memory_error(obj, "__hlt_object_ref", "bad reference count");
+    }
 #endif
 
     ++hdr->ref_cnt;
@@ -171,11 +175,20 @@ void __hlt_object_unref(const hlt_type_info* ti, void* obj)
     __hlt_gchdr* hdr = (__hlt_gchdr*)obj;
 
 #ifdef DEBUG
-    if ( ! ti->gc )
-        _internal_memory_error(obj, "__hlt_object_unref", "object not garbage collected");
+    const char* aux = 0;
 
-    if ( hdr->ref_cnt <= 0 )
+    if ( hdr->ref_cnt == 0 )
+        aux = "dtor";
+
+    if ( ! ti->gc ) {
+        _dbg_mem_gc("! unref", ti, obj, 0, aux);
+        _internal_memory_error(obj, "__hlt_object_unref", "object not garbage collected");
+    }
+
+    if ( hdr->ref_cnt <= 0 ) {
+        _dbg_mem_gc("! unref", ti, obj, 0, aux);
         _internal_memory_error(obj, "__hlt_object_unref", "bad reference count");
+    }
 #endif
 
     // We explicitly set it to zero even if we're about to delete the object.
@@ -184,11 +197,6 @@ void __hlt_object_unref(const hlt_type_info* ti, void* obj)
     --hdr->ref_cnt;
 
 #ifdef DEBUG
-    const char* aux = 0;
-
-    if ( hdr->ref_cnt == 0 )
-        aux = "dtor";
-
     _dbg_mem_gc("unref", ti, obj, 0, aux);
 #endif
 

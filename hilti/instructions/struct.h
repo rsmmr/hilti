@@ -22,9 +22,9 @@ static shared_ptr<type::struct_::Field> _structField(const Instruction* i, share
         return nullptr;
     }
 
-    auto cval = ast::as<constant::String>(cexpr);
+    auto cval = ast::as<constant::String>(cexpr->constant());
 
-    if ( cval ) {
+    if ( ! cval ) {
         i->error(field, "struct field must be a constant string");
         return nullptr;
     }
@@ -46,7 +46,7 @@ iBegin(struct_, New, "new")
     iOp2(optype::optional(optype::refTimerMgr), true)
 
     iValidate {
-        hasType(target, typedType(op1));
+        equalTypes(referencedType(target), typedType(op1));
     }
 
     iDoc(R"(

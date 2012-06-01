@@ -356,7 +356,7 @@ struct_       : STRUCT                           { driver.disableLineMode(); }
 opt_struct_fields : struct_fields                { $$ = $1; }
               | /* empty */                      { $$ = builder::struct_::field_list(); }
 
-struct_fields : struct_fields ',' struct_field   { $$ = $1; $1.push_back($3); }
+struct_fields : struct_fields ',' struct_field   { $$ = $1; $$.push_back($3); }
               | struct_field                     { $$ = builder::struct_::field_list(); $$.push_back($1); }
 
 struct_field  : type local_id                    { $$ = builder::struct_::field($2, $1, nullptr, false, loc(@$)); }

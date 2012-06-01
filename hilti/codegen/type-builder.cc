@@ -59,15 +59,7 @@ TypeBuilder::~TypeBuilder()
 {
 }
 
-TypeInfo* TypeBuilder::_typeInfo(shared_ptr<hilti::Type> type)
-{
-    TypeInfo* result;
-    bool success = processOne(type, &result);
-    assert(success);
-    return result;
-}
-
-shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
+TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
 {
     auto i = _ti_cache.find(type);
 
@@ -77,7 +69,9 @@ shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
 
     setDefaultResult(nullptr);
 
-    shared_ptr<TypeInfo> ti(_typeInfo(type));
+    TypeInfo* ti;
+    bool success = processOne(type, &ti);
+    assert(success);
 
 #ifdef DEBUG
     if ( ! ti ) {
@@ -92,8 +86,15 @@ shared_ptr<TypeInfo> TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
     if ( ! ti->llvm_type && ti->lib_type.size() ) {
         ti->llvm_type = cg()->llvmLibType(ti->lib_type);
 
-        if ( ast::isA<type::Reference>(type) )
+        if ( ast::isA<type::HeapType>(type) )
             ti->llvm_type = cg()->llvmTypePtr(ti->llvm_type);
+    }
+
+    if ( ast::isA<type::HeapType>(type) ) {
+        ti->obj_dtor = ti->dtor;
+        ti->obj_dtor_func = ti->dtor_func;
+        ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
+        ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
     }
 
     if ( type::hasTrait<type::trait::GarbageCollected>(type) ) {
@@ -186,10 +187,15 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     // Ok if not the right type here.
     shared_ptr<type::trait::Parameterized> ptype = std::dynamic_pointer_cast<type::trait::Parameterized>(ti->type);
 
+    int num_params = 0;
+
+    if ( ptype )
+        num_params = ptype->parameters().size();
+
     vals.push_back(cg()->llvmConstInt(ti->id, 16));
     vals.push_back(sizeof_);
     vals.push_back(cg()->llvmConstAsciizPtr(ti->name));
-    vals.push_back(cg()->llvmConstInt((ptype ? ptype->parameters().size() : 0), 16));
+    vals.push_back(cg()->llvmConstInt(num_params, 16));
     vals.push_back(cg()->llvmConstInt(gc, 16));
     vals.push_back(ti->aux ? ti->aux : cg()->llvmConstNull(cg()->llvmTypePtr()));
     vals.push_back(ti->ptr_map ? ti->ptr_map : cg()->llvmConstNull(cg()->llvmTypePtr()));
@@ -451,7 +457,6 @@ void TypeBuilder::visit(type::Tuple* t)
     ti->hash = "hlt::tuple_hash";
     ti->equal = "hlt::tuple_equal";
     ti->aux = aux;
-    // ti->cctor_func = make_tuple_cctor(cg(), t);
 
     if ( ! t->wildcard() ) {
         ti->dtor_func = _makeTupleDtor(cg(), t);
@@ -471,14 +476,7 @@ void TypeBuilder::visit(type::Reference* b)
     shared_ptr<hilti::Type> t = nullptr;
 
     if ( ! b->wildcard() ) {
-        auto ti = _typeInfo(b->argType());
-
-        ti->obj_dtor = ti->dtor;
-        ti->obj_dtor_func = ti->dtor_func;
-
-        ti->cctor_func = cg()->llvmLibFunction("__hlt_object_ref");
-        ti->dtor_func = cg()->llvmLibFunction("__hlt_object_unref");
-
+        auto ti = typeInfo(b->argType());
         setResult(ti);
         return;
     }
@@ -776,15 +774,61 @@ void TypeBuilder::visit(type::MatchTokenState* t)
     setResult(ti);
 }
 
+llvm::Function* TypeBuilder::_makeStructDtor(CodeGen* cg, type::Struct* t, llvm::Type* llvm_type)
+{
+    auto type = t->sharedPtr<Type>();
+
+    string name = "dtor_" + type->render();
+
+    llvm::Value* cached = cg->lookupCachedValue("dtor-struct", name);
+
+    if ( cached )
+        return llvm::cast<llvm::Function>(cached);
+
+    CodeGen::llvm_parameter_list params;
+    params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
+    params.push_back(std::make_pair("struct", cg->llvmTypePtr(llvm_type)));
+
+    auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
+
+    cg->pushFunction(func);
+
+    auto a = func->arg_begin();
+    ++a;
+    auto sval = cg->builder()->CreateLoad(a);
+    auto mask = cg->llvmExtractValue(sval, 1);
+
+    int idx = 0;
+
+    for ( auto et : t->typeList() ) {
+
+        auto bit = cg->llvmConstInt(1 << idx, 32);
+        auto isset = builder()->CreateAnd(bit, mask);
+
+        auto set = cg->newBuilder("set");
+        auto done = cg->newBuilder("done");
+
+        auto notzero = builder()->CreateICmpNE(isset, cg->llvmConstInt(0, 32));
+        cg->llvmCreateCondBr(notzero, set, done);
+
+        cg->pushBuilder(set);
+        auto elem = cg->llvmExtractValue(sval, 2 + idx++); // first two are gc_hdr and mask.
+        cg->llvmDtor(elem, et, false, "struct");
+        cg->llvmCreateBr(done);
+        cg->popBuilder();
+
+        cg->pushBuilder(done);
+    }
+
+    cg->popFunction();
+
+    cg->cacheValue("dtor-struct", name, func);
+
+    return func;
+}
+
 void TypeBuilder::visit(type::Struct* t)
 {
-    TypeInfo* ti = new TypeInfo(t);
-    ti->id = HLT_TYPE_STRUCT;
-    ti->dtor = "hlt::struct_dtor";
-    ti->to_string = "hlt::struct_to_string";
-    ti->hash = "hlt::struct_hash";
-    ti->equal = "hlt::struct_equal";
-
     /// Create the struct type.
     string sname = t->id() ? t->id()->pathAsString() : string("struct");
     CodeGen::type_list fields { cg()->llvmLibType("hlt.gchdr"), cg()->llvmTypeInt(32) };
@@ -794,15 +838,13 @@ void TypeBuilder::visit(type::Struct* t)
 
     auto stype = cg()->llvmTypeStruct(sname, fields);
 
-    ti->init_val = cg()->llvmConstNull(cg()->llvmTypePtr(stype));
-
     /// Type information for a ``struct`` includes the fields' offsets in the
     /// ``aux`` entry as a concatenation of pairs (ASCIIZ*, offset), where
     /// ASCIIZ is a field's name, and offset its offset in the value. Aux
     /// information is a list of tuple <const char*, int16_t>.
 
     auto zero = cg()->llvmGEPIdx(0);
-    auto null = cg()->llvmConstNull(cg()->llvmTypePtr());
+    auto null = cg()->llvmConstNull(cg()->llvmTypePtr(stype));
 
     CodeGen::constant_list array;
 
@@ -813,19 +855,36 @@ void TypeBuilder::visit(type::Struct* t)
 
         // Calculate the offset.
         auto idx = cg()->llvmGEPIdx(i + 2); // skip the gchdr and bitmask.
-        auto offset = llvm::ConstantExpr::getGetElementPtr(null, idx);
+        auto offset = cg()->llvmGEP(null, zero, idx);
         offset = llvm::ConstantExpr::getPtrToInt(offset, cg()->llvmTypeInt(16));
 
         CodeGen::constant_list pair { name, offset };
         array.push_back(cg()->llvmConstStruct(pair));
+
+        ++i;
     }
+
+    llvm::Constant* glob = nullptr;
 
     if ( array.size() ) {
         auto aval = cg()->llvmConstArray(array);
-        auto glob = cg()->llvmAddConst("struct-fields", aval);
-        glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
-        ti->aux = glob;
+        glob = cg()->llvmAddConst("struct-fields", aval);
+        //glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
     }
+
+    TypeInfo* ti = new TypeInfo(t);
+    ti->id = HLT_TYPE_STRUCT;
+    ti->init_val = cg()->llvmConstNull(cg()->llvmTypePtr(stype));
+    ti->to_string = "hlt::struct_to_string";
+    ti->hash = "hlt::struct_hash";
+    ti->equal = "hlt::struct_equal";
+    ti->aux = glob;
+
+    if ( ! t->wildcard() )
+        ti->dtor_func = _makeStructDtor(cg(), t, stype);
+    else
+        // Generic versions working with all tuples.
+        ti->dtor = "hlt::struct_dtor";
 
     setResult(ti);
 }

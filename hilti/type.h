@@ -1423,7 +1423,7 @@ private:
 }
 
 /// Type for structs.
-class Struct : public ValueType, public trait::TypeList, public trait::Hashable
+class Struct : public HeapType, public trait::TypeList, public trait::Hashable, public trait::Parameterized
 {
 public:
    typedef std::list<node_ptr<struct_::Field>> field_list;
@@ -1446,6 +1446,7 @@ public:
    const field_list& fields() const { return _fields; }
 
    const trait::TypeList::type_list typeList() const override;
+   parameter_list parameters() const override;
 
    bool _equal(shared_ptr<hilti::Type> other) const override;
 

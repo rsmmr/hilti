@@ -737,6 +737,11 @@ void Printer::visit(type::Struct* t)
 
     Printer& p = *this;
 
+    if ( ! t->fields().size() ) {
+        p << "struct" << endl;
+        return;
+    }
+
     p << "struct {" << endl;
     pushIndent();
 
@@ -748,7 +753,7 @@ void Printer::visit(type::Struct* t)
 
         p << f->type() << ' ' << f->id();
         if ( f->default_() )
-            p << " = " << f->default_();
+            p << " &default=" << f->default_();
 
         first = false;
     }

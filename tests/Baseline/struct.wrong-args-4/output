@@ -1,4 +1,5 @@
->>> struct.set a "b" 42
-wrong-args.hlt:19: error, operand 3 type must be bool, but is int<64>
 
-wrong-args.hlt: 1 error found during validating
+>>> struct.set a "b" 3.41
+wrong-args.hlt:19-19: error, operand type double is not compatible with type bool [pass::Validator]
+wrong-args.hlt: Aborting due to verification error.
+error running hiltic, aborting

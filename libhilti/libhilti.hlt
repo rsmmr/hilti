@@ -69,6 +69,10 @@ declare "C-HILTI" void exception_dtor(ref<exception> b)
 
 ###
 
+declare "C-HILTI" void struct_dtor(any b)
+
+###
+
 declare "C-HILTI" void callable_dtor(ref<callable<*>> b)
 
 ###

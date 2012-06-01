@@ -177,7 +177,7 @@ public:
    /// type: The type to return the information for.
    ///
    /// Returns: The object with the type's information.
-   shared_ptr<TypeInfo> typeInfo(shared_ptr<hilti::Type> type);
+   TypeInfo* typeInfo(shared_ptr<hilti::Type> type);
 
    /// Returns the LLVM type that corresponds to a HILTI type.
    ///
@@ -237,14 +237,14 @@ protected:
 
 private:
    llvm::Constant* _lookupFunction(const string& func);
-   TypeInfo* _typeInfo(shared_ptr<hilti::Type> type);
    llvm::Function* _makeTupleDtor(CodeGen* cg, type::Tuple* type);
    llvm::Function* _makeTupleCctor(CodeGen* cg, type::Tuple* type);
    llvm::Function* _makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, bool dtor);
+   llvm::Function* _makeStructDtor(CodeGen* cg, type::Struct* t, llvm::Type* llvm_type);
 
    // We cached all once computed type-infos and return the cached version
    // next time somebody asks for the same type instance.
-   typedef std::map<shared_ptr<hilti::Type>, shared_ptr<TypeInfo>> ti_cache_map;
+   typedef std::map<shared_ptr<hilti::Type>, TypeInfo*> ti_cache_map;
    ti_cache_map _ti_cache;
 };
 

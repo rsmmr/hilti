@@ -1,4 +1,25 @@
->>> i = new A
-wrong-args.hlt:24: error, target type must be ref<struct { int<64> i, bool b, string test, double d }>
 
-wrong-args.hlt: 1 error found during validating
+>>> i = new A
+wrong-args.hlt:23-23: error, operands do not match instruction new
+  got:
+    new: A -> int<64>
+  expected one of:
+    new: bytes -> ref<bytes>
+    new: callable, <function>, tuple<> -> ref<callable>
+    new: channel<*>, int<64> -> ref<channel<*>>
+    new: classifier -> ref<classifier>
+    new: exception -> ref<exception>
+    new: exception, any -> ref<exception>
+    new: file -> ref<file>
+    new: iosrc<*> -> ref<iosrc<*>>
+    new: list<*>, [ ref<timer_mgr> ] -> ref<list<*>>
+    new: map<*>, [ ref<timer_mgr> ] -> ref<map<*>>
+    new: regexp<>, [ ref<timer_mgr> ] -> ref<regexp<>>
+    new: set<*>, [ ref<timer_mgr> ] -> ref<set<*>>
+    new: struct , [ ref<timer_mgr> ] -> ref<struct >
+    new: timer, <function>, tuple<> -> ref<timer>
+    new: timer_mgr -> ref<timer_mgr>
+    new: vector<*>, [ ref<timer_mgr> ] -> ref<vector<*>>
+ [pass::InstructionResolver]
+wrong-args.hlt: Aborting due to resolver error.
+error running hiltic, aborting
