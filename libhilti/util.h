@@ -3,6 +3,7 @@
 #define HLT_UTIL_H
 
 #include <stdint.h>
+#include <pthread.h>
 
 #include "types.h"
 
@@ -44,13 +45,10 @@ extern size_t hlt_util_memory_usage();
 /// This is the only time when we need to ensure the state is indeed set
 /// right.
 ///
-// extern void hlt_pthread_setcancelstate(int state, int *oldstate);
+extern void hlt_pthread_setcancelstate(int state, int *oldstate);
 
 /// Aborts execution immediately with a core dump.
 void hlt_abort();
-
-// This is a noop as long as we aren't shutting down.
-// extern void hlt_pthread_setcancelstate(int state, int *oldstate);
 
 /// Converts a 64-bit value from host-order to network order.
 ///

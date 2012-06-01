@@ -23,7 +23,7 @@ static void _fatal_error(const char* msg)
     exit(1);
 }
 
-void __hlt_hooks_start()
+void __hlt_hooks_init()
 {
     if ( __hlt_global_hook_state )
         return;
@@ -36,7 +36,7 @@ void __hlt_hooks_start()
         _fatal_error("cannot initialize worker's lock");
 }
 
-void __hlt_hooks_stop()
+void __hlt_hooks_done()
 {
     if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&__hlt_global_hook_state_lock) != 0 )
         _fatal_error("could not destroy lock");

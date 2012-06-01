@@ -30,8 +30,8 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
     // unlock it at each possible exit to this function.
 
     // We must not terminate while in here.
-//    int old_state;
-//    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
+    int old_state;
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
 
     flockfile(stdout);
 
@@ -59,6 +59,6 @@ void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_excep
 
 unlock:
     funlockfile(stdout);
-//    pthread_setcancelstate(old_state, NULL);
+    pthread_setcancelstate(old_state, NULL);
 }
 

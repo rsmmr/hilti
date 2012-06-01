@@ -1,19 +1,18 @@
 
-#include "hilti.h"
-
 #include <string.h>
 #include <jrx.h>
 
-struct hlt_regexp {
+#include "regexp.h"
+#include "string_.h"
+#include "memory.h"
+
+struct __hlt_regexp {
+    __hlt_gchdr __gchdr; // Header for memory management.
     int32_t num; // Number of patterns in set.
     hlt_string* patterns;
     hlt_regexp_flags flags;
     jrx_regex_t regexp;
 };
-
-static hlt_string_constant ASCII = { 5, "ascii" };
-static hlt_string_constant EMPTY = { 12, "<no-pattern>" };
-static hlt_string_constant PIPE = { 4, " | " };
 
 //#define _DEBUG_MATCHING
 
@@ -22,10 +21,19 @@ static void print_bytes_raw(const char* b2, hlt_bytes_size size, hlt_exception**
 static void print_bytes(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 #endif
 
-void hlt_regexp_dtor(hlt_type_info* ti, hlt_regexp* excpt)
+void hlt_regexp_dtor(hlt_type_info* ti, hlt_regexp* re)
 {
+    for ( int i = 0; i < re->num; i++ )
+        GC_DTOR(re->patterns[i], hlt_string);
+
+    if ( re->num > 0 )
+        jrx_regfree(&re->regexp);
 }
 
+void hlt_regexp_match_token_dtor(hlt_type_info* ti, hlt_regexp_match_token* t)
+{
+    hlt_iterator_bytes_dtor(t->end);
+}
 
 hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
 {
@@ -34,7 +42,7 @@ hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt
 
     int64_t *flags = (int64_t*) &(type->type_params);
 
-    hlt_regexp* re = hlt_gc_malloc_non_atomic(sizeof(hlt_regexp));
+    hlt_regexp* re = GC_NEW(hlt_regexp);
     re->num = 0;
     re->patterns = 0;
     re->flags = (hlt_regexp_flags)(*flags);
@@ -50,21 +58,28 @@ static inline int _cflags(hlt_regexp_flags flags)
     return cflags | ((cflags & REG_NOSUB) ? REG_ANCHOR : 0);
 }
 
+// patter not net ref'ed.
 static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // FIXME: For now, the pattern must contain only ASCII characters.
-    hlt_bytes* p = hlt_string_encode(pattern, &ASCII, excpt, ctx);
+    hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
+    hlt_bytes* p = hlt_string_encode(pattern, ascii, excpt, ctx);
+    GC_DTOR(ascii, hlt_string);
     if ( *excpt )
         return;
 
     hlt_bytes_size plen = hlt_bytes_len(p, excpt, ctx);
-    const int8_t* praw = hlt_bytes_to_raw(p, excpt, ctx);
+    int8_t* praw = hlt_bytes_to_raw(p, excpt, ctx);
+
+    GC_DTOR(p, hlt_bytes);
 
     if ( jrx_regset_add(&re->regexp, (const char*)praw, plen) != 0 ) {
+        hlt_free(praw);
         hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
         return;
     }
 
+    hlt_free(praw);
     re->patterns[idx] = pattern;
 }
 
@@ -76,7 +91,7 @@ void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception*
     }
 
     re->num = 1;
-    re->patterns = hlt_gc_malloc_non_atomic(sizeof(hlt_string));
+    re->patterns = hlt_malloc(sizeof(hlt_string));
     jrx_regset_init(&re->regexp, -1, _cflags(re->flags));
     _compile_one(re, pattern, 0, excpt, ctx);
     jrx_regset_finalize(&re->regexp);
@@ -90,23 +105,29 @@ void hlt_regexp_compile_set(hlt_regexp* re, hlt_list* patterns, hlt_exception** 
     }
 
     re->num = hlt_list_size(patterns, excpt, ctx);
-    re->patterns = hlt_gc_malloc_non_atomic(re->num * sizeof(hlt_string));
+    re->patterns = hlt_malloc(re->num * sizeof(hlt_string));
     jrx_regset_init(&re->regexp, -1, _cflags(re->flags));
 
-    hlt_list_iter i = hlt_list_begin(patterns, excpt, ctx);
-    hlt_list_iter end = hlt_list_end(patterns, excpt, ctx);
+    hlt_iterator_list i = hlt_list_begin(patterns, excpt, ctx);
+    hlt_iterator_list end = hlt_list_end(patterns, excpt, ctx);
     int idx = 0;
 
-    while ( ! hlt_list_iter_eq(i, end, excpt, ctx) ) {
-        hlt_string* pattern = hlt_list_iter_deref(i, excpt, ctx);
+    while ( ! hlt_iterator_list_eq(i, end, excpt, ctx) ) {
+        hlt_string* pattern = hlt_iterator_list_deref(i, excpt, ctx);
         _compile_one(re, *pattern, idx, excpt, ctx);
+        GC_DTOR(*pattern, hlt_string);
 
          if ( *excpt )
             return;
 
-        i = hlt_list_iter_incr(i, excpt, ctx);
+        hlt_iterator_list j = i;
+        i = hlt_iterator_list_incr(i, excpt, ctx);
+        GC_DTOR(j, hlt_iterator_list);
         idx++;
     }
+
+    GC_DTOR(i, hlt_iterator_list);
+    GC_DTOR(end, hlt_iterator_list);
 
     jrx_regset_finalize(&re->regexp);
 }
@@ -116,19 +137,25 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
     const hlt_regexp* re = *((const hlt_regexp**)obj);
 
     if ( ! re->num )
-        return &EMPTY;
+        return 0;
 
     if ( re->num == 1 )
         return re->patterns[0];
 
     hlt_string s = hlt_string_from_asciiz("", excpt, ctx);
+    hlt_string pipe = hlt_string_from_asciiz("pipe", excpt, ctx);;
 
     for ( int32_t idx = 0; idx < re->num; idx++ ) {
-        if ( idx > 0 )
-            s = hlt_string_concat(s, &PIPE, excpt, ctx);
-        s = hlt_string_concat(s, re->patterns[idx], excpt, ctx);
+        if ( idx > 0 ) {
+            GC_CCTOR(pipe, hlt_string);
+            s = hlt_string_concat_and_unref(s, pipe, excpt, ctx);
+        }
+
+        GC_CCTOR(re->patterns[idx], hlt_string);
+        s = hlt_string_concat_and_unref(s, re->patterns[idx], excpt, ctx);
     }
 
+    GC_DTOR(pipe, hlt_string);
     return s;
 }
 
@@ -156,11 +183,13 @@ hlt_vector *hlt_regexp_string_groups(hlt_regexp* re, const hlt_string s, hlt_exc
 
 // Searches for the regexp at arbitrary starting positions and returns the
 // first match.
+//
+// begin/end not yet ref'ed.
 static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
                                      const hlt_iterator_bytes begin, const hlt_iterator_bytes end,
                                      jrx_offset* so, jrx_offset* eo,
                                      int do_anchor, int find_partial_matches,
-                                      hlt_exception** excpt, hlt_execution_context* ctx)
+                                     hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // We follow one of two strategies here:
     //
@@ -193,9 +222,11 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
     jrx_accept_id acc = 0;
     int8_t need_msdone = 0;
     hlt_bytes_size offset = 0;
-    hlt_iterator_bytes cur = begin;
     int block_len = 0;
     int bytes_seen = 0;
+
+    hlt_iterator_bytes cur = begin;
+    GC_CCTOR(cur, hlt_iterator_bytes);
 
     int8_t stdmatcher = ! (re->regexp.cflags & REG_NOSUB);
 
@@ -204,6 +235,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
     if ( hlt_iterator_bytes_eq(cur, end, excpt, ctx) ) {
         // Nothing to do, but still need to init the match state.
         jrx_match_state_init(&re->regexp, offset, ms);
+        GC_DTOR(cur, hlt_iterator_bytes);
         return -1;
     }
 
@@ -218,7 +250,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
 
         jrx_match_state_init(&re->regexp, offset, ms);
 
-        while ( true ) {
+        while ( 1 ) {
             cookie = hlt_bytes_iterate_raw(&block, cookie, cur, end, excpt, ctx);
 
             if ( ! cookie )
@@ -239,9 +271,11 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
             fprintf(stderr, "rc=%d ms->offset=%d\n", rc, ms->offset);
 #endif
 
-            if ( rc == 0 )
+            if ( rc == 0 ) {
                 // No further match.
+                GC_DTOR(cur, hlt_iterator_bytes);
                 return acc;
+            }
 
             if ( rc > 0 ) {
                 // Match.
@@ -272,6 +306,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
                         *eo = pmatch.rm_eo;
                 }
 
+                GC_DTOR(cur, hlt_iterator_bytes);
                 return acc;
             }
 
@@ -289,11 +324,15 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
             // We compiled with an implicit ".*", or are asked to anchor.
             break;
 
+        hlt_iterator_bytes tmp = cur;
         cur = hlt_iterator_bytes_incr(cur, excpt, ctx);
+        GC_DTOR(tmp, hlt_iterator_bytes);
+
         offset++;
         first = 0;
     }
 
+    GC_DTOR(cur, hlt_iterator_bytes);
     return acc;
 }
 
@@ -310,9 +349,9 @@ int32_t hlt_regexp_bytes_find(hlt_regexp* re, const hlt_iterator_bytes begin, co
     return acc;
 }
 
-hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_regexp_span hlt_regexp_bytes_span(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_regexp_span_result result;
+    hlt_regexp_span result;
 
     if ( ! re->num ) {
         hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
@@ -359,6 +398,9 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_bytes beg
 
     hlt_vector* vec = hlt_vector_new(&hlt_type_info_tuple_iterator_bytes_iterator_bytes, &def_span, 0, excpt, ctx);
 
+    GC_DTOR(def_span.begin, hlt_iterator_bytes);
+    GC_DTOR(def_span.end, hlt_iterator_bytes);
+
     jrx_offset so = -1;
     jrx_offset eo = -1;
     jrx_match_state ms;
@@ -384,7 +426,7 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_bytes beg
     return vec;
 }
 
-struct hlt_regexp_match_token_state {
+struct __hlt_regexp_match_token_state {
     hlt_regexp* re;
     jrx_match_state ms;
     jrx_accept_id acc;
@@ -394,7 +436,7 @@ struct hlt_regexp_match_token_state {
 
 static hlt_regexp_match_token_state* _match_token_init(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx_)
 {
-    hlt_regexp_match_token_state* state = (hlt_regexp_match_token_state*) hlt_gc_malloc_non_atomic(sizeof(hlt_regexp_match_token_state));
+    hlt_regexp_match_token_state* state = (hlt_regexp_match_token_state*) hlt_malloc(sizeof(hlt_regexp_match_token_state));
     if ( ! state ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return 0;
@@ -468,18 +510,18 @@ static void _match_token_finish(hlt_regexp_match_token_state* state, jrx_offset*
    jrx_match_state_done(&state->ms);
 }
 
-hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_regexp_match_token hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! re->num ) {
         hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
-        hlt_regexp_match_token_result dummy;
+        hlt_regexp_match_token dummy;
         return dummy;
     }
 
     if ( ! (re->regexp.cflags & REG_NOSUB) ) {
         // Must be a REG_NOSUB pattern.
         hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
-        hlt_regexp_match_token_result dummy;
+        hlt_regexp_match_token dummy;
         return dummy;
     }
 
@@ -490,7 +532,15 @@ hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const
     jrx_offset eo;
     _match_token_finish(state, &eo, excpt, ctx);
 
-    hlt_regexp_match_token_result result = { rc, (rc > 0 ? hlt_iterator_bytes_incr_by(begin, eo, excpt, ctx) : end) };
+    hlt_regexp_match_token result;
+    result.rc = rc;
+
+    if ( rc > 0 )
+        result.end = hlt_iterator_bytes_incr_by(begin, eo, excpt, ctx);
+    else {
+        result.end = end;
+        GC_CCTOR(result.end, hlt_iterator_bytes);
+    }
 
     return result;
 }
@@ -511,12 +561,12 @@ hlt_regexp_match_token_state* hlt_regexp_match_token_init(hlt_regexp* re, hlt_ex
     return _match_token_init(re, excpt, ctx);
 }
 
-hlt_regexp_match_token_result hlt_regexp_bytes_match_token_advance(hlt_regexp_match_token_state* state, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_regexp_match_token hlt_regexp_bytes_match_token_advance(hlt_regexp_match_token_state* state, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! state->re ) {
         // Already finished.
         hlt_set_exception(excpt, &hlt_exception_value_error, 0);
-        hlt_regexp_match_token_result dummy;
+        hlt_regexp_match_token dummy;
         return dummy;
     }
 
@@ -529,12 +579,22 @@ hlt_regexp_match_token_result hlt_regexp_bytes_match_token_advance(hlt_regexp_ma
 
         jrx_offset eo;
         _match_token_finish(state, &eo, excpt, ctx);
-        hlt_regexp_match_token_result result = { rc, (rc > 0 ? hlt_iterator_bytes_incr_by(begin, eo, excpt, ctx) : end) };
+
+        hlt_regexp_match_token result;
+        result.rc = rc;
+
+        if ( rc > 0 )
+            result.end = hlt_iterator_bytes_incr_by(begin, eo, excpt, ctx);
+        else {
+            result.end = end;
+            GC_CCTOR(result.end, hlt_iterator_bytes);
+        }
 
         return result;
     }
 
-    hlt_regexp_match_token_result result = { rc, end };
+    hlt_regexp_match_token result = { rc, end };
+    GC_CCTOR(result.end, hlt_iterator_bytes);
     return result;
 }
 

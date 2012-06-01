@@ -21,26 +21,22 @@ void hlt_init()
         exit(1);
     }
 
-    // Initialize configuration to defaults.
     __hlt_config_init();
-
-    // Initialize debugging system.
     __hlt_debug_init();
-
-    // Initialize profiling if requested.
+    __hlt_cmd_queue_init();
+    __hlt_files_init();
 //  __hlt_profiling_init();
-
-    // Initialize global library state.
     __hlt_global_state_init();
-
-    __hlt_hooks_start();
+    __hlt_hooks_init();
 }
 
 void hlt_done()
 {
-    __hlt_hooks_stop();
+    __hlt_hooks_done();
     __hlt_global_state_done();
 //  __hlt_profiling_done();
+    __hlt_files_done();
+    __hlt_cmd_queue_done();
     __hlt_debug_done();
     __hlt_config_done();
 }

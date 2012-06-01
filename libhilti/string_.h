@@ -153,6 +153,18 @@ extern hlt_string hlt_string_decode(struct __hlt_bytes* raw, hlt_string charset,
 /// Returns: The empty string.
 extern hlt_string hlt_string_empty(hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Creates a copy of the string. Note that this returns a physically new
+/// instance, which is rarely necessary because string's are immutable and
+/// hence can be duplicated by creating a new reference to an existing
+/// object.
+///
+/// s: The string to duplicate.
+///
+/// \hlt_c
+///
+/// Returns: The empty string.
+extern hlt_string hlt_string_copy(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Instantiates a new string from a C ASCIIZ string. The ASCIIZ string is
 /// assumed to be encoded in UTF8.
 ///
@@ -231,7 +243,7 @@ extern void hlt_string_print_n(FILE* file, hlt_string s, int8_t newline, hlt_str
 ///
 /// \todo "Native" is supposed mean the local character set, but we don't do
 /// any character set conversion yet.
-extern const char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
+extern char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// @}
 

@@ -10,6 +10,7 @@ extern const hlt_type_info* hlt_type_info_hlt_int_32;
 extern const hlt_type_info* hlt_type_info_hlt_int_64;
 extern const hlt_type_info* hlt_type_info_hlt_string;
 extern const hlt_type_info* hlt_type_info_hlt_bytes;
+extern const hlt_type_info* hlt_type_info_hlt_regexp;
 extern const hlt_type_info* hlt_type_info_hlt_addr;
 extern const hlt_type_info* hlt_type_info_hlt_iterator_bytes;
 extern const hlt_type_info* hlt_type_info_hlt_exception;
@@ -25,5 +26,6 @@ extern const hlt_type_info* hlt_type_info_hlt_set;
 extern const hlt_type_info* hlt_type_info_hlt_iterator_set;
 extern const hlt_type_info* hlt_type_info_hlt_map;
 extern const hlt_type_info* hlt_type_info_hlt_iterator_map;
+extern const hlt_type_info* hlt_type_info_hlt_file;
 
 #endif

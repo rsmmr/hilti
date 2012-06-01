@@ -19,6 +19,7 @@
     %hlt.exception.type*,
     %hlt.fiber*,
     i8*,
+    i8*,
     i8*  ;; Start of globals (right here, pointer content isn't used.)
 }
 
@@ -100,6 +101,9 @@
 %hlt.vector = type {};
 %hlt.set = type {};
 %hlt.map = type {};
+%hlt.file = type {};
+%hlt.regexp = type {};
+%hlt.match_token_state = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.
 

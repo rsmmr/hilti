@@ -11,13 +11,20 @@
 
 #include "instructions/define-instruction.h"
 
+static inline void _checkMatchTokenTupleBytes(const Instruction* i, shared_ptr<Expression> target)
+{
+    auto i32 = builder::integer::type(32);
+    auto ib = builder::iterator::type(builder::bytes::type());
+    builder::type_list tt = { i32, ib };
+    i->canCoerceTo(builder::tuple::type(tt), target);
+}
+
 iBegin(regexp, New, "new")
     iTarget(optype::refRegExp)
     iOp1(optype::typeRegExp, true)
-    iOp2(optype::optional(optype::refTimerMgr), true)
 
     iValidate {
-        hasType(target, typedType(op1));
+        equalTypes(referencedType(target), typedType(op1));
     }
 
     iDoc(R"(
@@ -55,7 +62,7 @@ iBegin(regexp, CompileSet, "regexp.compile")
     iOp2(optype::refList, true)
 
     iValidate {
-        equalTypes(elementType(op2), optype::string);
+        equalTypes(elementType(referencedType(op2)), optype::string);
     }
 
     iDoc(R"(
@@ -161,6 +168,11 @@ iBegin(regexp, GroupsBytes, "regexp.groups")
     iOp3(optype::optional(optype::iterBytes), true)
 
     iValidate {
+        auto ib = builder::iterator::type(builder::bytes::type());
+        builder::type_list tt = { ib, ib };
+        auto rv = builder::reference::type(builder::vector::type(builder::tuple::type(tt)));
+        canCoerceTo(rv, target);
+
         // auto ty_target = as<type::ref\ <vector\ <(iterator<bytes>,iterator<bytes>)>>>(target->type());
         //
         // TODO: Check target vector.
@@ -223,9 +235,7 @@ iBegin(regexp, MatchTokenBytes, "regexp.match_token")
 
 
     iValidate {
-        // auto ty_target = as<type::(int\ <32>,iterator<bytes>)>(target->type());
-
-        // TODO: Check target tuple.
+        _checkMatchTokenTupleBytes(this, target);
     }
 
     iDoc(R"(
@@ -255,9 +265,7 @@ iBegin(regexp, MatchTokenAdvanceString, "regexp.match_token_advance")
     iOp2(optype::string, true)
 
     iValidate {
-        // auto ty_target = as<type::(int\ <32>,iterator<bytes>)>(target->type());
-
-        // TODO: Check tuple type.
+        _checkMatchTokenTupleBytes(this, target);
     }
 
     iDoc(R"(
@@ -291,9 +299,7 @@ iBegin(regexp, MatchTokenAdvanceBytes, "regexp.match_token_advance")
     iOp3(optype::optional(optype::iterBytes), true)
 
     iValidate {
-        // auto ty_target = as<type::(int\ <32>,iterator<bytes>)>(target->type());
-
-        // TODO: Check tuple type.
+        _checkMatchTokenTupleBytes(this, target);
     }
 
     iDoc(R"(
@@ -345,9 +351,7 @@ iBegin(regexp, SpanString, "regexp.span")
     iOp2(optype::string, true)
 
     iValidate {
-        // auto ty_target = as<type::(int\ <32>,(iterator<bytes>,iterator<bytes>))>(target->type());
-
-        // TODO: Check tuple.
+        // TODO:Check tuple.
     }
 
     iDoc(R"(
@@ -373,9 +377,11 @@ iBegin(regexp, SpanBytes, "regexp.span")
     iOp3(optype::optional(optype::iterBytes), true)
 
     iValidate {
-        // auto ty_target = as<type::(int\ <32>,(iterator<bytes>,iterator<bytes>))>(target->type());
-
-        // TODO: Check tuple.
+        auto i32 = builder::integer::type(32);
+        auto ib = builder::iterator::type(builder::bytes::type());
+        builder::type_list tt1 = { ib, ib };
+        builder::type_list tt2 = { i32, builder::tuple::type(tt1) };
+        canCoerceTo(builder::tuple::type(tt2), target);
     }
 
     iDoc(R"(

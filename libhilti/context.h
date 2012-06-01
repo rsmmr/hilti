@@ -23,7 +23,7 @@ extern void __hlt_module_globals_init(hlt_execution_context* ctx);
 // globals in the passed context.
 extern void __hlt_module_globals_dtor(hlt_execution_context* ctx);
 
-struct hlt_worker_thread;
+struct __hlt_worker_thread;
 
 /// A per-thread execution context. This is however just the common header of
 /// all contexts. In memory, the header will be followed with the set of
@@ -37,10 +37,9 @@ struct __hlt_execution_context {
     hlt_exception* excpt;             /// The currently raised exception, or 0 if none.
     hlt_fiber* fiber;                 /// The current fiber to use for executing code inside this context.
     hlt_free_list* fiber_pool;        /// The pool of fiber objects for this context.
+    struct __hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
 
 #if 0
-    struct hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
-
     /// We keep an array of callable registered for execution but not
     /// processed yet.
     uint64_t       calls_num;     /// Number of callables in array.

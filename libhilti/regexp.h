@@ -9,10 +9,10 @@
 #include "list.h"
 
 /// Type for regular expressions.
-typedef struct hlt_regexp hlt_regexp;
+typedef struct __hlt_regexp hlt_regexp;
 
 /// Type for state of token matching.
-typedef struct hlt_regexp_match_token_state hlt_regexp_match_token_state; 
+typedef struct __hlt_regexp_match_token_state hlt_regexp_match_token_state;
 
 /// Type for compilation flags. A mask of these is the stored as a type
 /// parameter with the regexp type.
@@ -29,13 +29,13 @@ typedef struct {
 typedef struct {
     int32_t rc;
     hlt_regexp_range span;
-} hlt_regexp_span_result;
+} hlt_regexp_span;
 
 /// Type for the result of ~~hlt_regexp_match_token.
 typedef struct {
     int32_t rc;
     hlt_iterator_bytes end;
-} hlt_regexp_match_token_result;
+} hlt_regexp_match_token;
 
 /// Instantiates a new Regexp instance.
 ///
@@ -132,7 +132,7 @@ extern hlt_string hlt_regexp_string_span(hlt_regexp* re, hlt_string s, hlt_excep
 /// *end* are set to ~~hlt_bytes_end.
 ///
 /// Raises: ~~hlt_exception_value_error - If no pattern has been compiled for *re* yet.
-extern hlt_regexp_span_result hlt_regexp_bytes_span(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_regexp_span hlt_regexp_bytes_span(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Returns substrings matching parenthesis expressions in a regexp.
 ///
@@ -171,13 +171,13 @@ extern hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_by
 hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// TODO: Document.
-extern hlt_regexp_match_token_result hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_regexp_match_token hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// TODO: Document.
 extern hlt_regexp_match_token_state* hlt_regexp_match_token_init(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// TODO: Document.
-extern hlt_regexp_match_token_result hlt_regexp_bytes_match_token_advance(hlt_regexp_match_token_state* state, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_regexp_match_token hlt_regexp_bytes_match_token_advance(hlt_regexp_match_token_state* state, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// @}
 

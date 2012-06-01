@@ -26,8 +26,8 @@ extern void hlt_hook_group_enable(int64_t group, int8_t enabled, hlt_exception**
 extern int8_t hlt_hook_group_is_enabled(int64_t group, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Internal functions to (de-)/initialize the hook system.
-void __hlt_hooks_start();
-void __hlt_hooks_stop();
+void __hlt_hooks_init();
+void __hlt_hooks_done();
 
 /// @}
 

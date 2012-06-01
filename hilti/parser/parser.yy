@@ -298,6 +298,7 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | REF '<' '*' '>'                  { $$ = builder::reference::typeAny(loc(@$)); }
               | REF '<' type '>'                 { $$ = builder::reference::type($3, loc(@$)); }
               | REGEXP '<' opt_attr_list '>'     { $$ = builder::regexp::type($3, loc(@$)); }
+              | REGEXP                           { $$ = builder::regexp::type(std::list<string>(), loc(@$)); }
               | SET  '<' type '>'                { $$ = builder::set::type($3, loc(@$)); }
               | SET '<' '*' '>'                  { $$ = builder::set::typeAny(loc(@$)); }
               | TUPLE '<' '*' '>'                { $$ = builder::tuple::typeAny(loc(@$)); }

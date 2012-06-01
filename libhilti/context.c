@@ -56,6 +56,7 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
     ctx->excpt = 0;
     ctx->fiber = 0;
     ctx->fiber_pool = hlt_free_list_new();
+    ctx->worker = 0;
 
     return ctx;
 }
