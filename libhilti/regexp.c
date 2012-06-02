@@ -82,6 +82,8 @@ static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_except
     }
 
     hlt_free(praw);
+
+    GC_CCTOR(pattern, hlt_string);
     re->patterns[idx] = pattern;
 }
 
@@ -141,8 +143,10 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
     if ( ! re->num )
         return hlt_string_from_asciiz("<no pattern>", excpt, ctx);
 
-    if ( re->num == 1 )
+    if ( re->num == 1 ) {
+        GC_CCTOR(re->patterns[0], hlt_string);
         return re->patterns[0];
+    }
 
     hlt_string s = hlt_string_from_asciiz("", excpt, ctx);
     hlt_string pipe = hlt_string_from_asciiz("pipe", excpt, ctx);;
