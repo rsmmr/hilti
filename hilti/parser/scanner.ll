@@ -113,7 +113,7 @@ True                  yylval->bval = 1; return token::CBOOL;
 &priority             yylval->sval = yytext; return token::ATTR_PRIORITY;
 &scope                yylval->sval = yytext; return token::ATTR_SCOPE;
 
-{digits}/(tcp|udp)    yylval->sval = yytext; return token::CPORT;
+{digits}\/(tcp|udp)   yylval->sval = yytext; return token::CPORT;
 {address}             yylval->sval = yytext; return token::CADDRESS;
 
 [-+]?{digits}\.{digits} yylval->dval = strtod(yytext, 0); return token::CDOUBLE;
@@ -127,7 +127,7 @@ b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strle
 {id}(\.{id}){1,}      yylval->sval = yytext; return token::DOTTED_IDENT;
 {id}(::{id}){1,}      yylval->sval = yytext; return token::SCOPED_IDENT;
 
-[*,=:;<>(){}/]        return (token_type) yytext[0];
+[*,=:;<>(){}/|]       return (token_type) yytext[0];
 
 .                     driver.error("invalid character", *yylloc);
 

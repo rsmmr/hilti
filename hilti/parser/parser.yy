@@ -24,6 +24,7 @@ namespace hilti_parser { class Parser; }
 
 %error-verbose
 %debug
+%verbose
 
 %union {}
 

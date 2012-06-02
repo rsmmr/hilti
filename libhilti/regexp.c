@@ -14,7 +14,7 @@ struct __hlt_regexp {
     jrx_regex_t regexp;
 };
 
-//#define _DEBUG_MATCHING
+#define _DEBUG_MATCHING
 
 #ifdef _DEBUG_MATCHING
 static void print_bytes_raw(const char* b2, hlt_bytes_size size, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -287,7 +287,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
                 // Match.
                 acc = rc;
 #ifdef _DEBUG_MATCHING
-                fprintf(stderr, "offset=%d ms->offset=%d bytes_seen=%d eo=%p so=%p\n", offset, ms->offset-1, bytes_seen, eo, so);
+                fprintf(stderr, "offset=%lld ms->offset=%d bytes_seen=%d eo=%p so=%p\n", offset, ms->offset-1, bytes_seen, eo, so);
 #endif
 
                 if ( ! stdmatcher ) {

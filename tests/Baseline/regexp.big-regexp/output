@@ -1,4 +1,4 @@
-<no-pattern>
+<no pattern>
 /etc/(passwd|shadow|netconfig)|IFS[ \t]*=|nph-test-cgi\?|(%0a|\.\.)/(bin|etc|usr|tmp)|/Admin_files/order\.log|/carbo\.dll|/cgi-bin/(phf|php\.cgi|test-cgi)|/cgi-dos/args\.bat|/cgi-win/uploader\.exe|/search97\.vts|tk\.tgz|ownz/|viewtopic\.php.*%.*\(.*\(/|sshd\.(tar|tgz).*|[aA][dD][oO][rR][eE][bB][sS][dD].*|shv4\.(tar|tgz).*|lrk\.(tar|tgz).*|lyceum\.(tar|tgz).*|maxty\.(tar|tgz).*|rootII\.(tar|tgz).*|invader\.(tar|tgz).*
 /etc/passwd
 /etc/passwd

@@ -467,18 +467,19 @@ void Loader::visit(ctor::RegExp* c)
     else {
         // More than one pattern. We built a list of the patterns and then
         // call compile_set.
-        auto ttmgr = builder::timer_mgr::type();
+        auto ttmgr = builder::reference::type(builder::timer_mgr::type());
         auto tmgr = builder::codegen::create(ttmgr, cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmLibType("hlt.timer_mgr"))));
         CodeGen::expr_list args = { builder::type::create(builder::string::type()), tmgr };
         auto list = cg()->llvmCall("hlt::list_new", args);
+        auto ltype = builder::reference::type(builder::list::type(builder::string::type()));
 
         for ( auto p : patterns ) {
-            args = { builder::codegen::create(builder::list::type(builder::string::type()), list),
+            args = { builder::codegen::create(ltype, list),
                      builder::string::create(p.first) };
             cg()->llvmCall("hlt::list_push_back", args);
         }
 
-        args = { op1, builder::codegen::create(builder::list::type(builder::string::type()), list) };
+        args = { op1, builder::codegen::create(ltype, list) };
         cg()->llvmCall("hlt::regexp_compile_set", args);
     }
 
