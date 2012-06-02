@@ -112,9 +112,9 @@ bool GlobalsBasePass::runOnBasicBlock(llvm::BasicBlock &bb)
     return true;
 }
 
-void Linker::error(const llvm::Linker& linker, const string& file)
+void Linker::error(const llvm::Linker& linker, const string& where, const string& file)
 {
-    ast::Logger::error(::util::fmt("error linking %s", file.c_str(), linker.getLastError().c_str()));
+    ast::Logger::error(::util::fmt("error linking %s in %s: %s", file.c_str(), where.c_str(), linker.getLastError().c_str()));
 }
 
 llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& modules, bool verify, int debug_cg)
@@ -142,12 +142,12 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
             module_names.push_back(name);
 
         if ( linker.LinkInModule(i) ) {
-            error(linker, name);
+            error(linker, "module", name);
             return nullptr;
         }
 
         if ( verify && ! util::llvmVerifyModule(linker.getModule()) ) {
-            error(linker, name);
+            error(linker, "verify", name);
             return nullptr;
         }
     }
@@ -164,7 +164,7 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
         llvm::sys::Path path(i);
         bool native = false;
         if ( linker.LinkInArchive(path, native) ) {
-            error(linker, i);
+            error(linker, "archive", i);
             return nullptr;
         }
     }
@@ -172,7 +172,7 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
     for ( auto i : _libs ) {
         bool native = true;
         if ( linker.LinkInLibrary(i, native) ) {
-            error(linker, i);
+            error(linker, "library", i);
             return nullptr;
         }
     }

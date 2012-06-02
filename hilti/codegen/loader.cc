@@ -448,7 +448,39 @@ void Loader::visit(ctor::Map* c)
 
 void Loader::visit(ctor::RegExp* c)
 {
-    assert(false);
-    // Not implemented.
-    // setResult(val, true, false);
+    auto patterns = c->patterns();
+
+    auto top = builder::regexp::type( { } );
+    CodeGen::expr_list args = { builder::type::create(top) };
+    auto regexp = cg()->llvmCall("hlt::regexp_new", args);
+    auto op1 = builder::codegen::create(builder::reference::type(top), regexp);
+
+    if ( patterns.size() == 1 ) {
+        // Just one pattern, we use regexp_compile().
+        auto pattern = patterns.front();
+        CodeGen::expr_list args;
+        args.push_back(op1);
+        args.push_back(builder::string::create(pattern.first));
+        cg()->llvmCall("hlt::regexp_compile", args);
+    }
+
+    else {
+        // More than one pattern. We built a list of the patterns and then
+        // call compile_set.
+        auto ttmgr = builder::timer_mgr::type();
+        auto tmgr = builder::codegen::create(ttmgr, cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmLibType("hlt.timer_mgr"))));
+        CodeGen::expr_list args = { builder::type::create(builder::string::type()), tmgr };
+        auto list = cg()->llvmCall("hlt::list_new", args);
+
+        for ( auto p : patterns ) {
+            args = { builder::codegen::create(builder::list::type(builder::string::type()), list),
+                     builder::string::create(p.first) };
+            cg()->llvmCall("hlt::list_push_back", args);
+        }
+
+        args = { op1, builder::codegen::create(builder::list::type(builder::string::type()), list) };
+        cg()->llvmCall("hlt::regexp_compile_set", args);
+    }
+
+    setResult(regexp, true, false);
 }

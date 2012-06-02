@@ -191,11 +191,7 @@ public:
    /// patterns: List of patterns.
    ///
    /// l: An associated location.
-   RegExp(const pattern_list& patterns, const Location& l=Location::None) {
-       _patterns = patterns;
-       _type = std::make_shared<type::RegExp>(type::RegExp::attribute_list(), l);
-       addChild(_type);
-   }
+   RegExp(const pattern_list& patterns, const Location& l=Location::None);
 
    /// Returns the pattern.
    const pattern_list& patterns() const { return _patterns; }

@@ -70,3 +70,11 @@ ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_lis
 
     addChild(_type);
 }
+
+ctor::RegExp::RegExp(const pattern_list& patterns, const Location& l)
+{
+    _patterns = patterns;
+    _type = std::make_shared<type::RegExp>(type::RegExp::attribute_list(), l);
+    _type = std::make_shared<type::Reference>(_type);
+    addChild(_type);
+}

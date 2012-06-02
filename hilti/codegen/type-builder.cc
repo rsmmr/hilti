@@ -864,12 +864,12 @@ void TypeBuilder::visit(type::Struct* t)
         ++i;
     }
 
-    llvm::Constant* glob = nullptr;
+    llvm::GlobalVariable* glob = nullptr;
 
     if ( array.size() ) {
         auto aval = cg()->llvmConstArray(array);
         glob = cg()->llvmAddConst("struct-fields", aval);
-        //glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
+        glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
     }
 
     TypeInfo* ti = new TypeInfo(t);
