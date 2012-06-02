@@ -1,4 +1,4 @@
-<no-pattern>
+<no pattern>
 A(.*)X(.*)Y(.*)B
 xxA1234X5678Y9012Bxx
 A1234X5678Y9012B

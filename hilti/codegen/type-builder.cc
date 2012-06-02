@@ -393,6 +393,7 @@ llvm::Function* TypeBuilder::_makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, b
     params.push_back(std::make_pair("tuple", cg->llvmTypePtr(llvm_type)));
 
     auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
+    func->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
 
     cg->pushFunction(func);
 

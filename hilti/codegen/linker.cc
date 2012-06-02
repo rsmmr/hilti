@@ -112,9 +112,11 @@ bool GlobalsBasePass::runOnBasicBlock(llvm::BasicBlock &bb)
     return true;
 }
 
-void Linker::error(const llvm::Linker& linker, const string& where, const string& file)
+void Linker::error(const llvm::Linker& linker, const string& where, const string& file, const string& error)
 {
-    ast::Logger::error(::util::fmt("error linking %s in %s: %s", file.c_str(), where.c_str(), linker.getLastError().c_str()));
+    string err = error.size() ? error : linker.getLastError();
+
+    ast::Logger::error(::util::fmt("error linking %s in %s: %s", file.c_str(), where.c_str(), err.c_str()));
 }
 
 llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& modules, bool verify, int debug_cg)
@@ -141,8 +143,10 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
         if ( isHiltiModule(i) )
             module_names.push_back(name);
 
-        if ( linker.LinkInModule(i) ) {
-            error(linker, "module", name);
+        string err;
+
+        if ( linker.LinkInModule(i, &err) ) {
+            error(linker, "module", name, err);
             return nullptr;
         }
 
