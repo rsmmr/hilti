@@ -1,1 +1,3 @@
-Binary file (standard input) matches
+<no pattern>
+/Foo/ | /Bar/ | /Hurz/
+hilti: uncaught exception, PatternError (from /Users/robin/work/binpacpp/hilti2/libhilti/regexp.c:441)

@@ -8,6 +8,7 @@ export string
 export addr
 export time
 export int<64>
+export match_token_state
 
 export ref<bytes>
 export ref<exception>

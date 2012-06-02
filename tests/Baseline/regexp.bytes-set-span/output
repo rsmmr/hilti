@@ -1,1 +1,6 @@
-Binary file (standard input) matches
+<no pattern>
+/Foo/ | /5.7/ | /A.*B/
+1234AxyxyxyB5678
+AxyxyxyB
+1234XYZ5678
+567

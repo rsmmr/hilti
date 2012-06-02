@@ -14,6 +14,14 @@ struct __hlt_regexp {
     jrx_regex_t regexp;
 };
 
+struct __hlt_match_token_state {
+    __hlt_gchdr __gchdr; // Header for memory management.
+    hlt_regexp* re;
+    jrx_match_state ms;
+    jrx_accept_id acc;
+    int first;
+};
+
 //#define _DEBUG_MATCHING
 
 #ifdef _DEBUG_MATCHING
@@ -32,9 +40,13 @@ void hlt_regexp_dtor(hlt_type_info* ti, hlt_regexp* re)
         jrx_regfree(&re->regexp);
 }
 
-void hlt_regexp_match_token_dtor(hlt_type_info* ti, hlt_regexp_match_token* t)
+void hlt_match_token_state_dtor(hlt_type_info* ti, hlt_match_token_state* t)
 {
-    hlt_iterator_bytes_dtor(t->end);
+    if ( t->re )
+        // Will be set to zero once match_state_done is called.
+        jrx_match_state_done(&t->ms);
+
+    GC_DTOR(t->re, hlt_regexp);
 }
 
 hlt_regexp* hlt_regexp_new(const hlt_type_info* type, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -175,7 +187,8 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
     }
 
     hlt_string s = hlt_string_from_asciiz("", excpt, ctx);
-    hlt_string pipe = hlt_string_from_asciiz("pipe", excpt, ctx);;
+    hlt_string pipe = hlt_string_from_asciiz(" | ", excpt, ctx);;
+    hlt_string slash = hlt_string_from_asciiz("/", excpt, ctx);;
 
     for ( int32_t idx = 0; idx < re->num; idx++ ) {
         if ( idx > 0 ) {
@@ -183,8 +196,14 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
             s = hlt_string_concat_and_unref(s, pipe, excpt, ctx);
         }
 
+        GC_CCTOR(slash, hlt_string);
+        s = hlt_string_concat_and_unref(s, slash, excpt, ctx);
+
         GC_CCTOR(re->patterns[idx], hlt_string);
         s = hlt_string_concat_and_unref(s, re->patterns[idx], excpt, ctx);
+
+        GC_CCTOR(slash, hlt_string);
+        s = hlt_string_concat_and_unref(s, slash, excpt, ctx);
     }
 
     GC_DTOR(pipe, hlt_string);
@@ -456,23 +475,10 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_bytes beg
     return vec;
 }
 
-struct __hlt_regexp_match_token_state {
-    hlt_regexp* re;
-    jrx_match_state ms;
-    jrx_accept_id acc;
-    hlt_iterator_bytes begin;
-    int first;
-};
-
-static hlt_regexp_match_token_state* _match_token_init(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx_)
+static hlt_match_token_state* _match_token_init(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx_)
 {
-    hlt_regexp_match_token_state* state = (hlt_regexp_match_token_state*) hlt_malloc(sizeof(hlt_regexp_match_token_state));
-    if ( ! state ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
-
-    state->re = re;
+    hlt_match_token_state* state = GC_NEW(hlt_match_token_state);
+    GC_INIT(state->re, re, hlt_regexp);
     state->acc = 0;
     state->first = JRX_ASSERTION_BOL | JRX_ASSERTION_BOD;
     jrx_match_state_init(&re->regexp, 0, &state->ms);
@@ -480,7 +486,7 @@ static hlt_regexp_match_token_state* _match_token_init(hlt_regexp* re, hlt_excep
     return state;
 }
 
-static int _match_token_advance(hlt_regexp_match_token_state* state,
+static int _match_token_advance(hlt_match_token_state* state,
                                 hlt_iterator_bytes begin, const hlt_iterator_bytes end,
                                 int8_t final,
                                 hlt_exception** excpt, hlt_execution_context* ctx)
@@ -525,7 +531,7 @@ static int _match_token_advance(hlt_regexp_match_token_state* state,
     return state->acc;
 }
 
-static void _match_token_finish(hlt_regexp_match_token_state* state, jrx_offset* eo,
+static void _match_token_finish(hlt_match_token_state* state, jrx_offset* eo,
                                 hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(eo);
@@ -557,7 +563,7 @@ hlt_regexp_match_token hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_it
 
     int8_t is_frozen = hlt_iterator_bytes_is_frozen(begin, excpt, ctx);
 
-    hlt_regexp_match_token_state* state = _match_token_init(re, excpt, ctx);
+    hlt_match_token_state* state = _match_token_init(re, excpt, ctx);
     jrx_accept_id rc = _match_token_advance(state, begin, end, is_frozen, excpt, ctx);
     jrx_offset eo;
     _match_token_finish(state, &eo, excpt, ctx);
@@ -575,7 +581,7 @@ hlt_regexp_match_token hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_it
     return result;
 }
 
-hlt_regexp_match_token_state* hlt_regexp_match_token_init(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_match_token_state* hlt_regexp_match_token_init(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! re->num ) {
         hlt_set_exception(excpt, &hlt_exception_pattern_error, 0);
@@ -591,7 +597,7 @@ hlt_regexp_match_token_state* hlt_regexp_match_token_init(hlt_regexp* re, hlt_ex
     return _match_token_init(re, excpt, ctx);
 }
 
-hlt_regexp_match_token hlt_regexp_bytes_match_token_advance(hlt_regexp_match_token_state* state, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_regexp_match_token hlt_regexp_bytes_match_token_advance(hlt_match_token_state* state, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! state->re ) {
         // Already finished.
@@ -605,7 +611,7 @@ hlt_regexp_match_token hlt_regexp_bytes_match_token_advance(hlt_regexp_match_tok
     jrx_accept_id rc = _match_token_advance(state, begin, end, is_frozen, excpt, ctx);
 
     if ( rc >= 0 ) {
-        state->re = 0; // Mark as done.
+        GC_CLEAR(state->re, hlt_regexp); // Mark as done.
 
         jrx_offset eo;
         _match_token_finish(state, &eo, excpt, ctx);

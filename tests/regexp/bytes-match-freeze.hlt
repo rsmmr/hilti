@@ -24,7 +24,7 @@ void do_match(ref<bytes> b) {
 
     rc = tuple.index result 0
     eo = tuple.index result 1
-    #    token = bytes.sub start eo
+    token = bytes.sub start eo
 
     call Hilti::print("==> ", False)
     call Hilti::print(rc)

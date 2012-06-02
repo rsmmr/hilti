@@ -1,1 +1,19 @@
-Binary file (standard input) matches
+/Foo/ | /Bar/ | /Foolein/
+FooBarFooleinX
+1
+Foo
+2
+Bar
+3
+Foolein
+0
+
+FooBarFooleinBa
+1
+Foo
+2
+Bar
+3
+Foolein
+-1
+

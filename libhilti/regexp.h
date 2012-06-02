@@ -12,7 +12,7 @@
 typedef struct __hlt_regexp hlt_regexp;
 
 /// Type for state of token matching.
-typedef struct __hlt_regexp_match_token_state hlt_regexp_match_token_state;
+typedef struct __hlt_match_token_state hlt_match_token_state;
 
 /// Type for compilation flags. A mask of these is the stored as a type
 /// parameter with the regexp type.
@@ -186,10 +186,10 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
 extern hlt_regexp_match_token hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// TODO: Document.
-extern hlt_regexp_match_token_state* hlt_regexp_match_token_init(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_match_token_state* hlt_regexp_match_token_init(hlt_regexp* re, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// TODO: Document.
-extern hlt_regexp_match_token hlt_regexp_bytes_match_token_advance(hlt_regexp_match_token_state* state, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_regexp_match_token hlt_regexp_bytes_match_token_advance(hlt_match_token_state* state, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// @}
 
