@@ -38,7 +38,7 @@ iEnd
 iBegin(file, Open, "file.open")
     iOp1(optype::refFile, false)
     iOp2(optype::string, true)
-    iOp3(optype::tuple, true)
+    iOp3(optype::optional(optype::tuple), true)
 
     iValidate {
         // auto ty_op1 = as<type::refFile>(op1->type());

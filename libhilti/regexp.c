@@ -14,7 +14,7 @@ struct __hlt_regexp {
     jrx_regex_t regexp;
 };
 
-#define _DEBUG_MATCHING
+//#define _DEBUG_MATCHING
 
 #ifdef _DEBUG_MATCHING
 static void print_bytes_raw(const char* b2, hlt_bytes_size size, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -85,6 +85,32 @@ static void _compile_one(hlt_regexp* re, hlt_string pattern, int idx, hlt_except
 
     GC_CCTOR(pattern, hlt_string);
     re->patterns[idx] = pattern;
+}
+
+hlt_regexp* hlt_regexp_new_from_regexp(const hlt_type_info* type, hlt_regexp* other, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    assert(type->type == HLT_TYPE_REGEXP);
+    assert(type->num_params == 1);
+
+    int64_t *flags = (int64_t*) &(type->type_params);
+
+    hlt_regexp* re = GC_NEW(hlt_regexp);
+    re->flags = (hlt_regexp_flags)(*flags);
+    re->num = other->num;
+    re->patterns = hlt_malloc(re->num * sizeof(hlt_string));
+    jrx_regset_init(&re->regexp, -1, _cflags(re->flags));
+
+    for ( int idx = 0; idx < other->num; idx++ ) {
+        hlt_string pattern = other->patterns[idx];
+        _compile_one(re, pattern, idx, excpt, ctx);
+
+         if ( *excpt )
+            return 0;
+    }
+
+    jrx_regset_finalize(&re->regexp);
+
+    return re;
 }
 
 void hlt_regexp_compile(hlt_regexp* re, const hlt_string pattern, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -542,7 +568,7 @@ hlt_regexp_match_token hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_it
     if ( rc > 0 )
         result.end = hlt_iterator_bytes_incr_by(begin, eo, excpt, ctx);
     else {
-        result.end = end;
+        result.end = begin;
         GC_CCTOR(result.end, hlt_iterator_bytes);
     }
 

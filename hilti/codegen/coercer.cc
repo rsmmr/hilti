@@ -81,3 +81,24 @@ void codegen::Coercer::visit(type::Address* t)
 
     assert(false);
 }
+
+void codegen::Coercer::visit(type::Reference* r)
+{
+    auto val = arg1();
+    auto dst = arg2();
+
+    shared_ptr<type::Reference> dst_ref = ast::as<type::Reference>(dst);
+
+    if ( dst_ref ) {
+        if ( ast::isA<type::RegExp>(r->argType()) && ast::isA<type::RegExp>(dst_ref->argType()) ) {
+            auto top = dst_ref->argType();
+            CodeGen::expr_list args = { builder::type::create(top), builder::codegen::create(dst, val) };
+            auto nregexp = cg()->llvmCall("hlt::regexp_new_from_regexp", args);
+            cg()->llvmDtor(val, r->sharedPtr<Type>(), false, "codegen::Coercer/regexp");
+            setResult(nregexp);
+            return;
+        }
+    }
+
+    assert(false);
+}

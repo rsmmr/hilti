@@ -450,10 +450,10 @@ void Loader::visit(ctor::RegExp* c)
 {
     auto patterns = c->patterns();
 
-    auto top = builder::regexp::type( { } );
-    CodeGen::expr_list args = { builder::type::create(top) };
+    auto top = ast::as<type::Reference>(c->type())->argType();
+    CodeGen::expr_list args = { builder::type::create(top)};
     auto regexp = cg()->llvmCall("hlt::regexp_new", args);
-    auto op1 = builder::codegen::create(builder::reference::type(top), regexp);
+    auto op1 = builder::codegen::create(c->type(), regexp);
 
     if ( patterns.size() == 1 ) {
         // Just one pattern, we use regexp_compile().

@@ -183,20 +183,21 @@ declare "C-HILTI" bool iterator_list_eq(iterator<list<*>> i1, iterator<list<*>> 
 #
 # ##
 #
-declare "C-HILTI" void regexp_dtor(ref<regexp> re)
+declare "C-HILTI" void regexp_dtor(ref<regexp<*>> re)
 declare "C-HILTI" void match_token_state_dtor(ref<match_token_state> ms)
-declare "C-HILTI" ref<regexp> regexp_new(type regexp_type)
-declare "C-HILTI" void regexp_compile(ref<regexp> re, string pattern)
-declare "C-HILTI" void regexp_compile_set(ref<regexp> re, ref<list<string>> patterns)
-declare "C-HILTI" int<32> regexp_string_find(ref<regexp> re, string s)
-declare "C-HILTI" int<32> regexp_bytes_find(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
-declare "C-HILTI" tuple<int<32>, tuple<iterator<bytes>,iterator<bytes>>> regexp_string_span(ref<regexp> re, string s)
-declare "C-HILTI" tuple<int<32>, tuple<iterator<bytes>,iterator<bytes>>> regexp_bytes_span(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
-declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_string_groups(ref<regexp> re, string s)
-declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_bytes_groups(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
-declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_string_match_token(ref<regexp> re, string s)
-declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_bytes_match_token(ref<regexp> re, iterator<bytes> first, iterator<bytes> last)
-declare "C-HILTI" ref<match_token_state>        regexp_match_token_init(ref<regexp> re)
+declare "C-HILTI" ref<regexp<*>> regexp_new(type regexp_type)
+declare "C-HILTI" ref<regexp<*>> regexp_new_from_regexp(type regexp_type, ref<regexp<*>> other)
+declare "C-HILTI" void regexp_compile(ref<regexp<*>> re, string pattern)
+declare "C-HILTI" void regexp_compile_set(ref<regexp<*>> re, ref<list<string>> patterns)
+declare "C-HILTI" int<32> regexp_string_find(ref<regexp<*>> re, string s)
+declare "C-HILTI" int<32> regexp_bytes_find(ref<regexp<*>> re, iterator<bytes> first, iterator<bytes> last)
+declare "C-HILTI" tuple<int<32>, tuple<iterator<bytes>,iterator<bytes>>> regexp_string_span(ref<regexp<*>> re, string s)
+declare "C-HILTI" tuple<int<32>, tuple<iterator<bytes>,iterator<bytes>>> regexp_bytes_span(ref<regexp<*>> re, iterator<bytes> first, iterator<bytes> last)
+declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_string_groups(ref<regexp<*>> re, string s)
+declare "C-HILTI" ref<vector<tuple<iterator<bytes>,iterator<bytes>>>> regexp_bytes_groups(ref<regexp<*>> re, iterator<bytes> first, iterator<bytes> last)
+declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_string_match_token(ref<regexp<*>> re, string s)
+declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_bytes_match_token(ref<regexp<*>> re, iterator<bytes> first, iterator<bytes> last)
+declare "C-HILTI" ref<match_token_state>        regexp_match_token_init(ref<regexp<*>> re)
 declare "C-HILTI" tuple<int<32>, iterator<bytes>> regexp_bytes_match_token_advance(ref<match_token_state> state, iterator<bytes> first, iterator<bytes> last)
 #
 # ##
@@ -299,6 +300,7 @@ declare "C-HILTI" int<64> interval_nsecs(interval t)
 #
 # ##
 #
+# declare "C-HILTI" void classifier_dtor(ref<classifier<*,*>> c)
 # declare "C-HILTI" ref<classifier<*,*>> classifier_new(int<64> num_fields, type rtype, type vtype)
 # declare "C-HILTI" void classifier_add(ref<classifier<*,*>> c, caddr fields, int<64> priority, any value)
 # declare "C-HILTI" void classifier_add_no_prio(ref<classifier<*,*>> c, caddr fields, any value)

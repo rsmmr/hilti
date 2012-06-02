@@ -26,6 +26,12 @@ void Coercer::visit(type::Reference* r)
     auto dst_ref = ast::as<type::Reference>(arg1());
 
     if ( dst_ref ) {
+
+        if ( ast::isA<type::RegExp>(r->argType()) && ast::isA<type::RegExp>(dst_ref->argType()) ) {
+            setResult(true);
+            return;
+        }
+
         setResult(dst_ref->wildcard());
         return;
     }
