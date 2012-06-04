@@ -31,16 +31,16 @@ void StatementBuilder::visit(statement::instruction::file::Open* i)
 
     if ( i->op3() ) {
         auto llvm_op3 = cg()->llvmValue(i->op3());
-        ty = cg()->llvmTupleElement(nullptr, llvm_op3, 0, false);
-        mode = cg()->llvmTupleElement(nullptr, llvm_op3, 1, false);
-        chr = cg()->llvmTupleElement(nullptr, llvm_op3, 2, false);
+        ty = cg()->llvmTupleElement(i->op3()->type(), llvm_op3, 0, false);
+        mode = cg()->llvmTupleElement(i->op3()->type(), llvm_op3, 1, false);
+        chr = cg()->llvmTupleElement(i->op3()->type(), llvm_op3, 2, false);
     }
 
     else {
         // Use defaults.
-        auto ty = cg()->llvmEnum("Hilti::FileType::Text");
-        auto mode = cg()->llvmEnum("Hilti::FileMode::Create");
-        auto chr = cg()->llvmConstAsciizPtr("utf8");
+        ty = cg()->llvmEnum("Hilti::FileType::Text");
+        mode = cg()->llvmEnum("Hilti::FileMode::Create");
+        chr = cg()->llvmString("utf8");
     }
 
     CodeGen::expr_list args;
@@ -58,7 +58,7 @@ void StatementBuilder::visit(statement::instruction::file::WriteBytes* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
-    cg()->llvmCall("hlt::file_write_string", args);
+    cg()->llvmCall("hlt::file_write_bytes", args);
 }
 
 void StatementBuilder::visit(statement::instruction::file::WriteString* i)
@@ -66,5 +66,5 @@ void StatementBuilder::visit(statement::instruction::file::WriteString* i)
     CodeGen::expr_list args;
     args.push_back(i->op1());
     args.push_back(i->op2());
-    cg()->llvmCall("hlt::file_write_bytes", args);
+    cg()->llvmCall("hlt::file_write_string", args);
 }

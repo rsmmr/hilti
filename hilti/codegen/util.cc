@@ -112,7 +112,12 @@ static void _dumpCall(llvm::Function* func, llvm::ArrayRef<llvm::Value *> args, 
 
     for ( int i = 0; i < args.size(); ++i ) {
         os << "   [" << i+1 << "] ";
-        args[i]->getType()->print(os);
+
+        if ( args[i] )
+            args[i]->getType()->print(os);
+        else
+            os << "(null)";
+
         os << "\n";
     }
 
@@ -136,6 +141,10 @@ llvm::CallInst* codegen::util::checkedCreateCall(IRBuilder* builder, const strin
 
     for ( int i = 0; i < args.size(); ++i ) {
         auto t1 = ftype->getParamType(i);
+
+        if ( ! args[i] )
+            _dumpCall(func, args, where, ::util::fmt("parameter %d is null", i+1));
+
         auto t2 = args[i]->getType();
 
         if ( t1 != t2 )

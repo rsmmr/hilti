@@ -50,7 +50,7 @@ pthread_mutex_t files_lock;
 
 void hlt_file_dtor(hlt_type_info* ti, hlt_file* f)
 {
-    // Nothing to do.
+    GC_DTOR(f->path, hlt_string);
 }
 
 static void fatal_error(const char* msg)
@@ -89,8 +89,12 @@ void __hlt_files_init()
 
 void __hlt_files_done()
 {
-    for ( __hlt_file_info* info = files; info; info = info->next )
+    for ( __hlt_file_info* info = files; info; info = info->next ) {
         fsync(info->fd);
+
+        GC_DTOR(info->path, hlt_string);
+        hlt_free(info);
+    }
 
     // if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&files_lock) != 0 )
     //    fatal_error("cannot destroy mutex");
@@ -121,6 +125,9 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
         return;
     }
 
+    if ( *excpt )
+        return;
+
     int s;
     acqire_lock(&s);
 
@@ -137,6 +144,9 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
             goto init_instance;
         }
     }
+
+    if ( *excpt )
+        return;
 
     // Not open yet.
 
@@ -208,6 +218,7 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
     __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 
     file->open = 0;
+    GC_CLEAR(file->path, hlt_string);
 }
 
 void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)

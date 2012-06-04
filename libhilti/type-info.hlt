@@ -19,6 +19,7 @@ export ref<vector<*>>
 export ref<set<*>>
 export ref<map<*>>
 export ref<file>
+export ref<regexp>
 
 export iterator<bytes>
 export iterator<list<*>>

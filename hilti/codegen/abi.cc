@@ -181,7 +181,10 @@ abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& na
 
         int n = ffi64_examine_argument (ffi_arg_types[i], classes, 0, &ngpr, &nsse);
 
-        if ( n == 0 || gprcount + ngpr > MAX_GPR_REGS || ssecount + nsse > MAX_SSE_REGS )
+        // FIXME: The max register heuristic (which is copied from libffi)
+        // doesn't seem to work. It kicks in when clang still doesn't pass
+        // aggs.
+        if ( n == 0 ) //|| gprcount + ngpr > MAX_GPR_REGS || ssecount + nsse > MAX_SSE_REGS )
             // Argument is passed in memory.
             arg_in_mem = true;
 

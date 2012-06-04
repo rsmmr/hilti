@@ -118,7 +118,7 @@ hlt_exception* __hlt_exception_new_yield(hlt_continuation* cont, int32_t arg, co
 void __hlt_set_exception(hlt_exception** dst, hlt_exception_type* type, void* arg, const char* location)
 {
     assert(dst);
-    *dst = hlt_exception_new(type, arg, location);
+    *dst = hlt_exception_new(type, &arg, location);
 }
 
 int8_t __hlt_exception_match(hlt_exception* excpt, hlt_exception_type* type)

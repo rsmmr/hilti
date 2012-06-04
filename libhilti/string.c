@@ -282,7 +282,7 @@ hlt_string hlt_string_copy(hlt_string src, hlt_exception** excpt, hlt_execution_
 {
     hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + src->len);
     dst->len = src->len;
-    memcpy(&dst->bytes, src->bytes, src->len);
+    memcpy(&dst->bytes, &src->bytes, src->len);
     return dst;
 }
 
@@ -522,15 +522,10 @@ char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_co
 
     const int8_t* raw = hlt_bytes_to_raw(b, excpt, ctx);
     if ( *excpt ) {
-        GC_DTOR(b, hlt_string);
+        GC_DTOR(b, hlt_bytes);
         return 0;
     }
 
-    int64_t len = hlt_bytes_len(b, excpt, ctx);
-    char* buffer = hlt_malloc(len + 1);
-    memcpy(buffer, raw, len);
-    buffer[len] = '\0';
-
-    GC_DTOR(b, hlt_string);
-    return (char*) buffer;
+    GC_DTOR(b, hlt_bytes);
+    return (char*)raw;
 }
