@@ -21,6 +21,7 @@ set(instructions
     map.h
     network.h
     operators.h
+    overlay.h
     port.h
     regexp.h
     set.h

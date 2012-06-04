@@ -746,13 +746,48 @@ void TypeBuilder::visit(type::Set* t)
     setResult(ti);
 }
 
+llvm::Function* TypeBuilder::_makeOverlayDtor(CodeGen* cg, type::Overlay* t)
+{
+    string name = util::fmt("dtor_overlay_dep%d", t->numDependencies())
+
+    llvm::Value* cached = cg->lookupCachedValue("dtor-overlay", name);
+
+    if ( cached )
+        return llvm::cast<llvm::Function>(cached);
+
+    CodeGen::llvm_parameter_list params;
+    params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
+    params.push_back(std::make_pair("overlay", cg->llvmTypePtr(llvm_type)));
+
+    auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
+
+    cg->pushFunction(func);
+
+    auto itype = cg()->llvmType(builder::iterator::type(builder::bytes::type()));
+    auto oval = cg->builder()->CreateLoad(++func->arg_begin());
+
+    for ( int i = 0; i < t->numDependencies(); ++i) {
+        auto iter = cg->llvmExtractValue(oval, i);
+        cg->llvmDtor(iter, itype, false, "overlay-dtor");
+    }
+
+    cg->popFunction();
+
+    cg->cacheValue("dtor-overlay", name, func);
+
+    return func;
+}
+
 void TypeBuilder::visit(type::Overlay* t)
 {
+    auto itype = cg()->llvmType(builder::iterator::type(builder::bytes::type()));
+    auto atype = llvm::ArrayType::get(itype, 1 + t->numDependencies());
+
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_OVERLAY;
-    ti->dtor = "hlt::overlay_dtor";
+    ti->dtor_func = _makeOverlayDtor(cg(), t);
     ti->lib_type = "hlt.overlay";
-    ti->to_string = "hlt::overlay_to_string";
+    ti->init_val = cg()->llvmConstNull(atype);
     setResult(ti);
 }
 

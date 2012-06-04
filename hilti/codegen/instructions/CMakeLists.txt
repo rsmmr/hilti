@@ -21,6 +21,7 @@ add_library(cg-instructions
     map.cc
     network.cc
     operators.cc
+    overlay.cc
     port.cc
     regexp.cc
     set.cc
