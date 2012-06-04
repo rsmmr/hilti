@@ -32,6 +32,7 @@ struct yystype {
     type::Bitset::label_list bitset_labels;
     type::Bitset::Label bitset_label;
     type::Struct::field_list struct_fields;
+    type::Overlay::field_list overlay_fields;
     ctor::Map::element map_element;
     ctor::Map::element_list map_elements;
     ctor::RegExp::pattern re_pattern;
@@ -51,6 +52,7 @@ struct yystype {
     shared_ptr<hilti::function::Parameter> param;
     shared_ptr<hilti::statement::try_::Catch> catch_;
     shared_ptr<hilti::type::struct_::Field> struct_field;
+    shared_ptr<hilti::type::overlay::Field> overlay_field;
 
     std::list<shared_ptr<hilti::Type>> types;
 

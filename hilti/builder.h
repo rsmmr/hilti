@@ -1106,10 +1106,24 @@ namespace classifier {
 
 /// Instantiates a type::Classifier type.
 ///
+/// rtype: The type for the classifier rules. This must be a reference to
+/// heap type that's of trait trait::TypeList.
+///
+/// vtype: The type for values associated with rules.
+///
 /// l: Location associated with the type.
 ///
 /// Returns: The type node.
-inline shared_ptr<hilti::type::Classifier> type(const Location& l=Location::None) {
+inline shared_ptr<hilti::type::Classifier> type(shared_ptr<Type> rtype, shared_ptr<Type> vtype, const Location& l=Location::None) {
+    return _sptr(new hilti::type::Classifier(rtype, vtype, l));
+}
+
+/// Instantiates a type::Classifier wildcard type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Classifier> typeAny(const Location& l=Location::None) {
     return _sptr(new hilti::type::Classifier(l));
 }
 
@@ -1341,15 +1355,17 @@ inline shared_ptr<hilti::type::Map> typeAny(const Location& l=Location::None) {
 
 namespace overlay {
 
+typedef hilti::type::Overlay::field_list field_list;
+
 /// Instantiates a type::Overlay type.
+///
+/// fields: The overlay's fields.
 ///
 /// l: Location associated with the type.
 ///
 /// Returns: The type node.
-///
-/// \todo This needs extension once we have the Type fully defined.
-inline shared_ptr<hilti::type::Overlay> type(const Location& l=Location::None) {
-    return _sptr(new hilti::type::Overlay(l));
+inline shared_ptr<hilti::type::Overlay> type(const field_list& fields, const Location& l=Location::None) {
+    return _sptr(new hilti::type::Overlay(fields, l));
 }
 
 /// Instantiates a type::Overlay wildcard type.
@@ -1359,6 +1375,48 @@ inline shared_ptr<hilti::type::Overlay> type(const Location& l=Location::None) {
 /// Returns: The type node.
 inline shared_ptr<hilti::type::Overlay> typeAny(const Location& l=Location::None) {
     return _sptr(new hilti::type::Overlay(l));
+}
+
+/// Instanties a overlay field for its type description.
+///
+/// name: The name of the field.
+///
+/// type: The type of the field.
+///
+/// start: Offset in bytes form the start of the overlay where the field's
+/// data starts.
+///
+/// fmt: An expression refering to a ``Hilti::Packed`` label defining the
+/// format used for unpacking the field.
+///
+/// arg: An argument expression that might be need for the given \a fmt
+/// unpack format.
+///
+/// l: Associated location.
+inline shared_ptr<hilti::type::overlay::Field> field(shared_ptr<ID> name, shared_ptr<Type> type, int start, shared_ptr<Expression> fmt, shared_ptr<Expression> arg = nullptr, const Location& l=Location::None)
+{
+    return _sptr(new hilti::type::overlay::Field(name, type, start, fmt, arg, l));
+}
+
+/// Instanties a overlay field for its type description.
+///
+/// name: The name of the field.
+///
+/// type: The type of the field.
+///
+/// start: Name of an another field which this one follows immediately in
+/// the overlay layout.
+///
+/// fmt: An expression refering to a ``Hilti::Packed`` label defining the
+/// format used for unpacking the field.
+///
+/// arg: An argument expression that might be need for the given \a fmt
+/// unpack format.
+///
+/// l: Associated location.
+inline shared_ptr<hilti::type::overlay::Field> field(shared_ptr<ID> name, shared_ptr<Type> type, shared_ptr<ID> start, shared_ptr<Expression> fmt, shared_ptr<Expression> arg = nullptr, const Location& l=Location::None)
+{
+    return _sptr(new hilti::type::overlay::Field(name, type, start, fmt, arg, l));
 }
 
 }
@@ -1475,7 +1533,7 @@ namespace struct_ {
 #if 0
 // Turns out we don't have a struct ctor but coerce tuples into structs ... Need to decide whether we want to keep it that way.
 
-typedef ctor::Struct::element_list element_list;
+typedef ctor::quct::element_list element_list;
 
 /// Instantiates an AST expression node representing a struct ctor.
 ///

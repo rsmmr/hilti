@@ -127,6 +127,31 @@ void Validator::visit(type::Channel* t)
 
 void Validator::visit(type::Classifier* t)
 {
+    if ( ! t->ruleType() )
+        error(t, "no type for classifier rules given");
+
+    if ( ! t->valueType() )
+        error(t, "no type for classifier values given");
+
+    if ( t->ruleType() ) {
+        auto rtype = ast::as<type::Reference>(t->ruleType());
+
+        if ( ! rtype )
+            error(t, "rule type must be a reference; use ref<struct>");
+
+        else {
+            auto tlist = ast::as<type::trait::TypeList>(rtype->argType());
+
+            if ( ! tlist )
+                error(t, "rule type does not provide a type list; use ref<struct>");
+            else {
+                for ( auto l : tlist->typeList() ) {
+                    if ( type::hasTrait<type::trait::Classifiable>(l) )
+                        error(l, "type cannot be used in a classifier");
+                }
+            }
+        }
+    }
 }
 
 void Validator::visit(type::Double* t)
@@ -260,8 +285,29 @@ void Validator::visit(type::Network* t)
 {
 }
 
+void Validator::visit(type::overlay::Field* f)
+{
+    if ( f->startOffset() >= 0 && f->startField() )
+        error(f, "field cannot specify both offset and preceeding field");
+
+    if ( ! (f->startOffset() >= 0 && f->startField()) )
+        error(f, "field must specify either offset and preceeding field");
+
+    if ( ! type::hasTrait<type::trait::Unpackable>(f->type()) )
+        error(f, "field type does not support unpacking");
+}
+
 void Validator::visit(type::Overlay* t)
 {
+    std::set<string> names;
+
+    for ( auto f : t->fields() ) {
+        if ( names.find(f->name()->name()) != names.end() )
+            error(f, "field name already defined");
+
+        if ( f->startField() && names.find(f->startField()->name()) == names.end() )
+            error(f, "dependent field must be defined first");
+    }
 }
 
 void Validator::visit(type::Port* t)

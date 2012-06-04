@@ -101,6 +101,9 @@ tuple                 return token::TUPLE;
 type                  return token::TYPE;
 vector                return token::VECTOR;
 void                  return token::VOID;
+with                  return token::WITH;
+after                 return token::AFTER;
+at                    return token::AT;
 
 False                 yylval->bval = 0; return token::CBOOL;
 Null                  return token::CNULL;

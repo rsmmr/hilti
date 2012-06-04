@@ -129,6 +129,10 @@ using namespace hilti;
 %token         TYPE           "'type'"
 %token         VECTOR         "'vector'"
 %token         VOID           "'void'"
+%token         WITH           "'with'"
+%token         AFTER          "'after'"
+%token         AT             "'at'"
+
 
 %type <bitset_label>     bitset_label
 %type <bitset_labels>    bitset_labels
@@ -141,7 +145,7 @@ using namespace hilti;
 %type <decls>            opt_local_decls
 %type <enum_label>       enum_label
 %type <enum_labels>      enum_labels
-%type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor
+%type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor opt_expr
 %type <exprs>            opt_tuple_elem_list tuple_elem_list tuple exprs opt_exprs
 %type <id>               local_id scoped_id mnemonic import opt_label label
 %type <hook_attribute>   hook_attr
@@ -158,8 +162,10 @@ using namespace hilti;
 %type <strings>          attr_list opt_attr_list
 %type <struct_field>     struct_field
 %type <struct_fields>    struct_fields opt_struct_fields
+%type <overlay_field>    overlay_field
+%type <overlay_fields>   overlay_fields opt_overlay_fields
 %type <sval>             comment opt_comment opt_exception_libtype attribute re_pattern_constant
-%type <type>             base_type type enum_ bitset exception opt_exception_base struct_
+%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ overlay
 %type <types>            type_list
 
 %%
@@ -274,7 +280,6 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | BOOL                             { $$ = builder::boolean::type(loc(@$)); }
               | BYTES                            { $$ = builder::bytes::type(loc(@$)); }
               | CADDR                            { $$ = builder::caddr::type(loc(@$)); }
-              | CLASSIFIER                       { $$ = builder::classifier::type(loc(@$)); }
               | DOUBLE                           { $$ = builder::double_::type(loc(@$)); }
               | FILE                             { $$ = builder::file::type(loc(@$)); }
               | INTERVAL                         { $$ = builder::interval::type(loc(@$)); }
@@ -309,12 +314,15 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | VECTOR '<' '*' '>'               { $$ = builder::vector::typeAny(loc(@$)); }
               | CALLABLE '<' type '>'            { $$ = builder::callable::type($3, loc(@$)); }
               | CALLABLE '<' '*' '>'             { $$ = builder::callable::typeAny(loc(@$)); }
+              | CLASSIFIER '<' type ',' type '>' { $$ = builder::classifier::type($3, $5, loc(@$)); }
+              | CLASSIFIER '<' '*' '>'           { $$ = builder::classifier::typeAny(loc(@$)); }
               | TYPE                             { $$ = builder::type::typeAny(loc(@$)); }
 
               | bitset                           { $$ = $1; }
               | enum_                            { $$ = $1; }
               | exception                        { $$ = $1; }
               | struct_                          { $$ = $1; }
+              | overlay                          { $$ = $1; }
               ;
 
 type          : base_type                        { $$ = $1; }
@@ -365,6 +373,25 @@ struct_fields : struct_fields ',' struct_field   { $$ = $1; $$.push_back($3); }
 struct_field  : type local_id                    { $$ = builder::struct_::field($2, $1, nullptr, false, loc(@$)); }
               | type local_id ATTR_DEFAULT '=' expr { $$ = builder::struct_::field($2, $1, $5, false, loc(@$)); }
 
+overlay       : OVERLAY                          { driver.disableLineMode(); }
+                  '{' opt_overlay_fields '}'     { driver.enableLineMode(); $$ = builder::overlay::type($4, loc(@$)); }
+
+opt_overlay_fields : overlay_fields              { $$ = $1; }
+              | /* empty */                      { $$ = builder::overlay::field_list(); }
+
+overlay_fields : overlay_fields ',' overlay_field { $$ = $1; $$.push_back($3); }
+              | overlay_field                    { $$ = builder::overlay::field_list(); $$.push_back($1); }
+
+overlay_field : local_id ':' type local_id AT CINTEGER WITH expr opt_expr {
+                  if ( $4->name() != "unpack" ) error(@$, "expected 'unpack' in field description");
+                  $$ = builder::overlay::field($1, $3, $6, $8, $9, loc(@$));
+              }
+
+              | local_id ':' type local_id AFTER local_id WITH expr opt_expr {
+                  if ( $4->name() != "unpack" ) error(@$, "expected 'unpack' in field description");
+                  $$ = builder::overlay::field($1, $3, $6, $8, $9, loc(@$));
+              }
+
 
 opt_exception_base : ':' type                    { $$ = $2; }
               | /* empty */                      { $$ = nullptr; }
@@ -394,6 +421,9 @@ expr          : constant                         { $$ = $1; }
               | scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
               | base_type                        { $$ = builder::type::create($1, loc(@$)); }
               ;
+
+opt_expr      : expr                             { $$ = $1; }
+              | /* empty */                      { $$ = nullptr; }
 
 expr_lhs      : scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
               ;

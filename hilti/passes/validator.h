@@ -59,6 +59,7 @@ protected:
    void visit(declaration::Hook* f) override;
 
    void visit(type::function::Parameter* p) override;
+   void visit(type::overlay::Field* f) override;
 
    void visit(type::Address* t) override;
    void visit(type::Any* t) override;

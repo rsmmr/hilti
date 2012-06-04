@@ -89,6 +89,10 @@ namespace type {
    namespace struct_ {
       class Field;
    }
+
+   namespace overlay {
+      class Field;
+   }
 }
 
 namespace constant {
@@ -252,6 +256,7 @@ public:
 
    // Other type-related classes.
    virtual void visit(type::struct_::Field* f) {}
+   virtual void visit(type::overlay::Field* f) {}
 
    // Type parameters.
    virtual void visit(type::trait::parameter::Attribute* p) {}

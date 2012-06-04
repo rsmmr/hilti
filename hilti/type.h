@@ -220,8 +220,13 @@ public:
    virtual const std::vector<Format>& unpackFormats() const = 0;
 };
 
-// class Classifiable.
-// class Blockable.
+/// Trait class marking types which can be used within a classifier rule.
+/// HILTI run-time.
+class Classifiable : public Trait
+{
+};
+
+// class BLockable.
 
 }
 
@@ -515,7 +520,7 @@ public:
 };
 
 /// Type for IP addresses.
-class Address : public ValueType, public trait::Unpackable {
+class Address : public ValueType, public trait::Unpackable, public trait::Classifiable {
 public:
    /// Constructor.
    ///
@@ -529,7 +534,7 @@ public:
 };
 
 /// Type for IP subnets.
-class Network : public ValueType {
+class Network : public ValueType, public trait::Classifiable {
 public:
    /// Constructor.
    ///
@@ -541,7 +546,7 @@ public:
 };
 
 /// Type for ports.
-class Port : public ValueType, public trait::Unpackable {
+class Port : public ValueType, public trait::Unpackable, public trait::Classifiable {
 public:
    /// Constructor.
    ///
@@ -653,7 +658,7 @@ public:
 };
 
 /// Type for booleans.
-class Bool : public ValueType, public trait::Unpackable {
+class Bool : public ValueType, public trait::Unpackable, public trait::Classifiable {
 public:
    /// Constructor.
    ///
@@ -692,7 +697,7 @@ public:
 
 
 /// Type for integer values.
-class Integer : public ValueType, public trait::Parameterized, public trait::Unpackable
+class Integer : public ValueType, public trait::Parameterized, public trait::Unpackable, public trait::Classifiable
 {
 public:
    /// Constructor.
@@ -955,7 +960,7 @@ public:
 
 /// Type for bytes instances.
 ///
-class Bytes : public HeapType, public trait::Iterable, public trait::Unpackable, public trait::Hashable
+class Bytes : public HeapType, public trait::Iterable, public trait::Unpackable, public trait::Hashable, public trait::Classifiable
 {
 public:
    /// Constructor.
@@ -1012,16 +1017,184 @@ public:
 
 /// Type for classifier instances.
 ///
-class Classifier : public HeapType
+class Classifier : public HeapType, public trait::Parameterized
 {
 public:
    /// Constructor.
    ///
+   /// rtype: The type for the classifier rules. This must be a reference to
+   /// heap type that's of trait trait::TypeList.
+   ///
+   /// vtype: The type for values associated with rules.
+   ///
    /// l: Associated location.
-   Classifier(const Location& l=Location::None) : HeapType(l) {}
+   Classifier(shared_ptr<Type> rtype, shared_ptr<Type> vtype, const Location& l=Location::None);
    virtual ~Classifier();
 
+   /// Constructor for wildcard classifier type.
+   ///
+   /// l: Associated location.
+   Classifier(const Location& l=Location::None);
+
+   /// Returns the type for rules.
+   shared_ptr<Type> ruleType() const { return _rtype; }
+
+   /// Returns the type for value.
+   shared_ptr<Type> valueType() const { return _vtype; }
+
+   parameter_list parameters() const override;
+
+   bool _equal(shared_ptr<hilti::Type> other) const override;
+
    ACCEPT_VISITOR(Type);
+
+private:
+   node_ptr<Type> _rtype;
+   node_ptr<Type> _vtype;
+};
+
+class Overlay;
+
+namespace overlay {
+
+/// Definition of one overlay field.
+class Field : public Node
+{
+public:
+   typedef std::list<node_ptr<overlay::Field>> field_list;
+
+   /// Constructor.
+   ///
+   /// name: The name of the field.
+   ///
+   /// start: Offset in bytes form the start of the overlay where the field's
+   /// data starts.
+   ///
+   /// type: The type of the field.
+   ///
+   /// fmt: An expression refering to a ``Hilti::Packed`` label defining the
+   /// format used for unpacking the field.
+   ///
+   /// arg: An argument expression that might be need for the given \a fmt
+   /// unpack format.
+   ///
+   /// l: Associated location.
+   Field(shared_ptr<ID> name, shared_ptr<Type> type, int start, shared_ptr<Expression> fmt, shared_ptr<Expression> arg = nullptr, const Location& l=Location::None);
+
+   /// Constructor.
+   ///
+   /// name: The name of the field.
+   ///
+   /// type: The type of the field.
+   ///
+   /// start: Name of an another field which this one follows immediately in
+   /// the overlay layout.
+   ///
+   /// fmt: An expression refering to a ``Hilti::Packed`` label defining the
+   /// format used for unpacking the field.
+   ///
+   /// arg: An argument expression that might be need for the given \a fmt
+   /// unpack format.
+   ///
+   /// l: Associated location.
+   Field(shared_ptr<ID> name, shared_ptr<Type> type, shared_ptr<ID> start, shared_ptr<Expression> fmt, shared_ptr<Expression> arg = nullptr, const Location& l=Location::None);
+
+   /// Destructor.
+   ~Field();
+
+   /// Returns the field's name.
+   shared_ptr<ID> name() const { return _name; }
+
+   /// Returns the field's type.
+   shared_ptr<Type> type() const { return _type; }
+
+   /// Returns the field's start offset, if set via the ctor; -1 if not.
+   const int startOffset() const { return _start_offset; }
+
+   /// Returns the field's predecessor field, if set via the ctor; null if not.
+   shared_ptr<ID> startField() const { return _start_field; }
+
+   /// Returns the field's unpack format.
+   shared_ptr<Expression> format() const;
+
+   /// Returns the field's optional unpack argument, or null if not set.
+   shared_ptr<Expression> formatArg() const;
+
+   /// Returns a list of all other fields that this one depends on for
+   /// determining its start offset in the overlay. The list is sorted in the
+   /// order the fields are defined in the overlay. If the named field starts
+   /// at a constant offset and does not depend on any other fields, an empty
+   /// list is returned.
+   /// 
+   /// Valid only after the field has been added to an Overlay.
+   const field_list& dependents() const { return _deps; }
+
+   /// Returns an index unique across all fields that are directly
+   /// determining the starting position of another field with a non-constant
+   /// offset. All of these fields are sequentially numbered, starting with
+   /// one. Returns -1 if the does not determine another's offset directly.
+   ///
+   /// Valid only after the field has been added to an Overlay.
+   int depIndex() const { return _idx; }
+
+   bool equal(shared_ptr<Field> other) const;
+
+   ACCEPT_VISITOR_ROOT();
+
+private:
+   friend class Overlay;
+
+   shared_ptr<ID> _name;
+   shared_ptr<Type> _type;
+   int _start_offset;
+   shared_ptr<ID> _start_field;
+   node_ptr<Expression> _fmt;
+   node_ptr<Expression> _fmt_arg;
+   field_list _deps;
+   int _idx;
+};
+
+}
+
+/// Type for overlays.
+class  Overlay : public ValueType {
+public:
+   typedef overlay::Field::field_list field_list;
+
+   /// Constructor.
+   ///
+   Overlay(const field_list& fields, const Location& l=Location::None);
+
+   /// Constructor for wildcard overlay type.
+   ///
+   /// l: Associated location.
+   Overlay(const Location& l=Location::None) : ValueType(l) {}
+
+   virtual ~Overlay();
+
+   /// Returns the overlay's fields.
+   const field_list& fields() const { return _fields; }
+
+   /// Returns a field of a given name, or null if not known.
+   shared_ptr<overlay::Field> field(const string& name) const;
+
+   /// Returns a field of a given name, or null if not known.
+   shared_ptr<overlay::Field> field(shared_ptr<ID> name) const;
+
+   /// Returns the number of fields that other fields directly depend on for
+   /// their starting position. This number is guaranteed to be not higher
+   /// than the largest overlay::Field::depIndex() in this overlay.
+   int numDependencies() const { return _idxcnt; }
+
+   bool _equal(shared_ptr<hilti::Type> other) const override;
+
+   ACCEPT_VISITOR(Type);
+
+private:
+   void Init();
+
+   field_list _fields;
+   int _idxcnt;
 };
 
 /// Type for file instances.
@@ -1291,20 +1464,6 @@ public:
 private:
    node_ptr<hilti::Type> _key = nullptr;
    node_ptr<hilti::Type> _value = nullptr;
-};
-
-/// Type for overlays.
-///
-/// \todo Implementation missing.
-class  Overlay : public ValueType {
-public:
-   /// Constructor.
-   ///
-   /// l: Associated location.
-   Overlay(const Location& l=Location::None) : ValueType(l) {}
-   virtual ~Overlay();
-
-   ACCEPT_VISITOR(Type);
 };
 
 /// Type for regexp instances.

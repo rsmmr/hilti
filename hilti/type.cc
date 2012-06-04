@@ -189,7 +189,7 @@ const type::trait::TypeList::type_list type::Tuple::typeList() const
 {
     type::trait::TypeList::type_list types;
 
-    for ( auto t : _types ) 
+    for ( auto t : _types )
         types.push_back(t);
 
     return types;
@@ -638,4 +638,165 @@ const std::vector<type::trait::Unpackable::Format>& type::Bool::unpackFormats() 
     return unpack_formats_bool;
 }
 
+type::Classifier::Classifier(shared_ptr<Type> rtype, shared_ptr<Type> vtype, const Location& l)
+    : HeapType(l)
+{
+    _rtype = rtype;
+    _vtype = vtype;
+    addChild(_rtype);
+    addChild(_vtype);
+}
 
+type::Classifier::Classifier(const Location& l)
+{
+    setWildcard(true);
+}
+
+type::trait::Parameterized::parameter_list type::Classifier::parameters() const
+{
+    auto rtype = std::make_shared<trait::parameter::Type>(_rtype);
+    auto vtype = std::make_shared<trait::parameter::Type>(_vtype);
+
+    parameter_list params = { rtype, vtype };
+    return params;
+}
+
+bool type::Classifier::_equal(shared_ptr<hilti::Type> t) const
+{
+    auto other = ast::as<type::Classifier>(t);
+    assert(other);
+
+    return _rtype->equal(other->_rtype) && _vtype->equal(other->_vtype);
+}
+
+type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, shared_ptr<ID> start, shared_ptr<Expression> fmt, shared_ptr<Expression> arg, const Location& l)
+    : Node(l)
+{
+    _name = name;
+    _start_offset = -1;
+    _start_field = nullptr;
+    _type = type;
+    _fmt = fmt;
+    _fmt_arg = arg;
+    _idx = -1;
+
+    addChild(_name);
+    addChild(_type);
+    addChild(_start_field);
+    addChild(_fmt);
+    addChild(_fmt_arg);
+}
+
+type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, int start, shared_ptr<Expression> fmt, shared_ptr<Expression> arg, const Location& l)
+{
+    _name = name;
+    _start_offset = start;
+    _start_field = nullptr;
+    _type = type;
+    _fmt = fmt;
+    _fmt_arg = arg;
+    _idx = -1;
+
+    addChild(_name);
+    addChild(_type);
+    addChild(_start_field);
+    addChild(_fmt);
+    addChild(_fmt_arg);
+}
+
+type::overlay::Field::~Field()
+{
+    // Nothing to do.
+}
+
+shared_ptr<Expression> type::overlay::Field::format() const
+{
+    return _fmt;
+}
+
+shared_ptr<Expression> type::overlay::Field::formatArg() const
+{
+    return _fmt_arg;
+}
+
+bool type::overlay::Field::equal(shared_ptr<Field> other) const
+{
+    // We can't compare the expressions, so let's always say no.
+    return false;
+
+#if 0
+    return _name->name() == other->_name->name()
+        && _start_offset = other->_start_offset
+        && ( (! _start_field && ! other->_start_field) || _start_field->name() == other->_start_field->name())
+        && _type->equal(other->_type)
+        && _fmt->equal(other->_fmt)
+        && (! _arg || _arg->equal(other->_arg));
+#endif
+}
+
+type::Overlay::Overlay(const field_list& fields, const Location& l)
+    : ValueType(l)
+{
+    _fields = fields;
+
+    for ( auto f : _fields )
+        addChild(f);
+
+    Init();
+}
+
+void type::Overlay::Init()
+{
+    for ( auto f : _fields ) {
+        if ( ! f->_start_field )
+            continue;
+
+        // Field depends on another one.
+        auto dep = field(f->_start_field);
+        f->_deps = dep->_deps;
+        f->_deps.push_back(dep);
+
+        if ( dep->_idx < 0)
+            // Dep fields needs an index for caching.
+            dep->_idx = ++_idxcnt;
+    }
+}
+
+shared_ptr<type::overlay::Field> type::Overlay::field(const string& name) const
+{
+    for ( auto f : _fields ) {
+        if ( f->name()->name() == name )
+            return f;
+    }
+
+    return nullptr;
+}
+
+shared_ptr<type::overlay::Field> type::Overlay::field(shared_ptr<ID> name) const
+{
+    for ( auto f : _fields ) {
+        if ( f->name()->name() == name->name() )
+            return f;
+    }
+
+    return nullptr;
+}
+
+bool type::Overlay::_equal(shared_ptr<hilti::Type> t) const
+{
+    auto other = ast::as<type::Overlay>(t);
+    assert(other);
+
+    if ( _fields.size() != other->_fields.size() )
+        return false;
+
+    auto f1 = _fields.begin();
+    auto f2 = other->_fields.begin();
+
+    while ( f1 != _fields.end() ) {
+        if ( ! (*f1++)->equal(*f2) )
+            return false;
+    }
+
+    return true;
+}

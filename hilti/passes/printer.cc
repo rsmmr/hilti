@@ -615,7 +615,11 @@ void Printer::visit(type::Classifier* t)
         return;
 
     Printer& p = *this;
-    p << "classifier";
+
+    if ( ! t->wildcard() )
+        p << "classifier<" << t->ruleType() << "," << t->valueType() << ">";
+    else
+        p << "classifier<*>";
 }
 
 void Printer::visit(type::File* t)
@@ -701,7 +705,39 @@ void Printer::visit(type::Overlay* t)
         return;
 
     Printer& p = *this;
-    p << "overlay";
+
+    if ( ! t->fields().size() ) {
+        p << "overlay" << endl;
+        return;
+    }
+
+    p << "overlay {" << endl;
+    pushIndent();
+
+    bool first = true;
+    for ( auto f : t->fields() ) {
+
+        if ( ! first )
+            p << "," << endl;
+
+        p << f->name() << ": ";
+
+        if ( f->startOffset() >= 0 )
+            p << "at " << f->startOffset();
+        else
+            p << "after " << f->startField()->name();
+
+        p << " unpack with " << f->format();
+
+        if ( f->formatArg() )
+            p << " " << f->formatArg();
+
+        first = false;
+    }
+
+    p << endl;
+    popIndent();
+    p << "}" << endl << endl;
 }
 
 void Printer::visit(type::OptionalArgument* t)
