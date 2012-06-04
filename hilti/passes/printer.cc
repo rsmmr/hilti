@@ -835,6 +835,8 @@ void Printer::visit(type::Unset* t)
     if ( printTypeID(t) )
         return;
 
+    Printer& p = *this;
+    
     p << "<type \"unset\">";
 }
 
