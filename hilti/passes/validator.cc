@@ -134,19 +134,18 @@ void Validator::visit(type::Classifier* t)
         error(t, "no type for classifier values given");
 
     if ( t->ruleType() ) {
-        auto rtype = ast::as<type::Reference>(t->ruleType());
-
-        if ( ! rtype )
-            error(t, "rule type must be a reference; use ref<struct>");
+        if ( ! ast::isA<type::HeapType>(t->ruleType()) )
+            error(t, "rule type must be a heap type; use a struct");
 
         else {
-            auto tlist = ast::as<type::trait::TypeList>(rtype->argType());
+            auto tlist = ast::as<type::trait::TypeList>(t->ruleType());
 
             if ( ! tlist )
-                error(t, "rule type does not provide a type list; use ref<struct>");
+                error(t, "rule type does not provide a type list; use a struct");
+
             else {
                 for ( auto l : tlist->typeList() ) {
-                    if ( type::hasTrait<type::trait::Classifiable>(l) )
+                    if ( ! type::hasTrait<type::trait::Classifiable>(l) )
                         error(l, "type cannot be used in a classifier");
                 }
             }
@@ -290,8 +289,8 @@ void Validator::visit(type::overlay::Field* f)
     if ( f->startOffset() >= 0 && f->startField() )
         error(f, "field cannot specify both offset and preceeding field");
 
-    if ( ! (f->startOffset() >= 0 && f->startField()) )
-        error(f, "field must specify either offset and preceeding field");
+    if ( ! (f->startOffset() >= 0 || f->startField()) )
+        error(f, "field must specify either offset pr preceeding field");
 
     if ( ! type::hasTrait<type::trait::Unpackable>(f->type()) )
         error(f, "field type does not support unpacking");
@@ -305,7 +304,7 @@ void Validator::visit(type::Overlay* t)
         if ( names.find(f->name()->name()) != names.end() )
             error(f, "field name already defined");
 
-        if ( f->startField() && names.find(f->startField()->name()) == names.end() )
+        if ( f->startField() && ! t->field(f->startField()->name()) )
             error(f, "dependent field must be defined first");
     }
 }

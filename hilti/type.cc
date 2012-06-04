@@ -674,7 +674,7 @@ type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, shared_p
 {
     _name = name;
     _start_offset = -1;
-    _start_field = nullptr;
+    _start_field = start;
     _type = type;
     _fmt = fmt;
     _fmt_arg = arg;
@@ -688,6 +688,7 @@ type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, shared_p
 }
 
 type::overlay::Field::Field(shared_ptr<ID> name, shared_ptr<Type> type, int start, shared_ptr<Expression> fmt, shared_ptr<Expression> arg, const Location& l)
+    : Node(l)
 {
     _name = name;
     _start_offset = start;

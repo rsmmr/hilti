@@ -830,6 +830,14 @@ void Printer::visit(type::Iterator* t)
         p << "iterator<*>";
 }
 
+void Printer::visit(type::Unset* t)
+{
+    if ( printTypeID(t) )
+        return;
+
+    p << "<type \"unset\">";
+}
+
 void Printer::visit(constant::Integer* i)
 {
     Printer& p = *this;

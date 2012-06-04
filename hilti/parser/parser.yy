@@ -382,14 +382,14 @@ opt_overlay_fields : overlay_fields              { $$ = $1; }
 overlay_fields : overlay_fields ',' overlay_field { $$ = $1; $$.push_back($3); }
               | overlay_field                    { $$ = builder::overlay::field_list(); $$.push_back($1); }
 
-overlay_field : local_id ':' type local_id AT CINTEGER WITH expr opt_expr {
-                  if ( $4->name() != "unpack" ) error(@$, "expected 'unpack' in field description");
-                  $$ = builder::overlay::field($1, $3, $6, $8, $9, loc(@$));
+overlay_field : local_id ':' type AT CINTEGER local_id WITH expr opt_expr {
+                  if ( $6->name() != "unpack" ) error(@$, "expected 'unpack' in field description");
+                  $$ = builder::overlay::field($1, $3, $5, $8, $9, loc(@$));
               }
 
-              | local_id ':' type local_id AFTER local_id WITH expr opt_expr {
-                  if ( $4->name() != "unpack" ) error(@$, "expected 'unpack' in field description");
-                  $$ = builder::overlay::field($1, $3, $6, $8, $9, loc(@$));
+              | local_id ':' type AFTER local_id local_id WITH expr opt_expr {
+                  if ( $6->name() != "unpack" ) error(@$, "expected 'unpack' in field description");
+                  $$ = builder::overlay::field($1, $3, $5, $8, $9, loc(@$));
               }
 
 

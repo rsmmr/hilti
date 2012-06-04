@@ -448,14 +448,15 @@ private:
 };
 
 /// A type representing an unset value.
-class Unset : public hilti::Type
+class Unset : public ValueType
 {
 public:
    /// Constructor.
    ///
    /// l: Associated location.
-   Unset(const Location& l=Location::None) : hilti::Type(l) {}
+   Unset(const Location& l=Location::None) : ValueType(l) {}
    virtual ~Unset();
+
    ACCEPT_VISITOR(Type);
 };
 
