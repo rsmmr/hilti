@@ -1169,7 +1169,7 @@ public:
    /// Constructor for wildcard overlay type.
    ///
    /// l: Associated location.
-   Overlay(const Location& l=Location::None) : ValueType(l) {}
+   Overlay(const Location& l=Location::None);
 
    virtual ~Overlay();
 
@@ -1195,7 +1195,7 @@ private:
    void Init();
 
    field_list _fields;
-   int _idxcnt;
+   int _idxcnt = 0;
 };
 
 /// Type for file instances.

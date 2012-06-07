@@ -279,9 +279,9 @@ llvm::Constant* CodeGen::llvmSizeOf(llvm::Type* t)
     return llvm::ConstantExpr::getPtrToInt(addr, llvmTypeInt(64));
 }
 
-void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value)
+void CodeGen::llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value, bool dtor_first)
 {
-    _storer->llvmStore(target, value, true);
+    _storer->llvmStore(target, value, true, dtor_first);
 }
 
 std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmUnpack(
@@ -348,9 +348,9 @@ llvm::Value* CodeGen::llvmParameter(shared_ptr<type::function::Parameter> param)
     return 0; // Never reached.
 }
 
-void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value)
+void CodeGen::llvmStore(statement::Instruction* instr, llvm::Value* value, bool dtor_first)
 {
-    _storer->llvmStore(instr->target(), value, true);
+    _storer->llvmStore(instr->target(), value, true, dtor_first);
 }
 
 llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builder, bool abort_on_excpt, bool is_init_func)
@@ -1859,6 +1859,9 @@ llvm::BranchInst* CodeGen::llvmCreateCondBr(llvm::Value* cond, IRBuilder* true_,
 
 llvm::Value* CodeGen::llvmInsertValue(llvm::Value* aggr, llvm::Value* val, unsigned int idx)
 {
+    if ( llvm::isa<llvm::VectorType>(aggr->getType()) )
+        return builder()->CreateInsertElement(aggr, val, llvmConstInt(idx, 32));
+
     std::vector<unsigned int> vec;
     vec.push_back(idx);
     return builder()->CreateInsertValue(aggr, val, vec);
@@ -1866,6 +1869,9 @@ llvm::Value* CodeGen::llvmInsertValue(llvm::Value* aggr, llvm::Value* val, unsig
 
 llvm::Constant* CodeGen::llvmConstInsertValue(llvm::Constant* aggr, llvm::Constant* val, unsigned int idx)
 {
+    if ( llvm::isa<llvm::VectorType>(aggr->getType()) )
+        return llvm::ConstantExpr::getInsertElement(aggr, val, llvmConstInt(idx, 32));
+
     std::vector<unsigned int> vec;
     vec.push_back(idx);
     return llvm::ConstantExpr::getInsertValue(aggr, val, vec);
@@ -1873,6 +1879,9 @@ llvm::Constant* CodeGen::llvmConstInsertValue(llvm::Constant* aggr, llvm::Consta
 
 llvm::Value* CodeGen::llvmExtractValue(llvm::Value* aggr, unsigned int idx)
 {
+    if ( llvm::isa<llvm::VectorType>(aggr->getType()) )
+        return builder()->CreateExtractElement(aggr, llvmConstInt(idx, 32));
+
     std::vector<unsigned int> vec;
     vec.push_back(idx);
     return builder()->CreateExtractValue(aggr, vec);
@@ -1880,6 +1889,9 @@ llvm::Value* CodeGen::llvmExtractValue(llvm::Value* aggr, unsigned int idx)
 
 llvm::Constant* CodeGen::llvmConstExtractValue(llvm::Constant* aggr, unsigned int idx)
 {
+    if ( llvm::isa<llvm::VectorType>(aggr->getType()) )
+        return llvm::ConstantExpr::getExtractElement(aggr, llvmConstInt(idx, 32));
+
     std::vector<unsigned int> vec;
     vec.push_back(idx);
     return llvm::ConstantExpr::getExtractValue(aggr, vec);
@@ -2567,10 +2579,13 @@ void CodeGen::llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, co
     llvmCallC("__hlt_object_cctor", args, false, false);
 }
 
-void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone)
+void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone, bool dtor_first)
 {
     assert(ast::isA<type::ValueType>(type));
-    llvmDtor(dst, type, true, "gc-assign");
+
+    if ( dtor_first )
+        llvmDtor(dst, type, true, "gc-assign");
+
     llvmCreateStore(val, dst);
 
     if ( ! plusone )

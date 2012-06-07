@@ -241,6 +241,9 @@ private:
    llvm::Function* _makeTupleCctor(CodeGen* cg, type::Tuple* type);
    llvm::Function* _makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, bool dtor);
    llvm::Function* _makeStructDtor(CodeGen* cg, type::Struct* t, llvm::Type* llvm_type);
+   llvm::Function* _makeOverlayCctor(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type);
+   llvm::Function* _makeOverlayDtor(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type);
+   llvm::Function* _makeOverlayFuncHelper(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type, bool dtor);
 
    // We cached all once computed type-infos and return the cached version
    // next time somebody asks for the same type instance.

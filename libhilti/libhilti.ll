@@ -103,6 +103,7 @@
 %hlt.map = type {};
 %hlt.file = type {};
 %hlt.regexp = type {};
+%hlt.overlay = type {};
 %hlt.match_token_state = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.

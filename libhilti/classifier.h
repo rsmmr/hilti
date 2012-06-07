@@ -7,7 +7,7 @@
 #ifndef HILTI_CLASSIFIER_H
 #define HILTI_CLASSIFIER_H
 
-/// Structure describing one field of a classifier rule.
+/// Structure describing one field of a classifier rule. The classifier takes ownership.
 typedef struct {
     uint64_t len;   /// Number of bytes of the data part of the field.
     uint64_t bits;  /// Number of bits that are valid in the data.
@@ -35,7 +35,8 @@ extern hlt_classifier* hlt_classifier_new(int64_t num_fields, const hlt_type_inf
 /// c: The classifier to add the rule to.
 ///
 /// fields: The fields for the classifier for the rule. Their number must
-/// match with what as passed to ~~hlt_map_new.
+/// match with what as passed to ~~hlt_map_new. The classifier takes
+/// ownership of the array and its elements.
 ///
 /// priority: The priority associated with the rule. The highest-priority
 /// matching rule be returned for lookups. 
@@ -52,8 +53,8 @@ extern void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields,
 /// c: The classifier to add the rule to.
 ///
 /// fields: The fields for the classifier for the rule. Their number must
-/// match with what as passed to ~~hlt_map_new.
-///
+/// match with what as passed to ~~hlt_map_new. The classifier takes
+/// ownership of the array and its elements.
 ///
 /// vtype: The result type associated with the rule, which must match what
 /// was passed to ~~hlt_classifier_new.
@@ -76,7 +77,7 @@ extern void hlt_classifier_compile(hlt_classifier* c, hlt_exception** excpt, hlt
 ///
 /// c: The classifier.
 ///
-/// key: The key values to look up; their number must match the number of
+/// vals: The key values to look up; their number must match the number of
 /// fields the classifier has.
 ///
 /// excpt: &
@@ -95,7 +96,7 @@ extern int8_t hlt_classifier_matches(hlt_classifier* c, hlt_classifier_field** v
 ///
 /// c: The classifier.
 ///
-/// key: The key values to look up; their number must match the number of
+/// vals: The key values to look up; their number must match the number of
 /// fields the classifier has.
 ///
 /// excpt: &

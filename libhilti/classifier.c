@@ -27,6 +27,11 @@ void hlt_classifier_dtor(hlt_type_info* ti, hlt_classifier* c)
 
     for ( int i = 0; i < c->num_rules; i++ ) {
         hlt_classifier_rule* r = c->rules[i];
+
+        for ( int j = 0; j < c->num_fields; j++ )
+            hlt_free(r->fields[j]);
+
+        hlt_free(r->fields);
         GC_DTOR(r->value, c->vtype);
         hlt_free(r->value);
         hlt_free(r);

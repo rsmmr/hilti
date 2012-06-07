@@ -78,6 +78,7 @@ set(instructions
     hilti/instructions/map.h
     hilti/instructions/network.h
     hilti/instructions/operators.h
+    hilti/instructions/overlay.h
     hilti/instructions/port.h
     hilti/instructions/regexp.h
     hilti/instructions/set.h
@@ -197,6 +198,7 @@ add_library (hilti
     hilti/codegen/instructions/list.cc
     hilti/codegen/instructions/map.cc
     hilti/codegen/instructions/network.cc
+    hilti/codegen/instructions/overlay.cc
     hilti/codegen/instructions/port.cc
     hilti/codegen/instructions/regexp.cc
     hilti/codegen/instructions/set.cc

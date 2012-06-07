@@ -746,6 +746,11 @@ type::Overlay::Overlay(const field_list& fields, const Location& l)
     Init();
 }
 
+type::Overlay::Overlay(const Location& l) : ValueType(l)
+{
+    setWildcard(true);
+}
+
 void type::Overlay::Init()
 {
     for ( auto f : _fields ) {

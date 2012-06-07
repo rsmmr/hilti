@@ -464,7 +464,7 @@ public:
    /// the value.
    ///
    /// value: The value to store.
-   void llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value);
+   void llvmStore(shared_ptr<hilti::Expression> target, llvm::Value* value, bool dtor_first = true);
 
    /// Stores an LLVM value at the location associated with a HILTI
    /// instruction's target operand. expression. The value must already have
@@ -477,7 +477,7 @@ public:
    /// destination for the store operation.
    ///
    /// value: The value to store.
-   void llvmStore(statement::Instruction* instr, llvm::Value* value);
+   void llvmStore(statement::Instruction* instr, llvm::Value* value, bool dtor_first = true);
 
 
    /// Unpacks an instance of a type from binary data (like in the \c unpack
@@ -1427,7 +1427,7 @@ public:
    void llvmCctor(llvm::Value* val, shared_ptr<Type> type, bool is_ptr, const string& location_addl);
 
    /// XXXX
-   void llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone);
+   void llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone, bool dtor_first = true);
 
    /// XXXX
    void llvmGCClear(llvm::Value* val, shared_ptr<Type> type);

@@ -746,11 +746,22 @@ void TypeBuilder::visit(type::Set* t)
     setResult(ti);
 }
 
-llvm::Function* TypeBuilder::_makeOverlayDtor(CodeGen* cg, type::Overlay* t)
+llvm::Function* TypeBuilder::_makeOverlayCctor(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type)
 {
-    string name = util::fmt("dtor_overlay_dep%d", t->numDependencies())
+    return _makeOverlayFuncHelper(cg, t, llvm_type, false);
+}
 
-    llvm::Value* cached = cg->lookupCachedValue("dtor-overlay", name);
+llvm::Function* TypeBuilder::_makeOverlayDtor(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type)
+{
+    return _makeOverlayFuncHelper(cg, t, llvm_type, true);
+}
+
+llvm::Function* TypeBuilder::_makeOverlayFuncHelper(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type, bool dtor)
+{
+    string prefix = dtor ? "dtor_" : "cctor_";
+    string name = prefix + ::util::fmt("dtor_overlay_dep%d", t->numDependencies());
+
+    llvm::Value* cached = cg->lookupCachedValue(prefix + "-overlay", name);
 
     if ( cached )
         return llvm::cast<llvm::Function>(cached);
@@ -763,17 +774,21 @@ llvm::Function* TypeBuilder::_makeOverlayDtor(CodeGen* cg, type::Overlay* t)
 
     cg->pushFunction(func);
 
-    auto itype = cg()->llvmType(builder::iterator::type(builder::bytes::type()));
+    auto itype = builder::iterator::type(builder::bytes::type());
     auto oval = cg->builder()->CreateLoad(++func->arg_begin());
 
-    for ( int i = 0; i < t->numDependencies(); ++i) {
+    for ( int i = 0; i < 1 + t->numDependencies(); ++i) {
         auto iter = cg->llvmExtractValue(oval, i);
-        cg->llvmDtor(iter, itype, false, "overlay-dtor");
+
+        if ( dtor )
+            cg->llvmDtor(iter, itype, false, "overlay-dtor");
+        else
+            cg->llvmCctor(iter, itype, false, "overlay-cctor");
     }
 
     cg->popFunction();
 
-    cg->cacheValue("dtor-overlay", name, func);
+    cg->cacheValue(prefix + "-overlay", name, func);
 
     return func;
 }
@@ -785,8 +800,7 @@ void TypeBuilder::visit(type::Overlay* t)
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_OVERLAY;
-    ti->dtor_func = _makeOverlayDtor(cg(), t);
-    ti->lib_type = "hlt.overlay";
+    ti->dtor_func = _makeOverlayDtor(cg(), t, atype);
     ti->init_val = cg()->llvmConstNull(atype);
     setResult(ti);
 }

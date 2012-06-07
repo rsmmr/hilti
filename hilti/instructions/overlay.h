@@ -19,12 +19,12 @@ static shared_ptr<type::overlay::Field> _overlayField(const Instruction* i, shar
     }
 
     auto name = cval->value();
-    auto field = otype->field(name);
+    auto f = otype->field(name);
 
-    if ( ! field )
+    if ( ! f )
         i->error(field, util::fmt("unknown overlay field '%s'", name.c_str()));
 
-    return field;
+    return f;
 }
 
 iBegin(overlay, Attach, "overlay.attach")

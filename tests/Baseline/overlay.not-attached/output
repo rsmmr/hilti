@@ -1,1 +1,1 @@
-hilti: uncaught exception, OverlayNotAttached (from not-attached.hlt:24)
+hilti: uncaught exception, OverlayNotAttached (from /Users/robin/work/binpacpp/hilti2/tests/.tmp/overlay.not-attached/not-attached.hlt:23-23)
