@@ -250,6 +250,16 @@ bool Instruction::canCoerceTo(shared_ptr<Type> src, shared_ptr<Expression> targe
     return false;
 }
 
+bool Instruction::canCoerceTo(shared_ptr<Type> src, shared_ptr<Type> target) const
+{
+    if ( Coercer().canCoerceTo(src, target) )
+        return true;
+
+    error(target, util::fmt("type %s is not compatible with target type %s",
+                        src->render().c_str(), target->render().c_str()));
+    return false;
+}
+
 bool Instruction::canCoerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const
 {
    if ( op1->canCoerceTo(op2->type()) || op2->canCoerceTo(op1->type()) )

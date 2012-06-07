@@ -9,6 +9,7 @@
 #include "loader.h"
 #include "storer.h"
 #include "unpacker.h"
+#include "field-builder.h"
 #include "coercer.h"
 #include "builder.h"
 #include "stmt-builder.h"
@@ -27,6 +28,7 @@ CodeGen::CodeGen(const path_list& libdirs, int cg_debug_level)
       _loader(new Loader(this)),
       _storer(new Storer(this)),
       _unpacker(new Unpacker(this)),
+      _field_builder(new FieldBuilder(this)),
       _stmt_builder(new StatementBuilder(this)),
       _type_builder(new TypeBuilder(this)),
       _debug_info_builder(new DebugInfoBuilder(this)),
@@ -2799,7 +2801,14 @@ llvm::Value* CodeGen::llvmStructNew(shared_ptr<Type> type)
     return s;
 }
 
-llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, llvm::Value* default_, StructGetCallBack* cb, const Location& l)
+llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, int field, struct_get_default_callback_t default_, struct_get_filter_callback_t filter, const Location& l)
+{
+    auto i = ast::as<type::Struct>(stype)->fields().begin();
+    std::advance(i, field);
+    return llvmStructGet(stype, sval, (*i)->id()->name(), default_, filter, l);
+}
+
+llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, struct_get_default_callback_t default_, struct_get_filter_callback_t filter, const Location& l)
 {
     auto fd = _getField(this, stype, field);
     auto idx = fd.first;
@@ -2826,8 +2835,8 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     addr = llvmGEP(sval, zero, llvmGEPIdx(idx + 2));
     llvm::Value* result_ok = builder()->CreateLoad(addr);
 
-    if ( cb )
-        result_ok = (*cb)(this, result_ok);
+    if ( filter )
+        result_ok = filter(this, result_ok);
 
     llvmCreateBr(block_done);
     popBuilder();
@@ -2849,7 +2858,7 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     if ( default_ ) {
         auto phi = builder()->CreatePHI(result_ok->getType(), 2);
         phi->addIncoming(result_ok, block_ok->GetInsertBlock());
-        phi->addIncoming(default_, block_not_set->GetInsertBlock());
+        phi->addIncoming(default_(this), block_not_set->GetInsertBlock());
         result = phi;
     }
 
@@ -2863,11 +2872,25 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     return result;
 }
 
+void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, int field, shared_ptr<Expression> val)
+{
+    auto i = ast::as<type::Struct>(stype)->fields().begin();
+    std::advance(i, field);
+    return llvmStructSet(stype, sval, (*i)->id()->name(), val);
+}
+
 void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, shared_ptr<Expression> val)
 {
     auto fd = _getField(this, stype, field);
     auto lval = llvmCoerceTo(llvmValue(val), val->type(), fd.second->type());
     return llvmStructSet(stype, sval, field, lval);
+}
+
+void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, int field, llvm::Value* val)
+{
+    auto i = ast::as<type::Struct>(stype)->fields().begin();
+    std::advance(i, field);
+    return llvmStructSet(stype, sval, (*i)->id()->name(), val);
 }
 
 void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, llvm::Value* val)
@@ -2886,6 +2909,13 @@ void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const str
 
     addr = llvmGEP(sval, zero, llvmGEPIdx(idx + 2));
     llvmGCAssign(addr, val, f->type(), false);
+}
+
+void CodeGen::llvmStructUnset(shared_ptr<Type> stype, llvm::Value* sval, int field)
+{
+    auto i = ast::as<type::Struct>(stype)->fields().begin();
+    std::advance(i, field);
+    return llvmStructUnset(stype, sval, (*i)->id()->name());
 }
 
 void CodeGen::llvmStructUnset(shared_ptr<Type> stype, llvm::Value* sval, const string& field)
@@ -2954,14 +2984,18 @@ llvm::Value* CodeGen::llvmIterBytesEnd()
     return llvmConstNull(llvmLibType("hlt.iterator.bytes"));
 }
 
-#if 0
-llvm::Value* CodeGen::llvmMalloc(llvm::Type* ty)
+llvm::Value* CodeGen::llvmMalloc(llvm::Type* ty, const string& type, const Location& l)
 {
-    value_list args { llvmSizeOf(ty); }
-    auto result = llvmCallC("hlt_malloc", args, false, false);
+    value_list args { llvmSizeOf(ty), llvmConstAsciiz(type), llvmConstAsciiz(l) };
+    auto result = llvmCallC("__hlt_malloc", args, false, false);
     return builder()->CreateBitCast(result, llvmTypePtr(ty));
 }
-#endif
+
+void CodeGen::llvmFree(llvm::Value* val, const string& type, const Location& l)
+{
+    value_list args { val, llvmConstAsciiz(type), llvmConstAsciiz(l) };
+    llvmCallC("__hlt_free", args, false, false);
+}
 
 llvm::Value* CodeGen::llvmObjectNew(shared_ptr<Type> type, llvm::StructType* llvm_type)
 {
@@ -3022,3 +3056,111 @@ llvm::Value* CodeGen::llvmTuple(const value_list& elems)
     return llvmValueStruct(elems);
 }
 
+llvm::Value* CodeGen::llvmClassifierField(shared_ptr<Type> field_type, shared_ptr<Type> src_type, llvm::Value* src_val, const Location& l)
+{
+    return _field_builder->llvmClassifierField(field_type, src_type, src_val, l);
+}
+
+llvm::Value* CodeGen::llvmClassifierField(llvm::Value* data, llvm::Value* len, llvm::Value* bits, const Location& l)
+{
+    auto ft = llvmLibType("hlt.classifier.field");
+    auto field = llvmMalloc(ft, "hlt.classifier.field", l);
+
+    field = builder()->CreateBitCast(field, llvmTypePtr(ft));
+
+    if ( ! bits )
+        bits = builder()->CreateMul(len, llvmConstInt(8, 64));
+
+    // Initialize the static attributes of the field.
+    llvm::Value* s = llvmConstNull(ft);
+    s = llvmInsertValue(s, len, 0);
+    s = llvmInsertValue(s, bits, 1);
+
+    llvmCreateStore(s, field);
+
+    // Copy the data bytes into the field.
+    if ( data ) {
+        data = builder()->CreateBitCast(data, llvmTypePtr());
+        auto dst = llvmGEP(field, llvmGEPIdx(0), llvmGEPIdx(2));
+        dst = builder()->CreateBitCast(dst, llvmTypePtr());
+        llvmMemcpy(dst, data, len);
+    }
+
+    return builder()->CreateBitCast(field, llvmTypePtr());
+}
+
+llvm::Value* CodeGen::llvmHtoN(llvm::Value* val)
+{
+    auto itype = llvm::cast<llvm::IntegerType>(val->getType());
+    assert(itype);
+
+    int width = itype->getBitWidth();
+    const char* f = "";
+
+    switch ( width ) {
+     case 8:
+        return val;
+
+     case 16:
+        f = "hlt::hton16";
+        break;
+
+     case 32:
+        f = "hlt::hton32";
+        break;
+
+     case 64:
+        f = "hlt::hton64";
+        break;
+
+     default:
+        internalError("unexpected bit width in llvmNtoH");
+    }
+
+    expr_list args = { builder::codegen::create(builder::integer::type(width), val) };
+    return llvmCall(f, args);
+}
+
+llvm::Value* CodeGen::llvmNtoH(llvm::Value* val)
+{
+    auto itype = llvm::cast<llvm::IntegerType>(val->getType());
+    assert(itype);
+
+    int width = itype->getBitWidth();
+    const char* f = "";
+
+    switch ( width ) {
+     case 8:
+        return val;
+
+     case 16:
+        f = "hlt::ntoh16";
+        break;
+
+     case 32:
+        f = "hlt::ntoh32";
+        break;
+
+     case 64:
+        f = "hlt::ntoh64";
+        break;
+
+     default:
+        internalError("unexpected bit width in llvmHtoN");
+    }
+
+    expr_list args = { builder::codegen::create(builder::integer::type(width), val) };
+    return llvmCall(f, args);
+}
+
+void CodeGen::llvmMemcpy(llvm::Value *dst, llvm::Value *src, llvm::Value *n)
+{
+    src = builder()->CreateBitCast(src, llvmTypePtr());
+    dst = builder()->CreateBitCast(dst, llvmTypePtr());
+    n = builder()->CreateZExt(n, llvmTypeInt(64));
+
+    CodeGen::value_list args = { src, dst, n, llvmConstInt(1, 32), llvmConstInt(0, 1) };
+    std::vector<llvm::Type *> tys = { llvmTypePtr(), llvmTypePtr(), llvmTypeInt(64) };
+
+    llvmCallIntrinsic(llvm::Intrinsic::memcpy, tys, args);
+}

@@ -224,6 +224,14 @@ public:
 /// HILTI run-time.
 class Classifiable : public Trait
 {
+public:
+   typedef std::list<shared_ptr<Type>> type_list;
+
+   /// Returns a list of types that this one can be matched against in a
+   /// classifier rule \a in \a addition to the class itself. Can be
+   /// overidden by derived classes, the default implementatin returns just
+   /// an empty list.
+   virtual type_list alsoMatchableTo() const { return type_list(); }
 };
 
 // class BLockable.

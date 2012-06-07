@@ -82,13 +82,18 @@
     i64
 }
 
-
 ; An exception type. This must match hlt_exception_type in exception.h
-; FIXME: We're getting type trouble here if we spell out the names.
 %hlt.exception.type = type {
     i8*,
     i8*,
     i8**
+}
+
+; A classifier key. This must match with what classifier.h defines as hlt_classifier_field.
+%__hlt_classifier_field = type {
+    i64,
+    i64,
+    [0 x i8]
 }
 
 ; Types we don't specify further at the LLVM level.
@@ -104,6 +109,7 @@
 %hlt.file = type {};
 %hlt.regexp = type {};
 %hlt.overlay = type {};
+%hlt.classifier = type {};
 %hlt.match_token_state = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.
@@ -138,7 +144,8 @@ declare %hlt.execution_context* @hlt_global_execution_context();
 
 declare %hlt.timer*     @__hlt_timer_new_function(%hlt.callable*, %hlt.exception**, %hlt.execution_context*)
 
-declare i8* @hlt_malloc(i64)
+declare i8* @__hlt_malloc(i64, i8*, i8)
+declare void @__hlt_free(i8*, i8*, i8)
 
 declare void @hlt_abort()
 

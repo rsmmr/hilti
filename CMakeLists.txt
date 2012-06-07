@@ -176,6 +176,7 @@ add_library (hilti
     hilti/codegen/codegen.cc
     hilti/codegen/coercer.cc
     hilti/codegen/debug-info-builder.cc
+    hilti/codegen/field-builder.cc
     hilti/codegen/instructions/bool.cc
     hilti/codegen/instructions/bytes.cc
     hilti/codegen/instructions/flow.cc

@@ -127,11 +127,11 @@ declare "C-HILTI" void tuple_cctor(tuple<*> t)
 ###
 #
 declare "C-HILTI" int<64> int_pow(int<64> base, int<64> exp)
-#
-# declare "C-HILTI" int<64> hton64(int<64> v)
-# declare "C-HILTI" int<32> hton32(int<32> v)
-# declare "C-HILTI" int<16> hton16(int<16> v)
-#
+
+declare "C-HILTI" int<64> hton64(int<64> v)
+declare "C-HILTI" int<32> hton32(int<32> v)
+declare "C-HILTI" int<16> hton16(int<16> v)
+
 ###
 #
 # declare "C-HILTI" ref<channel<*>> channel_new(type channel_type, int<64> capacity)

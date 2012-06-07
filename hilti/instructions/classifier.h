@@ -1,4 +1,4 @@
-///
+//
 /// \type Channel.
 ///
 /// A data type for performing packet classification, i.e., find the
@@ -14,6 +14,71 @@
 ///
 
 #include "instructions/define-instruction.h"
+
+static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, shared_ptr<Expression> op)
+{
+    shared_ptr<Type> stype = nullptr;
+    auto ttype = ast::as<type::Tuple>(op);
+
+    if ( ! ttype )
+        stype = op->type();
+
+    else {
+        if ( ttype->typeList().size() != 2 ) {
+            i->error(ttype, "tuple must be of type (struct, int)");
+            return;
+        }
+
+        auto j = ttype->typeList().begin();
+
+        stype = *j++;
+
+        if ( ! ast::isA<type::Integer>(*j) ) {
+            i->error(ttype, "tuple must be of type (struct, int)");
+            return;
+        }
+    }
+
+    auto ref = ast::as<type::Reference>(stype);
+
+    if ( ! ref ) {
+        i->error(op, "rule value must be a reference to a struct");
+        return;
+    }
+
+    auto s = ast::as<type::Struct>(ref->argType());
+    auto r = ast::as<type::Struct>(rtype);
+    assert(r);
+
+    if ( ! s ) {
+        i->error(op, "rule value must be a reference to a struct");
+        return;
+    }
+
+    if ( r->typeList().size() != s->typeList().size() ) {
+        i->error(op, "rule value has wrong number of elements");
+        return;
+    }
+
+    auto ri = r->typeList().begin();
+    auto si = s->typeList().begin();
+
+    for ( ; ri != r->typeList().end(); ri++, si++ ) {
+        if ( (*ri)->equal(*si) )
+            continue;
+
+        bool match = false;
+        for ( auto t : ast::as<type::trait::Classifiable>(*ri)->alsoMatchableTo() ) {
+            if ( i->canCoerceTo(*si, t) )
+                match = true;
+        }
+
+        if ( ! match ) {
+            i->error(op, "rule value element not compatible with field type");
+            return;
+        }
+    }
+}
 
 iBegin(classifier, New, "new")
     iTarget(optype::refClassifier)
@@ -36,11 +101,8 @@ iBegin(classifier, Add, "classifier.add")
     iOp3(optype::any, true)
 
     iValidate {
-        // auto ty_op1 = as<type::refClassifier>(op1->type());
-        // auto ty_op2 = as<type::*rule-with-optional-prio*>(op2->type());
-        // auto ty_op3 = as<type::*value-type*>(op3->type());
-
-        // TODO: Validation missing.
+        auto rtype = ast::as<type::Classifier>(referencedType(op1))->ruleType();
+        _validateRuleValue(this, rtype, op2);
     }
 
     iDoc(R"(
@@ -58,7 +120,6 @@ iBegin(classifier, Compile, "classifier.compile")
     iOp1(optype::refClassifier, false)
 
     iValidate {
-        // auto ty_op1 = as<type::refClassifier>(op1->type());
     }
 
     iDoc(R"(
@@ -73,11 +134,8 @@ iBegin(classifier, Get, "classifier.get")
     iOp2(optype::any, true)
 
     iValidate {
-        // auto ty_target = as<type::*value-type*>(target->type());
-        // auto ty_op1 = as<type::refClassifier>(op1->type());
-        // auto ty_op2 = as<type::*key-type*>(op2->type());
-
-        // TODO: Validation missing.
+        auto rtype = ast::as<type::Classifier>(referencedType(op1))->ruleType();
+        _validateRuleValue(this, rtype, op2);
     }
 
     iDoc(R"(
@@ -96,11 +154,8 @@ iBegin(classifier, Matches, "classifier.matches")
     iOp2(optype::any, true)
 
     iValidate {
-        // auto ty_target = as<type::boolean>(target->type());
-        // auto ty_op1 = as<type::refClassifier>(op1->type());
-        // auto ty_op2 = as<type::*key-type*>(op2->type());
-
-        // TODO: Validation missing.
+        auto rtype = ast::as<type::Classifier>(referencedType(op1))->ruleType();
+        _validateRuleValue(this, rtype, op2);
     }
 
     iDoc(R"(

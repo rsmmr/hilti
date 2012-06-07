@@ -134,20 +134,13 @@ void Validator::visit(type::Classifier* t)
         error(t, "no type for classifier values given");
 
     if ( t->ruleType() ) {
-        if ( ! ast::isA<type::HeapType>(t->ruleType()) )
-            error(t, "rule type must be a heap type; use a struct");
+        if ( ! ast::isA<type::Struct>(t->ruleType()) )
+            error(t, "rule type must be a struct");
 
         else {
-            auto tlist = ast::as<type::trait::TypeList>(t->ruleType());
-
-            if ( ! tlist )
-                error(t, "rule type does not provide a type list; use a struct");
-
-            else {
-                for ( auto l : tlist->typeList() ) {
-                    if ( ! type::hasTrait<type::trait::Classifiable>(l) )
-                        error(l, "type cannot be used in a classifier");
-                }
+            for ( auto l : ast::as<type::Struct>(t->ruleType())->typeList() ) {
+                if ( ! type::hasTrait<type::trait::Classifiable>(l) )
+                    error(l, "type cannot be used in a classifier");
             }
         }
     }

@@ -38,7 +38,9 @@ void StatementBuilder::visit(statement::instruction::struct_::GetDefault* i)
     auto stype = referencedType(i->op1());
     auto op1 = cg()->llvmValue(i->op1());
     auto op3 = cg()->llvmValue(i->op3());
-    auto result = cg()->llvmStructGet(stype, op1, _opToStr(i->op2()), op3, nullptr, i->location());
+    auto result = cg()->llvmStructGet(stype, op1, _opToStr(i->op2()),
+                                      [&] (CodeGen* cg) -> llvm::Value* { return op3; },
+                                      nullptr, i->location());
     cg()->llvmStore(i, result);
 }
 

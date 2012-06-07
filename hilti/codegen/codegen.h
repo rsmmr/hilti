@@ -71,6 +71,7 @@ class Coercer;
 class Loader;
 class Storer;
 class Unpacker;
+class FieldBuilder;
 class StatementBuilder;
 class TypeBuilder;
 class TypeInfoBuilder;
@@ -1561,7 +1562,16 @@ public:
    // callback will be called with the value extracted from the struct
    // instance and the returns value of the callback will then be used
    // subsequently instead of the field's value.
-   typedef llvm::Value* (*StructGetCallBack)(CodeGen* cg, llvm::Value* v);
+   //
+   // FIXME: We should be able to use just a nromal function pointer here
+   // but that doesn't compile with clang at the time of writing.
+   typedef std::function<llvm::Value* (CodeGen* cg, llvm::Value* v)> struct_get_filter_callback_t;
+
+   // A callback to provide a default for unset fields with llvmStructGet(). 
+   //
+   // FIXME: We should be able to use just a nromal function pointer here
+   // but that doesn't compile with clang at the time of writing.
+   typedef std::function<llvm::Value* (CodeGen* cg)> struct_get_default_callback_t;
 
    /// Extracts a field from a struct instance.
    ///
@@ -1583,7 +1593,52 @@ public:
    ///
    /// Returns: The field's value, or the default if provided and the field
    /// is not set. The returned value will have its cctor called already.
-   llvm::Value* llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, llvm::Value* default_, StructGetCallBack* cb, const Location& l=Location::None);
+   llvm::Value* llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, struct_get_default_callback_t default_, struct_get_filter_callback_t filter, const Location& l=Location::None);
+
+   /// Extracts a field from a struct instance.
+   ///
+   /// The generated code will raise an \a UndefinedValue exception if the
+   /// field is not set and no default has been provided.
+   ///
+   /// stype: The type, which must be a \a type::Struct.
+   ///
+   /// sval: The struct instance.
+   ///
+   /// field: The index of the field to extract.
+   ///
+   /// default: An optional default value to return if the field is not set,
+   /// or null for no default.
+   ///
+   /// cb: A callback function to filter the extracted value.
+   ///
+   /// l: A location to associate with the exception being generated for unset fields.
+   ///
+   /// Returns: The field's value, or the default if provided and the field
+   /// is not set. The returned value will have its cctor called already.
+   llvm::Value* llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, int field, struct_get_default_callback_t default_, struct_get_filter_callback_t filter, const Location& l=Location::None);
+
+   /// Sets a struct field.
+   ///
+   /// stype: The type, which must be a \a type::Struct.
+   ///
+   /// sval: The struct instance.
+   ///
+   /// field: The index of the field to set.
+   ///
+   /// val: The value to set the field to. The value must not have its cctor called yet.
+   void llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, int field, llvm::Value* val);
+
+   /// Sets a struct field. This version gets an expression and coerce the
+   /// type as necessary.
+   ///
+   /// stype: The type, which must be a \a type::Struct.
+   ///
+   /// sval: The struct instance.
+   ///
+   /// field: The index of the field to set.
+   ///
+   /// val: The value to set the field to.
+   void llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, int field, shared_ptr<Expression> val);
 
    /// Sets a struct field.
    ///
@@ -1616,6 +1671,15 @@ public:
    ///
    /// field: The name of the field to set.
    void llvmStructUnset(shared_ptr<Type> stype, llvm::Value* sval, const string& field);
+
+   /// Unsets a struct field.
+   ///
+   /// stype: The type, which must be a \a type::Struct.
+   ///
+   /// sval: The struct instance.
+   ///
+   /// field: The index of the field to unset.
+   void llvmStructUnset(shared_ptr<Type> stype, llvm::Value* sval, int field);
 
    /// Return a boolean value indicating whether a struct field is set. If
    /// the field has a default, it is always considered set (unless
@@ -1702,16 +1766,87 @@ public:
    /// will reference to the pointer value, not the object itself.
    llvm::Value* llvmObjectNew(shared_ptr<Type> type, llvm::StructType* llvm_type);
 
-#if 0
    /// Allocates an instance of the given LLVM type. This generated code is
    /// guaranteed to return a valid object; if we're running out of the
    /// memory the runtime will abort execution.
    ///
    /// ty: The type to allocate an instance of.
    ///
+   /// type: A string describing the type being allocated. This is for debugging only.
+   ///
+   /// l: A location associated with the allocation. This is for debugging only.
+   ///
    /// Returns: Pointer to the newly allocate object.
-   llvm::Value* llvmMalloc(llvm::Type* ty);
-#endif
+   llvm::Value* llvmMalloc(llvm::Type* ty, const string& type, const Location& l = Location::None);
+
+   /// Release memory allocated with llvmMalloc().
+   ///
+   /// val: The allocated memory.
+   ///
+   /// type: A string describing the type being deallocated. This is for
+   /// debugging only.
+   ///
+   /// l: A location associated with the deallocation. This is for debugging
+   /// only.
+   ///
+   /// Returns: Pointer to the newly allocate object.
+   void llvmFree(llvm::Value* val, const string& type, const Location& l = Location::None);
+
+   /// Returns a LLVM value representing a classifier's field, intialized
+   /// from a value.
+   ///
+   /// field_type: The type of the field; must of trait trait::Classifiable.
+   ///
+   /// src_type: The type of the value to initialize it with. The type must
+   /// one of the ones that \a field_type's matchableTypes() returns.
+   ///
+   /// src_val: The value to initialize it with.
+   ///
+   /// Returns: A pointer to a ``hlt.classifier.field``. Passes ownership for
+   /// the newly allocated object and its elements to the calling code.
+   llvm::Value* llvmClassifierField(shared_ptr<Type> field_type, shared_ptr<Type> src_type, llvm::Value* src_val, const Location& l=Location::None);
+
+   /// Returns a LLVM value representing a classifier's field, intialized
+   /// from a byte sequence.
+   ///
+   /// data: A \a i8 pointer to bytes for the classifier to match on. The
+   ///  *data* can become invalid after return from this method; if
+   ///  necessary, bytes will be copied. 
+   ///
+   /// len: Number of bytes that \a data is pointing to.
+   ///
+   /// bits: Optional number of *bits* valid in the byte sequence pointed to
+   /// by *data*; the number must be equal or less than *len* times eight. If
+   /// not given, all bytes will be matched on.
+   ///
+   /// Returns: A pointer to a ``hlt.classifier.field``. Passes ownership for
+   /// the newly allocated object to the calling code.
+   llvm::Value* llvmClassifierField(llvm::Value* data, llvm::Value* len, llvm::Value* bits = nullptr, const Location& l=Location::None);
+
+   /// Generates code equivalnt to a \a memcpy call.
+   ///
+   /// src: The source address.
+   ///
+   /// dst: The destination address.
+   ///
+   /// n: The number of bytes to copy from \a src to \a dst.
+   void llvmMemcpy(llvm::Value *dst, llvm::Value *src, llvm::Value *n);
+
+   /// Converts an LLVM integer value from host to network bytes order. This
+   /// methods suports 8/16/32/64 values.
+   ///
+   /// val: The LLVM integer.
+   /// 
+   /// Returns: The converted integer.
+   llvm::Value* llvmHtoN(llvm::Value* val);
+
+   /// Converts an LLVM integer value from host to network bytes order. This
+   /// methods suports 8/16/32/64 values.
+   ///
+   /// val: The LLVM integer.
+   /// 
+   /// Returns: The converted integer.
+   llvm::Value* llvmNtoH(llvm::Value* val);
 
 private:
    // Creates/finishes the module intialization function that will receive all global
@@ -1806,6 +1941,7 @@ private:
    unique_ptr<Loader> _loader;
    unique_ptr<Storer> _storer;
    unique_ptr<Unpacker> _unpacker;
+   unique_ptr<FieldBuilder> _field_builder;
    unique_ptr<StatementBuilder> _stmt_builder;
    unique_ptr<Coercer> _coercer;
    unique_ptr<TypeBuilder>  _type_builder;

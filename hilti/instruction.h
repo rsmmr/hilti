@@ -213,10 +213,23 @@ public:
    ///
    /// src: The source type.
    ///
-   /// dst: The type to coerce into.
+   /// dst: The operand which's type to coerce into.
    ///
    /// Returns: True if coercion is possible.
    bool canCoerceTo(shared_ptr<Type> src, shared_ptr<Expression> target) const;
+
+   /// Checks whether a source target can be coerced into the type of a given
+   /// target expression.
+   ///
+   /// If the method fails, it calls error() with a suitable error message.
+   /// The method is primarily intended to be called from __validate().
+   ///
+   /// src: The source type.
+   ///
+   /// dst: The type to coerce into.
+   ///
+   /// Returns: True if coercion is possible.
+   bool canCoerceTo(shared_ptr<Type> src, shared_ptr<Type> target) const;
 
    /// Checks whether of two operands, one can be coerced into the other. It
    /// doesn't matter which one would be the source and which the
