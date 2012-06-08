@@ -114,6 +114,9 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
             ti->equal = "hlt::default_equal";
     }
 
+    if ( ! ti->name.size() )
+        ti->name = type->render();
+
     if ( ti->llvm_type && ! ti->init_val && ast::isA<type::ValueType>(type) )
         ti->init_val = cg()->llvmConstNull(ti->llvm_type);
 
@@ -139,9 +142,6 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
     if ( type::hasTrait<type::trait::GarbageCollected>(type) && ! ti->dtor )
         internalError(::util::fmt("type info for %s does not define a dtor function", ti->name.c_str()));
 #endif
-
-    if ( ! ti->name.size() )
-        ti->name = type->render();
 
     _ti_cache.insert(make_tuple(type, ti));
     return ti;
