@@ -15,69 +15,15 @@
 
 #include "instructions/define-instruction.h"
 
-static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, shared_ptr<Expression> op)
-{
-    shared_ptr<Type> stype = nullptr;
-    auto ttype = ast::as<type::Tuple>(op->type());
+namespace hilti {
+namespace instruction {
+namespace classifier {
 
-    if ( ! ttype )
-        stype = op->type();
+// Defined in classifier.cc.
+extern void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, shared_ptr<Expression> op);
 
-    else {
-        if ( ttype->typeList().size() != 2 ) {
-            i->error(ttype, "tuple must be of type (struct, int)");
-            return;
-        }
-
-        auto j = ttype->typeList().begin();
-
-        stype = *j++;
-
-        if ( ! ast::isA<type::Integer>(*j) ) {
-            i->error(ttype, "tuple must be of type (struct, int)");
-            return;
-        }
-    }
-
-    auto ref = ast::as<type::Reference>(stype);
-
-    if ( ! ref ) {
-        i->error(op, "rule value must be a reference to a struct");
-        return;
-    }
-
-    auto s = ast::as<type::Struct>(ref->argType());
-    auto r = ast::as<type::Struct>(rtype);
-    assert(r);
-
-    if ( ! s ) {
-        i->error(op, "rule value must be a reference to a struct");
-        return;
-    }
-
-    if ( r->typeList().size() != s->typeList().size() ) {
-        i->error(op, "rule value has wrong number of elements");
-        return;
-    }
-
-    auto ri = r->typeList().begin();
-    auto si = s->typeList().begin();
-
-    for ( ; ri != r->typeList().end(); ri++, si++ ) {
-        if ( (*ri)->equal(*si) )
-            continue;
-
-        bool match = false;
-        for ( auto t : ast::as<type::trait::Classifiable>(*ri)->alsoMatchableTo() ) {
-            if ( i->canCoerceTo(*si, t) )
-                match = true;
-        }
-
-        if ( ! match ) {
-            i->error(op, "rule value element not compatible with field type");
-            return;
-        }
-    }
+}
+}
 }
 
 iBegin(classifier, New, "new")
@@ -102,6 +48,8 @@ iBegin(classifier, Add, "classifier.add")
 
     iValidate {
         auto rtype = ast::as<type::Classifier>(referencedType(op1))->ruleType();
+        assert(rtype);
+
         _validateRuleValue(this, rtype, op2);
     }
 

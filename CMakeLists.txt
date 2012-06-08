@@ -161,6 +161,8 @@ add_library (hilti
     hilti/declaration.cc
     hilti/function.cc
 
+    hilti/instructions/classifier.cc
+
     hilti/parser/driver.cc
 
     hilti/passes/block-normalizer.cc
