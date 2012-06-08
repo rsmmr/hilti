@@ -54,7 +54,35 @@ void codegen::Coercer::visit(type::Tuple* t)
     auto val = arg1();
     auto dst = arg2();
 
-    assert(false);
+    auto rtype = ast::as<type::Reference>(dst);
+
+    if ( rtype ) {
+        auto stype = ast::as<type::Struct>(rtype->argType());
+        assert(stype);
+        assert(t->typeList().size() == stype->typeList().size());
+
+        auto sval = cg()->llvmStructNew(stype);
+
+        auto idx = 0;
+        for ( auto i : ::util::zip2(t->typeList(), stype->typeList()) ) {
+
+            if ( ast::as<type::Unset>(i.first) ) {
+                ++idx;
+                continue;
+            }
+
+            auto v = cg()->llvmExtractValue(val, idx);
+            v = cg()->llvmCoerceTo(v, i.first, i.second);
+            cg()->llvmCctor(v, i.second, false, "coercer/tuple-to-struct");
+            cg()->llvmStructSet(stype, sval, idx++, v);
+        }
+
+        setResult(sval);
+        cg()->llvmDtorAfterInstruction(sval, stype, false);
+        return;
+    }
+
+    assert(false); // Need to implement other coercions.
 
     setResult(val);
 

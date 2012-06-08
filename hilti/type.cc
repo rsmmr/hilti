@@ -654,6 +654,9 @@ type::Classifier::Classifier(const Location& l)
 
 type::trait::Parameterized::parameter_list type::Classifier::parameters() const
 {
+    if ( wildcard() )
+        return parameter_list();
+
     auto rtype = std::make_shared<trait::parameter::Type>(_rtype);
     auto vtype = std::make_shared<trait::parameter::Type>(_vtype);
 

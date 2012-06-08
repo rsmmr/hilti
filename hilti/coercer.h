@@ -21,7 +21,6 @@ public:
    void visit(type::Reference* r);
    void visit(type::Iterator* i);
    void visit(type::Tuple* t);
-   void visit(type::Unset* t);
 };
 
 }

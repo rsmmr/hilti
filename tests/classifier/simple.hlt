@@ -18,14 +18,14 @@ void run() {
 
     local bool b
     local int<64> v
-#    local ref<classifier<Rule, int<64>>> c
+    local ref<classifier<Rule, int<64>>> c
 
     local ref<Rule> r1 = (10.0.1.0/24, *, 10.0.2.0/24, 80/tcp)
 
     call Hilti::print (r1);
 
-#    c = new classifier<Rule, int<64>>
-#    classifier.add c (r1, 10) 42
+    c = new classifier<Rule, int<64>>
+    classifier.add c (r1, 10) 42
 #    classifier.compile c
 
 #    b = classifier.matches c (10.0.1.1/32, 1024/tcp, 10.0.2.1, 80/tcp)

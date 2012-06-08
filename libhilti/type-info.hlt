@@ -20,6 +20,7 @@ export ref<set<*>>
 export ref<map<*>>
 export ref<file>
 export ref<regexp>
+export ref<classifier<*>>
 
 export iterator<bytes>
 export iterator<list<*>>

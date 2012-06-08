@@ -60,6 +60,32 @@ void Coercer::visit(type::Tuple* t)
 {
     setResult(false);
 
+    auto rtype = ast::as<type::Reference>(arg1());
+
+    if ( rtype ) {
+        auto stype = ast::as<type::Struct>(rtype->argType());
+
+        if ( ! stype )
+            return;
+
+        // Coerce to struct is fine if all element coerce.
+
+        if ( t->typeList().size() != stype->typeList().size() )
+            return;
+
+        for ( auto i : util::zip2(t->typeList(), stype->typeList()) ) {
+
+            if ( ast::as<type::Unset>(i.first) )
+                continue;
+
+            if ( ! canCoerceTo(i.first, i.second) )
+                return;
+        }
+
+        setResult(true);
+        return;
+    }
+
     auto dst = ast::as<type::Tuple>(arg1());
 
     if ( ! dst )
@@ -95,9 +121,4 @@ void Coercer::visit(type::Address* t)
         setResult(true);
         return;
     }
-}
-
-void Coercer::visit(type::Unset* t)
-{
-    setResult(true);
 }

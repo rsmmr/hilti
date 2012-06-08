@@ -961,3 +961,11 @@ void TypeBuilder::visit(type::TimerMgr* t)
     setResult(ti);
 }
 
+void TypeBuilder::visit(type::Unset* t)
+{
+    TypeInfo* ti = new TypeInfo(t);
+    ti->id = HLT_TYPE_UNSET;
+    ti->init_val = cg()->llvmConstInt(0, 1); // just a dummy.
+    setResult(ti);
+}
+

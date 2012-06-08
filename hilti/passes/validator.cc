@@ -127,6 +127,9 @@ void Validator::visit(type::Channel* t)
 
 void Validator::visit(type::Classifier* t)
 {
+    if ( t->wildcard() )
+        return;
+
     if ( ! t->ruleType() )
         error(t, "no type for classifier rules given");
 

@@ -226,6 +226,7 @@ protected:
    void visit(type::Timer* t) override;
    void visit(type::TimerMgr* t) override;
    void visit(type::Tuple* t) override;
+   void visit(type::Unset* t) override;
    void visit(type::Vector* t) override;
    void visit(type::Void* t) override;
 

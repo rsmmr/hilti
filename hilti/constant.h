@@ -111,6 +111,8 @@ public:
    /// l: An associated location.
    Unset(const Location& l=Location::None)
        : ast::SpecificConstant<AstInfo, Constant, bool>(false, shared_ptr<Type>(new type::Unset()), l) {}
+
+   ACCEPT_VISITOR(Constant);
 };
 
 /// AST node for a constant of type \c ref<*>. This can be only \c null.

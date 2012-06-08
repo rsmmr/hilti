@@ -39,7 +39,7 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory.c int.c
     bool.c addr.c bitset.c caddr.c double.c enum.c interval.c
     net.c port.c time.c hook.c timer.c threading.c list.c fiber.c
     vector.c map_set.c struct.c regexp.c tqueue.c file.c cmdqueue.c
-    system.c
+    system.c classifier.c
 
     module/fmt.c
 

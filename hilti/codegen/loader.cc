@@ -187,6 +187,12 @@ void Loader::visit(constant::Tuple* t)
     setResult(result, false, false);
 }
 
+void Loader::visit(constant::Unset* t)
+{
+    // Just a dummy value.
+    setResult(cg()->llvmConstInt(0, 1), false, false);
+}
+
 void Loader::visit(constant::Reference* r)
 {
     // This can only be the null value.

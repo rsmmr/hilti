@@ -147,6 +147,15 @@ std::string::const_iterator atoi_n(std::string::const_iterator s, std::string::c
 	return s;
 }
 
+// From http://stackoverflow.com/questions/10420380/c-zip-variadic-templates.
+template <typename A, typename B>
+std::list<std::pair<A, B> > zip2(const std::list<A> & lhs, const std::list<B> & rhs) {
+    std::list<std::pair<A, B> >  result;
+    for (std::pair<typename std::list<A>::const_iterator, typename std::list<B>::const_iterator> iter = std::pair<typename std::list<A>::const_iterator, typename std::list<B>::const_iterator>(lhs.cbegin(), rhs.cbegin()); iter.first != lhs.end() and iter.second != rhs.end(); ++iter.first, ++iter.second)
+        result.push_back( std::pair<A, B>(*iter.first, *iter.second) );
+    return result;
+}
+
 }
 
 #endif

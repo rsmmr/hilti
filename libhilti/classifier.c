@@ -1,5 +1,11 @@
 
-#include "hilti.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "classifier.h"
+#include "memory.h"
+#include "debug.h"
 
 typedef struct {
     int64_t priority;
@@ -22,7 +28,7 @@ struct __hlt_classifier {
 
 void hlt_classifier_dtor(hlt_type_info* ti, hlt_classifier* c)
 {
-    if ( ! rules )
+    if ( ! c->rules )
         return;
 
     for ( int i = 0; i < c->num_rules; i++ ) {
@@ -32,7 +38,7 @@ void hlt_classifier_dtor(hlt_type_info* ti, hlt_classifier* c)
             hlt_free(r->fields[j]);
 
         hlt_free(r->fields);
-        GC_DTOR(r->value, c->vtype);
+        GC_DTOR_GENERIC(r->value, c->value_type);
         hlt_free(r->value);
         hlt_free(r);
     }
@@ -92,7 +98,7 @@ void hlt_classifier_add(hlt_classifier* c, hlt_classifier_field** fields, int64_
     r->priority = priority;
     r->fields = fields;
     r->value = _to_voidp(vtype, value);
-    GC_CCTOR_GENERIC(r->valye, vtype);
+    GC_CCTOR_GENERIC(r->value, vtype);
 
     if ( c->num_rules >= c->max_rules ) {
         // Grow rule array.

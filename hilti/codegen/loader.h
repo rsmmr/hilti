@@ -114,6 +114,7 @@ protected:
    virtual void visit(constant::String* c) override;
    virtual void visit(constant::Time* c) override;
    virtual void visit(constant::Tuple* c) override;
+   virtual void visit(constant::Unset* c) override;
 
    virtual void visit(ctor::Bytes* c) override;
    virtual void visit(ctor::List* c) override;

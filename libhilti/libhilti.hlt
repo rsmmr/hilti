@@ -300,13 +300,13 @@ declare "C-HILTI" int<64> interval_nsecs(interval t)
 #
 # ##
 #
-# declare "C-HILTI" void classifier_dtor(ref<classifier<*,*>> c)
-# declare "C-HILTI" ref<classifier<*,*>> classifier_new(int<64> num_fields, type rtype, type vtype)
-# declare "C-HILTI" void classifier_add(ref<classifier<*,*>> c, caddr fields, int<64> priority, any value)
-# declare "C-HILTI" void classifier_add_no_prio(ref<classifier<*,*>> c, caddr fields, any value)
-# declare "C-HILTI" void classifier_compile(ref<classifier<*,*>> c)
-# declare "C-HILTI" bool classifier_matches(ref<classifier<*,*>> c, caddr vals)
-# declare "C-HILTI" any classifier_get(ref<classifier<*,*>> c, caddr vals)
+declare "C-HILTI" void classifier_dtor(ref<classifier<*>> c)
+declare "C-HILTI" ref<classifier<*>> classifier_new(int<64> num_fields, type rtype, type vtype)
+declare "C-HILTI" void classifier_add(ref<classifier<*>> c, caddr fields, int<64> priority, any value)
+declare "C-HILTI" void classifier_add_no_prio(ref<classifier<*>> c, caddr fields, any value)
+declare "C-HILTI" void classifier_compile(ref<classifier<*>> c)
+declare "C-HILTI" bool classifier_matches(ref<classifier<*>> c, caddr vals)
+declare "C-HILTI" any classifier_get(ref<classifier<*>> c, caddr vals)
 #
 # ##
 #

@@ -7,6 +7,11 @@
 #ifndef HILTI_CLASSIFIER_H
 #define HILTI_CLASSIFIER_H
 
+#include <stdint.h>
+
+#include "context.h"
+#include "exceptions.h"
+
 /// Structure describing one field of a classifier rule. The classifier takes ownership.
 typedef struct {
     uint64_t len;   /// Number of bytes of the data part of the field.

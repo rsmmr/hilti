@@ -18,7 +18,7 @@
 static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, shared_ptr<Expression> op)
 {
     shared_ptr<Type> stype = nullptr;
-    auto ttype = ast::as<type::Tuple>(op);
+    auto ttype = ast::as<type::Tuple>(op->type());
 
     if ( ! ttype )
         stype = op->type();
