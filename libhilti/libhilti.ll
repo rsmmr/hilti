@@ -90,7 +90,7 @@
 }
 
 ; A classifier key. This must match with what classifier.h defines as hlt_classifier_field.
-%__hlt_classifier_field = type {
+%hlt.classifier.field = type {
     i64,
     i64,
     [0 x i8]
@@ -144,8 +144,8 @@ declare %hlt.execution_context* @hlt_global_execution_context();
 
 declare %hlt.timer*     @__hlt_timer_new_function(%hlt.callable*, %hlt.exception**, %hlt.execution_context*)
 
-declare i8* @__hlt_malloc(i64, i8*, i8)
-declare void @__hlt_free(i8*, i8*, i8)
+declare i8* @__hlt_malloc(i64, i8*, i8*)
+declare void @__hlt_free(i8*, i8*, i8*)
 
 declare void @hlt_abort()
 

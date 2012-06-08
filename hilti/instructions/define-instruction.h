@@ -17,14 +17,14 @@
 #define IMPLEMENT_INSTRUCTION(name, cls) \
    void __register_##name() { InstructionRegistry::globalRegistry()->addInstruction(std::make_shared<instruction::cls>()); }
 
-/// Begins the definition of an instruction.
+/// Begins the definition of an instruction. Old version; use iBeginH/iBeginCC instead.
 ///
 /// ns: The namespace to use for the statement class. The class will be in \c
 /// hilti::statement::instruction::<ns>.
 ///
 /// cls: The name of the statement class. The class will be \c
 /// hilti::statement::instruction::<ns>::<cls>.
-/// 
+///
 /// name: The source level name of the instruction (e.g., "string.concat").
 #define iBegin(ns, cls, name)                       \
    namespace hilti {                                \
@@ -57,10 +57,40 @@
        cls() : Instruction(shared_ptr<ID>(new ID(name)), factory) {}
 
 
-/// Ends the definition of an instruction.
+/// Ends the definition of an instruction. Old version - use iEndH/iEndC instead.
 #define iEnd  \
    }          \
    };         \
+   }          \
+   }          \
+   }
+
+/// Begins the definition of an instruction. Old version; use iBeginH/iBeginCC instead.
+///
+/// ns: The namespace to use for the statement class. The class will be in \c
+/// hilti::statement::instruction::<ns>.
+///
+/// cls: The name of the statement class. The class will be \c
+/// hilti::statement::instruction::<ns>::<cls>.
+///
+/// name: The source level name of the instruction (e.g., "string.concat").
+#define iBeginH(ns, cls, name)                       \
+   iBegin(ns, cls, name);                            \
+   const char* __doc() const override;               \
+   void __validate(const hilti::instruction::Operands& ops) const;
+
+#define iEndH \
+   };         \
+   }          \
+   }          \
+   }
+
+#define iBeginCC(ns)                                \
+   namespace hilti {                        \
+     namespace instruction {                        \
+       namespace ns {                               \
+
+#define iEndCC \
    }          \
    }          \
    }
@@ -114,17 +144,17 @@
 
 /// Defines a default for an instruction's 1st operand.
 ///
-/// def: The default Expression for the operand. 
+/// def: The default Expression for the operand.
 #define iDefault1(def)  __implementDefault(1, def)
 
 /// Defines a default for an instruction's 2st operand.
 ///
-/// def: The default Expression for the operand. 
+/// def: The default Expression for the operand.
 #define iDefault2(def)  __implementDdefault(2, def)
 
 /// Defines a default for an instruction's 3st operand.
 ///
-/// def: The default Expression for the operand. 
+/// def: The default Expression for the operand.
 #define iDefault3(def)  __implementDdefault(3, def)
 
 #define __get_op(n) \
@@ -134,8 +164,23 @@
 /// operands. The code has access to Expression instances \a target, \a op1,
 /// \a op2, \a op3, that represent the Expression for the corresponding
 /// operands.
+///
+/// Deprecated. Use iValidateCC instead.
 #define iValidate \
        void __validate(const hilti::instruction::Operands& ops) const override { \
+           shared_ptr<Expression> target = __get_op(0); \
+           shared_ptr<Expression> op1 = __get_op(1); \
+           shared_ptr<Expression> op2 = __get_op(2); \
+           shared_ptr<Expression> op3 = __get_op(3); \
+
+/// Starts a C++ code block that verifies the correctess of an instruction's
+/// operands. The code has access to Expression instances \a target, \a op1,
+/// \a op2, \a op3, that represent the Expression for the corresponding
+/// operands.
+///
+/// cls: The class name for the instruction.
+#define iValidateCC(cls) \
+       void cls::__validate(const hilti::instruction::Operands& ops) const { \
            shared_ptr<Expression> target = __get_op(0); \
            shared_ptr<Expression> op1 = __get_op(1); \
            shared_ptr<Expression> op2 = __get_op(2); \
@@ -145,9 +190,22 @@
 /// operands.
 ///
 /// txt: A string with the text for the manual.
+///
+/// Deprecated. Use iValidateCC instead.
 #define iDoc(txt) \
        } \
        const char* __doc() const override { { return txt; }
+
+/// Defines the manual entry for an instruction, describing its semantics and
+/// operands.
+///
+/// cls: The class name for the instruction.
+///
+/// txt: A string with the text for the manual.
+#define iDocCC(cls, txt) \
+       } \
+     const char* cls::__doc() const { return txt; }
+
 
 /// Marks an instruction as a block terminator.
 #define iTerminator() \

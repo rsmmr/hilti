@@ -2986,14 +2986,14 @@ llvm::Value* CodeGen::llvmIterBytesEnd()
 
 llvm::Value* CodeGen::llvmMalloc(llvm::Type* ty, const string& type, const Location& l)
 {
-    value_list args { llvmSizeOf(ty), llvmConstAsciiz(type), llvmConstAsciiz(l) };
+    value_list args { llvmSizeOf(ty), llvmConstAsciizPtr(type), llvmConstAsciizPtr(l) };
     auto result = llvmCallC("__hlt_malloc", args, false, false);
     return builder()->CreateBitCast(result, llvmTypePtr(ty));
 }
 
 void CodeGen::llvmFree(llvm::Value* val, const string& type, const Location& l)
 {
-    value_list args { val, llvmConstAsciiz(type), llvmConstAsciiz(l) };
+    value_list args { val, llvmConstAsciizPtr(type), llvmConstAsciizPtr(l) };
     llvmCallC("__hlt_free", args, false, false);
 }
 
