@@ -302,6 +302,24 @@ public:
    /// Checks whether a return type is compatible with a function's prototype.
    bool checkCallResult(shared_ptr<type::Function> func, shared_ptr<Type> ty) const;
 
+   struct Info {
+       string mnemonic;              /// The instructions mnemonic in the HILTI IR representation.
+       string namespace_;            /// The namespace the instruction is part of.
+       string class_;                /// The name of the instructions class (without the namespace).
+       string description;           /// Textual description of the instruction.
+       bool terminator;              /// True if this function is a block terminator.
+       shared_ptr<Type> type_target; /// Type of the target, or null if not used.
+       shared_ptr<Type> type_op1;    /// Type of operand 1, or null if not used.
+       shared_ptr<Type> type_op2;    /// Type of operand 2, or null if not used.
+       shared_ptr<Type> type_op3;    /// Type of operand 3, or null if not used.
+       shared_ptr<Expression> default_op1; /// Default for operand 1, or null if not used.
+       shared_ptr<Expression> default_op2; /// Default for operand 2, or null if not used.
+       shared_ptr<Expression> default_op3; /// Default for operand 3, or null if not used.
+   };
+
+   /// Returns information about the instruction for use in the reference documentation.
+   Info info() const;
+
    ACCEPT_VISITOR_ROOT();
 
 protected:
@@ -312,11 +330,12 @@ protected:
    /// id: The name of instruction.
    ///
    /// factor: The factory function. See factory().
-   Instruction(shared_ptr<ID> id, stmt_factory factory) {
+   Instruction(shared_ptr<ID> id, string namespace_, string class_, stmt_factory factory) {
        _id = id;
+       _namespace = namespace_;
+       _class = class_;
        _factory = factory;
    }
-
 
    /// Examines a set of operands for overload resolution.
    /// InstructionRegistry::getMatching() calls this method for overload
@@ -376,6 +395,8 @@ protected:
    virtual bool __terminator() const { return false; }
 
    node_ptr<ID> _id;
+   string _namespace;
+   string _class;
    stmt_factory _factory;
    passes::Validator* _validator = 0;
 
@@ -429,6 +450,18 @@ public:
    ///
    /// stmts: The statement to take the operands from.
    shared_ptr<statement::instruction::Resolved> resolveStatement(shared_ptr<Instruction> instr, shared_ptr<statement::Instruction> stmt);
+
+   /// Instantiates a statement::Instruction for an instruction/operand
+   /// combination. Each instructions has its own class derived from
+   /// statement::instruction::Resolved. This method instantiates a object of
+   /// that class and initializes its operands with those given. The methods
+   /// coerces the resolved statements' operands to the types requested by
+   /// the instruction's signature.
+   ///
+   /// instr: The instruction to instantiate a statement for.
+   ///
+   /// ops: The operands.
+   shared_ptr<statement::instruction::Resolved> resolveStatement(shared_ptr<Instruction> instr, const instruction::Operands& ops, const Location& l = Location::None);
 
    /// Registers an instruction with the registry. This will be called from
    /// the IMPLEMENT_INSTRUCTION macro.

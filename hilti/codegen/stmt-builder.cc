@@ -48,9 +48,11 @@ void StatementBuilder::visit(statement::Block* b)
     for ( auto d : b->declarations() )
         call(d);
 
+    cg()->finishStatement();
+
     for ( auto s : b->statements() ) {
 
-        if ( cg()->debugLevel() > 0 && ! ast::isA<statement::Block>(s) ) {
+        if ( cg()->debugLevel() > 0 && ! ast::isA<statement::Block>(s) && ! cg()->block()->getTerminator() ) {
             // Insert the source instruction as comment into the generated
             // code.
             comment.str(string());
@@ -65,9 +67,6 @@ void StatementBuilder::visit(statement::Block* b)
         call(s);
         cg()->finishStatement();
     }
-
-    if ( builder )
-        cg()->popBuilder();
 }
 
 void StatementBuilder::visit(statement::Try* t)
@@ -79,6 +78,8 @@ void StatementBuilder::visit(statement::Try* t)
     // Block for normal continuation.
     auto normal_cont = cg()->newBuilder("try-cont");
 
+    cg()->pushEndOfBlockHandler(normal_cont);
+
     for ( auto c : t->catches() ) {
         // Build code for catch block.
         auto builder = cg()->pushBuilder("catch-match");
@@ -87,15 +88,14 @@ void StatementBuilder::visit(statement::Try* t)
         cg()->pushExceptionHandler(builder);
 
         // The Catch() will have left the builder on the stack that handles
-        // fully catching the excepetion.  Add a branch (but don't remove
-        // builder, there may have been pushed more than ours in the
-        // meantime),
-        cg()->llvmCreateBr(normal_cont);
+        // fully catching the excepetion. Don't remove builder, there may
+        // have been pushed more than ours in the meantime.
     }
 
     cg()->pushBuilder(try_);
     call(t->block());
-    cg()->llvmCreateBr(normal_cont);
+
+    cg()->popEndOfBlockHandler();
 
     // Leave try_ on stack. After generating the block body it's potentially
     // not the top-most anymore.
@@ -147,9 +147,9 @@ void StatementBuilder::visit(statement::try_::Catch* c)
     // Now build our code block.
     cg()->pushBuilder(match);
 
-    if ( c->var() ) {
+    if ( c->variable() ) {
         // Initialize the local variable providing access to the exception.
-        auto name = c->var()->internalName();
+        auto name = c->variable()->internalName();
         auto addr = cg()->llvmAddLocal(name, c->type());
 
         // Can't init the local directly as that might end up in the wrong
@@ -201,6 +201,11 @@ void StatementBuilder::visit(declaration::Function* f)
 
     cg()->pushFunction(llvm_func);
 
+    if ( cg()->debugLevel() > 0 ) {
+        string msg = string("entering ") + f->render();
+        cg()->llvmDebugPrint("hilti-flow", msg);
+    }
+
     // Create shadow locals for non-const parameters so that we can modify
     // them.
     for ( auto p : ftype->parameters() ) {
@@ -228,6 +233,10 @@ void StatementBuilder::visit(declaration::Function* f)
         cg()->pushBuilder(enabled); // Leave on stack.
     }
 
+    auto body = cg()->newBuilder("body");
+    cg()->llvmCreateBr(body);
+
+    cg()->pushBuilder(body);
     call(func->body());
 
     cg()->popFunction();
@@ -240,3 +249,51 @@ void StatementBuilder::visit(declaration::Function* f)
         cg()->llvmAddHookMetaData(hook_decl->hook(), llvm_func);
 }
 
+void StatementBuilder::visit(statement::ForEach* f)
+{
+    shared_ptr<type::Reference> r = ast::as<type::Reference>(f->sequence()->type());
+    shared_ptr<Type> t = r ? r->argType() : f->sequence()->type();
+    auto iterable = ast::as<type::trait::Iterable>(t);
+    assert(iterable);
+
+    auto var = f->body()->scope()->lookup(f->id());
+    assert(var);
+
+    // Add the local iteration variable..
+    auto v = ast::as<expression::Variable>(var)->variable();
+    auto local = ast::as<variable::Local>(v);
+    cg()->llvmAddLocal(local->internalName(), local->type());
+
+    auto end = cg()->makeLocal("end",  iterable->iterType());
+    auto iter = cg()->makeLocal("iter", iterable->iterType());
+    auto cmp = cg()->makeLocal("cmp", builder::boolean::type());
+
+    cg()->llvmInstruction(iter, instruction::operator_::Begin, f->sequence());
+    cg()->llvmInstruction(end, instruction::operator_::End, f->sequence());
+
+    auto cond = cg()->newBuilder("loop-cond");
+    auto body = cg()->newBuilder("loop-body");
+    auto cont = cg()->newBuilder("loop-end");
+
+    cg()->pushEndOfBlockHandler(nullptr);
+
+    cg()->llvmCreateBr(cond);
+
+    cg()->pushBuilder(cond);
+    cg()->llvmInstruction(cmp, instruction::operator_::Equal, iter, end);
+    cg()->llvmCreateCondBr(cg()->llvmValue(cmp), cont, body);
+    cg()->popBuilder();
+
+    cg()->pushBuilder(body);
+    cg()->llvmInstruction(var, instruction::operator_::Deref, iter);
+    call(f->body());
+    cg()->llvmInstruction(iter, instruction::operator_::Incr, iter);
+    cg()->llvmCreateBr(cond);
+    cg()->popBuilder();
+
+    cg()->popEndOfBlockHandler();
+
+    cg()->pushBuilder(cont);
+
+    // Leqe on stack.
+}

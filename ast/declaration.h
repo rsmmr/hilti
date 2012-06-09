@@ -142,9 +142,7 @@ public:
    // id: The ID associated with the type.
    //
    // type: The type being declared.
-   //
-   /// scope: The scope this type declaration is to be added to.
-   Type(Declaration* target, shared_ptr<AIType> type, shared_ptr<Scope> scope) : __DECLARATION_MIXIN(target, this) {
+   Type(Declaration* target, shared_ptr<AIType> type) : __DECLARATION_MIXIN(target, this) {
        _type = type;
        target->addChild(_type);
    }

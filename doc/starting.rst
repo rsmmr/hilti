@@ -7,12 +7,12 @@ Getting Started
 Prerequisites
 -------------
 
-Currently, HILTI will likely compile only on MacOS. Other platforms
-may work with a bit of tweaking, but that hasn't been tried yet.
+HILTI has been only used on MacOS and Linux so far, and the current
+version requires a 64-bit OS version.
 
 To compile HILTI, you need the following:
 
-* LLVM and Clang 3.0, potentially even newer development versions from
+* LLVM and Clang 3.1, potentially even newer development versions from
   SVN/git. (http://llvm.org)
 
 * A development version of LLVM's ``libc++`` (http://libcxx.llvm.org).
@@ -23,7 +23,7 @@ To compile HILTI, you need the following:
 
 For unit testing:
 
-* BTest (http://www.bro-ids.org/documentation/README.btest.html).
+* BTest (http://www.bro-ids.org/documentation-git/components/btest/README.html)
 
 For generating the documentation:
 
@@ -41,108 +41,85 @@ For generating the documentation:
 Installation 
 ------------
 
-The following has been tried on Mac OS 10.7 only. YMMV.
+Getting HILTI
+~~~~~~~~~~~~~
 
-Compiling LLVM/clang/libc++
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Clone the HILTI git repository::
 
-This is a bit cumbersome because we need to compile clang twice, once
-to boostrap and once with the right ``libc++``. Order of these steps
-is important:
+    > git clone git://www.icir.org/binpacpp
 
-- Get the latest git versions::
-
-    > git clone http://llvm.org/git/libcxx
-    > git clone http://llvm.org/git/llvm.git
-    > cd llvm/tools
-    > git clone http://llvm.org/git/clang.git
-    > cd ../..
-
-- Install LLVM and clang into a separate ``--prefix``. Below we assume
-  ``--prefix=/opt/llvm``::
-
-    > cd llvm
-    > ./configure --prefix=/opt/llvm --enable-optimized
-    > make -j 5
-    > make install
-    > cd ..
-
-- Now, compile ``libc++``::
-
-     > cd libcxx/lib
-     > TRIPLE=-apple- ./buildit    # Lion only. SL is different.
-     > cd ../..
-
-  Then copy the library into ``/opt/llvm`` (clang will use it
-  automatically if it finds it there at the right spot)::
-
-    > mkdir -p /opt/llvm/lib/c++/v1
-    > cd libcxx
-    > ( (cd include && tar czvf - . ) | ( cd /opt/llvm/lib/c++/v1 && tar xzvf -) )
-    > cp `pwd`/lib/libc++.1.dylib /opt/llvm/lib/libc++.1.dylib
-    > ln -sf /opt/llvm/lib/libc++.1.dylib /opt/llvm/lib/libc++.dylib
-    > cd ..
-
-- Now we need to recompile LLVM/clang to use the right libc++::
-
-    > cd llvm
-    > make clean
-    > CXX=/opt/llvm/bin/clang++ ./configure --prefix=/opt/llvm --enable-optimized --enable-libcpp
-    > make -j 5
-    > make install
-
-
-Compiling HILTI
-~~~~~~~~~~~~~~~
-
-If the above succeeded, compiling HILTI itself should be easy:
-
-* Clone the git repository that contains HILTI::
-
-    > git clone git://envoy.icir.org/binpacpp
-
-  There's some other stuff in this repository as well (in particular
-  `BinPAC++ <http://www.icir.org/robin/binpac++>`_ , as the name
-  already suggests). HILTI is located in ``binpacpp/hilti2`` (*not*
-  ``binpacpp/hilti``, that's an old version).
+  There's some other stuff in this repository as wellHILTI is located
+  in ``binpacpp/hilti2`` (*not* ``binpacpp/hilti``, that's an old
+  version).
 
 .. note:: Eventually, we well split up the repository into individual
    ones for each component. As things are still moving fast, it's
    however easier to keep them together for now.
 
+Compiling LLVM/clang/libc++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is a bit cumbersome because we recent versions of clang and its
+accompanying libraries; and we need to compile clang twice: once to
+boostrap and once with the right ``libc++``. Order of the involved
+steps is important. Eventually, this will hopefully all become easy
+and standard, but for now we provide a script that does all the magic.
+
+
+The script is in ``hilti2/scripts/install-llvm``, and it needs a
+*source directory* where it can clone the LLVM repositories into, and
+an *installation directory* into which it will install the compiled
+LLVM infrastructure (e.g., ``/opt/llvm``)::
+
+    ./scripts/install-llvm --install <source dir> <install dir>
+
+This will take a while.
+
+The script has second mode to later update the LLVM installation but
+pulling in changes from the upstream git repositories::
+
+    ./scripts/install-llvm --update <source dir> <install dir>
+
+Note that the script currently pulls in the current development
+version of all LLVM components, which can occasionally be unstable.
+
+
+Compiling HILTI
+~~~~~~~~~~~~~~~
+
 .. note:: HILTI doesn't have a nice installation framework yet, it's
    best run just right ouf of the repository. This will eventually
    change as things get more stable. 
 
-* Then just run make in the top-level directory::
+Assuming the above succeeded, compiling HILTI itself should be
+straight-forward. Just run make in the top-level directory::
 
     > cd binpacpp/hilti2
     > make
 
-  If everything works right, there should be a binary
-  ``build/tools/hiltic`` afterwards.
+If everything works right, there should be a binary
+``build/tools/hiltic`` afterwards.
 
-* Next, you should see if a simple test succeeds::
+Next, you should see if a simple test succeeds::
 
      > cd tests
      > make hello-world
 
-  If there's a problem, ``diag.log`` will contain debugging output.
+If there's a problem, ``diag.log`` will contain debugging output.
 
-  Just typing ``make`` will run the full test-suite but as things are
-  being ported over from the old HILTI compiler, there may currently
-  be a lot of tests failing.
+Just typing ``make`` in ``tests/`` will run the full test-suite.
+However, as things are still being ported over from the old HILTI
+compiler, there may a number of failing tests currently.
 
-* As the HILTI tools aren't installed anywhere system-wide yet, you
-  may want to link to them from some directory that's in your
-  ``PATH``, such as::
+As the HILTI tools aren't installed anywhere system-wide yet, you may
+want to link to them from some directory that's in your ``PATH``, such
+as::
 
      > export PATH=$HOME/bin:$PATH
      > ln -s binpacpp/hilti2/build/tools/hiltic $HOME/bin
      > ln -s binpacpp/hilti2/tools/{hilti-build,hilti-config} $HOME/bin
 
-  In the following, we assume that the tools are found in the
-  ``PATH``.
+In the following, we assume that the tools are found in the ``PATH``.
 
 Compiling a HILTI Program
 -------------------------
@@ -157,21 +134,20 @@ Here's a simple "Hello, World!" in HILTI::
         call Hilti::print ("Hello, World!")
     }
 
-Assuming that's stored in ``hello.hlt``, we can compile it with
-|hb| and then run::
+If we store that in ``hello.hlt``, we can compile it with |hb| and
+then execute::
 
     > hilti-build -o a.out hello.hlt
     > ./a.out
     Hello, World!
 
 Note that a standalone HILTI module (i.e., a module that's run
-directly in this way, not linked into a C host application) must
-always have a ``Main::run`` function, which is where execution
-starts. 
+directly in this way, and not linked into a C host application) must
+always have a ``Main::run`` function, which is where execution starts.
 
 |hb| is HILTI's compiler driver, but it's not doing much work itself.
-Use the option to ``-v`` to see what |hb| is running in turn (shorted
-for brevity)::
+Use the option to ``-v`` to see what |hb| is running internally
+(shortneed for brevity)::
 
     > hilti-build -v -o a.out hello.hlt
       > [...]/hilti2/build/tools/hiltic [...] -b -o a.hb96231.tmp.bc  misc/hello-world.hlt
@@ -195,14 +171,14 @@ Exploring More
 
 * This documentation is found ``binpacpp/hilti2/doc``. The main text
   is written in *reST* and thus pretty readable as ASCII. To build
-  html in ``doc/build``, just type ``make``. This will also build the
-  C/C++ API documentation via Doxygen into ``doc/build/doxygen``.
+  html in ``doc/build/html``, just type ``make``. This will also build the
+  C/C++ API documentation via Doxygen into ``doc/build/html/doxygen``.
 
   Note that the documentation is a work in progress, with more and
   more pieces appearing there over time.
 
-* Look at the HILTI source files (``*.hlt``) in the ``tests/*`` subdirectories to
-  see how HILTI programs look like.
+* Look at the HILTI source files (``*.hlt``) in the ``tests/*``
+  subdirectories to see how HILTI programs look like.
 
 * Look at options of |hc| (the HILTI compiler and linker) and |hb|
   (the driver that that runs the whole chain from source to

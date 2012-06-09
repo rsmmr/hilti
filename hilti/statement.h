@@ -129,6 +129,11 @@ public:
    /// stmt: The declarartion.
    void addDeclaration(shared_ptr<Declaration> decl);
 
+   /// Adds a series of declarations to the block.
+   ///
+   /// decls; The declarations.
+   void addDeclarations(const decl_list& decls);
+
    /// Returns true if the last statement of the block is a terminator
    /// instruction.
    bool terminated() const;
@@ -166,7 +171,7 @@ public:
 
    /// Returns the type being caught. This will be of type type::Exception.
    /// Will return null for a catch-all clause.
-   shared_ptr<Type> type() const { if ( _type ) return _type; else return var()->type(); }
+   shared_ptr<Type> type() const { if ( _type ) return _type; else return variable()->type(); }
 
    /// Returns the local ID assigned to the caught exception instance. Will
    /// return null for a catch-all clause.
@@ -177,9 +182,7 @@ public:
 
    /// If an ID was given to the constructor, this returns a local variable
    /// referecning the exception value. If not, it returns null.
-   shared_ptr<variable::Local> var() const {
-       return _decl ? ast::as<variable::Local>(_decl->variable()) : nullptr;
-       }
+   shared_ptr<variable::Local> variable() const;
 
    /// Returns true if this is a catch-all clause.
    bool catchAll() const { return _type.get() == nullptr && _id.get() == nullptr; }
@@ -224,7 +227,40 @@ private:
    catch_list _catches;
 };
 
-/// Base class for instruction statements. 
+/// A for-each loop iterating over a sequence.
+class ForEach : public Statement
+{
+public:
+   /// Constructor.
+   ///
+   /// id: The iteration variable.
+   ///
+   /// seq: The sequence to iterate over. The type must be of trait trait::Iterable.
+   ///
+   /// body: The loop body.
+   ///
+   /// l: Associated location information.
+   ForEach(shared_ptr<ID> id, shared_ptr<Expression> seq, shared_ptr<Block> body, const Location& l=Location::None);
+
+   /// Returns the iteration variable.
+   shared_ptr<ID> id() const;
+
+   /// Returns the seq block.
+   shared_ptr<Expression> sequence() const { return _seq; }
+
+   /// Returns the body block.
+   shared_ptr<Block> body() const { return _body; }
+
+   ACCEPT_VISITOR(Statement);
+
+private:
+   node_ptr<Expression> _seq;
+   node_ptr<Block> _body;
+
+   shared_ptr<ID> _id; // No node_ptr, we just want to remember this here.
+};
+
+/// Base class for instruction statements.
 class Instruction : public Statement
 {
 public:
@@ -301,7 +337,24 @@ public:
    /// l: An associated location.
    Unresolved(const ::string& name, const hilti::instruction::Operands& ops, const Location& l=Location::None);
 
+   /// Constructor. This variant is for when the instruction itself is
+   /// already known, but not all operands may be resolved yet.
+   ///
+   /// instr: The instruction.
+   ///
+   /// ops: The list of operands. The first is the target and may be null if none is used.
+   ///
+   /// l: An associated location.
+   Unresolved(shared_ptr<hilti::Instruction> instr, const hilti::instruction::Operands& ops, const Location& l=Location::None);
+
+   /// If an instruction instance was passed to the constructor, this
+   /// returned; otherwise null.
+   shared_ptr<hilti::Instruction> instruction() const { return _instr; }
+
    ACCEPT_VISITOR(Instruction);
+
+private:
+   shared_ptr<hilti::Instruction> _instr;
 };
 
 

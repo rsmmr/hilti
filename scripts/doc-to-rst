@@ -1,0 +1,91 @@
+#! /usr/bin/env python
+#
+# Converts the output of hilti-doc into a series of reST documents for
+# the HILTI documentatin. Note that it will overwrite existing files in the
+# output directory.
+
+import os.path
+import sys
+
+import ConfigParser
+
+def canonicalizeText(doc, indent=3):
+
+	doc = doc.replace("\\n", "\n")
+
+	if not doc:
+		return ""
+
+	canon = []
+
+	for line in doc.strip().split("\n"):
+		line = line.strip()
+		line = " " * indent + line
+
+		canon += [line]
+
+	return "\n".join(canon)
+
+def getDoc(section, key):
+	if Doc.has_option(section, key):
+		return Doc.get(section, key)
+	else:
+		return ""
+
+def doInstruction(out, instr):
+	ns = getDoc(instr, "namespace")
+	cls = getDoc(instr, "class")
+	mnemo = getDoc(instr, "mnemonic")
+
+	ops_brief = ""
+	ops_long = ""
+
+	for (b, l) in ( ("target", "Target"), ("op1", "Operator 1"), ("op2", "Operator 2"), ("op3", "Operator 3") ):
+		type = getDoc(instr, "type_%s" % b)
+		default = getDoc(instr, "default_%s" % b)
+
+		if type:
+			ops_brief += " " + b
+			ops_long += "    :%s: %s" % (l, type)
+
+			if default:
+				ops_long += " [default: %s]" % default
+
+			ops_long += "\n"
+
+	print >>out
+	print >>out, ".. hlt:instruction:: %s::%s %s%s" % (ns, cls, mnemo, ops_brief)
+	print >>out
+	print >>out, ops_long
+	print >>out
+	print >>out, canonicalizeText(getDoc(instr, "description"))
+	print >>out
+
+if len(sys.argv) != 2:
+	print "usage: hilti-doc | doc-to-rst <output dir>"
+	sys.exit(1)
+
+OutputDir = sys.argv[1]
+Doc = ConfigParser.RawConfigParser()
+Doc.read('/dev/stdin')
+
+groups = {}
+
+for section in Doc.sections():
+	if section.startswith("instruction:"):
+		idx = getDoc(section, "mnemonic")
+		group = getDoc(section, "namespace")
+
+		if not group in groups:
+			groups[group] = {}
+
+		groups[group][idx] = section
+
+for group in groups.keys():
+
+	out = open(os.path.join(OutputDir, "hilti-instr-%s.rst" % group), "w")
+
+	for idx in sorted(groups[group].keys()):
+		doInstruction(out, groups[group][idx])
+
+	out.close()

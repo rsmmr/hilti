@@ -108,7 +108,7 @@ inline shared_ptr<T> as(shared_ptr<NodeBase> n) {
 /// Template-free base class for AST nodes. This class implements all
 /// functionality that does not need any template parameters. Node then
 /// derives from this to add what's missing.
-class NodeBase : public std::enable_shared_from_this<NodeBase> 
+class NodeBase : public std::enable_shared_from_this<NodeBase>
 {
 public:
    /// Constructor.
@@ -129,6 +129,10 @@ public:
    /// added to another node via addChild(). If a node gets added to multiple
    /// parents, the last one will be returned.
    NodeBase* parent() const { return _parent; }
+
+   /// Returns the next sibling of the given child node. Returns null if no
+   /// sibling or that's not a child.
+   NodeBase* siblingOfChild(NodeBase* child) const;
 
    /// Returns the closest parent of a given type.
    template<typename T>

@@ -521,6 +521,7 @@ void TypeBuilder::visit(type::CAddr* t)
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_CADDR;
     ti->to_string = "hlt::caddr_to_string";
+    ti->init_val = cg()->llvmConstNull(cg()->llvmTypePtr());
     setResult(ti);
 }
 

@@ -51,7 +51,7 @@ private:
    bool isHiltiModule(llvm::Module* module);
    void addModuleInfo(const std::list<string>& module_names, llvm::Module* module);
    void addGlobalsInfo(const std::list<string>& module_names, llvm::Module* module);
-   void joinFunctions(const char* new_func, const char* meta, const std::list<string>& module_names, llvm::Module* module);
+   void joinFunctions(const char* new_func, const char* meta, llvm::FunctionType* default_ftype, const std::list<string>& module_names, llvm::Module* module);
    void makeHooks(const std::list<string>& module_names, llvm::Module* module);
    void error(const llvm::Linker& linker, const string& where, const string& file, const string& error="");
 

@@ -36,7 +36,7 @@ namespace symbols {
 
     // Names of globals examined by custom linker pass.
     static const char* MetaModule       = "hlt.module";
-    static const char* MetaModuleInit   = "hlt.module.init";
+    static const char* MetaModuleInit   = "hlt.modules.init";
     static const char* MetaGlobalsInit  = "hlt.globals.init";
     static const char* MetaGlobalsDtor  = "hlt.globals.dtor";
     static const char* MetaHookDecls    = "hlt.hook.decls";
@@ -48,7 +48,7 @@ namespace symbols {
     // Symbols created by the linker for access by libhilti.
     static const char* FunctionGlobalsInit = "__hlt_globals_init";
     static const char* FunctionGlobalsDtor = "__hlt_globals_dtor";
-    static const char* FunctionModulesInit = "__hlt_module_init";
+    static const char* FunctionModulesInit = "__hlt_modules_init";
     static const char* ConstantGlobalsSize = "__hlt_globals_size";
 
     // Names for argument added internally for our calling conventions.
@@ -563,7 +563,8 @@ public:
    llvm::Value* llvmGlobalIndex(shared_ptr<Variable> var) { return llvmGlobalIndex(var.get()); }
 
    /// Coerces an LLVM value from one type into another. It assumes that the
-   /// coercion is legal and supported. If not, results are undefined.
+   /// coercion is legal and supported. If not, results are undefined. The
+   /// returned value has its ccotr appied, and the source value its dtor.
    ///
    /// The method uses the Coercer to do its work.
    ///
@@ -573,7 +574,7 @@ public:
    ///
    /// dst: The destination type.
    ///
-   /// Returns: The coerce value.
+   /// Returns: The coerce value, with its cctor already applied.
    llvm::Value* llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst);
 
    /// Returns an LLVM type from \c libhilti.ll. The method looks up a name
@@ -1444,6 +1445,11 @@ public:
    /// XXXX
    void llvmDebugPrint(const string& stream, const string& msg);
 
+   /// Increases the indentation level for debugging output.
+   void llvmDebugPushIndent();
+
+   /// Decreases the indentation level for debugging output.
+   void llvmDebugPopIndent();
 
    /// A case for llvmSwitch().
    struct SwitchCase {
@@ -1779,6 +1785,19 @@ public:
    /// Returns: Pointer to the newly allocate object.
    llvm::Value* llvmMalloc(llvm::Type* ty, const string& type, const Location& l = Location::None);
 
+   /// Allocates a given number of bytes. This generated code is guaranteed
+   /// to return a valid object; if we're running out of the memory the
+   /// runtime will abort execution.
+   ///
+   /// val: an i64 giving the number of bytes to allocate.
+   ///
+   /// type: A string describing the type being allocated. This is for debugging only.
+   ///
+   /// l: A location associated with the allocation. This is for debugging only.
+   ///
+   /// Returns: Pointer to the newly allocate object.
+   llvm::Value* llvmMalloc(llvm::Value* size, const string& type, const Location& l = Location::None);
+
    /// Release memory allocated with llvmMalloc().
    ///
    /// val: The allocated memory.
@@ -1848,6 +1867,25 @@ public:
    /// Returns: The converted integer.
    llvm::Value* llvmNtoH(llvm::Value* val);
 
+   /// Evaluates a HILTI instruction. This version is for instructions
+   /// without targets.
+   void llvmInstruction(shared_ptr<Instruction> instr, shared_ptr<Expression> op1 = nullptr, shared_ptr<Expression> op2 = nullptr, shared_ptr<Expression> op3 = nullptr, const Location& l = Location::None);
+
+   /// Evaluates a HILTI instruction. This version is for instructions
+   /// with targets.
+   void llvmInstruction(shared_ptr<Expression> target, shared_ptr<Instruction> instr, shared_ptr<Expression> op1 = nullptr, shared_ptr<Expression> op2 = nullptr, shared_ptr<Expression> op3 = nullptr, const Location& l = Location::None);
+
+   /// Creates a local variable to be used as instructions operands. This
+   /// will always create a new, unique local; the name may be appropiately
+   /// adapted.
+   ///
+   /// name: The name of the local.
+   ///
+   /// type: The type of the local.
+   ///
+   /// Returns: An expression referencing the local.
+   shared_ptr<hilti::Expression> makeLocal(const string& name, shared_ptr<Type> type);
+
 private:
    // Creates/finishes the module intialization function that will receive all global
    // code, and pushes it onto the stack.
@@ -1908,6 +1946,10 @@ private:
    // Helper for calling hlt_string_from_data().
    llvm::Value* llvmStringFromData(const string& s);
 
+   // An internal version of llvmInstruction that looks up the instruction by
+   // name.
+   void llvmInstruction(shared_ptr<Expression> target, const string& mnemo, shared_ptr<Expression> op1, shared_ptr<Expression> op2, shared_ptr<Expression> op3, const Location& l=Location::None);
+
    friend class util::IRInserter;
    const string& nextComment() const { // Used by the util::IRInserter.
        return _functions.back()->next_comment;
@@ -1930,6 +1972,17 @@ private:
    IRBuilder* topExceptionHandler() { // Used by stmt-builder::Try/Catch.
        return _functions.back()->catches.back();
    }
+
+   // Pushing a nullptr disables end of block handling.
+   void pushEndOfBlockHandler(IRBuilder* b) {
+       _functions.back()->handle_block_end.push_back(b);
+   }
+
+   void popEndOfBlockHandler() {
+       _functions.back()->handle_block_end.pop_back();
+   }
+
+   std::pair<bool, IRBuilder*> topEndOfBlockHandler();
 
    path_list _libdirs;
    bool _verify;
@@ -1969,6 +2022,7 @@ private:
        llvm::Function* function;
        llvm::BasicBlock* exit_block = nullptr;
        builder_list builders;
+       builder_list handle_block_end;
        builder_map builders_by_name;
        label_map labels;
        local_map locals;

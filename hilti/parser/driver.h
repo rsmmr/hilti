@@ -10,6 +10,7 @@
 #include "../variable.h"
 #include "../type.h"
 #include "../ctor.h"
+#include "../builder/builder.h"
 
 #undef YY_DECL
 #define	YY_DECL						                 \
@@ -57,8 +58,6 @@ struct yystype {
     std::list<shared_ptr<hilti::Type>> types;
 
     hilti::function::parameter_list params;
-    std::list<node_ptr<hilti::Statement>> stmts;
-    std::list<node_ptr<hilti::Declaration>> decls;
     std::list<node_ptr<hilti::Expression>> exprs;
     std::list<node_ptr<hilti::statement::try_::Catch>> catches;
 
@@ -86,9 +85,7 @@ class Scanner;
 class location;
 
 struct Context {
-   node_ptr<hilti::Module> module;
-   std::list<shared_ptr<Scope>> scopes;
-   std::list<shared_ptr<statement::Block>> blocks;
+   shared_ptr<ID> label;
 };
 
 class Driver : public ast::Logger {
@@ -98,29 +95,27 @@ public:
    // Report parsing errors.
    void error(const std::string& m, const hilti_parser::location& l);
 
+#if 0
    void checkNotNull(shared_ptr<Node> node, string msg, const hilti_parser::location& l) {
        if ( ! node )
            error(msg, l);
    }
+#endif
 
-   // The following methods are used by the parsing functions.
+   // The following methods are used by the parser.
+
+   void begin(shared_ptr<builder::ModuleBuilder> mbuilder) { _mbuilder = mbuilder; }
+   void end()                                   {}
 
    // The Bison parser needs a non-const pointer here. Grmpf.
    std::string* streamName() { return &_sname; }
 
+   // Returns the module builder.
+   shared_ptr<builder::ModuleBuilder> moduleBuilder() const { return _mbuilder; }
+
    Scanner* scanner() const { return _scanner; }
    Parser* parser() const { return _parser; }
    Context* context() const { return _context; }
-
-   void pushScope(shared_ptr<Scope> scope) { _context->scopes.push_back(scope); }
-   void popScope() { _context->scopes.pop_back(); }
-
-   shared_ptr<Scope> currentScope() const  { return _context->scopes.back(); }
-
-   void pushBlock(shared_ptr<statement::Block> block) { _context->blocks.push_back(block); }
-   void popBlock() { _context->blocks.pop_back(); }
-
-   shared_ptr<statement::Block> currentBlock() const  { return _context->blocks.back(); }
 
    void disableLineMode();
    void enableLineMode();
@@ -133,6 +128,7 @@ private:
    Context* _context = 0;
    Scanner* _scanner = 0;
    Parser* _parser = 0;
+   shared_ptr<builder::ModuleBuilder> _mbuilder = 0;
 };
 
 }

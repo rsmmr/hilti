@@ -109,7 +109,7 @@ declare "C-HILTI" bool bytes_is_frozen(ref<bytes> b)
 declare "C-HILTI" bool iterator_bytes_is_frozen(iterator<bytes> pos)
 
 declare "C-HILTI" any bytes_sub_raw(iterator<bytes> start, iterator<bytes> last)
-# declare "C-HILTI" caddr bytes_to_raw(ref<bytes> b)
+declare "C-HILTI" any bytes_to_raw(ref<bytes> b)
 
 declare "C-HILTI" void iterator_bytes_dtor(iterator<bytes> pos)
 declare "C-HILTI" void iterator_bytes_cctor(iterator<bytes> pos)

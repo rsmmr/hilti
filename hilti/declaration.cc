@@ -1,5 +1,5 @@
 
-#include "hilti.h"
+#include "hilti-intern.h"
 #include "declaration.h"
 
 using namespace hilti;

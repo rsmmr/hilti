@@ -1,5 +1,5 @@
 
-#include <hilti.h>
+#include <hilti-intern.h>
 
 #include "../stmt-builder.h"
 #include "libhilti/port.h"

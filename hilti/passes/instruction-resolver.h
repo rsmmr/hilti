@@ -28,7 +28,7 @@ public:
    }
 
 protected:
-   void visit(statement::Instruction* i) override;
+   void visit(statement::instruction::Unresolved* i) override;
 };
 
 }

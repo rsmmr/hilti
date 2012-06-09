@@ -69,11 +69,9 @@ public:
    /// 
    /// type: The declared type.
    ///
-   /// scope: The scope this type declaration is to be added to.
-   ///
    /// l: An associated location.
-   Type(shared_ptr<hilti::ID> id, shared_ptr<hilti::Type> type, shared_ptr<Scope> scope, const Location& l=Location::None)
-       : hilti::Declaration(id, l), ast::declaration::mixin::Type<AstInfo>(this, type, scope) {}
+   Type(shared_ptr<hilti::ID> id, shared_ptr<hilti::Type> type, const Location& l=Location::None)
+       : hilti::Declaration(id, l), ast::declaration::mixin::Type<AstInfo>(this, type) {}
 
    ACCEPT_VISITOR(hilti::Declaration);
 };

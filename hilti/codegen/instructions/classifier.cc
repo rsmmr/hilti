@@ -1,5 +1,5 @@
 
-#include <hilti.h>
+#include <hilti-intern.h>
 
 #include "../stmt-builder.h"
 
@@ -9,9 +9,12 @@ using namespace codegen;
 static void _freeFields(CodeGen* cg, shared_ptr<Type> rtype, llvm::Value* fields, const Location& l)
 {
     auto ftypes = ast::as<type::trait::TypeList>(rtype)->typeList();
+    auto atype = llvm::ArrayType::get(cg->llvmTypePtr(), ftypes.size());
+    fields = cg->builder()->CreateBitCast(fields, cg->llvmTypePtr(atype));
+
     for ( int i = 0; i < ftypes.size(); i++ ) {
         auto addr = cg->llvmGEP(fields, cg->llvmGEPIdx(0), cg->llvmGEPIdx(i));
-        cg->llvmFree(addr, "classifier-free-one-field", l);
+        cg->llvmFree(cg->builder()->CreateLoad(addr), "classifier-free-one-field", l);
     }
 
     cg->llvmFree(fields, "classifier-free-fields", l);
@@ -74,24 +77,16 @@ void StatementBuilder::visit(statement::instruction::classifier::Add* i)
 
     // op2 can be a tuple (ref<struct>, prio) or a just a rule ref<struct>
     auto ttype = ast::as<type::Tuple>(i->op2()->type());
+    assert(ttype);
 
-    if ( ttype ) {
-        auto op2 = cg()->llvmValue(i->op2());
-        auto rule = cg()->llvmExtractValue(op2, 0);
-        auto prio = cg()->builder()->CreateZExt(cg()->llvmExtractValue(op2, 1), cg()->llvmTypeInt(64));
-        auto stype = ast::as<type::Reference>(ttype->typeList().front())->argType();
-        auto fields = _llvmFields(cg(), rtype, stype, rule, i->location());
-        CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields),
-            builder::codegen::create(builder::integer::type(64), prio), i->op3() };
-        cg()->llvmCall("hlt::classifier_add", args);
-    }
-
-    else {
-        auto val = i->op2()->coerceTo(builder::reference::type(rtype));
-        auto fields = _llvmFields(cg(), rtype, rtype, cg()->llvmValue(val), i->location());
-        CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields), i->op3() };
-        cg()->llvmCall("hlt::classifier_add_no_prio", args);
-    }
+    auto op2 = cg()->llvmValue(i->op2());
+    auto rule = cg()->llvmExtractValue(op2, 0);
+    auto prio = cg()->builder()->CreateZExt(cg()->llvmExtractValue(op2, 1), cg()->llvmTypeInt(64));
+    auto stype = ast::as<type::Reference>(ttype->typeList().front())->argType();
+    auto fields = _llvmFields(cg(), rtype, stype, rule, i->location());
+    CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields),
+        builder::codegen::create(builder::integer::type(64), prio), i->op3() };
+    cg()->llvmCall("hlt::classifier_add", args);
 }
 
 void StatementBuilder::visit(statement::instruction::classifier::Compile* i)
@@ -106,16 +101,18 @@ void StatementBuilder::visit(statement::instruction::classifier::Get* i)
     auto vtype = ast::as<type::Classifier>(referencedType(i->op1()))->valueType();
 
     auto op2 = i->op2()->coerceTo(builder::reference::type(rtype));
-    auto fields = _llvmFields(cg(), rtype, op2->type(), cg()->llvmValue(op2), i->location());
+    auto fields = _llvmFields(cg(), rtype, rtype, cg()->llvmValue(op2), i->location());
 
     CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields) };
-    auto voidp = cg()->llvmCall("hlt::classifier_get", args);
+    auto voidp = cg()->llvmCall("hlt::classifier_get", args, false);
+
+    _freeFields(cg(), rtype, fields, i->location());
+    cg()->llvmCheckException();
+
     auto casted = builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(vtype)));
     auto result = builder()->CreateLoad(casted);
 
     cg()->llvmStore(i, result);
-
-    _freeFields(cg(), rtype, fields, i->location());
 }
 
 void StatementBuilder::visit(statement::instruction::classifier::Matches* i)
@@ -123,13 +120,14 @@ void StatementBuilder::visit(statement::instruction::classifier::Matches* i)
     auto rtype = ast::as<type::Classifier>(referencedType(i->op1()))->ruleType();
 
     auto op2 = i->op2()->coerceTo(builder::reference::type(rtype));
-    auto fields = _llvmFields(cg(), rtype, op2->type(), cg()->llvmValue(op2), i->location());
+    auto fields = _llvmFields(cg(), rtype, rtype, cg()->llvmValue(op2), i->location());
 
     CodeGen::expr_list args = { i->op1(), builder::codegen::create(builder::any::type(), fields) };
-    auto result = cg()->llvmCall("hlt::classifier_matches", args);
-
-    cg()->llvmStore(i, result);
+    auto result = cg()->llvmCall("hlt::classifier_matches", args, false);
 
     _freeFields(cg(), rtype, fields, i->location());
+
+    cg()->llvmCheckException();
+    cg()->llvmStore(i, result);
 }
 

@@ -200,18 +200,26 @@ bool Linker::isHiltiModule(llvm::Module* module)
     return (md != nullptr);
 }
 
-void Linker::joinFunctions(const char* new_func, const char* meta, const std::list<string>& module_names, llvm::Module* module)
+void Linker::joinFunctions(const char* new_func, const char* meta, llvm::FunctionType* default_ftype, const std::list<string>& module_names, llvm::Module* module)
 {
     auto md = module->getNamedMetadata(meta);
-
-    if ( ! md ) {
-        debug(1, ::util::fmt("no %s meta data in any module", meta));
-        return;
-    }
 
     IRBuilder* builder = nullptr;
     llvm::LLVMContext& ctx = llvm::getGlobalContext();
     llvm::Function* nfunc = nullptr;
+
+    if ( ! md ) {
+        // No such meta node, i.e., no module defines the function
+        //
+        // Create a function with the given type so that it exists, even if
+        // empty. In this case, the function type doesn't need to have the
+        // exact types as long as the cc does the right thing.
+        nfunc = llvm::Function::Create(default_ftype, llvm::Function::ExternalLinkage, new_func, module);
+        nfunc->setCallingConv(llvm::CallingConv::C);
+        builder = util::newBuilder(ctx, llvm::BasicBlock::Create(ctx, "", nfunc));
+        builder->CreateRetVoid();
+        return;
+    }
 
     for ( int i = 0; i < md->getNumOperands(); ++i ) {
         auto node = llvm::cast<llvm::MDNode>(md->getOperand(i));
@@ -372,15 +380,25 @@ void Linker::makeHooks(const std::list<string>& module_names, llvm::Module* modu
 
 void Linker::addModuleInfo(const std::list<string>& module_names, llvm::Module* module)
 {
-    joinFunctions(symbols::FunctionModulesInit, symbols::MetaModuleInit, module_names, module);
+    llvm::LLVMContext& ctx = llvm::getGlobalContext();
+
+    auto voidp = llvm::PointerType::get(llvm::IntegerType::get(ctx, 8), 0);
+    std::vector<llvm::Type*> args = { voidp, voidp };
+    auto ftype = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), args, false);
+
+    joinFunctions(symbols::FunctionModulesInit, symbols::MetaModuleInit, ftype, module_names, module);
 }
 
 void Linker::addGlobalsInfo(const std::list<string>& module_names, llvm::Module* module)
 {
     llvm::LLVMContext& ctx = llvm::getGlobalContext();
 
-    joinFunctions(symbols::FunctionGlobalsInit, symbols::MetaGlobalsInit, module_names, module);
-    joinFunctions(symbols::FunctionGlobalsDtor, symbols::MetaGlobalsDtor, module_names, module);
+    auto voidp = llvm::PointerType::get(llvm::IntegerType::get(ctx, 8), 0);
+    std::vector<llvm::Type*> args = { voidp, voidp };
+    auto ftype = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), args, false);
+
+    joinFunctions(symbols::FunctionGlobalsInit, symbols::MetaGlobalsInit, ftype, module_names, module);
+    joinFunctions(symbols::FunctionGlobalsDtor, symbols::MetaGlobalsDtor, ftype, module_names, module);
 
     // Create the joint globals type and determine its size.
 

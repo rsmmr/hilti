@@ -49,6 +49,7 @@ protected:
    void visit(statement::Block* b) override;
    void visit(statement::Try* b) override;
    void visit(statement::try_::Catch* c) override;
+   void visit(statement::ForEach* c) override;
 
    void visit(declaration::Function* f);
    void visit(declaration::Variable* v);

@@ -157,7 +157,7 @@ def compileC(input, output, cxx):
         flags = []
 
     flags += ["-c", "-emit-llvm", "-g", "-fno-color-diagnostics", "-O0"]
-    flags += runConfig(HiltiConfig, "--%sflags" % tag).split()
+    flags += runConfig(HiltiConfig, "--libhilti-%sflags" % tag).split()
     flags = uniqueArgs(flags)
 
     cc = "%s %s -o %s %s" % (Cc, flags, output, input)
@@ -206,8 +206,7 @@ def nativeLink(input, output):
         flags = []
 
     flags += ["-g"]
-    flags += runConfig(HiltiConfig, "--ldflags").split()
-    flags += runConfig(HiltiConfig, "--libs").split()
+    flags += runConfig(HiltiConfig, "--libhilti-ldflags").split()
 
     if Options.optimize:
         flags += [CcOptSpec]

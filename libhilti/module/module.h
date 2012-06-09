@@ -5,7 +5,7 @@
 #ifndef HILTI_LIB_H
 #define HILTI_LIB_H
 
-#include "../hilti.h"
+#include "../libhilti.h"
 
 extern void hilti_print(const hlt_type_info* type, void* obj, int8_t newline, hlt_exception** excpt, hlt_execution_context* ctx);
 extern hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple, hlt_exception** excpt, hlt_execution_context* ctx);

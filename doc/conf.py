@@ -21,7 +21,7 @@ rst_epilog = """
 sys.path.insert(0, os.path.abspath('scripts'))
 
 doxylink = {
-        'hltc' : ('build/doxygen/hilti.tag', 'doxygen'),
+        'hltc' : ('build/autogen/doxygen/hilti.tag', 'doxygen'),
 }
 
 autodoc_default_flags = ["members", "show-inheritance"]

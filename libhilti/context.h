@@ -4,7 +4,7 @@
 #ifndef HLT_CONTEXT_H
 #define HLT_CONTEXT_H
 
-#include "memory.h"
+#include "memory_.h"
 #include "types.h"
 #include "rtti.h"
 #include "fiber.h"

@@ -4,6 +4,7 @@
 #include "variable.h"
 #include "function.h"
 #include "instruction.h"
+#include "builder/nodes.h"
 #include "passes/printer.h"
 
 using namespace hilti;
@@ -85,6 +86,12 @@ void statement::Block::addDeclaration(shared_ptr<Declaration> decl)
     addChild(n);
 }
 
+void statement::Block::addDeclarations(const decl_list& decls)
+{
+    for ( auto d : decls )
+        addDeclaration(d);
+}
+
 void statement::Block::Init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l)
 {
     _id = id;
@@ -117,6 +124,10 @@ bool statement::Block::terminated() const
         return false;
 
     shared_ptr<Statement> s = _stmts.back();
+    auto b = ast::as<statement::Block>(s);
+
+    if ( b )
+        return b->terminated();
 
     auto i = ast::as<statement::instruction::Resolved>(s);
 
@@ -138,6 +149,9 @@ statement::instruction::Unresolved::Unresolved(shared_ptr<ID> id, const hilti::i
 
 statement::instruction::Unresolved::Unresolved(const ::string& name, const hilti::instruction::Operands& ops, const Location& l)
     : Instruction(shared_ptr<ID>(new ID(name)), ops, l) {}
+
+statement::instruction::Unresolved::Unresolved(shared_ptr<hilti::Instruction> instr, const hilti::instruction::Operands& ops, const Location& l)
+    : Instruction(instr->id(), ops, l) { _instr = instr; }
 
 statement::try_::Catch::Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_ptr<Block> block, const Location& l)
     : Node(l)
@@ -162,6 +176,11 @@ statement::try_::Catch::Catch(shared_ptr<Type> type, shared_ptr<ID> id, shared_p
     }
 }
 
+shared_ptr<variable::Local> statement::try_::Catch::Catch::variable() const
+{
+    return _decl ? ast::as<variable::Local>(_decl->variable()) : nullptr;
+}
+
 statement::Try::Try(shared_ptr<Block> try_, const catch_list& catches, const Location& l)
     : Statement(l)
 {
@@ -172,4 +191,20 @@ statement::Try::Try(shared_ptr<Block> try_, const catch_list& catches, const Loc
 
     for ( auto c : _catches )
         addChild(c);
+}
+
+statement::ForEach::ForEach(shared_ptr<ID> id, shared_ptr<Expression> seq, shared_ptr<Block> body, const Location& l)
+    : Statement(l)
+{
+    _id = id;
+    _seq = seq;
+    _body = body;
+
+    addChild(_seq);
+    addChild(_body);
+}
+
+shared_ptr<ID> statement::ForEach::ForEach::id() const
+{
+    return _id;
 }

@@ -1,0 +1,23 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+
+@b1:
+   call Hilti::print (1)
+
+@b2:
+   call Hilti::print (2)
+
+@b3:
+   call Hilti::print (3)
+
+@default:
+   call Hilti::print (-1)
+}

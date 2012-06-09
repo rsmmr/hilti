@@ -7,6 +7,7 @@
 #     With -h:
 #       instructions.h
 #       instructions-declare.h
+#       instructions-define.cc
 #       instructions-visits.h
 #       instructions-stmt-builder.h
 #       instructions-register.cc
@@ -53,7 +54,7 @@ if [ "$kind" == "-cc" ]; then
 
         cat >$cc <<EOF
 
-#include "hilti.h"
+#include "hilti-intern.h"
 
 #include "instructions/define-instruction.h"
 #include "$hdr"
@@ -61,9 +62,9 @@ if [ "$kind" == "-cc" ]; then
 EOF
 
         cat $hdr | getInstructions | while read line; do
-            name=`echo $line | sed 's/::/_/g'`
-            args="$line"
-            echo "IMPLEMENT_INSTRUCTION($name, $args);" >>$cc
+            ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
+            cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
+            echo "IMPLEMENT_INSTRUCTION($ns, $cls);" >>$cc
         done
     done
 fi
@@ -96,6 +97,12 @@ if [ "$kind" == "-h" ]; then
 
 EOF
 
+    cat >$dst/instructions-define.cc <<EOF
+
+#include "hilti-intern.h"
+
+EOF
+
     for h in $hdrs; do
         echo "#include \"$h\"" >>$dst/instructions.h
     done
@@ -121,17 +128,20 @@ EOF
         ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
         cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
         echo "namespace statement { namespace instruction { namespace $ns { class $cls; } } };" >>$dst/instructions-declare.h
+        echo "namespace instruction { namespace $ns { namespace __class { class $cls; } extern shared_ptr<::hilti::instruction::$ns::__class::$cls> $cls; } };" >>$dst/instructions-declare.h
+        echo "namespace hilti { namespace instruction { namespace $ns { namespace __class { class $cls; } shared_ptr<::hilti::instruction::$ns::__class::$cls> $cls; } } };" >>$dst/instructions-define.cc
+
         echo "       virtual void visit(statement::instruction::$ns::$cls* i) {}" >>$dst/instructions-visits.h
+
         echo "       void visit(statement::instruction::$ns::$cls* i) override;" >>$dst/instructions-stmt-builder.h
 
         name=`echo $line | sed 's/::/_/g'`
-        echo "    extern void __register_$name(); __register_$name();" >>$dst/instructions-register.cc
+        echo "    extern void __register_${ns}_${cls}(); __register_${ns}_${cls}();" >>$dst/instructions-register.cc
     done
 
     cat >>$dst/instructions-register.cc <<EOF
 }
 EOF
-
     date +%s >$TIMESTAMP
 
 fi

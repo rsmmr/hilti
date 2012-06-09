@@ -158,6 +158,7 @@ namespace statement {
    class Instruction;
    class Noop;
    class Try;
+   class ForEach;
 
    namespace try_ {
       class Catch;
@@ -328,6 +329,7 @@ public:
    virtual void visit(statement::Noop* s)        {}
    virtual void visit(statement::Try* s)         {}
    virtual void visit(statement::try_::Catch* s) {}
+   virtual void visit(statement::ForEach* s)     {}
 
    virtual void visit(statement::instruction::Resolved* s)   {}
    virtual void visit(statement::instruction::Unresolved* s) {}

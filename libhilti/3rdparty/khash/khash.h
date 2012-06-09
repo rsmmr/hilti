@@ -79,7 +79,7 @@ int main() {
 #define __AC_KHASH_H
 
 /* For libhilti. */
-#include "../../memory.h"
+#include "../../memory_.h"
 #define malloc  hlt_malloc
 #define calloc  hlt_calloc
 #define realloc hlt_realloc

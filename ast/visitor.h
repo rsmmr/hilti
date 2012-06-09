@@ -331,9 +331,10 @@ protected:
        Logger::reset();
    }
 
-private:
    void preOrder(shared_ptr<NodeBase> node);
    void postOrder(shared_ptr<NodeBase> node);
+
+private:
 
    void pushCurrent(shared_ptr<NodeBase> node) {
        _current.push_back(node);

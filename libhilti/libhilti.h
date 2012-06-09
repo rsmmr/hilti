@@ -7,8 +7,8 @@
 /// libhilti code. Instead, include only those headers that provided the
 /// required functionality.
 
-#ifndef HILTI_H
-#define HILTI_H
+#ifndef LIBHILTI_H
+#define LIBHILTI_H
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -22,7 +22,7 @@
 #include "context.h"
 #include "globals.h"
 #include "debug.h"
-#include "memory.h"
+#include "memory_.h"
 #include "init.h"
 #include "string_.h"
 #include "list.h"
@@ -45,11 +45,9 @@
 #include "hook.h"
 #include "exceptions.h"
 #include "debug.h"
-#include "hilti.h"
 #include "init.h"
 #include "int.h"
 #include "list.h"
-#include "memory.h"
 #include "net.h"
 #include "overlay.h"
 #include "port.h"

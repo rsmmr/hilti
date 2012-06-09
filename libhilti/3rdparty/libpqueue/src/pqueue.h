@@ -27,7 +27,7 @@
 #ifndef PQUEUE_H
 #define PQUEUE_H
 
-#include "../../../memory.h"
+#include "../../../memory_.h"
 #include "../../../timer.h"
 
 /** priority data type */

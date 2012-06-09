@@ -1,7 +1,8 @@
 
-#include <hilti.h>
+#include <hilti-intern.h>
 
 #include "../stmt-builder.h"
+#include "autogen/instructions.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -12,17 +13,53 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
     auto func = current<declaration::Function>();
     auto rtype = as<type::Function>(func->function()->type())->result()->type();
     auto op1 = cg()->llvmValue(i->op1(), rtype, false);
+
+    if ( debugLevel() > 0 ) {
+        string msg = string("leaving ") + func->render();
+        cg()->llvmDebugPrint("hilti-flow", msg);
+    }
+
     cg()->llvmReturn(func->function()->type()->result()->type(), op1);
+}
+
+static void _doVoidReturn(StatementBuilder* sbuilder)
+{
+    auto func = sbuilder->current<declaration::Function>();
+
+    if ( sbuilder->debugLevel() > 0 ) {
+        string msg = string("leaving ") + func->render();
+        sbuilder->cg()->llvmDebugPrint("hilti-flow", msg);
+    }
+
+    // Check if we are in a hook. If so, we return a boolean indicating that
+    // hook execution has not been stopped.
+    if ( ! sbuilder->current<declaration::Hook>() )
+        sbuilder->cg()->llvmReturn();
+    else
+        sbuilder->cg()->llvmReturn(0, sbuilder->cg()->llvmConstInt(0, 1));
 }
 
 void StatementBuilder::visit(statement::instruction::flow::ReturnVoid* i)
 {
-    // Check if we are in a hook. If so, we return a boolean indicating that
-    // hook execution has not been stopped.
-    if ( ! current<declaration::Hook>() )
-        cg()->llvmReturn();
+    _doVoidReturn(this);
+}
+
+void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
+{
+    auto handler = cg()->topEndOfBlockHandler();
+
+    if ( ! handler.first )
+        return;
+
+    if ( handler.second ) {
+        // If we have a block to jump to on block end, go there.
+        if ( ! cg()->builder()->GetInsertBlock()->getTerminator() )
+            cg()->llvmCreateBr(handler.second);
+    }
+
     else
-        cg()->llvmReturn(0, cg()->llvmConstInt(0, 1));
+        // Otherwise turn into a void return.
+        _doVoidReturn(this);
 }
 
 void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params)
@@ -135,3 +172,58 @@ void StatementBuilder::visit(statement::instruction::flow::Jump* i)
 
     cg()->builder()->CreateBr(op1_bb);
 }
+
+void StatementBuilder::visit(statement::instruction::flow::Switch* i)
+{
+    auto op1 = cg()->llvmValue(i->op1());
+    auto default_ = llvm::cast<llvm::BasicBlock>(cg()->llvmValue(i->op2()));
+    auto a1 = ast::as<expression::Constant>(i->op3());
+    auto a2 = ast::as<constant::Tuple>(a1->constant());
+
+    std::list<std::pair<llvm::Value*, llvm::BasicBlock*>> alts;
+
+    bool all_const = true;
+
+    for ( auto c : a2->value() ) {
+        auto c1 = ast::as<expression::Constant>(c);
+        auto c2 = ast::as<constant::Tuple>(c1->constant());
+
+        auto v = c2->value();
+        auto j = v.begin();
+        auto val = cg()->llvmValue((*j++)->coerceTo(i->op1()->type()));
+        auto block = llvm::cast<llvm::BasicBlock>(cg()->llvmValue(*j++));
+
+        if ( ! llvm::isa<llvm::Constant>(val) )
+            all_const = false;
+
+        alts.push_back(std::make_pair(val, block));
+    }
+
+    if ( all_const && ast::isA<type::Integer>(i->op1()->type()) ) {
+        // We optimize for constant integers here, for which LLVM directly
+        // provides a switch statement.
+        auto switch_ = cg()->builder()->CreateSwitch(op1, default_);
+
+        for ( auto a : alts ) {
+            auto c = llvm::cast<llvm::ConstantInt>(a.first);
+            assert(c);
+            switch_->addCase(c, a.second);
+        }
+    }
+
+    else {
+        // In all other cases, we build an if-else chain using the type's
+        // standard comparision operator.
+
+        auto cmp = cg()->makeLocal("switch-cmp", builder::boolean::type());
+
+        for ( auto a : alts ) {
+            cg()->llvmInstruction(cmp, instruction::operator_::Equal, i->op1(), builder::codegen::create(i->op1()->type(), a.first));
+            auto match = cg()->builder()->CreateICmpEQ(cg()->llvmConstInt(1, 1), cg()->llvmValue(cmp));
+            auto next_block = cg()->newBuilder("switch-chain");
+            cg()->builder()->CreateCondBr(match, a.second, next_block->GetInsertBlock());
+            cg()->pushBuilder(next_block);
+        }
+    }
+}
+

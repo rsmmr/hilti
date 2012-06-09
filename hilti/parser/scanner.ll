@@ -104,6 +104,8 @@ void                  return token::VOID;
 with                  return token::WITH;
 after                 return token::AFTER;
 at                    return token::AT;
+for                   return token::FOR;
+in                    return token::IN;
 
 False                 yylval->bval = 0; return token::CBOOL;
 Null                  return token::CNULL;

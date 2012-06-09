@@ -2,37 +2,7 @@
 Extending HILTI
 ===============
 
-Style Guide [Mostly missing]
-----------------------------
-
-C++ Code
-~~~~~~~~
-
-C Code (libhilti)
-~~~~~~~~~~~~~~~~~
-
-- Identifiers that are exposed to externals user start with ``hlt_*``.
-  
-- Identifiers that are not exposed to users but used across multiple C
-  modules (including compiled HILTI modules) starts with ``__hlt_*``.
-
-- Statics used only inside a single module start with a single
-  underscore but no ``hlt`` prefix.
-
-LLVM assembly (included generated code)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- Identifiers that will be accessed from libhilti begin with
-  ``%__hlt_``. We don't generate anything that will be directly
-  accessed from user applications.
-
-- Identifiers that provide access to user-written code from C (e.g.,
-  exported functions), don't use a prefix and have names of the form
-  ``Module::foo`` mangled into ``module_foo``.
-
-- Identifiers that are internal and only accessed from other LLVM code
-  begin with `%hlt.`.
-
+.. todo:: Note that this text isn't up to date anymore.
 
 Adding Instructions [Missing]
 -----------------------------

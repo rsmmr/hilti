@@ -26,16 +26,16 @@ void run() {
 
     c = new classifier<Rule, int<64>>
     classifier.add c (r1, 10) 42
-#    classifier.compile c
+    classifier.compile c
 
-#    b = classifier.matches c (10.0.1.1/32, 1024/tcp, 10.0.2.1, 80/tcp)
-#    call Hilti::print (b)
-#
-#    b = classifier.matches c (10.0.1.1/32, 1024/tcp, 11.0.2.1, 80/tcp)
-#    call Hilti::print (b)
-#
-#    v = classifier.get c (10.0.1.1/32, 1024/tcp, 10.0.2.1, 80/tcp)
-#    call Hilti::print (v)
+    b = classifier.matches c (10.0.1.1/32, 1024/tcp, 10.0.2.1, 80/tcp)
+    call Hilti::print (b)
+
+    b = classifier.matches c (10.0.1.1/32, 1024/tcp, 11.0.2.1, 80/tcp)
+    call Hilti::print (b)
+
+    v = classifier.get c (10.0.1.1/32, 1024/tcp, 10.0.2.1, 80/tcp)
+    call Hilti::print (v)
 
     return.void
 }

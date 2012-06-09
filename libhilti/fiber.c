@@ -7,7 +7,7 @@
 #include <setjmp.h>
 
 #include "fiber.h"
-#include "memory.h"
+#include "memory_.h"
 #include "context.h"
 
 #include "3rdparty/libtask/taskimpl.h"

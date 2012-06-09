@@ -1,10 +1,15 @@
 
-#include "hilti.h"
+#include "hilti-intern.h"
 
 using namespace hilti::passes;
 
 IdResolver::~IdResolver()
 {
+}
+
+bool IdResolver::run(shared_ptr<Node> module)
+{
+    return processAllPreOrder(module);
 }
 
 void IdResolver::visit(expression::ID* i)
@@ -98,4 +103,21 @@ void IdResolver::visit(variable::Local* v)
 
     v->setInternalName(name);
     _locals.insert(name);
+}
+
+void IdResolver::visit(statement::ForEach* s)
+{
+    // Make sure the sequence type is reseolved.
+    preOrder(s->sequence());
+
+    shared_ptr<type::Reference> r = ast::as<type::Reference>(s->sequence()->type());
+    shared_ptr<Type> t = r ? r->argType() : s->sequence()->type();
+
+    auto iterable = ast::as<type::trait::Iterable>(t);
+
+    if ( iterable && ! s->body()->scope()->has(s->id(), false) ) {
+        auto var = std::make_shared<variable::Local>(s->id(), iterable->elementType());
+        auto expr = std::make_shared<expression::Variable>(var);
+        s->body()->scope()->insert(s->id(), expr);
+    }
 }

@@ -18,36 +18,32 @@ void BlockNormalizer::visit(statement::Block* b)
     if ( ! p )
         return;
 
-    if ( ! (p->parent() && ast::isA<Function>(p->parent()->sharedPtr<Node>())) )
-        // Don't normalize nested blocks, the code generator needs to take
-        // care of those.
-        return;
-
-    // Find ourselves in parent's list.
-    auto stmts = p->statements();
-    auto self = stmts.begin();
-
-    for ( ; self != stmts.end(); self++ ) {
-        if ( self->get() == b )
-            break;
-    }
-
-    if ( self == stmts.end() )
-        return;
-
-    auto succ = self;
-    ++succ;
+    // Determine where to continue execution after block.
+    //
+    // 1. If we have a block sibling, go there.
+    // 2. Otherwise, add a block_end instruction.
 
     shared_ptr<statement::instruction::Unresolved> terminator = 0;
+    statement::Block* next = nullptr;
 
-    if ( succ != stmts.end() ) {
-        // If there's a succesor block, add a branch.
-        //
-        // FIXME: Do we want/need to generalize to when succ statement is not
-        // a block?
-        auto next = ast::as<statement::Block>(*succ);
-        assert(next);
+    // FIXME: This should be parent(), but that seems to ignore the first up-level node?
+    auto parent_ = current<statement::Block>();
 
+    if ( parent_ ) {
+        ast::NodeBase* n = b;
+
+        while ( n ) {
+            n = parent_->siblingOfChild(n);
+            next = dynamic_cast<statement::Block*>(n);
+
+            if ( next )
+                break;
+        }
+    }
+
+    // FIXME: Do we want/need to generalize to when succ statement is not
+    // a block?
+    if ( next ) {
         // FIXME: Anonymus blocks not supported here currently.
         auto label = next->id();
         assert(label);
@@ -62,18 +58,18 @@ void BlockNormalizer::visit(statement::Block* b)
         terminator = shared_ptr<hilti::statement::instruction::Unresolved>(
             new hilti::statement::instruction::Unresolved("jump", ops, b->location()));
         terminator->setInternal();
+        b->addStatement(terminator);
+
+        return;
     }
 
-    else {
-        // Otherwise a return.void statement.
-        hilti::instruction::Operands no_ops;
+    // Otherwise an internal block.end statement.
+    hilti::instruction::Operands no_ops;
 
-        terminator = shared_ptr<hilti::statement::instruction::Unresolved>(
-            new hilti::statement::instruction::Unresolved("return.void", no_ops, b->location()));
-        terminator->setInternal();
-    }
+    terminator = shared_ptr<hilti::statement::instruction::Unresolved>(
+                 new hilti::statement::instruction::Unresolved("block.end", no_ops, b->location()));
 
-    assert(terminator);
+    terminator->setInternal();
     b->addStatement(terminator);
 }
 

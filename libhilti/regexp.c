@@ -4,7 +4,7 @@
 
 #include "regexp.h"
 #include "string_.h"
-#include "memory.h"
+#include "memory_.h"
 
 struct __hlt_regexp {
     __hlt_gchdr __gchdr; // Header for memory management.

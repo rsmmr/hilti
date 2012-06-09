@@ -30,7 +30,7 @@ namespace hilti_parser { class Parser; }
 
 %{
 #include "parser/scanner.h"
-#include "builder.h"
+#include "builder/builder.h"
 
 #undef yylex
 #define yylex driver.scanner()->lex
@@ -84,7 +84,9 @@ using namespace hilti;
 %token <sval>  ATTR_SCOPE     "'&scope'"
 
 %token         ADDR           "'addr'"
+%token         AFTER          "'after'"
 %token         ANY            "'any'"
+%token         AT             "'at'"
 %token         BITSET         "'bitset'"
 %token         BOOL           "'bool'"
 %token         BYTES          "'bytes'"
@@ -101,9 +103,11 @@ using namespace hilti;
 %token         EXCEPTION      "'exception'"
 %token         EXPORT         "'export'"
 %token         FILE           "'file'"
+%token         FOR            "'for'"
 %token         GLOBAL         "'global'"
 %token         HOOK           "'hook'"
 %token         IMPORT         "'import'"
+%token         IN             "'inr'"
 %token         INT            "'int'"
 %token         INTERVAL       "'interval'"
 %token         IOSRC          "'iosrc'"
@@ -130,24 +134,20 @@ using namespace hilti;
 %token         VECTOR         "'vector'"
 %token         VOID           "'void'"
 %token         WITH           "'with'"
-%token         AFTER          "'after'"
-%token         AT             "'at'"
 
 
 %type <bitset_label>     bitset_label
 %type <bitset_labels>    bitset_labels
-%type <block>            body blocks block_content
+%type <block>            body block_content
 %type <bval>             opt_tok_const
 %type <catch_>           catch_
 %type <catches>          catches
 %type <cc>               opt_cc
-%type <decl>             global local function hook type_decl
-%type <decls>            opt_local_decls
 %type <enum_label>       enum_label
 %type <enum_labels>      enum_labels
 %type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor opt_expr
 %type <exprs>            opt_tuple_elem_list tuple_elem_list tuple exprs opt_exprs
-%type <id>               local_id scoped_id mnemonic import opt_label label
+%type <id>               local_id scoped_id mnemonic label
 %type <hook_attribute>   hook_attr
 %type <hook_attributes>  opt_hook_attrs
 %type <map_element>      map_elem
@@ -155,10 +155,9 @@ using namespace hilti;
 %type <operands>         operands
 %type <param>            param result
 %type <params>           param_list opt_param_list
-%type <re_pattern>       re_pattern 
+%type <re_pattern>       re_pattern
 %type <re_patterns>      ctor_regexp
-%type <stmt>             stmt instruction try_catch
-%type <stmts>            stmt_list opt_stmt_list first_block more_blocks
+%type <stmt>             stmt instruction try_catch foreach
 %type <strings>          attr_list opt_attr_list
 %type <struct_field>     struct_field
 %type <struct_fields>    struct_fields opt_struct_fields
@@ -170,7 +169,7 @@ using namespace hilti;
 
 %%
 
-%start input;
+%start module;
 
 empty_lines   : empty_line empty_lines
               | empty_line
@@ -198,68 +197,62 @@ opt_nl        : NEWLINE opt_nl
               | /* empty */
               ;
 
-input         : opt_comment module global_decls
-              ;
 
-module        : MODULE local_id eol              { auto module = builder::module::create($2, *driver.streamName(), loc(@$));
-                                                   driver.context()->module = module;
+module        : opt_comment MODULE local_id eol  { auto moduleBuilder = std::make_shared<builder::ModuleBuilder>($3, *driver.streamName(), ::hilti::path_list(), loc(@$));
+                                                   driver.begin(moduleBuilder);
                                                  }
+
+                global_decls                     { driver.end(); }
               ;
 
-local_id      : IDENT                            { $$ = builder::id::create($1, loc(@$)); }
+local_id      : IDENT                            { $$ = builder::id::node($1, loc(@$)); }
 
-scoped_id     : IDENT                            { $$ = builder::id::create($1, loc(@$)); }
-              | SCOPED_IDENT                     { $$ = builder::id::create($1, loc(@$)); }
+scoped_id     : IDENT                            { $$ = builder::id::node($1, loc(@$)); }
+              | SCOPED_IDENT                     { $$ = builder::id::node($1, loc(@$)); }
 
 global_decls  : global_decl global_decls
               | empty_lines
               ;
 
-global_decl   : global                           { driver.context()->module->body()->addDeclaration($1); }
-              | stmt                             { driver.context()->module->body()->addStatement($1); }
-              | function                         { driver.context()->module->body()->addDeclaration($1); }
-              | hook                             { driver.context()->module->body()->addDeclaration($1); }
-              | type_decl                        { driver.context()->module->body()->addDeclaration($1); }
-              | import                           { driver.context()->module->import($1); }
-              | export_                          { }
-              | comment                          { }
+global_decl   : global
+              | function
+              | hook
+              | type_decl
+              | import
+              | stmt
+              | export_
+              | comment
               ;
 
-opt_local_decls : local opt_local_decls          { $$ = $2; $$.push_front($1); }
-              | /* empty */                      { $$ = statement::Block::decl_list(); }
+global        : GLOBAL type local_id eol          { driver.moduleBuilder()->addGlobal($3, $2, nullptr, loc(@$)); }
+              | GLOBAL type local_id '=' expr eol { driver.moduleBuilder()->addGlobal($3, $2, $5, loc(@$)); }
               ;
 
-global        : GLOBAL type local_id eol          { $$ = builder::global::variable($3, $2, 0, loc(@$)); }
-              | GLOBAL type local_id '=' expr eol { $$ = builder::global::variable($3, $2, $5, loc(@$)); }
+local         : LOCAL type local_id eol          { driver.moduleBuilder()->addLocal($3, $2, 0, loc(@$)); }
+              | LOCAL type local_id '=' expr eol { driver.moduleBuilder()->addLocal($3, $2, $5, loc(@$)); }
               ;
 
-local         : LOCAL type local_id eol          { $$ = builder::local::variable($3, $2, 0, loc(@$)); }
-              | LOCAL type local_id '=' expr eol { $$ = builder::local::variable($3, $2, $5, loc(@$)); }
+type_decl     : TYPE local_id '=' type eol       { driver.moduleBuilder()->addType($2, $4, loc(@$)); }
+
+stmt          : instruction eol                  { driver.moduleBuilder()->builder()->addInstruction($1); }
               ;
 
-type_decl     : TYPE local_id '=' type eol       { $$ = builder::global::type($2, $4, driver.currentScope(), loc(@$)); }
-
-stmt          : instruction eol                  { $$ = $1; }
+stmt_list     : stmt opt_stmt_list
+              | comment opt_stmt_list
+              | local opt_stmt_list
               ;
 
-stmt_list     : stmt stmt_list                   { $$ = $2; $$.push_front($1); }
-              | local stmt_list                  { $$ = $2; driver.currentBlock()->addDeclaration($1); }
-              | comment stmt_list                { $$ = $2; }
-              | stmt                             { $$ = builder::block::statement_list(); $$.push_back($1); }
-              | local                            { $$ = builder::block::statement_list(); driver.currentBlock()->addDeclaration($1); }
-              | comment                          { $$ = builder::block::statement_list(); }
-              ;
-
-opt_stmt_list : stmt_list                        { $$ = $1; }
-              | /* empty */                      { $$ = builder::block::statement_list(); }
+opt_stmt_list : stmt_list
+              | /* empty */
 
 instruction   : mnemonic operands                { $$ = builder::instruction::create($1, $2, loc(@$)); }
               | expr_lhs '=' mnemonic operands   { $4[0] = $1; $$ = builder::instruction::create($3, $4, loc(@$)); }
               | expr_lhs '=' expr                { $$ = builder::instruction::create("assign", make_ops($1, $3, nullptr, nullptr), loc(@$)); }
               | try_catch                        { $$ = $1; }
+              | foreach                          { $$ = $1; }
 
 mnemonic      : local_id                         { $$ = $1; }
-              | DOTTED_IDENT                     { $$ = builder::id::create($1, loc(@$)); }
+              | DOTTED_IDENT                     { $$ = builder::id::node($1, loc(@$)); }
 
 try_catch     : TRY body opt_nl catches          { $$ = builder::block::try_($2, $4, loc(@$)); }
 
@@ -268,6 +261,8 @@ catches       : catches catch_ opt_nl            { $$ = $1; $$.push_back($2); }
 
 catch_        : CATCH '(' type local_id ')' body { $$ = builder::block::catch_($3, $4, $6, loc(@$)); }
               | CATCH body                       { $$ = builder::block::catchAll($2, loc(@$)); }
+
+foreach       : FOR '(' local_id IN expr ')' body { $$ = builder::loop::foreach($3, $5, $7, loc(@$)); }
 
 operands      : /* empty */                      { $$ = make_ops(nullptr, nullptr, nullptr, nullptr); }
               | expr                             { $$ = make_ops(nullptr, $1, nullptr, nullptr); }
@@ -468,24 +463,31 @@ map_elems     : map_elems ',' map_elem           { $$ = $1; $$.push_back($3); }
 
 map_elem      : expr ':' expr                    { $$ = builder::map::element($1, $3); }
 
-import        : IMPORT local_id eol              { $$ = $2; }
+import        : IMPORT local_id eol              { driver.moduleBuilder()->importModule($2); }
               ;
 
-export_       : EXPORT local_id eol              { driver.context()->module->exportID($2); }
-              | EXPORT type eol                  { driver.context()->module->exportType($2); }
+export_       : EXPORT local_id eol              { driver.moduleBuilder()->exportID($2); }
+              | EXPORT type eol                  { driver.moduleBuilder()->exportType($2); }
               ;
 
-function      : opt_cc result local_id '(' opt_param_list ')' body opt_nl { $$ = builder::function::create($3, $2, $5, driver.context()->module, $1, $7, loc(@$)); }
-              | DECLARE opt_cc result local_id '(' opt_param_list ')' eol { $$ = builder::function::create($4, $3, $6, driver.context()->module, $2, nullptr, loc(@$));
-                                                                            driver.context()->module->exportID($4);
-                                                                          }
+function      : opt_cc result local_id '(' opt_param_list ')'
+                                                 {  driver.moduleBuilder()->pushFunction($3, $2, $5, $1, true, loc(@$)); }
+                body opt_nl                      {  auto func = driver.moduleBuilder()->popFunction(); }
+
+              | DECLARE opt_cc result local_id '(' opt_param_list ')' eol
+                                                 {  driver.moduleBuilder()->declareFunction($4, $3, $6, $2, loc(@$));
+                                                    driver.moduleBuilder()->exportID($4);
+                                                 }
               ;
 
-hook          : HOOK result scoped_id '(' opt_param_list ')' opt_hook_attrs body opt_nl { $$ = builder::hook::create($3, $2, $5, driver.context()->module, $8, $7, loc(@$)); }
-              | DECLARE HOOK result local_id '(' opt_param_list ')' eol                 { $$ = builder::hook::create($4, $3, $6, driver.context()->module, nullptr, builder::hook::attributes(), loc(@$));
-                                                                                          if ( ! $4->isScoped() )
-                                                                                              driver.context()->module->exportID($4, true);
-                                                                                        }
+hook          : HOOK result scoped_id '(' opt_param_list ')' opt_hook_attrs
+                                                 {  driver.moduleBuilder()->pushHook($3, $2, $5, $7, loc(@$)); }
+
+                body opt_nl                      {  driver.moduleBuilder()->popHook(); }
+
+
+              | DECLARE HOOK result local_id '(' opt_param_list ')' eol
+                                                 {  driver.moduleBuilder()->declareHook($4, $3, $6, loc(@$)); }
               ;
 
 opt_hook_attrs : hook_attr opt_hook_attrs        { $$ = $2; $$.push_back($1); }
@@ -518,39 +520,23 @@ opt_tok_const : CONST                            { $$ = true; }
 opt_default_expr : '=' expr                      { $$ = $2; }
               | /* empty */                      { $$ = node_ptr<Expression>(); }
 
-body          : opt_nl '{' opt_nl blocks opt_nl '}' { $$ = $4; }
+body          : opt_nl '{' opt_nl                { driver.moduleBuilder()->pushBody(true, loc(@$)); }
+                blocks opt_nl '}'                { auto body = driver.moduleBuilder()->popBody(); $$ = body->block(); }
 
-blocks        :                                  { auto b = builder::block::create(driver.context()->module->body()->scope(), loc(@$));
-                                                   driver.pushBlock(b);
-                                                   driver.pushScope(b->scope());
-                                                 }
+blocks        :                                  { driver.context()->label = nullptr; }
+                block_content more_blocks
 
-                first_block                      { $$ = driver.currentBlock();
+              | label                            { driver.context()->label = $1; }
+                block_content more_blocks
 
-                                                   for ( auto b : $2 )
-                                                       $$->addStatement(b);
+more_blocks   : label                            { driver.context()->label = $1; }
+                block_content more_blocks
+              | /* empty */
 
-                                                   driver.popScope();
-                                                   driver.popBlock();
-                                                 }
+block_content :                                  { driver.moduleBuilder()->pushBuilder(driver.context()->label, loc(@$)); }
+                opt_stmt_list                    { driver.moduleBuilder()->popBuilder(); }
 
-first_block   : opt_label block_content          { $2->setID($1); driver.pushScope($2->scope()); }
-                  more_blocks                    { $$ = $4; $$.push_front($2); driver.popScope(); }
-
-              | opt_label block_content          { $2->setID($1); $$ = builder::block::statement_list(); $$.push_front($2); }
-
-more_blocks   : label block_content              { $2->setID($1); driver.pushScope($2->scope()); }
-                  more_blocks                    { $$ = $4; $$.push_front($2); driver.popScope(); }
-
-              | label block_content              { $2->setID($1); $$ = builder::block::statement_list(); $$.push_back($2); }
-              ;
-
-block_content : opt_local_decls opt_stmt_list    { $$ = builder::block::create($1, $2, driver.currentScope(), loc(@$)); }
-
-opt_label     : label                            { $$ = $1; }
-              | /* empty */                      { $$ = nullptr; }
-
-label         : LABEL_IDENT ':' opt_nl           { $$ = builder::id::create($1, loc(@$));; }
+label         : LABEL_IDENT ':' opt_nl           { $$ = builder::id::node($1, loc(@$));; }
 
 
 tuple         : '(' opt_tuple_elem_list ')'      { $$ = $2; }

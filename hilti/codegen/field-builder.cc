@@ -3,7 +3,7 @@
 
 #include "field-builder.h"
 #include "codegen.h"
-#include "builder.h"
+#include "builder/nodes.h"
 
 using namespace hilti;
 using namespace hilti::codegen;
@@ -18,12 +18,15 @@ FieldBuilder::~FieldBuilder()
 
 llvm::Value* FieldBuilder::llvmClassifierField(shared_ptr<Type> field_type, shared_ptr<Type> src_type, llvm::Value* src_val, const Location& l)
 {
-    assert(type::hasTrait<type::trait::Classifiable>(field_type));
+    auto r = ast::as<type::Reference>(field_type);
+    auto t = r ? r->argType() : field_type;
+
+    assert(type::hasTrait<type::trait::Classifiable>(t));
 
     _location = l;
 
     llvm::Value* result = nullptr;
-    setArg1(src_type);
+    setArg1(field_type);
     setArg2(src_val);
     processOne(field_type, &result);
     assert(result);
@@ -115,7 +118,7 @@ void FieldBuilder::visit(type::Bool* t)
     auto src_type = arg1();
     auto src_val = arg2();
 
-    auto tmp = cg()->llvmAddTmp("port-field", src_val->getType(), nullptr, true);
+    auto tmp = cg()->llvmAddTmp("bool-field", src_val->getType(), nullptr, true);
     cg()->llvmCreateStore(src_val, tmp);
 
     auto len = cg()->llvmSizeOf(src_val->getType());
@@ -129,7 +132,7 @@ void FieldBuilder::visit(type::Integer* t)
     auto src_type = arg1();
     auto src_val = arg2();
 
-    auto tmp = cg()->llvmAddTmp("port-field", src_val->getType(), nullptr, true);
+    auto tmp = cg()->llvmAddTmp("int-field", src_val->getType(), nullptr, true);
     cg()->llvmCreateStore(cg()->llvmHtoN(src_val), tmp);
 
     auto len = cg()->llvmSizeOf(src_val->getType());

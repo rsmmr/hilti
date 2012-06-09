@@ -10,7 +10,6 @@
 using namespace std;
 
 const char* Name = "hiltic";
-const char* Version = "0.2";
 
 int  debug = 0;
 int  debug_cg = 0;
@@ -67,7 +66,7 @@ void usage()
 
 void version()
 {
-    cerr << Name << " v" << Version << endl;
+    cerr << Name << " v" << hilti::version() << endl;
 }
 
 void error(const string& file, const string& msg)
@@ -253,7 +252,7 @@ int main(int argc, char** argv)
             break;
 
          case 'v':
-            version();
+            ::version();
             return 0;
 
          case 'h':

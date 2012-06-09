@@ -11,12 +11,12 @@
 #include "unpacker.h"
 #include "field-builder.h"
 #include "coercer.h"
-#include "builder.h"
 #include "stmt-builder.h"
 #include "type-builder.h"
+#include "abi.h"
 #include "debug-info-builder.h"
 #include "passes/collector.h"
-#include "abi.h"
+#include "builder/nodes.h"
 
 #include "libhilti/enum.h"
 
@@ -1438,6 +1438,10 @@ llvm::Function* CodeGen::llvmFunction(const string& name)
 
 void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result)
 {
+    if ( block()->getTerminator() )
+        // Already terminated (and hopefully corrently).
+        return;
+
     auto state = _functions.back().get();
 
     if ( ! state->exit_block )
@@ -2438,6 +2442,13 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
      case type::function::HILTI_C: {
          if ( excpt_check )
              llvmCheckCException(excpt);
+
+         else {
+             value_list args;
+             args.push_back(llvmExecutionContext());
+             args.push_back(builder()->CreateLoad(excpt));
+             llvmCallC("__hlt_context_set_exception", args, false, false);
+         }
          break;
      }
 
@@ -2630,6 +2641,19 @@ void CodeGen::llvmDebugPrint(const string& stream, const string& msg)
     llvmCall("hlt::debug_printf", args, false);
 #endif
 }
+
+void CodeGen::llvmDebugPushIndent()
+{
+    value_list args = { llvmExecutionContext() };
+    llvmCallC("__hlt_debug_push_indent", args, false, false);
+}
+
+void CodeGen::llvmDebugPopIndent()
+{
+    value_list args = { llvmExecutionContext() };
+    llvmCallC("__hlt_debug_pop_indent", args, false, false);
+}
+
 
 llvm::Value* CodeGen::llvmSwitchEnumConst(llvm::Value* op, const case_list& cases, bool result, const Location& l)
 {
@@ -2825,9 +2849,11 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     auto block_ok = newBuilder("ok");
     auto block_not_set = newBuilder("not_set");
     auto block_done = newBuilder("done");
+    IRBuilder* ok_exit = block_ok;
 
     auto notzero = builder()->CreateICmpNE(isset, llvmConstInt(0, 32));
     llvmCreateCondBr(notzero, block_ok, block_not_set);
+
 
     pushBuilder(block_ok);
 
@@ -2835,8 +2861,10 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     addr = llvmGEP(sval, zero, llvmGEPIdx(idx + 2));
     llvm::Value* result_ok = builder()->CreateLoad(addr);
 
-    if ( filter )
+    if ( filter ) {
         result_ok = filter(this, result_ok);
+        ok_exit = builder();
+    }
 
     llvmCreateBr(block_done);
     popBuilder();
@@ -2848,6 +2876,8 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     if ( ! default_ )
         llvmRaiseException("Hilti::UndefinedValue", l);
 
+    auto def = default_(this);
+
     llvmCreateBr(block_done);
     popBuilder();
 
@@ -2857,15 +2887,16 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
 
     if ( default_ ) {
         auto phi = builder()->CreatePHI(result_ok->getType(), 2);
-        phi->addIncoming(result_ok, block_ok->GetInsertBlock());
-        phi->addIncoming(default_(this), block_not_set->GetInsertBlock());
+        phi->addIncoming(result_ok, ok_exit->GetInsertBlock());
+        phi->addIncoming(def, block_not_set->GetInsertBlock());
         result = phi;
     }
 
     else
         result = result_ok;
 
-    llvmCctor(result, f->type(), false, "struct-get");
+    if ( ! filter )
+        llvmCctor(result, f->type(), false, "struct-get");
 
     // Leave builder on stack.
 
@@ -2883,7 +2914,8 @@ void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const str
 {
     auto fd = _getField(this, stype, field);
     auto lval = llvmCoerceTo(llvmValue(val), val->type(), fd.second->type());
-    return llvmStructSet(stype, sval, field, lval);
+    llvmStructSet(stype, sval, field, lval);
+    llvmDtor(lval, fd.second->type(), false, "llvmStructSet");
 }
 
 void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, int field, llvm::Value* val)
@@ -2991,8 +3023,16 @@ llvm::Value* CodeGen::llvmMalloc(llvm::Type* ty, const string& type, const Locat
     return builder()->CreateBitCast(result, llvmTypePtr(ty));
 }
 
+llvm::Value* CodeGen::llvmMalloc(llvm::Value* size, const string& type, const Location& l)
+{
+    value_list args { builder()->CreateZExt(size, llvmTypeInt(64)), llvmConstAsciizPtr(type), llvmConstAsciizPtr(l) };
+    auto result = llvmCallC("__hlt_malloc", args, false, false);
+    return builder()->CreateBitCast(result, llvmTypePtr());
+}
+
 void CodeGen::llvmFree(llvm::Value* val, const string& type, const Location& l)
 {
+    val = builder()->CreateBitCast(val, llvmTypePtr());
     value_list args { val, llvmConstAsciizPtr(type), llvmConstAsciizPtr(l) };
     llvmCallC("__hlt_free", args, false, false);
 }
@@ -3064,8 +3104,10 @@ llvm::Value* CodeGen::llvmClassifierField(shared_ptr<Type> field_type, shared_pt
 llvm::Value* CodeGen::llvmClassifierField(llvm::Value* data, llvm::Value* len, llvm::Value* bits, const Location& l)
 {
     auto ft = llvmLibType("hlt.classifier.field");
-    auto field = llvmMalloc(ft, "hlt.classifier.field", l);
 
+    llvm::Value* size = llvmSizeOf(ft);
+    size = builder()->CreateAdd(size, builder()->CreateZExt(len, size->getType()));
+    auto field = llvmMalloc(size, "hlt.classifier.field", l);
     field = builder()->CreateBitCast(field, llvmTypePtr(ft));
 
     if ( ! bits )
@@ -3084,6 +3126,9 @@ llvm::Value* CodeGen::llvmClassifierField(llvm::Value* data, llvm::Value* len, l
         auto dst = llvmGEP(field, llvmGEPIdx(0), llvmGEPIdx(2));
         dst = builder()->CreateBitCast(dst, llvmTypePtr());
         llvmMemcpy(dst, data, len);
+    }
+    else {
+        assert(len==0);
     }
 
     return builder()->CreateBitCast(field, llvmTypePtr());
@@ -3159,8 +3204,86 @@ void CodeGen::llvmMemcpy(llvm::Value *dst, llvm::Value *src, llvm::Value *n)
     dst = builder()->CreateBitCast(dst, llvmTypePtr());
     n = builder()->CreateZExt(n, llvmTypeInt(64));
 
-    CodeGen::value_list args = { src, dst, n, llvmConstInt(1, 32), llvmConstInt(0, 1) };
+    CodeGen::value_list args = { dst, src, n, llvmConstInt(1, 32), llvmConstInt(0, 1) };
     std::vector<llvm::Type *> tys = { llvmTypePtr(), llvmTypePtr(), llvmTypeInt(64) };
 
     llvmCallIntrinsic(llvm::Intrinsic::memcpy, tys, args);
+}
+
+void CodeGen::llvmInstruction(shared_ptr<Instruction> instr, shared_ptr<Expression> op1, shared_ptr<Expression> op2, shared_ptr<Expression> op3, const Location& l)
+{
+    return llvmInstruction(nullptr, instr, op1, op2, op3, l);
+}
+
+void CodeGen::llvmInstruction(shared_ptr<Expression> target, shared_ptr<Instruction> instr, shared_ptr<Expression> op1, shared_ptr<Expression> op2, shared_ptr<Expression> op3, const Location& l)
+{
+    auto name = instr->id()->name();
+
+    if ( ::util::startsWith(name, ".op.") ) {
+        // These are dummy instructions used only to provide a single class
+        // for the builder interface to access overloaded operators. We use
+        // the non-prefixed name instead to do the lookup by name.
+        name = name.substr(4, std::string::npos);
+        return llvmInstruction(target, name, op1, op2, op3);
+    }
+
+    instruction::Operands ops = { target, op1, op2, op3 };
+    auto id = std::make_shared<ID>(name);
+    auto matches = InstructionRegistry::globalRegistry()->getMatching(id, ops);
+
+    auto resolved = InstructionRegistry::globalRegistry()->resolveStatement(instr, ops);
+    assert(resolved);
+
+    _stmt_builder->llvmStatement(resolved);
+}
+
+void CodeGen::llvmInstruction(shared_ptr<Expression> target, const string& mnemo, shared_ptr<Expression> op1, shared_ptr<Expression> op2, shared_ptr<Expression> op3, const Location& l)
+{
+    instruction::Operands ops = { target, op1, op2, op3 };
+
+    auto id = std::make_shared<ID>(mnemo);
+    auto matches = InstructionRegistry::globalRegistry()->getMatching(id, ops);
+
+    if ( matches.size() != 1 ) {
+        fprintf(stderr, "target: %s\n", target ? target->type()->render().c_str() : "(null)");
+        fprintf(stderr, "op1   : %s\n", op1 ? op1->type()->render().c_str() : "(null)");
+        fprintf(stderr, "op2   : %s\n", op2 ? op2->type()->render().c_str() : "(null)");
+        fprintf(stderr, "op3   : %s\n", op3 ? op3->type()->render().c_str() : "(null)");
+        internalError(::util::fmt("llvmInstruction: %d matches for mnemo %s", matches.size(), mnemo.c_str()));
+    }
+
+    auto resolved = InstructionRegistry::globalRegistry()->resolveStatement(matches.front(), ops);
+    assert(resolved);
+
+    _stmt_builder->llvmStatement(resolved);
+}
+
+shared_ptr<hilti::Expression> CodeGen::makeLocal(const string& name, shared_ptr<Type> type)
+{
+    string n = "__" + name;
+
+    int idx = 1;
+    string unique_name = name;
+
+    while ( _functions.back()->locals.find(unique_name) != _functions.back()->locals.end() )
+        unique_name = ::util::fmt("%s.%d", n.c_str(), ++idx);
+
+    llvmAddLocal(unique_name, type);
+
+    auto id = std::make_shared<ID>(unique_name);
+    auto var = std::make_shared<variable::Local>(id, type);
+    auto expr = std::make_shared<expression::Variable>(var);
+
+    var->setInternalName(unique_name);
+
+    return expr;
+}
+
+std::pair<bool, IRBuilder*> CodeGen::topEndOfBlockHandler()
+{
+    if ( ! _functions.back()->handle_block_end.size() )
+        return std::make_pair(true, (IRBuilder*)nullptr);
+
+    auto handler = _functions.back()->handle_block_end.back();
+    return std::make_pair(handler != nullptr, handler);
 }

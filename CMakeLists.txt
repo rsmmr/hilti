@@ -33,6 +33,9 @@ include(ShowCompilerSettings)
 include ( CheckIncludeFiles )
 check_include_files ( alloca.h HAVE_ALLOCA_H )
 
+set(PATH_LIBHILTI "${CMAKE_CURRENT_SOURCE_DIR}/libhilti")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/hilti/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/autogen/config.h)
+
 ### Build libffi.
 
 include_directories(${ffi})
@@ -65,6 +68,7 @@ set(instructions
     hilti/instructions/callable.h
     hilti/instructions/channel.h
     hilti/instructions/classifier.h
+    hilti/instructions/debug.h
     hilti/instructions/double.h
     hilti/instructions/enum.h
     hilti/instructions/exception.h
@@ -94,6 +98,7 @@ set(instructions
 add_custom_command(
    OUTPUT   ${autogen}/instructions.h
             ${autogen}/instructions-declare.h
+            ${autogen}/instructions-define.cc
             ${autogen}/instructions-visits.h
             ${autogen}/instructions-stmt-builder.h
             ${autogen}/instructions-register.cc
@@ -123,6 +128,7 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-declare.h PROPERTIES GENERAT
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-visits.h PROPERTIES GENERATED 1)
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-stmt-builder.h PROPERTIES GENERATED 1)
 SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-register.cc  PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-define.cc  PROPERTIES GENERATED 1)
 
 # For fast compilation, precompile the instructions header files.
 
@@ -161,7 +167,11 @@ add_library (hilti
     hilti/declaration.cc
     hilti/function.cc
 
+    hilti/builder/block.cc
+    hilti/builder/module.cc
+
     hilti/instructions/classifier.cc
+    hilti/instructions/flow.cc
 
     hilti/parser/driver.cc
 
@@ -192,9 +202,11 @@ add_library (hilti
     hilti/codegen/instructions/channel.cc
     hilti/codegen/instructions/classifier.cc
     hilti/codegen/instructions/double.cc
+    hilti/codegen/instructions/debug.cc
     hilti/codegen/instructions/enum.cc
     hilti/codegen/instructions/exception.cc
     hilti/codegen/instructions/file.cc
+    hilti/codegen/instructions/flow.cc
     hilti/codegen/instructions/hook.cc
     hilti/codegen/instructions/interval.cc
     hilti/codegen/instructions/iosrc.cc
@@ -227,6 +239,7 @@ add_library (hilti
     ${autogen}/instructions-visits.h
     ${autogen}/instructions-stmt-builder.h
     ${autogen}/instructions-register.cc
+    ${autogen}/instructions-define.cc
 
     ${autogen}/scanner.cc
     ${autogen}/parser.cc

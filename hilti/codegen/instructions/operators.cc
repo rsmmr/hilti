@@ -1,10 +1,35 @@
 
-#include <hilti.h>
+#include <hilti-intern.h>
 
 #include "../stmt-builder.h"
 
 using namespace hilti;
 using namespace codegen;
+
+void StatementBuilder::visit(statement::instruction::operator_::Begin* i)
+{
+    assert(false); // Not used.
+}
+
+void StatementBuilder::visit(statement::instruction::operator_::End* i)
+{
+    assert(false); // Not used.
+}
+
+void StatementBuilder::visit(statement::instruction::operator_::Incr* i)
+{
+    assert(false); // Not used.
+}
+
+void StatementBuilder::visit(statement::instruction::operator_::Deref* i)
+{
+    assert(false); // Not used.
+}
+
+void StatementBuilder::visit(statement::instruction::operator_::Equal* i)
+{
+    assert(false); // Not used.
+}
 
 void StatementBuilder::visit(statement::instruction::operator_::Assign* i)
 {

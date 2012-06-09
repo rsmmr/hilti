@@ -68,7 +68,7 @@ void ProtoGen::generatePrototypes(shared_ptr<hilti::Module> module)
     out << "#ifndef " << ifdefname << std::endl;
     out << "#define " << ifdefname << std::endl;
     out << std::endl;
-    out << "#include <hilti.h>" << std::endl;
+    out << "#include <libhilti.h>" << std::endl;
     out << std::endl;
 
     // Generate body.

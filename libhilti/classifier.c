@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "classifier.h"
-#include "memory.h"
+#include "memory_.h"
 #include "debug.h"
 
 typedef struct {
@@ -211,11 +211,13 @@ void* hlt_classifier_get(hlt_classifier* c, hlt_classifier_field** vals, hlt_exc
     for ( int i = 0; i < c->num_rules; i++ ) {
         if ( match_single_rule(c, c->rules[i], vals) ) {
             DBG_LOG("hilti-classifier", "%s: match found with rule %p", "classifier_get", c->rules[i]);
+            GC_CCTOR_GENERIC(c->rules[i]->value, c->value_type);
             return c->rules[i]->value;
         }
     }
 
     DBG_LOG("hilti-classifier", "%s: no match", "classifier_get");
+
     hlt_set_exception(excpt, &hlt_exception_index_error, 0);
     return 0;
 }

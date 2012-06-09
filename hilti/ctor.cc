@@ -1,7 +1,7 @@
 
 #include "id.h"
 #include "ctor.h"
-#include "hilti.h"
+#include "hilti-intern.h"
 #include "expression.h"
 
 using namespace hilti;

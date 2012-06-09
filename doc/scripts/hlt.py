@@ -49,8 +49,9 @@ class HltGeneric(ObjectDescription):
 class HltInstruction(HltGeneric):
     def handle_signature(self, sig, signode):
         m = sig.split()
-        name = m[0]
-        args = m[1:] if len(m) > 1 else []
+        cls = m[0]
+        name = m[1]
+        args = m[2:] if len(m) > 2 else []
 
         if len(args) > 1 and args[0] == "target":
             args = args[1:] if len(args) > 1 else []
@@ -62,6 +63,9 @@ class HltInstruction(HltGeneric):
         signode += addnodes.desc_name("", desc_name)
         if len(args) > 0:
             signode += addnodes.desc_addname("", args)
+
+        signode += addnodes.desc_addname("", " [%s]" % cls)
+
         return name
 
 class HltType(HltGeneric):

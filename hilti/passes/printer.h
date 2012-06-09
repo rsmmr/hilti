@@ -48,6 +48,7 @@ protected:
    void visit(statement::instruction::Resolved* s) override;
    void visit(statement::instruction::Unresolved* s) override;
    void visit(statement::try_::Catch* s) override;
+   void visit(statement::ForEach* s) override;
 
    void visit(declaration::Variable* v) override;
    void visit(declaration::Function* f) override;
@@ -159,7 +160,7 @@ private:
    void prepLine() {
        if ( _bol && ! _no_indent ) {
            for ( int i = 0; i < _indent; ++i )
-               _out << "    ";
+               _out << "  ";
        }
        _bol = false;
        _no_indent = false;
@@ -209,10 +210,30 @@ template<typename T>
 inline Printer& operator<<(Printer& p, T t) { p.prepLine(); p.out() << t; return p; }
 
 template<typename T>
-inline Printer& operator<<(Printer& p, shared_ptr<T> node) { p.prepLine(); p.call(node); return p; }
+inline Printer& operator<<(Printer& p, shared_ptr<T> node)
+{
+    p.prepLine();
+
+    if ( node )
+        p.call(node);
+    else
+        p << "<nullptr>";
+
+    return p;
+}
 
 template<typename T>
-inline Printer& operator<<(Printer& p, node_ptr<T> node) { p.prepLine(); p.call(node); return p; }
+inline Printer& operator<<(Printer& p, node_ptr<T> node)
+{
+    p.prepLine();
+
+    if ( node )
+        p.call(node);
+    else
+        p << "<nullptr>";
+
+    return p;
+}
 
 inline Printer& operator<<(Printer& p, Printer& (*pf)(Printer&p)) { p.prepLine(); return (*pf)(p); }
 inline Printer& operator<<(Printer& p, std::ios& (*pf)(std::ios&)) { p.prepLine(); p.out() << pf; return p; }

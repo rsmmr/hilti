@@ -5,6 +5,7 @@
 #include "type.h"
 #include "variable.h"
 #include "function.h"
+#include "builder/nodes.h"
 #include "passes/printer.h"
 
 using namespace hilti;
@@ -227,6 +228,12 @@ type::trait::Parameterized::parameter_list type::Map::parameters() const
     return params;
 }
 
+shared_ptr<hilti::Type> type::Map::elementType()
+{
+    builder::type_list ty = { _key, _value };
+    return builder::tuple::type(ty);
+}
+
 type::Exception::Exception(shared_ptr<Type> base, shared_ptr<Type> arg, const Location& l) : TypedHeapType(arg, l)
 {
     _base = base;
@@ -238,9 +245,19 @@ shared_ptr<Type> type::Bytes::iterType()
     return shared_ptr<Type>(new type::iterator::Bytes(location()));
 }
 
+shared_ptr<Type> type::Bytes::elementType()
+{
+    return builder::bytes::type();
+}
+
 shared_ptr<Type> type::IOSource::iterType()
 {
     return std::make_shared<iterator::IOSource>(sharedPtr<Type>(), location());
+}
+
+shared_ptr<Type> type::IOSource::elementType()
+{
+    return builder::bytes::type();
 }
 
 // FIXME: We won't need this anymore with C++11 initializer lists.

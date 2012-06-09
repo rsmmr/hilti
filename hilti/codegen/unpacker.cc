@@ -3,8 +3,8 @@
 
 #include "unpacker.h"
 #include "codegen.h"
-#include "builder.h"
 #include "abi.h"
+#include "builder/nodes.h"
 
 using namespace hilti;
 using namespace hilti::codegen;

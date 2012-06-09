@@ -7,7 +7,7 @@
 #include "hook.h"
 #include "globals.h"
 #include "threading.h"
-#include "memory.h"
+#include "memory_.h"
 
 // A table defining the hooks' state, which currently consists of the
 // information which groups are enabled. The global hook state is defined in

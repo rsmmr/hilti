@@ -1,5 +1,5 @@
 
-#include "hilti.h"
+#include "hilti-intern.h"
 
 using namespace hilti::passes;
 
@@ -161,3 +161,4 @@ void ScopePrinter::visit(statement::Block* b)
     b->scope()->dump(std::cerr);
     std::cerr << "+++++" << std::endl;
 }
+

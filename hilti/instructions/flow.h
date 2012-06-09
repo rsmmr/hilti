@@ -3,6 +3,8 @@
 
 #include "instructions/define-instruction.h"
 
+#include "passes/validator.h"
+
 iBegin(flow, ReturnResult, "return.result")
     iTerminator()
     iOp1(optype::any, true)
@@ -25,6 +27,14 @@ iBegin(flow, ReturnVoid, "return.void")
     }
 
     iDoc("")
+iEnd
+
+iBegin(flow, BlockEnd, "block.end")
+    iTerminator()
+    iValidate {
+    }
+
+    iDoc("Internal instruction marking the end of a block that doesn't have any other terminator.")
 iEnd
 
 iBegin(flow, CallVoid, "call")
@@ -109,3 +119,9 @@ iBegin(flow, Jump, "jump")
 
 iEnd
 
+iBeginH(flow, Switch, "switch")
+    iTerminator()
+    iOp1(optype::any, true)
+    iOp2(optype::label, true)
+    iOp3(optype::tuple, true)
+iEndH

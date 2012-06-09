@@ -1,7 +1,7 @@
 
 #include <arpa/inet.h>
 
-#include "hilti.h"
+#include "hilti-intern.h"
 
 using namespace hilti::passes;
 using namespace hilti::passes::printer;
@@ -82,10 +82,12 @@ void Printer::visit(statement::Block* b)
 {
     Printer& p = *this;
 
+//    p << "==== Block start" << endl;
+
     bool in_function = in<declaration::Function>();
 
     if ( in_function ) {
-        if ( b->id() )
+        if ( b->id() && b->id()->pathAsString().size() )
             p << no_indent << b->id() << ":" << endl;
 
         if ( parent<statement::Block>() )
@@ -103,6 +105,8 @@ void Printer::visit(statement::Block* b)
 
     if ( in_function && parent<statement::Block>() )
         popIndent();
+
+//    p << "==== Block end" << endl;
 }
 
 void Printer::visit(statement::Try* s)
@@ -136,6 +140,16 @@ void Printer::visit(statement::try_::Catch* c)
     }
 
     p << c->block();
+    p << "}" << endl;
+    p << endl;
+}
+
+void Printer::visit(statement::ForEach* s)
+{
+    Printer& p = *this;
+
+    p << "for ( " << s->id()->name() << " in " << s->sequence() << " ) {" << endl;
+    p << s->body();
     p << "}" << endl;
     p << endl;
 }
@@ -324,7 +338,7 @@ void Printer::visit(type::function::Parameter* param)
 {
     Printer& p = *this;
 
-    if ( param->constant() )
+    if ( param->constant() && ! ast::isA<type::Void>(param->type()) )
         p << "const ";
 
     if ( param->type() )

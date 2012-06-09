@@ -37,12 +37,17 @@ public:
    ACCEPT_VISITOR_ROOT()
 };
 
+namespace hook {
+   typedef std::pair<string, int64_t> attribute;
+   typedef std::list<attribute> attribute_list;
+}
+
 /// AST node for a hook.
 class Hook : public Function
 {
 public:
-   typedef std::pair<string, int64_t> attribute;
-   typedef std::list<attribute> attribute_list;
+   typedef hook::attribute      attribute;
+   typedef hook::attribute_list attribute_list;
 
    /// id: A non-scoped ID with the hook's name.
    ///

@@ -52,6 +52,7 @@ protected:
    void visit(statement::instruction::Resolved* s) override;
    void visit(statement::instruction::Unresolved* s) override;
    void visit(statement::try_::Catch* s) override;
+   void visit(statement::ForEach* s) override;
 
    void visit(declaration::Variable* v) override;
 

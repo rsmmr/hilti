@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #include "config.h"
-#include "memory.h"
+#include "memory_.h"
 
 // FIXME: Maybe it would be better to have the user create a config object and use it,
 // instead of having a singleton one.

@@ -129,9 +129,9 @@ void Loader::visit(expression::Ctor* e)
 
 void Loader::visit(expression::Coerced* e)
 {
-    auto val = llvmValue(e->expression(), _cctor);
+    auto val = llvmValue(e->expression(), true);
     auto coerced = cg()->llvmCoerceTo(val, e->expression()->type(), e->type());
-    setResult(coerced, _cctor, false);
+    setResult(coerced, true, false);
 }
 
 void Loader::visit(expression::Function* f)

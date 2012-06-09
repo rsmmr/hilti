@@ -20,9 +20,7 @@ public:
    /// module: The AST to resolve.
    ///
    /// Returns: True if no errors were encountered.
-   bool run(shared_ptr<Node> module) override {
-       return processAllPostOrder(module);
-   }
+   bool run(shared_ptr<Node> module) override;
 
 protected:
    void visit(expression::ID* i) override;
@@ -30,6 +28,7 @@ protected:
    void visit(Function* f) override;
    void visit(type::Unknown* t) override;
    void visit(variable::Local* v) override;
+   void visit(statement::ForEach* s) override;
 
 private:
    std::set<string> _locals;

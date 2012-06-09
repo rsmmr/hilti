@@ -7,20 +7,31 @@ function usage {
    cat <<EOF
 Usage: hilti-config <options>
 
-    --cflags              Print flags for C compiler.
-    --cxxflags            Print flags for C++ compiler.
-    --distbase            Print path of the HILTI source distribution.
-    --hiltic-binary       Print path of hiltic binary
-    --hiltic-flags        Print flags for hiltic.
-    --hiltic-flags-main   Print flags for hiltic to link libhiltimain
-    --ldflags             Print flags for llvm-ld.
-    --libhilti            Print path to libhilti.
-    --libs                Print system libraries for llvm-ld.
-    --prefix              Print path of installation (TODO: same as --distbase currently)
+  == General options:
 
-    --debug               Adapt all output for building debugging versions.
+      --debug               Adapt all output for building debugging versions.
+      --distbase            Print path of the HILTI source distribution.
+      --libhilti            Print path to libhilti.
+      --prefix              Print path of installation (TODO: same as --distbase currently)
+      --version             Print HILTI version.
 
-    --version             Print HILTI version.
+  == Options printing flags for linking C++ code to the HILTI compiler infrastructure.
+
+      --hilti-cxxflags      Print flags for C++ compiler.
+      --hilti-ldflags       Print flags for system linker.
+
+  == Options printing flags for linking host application code with libhilti.
+
+      --libhilti-cflags     Print flags for C compiler.
+      --libhilti-cxxflags   Print flags for C++ compiler.
+      --libhilti-ldflags    Print flags for system linker.
+
+  == Options printing flags for running hiltic.
+
+      --hiltic-binary       Print path of hiltic binary
+      --hiltic-flags        Print flags for hiltic.
+      --hiltic-flags-main   Print flags for hiltic to link libhiltimain
+
 EOF
    exit 1
 }
@@ -59,6 +70,10 @@ if [ ! -d "$base/libhilti" ]; then
     exit 1
 fi
 
+if [ $# == 0 ]; then
+    usage
+fi
+
 ### Add the libpcap flags.
 
 # pcap_config=`which pcap-config 2>/dev/null`
@@ -87,6 +102,9 @@ done
 
 while [ "$1" != "" ]; do
     case $1 in
+
+    # General options.
+
         --version)
             echo "HILTI 0.2"
             shift;;
@@ -100,12 +118,31 @@ while [ "$1" != "" ]; do
             echo $base
             shift;;
 
-        --libsflags)
-            echo ""
+        --debug)
+            # Done in first pass already.
             shift;;
 
-        --ldflags)
-            echo ""
+        --libhilti)
+            echo "$base/libhilti"
+            shift;;
+
+     # libhilti
+        --libhilti-cflags)
+            echo "-I$base/libhilti -I$base/libhilti/$builddir"
+            shift;;
+
+        --libhilti-cxxflags)
+            echo "-I$base/libhilti -I$base/libhilti/$builddir"
+            shift;;
+
+        --libhilti-ldflags)
+            echo "$base/build/libhilti-${build_mode}/libhilti-rt-native.a"
+            shift;;
+
+     # hiltic
+
+        --hiltic-binary)
+            echo "$base/build/tools/hiltic"
             shift;;
 
         --hiltic-flags)
@@ -116,27 +153,16 @@ while [ "$1" != "" ]; do
             echo "$base/libhilti/type-info.hlt $base/build/libhilti-${build_mode}/libhilti-rt-main${libpostfix}.bca -I$base/libhilti"
             shift;;
 
-        --libhilti)
-            echo "$base/libhilti"
+     # HILTI
+        --hilti-cxxflags)
+            llvm_flags=`llvm-config --cxxflags`
+            llvm_flags="$llvm_flags -fexceptions -frtti" # We want exception.
+            echo "-stdlib=libc++ -std=c++0x -I$base/libhilti -I$base/build -I$base/libhilti/$builddir -I$base/hilti -I$base $llvm_flags"
             shift;;
 
-        --libs)
-            ## This is a hack. Eventually, cmake should replace this directlt *.in style.
-            ## papi_libs=`cat $base/libhilti/$builddir/papi-libs.cfg`
-            # echo "-lc -lm -lpthread $papi_libs $pcap_libs"
-            echo "$base/build/libhilti-${build_mode}/libhilti-rt-native.a"
-            shift;;
-
-        --cflags | --cxxflags)
-            echo "-I$base/libhilti -I$base/libhilti/$builddir"
-            shift;;
-
-        --hiltic-binary)
-            echo "$base/build/tools/hiltic"
-            shift;;
-
-        --debug)
-            # Done in first pass already.
+        --hilti-ldflags)
+            llvm_flags=`llvm-config --ldflags --libs core bitreader bitwriter linker asmparser`
+            echo "$llvm_flags $base/build/libhilti.a $base/build/hilti/codegen/libffi/libhilti-ffi.a"
             shift;;
 
         -h)

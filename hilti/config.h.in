@@ -1,0 +1,12 @@
+
+#ifndef HILTI_CONFIG_H
+#define HILTI_CONFIG_H
+
+namespace hilti {
+
+static const char* CONFIG_HILTI_VERSION = "${PROJECT_VERSION}";
+static const char* CONFIG_PATH_LIBHILTI = "${PATH_LIBHILTI}";
+
+}
+
+#endif

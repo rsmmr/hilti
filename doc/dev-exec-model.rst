@@ -5,9 +5,9 @@ Execution Model
 Module Information
 ------------------
 
-The HILTI compiler adds a global meta data node
-``!hlt.module.<Module>`` to each module, where where ``<Module>`` is
-the name of the LLVM module being compiled. The meta data node has the
+The HILTI compiler adds a global LLVM meta data node
+``!hlt.module.<Module>`` to each module, where ``<Module>`` is the
+name of the LLVM module being compiled. The meta data node has the
 following sub-nodes (in this order):
 
     ``version (i16)``
@@ -30,10 +30,10 @@ Execution Context
 -----------------
 
 All state local to a (virtual) thread is kept in instances of a
-structure :hltc:`__hlt_execution_context`. At runtime, there will be
-one instance of this for each virtual thread, plus one global one for
-all code executing within the main thread (including all
-initialization code).
+structure :hltc:`hlt_execution_context`. At runtime, there will be one
+instance of this for each virtual thread, plus one global one for all
+code executing within the main thread (including all initialization
+code).
 
 Global variables declared by HILT modules are a part of this
 structure. That means that the size of a context instance depends on
@@ -43,22 +43,24 @@ determine the size, see :ref:`dev-globals`.
 The function :hltc:`__hlt_execution_context_new` allocates a new
 execution context and intializes all its fields (including the
 globals) with their default values. Context objects are memory managed
-and when storing references, :hltc:`__hlt_execution_context_ref` and
-:hltc:`__hlt_execution_context_unref` must be used. 
-
-.. _dev-globals:
+and when storing references, :hltc:`GC_CCTOR` and :hltc:`GC_DTOR` (or
+their variants) must be used; see :ref:`dev-memory`.
 
 Module Initalization
 --------------------
 
-For each module, the HILTI compiler generates a function
-``%.hlt.init.module.<Module>()`` that receives all module-global code
-(which includes initialization of globals with non-default values).
+For each module that needs it, the HILTI compiler generates a function
+``%.hlt.init.module.<Module>()`` that receives all module-global code,
+and it adds it to a global LLVM meta data node ``!hlt.modules.init``.
 
-HILTI's custom linker collects all these initialization functions and
-generates an additional function ``__hlt_module_init()`` that calls
-the individual ones sequentially (order undefined). This new function
-is called from the HILTI run-time at startup.
+HILTI's custom linker later collects all these initialization
+functions and generates an additional function ``__hlt_module_init()``
+that calls the individual ones sequentially (order undefined). This
+new function is called from the HILTI runtime through
+:hltc:`hlt_init`.
+
+
+.. _dev-globals:
 
 Globals
 -------
@@ -70,14 +72,14 @@ operation involving a global then translates into an access to a
 specific offset in the current thread's context.
 
 To make this work, we need linker support for combining all the
-globals into a singe data structure. Here's how code generation works
+globals into a single data structure. Here's how code generation works
 for that:
 
     * The HILTI compiler lays out the globals for a specific module as
       an struct with corresponding fields. The struct type is called
       ``%hlt.globals.type.<Module>`` and an instance of
       ``%hlt.globals.type.<Module>`` will be part of every
-      ``__hlt_execution_context``.
+      ``hlt_execution_context``.
 
     * All accesses to a global work indirectly by first determining
       the address of the global in memory and then using that for the
@@ -88,9 +90,14 @@ for that:
       will be replaced by the linker with code returning the right
       address, based on the current execution context and the module.
 
-    * The HILTI compiler also generates a function ``void
-      %.hlt.init.globals.<Module>()`` that initializes all of module's
-      globals with default values in an execution context passed in.
+    * The HILTI compiler also generates two functions ``void
+      %.hlt.init.globals.<Module>()`` and ``void
+      %.hlt.dtor.globals.<Module>()``. The former initializes all of
+      module's globals with default values in an execution context
+      passed in; the latter destroys all the values when a context is
+      deleted. The compiler adds these functions to global global LLVM
+      meta data nodes ``!hlt.globals.init`` and ``!hlt.globals.dtor``,
+      respectively.
 
     * HILTI's custom linker pass merges information about all globals
       as follows:
@@ -103,15 +110,14 @@ for that:
           __hlt_globals_size``.
 
         - It assigns each module an offset into the
-          ``__hlt_execution_context`` for storing its globals, based
+          ``hlt_execution_context`` for storing its globals, based
           on where that module's ``%hlt.globals.type.<Module>`` is
           located.
 
-        - It traverses each module's AST and replaces all call to
-          ``%hlt.globals.base.<Module>()`` with code that returns the
-          corresponding base address inside the current
-          ``__hlt_execution_context`` (i.e., ``&ctx.globals +
-          offset``).
+        - It traverses each module's LLVM AST and replaces all calls
+          to ``%hlt.globals.base.<Module>()`` with code that returns
+          the corresponding base address inside the current
+          ``hlt_execution_context`` (i.e., ``&ctx.globals + offset``).
 
         - It collects all ``.hlt.init.globals.<Module>()`` functions
           and generates an additional ``__hlt_globals_init()`` that
@@ -120,9 +126,17 @@ for that:
           :hltc:`__hlt_execution_context_new` to initialize a
           context's set of globals.
 
+          Similarly, a joint ``__hlt_globals_dtor()`` is created that
+          gets called from ``hlt_execution_context_dtor``.
+
+
+
+.. _dev-memory:
 
 Memory Management
 -----------------
+
+.. todo:: This is not current anymore.
 
 All objects dynamically allocated by compiled HILTI code (and also
 most allocated by libhilti) are managed via reference counting. By
@@ -194,7 +208,7 @@ provides two pieces of information for memory management:
 Reference Counting Conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[Not implemented yet].
+.. todo:: This is not current anymore.
 
 The following conventions are mandatory to follow when working with
 reference-counted objects:

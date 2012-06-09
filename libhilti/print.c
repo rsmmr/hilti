@@ -13,7 +13,7 @@
 
 #include "types.h"
 #include "rtti.h"
-#include "memory.h"
+#include "memory_.h"
 
 /*
  * Hilti::print(obj, newline = True)

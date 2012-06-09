@@ -7,7 +7,7 @@
 #include <pthread.h>
 
 #include "file.h"
-#include "memory.h"
+#include "memory_.h"
 #include "autogen/hilti-hlt.h"
 
 // This struct describes one currently open file. We memory-manage this ourselves.

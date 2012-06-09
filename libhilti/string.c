@@ -16,7 +16,7 @@
 #include "exceptions.h"
 #include "bytes.h"
 #include "rtti.h"
-#include "memory.h"
+#include "memory_.h"
 #include "utf8proc.h"
 #include "util.h"
 

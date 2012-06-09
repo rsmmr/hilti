@@ -121,6 +121,8 @@ declare void @__hlt_object_cctor(%hlt.type_info*, i8 *, i8*)
 declare i8* @__hlt_object_new(%hlt.type_info*, i64, i8*)
 
 declare void @__hlt_debug_print(i8*, i8*)
+declare void @__hlt_debug_push_indent(%hlt.execution_context*)
+declare void @__hlt_debug_pop_indent(%hlt.execution_context*)
 
 declare %hlt.string* @hlt_string_from_data(i8*, i64, %hlt.exception**, %hlt.execution_context*)
 declare %hlt.bytes*  @hlt_bytes_new_from_data_copy(i8*, i64, %hlt.exception**, %hlt.execution_context*)

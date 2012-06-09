@@ -1,0 +1,10 @@
+
+module Main
+
+import Hilti
+
+void run()
+{
+    call Hilti::print ("Hello, world!")
+}
+

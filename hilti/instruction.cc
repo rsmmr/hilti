@@ -405,7 +405,39 @@ bool Instruction::checkCallResult(shared_ptr<type::Function> func, shared_ptr<Ex
     return false;
 }
 
+Instruction::Info Instruction::info() const
+{
+    Info info;
+    info.mnemonic = _id->name();
+    info.namespace_ = _namespace;
+    info.class_ = _class;
+    info.description = ::util::escapeBytes(__doc());
+    info.terminator = __terminator();
+    info.type_target = __typeOp0();
+    info.type_op1 = __typeOp1();
+    info.type_op2 = __typeOp2();
+    info.type_op3 = __typeOp3();
+    info.default_op1 = __defaultOp1();
+    info.default_op2 = __defaultOp2();
+    info.default_op3 = __defaultOp3();
+
+    if ( ::util::startsWith(info.mnemonic, ".op.") )
+         info.mnemonic = info.mnemonic.substr(4, std::string::npos);
+
+    return info;
+}
+
 shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(shared_ptr<Instruction> instr, shared_ptr<statement::Instruction> stmt)
+{
+    auto resolved = resolveStatement(instr, stmt->operands(), stmt->location());
+
+    if ( stmt->internal() )
+        resolved->setInternal();
+
+    return resolved;
+}
+
+shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(shared_ptr<Instruction> instr, const instruction::Operands& ops, const Location& l)
 {
     instruction::Operands new_ops;
     instruction::Operands defaults;
@@ -417,10 +449,10 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
     defaults[3] = instr->__defaultOp3();
 
     for ( int i = 0; i < _num_ops; i++ ) {
-        auto op = stmt->operands()[i];
+        auto op = ops[i];
 
         if ( op && instr ) {
-        
+
             switch ( i ) {
              case 1:
                 if ( instr->__typeOp1() )
@@ -442,10 +474,7 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
         new_ops.push_back(op ? op : defaults[i]);
     }
 
-    auto resolved = (*instr->factory())(instr, new_ops, stmt->location());
-
-    if ( stmt->internal() )
-        resolved->setInternal();
+    auto resolved = (*instr->factory())(instr, new_ops, l);
 
     return resolved;
 }

@@ -2,8 +2,6 @@
 #ifndef HILTI_SCOPE_H
 #define HILTI_SCOPE_H
 
-#include <boost/variant.hpp>
-
 #include "common.h"
 
 namespace hilti {

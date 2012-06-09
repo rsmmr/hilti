@@ -26,6 +26,11 @@ public:
    /// Returns a readable one-line representation of the type.
    string render() override;
 
+   /// Retturns a readable represention meant to be used in the automatically
+   /// generated reference documentation. By default, this return the same as
+   /// render() but can be overridden by derived classed.
+   virtual string docRender() { return render(); }
+
    /// Returns a scope of sub-identifiers that a relative to the type. If a
    /// type defines IDs in this scope and a global type declaration is added
    /// to a module, these IDs will be accessible via scoping relative to the
@@ -179,6 +184,9 @@ class Iterable : public Trait
 public:
    /// Returns the type for an iterator over this type.
    virtual shared_ptr<hilti::Type> iterType() = 0;
+
+   /// Returns the type of elements when iterating over this type.
+   virtual shared_ptr<hilti::Type> elementType() = 0;
 };
 
 /// Trait class marking a type that can be hashed for storing in containers.
@@ -979,6 +987,7 @@ public:
    virtual ~Bytes();
 
    shared_ptr<hilti::Type> iterType() override;
+   shared_ptr<hilti::Type> elementType() override;
 
    const std::vector<Format>& unpackFormats() const override;
 
@@ -1266,6 +1275,7 @@ public:
    shared_ptr<ID> kind() const { return _kind; }
 
    shared_ptr<hilti::Type> iterType() override;
+   shared_ptr<hilti::Type> elementType() override;
 
    bool _equal(shared_ptr<hilti::Type> other) const override {
        return trait::Parameterized::equal(other);
@@ -1385,6 +1395,10 @@ public:
        return std::make_shared<iterator::List>(this->sharedPtr<Type>(), location());
    }
 
+   shared_ptr<hilti::Type> elementType() override {
+       return argType();
+   }
+
    ACCEPT_VISITOR(Type);
 };
 
@@ -1409,6 +1423,10 @@ public:
        return std::make_shared<iterator::Vector>(this->sharedPtr<Type>(), location());
    }
 
+   shared_ptr<hilti::Type> elementType() override {
+       return argType();
+   }
+
    ACCEPT_VISITOR(Type);
 };
 
@@ -1431,6 +1449,10 @@ public:
 
    shared_ptr<hilti::Type> iterType() override {
        return std::make_shared<iterator::Set>(this->sharedPtr<Type>(), location());
+   }
+
+   shared_ptr<hilti::Type> elementType() override {
+       return argType();
    }
 
    ACCEPT_VISITOR(Type);
@@ -1458,6 +1480,8 @@ public:
    shared_ptr<hilti::Type> iterType() override {
        return std::make_shared<iterator::Map>(this->sharedPtr<Type>(), location());
    }
+
+   shared_ptr<hilti::Type> elementType() override;
 
    shared_ptr<Type> keyType() const { return _key; }
    shared_ptr<Type> valueType() const { return _value; }

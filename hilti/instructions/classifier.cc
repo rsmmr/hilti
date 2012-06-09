@@ -3,31 +3,32 @@
 
 #include "classifier.h"
 #include "module.h"
+#include "builder/nodes.h"
 
 static void _validateRuleValue(const Instruction* i, shared_ptr<Type> rtype, shared_ptr<Expression> op)
 {
     shared_ptr<Type> stype = nullptr;
     auto ttype = ast::as<type::Tuple>(op->type());
 
-    if ( ! ttype )
-        stype = op->type();
+    if ( ! ttype ) {
+        i->error(op, "operand must be tuple (struct, int)");
+        return;
+    }
 
-    else {
-        if ( ttype->typeList().size() != 2 ) {
-            i->error(ttype, "tuple must be of type (struct, int)");
-            return;
-        }
+    if ( ttype->typeList().size() != 2 ) {
+        i->error(ttype, "tuple must be of type (struct, int)");
+        return;
+    }
 
-        auto params = ttype->typeList();
-        auto j = params.begin();
+    auto params = ttype->typeList();
+    auto j = params.begin();
 
-        stype = *j++;
-        auto itype = *j++;
+    stype = *j++;
+    auto itype = *j++;
 
-        if ( ! ast::isA<type::Integer>(itype) ) {
-            i->error(ttype, "tuple must be of type (struct, int)");
-            return;
-        }
+    if ( ! ast::isA<type::Integer>(itype) ) {
+        i->error(ttype, "tuple must be of type (struct, int)");
+        return;
     }
 
     assert(stype);
@@ -120,7 +121,7 @@ iEndCC
 iBeginCC(classifier)
     iValidateCC(Get) {
         auto rtype = ast::as<type::Classifier>(referencedType(op1))->ruleType();
-        _validateRuleValue(this, rtype, op2);
+        canCoerceTo(op2, builder::reference::type(rtype));
     }
 
     iDocCC(Get, R"(
@@ -136,7 +137,7 @@ iEndCC
 iBeginCC(classifier)
     iValidateCC(Matches) {
         auto rtype = ast::as<type::Classifier>(referencedType(op1))->ruleType();
-        _validateRuleValue(this, rtype, op2);
+        canCoerceTo(op2, builder::reference::type(rtype));
     }
 
     iDocCC(Matches, R"(

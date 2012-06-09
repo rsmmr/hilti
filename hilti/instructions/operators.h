@@ -1,6 +1,58 @@
 
 #include "instructions/define-instruction.h"
 
+// Most operators are implemented by overloading, rather than by providing a
+// direct instruction. For these, we still creates instructions here so that
+// we have a class "operator_::XXX" to use with the builder interface.
+// However, we name their mnemonics by starting them with a ".op", turning
+// them into internal ones that can't be looked up. If used, the statement
+// resolver will replace them with the correct overloaded version.
+
+iBegin(operator_, Begin, ".op.begin")
+    iTarget(optype::any)
+    iOp1(optype::any, true)
+    iValidate {}
+    iDoc(R"(
+        Returns an iterator pointing to the first element of an iterable sequence.
+    )")
+iEnd
+
+iBegin(operator_, End, ".op.end")
+    iTarget(optype::any)
+    iOp1(optype::any, true)
+    iValidate {}
+    iDoc(R"(
+        Returns an iterator pointing one beyond the last element of an iterable sequence.
+    )")
+iEnd
+
+iBegin(operator_, Incr, ".op.incr")
+    iTarget(optype::any)
+    iOp1(optype::any, true)
+    iValidate {}
+    iDoc(R"(
+        Increments an iterator by one element.
+    )")
+iEnd
+
+iBegin(operator_, Deref, ".op.deref")
+    iTarget(optype::any)
+    iOp1(optype::any, true)
+    iValidate {}
+    iDoc(R"(
+        Dereferences an interator.
+    )")
+iEnd
+
+iBegin(operator_, Equal, ".op.equal")
+    iTarget(optype::any)
+    iOp1(optype::any, true)
+    iValidate {}
+    iDoc(R"(
+        Compares two values of the same type, assuming the type supports comparision.
+    )")
+iEnd
+
 iBegin(operator_, Assign, "assign")
     iTarget(optype::any)
     iOp1(optype::any, true)
@@ -23,7 +75,7 @@ iBegin(operator_, Assign, "assign")
             error(op1, "operand not compatible with target");
     }
 
-    iDoc(R"(    
+    iDoc(R"(
         Assigns *op1* to the target.  There is a short-cut syntax: instead of
         using the standard form ``t = assign op``, one can just write ``t =
         op``.

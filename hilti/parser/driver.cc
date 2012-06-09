@@ -1,11 +1,9 @@
 
 #include <iostream>
 
-#include "parser/driver.h"
-#include "parser/scanner.h"
+#include "driver.h"
+#include "scanner.h"
 #include "autogen/parser.h"
-
-#include "../builder.h"
 
 using namespace hilti_parser;
 
@@ -25,14 +23,16 @@ shared_ptr<hilti::Module> Driver::parse(std::istream& in, const std::string& sna
     _parser->set_debug_level(0);
     _parser->parse();
 
+    auto module = _mbuilder->module();
+
     _scanner = 0;
     _parser = 0;
+    _mbuilder = 0;
 
     if ( errors() > 0 )
         return 0;
 
-    assert(context.module);
-    return context.module;
+    return module;
 }
 
 void Driver::error(const std::string& m, const hilti_parser::location& l)

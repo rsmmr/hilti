@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 #include "bytes.h"
-#include "memory.h"
+#include "memory_.h"
 #include "exceptions.h"
 #include "string_.h"
 #include "globals.h"

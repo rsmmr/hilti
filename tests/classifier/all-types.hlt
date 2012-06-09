@@ -1,7 +1,7 @@
 #
 # @TEST-EXEC:  hilti-build %INPUT -o a.out
 # @TEST-EXEC:  HILTI_DEBUG=hilti-classifier ./a.out 2>&1 | sed 's/0x[0-9a-zA-Z]*/0xXXX/g' >output
-
+# @TEST-EXEC:  cat hlt-debug.log >>output
 # @TEST-EXEC:  btest-diff output
 
 module Main
@@ -14,7 +14,7 @@ type Rule = struct {
     addr a,
     bool b,
     int<64> i,
-    ref<bytes> b
+    ref<bytes> b2
 }
 
 void run() {

@@ -21,11 +21,11 @@ void run() {
 
     call Hilti::print ("A", True)
 
-    for x in l do
-        for y in l do
+    for ( x in l ) {
+        for ( y in l ) {
             call f (x,y)
-        done
-    done
+        }
+    }
 
     call Hilti::print ("B", True)
 

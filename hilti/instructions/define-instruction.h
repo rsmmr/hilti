@@ -7,6 +7,7 @@
 
 #include "../instruction.h"
 #include "../statement.h"
+#include "../builder/nodes.h"
 
 #include "optypes.h"
 
@@ -14,8 +15,11 @@
 #define __unique(l) __cat(register_, l)
 
 /// Registers an instruction with the InstructionRegistry.
-#define IMPLEMENT_INSTRUCTION(name, cls) \
-   void __register_##name() { InstructionRegistry::globalRegistry()->addInstruction(std::make_shared<instruction::cls>()); }
+#define IMPLEMENT_INSTRUCTION(ns, cls) \
+   void __register_##ns##_##cls() { \
+        ::hilti::instruction::ns::cls = std::make_shared<::hilti::instruction::ns::__class::cls>(); \
+        InstructionRegistry::globalRegistry()->addInstruction(::hilti::instruction::ns::cls); \
+   }
 
 /// Begins the definition of an instruction. Old version; use iBeginH/iBeginCC instead.
 ///
@@ -45,8 +49,9 @@
                                                     \
      namespace instruction {                        \
        namespace ns {                               \
+         namespace __class {                        \
                                                     \
-   class cls : public Instruction                   \
+          class cls : public hilti::Instruction     \
    {                                                \
    public:                                          \
        static shared_ptr<statement::instruction::Resolved> factory(shared_ptr<hilti::Instruction> instruction, \
@@ -54,13 +59,14 @@
            const Location& l=Location::None) {      \
            return shared_ptr<statement::instruction::Resolved>(new typename hilti::statement::instruction::ns::cls(instruction, ops, l)); \
            }                                        \
-       cls() : Instruction(shared_ptr<ID>(new ID(name)), factory) {}
+       cls() : hilti::Instruction(shared_ptr<ID>(new ID(name)), #ns, #cls, factory) {}
 
 
 /// Ends the definition of an instruction. Old version - use iEndH/iEndC instead.
 #define iEnd  \
    }          \
    };         \
+   }          \
    }          \
    }          \
    }
@@ -83,14 +89,17 @@
    };         \
    }          \
    }          \
+   }          \
    }
 
 #define iBeginCC(ns)                                \
-   namespace hilti {                        \
+   namespace hilti {                                \
      namespace instruction {                        \
-       namespace ns {                               \
+      namespace ns {                                \
+       namespace __class {                          \
 
 #define iEndCC \
+   }          \
    }          \
    }          \
    }

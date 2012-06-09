@@ -4,7 +4,9 @@
  *
  */
 
-#include "hilti.h"
+#include <assert.h>
+
+#include "context.h"
 #include "string_.h"
 #include "rtti.h"
 

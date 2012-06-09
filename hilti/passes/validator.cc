@@ -1,5 +1,5 @@
 
-#include "hilti.h"
+#include "hilti-intern.h"
 
 using namespace hilti::passes;
 
@@ -39,6 +39,15 @@ void Validator::visit(statement::Block* s)
 
 void Validator::visit(statement::Try* s)
 {
+}
+
+void Validator::visit(statement::ForEach* s)
+{
+    shared_ptr<type::Reference> r = ast::as<type::Reference>(s->sequence()->type());
+    shared_ptr<Type> t = r ? r->argType() : s->sequence()->type();
+
+    if ( ! type::hasTrait<type::trait::Iterable>(t) )
+        error(s, "expression not iterable");
 }
 
 void Validator::visit(statement::instruction::Resolved* s)
@@ -142,7 +151,10 @@ void Validator::visit(type::Classifier* t)
 
         else {
             for ( auto l : ast::as<type::Struct>(t->ruleType())->typeList() ) {
-                if ( ! type::hasTrait<type::trait::Classifiable>(l) )
+                auto r = ast::as<type::Reference>(l);
+                auto t = r ? r->argType() : l;
+
+                if ( ! type::hasTrait<type::trait::Classifiable>(t) )
                     error(l, "type cannot be used in a classifier");
             }
         }
@@ -344,7 +356,16 @@ void Validator::visit(type::String* t)
 
 void Validator::visit(type::Struct* t)
 {
+    std::set<string> names;
+
     for ( auto f : t->fields() ) {
+
+        if ( names.find(f->id()->name()) != names.end() ) {
+            error(f, "duplicate field name in struct");
+            return;
+        }
+
+        names.insert(f->id()->name());
 
         if ( ! f->type() ) {
             error(f, "struct has field without type");

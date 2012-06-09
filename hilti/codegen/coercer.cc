@@ -29,6 +29,8 @@ llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti
     llvm::Value* result;
     bool success = processOne(src, &result);
     assert(success);
+
+    cg()->llvmDtor(value, src, false, "llvmCoerceTo");
     return result;
 }
 
@@ -73,12 +75,10 @@ void codegen::Coercer::visit(type::Tuple* t)
 
             auto v = cg()->llvmExtractValue(val, idx);
             v = cg()->llvmCoerceTo(v, i.first, i.second);
-            cg()->llvmCctor(v, i.second, false, "coercer/tuple-to-struct");
             cg()->llvmStructSet(stype, sval, idx++, v);
         }
 
         setResult(sval);
-        cg()->llvmDtorAfterInstruction(sval, stype, false);
         return;
     }
 
