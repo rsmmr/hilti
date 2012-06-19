@@ -74,7 +74,7 @@ bool GlobalsBasePass::runOnBasicBlock(llvm::BasicBlock &bb)
                 ectx = a;
 
         if ( ! ectx )
-            InternalError("function accessing global does not have an execution context parameter");
+            throw InternalError("function accessing global does not have an execution context parameter");
 
         // Add instructions at the beginning of the function that give us the
         // address of the global variables inside the execution context.

@@ -128,7 +128,7 @@ make -j 4 clean
 
 if [ "$install" != "" ]; then
     LD_LIBRARY_PATH=$prefix \
-        LDFLAGS="-lc++ -L$prefix/lib -Wl,-rpath,$prefix/lib" \
+        LDFLAGS="-lc++ -lcxxrt -L$prefix/lib -Wl,-rpath,$prefix/lib" \
         CFLAGS="-L$prefix/lib" CXXFLAGS="-L$prefix/lib" \
         CC=clang CXX=clang++ \
         ./configure --prefix=$prefix --enable-optimized --enable-libcpp
