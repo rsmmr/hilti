@@ -1,4 +1,13 @@
->>> call foo 42
-wrong-calls.hlt:13: error, operand 2 must be of type tuple but is int<64>
 
-wrong-calls.hlt: 1 error found during validating
+>>> call foo 42
+wrong-calls.hlt:12-13: error, operands do not match instruction call
+  got:
+    call: <function>, int<64>
+  expected one of:
+    call: ref<callable> -> any
+    call: ref<callable>
+    call: <function>, tuple<> -> any
+    call: <function>, tuple<>
+ [pass::InstructionResolver]
+wrong-calls.hlt: Aborting due to resolver error.
+error running hiltic, aborting

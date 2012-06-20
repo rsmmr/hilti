@@ -1,2 +1,5 @@
-missing-import.hlt:16: error, unknown identifier Hilti::print
-missing-import.hlt: 1 error found during validating
+
+>>> Hilti::print
+missing-import.hlt:15-15: error, unknown ID Hilti::print [pass::IdResolver]
+missing-import.hlt: Aborting due to resolver error.
+error running hiltic, aborting

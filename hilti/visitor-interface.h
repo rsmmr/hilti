@@ -225,6 +225,7 @@ public:
    virtual void visit(type::Integer* i)     {}
    virtual void visit(type::Interval* t)    {}
    virtual void visit(type::Iterator* t)    {}
+   virtual void visit(type::Label* t)       {}
    virtual void visit(type::List* t)        {}
    virtual void visit(type::Map* t)         {}
    virtual void visit(type::MatchTokenState* t) {}

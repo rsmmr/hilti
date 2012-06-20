@@ -106,6 +106,7 @@ after                 return token::AFTER;
 at                    return token::AT;
 for                   return token::FOR;
 in                    return token::IN;
+init                  return token::INIT;
 
 False                 yylval->bval = 0; return token::CBOOL;
 Null                  return token::CNULL;

@@ -47,10 +47,24 @@ iEnd
 iBegin(operator_, Equal, ".op.equal")
     iTarget(optype::any)
     iOp1(optype::any, true)
+    iOp2(optype::any, true)
     iValidate {}
     iDoc(R"(
         Compares two values of the same type, assuming the type supports comparision.
     )")
+iEnd
+
+iBegin(operator_, Unequal, "unequal")
+    iTarget(optype::boolean)
+    iOp1(optype::any, true)
+    iOp2(optype::any, true)
+    iValidate {
+        equalTypes(op1, op2);
+    }
+    iDoc(R"(
+        Compares two values of the same type, returning true if they don't match. This operator
+        is defined for all types that offer an ``equal`` operator.
+     )")
 iEnd
 
 iBegin(operator_, Assign, "assign")
@@ -109,5 +123,15 @@ iBegin(operator_, Unpack, "unpack")
     Note: The ``unpack`` operator uses a generic implementation able to handle all data
     types. Different from most other operators, it's implementation is not
     overloaded on a per-type based. Instead, the type specific code is implemented in the codegen::Unpacker.
+    )")
+iEnd
+
+iBegin(operator_, Clear, "clear")
+    iOp1(optype::any, false)
+    iValidate {}
+    iDoc(R"(
+        Resets *op1* to the default value a new variable would be set to.
+
+        Note: This operator is automatically defined for all value types.
     )")
 iEnd

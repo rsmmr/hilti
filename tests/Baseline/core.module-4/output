@@ -1,2 +1,2 @@
-module.hlt:2: parser error, unexpected void
-module.hlt: 1 error found during parsing
+module.hlt:2.1-4: error, syntax error, unexpected "'void'", expecting "'module'"
+error running hiltic, aborting

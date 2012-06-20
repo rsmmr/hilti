@@ -46,6 +46,9 @@ bool ModuleBuilder::finalize(bool resolve, bool validate)
 {
     _finalized = true;
 
+    if ( errors() )
+        return false;
+
     if ( resolve ) {
         if ( ! hilti::resolveAST(_module, _libdirs) )
             return false;
@@ -114,8 +117,10 @@ shared_ptr<ID> ModuleBuilder::uniqueID(shared_ptr<ID> id, shared_ptr<Scope> scop
 
     while ( scope->lookup(uid, false) ) {
 
-        if ( ! force_unique )
-            fatalError(::util::fmt("ModuleBuilder: ID %s already defined", uid->name().c_str()), id);
+        if ( ! force_unique ) {
+            error(::util::fmt("ModuleBuilder: ID %s already defined", uid->name().c_str()), id);
+            return std::make_shared<ID>("<error>");
+        }
 
         std::string s = ::util::fmt("%s.%d", id->name().c_str(), ++i);
         uid = std::make_shared<ID>(s, uid->location());
@@ -414,6 +419,36 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(const std::stri
     return addGlobal(std::make_shared<ID>(id, l), type, init, force_unique, l);
 }
 
+shared_ptr<hilti::expression::Constant> ModuleBuilder::addConstant(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
+{
+    auto const_ = ast::as<hilti::expression::Constant>(init);
+
+    if ( ! const_ ) {
+        error("constant initialized with non-constant expression", init);
+        return nullptr;
+    }
+
+    if ( ! const_->canCoerceTo(type) ) {
+        error("constant initialization does not match type", init);
+        return nullptr;
+    }
+
+    const_ = ast::as<hilti::expression::Constant>(init->coerceTo(type));
+    assert(const_);
+
+    id = uniqueID(id, nullptr, force_unique, true);
+    // FIXME: Shoudl we create a declaration::Constant instead of inserting
+    // into the scope here directly?
+    auto decl = std::make_shared<declaration::Constant>(id, const_->constant(), l);
+    _module->body()->addDeclaration(decl);
+    return const_;
+}
+
+shared_ptr<hilti::expression::Constant> ModuleBuilder::addConstant(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
+{
+    return addConstant(std::make_shared<ID>(id, l), type, init, force_unique, l);
+}
+
 shared_ptr<hilti::expression::Type> ModuleBuilder::addType(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool force_unique, const Location& l)
 {
     id = uniqueID(id, nullptr, force_unique, true);
@@ -453,8 +488,10 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::addTmp(shared_ptr<hilti::
 
         if ( var ) {
             auto decl = ast::as<declaration::Variable>(var);
-            if ( ! (decl && decl->variable()->type()->equal(type)) )
-                fatalError(::util::fmt("ModuleBuilder::addTmp: ID %s already exists but is of different type", id->name().c_str()), id);
+            if ( ! (decl && decl->variable()->type()->equal(type)) ) {
+                error(::util::fmt("ModuleBuilder::addTmp: ID %s already exists but is of different type", id->name().c_str()), id);
+                return nullptr;
+            }
 
             return std::make_shared<hilti::expression::Variable>(decl->variable(), l);
         }

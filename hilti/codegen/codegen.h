@@ -1435,7 +1435,7 @@ public:
    void llvmGCClear(llvm::Value* val, shared_ptr<Type> type);
 
    /// Finished generation of a statement. This is called from the statement builder.
-   void finishStatement();
+   void finishStatement(bool clear=true);
 
    /// Inserts a block with after-statement cleanup. Does however not flag
    /// the statement as done and is only intended for use in abnormal
@@ -1885,6 +1885,9 @@ public:
    ///
    /// Returns: An expression referencing the local.
    shared_ptr<hilti::Expression> makeLocal(const string& name, shared_ptr<Type> type);
+
+   /// Returns the LLVM function that initialized the module.
+   llvm::Function* llvmModuleInitFunction();
 
 private:
    // Creates/finishes the module intialization function that will receive all global

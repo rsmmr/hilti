@@ -297,10 +297,10 @@ public:
 
    /// Checks whether a return expression is compatible with a function's
    /// return type.
-   bool checkCallResult(shared_ptr<type::Function> func, shared_ptr<Expression> expr) const;
+   bool checkCallResult(shared_ptr<Type> rtype, shared_ptr<Expression> expr) const;
 
    /// Checks whether a return type is compatible with a function's prototype.
-   bool checkCallResult(shared_ptr<type::Function> func, shared_ptr<Type> ty) const;
+   bool checkCallResult(shared_ptr<Type> rtype, shared_ptr<Type> ty) const;
 
    struct Info {
        string mnemonic;              /// The instructions mnemonic in the HILTI IR representation.

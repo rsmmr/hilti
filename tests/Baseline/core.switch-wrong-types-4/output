@@ -1,4 +1,10 @@
->>> switch n @default "foo"
-switch-wrong-types.hlt:8: error, operand 3 operand 3 must be a tuple
 
-switch-wrong-types.hlt: 1 error found during validating
+>>> switch n @default "foo"
+switch-wrong-types.hlt:8-10: error, operands do not match instruction switch
+  got:
+    switch: int<32>, label, string
+  expected one of:
+    switch: any, label, tuple<>
+ [pass::InstructionResolver]
+switch-wrong-types.hlt: Aborting due to resolver error.
+error running hiltic, aborting

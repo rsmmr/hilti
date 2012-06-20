@@ -396,7 +396,11 @@ void Printer::visit(type::Integer* i)
         return;
 
     Printer& p = *this;
-    p << "int<" << i->width() << ">";
+
+    if ( i->wildcard() )
+        p << "int<*>";
+    else
+        p << "int<" << i->width() << ">";
 }
 
 void Printer::visit(type::String* i)
@@ -406,6 +410,15 @@ void Printer::visit(type::String* i)
 
     Printer& p = *this;
     p << "string";
+}
+
+void Printer::visit(type::Label* i)
+{
+    if ( printTypeID(i) )
+        return;
+
+    Printer& p = *this;
+    p << "label";
 }
 
 void Printer::visit(type::Bool* b)
@@ -437,16 +450,17 @@ void Printer::visit(type::Exception* e)
 
     Printer& p = *this;
 
+    enableTypeIDs();
+
     if ( e->argType() )
         p << "exception<" << e->argType() << ">";
     else
         p << "exception";
 
-    if ( e->baseType() ) {
-        enableTypeIDs();
+    if ( e->baseType() )
         p << " : " << e->baseType();
-        disableTypeIDs();
-    }
+
+    disableTypeIDs();
 }
 
 void Printer::visit(type::Bytes* b)
@@ -794,6 +808,7 @@ void Printer::visit(type::Struct* t)
 
     p << "struct {" << endl;
     pushIndent();
+    enableTypeIDs();
 
     bool first = true;
     for ( auto f : t->fields() ) {
@@ -809,7 +824,10 @@ void Printer::visit(type::Struct* t)
     }
 
     p << endl;
+
+    disableTypeIDs();
     popIndent();
+
     p << "}" << endl << endl;
 }
 

@@ -1,6 +1,4 @@
 
-#include <hilti-intern.h>
-
 #include "../stmt-builder.h"
 
 using namespace hilti;

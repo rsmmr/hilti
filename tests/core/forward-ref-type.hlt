@@ -1,6 +1,7 @@
 #
-# @TEST-EXEC:  hiltic %INPUT -p -o out.ll
-# @TEST-EXEC:  btest-diff out.ll
+# @TEST-EXEC:  hiltic %INPUT -p -o out.hlt
+# @TEST-EXEC:  hiltic %INPUT -l -o out.ll
+# @TEST-EXEC:  btest-diff out.hlt
 
 module Main
 

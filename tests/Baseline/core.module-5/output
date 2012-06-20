@@ -1,2 +1,2 @@
-module.hlt:2: parser error, unexpected declare
-module.hlt: 1 error found during parsing
+module.hlt:2.1-7: error, syntax error, unexpected "'declare'", expecting "'module'"
+error running hiltic, aborting

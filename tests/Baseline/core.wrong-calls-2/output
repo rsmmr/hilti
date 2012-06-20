@@ -1,4 +1,5 @@
->>> call foo (42, 43)
-wrong-calls.hlt:7: error, wrong number of arguments for function
 
-wrong-calls.hlt: 1 error found during validating
+>>> call foo (42,43)
+wrong-calls.hlt:7-8: error, too many arguments given, expected 1 but got 2 [pass::Validator]
+wrong-calls.hlt: Aborting due to verification error.
+error running hiltic, aborting

@@ -1,7 +1,7 @@
 // @TEST-IGNORE
 
 #include <stdio.h>
-#include <hilti.h>
+#include <libhilti.h>
 
 #include "c-interface.hlt.h"
 

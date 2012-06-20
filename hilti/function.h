@@ -34,7 +34,20 @@ public:
    /// l: Location associated with the node.
    Function(shared_ptr<ID> id, shared_ptr<hilti::type::Function> ftype, shared_ptr<Module> module, shared_ptr<Statement> body = nullptr, const Location& l=Location::None);
 
-   ACCEPT_VISITOR_ROOT()
+   /// Marks this function as an "init" function. Such functions will be
+   /// automatically executed at startup and must not be called otherwise.
+   /// They must not take any parameters and nor return a value.
+   void setInitFunction() { _init = true; }
+
+   /// Returns whether this is an "init" function.Such functions will be
+   /// automatically executed at startup and must not be called otherwise.
+   /// They must not take any parameters and nor return a value.
+   bool initFunction() { return _init; }
+
+   ACCEPT_VISITOR_ROOT();
+
+private:
+   bool _init = false;
 };
 
 namespace hook {

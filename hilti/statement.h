@@ -171,7 +171,7 @@ public:
 
    /// Returns the type being caught. This will be of type type::Exception.
    /// Will return null for a catch-all clause.
-   shared_ptr<Type> type() const { if ( _type ) return _type; else return variable()->type(); }
+   shared_ptr<Type> type() const { if ( _type ) return _type; else return variable() ? variable()->type() : nullptr; }
 
    /// Returns the local ID assigned to the caught exception instance. Will
    /// return null for a catch-all clause.

@@ -1,2 +1,3 @@
-no-run.hlt:4: error, in module Main, ID 'run' must be a function
-no-run.hlt: 1 error found during validating
+no-run.hlt:4-4: error, in module Main, ID 'run' must be a function [pass::Validator]
+no-run.hlt: Aborting due to verification error.
+error running hiltic, aborting

@@ -3,8 +3,7 @@
  * @TEST-IGNORE
  */
 
-#include <stdint.h>
-#include <hilti.h>
+#include <libhilti.h>
 
 struct A {
     int8_t x;

@@ -51,7 +51,7 @@ llvm::Constant* PointerMap::llvmMap()
     return _cg->llvmAddConst("ptrmap", cval);
 }
 
-TypeBuilder::TypeBuilder(CodeGen* cg) : CGVisitor<TypeInfo *>(cg, "codegen::TypeBuilder")
+TypeBuilder::TypeBuilder(CodeGen* cg) : CGVisitor<TypeInfo *, bool>(cg, "codegen::TypeBuilder")
 {
 }
 
@@ -59,14 +59,24 @@ TypeBuilder::~TypeBuilder()
 {
 }
 
-TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
+void TypeBuilder::finalize()
 {
+    for ( auto dtor : _struct_dtors )
+        _makeStructDtor(dtor.first, dtor.second);
+}
+
+TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_only)
+{
+    if ( ! llvm_type_only )
+        typeInfo(type, true);
+
     auto i = _ti_cache.find(type);
 
     if ( i != _ti_cache.end() )
         // Already computed.
         return i->second;
 
+    setArg1(llvm_type_only);
     setDefaultResult(nullptr);
 
     TypeInfo* ti;
@@ -143,14 +153,24 @@ TypeInfo* TypeBuilder::typeInfo(shared_ptr<hilti::Type> type)
         internalError(::util::fmt("type info for %s does not define a dtor function", ti->name.c_str()));
 #endif
 
-    _ti_cache.insert(make_tuple(type, ti));
+    if ( ! llvm_type_only )
+        _ti_cache.insert(make_tuple(type, ti));
+
     return ti;
 }
 
 llvm::Type* TypeBuilder::llvmType(shared_ptr<Type> type)
 {
-    auto ti = typeInfo(type);
+    auto rtype = ast::as<type::Reference>(type);
+
+    if ( rtype )
+        // For references, "unwrap" directly here to avoid recursion trouble
+        // with cyclic types.
+        type = rtype->argType();
+
+    auto ti = typeInfo(type, true);
     assert(ti && ti->llvm_type);
+
     return ti->llvm_type;
 }
 
@@ -825,102 +845,97 @@ void TypeBuilder::visit(type::MatchTokenState* t)
     setResult(ti);
 }
 
-llvm::Function* TypeBuilder::_makeStructDtor(CodeGen* cg, type::Struct* t, llvm::Type* llvm_type)
+// This function just declares the function, we build the implementation at
+// the end when all type information has been generated. Otherwise we'd run
+// into trouble with cyclic structures as they function already needs the
+// fields' type information already.
+llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llvm_type)
 {
     auto type = t->sharedPtr<Type>();
 
     string name = "dtor_" + type->render();
 
-    llvm::Value* cached = cg->lookupCachedValue("dtor-struct", name);
+    llvm::Value* cached = cg()->lookupCachedValue("dtor-struct", name);
 
     if ( cached )
         return llvm::cast<llvm::Function>(cached);
 
     CodeGen::llvm_parameter_list params;
-    params.push_back(std::make_pair("type", cg->llvmTypePtr(cg->llvmTypeRtti())));
-    params.push_back(std::make_pair("struct", cg->llvmTypePtr(llvm_type)));
+    params.push_back(std::make_pair("type", cg()->llvmTypePtr(cg()->llvmTypeRtti())));
+    params.push_back(std::make_pair("struct", cg()->llvmTypePtr(llvm_type)));
 
-    auto func = cg->llvmAddFunction(name, cg->llvmTypeVoid(), params, false);
+    auto func = cg()->llvmAddFunction(name, cg()->llvmTypeVoid(), params, false);
 
-    cg->pushFunction(func);
+    cg()->cacheValue("dtor-struct", name, func);
+
+    _struct_dtors.push_back(std::make_pair(t, func));
+
+    return func;
+}
+
+void TypeBuilder::_makeStructDtor(type::Struct* t, llvm::Function* func)
+{
+    cg()->pushFunction(func);
 
     auto a = func->arg_begin();
     ++a;
-    auto sval = cg->builder()->CreateLoad(a);
-    auto mask = cg->llvmExtractValue(sval, 1);
+    auto sval = cg()->builder()->CreateLoad(a);
+    auto mask = cg()->llvmExtractValue(sval, 1);
 
     int idx = 0;
 
     for ( auto et : t->typeList() ) {
 
-        auto bit = cg->llvmConstInt(1 << idx, 32);
+        auto bit = cg()->llvmConstInt(1 << idx, 32);
         auto isset = builder()->CreateAnd(bit, mask);
 
-        auto set = cg->newBuilder("set");
-        auto done = cg->newBuilder("done");
+        auto set = cg()->newBuilder("set");
+        auto done = cg()->newBuilder("done");
 
-        auto notzero = builder()->CreateICmpNE(isset, cg->llvmConstInt(0, 32));
-        cg->llvmCreateCondBr(notzero, set, done);
+        auto notzero = builder()->CreateICmpNE(isset, cg()->llvmConstInt(0, 32));
+        cg()->llvmCreateCondBr(notzero, set, done);
 
-        cg->pushBuilder(set);
-        auto elem = cg->llvmExtractValue(sval, 2 + idx++); // first two are gc_hdr and mask.
-        cg->llvmDtor(elem, et, false, "struct");
-        cg->llvmCreateBr(done);
-        cg->popBuilder();
+        cg()->pushBuilder(set);
+        auto elem = cg()->llvmExtractValue(sval, 2 + idx++); // first two are gc_hdr and mask.
+        cg()->llvmDtor(elem, et, false, "struct");
+        cg()->llvmCreateBr(done);
+        cg()->popBuilder();
 
-        cg->pushBuilder(done);
+        cg()->pushBuilder(done);
     }
 
-    cg->popFunction();
-
-    cg->cacheValue("dtor-struct", name, func);
-
-    return func;
+    cg()->popFunction();
 }
 
 void TypeBuilder::visit(type::Struct* t)
 {
-    /// Create the struct type.
-    string sname = t->id() ? t->id()->pathAsString() : string("struct");
-    CodeGen::type_list fields { cg()->llvmLibType("hlt.gchdr"), cg()->llvmTypeInt(32) };
+    auto llvm_type_only = arg1();
 
-    for ( auto f : t->fields() )
-        fields.push_back(cg()->llvmType(f->type()));
+    string sname = t->id() ? t->id()->pathAsString() : t->render();
 
-    auto stype = cg()->llvmTypeStruct(sname, fields);
+    llvm::StructType* stype = nullptr;
 
-    /// Type information for a ``struct`` includes the fields' offsets in the
-    /// ``aux`` entry as a concatenation of pairs (ASCIIZ*, offset), where
-    /// ASCIIZ is a field's name, and offset its offset in the value. Aux
-    /// information is a list of tuple <const char*, int16_t>.
+    // See if we have already created this struct type.
+    auto i = _known_structs.find(sname);
 
-    auto zero = cg()->llvmGEPIdx(0);
-    auto null = cg()->llvmConstNull(cg()->llvmTypePtr(stype));
+    if ( i != _known_structs.end() )
+        stype = i->second;
 
-    CodeGen::constant_list array;
+    else {
+        /// Need to create the struct type. We first create it empty and
+        /// cache it so that recursion works. We'll then add the right
+        ///
+        /// fields.
+        stype = llvm::StructType::create(cg()->llvmContext(), sname); // opaque type
+        _known_structs.insert(std::make_pair(sname, stype));
 
-    int i = 0;
+        // Now add the fields.
+        CodeGen::type_list fields { cg()->llvmLibType("hlt.gchdr"), cg()->llvmTypeInt(32) };
 
-    for ( auto f : t->fields() ) {
-        auto name = cg()->llvmConstAsciizPtr(f->id()->name());
+        for ( auto f : t->fields() )
+            fields.push_back(cg()->llvmType(f->type()));
 
-        // Calculate the offset.
-        auto idx = cg()->llvmGEPIdx(i + 2); // skip the gchdr and bitmask.
-        auto offset = cg()->llvmGEP(null, zero, idx);
-        offset = llvm::ConstantExpr::getPtrToInt(offset, cg()->llvmTypeInt(16));
-
-        CodeGen::constant_list pair { name, offset };
-        array.push_back(cg()->llvmConstStruct(pair));
-
-        ++i;
-    }
-
-    llvm::GlobalVariable* glob = nullptr;
-
-    if ( array.size() ) {
-        auto aval = cg()->llvmConstArray(array);
-        glob = cg()->llvmAddConst("struct-fields", aval);
-        glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
+        stype->setBody(fields);
     }
 
     TypeInfo* ti = new TypeInfo(t);
@@ -929,15 +944,52 @@ void TypeBuilder::visit(type::Struct* t)
     ti->to_string = "hlt::struct_to_string";
     ti->hash = "hlt::struct_hash";
     ti->equal = "hlt::struct_equal";
-    ti->aux = glob;
-
-    if ( ! t->wildcard() )
-        ti->dtor_func = _makeStructDtor(cg(), t, stype);
-    else
-        // Generic versions working with all tuples.
-        ti->dtor = "hlt::struct_dtor";
 
     setResult(ti);
+
+    if ( ! llvm_type_only ) {
+        if ( ! t->wildcard() )
+            ti->dtor_func = _declareStructDtor(t, stype);
+        else
+            // Generic versions working with all tuples.
+            ti->dtor = "hlt::struct_dtor";
+
+        /// Type information for a ``struct`` includes the fields' offsets in the
+        /// ``aux`` entry as a concatenation of pairs (ASCIIZ*, offset), where
+        /// ASCIIZ is a field's name, and offset its offset in the value. Aux
+        /// information is a list of tuple <const char*, int16_t>.
+
+        auto zero = cg()->llvmGEPIdx(0);
+        auto null = cg()->llvmConstNull(cg()->llvmTypePtr(stype));
+
+        CodeGen::constant_list array;
+
+        int i = 0;
+
+        for ( auto f : t->fields() ) {
+            auto name = cg()->llvmConstAsciizPtr(f->id()->name());
+
+            // Calculate the offset.
+            auto idx = cg()->llvmGEPIdx(i + 2); // skip the gchdr and bitmask.
+            auto offset = cg()->llvmGEP(null, zero, idx);
+            offset = llvm::ConstantExpr::getPtrToInt(offset, cg()->llvmTypeInt(16));
+
+            CodeGen::constant_list pair { name, offset };
+            array.push_back(cg()->llvmConstStruct(pair));
+
+            ++i;
+        }
+
+        llvm::GlobalVariable* glob = nullptr;
+
+        if ( array.size() ) {
+            auto aval = cg()->llvmConstArray(array);
+            glob = cg()->llvmAddConst("struct-fields", aval);
+            glob->setLinkage(llvm::GlobalValue::LinkOnceAnyLinkage);
+        }
+
+        ti->aux = glob;
+    }
 }
 
 void TypeBuilder::visit(type::Timer* t)

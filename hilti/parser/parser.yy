@@ -134,14 +134,15 @@ using namespace hilti;
 %token         VECTOR         "'vector'"
 %token         VOID           "'void'"
 %token         WITH           "'with'"
+%token         INIT           "'init'"
 
 
 %type <bitset_label>     bitset_label
 %type <bitset_labels>    bitset_labels
 %type <block>            body block_content
-%type <bval>             opt_tok_const
+%type <bval>             opt_tok_const opt_init
 %type <catch_>           catch_
-%type <catches>          catches
+%type <catches>          catches opt_catches
 %type <cc>               opt_cc
 %type <enum_label>       enum_label
 %type <enum_labels>      enum_labels
@@ -215,6 +216,7 @@ global_decls  : global_decl global_decls
               ;
 
 global_decl   : global
+              | const_
               | function
               | hook
               | type_decl
@@ -224,17 +226,20 @@ global_decl   : global
               | comment
               ;
 
-global        : GLOBAL type local_id eol          { driver.moduleBuilder()->addGlobal($3, $2, nullptr, loc(@$)); }
-              | GLOBAL type local_id '=' expr eol { driver.moduleBuilder()->addGlobal($3, $2, $5, loc(@$)); }
+global        : GLOBAL type local_id eol          { driver.moduleBuilder()->addGlobal($3, $2, nullptr, false, loc(@$)); }
+              | GLOBAL type local_id '=' expr eol { driver.moduleBuilder()->addGlobal($3, $2, $5, false, loc(@$)); }
               ;
 
-local         : LOCAL type local_id eol          { driver.moduleBuilder()->addLocal($3, $2, 0, loc(@$)); }
-              | LOCAL type local_id '=' expr eol { driver.moduleBuilder()->addLocal($3, $2, $5, loc(@$)); }
+const_        : CONST type local_id '=' expr eol  { driver.moduleBuilder()->addConstant($3, $2, $5, false, loc(@$)); }
               ;
 
-type_decl     : TYPE local_id '=' type eol       { driver.moduleBuilder()->addType($2, $4, loc(@$)); }
+local         : LOCAL type local_id eol          { driver.moduleBuilder()->addLocal($3, $2, 0, false, loc(@$)); }
+              | LOCAL type local_id '=' expr eol { driver.moduleBuilder()->addLocal($3, $2, $5, false, loc(@$)); }
+              ;
 
-stmt          : instruction eol                  { driver.moduleBuilder()->builder()->addInstruction($1); }
+type_decl     : TYPE local_id '=' type eol       { driver.moduleBuilder()->addType($2, $4, false, loc(@$)); }
+
+stmt          : instruction                      { driver.moduleBuilder()->builder()->addInstruction($1); }
               ;
 
 stmt_list     : stmt opt_stmt_list
@@ -245,22 +250,24 @@ stmt_list     : stmt opt_stmt_list
 opt_stmt_list : stmt_list
               | /* empty */
 
-instruction   : mnemonic operands                { $$ = builder::instruction::create($1, $2, loc(@$)); }
-              | expr_lhs '=' mnemonic operands   { $4[0] = $1; $$ = builder::instruction::create($3, $4, loc(@$)); }
-              | expr_lhs '=' expr                { $$ = builder::instruction::create("assign", make_ops($1, $3, nullptr, nullptr), loc(@$)); }
+instruction   : mnemonic operands eol            { $$ = builder::instruction::create($1, $2, loc(@$)); }
+              | expr_lhs '=' mnemonic operands eol { $4[0] = $1; $$ = builder::instruction::create($3, $4, loc(@$)); }
+              | expr_lhs '=' expr eol            { $$ = builder::instruction::create("assign", make_ops($1, $3, nullptr, nullptr), loc(@$)); }
               | try_catch                        { $$ = $1; }
-              | foreach                          { $$ = $1; }
+              | foreach eol                      { $$ = $1; }
 
 mnemonic      : local_id                         { $$ = $1; }
               | DOTTED_IDENT                     { $$ = builder::id::node($1, loc(@$)); }
 
-try_catch     : TRY body opt_nl catches          { $$ = builder::block::try_($2, $4, loc(@$)); }
+try_catch     : TRY body eol catches             { $$ = builder::block::try_($2, $4, loc(@$)); }
 
-catches       : catches catch_ opt_nl            { $$ = $1; $$.push_back($2); }
-              | catch_                           { $$ = builder::block::catch_list(); $$.push_back($1); }
+catches       : catch_ opt_catches               { $$ = $2; $$.push_front($1); }
 
-catch_        : CATCH '(' type local_id ')' body { $$ = builder::block::catch_($3, $4, $6, loc(@$)); }
-              | CATCH body                       { $$ = builder::block::catchAll($2, loc(@$)); }
+opt_catches   : catches                          { $$ = $1; }
+              | /* empty */                      { $$ = builder::block::catch_list(); }
+
+catch_        : CATCH '(' type local_id ')' body eol { $$ = builder::block::catch_($3, $4, $6, loc(@$)); }
+              | CATCH body                       eol { $$ = builder::block::catchAll($2, loc(@$)); }
 
 foreach       : FOR '(' local_id IN expr ')' body { $$ = builder::loop::foreach($3, $5, $7, loc(@$)); }
 
@@ -470,8 +477,10 @@ export_       : EXPORT local_id eol              { driver.moduleBuilder()->expor
               | EXPORT type eol                  { driver.moduleBuilder()->exportType($2); }
               ;
 
-function      : opt_cc result local_id '(' opt_param_list ')'
-                                                 {  driver.moduleBuilder()->pushFunction($3, $2, $5, $1, true, loc(@$)); }
+function      : opt_init opt_cc result local_id '(' opt_param_list ')'
+                                                 {  auto func = driver.moduleBuilder()->pushFunction($4, $3, $6, $2, true, loc(@$));
+                                                    if ( $1 ) func->function()->setInitFunction();
+                                                 }
                 body opt_nl                      {  auto func = driver.moduleBuilder()->popFunction(); }
 
               | DECLARE opt_cc result local_id '(' opt_param_list ')' eol
@@ -479,6 +488,9 @@ function      : opt_cc result local_id '(' opt_param_list ')'
                                                     driver.moduleBuilder()->exportID($4);
                                                  }
               ;
+
+opt_init      : INIT                             { $$ = true; }
+              | /* empty */                      { $$ = false; }
 
 hook          : HOOK result scoped_id '(' opt_param_list ')' opt_hook_attrs
                                                  {  driver.moduleBuilder()->pushHook($3, $2, $5, $7, loc(@$)); }

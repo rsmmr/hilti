@@ -1,4 +1,10 @@
->>> jump foo
-wrong-id-types.hlt:7: error, operand 1 must be of type label but is function (int<32>) -> void
 
-wrong-id-types.hlt: 1 error found during validating
+>>> jump foo
+wrong-id-types.hlt:7-8: error, operands do not match instruction jump
+  got:
+    jump: <function>
+  expected one of:
+    jump: label
+ [pass::InstructionResolver]
+wrong-id-types.hlt: Aborting due to resolver error.
+error running hiltic, aborting

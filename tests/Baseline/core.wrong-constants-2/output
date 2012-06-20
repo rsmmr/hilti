@@ -1,2 +1,5 @@
-wrong-constants.hlt:7: parser error, value must be a constant
-wrong-constants.hlt: 1 error found during parsing
+
+>>> c1
+wrong-constants.hlt:7-7: error, constant initialized with non-constant expression
+wrong-constants.hlt: Aborting due to parse error.
+error running hiltic, aborting

@@ -973,6 +973,8 @@ public:
    Hook(const Location& l=Location::None) : Function(l) {}
 
    virtual ~Hook();
+
+   ACCEPT_VISITOR(hilti::type::Function);
 };
 
 /// Type for bytes instances.

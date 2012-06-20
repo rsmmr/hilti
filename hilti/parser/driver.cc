@@ -24,12 +24,13 @@ shared_ptr<hilti::Module> Driver::parse(std::istream& in, const std::string& sna
     _parser->parse();
 
     auto module = _mbuilder->module();
+    auto merrors = _mbuilder->errors();
 
     _scanner = 0;
     _parser = 0;
     _mbuilder = 0;
 
-    if ( errors() > 0 )
+    if ( errors() > 0 || merrors > 0 )
         return 0;
 
     return module;

@@ -1,4 +1,10 @@
->>> sum = int.add
-wrong-op-number.hlt:14: error, operand 1 missing
 
-wrong-op-number.hlt: 1 error found during validating
+>>> sum = int.add
+wrong-op-number.hlt:13-14: error, operands do not match instruction int.add
+  got:
+    int.add:  -> int<32>
+  expected one of:
+    int.add: int<*>, int<*> -> int<*>
+ [pass::InstructionResolver]
+wrong-op-number.hlt: Aborting due to resolver error.
+error running hiltic, aborting

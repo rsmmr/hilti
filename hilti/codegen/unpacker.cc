@@ -574,5 +574,31 @@ void Unpacker::visit(type::Port* t)
 
 void Unpacker::visit(type::Bool* t)
 {
+    auto iter_type = builder::iterator::typeBytes();
+
+    auto args = arg1();
+    auto result = arg2();
+
+    // Format can only Hilti::Packed::Bool.
+
+    // Copy the start iterator.
+    cg()->llvmCreateStore(args.begin, result.iter_ptr);
+    cg()->llvmCctor(result.iter_ptr, iter_type, true, "integer.unpack");
+
+    // We'll do another cctor below but need this to unref in the exception case.
+    cg()->llvmDtorAfterInstruction(result.iter_ptr, iter_type, true);
+
+    llvm::Value* value = cg()->llvmCallC("__hlt_bytes_extract_one", { result.iter_ptr, args.end }, true);
+
+    // Select subset of bits if requested.
+    if ( args.arg ) {
+        auto bit = cg()->builder()->CreateTrunc(args.arg, cg()->llvmTypeInt(8));
+        value = cg()->llvmExtractBits(value, bit, bit);
+    }
+
+    auto unpacked = cg()->builder()->CreateICmpNE(value, cg()->llvmConstInt(0, 8));
+
+    cg()->llvmCctor(result.iter_ptr, iter_type, true, "integer.unpack");
+    cg()->llvmCreateStore(unpacked, result.value_ptr);
 }
 

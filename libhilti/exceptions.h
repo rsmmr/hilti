@@ -118,7 +118,8 @@ extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context*
 ///
 /// dst: A pointer to the location where to store the raised exception.
 /// Often, this will be *expt* parameter passed as part of the C-HILTI
-/// calling convention.
+/// calling convention. It uses GC_ASSIGN for the assignement so if that
+/// location already stores an exception, that will be unrefed first.
 ///
 /// type: The type of the exception.
 ///

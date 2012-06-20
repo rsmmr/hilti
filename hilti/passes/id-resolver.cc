@@ -25,7 +25,7 @@ void IdResolver::visit(expression::ID* i)
     auto val = body->scope()->lookup(id->id());
 
     if ( ! val ) {
-        error(i, util::fmt("unknown ID %s", id->id()->name().c_str()));
+        error(i, util::fmt("unknown ID %s", id->id()->pathAsString().c_str()));
         return;
     }
 
@@ -116,8 +116,8 @@ void IdResolver::visit(statement::ForEach* s)
     auto iterable = ast::as<type::trait::Iterable>(t);
 
     if ( iterable && ! s->body()->scope()->has(s->id(), false) ) {
-        auto var = std::make_shared<variable::Local>(s->id(), iterable->elementType());
-        auto expr = std::make_shared<expression::Variable>(var);
+        auto var = std::make_shared<variable::Local>(s->id(), iterable->elementType(), nullptr, s->location());
+        auto expr = std::make_shared<expression::Variable>(var, s->location());
         s->body()->scope()->insert(s->id(), expr);
     }
 }

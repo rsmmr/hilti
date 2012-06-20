@@ -75,6 +75,7 @@ protected:
    void visit(type::Integer* t) override;
    void visit(type::Interval* t) override;
    void visit(type::Iterator* t) override;
+   void visit(type::Label* t) override;
    void visit(type::List* t) override;
    void visit(type::Map* t) override;
    void visit(type::MatchTokenState* t) override;

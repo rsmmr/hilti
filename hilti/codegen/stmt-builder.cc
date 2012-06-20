@@ -42,6 +42,10 @@ void StatementBuilder::visit(statement::Block* b)
 
     if ( b->id() ) {
         builder = cg()->builderForLabel(b->id()->name());
+
+        if ( ! cg()->block()->getTerminator() )
+            cg()->llvmCreateBr(builder);
+
         cg()->pushBuilder(builder);
     }
 
@@ -80,11 +84,11 @@ void StatementBuilder::visit(statement::Try* t)
 
     cg()->pushEndOfBlockHandler(normal_cont);
 
-    for ( auto c : t->catches() ) {
-        // Build code for catch block.
+    for ( auto c = t->catches().rbegin(); c != t->catches().rend(); c++ ) {
+        // Build code for catch block but in reverse order.
         auto builder = cg()->pushBuilder("catch-match");
 
-        call(c);
+        call(*c);
         cg()->pushExceptionHandler(builder);
 
         // The Catch() will have left the builder on the stack that handles
@@ -124,37 +128,52 @@ void StatementBuilder::visit(statement::try_::Catch* c)
         cg()->popBuilder();
     }
 
-    // In the original block, check if it's our exception.
-
-    auto rtype = ast::as<type::Reference>(c->type());
-    assert(rtype);
-    auto etype = ast::as<type::Exception>(rtype->argType());
-    assert(etype);
-
-    auto cexcpt = cg()->llvmCurrentException();
-
-    CodeGen::value_list args;
-    args.push_back(cexcpt);
-    args.push_back(cg()->llvmExceptionTypeObject(etype));
-    auto ours = cg()->llvmCallC("__hlt_exception_match", args, false, false);
+    // In the original block.
 
     // Create block for our code.
-    auto match = cg()->newBuilder("caught-excpt");
+    IRBuilder* match = nullptr;
 
-    auto cond = builder()->CreateICmpNE(ours, cg()->llvmConstInt(0, 8));
-    cg()->llvmCreateCondBr(cond, match, no_match);
+    if ( c->type() ) {
+        // Check if it's our exception.
+        match = cg()->newBuilder("caught-excpt");
+
+        auto rtype = ast::as<type::Reference>(c->type());
+        assert(rtype);
+        auto etype = ast::as<type::Exception>(rtype->argType());
+        assert(etype);
+
+        auto cexcpt = cg()->llvmCurrentException();
+
+        CodeGen::value_list args;
+        args.push_back(cexcpt);
+        args.push_back(cg()->llvmExceptionTypeObject(etype));
+        auto ours = cg()->llvmCallC("__hlt_exception_match", args, false, false);
+
+        auto cond = builder()->CreateICmpNE(ours, cg()->llvmConstInt(0, 8));
+        cg()->llvmCreateCondBr(cond, match, no_match);
+    }
+
+    else {
+        // It's a catch all.
+        match = cg()->newBuilder("catch-all");
+        cg()->llvmCreateBr(match);
+    }
 
     // Now build our code block.
-    cg()->pushBuilder(match);
+    if ( match )
+        cg()->pushBuilder(match);
+
+    llvm::Value* addr = nullptr;
 
     if ( c->variable() ) {
         // Initialize the local variable providing access to the exception.
         auto name = c->variable()->internalName();
-        auto addr = cg()->llvmAddLocal(name, c->type());
+        addr = cg()->llvmAddLocal(name, c->type());
 
         // Can't init the local directly as that might end up in the wrong
         // block.
-        cg()->llvmGCAssign(addr, cexcpt, c->type(), false);
+        // cg()->llvmCreateStore(cg()->llvmCurrentException(), addr);
+        cg()->llvmGCAssign(addr, cg()->llvmCurrentException(), c->variable()->type(), false);
     }
 
     cg()->llvmClearException();
@@ -247,6 +266,15 @@ void StatementBuilder::visit(declaration::Function* f)
     // If it's a hook, add meta information about the implementation.
     if ( hook_decl )
         cg()->llvmAddHookMetaData(hook_decl->hook(), llvm_func);
+
+    // If it's an init function, add a call to our initialization code.
+    if ( func->initFunction() ) {
+        llvm::BasicBlock& block(cg()->llvmModuleInitFunction()->getEntryBlock());
+        auto builder = util::newBuilder(cg()->llvmContext(), &block, false);
+        std::vector<llvm::Value *> args = { cg()->llvmExecutionContext() };
+        util::checkedCreateCall(builder, "call-init-func", llvm_func, args);
+        delete builder;
+    }
 }
 
 void StatementBuilder::visit(statement::ForEach* f)

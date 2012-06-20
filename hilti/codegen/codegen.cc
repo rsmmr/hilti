@@ -87,6 +87,8 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
 
         createRtti();
 
+        _type_builder->finalize();
+
         return _module;
     }
 
@@ -481,6 +483,11 @@ void CodeGen::createInitFunction()
     _module_init_func = llvmAddFunction(name, llvmTypeVoid(), no_params, false, type::function::HILTI_C);
 
     pushFunction(_module_init_func, true, false, true);
+}
+
+llvm::Function* CodeGen::llvmModuleInitFunction()
+{
+    return _module_init_func;
 }
 
 void CodeGen::finishInitFunction()
@@ -1651,6 +1658,8 @@ void CodeGen::llvmRaiseException(llvm::Value* excpt, bool dtor)
         llvmDtor(excpt, ty, false, "raise-exception");
     }
 
+    finishStatement(false);
+
     llvmTriggerExceptionHandling(true);
 }
 
@@ -1949,7 +1958,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     // Copy exception over.
     auto ctx_excpt = llvmCurrentException();
-    llvmCreateStore(ctx_excpt, arg);
+    llvmGCAssign(args, ctx_excpt, builder::reference::type(builder::exception::typeAny()), false);
 
     if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
@@ -2296,6 +2305,8 @@ llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Valu
     // generic pointer into oru function pointer.
     auto result = builder()->CreateCall(func, args);
 
+    llvmCheckException();
+
     if ( cty->argType()->equal(shared_ptr<Type>(new type::Void())) )
         return nullptr;
 
@@ -2448,7 +2459,11 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
              args.push_back(llvmExecutionContext());
              args.push_back(builder()->CreateLoad(excpt));
              llvmCallC("__hlt_context_set_exception", args, false, false);
+
+             auto ty = builder::reference::type(builder::exception::typeAny());
+             llvmDtor(excpt, ty, true, "llvmDoCall/excpt");
          }
+
          break;
      }
 
@@ -2501,13 +2516,14 @@ void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, 
     _functions.back()->dtors_after_ins.push_back(std::make_tuple(std::make_tuple(val, is_ptr), type));
 }
 
-void CodeGen::finishStatement()
+void CodeGen::finishStatement(bool clear)
 {
     // Unref values registered for doing so.
     for ( auto unref : _functions.back()->dtors_after_ins )
         llvmDtor(unref.first.first, unref.second, unref.first.second, "finish-stmnt");
 
-    _functions.back()->dtors_after_ins.clear();
+    if ( clear )
+        _functions.back()->dtors_after_ins.clear();
 }
 
 IRBuilder* CodeGen::llvmInsertInstructionCleanup(IRBuilder* b)
@@ -2518,8 +2534,13 @@ IRBuilder* CodeGen::llvmInsertInstructionCleanup(IRBuilder* b)
     auto cbuilder = builder();
     auto nbuilder = pushBuilder("cleanup-tmps");
 
+#if 0
+    // Disabled, this needs to be done with finishStatement() (and
+    // potentially finishStatement(false)) on an individual basis.
+
     for ( auto unref : _functions.back()->dtors_after_ins )
         llvmDtor(unref.first.first, unref.second, unref.first.second, "instruction-cleanup");
+#endif        
 
     llvmCreateBr(b);
 

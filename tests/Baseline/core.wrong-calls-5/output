@@ -1,4 +1,5 @@
->>> call foo ()
-wrong-calls.hlt:9: error, called function returns a value
 
-wrong-calls.hlt: 1 error found during validating
+>>> call foo ()
+wrong-calls.hlt:9-10: error, function value not used [pass::Validator]
+wrong-calls.hlt: Aborting due to verification error.
+error running hiltic, aborting

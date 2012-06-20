@@ -1,4 +1,7 @@
->>> return.result True
-wrong-returns.hlt:5: error, return type does not match function definition (is bool, expected int<32>)
 
-wrong-returns.hlt: 1 error found during validating
+>>> return.result True
+wrong-returns.hlt:5-6: error, returned type does not match function
+    Type given:    bool
+    Type expected: int<32> [pass::Validator]
+wrong-returns.hlt: Aborting due to verification error.
+error running hiltic, aborting

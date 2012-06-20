@@ -6,7 +6,7 @@
 
 */
 
-#include <stdio.h>
+#include <libhilti.h>
 #include <assert.h>
 
 #include <hilti.h>

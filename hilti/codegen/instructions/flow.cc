@@ -57,9 +57,18 @@ void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
             cg()->llvmCreateBr(handler.second);
     }
 
-    else
+    else {
+        // TODO: We catch this error here; can we do that in the validator?
+        auto func = current<declaration::Function>();
+
+        if ( ! ast::isA<type::Void>(func->function()->type()->result()->type()) ) {
+            fatalError(i, "function does not return a value");
+            return;
+        }
+
         // Otherwise turn into a void return.
         _doVoidReturn(this);
+    }
 }
 
 void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params)
@@ -224,6 +233,10 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
             cg()->builder()->CreateCondBr(match, a.second, next_block->GetInsertBlock());
             cg()->pushBuilder(next_block);
         }
+
+        // Do the default.
+        cg()->builder()->CreateBr(default_);
+
     }
 }
 

@@ -34,34 +34,3 @@ void run() {
      return.void
 
 }
-
-# @TEST-START-NEXT
-
-module Main
-
-import Hilti
-
-type myException = exception
-
-void run() {
-
-     call Hilti::print ("A")
-
-     try {
-
-       local ref<myException> e
-       e = new myException
-       exception.throw e
-
-       call Hilti::print ("Cannot be reached")
-     }
-
-     catch {
-       call Hilti::print ("Caught the wrong one!")
-     }
-
-     catch ( ref<myException> e ) {
-       call Hilti::print ("Caught the right one!")
-     }
-
-}

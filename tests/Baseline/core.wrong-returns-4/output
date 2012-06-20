@@ -1,4 +1,5 @@
->>> return.void
-wrong-returns.hlt:6: error, function must return a value
 
-wrong-returns: 1 error found during validating canonified module
+>>> 
+wrong-returns.hlt:7-7: fatal error, function does not return a value [codegen]
+wrong-returns.hlt: Aborting due to code generation error.
+error running hiltic, aborting

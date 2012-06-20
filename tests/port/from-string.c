@@ -4,7 +4,7 @@
 // @TEST-EXEC: ./a.out >output
 // @TEST-EXEC: btest-diff output
 
-#include <hilti.h>
+#include <libhilti.h>
 
 extern const hlt_type_info hlt_type_info_port;
 

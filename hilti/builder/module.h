@@ -435,6 +435,42 @@ public:
    /// Returns: An expression referencing the global.
    shared_ptr<hilti::expression::Variable> addGlobal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
 
+   /// Adds a global constant to the module.
+   ///
+   /// id: The name of the constant.
+   ///
+   /// type: The type of the constant.
+   ///
+   /// init: Value to initialize the constant. This must be of
+   /// expression::Constant.
+   ///
+   /// force_unique: If true and an ID of the given name already exists,
+   /// adapts the name to be unique. If false and the name is already taken,
+   /// aborts with error.
+   ///
+   /// l: An associated location.
+   ///
+   /// Returns: An expression referencing the global.
+   shared_ptr<hilti::expression::Constant> addConstant(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique = false, const Location& l = Location::None);
+
+   /// Adds a global constant to the module.
+   ///
+   /// id: The name of the constant.
+   ///
+   /// type: The type of the constant.
+   ///
+   /// init: Value to initialize the constant. This must be of
+   /// expression::Constant.
+   ///
+   /// force_unique: If true and an ID of the given name already exists,
+   /// adapts the name to be unique. If false and the name is already taken,
+   /// aborts with error.
+   ///
+   /// l: An associated location.
+   ///
+   /// Returns: An expression referencing the global.
+   shared_ptr<hilti::expression::Constant> addConstant(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique = false, const Location& l = Location::None);
+
    /// Adds a local variable to the current function.
    ///
    /// id: The name of the variable.

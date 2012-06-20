@@ -1,4 +1,5 @@
->>> return.result 42
-wrong-returns.hlt:5: error, void function returns a value
 
-wrong-returns.hlt: 1 error found during validating
+>>> return.result 42
+wrong-returns.hlt:5-6: error, function does not return a value [pass::Validator]
+wrong-returns.hlt: Aborting due to verification error.
+error running hiltic, aborting

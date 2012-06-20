@@ -136,6 +136,7 @@ uint16_t hlt_ntoh16(uint16_t v)
 
 void hlt_abort()
 {
+    __hlt_debug_print("hilti-mem", "hlt_abort() called");
     fprintf(stderr, "internal HILTI error: hlt_abort() called");
     abort();
 }

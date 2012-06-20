@@ -1,2 +1,2 @@
-module.hlt:2: parser error, unexpected global
-module.hlt: 1 error found during parsing
+module.hlt:2.1-6: error, syntax error, unexpected "'global'", expecting "'module'"
+error running hiltic, aborting

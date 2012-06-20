@@ -1,6 +1,6 @@
 #
-# @TEST-EXEC: hilti-build %INPUT -o a.out
-# @TEST-EXEC: ./a.out
+# @TEST-EXEC: hilti-build %INPUT other.hlt -o a.out
+# @TEST-EXEC: ./a.out >output
 # @TEST-EXEC: btest-diff output
 #
 

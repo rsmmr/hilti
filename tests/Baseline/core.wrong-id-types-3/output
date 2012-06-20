@@ -1,4 +1,10 @@
->>> jump foo
-wrong-id-types.hlt:9: error, operand 1 must be of type label but is struct { int<32> bar }
 
-wrong-id-types.hlt: 1 error found during validating
+>>> jump struct {   int<32> bar }  
+wrong-id-types.hlt:9-10: error, operands do not match instruction jump
+  got:
+    jump: struct {   int<32> bar }  
+  expected one of:
+    jump: label
+ [pass::InstructionResolver]
+wrong-id-types.hlt: Aborting due to resolver error.
+error running hiltic, aborting

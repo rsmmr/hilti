@@ -43,6 +43,33 @@ public:
    /// want: The type we expected instead.
    void wrongType(shared_ptr<Node> node, const string& msg, shared_ptr<Type> have, shared_ptr<Type> want);
 
+   /// Reports an error if type is not valid as a function return type.
+   ///
+   /// node: The node to get the error location from.
+   ///
+   /// type: The type to check.
+   ///
+   /// Returns: False if an error was found.
+   bool validReturnType(ast::NodeBase* node, shared_ptr<Type> type, type::function::CallingConvention cc);
+
+   /// Reports an error if type is not valid as a function parameter.
+   ///
+   /// node: The node to get the error location from.
+   ///
+   /// type: The type to check.
+   ///
+   /// Returns: False if an error was found.
+   bool validParameterType(ast::NodeBase* node, shared_ptr<Type> type, type::function::CallingConvention cc);
+
+   /// Reports an error if type is not valid as a variable type.
+   ///
+   /// node: The node to get the error location from.
+   ///
+   /// type: The type to check.
+   ///
+   /// Returns: False if an error was found.
+   bool validVariableType(ast::NodeBase* node, shared_ptr<Type> type);
+
 protected:
    void visit(Module* m) override;
    void visit(ID* id) override;
@@ -53,6 +80,8 @@ protected:
    void visit(statement::instruction::Unresolved* s) override;
    void visit(statement::try_::Catch* s) override;
    void visit(statement::ForEach* s) override;
+   void visit(statement::instruction::flow::ReturnResult* s) override;
+   void visit(statement::instruction::flow::ReturnVoid* s) override;
 
    void visit(declaration::Variable* v) override;
 

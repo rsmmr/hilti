@@ -9,13 +9,13 @@
 
 /// Returns the global execution context used by the main thread.
 ///
-/// Returns: The context.
+/// Returns: The context. It will *not* have it's cctor applied.
 extern hlt_execution_context* hlt_global_execution_context();
 
 /// Returns the thread manager if threading has been initialized, or null
 /// otherwise.
 ///
-/// Returns: The thread manager.
+/// Returns: The thread manager. It will *not* have it's cctor applied.
 extern hlt_thread_mgr* hlt_global_thread_mgr();
 
 /// Initializes all global state. The function is called from hlt_init().

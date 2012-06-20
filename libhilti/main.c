@@ -134,8 +134,10 @@ int main(int argc, char **argv)
     hlt_exception* excpt = 0;
     main_run(&excpt, ctx);
 
-    if ( excpt )
+    if ( excpt ) {
         hlt_exception_print_uncaught(excpt, ctx);
+        GC_DTOR(excpt, hlt_exception);
+    }
 
     // hlt_threading_stop(&excpt);
 

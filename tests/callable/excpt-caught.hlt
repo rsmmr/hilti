@@ -34,7 +34,7 @@ void run() {
         result = call c
     }
 
-    catch ( myException e ) {
+    catch ( ref<myException> e ) {
        call Hilti::print ("Caught it!")
     }
 

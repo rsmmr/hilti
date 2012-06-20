@@ -1,2 +1,3 @@
-wrong-decls.hlt:11: error, cannot create local variable of type any
-wrong-decls.hlt: 1 error found during validating
+wrong-decls.hlt:10-11: error, variable type must be a value type, but is any [pass::Validator]
+wrong-decls.hlt: Aborting due to verification error.
+error running hiltic, aborting

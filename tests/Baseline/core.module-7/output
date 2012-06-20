@@ -1,4 +1,5 @@
-module.hlt:4: parser error, unexpected nl '
 
-'
-module.hlt: 1 error found during parsing
+>>> Bar
+module.hlt:4-4: error, unknown ID Bar [pass::IdResolver]
+module.hlt: Aborting due to resolver error.
+error running hiltic, aborting

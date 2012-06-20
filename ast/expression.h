@@ -22,6 +22,7 @@ public:
    typedef typename AstInfo::coercer Coercer;
    typedef typename AstInfo::coerced_expression CoercedExpression;
    typedef typename AstInfo::expression Expression;
+   typedef typename AstInfo::optional_type OptionalType;
 
    // See Expression::canCoerceTo().
    virtual bool _canCoerceTo(shared_ptr<Type> target) const {
@@ -104,6 +105,9 @@ inline shared_ptr<typename AstInfo::expression> ExpressionOverrider<AstInfo>::_c
 {
     if ( this->object()->type()->equal(target) )
         return this->object();
+
+    if ( isA<OptionalType>(target) )
+        return this->object()->coerceTo(ast::as<OptionalType>(target)->argType());
 
 #ifdef DEBUG
     if ( ! this->object()->canCoerceTo(target) ) {
@@ -200,6 +204,7 @@ public:
    typedef typename AstInfo::constant_coercer ConstantCoercer;
    typedef typename AstInfo::coercer Coercer;
    typedef typename AstInfo::coerced_expression CoercedExpression;
+   typedef typename AstInfo::optional_type OptionalType;
 
    /// Constructor.
    ///
@@ -249,6 +254,9 @@ public:
    shared_ptr<Expression> _coerceTo(shared_ptr<Type> target) /* override */ {
        if ( this->object()->type()->equal(target) )
            return this->object();
+
+       if ( isA<OptionalType>(target) )
+           return this->object()->coerceTo(ast::as<OptionalType>(target)->argType());
 
        auto coerced = ConstantCoercer().coerceTo(_constant, target);
 

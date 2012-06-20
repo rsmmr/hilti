@@ -80,6 +80,7 @@ set(instructions
     hilti/instructions/iosrc.h
     hilti/instructions/list.h
     hilti/instructions/map.h
+    hilti/instructions/misc.h
     hilti/instructions/network.h
     hilti/instructions/operators.h
     hilti/instructions/overlay.h
@@ -172,6 +173,7 @@ add_library (hilti
 
     hilti/instructions/classifier.cc
     hilti/instructions/flow.cc
+    hilti/instructions/misc.cc
 
     hilti/parser/driver.cc
 
@@ -192,6 +194,7 @@ add_library (hilti
     hilti/codegen/instructions/bool.cc
     hilti/codegen/instructions/bytes.cc
     hilti/codegen/instructions/flow.cc
+    hilti/codegen/instructions/misc.cc
     hilti/codegen/instructions/integer.cc
     hilti/codegen/instructions/operators.cc
     hilti/codegen/instructions/string.cc

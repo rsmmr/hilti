@@ -1,8 +1,6 @@
-/* $Id$
- *
- * Support functions HILTI's bool data type.
- *
- */
+//
+// Support functions HILTI's bool data type.
+//
 
 #include <assert.h>
 

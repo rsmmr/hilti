@@ -315,7 +315,7 @@ type::Bitset::Bitset(const label_list& labels, const Location& l) : ValueType(l)
         _labels.push_back(make_pair(label.first, bit));
     }
 
-    _labels.sort();
+    _labels.sort([] (const Label& lhs, const Label& rhs) { return lhs.first->name().compare(rhs.first->name()) < 0; });
 }
 
 shared_ptr<Scope> type::Bitset::typeScope()
@@ -385,7 +385,7 @@ type::Enum::Enum(const label_list& labels, const Location& l) : ValueType(l)
     }
 
     _labels.push_back(make_pair(std::make_shared<ID>("Undef"), -1));
-    _labels.sort();
+    _labels.sort([] (const Label& lhs, const Label& rhs) { return lhs.first->name().compare(rhs.first->name()) < 0; });
 }
 
 shared_ptr<Scope> type::Enum::typeScope()
@@ -518,7 +518,15 @@ bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
         if ( f1->id()->name() != f2->id()->name() )
             return false;
 
-        if ( ! f1->type()->equal(f2->type()) )
+        // Comparing the types by rendering them to avoid infinite recursion
+        // for cycles.
+        std::ostringstream t1;
+        passes::Printer(t1, true).run(f1->type());
+
+        std::ostringstream t2;
+        passes::Printer(t2, true).run(f2->type());
+
+        if ( t1.str() != t2.str() )
             return false;
 
         if ( f1->default_() && ! f2->default_() )
@@ -533,7 +541,7 @@ bool type::Struct::_equal(shared_ptr<hilti::Type> ty) const
             passes::Printer(e1, true).run(f1->default_());
 
             std::ostringstream e2;
-            passes::Printer(e2, true).run(f1->default_());
+            passes::Printer(e2, true).run(f2->default_());
 
             if ( e1.str() != e2.str() )
                 return false;
@@ -645,7 +653,10 @@ const std::vector<type::trait::Unpackable::Format>& type::Port::unpackFormats() 
 
 type::trait::Unpackable::Format _unpack_formats_bool[] = {
     { "Bool", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
-      "A single bytes." }
+      R"(A single bytes and, per default, returns ``True` if that byte is non-zero
+        and ``False`` otherwise. Optionally, one can specify a particular bit
+        (0-7) as additional ``unpack`` arguments and the result will then
+        reflect the value of that bit.)" }
 };
 
 std::vector<type::trait::Unpackable::Format> unpack_formats_bool(makeVector(_unpack_formats_bool));

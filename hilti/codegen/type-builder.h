@@ -163,7 +163,12 @@ struct TypeInfo {
 /// Visitor class that generates type information for a type. Note that this
 /// class should not be used directly, the main frontend functions are
 /// CodeGen::llvmRtti(), CodeGen::llvmType, CodeGen::typeInfo().
-class TypeBuilder : public CGVisitor<TypeInfo*>
+///
+/// The boolean parameter is internal and if true indicate that we want to
+/// retrieve only llvm_type field; others may be left unset (except that
+/// init_val may be set instead of llvm_type) This helps dealing with cyclic
+/// struct types.
+class TypeBuilder : public CGVisitor<TypeInfo*, bool>
 {
 public:
    /// Constructor.
@@ -172,12 +177,18 @@ public:
    TypeBuilder(CodeGen* cg);
    virtual ~TypeBuilder();
 
+   /// Finalizes type building. This method must be called at the very end of
+   /// code generation.
+   void finalize();
+
    /// Returns the type information structure for a type.
    ///
    /// type: The type to return the information for.
    ///
    /// Returns: The object with the type's information.
-   TypeInfo* typeInfo(shared_ptr<hilti::Type> type);
+   TypeInfo* typeInfo(shared_ptr<hilti::Type> type) {
+       return typeInfo(type, false);
+   }
 
    /// Returns the LLVM type that corresponds to a HILTI type.
    ///
@@ -237,19 +248,29 @@ protected:
    void visit(type::iterator::Vector* i) override;
 
 private:
+   TypeInfo* typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_only);
+
    llvm::Constant* _lookupFunction(const string& func);
    llvm::Function* _makeTupleDtor(CodeGen* cg, type::Tuple* type);
    llvm::Function* _makeTupleCctor(CodeGen* cg, type::Tuple* type);
    llvm::Function* _makeTupleFuncHelper(CodeGen* cg, type::Tuple* t, bool dtor);
-   llvm::Function* _makeStructDtor(CodeGen* cg, type::Struct* t, llvm::Type* llvm_type);
    llvm::Function* _makeOverlayCctor(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type);
    llvm::Function* _makeOverlayDtor(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type);
    llvm::Function* _makeOverlayFuncHelper(CodeGen* cg, type::Overlay* t, llvm::Type* llvm_type, bool dtor);
+
+   llvm::Function* _declareStructDtor(type::Struct* t, llvm::Type* llvm_type);
+   void _makeStructDtor(type::Struct* t, llvm::Function* func);
 
    // We cached all once computed type-infos and return the cached version
    // next time somebody asks for the same type instance.
    typedef std::map<shared_ptr<hilti::Type>, TypeInfo*> ti_cache_map;
    ti_cache_map _ti_cache;
+
+   // We cache structs by name so that we always map them to the same type.
+   std::map<string, llvm::StructType*> _known_structs;
+
+   // We acculumate struct dtor functions first and then build them at the end.
+   std::list<std::pair<type::Struct*, llvm::Function*>> _struct_dtors;
 };
 
 

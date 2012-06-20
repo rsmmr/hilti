@@ -1,4 +1,5 @@
->>> call foo (x, x)
-wrong-calls.hlt:8: error, wrong type for function argument 2 in call (is int<32>, expected int<16>)
 
-wrong-calls.hlt: 1 error found during validating
+>>> call foo (x,x)
+wrong-calls.hlt:8-9: error, type of parameter 1 does not match function, have int<32> but expected int<16> [pass::Validator]
+wrong-calls.hlt: Aborting due to verification error.
+error running hiltic, aborting

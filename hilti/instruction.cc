@@ -365,19 +365,27 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
     return true;
 }
 
-bool Instruction::checkCallResult(shared_ptr<type::Function> func, shared_ptr<Type> ty) const
+bool Instruction::checkCallResult(shared_ptr<Type> rtype, shared_ptr<Type> ty) const
 {
-    auto rtype = func->result()->type();
+    bool is_void = ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype);
 
-    if ( ! ty ) {
-        if ( ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype) )
-            return true;
+    if ( ty && is_void ) {
+        error(nullptr, "function does not return a value");
+        return false;
     }
 
-    if ( ty && Coercer().canCoerceTo(ty, rtype) )
+    if ( ! ty && ! is_void ) {
+        error(nullptr, "function value not used");
+        return false;
+    }
+
+    if ( ! ty )
         return true;
 
-    auto have = ty ? ty->render() : string("none");
+    if ( Coercer().canCoerceTo(ty, rtype) )
+        return true;
+
+    auto have = ty->render();
     auto want = rtype->render();
 
     error(ty, util::fmt("return type does not match function, have %s but expected %s", have.c_str(), want.c_str()));
@@ -385,19 +393,27 @@ bool Instruction::checkCallResult(shared_ptr<type::Function> func, shared_ptr<Ty
     return false;
 }
 
-bool Instruction::checkCallResult(shared_ptr<type::Function> func, shared_ptr<Expression> op) const
+bool Instruction::checkCallResult(shared_ptr<Type> rtype, shared_ptr<Expression> op) const
 {
-    auto rtype = func->result()->type();
+    bool is_void = ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype);
 
-    if ( ! op ) {
-        if ( ast::isA<type::Void>(rtype) || ast::isA<type::OptionalArgument>(rtype) )
-            return true;
+    if ( op && is_void ) {
+        error(nullptr, "function does not return a value");
+        return false;
     }
 
-    if ( op && op->canCoerceTo(rtype) )
+    if ( ! op && ! is_void ) {
+        error(nullptr, "function value not used");
+        return false;
+    }
+
+    if ( ! op )
         return true;
 
-    auto have = op ? op->type()->render() : string("none");
+    if ( op->canCoerceTo(rtype) )
+        return true;
+
+    auto have = op->type()->render();
     auto want = rtype->render();
 
     error(op, util::fmt("return type does not match function, have %s but expected %s", have.c_str(), want.c_str()));

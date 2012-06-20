@@ -1,2 +1,3 @@
-wrong-decls.hlt:4: error, cannot create global variable of type any
-wrong-decls.hlt: 1 error found during validating
+wrong-decls.hlt:4-6: error, variable type must be a value type, but is any [pass::Validator]
+wrong-decls.hlt: Aborting due to verification error.
+error running hiltic, aborting

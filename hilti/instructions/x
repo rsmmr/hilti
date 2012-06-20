@@ -1,0 +1,58 @@
+static void _checkCallArgs(const Instruction* i, shared_ptr<Expression> func, shared_ptr<Expression> args)
+{
+    auto ftype = ast::as<type::Function>(func->type());
+    auto params = ftype->parameters();
+
+    auto tconst = ast::as<expression::Constant>(args);
+    auto targs = ast::as<constant::Tuple>(tconst->constant());
+
+    if ( ! targs ) {
+        i->error(nullptr, "call parameters must be a constant tuple");
+        return;
+    }
+
+    auto tlist = targs->value();
+
+    if ( tlist.size() > params.size() ) {
+        i->error(nullptr, "too many arguments for call");
+        return;
+    }
+
+    auto p = params.begin();
+    auto a = tlist.begin();
+
+    int i = 0;
+    while ( a != tlist.end() ) {
+        if ( ! (*a++)->canCoerceTo((*p++)->type()) ) {
+            i->error(nullptr, "");
+            return;
+        }
+    }
+
+    while ( p != params.end() ) {
+        if ( ! (*p++)->defaultValue() ) {
+            i->error(nullptr, "too few parameters for call");
+            return;
+        }
+    }
+}
+
+static void _checkCallResult(const Instruction* i, shared_ptr<Expression> target, shared_ptr<Type> rtype)
+{
+    auto is_void = ast::isA<type::Void>(rtype);
+
+    if ( target && is_void ) {
+        i->error(nullptr, "function does not return a value");
+        return;
+    }
+
+    if ( ! target && ! is_void ) {
+        i->error(nullptr, "function value not used");
+        return;
+    }
+
+    if ( ! target )
+        return;
+
+    i->canCoerceTo(rtype, target->type());
+}

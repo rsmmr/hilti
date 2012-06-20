@@ -94,7 +94,7 @@ void ScopeBuilder::visit(declaration::Variable* v)
         return;
 
     auto var = v->variable()->sharedPtr<Variable>();
-    auto expr = shared_ptr<expression::Variable>(new expression::Variable(var, var->location()));
+    auto expr = std::make_shared<expression::Variable>(var, var->location());
     scope->insert(v->id(), expr);
 }
 
@@ -125,7 +125,7 @@ void ScopeBuilder::visit(declaration::Constant* c)
     if ( ! scope )
         return;
 
-    auto constant = c->sharedPtr<Constant>();
+    auto constant = c->constant();
     auto expr = shared_ptr<expression::Constant>(new expression::Constant(constant, constant->location()));
     scope->insert(c->id(), expr);
 }

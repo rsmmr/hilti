@@ -47,7 +47,8 @@ extern size_t hlt_util_memory_usage();
 ///
 extern void hlt_pthread_setcancelstate(int state, int *oldstate);
 
-/// Aborts execution immediately with a core dump.
+/// Aborts execution immediately with a core dump. This also flags our memory
+/// checking that finding leaks is futile because we don't clean up.
 void hlt_abort();
 
 /// Converts a 64-bit value from host-order to network order.

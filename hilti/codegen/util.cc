@@ -165,10 +165,10 @@ IRBuilder* codegen::util::newBuilder(CodeGen* cg, llvm::BasicBlock* block, bool 
 
     auto builder = new IRBuilder(cg->llvmContext(), folder, util::IRInserter(cg));
 
-    if ( ! (insert_at_beginning && block->getFirstInsertionPt() != block->end() ) )
-        builder->SetInsertPoint(block);
+    if ( insert_at_beginning && block->begin() != block->end() )
+        builder->SetInsertPoint(block->begin());
     else
-        builder->SetInsertPoint(block->getFirstInsertionPt());
+        builder->SetInsertPoint(block);
 
     return builder;
 }

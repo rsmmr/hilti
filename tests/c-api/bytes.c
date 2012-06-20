@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#include <hilti.h>
+#include <libhilti.h>
 
 void printb(const hlt_bytes* b)
 {

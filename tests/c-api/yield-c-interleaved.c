@@ -3,7 +3,7 @@
  * @TEST-IGNORE
  */
 
-#include <hilti.h>
+#include <libhilti.h>
 #include <assert.h>
 
 #include "yield-interleaved.hlt.h"

@@ -78,6 +78,4 @@ void run() {
     out = call Hilti::fmt ("sub=%s diff=%d", (sub, diff))
     call Hilti::print(out)
 
-    ## Note multi-byte delimiters not supported yet.
-
     }

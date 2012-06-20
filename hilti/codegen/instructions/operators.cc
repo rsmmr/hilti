@@ -2,6 +2,7 @@
 #include <hilti-intern.h>
 
 #include "../stmt-builder.h"
+#include "../type-builder.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -31,6 +32,14 @@ void StatementBuilder::visit(statement::instruction::operator_::Equal* i)
     assert(false); // Not used.
 }
 
+void StatementBuilder::visit(statement::instruction::operator_::Unequal* i)
+{
+    auto eq = cg()->makeLocal("eq", builder::boolean::type());
+    cg()->llvmInstruction(eq, instruction::operator_::Equal, i->op1(), i->op2());
+    auto result = cg()->builder()->CreateSelect(cg()->llvmValue(eq), cg()->llvmConstInt(0, 1), cg()->llvmConstInt(1, 1));
+    cg()->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::operator_::Assign* i)
 {
     auto op1 = cg()->llvmValue(i->op1(), i->target()->type(), true);
@@ -56,3 +65,7 @@ void StatementBuilder::visit(statement::instruction::operator_::Unpack* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::operator_::Clear* i)
+{
+    cg()->llvmStore(i->op1(), cg()->typeInfo(i->op1()->type())->init_val);
+}

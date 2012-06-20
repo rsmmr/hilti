@@ -1,4 +1,25 @@
->>> a = new int<32>
-wrong-operators.hlt:12: error, operand 1 must be of type heaptype but is int<32>
 
-wrong-operators.hlt: 1 error found during validating
+>>> a = new int<32>
+wrong-operators.hlt:11-12: error, operands do not match instruction new
+  got:
+    new: int<32> -> int<32>
+  expected one of:
+    new: bytes -> ref<bytes>
+    new: callable, <function>, tuple<> -> ref<callable>
+    new: channel<*>, int<64> -> ref<channel<*>>
+    new: classifier<*> -> ref<classifier<*>>
+    new: exception -> ref<exception>
+    new: exception, any -> ref<exception>
+    new: file -> ref<file>
+    new: iosrc<*> -> ref<iosrc<*>>
+    new: list<*>, [ ref<timer_mgr> ] -> ref<list<*>>
+    new: map<*>, [ ref<timer_mgr> ] -> ref<map<*>>
+    new: regexp<> -> ref<regexp<>>
+    new: set<*>, [ ref<timer_mgr> ] -> ref<set<*>>
+    new: struct , [ ref<timer_mgr> ] -> ref<struct >
+    new: timer_mgr -> ref<timer_mgr>
+    new: timer, <function>, tuple<> -> ref<timer>
+    new: vector<*>, [ ref<timer_mgr> ] -> ref<vector<*>>
+ [pass::InstructionResolver]
+wrong-operators.hlt: Aborting due to resolver error.
+error running hiltic, aborting

@@ -1,7 +1,30 @@
 
 #include "hilti-intern.h"
+#include "autogen/instructions.h"
 
 using namespace hilti::passes;
+
+static void _checkReturn(Validator* v, Statement* stmt, shared_ptr<Function> func, shared_ptr<Expression> result)
+{
+    auto rtype = as<type::Function>(func->type())->result()->type();
+    auto is_void = ast::isA<type::Void>(rtype);
+
+    if ( result && is_void ) {
+        v->error(stmt, "function does not return a value");
+        return;
+    }
+
+    if ( ! result && ! is_void ) {
+        v->error(stmt, "function must return a value");
+        return;
+    }
+
+    if ( ! result )
+        return;
+
+    if ( ! result->canCoerceTo(rtype) )
+        v->wrongType(stmt, "returned type does not match function", result->type(), rtype);
+}
 
 Validator::~Validator()
 {
@@ -25,8 +48,75 @@ void Validator::wrongType(ast::NodeBase* node, const string& msg, shared_ptr<Typ
     return error(node, m);
 }
 
+bool Validator::validReturnType(ast::NodeBase* node, shared_ptr<Type> type, type::function::CallingConvention cc)
+{
+    if ( ast::isA<type::Void>(type) )
+        return true;
+
+    if ( cc != type::function::HILTI && ast::isA<type::Any>(type) )
+        return true;
+
+    if ( ast::isA<type::ValueType>(type) )
+        return true;
+
+    error(node, ::util::fmt("function result must be a value type, but is %s", type->render().c_str()));
+    return false;
+}
+
+
+bool Validator::validParameterType(ast::NodeBase* node, shared_ptr<Type> type, type::function::CallingConvention cc)
+{
+    if ( ast::isA<type::OptionalArgument>(type) )
+        type = ast::as<type::OptionalArgument>(type)->argType();
+
+    if ( cc == type::function::HILTI ) {
+        auto tuple = ast::as<type::Tuple>(type);
+        if ( tuple && tuple->wildcard() ) {
+            error(tuple, "HILTI functions cannot have parameter of type tuple<*>");
+            return false;
+        }
+    }
+
+    if ( cc != type::function::HILTI && ast::isA<type::Any>(type) )
+        return true;
+
+    if ( ast::isA<type::ValueType>(type) )
+        return true;
+
+    if ( ast::isA<type::TypeType>(type) )
+        return true;
+
+    error(node, ::util::fmt("function parameter must be a value type, but is %s", type->render().c_str()));
+    return false;
+}
+
+bool Validator::validVariableType(ast::NodeBase* node, shared_ptr<Type> type)
+{
+    if ( type->wildcard() ) {
+        error(node, "cannot create instances of a wildcard type");
+        return false;
+    }
+
+    if ( ast::isA<type::ValueType>(type) )
+        return true;
+
+    error(node, ::util::fmt("variable type must be a value type, but is %s", type->render().c_str()));
+    return false;
+}
+
 void Validator::visit(Module* m)
 {
+    // Make sure we have a Main::run function.
+    if ( util::strtolower(m->id()->name()) == "main" ) {
+
+        auto run = m->body()->scope()->lookup(std::make_shared<ID>("run"));
+
+        if ( ! run )
+            error(m, "module Main must define a run() function");
+
+        else if ( ! ast::isA<expression::Function>(run) )
+            error(m, "in module Main, ID 'run' must be a function");
+    }
 }
 
 void Validator::visit(ID* id)
@@ -62,6 +152,18 @@ void Validator::visit(statement::instruction::Unresolved* s)
     error(s, "unresolved instruction (should not happen, probably an internal error)");
 }
 
+void Validator::visit(statement::instruction::flow::ReturnResult* s)
+{
+    auto func = current<declaration::Function>();
+    _checkReturn(this, s, func->function(), s->op1());
+}
+
+void Validator::visit(statement::instruction::flow::ReturnVoid* s)
+{
+    auto func = current<declaration::Function>();
+    _checkReturn(this, s, func->function(), nullptr);
+}
+
 void Validator::visit(statement::try_::Catch* s)
 {
     static shared_ptr<Type> refException(new type::Reference(shared_ptr<Type>(new type::Exception())));
@@ -72,10 +174,20 @@ void Validator::visit(statement::try_::Catch* s)
 
 void Validator::visit(declaration::Variable* v)
 {
+    validVariableType(v, v->variable()->type());
 }
 
 void Validator::visit(declaration::Function* f)
 {
+    auto func = f->function();
+
+    if ( func->initFunction() ) {
+        if ( ! ast::isA<type::Void>(func->type()->result()->type()) )
+            error(f, "init function cannot return a value");
+
+        if ( func->type()->parameters().size() )
+            error(f, "init function cannot take parameters");
+    }
 }
 
 void Validator::visit(declaration::Hook* f)
@@ -95,7 +207,6 @@ void Validator::visit(declaration::Hook* f)
 void Validator::visit(type::function::Parameter* p)
 {
 }
-
 
 void Validator::visit(type::Address* t)
 {
@@ -219,6 +330,13 @@ void Validator::visit(type::File* t)
 
 void Validator::visit(type::Function* t)
 {
+    if ( ! validReturnType(t, t->result()->type(), t->callingConvention()) )
+        return;
+
+    for ( auto p : t->parameters() ) {
+        if ( ! validParameterType(t, p->type(), t->callingConvention()) )
+            continue;
+    }
 }
 
 void Validator::visit(type::Hook* t)

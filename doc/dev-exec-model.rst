@@ -144,115 +144,119 @@ convention, each such object begins with an instance of
 :hltc:`__hlt_gchdr`, which stores the reference count information.
 
 In the HILTI compiler's type hierarchy, all ref'counted types are
-derived from :hltc:`GarbageCollected`. Note a :hltc:`HeapType` is
+derived from :hltc:`GarbageCollected`. Note that a :hltc:`HeapType` is
 always ref'counted, but others may be too (like
 :hltc:`hilti::type::String`).
 
-The code generator provides three methods to manage such objects:
+Unfortunately, having memory managed objects also complicates handling
+of non-heap objects if they can store references to any of them (e.g.,
+tuples, iterators). For these, we need to *copy constructors* and
+*destructors* that increase/decreate the reference count for all
+embedded referenced, respectively.
 
-    :hltc:`llvmRef` 
-        Indicates that a new reference to an objects has been stored
-        (i.e., increasing the reference count).
+The code generator provides a set of methods to create or delete
+copies of objects that need memory management, and they all
+transparenlty handle both directly garbage collected objects and other
+that may themselves store reference of such (and also those who
+don't). Generally, these method should be used whenever
+creating/copying/deleting a HILTI value:
 
-    :hltc:`llvmUnref` 
-        Indicates that a reference to an objects has been deleted
-        (i.e., decreasing the reference count). If going to zero, the
-        object will have its destructors run (if defined) and then be
-        deleted. Conceptually, destruction doesn't need to happen
-        immediately though usually it probably will.
 
-There are corresponding functions in ``libhilti`` for internal C-level
-memory management (:hltc:`__hlt_object_ref`,
-:hltc:`__hlt_object_unref`). In addition, by convention each garbaged
-collected type ``foo`` provides functions ``foo_new``, ``foo_ref`` and
-``foo_unref``. While the latter two are equivalent in functionality to
-``__hlt_object_ref/unref``, calling these is more convinient as type
-information doesn't need to be passed in (and it's more readable too).
+    :hltc:`llvmCctor`
+        Called after a copy of an object has been created (i.e., for
+        heap types, when a new references got created; and for value
+        types, when the object was copied). It increases all reference
+        counts appropiately.
 
-For each garbage collected type, HILTI's run-time type information
-provides two pieces of information for memory management:
+    :hltc:`llvmDtor`
+        Called before a copy of an object is deleted (i.e, the
+        reference or the object is no longer used). It dereases all
+        reference counts appropiately.
 
-    A destructor function.
-        This will be called when a reference count goes to zero. It
-        must in turn unref all pointers the instance to be deleted may
-        have stored to other collected objects.
+    :hltc:`llvmGCAssign`
+        Creates a copy of a value and assigns it to a target location,
+        calling ``llvmDtor`` for the old value currently stored at the
+        target location and ``llvmCctor`` for the copy.
 
-    A pointer map.
-        A array of offsets specifying where pointers to further
-        garbage collected objects are stored inside an instance. This
-        i While not strictly necessary for simple ref'counting itself,
-        thus will eventually faciliate having a garbage collector
-        running in addition to break cycles.
+    :hltc:`llvmGCClear`
+        Deletes a value by assigning a null value to its location,
+        calling ``llvmDtor`` for the old value.
 
-        A pointer map is an array of :hltc:`hlt_ptroffset_t` in which
-        each entry gives the offset of a pointer in the allocated
-        object (offset counting *includes* the initial
-        :hltc:`__hlt_gchdr` instance at offset 0). The end of the
-        array is marked by an offset that has the value
-        :hltc:`HLT_PTR_MAP_END` , defined in :hltc:`rtti.h`.
+There is corresponding set of macros in ``libhilti`` for internal
+C-level memory management (:hltc:`GC_CCTOR`, :hltc:`GC_ASSIGN`, and
+others).
 
-        For fully typed-LLVM objects, there is class
-        :hltc:`codegen::PointerMap` that computes the pointer map
-        automatically at code generation time. For types defined at
-        the C-level, ``libhilti`` includes global of the name
-        ``__hlt_<type>_ptrmap`` that can be references.
+To make this all work, by convention each type ``foo`` requiring a
+copy constructor or destructor provides corresponding
+functions``foo_cctor`` and ``foo_dtor``. These functions are stored as
+part of the run-time type information.
 
-        .. note:: This pointer map stuff is a bit preliminary right
-           now, and we don't use the information at all currently. In
-           principle we could also use that information to replace the
-           destructor function (if we also added type information top
-           the map). However, that seems not only less efficient but
-           also hard to debug. 
+.. note::
 
+    There's a bit of magic here: for not garbabe collected types, we
+    store the functions directly. For garbage collected types,
+    however, we instead store pointers to functions
+    increasing/decreasing their reference count. Only if a reference
+    count goes to zero, will their actual dtor function be called (and
+    they don't have cctor functions).
+
+For each garbage collected type, we also generate a pointer map. That
+map is currently not further used, but may be so in the future if we
+add a pointer-chasing cycle detector. We describe it here mainly for
+later reference. The map is an array of offsets specifying where
+pointers to further garbage collected objects are stored inside an
+instance. A pointer map is an array of :hltc:`hlt_ptroffset_t` in
+which each entry gives the offset of a pointer in the allocated object
+(offset counting *includes* the initial :hltc:`__hlt_gchdr` instance
+at offset 0). The end of the array is marked by an offset that has the
+value :hltc:`HLT_PTR_MAP_END` , defined in :hltc:`rtti.h`. For fully
+typed-LLVM objects, there is class :hltc:`codegen::PointerMap` that
+computes the pointer map automatically at code generation time. For
+types defined at the C-level, ``libhilti`` should define globals of
+the name ``__hlt_<type>_ptrmap`` for types that that can be references
+(but it doesn't currently).
 
 Reference Counting Conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: This is not current anymore.
-
 The following conventions are mandatory to follow when working with
-reference-counted objects:
-
-    1. When storing a reference in any variable or parameter, first
-       *unref* the old value, then *ref* the new value before doing
-       the store. The :hltc:`codegen::Storer` takes care of this.
+garbage collected objects. We frame it in terms of creating copies of
+values using their *cctor* and *dtor* function, as described above.
+ 
+    1. When storing a reference in any location that may persist after
+       the current function exits, you need to *cctor* it. Make sure
+       to *dtor* the old value first. The :hltc:`codegen::Storer`
+       takes care of this, and it can be manually done via
+       :hltc:`llvmGCAssign`.
 
     2. When calling functions of :ref:`dev-cc` ``HILTI`` or
-       ``C-HILTI``, we pass all ref-counted objects at +0. For the
-       callee, the object is guaranteed to exists until it returns. 
-       If it needs to store a reference to one of its arguments that
-       exceeds that, it needs to ref.
+       ``C-HILTI``, we generally pass all objects at +0. For the
+       callee, the object is guaranteed to exists until it returns. If
+       it needs to store a copy to one of its arguments that exceeds
+       that, it needs to *cctor*. For ``C`` function, the default is
+       the same, though exception may apply as indicated in comments.
 
        For non-const parameters, we create local shadow variables in
        the function. These shadow variables are treated like any other
-       and they ref upon initialization.
+       and they are *ctor*'ed upon initialization.
 
-    3. When returning an object of a ref-counted type from a
-       ``HILTI``/``C-HILTI`` function, we *always* return it at +1.
-       I.e., the callee must ``ref`` the object before returning and
-       the caller must ``unref`` after receiving it (in practice, the
-       caller will normally immediately store the return value so with
-       (1) above, it then doesn't need to anything.)
+    3. When returning a value from a ``HILTI``/``C-HILTI`` function,
+       we *always* return it at +1. I.e., the callee must *cctor* the
+       object before returning and the caller must *dtor* after
+       receiving it (in practice, the caller will normally immediately
+       store the return value so with (1) above, it then doesn't need
+       to anything.) For ``C`` function, the default is the same,
+       though exception may apply as indicated in comments.
 
-    4. ``HILTI``/``C-HILTI`` functions *unref* all their local
+    4. ``HILTI``/``C-HILTI`` functions *dtor* all their local
        variables (and shadow parameters) at exit (both normal or
        exception).
 
-    5. Globals are *unref* when the execution context they are stored
-       in gets destroyed.
+    5. Globals are *dtor*'ed when the execution context they are
+       stored in gets destroyed.
 
-    6. For functions of other calling conventions
-       ``HILTI``/``C-HILTI`` (including internal ones not following
-       any standard convention), ref-counting semantics must be
-       defined individually (though it's usually best to follow the
-       above wherever possible to avoid confusion).
-
-    7. Composite objects storing references to garbage collected
-       objects must ``ref`` and ``unref`` as appropiate.
-
-       Note that tuples are tricky here as they are a value type. We
-       hardcode the login in :hltc:`CodeGen::llvmRef` and
-       :hltc:`CodeGen::llvmUnref`.
+    6. Composite objects storing references to values objects must
+       ``cctor`` and ``dtor`` as appropiate.
 
 .. note:: These conventions generates more updates than necessary.  We
    should be able to add an optimization pass later that removes a
@@ -261,10 +265,24 @@ reference-counted objects:
 Exception Handling
 ------------------
 
-See this thread:
-    http://groups.google.com/group/llvm-dev/browse_thread/thread/f04c4ed8df41bbb6/a65e630d24b76cdb?show_docid=a65e630d24b76cdb
+We do exception handling "manually" by storing the current exception
+in the execution context and checking it periodicially when it may
+have been set (like after a function call). This includes manual stack
+unwinding if we don't find a handler.
 
-TODO.
+.. note:: It's unclear if "real" exception handling would be
+   sufficiently more efficient to be worth the effort. That's
+   something to decide later.
+
+
+``C-HILTI`` functions are currently handled differently: they get an
+additional exception parameter, which they set to raise one.
+
+.. todo::
+
+    That's somethign we should change. There's no reason the C
+    functions can't directly set the exception in the execution
+    context as well.
 
 Continuations
 -------------
