@@ -1502,6 +1502,12 @@ void CodeGen::llvmBuildExitBlock()
 
     pushBuilder(exit_builder);
     llvmBuildFunctionCleanup();
+
+    if ( debugLevel() > 0 &&  _functions.back()->leave_func ) {
+        string msg = string("leaving function ") + _functions.back()->leave_func->function()->id()->name();
+        llvmDebugPrint("hilti-flow", msg);
+    }
+
     popBuilder();
 
     if ( phi ) {

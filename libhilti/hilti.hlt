@@ -40,6 +40,12 @@ type UndefinedValue = exception<string> &libhilti="hlt_exception_undefined_value
 # Raised when an overlay's field is accessed before attaching it.
 type OverlayNotAttached = exception &libhilti="hlt_exception_overlay_not_attached"
 
+# Raised when a debug.assert statement failed.
+type AssertionError = exception<string> &libhilti="hlt_exception_assertion_error"
+
+# Raised by debug.internal_error.
+type InternalError = exception<string> &libhilti="hlt_exception_internal_error"
+
 ## Defines the valid formats for the ref:op:`unpack` operator. 
 type Packed = enum {
     # String

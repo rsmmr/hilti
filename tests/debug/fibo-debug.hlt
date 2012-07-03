@@ -1,7 +1,7 @@
 #
-# @TEST-EXEC:  hilti-build -D %INPUT -o a.out
+# @TEST-EXEC:  hilti-build -dd %INPUT -o a.out
 # @TEST-EXEC:  HILTI_DEBUG=hilti-flow:hilti-trace ./a.out >output 2>&1
-# @TEST-EXEC:  btest-diff output
+# @TEST-EXEC:  btest-diff hlt-debug.log
 
 module Main
 

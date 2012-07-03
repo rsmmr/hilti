@@ -1,1 +1,1 @@
-hilti: uncaught exception, AssertionError with argument Test False (from assert-debug.hlt:12)
+hilti: uncaught exception, AssertionError with argument 'Test False' (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/debug.assert-debug/assert-debug.hlt:11-11)

@@ -1962,6 +1962,10 @@ private:
        _functions.back()->next_comment.clear();
    }
 
+   void setLeaveFunc(declaration::Function* f) {
+       _functions.back()->leave_func = f ;
+   }
+
    friend class StatementBuilder;
    void pushExceptionHandler(IRBuilder* handler) { // Used by stmt-builder::Try/Catch.
        handler = llvmInsertInstructionCleanup(handler);
@@ -2036,6 +2040,7 @@ private:
        bool abort_on_excpt;
        bool is_init_func;
        llvm::Value* context;
+       declaration::Function* leave_func = nullptr;
 
        // Stack of current catch clauses. When an exception occurs we jump to
        // top-most, which either handles it or forwards to the one just

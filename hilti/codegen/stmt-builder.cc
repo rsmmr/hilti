@@ -64,8 +64,17 @@ void StatementBuilder::visit(statement::Block* b)
             passes::Printer p(comment, true);
             cg()->llvmInsertComment(comment.str() + " (" + string(s->location()) + ")");
 
+            string c = string(s->location());
+
+            auto n = c.rfind("/");
+
+            if ( n != string::npos )
+                c = c.substr(n + 1, string::npos);
+
+            c +=  + ": " + comment.str();
+
             // Send it also to the hilti-trace debug stream.
-            cg()->llvmDebugPrint("hilti-trace", comment.str());
+            cg()->llvmDebugPrint("hilti-trace", c);
         }
 
         call(s);
@@ -221,8 +230,9 @@ void StatementBuilder::visit(declaration::Function* f)
     cg()->pushFunction(llvm_func);
 
     if ( cg()->debugLevel() > 0 ) {
-        string msg = string("entering ") + f->render();
+        string msg = string("entering function ") + f->function()->id()->name();
         cg()->llvmDebugPrint("hilti-flow", msg);
+        cg()->setLeaveFunc(f);
     }
 
     // Create shadow locals for non-const parameters so that we can modify

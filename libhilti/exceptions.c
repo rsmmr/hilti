@@ -10,6 +10,7 @@
 #include "string_.h"
 #include "rtti.h"
 #include "util.h"
+#include "globals.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -68,8 +69,10 @@ hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char
     excpt->type = type;
 
     if ( arg ) {
+        hlt_exception* e;
+        // hlt_string_print(stderr, arg, 0, &e, hlt_global_execution_context());
         excpt->arg = hlt_malloc((*type->argtype)->size);
-        memcpy(excpt->arg, arg, (*type->argtype)->size);
+        memcpy(excpt->arg, &arg, (*type->argtype)->size);
         GC_CCTOR_GENERIC(excpt->arg, *type->argtype);
     }
 
@@ -150,8 +153,9 @@ static void __exception_print(const char* prefix, hlt_exception* exception, hlt_
 
     if ( exception->arg ) {
         hlt_string arg = hlt_string_from_object(*exception->type->argtype, exception->arg, &excpt, ctx);
-        fprintf(stderr, " with argument ");
+        fprintf(stderr, " with argument '");
         hlt_string_print(stderr, arg, 0, &excpt, ctx);
+        fprintf(stderr, "'");
         GC_DTOR(arg, hlt_string);
     }
 

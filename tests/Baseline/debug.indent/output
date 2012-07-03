@@ -1,5 +1,5 @@
-[test/main-thread] 0
-[test/main-thread]    1
-[test/main-thread]       2
-[test/main-thread]    1
-[test/main-thread] 0
+[test] 0
+[test]   1
+[test]     2
+[test]   1
+[test] 0
