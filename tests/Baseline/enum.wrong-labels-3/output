@@ -1,3 +1,5 @@
-/Users/robin/work/binpacpp/hilti2/tests/.tmp/enum.wrong-labels-3/wrong-labels.hlt:9-9: pass::IdResolver error, unknown ID ASCIIZ
-/Users/robin/work/binpacpp/hilti2/tests/.tmp/enum.wrong-labels-3/wrong-labels.hlt: Aborting due to resolver error.
+
+>>> Packed::ASCIIZ
+wrong-labels.hlt:9-9: error, unknown ID Packed::ASCIIZ [pass::IdResolver]
+wrong-labels.hlt: Aborting due to resolver error.
 error running hiltic, aborting

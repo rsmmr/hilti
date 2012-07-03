@@ -1740,6 +1740,9 @@ void CodeGen::llvmCheckCException(llvm::Value* excpt)
 
 void CodeGen::llvmCheckException()
 {
+    // Make sure we clean up any temporaries.
+    finishStatement();
+
     if ( ! _functions.back()->abort_on_excpt ) {
         llvmTriggerExceptionHandling(false);
         return;

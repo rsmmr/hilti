@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  hilti-build -P %INPUT -o a.out
+# @TEST-EXEC:  hiltic -P %INPUT >prototypes.hlt.h
 # @TEST-EXEC:  btest-diff prototypes.hlt.h
 
 module Main
