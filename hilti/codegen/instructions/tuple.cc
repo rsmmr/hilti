@@ -87,7 +87,7 @@ void StatementBuilder::visit(statement::instruction::tuple::Index* i)
 
     assert(etype);
 
-    auto result = cg()->llvmTupleElement(i->op1()->type(), op1, idx, true);
+    auto result = cg()->llvmTupleElement(i->op1()->type(), op1, idx, false);
     result = cg()->llvmCoerceTo(result, etype, i->target()->type());
 
     cg()->llvmStore(i, result);

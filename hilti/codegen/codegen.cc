@@ -2901,12 +2901,14 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
 
     pushBuilder(block_not_set);
 
+    llvm::Value* def = nullptr;
+
     // Unset, raise exception if no default.
 
     if ( ! default_ )
         llvmRaiseException("Hilti::UndefinedValue", l);
-
-    auto def = default_(this);
+    else
+        def = default_(this);
 
     llvmCreateBr(block_done);
     popBuilder();

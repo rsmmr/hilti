@@ -1,24 +1,24 @@
 
 >>> a = new string
-wrong-args.hlt:18-18: error, operands do not match instruction new
+wrong-args.hlt:18-19: error, operands do not match instruction new
   got:
     new: string -> ref<A>
   expected one of:
     new: bytes -> ref<bytes>
     new: callable, <function>, tuple<> -> ref<callable>
     new: channel<*>, int<64> -> ref<channel<*>>
-    new: classifier -> ref<classifier>
+    new: classifier<*> -> ref<classifier<*>>
     new: exception -> ref<exception>
     new: exception, any -> ref<exception>
     new: file -> ref<file>
     new: iosrc<*> -> ref<iosrc<*>>
     new: list<*>, [ ref<timer_mgr> ] -> ref<list<*>>
     new: map<*>, [ ref<timer_mgr> ] -> ref<map<*>>
-    new: regexp<>, [ ref<timer_mgr> ] -> ref<regexp<>>
+    new: regexp<> -> ref<regexp<>>
     new: set<*>, [ ref<timer_mgr> ] -> ref<set<*>>
     new: struct , [ ref<timer_mgr> ] -> ref<struct >
-    new: timer, <function>, tuple<> -> ref<timer>
     new: timer_mgr -> ref<timer_mgr>
+    new: timer, <function>, tuple<> -> ref<timer>
     new: vector<*>, [ ref<timer_mgr> ] -> ref<vector<*>>
  [pass::InstructionResolver]
 wrong-args.hlt: Aborting due to resolver error.

@@ -17,8 +17,10 @@ codegen::Coercer::~Coercer()
 
 llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti::Type> src, shared_ptr<hilti::Type> dst)
 {
-    if ( src->equal(dst) || dst->equal(src) )
+    if ( src->equal(dst) || dst->equal(src) ) {
+        cg()->llvmCctor(value, src, false, "Coercer::llvmCoerceTo/equal");
         return value;
+    }
 
     if ( ast::isA<type::OptionalArgument>(dst) )
         return llvmCoerceTo(value, src, ast::as<type::OptionalArgument>(dst)->argType());
@@ -30,7 +32,7 @@ llvm::Value* codegen::Coercer::llvmCoerceTo(llvm::Value* value, shared_ptr<hilti
     bool success = processOne(src, &result);
     assert(success);
 
-    cg()->llvmDtor(value, src, false, "llvmCoerceTo");
+    cg()->llvmDtor(value, src, false, "Coercer::llvmCoerceTo");
     return result;
 }
 
@@ -76,6 +78,7 @@ void codegen::Coercer::visit(type::Tuple* t)
             auto v = cg()->llvmExtractValue(val, idx);
             v = cg()->llvmCoerceTo(v, i.first, i.second);
             cg()->llvmStructSet(stype, sval, idx++, v);
+            cg()->llvmDtor(v, i.second, false, "Coercer::visit-tuple");
         }
 
         setResult(sval);
