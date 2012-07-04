@@ -61,7 +61,7 @@ void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
         // TODO: We catch this error here; can we do that in the validator?
         auto func = current<declaration::Function>();
 
-        if ( ! ast::isA<type::Void>(func->function()->type()->result()->type()) ) {
+        if ( func && ! ast::isA<type::Void>(func->function()->type()->result()->type()) ) {
             fatalError(i, "function does not return a value");
             return;
         }

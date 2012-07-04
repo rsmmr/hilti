@@ -163,8 +163,9 @@ iBegin(hook, Run, "hook.run")
 
     iValidate {
         auto htype = as<type::Hook>(op1->type());
+        auto rtype = htype->result()->type();
         checkCallParameters(htype, op2);
-        checkCallResult(htype, target ? target->type() : nullptr);
+        checkCallResult(rtype, target ? target->type() : nullptr);
     }
 
     iDoc(R"(    
@@ -186,7 +187,9 @@ iBegin(hook, Stop, "hook.stop")
             return;
         }
 
-        checkCallResult(hook->hook()->type(), op1);
+        auto htype = hook->hook()->type();
+        auto rtype = htype->result()->type();
+        checkCallResult(rtype, op1);
     }
 
     iDoc(R"(    

@@ -136,7 +136,15 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(shared_ptr<h
     func->location = function->location();
     _functions.push_back(func);
 
-    auto decl = std::make_shared<declaration::Function>(function, function->location());
+    shared_ptr<declaration::Function> decl = nullptr;
+
+    auto hook = ast::as<hilti::Hook>(function);
+
+    if ( hook )
+        decl = std::make_shared<declaration::Hook>(hook, function->location());
+    else
+        decl = std::make_shared<declaration::Function>(function, function->location());
+
     _module->body()->addDeclaration(decl);
 
     if ( ! no_body )

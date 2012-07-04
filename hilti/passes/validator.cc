@@ -154,12 +154,20 @@ void Validator::visit(statement::instruction::Unresolved* s)
 
 void Validator::visit(statement::instruction::flow::ReturnResult* s)
 {
+    if ( current<declaration::Hook>() ) {
+        error(s, "cannot use return.result in a hook; use hook.stop instead");
+        return;
+    }
+
     auto func = current<declaration::Function>();
     _checkReturn(this, s, func->function(), s->op1());
 }
 
 void Validator::visit(statement::instruction::flow::ReturnVoid* s)
 {
+    if ( current<declaration::Hook>() )
+        return;
+
     auto func = current<declaration::Function>();
     _checkReturn(this, s, func->function(), nullptr);
 }

@@ -1,7 +1,7 @@
-wrong-type.hlt:9-14: error, inconsistent definitions for hook my_hook [pass::Validator]
-wrong-type.hlt:14-19: error, inconsistent definitions for hook my_hook [pass::Validator]
+wrong-type.hlt:9-9: error, inconsistent definitions for hook my_hook [pass::Validator]
+wrong-type.hlt:14-14: error, inconsistent definitions for hook my_hook [pass::Validator]
 
 >>> hook.run my_hook ()
-wrong-type.hlt:25-25: error, return type does not match function, have none but expected bool [pass::Validator]
+wrong-type.hlt:25-26: error, function value not used [pass::Validator]
 wrong-type.hlt: Aborting due to verification error.
 error running hiltic, aborting

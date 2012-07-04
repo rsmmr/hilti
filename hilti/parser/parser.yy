@@ -493,7 +493,7 @@ opt_init      : INIT                             { $$ = true; }
               | /* empty */                      { $$ = false; }
 
 hook          : HOOK result scoped_id '(' opt_param_list ')' opt_hook_attrs
-                                                 {  driver.moduleBuilder()->pushHook($3, $2, $5, $7, loc(@$)); }
+                                                 {  driver.moduleBuilder()->pushHook($3, $2, $5, $7, true, loc(@$)); }
 
                 body opt_nl                      {  driver.moduleBuilder()->popHook(); }
 
