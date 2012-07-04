@@ -163,7 +163,7 @@ llvm::Type* TypeBuilder::llvmType(shared_ptr<Type> type)
 {
     auto rtype = ast::as<type::Reference>(type);
 
-    if ( rtype )
+    if ( rtype && ! rtype->wildcard() )
         // For references, "unwrap" directly here to avoid recursion trouble
         // with cyclic types.
         type = rtype->argType();
@@ -471,7 +471,7 @@ void TypeBuilder::visit(type::Tuple* t)
 
     TypeInfo* ti = new TypeInfo(t);
     ti->id = HLT_TYPE_TUPLE;
-    ti->ptr_map = PointerMap(cg(), t).llvmMap();
+    // ti->ptr_map = PointerMap(cg(), t).llvmMap();
     ti->init_val = init_val;
     ti->pass_type_info = t->wildcard();
     ti->to_string = "hlt::tuple_to_string";
