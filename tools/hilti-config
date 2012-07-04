@@ -136,7 +136,7 @@ while [ "$1" != "" ]; do
             shift;;
 
         --libhilti-ldflags)
-            echo "$base/build/libhilti-${build_mode}/libhilti-rt-native.a -lpthread"
+            echo "$base/build/libhilti-${build_mode}/libhilti-rt-native.a -lm -lpthread"
             shift;;
 
      # hiltic
