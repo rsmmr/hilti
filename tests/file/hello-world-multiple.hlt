@@ -1,6 +1,6 @@
 #
 # @TEST-EXEC:  hilti-build %INPUT -o a.out
-# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  ./a.out 2>&1 | cat >output
 # @TEST-EXEC:  btest-diff output
 
 module Main
