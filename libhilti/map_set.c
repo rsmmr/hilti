@@ -91,6 +91,7 @@ void hlt_map_dtor(hlt_type_info* ti, hlt_map* m)
     GC_DTOR(m->tmgr, hlt_timer_mgr);
     GC_DTOR_GENERIC(m->def, m->tvalue);
     hlt_free(m->result);
+    hlt_free(m->def);
     kh_destroy_map(m);
 }
 

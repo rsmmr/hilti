@@ -184,6 +184,7 @@ void StatementBuilder::visit(statement::instruction::iterMap::Equal* i)
 void StatementBuilder::visit(statement::instruction::iterMap::Deref* i)
 {
     CodeGen::expr_list args;
+    args.push_back(builder::type::create(i->target()->type()));
     args.push_back(i->op1());
     auto voidp = cg()->llvmCall("hlt::iterator_map_deref", args);
     auto casted = cg()->builder()->CreateBitCast(voidp, cg()->llvmTypePtr(cg()->llvmType(i->target()->type())));
