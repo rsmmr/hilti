@@ -25,12 +25,11 @@ void StatementBuilder::visit(statement::instruction::exception::NewWithArg* i)
     auto etype = ast::as<type::Exception>(type);
 
     auto arg = cg()->llvmValue(i->op2(), etype->argType());
-    auto tmp = cg()->llvmAddTmp("excpt_arg", arg, true);
-    tmp = builder()->CreateBitCast(tmp, cg()->llvmTypePtr());
+    arg = builder()->CreateBitCast(arg, cg()->llvmTypePtr());
 
     CodeGen::value_list args;
     args.push_back(cg()->llvmExceptionTypeObject(etype));
-    args.push_back(tmp);
+    args.push_back(arg);
     args.push_back(cg()->llvmLocationString(i->location()));
     auto result = cg()->llvmCallC("hlt_exception_new", args, false, false);
     cg()->llvmStore(i, result);

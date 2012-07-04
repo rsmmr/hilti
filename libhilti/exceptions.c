@@ -70,7 +70,6 @@ hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char
 
     if ( arg ) {
         hlt_exception* e;
-        // hlt_string_print(stderr, arg, 0, &e, hlt_global_execution_context());
         excpt->arg = hlt_malloc((*type->argtype)->size);
         memcpy(excpt->arg, &arg, (*type->argtype)->size);
         GC_CCTOR_GENERIC(excpt->arg, *type->argtype);
