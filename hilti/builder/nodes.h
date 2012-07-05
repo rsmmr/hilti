@@ -608,6 +608,8 @@ typedef hilti::function::parameter_list parameter_list;
 ///
 /// cc: The function's calling convention.
 ///
+/// scope: The function's scheduling scope.
+///
 /// body: The body of the function. Can be null to declare a function with
 /// giving it a body (like for prototyping an external function).
 ///
@@ -618,6 +620,7 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
                                                 shared_ptr<hilti::function::Parameter> result = nullptr,
                                                 const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                 hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
+                                                shared_ptr<Type> scope = nullptr,
                                                 shared_ptr<statement::Block> body = nullptr,
                                                 shared_ptr<Module> module = nullptr,
                                                 const Location& l=Location::None) {
@@ -626,7 +629,7 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
         result = std::make_shared<hilti::function::Parameter>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::Function>(result, params, cc, l);
-    auto func = std::make_shared<Function>(id, ftype, module, body, l);
+    auto func = std::make_shared<Function>(id, ftype, module, scope, body, l);
     return std::make_shared<declaration::Function>(func, l);
 }
 
@@ -695,6 +698,8 @@ typedef std::list<hook_attribute> attribute_list;
 /// body: The body of the function. Can be null to declare a function with
 /// giving it a body (for prototyping a hook).
 ///
+/// scope: The function's scheduling scope.
+///
 /// priority: The hook's priority, should default to 0.
 ///
 /// group: The hook's group, 0 for none.
@@ -707,11 +712,12 @@ inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
                                             const hilti::function::parameter_list& params,
                                             shared_ptr<Module> module,
                                             shared_ptr<statement::Block> body,
+                                            shared_ptr<Type> scope,
                                             int64_t priority, int64_t group,
                                             const Location& l=Location::None)
 {
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
-    auto func = std::make_shared<Hook>(id, ftype, module, priority, group, body, l);
+    auto func = std::make_shared<Hook>(id, ftype, module, scope, priority, group, body, l);
     return std::make_shared<declaration::Hook>(func, l);
 }
 
@@ -724,6 +730,8 @@ inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
 /// params: The parameters to the hook.
 ///
 /// module: The module the hook implementation is declared in.
+///
+/// scope: The function's scheduling scope.
 ///
 /// body: The body of the function. Can be null to declare a function with
 /// giving it a body (for prototyping a hook).
@@ -738,11 +746,12 @@ inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
                                             const hilti::function::parameter_list& params,
                                             shared_ptr<Module> module,
                                             shared_ptr<statement::Block> body,
+                                            shared_ptr<Type> scope,
                                             const attribute_list& attrs,
                                             const Location& l=Location::None)
 {
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
-    auto func = std::make_shared<Hook>(id, ftype, module, attrs, body, l);
+    auto func = std::make_shared<Hook>(id, ftype, module, scope, attrs, body, l);
     return std::make_shared<declaration::Hook>(func, l);
 }
 
@@ -1619,6 +1628,67 @@ inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_p
     return std::make_shared<hilti::type::struct_::Field>(id, type, default_, internal, l);
 }
 
+
+}
+
+////
+
+namespace context {
+
+typedef hilti::type::Struct::field_list field_list;
+
+/// Instantiates a type::Context type.
+///
+/// fields: The context's fields.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Context> type(const field_list& fields, const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Context>(fields, l);
+}
+
+/// Instantiates a type::Context wildcard type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Context> typeAny(const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Context>(l);
+}
+
+/// Instanties a context field for its type description.
+///
+/// id:  The name of the field.
+///
+/// type: The type of the field.
+///
+/// l: Location associated with the field.
+inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, const Location& l=Location::None)
+{
+    return std::make_shared<hilti::type::struct_::Field>(id, type, nullptr, false, l);
+}
+
+
+}
+
+/////
+
+namespace scope {
+
+/// A list of bitset labels used to define a bitset type.
+typedef ::type::Scope::field_list field_list;
+
+/// Instantiates an type::Scope type.
+///
+/// labels: The fields of the type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The type node.
+inline shared_ptr<hilti::type::Scope> type(const field_list& fields, const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Scope>(fields);
+}
 
 }
 

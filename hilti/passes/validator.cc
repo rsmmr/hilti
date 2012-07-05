@@ -163,6 +163,176 @@ void Validator::visit(statement::instruction::flow::ReturnResult* s)
     _checkReturn(this, s, func->function(), s->op1());
 }
 
+void Validator::visit(statement::instruction::thread::GetContext* s)
+{
+    auto m = current<Module>();
+    assert(m);
+
+    auto ctx = m->context();
+
+    if ( ! ctx )
+        error(s, "module does not define an execution context");
+
+    if ( ! Coercer().canCoerceTo(builder::reference::type(ctx), s->target()->type()) )
+        wrongType(s, "invalid target type", s->target()->type(), builder::reference::type(ctx));
+}
+
+void Validator::visit(statement::instruction::thread::SetContext* s)
+{
+    auto m = current<Module>();
+    assert(m);
+
+    auto ctx = m->context();
+
+    if ( ! ctx )
+        error(s, "module does not define an execution context");
+
+#if 0
+    if ( ! s->op1()->canCoerceTo(builder::reference::type(ctx)) )
+        wrongType(s, "invalid operand type", s->op1()->type(), builder::reference::type(ctx));
+#endif
+
+    auto func = current<Function>();
+    auto scope = func->scope();
+
+    if ( ! scope ) {
+        error(s, "current function does not have a scope defined");
+        return;
+    }
+
+    // TODO: If we get a dynamic struct/context, should we check at runtime
+    // that all fields needed by the scope are set?
+
+    auto ttype = ast::as<type::Tuple>(s->op1()->type());
+
+    if ( ttype ) {
+        auto c = ast::as<expression::Constant>(s->op1());
+
+        if ( c ) {
+            // Make sure we set all fields that our scope requires.
+            for ( auto p : util::zip2(ttype->typeList(), ctx->fields()) ) {
+                if ( ast::isA<type::Unset>(p.first) && scope->hasField(p.second->id()) ) {
+                    error(s, "set of scope fields does not match current function's scope");
+                    return;
+                }
+            }
+        }
+
+        else
+            // Can't happen I believe.
+            internalError("run-time scope type check for dynamic tuples not implemented");
+        }
+
+    else {
+        // TODO: If we get a dynamic struct/context, should we check at runtime
+        // that all fields needed by the scope are set?
+    }
+}
+
+static void _checkCallScope(Validator* v, statement::Instruction* s)
+{
+    auto func = v->current<Function>();
+    auto op1 = ast::as<expression::Function>(s->op1());
+
+    if ( ! op1 ) {
+        v->error(s, "1st operand must reference a function");
+        return;
+    }
+
+    auto callee = op1->function();
+    assert(callee);
+    assert(callee->module());
+
+    auto scope = callee->scope();
+
+    if ( ! ((! scope && ! func->scope()) || scope->equal(func->scope())) )
+        v->error(s, "cannot call function with a different scope; use thread.schedule");
+}
+
+void Validator::visit(statement::instruction::flow::CallResult* s)
+{
+    _checkCallScope(this, s);
+}
+
+void Validator::visit(statement::instruction::flow::CallVoid* s)
+{
+    _checkCallScope(this, s);
+}
+
+void Validator::visit(statement::instruction::thread::Schedule* s)
+{
+    if ( ! s->op3() ) {
+        // Check whether scope promotion is valid.
+
+        auto func = current<Function>();
+        auto module  = current<Module>();
+
+        auto op1 = ast::as<expression::Function>(s->op1());
+
+        if ( ! op1 ) {
+            error(s, "1st operand must reference a function");
+            return;
+        }
+
+        auto callee = op1->function();
+        assert(callee);
+        assert(callee->module());
+
+        auto src_scope = func->scope();
+        auto src_context = module->context();
+        auto dst_scope = callee->scope();
+        auto dst_context = callee->module()->context();
+
+        if ( ! src_context ) {
+            error(s, "current module does not define a thread context");
+            return;
+        }
+
+        if ( ! dst_context ) {
+            error(s, "callee's module does not define a thread context");
+            return;
+        }
+
+        if ( ! src_scope ) {
+            error(s, "current function does not define a scope");
+            return;
+        }
+
+        if ( ! dst_scope ) {
+            error(s, "callee function does not define a scope");
+            return;
+        }
+
+        // For a valid promotion, all fields of the destination context must
+        // also be defined in the source scope (i.e., match in name and
+        // type).
+
+        for ( auto dst_field : dst_context->fields() ) {
+
+            if ( dst_field->internal() )
+                continue;
+
+            if ( ! src_scope->hasField(dst_field->id()) )
+                goto mismatch;
+
+            auto src_field = src_context->lookup(dst_field->id());
+
+            if ( ! src_field )
+                // Field missing.
+                goto mismatch;
+
+            if ( ! dst_field->type()->equal(src_field->type()) )
+                // Type mismatch.
+                goto mismatch;
+        }
+    }
+
+    return;
+
+mismatch:
+    error(s, "scope of callee function is incompatible with the current scope");
+}
+
 void Validator::visit(statement::instruction::flow::ReturnVoid* s)
 {
     if ( current<declaration::Hook>() )
@@ -195,6 +365,28 @@ void Validator::visit(declaration::Function* f)
 
         if ( func->type()->parameters().size() )
             error(f, "init function cannot take parameters");
+    }
+}
+
+void Validator::visit(declaration::Type* t)
+{
+    if ( t->id()->name() == "Context" && ! ast::isA<type::Context>(t->type()) )
+        error(t, "ID 'Context' is reserved for the module's execution context");
+
+    auto scope = ast::as<type::Scope>(t->type());
+
+    if ( scope ) {
+        auto context = current<Module>()->context();
+
+        if ( ! context ) {
+            error(t, "module does not define a context");
+            return;
+        }
+
+        for ( auto f : scope->fields() ) {
+            if ( ! context->lookup(f) )
+                error(t, "scope uses field that context does not define");
+        }
     }
 }
 

@@ -59,13 +59,11 @@ static int _want_stream(const char* s, hlt_exception** excpt, hlt_execution_cont
 
 static void _make_prefix(const char* s, char* dst, int len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-#if 0
     if ( hlt_is_multi_threaded() ) {
-        const char* t = hlt_thread_mgr_current_native_thread(__hlt_global_thread_mgr);
+        const char* t = hlt_thread_mgr_current_native_thread();
         snprintf(dst, len, "[%s/%s] ", s, t);
     }
     else
-#endif
         snprintf(dst, len, "[%s] ", s);
 }
 

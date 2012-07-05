@@ -85,6 +85,7 @@ protected:
    void visit(type::Port* t) override;
    void visit(type::Reference* t) override;
    void visit(type::RegExp* t) override;
+   void visit(type::Scope* t) override;
    void visit(type::Set* t) override;
    void visit(type::String* t) override;
    void visit(type::Struct* t) override;

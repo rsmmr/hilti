@@ -15,16 +15,15 @@ context {
     port resp_p
 }
 
-scope Connection = { orig_h, orig_p, resp_h, resp_p }
-scope Originator = { orig_h }
-scope Global     = { }
+type Connection = scope { orig_h, orig_p, resp_h, resp_p }
+type Originator = scope { orig_h }
+type Global     = scope { }
 
 void FuncConn() &scope=Connection {
-    local ref<context> ctx
+    local ref<Context> ctx
     local int<64> vid
     local string s
 
-    local int<64> vid
     vid = thread.id
     ctx = thread.get_context
 

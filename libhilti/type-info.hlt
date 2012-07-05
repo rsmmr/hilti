@@ -7,6 +7,7 @@ module LibHILTIRtti
 export string
 export addr
 export time
+export port
 export int<64>
 export match_token_state
 

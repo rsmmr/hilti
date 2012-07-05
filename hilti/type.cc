@@ -1,4 +1,4 @@
-
+                                        
 #include <initializer_list>
 
 #include "expression.h"
@@ -29,6 +29,7 @@ type::Bool::~Bool() {}
 type::Bytes::~Bytes() {}
 type::CAddr::~CAddr() {}
 type::Callable::~Callable() {}
+type::Context::~Context() {}
 type::Channel::~Channel() {}
 type::Classifier::~Classifier() {}
 type::Double::~Double() {}
@@ -51,6 +52,7 @@ type::RegExp::~RegExp() {}
 type::Set::~Set() {}
 type::String::~String() {}
 type::Struct::~Struct() {}
+type::Scope::~Scope() {}
 type::Time::~Time() {}
 type::Timer::~Timer() {}
 type::TimerMgr::~TimerMgr() {}
@@ -318,12 +320,12 @@ type::Bitset::Bitset(const label_list& labels, const Location& l) : ValueType(l)
     _labels.sort([] (const Label& lhs, const Label& rhs) { return lhs.first->name().compare(rhs.first->name()) < 0; });
 }
 
-shared_ptr<Scope> type::Bitset::typeScope()
+shared_ptr<hilti::Scope> type::Bitset::typeScope()
 {
     if ( _scope )
         return _scope;
 
-    _scope = shared_ptr<Scope>(new Scope());
+    _scope = shared_ptr<hilti::Scope>(new hilti::Scope());
 
     for ( auto label : _labels ) {
         auto p = shared_from_this();
@@ -388,12 +390,12 @@ type::Enum::Enum(const label_list& labels, const Location& l) : ValueType(l)
     _labels.sort([] (const Label& lhs, const Label& rhs) { return lhs.first->name().compare(rhs.first->name()) < 0; });
 }
 
-shared_ptr<Scope> type::Enum::typeScope()
+shared_ptr<hilti::Scope> type::Enum::typeScope()
 {
     if ( _scope )
         return _scope;
 
-    _scope = shared_ptr<Scope>(new Scope());
+    _scope = shared_ptr<hilti::Scope>(new hilti::Scope());
 
     for ( auto label : _labels ) {
         auto p = shared_from_this();
@@ -430,6 +432,22 @@ bool type::Enum::_equal(shared_ptr<Type> other) const
 
     for ( ; i1 != _labels.end(); ++i1, ++i2 ) {
         if ( i1->first != i2->first || i1->second != i2->second )
+            return false;
+    }
+
+    return true;
+}
+
+bool type::Scope::_equal(shared_ptr<Type> other) const
+{
+    auto sother = std::dynamic_pointer_cast<type::Scope>(other);
+    assert(sother);
+
+    if ( _fields.size() != sother->_fields.size() )
+        return false;
+
+    for ( auto p : ::util::zip2(_fields, sother->_fields) ) {
+        if ( p.first != p.second )
             return false;
     }
 
@@ -477,6 +495,32 @@ type::Struct::Struct(const field_list& fields, const Location& l) : HeapType(l)
 
     for ( auto f : _fields )
         addChild(f);
+}
+
+void type::Struct::addField(shared_ptr<struct_::Field> field)
+{
+    _fields.push_back(field);
+    addChild(_fields.back());
+}
+
+shared_ptr<type::struct_::Field> type::Struct::lookup(shared_ptr<ID> id) const
+{
+    for ( auto f : _fields ) {
+        if ( f->id()->name() == id->name() )
+            return f;
+    }
+
+    return nullptr;
+}
+
+type::Struct::field_list type::Struct::sortedFields()
+{
+    field_list sorted = _fields;
+
+    sorted.sort([] (shared_ptr<struct_::Field> lhs, shared_ptr<struct_::Field> rhs) {
+        return lhs->id()->name().compare(rhs->id()->name()) < 0; });
+
+    return sorted;
 }
 
 const type::trait::TypeList::type_list type::Struct::typeList() const
@@ -836,4 +880,40 @@ bool type::Overlay::_equal(shared_ptr<hilti::Type> t) const
     }
 
     return true;
+}
+
+type::Context::Context(const field_list& fields, const Location& l)
+    : Struct(fields, l) // Sort the fields so that order doesn't matter for hashing.
+{
+    // Add an internal field with a constant hash that depends on the defined
+    // fields. This forces different scheduling for contexts that aren't
+    // fully equivalent.
+
+    string d;
+
+    for ( auto f: fields ) {
+        d += f->id()->name();
+        d += typeid(f->type()).name();
+    }
+
+    auto hash = std::hash<std::string>()(d);
+
+    auto hash_id = builder::id::node("__type_hash", l);
+    auto hash_ty = builder::integer::type(64, l);
+    auto hash_val = builder::integer::create(hash, l);
+
+    auto field = builder::struct_::field(hash_id, hash_ty, hash_val, l);
+    field->setInternal();
+
+    addField(field);
+}
+
+bool type::Scope::hasField(shared_ptr<ID> id) const
+{
+    for ( auto f : _fields ) {
+        if ( id->name() == f->name() )
+            return true;
+    }
+
+    return false;
 }

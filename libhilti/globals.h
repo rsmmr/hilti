@@ -18,6 +18,10 @@ extern hlt_execution_context* hlt_global_execution_context();
 /// Returns: The thread manager. It will *not* have it's cctor applied.
 extern hlt_thread_mgr* hlt_global_thread_mgr();
 
+/// Sets the global thread manager. For internal use only, must only be
+/// called by the threading code.
+extern void __hlt_global_set_thread_mgr(hlt_thread_mgr* mgr);
+
 /// Initializes all global state. The function is called from hlt_init().
 extern void __hlt_global_state_init();
 
@@ -29,4 +33,7 @@ extern void __hlt_global_state__done();
 extern hlt_hook_state* __hlt_global_hook_state;
 extern pthread_mutex_t __hlt_global_hook_state_lock;
 
+/// Flag to signal worker threads to terminate. This must only be accessed by
+/// the thread mgr. Use __hlt_thread_mgr_terminating() to query.
+extern int8_t __hlt_global_thread_mgr_terminate;
 

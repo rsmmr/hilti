@@ -35,7 +35,7 @@ public:
    /// type defines IDs in this scope and a global type declaration is added
    /// to a module, these IDs will be accessible via scoping relative to the
    /// declaration. The returned scope should not have its parent set.
-   virtual shared_ptr<Scope> typeScope() { return nullptr; }
+   virtual shared_ptr<hilti::Scope> typeScope() { return nullptr; }
 
    ACCEPT_VISITOR_ROOT();
 };
@@ -602,7 +602,7 @@ public:
    // Returns the bit number for a label, which must be known.
    int labelBit(shared_ptr<ID> label) const;
 
-   shared_ptr<Scope> typeScope() override;
+   shared_ptr<hilti::Scope> typeScope() override;
 
    bool _equal(shared_ptr<hilti::Type> other) const override;
 
@@ -610,7 +610,7 @@ public:
 
 private:
    label_list _labels;
-   shared_ptr<Scope> _scope = nullptr;
+   shared_ptr<hilti::Scope> _scope = nullptr;
 };
 
 /// Type for enums.
@@ -639,7 +639,7 @@ public:
    // Returns the value for a label, which must be known. Returns -1 for \c Undef.
    int labelValue(shared_ptr<ID> label) const;
 
-   shared_ptr<Scope> typeScope() override;
+   shared_ptr<hilti::Scope> typeScope() override;
 
    bool _equal(shared_ptr<hilti::Type> other) const override;
 
@@ -647,7 +647,7 @@ public:
 
 private:
    label_list _labels;
-   shared_ptr<Scope> _scope = nullptr;
+   shared_ptr<hilti::Scope> _scope = nullptr;
 };
 
 /// Type for caddr values.
@@ -1604,6 +1604,9 @@ public:
    shared_ptr<Expression> default_() const;
    bool internal() const { return _internal; }
 
+   /// Marks the field as internal.
+   void setInternal() { _internal = true; }
+
    ACCEPT_VISITOR_ROOT();
 
 private:
@@ -1639,6 +1642,12 @@ public:
    /// Returns the list of fields.
    const field_list& fields() const { return _fields; }
 
+   /// Adds a field.
+   void addField(shared_ptr<struct_::Field> field);
+
+   /// Returns the field of a given name, or null if no such field.
+   shared_ptr<struct_::Field> lookup(shared_ptr<ID> id) const;
+
    const trait::TypeList::type_list typeList() const override;
    parameter_list parameters() const override;
 
@@ -1646,9 +1655,74 @@ public:
 
    ACCEPT_VISITOR(Type);
 
+protected:
+   // Returns a sorted list of field so that we have a well-defined order.
+   field_list sortedFields();
+
 private:
    std::list<node_ptr<struct_::Field>> _fields;
 };
+
+
+/// Type for a threading ``context``.
+class Context : public Struct
+{
+public:
+   /// Constructor.
+   ///
+   /// fields: The contexts's fields.
+   ///
+   /// l: Associated location.
+   Context(const field_list& fields, const Location& l=Location::None);
+
+   /// Constructor for a wildcard context type matching any other.
+   ///
+   /// l: Associated location.
+   Context(const Location& l=Location::None)
+       : Struct(l) {}
+
+   virtual ~Context();
+
+   ACCEPT_VISITOR(Struct);
+};
+
+/// Type for a threading ``scope``.
+class Scope : public HiltiType {
+public:
+   typedef std::list<node_ptr<ID>> field_list;
+
+   /// Constructor.
+   ///
+   /// fields: list of string - The field names of the context that are part of
+   /// this scope.
+   ///
+   /// l: Associated location.
+   Scope(const field_list& fields, const Location& l=Location::None) : HiltiType(l) {
+       _fields = fields;
+   }
+
+   virtual ~Scope();
+
+   /// Constructor creating a scope type matching any other scope type.
+   Scope(const Location& l=Location::None) : HiltiType(l) {
+       setWildcard(true);
+   }
+
+   // Returns the fields.
+   const field_list& fields() const { return _fields; }
+
+   /// Returns true if the scope uses a field of that name.
+   bool hasField(shared_ptr<ID> id) const;
+
+   bool _equal(shared_ptr<hilti::Type> other) const override;
+
+   ACCEPT_VISITOR(Type);
+
+private:
+   field_list _fields;
+   shared_ptr<hilti::Scope> _scope = nullptr;
+};
+
 
 ////
 

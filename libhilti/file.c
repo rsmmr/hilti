@@ -13,8 +13,10 @@
 // This struct describes one currently open file. We memory-manage this ourselves.
 typedef struct __hlt_file_info {
     hlt_string path;    // The path of the file.
+    hlt_string charset; // The charset for a text file.
+    hlt_enum type;      // Hilti_FileType_* constant.
     int fd;             // The file descriptor.
-    int writers;        // The number of file objects having the file open.
+    int writers;        // The number of file objects having the file open from the OS perspective.
 
     struct __hlt_file_info* next; // We keep them in a list.
     struct __hlt_file_info* prev;
@@ -24,21 +26,24 @@ typedef struct __hlt_file_info {
 struct __hlt_file {
     __hlt_gchdr __gchdr;   // Header for memory management.
     __hlt_file_info* info; // The internal file object.
-    hlt_enum type;         // Hilti_FileType_* constant.
-    hlt_string charset;    // The charset for a text file.
     hlt_string path;       // The path of the file; keep here as well for threads.
+    hlt_string charset;    // The charset for a text file.
+    hlt_enum type;         // Hilti_FileType_* constant.
     int8_t open;           // 1 if open, 0 if closed.
 };
 
 // A single write command inserted into the command queue.
 typedef struct __hlt_cmd_file {
     __hlt_cmd cmd;             // The common header for all commands.
-    hlt_file* file;            // The file to write to.
-    int type;                  // 1 if it's a string; 0 if it's a bytes; and 2 if it's a close command.
+    __hlt_file_info* info;     // The file to write to.
+    int type;                  // 1 if it's a string; 0 if it's a bytes; 2 if it's a close command; and 3 for a change in parameters.
     union {
         void* bytes;           // The bytes to write.
         void* string;          // The string to write.
     } data;
+
+    hlt_enum param_type;       // For type 3: The new type.
+    hlt_string param_charset;  // For type 3: The new charset.
 } __hlt_cmd_file;
 
 // The list of currently open files. Read and write accesses to this list
@@ -51,6 +56,7 @@ pthread_mutex_t files_lock;
 void hlt_file_dtor(hlt_type_info* ti, hlt_file* f)
 {
     GC_DTOR(f->path, hlt_string);
+    GC_DTOR(f->charset, hlt_string);
 }
 
 static void fatal_error(const char* msg)
@@ -93,11 +99,12 @@ void __hlt_files_done()
         fsync(info->fd);
 
         GC_DTOR(info->path, hlt_string);
+        GC_DTOR(info->charset, hlt_string);
         hlt_free(info);
     }
 
-    // if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&files_lock) != 0 )
-    //    fatal_error("cannot destroy mutex");
+ //   if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&files_lock) != 0 )
+ //       fatal_error("cannot destroy mutex");
 
     // TODO: We don't destroy the mutex for now because the cmd-queue might
     // still need it when writing stuff out. The question is when can we
@@ -139,7 +146,18 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
     __hlt_file_info* info;
     for ( info = files; info; info = info->next ) {
         if ( hlt_string_cmp(path, info->path, excpt, ctx) == 0 ) {
-            // Already open.
+            // Already open. Send a change parameters message.
+            if ( ! hlt_enum_equal(info->type, type, excpt, ctx)
+                 || hlt_string_cmp(info->charset, charset, excpt, ctx) != 0 ) {
+                __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
+                __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
+                cmd->info = info;
+                cmd->type = 3; // Change params.
+                cmd->param_type = type;
+                cmd->param_charset = hlt_string_copy(charset, excpt, ctx);
+                __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
+            }
+
             ++info->writers;
             goto init_instance;
         }
@@ -171,6 +189,8 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
 
     info->fd = fd;
     info->path = hlt_string_copy(path, excpt, ctx);
+    info->charset = hlt_string_copy(charset, excpt, ctx);
+    info->type = type;
     info->writers = 1;
     info->prev = 0;
     info->next = files;
@@ -188,6 +208,7 @@ init_instance:
     file->open = 1;
 
     GC_CCTOR(file->path, hlt_string);
+    GC_CCTOR(file->charset, hlt_string);
 
     goto done;
 
@@ -213,7 +234,7 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
 
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
     __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
-    cmd->file = file;
+    cmd->info = file->info;
     cmd->type = 2; // Close.
     __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 
@@ -236,7 +257,7 @@ void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt
 
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
     __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
-    cmd->file = file;
+    cmd->info = file->info;
     cmd->type = 1; // String.
     // Don't need to copy the string because it's not mutable.
     cmd->data.string = copy;
@@ -257,13 +278,13 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* bytes, hlt_exception** excp
 
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
     __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
-    cmd->file = file;
+    cmd->info = file->info;
     cmd->type = 0; // Bytes.
     cmd->data.bytes = copy;
     __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 }
 
-static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _write_bytes(__hlt_file_info* info, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes_block block;
     hlt_iterator_bytes start = hlt_bytes_begin(data, excpt, ctx);
@@ -271,7 +292,7 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
     void* cookie = 0;
     char buf[5] = { '\\', 'x', 'X', 'X', '0' };
 
-    assert(file->info);
+    assert(info);
 
     while ( 1 ) {
         cookie = hlt_bytes_iterate_raw(&block, cookie, start, end, excpt, ctx);
@@ -279,7 +300,7 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
         if ( block.start == block.end )
             break;
 
-        int8_t text = hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx);
+        int8_t text = hlt_enum_equal(info->type, Hilti_FileType_Text, excpt, ctx);
 
         if ( text ) {
             // Need to escape unprintable characters. FIXME: We don't honor the
@@ -293,12 +314,12 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
                     ++e;
 
                 if ( e != s )
-                    write(file->info->fd, s, e - s);
+                    write(info->fd, s, e - s);
 
                 if ( e < block.end ) {
                     // Unprintable character.
                     int n = hlt_util_uitoa_n(*e, buf + 2, 3, 16, 1);
-                    write(file->info->fd, buf, n + 2);
+                    write(info->fd, buf, n + 2);
                     ++e;
                 }
 
@@ -306,9 +327,9 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
             }
         }
 
-        else if ( hlt_enum_equal(file->type, Hilti_FileType_Binary, excpt, ctx) )
+        else if ( hlt_enum_equal(info->type, Hilti_FileType_Binary, excpt, ctx) )
             // Just write data directly.
-            write(file->info->fd, block.start, block.end - block.start);
+            write(info->fd, block.start, block.end - block.start);
 
         else
             fatal_error("unknown file type");
@@ -317,8 +338,8 @@ static void _write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt,
             break;
     }
 
-    if ( hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx) )
-        write(file->info->fd, "\n", 1);
+    if ( hlt_enum_equal(info->type, Hilti_FileType_Text, excpt, ctx) )
+        write(info->fd, "\n", 1);
 
     GC_DTOR(start, hlt_iterator_bytes);
     GC_DTOR(end, hlt_iterator_bytes);
@@ -333,18 +354,18 @@ void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_
 
       case 0: {
           // Bytes.
-          _write_bytes(cmd->file, cmd->data.bytes, excpt, ctx);
+          _write_bytes(cmd->info, cmd->data.bytes, excpt, ctx);
           GC_DTOR(cmd->data.bytes, hlt_bytes);
           break;
       }
 
       case 1: {
           // String.
-          hlt_bytes* b = hlt_string_encode(cmd->data.string, cmd->file->charset, excpt, ctx);
+          hlt_bytes* b = hlt_string_encode(cmd->data.string, cmd->info->charset, excpt, ctx);
           if ( *excpt )
               break;
 
-          _write_bytes(cmd->file, b, excpt, ctx);
+          _write_bytes(cmd->info, b, excpt, ctx);
           GC_DTOR(b, hlt_bytes);
           GC_DTOR(cmd->data.string, hlt_string);
           break;
@@ -355,15 +376,15 @@ void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_
           int s;
           acqire_lock(&s);
 
-          assert(cmd->file->info->writers);
+          assert(cmd->info->writers);
 
-          if ( --cmd->file->info->writers == 0 ) {
-              close(cmd->file->info->fd);
+          if ( --cmd->info->writers == 0 ) {
+              close(cmd->info->fd);
 
               // Delete from list.
               __hlt_file_info* cur;
               for ( cur = files; cur; cur = cur->next ) {
-                  if ( cur != cmd->file->info )
+                  if ( cur != cmd->info )
                       continue;
 
                   if ( cur->prev )
@@ -377,12 +398,28 @@ void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_
                   break;
               }
 
-              GC_DTOR(cmd->file->info->path, hlt_string);
-              hlt_free(cmd->file->info);
-
               if ( ! cur )
                   fatal_error("file to close not found");
+
+              GC_DTOR(cmd->info->path, hlt_string);
+              GC_DTOR(cmd->info->charset, hlt_string);
+              hlt_free(cmd->info);
+
+              cmd->info = 0;
           }
+
+          release_lock(s);
+          break;
+      }
+
+      case 3: {
+          // Change params command.
+          int s;
+          acqire_lock(&s);
+
+          GC_DTOR(cmd->info->charset, hlt_string);
+          cmd->info->charset = cmd->param_charset;
+          cmd->info->type = cmd->param_type;
 
           release_lock(s);
           break;

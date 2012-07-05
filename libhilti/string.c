@@ -280,10 +280,7 @@ hlt_string hlt_string_empty(hlt_exception** excpt, hlt_execution_context* ctx)
 
 hlt_string hlt_string_copy(hlt_string src, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_string dst = GC_NEW_CUSTOM_SIZE(hlt_string, sizeof(struct __hlt_string) + src->len);
-    dst->len = src->len;
-    memcpy(&dst->bytes, &src->bytes, src->len);
-    return dst;
+    return hlt_string_from_data(src->bytes, src->len, excpt, ctx);
 }
 
 hlt_string hlt_string_from_asciiz(const char* asciiz, hlt_exception** excpt, hlt_execution_context* ctx)

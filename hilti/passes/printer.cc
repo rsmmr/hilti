@@ -269,7 +269,14 @@ void Printer::visit(declaration::Type* t)
     Printer& p = *this;
 
     disableTypeIDs();
-    p << "type " << t->id() << " = " << t->type();
+
+    auto is_ctx = ast::isA<type::Context>(t->type());
+
+    if ( ! is_ctx )
+        p << "type " << t->id() << " = ";
+
+    p << t->type();
+
     enableTypeIDs();
 }
 
@@ -528,6 +535,30 @@ void Printer::visit(type::Bitset* c)
 
         first = false;
     }
+}
+
+void Printer::visit(type::Scope* s)
+{
+    if ( printTypeID(s) )
+        return;
+
+    Printer& p = *this;
+
+    p << "scope { ";
+
+    bool first = true;
+
+    for ( auto l : s->fields() ) {
+
+        if ( ! first )
+            p << ", ";
+
+        p << l;
+
+        first = false;
+    }
+
+    p << "} " << endl;
 }
 
 void Printer::visit(type::CAddr* c)
@@ -801,17 +832,22 @@ void Printer::visit(type::Struct* t)
 
     Printer& p = *this;
 
+    auto kind = ast::isA<type::Context>(t->sharedPtr<type::Struct>()) ? "context" : "struct";
+
     if ( ! t->fields().size() ) {
-        p << "struct" << endl;
+        p << kind << endl;
         return;
     }
 
-    p << "struct {" << endl;
+    p << kind << " {" << endl;
     pushIndent();
     enableTypeIDs();
 
     bool first = true;
     for ( auto f : t->fields() ) {
+
+        if ( f->internal() )
+            continue;
 
         if ( ! first )
             p << "," << endl;

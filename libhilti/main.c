@@ -22,9 +22,9 @@ static void usage(const char* prog)
     printf("%s [options]\n"
            "\n"
            "  -h| --help           Show usage information.\n"
+           "  -t| --threads <num>  Number of worker threads; zero disables. [Default: 2.]\n"
 #if 0
            "  -P| --profile        Activate profiling support.\n"
-           "  -t| --threads <num>  Number of worker threads. [default: 2]\n"
 #endif
            "\n", prog);
 

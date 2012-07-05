@@ -97,6 +97,7 @@ using namespace hilti;
 %token         CLASSIFIER     "'classifier'"
 %token         CNULL          "'null'"
 %token         CONST          "'const'"
+%token         CONTEXT        "'context'"
 %token         DECLARE        "'declare'"
 %token         DOUBLE         "'double'"
 %token         ENUM           "'enum'"
@@ -123,6 +124,7 @@ using namespace hilti;
 %token         REF            "'ref'"
 %token         REGEXP         "'regexp'"
 %token         SET            "'set'"
+%token         SCOPE          "'scope'"
 %token         STRING         "'string'"
 %token         STRUCT         "'struct'"
 %token         TIME           "'time'"
@@ -136,7 +138,6 @@ using namespace hilti;
 %token         WITH           "'with'"
 %token         INIT           "'init'"
 
-
 %type <bitset_label>     bitset_label
 %type <bitset_labels>    bitset_labels
 %type <block>            body block_content
@@ -144,28 +145,31 @@ using namespace hilti;
 %type <catch_>           catch_
 %type <catches>          catches opt_catches
 %type <cc>               opt_cc
+%type <context_field>    context_field
+%type <context_fields>   context_fields opt_context_fields
 %type <enum_label>       enum_label
 %type <enum_labels>      enum_labels
 %type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor opt_expr
 %type <exprs>            opt_tuple_elem_list tuple_elem_list tuple exprs opt_exprs
-%type <id>               local_id scoped_id mnemonic label
 %type <hook_attribute>   hook_attr
 %type <hook_attributes>  opt_hook_attrs
+%type <id>               local_id scoped_id mnemonic label scope_field
 %type <map_element>      map_elem
 %type <map_elements>     map_elems opt_map_elems
 %type <operands>         operands
+%type <overlay_field>    overlay_field
+%type <overlay_fields>   overlay_fields opt_overlay_fields
 %type <param>            param result
 %type <params>           param_list opt_param_list
 %type <re_pattern>       re_pattern
 %type <re_patterns>      ctor_regexp
+%type <scope_fields>     scope_fields opt_scope_fields
 %type <stmt>             stmt instruction try_catch foreach
 %type <strings>          attr_list opt_attr_list
 %type <struct_field>     struct_field
 %type <struct_fields>    struct_fields opt_struct_fields
-%type <overlay_field>    overlay_field
-%type <overlay_fields>   overlay_fields opt_overlay_fields
-%type <sval>             comment opt_comment opt_exception_libtype attribute re_pattern_constant
-%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ overlay
+%type <sval>             comment opt_comment opt_exception_libtype attribute re_pattern_constant 
+%type <type>             base_type type enum_ bitset exception opt_exception_base struct_ overlay context scope opt_scope_ref
 %type <types>            type_list
 
 %%
@@ -220,6 +224,7 @@ global_decl   : global
               | function
               | hook
               | type_decl
+              | context_decl
               | import
               | stmt
               | export_
@@ -238,6 +243,8 @@ local         : LOCAL type local_id eol          { driver.moduleBuilder()->addLo
               ;
 
 type_decl     : TYPE local_id '=' type eol       { driver.moduleBuilder()->addType($2, $4, false, loc(@$)); }
+
+context_decl  : CONTEXT context eol              { driver.moduleBuilder()->addContext($2, loc(@$)); }
 
 stmt          : instruction                      { driver.moduleBuilder()->builder()->addInstruction($1); }
               ;
@@ -324,6 +331,8 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | enum_                            { $$ = $1; }
               | exception                        { $$ = $1; }
               | struct_                          { $$ = $1; }
+              | scope                            { $$ = $1; }
+              | context                          { $$ = $1; }
               | overlay                          { $$ = $1; }
               ;
 
@@ -354,6 +363,19 @@ bitset_label  : local_id                         { $$ = std::make_pair($1, -1); 
               | local_id '=' CINTEGER            { $$ = std::make_pair($1, $3); }
               ;
 
+scope         : SCOPE                            { driver.disableLineMode(); }
+                 '{' opt_scope_fields '}'        { driver.enableLineMode(); $$ = builder::scope::type($4, loc(@$)); }
+              ;
+
+opt_scope_fields : scope_fields                  { $$ = $1; }
+              | /* emopty */                     { $$ = builder::scope::field_list(); }
+
+scope_fields  : scope_fields ',' scope_field     { $$ = $1; $$.push_back($3); }
+              | scope_field                      { $$ = builder::scope::field_list(); $$.push_back($1); }
+              ;
+
+scope_field   : local_id                         { $$ = $1; }
+
 exception     : EXCEPTION '<' type '>' opt_exception_base opt_exception_libtype {
                                                  $$ = builder::exception::type($5, $3, loc(@$));
                                                  ast::as<type::Exception>($$)->setLibraryType($6);
@@ -374,6 +396,17 @@ struct_fields : struct_fields ',' struct_field   { $$ = $1; $$.push_back($3); }
 
 struct_field  : type local_id                    { $$ = builder::struct_::field($2, $1, nullptr, false, loc(@$)); }
               | type local_id ATTR_DEFAULT '=' expr { $$ = builder::struct_::field($2, $1, $5, false, loc(@$)); }
+
+context       :                                  { driver.disableLineMode(); }
+                  '{' opt_context_fields '}'     { driver.enableLineMode(); $$ = builder::context::type($3, loc(@$)); }
+
+opt_context_fields : context_fields              { $$ = $1; }
+                   | /* empty */                 { $$ = builder::context::field_list(); }
+
+context_fields : context_fields ',' context_field { $$ = $1; $$.push_back($3); }
+               | context_field                    { $$ = builder::context::field_list(); $$.push_back($1); }
+
+context_field : type local_id                    { $$ = builder::context::field($2, $1, loc(@$)); }
 
 overlay       : OVERLAY                          { driver.disableLineMode(); }
                   '{' opt_overlay_fields '}'     { driver.enableLineMode(); $$ = builder::overlay::type($4, loc(@$)); }
@@ -477,8 +510,8 @@ export_       : EXPORT local_id eol              { driver.moduleBuilder()->expor
               | EXPORT type eol                  { driver.moduleBuilder()->exportType($2); }
               ;
 
-function      : opt_init opt_cc result local_id '(' opt_param_list ')'
-                                                 {  auto func = driver.moduleBuilder()->pushFunction($4, $3, $6, $2, true, loc(@$));
+function      : opt_init opt_cc result local_id '(' opt_param_list ')' opt_scope_ref
+                                                 {  auto func = driver.moduleBuilder()->pushFunction($4, $3, $6, $2, $8, true, loc(@$));
                                                     if ( $1 ) func->function()->setInitFunction();
                                                  }
                 body opt_nl                      {  auto func = driver.moduleBuilder()->popFunction(); }
@@ -492,8 +525,11 @@ function      : opt_init opt_cc result local_id '(' opt_param_list ')'
 opt_init      : INIT                             { $$ = true; }
               | /* empty */                      { $$ = false; }
 
-hook          : HOOK result scoped_id '(' opt_param_list ')' opt_hook_attrs
-                                                 {  driver.moduleBuilder()->pushHook($3, $2, $5, $7, true, loc(@$)); }
+opt_scope_ref : ATTR_SCOPE '=' local_id          { $$ = builder::type::byName($3, loc(@$)); }
+              | /* empty */                      { $$ = nullptr; }
+
+hook          : HOOK result scoped_id '(' opt_param_list ')' opt_scope_ref opt_hook_attrs
+                                                 {  driver.moduleBuilder()->pushHook($3, $2, $5, $7, $8, true, loc(@$)); }
 
                 body opt_nl                      {  driver.moduleBuilder()->popHook(); }
 

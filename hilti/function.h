@@ -29,10 +29,16 @@ public:
    /// module: The module the function is part of. Note that it will not
    /// automatically be added to that module.
    ///
+   /// scope: If body is given, the function's scheduling scope. Null for
+   /// none.
+   ///
    /// body: A statement with the function's body. Typically, the statement type will be that of a block of statements.
    ///
    /// l: Location associated with the node.
-   Function(shared_ptr<ID> id, shared_ptr<hilti::type::Function> ftype, shared_ptr<Module> module, shared_ptr<Statement> body = nullptr, const Location& l=Location::None);
+   Function(shared_ptr<ID> id, shared_ptr<hilti::type::Function> ftype, shared_ptr<Module> module, shared_ptr<Type> scope = nullptr, shared_ptr<Statement> body = nullptr, const Location& l=Location::None);
+
+   /// Returns the function's scheduling scope. Returns null if not set.
+   shared_ptr<type::Scope> scope() const;
 
    /// Marks this function as an "init" function. Such functions will be
    /// automatically executed at startup and must not be called otherwise.
@@ -47,6 +53,7 @@ public:
    ACCEPT_VISITOR_ROOT();
 
 private:
+   node_ptr<Type> _scope;
    bool _init = false;
 };
 
@@ -67,6 +74,9 @@ public:
    /// module: The module the hook is part of. Note that it will not
    /// automatically be added to that module.
    ///
+   /// scope: If body is given, the function's scheduling scope. Null for
+   /// none.
+   ///
    /// priority: If body is given, the hook's priority. Should default to 0.
    ///
    /// group: If body is given, the hook's priority, the hook's group. 0 for
@@ -78,11 +88,13 @@ public:
    ///
    /// l: Location associated with the node.
    Hook(shared_ptr<ID> id, shared_ptr<hilti::type::Hook> ftype, shared_ptr<Module> module,
-        uint64_t priority = 0, uint64_t group = 0, shared_ptr<Statement> body = nullptr,
+        shared_ptr<Type> scope = nullptr, uint64_t priority = 0, uint64_t group = 0,
+        shared_ptr<Statement> body = nullptr,
         const Location& l=Location::None)
-       : Function(id, ftype, module, body, l) { _priority = priority; _group = group; }
+       : Function(id, ftype, module, scope, body, l) { _priority = priority; _group = group; }
 
-   Hook(shared_ptr<ID> id, shared_ptr<hilti::type::Hook> ftype, shared_ptr<Module> module, const attribute_list& attrs,
+   Hook(shared_ptr<ID> id, shared_ptr<hilti::type::Hook> ftype, shared_ptr<Module> module,
+        shared_ptr<Type> scope = nullptr, const attribute_list& attrs = attribute_list(),
         shared_ptr<Statement> body = nullptr, const Location& l=Location::None);
 
    /// Returns the hook's group, with 0 meaning no group.

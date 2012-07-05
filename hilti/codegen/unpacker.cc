@@ -5,6 +5,7 @@
 #include "codegen.h"
 #include "abi.h"
 #include "builder/nodes.h"
+#include "libhilti/port.h"
 
 using namespace hilti;
 using namespace hilti::codegen;
@@ -528,12 +529,20 @@ void Unpacker::visit(type::Address* t)
     cg()->llvmSwitchEnumConst(args.fmt, cases);
 }
 
-static void _portUnpackTCP(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool nbo)
+static void _portUnpack(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool nbo, bool tcp)
 {
-}
+    auto iter_type = builder::iterator::typeBytes();
 
-static void _portUnpackUDP(CodeGen* cg, const UnpackArgs& args, const UnpackResult& result, bool nbo)
-{
+    auto fmt = cg->llvmEnum(nbo ? "Hilti::Packed::Int16Big" : "Hilti::Packed::Int16");
+    auto port = cg->llvmUnpack(builder::integer::type(16), args.begin, args.end, fmt, nullptr, nullptr, args.location);
+    auto proto = tcp ? HLT_PORT_TCP : HLT_PORT_UDP;
+
+    CodeGen::value_list vals = { port.first, cg->llvmConstInt(proto, 8) };
+
+    auto addr = cg->llvmValueStruct(vals);
+
+    cg->llvmCreateStore(addr, result.value_ptr);
+    cg->llvmGCAssign(result.iter_ptr, port.second, iter_type, true);
 }
 
 void Unpacker::visit(type::Port* t)
@@ -548,25 +557,25 @@ void Unpacker::visit(type::Port* t)
     cases.push_back(CodeGen::SwitchCase(
         "port-tcp",
         cg()->llvmEnum("Hilti::Packed::PortTCP"),
-        [&] (CodeGen* cg) -> llvm::Value* { _portUnpackTCP(cg, args, result, false); return nullptr; }
+        [&] (CodeGen* cg) -> llvm::Value* { _portUnpack(cg, args, result, false, true); return nullptr; }
     ));
 
     cases.push_back(CodeGen::SwitchCase(
         "port-tcp-network",
         cg()->llvmEnum("Hilti::Packed::PortTCPNetwork"),
-        [&] (CodeGen* cg) -> llvm::Value* { _portUnpackTCP(cg, args, result, true); return nullptr; }
+        [&] (CodeGen* cg) -> llvm::Value* { _portUnpack(cg, args, result, true, true); return nullptr; }
     ));
 
     cases.push_back(CodeGen::SwitchCase(
         "port-udp",
         cg()->llvmEnum("Hilti::Packed::PortUDP"),
-        [&] (CodeGen* cg) -> llvm::Value* { _portUnpackUDP(cg, args, result, false); return nullptr; }
+        [&] (CodeGen* cg) -> llvm::Value* { _portUnpack(cg, args, result, false, false); return nullptr; }
     ));
 
     cases.push_back(CodeGen::SwitchCase(
         "port-udp-network",
         cg()->llvmEnum("Hilti::Packed::PortUDPNetwork"),
-        [&] (CodeGen* cg) -> llvm::Value* { _portUnpackUDP(cg, args, result, true); return nullptr; }
+        [&] (CodeGen* cg) -> llvm::Value* { _portUnpack(cg, args, result, true, false); return nullptr; }
     ));
 
     cg()->llvmSwitchEnumConst(args.fmt, cases);

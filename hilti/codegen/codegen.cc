@@ -265,6 +265,11 @@ llvm::Value* CodeGen::llvmExecutionContext()
     return 0;
 }
 
+llvm::Value* CodeGen::llvmThreadMgr()
+{
+    return llvmCallC("hlt_global_thread_mgr", {}, false, false);
+}
+
 llvm::Value* CodeGen::llvmGlobalExecutionContext()
 {
     return llvmCallC("hlt_global_execution_context", {}, false, false);
@@ -1700,6 +1705,29 @@ llvm::Value* CodeGen::llvmCurrentFiber()
     value_list args;
     args.push_back(llvmExecutionContext());
     return llvmCallC("__hlt_context_get_fiber", args, false, false);
+}
+
+llvm::Value* CodeGen::llvmCurrentVID()
+{
+    value_list args;
+    args.push_back(llvmExecutionContext());
+    return llvmCallC("__hlt_context_get_vid", args, false, false);
+}
+
+llvm::Value* CodeGen::llvmCurrentThreadContext()
+{
+    value_list args;
+    args.push_back(llvmExecutionContext());
+    return llvmCallC("__hlt_context_get_thread_context", args, false, false);
+}
+
+void CodeGen::llvmSetCurrentThreadContext(shared_ptr<Type> type, llvm::Value* ctx)
+{
+    value_list args;
+    args.push_back(llvmExecutionContext());
+    args.push_back(llvmRttiPtr(type));
+    args.push_back(builder()->CreateBitCast(ctx, llvmTypePtr()));
+    llvmCallC("__hlt_context_set_thread_context", args, false, false);
 }
 
 #if 0

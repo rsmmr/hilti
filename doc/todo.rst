@@ -54,6 +54,11 @@ Instruction Set
 - ``int.div`` is signed. We should replace that with ``int.sdiv`` and
   ``int.udiv``.
 
+- callables should support hooks directly.
+
+- callables and hooks aren't integrated into the context/scope scheme
+  yet.
+
 Optimizations
 -------------
 

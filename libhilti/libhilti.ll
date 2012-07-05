@@ -13,13 +13,15 @@
 ; The per-thread execution context.
 ; Adapt codegen::hlt::ExecutionContext::Globals and hlt_execution_context when making changes here!
 %hlt.execution_context = type {
-    %hlt.gchdr,
-    %hlt.vid,
-    i64,
-    %hlt.exception.type*,
-    %hlt.fiber*,
-    i8*,
-    i8*,
+    %hlt.gchdr,                   ; __ghc
+    %hlt.vid,                     ; vid
+    %hlt.exception.type*,         ; excpt
+    %hlt.fiber*,                  ; fiber
+    i8*,                          ; fiber_pool
+    i8*,                          ; worker
+    i64,                          ; debug_indent
+    i8*,                          ; tcontext
+    i8*,                          ; tcontext_type
     i8*  ;; Start of globals (right here, pointer content isn't used.)
 }
 
@@ -110,6 +112,7 @@
 %hlt.regexp = type {};
 %hlt.overlay = type {};
 %hlt.classifier = type {};
+%hlt.thread_mgr = type {};
 %hlt.match_token_state = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.
@@ -141,8 +144,12 @@ declare %hlt.exception* @__hlt_context_get_exception(%hlt.execution_context*)
 declare void            @__hlt_context_set_exception(%hlt.execution_context*, %hlt.exception*)
 declare void            @__hlt_context_clear_exception(%hlt.execution_context*)
 declare %hlt.fiber*     @__hlt_context_get_fiber(%hlt.execution_context*)
+declare i64             @__hlt_context_get_vid(%hlt.execution_context*)
+declare i8*             @__hlt_context_get_thread_context(%hlt.execution_context*)
+declare void            @__hlt_context_set_thread_context(%hlt.execution_context*, %hlt.type_info*, i8*)
 
 declare %hlt.execution_context* @hlt_global_execution_context();
+declare %hlt.thread_mgr*        @hlt_global_thread_mgr();
 
 declare %hlt.timer*     @__hlt_timer_new_function(%hlt.callable*, %hlt.exception**, %hlt.execution_context*)
 
@@ -159,6 +166,9 @@ declare void        @hlt_fiber_yield(%hlt.fiber*)
 declare i8*         @hlt_fiber_get_result_ptr(%hlt.fiber*)
 declare void        @hlt_fiber_set_result_ptr(%hlt.fiber*, i8*)
 declare %hlt.execution_context* @hlt_fiber_context(%hlt.fiber*)
+
+declare void @__hlt_thread_mgr_schedule(%hlt.thread_mgr*, %hlt.vid, %hlt.callable*, %hlt.exception**, %hlt.execution_context*)
+declare void @__hlt_thread_mgr_schedule_tcontext(%hlt.thread_mgr*, %hlt.type_info*, %hlt.void*, %hlt.callable*, %hlt.exception**, %hlt.execution_context*)
 
 ;;; Exception types used by the code generator.
 @hlt_exception_unspecified = external constant %hlt.exception.type

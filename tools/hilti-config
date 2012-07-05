@@ -89,6 +89,7 @@ fi
 ### Parse command line once to see if we have --debug in there.
 
 build_mode="release"
+builddir=$base/build
 
 for arg in $@; do
     if [ "$arg" == "--debug" ]; then
@@ -128,11 +129,11 @@ while [ "$1" != "" ]; do
 
      # libhilti
         --libhilti-cflags)
-            echo "-I$base/libhilti -I$base/libhilti/$builddir"
+            echo "-I$base/libhilti -I$builddir/libhilti-${build_mode}"
             shift;;
 
         --libhilti-cxxflags)
-            echo "-I$base/libhilti -I$base/libhilti/$builddir"
+            echo "-I$base/libhilti -I$builddir/libhilti-${build_mode}"
             shift;;
 
         --libhilti-ldflags)

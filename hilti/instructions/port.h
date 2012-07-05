@@ -10,35 +10,14 @@
 
 #include "instructions/define-instruction.h"
 
-iBegin(port, Equal, "equal")
+iBeginH(port, Equal, "equal")
     iTarget(optype::boolean)
     iOp1(optype::port, true);
     iOp2(optype::port, true);
+iEndH
 
-    iValidate {
-    }
-
-    iDoc(R"(
-        Returns true if *op1* is equal to *op2*.
-    )")
-
-iEnd
-
-iBegin(port, Protocol, "port.protocol")
+iBeginH(port, Protocol, "port.protocol")
     iTarget(optype::enum_)
     iOp1(optype::port, true)
-
-    iValidate {
-        auto ty_target = as<type::Enum>(target->type());
-
-        if ( ty_target->id()->pathAsString() != "hilti::Port" )
-            error(target, "target must be of type hilti::Port");
-    }
-
-    iDoc(R"(    
-        Returns the protocol of *op1*, which can currently be either
-        ``Port::TCP`` or ``Port::UDP``.
-    )")
-
-iEnd
+iEndH
 

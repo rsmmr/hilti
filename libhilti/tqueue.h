@@ -25,8 +25,10 @@ typedef struct __hlt_thread_queue hlt_thread_queue;
 /// of batches that may still be unprocessed; it doesn't count whatever the
 /// reader has already grabbed some but not yet processed.
 ///
+/// worker_queue: Must be true if this queue is used by a worker thread.
+///
 /// Returns: The new queue.
-hlt_thread_queue* hlt_thread_queue_new(int writers, int batch_size, int max_batches);
+hlt_thread_queue* hlt_thread_queue_new(int writers, int batch_size, int max_batches, int8_t worker_queue);
 
 /// Releases all acquired resources.
 ///

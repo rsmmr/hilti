@@ -14,8 +14,8 @@ typedef void (*hlt_fiber_func)(hlt_fiber* fiber, void* p);
 
 /// Creates a new fiber instance.
 ///
-/// func: The function to run inside the fiber. It receives the pointer
-/// passed to hlt_fiber_create.
+/// func: The function to run inside the fiber. It receives two arguments:
+/// the fiber and the pointer passed to hlt_fiber_create.
 ///
 /// ctx: The context the fiber will run with.
 ///

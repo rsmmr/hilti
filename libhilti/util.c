@@ -12,6 +12,7 @@
 #include "rtti.h"
 #include "globals.h"
 #include "threading.h"
+#include "globals.h"
 
 void hlt_util_nanosleep(uint64_t nsecs)
 {
@@ -60,16 +61,14 @@ int hlt_util_number_of_cpus()
     return sysconf(_SC_NPROCESSORS_ONLN);
 }
 
-#if 0
 void hlt_pthread_setcancelstate(int state, int *oldstate)
 {
-    if ( ! __hlt_global_thread_mgr )
+    if ( ! hlt_global_thread_mgr() )
         return;
 
-    if (  __hlt_global_thread_mgr->state != HLT_THREAD_MGR_RUN )
+    if ( hlt_global_thread_mgr()->state != HLT_THREAD_MGR_RUN )
         pthread_setcancelstate(state, oldstate);
 }
-#endif
 
 size_t hlt_util_memory_usage()
 {
@@ -163,13 +162,4 @@ hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_except
 int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return memcmp(obj1, obj2, type1->size) == 0;
-}
-
-void hlt_pthread_setcancelstate(int state, int *oldstate)
-{
-    if ( ! hlt_global_thread_mgr() )
-        return;
-
-    if (  hlt_global_thread_mgr()->state != HLT_THREAD_MGR_RUN )
-        pthread_setcancelstate(state, oldstate);
 }

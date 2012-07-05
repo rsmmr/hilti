@@ -347,6 +347,7 @@ private:
    shared_ptr<type::Enum> _etype;
 };
 
+
 /// AST node for a constant of type Double.
 class Double : public ast::SpecificConstant<AstInfo, Constant, double>
 {

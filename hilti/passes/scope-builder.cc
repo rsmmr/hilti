@@ -40,8 +40,8 @@ bool ScopeBuilder::run(shared_ptr<Node> module)
     auto m = ast::as<Module>(module);
     m->body()->scope()->clear();
 
-    if ( !  processAllPreOrder(module) )
-        return true;
+    if ( ! processAllPreOrder(module) )
+        return false;
 
     for ( auto i : m->importedIDs() ) {
         shared_ptr<Module> other = hilti::loadModule(i, _libdirs, true);

@@ -14,7 +14,7 @@
 
 // TODO: This should be customizable, however the we'll need separate free
 // lists.
-static const int STACK_SIZE = 16384;
+static const int STACK_SIZE = 65536;
 
 enum __hlt_fiber_state { INIT=1, RUNNING=2, FINISHED=3, YIELDED=4 };
 

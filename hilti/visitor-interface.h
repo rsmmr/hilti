@@ -62,6 +62,8 @@ namespace type {
    class Unset;
    class Vector;
    class Void;
+   class Context;
+   class Scope;
 
    namespace trait {
       namespace parameter {
@@ -247,6 +249,8 @@ public:
    virtual void visit(type::Unset* t)       {}
    virtual void visit(type::Vector* t)      {}
    virtual void visit(type::Void* v)        {}
+   virtual void visit(type::Context* v)     {}
+   virtual void visit(type::Scope* v)     {}
 
    // Iterator types.
    virtual void visit(type::iterator::Bytes* i)    {}

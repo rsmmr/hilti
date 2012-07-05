@@ -4,14 +4,27 @@
 
 using namespace hilti;
 
-Function::Function(shared_ptr<ID> id, shared_ptr<hilti::type::Function> ftype, shared_ptr<Module> module, shared_ptr<Statement> body, const Location& l)
+Function::Function(shared_ptr<ID> id, shared_ptr<hilti::type::Function> ftype, shared_ptr<Module> module, shared_ptr<Type> scope, shared_ptr<Statement> body, const Location& l)
     : ast::Function<AstInfo>(id, ftype, module, body, l)
 
 {
+    _scope = scope;
+    addChild(_scope);
 }
 
-Hook::Hook(shared_ptr<ID> id, shared_ptr<hilti::type::Hook> ftype, shared_ptr<Module> module, const attribute_list& attrs, 
-           shared_ptr<Statement> body, const Location& l) : Function(id, ftype, module, body, l)
+shared_ptr<type::Scope> Function::scope() const
+{
+    if ( ! _scope )
+        return nullptr;
+
+    shared_ptr<Node> n(_scope);
+    auto s = ast::as<type::Scope>(n);
+    assert(s);
+    return s;
+}
+
+Hook::Hook(shared_ptr<ID> id, shared_ptr<hilti::type::Hook> ftype, shared_ptr<Module> module, shared_ptr<Type> scope, const attribute_list& attrs, 
+           shared_ptr<Statement> body, const Location& l) : Function(id, ftype, module, scope, body, l)
 {
     _priority = 0;
     _group = 0;
@@ -25,3 +38,4 @@ Hook::Hook(shared_ptr<ID> id, shared_ptr<hilti::type::Hook> ftype, shared_ptr<Mo
             throw std::runtime_error("unknown hook attribute " + a.first);
     }
 }
+

@@ -87,7 +87,7 @@ void __hlt_cmd_queue_init()
 
     DBG_LOG(DBG_STREAM_QUEUE, "starting command queue manager thread");
 
-    cmd_queue = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 1000, 0); // Slot 0 is main thread.
+    cmd_queue = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 1000, 0, 0); // Slot 0 is main thread.
 
     if ( ! cmd_queue )
         fatal_error("cannot create command queue data structure");
@@ -102,7 +102,6 @@ void __hlt_cmd_worker_terminating(int worker)
         return;
 
     hlt_thread_queue_terminate_writer(cmd_queue, worker);
-    hlt_thread_queue_delete(cmd_queue);
 }
 
 void __hlt_cmd_queue_done()

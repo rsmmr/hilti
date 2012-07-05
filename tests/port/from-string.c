@@ -1,5 +1,5 @@
 //
-// @TEST-EXEC: ${CC} -c %INPUT -o %INPUT.bc
+// @TEST-EXEC: ${CC} `hilti-config --debug --libhilti-cflags` -c %INPUT -o %INPUT.bc
 // @TEST-EXEC: hilti-build %INPUT.bc -o a.out
 // @TEST-EXEC: ./a.out >output
 // @TEST-EXEC: btest-diff output

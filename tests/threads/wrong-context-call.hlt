@@ -13,10 +13,10 @@ context {
     port resp_p
 }
 
-scope Connection = { orig_h, orig_p, resp_h, resp_p }
-scope Originator = { orig_h }
+type Connection = scope { orig_h, orig_p, resp_h, resp_p }
+type Originator = scope { orig_h }
 
-void Func() &scope = Originator {
+void Func() &scope=Originator {
 }
 
 void run() &scope=Connection {

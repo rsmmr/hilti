@@ -83,8 +83,14 @@ protected:
    void visit(statement::instruction::flow::ReturnResult* s) override;
    void visit(statement::instruction::flow::ReturnVoid* s) override;
 
-   void visit(declaration::Variable* v) override;
+   void visit(statement::instruction::thread::GetContext* s) override;
+   void visit(statement::instruction::thread::SetContext* s) override;
+   void visit(statement::instruction::thread::Schedule* s) override;
+   void visit(statement::instruction::flow::CallResult* s) override;
+   void visit(statement::instruction::flow::CallVoid* s) override;
 
+   void visit(declaration::Variable* v) override;
+   void visit(declaration::Type* t) override;
    void visit(declaration::Function* f) override;
    void visit(declaration::Hook* f) override;
 

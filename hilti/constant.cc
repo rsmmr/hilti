@@ -176,3 +176,4 @@ constant::Enum::Enum(shared_ptr<ID> value, shared_ptr<Type> etype, const Locatio
 
     throw ConstantParseError(this, util::fmt("unknown enum label '%s'", value->pathAsString().c_str()));
 }
+

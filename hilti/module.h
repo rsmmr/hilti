@@ -23,6 +23,11 @@ public:
    /// l: Associated location.
    Module(shared_ptr<ID> id, const string& path = "-", const Location& l=Location::None);
 
+   /// Returns the module's execution context if any has been declared, or
+   /// null if not. Note that the result is only defined after the module has
+   /// been finalized.
+   shared_ptr<type::Context> context() const;
+
    ACCEPT_VISITOR_ROOT();
 
    /// Returns any already existing module associated with a given path. We

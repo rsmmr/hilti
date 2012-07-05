@@ -35,8 +35,8 @@ void run() {
     str = call Hilti::fmt ("|%d|%d|", (-42, True))
     call Hilti::print (str)
 
-    # str = call Hilti::fmt ("|%f|", (-3.14))
-    # call Hilti::print (str)
+    str = call Hilti::fmt ("|%f|", (-3.14))
+    call Hilti::print (str)
 
     str = call Hilti::fmt ("|%p|", (Null))
     call Hilti::print (str)

@@ -24,6 +24,7 @@ struct __hlt_thread_queue {
     int writers;
     int batch_size;
     int max_batches;
+    int8_t worker_queue; // True if this thread this is used in is managed by the thread manager.
 
     // These are safe to access from the writers without locking.
     batch**   writer_batches;     // Array of batches, one for each writer.
@@ -59,10 +60,12 @@ inline static void _acquire_lock(hlt_thread_queue* queue, int* i, int reader, in
 {
     hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, i);
 
+    // stderr, "trying acquired %p %d %d\n", queue, reader, thread);
+
     if ( PTHREAD_SPIN_LOCK(&queue->lock) != 0 )
         _fatal_error("cannot acquire lock");
 
-    //fprintf(stderr, "acquired %p %d %d\n", queue, reader, thread);
+    // fprintf(stderr, "acquired %p %d %d\n", queue, reader, thread);
 
 }
 
@@ -71,7 +74,7 @@ inline static void _release_lock(hlt_thread_queue* queue, int i, int reader, int
     if ( PTHREAD_SPIN_UNLOCK(&queue->lock) != 0 )
         _fatal_error("cannot release lock");
 
-    //fprintf(stderr, "released %p %d %d\n", queue, reader, thread);
+    // fprintf(stderr, "released %p %d %d\n", queue, reader, thread);
 
     hlt_pthread_setcancelstate(i, NULL);
 }
@@ -109,7 +112,7 @@ static void _debug_print_queue(const char *prefix, hlt_thread_queue* q, int read
 
 #endif
 
-hlt_thread_queue* hlt_thread_queue_new(int writers, int batch_size, int max_batches)
+hlt_thread_queue* hlt_thread_queue_new(int writers, int batch_size, int max_batches, int8_t worker_queue)
 {
     hlt_thread_queue *queue = (hlt_thread_queue *) hlt_malloc(sizeof(hlt_thread_queue));
     if ( ! queue )
@@ -118,6 +121,7 @@ hlt_thread_queue* hlt_thread_queue_new(int writers, int batch_size, int max_batc
     queue->writers = writers;
     queue->batch_size = batch_size;
     queue->max_batches = max_batches;
+    queue->worker_queue = worker_queue;
 
     queue->reader_head = 0;
     queue->reader_pos = 0;
@@ -173,6 +177,9 @@ void hlt_thread_queue_write(hlt_thread_queue* queue, int writer, void *elem)
         return;
 
     do {
+        if ( queue->worker_queue && __hlt_thread_mgr_terminating() )
+            return;
+
         batch* b = queue->writer_batches[writer];
 
         // If we don't have a batch, get us one.
@@ -213,6 +220,9 @@ void hlt_thread_queue_flush(hlt_thread_queue* queue, int writer)
 
     do {
         int i;
+
+        if ( queue->worker_queue && __hlt_thread_mgr_terminating() )
+            return;
 
         _acquire_lock(queue, &i, 0, writer);
         ++queue->writer_stats[writer].locked;
@@ -269,6 +279,10 @@ void* hlt_thread_queue_read(hlt_thread_queue* queue, int timeout)
     timeout *= 1000; // Turn it into nanoseconds.
 
     while ( 1 ) {
+
+        if ( queue->worker_queue && __hlt_thread_mgr_terminating() )
+            return 0;
+
         while ( queue->reader_head ) {
             // We still have stuff to do, so do it.
             batch* b = queue->reader_head;
@@ -360,7 +374,6 @@ void hlt_thread_queue_terminate_writer(hlt_thread_queue* queue, int writer)
     _release_lock(queue, s, 0, writer);
 
     hlt_thread_queue_flush(queue, writer);
-
 }
 
 int8_t hlt_thread_queue_terminated(hlt_thread_queue* queue)

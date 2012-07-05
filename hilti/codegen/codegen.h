@@ -61,7 +61,7 @@ namespace symbols {
 /// at the C layer in libhilti.
 namespace hlt {
     /// Fields in %hlt.execution_context.
-    enum ExecutionContext { Globals = 7 };
+    enum ExecutionContext { Globals = 9 };
 
     /// Fields in %hlt.exception.
     enum Exception { Name = 0 };
@@ -438,6 +438,11 @@ public:
    ///
    /// Returns: The LLVM value.
    llvm::Value* llvmExecutionContext();
+
+   /// Returns the LLVM value for global thread manager.
+   ///
+   /// Returns: The LLVM value.
+   llvm::Value* llvmThreadMgr();
 
    /// Returns the LLVM value for the global execution context.
    ///
@@ -1227,6 +1232,21 @@ public:
 
    /// Extracts the current fiber from the execution context.
    llvm::Value* llvmCurrentFiber();
+
+   /// Extracts the current virtual thread ID from the execution context.
+   llvm::Value* llvmCurrentVID();
+
+   /// Returns the current thread context form the execution context. The
+   /// returned value does not have its cctor applied yet.
+   llvm::Value* llvmCurrentThreadContext();
+
+   /// Sets the current thread context in the execution context.
+   ///
+   /// type: The type of the context, of type type::Context.
+   ///
+   /// ctx: The new value for the context. It's assumed to not have its cctor
+   /// applied.
+   void llvmSetCurrentThreadContext(shared_ptr<Type> type, llvm::Value* ctx);
 
 #if 0 // Not used, runtime takes care of it.
    /// Sets the current fiber in the execution context.

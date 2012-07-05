@@ -1,4 +1,5 @@
->>> thread.schedule Func ()
-wrong-context-usage.hlt:21: error, scope of callee function is incompatible with the current scope
 
-wrong-context-usage.hlt: 1 error found during validating
+>>> thread.schedule Func ()
+wrong-context-usage.hlt:21-22: error, scope of callee function is incompatible with the current scope [pass::Validator]
+wrong-context-usage.hlt: Aborting due to verification error.
+error running hiltic, aborting

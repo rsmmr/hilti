@@ -9,6 +9,7 @@
 
 hlt_hook_state* __hlt_global_hook_state = 0;
 pthread_mutex_t __hlt_global_hook_state_lock;
+int8_t          __hlt_global_thread_mgr_terminate = 0;
 
 static hlt_execution_context* _global_execution_context = 0;
 static hlt_thread_mgr*        _global_thread_mgr = 0;
@@ -33,6 +34,11 @@ hlt_execution_context* hlt_global_execution_context()
 hlt_thread_mgr* hlt_global_thread_mgr()
 {
     return _global_thread_mgr;
+}
+
+void __hlt_global_set_thread_mgr(hlt_thread_mgr* mgr)
+{
+    _global_thread_mgr = mgr;
 }
 
 

@@ -19,6 +19,7 @@
 #include "string_.h"
 #include "globals.h"
 #include "util.h"
+#include "threading.h"
 
 typedef struct {
     __hlt_gchdr __gchdr; // Header for memory management.
@@ -42,7 +43,7 @@ struct __hlt_bytes {
     __hlt_gchdr __gchdr;     // Header for memory management.
     __hlt_bytes_chunk* head; // First chunk.
     __hlt_bytes_chunk* tail; // Last chunk.  NOTE: No ref'cnt here to avoid cylces.
-    // hlt_thread_mgr_blockable blockable; // For blocking until changed.
+    __hlt_thread_mgr_blockable blockable; // For blocking until changed.
 };
 
 __HLT_RTTI_GC_TYPE(__hlt_bytes_data,  HLT_TYPE_BYTES_DATA)
@@ -161,7 +162,7 @@ hlt_bytes* hlt_bytes_new(hlt_exception** excpt, hlt_execution_context* ctx)
 
     GC_CLEAR(dst, __hlt_bytes_chunk);
 
-    // hlt_thread_mgr_blockable_init(&b->blockable);
+    hlt_thread_mgr_blockable_init(&b->blockable);
 
     assert(is_empty(b));
 
@@ -257,7 +258,7 @@ int8_t __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt
         return 0;
     }
 
-    // hlt_thread_mgr_unblock(&b->blockable, ctx);
+    hlt_thread_mgr_unblock(&b->blockable, ctx);
 
     // Special case: see if we can copy it into the last chunk.
     if ( b->tail && b->tail->owner && b->tail->free >= len ) {
@@ -321,7 +322,7 @@ void hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exception** excp
         // Empty.
         return;
 
-    // hlt_thread_mgr_unblock(&b->blockable, ctx);
+    hlt_thread_mgr_unblock(&b->blockable, ctx);
 
 #if 0
     /// FIXME: This isn't working I believe.
@@ -759,7 +760,7 @@ void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_ex
     }
 
     b->tail->frozen = freeze;
-    // hlt_thread_mgr_unblock(&b->blockable, ctx);
+    hlt_thread_mgr_unblock(&b->blockable, ctx);
 }
 
 void hlt_bytes_trim(hlt_bytes* b, hlt_iterator_bytes pos, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -1050,13 +1051,11 @@ int8_t hlt_bytes_equal(const hlt_type_info* type1, const void* obj1, const hlt_t
     return hlt_bytes_cmp(b1, b2, &e, c) == 0;
 }
 
-#if 0
 void* hlt_bytes_blockable(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_bytes* b = *((hlt_bytes**)obj);
     return &b->blockable;
 }
-#endif
 
 void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {

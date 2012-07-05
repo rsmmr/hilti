@@ -10,6 +10,7 @@ typedef struct __hlt_exception hlt_exception;
 typedef struct __hlt_execution_context hlt_execution_context;
 typedef struct __hlt_type_info hlt_type_info;
 typedef struct __hlt_thread_mgr hlt_thread_mgr;
+typedef struct __hlt_callable hlt_callable;
 
 /// Type for hash values.
 typedef uint64_t hlt_hash;

@@ -32,30 +32,22 @@ struct __hlt_worker_thread;
 /// When changing this, adapt ``hlt.execution_context`` in ``libhilti.ll``
 /// and ``codegen::hlt::ExecutionContext::Globals``.
 struct __hlt_execution_context {
-    __hlt_gchdr __gch;                /// Header for garbage collection.
-    hlt_vthread_id vid;               /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
-    hlt_exception* excpt;             /// The currently raised exception, or 0 if none.
-    hlt_fiber* fiber;                 /// The current fiber to use for executing code inside this context.
-    hlt_free_list* fiber_pool;        /// The pool of fiber objects for this context.
+    __hlt_gchdr __gch;                  /// Header for garbage collection.
+    hlt_vthread_id vid;                 /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
+    hlt_exception* excpt;               /// The currently raised exception, or 0 if none.
+    hlt_fiber* fiber;                   /// The current fiber to use for executing code inside this context.
+    hlt_free_list* fiber_pool;          /// The pool of fiber objects for this context.
     struct __hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
+    void* tcontext;                     /// The current threading context, per the module's "context" definition; NULL if not set. This is ref counted.
+    const hlt_type_info* tcontext_type;       /// The type of the current threading context.
 
 #if 0
-    /// We keep an array of callable registered for execution but not
-    /// processed yet.
-    uint64_t       calls_num;     /// Number of callables in array.
-    uint64_t       calls_alloced; /// Number of slots allocated.
-    uint64_t       calls_first;   /// Index of first non-yet processed element.
-    hlt_callable** calls;         /// First element of array, or 0 if empty.
-
     hlt_profiling_state* pstate;  /// State for ongoing profiling, or 0 if none.
 #endif
 
     // TODO; We should not compile this in non-debug mode.
     uint64_t debug_indent;        /// Current indent level for debug messages.
 
-#if 0
-    void* tcontext; /// The current threading context, per the module's "context" definition; NULL if not set.
-#endif
     void *globals;  // The globals are starting right here (at the address of the field, the pointer content is ignored.)
 };
 
@@ -94,11 +86,34 @@ extern void __hlt_context_clear_exception(hlt_execution_context* ctx);
 /// Returns: The fiber.
 extern hlt_fiber* __hlt_context_get_fiber(hlt_execution_context* ctx);
 
+/// Returns the virtual thread ID from an execution context.
+///
+/// ctx: The context.
+///
+/// Returns: The vid.
+extern hlt_vthread_id __hlt_context_get_vid(hlt_execution_context* ctx);
+
 /// Sets the fiber field in an execution context.
 ///
 /// ctx: The context.
 ///
 /// fiber: The fiber.
 extern void __hlt_context_set_fiber(hlt_execution_context* ctx, hlt_fiber* fiber);
+
+/// Returns the thread context field from an execution context.
+///
+/// ctx: The context.
+///
+/// Returns: The thread context.
+extern void* __hlt_context_get_thread_context(hlt_execution_context* ctx);
+
+/// Sets the thread context field in an execution context.
+///
+/// ctx: The context.
+///
+/// type: The type of the thread context.
+///
+/// tctx: The thread context.
+extern void __hlt_context_set_thread_contxt(hlt_execution_context* ctx, hlt_type_info* type, void* tctx);
 
 #endif

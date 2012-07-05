@@ -676,6 +676,7 @@ void TypeBuilder::visit(type::Bytes* b)
     ti->to_string = "hlt::bytes_to_string";
     ti->hash = "hlt::bytes_hash";
     ti->equal = "hlt::bytes_equal";
+    ti->blockable = "hlt::bytes_blockable";
     setResult(ti);
 }
 

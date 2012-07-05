@@ -92,6 +92,7 @@ set(instructions
     hilti/instructions/time.h
     hilti/instructions/timer-mgr.h
     hilti/instructions/timer.h
+    hilti/instructions/thread.h
     hilti/instructions/tuple.h
     hilti/instructions/vector.h
 )
@@ -174,6 +175,8 @@ add_library (hilti
     hilti/instructions/classifier.cc
     hilti/instructions/flow.cc
     hilti/instructions/misc.cc
+    hilti/instructions/port.cc
+    hilti/instructions/thread.cc
 
     hilti/parser/driver.cc
 
@@ -224,6 +227,7 @@ add_library (hilti
     hilti/codegen/instructions/time.cc
     hilti/codegen/instructions/timer-mgr.cc
     hilti/codegen/instructions/timer.cc
+    hilti/codegen/instructions/thread.cc
     hilti/codegen/instructions/tuple.cc
     hilti/codegen/instructions/vector.cc
     hilti/codegen/linker.cc
