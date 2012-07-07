@@ -1,12 +1,9 @@
 //
-// @TEST-EXEC: ${CC} `hilti-config --debug --libhilti-cflags` -c %INPUT -o %INPUT.bc
-// @TEST-EXEC: hilti-build %INPUT.bc -o a.out
+// @TEST-EXEC: hilti-build %INPUT -o a.out
 // @TEST-EXEC: ./a.out >output
 // @TEST-EXEC: btest-diff output
 
 #include <libhilti.h>
-
-extern const hlt_type_info hlt_type_info_port;
 
 int main()
 {
@@ -20,12 +17,12 @@ int main()
     hlt_port a;
 
     a = hlt_port_from_asciiz("80/tcp", &excpt, ctx);
-    s = hlt_port_to_string(&hlt_type_info_port, &a, 0, &excpt, ctx);
+    s = hlt_port_to_string(hlt_type_info_hlt_port, &a, 0, &excpt, ctx);
     hlt_string_print(stdout, s, 1, &excpt, ctx);
     assert(! excpt);
 
     a = hlt_port_from_asciiz("53/udp", &excpt, ctx);
-    s = hlt_port_to_string(&hlt_type_info_port, &a, 0, &excpt, ctx);
+    s = hlt_port_to_string(hlt_type_info_hlt_port, &a, 0, &excpt, ctx);
     hlt_string_print(stdout, s, 1, &excpt, ctx);
     assert(! excpt);
 

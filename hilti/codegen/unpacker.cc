@@ -538,8 +538,7 @@ static void _portUnpack(CodeGen* cg, const UnpackArgs& args, const UnpackResult&
     auto proto = tcp ? HLT_PORT_TCP : HLT_PORT_UDP;
 
     CodeGen::value_list vals = { port.first, cg->llvmConstInt(proto, 8) };
-
-    auto addr = cg->llvmValueStruct(vals);
+    auto addr = cg->llvmValueStruct(vals, true);
 
     cg->llvmCreateStore(addr, result.value_ptr);
     cg->llvmGCAssign(result.iter_ptr, port.second, iter_type, true);

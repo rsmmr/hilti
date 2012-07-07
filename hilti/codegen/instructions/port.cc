@@ -28,11 +28,11 @@ void StatementBuilder::visit(statement::instruction::port::Protocol* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
 
-    auto v = cg()->llvmExtractValue(op1, 0);
-    auto cmp = cg()->builder()->CreateICmpEQ(v, cg()->llvmConstInt(HLT_PORT_TCP, 64));
+    auto v = cg()->llvmExtractValue(op1, 1);
+    auto cmp = cg()->builder()->CreateICmpEQ(v, cg()->llvmConstInt(HLT_PORT_TCP, 8));
 
-    auto tcp = cg()->llvmEnum("Hilti::AddrFamily::TCP");
-    auto udp = cg()->llvmEnum("Hilti::AddrFamily::UDP");
+    auto tcp = cg()->llvmEnum("Hilti::Protocol::TCP");
+    auto udp = cg()->llvmEnum("Hilti::Protocol::UDP");
 
     auto result = cg()->builder()->CreateSelect(cmp, tcp, udp);
     cg()->llvmStore(i, result);

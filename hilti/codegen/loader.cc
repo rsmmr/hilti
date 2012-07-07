@@ -343,7 +343,7 @@ void Loader::visit(constant::Port* c)
 
     CodeGen::constant_list elems;
     elems.push_back(cg()->llvmConstInt(p.port, 16));
-    elems.push_back(cg()->llvmConstInt(p.proto, 8));
+    elems.push_back(cg()->llvmConstInt(proto, 8));
     auto val = cg()->llvmConstStruct(elems, true);
 
     setResult(val, false, false);

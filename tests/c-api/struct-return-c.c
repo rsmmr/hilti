@@ -138,12 +138,12 @@ struct K fk() {
     return k;
 }
 
-static hlt_string_constant OK = { 2, "OK" };
-
 struct L fl() {
+    hlt_exception* excpt = 0;
+
     struct L l;
     l.d = 42.0;
-    l.s = &OK;
+    l.s = hlt_string_from_asciiz("OK", &excpt, hlt_global_execution_context());
     return l;
 }
 

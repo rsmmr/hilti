@@ -17,8 +17,6 @@ iBeginCC(port)
     iValidateCC(Protocol) {
         auto ty_target = as<type::Enum>(target->type());
 
-        fprintf(stderr, "%s\n", ty_target->id()->pathAsString().c_str());
-
         if ( util::strtolower(ty_target->id()->pathAsString()) != "hilti::protocol" )
             error(target, "target must be of type hilti::Protocol");
     }

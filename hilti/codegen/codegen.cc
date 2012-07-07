@@ -1311,15 +1311,20 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
 
 llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool internal, type::function::CallingConvention cc, const string& force_name, bool skip_ctx)
 {
+    string use_name = force_name;
+
     if ( cc == type::function::DEFAULT )
         cc = func->type()->callingConvention();
+
+    if ( cc == type::function::C )
+        use_name = func->id()->name();
 
     parameter_list params;
 
     for ( auto p : func->type()->parameters() )
         params.push_back(make_pair(p->id()->name(), p->type()));
 
-    auto name = force_name.size() ? force_name : util::mangle(func->id(), true, func->module()->id(), "", internal);
+    auto name = use_name.size() ? use_name : util::mangle(func->id(), true, func->module()->id(), "", internal);
 
     auto rtype = llvmType(func->type()->result()->type());
 
@@ -1328,6 +1333,10 @@ llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool interna
 
 llvm::Function* CodeGen::llvmFunction(shared_ptr<Function> func, bool force_new)
 {
+    if ( func->type()->callingConvention() == type::function::C )
+        // Don't mess with the name.
+        return llvmAddFunction(func, false, type::function::C);
+
     bool internal = true;
 
     if ( func->module()->exported(func->id()) )
