@@ -39,14 +39,13 @@ struct __hlt_execution_context {
     hlt_free_list* fiber_pool;          /// The pool of fiber objects for this context.
     struct __hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
     void* tcontext;                     /// The current threading context, per the module's "context" definition; NULL if not set. This is ref counted.
-    const hlt_type_info* tcontext_type;       /// The type of the current threading context.
+    const hlt_type_info* tcontext_type; /// The type of the current threading context.
 
-#if 0
-    hlt_profiling_state* pstate;  /// State for ongoing profiling, or 0 if none.
-#endif
+    // TODO: We should not compile this in non-profiling mode.
+    __hlt_profiler_state* pstate;      /// State for ongoing profiling, or 0 if none.
 
     // TODO; We should not compile this in non-debug mode.
-    uint64_t debug_indent;        /// Current indent level for debug messages.
+    uint64_t debug_indent;              /// Current indent level for debug messages.
 
     void *globals;  // The globals are starting right here (at the address of the field, the pointer content is ignored.)
 };

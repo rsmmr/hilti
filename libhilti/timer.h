@@ -31,9 +31,9 @@
 #include "context.h"
 #include "exceptions.h"
 #include "callable.h"
+#include "profiler.h"
 
 typedef struct __hlt_timer hlt_timer;       ///< Type for representing a HILTI timer.
-typedef struct __hlt_timer_mgr hlt_timer_mgr; ///< Type for representing a HILTI timer manager.
 
 // Todo: We store the timer manager with every timer. That's kind of a waste,
 // but it makes handing timers around much easier. Need to recheck eventually
@@ -50,9 +50,7 @@ struct __hlt_timer {
         __hlt_map_timer_cookie map;
         __hlt_set_timer_cookie set;
         __hlt_vector_timer_cookie vector;
-#if 0
         __hlt_profiler_timer_cookie profiler;
-#endif
     } cookie;
 };
 
@@ -221,7 +219,6 @@ extern hlt_timer* __hlt_timer_new_vector(__hlt_vector_timer_cookie cookie, hlt_e
 /// Returns: The new timer object.
 extern hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
-#if 0
 /// Instantiates a new timer object that will record a profiler snapshot when it
 /// fires.
 ///
@@ -232,8 +229,6 @@ extern hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_excepti
 ///
 /// Returns: The new timer object.
 extern hlt_timer* __hlt_timer_new_profiler(__hlt_profiler_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx);
-
-#endif
 
 
 #endif

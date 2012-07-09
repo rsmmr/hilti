@@ -302,8 +302,10 @@ base_type     : ANY                              { $$ = builder::any::type(loc(@
               | VOID                             { $$ = builder::void_::type(loc(@$)); }
 
               | CHANNEL '<' type '>'             { $$ = builder::channel::type($3, loc(@$)); }
+              | CHANNEL '<' '*' '>'              { $$ = builder::channel::typeAny(loc(@$)); }
               | INT '<' CINTEGER '>'             { $$ = builder::integer::type($3, loc(@$)); }
               | IOSRC '<' scoped_id '>'          { $$ = builder::iosource::type($3, loc(@$)); }
+              | IOSRC '<' '*' '>'                { $$ = builder::iosource::typeAny(loc(@$)); }
               | ITER '<' '*' '>'                 { $$ = builder::iterator::typeAny(loc(@$)); }
               | ITER '<' type '>'                { $$ = builder::iterator::type($3, loc(@$)); }
               | LIST '<' type '>'                { $$ = builder::list::type($3, loc(@$)); }

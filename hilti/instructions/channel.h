@@ -19,98 +19,34 @@
 
 #include "instructions/define-instruction.h"
 
-iBegin(channel, New, "new")
+iBeginH(channel, New, "new")
     iTarget(optype::refChannel)
     iOp1(optype::typeChannel, true);
     iOp2(optype::int64, true);
+iEndH
 
-    iValidate {
-        hasType(target, typedType(op1));
-    }
-
-    iDoc(R"(
-         Allocates a new instance of a channel storing elements of type *op1*.
-         *op2* defines the channel's capacity, i.e., the maximal number of items it
-         can store. The capacity defaults to zero, which creates a channel of
-         unbounded capacity.
-    )")
-
-iEnd
-
-
-iBegin(channel, Read, "channel.read")
+iBeginH(channel, Read, "channel.read")
     iTarget(optype::any)
     iOp1(optype::refChannel, true)
+iEndH
 
-    iValidate {
-        canCoerceTo(referencedType(op1), target);
-    }
-
-    iDoc(R"(    
-        Returns the next channel item from the channel referenced by *op1*. If
-        the channel is empty, the instruction blocks until an item becomes
-        available.
-    )")
-
-iEnd
-
-iBegin(channel, ReadTry, "channel.read_try")
+iBeginH(channel, ReadTry, "channel.read_try")
     iTarget(optype::any)
     iOp1(optype::refChannel, true)
+iEndH
 
-    iValidate {
-        canCoerceTo(referencedType(op1), target);
-    }
-
-    iDoc(R"(    
-        Returns the next channel item from the channel referenced by *op1*. If
-        the channel is empty, the instruction raises a ``WouldBlock``
-        exception.
-    )")
-
-iEnd
-
-iBegin(channel, Size, "channel.size")
+iBeginH(channel, Size, "channel.size")
     iTarget(optype::int64)
     iOp1(optype::refChannel, true)
+iEndH
 
-    iValidate {
-    }
-
-    iDoc(R"(    
-        Returns the current number of items in the channel referenced by
-        *op1*.
-    )")
-
-iEnd
-
-iBegin(channel, Write, "channel.write")
+iBeginH(channel, Write, "channel.write")
     iOp1(optype::refChannel, false)
     iOp2(optype::any, true)
+iEndH
 
-    iValidate {
-        canCoerceTo(op2, referencedType(op1));
-    }
-
-    iDoc(R"(    
-        Writes an item into the channel referenced by *op1*. If the channel is
-        full, the instruction blocks until a slot becomes available.
-    )")
-
-iEnd
-
-iBegin(channel, WriteTry, "channel.write_try")
+iBeginH(channel, WriteTry, "channel.write_try")
     iOp1(optype::refChannel, false)
     iOp2(optype::any, true)
-
-    iValidate {
-        canCoerceTo(op2, referencedType(op1));
-    }
-
-    iDoc(R"(    
-        Writes an item into the channel referenced by *op1*. If the channel is
-        full, the instruction raises a ``WouldBlock`` exception.
-    )")
-
-iEnd
+iEndH
 

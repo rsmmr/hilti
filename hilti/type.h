@@ -200,6 +200,13 @@ class Container : public Trait, public Iterable
 {
 };
 
+/// Trait class marking a type that provides yielding until a resource
+/// becomes available (i.e., it can acts as argument in a \c yield instruction).
+/// Theses types must provide a \a blockable function in their type information.
+class Blockable : public Trait
+{
+};
+
 /// Trait class marking types which's instances can be unpacked from binary
 /// data via the Unpacker.
 class Unpackable : public Trait
@@ -979,7 +986,7 @@ public:
 
 /// Type for bytes instances.
 ///
-class Bytes : public HeapType, public trait::Iterable, public trait::Unpackable, public trait::Hashable, public trait::Classifiable
+class Bytes : public HeapType, public trait::Iterable, public trait::Unpackable, public trait::Hashable, public trait::Classifiable, public trait::Blockable
 {
 public:
    /// Constructor.
@@ -1145,7 +1152,7 @@ public:
    /// order the fields are defined in the overlay. If the named field starts
    /// at a constant offset and does not depend on any other fields, an empty
    /// list is returned.
-   /// 
+   ///
    /// Valid only after the field has been added to an Overlay.
    const field_list& dependents() const { return _deps; }
 
@@ -1248,7 +1255,7 @@ public:
    Channel(const Location& l=Location::None) : TypedHeapType(l) {}
 
    virtual ~Channel();
-   
+
    ACCEPT_VISITOR(Type);
 };
 

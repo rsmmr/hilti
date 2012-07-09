@@ -85,6 +85,7 @@ set(instructions
     hilti/instructions/operators.h
     hilti/instructions/overlay.h
     hilti/instructions/port.h
+    hilti/instructions/profiler.h
     hilti/instructions/regexp.h
     hilti/instructions/set.h
     hilti/instructions/string.h
@@ -172,10 +173,13 @@ add_library (hilti
     hilti/builder/block.cc
     hilti/builder/module.cc
 
+    hilti/instructions/channel.cc
     hilti/instructions/classifier.cc
     hilti/instructions/flow.cc
+    hilti/instructions/iosrc.cc
     hilti/instructions/misc.cc
     hilti/instructions/port.cc
+    hilti/instructions/profiler.cc
     hilti/instructions/thread.cc
 
     hilti/parser/driver.cc
@@ -221,6 +225,7 @@ add_library (hilti
     hilti/codegen/instructions/network.cc
     hilti/codegen/instructions/overlay.cc
     hilti/codegen/instructions/port.cc
+    hilti/codegen/instructions/profiler.cc
     hilti/codegen/instructions/regexp.cc
     hilti/codegen/instructions/set.cc
     hilti/codegen/instructions/struct.cc

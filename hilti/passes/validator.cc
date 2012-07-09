@@ -438,6 +438,9 @@ void Validator::visit(type::Callable* t)
 
 void Validator::visit(type::Channel* t)
 {
+    if ( t->wildcard() )
+        return;
+
     if ( ! t->argType() )
         error(t, "no type for channel elements given");
 
@@ -545,6 +548,9 @@ void Validator::visit(type::Hook* t)
 
 void Validator::visit(type::IOSource* t)
 {
+    if ( t->wildcard() )
+        return;
+
     if ( ! t->kind() ) {
         error(t, "no kind for iosrc given");
         return;

@@ -6,178 +6,175 @@
 using namespace hilti;
 using namespace codegen;
 
+static llvm::Value* _makeIterator(CodeGen* cg, shared_ptr<Type> ty, llvm::Value* src, llvm::Value* elem)
+{
+    auto ioty = ast::as<type::IOSource>(ty);
+    assert(ioty);
+
+    if ( ! src )
+        src = cg->llvmConstNull(cg->llvmType(ioty));
+
+    if ( ! elem ) {
+        auto ity = type::asTrait<type::trait::Iterable>(ty.get());
+        elem = cg->llvmConstNull(cg->llvmType(ity->elementType()));
+    }
+
+    CodeGen::value_list vals = { src, elem };
+    return cg->llvmValueStruct(vals);
+}
+
+static llvm::Value* _checkExhausted(CodeGen* cg, statement::Instruction* i, shared_ptr<Expression> src, llvm::Value* result, bool make_iters)
+{
+    auto rty = ast::as<type::Reference>(src->type());
+    assert(rty);
+
+    auto ty = rty->argType();
+
+    auto data = cg->llvmExtractValue(result, 1);
+    auto exhausted = cg->builder()->CreateIsNull(data);
+
+    auto builder_exhausted = cg->newBuilder("excpt");
+    auto builder_not_exhausted = cg->newBuilder("no-excpt");
+    auto builder_cont= cg->newBuilder("cont");
+
+    cg->llvmCreateCondBr(exhausted, builder_exhausted, builder_not_exhausted);
+
+    cg->pushBuilder(builder_exhausted);
+
+    llvm::Value* result_exhausted = nullptr;
+    llvm::Value* result_not_exhausted = nullptr;
+
+    if ( make_iters )
+        result_exhausted = _makeIterator(cg, ty, nullptr, nullptr);
+
+    else
+        cg->llvmRaiseException("Hilti::IOSrcExhausted", i->location());
+
+    cg->llvmCreateBr(builder_cont);
+    cg->popBuilder();
+
+    cg->pushBuilder(builder_not_exhausted);
+
+    if ( make_iters )
+        result_not_exhausted = _makeIterator(cg, ty, cg->llvmValue(src), result);
+
+    cg->llvmCreateBr(builder_cont);
+    cg->popBuilder();
+
+    cg->pushBuilder(builder_cont);
+
+    if ( make_iters ) {
+        auto result = cg->builder()->CreatePHI(result_exhausted->getType(), 2);
+        result->addIncoming(result_exhausted, builder_exhausted->GetInsertBlock());
+        result->addIncoming(result_not_exhausted, builder_not_exhausted->GetInsertBlock());
+        return result;
+    }
+
+    return result;
+}
+
 void StatementBuilder::visit(statement::instruction::ioSource::New* i)
 {
-   // TODO: Not implemented yet.
-   abort();
+    auto ptype = type::asTrait<type::trait::Parameterized>(typedType(i->op1()).get());
+    assert(ptype);
 
+    auto params = ptype->parameters();
+    assert(params.size() == 1);
+
+    auto param = std::dynamic_pointer_cast<type::trait::parameter::Enum>(params.front());
+    assert(param);
+
+    auto kind = param->label()->pathAsString();
+    CodeGen::expr_list args = { i->op2() };
+
+    CodeGen::case_list cases;
+
+    cases.push_back(CodeGen::SwitchCase(
+        "pcap-live",
+        cg()->llvmEnum("Hilti::IOSrc::PcapLive"),
+        [&] (CodeGen* cg) -> llvm::Value* {
+            return cg->llvmCall("hlt::iosrc_pcap_new_live", args);
+        }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "pcap-offline",
+        cg()->llvmEnum("Hilti::IOSrc::PcapOffline"),
+        [&] (CodeGen* cg) -> llvm::Value* {
+            return cg->llvmCall("hlt::iosrc_pcap_new_offline", args);
+        }
+    ));
+
+    auto result = cg()->llvmSwitchEnumConst(cg()->llvmEnum(kind), cases, true, i->location());
+    cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::ioSource::Close* i)
 {
-   // TODO: Not implemented yet.
-   abort();
+    CodeGen::expr_list args = { i->op1() };
+    cg()->llvmCall("hlt::iosrc_pcap_close", args);
+}
 
-/*
-    auto op1 = cg()->llvmValue(i->op1(), X);
-*/
+static llvm::Value* _readTry(CodeGen* cg, statement::Instruction* i)
+{
+    CodeGen::expr_list args = { i->op1(), builder::boolean::create(false) };
+    return cg->llvmCall("hlt::iosrc_pcap_read_try", args, false);
+}
 
-/*
-    CodeGen::expr_list args;
-    args.push_back(i->op1());
-    cg()->llvmCall("hlt::X", args);
-*/
-
-
-/*
-    def _codegen(self, cg):
-        _makeSwitch(cg, self.op1().type().refType(), "close", [self.op1()], False)
-
-*/
+static void _readFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* result, bool make_iters)
+{
+    result = _checkExhausted(cg, i, i->op1(), result, false);
+    cg->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::ioSource::Read* i)
 {
-   // TODO: Blocking instruction not implemented.
-   abort();
-
-/*
-    auto op1 = cg()->llvmValue(i->op1(), X);
-
-    auto result = builder()->
-
-    cg()->llvmStore(i, result);
-*/
-
-/*
-    CodeGen::expr_list args;
-    args.push_back(i->op1());
-
-    auto result = cg()->llvmCall("hlt::X", args);
-
-    cg()->llvmStore(i, result);
-*/
-
-/*
-
-    def cCall(self, cg):
-        func = _funcName("read_try", self.op1().type().refType().kind())
-        args = [self.op1(), operand.Constant(constant.Constant(0, type.Bool()))]
-        return (func, args)
-
-    def cResult(self, cg, result):
-        result = _checkExhausted(cg, self, self.op1(), result, make_iters=True)
-        cg.llvmStoreInTarget(self, result)
-        *
-
-*/
-
-
-/*
-    def _codegen(self, cg):
-        self.blockingCodegen(cg)
-
-*/
+    cg()->llvmBlockingInstruction(i,
+                                  _readTry,
+                                  [&] (CodeGen* cg, statement::Instruction* i, llvm::Value* result) { _readFinish(cg, i, result, false); }
+                                 );
 }
 
 void StatementBuilder::visit(statement::instruction::iterIOSource::Begin* i)
 {
-/*
-@hlt.overload(Begin, op1=cReferenceOf(cioSource), target=cIteratorioSource)
-class Begin(BlockingOperator):
-    """Returns an iterator for iterating over all elements of a packet source
-    *op1*. The instruction will block until the first element becomes
-    available."""
-    def _canonify(self, canonifier):
-        Instruction._canonify(self, canonifier)
-        self.blockingCanonify(canonifier)
-
-    def _codegen(self, cg):
-        self.blockingCodegen(cg)
-
-    def cCall(self, cg):
-        func = _funcName("read_try", self.op1().type().refType().kind())
-        args = [self.op1(), operand.Constant(constant.Constant(0, type.Bool()))]
-        return (func, args)
-
-    def cResult(self, cg, result):
-        result = _checkExhausted(cg, self, self.op1(), result, make_iters=True)
-        cg.llvmStoreInTarget(self, result)
-
-*/
+    cg()->llvmBlockingInstruction(i,
+                                  _readTry,
+                                  [&] (CodeGen* cg, statement::Instruction* i, llvm::Value* result) { _readFinish(cg, i, result, true); }
+                                 );
 }
 
 void StatementBuilder::visit(statement::instruction::iterIOSource::End* i)
 {
-/*
-@hlt.overload(End, op1=cReferenceOf(cioSource), target=cIteratorioSource)
-class End(Operator):
-    """Returns an iterator representing an exhausted packet source *op1*."""
-    def _codegen(self, cg):
-        ty = self.op1().type().refType()
-        result = _makeIterator(cg, ty, None, None)
-        cg.llvmStoreInTarget(self, result)
-*/
+    auto rty = ast::as<type::Reference>(i->op1()->type());
+    assert(rty);
+
+    auto ty = rty->argType();
+    auto result = _makeIterator(cg(), ty, nullptr, nullptr);
+    cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::iterIOSource::Incr* i)
 {
-/*
-@hlt.overload(Incr, op1=cIteratorioSource, target=cIteratorioSource)
-class Incr(BlockingOperator):
-    """Advances the iterator to the next element, or the end position if
-    already exhausted. The instruction will block until the next element
-    becomes available.
-    """
-    def _canonify(self, canonifier):
-        Instruction._canonify(self, canonifier)
-        self.blockingCanonify(canonifier)
-
-    def _codegen(self, cg):
-        self.blockingCodegen(cg)
-
-    def cCall(self, cg):
-        ty = self.op1().type().parentType()
-        src = operand.LLVM(cg.llvmExtractValue(cg.llvmOp(self.op1()), 0), type.Reference(ty))
-        func = _funcName("read_try", ty.kind())
-        args = [src, operand.Constant(constant.Constant(0, type.Bool()))]
-        return (func, args)
-
-    def cResult(self, cg, result):
-        ty = self.op1().type().parentType()
-        src = operand.LLVM(cg.llvmExtractValue(cg.llvmOp(self.op1()), 0), type.Reference(ty))
-        result = _checkExhausted(cg, self, src, result, make_iters=True)
-        cg.llvmStoreInTarget(self, result)
-*/
+    cg()->llvmBlockingInstruction(i,
+                                  _readTry,
+                                  [&] (CodeGen* cg, statement::Instruction* i, llvm::Value* result) { _readFinish(cg, i, result, true); }
+                                 );
 }
 
 void StatementBuilder::visit(statement::instruction::iterIOSource::Equal* i)
 {
-/*
-@hlt.overload(Equal, op1=cIteratorioSource, op2=cIteratorioSource, target=cBool)
-class Equal(Operator):
-    """Returns true if *op1* and *op2* refer to the same element.
-    """
-    def _codegen(self, cg):
-        elem1 = cg.llvmExtractValue(cg.llvmOp(self.op1()), 1)
-        payload1 = cg.llvmExtractValue(elem1, 1)
-        elem2 = cg.llvmExtractValue(cg.llvmOp(self.op2()), 1)
-        payload2 = cg.llvmExtractValue(elem2, 1)
-        result = cg.builder().icmp(llvm.core.IPRED_EQ, payload1, payload2)
-        cg.llvmStoreInTarget(self, result)
-*/
+    auto elem1 = cg()->llvmExtractValue(cg()->llvmValue(i->op1()), 1);
+    auto elem2 = cg()->llvmExtractValue(cg()->llvmValue(i->op2()), 1);
+
+    auto payload1 = cg()->llvmExtractValue(elem1, 1);
+    auto payload2 = cg()->llvmExtractValue(elem2, 1);
+
+    auto result = cg()->builder()->CreateICmpEQ(payload1, payload2);
+    cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::iterIOSource::Deref* i)
 {
-/*
-@hlt.overload(Deref, op1=cIteratorioSource, target=cDerefTypeOfOp(1))
-class Deref(Operator):
-    """Returns the element the iterator is pointing at as a tuple ``(double,
-    ref<bytes>)``.
-    """
-    def _codegen(self, cg):
-        elem = cg.llvmExtractValue(cg.llvmOp(self.op1()), 1)
-        cg.llvmStoreInTarget(self, elem)
-*/
+    auto elem = cg()->llvmExtractValue(cg()->llvmValue(i->op1()), 1);
+    cg()->llvmStore(i, elem);
 }

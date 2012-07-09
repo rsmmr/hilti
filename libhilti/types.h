@@ -11,6 +11,9 @@ typedef struct __hlt_execution_context hlt_execution_context;
 typedef struct __hlt_type_info hlt_type_info;
 typedef struct __hlt_thread_mgr hlt_thread_mgr;
 typedef struct __hlt_callable hlt_callable;
+typedef struct __hlt_timer_mgr hlt_timer_mgr;
+
+typedef struct __hlt_profiler_state __hlt_profiler_state;
 
 /// Type for hash values.
 typedef uint64_t hlt_hash;

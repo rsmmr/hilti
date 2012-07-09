@@ -23,56 +23,33 @@ void StatementBuilder::visit(statement::instruction::channel::New* i)
     cg()->llvmStore(i, result);
 }
 
+static llvm::Value* _readTry(CodeGen* cg, statement::Instruction* i)
+{
+    CodeGen::expr_list args = { i->op1() };
+    return cg->llvmCall("hlt::channel_read_try", args, false);
+}
+
+static void _readFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* result)
+{
+    auto rtype = ast::checkedCast<type::Reference>(i->op1()->type());
+    auto etype = ast::checkedCast<type::Channel>(rtype->argType())->argType();
+    auto casted = cg->builder()->CreateBitCast(result, cg->llvmTypePtr(cg->llvmType(etype)));
+    result = cg->builder()->CreateLoad(casted);
+    result = cg->llvmCoerceTo(result, etype, i->target()->type());
+    cg->llvmStore(i, result);
+}
+
 void StatementBuilder::visit(statement::instruction::channel::Read* i)
 {
-    // TODO: Blocking instruction not implemented.
-    abort();
-/*
-    auto op1 = cg()->llvmValue(i->op1(), X);
-
-    auto result = builder()->
-
-    cg()->llvmStore(i, result);
-*/
-
-/*
-    CodeGen::expr_list args;
-    args.push_back(i->op1());
-
-    auto result = cg()->llvmCall("hlt::X", args);
-
-    cg()->llvmStore(i, result);
-*/
-
-/*
- def cCall(self, cg):
-   return ("hlt::channel_read_try", [self.op1()])
-
-    def cResult(self, cg, result):
-        item_type = self.target().type()
-        nodep = cg.builder().bitcast(result, llvm.core.Type.pointer(cg.llvmType(item_type)))
-        cg.llvmStoreInTarget(self, cg.builder().load(nodep))
-        *
-*/
-
-/*
-    def _codegen(self, cg):
-        self.blockingCodegen(cg)
-
-*/
+    cg()->llvmBlockingInstruction(i, _readTry, _readFinish);
 }
 
 void StatementBuilder::visit(statement::instruction::channel::ReadTry* i)
 {
-    auto etype = ast::as<type::Channel>(referencedType(i->op1()))->argType();
+    auto val = _readTry(cg(), i);
+    cg()->llvmCheckException();
 
-    CodeGen::expr_list args;
-    args.push_back(i->op1());
-
-    auto r = cg()->llvmCall("hlt::channel_read_try", args);
-    auto result = builder()->CreateBitCast(r, cg()->llvmTypePtr(cg()->llvmType(etype)));
-
-    cg()->llvmStore(i, result);
+    _readFinish(cg(), i, val);
 }
 
 void StatementBuilder::visit(statement::instruction::channel::Size* i)
@@ -85,47 +62,30 @@ void StatementBuilder::visit(statement::instruction::channel::Size* i)
     cg()->llvmStore(i, result);
 }
 
+static llvm::Value* _writeTry(CodeGen* cg, statement::Instruction* i)
+{
+    auto rtype = ast::checkedCast<type::Reference>(i->op1()->type());
+    auto etype = ast::checkedCast<type::Channel>(rtype->argType())->argType();
+
+    CodeGen::expr_list args = { i->op1(), i->op2()->coerceTo(etype) };
+    return cg->llvmCall("hlt::channel_write_try", args, false);
+}
+
+static void _writeFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* result)
+{
+    // Nothing to do.
+}
+
 void StatementBuilder::visit(statement::instruction::channel::Write* i)
 {
-   // TODO: Blocking instruction not implemented.
-   abort();
-
-/*
-    auto op1 = cg()->llvmValue(i->op1(), X);
-    auto op2 = cg()->llvmValue(i->op2(), X);
-*/
-
-/*
-    CodeGen::expr_list args;
-    args.push_back(i->op1());
-    args.push_back(i->op2());
-    cg()->llvmCall("hlt::X", args);
-*/
-
-/*
-
-     def cCall(self, cg):
-        op2 = self.op2().coerceTo(cg, self.op1().type().refType().itemType())
-        return ("hlt::channel_write_try", [self.op1(), op2])
-
-
-*/
-/*
-    def _codegen(self, cg):
-        self.blockingCodegen(cg)
-
-*/
+    cg()->llvmBlockingInstruction(i, _writeTry, _writeFinish);
 }
 
 void StatementBuilder::visit(statement::instruction::channel::WriteTry* i)
 {
-    auto etype = ast::as<type::Channel>(referencedType(i->op1()))->argType();
+    auto val = _writeTry(cg(), i);
+    cg()->llvmCheckException();
 
-    auto op2 = i->op2()->coerceTo(etype);
-
-    CodeGen::expr_list args;
-    args.push_back(i->op1());
-    args.push_back(op2);
-    cg()->llvmCall("hlt::channel_write_try", args);
+    _writeFinish(cg(), i, val);
 }
 

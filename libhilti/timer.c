@@ -48,11 +48,8 @@ void hlt_timer_dtor(hlt_type_info* ti, hlt_timer* timer)
         GC_DTOR(timer->cookie.vector, hlt_iterator_vector);
         break;
 
-#if 0
-
       case HLT_TIMER_PROFILER:
-        GC_DTOR(timer->cookie.profiler, __hlt_profiler_timer_cookie);
-#endif
+        GC_DTOR(timer->cookie.profiler, hlt_string);
 
       default:
         abort();
@@ -91,11 +88,9 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
         hlt_vector_expire(timer->cookie.vector);
         break;
 
-#if 0
       case HLT_TIMER_PROFILER:
         hlt_profiler_timer_expire(timer->cookie.profiler, excpt, ctx);
         break;
-#endif
 
       default:
         hlt_set_exception(excpt, &hlt_exception_internal_error, 0);
@@ -154,19 +149,15 @@ hlt_timer* __hlt_timer_new_set(__hlt_set_timer_cookie cookie, hlt_exception** ex
     return timer;
 }
 
-#if 0
-
 hlt_timer* __hlt_timer_new_profiler(__hlt_profiler_timer_cookie cookie, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_timer* timer = (hlt_timer*) GC_NEW(hlt_timer);
     timer->mgr = 0;
     timer->time = HLT_TIME_UNSET;
     timer->type = HLT_TIMER_PROFILER;
-    GC_INIT(timer->cookie.profiler, cookie, __hlt_profiler_timer_cookie);
+    GC_INIT(timer->cookie.profiler, cookie, hlt_string);
     return timer;
 }
-
-#endif
 
 void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
 {

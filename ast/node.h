@@ -99,10 +99,38 @@ inline bool isA(shared_ptr<NodeBase> n) {
 
 /// Dynamic cast of a node pointer to a specific Node-derived class.
 ///
+/// Deprecated. Use \a tryCast or \a checkedCast instead.
+///
 /// Returns: The cast pointer, or null if the dynamic cast fails.
 template<typename T>
 inline shared_ptr<T> as(shared_ptr<NodeBase> n) {
     return std::dynamic_pointer_cast<T>(n);
+}
+
+/// Dynamic cast of a node pointer to a specific Node-derived class. This
+/// version continues if the cast fails by returning null.
+///
+/// Returns: The cast pointer, or null if the dynamic cast fails.
+template<typename T>
+inline shared_ptr<T> tryCast(shared_ptr<NodeBase> n) {
+    return std::dynamic_pointer_cast<T>(n);
+}
+
+/// Dynamic cast of a node pointer to a specific Node-derived class. This
+/// version aborts if the cast fails.
+///
+/// Returns: The cast pointer.
+template<typename T>
+inline shared_ptr<T> checkedCast(shared_ptr<NodeBase> n) {
+    auto c = std::dynamic_pointer_cast<T>(n);
+
+    if ( ! c ) {
+        fprintf(stderr, "internal error: ast::checkedCast() failed; want '%s' but got a '%s'",
+                typeid(T).name(), typeid(n.get()).name());
+        abort();
+    }
+
+    return c;
 }
 
 /// Template-free base class for AST nodes. This class implements all

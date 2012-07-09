@@ -255,10 +255,11 @@ declare "C-HILTI" bool iterator_set_eq(iterator<set<*>> i1, iterator<set<*>> i2)
 #
 # ##
 #
-# declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_live(string interface)
-# declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_offline(string interface)
-# declare "C-HILTI" tuple<time, ref<bytes>> iosrc_pcap_read_try(ref<iosrc<*>> src, bool keep_link_layer)
-# declare "C-HILTI" void iosrc_pcap_close(ref<iosrc<*>> src)
+declare "C-HILTI" void iosrc_dtor(ref<iosrc<*>> v)
+declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_live(string interface)
+declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_offline(string interface)
+declare "C-HILTI" tuple<time, ref<bytes>> iosrc_pcap_read_try(ref<iosrc<*>> src, bool keep_link_layer)
+declare "C-HILTI" void iosrc_pcap_close(ref<iosrc<*>> src)
 #
 # ##
 #
@@ -294,9 +295,9 @@ declare "C-HILTI" int<64> interval_nsecs(interval t)
 #
 # ##
 #
-# declare "C-HILTI" void profiler_start(string tag, Hilti::ProfileStyle style, int<64> param, ref<timer_mgr> tmgr)
-# declare "C-HILTI" void profiler_update(string tag, int<64> user_delta)
-# declare "C-HILTI" void profiler_stop(string tag)
+declare "C-HILTI" void profiler_start(string tag, Hilti::ProfileStyle style, int<64> param, ref<timer_mgr> tmgr)
+declare "C-HILTI" void profiler_update(string tag, int<64> user_delta)
+declare "C-HILTI" void profiler_stop(string tag)
 #
 # ##
 #

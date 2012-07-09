@@ -46,7 +46,7 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
 {
     _verify = verify;
     _debug_level = debug;
-    _profile = profile;
+    _profile_level = profile;
 
     _hilti_module = hltmod;
     _functions.clear();
@@ -1804,6 +1804,29 @@ void CodeGen::llvmCheckException()
     pushBuilder(cont); // leave on stack.
 }
 
+llvm::Value* CodeGen::llvmMatchException(const string& name, llvm::Value* excpt)
+{
+    auto expr = _hilti_module->body()->scope()->lookup((std::make_shared<ID>(name)));
+
+    if ( ! expr )
+        internalError(::util::fmt("unknown exception %s", name.c_str()));
+
+    auto type = ast::as<expression::Type>(expr)->typeValue();
+    assert(type);
+
+    auto etype = ast::as<type::Exception>(type);
+    assert(etype);
+
+    return llvmMatchException(etype, excpt);
+}
+
+llvm::Value* CodeGen::llvmMatchException(shared_ptr<type::Exception> etype, llvm::Value* excpt)
+{
+    CodeGen::value_list args = { excpt, llvmExceptionTypeObject(etype) };
+    auto match = llvmCallC("__hlt_exception_match", args, false, false);
+    return builder()->CreateICmpNE(match, llvmConstInt(0, 8));
+}
+
 void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
 {
     if ( _in_check_exception )
@@ -2181,8 +2204,15 @@ llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
     // Leave builder on stack.
 }
 
-void CodeGen::llvmFiberYield(llvm::Value* fiber)
+void CodeGen::llvmFiberYield(llvm::Value* fiber, shared_ptr<Type> blockable_ty, llvm::Value* blockable_val)
 {
+    if ( blockable_ty ) {
+        assert(type::hasTrait<type::trait::Blockable>(blockable_ty));
+        assert(typeInfo(blockable_ty)->blockable.size());
+    }
+
+    // TODO: We don't use blockable yet.
+
     CodeGen::value_list cargs { fiber };
     llvmCallC("hlt_fiber_yield", { fiber }, false, false);
 }
@@ -2586,7 +2616,7 @@ IRBuilder* CodeGen::llvmInsertInstructionCleanup(IRBuilder* b)
 
     for ( auto unref : _functions.back()->dtors_after_ins )
         llvmDtor(unref.first.first, unref.second, unref.first.second, "instruction-cleanup");
-#endif        
+#endif
 
     llvmCreateBr(b);
 
@@ -3356,3 +3386,110 @@ std::pair<bool, IRBuilder*> CodeGen::topEndOfBlockHandler()
     auto handler = _functions.back()->handle_block_end.back();
     return std::make_pair(handler != nullptr, handler);
 }
+
+void CodeGen::llvmBlockingInstruction(statement::Instruction* i, try_func try_, finish_func finish,
+                                      shared_ptr<Type> blockable_ty, llvm::Value* blockable_val)
+{
+    auto loop = newBuilder("blocking-try");
+    auto yield_ = newBuilder("blocking-yield");
+    auto done = newBuilder("blocking-finish");
+
+    llvmCreateBr(loop);
+
+    pushBuilder(loop);
+    auto result = try_(this, i);
+
+    auto blocked = llvmMatchException("Hilti::WouldBlock", llvmCurrentException());
+    llvmCreateCondBr(blocked, yield_, done);
+    popBuilder();
+
+    pushBuilder(yield_);
+    auto fiber = llvmCurrentFiber();
+    llvmFiberYield(fiber, blockable_ty, blockable_val);
+    llvmCreateBr(loop);
+    popBuilder();
+
+    pushBuilder(done);
+    llvmCheckException();
+    finish(this, i, result);
+
+    // Leave on stack.
+}
+
+void CodeGen::llvmProfilerStart(llvm::Value* tag, llvm::Value* style, llvm::Value* param, llvm::Value* tmgr)
+{
+    assert(tag);
+
+    if ( _profile_level == 0 )
+        return;
+
+    if ( ! style )
+        style = llvmEnum("Hilti::ProfileStyle::Standard");
+
+    if ( ! param )
+        param = llvmConstInt(0, 64);
+
+    if ( ! tmgr ) {
+        auto rtmgr = builder::reference::type(builder::timer_mgr::type());
+        tmgr = llvmConstNull(llvmType(rtmgr));
+    }
+
+    value_list args = { tag, style, param, tmgr };
+    llvmCallC("hlt_profiler_start", args, true, true);
+}
+
+void CodeGen::llvmProfilerStart(const string& tag, const string& style, int64_t param, llvm::Value* tmgr)
+{
+    assert(tag.size());
+
+    auto ltag = llvmString(tag);
+    auto lstyle = style.size() ? llvmEnum(style) : static_cast<llvm::Value*>(nullptr);
+    auto lparam = llvmConstInt(param, 64);
+
+    llvmProfilerStart(ltag, lstyle, lparam, tmgr);
+}
+
+void CodeGen::llvmProfilerStop(llvm::Value* tag)
+{
+    assert(tag);
+
+    if ( _profile_level == 0 )
+        return;
+
+    value_list args = { tag };
+    llvmCallC("hlt_profiler_stop", args, true, true);
+}
+
+void CodeGen::llvmProfilerStop(const string& tag)
+{
+    assert(tag.size());
+
+    auto ltag = llvmString(tag);
+    llvmProfilerStop(ltag);
+}
+
+void CodeGen::llvmProfilerUpdate(llvm::Value* tag, llvm::Value* arg)
+{
+    assert(tag);
+
+    if ( _profile_level == 0 )
+        return;
+
+    if ( ! arg )
+        arg = llvmConstInt(0, 64);
+
+    value_list args = { tag, arg };
+    llvmCallC("hlt_profiler_update", args, true, true);
+}
+
+void CodeGen::llvmProfilerUpdate(const string& tag, int64_t arg)
+{
+    assert(tag.size());
+
+    auto ltag = llvmString(tag);
+    auto larg = llvmConstInt(arg, 64);
+
+    llvmProfilerUpdate(ltag, larg);
+}
+
+

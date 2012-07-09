@@ -151,14 +151,7 @@ void StatementBuilder::visit(statement::try_::Catch* c)
         auto etype = ast::as<type::Exception>(rtype->argType());
         assert(etype);
 
-        auto cexcpt = cg()->llvmCurrentException();
-
-        CodeGen::value_list args;
-        args.push_back(cexcpt);
-        args.push_back(cg()->llvmExceptionTypeObject(etype));
-        auto ours = cg()->llvmCallC("__hlt_exception_match", args, false, false);
-
-        auto cond = builder()->CreateICmpNE(ours, cg()->llvmConstInt(0, 8));
+        auto cond = cg()->llvmMatchException(etype, cg()->llvmCurrentException());
         cg()->llvmCreateCondBr(cond, match, no_match);
     }
 

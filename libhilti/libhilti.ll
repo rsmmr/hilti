@@ -19,6 +19,7 @@
     %hlt.fiber*,                  ; fiber
     i8*,                          ; fiber_pool
     i8*,                          ; worker
+    i8*,                          ; profiling state
     i64,                          ; debug_indent
     i8*,                          ; tcontext
     i8*,                          ; tcontext_type
@@ -114,6 +115,8 @@
 %hlt.classifier = type {};
 %hlt.thread_mgr = type {};
 %hlt.match_token_state = type {};
+%hlt.iosrc = type {};
+%hlt.channel = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.
 

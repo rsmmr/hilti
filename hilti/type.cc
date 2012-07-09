@@ -411,7 +411,7 @@ shared_ptr<hilti::Scope> type::Enum::typeScope()
 int type::Enum::labelValue(shared_ptr<ID> label) const
 {
     for ( auto l : _labels ) {
-        if ( *l.first == *label )
+        if ( l.first->name() == label->name() )
             return l.second;
     }
 
