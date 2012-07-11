@@ -1535,6 +1535,9 @@ void CodeGen::llvmBuildExitBlock()
         llvmDebugPrint("hilti-flow", msg);
     }
 
+    if ( profileLevel() > 1 &&  _functions.back()->leave_func )
+        llvmProfilerStop(_functions.back()->leave_func->id()->pathAsString());
+
     popBuilder();
 
     if ( phi ) {
@@ -3458,7 +3461,7 @@ void CodeGen::llvmProfilerStart(llvm::Value* tag, llvm::Value* style, llvm::Valu
         builder::codegen::create(builder::reference::type(builder::timer_mgr::type()), tmgr)
     };
 
-    llvmCall("hlt::profiler_start", args);
+    llvmCall("hlt::profiler_start", args, false);
 }
 
 void CodeGen::llvmProfilerStart(const string& tag, const string& style, int64_t param, llvm::Value* tmgr)
@@ -3483,7 +3486,7 @@ void CodeGen::llvmProfilerStop(llvm::Value* tag)
         builder::codegen::create(builder::string::type(), tag),
     };
 
-    llvmCall("hlt::profiler_stop", args);
+    llvmCall("hlt::profiler_stop", args, false);
 }
 
 void CodeGen::llvmProfilerStop(const string& tag)
@@ -3509,7 +3512,7 @@ void CodeGen::llvmProfilerUpdate(llvm::Value* tag, llvm::Value* arg)
         builder::codegen::create(builder::integer::type(64), arg),
     };
 
-    llvmCall("hlt::profiler_update", args);
+    llvmCall("hlt::profiler_update", args, false);
 }
 
 void CodeGen::llvmProfilerUpdate(const string& tag, int64_t arg)

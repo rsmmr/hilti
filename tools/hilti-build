@@ -177,12 +177,6 @@ def runHiltic(inputs, output, proto=False):
     except:
         flags = []
 
-    for i in range(Options.debug):
-        flags += ["-d"]
-
-    for i in range(Options.profile):
-        flags += ["-F"]
-
     if Options.libhiltimain:
         flags += runConfig(HiltiConfig, "--hiltic-flags-main").split()
     else:
@@ -191,6 +185,12 @@ def runHiltic(inputs, output, proto=False):
     flags += ["-I ."]
 
     flags = uniqueArgs(flags)
+
+    for i in range(Options.debug):
+        flags += " -d"
+
+    for i in range(Options.profile):
+        flags += " -F"
 
     inputs = " ".join(inputs)
     path = runConfig(HiltiConfig, "--hiltic-binary")

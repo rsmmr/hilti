@@ -228,6 +228,9 @@ void StatementBuilder::visit(declaration::Function* f)
         cg()->setLeaveFunc(f);
     }
 
+    if ( cg()->profileLevel() > 1 )
+        cg()->llvmProfilerStart(func->id()->pathAsString());
+
     // Create shadow locals for non-const parameters so that we can modify
     // them.
     for ( auto p : ftype->parameters() ) {

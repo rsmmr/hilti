@@ -19,6 +19,9 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
         cg()->llvmDebugPrint("hilti-flow", msg);
     }
 
+    if ( cg()->profileLevel() > 1 )
+        cg()->llvmProfilerStart(func->id()->pathAsString());
+
     cg()->llvmReturn(func->function()->type()->result()->type(), op1);
 }
 
@@ -30,6 +33,9 @@ static void _doVoidReturn(StatementBuilder* sbuilder)
         string msg = string("leaving ") + func->render();
         sbuilder->cg()->llvmDebugPrint("hilti-flow", msg);
     }
+
+    if ( sbuilder->cg()->profileLevel() > 1 )
+        sbuilder->cg()->llvmProfilerStop(func->id()->pathAsString());
 
     // Check if we are in a hook. If so, we return a boolean indicating that
     // hook execution has not been stopped.

@@ -516,7 +516,7 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
         __hlt_profiler* p = kh_value(ctx->pstate->profilers, i);
 
         if ( ! p ) {
-            hlt_set_exception(excpt, &hlt_exception_profiler_unknown, 0);
+            hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
             return;
         }
 
@@ -537,21 +537,21 @@ void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** ex
         return;
 
     if ( ! ctx->pstate->profilers ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, 0);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
         return;
     }
 
     khiter_t i = kh_get_table(ctx->pstate->profilers, tag, 0);
 
     if ( i == kh_end(ctx->pstate->profilers) ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, 0);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
         return;
     }
 
     __hlt_profiler* p = kh_value(ctx->pstate->profilers, i);
 
     if ( ! p ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, 0);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
         return;
     }
 
@@ -590,21 +590,21 @@ void hlt_profiler_stop(hlt_string tag, hlt_exception** excpt, hlt_execution_cont
         return;
 
     if ( ! ctx->pstate->profilers ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, 0);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
         return;
     }
 
     khiter_t i = kh_get_table(ctx->pstate->profilers, tag, 0);
 
     if ( i == kh_end(ctx->pstate->profilers) ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, 0);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
         return;
     }
 
     __hlt_profiler* p = kh_value(ctx->pstate->profilers, i);
 
     if ( ! p ) {
-        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, 0);
+        hlt_set_exception(excpt, &hlt_exception_profiler_unknown, tag);
         return;
     }
 
