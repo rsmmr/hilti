@@ -23,9 +23,7 @@ static void usage(const char* prog)
            "\n"
            "  -h| --help           Show usage information.\n"
            "  -t| --threads <num>  Number of worker threads; zero disables. [Default: 2.]\n"
-#if 0
            "  -P| --profile        Activate profiling support.\n"
-#endif
            "\n", prog);
 
     exit(1);

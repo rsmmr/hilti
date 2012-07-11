@@ -305,10 +305,13 @@ static void write_record(int8_t rtype, __hlt_profiler* p, hlt_exception** excpt,
 {
     hlt_profiler_record rec;
 
-    rec.ctime = hlt_hton64(p->tmgr ? hlt_timer_mgr_current(p->tmgr, excpt, ctx) : 0);
-    rec.cwall = hlt_hton64(hlt_time_wall(excpt, ctx));
-    rec.time = hlt_hton64(p->tmgr ? rec.ctime - p->time : 0);
-    rec.wall = hlt_hton64(rec.cwall - p->wall);
+    uint64_t cwall = hlt_time_wall(excpt, ctx);
+    uint64_t ctime = p->tmgr ? hlt_timer_mgr_current(p->tmgr, excpt, ctx) : 0;
+
+    rec.ctime = hlt_hton64(ctime);
+    rec.cwall = hlt_hton64(cwall);
+    rec.time = hlt_hton64(p->tmgr ? ctime - p->time : 0);
+    rec.wall = hlt_hton64(cwall - p->wall);
 
     rec.updates = hlt_hton64(p->updates);
     rec.alloced = hlt_hton64(hlt_util_memory_usage() - p->heap);
@@ -428,9 +431,11 @@ void hlt_profiler_timer_expire(hlt_string tag, hlt_exception** excpt, hlt_execut
 
 void __hlt_profiler_init()
 {
-    profiling_enabled = 1;
+    profiling_enabled = hlt_config_get()->profiling;
+
 #ifdef HAVE_PAPI
-    init_papi();
+    if ( profiling_enabled )
+        init_papi();
 #endif
 }
 

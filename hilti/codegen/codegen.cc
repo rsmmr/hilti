@@ -3448,8 +3448,17 @@ void CodeGen::llvmProfilerStart(llvm::Value* tag, llvm::Value* style, llvm::Valu
         tmgr = llvmConstNull(llvmType(rtmgr));
     }
 
-    value_list args = { tag, style, param, tmgr };
-    llvmCallC("hlt_profiler_start", args, true, true);
+    auto eexpr = _hilti_module->body()->scope()->lookup((std::make_shared<ID>("Hilti::ProfileStyle")));
+    assert(eexpr);
+
+    expr_list args = {
+        builder::codegen::create(builder::string::type(), tag),
+        builder::codegen::create(ast::checkedCast<expression::Type>(eexpr)->typeValue(), style),
+        builder::codegen::create(builder::integer::type(64), param),
+        builder::codegen::create(builder::reference::type(builder::timer_mgr::type()), tmgr)
+    };
+
+    llvmCall("hlt::profiler_start", args);
 }
 
 void CodeGen::llvmProfilerStart(const string& tag, const string& style, int64_t param, llvm::Value* tmgr)
@@ -3470,8 +3479,11 @@ void CodeGen::llvmProfilerStop(llvm::Value* tag)
     if ( _profile_level == 0 )
         return;
 
-    value_list args = { tag };
-    llvmCallC("hlt_profiler_stop", args, true, true);
+    expr_list args = {
+        builder::codegen::create(builder::string::type(), tag),
+    };
+
+    llvmCall("hlt::profiler_stop", args);
 }
 
 void CodeGen::llvmProfilerStop(const string& tag)
@@ -3492,8 +3504,12 @@ void CodeGen::llvmProfilerUpdate(llvm::Value* tag, llvm::Value* arg)
     if ( ! arg )
         arg = llvmConstInt(0, 64);
 
-    value_list args = { tag, arg };
-    llvmCallC("hlt_profiler_update", args, true, true);
+    expr_list args = {
+        builder::codegen::create(builder::string::type(), tag),
+        builder::codegen::create(builder::integer::type(64), arg),
+    };
+
+    llvmCall("hlt::profiler_update", args);
 }
 
 void CodeGen::llvmProfilerUpdate(const string& tag, int64_t arg)

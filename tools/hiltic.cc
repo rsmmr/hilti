@@ -12,6 +12,7 @@ using namespace std;
 const char* Name = "hiltic";
 
 int  debug = 0;
+int  profile = 0;
 int  debug_cg = 0;
 int  num_output_types = 0;
 int  num_input_files = 0;
@@ -36,6 +37,7 @@ static struct option long_options[] = {
     { "prototypes", no_argument, 0, 'P' },
     { "output",  required_argument, 0, 'o' },
     { "version", no_argument, 0, 'v' },
+    { "profile", no_argument, 0, 'p' },
     { 0, 0, 0, 0 }
 };
 
@@ -51,6 +53,7 @@ void usage()
             "  -b | --bitcode        Output LLVM bitcode.\n"
             "  -d | --debug          Debug level. Each time increases level. [Default: 0]\n"
             "  -D | --debug-codegen  Code generation debug level. Each time increases level. [Default: 0]\n"
+            "  -F | --profile        Profile level. Each time increases level. [Default: 0]\n"
             "  -h | --help           Print usage information.\n"
             "  -l | --llvm           Output the final LLVM assembly.\n"
             "  -L | --llvm-always    Like -l, but don't verify correctness first.\n"
@@ -161,7 +164,7 @@ llvm::Module* compileHILTI(string path)
         return nullptr;
     }
 
-    llvm::Module* llvm_module = hilti::compileModule(module, paths, verify, debug, 0, debug_cg);
+    llvm::Module* llvm_module = hilti::compileModule(module, paths, verify, debug, profile, debug_cg);
 
     if ( ! llvm_module )
         error(path, "Aborting due to code generation error.");
@@ -187,7 +190,7 @@ int main(int argc, char** argv)
     int num_output_types = 0;
 
     while ( true ) {
-        int c = getopt_long(argc, argv, "AdDhpPWblLVo:vI:", long_options, 0);
+        int c = getopt_long(argc, argv, "AdDhpFPWblLVo:vI:", long_options, 0);
 
         if ( c < 0 )
             break;
@@ -249,6 +252,10 @@ int main(int argc, char** argv)
 
          case 'I':
             paths.push_back(optarg);
+            break;
+
+         case 'F':
+            ++profile;
             break;
 
          case 'v':

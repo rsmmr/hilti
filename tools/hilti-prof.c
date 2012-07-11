@@ -29,6 +29,7 @@ static void printHeader(time_t t)
         "\n",
         stdout
         );
+
     fputs("#\n", stdout);
     fputs("# ", stdout);
     fputs(ctime(&t), stdout);
