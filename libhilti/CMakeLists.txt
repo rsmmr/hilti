@@ -9,6 +9,12 @@ project(libhilti C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
+find_package(PAPI)
+
+if (${PAPI_FOUND} STREQUAL "TRUE" )
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_PAPI")
+endif ()
+
 include(EnableLLVMBitcode)
 include(DefaultCompilerSettings)
 

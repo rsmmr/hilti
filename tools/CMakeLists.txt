@@ -23,3 +23,6 @@ add_custom_command(
 
 add_custom_target(hilti-prof ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof hiltic)
 
+find_package(PAPI)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/hilti-config.in ${CMAKE_CURRENT_BINARY_DIR}/hilti-config)

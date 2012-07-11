@@ -62,7 +62,7 @@ if [ "$base" == "" ]; then
        dir=`dirname $0`
    fi
 
-   base=`cd $dir/.. && pwd -P`
+   base=`cd $dir/../.. && pwd -P`
 fi
 
 if [ ! -d "$base/libhilti" ]; then
@@ -88,13 +88,13 @@ fi
 
 ### Parse command line once to see if we have --debug in there.
 
-build_mode="release"
+mode="release"
 builddir=$base/build
 
 for arg in $@; do
     if [ "$arg" == "--debug" ]; then
         debug=1
-        build_mode="debug"
+        mode="debug"
         libpostfix="-dbg"
     fi
 done
@@ -129,15 +129,20 @@ while [ "$1" != "" ]; do
 
      # libhilti
         --libhilti-cflags)
-            echo "-I$base/libhilti -I$builddir/libhilti-${build_mode}"
+            echo "-I$base/libhilti -I$builddir/libhilti-$mode"
             shift;;
 
         --libhilti-cxxflags)
-            echo "-I$base/libhilti -I$builddir/libhilti-${build_mode}"
+            echo "-I$base/libhilti -I$builddir/libhilti-$mode"
             shift;;
 
         --libhilti-ldflags)
-            echo "$base/build/libhilti-${build_mode}/libhilti-rt-native.a -lm -lpthread -lpcap"
+            papi=${PAPI_LIBRARIES}
+            if [ "$papi" == "PAPI_LIBRARIES-NOTFOUND" ]; then
+                papi=""
+            fi
+
+            echo "$base/build/libhilti-$mode/libhilti-rt-native.a -lm -lpthread -lpcap $papi"
             shift;;
 
      # hiltic
@@ -147,11 +152,11 @@ while [ "$1" != "" ]; do
             shift;;
 
         --hiltic-flags)
-            echo "$base/libhilti/type-info.hlt $base/build/libhilti-${build_mode}/libhilti-rt${libpostfix}.bca -I$base/libhilti"
+            echo "$base/libhilti/type-info.hlt $base/build/libhilti-$mode/libhilti-rt$libpostfix.bca -I$base/libhilti"
             shift;;
 
         --hiltic-flags-main)
-            echo "$base/libhilti/type-info.hlt $base/build/libhilti-${build_mode}/libhilti-rt-main${libpostfix}.bca -I$base/libhilti"
+            echo "$base/libhilti/type-info.hlt $base/build/libhilti-$mode/libhilti-rt-main$libpostfix.bca -I$base/libhilti"
             shift;;
 
      # HILTI

@@ -19,11 +19,12 @@ OptOptSpec   = "-std-compile-opts -std-link-opts"
 
 # Search file in shell PATH. Returns None if not found.
 def findInPATH(file):
-    hc = os.path.join(os.path.dirname(sys.argv[0]), "../hilti-config")
+    hc = os.path.join(os.path.dirname(sys.argv[0]), "../build/tools")
     hc = os.path.abspath(hc)
 
     for dir in os.environ["PATH"].split(":") + [hc]:
         p = os.path.join(dir, file)
+        print p
         if os.path.exists(p):
             return p
     else:
@@ -44,6 +45,7 @@ def findConfigTool(tool):
     # Search in the same directory as we are in.
     dir = os.path.dirname(sys.argv[0])
     path = os.path.join(dir, tool)
+
     if os.path.exists(path):
         return path
 
@@ -52,6 +54,9 @@ def findConfigTool(tool):
 
     if not path:
         print >>sys.stderr, "cannot find %s, aborting." % tool
+        sys.exit(1)
+
+    return path
 
 # Run a *-config tool to get an option.
 def runConfig(path, option):
