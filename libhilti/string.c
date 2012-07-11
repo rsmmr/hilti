@@ -507,7 +507,9 @@ void hlt_string_print(FILE* file, hlt_string s, int8_t newline, hlt_exception** 
     hlt_string_print_n(file, s, newline, s->len, excpt, ctx);
 }
 
-/* FIXME: We don't really do "to native" yet, but just to ASCII ... */
+/* FIXME: We don't really do "to native" yet, but just to ASCII ...
+ * This is also all very inefficient ...
+*/
 char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_string ascii = hlt_string_from_asciiz("ascii", excpt, ctx);
@@ -523,6 +525,13 @@ char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_co
         return 0;
     }
 
+    // Add a null terminator.
+    hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
+    char* sraw = hlt_malloc(len + 1);
+    memcpy(sraw, raw, len);
+    sraw[len] = '\0';
+
     GC_DTOR(b, hlt_bytes);
-    return (char*)raw;
+
+    return sraw;
 }

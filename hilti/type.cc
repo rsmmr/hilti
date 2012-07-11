@@ -209,6 +209,10 @@ type::trait::Parameterized::parameter_list type::Integer::parameters() const
 type::trait::Parameterized::parameter_list type::IOSource::parameters() const
 {
     parameter_list params;
+
+    if ( wildcard() )
+        return params;
+
     auto p = shared_ptr<trait::parameter::Base>(new trait::parameter::Enum(_kind));
     params.push_back(p);
     return params;
@@ -259,7 +263,8 @@ shared_ptr<Type> type::IOSource::iterType()
 
 shared_ptr<Type> type::IOSource::elementType()
 {
-    return builder::bytes::type();
+    builder::type_list elems = { builder::time::type(), builder::reference::type(builder::bytes::type()) };
+    return builder::tuple::type(elems);
 }
 
 // FIXME: We won't need this anymore with C++11 initializer lists.

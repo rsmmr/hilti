@@ -143,6 +143,19 @@ extern void  hlt_bytes_append(hlt_bytes* b, const hlt_bytes* other, hlt_exceptio
 /// Raises: ValueError - If *b* has been frozen.
 extern void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Appends a sequence of raw bytes in memory to a bytes object. This
+/// function does not take ownership of the appended data, but makes a copy
+/// internally.
+///
+/// b: The bytes object to append to.
+///
+/// raw: A pointer to the beginning of the byte sequence to append.
+///
+/// len: The number of bytes to append starting from *raw*. \hlt_c
+///
+/// Raises: ValueError - If *b* has been frozen.
+extern void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Searches for the first occurance of a specific byte in a bytes object. 
 ///
 /// b: The bytes object to search.

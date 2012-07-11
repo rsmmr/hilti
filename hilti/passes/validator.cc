@@ -232,6 +232,10 @@ void Validator::visit(statement::instruction::thread::SetContext* s)
 static void _checkCallScope(Validator* v, statement::Instruction* s)
 {
     auto func = v->current<Function>();
+
+    if ( ! func )
+        return;
+
     auto op1 = ast::as<expression::Function>(s->op1());
 
     if ( ! op1 ) {

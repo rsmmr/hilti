@@ -32,6 +32,7 @@ typedef struct __hlt_channel_chunk {
 } hlt_channel_chunk;
 
 struct __hlt_channel {
+    __hlt_gchdr __gchdr;    // Header for memory management.
     const hlt_type_info* type;      /* Type information of the channel's data type. */
     hlt_channel_capacity capacity;      /* Maximum number of channel items. */
     volatile hlt_channel_capacity size; /* Current number of channel items. */
@@ -132,7 +133,7 @@ void _hlt_channel_finalizer(void* ch_ptr)
 
 hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacity capacity, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_channel *ch = hlt_malloc(sizeof(hlt_channel));
+    hlt_channel *ch = GC_NEW(hlt_channel);
     if ( ! ch ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return 0;
@@ -154,8 +155,6 @@ hlt_channel* hlt_channel_new(const hlt_type_info* item_type, hlt_channel_capacit
     pthread_mutex_init(&ch->mutex, NULL);
     pthread_cond_init(&ch->empty_cv, NULL);
     pthread_cond_init(&ch->full_cv, NULL);
-
-    hlt_gc_register_finalizer(ch, _hlt_channel_finalizer);
 
     return ch;
 }

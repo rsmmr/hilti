@@ -22,10 +22,15 @@ void StatementBuilder::visit(statement::instruction::profiler::Start* i)
         else {
             auto cexpr = ast::checkedCast<expression::Constant>(i->op2());
             auto vals = ast::checkedCast<constant::Tuple>(cexpr->constant())->value();
-
             auto v = vals.begin();
             style = cg()->llvmValue(*v++);
-            param = cg()->llvmValue(*v++, builder::integer::type(64));
+
+            auto p = *v;
+
+            if ( ast::isA<type::Interval>(p->type()) )
+                param = cg()->llvmValue(p);
+            else
+                param = cg()->llvmValue(p, builder::integer::type(64));
         }
     }
 

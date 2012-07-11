@@ -64,6 +64,7 @@
 #define HLT_TYPE_ITERATOR_LIST   102
 #define HLT_TYPE_ITERATOR_SET    103
 #define HLT_TYPE_ITERATOR_MAP    104
+#define HLT_TYPE_ITERATOR_IOSRC  105
 
 // Default context for numeric operations.
 #define HLT_CONVERT_NONE     0x00  // Not given, implies doing signed operations.

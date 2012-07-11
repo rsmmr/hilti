@@ -366,6 +366,22 @@ void TypeBuilder::visit(type::iterator::Vector* i)
     setResult(ti);
 }
 
+void TypeBuilder::visit(type::iterator::IOSource* i)
+{
+    // If we just lookup hlt.iterator.iosrc, we get type conflicts due to
+    // LLVM's type unification. So we build it manually.
+    auto src_type = cg()->llvmTypePtr(cg()->llvmLibType("hlt.iosrc"));
+    CodeGen::type_list iter_fields = { src_type, cg()->llvmTypeInt(64), cg()->llvmTypePtr(cg()->llvmLibType("hlt.bytes")) };
+    auto iter_type = cg()->llvmTypeStruct("", iter_fields);
+
+    TypeInfo* ti = new TypeInfo(i);
+    ti->id = HLT_TYPE_ITERATOR_IOSRC;
+    ti->dtor = "hlt::iterator_iosrc_dtor";
+    ti->cctor = "hlt::iterator_iosrc_cctor";
+    ti->init_val = cg()->llvmConstNull(iter_type);
+    setResult(ti);
+}
+
 void TypeBuilder::visit(type::Integer* i)
 {
     TypeInfo* ti = new TypeInfo(i);

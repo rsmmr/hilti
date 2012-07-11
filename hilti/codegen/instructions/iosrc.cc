@@ -6,30 +6,34 @@
 using namespace hilti;
 using namespace codegen;
 
-static llvm::Value* _makeIterator(CodeGen* cg, shared_ptr<Type> ty, llvm::Value* src, llvm::Value* elem)
+static llvm::Value* _makeIterator(CodeGen* cg, llvm::Value* src, llvm::Value* elem)
 {
-    auto ioty = ast::as<type::IOSource>(ty);
-    assert(ioty);
+    llvm::Value* time = nullptr;
+    llvm::Value* pkt = nullptr;
 
     if ( ! src )
-        src = cg->llvmConstNull(cg->llvmType(ioty));
-
-    if ( ! elem ) {
-        auto ity = type::asTrait<type::trait::Iterable>(ty.get());
-        elem = cg->llvmConstNull(cg->llvmType(ity->elementType()));
+        src = cg->llvmConstNull(cg->llvmTypePtr(cg->llvmLibType("hlt.iosrc")));
+    else {
+        cg->llvmCctor(src, builder::reference::type(builder::iosource::typeAny()), false, "iosource:_makeIterator");
     }
 
-    CodeGen::value_list vals = { src, elem };
+    if ( elem ) {
+        time = cg->llvmExtractValue(elem, 0);
+        pkt = cg->llvmExtractValue(elem, 1);
+        cg->llvmCctor(pkt, builder::reference::type(builder::bytes::type()), false, "iosource:_makeIterator");
+    }
+
+    else {
+        time = cg->llvmConstInt(0, 64);
+        pkt = cg->llvmConstNull(cg->llvmTypePtr(cg->llvmLibType("hlt.bytes")));
+    }
+
+    CodeGen::value_list vals = { src, time, pkt };
     return cg->llvmValueStruct(vals);
 }
 
-static llvm::Value* _checkExhausted(CodeGen* cg, statement::Instruction* i, shared_ptr<Expression> src, llvm::Value* result, bool make_iters)
+static llvm::Value* _checkExhausted(CodeGen* cg, statement::Instruction* i, llvm::Value* src, llvm::Value* result, bool make_iters)
 {
-    auto rty = ast::as<type::Reference>(src->type());
-    assert(rty);
-
-    auto ty = rty->argType();
-
     auto data = cg->llvmExtractValue(result, 1);
     auto exhausted = cg->builder()->CreateIsNull(data);
 
@@ -45,10 +49,12 @@ static llvm::Value* _checkExhausted(CodeGen* cg, statement::Instruction* i, shar
     llvm::Value* result_not_exhausted = nullptr;
 
     if ( make_iters )
-        result_exhausted = _makeIterator(cg, ty, nullptr, nullptr);
+        result_exhausted = _makeIterator(cg, nullptr, nullptr);
 
     else
         cg->llvmRaiseException("Hilti::IOSrcExhausted", i->location());
+
+    builder_exhausted = cg->builder();
 
     cg->llvmCreateBr(builder_cont);
     cg->popBuilder();
@@ -56,7 +62,9 @@ static llvm::Value* _checkExhausted(CodeGen* cg, statement::Instruction* i, shar
     cg->pushBuilder(builder_not_exhausted);
 
     if ( make_iters )
-        result_not_exhausted = _makeIterator(cg, ty, cg->llvmValue(src), result);
+        result_not_exhausted = _makeIterator(cg, src, result);
+
+    builder_not_exhausted = cg->builder();
 
     cg->llvmCreateBr(builder_cont);
     cg->popBuilder();
@@ -93,7 +101,7 @@ void StatementBuilder::visit(statement::instruction::ioSource::New* i)
         "pcap-live",
         cg()->llvmEnum("Hilti::IOSrc::PcapLive"),
         [&] (CodeGen* cg) -> llvm::Value* {
-            return cg->llvmCall("hlt::iosrc_pcap_new_live", args);
+            return cg->llvmCall("hlt::iosrc_new_live", args);
         }
     ));
 
@@ -101,7 +109,7 @@ void StatementBuilder::visit(statement::instruction::ioSource::New* i)
         "pcap-offline",
         cg()->llvmEnum("Hilti::IOSrc::PcapOffline"),
         [&] (CodeGen* cg) -> llvm::Value* {
-            return cg->llvmCall("hlt::iosrc_pcap_new_offline", args);
+            return cg->llvmCall("hlt::iosrc_new_offline", args);
         }
     ));
 
@@ -112,34 +120,44 @@ void StatementBuilder::visit(statement::instruction::ioSource::New* i)
 void StatementBuilder::visit(statement::instruction::ioSource::Close* i)
 {
     CodeGen::expr_list args = { i->op1() };
-    cg()->llvmCall("hlt::iosrc_pcap_close", args);
+    cg()->llvmCall("hlt::iosrc_close", args);
 }
 
-static llvm::Value* _readTry(CodeGen* cg, statement::Instruction* i)
+static llvm::Value* _readTry(CodeGen* cg, statement::Instruction* i, llvm::Value* src)
 {
-    CodeGen::expr_list args = { i->op1(), builder::boolean::create(false) };
-    return cg->llvmCall("hlt::iosrc_pcap_read_try", args, false);
+    if ( ! src )
+        src = cg->llvmValue(i->op1());
+
+    CodeGen::expr_list args = {
+        builder::codegen::create(builder::reference::type(builder::iosource::typeAny()), src),
+        builder::boolean::create(false)
+    };
+
+    return cg->llvmCall("hlt::iosrc_read_try", args, false);
 }
 
-static void _readFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* result, bool make_iters)
+static void _readFinish(CodeGen* cg, statement::Instruction* i, llvm::Value* result, bool make_iters, llvm::Value* src)
 {
-    result = _checkExhausted(cg, i, i->op1(), result, false);
+    if ( ! src )
+        src = cg->llvmValue(i->op1());
+
+    result = _checkExhausted(cg, i, src, result, make_iters);
     cg->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::ioSource::Read* i)
 {
     cg()->llvmBlockingInstruction(i,
-                                  _readTry,
-                                  [&] (CodeGen* cg, statement::Instruction* i, llvm::Value* result) { _readFinish(cg, i, result, false); }
+                                  [&] (CodeGen* cg, statement::Instruction* i) -> llvm::Value* { return _readTry(cg, i, nullptr); },
+                                  [&] (CodeGen* cg, statement::Instruction* i, llvm::Value* result) { _readFinish(cg, i, result, false, nullptr); }
                                  );
 }
 
 void StatementBuilder::visit(statement::instruction::iterIOSource::Begin* i)
 {
     cg()->llvmBlockingInstruction(i,
-                                  _readTry,
-                                  [&] (CodeGen* cg, statement::Instruction* i, llvm::Value* result) { _readFinish(cg, i, result, true); }
+                                  [&] (CodeGen* cg, statement::Instruction* i) -> llvm::Value* { return _readTry(cg, i, nullptr); },
+                                  [&] (CodeGen* cg, statement::Instruction* i, llvm::Value* result) { _readFinish(cg, i, result, true, nullptr); }
                                  );
 }
 
@@ -149,32 +167,39 @@ void StatementBuilder::visit(statement::instruction::iterIOSource::End* i)
     assert(rty);
 
     auto ty = rty->argType();
-    auto result = _makeIterator(cg(), ty, nullptr, nullptr);
+    auto result = _makeIterator(cg(), nullptr, nullptr);
     cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::iterIOSource::Incr* i)
 {
+    auto src = cg()->llvmExtractValue(cg()->llvmValue(i->op1()), 0);
+
     cg()->llvmBlockingInstruction(i,
-                                  _readTry,
-                                  [&] (CodeGen* cg, statement::Instruction* i, llvm::Value* result) { _readFinish(cg, i, result, true); }
+                                  [&] (CodeGen* cg, statement::Instruction* i) -> llvm::Value* { return _readTry(cg, i, src); },
+                                  [&] (CodeGen* cg, statement::Instruction* i, llvm::Value* result) { _readFinish(cg, i, result, true, src); }
                                  );
 }
 
 void StatementBuilder::visit(statement::instruction::iterIOSource::Equal* i)
 {
-    auto elem1 = cg()->llvmExtractValue(cg()->llvmValue(i->op1()), 1);
-    auto elem2 = cg()->llvmExtractValue(cg()->llvmValue(i->op2()), 1);
+    auto val1 = cg()->llvmValue(i->op1());
+    auto val2 = cg()->llvmValue(i->op2());
 
-    auto payload1 = cg()->llvmExtractValue(elem1, 1);
-    auto payload2 = cg()->llvmExtractValue(elem2, 1);
+    auto pkt1 = cg()->llvmExtractValue(val1, 2);
+    auto pkt2 = cg()->llvmExtractValue(val2, 2);
 
-    auto result = cg()->builder()->CreateICmpEQ(payload1, payload2);
+    auto result = cg()->builder()->CreateICmpEQ(pkt1, pkt2);
     cg()->llvmStore(i, result);
 }
 
 void StatementBuilder::visit(statement::instruction::iterIOSource::Deref* i)
 {
-    auto elem = cg()->llvmExtractValue(cg()->llvmValue(i->op1()), 1);
-    cg()->llvmStore(i, elem);
+    auto val = cg()->llvmValue(i->op1());
+    auto time = cg()->llvmExtractValue(val, 1);
+    auto pkt = cg()->llvmExtractValue(val, 2);
+
+    CodeGen::value_list vals = { time, pkt };
+    auto result = cg()->llvmValueStruct(vals);
+    cg()->llvmStore(i, result);
 }

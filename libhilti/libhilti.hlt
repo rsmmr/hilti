@@ -30,7 +30,7 @@ declare "C-HILTI" string timer_to_string(any s, int<32> options)
 declare "C-HILTI" string timer_mgr_to_string(any s, int<32> options)
 declare "C-HILTI" string map_to_string(any s, int<32> options)
 declare "C-HILTI" string set_to_string(any s, int<32> options)
-declare "C-HILTI" string iosrc_pcap_to_string(any s, int<32> options)
+declare "C-HILTI" string iosrc_to_string(any s, int<32> options)
 declare "C-HILTI" string time_to_string(any d, int<32> options)
 declare "C-HILTI" string interval_to_string(any d, int<32> options)
 declare "C-HILTI" string vector_to_string(any l, int<32> options)
@@ -134,10 +134,11 @@ declare "C-HILTI" int<16> hton16(int<16> v)
 
 ###
 #
-# declare "C-HILTI" ref<channel<*>> channel_new(type channel_type, int<64> capacity)
-# declare "C-HILTI" void channel_write_try(ref<channel<*>> ch, any data)
-# declare "C-HILTI" any channel_read_try(ref<channel<*>> ch)
-# declare "C-HILTI" int<64> channel_size(ref<channel<*>> ch)
+declare "C-HILTI" void channel_dtor(ref<channel<*>> c)
+declare "C-HILTI" ref<channel<*>> channel_new(type channel_type, int<64> capacity)
+declare "C-HILTI" void channel_write_try(ref<channel<*>> ch, any data)
+declare "C-HILTI" any channel_read_try(ref<channel<*>> ch)
+declare "C-HILTI" int<64> channel_size(ref<channel<*>> ch)
 #
 # ###
 #
@@ -256,10 +257,13 @@ declare "C-HILTI" bool iterator_set_eq(iterator<set<*>> i1, iterator<set<*>> i2)
 # ##
 #
 declare "C-HILTI" void iosrc_dtor(ref<iosrc<*>> v)
-declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_live(string interface)
-declare "C-HILTI" ref<iosrc<*>> iosrc_pcap_new_offline(string interface)
-declare "C-HILTI" tuple<time, ref<bytes>> iosrc_pcap_read_try(ref<iosrc<*>> src, bool keep_link_layer)
-declare "C-HILTI" void iosrc_pcap_close(ref<iosrc<*>> src)
+declare "C-HILTI" ref<iosrc<*>> iosrc_new_live(string interface)
+declare "C-HILTI" ref<iosrc<*>> iosrc_new_offline(string interface)
+declare "C-HILTI" tuple<time, ref<bytes>> iosrc_read_try(ref<iosrc<*>> src, bool keep_link_layer)
+declare "C-HILTI" void iosrc_close(ref<iosrc<*>> src)
+
+declare "C-HILTI" void iterator_iosrc_dtor(iterator<iosrc<*>> pos)
+declare "C-HILTI" void iterator_iosrc_cctor(iterator<iosrc<*>> pos)
 #
 # ##
 #

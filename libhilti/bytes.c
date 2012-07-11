@@ -357,6 +357,11 @@ void hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exc
     __hlt_bytes_append_raw(b, raw, len, excpt, ctx, 1);
 }
 
+void hlt_bytes_append_raw_copy(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    __hlt_bytes_append_raw(b, raw, len, excpt, ctx, 0);
+}
+
 static hlt_iterator_bytes GenericEndPos = { 0, 0 };
 
 hlt_iterator_bytes hlt_bytes_find_byte(hlt_bytes* b, int8_t chr, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -990,7 +995,7 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
 
     char hex[5] = { '\\', 'x', 'X', 'X', '\0' };
     char buffer[256];
-    char i = 0;
+    uint64_t i = 0;
 
     for ( const __hlt_bytes_chunk* c = b->head; c; c = c->next ) {
         for ( const int8_t* p = c->start; p < c->end; ++p ) {

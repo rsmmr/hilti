@@ -813,6 +813,18 @@ public:
    /// version of this method that works with constants rather than arbitrary
    /// values, llvmConstStruct().
    ///
+   /// type: The struct will be created as of this type (which must
+   /// be a struct type obviousl).
+   ///
+   /// elems: The field values.
+   ///
+   /// packed: True if the constant is to represent a packed struct type.
+   llvm::Value* llvmValueStruct(llvm::Type* type, const std::vector<llvm::Value*>& elems, bool packed=false);
+
+   /// Returns an LLVM struct value with fields initialized. There's also a
+   /// version of this method that works with constants rather than arbitrary
+   /// values, llvmConstStruct().
+   ///
    /// elems: The field values.
    ///
    /// packed: True if the constant is to represent a packed struct type.

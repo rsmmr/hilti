@@ -1049,6 +1049,19 @@ llvm::Value* CodeGen::llvmValueStruct(const std::vector<llvm::Value*>& elems, bo
     return sval;
 }
 
+llvm::Value* CodeGen::llvmValueStruct(llvm::Type* stype, const std::vector<llvm::Value*>& elems, bool packed)
+{
+    // This is quite a cumbersome way to create a struct on the fly but it
+    // seems it's the best we can do when inserting non-const values.
+
+    llvm::Value* sval = llvmConstNull(stype);
+
+    for ( int i = 0; i < elems.size(); ++i )
+        sval = llvmInsertValue(sval, elems[i], i);
+
+    return sval;
+}
+
 llvm::GlobalVariable* CodeGen::llvmAddConst(const string& name, llvm::Constant* val, bool use_name_as_is)
 {
     auto mname = use_name_as_is ? name : uniqueName("const", name);
@@ -2830,10 +2843,11 @@ llvm::Value* CodeGen::llvmSwitch(llvm::Value* op, const case_list& cases, bool r
         assert(! c._enums);
         auto b = pushBuilder(::util::fmt("switch-%s", c.label.c_str()));
         auto r = c.callback(this);
+
+        returns.push_back(std::make_pair(r, builder()->GetInsertBlock()));
+
         llvmCreateBr(cont);
         popBuilder();
-
-        returns.push_back(std::make_pair(r, b->GetInsertBlock()));
 
         for ( auto op : c.op_integers )
             switch_->addCase(op, b->GetInsertBlock());

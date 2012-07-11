@@ -1,7 +1,7 @@
 
 iBeginH(profiler, Start, "profiler.start")
     iOp1(optype::string, true)
-    iOp2(optype::any, true)
+    iOp2(optype::optional(optype::any), true)
     iOp3(optype::optional(optype::refTimerMgr), true);
 iEndH
 

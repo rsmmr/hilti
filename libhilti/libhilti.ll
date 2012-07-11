@@ -4,6 +4,7 @@
 %hlt.func = type i8
 
 %hlt.vid = type i64
+%hlt.time = type i64
 
 ; The header of garbage collected objects.
 %hlt.gchdr = type {

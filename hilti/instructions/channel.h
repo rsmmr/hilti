@@ -22,7 +22,7 @@
 iBeginH(channel, New, "new")
     iTarget(optype::refChannel)
     iOp1(optype::typeChannel, true);
-    iOp2(optype::int64, true);
+    iOp2(optype::optional(optype::int64), true);
 iEndH
 
 iBeginH(channel, Read, "channel.read")

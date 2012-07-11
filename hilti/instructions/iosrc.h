@@ -40,7 +40,7 @@ iBeginH(iterIOSource, Equal, "equal")
 iEndH
 
 iBeginH(iterIOSource, Deref, "deref")
-    iTarget(optype::int8)
+    iTarget(optype::tuple)
     iOp1(optype::iterIOSource, true);
 iEndH
 

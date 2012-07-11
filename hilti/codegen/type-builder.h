@@ -246,6 +246,7 @@ protected:
    void visit(type::iterator::Map* i) override;
    void visit(type::iterator::Set* i) override;
    void visit(type::iterator::Vector* i) override;
+   void visit(type::iterator::IOSource* i) override;
 
 private:
    TypeInfo* typeInfo(shared_ptr<hilti::Type> type, bool llvm_type_only);

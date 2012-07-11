@@ -1,10 +1,28 @@
 
 #include <pcap.h>
 
-#include "iosrc-pcap.h"
+#include "iosrc.h"
 #include "autogen/hilti-hlt.h"
 
-static void _raise_error(hlt_iosrc_pcap* src, const char* errbuf, hlt_exception** excpt, hlt_execution_context* ctx)
+typedef struct  {
+    hlt_iosrc* src;
+    hlt_time t;
+    hlt_bytes* pkt;
+} __hlt_iterator_iosrc;
+
+void hlt_iterator_iosrc_cctor(hlt_type_info* ti, __hlt_iterator_iosrc* i)
+{
+    GC_CCTOR(i->src, hlt_iosrc);
+    GC_CCTOR(i->pkt, hlt_bytes);
+}
+
+void hlt_iterator_iosrc_dtor(hlt_type_info* ti, __hlt_iterator_iosrc* i)
+{
+    GC_DTOR(i->src, hlt_iosrc);
+    GC_DTOR(i->pkt, hlt_bytes);
+}
+
+static void _raise_error(hlt_iosrc* src, const char* errbuf, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const char* err = errbuf ? errbuf : pcap_geterr(src->handle);
 
@@ -22,7 +40,7 @@ static void _raise_error(hlt_iosrc_pcap* src, const char* errbuf, hlt_exception*
     GC_DTOR(msg, hlt_string);
 }
 
-static void _strip_link_layer(hlt_iosrc_pcap* src, const char** pkt, int* caplen, int datalink, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _strip_link_layer(hlt_iosrc* src, const char** pkt, int* caplen, int datalink, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     int hdr_size = 0;
 
@@ -61,7 +79,7 @@ static void _strip_link_layer(hlt_iosrc_pcap* src, const char** pkt, int* caplen
     *caplen -= hdr_size;
 }
 
-void hlt_iosrc_dtor(hlt_type_info* ti, hlt_iosrc_pcap* c)
+void hlt_iosrc_dtor(hlt_type_info* ti, hlt_iosrc* c)
 {
     if ( c->handle )
         pcap_close(c->handle);
@@ -69,9 +87,9 @@ void hlt_iosrc_dtor(hlt_type_info* ti, hlt_iosrc_pcap* c)
     GC_CLEAR(c->iface, hlt_string);
 }
 
-hlt_string hlt_iosrc_pcap_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_string hlt_iosrc_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    const hlt_iosrc_pcap* src = *((const hlt_iosrc_pcap**)obj);
+    const hlt_iosrc* src = *((const hlt_iosrc**)obj);
 
     hlt_string prefix = hlt_string_from_asciiz("<pcap source ", excpt, ctx);
     hlt_string postfix = hlt_string_from_asciiz(">", excpt, ctx);
@@ -84,23 +102,21 @@ hlt_string hlt_iosrc_pcap_to_string(const hlt_type_info* type, const void* obj, 
     return str;
 }
 
-hlt_iosrc_pcap* hlt_iosrc_pcap_new_live(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iosrc* hlt_iosrc_new_live(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_iosrc_pcap* src = (hlt_iosrc_pcap*) hlt_gc_malloc_non_atomic(sizeof(hlt_iosrc_pcap));
-    if ( ! src ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
-
+    hlt_iosrc* src = GC_NEW(hlt_iosrc);
     src->type = Hilti_IOSrc_PcapLive;
-    src->iface = interface;
+    src->iface = hlt_string_copy(interface, excpt, ctx);
 
-    const char* iface = hlt_string_to_native(interface, excpt, ctx);
+    char* iface = hlt_string_to_native(interface, excpt, ctx);
     if ( *excpt )
         return 0;
 
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *p = pcap_create(iface, errbuf);
+
+    hlt_free(iface);
+
     if ( ! p ) {
         _raise_error(src, errbuf, excpt, ctx);
         return 0;
@@ -130,23 +146,21 @@ error:
     return 0;
 }
 
-hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_iosrc* hlt_iosrc_new_offline(hlt_string interface, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_iosrc_pcap* src = (hlt_iosrc_pcap*) hlt_gc_malloc_non_atomic(sizeof(hlt_iosrc_pcap));
-    if ( ! src ) {
-        hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
-        return 0;
-    }
-
+    hlt_iosrc* src = GC_NEW(hlt_iosrc);
     src->type = Hilti_IOSrc_PcapOffline;
-    src->iface = interface;
+    src->iface = hlt_string_copy(interface, excpt, ctx);
 
-    const char* iface = hlt_string_to_native(interface, excpt, ctx);
+    char* iface = hlt_string_to_native(interface, excpt, ctx);
     if ( *excpt )
         return 0;
 
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *p = pcap_open_offline(iface, errbuf);
+
+    hlt_free(iface);
+
     if ( ! p ) {
         _raise_error(src, errbuf, excpt, ctx);
         return 0;
@@ -156,7 +170,7 @@ hlt_iosrc_pcap* hlt_iosrc_pcap_new_offline(hlt_string interface, hlt_exception**
     return src;
 }
 
-hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, hlt_exception** excpt, hlt_execution_context* ctx)
+hlt_packet hlt_iosrc_read_try(hlt_iosrc* src, int8_t keep_link_layer, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_packet result = { 0.0, NULL };
 
@@ -187,6 +201,7 @@ hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, 
         // Build the result tuple.
         result.t = hlt_time_value(hdr->ts.tv_sec, hdr->ts.tv_usec * 1000);
         result.data = pkt;
+
         return result;
     }
 
@@ -211,7 +226,7 @@ hlt_packet hlt_iosrc_pcap_read_try(hlt_iosrc_pcap* src, int8_t keep_link_layer, 
     return result;
 }
 
-void hlt_iosrc_pcap_close(hlt_iosrc_pcap* src, hlt_exception** excpt, hlt_execution_context* ctx)
+void hlt_iosrc_close(hlt_iosrc* src, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     pcap_close(src->handle);
     src->handle = 0;

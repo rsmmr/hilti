@@ -27,14 +27,15 @@ iBeginCC(profiler)
 
         if ( ttype->typeList().size() == 2 ) {
 
-            auto a = ttype->typeList().begin();
+            auto types = ttype->typeList();
+            auto a = types.begin();
             auto arg1 = *a++;
             auto arg2 = *a++;
 
             if ( ! ast::isA<type::Enum>(arg1) )
                 goto error;
 
-            if ( ! (ast::isA<type::Integer>(arg2) || ast::isA<type::Time>(arg2)) )
+            if ( ! (ast::isA<type::Integer>(arg2) || ast::isA<type::Interval>(arg2)) )
                 goto error;
 
             // Ok.
@@ -43,7 +44,7 @@ iBeginCC(profiler)
 
 error:
         // Error when arriving here.
-        error(op2, "profiler parameter must be Hilti::ProfileStyle or (Hilti::ProfileStyle, int64|time)");
+        error(op2, "profiler parameter must be Hilti::ProfileStyle or (Hilti::ProfileStyle, int64|interval)");
     }
 
     iDocCC(Start, R"(

@@ -22,6 +22,8 @@ export ref<map<*>>
 export ref<file>
 export ref<regexp>
 export ref<classifier<*>>
+export ref<iosrc<*>>
+export ref<channel<*>>
 
 export iterator<bytes>
 export iterator<list<*>>

@@ -40,7 +40,7 @@ iEndCC
 
 iBeginCC(iterIOSource)
     iValidateCC(Equal) {
-        equalTypes(target, op1);
+        equalTypes(op1, op2);
     }
 
     iDocCC(Equal, R"(
@@ -51,6 +51,7 @@ iEndCC
 
 iBeginCC(iterIOSource)
     iValidateCC(Deref) {
+        // TODO:  Check tuple.
     }
 
     iDocCC(Deref, R"(

@@ -128,8 +128,17 @@ ffi_cif* ABI::getCIF(const string& name, llvm::Type* rtype, const argument_type_
 
     ffi_type** args_ffi = new ffi_type*[nargs];
 
-    for ( int i = 0; i < nargs; ++i )
+    fprintf(stderr, "--\n");
+    if ( rtype ) {
+        rtype->dump();
+        fprintf(stderr, " RESULT\n");
+    }
+
+    for ( int i = 0; i < nargs; ++i ) {
         args_ffi[i] = _llvmToCif(cg(), args[i]);
+        args[i]->dump();
+        fprintf(stderr, "  %d\n", i);
+    }
 
     auto cif = new ffi_cif;
     auto rc = ffi_prep_cif(cif, FFI_DEFAULT_ABI, nargs, rtype_ffi, args_ffi);
