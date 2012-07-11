@@ -222,14 +222,15 @@ void StatementBuilder::visit(declaration::Function* f)
 
     cg()->pushFunction(llvm_func);
 
-    if ( cg()->debugLevel() > 0 ) {
-        string msg = string("entering function ") + f->function()->id()->name();
-        cg()->llvmDebugPrint("hilti-flow", msg);
-        cg()->setLeaveFunc(f);
-    }
+    cg()->setLeaveFunc(f);
+
+    auto name = ::util::fmt("%s::%s", cg()->hiltiModule()->id()->name().c_str(), f->id()->name().c_str());
+
+    if ( cg()->debugLevel() > 0 )
+        cg()->llvmDebugPrint("hilti-flow", string("entering ") + name);
 
     if ( cg()->profileLevel() > 1 )
-        cg()->llvmProfilerStart(func->id()->pathAsString());
+        cg()->llvmProfilerStart(string("func/") + name);
 
     // Create shadow locals for non-const parameters so that we can modify
     // them.

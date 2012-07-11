@@ -1,0 +1,5 @@
+#! ctime cwall tag type time wall updates cycles misses alloced heap user 
+0 - func/Main::run B 0 - 0 - - - - 0
+0 - func/Main::fibo B 0 - 0 - - - - 0
+0 - func/Main::fibo E 0 - 0 - - - - 0
+0 - func/Main::run E 0 - 0 - - - - 0

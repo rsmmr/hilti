@@ -14,28 +14,12 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
     auto rtype = as<type::Function>(func->function()->type())->result()->type();
     auto op1 = cg()->llvmValue(i->op1(), rtype, false);
 
-    if ( debugLevel() > 0 ) {
-        string msg = string("leaving ") + func->render();
-        cg()->llvmDebugPrint("hilti-flow", msg);
-    }
-
-    if ( cg()->profileLevel() > 1 )
-        cg()->llvmProfilerStart(func->id()->pathAsString());
-
     cg()->llvmReturn(func->function()->type()->result()->type(), op1);
 }
 
 static void _doVoidReturn(StatementBuilder* sbuilder)
 {
     auto func = sbuilder->current<declaration::Function>();
-
-    if ( sbuilder->debugLevel() > 0 ) {
-        string msg = string("leaving ") + func->render();
-        sbuilder->cg()->llvmDebugPrint("hilti-flow", msg);
-    }
-
-    if ( sbuilder->cg()->profileLevel() > 1 )
-        sbuilder->cg()->llvmProfilerStop(func->id()->pathAsString());
 
     // Check if we are in a hook. If so, we return a boolean indicating that
     // hook execution has not been stopped.

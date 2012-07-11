@@ -1530,13 +1530,20 @@ void CodeGen::llvmBuildExitBlock()
     pushBuilder(exit_builder);
     llvmBuildFunctionCleanup();
 
-    if ( debugLevel() > 0 &&  _functions.back()->leave_func ) {
-        string msg = string("leaving function ") + _functions.back()->leave_func->function()->id()->name();
-        llvmDebugPrint("hilti-flow", msg);
-    }
+    auto leave_func = _functions.back()->leave_func;
 
-    if ( profileLevel() > 1 &&  _functions.back()->leave_func )
-        llvmProfilerStop(_functions.back()->leave_func->id()->pathAsString());
+    if ( leave_func ) {
+
+        auto name = ::util::fmt("%s::%s", _hilti_module->id()->name().c_str(), leave_func->id()->name().c_str());
+
+        if ( debugLevel() > 0 ) {
+            string msg = string("leaving ") + name;
+            llvmDebugPrint("hilti-flow", msg);
+        }
+
+        if ( profileLevel() > 1 )
+            llvmProfilerStop(string("func/") + name);
+    }
 
     popBuilder();
 
