@@ -49,20 +49,17 @@ typedef enum {
 #define HLT_VID_MAIN -1
 #define HLT_VID_QUEUE -2
 
-typedef struct __hlt_thread_mgr_blockable {
+struct __hlt_thread_mgr_blockable {
     uint64_t num_blocked;	// Number of jobs waiting for this resource.
-} __hlt_thread_mgr_blockable;
+};
 
 // A job queued for execution.
 typedef struct __hlt_job {
     hlt_fiber* fiber;         // The fiber for running this job.
     hlt_vthread_id vid;       // The virtual thread the job is scheduled to.
-    const hlt_type_info* tcontext_type; // The type of the thread context.
+    hlt_type_info* tcontext_type; // The type of the thread context.
     void* tcontext;           // The jobs thread context to use when executing.
     __hlt_thread_mgr_blockable* blockable; // For moving into the blocked queue.
-    struct __hlt_job* prev;   // The prev job in the *blocked* queue if linked in there.
-    struct __hlt_job* next;   // The next job in the *blocked* queue if linked in there.
-
 #ifdef DEBUG
     uint64_t id;            // For debugging, we assign numerical IDs for easier identification.
 #endif
@@ -78,7 +75,7 @@ typedef struct __hlt_worker_thread {
 
     // This can be *read* from different threads without further locking.
     int id;                       // ID of this worker thread in the range 1..*num_workers*.
-    const char* name;             // A string identifying the worker.
+    char* name;                   // A string identifying the worker.
     int idle;                     // When in state FINISH, the worker will set this when idle.
     pthread_t handle;             // The pthread handle for this thread.
 
@@ -229,7 +226,7 @@ extern void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, h
 /// ctx: The caller's execution context.
 ///
 /// excpt: &
-extern void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, const hlt_type_info* type, void* tcontext, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx);
+extern void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, hlt_type_info* type, void* tcontext, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Checks whether any worker thread has raised an uncaught exception. In
 /// that case, all worker threads will have been terminated, and this

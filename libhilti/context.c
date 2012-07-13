@@ -30,13 +30,16 @@ void hlt_execution_context_dtor(hlt_type_info* ti, hlt_execution_context* ctx)
     }
 
     GC_DTOR(ctx->excpt, hlt_exception);
-    GC_DTOR_GENERIC(&ctx->tcontext, ctx->tcontext_type);
 
     if ( ctx->fiber )
         hlt_fiber_delete(ctx->fiber);
 
     if ( ctx->pstate )
         __hlt_profiler_state_delete(ctx->pstate);
+
+    if ( ctx->tcontext ) {
+        GC_DTOR_GENERIC(&ctx->tcontext, ctx->tcontext_type);
+    }
 
     hlt_free_list_delete(ctx->fiber_pool);
 }
@@ -65,6 +68,7 @@ hlt_execution_context* __hlt_execution_context_new(hlt_vthread_id vid)
     ctx->tcontext = 0;
     ctx->tcontext_type = 0;
     ctx->pstate = 0;
+    ctx->blockable = 0;
 
     return ctx;
 }
@@ -99,7 +103,7 @@ void* __hlt_context_get_thread_context(hlt_execution_context* ctx)
     return ctx->tcontext;
 }
 
-void __hlt_context_set_thread_contxt(hlt_execution_context* ctx, hlt_type_info* type, void* tctx)
+void __hlt_context_set_thread_context(hlt_execution_context* ctx, hlt_type_info* type, void* tctx)
 {
     GC_DTOR_GENERIC(&ctx->tcontext, ctx->tcontext_type);
     ctx->tcontext = tctx;
@@ -110,4 +114,9 @@ void __hlt_context_set_thread_contxt(hlt_execution_context* ctx, hlt_type_info* 
 hlt_vthread_id __hlt_context_get_vid(hlt_execution_context* ctx)
 {
     return ctx->vid;
+}
+
+void __hlt_context_set_blockable(hlt_execution_context* ctx, __hlt_thread_mgr_blockable* b)
+{
+    ctx->blockable = b;
 }

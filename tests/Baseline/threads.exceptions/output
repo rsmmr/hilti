@@ -1,10 +1,10 @@
 RUN 1
-hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)
+hilti: uncaught exception, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions/exceptions.hlt:36-37)
 RUN 2
-hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)
+hilti: uncaught exception, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions/exceptions.hlt:36-37)
 RUN 3
-hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)
+hilti: uncaught exception, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions/exceptions.hlt:36-37)
 RUN 4
-hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)
+hilti: uncaught exception, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions/exceptions.hlt:36-37)
 RUN 5
-hilti: uncaught exception, DivisionByZero (from exceptions.hlt:56)
+hilti: uncaught exception, DivisionByZero (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/threads.exceptions/exceptions.hlt:36-37)

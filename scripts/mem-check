@@ -6,6 +6,7 @@
 
 import sys
 import optparse
+import subprocess
 
 optparser = optparse.OptionParser(usage="%prog [options] <input-file>")
 
@@ -15,27 +16,37 @@ optparser.add_option("-v", "--verbose", action="store_true", dest="verbose", def
 (options, args) = optparser.parse_args()
 
 if len(args) != 0:
-	optparser.error("too many arguments")
+    optparser.error("too many arguments")
 
 objs = {}
 
-for line in sys.stdin:
+sorted = subprocess.Popen("sort -n", shell=True, stdin=sys.stdin, stdout=subprocess.PIPE).stdout
 
-	if not line.startswith("[hilti-mem]"):
-		continue
+for line in sorted:
 
-	m = line.split()
+    if not "[hilti-mem" in line:
+        continue
 
-	(dbg, op, addr, size, refcnt, type, location) = m[0:7]
+    m = line.split()
 
-	if op == "free":
-		del objs[addr]
-		continue
+    try:
+        (cnt, dbg, op, addr, size, refcnt, type, location) = m[0:8]
+    except ValueError:
+        location = ""
+        try:
+            (cnt, dbg, op, addr, size, refcnt, type) = m[0:7]
+        except ValueError:
+            print >>sys.stderr, "Cannot parse |%s|" % line
+            sys.exit(1)
 
-	try:
-		objs[addr] += [(op, line)]
-	except KeyError:
-		objs[addr] = [(op, line)]
+    if op == "free":
+        del objs[addr]
+        continue
+
+    try:
+        objs[addr] += [(op, line)]
+    except KeyError:
+        objs[addr] = [(op, line)]
 
 leaks = 0
 
@@ -47,7 +58,7 @@ for lines in objs.values():
         leaks += 1
 
 if not leaks:
-	sys.exit(0)
+    sys.exit(0)
 
 print "Leaks"
 print "====="

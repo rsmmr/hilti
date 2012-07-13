@@ -19,7 +19,7 @@ iEndCC
 
 iBeginCC(channel)
     iValidateCC(Read) {
-        canCoerceTo(referencedType(op1), target);
+        canCoerceTo(argType(op1), target);
     }
 
     iDocCC(Read, R"(    
@@ -31,7 +31,7 @@ iEndCC
 
 iBeginCC(channel)
     iValidateCC(ReadTry) {
-        canCoerceTo(referencedType(op1), target);
+        canCoerceTo(argType(op1), target);
     }
 
     iDocCC(ReadTry, R"(    
@@ -53,7 +53,7 @@ iEndCC
 
 iBeginCC(channel)
     iValidateCC(Write) {
-        canCoerceTo(op2, referencedType(op1));
+        canCoerceTo(op2, argType(op1));
     }
 
     iDocCC(Write, R"(    
@@ -64,7 +64,7 @@ iEndCC
 
 iBeginCC(channel)
     iValidateCC(WriteTry) {
-        canCoerceTo(op2, referencedType(op1));
+        canCoerceTo(op2, argType(op1));
     }
 
     iDocCC(WriteTry, R"(    

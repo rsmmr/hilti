@@ -36,11 +36,9 @@ struct __hlt_file {
 typedef struct __hlt_cmd_file {
     __hlt_cmd cmd;             // The common header for all commands.
     __hlt_file_info* info;     // The file to write to.
-    int type;                  // 1 if it's a string; 0 if it's a bytes; 2 if it's a close command; and 3 for a change in parameters.
-    union {
-        void* bytes;           // The bytes to write.
-        void* string;          // The string to write.
-    } data;
+    int type;                  // 1 for writing data; 1 if it's a close command; and 2 for a change in parameters.
+    char* data;                // Bytes to write.
+    int len;                   // Number of bytes to write.
 
     hlt_enum param_type;       // For type 3: The new type.
     hlt_string param_charset;  // For type 3: The new charset.
@@ -152,7 +150,7 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
                 __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
                 __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
                 cmd->info = info;
-                cmd->type = 3; // Change params.
+                cmd->type = 2; // Change params.
                 cmd->param_type = type;
                 cmd->param_charset = hlt_string_copy(charset, excpt, ctx);
                 __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
@@ -235,7 +233,7 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
     __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
     cmd->info = file->info;
-    cmd->type = 2; // Close.
+    cmd->type = 1; // Close.
     __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 
     file->open = 0;
@@ -244,27 +242,23 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
 
 void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! file->open ) {
-        hlt_string err = hlt_string_from_asciiz("file not open", excpt, ctx);
-        hlt_set_exception(excpt, &hlt_exception_io_error, err);
-        GC_DTOR(err, hlt_string);
-        return;
-    }
-
-    hlt_string copy = hlt_string_copy(str, excpt, ctx);
+    hlt_bytes* b = hlt_string_encode(str, file->info->charset, excpt, ctx);
     if ( *excpt )
         return;
 
-    __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
-    __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
-    cmd->info = file->info;
-    cmd->type = 1; // String.
-    // Don't need to copy the string because it's not mutable.
-    cmd->data.string = copy;
-    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
+    hlt_file_write_bytes(file, b, excpt, ctx);
+    GC_DTOR(b, hlt_bytes);
 }
 
-void hlt_file_write_bytes(hlt_file* file, hlt_bytes* bytes, hlt_exception** excpt, hlt_execution_context* ctx)
+static void _add_to_cmd_data(__hlt_cmd_file* cmd, const int8_t* data, int len)
+{
+    int old_len = cmd->len;
+    cmd->len += len;
+    cmd->data = hlt_realloc(cmd->data, cmd->len);
+    memcpy(cmd->data + old_len, data, len);
+}
+
+void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! file->open ) {
         hlt_string err = hlt_string_from_asciiz("file not open", excpt, ctx);
@@ -272,27 +266,18 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* bytes, hlt_exception** excp
         return;
     }
 
-    hlt_bytes* copy = hlt_bytes_copy(bytes, excpt, ctx);
-    if ( *excpt )
-        return;
-
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
     __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
     cmd->info = file->info;
-    cmd->type = 0; // Bytes.
-    cmd->data.bytes = copy;
-    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
-}
+    cmd->type = 0; // Write.
+    cmd->data = 0;
+    cmd->len = 0;
 
-static void _write_bytes(__hlt_file_info* info, hlt_bytes* data, hlt_exception** excpt, hlt_execution_context* ctx)
-{
     hlt_bytes_block block;
     hlt_iterator_bytes start = hlt_bytes_begin(data, excpt, ctx);
     hlt_iterator_bytes end = hlt_bytes_end(data, excpt, ctx);
     void* cookie = 0;
-    char buf[5] = { '\\', 'x', 'X', 'X', '0' };
-
-    assert(info);
+    int8_t buf[5] = { '\\', 'x', 'X', 'X', '0' };
 
     while ( 1 ) {
         cookie = hlt_bytes_iterate_raw(&block, cookie, start, end, excpt, ctx);
@@ -300,7 +285,7 @@ static void _write_bytes(__hlt_file_info* info, hlt_bytes* data, hlt_exception**
         if ( block.start == block.end )
             break;
 
-        int8_t text = hlt_enum_equal(info->type, Hilti_FileType_Text, excpt, ctx);
+        int8_t text = hlt_enum_equal(file->info->type, Hilti_FileType_Text, excpt, ctx);
 
         if ( text ) {
             // Need to escape unprintable characters. FIXME: We don't honor the
@@ -314,12 +299,12 @@ static void _write_bytes(__hlt_file_info* info, hlt_bytes* data, hlt_exception**
                     ++e;
 
                 if ( e != s )
-                    write(info->fd, s, e - s);
+                    _add_to_cmd_data(cmd, s, e - s);
 
                 if ( e < block.end ) {
                     // Unprintable character.
-                    int n = hlt_util_uitoa_n(*e, buf + 2, 3, 16, 1);
-                    write(info->fd, buf, n + 2);
+                    int n = hlt_util_uitoa_n(*e, (char*)buf + 2, 3, 16, 1);
+                    _add_to_cmd_data(cmd, buf, n + 2);
                     ++e;
                 }
 
@@ -327,9 +312,9 @@ static void _write_bytes(__hlt_file_info* info, hlt_bytes* data, hlt_exception**
             }
         }
 
-        else if ( hlt_enum_equal(info->type, Hilti_FileType_Binary, excpt, ctx) )
+        else if ( hlt_enum_equal(file->info->type, Hilti_FileType_Binary, excpt, ctx) )
             // Just write data directly.
-            write(info->fd, block.start, block.end - block.start);
+            _add_to_cmd_data(cmd, block.start, block.end - block.start);
 
         else
             fatal_error("unknown file type");
@@ -338,14 +323,16 @@ static void _write_bytes(__hlt_file_info* info, hlt_bytes* data, hlt_exception**
             break;
     }
 
-    if ( hlt_enum_equal(info->type, Hilti_FileType_Text, excpt, ctx) )
-        write(info->fd, "\n", 1);
+    if ( hlt_enum_equal(file->info->type, Hilti_FileType_Text, excpt, ctx) )
+        _add_to_cmd_data(cmd, (int8_t*)"\n", 1);
 
     GC_DTOR(start, hlt_iterator_bytes);
     GC_DTOR(end, hlt_iterator_bytes);
+
+    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 }
 
-void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_file_cmd_internal(__hlt_cmd* c)
 {
     __hlt_cmd_file* cmd = (__hlt_cmd_file*) c;
 
@@ -353,25 +340,14 @@ void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_
     switch ( cmd->type ) {
 
       case 0: {
-          // Bytes.
-          _write_bytes(cmd->info, cmd->data.bytes, excpt, ctx);
-          GC_DTOR(cmd->data.bytes, hlt_bytes);
+          if ( cmd->len ) {
+              write(cmd->info->fd, cmd->data, cmd->len);
+              hlt_free(cmd->data);
+          }
           break;
       }
 
       case 1: {
-          // String.
-          hlt_bytes* b = hlt_string_encode(cmd->data.string, cmd->info->charset, excpt, ctx);
-          if ( *excpt )
-              break;
-
-          _write_bytes(cmd->info, b, excpt, ctx);
-          GC_DTOR(b, hlt_bytes);
-          GC_DTOR(cmd->data.string, hlt_string);
-          break;
-      }
-
-      case 2: {
           // Close command.
           int s;
           acqire_lock(&s);
@@ -412,7 +388,7 @@ void __hlt_file_cmd_internal(__hlt_cmd* c, hlt_exception** excpt, hlt_execution_
           break;
       }
 
-      case 3: {
+      case 2: {
           // Change params command.
           int s;
           acqire_lock(&s);

@@ -41,6 +41,10 @@ iEndH
 iBeginH(flow, Yield, "yield")
 iEndH
 
+iBeginH(flow, YieldUntil, "yield.until")
+    iOp1(optype::any, true)
+iEndH
+
 iBeginH(flow, IfElse, "if.else")
     iTerminator()
     iOp1(optype::boolean, true)

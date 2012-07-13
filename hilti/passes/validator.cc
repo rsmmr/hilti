@@ -165,16 +165,20 @@ void Validator::visit(statement::instruction::flow::ReturnResult* s)
 
 void Validator::visit(statement::instruction::thread::GetContext* s)
 {
-    auto m = current<Module>();
-    assert(m);
+    auto func = current<declaration::Function>();
+    assert(func);
 
-    auto ctx = m->context();
+    auto ctx = func->function()->module()->context();
 
     if ( ! ctx )
         error(s, "module does not define an execution context");
 
+#if 0
+    // FIXME: This isn't working, seems ctx is picking up the wrong context
+    // when used across modules (threads.context-across-modules).
     if ( ! Coercer().canCoerceTo(builder::reference::type(ctx), s->target()->type()) )
         wrongType(s, "invalid target type", s->target()->type(), builder::reference::type(ctx));
+#endif
 }
 
 void Validator::visit(statement::instruction::thread::SetContext* s)
@@ -249,8 +253,14 @@ static void _checkCallScope(Validator* v, statement::Instruction* s)
 
     auto scope = callee->scope();
 
-    if ( ! ((! scope && ! func->scope()) || scope->equal(func->scope())) )
-        v->error(s, "cannot call function with a different scope; use thread.schedule");
+    if ( func->scope() ) {
+        if ( scope && ! scope->equal(func->scope()) )
+            v->error(s, "cannot call function with a different scope; use thread.schedule");
+    }
+    else {
+        if ( scope )
+            v->error(s, "cannot call function with scope from one without; use thread.schedule");
+    }
 }
 
 void Validator::visit(statement::instruction::flow::CallResult* s)
@@ -313,7 +323,8 @@ void Validator::visit(statement::instruction::thread::Schedule* s)
 
         for ( auto dst_field : dst_context->fields() ) {
 
-            if ( dst_field->internal() )
+            if ( ! dst_scope->hasField(dst_field->id()) )
+                // Don't need this field.
                 continue;
 
             if ( ! src_scope->hasField(dst_field->id()) )
@@ -328,6 +339,7 @@ void Validator::visit(statement::instruction::thread::Schedule* s)
             if ( ! dst_field->type()->equal(src_field->type()) )
                 // Type mismatch.
                 goto mismatch;
+
         }
     }
 

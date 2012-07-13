@@ -9,14 +9,17 @@ project(libhilti C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
+include(FindRequiredPackage)
+include(EnableLLVMBitcode)
+include(DefaultCompilerSettings)
+
+FindRequiredPackage(FLEX)
+FindRequiredPackage(BISON)
 find_package(PAPI)
 
 if (${PAPI_FOUND} STREQUAL "TRUE" )
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_PAPI")
 endif ()
-
-include(EnableLLVMBitcode)
-include(DefaultCompilerSettings)
 
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
@@ -36,6 +39,25 @@ add_custom_command(
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/hilti-hlt.h PROPERTIES GENERATED 1)
 
+### Generate the justrx parser.
+
+bison_target(JRXParser justrx/src/re-parse.y
+             ${autogen}/re-parse.c
+             HEADER ${autogen}/re-parse.h
+             VERBOSE ${autogen}/re-parse.output
+             COMPILE_FLAGS "${BISON_FLAGS}")
+
+flex_target(JRXScanner justrx/src/re-scan.l
+             ${autogen}/re-scan.c
+             COMPILE_FLAGS "--header-file=${autogen}/re-scan.h"
+             )
+
+ADD_CUSTOM_TARGET(generate_jrx_parser
+                  DEPENDS ${autogen}/re-parse.c ${autogen}/re-scan.c)
+
+SET_SOURCE_FILES_PROPERTIES(${autogen}/re-scan.c PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${autogen}/re-parse.c  PROPERTIES GENERATED 1)
+
 ### Generate the library.
 
 ENABLE_LANGUAGE(ASM)
@@ -48,6 +70,7 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory_.c int.c
     system.c classifier.c iosrc.c profiler.c channel.c
 
     module/fmt.c
+    module/misc.c
 
     justrx/src/ccl.c
     justrx/src/dfa-interpreter-min.c
@@ -56,15 +79,15 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory_.c int.c
     justrx/src/jlocale.c
     justrx/src/jrx.c
     justrx/src/nfa.c
-    justrx/src/re-parse.c
-    justrx/src/re-scan.c
     justrx/src/util.c
 
     3rdparty/libpqueue/src/pqueue.c
     3rdparty/libtask/context.c
 
     ${autogen}/hilti-hlt.h
-    )
+    ${autogen}/re-parse.c
+    ${autogen}/re-scan.c
+)
 
 # Need to compile this ASM file separately as we can't turn it into
 # bitcode.
@@ -84,15 +107,15 @@ add_custom_target(build_asm
                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libhilti-rt-native.a)
 
 if ( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )
-    add_library(hilti-rt-dbg      STATIC ${SRCS})
-    add_library(hilti-rt-main-dbg STATIC main.c ${SRCS})
-    add_dependencies(hilti-rt-dbg      build_asm)
-    add_dependencies(hilti-rt-main-dbg build_asm)
+    add_library(hilti-rt-dbg           STATIC ${SRCS})
+    add_library(hilti-rt-main-dbg      STATIC main.c ${SRCS})
+    add_dependencies(hilti-rt-dbg      generate_jrx_parser build_asm)
+    add_dependencies(hilti-rt-main-dbg generate_jrx_parser build_asm)
 else ()
-    add_library(hilti-rt          STATIC ${SRCS})
-    add_library(hilti-rt-main     STATIC main.c ${SRCS})
-    add_dependencies(hilti-rt      build_asm)
-    add_dependencies(hilti-rt-main build_asm)
+    add_library(hilti-rt           STATIC ${SRCS})
+    add_library(hilti-rt-main      STATIC main.c ${SRCS})
+    add_dependencies(hilti-rt      generate_jrx_parser build_asm)
+    add_dependencies(hilti-rt-main generate_jrx_parser build_asm)
 endif ()
 
 include(ShowCompilerSettings)

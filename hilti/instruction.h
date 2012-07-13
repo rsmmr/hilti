@@ -61,6 +61,9 @@ public:
    /// op: The expression of type type::Iterator.
    ///
    /// Returns: The type's type.
+   ///
+   /// \todo This is deprecated and supersed by argType(), which will work
+   /// for containers too.
    shared_ptr<Type> elementType(shared_ptr<Expression> op) const;
 
    /// For a type of type type::Container or type::Reference pointing to a
@@ -70,7 +73,29 @@ public:
    /// op: The expression of type type::Iterator.
    ///
    /// Returns: The type's type.
+   ///
+   /// \todo This is deprecated and supersed by argType(), which will work
+   /// for containers too.
    shared_ptr<Type> elementType(shared_ptr<Type> ty) const;
+
+   /// For an expression of type type::TypedHeapType or type::TypedValueType
+   /// (or type::Reference pointing to one of either), returns the
+   /// corresponding argType(). Passing an expression of a different type is
+   /// an error.
+   ///
+   /// op: The expression of type type::Iterator.
+   ///
+   /// Returns: The type's type.
+   shared_ptr<Type> argType(shared_ptr<Expression> op) const;
+
+   /// For a type of type type::TypedHeapType or type::TypedValueType or
+   /// (or type::Reference pointing to one of either), returns the
+   /// argType(). Passing an expression of a different type is an error.
+   ///
+   /// op: The expression of type type::Iterator.
+   ///
+   /// Returns: The type's type.
+   shared_ptr<Type> argType(shared_ptr<Type> ty) const;
 
    /// For an expression of type type::Iterator, returns the corresponding
    /// argType(). Passing an expression of a different type is an error.

@@ -516,22 +516,17 @@ char* hlt_string_to_native(hlt_string s, hlt_exception** excpt, hlt_execution_co
     hlt_bytes* b = hlt_string_encode(s, ascii, excpt, ctx);
     GC_DTOR(ascii, hlt_string);
 
+    // Add a null terminator.
+    hlt_bytes_append_raw_copy(b, (int8_t*)"\0", 1, excpt, ctx);
+
     if ( *excpt )
         return 0;
 
     const int8_t* raw = hlt_bytes_to_raw(b, excpt, ctx);
-    if ( *excpt ) {
-        GC_DTOR(b, hlt_bytes);
-        return 0;
-    }
-
-    // Add a null terminator.
-    hlt_bytes_size len = hlt_bytes_len(b, excpt, ctx);
-    char* sraw = hlt_malloc(len + 1);
-    memcpy(sraw, raw, len);
-    sraw[len] = '\0';
-
     GC_DTOR(b, hlt_bytes);
 
-    return sraw;
+    if ( *excpt )
+        return 0;
+
+    return (char*)raw;
 }

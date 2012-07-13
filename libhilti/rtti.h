@@ -121,7 +121,7 @@ struct __hlt_type_info {
     /// If this is a type that a "yield" can block for until a resource
     /// becomes available, a function returning hlt_thread_mgr_blockable
     /// object for an instance.
-    void* (*blockable)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
+    __hlt_thread_mgr_blockable* (*blockable)(const hlt_type_info* type, const void* obj, hlt_exception** expt, hlt_execution_context* ctx);
 
     /// If this is a garbage collected type, a function that will be called
     /// if an objects reference count went down to zero and its about to be

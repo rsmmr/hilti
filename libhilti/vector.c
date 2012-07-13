@@ -37,7 +37,7 @@ struct __hlt_vector {
 void hlt_vector_dtor(hlt_type_info* ti, hlt_vector* v)
 {
     void* end = v->elems + v->last * v->type->size;
-    for ( void* elem = v->elems; elem < end; elem += v->type->size ) {
+    for ( void* elem = v->elems; elem <= end; elem += v->type->size ) {
         GC_DTOR_GENERIC(elem, v->type);
     }
 
@@ -160,7 +160,7 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
         hlt_vector_reserve(v, c, excpt, ctx);
     }
 
-    for ( int j = v->last + 1; j < i; j++ ) {
+    for ( int j = v->last + 1; j <= i; j++ ) {
         // Initialize elements between old and new end of vector.
         void* dst = v->elems + j * v->type->size;
         memcpy(dst, v->def, v->type->size);

@@ -487,6 +487,7 @@ void Loader::visit(ctor::RegExp* c)
 
         args = { op1, builder::codegen::create(ltype, list) };
         cg()->llvmCall("hlt::regexp_compile_set", args);
+        cg()->llvmDtor(list, ltype, false, "ctor::RegExp");
     }
 
     setResult(regexp, true, false);

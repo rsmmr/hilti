@@ -151,6 +151,12 @@ void StatementBuilder::visit(statement::instruction::flow::Yield* i)
     cg()->llvmFiberYield(fiber);
 }
 
+void StatementBuilder::visit(statement::instruction::flow::YieldUntil* i)
+{
+    auto fiber = cg()->llvmCurrentFiber();
+    cg()->llvmFiberYield(fiber, i->op1()->type(), cg()->llvmValue(i->op1()));
+}
+
 void StatementBuilder::visit(statement::instruction::flow::IfElse* i)
 {
     auto btype = shared_ptr<Type>(new type::Bool());

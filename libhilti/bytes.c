@@ -69,11 +69,17 @@ void hlt_bytes_dtor(hlt_type_info* ti, hlt_bytes* b)
 
 void hlt_iterator_bytes_dtor(hlt_type_info* ti, hlt_iterator_bytes* p)
 {
+    if ( ! p->chunk )
+        return;
+
     GC_CLEAR(p->chunk, __hlt_bytes_chunk);
 }
 
 void hlt_iterator_bytes_cctor(hlt_type_info* ti, hlt_iterator_bytes* p)
 {
+    if ( ! p->chunk )
+        return;
+
     GC_CCTOR(p->chunk, __hlt_bytes_chunk)
 }
 

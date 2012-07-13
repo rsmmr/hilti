@@ -1,2 +1,2 @@
-[test/main-thread] My little test debug msg 1: 42
-[test/main-thread] My little test debug msg 2
+00000001 [test/main-thread]             My little test debug msg 1: 42
+00000002 [test/main-thread]             My little test debug msg 2

@@ -50,6 +50,7 @@ void hlt_timer_dtor(hlt_type_info* ti, hlt_timer* timer)
 
       case HLT_TIMER_PROFILER:
         GC_DTOR(timer->cookie.profiler, hlt_string);
+        break;
 
       default:
         abort();
@@ -97,6 +98,7 @@ static void __hlt_timer_fire(hlt_timer* timer, hlt_exception** excpt, hlt_execut
     }
 
     timer->mgr = 0;
+    GC_DTOR(timer, hlt_timer);
 }
 
 hlt_timer* __hlt_timer_new_function(hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -171,13 +173,14 @@ void hlt_timer_update(hlt_timer* timer, hlt_time t, hlt_exception** excpt, hlt_e
         return;
     }
 
-    if ( t > timer->mgr->time )
+    if ( t > timer->mgr->time ) {
+        timer->time = t;
         pqueue_change_priority(timer->mgr->timers, t, timer);
+    }
 
     else {
         pqueue_remove(timer->mgr->timers, timer);
         __hlt_timer_fire(timer, excpt, ctx);
-        GC_DTOR(timer, hlt_timer);
     }
 }
 
@@ -258,20 +261,19 @@ void hlt_timer_mgr_schedule(hlt_timer_mgr* mgr, hlt_time t, hlt_timer* timer, hl
         return;
     }
 
+    timer->mgr = mgr; // Not memory managed to avoid cycles.
+    timer->time = t;
+    GC_CCTOR(timer, hlt_timer);
+
     if ( t <= mgr->time ) {
         __hlt_timer_fire(timer, excpt, ctx);
         return;
     }
 
-    timer->mgr = mgr; // Not memory managed to avoid cycles.
-    timer->time = t;
-
     if ( pqueue_insert(mgr->timers, timer) != 0 ) {
         hlt_set_exception(excpt, &hlt_exception_out_of_memory, 0);
         return;
     }
-
-    GC_CCTOR(timer, hlt_timer);
 }
 
 int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -294,7 +296,6 @@ int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** ex
         __hlt_timer_fire(timer, excpt, ctx);
 
         pqueue_pop(mgr->timers);
-        GC_DTOR(timer, hlt_timer);
 
         ++count;
     }
@@ -327,8 +328,8 @@ void hlt_timer_mgr_expire(hlt_timer_mgr* mgr, int8_t fire, hlt_exception** excpt
 
         if ( fire )
             __hlt_timer_fire(timer, excpt, ctx);
-
-        GC_DTOR(timer, hlt_timer);
+        else
+            GC_DTOR(timer, hlt_timer);
     }
 }
 

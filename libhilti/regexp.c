@@ -22,7 +22,7 @@ struct __hlt_match_token_state {
     int first;
 };
 
-#define _DEBUG_MATCHING
+// #define _DEBUG_MATCHING
 
 #ifdef _DEBUG_MATCHING
 static void print_bytes_raw(const char* b2, hlt_bytes_size size, hlt_exception** excpt, hlt_execution_context* ctx);
@@ -207,6 +207,7 @@ hlt_string hlt_regexp_to_string(const hlt_type_info* type, const void* obj, int3
     }
 
     GC_DTOR(pipe, hlt_string);
+    GC_DTOR(slash, hlt_string);
     return s;
 }
 
@@ -432,6 +433,8 @@ static inline void _set_group(hlt_vector* vec, hlt_iterator_bytes begin, int i, 
     span.begin = hlt_iterator_bytes_incr_by(begin, so, excpt, ctx);
     span.end = hlt_iterator_bytes_incr_by(begin, eo, excpt, ctx);
     hlt_vector_set(vec, i, hlt_type_info_hlt_tuple_iterator_bytes_iterator_bytes, &span, excpt, ctx);
+    GC_DTOR(span.begin, hlt_iterator_bytes);
+    GC_DTOR(span.end, hlt_iterator_bytes);
 }
 
 hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_bytes begin, const hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -443,7 +446,8 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_bytes beg
     }
 
     hlt_regexp_range def_span;
-    def_span.begin = def_span.end = hlt_bytes_generic_end(excpt, ctx);
+    def_span.begin = hlt_bytes_generic_end(excpt, ctx);
+    def_span.end = hlt_bytes_generic_end(excpt, ctx);
 
     hlt_vector* vec = hlt_vector_new(hlt_type_info_hlt_tuple_iterator_bytes_iterator_bytes, &def_span, 0, excpt, ctx);
 
@@ -567,6 +571,8 @@ hlt_regexp_match_token hlt_regexp_bytes_match_token(hlt_regexp* re, const hlt_it
     jrx_accept_id rc = _match_token_advance(state, begin, end, is_frozen, excpt, ctx);
     jrx_offset eo;
     _match_token_finish(state, &eo, excpt, ctx);
+
+    GC_DTOR(state, hlt_match_token_state);
 
     hlt_regexp_match_token result;
     result.rc = rc;

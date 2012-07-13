@@ -27,13 +27,13 @@ static void fatal_error(const char* msg)
 }
 
 // Executes a single command.
-static void execute_cmd(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_context* ctx)
+static void execute_cmd(__hlt_cmd *cmd)
 {
     DBG_LOG(DBG_STREAM_QUEUE, "executing cmd %p of type %d", cmd, cmd->type);
 
     switch ( cmd->type ) {
       case __HLT_CMD_FILE:
-        __hlt_file_cmd_internal(cmd, excpt, ctx);
+        __hlt_file_cmd_internal(cmd);
         break;
 
       default:
@@ -50,8 +50,6 @@ static void* _manager(void *arg)
 
     DBG_LOG(DBG_STREAM_QUEUE, "processing started");
 
-    hlt_execution_context* ctx = __hlt_execution_context_new(HLT_VID_QUEUE);
-
     // We terminate iff all writer threads have terminated already with all
     // remaining elements processed.
     while ( ! hlt_thread_queue_terminated(cmd_queue) ) {
@@ -61,10 +59,7 @@ static void* _manager(void *arg)
         if ( ! cmd )
             continue;
 
-        hlt_exception* excpt = 0;
-        execute_cmd(cmd, &excpt, ctx);
-        if ( excpt )
-            __hlt_exception_print_uncaught_abort(excpt, ctx);
+        execute_cmd(cmd);
 
         uint64_t size = hlt_thread_queue_size(cmd_queue);
         if ( size % 100 == 0 ) {
@@ -87,7 +82,7 @@ void __hlt_cmd_queue_init()
 
     DBG_LOG(DBG_STREAM_QUEUE, "starting command queue manager thread");
 
-    cmd_queue = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 1000, 0, 0); // Slot 0 is main thread.
+    cmd_queue = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 1000, 0); // Slot 0 is main thread.
 
     if ( ! cmd_queue )
         fatal_error("cannot create command queue data structure");
@@ -142,7 +137,7 @@ void __hlt_cmdqueue_push(__hlt_cmd *cmd, hlt_exception** excpt, hlt_execution_co
 {
     if ( ! hlt_is_multi_threaded() ) {
         DBG_LOG(DBG_STREAM_QUEUE, "directly executing cmd %p of type %d", cmd, cmd->type);
-        execute_cmd(cmd, excpt, ctx);
+        execute_cmd(cmd);
     }
 
     else {

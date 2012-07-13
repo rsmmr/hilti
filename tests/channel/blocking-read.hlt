@@ -34,7 +34,7 @@ void run() {
 
     thread.schedule reader(ch) 1
 
-    call Hilti::sleep(0.5)
+    call Hilti::sleep(1)
 
     call Hilti::print("doing write")
     channel.write ch 42

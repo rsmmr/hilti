@@ -557,12 +557,14 @@ void CodeGen::createGlobalsInitFunction()
 
     pushFunction(_globals_init_func, true, true, true);
 
+#ifdef OLDSTRING
     // Init the global string constants.
     for ( auto gs : _global_strings ) {
         auto s = llvmStringFromData(gs.first);
         builder()->CreateStore(s, gs.second);
         finishStatement(); // Add cleanup.
     }
+#endif
 
     // Init user defined globals.
     for ( auto g : _collector->globals() ) {
@@ -595,9 +597,11 @@ void CodeGen::createGlobalsInitFunction()
 
     auto stype = shared_ptr<Type>(new type::String());
 
+#ifdef OLDSTRING
     for ( auto gs : _global_strings ) {
         llvmDtor(gs.second, stype, true, "init-globals");
     }
+#endif
 
     if ( functionEmpty() ) {
         // We haven't added anything to the function, just discard.
@@ -995,6 +999,7 @@ llvm::Value* CodeGen::llvmStringFromData(const string& str)
 
 llvm::Value* CodeGen::llvmStringPtr(const string& s)
 {
+#ifdef OLDSTRING
     // If we're currently buildign the init function, we create the new value
     // directly and without caching, because otherwise we'd be telling the
     // init function to create, which it wouldn't do because it's already
@@ -1019,6 +1024,11 @@ llvm::Value* CodeGen::llvmStringPtr(const string& s)
     }
 
     return data;
+#endif
+
+    auto val = llvmString(s);
+    auto ptr = llvmAddTmp("string", val->getType(), val);
+    return ptr;
 }
 
 llvm::Value* CodeGen::llvmString(const string& s)
@@ -1027,7 +1037,9 @@ llvm::Value* CodeGen::llvmString(const string& s)
         // The empty string is represented by a null pointer.
         return llvmConstNull(llvmTypeString());
 
-    return builder()->CreateLoad(llvmStringPtr(s));
+    auto val = llvmStringFromData(s);
+    llvmDtorAfterInstruction(val, builder::string::type(), false);
+    return val;
 }
 
 llvm::Value* CodeGen::llvmValueStruct(const std::vector<llvm::Value*>& elems, bool packed)
@@ -1748,16 +1760,20 @@ llvm::Value* CodeGen::llvmCurrentVID()
 
 llvm::Value* CodeGen::llvmCurrentThreadContext()
 {
+    if ( ! _hilti_module->context() )
+        return nullptr;
+
     value_list args;
     args.push_back(llvmExecutionContext());
-    return llvmCallC("__hlt_context_get_thread_context", args, false, false);
+    auto ctx = llvmCallC("__hlt_context_get_thread_context", args, false, false);
+    return builder()->CreateBitCast(ctx, llvmType(_hilti_module->context()));
 }
 
 void CodeGen::llvmSetCurrentThreadContext(shared_ptr<Type> type, llvm::Value* ctx)
 {
     value_list args;
     args.push_back(llvmExecutionContext());
-    args.push_back(llvmRttiPtr(type));
+    args.push_back(llvmRtti(type));
     args.push_back(builder()->CreateBitCast(ctx, llvmTypePtr()));
     llvmCallC("__hlt_context_set_thread_context", args, false, false);
 }
@@ -2230,14 +2246,20 @@ llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
 void CodeGen::llvmFiberYield(llvm::Value* fiber, shared_ptr<Type> blockable_ty, llvm::Value* blockable_val)
 {
     if ( blockable_ty ) {
-        assert(type::hasTrait<type::trait::Blockable>(blockable_ty));
         assert(typeInfo(blockable_ty)->blockable.size());
+
+        auto objptr = llvmAddTmp("obj", blockable_val->getType(), blockable_val, true);
+        CodeGen::value_list args = { llvmRtti(blockable_ty), builder()->CreateBitCast(objptr, llvmTypePtr()) } ;
+        blockable_val = llvmCallC("__hlt_object_blockable", args, true, true);
     }
+    else
+        blockable_val = llvmConstNull(llvmTypePtr(llvmLibType("hlt.blockable")));
 
-    // TODO: We don't use blockable yet.
+    CodeGen::value_list args1 = { llvmExecutionContext(), blockable_val };
+    llvmCallC("__hlt_context_set_blockable", args1, false, false);
 
-    CodeGen::value_list cargs { fiber };
-    llvmCallC("hlt_fiber_yield", { fiber }, false, false);
+    CodeGen::value_list args2 = { fiber };
+    llvmCallC("hlt_fiber_yield", args2, false, false);
 }
 
 llvm::Value* CodeGen::llvmCallableBind(llvm::Value* llvm_func_val, shared_ptr<type::Function> ftype, const expr_list args, bool excpt_check)
@@ -3428,6 +3450,7 @@ void CodeGen::llvmBlockingInstruction(statement::Instruction* i, try_func try_, 
     popBuilder();
 
     pushBuilder(yield_);
+    llvmClearException();
     auto fiber = llvmCurrentFiber();
     llvmFiberYield(fiber, blockable_ty, blockable_val);
     llvmCreateBr(loop);

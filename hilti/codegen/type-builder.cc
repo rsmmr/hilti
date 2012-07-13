@@ -882,6 +882,7 @@ llvm::Function* TypeBuilder::_declareStructDtor(type::Struct* t, llvm::Type* llv
     params.push_back(std::make_pair("struct", cg()->llvmTypePtr(llvm_type)));
 
     auto func = cg()->llvmAddFunction(name, cg()->llvmTypeVoid(), params, false);
+    func->setLinkage(llvm::GlobalValue::LinkOnceODRLinkage);
 
     cg()->cacheValue("dtor-struct", name, func);
 

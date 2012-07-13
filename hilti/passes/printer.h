@@ -17,7 +17,10 @@ public:
    ///
    /// single_line: If true, all line separator while be turned into space so
    /// that we get a single-line version of the output.
-   Printer(std::ostream& out, bool single_line=false) : Pass<>("Printer"), _out(out), _single_line(single_line) {}
+   ///
+   /// roll_out_types: Always roll out the types, don't print them by names.
+   Printer(std::ostream& out, bool single_line=false)
+       : Pass<>("Printer"), _out(out), _single_line(single_line) {}
 
    /// Renders a HILTI AST back into HILTI source code.
    ///

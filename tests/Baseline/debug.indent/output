@@ -1,5 +1,5 @@
-[test/main-thread] 0
-[test/main-thread]   1
-[test/main-thread]     2
-[test/main-thread]   1
-[test/main-thread] 0
+00000001 [test/main-thread]             0
+00000002 [test/main-thread]               1
+00000003 [test/main-thread]                 2
+00000004 [test/main-thread]               1
+00000005 [test/main-thread]             0

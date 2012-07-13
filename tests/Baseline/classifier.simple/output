@@ -1,4 +1,4 @@
-<saddr=10.0.1.0/24, sport=(not set), daddr=10.0.2.0/24, dport=80/udp>
+<saddr=10.0.1.0/24, sport=(not set), daddr=10.0.2.0/24, dport=80/tcp>
 True
 False
 42

@@ -25,10 +25,8 @@ typedef struct __hlt_thread_queue hlt_thread_queue;
 /// of batches that may still be unprocessed; it doesn't count whatever the
 /// reader has already grabbed some but not yet processed.
 ///
-/// worker_queue: Must be true if this queue is used by a worker thread.
-///
 /// Returns: The new queue.
-hlt_thread_queue* hlt_thread_queue_new(int writers, int batch_size, int max_batches, int8_t worker_queue);
+hlt_thread_queue* hlt_thread_queue_new(int writers, int batch_size, int max_batches);
 
 /// Releases all acquired resources.
 ///
@@ -113,8 +111,22 @@ void hlt_thread_queue_terminate_writer(hlt_thread_queue* queue, int writer);
 ///
 /// queue: The queue for which to check the termination status.
 ///
+/// writer: The writer thread doing the write in the range between zero and
+/// *writers*-1, as passsed to ~~hlt_thread_queue_new. Note that different
+/// threads must not use the same writer number.
+///
 /// Returns: True if done.
 int8_t hlt_thread_queue_terminated(hlt_thread_queue* queue);
+
+/// An update function for the write side that should be regularly called to
+/// ensure that for low volume input, items are passed on the reader quickly.
+///
+/// queue: The queue for which to check the termination status.
+///
+/// writer: The writer thread doing the write in the range between zero and
+/// *writers*-1, as passsed to ~~hlt_thread_queue_new. Note that different
+/// threads must not use the same writer number.
+void hlt_thread_queue_writer_update(hlt_thread_queue* queue, int writer);
 
 extern uint64_t hlt_thread_queue_pending(hlt_thread_queue* queue);
 

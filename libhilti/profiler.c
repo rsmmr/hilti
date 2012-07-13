@@ -40,7 +40,7 @@ static int papi_set = PAPI_NULL;
 typedef struct {
     hlt_string tag;           // The hash tag.
     hlt_timer_mgr* tmgr;      // Timer manager attached, or NULL.
-    hlt_timer* timer;         // Snapshot timer if installed, or NULL.
+    hlt_timer* timer;         // Snapshot timer if installed, or NULL. Not memory-managed to avoid cycles.
     hlt_enum style;           // The profile style.
     uint64_t param;           // Parameter for the profile style.
     uint64_t level;           // Depth of nested calls currently.
@@ -397,6 +397,7 @@ static void install_timer(__hlt_profiler* p, hlt_exception** excpt, hlt_executio
     hlt_time t = (hlt_timer_mgr_current(p->tmgr, excpt, ctx) / p->param ) * p->param + p->param;
 
     hlt_timer_mgr_schedule(p->tmgr, t, p->timer, excpt, ctx);
+    GC_DTOR(p->timer, hlt_timer); // Not memory-managed on our end.
 }
 
 void __hlt_profiler_state_delete(__hlt_profiler_state* state)
@@ -407,6 +408,7 @@ void __hlt_profiler_state_delete(__hlt_profiler_state* state)
     }
 
     kh_destroy_table(state->profilers);
+    hlt_free(state->profilers);
 
     close(state->fd);
     hlt_free(state);
@@ -617,6 +619,7 @@ void hlt_profiler_stop(hlt_string tag, hlt_exception** excpt, hlt_execution_cont
             p->timer = 0;
         }
 
+        hlt_free(p);
         kh_value(ctx->pstate->profilers, i) = 0;
     }
 }

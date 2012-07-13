@@ -88,6 +88,23 @@ iBeginCC(flow)
 iEndCC
 
 iBeginCC(flow)
+    iValidateCC(YieldUntil) {
+        shared_ptr<Type> ty = op1->type();
+        auto rtype = ast::as<type::Reference>(ty);
+
+        if ( rtype )
+            ty = rtype->argType();
+
+        if ( ! type::hasTrait<type::trait::Blockable>(ty) )
+            error(op1, "operand type does not support yield.until");
+    }
+
+    iDocCC(YieldUntil, R"(
+        TODO.
+    )")
+iEndCC
+
+iBeginCC(flow)
     iValidateCC(IfElse) {
     }
 

@@ -59,6 +59,32 @@ shared_ptr<Type> InstructionHelper::elementType(shared_ptr<Type> ty) const
     return t->argType();
 }
 
+shared_ptr<Type> InstructionHelper::argType(shared_ptr<Expression> op) const
+{
+    return argType(op->type());
+}
+
+shared_ptr<Type> InstructionHelper::argType(shared_ptr<Type> ty) const
+{
+    auto r = ast::as<type::Reference>(ty);
+
+    if ( r )
+        ty = r->argType();
+
+    auto t1 = ast::as<type::TypedHeapType>(ty);
+
+    if ( t1 )
+        return t1->argType();
+
+    auto t2 = ast::as<type::TypedValueType>(ty);
+
+    if ( t2 )
+        return t2->argType();
+
+    assert(false);
+    return nullptr;
+}
+
 shared_ptr<Type> InstructionHelper::iteratedType(shared_ptr<Expression> op) const
 {
     auto t = ast::as<type::Iterator>(op->type());

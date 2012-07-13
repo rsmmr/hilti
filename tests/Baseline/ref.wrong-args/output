@@ -1,4 +1,5 @@
->>> b = assign a
-wrong-args.hlt:22: error, operand 1 must be coercable to type of target, which is ref<struct { bool b }>
 
-wrong-args.hlt: 1 error found during validating
+>>> b = assign a
+wrong-args.hlt:21-22: error, operand not compatible with target [pass::Validator]
+wrong-args.hlt: Aborting due to verification error.
+error running hiltic, aborting

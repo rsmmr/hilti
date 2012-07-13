@@ -13,6 +13,7 @@ void StatementBuilder::visit(statement::instruction::thread::GetContext* i)
     assert(ty);
 
     tctx = cg()->builder()->CreateBitCast(tctx, cg()->llvmType(ty));
+    cg()->llvmCctor(tctx, ty, false, "thread.get_context");
     cg()->llvmStore(i, tctx);
 }
 
@@ -61,6 +62,8 @@ llvm::Value* _promoteContext(CodeGen* cg, llvm::Value* tctx,
         cg->llvmDtor(val, f->type(), false, "thread.cc::_promoteContext");
     }
 
+    cg->llvmDtorAfterInstruction(new_tctx, dst_context, false);
+
     return new_tctx;
 }
 
@@ -105,8 +108,11 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
 
         // Do the Promotion.
 
-        auto func = current<Function>();
-        auto module  = current<Module>();
+        auto decl = current<declaration::Function>();
+        assert(decl);
+
+        auto func = decl->function();
+        assert(func);
 
         auto op1 = ast::as<expression::Function>(i->op1());
         assert(op1);
@@ -116,17 +122,17 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
         assert(callee->module());
 
         auto src_scope = func->scope();
-        auto src_context = module->context();
+        auto src_context = func->module()->context();
         auto dst_scope = callee->scope();
         auto dst_context = callee->module()->context();
 
         tctx = _promoteContext(cg(), tctx, src_scope, src_context, dst_scope, dst_context);
         tctx = cg()->builder()->CreateBitCast(tctx, cg()->llvmTypePtr());
 
-        auto ti = cg()->llvmRttiPtr(dst_context);
+        auto ti = cg()->llvmRtti(dst_context);
         CodeGen::value_list vals = { mgr, ti, tctx, job };
-        cg()->llvmCallC("__hlt_thread_mgr_schedule", vals, true, true);
-
-        cg()->popBuilder();
+        cg()->llvmCallC("__hlt_thread_mgr_schedule_tcontext", vals, true, true);
     }
+
+    cg()->llvmDtor(job, builder::reference::type(builder::callable::typeAny()), false, "thread.schedule");
 }

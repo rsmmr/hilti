@@ -70,28 +70,71 @@ static void _fatal_error(const char* msg)
 
 static void _hlt_job_delete(hlt_job* j)
 {
-    // TODO;
+    DBG_LOG(DBG_STREAM, "deleting job %lu", j->id);
+
+    if ( j->fiber )
+        hlt_fiber_delete(j->fiber);
+
+    GC_DTOR_GENERIC(&j->tcontext, j->tcontext_type);
+    hlt_free(j);
 }
 
 static void _hlt_worker_thread_delete(hlt_worker_thread* t)
 {
-    // TODO;
-}
+    DBG_LOG(DBG_STREAM, "deleting worker thread %s", t->name);
 
-static void _hlt_blocked_job_free(hlt_blocked_job* job)
-{
-    // TODO;
+
+    for ( int j = 1; j <= t->max_vid; j++ ) {
+        if ( t->ctxs[j] ) {
+            GC_DTOR(t->ctxs[j], hlt_execution_context);
+        }
+    }
+
+    while ( hlt_thread_queue_size(t->jobs) ) {
+        hlt_job* job = hlt_thread_queue_read(t->jobs, -1);
+        assert(job);
+        _hlt_job_delete(job);
+    }
+
+    hlt_thread_queue_delete(t->jobs);
+
+    for ( khiter_t i = kh_begin(t->jobs_blocked); i != kh_end(t->jobs_blocked); i++ ) {
+        if ( ! kh_exist(t->jobs_blocked, i) )
+            continue;
+
+        hlt_blocked_job* bjob = kh_value(t->jobs_blocked, i);
+
+        while ( bjob ) {
+            hlt_blocked_job* next = bjob->next;
+            _hlt_job_delete(bjob->job);
+            hlt_free(bjob);
+            bjob = next;
+        }
+    }
+
+    kh_destroy_blocked_jobs(t->jobs_blocked);
+    hlt_free(t->jobs_blocked);
+
+    hlt_free(t->ctxs);
+    hlt_free(t->name);
+    hlt_free(t);
 }
 
 void hlt_thread_mgr_delete(hlt_thread_mgr* mgr)
 {
-    DBG_LOG(DBG_STREAM, "deleteing");
+    DBG_LOG(DBG_STREAM, "deleting thread manager");
 
     if ( mgr->state != HLT_THREAD_MGR_DEAD )
         _fatal_error("thread manager being deleteed still has running threads");
 
     if ( pthread_key_delete(mgr->id) != 0 )
         _fatal_error("cannot delete thread-local key");
+
+    for ( int i = 0; i < mgr->num_workers; i++ )
+        _hlt_worker_thread_delete(mgr->workers[i]);
+
+    hlt_free(mgr->workers);
+    hlt_free(mgr);
 }
 
 int8_t __hlt_thread_mgr_terminating()
@@ -246,6 +289,7 @@ static void _worker_fiber_entry(hlt_fiber* fiber, void *callable)
     hlt_execution_context* ctx = hlt_fiber_context(fiber);
     hlt_exception* excpt = 0;
     hlt_callable_run((hlt_callable *)callable, &excpt, ctx);
+    GC_DTOR(callable, hlt_callable);
 
     if ( excpt )
         __hlt_thread_mgr_uncaught_exception_in_thread(excpt, ctx);
@@ -254,12 +298,12 @@ static void _worker_fiber_entry(hlt_fiber* fiber, void *callable)
 }
 
 // Schedules a job to a worker thread.
-static void _worker_schedule_job(hlt_worker_thread* target, hlt_job* job)
+static void _worker_schedule_job(hlt_worker_thread* current, hlt_worker_thread* target, hlt_job* job)
 {
     DBG_LOG(DBG_STREAM, "scheduling job %lu for vid %d to %s", job->id, job->vid, target->name);
 
     if ( ! job->blockable )
-        hlt_thread_queue_write(target->jobs, target ? target->id : 0, job);
+        hlt_thread_queue_write(target->jobs, current ? current->id : 0, job);
     else
         _add_to_blocked(target, job->blockable, job);
 }
@@ -273,20 +317,26 @@ static void _unblock_blocked(hlt_worker_thread* thread, __hlt_thread_mgr_blockab
 
     DBG_LOG(DBG_STREAM, "unblocking resource %p in %s", resource, ctx->worker->name);
 
-    for ( hlt_blocked_job* bjob = kh_value(thread->jobs_blocked, i); bjob; bjob = bjob->next ) {
+    hlt_blocked_job* bjob = kh_value(thread->jobs_blocked, i);
+
+    while ( bjob ) {
         hlt_job* job = bjob->job;
         DBG_LOG(DBG_STREAM, "removing job %lu from blocked queue for %s", job->id, thread->name);
         assert(job->blockable == resource);
         job->blockable = 0;
         --resource->num_blocked;
-        _worker_schedule_job(thread, job);
+        _worker_schedule_job(thread, thread, job);
+
+        hlt_blocked_job* next = bjob->next;
+        hlt_free(bjob);
+        bjob = next;
     }
 
     kh_value(thread->jobs_blocked, i) = 0;
     kh_del_blocked_jobs(thread->jobs_blocked, i);
 }
 
-static void _worker_schedule(hlt_worker_thread* target, hlt_vthread_id vid, hlt_callable* func, const hlt_type_info* tcontext_type, void* tcontext, hlt_execution_context* ctx)
+static void _worker_schedule(hlt_worker_thread* current, hlt_worker_thread* target, hlt_vthread_id vid, hlt_callable* func, hlt_type_info* tcontext_type, void* tcontext, hlt_execution_context* ctx)
 {
     if ( target->mgr->state != HLT_THREAD_MGR_RUN && target->mgr->state != HLT_THREAD_MGR_FINISH ) {
         DBG_LOG(DBG_STREAM, "omitting scheduling of job because mgr signaled termination");
@@ -298,15 +348,14 @@ static void _worker_schedule(hlt_worker_thread* target, hlt_vthread_id vid, hlt_
     job->vid = vid;
     job->tcontext_type = tcontext_type;
     job->tcontext = tcontext;
-    job->next = 0;
-    job->prev = 0;
 #if DEBUG
     job->id = ++job_counter;
 #endif
 
     GC_CCTOR_GENERIC(&job->tcontext, tcontext_type);
+    GC_CCTOR(func, hlt_callable);
 
-    _worker_schedule_job(target, job);
+    _worker_schedule_job(current, target, job);
 }
 
 #ifdef DEBUG
@@ -323,7 +372,7 @@ static void _debug_print_job_summary(hlt_thread_mgr* mgr)
         hlt_worker_thread* thread = mgr->workers[i];
         uint64_t size = hlt_thread_queue_pending(thread->jobs);
 
-        DBG_LOG(DBG_STREAM_STATS, "%s: %d jobs currently queued", thread->name, size);
+        DBG_LOG(DBG_STREAM_STATS, "%s: %d jobs currently pending", thread->name, size);
 
         hlt_thread_queue* queue = thread->jobs;
         fprintf(stderr, "=== %s\n", thread->name);
@@ -367,27 +416,31 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
 
     hlt_exception* excpt = 0;
 
-    ctx->fiber = job->fiber;
-    ctx->tcontext = job->tcontext;
-    ctx->tcontext_type = job->tcontext_type;
-
-    GC_CCTOR_GENERIC(&ctx->tcontext, ctx->tcontext_type);
+    __hlt_context_set_fiber(ctx, job->fiber);
+    __hlt_context_set_thread_context(ctx, job->tcontext_type, job->tcontext);
 
     if ( hlt_fiber_start(job->fiber) == 0 ) {
         // Yield.
         DBG_LOG(DBG_STREAM, "vid %d is yielding", ctx->vid);
-        _worker_schedule_job(ctx->worker, job);
+
+        // See if the yield indicated a blockable to wait for.
+        if ( ctx->blockable ) {
+            job->blockable = ctx->blockable;
+            __hlt_context_set_blockable(ctx, 0);
+        }
+
+        _worker_schedule_job(thread, thread, job);
     }
 
     else {
         // Done with this.
         DBG_LOG(DBG_STREAM, "done with job %lu", job->id);
 
-        hlt_fiber_delete(ctx->fiber);
+        __hlt_context_set_fiber(ctx, 0);
+        __hlt_context_set_thread_context(ctx, job->tcontext_type, 0);
 
-        GC_DTOR_GENERIC(&ctx->tcontext, ctx->tcontext_type);
-        ctx->fiber = 0;
-        ctx->tcontext = 0;
+        job->fiber = 0; // This is deleted already.
+        _hlt_job_delete(job);
     }
 }
 
@@ -409,6 +462,7 @@ static void* _worker(void* worker_thread_ptr)
 
     while ( ! (__hlt_thread_mgr_terminating() || hlt_thread_queue_terminated(thread->jobs)) ) {
         // Process next job.
+
         hlt_job* job = hlt_thread_queue_read(thread->jobs, 10);
 
         if ( mgr->state == HLT_THREAD_MGR_FINISH ) {
@@ -444,6 +498,9 @@ static void* _worker(void* worker_thread_ptr)
 
             finished = 1;
         }
+
+        for ( int i = 0; i < mgr->num_workers; ++i )
+            hlt_thread_queue_writer_update(mgr->workers[i]->jobs, thread->id);
 
 #ifdef DEBUG
         uint64_t size = hlt_thread_queue_size(thread->jobs);
@@ -618,7 +675,7 @@ void hlt_thread_mgr_start(hlt_thread_mgr* mgr)
         // We must not give a size limit for the queue here as otherwise the
         // scheduler will deadlock when blocking because each thread is both
         // reader and writer.
-        thread->jobs = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 5000, 0, 1);
+        thread->jobs = hlt_thread_queue_new(hlt_config_get()->num_workers + 1, 5000, 0);
         thread->ctxs = hlt_calloc(3, sizeof(hlt_execution_context*));
         thread->max_vid = 2;
         thread->id = i + 1; // We leave zero for the main thread so that we can use that as its writer id.
@@ -678,10 +735,10 @@ void __hlt_thread_mgr_schedule(hlt_thread_mgr* mgr, hlt_vthread_id vid, hlt_call
     }
 
     hlt_worker_thread* thread = _vthread_to_worker(mgr, vid);
-    _worker_schedule(thread, vid, func, 0, 0, ctx);
+    _worker_schedule(ctx->worker, thread, vid, func, 0, 0, ctx);
 }
 
-void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, const struct __hlt_type_info* type, void* tcontext, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
+void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, hlt_type_info* type, void* tcontext, hlt_callable* func, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! hlt_is_multi_threaded() ) {
         hlt_set_exception(excpt, &hlt_exception_no_threading, 0);
@@ -703,16 +760,16 @@ void __hlt_thread_mgr_schedule_tcontext(hlt_thread_mgr* mgr, const struct __hlt_
     hlt_vthread_id scaled_vid = (vid % n) + cfg->vid_schedule_min;
 
     hlt_worker_thread* thread = _vthread_to_worker(mgr, scaled_vid);
-    _worker_schedule(thread, scaled_vid, func, type, tcontext, ctx);
+    _worker_schedule(ctx->worker, thread, scaled_vid, func, type, tcontext, ctx);
 }
 
 const char* hlt_thread_mgr_current_native_thread()
 {
     if ( ! hlt_global_thread_mgr() )
-        return "<no threading>";
+        return "<no-threading>";
 
     const char* id = pthread_getspecific(hlt_global_thread_mgr()->id);
-    return id ? id : "<no thread id>";
+    return id ? id : "<no-thread-id>";
 }
 
 void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, int default_affinity)
@@ -767,5 +824,11 @@ void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, 
 
         DBG_LOG(DBG_STREAM, "native thread %p pinned to core %d", self, core);
     }
+}
+
+__hlt_thread_mgr_blockable* __hlt_object_blockable(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    assert(type->blockable);
+    return type->blockable(type, obj, excpt, ctx);
 }
 

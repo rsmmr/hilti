@@ -125,7 +125,6 @@ void codegen::Coercer::visit(type::Reference* r)
             auto top = dst_ref->argType();
             CodeGen::expr_list args = { builder::type::create(top), builder::codegen::create(dst, val) };
             auto nregexp = cg()->llvmCall("hlt::regexp_new_from_regexp", args);
-            cg()->llvmDtor(val, r->sharedPtr<Type>(), false, "codegen::Coercer/regexp");
             setResult(nregexp);
             return;
         }

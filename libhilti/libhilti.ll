@@ -24,6 +24,7 @@
     i64,                          ; debug_indent
     i8*,                          ; tcontext
     i8*,                          ; tcontext_type
+    %hlt.blockable*,              ; blockable
     i8*  ;; Start of globals (right here, pointer content isn't used.)
 }
 
@@ -118,6 +119,7 @@
 %hlt.match_token_state = type {};
 %hlt.iosrc = type {};
 %hlt.channel = type {};
+%hlt.blockable = type {};
 
 ;;; libhilti functions that don't fit the normal calling conventions.
 
@@ -126,6 +128,8 @@ declare void @__hlt_object_unref(%hlt.type_info*, i8 *)
 declare void @__hlt_object_dtor(%hlt.type_info*, i8 *, i8*)
 declare void @__hlt_object_cctor(%hlt.type_info*, i8 *, i8*)
 declare i8* @__hlt_object_new(%hlt.type_info*, i64, i8*)
+
+declare %hlt.blockable* @__hlt_object_blockable(%hlt.type_info*, i8*, %hlt.exception**, %hlt.execution_context*)
 
 declare void @__hlt_debug_print(i8*, i8*)
 declare void @__hlt_debug_push_indent(%hlt.execution_context*)
@@ -151,6 +155,7 @@ declare %hlt.fiber*     @__hlt_context_get_fiber(%hlt.execution_context*)
 declare i64             @__hlt_context_get_vid(%hlt.execution_context*)
 declare i8*             @__hlt_context_get_thread_context(%hlt.execution_context*)
 declare void            @__hlt_context_set_thread_context(%hlt.execution_context*, %hlt.type_info*, i8*)
+declare void            @__hlt_context_set_blockable(%hlt.execution_context*, %hlt.blockable*)
 
 declare %hlt.execution_context* @hlt_global_execution_context();
 declare %hlt.thread_mgr*        @hlt_global_thread_mgr();

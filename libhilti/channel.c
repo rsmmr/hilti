@@ -50,7 +50,14 @@ struct __hlt_channel {
 
 void hlt_channel_dtor(hlt_type_info* ti, hlt_channel* c)
 {
-    fprintf(stderr, "channel dtor not implemented\n");
+    hlt_channel_chunk* rc = c->rc;
+
+    while ( rc ) {
+        hlt_channel_chunk* next = rc->next;
+        hlt_free(rc->data);
+        hlt_free(rc);
+        rc = next;
+    }
 }
 
 static hlt_channel_chunk* _hlt_chunk_create(size_t capacity, int16_t item_size, hlt_exception** excpt, hlt_execution_context* ctx)

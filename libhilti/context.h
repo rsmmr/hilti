@@ -35,11 +35,12 @@ struct __hlt_execution_context {
     __hlt_gchdr __gch;                  /// Header for garbage collection.
     hlt_vthread_id vid;                 /// The ID of the virtual thread this context belongs to. HLT_VID_MAIN for the main thread.
     hlt_exception* excpt;               /// The currently raised exception, or 0 if none.
-    hlt_fiber* fiber;                   /// The current fiber to use for executing code inside this context.
+    hlt_fiber* fiber;                   /// The current fiber to use for executing code inside this context. If set when the context is destroyed, it will be deleted.
     hlt_free_list* fiber_pool;          /// The pool of fiber objects for this context.
     struct __hlt_worker_thread* worker; /// The worker thread this virtual thread is mapped to. NULL for the main thread.
     void* tcontext;                     /// The current threading context, per the module's "context" definition; NULL if not set. This is ref counted.
-    const hlt_type_info* tcontext_type; /// The type of the current threading context.
+    hlt_type_info* tcontext_type;       /// The type of the current threading context.
+    __hlt_thread_mgr_blockable* blockable; /// A blockable set to go along with the next yield.
 
     // TODO: We should not compile this in non-profiling mode.
     __hlt_profiler_state* pstate;      /// State for ongoing profiling, or 0 if none.
@@ -113,6 +114,13 @@ extern void* __hlt_context_get_thread_context(hlt_execution_context* ctx);
 /// type: The type of the thread context.
 ///
 /// tctx: The thread context.
-extern void __hlt_context_set_thread_contxt(hlt_execution_context* ctx, hlt_type_info* type, void* tctx);
+extern void __hlt_context_set_thread_context(hlt_execution_context* ctx, hlt_type_info* type, void* tctx);
+
+/// Sets the blockable field in an execution context.
+///
+/// ctx: The context.
+///
+/// b: The blockable to set the field to.
+extern void __hlt_context_set_blockable(hlt_execution_context* ctx, __hlt_thread_mgr_blockable* b);
 
 #endif

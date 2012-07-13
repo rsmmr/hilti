@@ -24,7 +24,6 @@ def findInPATH(file):
 
     for dir in os.environ["PATH"].split(":") + [hc]:
         p = os.path.join(dir, file)
-        print p
         if os.path.exists(p):
             return p
     else:

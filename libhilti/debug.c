@@ -11,6 +11,8 @@
 #include "string_.h"
 #include "module/module.h"
 
+_Atomic(uint_fast64_t) _counter = 0;
+
 static FILE* _debug_out()
 {
     static FILE* debug_out = 0;
@@ -61,10 +63,15 @@ static void _make_prefix(const char* s, char* dst, int len, hlt_exception** excp
 {
     if ( hlt_is_multi_threaded() ) {
         const char* t = hlt_thread_mgr_current_native_thread();
-        snprintf(dst, len, "[%s/%s] ", s, t);
+        snprintf(dst, len, "%08" PRId64 " [%s/%s] ", ++_counter, s, t);
     }
     else
-        snprintf(dst, len, "[%s] ", s);
+        snprintf(dst, len, "%08" PRId64 " [%s/-] ", ++_counter, s);
+
+    int min = (len - 1 < 40 ? len - 1 : 40);
+
+    while ( strlen(dst) < min )
+        strcat(dst, " ");
 }
 
 void __hlt_debug_init()

@@ -890,27 +890,6 @@ bool type::Overlay::_equal(shared_ptr<hilti::Type> t) const
 type::Context::Context(const field_list& fields, const Location& l)
     : Struct(fields, l) // Sort the fields so that order doesn't matter for hashing.
 {
-    // Add an internal field with a constant hash that depends on the defined
-    // fields. This forces different scheduling for contexts that aren't
-    // fully equivalent.
-
-    string d;
-
-    for ( auto f: fields ) {
-        d += f->id()->name();
-        d += typeid(f->type()).name();
-    }
-
-    auto hash = std::hash<std::string>()(d);
-
-    auto hash_id = builder::id::node("__type_hash", l);
-    auto hash_ty = builder::integer::type(64, l);
-    auto hash_val = builder::integer::create(hash, l);
-
-    auto field = builder::struct_::field(hash_id, hash_ty, hash_val, l);
-    field->setInternal();
-
-    addField(field);
 }
 
 bool type::Scope::hasField(shared_ptr<ID> id) const
