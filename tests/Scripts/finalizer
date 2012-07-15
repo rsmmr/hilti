@@ -21,4 +21,6 @@ if [ ! -e $LOG ]; then
     exit 0
 fi
 
-cat $LOG | `dirname $0`/../../scripts/mem-check -v >&2
+if [ "$NO_LEAK_CHECK" == "" ]; then
+    cat $LOG | `dirname $0`/../../scripts/mem-check -v >&2
+fi
