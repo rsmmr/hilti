@@ -122,12 +122,20 @@ public:
    /// Constructor. This creates a \c null constant of the given type.
    ///
    /// l: An associated location.
-   Reference(const Location& l=Location::None) : Constant(l) {}
+   Reference(shared_ptr<Type> type, const Location& l=Location::None);
+
+   /// Constructor. This creates a \c null constant of wildcard type.
+   ///
+   /// l: An associated location.
+   Reference(const Location& l=Location::None);
 
    /// Returns the type of the constant.
    shared_ptr<Type> type() const override;
 
    ACCEPT_VISITOR(Constant);
+
+private:
+   node_ptr<Type> _type;
 };
 
 /// AST node for a constant of type Tuple.

@@ -86,6 +86,7 @@ set(instructions
     hilti/instructions/overlay.h
     hilti/instructions/port.h
     hilti/instructions/profiler.h
+    hilti/instructions/reference.h
     hilti/instructions/regexp.h
     hilti/instructions/set.h
     hilti/instructions/string.h
@@ -226,6 +227,7 @@ add_library (hilti
     hilti/codegen/instructions/overlay.cc
     hilti/codegen/instructions/port.cc
     hilti/codegen/instructions/profiler.cc
+    hilti/codegen/instructions/reference.cc
     hilti/codegen/instructions/regexp.cc
     hilti/codegen/instructions/set.cc
     hilti/codegen/instructions/struct.cc

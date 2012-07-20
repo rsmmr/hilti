@@ -18,10 +18,10 @@ void run() {
     a = new A
     b = Null
 
-    is = ref.cast.bool a
+    is = ref.as_bool a
     call Hilti::print(is)
 
-    is = ref.cast.bool b
+    is = ref.as_bool b
     call Hilti::print(is)
 }
 

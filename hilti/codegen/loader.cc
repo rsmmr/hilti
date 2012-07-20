@@ -196,7 +196,7 @@ void Loader::visit(constant::Unset* t)
 void Loader::visit(constant::Reference* r)
 {
     // This can only be the null value.
-    auto val = cg()->llvmConstNull();
+    auto val = cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmType(r->type())));
     setResult(val, false, false);
 }
 

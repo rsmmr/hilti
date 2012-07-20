@@ -76,13 +76,13 @@ void ConstantCoercer::visit(constant::Reference* r)
 
     if ( dst_ref->wildcard() ) {
         // Null coerces into all reference types.
-        setResult(r->sharedPtr<constant::Tuple>());
+        setResult(r->sharedPtr<constant::Reference>());
         return;
     }
 
-    if ( dst_ref ) {
+    if ( dst_ref && r->type()->wildcard() ) {
         // Null coerces into all reference types.
-        setResult(r->sharedPtr<constant::Tuple>());
+        setResult(std::make_shared<constant::Reference>(dst_ref));
         return;
     }
 

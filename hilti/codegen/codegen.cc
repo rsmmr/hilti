@@ -1500,6 +1500,9 @@ void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result)
             llvmCctor(result, rtype, false, "llvm-return");
     }
 
+    // Flush the pending stuff before we branch out.
+    finishStatement();
+
     builder()->CreateBr(state->exit_block);
 }
 
@@ -1720,13 +1723,17 @@ void CodeGen::llvmRaiseException(llvm::Value* excpt, bool dtor)
 
 void CodeGen::llvmRethrowException()
 {
-    // This simply returns with a null value. The caller will check for a thrown exception.
+    auto func = _functions.back()->function;
 
-    auto rt = _functions.back()->function->getReturnType();
+    auto rt = func->getReturnType();
+
+    if ( rt->isVoidTy() && _functions.back()->function->hasStructRetAttr() )
+        rt = func->arg_begin()->getType()->getPointerElementType();
 
     if ( rt->isVoidTy() )
         llvmReturn();
     else
+        // This simply returns with a null value. The caller will check for a thrown exception.
         llvmReturn(0, llvmConstNull(rt));
 }
 

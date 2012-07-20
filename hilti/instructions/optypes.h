@@ -58,6 +58,7 @@ static shared_ptr<Type> iterMap(new type::iterator::Map(std::make_shared<type::M
 static shared_ptr<Type> iterSet(new type::iterator::Set(std::make_shared<type::Set>()));
 static shared_ptr<Type> iterVector(new type::iterator::Vector(std::make_shared<type::Vector>()));
 
+static shared_ptr<Type> refAny(new type::Reference());
 static shared_ptr<Type> refBytes(new type::Reference(bytes));
 static shared_ptr<Type> refCallable(new type::Reference(callable));
 static shared_ptr<Type> refChannel(new type::Reference(channel));

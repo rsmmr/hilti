@@ -47,10 +47,23 @@ const std::list<shared_ptr<Expression>> constant::Tuple::value() const
     return l;
 }
 
+constant::Reference::Reference(shared_ptr<Type> type, const Location& l) : Constant(l)
+{
+    _type = type;
+    addChild(_type);
+}
+
+constant::Reference::Reference(const Location& l) : Constant(l)
+{
+    _type = nullptr;
+}
 
 shared_ptr<Type> constant::Reference::type() const
 {
-    return shared_ptr<type::Reference>(new type::Reference(location()));
+    if ( _type )
+        return _type;
+    else
+        return shared_ptr<type::Reference>(new type::Reference(location()));
 }
 
 constant::AddressVal::AddressVal(Constant* c, const string& addr)
