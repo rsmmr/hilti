@@ -21,13 +21,21 @@ int main()
     hlt_string_print(stdout, s, 1, &excpt, ctx);
     assert(! excpt);
 
+    GC_DTOR(s, hlt_string);
+
     a = hlt_port_from_asciiz("53/udp", &excpt, ctx);
     s = hlt_port_to_string(hlt_type_info_hlt_port, &a, 0, &excpt, ctx);
     hlt_string_print(stdout, s, 1, &excpt, ctx);
     assert(! excpt);
 
+    GC_DTOR(s, hlt_string);
+
     a = hlt_port_from_asciiz("can't parse", &excpt, ctx);
     assert(excpt);
+
+    GC_DTOR(excpt, hlt_exception);
+
+    hlt_done();
 
     return 0;
 }
