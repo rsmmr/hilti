@@ -1127,7 +1127,9 @@ public:
    ///
    /// result: The result to return from the current function, or null if the
    /// return type is void.
-   void llvmReturn(shared_ptr<Type> rtype = 0, llvm::Value* result = 0);
+   ///
+   /// result_cctored: If true, the result is already cctored.
+   void llvmReturn(shared_ptr<Type> rtype = 0, llvm::Value* result = 0, bool result_cctored = false);
 
    typedef std::vector<llvm::Value*> value_list;
 

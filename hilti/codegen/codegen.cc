@@ -1481,7 +1481,7 @@ llvm::Function* CodeGen::llvmFunction(const string& name)
     return llvmFunction(id);
 }
 
-void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result)
+void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result, bool result_cctored)
 {
     if ( block()->getTerminator() )
         // Already terminated (and hopefully corrently).
@@ -1495,7 +1495,7 @@ void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result)
     if ( result ) {
         state->exits.push_back(std::make_pair(block(), result));
 
-        if ( rtype )
+        if ( rtype && ! result_cctored )
             llvmCctor(result, rtype, false, "llvm-return");
     }
 
@@ -2060,8 +2060,11 @@ llvm::Constant* CodeGen::llvmConstExtractValue(llvm::Constant* aggr, unsigned in
 
 std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Function> func)
 {
-    auto rf1 = lookupCachedValue("c-wrappers", "entry");
-    auto rf2 = lookupCachedValue("c-wrappers", "resume");
+    // Name must match with ProtoGen::visit(declaration::Function* f).
+    auto name = util::mangle(func->id(), true, func->module()->id(), "", false);
+
+    auto rf1 = lookupCachedValue("c-wrappers", "entry-" + name);
+    auto rf2 = lookupCachedValue("c-wrappers", "resume-" + name);
 
     if ( rf1 ) {
         assert(rf2);
@@ -2082,8 +2085,6 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     // Build the entry function.
 
-        // Name must match with ProtoGen::visit(declaration::Function* f).
-    auto name = util::mangle(func->id(), true, func->module()->id(), "", false);
     auto llvm_func = llvmAddFunction(func, false, type::function::HILTI_C, name, true);
     rf1 = llvm_func;
 
@@ -2110,7 +2111,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
     else
-        llvmReturn(rtype, result);
+        llvmReturn(rtype, result, true);
 
     popFunction();
 
@@ -2146,12 +2147,12 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
     else
-        llvmReturn(rtype, result);
+        llvmReturn(rtype, result, true);
 
     popFunction();
 
-    cacheValue("c-wrappers", "entry", rf1);
-    cacheValue("c-wrappers", "resume", rf2);
+    cacheValue("c-wrappers", "entry-" + name, rf1);
+    cacheValue("c-wrappers", "resume-" + name, rf2);
 
     return std::make_pair(rf1, rf2);
 }

@@ -1,7 +1,7 @@
 #
 # @TEST-EXEC:  hilti-build -P %INPUT
-# @TEST-EXEC:  hilti-build %DIR/c-interface-host.c %INPUT -o a.out
-# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  hilti-build -d %DIR/c-interface-host.c %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output
 # @TEST-EXEC:  btest-diff output
 #
 # Testing calls from C.
