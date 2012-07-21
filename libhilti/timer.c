@@ -293,9 +293,9 @@ int32_t hlt_timer_mgr_advance(hlt_timer_mgr* mgr, hlt_time t, hlt_exception** ex
         if ( ! timer || timer->time > t )
             break;
 
-        __hlt_timer_fire(timer, excpt, ctx);
-
         pqueue_pop(mgr->timers);
+
+        __hlt_timer_fire(timer, excpt, ctx);
 
         ++count;
     }

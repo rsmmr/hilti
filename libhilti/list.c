@@ -137,8 +137,8 @@ static __hlt_list_node* _make_node(hlt_list* l, void *val, hlt_exception** excpt
 
     // Start timer if needed.
     if ( l->tmgr && l->timeout ) {
-        GC_CCTOR(l, hlt_list);
         __hlt_list_timer_cookie cookie = { l, n };
+        GC_CCTOR(cookie, hlt_iterator_list);
         n->timer = __hlt_timer_new_list(cookie, excpt, ctx);
         hlt_time t = hlt_timer_mgr_current(l->tmgr, excpt, ctx) + l->timeout;
         hlt_timer_mgr_schedule(l->tmgr, t, n->timer, excpt, ctx);
