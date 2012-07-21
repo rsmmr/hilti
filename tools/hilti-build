@@ -160,7 +160,7 @@ def compileC(input, output, cxx):
     except:
         flags = []
 
-    flags += ["-c", "-emit-llvm", "-g", "-fno-color-diagnostics", "-O0"]
+    flags += ["-c", "-emit-llvm", "-g", "-fno-color-diagnostics", "-O0", "-I ."]
     flags += runConfig(HiltiConfig, "--libhilti-%sflags" % tag).split()
     flags = uniqueArgs(flags)
 
