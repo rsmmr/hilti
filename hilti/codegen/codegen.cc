@@ -2104,7 +2104,8 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     // Copy exception over.
     auto ctx_excpt = llvmCurrentException();
-    llvmGCAssign(args, ctx_excpt, builder::reference::type(builder::exception::typeAny()), false);
+    auto last_arg = llvm_func->arg_end();
+    llvmGCAssign(--last_arg, ctx_excpt, builder::reference::type(builder::exception::typeAny()), false);
 
     if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
@@ -2134,11 +2135,13 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     value_list eargs = { yield_excpt };
     llvmCallC("__hlt_exception_clear_fiber", eargs, false, false);
 
+    llvmDtor(yield_excpt, builder::reference::type(builder::exception::typeAny()), false, "c-wrapper/resume");
+
     result = llvmFiberStart(fiber, rtype);
 
     // Copy exception over.
     ctx_excpt = llvmCurrentException();
-    llvmCreateStore(ctx_excpt, ++llvm_func->arg_begin());
+    llvmGCAssign(++llvm_func->arg_begin(), ctx_excpt, builder::reference::type(builder::exception::typeAny()), false, false);
 
     if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
@@ -2267,6 +2270,7 @@ llvm::Value* CodeGen::llvmFiberStart(llvm::Value* fiber, shared_ptr<Type> rtype)
     auto excpt = llvmCallC("hlt_exception_new_yield", args, false, false);
     value_list eargs = { llvmExecutionContext(), excpt };
     llvmCallC("__hlt_context_set_exception", eargs, false, false);
+    llvmDtor(excpt, builder::reference::type(builder::exception::typeAny()), false, "llvmFiberStart");
     llvmCreateBr(done);
     popBuilder();
 

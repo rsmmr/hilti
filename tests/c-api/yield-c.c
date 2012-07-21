@@ -25,6 +25,9 @@ int main()
     }
 
     fprintf(stderr, "Done in C\n");
+
+    hlt_done();
+
     return 0;
 }
 
