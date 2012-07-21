@@ -9,7 +9,7 @@
 #include <libhilti.h>
 #include <assert.h>
 
-#include <hilti.h>
+#include <libhilti.h>
 
 void fiber_yielded(hlt_fiber* f)
 {
@@ -62,9 +62,7 @@ int main(int argc, char** argv)
         assert(0); // Cannot be reached.
     }
 
-    hlt_fiber_delete(fiber);
-
-    // hlt_done();
+    hlt_done();
 
     return 0;
 }
