@@ -2140,6 +2140,7 @@ private:
    int _profile_level;
 
    int _in_check_exception = 0;
+   int _in_build_exit = 0;
 
    unique_ptr<Loader> _loader;
    unique_ptr<Storer> _storer;

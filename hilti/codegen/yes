@@ -1,0 +1,25 @@
+make-cmake -j 5 2>&1
+/home/robin/scripts/make-cmake: make -f /home/robin/work/binpacpp/hilti2/Makefile -j 5
+test -d build || mkdir build
+( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug ..; make )
+test -d build/libhilti-debug || mkdir build/libhilti-debug
+test -d build/libhilti-release || mkdir build/libhilti-release
+make[1]: Entering directory `/da/home/robin/work/binpacpp/hilti2/build'
+make[2]: Entering directory `/da/home/robin/work/binpacpp/hilti2/build'
+make[3]: Entering directory `/da/home/robin/work/binpacpp/hilti2/build'
+make[3]: Entering directory `/da/home/robin/work/binpacpp/hilti2/build'
+make[3]: Leaving directory `/da/home/robin/work/binpacpp/hilti2/build'
+make[3]: Leaving directory `/da/home/robin/work/binpacpp/hilti2/build'
+[  1%] Built target generate_parser
+[  7%] Built target hilti-ffi
+make[3]: Entering directory `/da/home/robin/work/binpacpp/hilti2/build'
+make[3]: Leaving directory `/da/home/robin/work/binpacpp/hilti2/build'
+make[3]: Entering directory `/da/home/robin/work/binpacpp/hilti2/build'
+[  8%] [  9%] [  9%] [  9%] [ 10%] Building CXX object CMakeFiles/hilti.dir/hilti/codegen/codegen.cc.o
+Building CXX object CMakeFiles/hilti.dir/hilti/codegen/instructions/bytes.cc.o
+Building CXX object CMakeFiles/hilti.dir/hilti/codegen/instructions/flow.cc.o
+Building CXX object CMakeFiles/hilti.dir/hilti/codegen/instructions/integer.cc.o
+Building CXX object CMakeFiles/hilti.dir/hilti/codegen/instructions/misc.cc.o
+/home/robin/work/binpacpp/hilti2/hilti/codegen/codegen.cc:1040:35: error: use of undeclared identifier 'gs'
+    auto val = llvmStringFromData(gs.first);
+                                  ^

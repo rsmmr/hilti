@@ -1526,6 +1526,8 @@ void CodeGen::llvmBuildExitBlock()
     if ( ! state->exit_block )
         return;
 
+    ++_in_build_exit;
+
     auto exit_builder = newBuilder(state->exit_block);
 
     llvm::PHINode* phi = nullptr;
@@ -1553,8 +1555,13 @@ void CodeGen::llvmBuildExitBlock()
             llvmDebugPrint("hilti-flow", msg);
         }
 
-        if ( profileLevel() > 1 )
-            llvmProfilerStop(string("func/") + name);
+        if ( profileLevel() > 1 ) {
+            // As this may be run in an exit block where we won't clean up
+            // after us anymore, we do the string's mgt manually here.
+            auto str = llvmStringFromData(string("func/") + name);
+            llvmProfilerStop(str);
+            llvmDtor(str, builder::string::type(), false, "exit-block/profiler-stop");
+        }
     }
 
     if ( phi ) {
@@ -1570,6 +1577,8 @@ void CodeGen::llvmBuildExitBlock()
 
     else
         builder()->CreateRetVoid();
+
+    --_in_build_exit;
 }
 
 void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
@@ -1831,6 +1840,10 @@ llvm::Value* CodeGen::llvmClearCurrentFiber()
 
 void CodeGen::llvmCheckCException(llvm::Value* excpt)
 {
+    if ( _in_build_exit )
+        // Can't handle exeptions in exit block.
+        return;
+
     auto eval = builder()->CreateLoad(excpt);
     auto is_null = builder()->CreateIsNull(eval);
     auto cont = newBuilder("no-excpt");
@@ -1847,6 +1860,10 @@ void CodeGen::llvmCheckCException(llvm::Value* excpt)
 
 void CodeGen::llvmCheckException()
 {
+    if ( _in_build_exit )
+        // Can't handle exeptions in exit block.
+        return;
+
     if ( ! _functions.back()->abort_on_excpt ) {
         llvmTriggerExceptionHandling(false);
         return;
