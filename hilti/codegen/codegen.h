@@ -1500,14 +1500,6 @@ public:
    /// XXXX
    void llvmGCClear(llvm::Value* val, shared_ptr<Type> type);
 
-   /// Finished generation of a statement. This is called from the statement builder.
-   void finishStatement(bool clear=true);
-
-   /// Inserts a block with after-statement cleanup. Does however not flag
-   /// the statement as done and is only intended for use in abnormal
-   /// branches (typically exception code). Use finishStatement() for the normal case.
-   IRBuilder* llvmInsertInstructionCleanup(IRBuilder* builder);
-
    /// XXXX
    void llvmDebugPrint(const string& stream, const string& msg);
 
@@ -2118,7 +2110,6 @@ private:
 
    friend class StatementBuilder;
    void pushExceptionHandler(IRBuilder* handler) { // Used by stmt-builder::Try/Catch.
-       handler = llvmInsertInstructionCleanup(handler);
        _functions.back()->catches.push_back(handler);
    }
 
@@ -2140,6 +2131,8 @@ private:
    }
 
    std::pair<bool, IRBuilder*> topEndOfBlockHandler();
+
+   void llvmRunDtorsAfterIns();
 
    path_list _libdirs;
    bool _verify;

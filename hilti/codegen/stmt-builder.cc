@@ -52,8 +52,6 @@ void StatementBuilder::visit(statement::Block* b)
     for ( auto d : b->declarations() )
         call(d);
 
-    cg()->finishStatement();
-
     for ( auto s : b->statements() ) {
 
         if ( cg()->debugLevel() > 0 && ! ast::isA<statement::Block>(s) && ! cg()->block()->getTerminator() ) {
@@ -78,7 +76,6 @@ void StatementBuilder::visit(statement::Block* b)
         }
 
         call(s);
-        cg()->finishStatement();
     }
 }
 

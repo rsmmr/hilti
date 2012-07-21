@@ -572,7 +572,6 @@ void CodeGen::createGlobalsInitFunction()
         assert(init);
         auto addr = llvmGlobal(g.get());
         llvmCreateStore(init, addr);
-        finishStatement(); // Add cleanup.
     }
 
     if ( functionEmpty() ) {
@@ -1500,9 +1499,6 @@ void CodeGen::llvmReturn(shared_ptr<Type> rtype, llvm::Value* result)
             llvmCctor(result, rtype, false, "llvm-return");
     }
 
-    // Flush the pending stuff before we branch out.
-    finishStatement();
-
     builder()->CreateBr(state->exit_block);
 }
 
@@ -1543,6 +1539,7 @@ void CodeGen::llvmBuildExitBlock()
     }
 
     pushBuilder(exit_builder);
+
     llvmBuildFunctionCleanup();
 
     auto leave_func = _functions.back()->leave_func;
@@ -1560,30 +1557,59 @@ void CodeGen::llvmBuildExitBlock()
             llvmProfilerStop(string("func/") + name);
     }
 
-    popBuilder();
-
     if ( phi ) {
         if ( state->function->hasStructRetAttr() ) {
             // Need to store in argument.
-            exit_builder->CreateStore(phi, state->function->arg_begin());
-            exit_builder->CreateRetVoid();
+            builder()->CreateStore(phi, state->function->arg_begin());
+            builder()->CreateRetVoid();
         }
 
         else
-            exit_builder->CreateRet(phi);
+            builder()->CreateRet(phi);
     }
 
     else
-        exit_builder->CreateRetVoid();
+        builder()->CreateRetVoid();
+}
 
-    delete exit_builder;
+void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
+{
+    auto tmp = llvmAddTmp("dtor", val->getType());
+
+    llvmCreateStore(val, tmp);
+
+    _functions.back()->dtors_after_ins.push_back(std::make_tuple(std::make_tuple(tmp, is_ptr), type));
 }
 
 void CodeGen::llvmBuildFunctionCleanup()
 {
     // Unref locals (incl. parameters).
     for ( auto l : _functions.back()->locals )
-        llvmDtor(l.second.first, l.second.second, true, "func-cleanup");
+        llvmDtor(l.second.first, l.second.second, true, "func-cleanup-local");
+
+    // Unref tmps.
+    for ( auto unref : _functions.back()->dtors_after_ins ) {
+        auto dtor = newBuilder("dtor-tmp");
+        auto cont = newBuilder("cont");
+        auto tmp = unref.first.first;
+        auto val = builder()->CreateLoad(tmp);
+        auto is_null = builder()->CreateIsNull(val);
+
+        llvmCreateCondBr(is_null, cont, dtor);
+
+        pushBuilder(dtor);
+
+        llvm::Value* ptr_val = unref.first.second ? val : tmp;
+        llvmDtor(ptr_val, unref.second, true, "function-cleanup-tmp");
+
+        llvmCreateStore(llvmConstNull(val->getType()), tmp);
+        llvmCreateBr(cont);
+        popBuilder();
+
+        pushBuilder(cont);
+
+        // Leave on stack.
+    }
 }
 
 llvm::Value* CodeGen::llvmGEP(llvm::Value* addr, llvm::Value* i1, llvm::Value* i2, llvm::Value* i3, llvm::Value* i4)
@@ -1716,8 +1742,6 @@ void CodeGen::llvmRaiseException(llvm::Value* excpt, bool dtor)
         llvmDtor(excpt, ty, false, "raise-exception");
     }
 
-    finishStatement(false);
-
     llvmTriggerExceptionHandling(true);
 }
 
@@ -1823,9 +1847,6 @@ void CodeGen::llvmCheckCException(llvm::Value* excpt)
 
 void CodeGen::llvmCheckException()
 {
-    // Make sure we clean up any temporaries.
-    finishStatement();
-
     if ( ! _functions.back()->abort_on_excpt ) {
         llvmTriggerExceptionHandling(false);
         return;
@@ -1837,8 +1858,6 @@ void CodeGen::llvmCheckException()
     auto is_null = builder()->CreateIsNull(excpt);
     auto cont = newBuilder("no-excpt");
     auto abort = newBuilder("excpt-abort");
-
-    abort = llvmInsertInstructionCleanup(abort);
 
     llvmCreateCondBr(is_null, cont, abort);
 
@@ -1903,16 +1922,7 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
     }
 
     else {
-        // No catches at all, unwind.
-        auto unwind = haveBuilder("unwind");
-
-        if ( ! unwind ) {
-            unwind = pushBuilder("unwind");
-            llvmRethrowException();
-            popBuilder();
-        }
-
-        unwind = llvmInsertInstructionCleanup(unwind);
+        auto unwind = newBuilder("unwind");
 
         if ( ! known_exception ) {
             cont = newBuilder("no-excpt");
@@ -1923,6 +1933,10 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
             cont = newBuilder("cannot-be-reached");
             llvmCreateBr(unwind);
         }
+
+        pushBuilder(unwind);
+        llvmRethrowException();
+        popBuilder();
     }
 
     pushBuilder(cont);
@@ -2637,47 +2651,6 @@ llvm::Value* CodeGen::llvmExtractBits(llvm::Value* value, llvm::Value* low, llvm
     value = builder()->CreateLShr(value, low);
 
     return builder()->CreateAnd(value, mask);
-}
-
-void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
-{
-    _functions.back()->dtors_after_ins.push_back(std::make_tuple(std::make_tuple(val, is_ptr), type));
-}
-
-void CodeGen::finishStatement(bool clear)
-{
-    // Unref values registered for doing so.
-    for ( auto unref : _functions.back()->dtors_after_ins )
-        llvmDtor(unref.first.first, unref.second, unref.first.second, "finish-stmnt");
-
-    if ( clear )
-        _functions.back()->dtors_after_ins.clear();
-}
-
-IRBuilder* CodeGen::llvmInsertInstructionCleanup(IRBuilder* b)
-{
-    if ( ! _functions.back()->dtors_after_ins.size() )
-        return b;
-
-    auto cbuilder = builder();
-    auto nbuilder = pushBuilder("cleanup-tmps");
-
-#if 0
-    // Disabled, this needs to be done with finishStatement() (and
-    // potentially finishStatement(false)) on an individual basis.
-
-    for ( auto unref : _functions.back()->dtors_after_ins )
-        llvmDtor(unref.first.first, unref.second, unref.first.second, "instruction-cleanup");
-#endif
-
-    llvmCreateBr(b);
-
-    popBuilder();
-
-    if ( builder() != cbuilder )
-        pushBuilder(cbuilder);
-
-    return nbuilder;
 }
 
 llvm::Value* CodeGen::llvmLocationString(const Location& l)
