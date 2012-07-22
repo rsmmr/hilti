@@ -1168,8 +1168,6 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
 
     _functions.back()->tmps.insert(make_pair(tname, std::make_pair(tmp, nullptr)));
 
-    delete tmp_builder;
-
     return tmp;
 }
 
