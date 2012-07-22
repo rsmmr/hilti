@@ -1,7 +1,7 @@
 #
 # @TEST-NO-FILTER: printer
 #
-# @TEST-EXEC:  hilti-build %INPUT TestModule.hlt -o a.out
+# @TEST-EXEC:  hilti-build %INPUT testmodule.hlt -o a.out
 # @TEST-EXEC:  ./a.out >output 2>&1
 # @TEST-EXEC:  btest-diff output
 
