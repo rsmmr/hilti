@@ -122,6 +122,10 @@ llvm::Module* loadLLVM(const string& path)
 llvm::Module* compileHILTI(string path)
 {
     ifstream in(path);
+
+    if ( ! in.good() )
+        error(path, "Cannot open file.");
+
     shared_ptr<hilti::Module> module = hilti::parseStream(in, path);
 
     if ( ! module )
