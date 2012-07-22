@@ -238,6 +238,7 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
 
     file->open = 0;
     GC_CLEAR(file->path, hlt_string);
+    GC_CLEAR(file->charset, hlt_string);
 }
 
 void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)
