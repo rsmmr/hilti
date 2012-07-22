@@ -1133,12 +1133,12 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
 
 llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Value* init, bool reuse, int alignment)
 {
-    if ( ! init )
-        init = llvmConstNull(type);
-
     string tname = "__tmp_" + name;
 
     if ( reuse ) {
+        if ( ! init )
+            init = llvmConstNull(type);
+
         auto i = _functions.back()->tmps.find(tname);
         if ( i != _functions.back()->tmps.end() ) {
             auto tmp = i->second.first;
@@ -1158,6 +1158,13 @@ llvm::Value* CodeGen::llvmAddTmp(const string& name, llvm::Type* type, llvm::Val
     if ( init )
         // Must be done in original block.
         llvmCreateStore(init, tmp);
+    else {
+        // Do init entry block so that we don't overwrite this if the code
+        // gets executed multiple times.
+        pushBuilder(tmp_builder);
+        llvmCreateStore(llvmConstNull(type), tmp);
+        popBuilder();
+    }
 
     _functions.back()->tmps.insert(make_pair(tname, std::make_pair(tmp, nullptr)));
 
@@ -1585,8 +1592,7 @@ void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, 
 {
     auto tmp = llvmAddTmp("dtor", val->getType());
 
-    llvmCreateStore(val, tmp);
-
+    llvmGCAssign(tmp, val, type, true);
     _functions.back()->dtors_after_ins.push_back(std::make_tuple(std::make_tuple(tmp, is_ptr), type));
 }
 
