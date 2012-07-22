@@ -21,7 +21,7 @@ add_custom_command(
     ARGS    -m -o ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof ${CMAKE_CURRENT_SOURCE_DIR}/hilti-prof.c
     )
 
-add_custom_target(hilti-prof ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof hiltic)
+add_custom_target(hilti-prof DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof hiltic)
 
 find_package(PAPI)
 
