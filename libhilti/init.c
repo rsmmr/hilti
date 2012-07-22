@@ -71,8 +71,8 @@ void hlt_done()
 
     hlt_exception* excpt = 0;
 
-    __hlt_profiler_done();
     __hlt_threading_done(&excpt);
+    __hlt_profiler_done(); // Must come after threading is done.
 
     if ( excpt )
         hlt_exception_print_uncaught(excpt, hlt_global_execution_context());
