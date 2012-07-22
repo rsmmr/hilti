@@ -167,7 +167,7 @@ error:
 
 #endif
 
-inline static void safe_write(const void* data, int len, hlt_exception** excpt, hlt_execution_context* ctx)
+inline static void _safe_write(const void* data, int len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     assert(ctx->pstate->fd >= 0);
 
@@ -190,7 +190,7 @@ inline static void safe_write(const void* data, int len, hlt_exception** excpt, 
     }
 }
 
-inline static int safe_read(int fd, const void* data, int len)
+inline static int _safe_read(int fd, const void* data, int len)
 {
     while ( len ) {
         int nread = read(fd, data, len);
@@ -216,22 +216,22 @@ inline static int safe_read(int fd, const void* data, int len)
 inline static void write_tag(hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     int8_t len = str->len;
-    safe_write(&len, sizeof(len), excpt, ctx);
+    _safe_write(&len, sizeof(len), excpt, ctx);
     // We write this out in UTF8, and decode when reading.
-    safe_write(&str->bytes, len, excpt, ctx);
+    _safe_write(&str->bytes, len, excpt, ctx);
 }
 
 inline static int read_tag(int fd, char* tag)
 {
     int8_t len;
 
-    int ret = safe_read(fd, &len, sizeof(len));
+    int ret = _safe_read(fd, &len, sizeof(len));
     if ( ret <= 0 )
         return ret;
 
     char buffer[len];
 
-    if ( safe_read(fd, &buffer, len) <= 0 )
+    if ( _safe_read(fd, &buffer, len) <= 0 )
         return -1; // Eof is an error here.
 
     char* p = buffer;
@@ -259,20 +259,20 @@ static const char* MAGIC = "HLTPROF";
 
 static void write_header(hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    safe_write(MAGIC, sizeof(MAGIC) - 1, excpt, ctx);
+    _safe_write(MAGIC, sizeof(MAGIC) - 1, excpt, ctx);
 
     uint64_t version = hlt_hton64(HLT_PROFILER_VERSION);
-    safe_write(&version, sizeof(version), excpt, ctx );
+    _safe_write(&version, sizeof(version), excpt, ctx );
 
     time_t t = time(0);
     uint64_t secs = hlt_hton64(t);
-    safe_write(&secs, sizeof(secs), excpt, ctx);
+    _safe_write(&secs, sizeof(secs), excpt, ctx);
 }
 
 static int read_header(int fd, time_t* t)
 {
     const char buffer[sizeof(MAGIC) - 1];
-    if ( safe_read(fd, buffer, sizeof(MAGIC) - 1) <= 0 )
+    if ( _safe_read(fd, buffer, sizeof(MAGIC) - 1) <= 0 )
         return -1; // Eof is an error here.
 
     if ( memcmp(MAGIC, buffer, sizeof(MAGIC) - 1) != 0 ) {
@@ -281,7 +281,7 @@ static int read_header(int fd, time_t* t)
     }
 
     uint64_t version;
-    if ( safe_read(fd, &version, sizeof(version)) <= 0 )
+    if ( _safe_read(fd, &version, sizeof(version)) <= 0 )
         return -1; // Eof is an error here.
 
     version = hlt_ntoh64(version);
@@ -292,7 +292,7 @@ static int read_header(int fd, time_t* t)
 
     uint64_t secs;
 
-    if ( safe_read(fd, &secs, sizeof(version)) <= 0 )
+    if ( _safe_read(fd, &secs, sizeof(version)) <= 0 )
         return -1; // Eof is an error here.
 
     if ( t )
@@ -331,7 +331,7 @@ static void write_record(int8_t rtype, __hlt_profiler* p, hlt_exception** excpt,
     rec.type = rtype;
 
     write_tag(p->tag, excpt, ctx);
-    safe_write(&rec, sizeof(rec), excpt, ctx);
+    _safe_write(&rec, sizeof(rec), excpt, ctx);
 }
 
 static int read_record(int fd, char* tag, hlt_profiler_record* rec)
@@ -341,7 +341,7 @@ static int read_record(int fd, char* tag, hlt_profiler_record* rec)
     if ( ret <= 0 )
         return ret;
 
-    if ( safe_read(fd, rec, sizeof(hlt_profiler_record)) <= 0 )
+    if ( _safe_read(fd, rec, sizeof(hlt_profiler_record)) <= 0 )
         return -1; // Eof is an error here.
 
     rec->ctime = hlt_ntoh64(rec->ctime);

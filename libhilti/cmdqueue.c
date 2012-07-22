@@ -50,6 +50,8 @@ static void* _manager(void *arg)
 
     DBG_LOG(DBG_STREAM_QUEUE, "processing started");
 
+    __hlt_files_init();
+
     // We terminate iff all writer threads have terminated already with all
     // remaining elements processed.
     while ( ! hlt_thread_queue_terminated(cmd_queue) ) {
@@ -69,6 +71,8 @@ static void* _manager(void *arg)
             hlt_set_thread_name(name_buffer);
         }
     }
+
+    __hlt_files_done();
 
     DBG_LOG(DBG_STREAM_QUEUE, "command queue manager finished at size %d", hlt_thread_queue_size(cmd_queue));
 

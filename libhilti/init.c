@@ -44,7 +44,6 @@ void hlt_init()
 
     __hlt_config_init();
     __hlt_debug_init();
-    __hlt_files_init();
     __hlt_cmd_queue_init();
     __hlt_global_state_init();
     __hlt_hooks_init();
@@ -81,7 +80,6 @@ void hlt_done()
     __hlt_hooks_done();
     __hlt_global_state_done();
     __hlt_cmd_queue_done();
-    __hlt_files_done();
     __hlt_debug_done();
     __hlt_config_done();
 }

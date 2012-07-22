@@ -88,12 +88,15 @@ extern uint16_t hlt_ntoh16(uint16_t v);
 /// len: The number of bytes to include, starting at *s*.
 ///
 /// Returns: The hash value.
-hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len);
+extern hlt_hash hlt_hash_bytes(const int8_t *s, int16_t len);
 
 /// Default hash function hashing a value by value.
-hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
+extern hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Default comparision function comparing a value by value.
-int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx);
+extern int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx);
+
+/// Wrapper around the standard \a write(2) that restarts on \c EINTR.
+extern int8_t safe_write(int fd, const char* data, int len);
 
 #endif

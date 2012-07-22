@@ -93,20 +93,21 @@ void __hlt_files_init()
 
 void __hlt_files_done()
 {
-    for ( __hlt_file_info* info = files; info; info = info->next ) {
-        fsync(info->fd);
+    __hlt_file_info* info = files;
+
+    while ( info ) {
+        close(info->fd);
 
         GC_DTOR(info->path, hlt_string);
         GC_DTOR(info->charset, hlt_string);
+
+        __hlt_file_info* next = info->next;
         hlt_free(info);
+        info = next;
     }
 
- //   if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&files_lock) != 0 )
- //       fatal_error("cannot destroy mutex");
-
-    // TODO: We don't destroy the mutex for now because the cmd-queue might
-    // still need it when writing stuff out. The question is when can we
-    // safely destroy it?
+    if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&files_lock) != 0 )
+        fatal_error("cannot destroy mutex");
 }
 
 hlt_file* hlt_file_new(hlt_exception** excpt, hlt_execution_context* ctx)
@@ -341,8 +342,9 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
     switch ( cmd->type ) {
 
       case 0: {
+          // Write comment.
           if ( cmd->len ) {
-              write(cmd->info->fd, cmd->data, cmd->len);
+              safe_write(cmd->info->fd, cmd->data, cmd->len);
               hlt_free(cmd->data);
           }
           break;

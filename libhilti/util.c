@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/resource.h>
 
 #include "util.h"
@@ -162,4 +163,23 @@ hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt_except
 int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     return memcmp(obj1, obj2, type1->size) == 0;
+}
+
+int8_t safe_write(int fd, const char* data, int len)
+{
+	while ( len > 0 ) {
+		int n = write(fd, data, len);
+
+		if ( n < 0 ) {
+			if ( errno == EINTR )
+				continue;
+
+			return 0;
+        }
+
+		data += n;
+		len -= n;
+    }
+
+	return 1;
 }

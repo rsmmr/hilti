@@ -118,11 +118,12 @@ void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt
 /// excpt: &
 void hlt_file_write_bytes(hlt_file* file, struct __hlt_bytes* bytes, hlt_exception** excpt, hlt_execution_context* ctx);
 
-// Internal function called once at startup to initialize the file
-// management.
+// Internal function called once at startup from the command queue threadto
+// initialize the file management.
 void __hlt_files_init();
 
-// Internal function called at termination to clean up the threading.
+// Internal function called at termination of the command queue thread to
+// clean up.
 void __hlt_files_done();
 
 typedef struct __hlt_cmd_write __hlt_cmd_write;
