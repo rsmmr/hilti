@@ -66,6 +66,11 @@ extern void hlt_fiber_set_result_ptr(hlt_fiber* fiber, void* p);
 /// Returns: The pointer.
 extern void* hlt_fiber_get_result_ptr(hlt_fiber* fiber);
 
+/// Returns the cookie value passed in when creating the fiber.
+///
+/// Returns: The cookie.
+extern void* hlt_fiber_get_cookie(hlt_fiber* fiber);
+
 /// Returns the execution context the fibers is running in.
 ///
 /// Returns: The context.

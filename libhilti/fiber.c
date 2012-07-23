@@ -139,6 +139,11 @@ void* hlt_fiber_get_result_ptr(hlt_fiber* fiber)
     return fiber->result;
 }
 
+void* hlt_fiber_get_cookie(hlt_fiber* fiber)
+{
+    return fiber->cookie;
+}
+
 extern hlt_execution_context* hlt_fiber_context(hlt_fiber* fiber)
 {
     return fiber->context;

@@ -74,8 +74,10 @@ void hlt_done()
     __hlt_threading_done(&excpt);
     __hlt_profiler_done(); // Must come after threading is done.
 
-    if ( excpt )
+    if ( excpt ) {
         hlt_exception_print_uncaught(excpt, hlt_global_execution_context());
+        GC_DTOR(excpt, hlt_exception);
+    }
 
     __hlt_hooks_done();
     __hlt_global_state_done();

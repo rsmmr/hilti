@@ -72,8 +72,11 @@ static void _hlt_job_delete(hlt_job* j)
 {
     DBG_LOG(DBG_STREAM, "deleting job %lu", j->id);
 
-    if ( j->fiber )
+    if ( j->fiber ) {
+        hlt_callable* func = hlt_fiber_get_cookie(j->fiber);
+        GC_DTOR(func, hlt_callable);
         hlt_fiber_delete(j->fiber);
+    }
 
     GC_DTOR_GENERIC(&j->tcontext, j->tcontext_type);
     hlt_free(j);
@@ -82,13 +85,6 @@ static void _hlt_job_delete(hlt_job* j)
 static void _hlt_worker_thread_delete(hlt_worker_thread* t)
 {
     DBG_LOG(DBG_STREAM, "deleting worker thread %s", t->name);
-
-
-    for ( int j = 1; j <= t->max_vid; j++ ) {
-        if ( t->ctxs[j] ) {
-            GC_DTOR(t->ctxs[j], hlt_execution_context);
-        }
-    }
 
     while ( hlt_thread_queue_size(t->jobs) ) {
         hlt_job* job = hlt_thread_queue_read(t->jobs, -1);
@@ -109,6 +105,12 @@ static void _hlt_worker_thread_delete(hlt_worker_thread* t)
             _hlt_job_delete(bjob->job);
             hlt_free(bjob);
             bjob = next;
+        }
+    }
+
+    for ( int j = 1; j <= t->max_vid; j++ ) {
+        if ( t->ctxs[j] ) {
+            GC_DTOR(t->ctxs[j], hlt_execution_context);
         }
     }
 
