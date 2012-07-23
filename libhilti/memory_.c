@@ -274,7 +274,9 @@ hlt_free_list* hlt_free_list_new()
 {
     hlt_free_list* list = hlt_malloc(sizeof(hlt_free_list));
     list->pool = 0;
+#ifdef DEBUG
     list->size = 0;
+#endif
     return list;
 }
 
