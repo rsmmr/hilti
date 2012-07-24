@@ -22,7 +22,7 @@ struct _LoadResult
 /// Visitor that generates the code for loading the value of an HILTI
 /// constant or expression. Note that this class should not be used directly,
 /// the main frontend function is CodeGen::llvmValue().
-class Loader : public CGVisitor<_LoadResult>
+class Loader : public CGVisitor<_LoadResult, shared_ptr<Type>>
 {
 public:
    /// Constructor.
@@ -83,7 +83,7 @@ protected:
        result.value = _value;
        result.cctor = _cctor;
        result.is_ptr = _is_ptr;
-       CGVisitor<_LoadResult>::setResult(result);
+       CGVisitor<_LoadResult, shared_ptr<Type>>::setResult(result);
    }
 
    bool preferCctor() const { return _cctor; }

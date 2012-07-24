@@ -14,7 +14,7 @@
 using namespace hilti;
 using namespace codegen;
 
-Loader::Loader(CodeGen* cg) : CGVisitor<_LoadResult>(cg, "codegen::Loader")
+Loader::Loader(CodeGen* cg) : CGVisitor<_LoadResult, shared_ptr<Type>>(cg, "codegen::Loader")
 {
 }
 
@@ -47,6 +47,7 @@ llvm::Value* Loader::llvmValue(shared_ptr<Expression> expr, bool cctor, shared_p
 
     _cctor = cctor;
     _LoadResult result;
+    setArg1(coerce_to);
     bool success = processOne(expr, &result);
     assert(success);
 
@@ -117,14 +118,14 @@ void Loader::visit(expression::Constant* e)
 {
     _LoadResult result;
     bool success = processOne(e->constant(), &result);
-    CGVisitor<_LoadResult>::setResult(result);
+    CGVisitor<_LoadResult, shared_ptr<Type>>::setResult(result);
 }
 
 void Loader::visit(expression::Ctor* e)
 {
     _LoadResult result;
     bool success = processOne(e->ctor(), &result);
-    CGVisitor<_LoadResult>::setResult(result);
+    CGVisitor<_LoadResult, shared_ptr<Type>>::setResult(result);
 }
 
 void Loader::visit(expression::Coerced* e)
@@ -196,7 +197,8 @@ void Loader::visit(constant::Unset* t)
 void Loader::visit(constant::Reference* r)
 {
     // This can only be the null value.
-    auto val = cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmType(r->type())));
+    auto dtype = arg1() ? arg1() : r->type();
+    auto val = cg()->llvmConstNull(cg()->llvmType(dtype));
     setResult(val, false, false);
 }
 
