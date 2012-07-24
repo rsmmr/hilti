@@ -5,9 +5,9 @@
 
 all: debug
 
-debug: mkdirs libhilti-debug hilti-prof
+debug: mkdirs libhilti-debug hilti-prof-debug
 
-release: mkdirs libhilti-releae hilti-prof
+release: mkdirs libhilti-releae hilti-prof-release
 
 hilti-debug:
 	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug ..; $(MAKE) )
@@ -21,7 +21,10 @@ libhilti-release: hilti-release
 libhilti-debug: hilti-debug
 	( cd build/libhilti-debug;   test -e Makefile || cmake -D CMAKE_BUILD_TYPE=Debug          ../../libhilti; $(MAKE) )
 
-hilti-prof: libhilti-release libhilti-debug
+hilti-prof-debug: libhilti-debug
+	( cd build; make hilti-prof )
+
+hilti-prof-release: libhilti-release
 	( cd build; make hilti-prof )
 
 mkdirs:
