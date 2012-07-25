@@ -301,9 +301,16 @@ int8_t __hlt_bytes_append_raw(hlt_bytes* b, int8_t* raw, hlt_bytes_size len, hlt
     }
 
     else {
-        dst->bytes->data = raw;
-        dst->start = raw;
-        dst->end = raw + len;
+        int8_t* data = raw;
+
+        if ( ! owner ) {
+            data = hlt_malloc(len);
+            memcpy(data, raw, len);
+        }
+
+        dst->bytes->data = data;
+        dst->start = data;
+        dst->end = data + len;
         dst->owner = 0;
         dst->frozen = 0;
         add_chunk(b, dst);
@@ -634,7 +641,7 @@ int8_t* hlt_bytes_sub_raw(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_
     if ( start.chunk == end.chunk ) {
         size_t len = start.chunk->end - start.cur;
         int8_t* mem = hlt_malloc(len);
-        memcpy(mem, start.chunk->start, len);
+        memcpy(mem, start.cur, len);
         return mem;
     }
 
