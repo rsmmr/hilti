@@ -13,10 +13,9 @@
 // This struct describes one currently open file. We memory-manage this ourselves.
 typedef struct __hlt_file_info {
     hlt_string path;    // The path of the file.
-    hlt_string charset; // The charset for a text file.
-    hlt_enum type;      // Hilti_FileType_* constant.
     int fd;             // The file descriptor.
     int writers;        // The number of file objects having the file open from the OS perspective.
+    bool error;         // True if we run into an error.
 
     struct __hlt_file_info* next; // We keep them in a list.
     struct __hlt_file_info* prev;
@@ -40,8 +39,8 @@ typedef struct __hlt_cmd_file {
     char* data;                // Bytes to write.
     int len;                   // Number of bytes to write.
 
-    hlt_enum param_type;       // For type 3: The new type.
-    hlt_string param_charset;  // For type 3: The new charset.
+    hlt_enum param_type;       // For type 0: The type.
+    hlt_enum param_mode;       // For type 0: The mode.
 } __hlt_cmd_file;
 
 // The list of currently open files. Read and write accesses to this list
@@ -99,7 +98,6 @@ void __hlt_files_done()
         close(info->fd);
 
         GC_DTOR(info->path, hlt_string);
-        GC_DTOR(info->charset, hlt_string);
 
         __hlt_file_info* next = info->next;
         hlt_free(info);
@@ -131,8 +129,7 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
         return;
     }
 
-    if ( *excpt )
-        return;
+    // Find, or create, the file's global state record.
 
     int s;
     acqire_lock(&s);
@@ -145,52 +142,16 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
     __hlt_file_info* info;
     for ( info = files; info; info = info->next ) {
         if ( hlt_string_cmp(path, info->path, excpt, ctx) == 0 ) {
-            // Already open. Send a change parameters message.
-            if ( ! hlt_enum_equal(info->type, type, excpt, ctx)
-                 || hlt_string_cmp(info->charset, charset, excpt, ctx) != 0 ) {
-                __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
-                __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
-                cmd->info = info;
-                cmd->type = 2; // Change params.
-                cmd->param_type = type;
-                cmd->param_charset = hlt_string_copy(charset, excpt, ctx);
-                __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
-            }
-
             ++info->writers;
             goto init_instance;
         }
     }
 
-    if ( *excpt )
-        return;
-
-    // Not open yet.
-
-    char* fn = hlt_string_to_native(path, excpt, ctx);
-    if ( *excpt )
-        return;
-
-    int8_t append = hlt_enum_equal(mode, Hilti_FileMode_Append, excpt, ctx);
-    int oflags = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
-    int fd = open(fn, oflags, 0777);
-
-    hlt_free(fn);
-
-    if ( fd < 0 ) {
-        hlt_string err = hlt_string_from_asciiz(strerror(errno), excpt, ctx);
-        hlt_set_exception(excpt, &hlt_exception_io_error, err);
-        GC_DTOR(err, hlt_string);
-        goto error;
-    }
-
     info = hlt_malloc(sizeof(__hlt_file_info));
-
-    info->fd = fd;
+    info->fd = -1;
     info->path = hlt_string_copy(path, excpt, ctx);
-    info->charset = hlt_string_copy(charset, excpt, ctx);
-    info->type = type;
     info->writers = 1;
+    info->error = 0;
     info->prev = 0;
     info->next = files;
 
@@ -209,17 +170,16 @@ init_instance:
     GC_CCTOR(file->path, hlt_string);
     GC_CCTOR(file->charset, hlt_string);
 
-    goto done;
-
-error:
-    if ( file && file->info )
-        --info->writers;
-
-    file->info = 0;
-    file->open = 0;
-
-done:
     release_lock(s);
+
+    // Send open command.
+    __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
+    __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
+    cmd->info = file->info;
+    cmd->type = 1; // Open.
+    cmd->param_type = type;
+    cmd->param_mode = mode;
+    __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 }
 
 void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -234,7 +194,7 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
     __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
     cmd->info = file->info;
-    cmd->type = 1; // Close.
+    cmd->type = 3; // Close.
     __hlt_cmdqueue_push((__hlt_cmd*) cmd, excpt, ctx);
 
     file->open = 0;
@@ -244,7 +204,7 @@ void hlt_file_close(hlt_file* file, hlt_exception** excpt, hlt_execution_context
 
 void hlt_file_write_string(hlt_file* file, hlt_string str, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_bytes* b = hlt_string_encode(str, file->info->charset, excpt, ctx);
+    hlt_bytes* b = hlt_string_encode(str, file->charset, excpt, ctx);
     if ( *excpt )
         return;
 
@@ -271,7 +231,7 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt
     __hlt_cmd_file* cmd = hlt_malloc(sizeof(__hlt_cmd_file));
     __hlt_cmdqueue_init_cmd((__hlt_cmd*) cmd, __HLT_CMD_FILE);
     cmd->info = file->info;
-    cmd->type = 0; // Write.
+    cmd->type = 2; // Write.
     cmd->data = 0;
     cmd->len = 0;
 
@@ -287,11 +247,11 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt
         if ( block.start == block.end )
             break;
 
-        int8_t text = hlt_enum_equal(file->info->type, Hilti_FileType_Text, excpt, ctx);
+        int8_t text = hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx);
 
         if ( text ) {
-            // Need to escape unprintable characters. FIXME: We don't honor the
-            // charset here yet, just encode everything that is not
+            // Need to escape unprintable characters. FIXME: We don't honor
+            // the charset here yet, just encode everything that is not
             // representable in our current locale.
             const int8_t* s = block.start;
             const int8_t* e = s;
@@ -314,7 +274,7 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt
             }
         }
 
-        else if ( hlt_enum_equal(file->info->type, Hilti_FileType_Binary, excpt, ctx) )
+        else if ( hlt_enum_equal(file->type, Hilti_FileType_Binary, excpt, ctx) )
             // Just write data directly.
             _add_to_cmd_data(cmd, block.start, block.end - block.start);
 
@@ -325,7 +285,7 @@ void hlt_file_write_bytes(hlt_file* file, hlt_bytes* data, hlt_exception** excpt
             break;
     }
 
-    if ( hlt_enum_equal(file->info->type, Hilti_FileType_Text, excpt, ctx) )
+    if ( hlt_enum_equal(file->type, Hilti_FileType_Text, excpt, ctx) )
         _add_to_cmd_data(cmd, (int8_t*)"\n", 1);
 
     GC_DTOR(start, hlt_iterator_bytes);
@@ -341,17 +301,68 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
     // This will be called from the command queue thread only.
     switch ( cmd->type ) {
 
-      case 0: {
+     case 1: {
+         if ( cmd->info->error )
+             return;
+
+         // Open command.
+         int s;
+         acqire_lock(&s);
+
+         if ( cmd->info->fd < 0 ) {
+             // Not open yet.
+
+             hlt_exception* excpt = 0;
+             char* fn = hlt_string_to_native(cmd->info->path, &excpt, 0);
+             if ( excpt ) {
+                 release_lock(s);
+                 break;
+             }
+
+             int8_t append = hlt_enum_equal(cmd->param_mode, Hilti_FileMode_Append, &excpt, 0);
+             int oflags = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
+             int fd = open(fn, oflags, 0666);
+
+             hlt_free(fn);
+
+             if ( fd < 0 ) {
+                 cmd->info->error = 1;
+                 // TODO: We don't have a good way to report errors unfortunately.
+                 release_lock(s);
+                 return;
+             }
+
+             cmd->info->fd = fd;
+         }
+
+         release_lock(s);
+         break;
+
+      case 2: {
           // Write comment.
+
+          if ( cmd->info->fd < 0 )
+              return;
+
+          if ( cmd->info->error )
+              return;
+
           if ( cmd->len ) {
-              safe_write(cmd->info->fd, cmd->data, cmd->len);
+              if ( ! safe_write(cmd->info->fd, cmd->data, cmd->len) )
+                  cmd->info->error = 1;
+
               hlt_free(cmd->data);
           }
+
           break;
       }
 
-      case 1: {
+      case 3: {
           // Close command.
+
+          if ( cmd->info->fd < 0 )
+              return;
+
           int s;
           acqire_lock(&s);
 
@@ -381,7 +392,6 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
                   fatal_error("file to close not found");
 
               GC_DTOR(cmd->info->path, hlt_string);
-              GC_DTOR(cmd->info->charset, hlt_string);
               hlt_free(cmd->info);
 
               cmd->info = 0;
@@ -391,21 +401,9 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
           break;
       }
 
-      case 2: {
-          // Change params command.
-          int s;
-          acqire_lock(&s);
-
-          GC_DTOR(cmd->info->charset, hlt_string);
-          cmd->info->charset = cmd->param_charset;
-          cmd->info->type = cmd->param_type;
-
-          release_lock(s);
-          break;
-      }
-
       default:
-        fatal_error("unknown data type in write");
+         fatal_error("unknown data type in write");
+     }
     }
 }
 
