@@ -1,0 +1,3 @@
+#! /usr/bin/env bash
+
+CCC_CC=@CCC_CC@ eval ccc-analyzer $@

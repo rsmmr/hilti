@@ -1,0 +1,3 @@
+#! /usr/bin/env bash
+
+CCC_CXX=@CCC_CXX@ eval c++-analyzer $@

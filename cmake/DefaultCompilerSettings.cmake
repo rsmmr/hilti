@@ -5,7 +5,7 @@
 
 MESSAGE(STATUS "Adapting compiler settings")
 
-set(clang_debug_flags  "-DDEBUG  -Wno-error=unused-function -Werror -O0")
+set(clang_debug_flags  "-DDEBUG -Wno-error=unused-function -Werror -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 
 set(clang_cflags       "-lcxxrt -L${LLVM_LIB_DIR} -Qunused-arguments -fno-color-diagnostics -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 set(clang_cxxflags     "${clang_cflags} -stdlib=libc++ -std=c++0x")
