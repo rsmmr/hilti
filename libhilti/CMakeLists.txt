@@ -11,6 +11,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
 include(FindRequiredPackage)
 include(EnableLLVMBitcode)
+include(EnableClangDebugging)
 include(DefaultCompilerSettings)
 
 FindRequiredPackage(FLEX)

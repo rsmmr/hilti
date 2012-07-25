@@ -49,8 +49,11 @@ static int _want_stream(const char* s, hlt_exception** excpt, hlt_execution_cont
     char* c = copy;
 
     while ( (t = strtok_r(c, ":", &saveptr)) ) {
-        if ( strcmp(s, t) == 0 )
+        if ( strcmp(s, t) == 0 ) {
+            free(copy);
             return 1;
+        }
+
         c = 0;
     }
 

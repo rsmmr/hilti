@@ -269,7 +269,7 @@ static jrx_accept_id _search_pattern(hlt_regexp* re, jrx_match_state* ms,
 
     hlt_bytes_block block;
     jrx_assertion first = JRX_ASSERTION_BOL | JRX_ASSERTION_BOD;
-    jrx_assertion last;
+    jrx_assertion last = 0;
     void* cookie = 0;
     jrx_accept_id acc = 0;
     int8_t need_msdone = 0;

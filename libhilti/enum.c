@@ -37,7 +37,7 @@ hlt_string hlt_enum_to_string(const hlt_type_info* type, const void* obj, int32_
         if ( hlt_enum_has_val(i) ) {
             // FIXME: Come up with something nicer.
             char buffer[128];
-            int len = snprintf(buffer, 128, "Unknown-%" PRId64, i.value);
+            snprintf(buffer, 128, "Unknown-%" PRId64, i.value);
             return hlt_string_from_asciiz(buffer, excpt, ctx);
         }
         else

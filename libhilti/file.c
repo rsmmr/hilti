@@ -131,7 +131,7 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
 
     // Find, or create, the file's global state record.
 
-    int s;
+    int s = 0;
     acqire_lock(&s);
 
     // First see whether we know this file already.
@@ -306,7 +306,7 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
              return;
 
          // Open command.
-         int s;
+         int s = 0;
          acqire_lock(&s);
 
          if ( cmd->info->fd < 0 ) {
@@ -363,7 +363,7 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
           if ( cmd->info->fd < 0 )
               return;
 
-          int s;
+          int s = 0;
           acqire_lock(&s);
 
           assert(cmd->info->writers);

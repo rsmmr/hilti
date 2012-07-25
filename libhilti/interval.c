@@ -19,7 +19,7 @@ hlt_string hlt_interval_to_string(const hlt_type_info* type, const void* obj, in
     double frac = (val % 1000000000) / 1e9;
 
     char buffer[128];
-    int len = snprintf(buffer, 128, "%.6fs", ( (double)secs + ((double)frac)) );
+    snprintf(buffer, 128, "%.6fs", ( (double)secs + ((double)frac)) );
     return hlt_string_from_asciiz(buffer, excpt, ctx);
 }
 

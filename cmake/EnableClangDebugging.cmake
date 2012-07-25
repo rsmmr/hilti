@@ -2,7 +2,7 @@
 # If we compile in debugging mode, we activate clang's debugging capabilities:
 #
 #   - The static analyzer if we find 'ccc-analyzer'
-#   - AddressSanitizer [Disabled for now, produces linker errors]
+#   - AddressSanitizer [Disabled for now, produces linker errors; probably need compiler-rt]
 #
 
 if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )

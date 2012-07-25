@@ -637,6 +637,13 @@ int8_t* hlt_bytes_sub_raw(hlt_iterator_bytes start, hlt_iterator_bytes end, hlt_
     normalize_pos(&start, 0);
     normalize_pos(&end, 0);
 
+    if ( is_end(start) ) {
+        if ( ! is_end(end) )
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+
+        return 0;
+    }
+
     // The easy case: start and end are within the same chunk.
     if ( start.chunk == end.chunk ) {
         size_t len = start.chunk->end - start.cur;
@@ -679,9 +686,11 @@ int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_bytes end, 
     }
 
     // Extract byte.
+    assert(pos->cur);
     int8_t b = *(pos->cur);
 
     // Increase iterator.
+    assert(pos->chunk);
     if ( pos->cur < pos->chunk->end - 1 )
         // We stay inside chunk.
         ++pos->cur;
@@ -777,6 +786,7 @@ void hlt_bytes_freeze(hlt_bytes* b, int8_t freeze, hlt_exception** excpt, hlt_ex
         return;
     }
 
+    assert(b->tail);
     b->tail->frozen = freeze;
     hlt_thread_mgr_unblock(&b->blockable, ctx);
 }
@@ -971,6 +981,7 @@ hlt_bytes_size hlt_iterator_bytes_diff(hlt_iterator_bytes pos1, hlt_iterator_byt
     }
 
     // Count first chunk.
+    assert(pos1.chunk);
     hlt_bytes_size n = pos1.chunk->end - pos1.cur;
 
     // Count intermediary chunks.
@@ -1028,7 +1039,7 @@ hlt_string hlt_bytes_to_string(const hlt_type_info* type, const void* obj, int32
                 buffer[i++] = c;
 
             else {
-                int n = hlt_util_uitoa_n(c, hex + 2, 3, 16, 1);
+                hlt_util_uitoa_n(c, hex + 2, 3, 16, 1);
                 strcpy(buffer + i, hex);
                 i += sizeof(hex) - 1;
             }
@@ -1088,7 +1099,13 @@ void* hlt_bytes_iterate_raw(hlt_bytes_block* block, void* cookie, hlt_iterator_b
             return 0;
         }
 
+        if ( is_end(start) && ! is_end(end) ) {
+            hlt_set_exception(excpt, &hlt_exception_value_error, 0);
+            return 0;
+        }
+
         if ( start.chunk != end.chunk  ) {
+            assert(start.chunk);
             block->start = start.cur;
             block->end = start.chunk->end;
             block->next = start.chunk->next;

@@ -190,7 +190,7 @@ inline static void _safe_write(const void* data, int len, hlt_exception** excpt,
     }
 }
 
-inline static int _safe_read(int fd, const void* data, int len)
+inline static int _safe_read(int fd, void* data, int len)
 {
     while ( len ) {
         int nread = read(fd, data, len);
@@ -223,7 +223,7 @@ inline static void write_tag(hlt_string str, hlt_exception** excpt, hlt_executio
 
 inline static int read_tag(int fd, char* tag)
 {
-    int8_t len;
+    int8_t len = 0;
 
     int ret = _safe_read(fd, &len, sizeof(len));
     if ( ret <= 0 )
@@ -271,7 +271,7 @@ static void write_header(hlt_exception** excpt, hlt_execution_context* ctx)
 
 static int read_header(int fd, time_t* t)
 {
-    const char buffer[sizeof(MAGIC) - 1];
+    char buffer[sizeof(MAGIC) - 1];
     if ( _safe_read(fd, buffer, sizeof(MAGIC) - 1) <= 0 )
         return -1; // Eof is an error here.
 
@@ -280,7 +280,7 @@ static int read_header(int fd, time_t* t)
         return -1;
     }
 
-    uint64_t version;
+    uint64_t version = 0;
     if ( _safe_read(fd, &version, sizeof(version)) <= 0 )
         return -1; // Eof is an error here.
 
@@ -290,7 +290,7 @@ static int read_header(int fd, time_t* t)
         return -1;
     }
 
-    uint64_t secs;
+    uint64_t secs = 0;
 
     if ( _safe_read(fd, &secs, sizeof(version)) <= 0 )
         return -1; // Eof is an error here.

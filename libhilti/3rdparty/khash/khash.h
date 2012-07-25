@@ -216,7 +216,7 @@ static const double __ac_HASH_UPPER = 0.77;
 		}																\
 		{																\
 			khint_t inc, k, i, site, last;								\
-			x = site = h->n_buckets; k = __hash_func(key, cookie); i = k % h->n_buckets; \
+			x = site = h->n_buckets; k = __hash_func(key, cookie); assert(h->n_buckets); i = k % h->n_buckets; \
 			if (__ac_isempty(h->flags, i)) x = i;						\
 			else {														\
 				inc = 1 + k % (h->n_buckets - 1); last = i;				\

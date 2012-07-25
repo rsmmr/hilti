@@ -17,7 +17,7 @@ hlt_string hlt_double_to_string(const hlt_type_info* type, const void* obj, int3
     // FIXME: This is just a hack for now. Rather than depending on snprintf,
     // we should code our own dtoa().
     char buffer[128];
-    int len = snprintf(buffer, 128, "%.6f", val);
+    snprintf(buffer, 128, "%.6f", val);
     return hlt_string_from_asciiz(buffer, excpt, ctx);
 }
 

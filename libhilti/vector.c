@@ -75,7 +75,7 @@ static inline void _access_entry(hlt_vector* v, hlt_vector_idx i, hlt_exception*
 static inline void _set_entry(hlt_vector* v, hlt_vector_idx i, void *val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // Cancel old timer if active.
-    if ( v->tmgr && v->timers[i] ) {
+    if ( v->tmgr && v->timers && v->timers[i] ) {
         hlt_timer_cancel(v->timers[i], excpt, ctx);
         v->timers[i] = 0;
     }
@@ -105,6 +105,7 @@ hlt_vector* hlt_vector_new(const hlt_type_info* elemtype, const void* def, struc
     if ( tmgr ) {
         GC_INIT(v->tmgr, tmgr, hlt_timer_mgr);
         v->timers = hlt_malloc(sizeof(hlt_timer*) *  InitialCapacity);
+        assert(v->timers);
     }
 
     // We need to deep-copy the default element as the caller might have it
@@ -166,8 +167,10 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
         memcpy(dst, v->def, v->type->size);
         GC_CCTOR_GENERIC(dst, v->type);
 
-        if ( v->tmgr )
+        if ( v->tmgr ) {
+            assert(v->timers);
             v->timers[j] = 0;
+        }
     }
 
     if ( i > v->last )
@@ -190,9 +193,11 @@ void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* va
 
     assert(v->last < v->capacity);
 
-    if ( v->tmgr )
+    if ( v->tmgr ) {
+        assert(v->timers);
         v->timers[v->last] = 0;
-
+    }
+    
     _set_entry(v, v->last, val, excpt, ctx);
 }
 
@@ -223,8 +228,10 @@ void hlt_vector_reserve(hlt_vector* v, hlt_vector_idx n, hlt_exception** excpt, 
     v->capacity = n;
     v->elems = hlt_realloc(v->elems, v->type->size * n);
 
-    if ( v->timers )
+    if ( v->timers ) {
         v->timers = hlt_realloc(v->timers, sizeof(hlt_timer*) * n);
+        assert(v->timers);
+    }
 }
 
 hlt_iterator_vector hlt_vector_begin(hlt_vector* v, hlt_exception** excpt, hlt_execution_context* ctx)

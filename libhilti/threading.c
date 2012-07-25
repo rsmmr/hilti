@@ -505,7 +505,7 @@ static void* _worker(void* worker_thread_ptr)
             hlt_thread_queue_writer_update(mgr->workers[i]->jobs, thread->id);
 
 #ifdef DEBUG
-        uint64_t size = hlt_thread_queue_size(thread->jobs);
+        hlt_thread_queue_size(thread->jobs);
 
         ++cnt;
 
