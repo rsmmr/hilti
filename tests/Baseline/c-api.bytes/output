@@ -28,7 +28,7 @@ D len = 2058 (2058) no-exception
 E len = 1497 (1497) no-exception
 -----
 4512
-A len = 1497 (4) no-exception
+A len = 4 (4) no-exception
 -----
 1234512
 B len = 7 (7) no-exception
