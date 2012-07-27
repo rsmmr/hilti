@@ -509,8 +509,10 @@ static void* _worker(void* worker_thread_ptr)
 
         ++cnt;
 
+#if 0
         if ( thread->id == 1 && cnt % 5000 == 0 )
             _debug_print_job_summary(mgr);
+#endif
 
         if ( cnt % 1000 == 0 )
             _debug_adapt_thread_name(thread);
