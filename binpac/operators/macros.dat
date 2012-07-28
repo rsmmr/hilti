@@ -1,0 +1,86 @@
+> <<HEADER>> h
+
+#ifndef $STDIFDEF
+#define $STDIFDEF
+
+#include "operator.h"
+
+namespace operator_ {
+===
+> <<FOOTER>> h
+}
+
+#endif
+
+===
+>> opBegin h
+
+namespace $NAMESPACE {
+
+class $CLASS : public binpac::Operator
+{
+public:
+   $CLASS();
+   virtual ~$CLASS();
+protected:
+===
+> opOp1 h
+   shared_ptr<Type> __typeOp1() const;
+===
+> opOp1 h
+   shared_ptr<Type> __typeOp2() const;
+===
+> opOp3 h
+   shared_ptr<Type> __typeOp3() const;
+===
+> opValidate h
+   void __validate(const expression_list& ops) override;
+===
+> opMatch h
+   void __match(const expression_list& ops) override;
+===
+> opDoc h
+   string __doc() const override;
+===
+> opResult h
+   shared_ptr<Type> __typeResult(const expression_list& ops);
+===
+> opSimplify h
+   shared_ptr<Expression> __simplify(const expression_list& ops);
+===
+> opEnd h
+};
+
+}
+
+===
+>> opBegin cc
+$CLASS::$CLASS : binpac::Operator($CLASS) {}
+===
+> opOp1 cc
+shared_ptr<Type> $CLASS::__typeOp1() const { return $1; }
+===
+> opOp1 cc
+shared_ptr<Type> $CLASS::__typeOp2() const { return $1; }
+===
+> opOp3 cc
+shared_ptr<Type> $CLASS::__typeOp3() const { return $1; }
+===
+> opValidate cc
+void $CLASS::__validate(const expression_list& ops) override
+===
+> opMatch cc
+void $CLASS__match(const expression_list& ops) override
+===
+> opDoc cc
+string $CLASS::__doc() const override { return $1; }
+===
+> opResult cc
+shared_ptr<Type> $CLASS::__typeResult(const expression_list& ops)
+===
+> opSimplify cc
+shared_ptr<Expression> $CLASS::__simplify(const expression_list& ops)
+===
+
+
+

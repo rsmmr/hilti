@@ -1,4 +1,11 @@
 
-include_directories (${HILTI_SOURCE_DIR})
+add_library (ast SHARED
+    exception.cc
+    location.cc
+    logger.cc
+    node.cc
+    type.cc
+)
 
-add_library (ast location.cc node.cc type.cc logger.cc exception.cc)
+target_link_libraries(ast util)
+

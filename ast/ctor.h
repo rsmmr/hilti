@@ -14,20 +14,20 @@ template<typename AstInfo>
 class Ctor : public AstInfo::node
 {
 public:
-   typedef typename AstInfo::type Type;
-   typedef typename AstInfo::visitor_interface VisitorInterface;
+    typedef typename AstInfo::type Type;
+    typedef typename AstInfo::visitor_interface VisitorInterface;
 
-   // Constructor.
-   //
-   /// l: A location associated with the ctor.
-   Ctor(const Location& l=Location::None)
+    // Constructor.
+    //
+    /// l: A location associated with the ctor.
+    Ctor(const Location& l=Location::None)
        : AstInfo::node(l) {}
 
-   /// Returns the type of the ctor. Must be overriden by derived
-   /// classes.
-   virtual shared_ptr<Type> type() const = 0;
+    /// Returns the type of the ctor. Must be overriden by derived
+    /// classes.
+    virtual shared_ptr<Type> type() const = 0;
 
-   ACCEPT_DISABLED;
+    ACCEPT_DISABLED;
 };
 
 }

@@ -19,37 +19,37 @@ namespace ast {
 // gives compiler errors.
 
 #define ACCEPT_VISITOR(base)                         \
-   void accept(VisitorInterface* visitor) override { \
+    void accept(VisitorInterface* visitor) override { \
        this->base::accept(visitor);                  \
        visitor->visit(this);                         \
-   }                                                 \
-   const char* acceptClass() const override {        \
+    }                                                 \
+    const char* acceptClass() const override {        \
        return typeid(*this).name();                  \
-   }
+    }
 
 #define ACCEPT_VISITOR_ROOT()                        \
-   void accept(VisitorInterface* visitor) /* override */ { \
+    void accept(VisitorInterface* visitor) /* override */ { \
        visitor->visit(this);                         \
-   }                                                 \
-   const char* acceptClass() const  {        \
+    }                                                 \
+    const char* acceptClass() const  {        \
        return typeid(*this).name();                  \
-   }
+    }
 
 #define ACCEPT_VISITOR_FORWARD_TO_BASE(base)         \
-   void accept(VisitorInterface* visitor) /* override */ { \
+    void accept(VisitorInterface* visitor) /* override */ { \
        this->base::accept(visitor);                  \
-   }                                                 \
-   const char* acceptClass() const  {        \
+    }                                                 \
+    const char* acceptClass() const  {        \
        return typeid(*this).name();                  \
-   }
+    }
 
 #define ACCEPT_DISABLED                              \
-   void accept(VisitorInterface* visitor) /* override */ { \
+    void accept(VisitorInterface* visitor) /* override */ { \
        throw InternalError("disabled accept called", this); \
-   }                                                 \
-   const char* acceptClass() const  {        \
+    }                                                 \
+    const char* acceptClass() const  {        \
        return typeid(*this).name();                  \
-   }
+    }
 
 /// Base class for all AST visitors.
 ///
@@ -74,113 +74,113 @@ template<typename AstInfo, typename Result=int, typename Arg1=int, typename Arg2
 class Visitor : public AstInfo::visitor_interface, public Logger
 {
 public:
-   typedef typename AstInfo::visitor_interface VisitorInterface;
+    typedef typename AstInfo::visitor_interface VisitorInterface;
 
-   /// Processes all child nodes pre-order, i.e., parent nodes are visited
-   /// before their childs.
-   ///
-   /// node: The node where to start visiting.
-   bool processAllPreOrder(shared_ptr<NodeBase> node);
+    /// Processes all child nodes pre-order, i.e., parent nodes are visited
+    /// before their childs.
+    ///
+    /// node: The node where to start visiting.
+    bool processAllPreOrder(shared_ptr<NodeBase> node);
 
-   /// Processes all child nodes pre-order, i.e., parent nodes are visited
-   /// after their childs.
-   ///
-   /// node: The node where to start visiting.
-   bool processAllPostOrder(shared_ptr<NodeBase> node);
+    /// Processes all child nodes pre-order, i.e., parent nodes are visited
+    /// after their childs.
+    ///
+    /// node: The node where to start visiting.
+    bool processAllPostOrder(shared_ptr<NodeBase> node);
 
-   /// Visits just a single node. The methods doesn't recurse any further,
-   /// although the individual visit methods can manually do so by invoking 
-   /// any of the #call methods.
-   ///
-   /// In other words, this method is external interface to visiting a single
-   /// node, whereas *call* is internal interface when a visiting process is
-   /// already in progress. Don't mix the two.
-   ///
-   /// node: The node to visit.
-   ///
-   /// Returns: True if no fatalError() has been reported.
-   bool processOne(shared_ptr<NodeBase> node);
+    /// Visits just a single node. The methods doesn't recurse any further,
+    /// although the individual visit methods can manually do so by invoking 
+    /// any of the #call methods.
+    ///
+    /// In other words, this method is external interface to visiting a single
+    /// node, whereas *call* is internal interface when a visiting process is
+    /// already in progress. Don't mix the two.
+    ///
+    /// node: The node to visit.
+    ///
+    /// Returns: True if no fatalError() has been reported.
+    bool processOne(shared_ptr<NodeBase> node);
 
-   /// Like processOne(), but also allows the visit method to set a result
-   /// value. If no result is set via setResult(), the default set with
-   /// setDefault() is returned. If neither is set, that's an error.
-   ///
-   /// node: The node to visit.
-   ///
-   /// result: Pointer to instance to store result in.
-   bool processOne(shared_ptr<NodeBase> node, Result* result);
+    /// Like processOne(), but also allows the visit method to set a result
+    /// value. If no result is set via setResult(), the default set with
+    /// setDefault() is returned. If neither is set, that's an error.
+    ///
+    /// node: The node to visit.
+    ///
+    /// result: Pointer to instance to store result in.
+    bool processOne(shared_ptr<NodeBase> node, Result* result);
 
-   /// Like processOne(), but also sets the visitors first argument. Visit
-   /// methods can then retrieve it with #arg1.
-   bool processOne(shared_ptr<NodeBase> node, Arg1 arg1) {
+    /// Like processOne(), but also sets the visitors first argument. Visit
+    /// methods can then retrieve it with #arg1.
+    bool processOne(shared_ptr<NodeBase> node, Arg1 arg1) {
        this->setArg1(arg1);
        processOne(node);
-   }
+    }
 
-   /// Like processOne(), but also sets the visitors first and second
-   /// arguments. Visit methods can then retrieve it with #arg1 and #arg2.
-   bool processOne(shared_ptr<NodeBase> node, Arg1 arg1, Arg2 arg2) {
+    /// Like processOne(), but also sets the visitors first and second
+    /// arguments. Visit methods can then retrieve it with #arg1 and #arg2.
+    bool processOne(shared_ptr<NodeBase> node, Arg1 arg1, Arg2 arg2) {
        this->setArg1(arg1);
        this->setArg2(arg2);
        return processOne(node);
-   }
+    }
 
-   /// Like processOne(), with setting an argument and getting a result back.
-   bool processOne(shared_ptr<NodeBase> node, Result* result, Arg1 arg1) {
+    /// Like processOne(), with setting an argument and getting a result back.
+    bool processOne(shared_ptr<NodeBase> node, Result* result, Arg1 arg1) {
        this->setArg1(arg1);
        return processOne(node, result);
-   }
+    }
 
-   /// Like processOne(), with setting arguments and getting a result back.
-   bool processOne(shared_ptr<NodeBase> node, Result* result, Arg1 arg1, Arg2 arg2) {
+    /// Like processOne(), with setting arguments and getting a result back.
+    bool processOne(shared_ptr<NodeBase> node, Result* result, Arg1 arg1, Arg2 arg2) {
        this->setArg1(arg1);
        this->setArg2(arg2);
        return processOne(node, result);
-   }
+    }
 
-   /// Returns true if we currently in a visit method that was triggered by
-   /// recursing down from a higher-level method for type T. The result is
-   /// undefined if there's currently no visiting in progress.
-   template<typename T>
-   bool in() {
+    /// Returns true if we currently in a visit method that was triggered by
+    /// recursing down from a higher-level method for type T. The result is
+    /// undefined if there's currently no visiting in progress.
+    template<typename T>
+    bool in() {
        return current<T>(typeid(T)) != 0;
-   }
+    }
 
-   /// Returns the closest higher-level instance of a given type. This method
-   /// must only be called during an ongoing visiting process from another
-   /// visit method. It will return a higher-level objects of type T, or null
-   /// if there's no such. Note that this may return the current instance,
-   /// use parent() if that's not desired.
-   template<typename T>
-   shared_ptr<T> current() {
+    /// Returns the closest higher-level instance of a given type. This method
+    /// must only be called during an ongoing visiting process from another
+    /// visit method. It will return a higher-level objects of type T, or null
+    /// if there's no such. Note that this may return the current instance,
+    /// use parent() if that's not desired.
+    template<typename T>
+    shared_ptr<T> current() {
        auto t = current<T>(typeid(T));
        return t;
-   }
+    }
 
-   Location currentLocation() {
+    Location currentLocation() {
        for ( auto i = _current.rbegin(); i != _current.rend(); i++ ) {
            if ( (*i)->location() != Location::None )
                return (*i)->location();
        }
 
        return Location::None;
-   }
+    }
 
-   /// Returns the closest higher-level instance of a given type (excluding
-   /// the current one). This method must only be called during an ongoing
-   /// visiting process from another visit method. It will return a
-   /// higher-level objects of type T, or null if there's no such.
-   template<typename T>
-   shared_ptr<T> parent() {
+    /// Returns the closest higher-level instance of a given type (excluding
+    /// the current one). This method must only be called during an ongoing
+    /// visiting process from another visit method. It will return a
+    /// higher-level objects of type T, or null if there's no such.
+    template<typename T>
+    shared_ptr<T> parent() {
        auto t = current<T, true>(typeid(T));
        return t;
-   }
+    }
 
-   /// Returns the number of higher-level instance of a given type. This method
-   /// must only be called during an ongoing visiting process from another
-   /// visit method.
-   template<typename T>
-   shared_ptr<T> depth() {
+    /// Returns the number of higher-level instance of a given type. This method
+    /// must only be called during an ongoing visiting process from another
+    /// visit method.
+    template<typename T>
+    shared_ptr<T> depth() {
        int d = 0;
        for ( auto i = _current.rbegin(); i != _current.rend(); i++ ) {
            if ( typeid(**i) == typeid(T) )
@@ -188,168 +188,168 @@ public:
        }
 
        return d;
-   }
+    }
 
-   /// Returns the first argument given to the visitor. The argument can be
-   /// set by calling setArg1() prior to starting the visiting via any of \c
-   /// process* methods. The return value is undefined if no argument has
-   /// been set.
-   Arg1 arg1() const { return _arg1; }
+    /// Returns the first argument given to the visitor. The argument can be
+    /// set by calling setArg1() prior to starting the visiting via any of \c
+    /// process* methods. The return value is undefined if no argument has
+    /// been set.
+    Arg1 arg1() const { return _arg1; }
 
-   /// Returns the second argument given to the visitor. The argument can be
-   /// set by calling setArg2() prior to starting the visiting via any of \c
-   /// process* methods. The return value is undefined if no argument has
-   /// been set.
-   Arg2 arg2() const { return _arg2; }
+    /// Returns the second argument given to the visitor. The argument can be
+    /// set by calling setArg2() prior to starting the visiting via any of \c
+    /// process* methods. The return value is undefined if no argument has
+    /// been set.
+    Arg2 arg2() const { return _arg2; }
 
-   /// Sets the result to be returned by any of the \c *withResult() methods.
-   /// This must only be called from a visit method during traversal.
-   void setResult(Result result) {
+    /// Sets the result to be returned by any of the \c *withResult() methods.
+    /// This must only be called from a visit method during traversal.
+    void setResult(Result result) {
        _result_set = true;
        _result = result;
-   }
+    }
 
-   /// Recurse to another node. Must only be called by a visit method during
-   /// traversal.
-   void call(shared_ptr<NodeBase> node) {
+    /// Recurse to another node. Must only be called by a visit method during
+    /// traversal.
+    void call(shared_ptr<NodeBase> node) {
        this->pushCurrent(node);
        this->callAccept(node);
        this->popCurrent();
-   }
+    }
 
-   /// Returns the current recursion level during visiting.
-   int level() const { return _level; }
+    /// Returns the current recursion level during visiting.
+    int level() const { return _level; }
 
-   /// Returns a string of whitespace reflecting an indentation according to
-   /// the current recursion level.
-   string levelIndent() const;
+    /// Returns a string of whitespace reflecting an indentation according to
+    /// the current recursion level.
+    string levelIndent() const;
 
-   /// XXX
-   void pushCurrentLocationNode(shared_ptr<NodeBase> node) { _loc_nodes.push_back(node.get()); }
+    /// XXX
+    void pushCurrentLocationNode(shared_ptr<NodeBase> node) { _loc_nodes.push_back(node.get()); }
 
-   /// XXXX
-   void pushCurrentLocationNode(NodeBase* node) { _loc_nodes.push_back(node); }
+    /// XXXX
+    void pushCurrentLocationNode(NodeBase* node) { _loc_nodes.push_back(node); }
 
-   /// XXX
-   void popCurrentLocationNode() { _loc_nodes.pop_back(); }
+    /// XXX
+    void popCurrentLocationNode() { _loc_nodes.pop_back(); }
 
-   const NodeBase* currentLocationNode() const { return _loc_nodes.back(); }
+    const NodeBase* currentLocationNode() const { return _loc_nodes.back(); }
 
-   /// Forwards to Logger.
-   void error(NodeBase* node, string msg) const {
+    /// Forwards to Logger.
+    void error(NodeBase* node, string msg) const {
        Logger::error(msg, _loc_nodes.back() ? _loc_nodes.back() : node);
-   }
+    }
 
-   /// Forwards to Logger.
-   void error(shared_ptr<NodeBase> node, string msg) const {
+    /// Forwards to Logger.
+    void error(shared_ptr<NodeBase> node, string msg) const {
        Logger::error(msg, _loc_nodes.back() ? _loc_nodes.back() : node.get());
-   }
+    }
 
-   /// Forwards to Logger.
-   void error(string msg) {
+    /// Forwards to Logger.
+    void error(string msg) {
        Logger::error(msg, _loc_nodes.back());
-   }
+    }
 
-   /// Forwards to Logger.
-   void internalError(NodeBase* node, string msg) const {
+    /// Forwards to Logger.
+    void internalError(NodeBase* node, string msg) const {
        Logger::internalError(msg, _loc_nodes.back() ? _loc_nodes.back() : node);
-   }
+    }
 
-   /// Forwards to Logger.
-   void internalError(shared_ptr<NodeBase> node, string msg) const {
+    /// Forwards to Logger.
+    void internalError(shared_ptr<NodeBase> node, string msg) const {
        Logger::internalError(msg, _loc_nodes.back() ? _loc_nodes.back() : node.get());
-   }
+    }
 
-   /// Forwards to Logger.
-   void internalError(string msg) const {
+    /// Forwards to Logger.
+    void internalError(string msg) const {
        Logger::internalError(msg, _loc_nodes.back());
-   }
+    }
 
-   /// Forwards to Logger.
-   void fatalError(NodeBase* node, string msg) const {
+    /// Forwards to Logger.
+    void fatalError(NodeBase* node, string msg) const {
        Logger::fatalError(msg, _loc_nodes.back() ? _loc_nodes.back() : node);
-   }
+    }
 
-   /// Forwards to Logger.
-   void fatalError(shared_ptr<NodeBase> node, string msg) const {
+    /// Forwards to Logger.
+    void fatalError(shared_ptr<NodeBase> node, string msg) const {
        Logger::fatalError(msg, _loc_nodes.back() ? _loc_nodes.back() : node.get());
-   }
+    }
 
-   /// Forwards to Logger.
-   void fatalError(string msg) const {
+    /// Forwards to Logger.
+    void fatalError(string msg) const {
        Logger::fatalError(msg, _loc_nodes.back());
-   }
+    }
 
-   /// Forwards to Logger.
-   void warning(NodeBase* node, string msg) const {
+    /// Forwards to Logger.
+    void warning(NodeBase* node, string msg) const {
        Logger::warning(msg, _loc_nodes.back() ? _loc_nodes.back() : node);
-   }
+    }
 
-   /// Forwards to Logger.
-   void warning(shared_ptr<NodeBase> node, string msg) const {
+    /// Forwards to Logger.
+    void warning(shared_ptr<NodeBase> node, string msg) const {
        Logger::warning(msg, _loc_nodes.back() ? _loc_nodes.back() : node.get());
-   }
+    }
 
-   /// Forwards to Logger.
-   void warning(string msg) const {
+    /// Forwards to Logger.
+    void warning(string msg) const {
        Logger::warning(msg, _loc_nodes.back());
-   }
+    }
 
 protected:
-   /// Sets the first argument. visit methods can then retrieve it with
-   /// #arg1.
-   ///
-   /// This method is protected because it should normally be called from a
-   /// wrapper method provided by the derived visitor class as its main entry
-   /// point.
-   void setArg1(Arg1 arg1) { _arg1 = arg1; }
+    /// Sets the first argument. visit methods can then retrieve it with
+    /// #arg1.
+    ///
+    /// This method is protected because it should normally be called from a
+    /// wrapper method provided by the derived visitor class as its main entry
+    /// point.
+    void setArg1(Arg1 arg1) { _arg1 = arg1; }
 
-   /// Sets the first argument. visit methods can then retrieve it with
-   /// #arg2.
-   ///
-   /// This method is protected because it should normally be called from a
-   /// wrapper method provided by the derived visitor class as its main entry
-   /// point.
-   void setArg2(Arg2 arg2) { _arg2 = arg2; }
+    /// Sets the first argument. visit methods can then retrieve it with
+    /// #arg2.
+    ///
+    /// This method is protected because it should normally be called from a
+    /// wrapper method provided by the derived visitor class as its main entry
+    /// point.
+    void setArg2(Arg2 arg2) { _arg2 = arg2; }
 
-   /// Sets the default result to be returned by any of the \c *withResult()
-   /// methods if no visit methods sets one. It's an error if no node sets a
-   /// result without a default being defined.
-   ///
-   /// This method is protected because it should normally be called from a
-   /// wrapper method provided by the derived visitor class as its main entry
-   /// point.
-   void setDefaultResult(Result def)  {
+    /// Sets the default result to be returned by any of the \c *withResult()
+    /// methods if no visit methods sets one. It's an error if no node sets a
+    /// result without a default being defined.
+    ///
+    /// This method is protected because it should normally be called from a
+    /// wrapper method provided by the derived visitor class as its main entry
+    /// point.
+    void setDefaultResult(Result def)  {
        _default = def;
        _default_set = true;
-   }
+    }
 
-   /// Resets the visiting process, clearing all previous state. Derived
-   /// classes can override this but must call the parent implementations.
-   virtual void reset() {
+    /// Resets the visiting process, clearing all previous state. Derived
+    /// classes can override this but must call the parent implementations.
+    virtual void reset() {
        _visited.clear();
        Logger::reset();
-   }
+    }
 
-   void preOrder(shared_ptr<NodeBase> node);
-   void postOrder(shared_ptr<NodeBase> node);
+    void preOrder(shared_ptr<NodeBase> node);
+    void postOrder(shared_ptr<NodeBase> node);
 
 private:
 
-   void pushCurrent(shared_ptr<NodeBase> node) {
+    void pushCurrent(shared_ptr<NodeBase> node) {
        _current.push_back(node);
        debugPushIndent();
        ++_level;
-   }
+    }
 
-   void popCurrent() {
+    void popCurrent() {
        _current.pop_back();
        debugPopIndent();
        --_level;
-   }
+    }
 
-   template<typename T, bool skip_first=false>
-   shared_ptr<T> current(const std::type_info& ti) const {
+    template<typename T, bool skip_first=false>
+    shared_ptr<T> current(const std::type_info& ti) const {
        auto i = _current.rbegin();
 
        if ( skip_first )
@@ -361,26 +361,26 @@ private:
        }
 
        return shared_ptr<T>();
-   }
+    }
 
-   typedef std::list<shared_ptr<NodeBase>> node_list;
-   node_list _current;
+    typedef std::list<shared_ptr<NodeBase>> node_list;
+    node_list _current;
 
-   Arg1 _arg1;
-   Arg2 _arg2;
-   int _errors = 0;
-   int _level = 0;
+    Arg1 _arg1;
+    Arg2 _arg2;
+    int _errors = 0;
+    int _level = 0;
 
-   std::list<NodeBase *> _loc_nodes = { nullptr }; // Initial null element.
+    std::list<NodeBase *> _loc_nodes = { nullptr }; // Initial null element.
 
-   bool _result_set = false;
-   Result _result;
+    bool _result_set = false;
+    Result _result;
 
-   bool _default_set = false;
-   Result _default;
+    bool _default_set = false;
+    Result _default;
 
-   typedef std::set<shared_ptr<NodeBase>> node_set;
-   node_set _visited;
+    typedef std::set<shared_ptr<NodeBase>> node_set;
+    node_set _visited;
 };
 
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
@@ -503,7 +503,7 @@ inline string Visitor<AstInfo, Result, Arg1, Arg2>::levelIndent() const {
        for ( int i = 0; i < _level; ++i )
            s += "  ";
        return s;
-   }
+    }
 
 
 }

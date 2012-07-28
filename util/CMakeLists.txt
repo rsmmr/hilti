@@ -1,1 +1,4 @@
-add_library (util util.cc utf8proc.c utf8proc_data.c)
+add_library (util SHARED
+    util.cc
+    utf8proc.c
+)

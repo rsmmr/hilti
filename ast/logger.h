@@ -13,10 +13,10 @@ namespace ast {
 class FatalLoggerError : public RuntimeError
 {
 public:
-   /// Constructor.
-   ///
-   /// what: A string describing the error.
-   FatalLoggerError(string what) : RuntimeError(what) {}
+    /// Constructor.
+    ///
+    /// what: A string describing the error.
+    FatalLoggerError(string what) : RuntimeError(what) {}
 };
 
 /// Class providing logging and debug output infrastructure. The default is
@@ -33,71 +33,71 @@ public:
 class Logger
 {
 public:
-   Logger(const string& name = "", std::ostream& output = std::cerr) : _output(output) {
+    Logger(const string& name = "", std::ostream& output = std::cerr) : _output(output) {
        _name = name;
-   }
+    }
 
-   Logger(const string& name, Logger* forward_to) {
+    Logger(const string& name, Logger* forward_to) {
        _forward = forward_to;
        _name = name;
-   }
+    }
 
-   virtual ~Logger();
+    virtual ~Logger();
 
-   const string& loggerName() const { return _name; }
-   void setLoggerName(const string& name) { _name = name; }
+    const string& loggerName() const { return _name; }
+    void setLoggerName(const string& name) { _name = name; }
 
-   void forwardLoggingTo(Logger* logger) { _forward = logger; }
+    void forwardLoggingTo(Logger* logger) { _forward = logger; }
 
-   void fatalError(const string& message, const string& location = "") const;
-   void fatalError(const string& message, shared_ptr<NodeBase> node) const;
-   void fatalError(const string& message, NodeBase* node) const;
+    void fatalError(const string& message, const string& location = "") const;
+    void fatalError(const string& message, shared_ptr<NodeBase> node) const;
+    void fatalError(const string& message, NodeBase* node) const;
 
-   void error(const string& message, const string& location = "") const;
-   void error(const string& message, shared_ptr<NodeBase> node) const;
-   void error(const string& message, NodeBase* node) const;
+    void error(const string& message, const string& location = "") const;
+    void error(const string& message, shared_ptr<NodeBase> node) const;
+    void error(const string& message, NodeBase* node) const;
 
-   void internalError(const string& message, const string& location = "") const;
-   void internalError(const string& message, shared_ptr<NodeBase> node) const;
-   void internalError(const string& message, NodeBase* node) const;
+    void internalError(const string& message, const string& location = "") const;
+    void internalError(const string& message, shared_ptr<NodeBase> node) const;
+    void internalError(const string& message, NodeBase* node) const;
 
-   void warning(const string& message, const string& location = "") const;
-   void warning(const string& message, shared_ptr<NodeBase> node) const;
-   void warning(const string& message, NodeBase* node) const;
+    void warning(const string& message, const string& location = "") const;
+    void warning(const string& message, shared_ptr<NodeBase> node) const;
+    void warning(const string& message, NodeBase* node) const;
 
-   int errors() const { return _errors; }
-   int warnings() const { return _warnings; }
-   void reset() { _errors = _warnings = 0; }
+    int errors() const { return _forward ? _forward->errors() : _errors; }
+    int warnings() const { return _forward ? _forward->warnings() : _errors; }
+    void reset() { _errors = _warnings = 0; }
 
 #ifdef DEBUG
-   int debugLevel() const;
-   void debugSetLevel(int level);
-   void debug(int level, string msg);
-   void debugPushIndent();
-   void debugPopIndent();
+    int debugLevel() const;
+    void debugSetLevel(int level);
+    void debug(int level, string msg);
+    void debugPushIndent();
+    void debugPopIndent();
 #else
-   int debugLevel() const { return 0; }
-   void debugSetLevel(int level) { }
-   void debug(int level, string msg) {}
-   void debugPushIndent() { }
-   void debugPopIndent()  { }
+    int debugLevel() const { return 0; }
+    void debugSetLevel(int level) { }
+    void debug(int level, string msg) {}
+    void debugPushIndent() { }
+    void debugPopIndent()  { }
 #endif
 
 private:
-   string _name;
-   std::ostream& _output = std::cerr;
-   Logger* _forward = nullptr;
-   mutable int _warnings = 0;
-   mutable int _errors = 0;
+    string _name;
+    std::ostream& _output = std::cerr;
+    Logger* _forward = nullptr;
+    mutable int _warnings = 0;
+    mutable int _errors = 0;
 
 #ifdef DEBUG
-   int _debug_level = 0;
-   int _debug_indent = 0;
+    int _debug_level = 0;
+    int _debug_indent = 0;
 #endif
 
 protected:
-   enum ErrorType { Warning, Error, Internal, Fatal };
-   virtual void doError(const string& message, NodeBase* node, const string& location, ErrorType type) const;
+    enum ErrorType { Warning, Error, Internal, Fatal };
+    virtual void doError(const string& message, NodeBase* node, const string& location, ErrorType type) const;
 };
 
 }

@@ -1,4 +1,7 @@
 
+#include <stdlib.h>
+#include <cxxabi.h>
+
 #include <util/util.h>
 
 #include "node.h"
@@ -77,7 +80,10 @@ NodeBase::operator string() {
     if ( _location )
         location = string(_location);
 
-    return util::fmt("%s [%d/%s %p] %s", typeid(*this).name(),
+    int status;
+    char *name = abi::__cxa_demangle(typeid(*this).name(), 0, 0, &status);
+
+    return util::fmt("%s [%d/%s %p] %s", name,
                      _childs.size(), location.c_str(), this, s.c_str());
 }
 

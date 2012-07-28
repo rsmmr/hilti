@@ -1,0 +1,1 @@
+for i in *.h *.cc; do cat $i | sed 's/HILTI_/BINPAC_/g' | sed 's/namespace hilti/namespace binpac/g' | sed 's/hilti::/binpac::/g' >$i.tmp && \mv $i.tmp $i; done

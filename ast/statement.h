@@ -12,12 +12,12 @@ template<typename AstInfo>
 class Statement : public AstInfo::node
 {
 public:
-   typedef typename AstInfo::node Node;
+    typedef typename AstInfo::node Node;
 
-   /// Constructor.
-   ///
-   /// l: Associated location.
-   Statement(const Location& l=Location::None) : AstInfo::node(l) {}
+    /// Constructor.
+    ///
+    /// l: Associated location.
+    Statement(const Location& l=Location::None) : AstInfo::node(l) {}
 };
 
 }

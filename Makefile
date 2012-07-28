@@ -3,11 +3,17 @@
 # Build compiler and libhilti. This Makefile builds both debug and
 # release versions of libhilti simultaniously.
 
-all: debug
+all: all-debug
 
-debug: mkdirs libhilti-debug hilti-prof-debug
+all-debug:
+	test -d build || mkdir build
+	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug ..; $(MAKE) )
 
-release: mkdirs libhilti-releae hilti-prof-release
+####
+
+debug: mkdirs libhilti-debug
+
+release: mkdirs libhilti-releae
 
 hilti-debug:
 	( cd build; test -e Makefile || cmake  -D CMAKE_BUILD_TYPE=Debug ..; $(MAKE) )
@@ -20,12 +26,6 @@ libhilti-release: hilti-release
 
 libhilti-debug: hilti-debug
 	( cd build/libhilti-debug;   test -e Makefile || cmake -D CMAKE_BUILD_TYPE=Debug          ../../libhilti; $(MAKE) )
-
-hilti-prof-debug: libhilti-debug
-	( cd build; make hilti-prof )
-
-hilti-prof-release: libhilti-release
-	( cd build; make hilti-prof )
 
 mkdirs:
 	test -d build || mkdir build

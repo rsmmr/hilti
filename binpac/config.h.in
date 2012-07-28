@@ -1,0 +1,12 @@
+
+#ifndef BINPAC_CONFIG_H
+#define BINPAC_CONFIG_H
+
+namespace binpac {
+
+static const char* CONFIG_BINPAC_VERSION = "${BINPAC_VERSION}";
+static const char* CONFIG_PATH_LIBBINPAC = "${PATH_LIBBINPAC}";
+
+}
+
+#endif
