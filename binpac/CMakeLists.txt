@@ -62,6 +62,7 @@ add_library (binpac SHARED
 
     passes/printer.cc
     passes/validator.cc
+    passes/id-resolver.cc
 
     ${autogen}/scanner.cc
     ${autogen}/parser.cc

@@ -5,6 +5,10 @@
 using namespace binpac;
 using namespace binpac::passes;
 
+Validator::Validator() : Pass<AstInfo>("Validator")
+{
+}
+
 bool Validator::run(shared_ptr<ast::NodeBase> node)
 {
     return processAllPreOrder(node);

@@ -14,7 +14,7 @@ namespace passes {
 class Validator : public ast::Pass<AstInfo>
 {
 public:
-    Validator() : Pass<AstInfo>("Validator") {}
+    Validator();
     virtual ~Validator();
 
     /// Verifies a given module.
