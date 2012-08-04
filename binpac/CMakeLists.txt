@@ -37,6 +37,47 @@ ADD_CUSTOM_TARGET(generate_parser
 SET_SOURCE_FILES_PROPERTIES(${autogen}/scanner.cc PROPERTIES GENERATED 1)
 SET_SOURCE_FILES_PROPERTIES(${autogen}/parser.cc  PROPERTIES GENERATED 1)
 
+### Auto-generate all the boiler-plate stuff for operators.
+
+set(operators
+    operators/integer.cc
+)
+
+add_custom_command(
+   OUTPUT   ${autogen}/operators/operators-declare.h
+            ${autogen}/operators/operators-visits.h
+            ${autogen}/operators/operators-expression-builder.h
+            ${autogen}/operators/operators-register.cc
+   COMMAND  ${scripts}/make-operators -h ${CMAKE_CURRENT_SOURCE_DIR} ${autogen}/operators ${operators}
+   DEPENDS  ${operators} operators/define-operator.h ${scripts}/make-operators
+)
+
+SET_SOURCE_FILES_PROPERTIES(${autogen}/operators-declare.h PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${autogen}/operators-visits.h PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${autogen}/operators-expression-builder.h PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${autogen}/operators-register.cc  PROPERTIES GENERATED 1)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen}/operators)
+
+foreach(in ${operators})
+   string(REPLACE ".cc" "" base "${in}")
+   #string(REPLACE "" "${autogen}/operators" base "${base}")
+
+   set(h  "${autogen}/${base}.h")
+   set(cc "${autogen}/${base}.cc")
+
+   set(operators_cc ${operators_cc} ${cc})
+
+   add_custom_command(
+       OUTPUT   ${h} ${cc}
+       COMMAND  ${scripts}/expand-macros ${CMAKE_CURRENT_SOURCE_DIR}/operators/macros.dat ${CMAKE_CURRENT_SOURCE_DIR}/${in} ${autogen}/operators
+       DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/${in} operators/define-operator.h ${scripts}/expand-macros ${CMAKE_CURRENT_SOURCE_DIR}/operators/macros.dat
+   )
+
+   SET_SOURCE_FILES_PROPERTIES(${cc} PROPERTIES GENERATED 1)
+
+endforeach ()
+
 ### Build libpac.
 
 add_library (binpac SHARED
@@ -52,23 +93,29 @@ add_library (binpac SHARED
     function.cc
     id.cc
     module.cc
+    operator.cc
     scope.cc
     statement.cc
     type.cc
     variable.cc
     visitor-interface.cc
 
+    ${operators_cc}
+
     parser/driver.cc
 
     passes/printer.cc
     passes/validator.cc
     passes/id-resolver.cc
+    passes/operator-resolver.cc
+
+    ${autogen}/operators/operators-register.cc
 
     ${autogen}/scanner.cc
     ${autogen}/parser.cc
 
     ${autogen}/visitor-interface.h
     ${autogen}/visitor-types.h
-)
+    )
 
 target_link_libraries(binpac ast)

@@ -129,7 +129,7 @@ shared_ptr<Operator> expression::ResolvedOperator::operator_() const
 
 operator_::Kind expression::ResolvedOperator::kind() const
 {
-    return _kind;
+    return _op->kind();
 }
 
 const std::list<node_ptr<Expression>>& expression::ResolvedOperator::operands() const

@@ -3,18 +3,18 @@
 #ifndef $STDIFDEF
 #define $STDIFDEF
 
+#include "expression.h"
 #include "operator.h"
 
-namespace operator_ {
 ===
 > <<FOOTER>> h
-}
 
 #endif
 
 ===
 >> opBegin h
 
+namespace binpac { namespace operator_ {
 namespace $NAMESPACE {
 
 class $CLASS : public binpac::Operator
@@ -34,53 +34,113 @@ protected:
    shared_ptr<Type> __typeOp3() const;
 ===
 > opValidate h
-   void __validate(const expression_list& ops) override;
+   void __validate() override;
 ===
 > opMatch h
-   void __match(const expression_list& ops) override;
+   void __match() override;
 ===
 > opDoc h
    string __doc() const override;
 ===
 > opResult h
-   shared_ptr<Type> __typeResult(const expression_list& ops);
+   shared_ptr<Type> __typeResult() const override;
 ===
 > opSimplify h
-   shared_ptr<Expression> __simplify(const expression_list& ops);
+   shared_ptr<Expression> __simplify() const override;
 ===
 > opEnd h
+private:
+    static shared_ptr<expression::ResolvedOperator> _factory(shared_ptr<Operator> op, const expression_list& ops, const Location& l);
 };
 
-}
+} // namespace $NAMESPACE
+} // namespace operator_
+
+namespace expression { namespace operator_ {
+namespace $NAMESPACE {
+
+class $CLASS : public ResolvedOperator
+{
+public:
+    $CLASS(shared_ptr<Operator> op, const expression_list& ops, const Location& l);
+};
+
+} // namespace $NAMESPACE
+} // namespace resolved
+} // namespace expression
+} // namespace binpac
+
+===
+> <<HEADER>> cc
+
+#include "$BASENAME.h"
 
 ===
 >> opBegin cc
-$CLASS::$CLASS : binpac::Operator($CLASS) {}
+
+namespace binpac {
+
+operator_::$NAMESPACE::$CLASS::$CLASS() : Operator(operator_::$CLASS, _factory)
+{
+}
+
+operator_::$NAMESPACE::$CLASS::~$CLASS()
+{
+}
+
+expression::operator_::$NAMESPACE::$CLASS::$CLASS(shared_ptr<Operator> op, const expression_list& ops, const Location& l)
+    :  expression::ResolvedOperator(op, ops, l)
+{
+}
 ===
 > opOp1 cc
-shared_ptr<Type> $CLASS::__typeOp1() const { return $1; }
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeOp1() const
+{
+    return $1;
+}
 ===
-> opOp1 cc
-shared_ptr<Type> $CLASS::__typeOp2() const { return $1; }
+> opOp2 cc
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeOp2() const
+{
+    return $1;
+}
 ===
 > opOp3 cc
-shared_ptr<Type> $CLASS::__typeOp3() const { return $1; }
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeOp3() const
+{
+    return $1;
+}
 ===
 > opValidate cc
-void $CLASS::__validate(const expression_list& ops) override
+void operator_::$NAMESPACE::$CLASS::__validate()
 ===
-> opMatch cc
-void $CLASS__match(const expression_list& ops) override
+> opMatch h
+void operator_::$NAMESPACE::$CLASS::__match()
 ===
 > opDoc cc
-string $CLASS::__doc() const override { return $1; }
+string operator_::$NAMESPACE::$CLASS::__doc() const
+{
+    return $1;
+}
 ===
 > opResult cc
-shared_ptr<Type> $CLASS::__typeResult(const expression_list& ops)
+shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeResult() const
 ===
 > opSimplify cc
-shared_ptr<Expression> $CLASS::__simplify(const expression_list& ops)
+shared_ptr<Expression> operator_::$NAMESPACE::$CLASS::__simplify() const
 ===
+> opEnd cc
+shared_ptr<expression::ResolvedOperator> operator_::$NAMESPACE::$CLASS::_factory(shared_ptr<Operator> op, const expression_list& ops, const Location& l)
+{
+    return shared_ptr<expression::ResolvedOperator>(new expression::operator_::$NAMESPACE::$CLASS(op, ops, l));
+}
 
+void __register_$NAMESPACE_$CLASS()
+{
+    shared_ptr<Operator> op(new operator_::$NAMESPACE::$CLASS);
+    OperatorRegistry::globalRegistry()->addOperator(op);
+}
 
+} // namespace binpac
 
+===

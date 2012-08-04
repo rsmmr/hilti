@@ -15,6 +15,7 @@ cls_macro = None
 cls_value = "<No class>"
 cls_ns = "<No namespace>"
 stdifdef = os.getcwd().upper().replace(".", "_").replace("/", "_").replace("+", "_").replace("-", "_")
+basename = os.path.splitext(os.path.basename(sys.argv[2]))[0]
 
 state = "macro"
 
@@ -50,7 +51,8 @@ for line in open(sys.argv[1]):
 			macros[name] = []
 
 		if not file in files:
-			files[file] = open(os.path.join(sys.argv[3], os.path.splitext(sys.argv[2])[0] + "." + file), "w")
+			out = os.path.join(sys.argv[3], basename + "." + file)
+			files[file] = open(out, "w")
 
 		if file == "h":
 			regexp = re.compile("^ *%s(\((.*)\))?.*" % name)
@@ -67,6 +69,7 @@ for (name, items) in macros.items():
 	for val in items:
 		(regexp, fname, file, content) = val
 		content = content.replace("$STDIFDEF", stdifdef)
+		content = content.replace("$BASENAME", basename)
 		if name == "<<HEADER>>":
 			print >>file, content
 
@@ -74,8 +77,6 @@ nr = 0
 last_nrs = {}
 
 for line in open(sys.argv[2]):
-	nr += 1
-
 	found = False
 
 	for (name, items) in macros.items():
@@ -103,11 +104,10 @@ for line in open(sys.argv[2]):
 				out = out.replace("$NAMESPACE", cls_ns)
 				out = out.replace("$STDIFDEF", stdifdef)
 
-				if nr != last_nrs.get(fname, -1) + 1:
+				if nr != last_nrs.get(fname, 0):
 					print >>file, "#line %d \"%s\"" % (nr, os.path.abspath(sys.argv[2]))
 
 				last_nrs[fname] = nr
-
 				print >>file, out,
 				found = True
 
@@ -116,8 +116,9 @@ for line in open(sys.argv[2]):
 			print >>files["cc"], "#line %d \"%s\"" % (nr, os.path.abspath(sys.argv[2]))
 
 		last_nrs["cc"] = nr
-
 		print >>files["cc"], line,
+
+	nr += 1
 
 for (name, items) in macros.items():
 	for val in items:

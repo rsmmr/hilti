@@ -33,7 +33,7 @@ void Logger::error(const string& message, NodeBase* node) const
     }
 
     ++_errors;
-    doError(message, node, node->location(), Error);
+    doError(message, node, (node ? node->location() : Location::None), Error);
 }
 
 void Logger::internalError(const string& message, const string& location) const
@@ -61,7 +61,7 @@ void Logger::internalError(const string& message, NodeBase* node) const
     }
 
     ++_errors;
-    doError(message, node, node->location(), Internal);
+    doError(message, node, (node ? node->location() : Location::None), Internal);
     abort();
 }
 
@@ -90,7 +90,7 @@ void Logger::fatalError(const string& message, NodeBase* node) const
     }
 
     ++_errors;
-    doError(message, node, node->location(), Fatal);
+    doError(message, node, (node ? node->location() : Location::None), Fatal);
     throw FatalLoggerError(message);
 }
 
@@ -118,7 +118,7 @@ void Logger::warning(const string& message, NodeBase* node) const
     }
 
     ++_warnings;
-    doError(message, node, node->location(), Warning);
+    doError(message, node, (node ? node->location() : Location::None), Warning);
 }
 
 void Logger::doError(const string& message, NodeBase* node, const string& location, ErrorType type) const

@@ -4,11 +4,14 @@
 #include <util/util.h>
 
 #include "context.h"
+#include "operator.h"
 
 #include "parser/driver.h"
 
 #include "passes/printer.h"
 #include "passes/validator.h"
+#include "passes/operator-resolver.h"
+#include "passes/id-resolver.h"
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -80,7 +83,17 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
 
 bool CompilerContext::finalize(shared_ptr<Module> module, const string_list& libdirs, bool verify)
 {
+    // Just a double-check ...
+    if ( ! OperatorRegistry::globalRegistry()->byKind(operator_::Plus).size() ) {
+        internalError("binpac: no operators defined, did you call binpac_init()?");
+    }
+
     passes::Validator        validator;
+    passes::IDResolver       id_resolver;
+    passes::OperatorResolver op_resolver;
+
+    if ( ! op_resolver.run(module) )
+        return false;
 
     if ( verify && ! validator.run(module) )
         return false;
@@ -89,16 +102,11 @@ bool CompilerContext::finalize(shared_ptr<Module> module, const string_list& lib
 
 #if 0
     passes::ScopeBuilder     scope_builder(_prepareLibDirs(libdirs));
-    passes::IdResolver       id_resolver;
-    passes::OperatorResolver op_resolver;
 
     if ( ! scope_builder.run(module) )
         return false;
 
     if ( ! id_resolver.run(module) )
-        return false;
-
-    if ( ! op_resolver.run(module) )
         return false;
 
     // Run these again, we may have inserted new operators.

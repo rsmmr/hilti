@@ -13,6 +13,11 @@
 
 // This forward-declares all our node types.
 #include "autogen/visitor-types.h"
+
+// This forward-declares all the auto-generated expression::operator_::*
+// classes.
+#include "autogen/operators/operators-declare.h"
+
 #include "ast-info.h"
 
 using std::string;
@@ -23,11 +28,14 @@ using ast::Location;
 using ast::Logger;
 
 namespace binpac {
+    class Operator;
+
     typedef std::list<shared_ptr<Attribute>> attribute_list;
     typedef std::list<shared_ptr<Declaration>> declaration_list;
     typedef std::list<shared_ptr<Expression>> expression_list;
     typedef std::list<shared_ptr<Variable>> variable_list;
     typedef std::list<shared_ptr<Statement>> statement_list;
+    typedef std::list<shared_ptr<Operator>> operator_list;
     typedef std::list<shared_ptr<ID>> id_list;
     typedef std::list<shared_ptr<Type>> type_list;
     typedef std::list<shared_ptr<Hook>> hook_list;

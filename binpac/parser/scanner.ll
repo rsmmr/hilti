@@ -147,7 +147,7 @@ b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strle
 {id}                  yylval->sval = yytext; return token::IDENT;
 {id}(::{id}){1,}      yylval->sval = yytext; return token::SCOPED_IDENT;
 
-[*,=:;<>(){}/|!]      return (token_type) yytext[0];
+[,=:;<>(){}/|*/&^%!+-] return (token_type) yytext[0];
 
 .                     driver.error("invalid character", *yylloc);
 

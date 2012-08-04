@@ -12,6 +12,10 @@
 
 namespace binpac {
 
+/// Initializes the BinPAC++ compiler infrastructure. Must be called before
+/// any other method.
+extern void init();
+
 /// Returns the current BinPAC++ version.
 extern string version();
 

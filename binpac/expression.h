@@ -216,14 +216,14 @@ public:
     UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops, const Location& l=Location::None);
 
     /// Returns the operator type.
-    operator_::Kind kind() const;
+    binpac::operator_::Kind kind() const;
 
     expression_list operands() const;
 
     ACCEPT_VISITOR(binpac::Expression);
 
 private:
-    operator_::Kind _kind;
+    binpac::operator_::Kind _kind;
     std::list<node_ptr<Expression>> _ops;
 };
 
@@ -244,7 +244,7 @@ public:
     shared_ptr<Operator> operator_() const;
 
     /// Returns the operator type.
-    operator_::Kind kind() const;
+    binpac::operator_::Kind kind() const;
 
     /// Returns the operands.
     const std::list<node_ptr<Expression>>& operands() const;
@@ -254,7 +254,6 @@ public:
 protected:
 
 private:
-    operator_::Kind _kind;
     shared_ptr<Operator> _op;
     std::list<node_ptr<Expression>> _ops;
 };

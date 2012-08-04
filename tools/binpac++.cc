@@ -154,6 +154,8 @@ int main(int argc, char** argv)
     if ( ! out.good() )
         error(output, "Cannot open file for output.");
 
+    binpac::init();
+
     auto ctx = std::make_shared<binpac::CompilerContext>();
     ctx->enableDebug(dbg_scanner, dbg_parser, dbg_scopes);
 

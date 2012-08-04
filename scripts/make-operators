@@ -1,0 +1,113 @@
+#! /usr/bin/env bash
+#
+# Autogenerates files with support code implementing BinPAC++ operators.
+#
+# This creates
+#
+#     With -h:
+#       operators-declare.h
+#       operators-visits.h
+#       operators-expression-builder.h
+#       operators-register.cc
+#
+
+function getoperators
+{
+    grep -h '^[\t ]*opBegin' | sed 's/.*opBegin(\(.*\)).*/\1/g' | sed 's/, /::/g' | sort
+}
+
+if [ $# -le 2 ]; then
+    echo "usage: `basename $0` -h  <current-source-directory> <target-directory> *.h"
+    exit 1
+fi
+
+kind=$1
+src=$2
+dst=$3
+shift
+shift
+shift
+
+cd $src
+
+hdrs=$@
+tmp=$dst/make-operators.tmp.$$
+
+## Get the names of all operator classes (e.g., "integer::Add").
+cat $hdrs | getoperators >$tmp
+
+##### Create operators.h that includes all the operator *.h files.
+
+if [ "$kind" == "-h" ]; then
+
+    LOCK=$dst/lock
+    TIMESTAMP=$dst/timestamp
+    now=`date +%s`
+
+    lockfile -1 $LOCK
+    trap "rm -f $LOCK" EXIT
+
+    if [ -e $TIMESTAMP ]; then
+        ts=`cat $TIMESTAMP`
+        if [ $ts -gt $now ]; then
+            # Updated since we started.
+            exit 0;
+        fi
+    fi
+
+    #### Create operators-declare.h that declares all operator expression classes, and 
+    #### operators-visits.h with visit() methods for all operator expression classes, and
+    #### operators-exoression-builder.h with visit() methods for the expression builder.
+    #### operators-register.cc with calls to operators register functions.
+
+    cat </dev/null >$dst/operators-visits.h
+    cat </dev/null >$dst/operators-expression-builder.h
+
+    cat </dev/null >$dst/operators-declare.h <<EOF
+namespace binpac {
+EOF
+
+
+    cat >$dst/operators-register.cc <<EOF
+
+namespace binpac {
+
+void __registerAllOperators()
+{
+EOF
+
+    cat $tmp | while read line; do
+        ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
+        cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
+        echo "namespace expression { namespace operator_ { namespace $ns { class $cls; } } };" >>$dst/operators-declare.h
+
+        echo "       virtual void visit(expression::operator_::$ns::$cls* i) {}" >>$dst/operators-visits.h
+
+        echo "       void visit(expression::operator_::$ns::$cls* i) override;" >>$dst/operators-expression-builder.h
+
+        name=`echo $line | sed 's/::/_/g'`
+        echo "    extern void __register_${ns}_${cls}(); __register_${ns}_${cls}();" >>$dst/operators-register.cc
+    done
+
+    cat >>$dst/operators-register.cc <<EOF
+}
+
+}
+EOF
+
+    cat >>$dst/operators-declare.h <<EOF
+}
+EOF
+
+
+    date +%s >$TIMESTAMP
+
+fi
+
+#### Cleanup.
+
+rm -f $tmp
+
+
+
+
