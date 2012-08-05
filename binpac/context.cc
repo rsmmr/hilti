@@ -12,31 +12,28 @@
 #include "passes/validator.h"
 #include "passes/operator-resolver.h"
 #include "passes/id-resolver.h"
+#include "passes/scope-builder.h"
+#include "passes/scope-printer.h"
 
 using namespace binpac;
 using namespace binpac::passes;
 
-static const string_list _prepareLibDirs(const string_list& libdirs)
+CompilerContext::CompilerContext(const string_list& libdirs)
 {
     // Always add libbinpac to the path list.
     auto paths = libdirs;
     paths.push_front(".");
     paths.push_front(CONFIG_PATH_LIBBINPAC);
-    return paths;
+
+    _libdirs = paths;
 }
 
-CompilerContext::CompilerContext()
-{
-}
-
-shared_ptr<Module> CompilerContext::load(string path, const string_list& libdirs, bool verify, bool finalize)
+shared_ptr<Module> CompilerContext::load(string path, bool verify, bool finalize)
 {
     if ( ! util::endsWith(path, ".pac2") )
         path += ".pac2";
 
-    auto dirs = _prepareLibDirs(libdirs);
-
-    string full_path = util::findInPaths(path, dirs);
+    string full_path = util::findInPaths(path, _libdirs);
 
     if ( full_path.size() == 0 ) {
         error(util::fmt("cannot find input file %s", path.c_str()));
@@ -63,7 +60,7 @@ shared_ptr<Module> CompilerContext::load(string path, const string_list& libdirs
     if ( ! module )
         return nullptr;
 
-    if ( finalize && ! CompilerContext::finalize(module, libdirs, verify) )
+    if ( finalize && ! CompilerContext::finalize(module, verify) )
         return nullptr;
 
     _modules.insert(std::make_pair(full_path, module));
@@ -81,7 +78,7 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
     return driver.parse(in, sname);
 }
 
-bool CompilerContext::finalize(shared_ptr<Module> module, const string_list& libdirs, bool verify)
+bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
 {
     // Just a double-check ...
     if ( ! OperatorRegistry::globalRegistry()->byKind(operator_::Plus).size() ) {
@@ -91,40 +88,32 @@ bool CompilerContext::finalize(shared_ptr<Module> module, const string_list& lib
     passes::Validator        validator;
     passes::IDResolver       id_resolver;
     passes::OperatorResolver op_resolver;
+    passes::ScopeBuilder     scope_builder(this);
+    passes::ScopePrinter     scope_printer(std::cerr);
 
     if ( ! op_resolver.run(module) )
         return false;
 
     if ( verify && ! validator.run(module) )
         return false;
-
-    return true;
-
-#if 0
-    passes::ScopeBuilder     scope_builder(_prepareLibDirs(libdirs));
 
     if ( ! scope_builder.run(module) )
         return false;
 
+    if ( _dbg_scopes ) {
+        scope_printer.run(module);
+    }
+
     if ( ! id_resolver.run(module) )
-        return false;
-
-    // Run these again, we may have inserted new operators.
-
-    if ( ! id_resolver.run(module) )
-        return false;
-
-    if ( ! op_resolver.run(module) )
         return false;
 
     if ( verify && ! validator.run(module) )
         return false;
 
     return true;
-#endif
 }
 
-shared_ptr<hilti::Module> CompilerContext::compile(shared_ptr<Module> module, const string_list& libdirs, int debug, bool verify)
+shared_ptr<hilti::Module> CompilerContext::compile(shared_ptr<Module> module, int debug, bool verify)
 {
     std::cerr << "compile() not implemented" << std::endl;
     return nullptr;

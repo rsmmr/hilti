@@ -108,6 +108,8 @@ add_library (binpac SHARED
     passes/validator.cc
     passes/id-resolver.cc
     passes/operator-resolver.cc
+    passes/scope-builder.cc
+    passes/scope-printer.cc
 
     ${autogen}/operators/operators-register.cc
 

@@ -18,6 +18,11 @@ string Expression::render()
     return r;
 }
 
+Expression::operator string()
+{
+    return render();
+}
+
 Expression::Expression(const Location& l) : ast::Expression<AstInfo>(l)
 {
 }

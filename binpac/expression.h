@@ -32,6 +32,8 @@ public:
 
     string render() override;
 
+    operator string();
+
     ACCEPT_VISITOR_ROOT();
 };
 

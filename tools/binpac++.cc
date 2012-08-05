@@ -156,10 +156,10 @@ int main(int argc, char** argv)
 
     binpac::init();
 
-    auto ctx = std::make_shared<binpac::CompilerContext>();
+    auto ctx = std::make_shared<binpac::CompilerContext>(import_paths);
     ctx->enableDebug(dbg_scanner, dbg_parser, dbg_scopes);
 
-    auto module = ctx->load(input, import_paths, verify);
+    auto module = ctx->load(input, verify);
 
     if ( ! module ) {
         error(input, "Aborting due to input error.");

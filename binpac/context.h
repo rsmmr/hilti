@@ -16,7 +16,10 @@ class CompilerContext : public Logger
 {
 public:
     /// Constructor.
-    CompilerContext();
+    ///
+    /// libdirs: List of directories to search for relative paths. The current
+    /// directly will be tried first.
+    CompilerContext(const string_list& libdirs);
 
     /// Reads a BinPAC++ source file and returns the parsed AST. The function
     /// searches the file in the paths given and reads it in. It then uses uses
@@ -24,14 +27,9 @@ public:
     ///
     /// path: The relative or absolute path to the source to load.
     ///
-    /// libdirs: List of directories to search for relative paths. The current
-    /// directly will be tried first.
-    ///
     /// import: True if this load is triggered recurisvely by an import
     /// statement. In that case the returned module may not be fully resolved.
     /// Should be used ony for internal purposes.
-    ///
-    ///
     ///
     /// verify: If false, no correctness verification is done. Only applies if
     /// \a finalize is true.
@@ -39,7 +37,7 @@ public:
     /// finalize: If false, finalize() isn't called.
     ///
     /// Returns: The parsed AST, or null if errors are encountered.
-    shared_ptr<Module> load(string path, const string_list& libdirs, bool verify = true, bool resolve = true);
+    shared_ptr<Module> load(string path, bool verify = true, bool resolve = true);
 
     /// Parses BinPAC++ source code into a module AST. Note that before the
     /// AST can be used further, it needs to go through finalize(). The
@@ -65,15 +63,13 @@ public:
     /// verify: If false, no correctness verification is done.
     ///
     /// Returns: True if no errors were found.
-    bool finalize(shared_ptr<Module> module, const string_list& libdirs, bool verify = true);
+    bool finalize(shared_ptr<Module> module, bool verify = true);
 
     /// Compiles an AST into a HILTI module. This is the main interface to the
     /// code generater. The AST must have passed through finalize(). After
     /// compilation, it needs to be linked with linkModules().
     ///
     /// module: The module to compile.
-    ///
-    /// libdirs: List of directories to search for libarary files.
     ///
     /// debug: The debug level to activate for code generation. The higher, the
     /// more debugging code will be compiled in. Zero disables all debugging.
@@ -83,7 +79,7 @@ public:
     ///
     /// Returns: The HILTI module, or null if errors are encountered. Passes
     /// ownership to the caller.
-    shared_ptr<hilti::Module> compile(shared_ptr<Module> module, const string_list& libdirs, int debug = 0, bool verify = true);
+    shared_ptr<hilti::Module> compile(shared_ptr<Module> module, int debug = 0, bool verify = true);
 
     /// Renders an AST back into BinPAC++ source code.
     ///
@@ -114,6 +110,8 @@ public:
     void enableDebug(bool scanner, bool parser, bool scopes);
 
 private:
+    string_list _libdirs;
+
     /// We keep a global map of all module nodes we have instantiated so far,
     /// indexed by their path. This is for avoid duplicate imports, in
     /// particular when encountering cycles.
