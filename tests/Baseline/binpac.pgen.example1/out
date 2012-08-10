@@ -1,0 +1,54 @@
+=== Grammar my-grammar
+        Epsilon: <eps> -> ()
+      LookAhead: A   -> {"a", "b", "c"}: <eps> | {"a"}: a
+       Sequence: ABA -> A B A
+       Sequence: AD  -> A D
+      LookAhead: B   -> {"a"}: <eps> | {"b"}: bD
+      LookAhead: C   -> {"a", "c"}: AD | {"b"}: b
+      LookAhead: D   -> {"a"}: aA | {"c"}: c
+ (*)  LookAhead: S   -> {"a", "b"}: ABA | {"c"}: cC
+        Literal: a   -> "a"
+       Sequence: aA  -> a A
+        Literal: b   -> "b"
+       Sequence: bD  -> b D
+        Literal: c   -> "c"
+       Sequence: cC  -> c C
+
+  -- Epsilon:
+     A = 1
+     ABA = 1
+     AD = 0
+     B = 1
+     C = 0
+     D = 0
+     S = 1
+     aA = 0
+     bD = 0
+     cC = 0
+
+  -- First_1:
+     A = { a }
+     ABA = { a, b }
+     AD = { a, c }
+     B = { b }
+     C = { a, b, c }
+     D = { a, c }
+     S = { a, b, c }
+     aA = { a }
+     bD = { b }
+     cC = { c }
+
+  -- Follow:
+     A = { a, b, c }
+     ABA = {  }
+     AD = {  }
+     B = { a }
+     C = {  }
+     D = { a }
+     S = {  }
+     aA = { a }
+     bD = { a }
+     cC = {  }
+
+Grammar error: grammar my-grammar, production A is ambigious for look-ahead symbol(s) { a }
+

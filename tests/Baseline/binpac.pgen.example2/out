@@ -1,0 +1,49 @@
+=== Grammar my-grammar
+        Epsilon: <eps> -> ()
+       Sequence: FFs -> Fact Facts
+       Sequence: Fact -> no st
+      LookAhead: Facts -> {"!"}: FFs | {"?"}: <eps>
+       Sequence: FsQ -> Facts Question
+       Sequence: Question -> qu st
+       Sequence: SS  -> pl Session pr Session
+      LookAhead: Session -> {"!", "?"}: FsQ | {"("}: SS
+ (*)   Sequence: Start -> Session hs
+        Literal: hs  -> "#"
+        Literal: no  -> "!"
+        Literal: pl  -> "("
+        Literal: pr  -> ")"
+        Literal: qu  -> "?"
+       Variable: st  -> (type bytes)
+
+  -- Epsilon:
+     FFs = 0
+     Fact = 0
+     Facts = 1
+     FsQ = 0
+     Question = 0
+     SS = 0
+     Session = 0
+     Start = 0
+
+  -- First_1:
+     FFs = { no }
+     Fact = { no }
+     Facts = { no }
+     FsQ = { no, qu }
+     Question = { qu }
+     SS = { pl }
+     Session = { no, pl, qu }
+     Start = { no, pl, qu }
+     hs = {  }
+     pr = {  }
+
+  -- Follow:
+     FFs = { qu }
+     Fact = { no, qu }
+     Facts = { qu }
+     FsQ = {  }
+     Question = {  }
+     SS = {  }
+     Session = {  }
+     Start = {  }
+

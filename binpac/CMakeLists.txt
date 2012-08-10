@@ -104,6 +104,9 @@ add_library (binpac SHARED
 
     parser/driver.cc
 
+    pgen/grammar.cc
+    pgen/production.cc
+
     passes/printer.cc
     passes/validator.cc
     passes/id-resolver.cc

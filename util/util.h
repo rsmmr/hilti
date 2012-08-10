@@ -4,6 +4,8 @@
 #define HILTI_UTIL_H
 
 #include <list>
+#include <set>
+#include <map>
 #include <string>
 #include <stdexcept>
 
@@ -23,6 +25,22 @@ string strjoin(const std::list<T>& l, string delim="")
     bool first = true;
 
     for ( typename std::list<T>::const_iterator i = l.begin(); i != l.end(); i++ ) {
+        if ( not first )
+            result += delim;
+        result += string(*i);
+        first = false;
+    }
+
+    return result;
+}
+
+template<typename T>
+string strjoin(const std::set<T>& l, string delim="")
+{
+    string result;
+    bool first = true;
+
+    for ( typename std::set<T>::const_iterator i = l.begin(); i != l.end(); i++ ) {
         if ( not first )
             result += delim;
         result += string(*i);
@@ -149,12 +167,69 @@ std::string::const_iterator atoi_n(std::string::const_iterator s, std::string::c
 
 // From http://stackoverflow.com/questions/10420380/c-zip-variadic-templates.
 template <typename A, typename B>
-std::list<std::pair<A, B> > zip2(const std::list<A> & lhs, const std::list<B> & rhs) {
+std::list<std::pair<A, B> > zip2(const std::list<A> & lhs, const std::list<B> & rhs)
+{
     std::list<std::pair<A, B> >  result;
     for (std::pair<typename std::list<A>::const_iterator, typename std::list<B>::const_iterator> iter = std::pair<typename std::list<A>::const_iterator, typename std::list<B>::const_iterator>(lhs.cbegin(), rhs.cbegin()); iter.first != lhs.end() and iter.second != rhs.end(); ++iter.first, ++iter.second)
         result.push_back( std::pair<A, B>(*iter.first, *iter.second) );
     return result;
 }
+
+// Returns the keys of a map as a set.
+template <typename A, typename B>
+std::set<A> map_keys(const std::map<A, B> m)
+{
+    std::set<A> l;
+
+    for ( auto i : m )
+        l.insert(i.first);
+
+    return l;
+}
+
+// Returns the values of a map as a set.
+template <typename A, typename B>
+std::set<A> map_values(const std::map<A, B> m)
+{
+    std::set<A> l;
+
+    for ( auto i : m )
+        l.insert(i.second);
+
+    return l;
+}
+
+// Returns the difference of two sets. This is a convience wrapper around
+// std::set_difference.
+template<typename A>
+std::set<A> set_difference(std::set<A> a, std::set<A> b)
+{
+    std::set<A> r;
+    std::set_difference(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()));
+    return r;
+}
+
+// Returns the intersection of two sets. This is a convience wrapper around
+// std::set_intersection.
+template<typename A>
+std::set<A> set_intersection(std::set<A> a, std::set<A> b)
+{
+    std::set<A> r;
+    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()));
+    return r;
+}
+
+// Returns the union of two sets. This is a convience wrapper around
+// std::set_union.
+template<typename A>
+std::set<A> set_union(std::set<A> a, std::set<A> b)
+{
+    std::set<A> r;
+    std::set_union(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()));
+    return r;
+}
+
+
 
 }
 

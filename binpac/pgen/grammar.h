@@ -2,10 +2,13 @@
 /// A grammar to generate a BinPAC++ parser from.
 ///
 
-#ifndef BINPAC_GRAMMAR_H
-#define BINPAC_GRAMMAR_H
+#ifndef BINPAC_PGEN_GRAMMAR_H
+#define BINPAC_PGEN_GRAMMAR_H
+
+#include <map>
 
 #include "common.h"
+#include "production.h"
 
 namespace binpac {
 
@@ -14,6 +17,8 @@ class Grammar
 {
 public:
     typedef std::list<std::pair<shared_ptr<ID>, shared_ptr<Type>>> parameter_list;
+    typedef std::list<shared_ptr<production::NonTerminal>> nterm_list;
+    typedef std::map<string, shared_ptr<Production>> production_map;
 
     /// Constructor.
     ///
@@ -33,14 +38,14 @@ public:
 
     /// Returns the name of the grammar. The name uniquely identifies the
     /// grammar.
-    const string& name() const { return _name; }
+    const string& name() const;
 
     /// Returns the location associated with the production, or Location::None
     /// if none.
-    const Location& location() const { return _location; }
+    const Location& location() const;
 
     /// Returns the parameters passed into the grammar' parser.
-    const parameter_list& parameters() const { return _params; }
+    const parameter_list& parameters() const;
 
     /// Checks the grammar for ambiguity. From an ambigious grammar, no parser
     /// can be generated.
@@ -50,17 +55,13 @@ public:
     /// ambiguities encountered, suitable for inclusion in an error message.
     string check() const;
 
-    /// Returns the grammar's productions. The method returns a dictionary
-    /// that maps each production's symbol to the Production itself.
-    /// Production's without symbols are not included.
-    std::map<string, shared_ptr<Production>> productions() const;
+    /// Returns the grammar's productions. The method returns a map that maps
+    /// each production's symbol to the Production itself. Production's
+    /// without symbols are not included.
+    const production_map& productions() const;
 
-    /// Returns a scope for this grammar that contains all identifier defined
-    /// by this grammar.
-    shared_ptr<Scope> scope() const { return _scope; }
-
-    /// Returns the starting production.
-    shared_ptr<Production> start() const { self._start; }
+    /// Returns the root production.
+    shared_ptr<Production> root() const;
 
     /// Prints the grammar in a (somewhat) human readable form. This is for
     /// debugging. In *verbose* mode, the grammar and all the internal
@@ -68,25 +69,37 @@ public:
     ///
     /// out: Where to print to.
     /// verbose: True for verbose output.
-    void printTables(self, std::ostream& out, bool verbose = false);
+    void printTables(std::ostream& out, bool verbose = false);
 
 private:
     typedef Production::production_list production_list;
+    typedef std::set<shared_ptr<Production>> production_set;
+    typedef std::set<string> symbol_set;
 
-    void _addProduction(shared_ptr<Production> p, bool add_ids=True);
+    void _addProduction(shared_ptr<Production> p);
     void _simplify();
     void _computeTables();
 
-    // void _add(tbl, dst, src, changed);
-    // bool _nullable(rhs, i, j);
-    // production_list _first(prod);
-    // production_list _firstOfRhs(prod);
+    void _computeClosure(shared_ptr<Production> root, std::set<string>* used);
+    bool _add(std::map<string, symbol_set>* tbl, shared_ptr<Production> dst, const symbol_set& src, bool changed);
+    bool _isNullable(production_list::iterator i, production_list::iterator j);
+    symbol_set _getFirst(shared_ptr<Production> p);
+    symbol_set _getFirstOfRhs(production_list rhs);
+    string _productionLocation(shared_ptr<Production> p) const;
 
     string _name;
-    shared_ptr<Production> _root;
     parameter_list _params;
     parameter_list _attrs;
     Location _location;
+    shared_ptr<Production> _epsilon;
+    shared_ptr<Production> _root;
+
+    production_map _prods;
+    nterm_list _nterms;
+
+    std::map<string, bool> _nullable;
+    std::map<string, symbol_set> _first;
+    std::map<string, symbol_set> _follow;
 };
 
 }

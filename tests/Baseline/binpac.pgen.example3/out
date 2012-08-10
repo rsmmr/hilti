@@ -1,0 +1,33 @@
+=== Grammar my-grammar
+        Epsilon: <eps> -> ()
+ (*)  LookAhead: All -> {HdrKey}: List2 | {"[\\r\\n]"}: nl
+       Variable: HdrKey -> (type bytes)
+       Variable: HdrVal -> (type bytes)
+       Sequence: Header -> HdrKey ws colon ws HdrVal nl
+       Sequence: List1 -> Header List2
+      LookAhead: List2 -> {HdrKey}: List1 | {}: <eps>
+        Literal: colon -> ":"
+        Literal: nl  -> "[\\r\\n]"
+        Literal: ws  -> "[ \\t]*"
+
+  -- Epsilon:
+     All = 1
+     Header = 0
+     List1 = 0
+     List2 = 1
+
+  -- First_1:
+     All = { HdrKey, nl }
+     Header = { HdrKey }
+     List1 = { HdrKey }
+     List2 = { HdrKey }
+
+  -- Follow:
+     All = {  }
+     Header = { HdrKey }
+     List1 = {  }
+     List2 = {  }
+
+Grammar error: grammar my-grammar, production All: look-ahead cannot depend on variable
+grammar my-grammar, production List2: look-ahead cannot depend on variable
+

@@ -1,0 +1,23 @@
+#! /usr/bin/env bash
+#
+# Builds a *.cc that links to libbinpac.
+#
+# TODO: This should be using hilti-config.
+
+base=`pwd`
+
+while true; do
+    base=`readlink -f $base`
+
+    if [ -d "$base/build" ]; then
+        break;
+    fi
+
+    base=$base/..
+done
+
+clang++ -L /opt/llvm/lib/ -lc++ -lcxxrt -stdlib=libc++ -std=c++0x \
+        -I $base/binpac -I $base/build/binpac -I $base/ \
+        -L $base/build/binpac/ -lbinpac -L $base/build/ast -last -L $base/build/util/ -lutil \
+        -Wl,-rpath,$base/build/binpac:$base/build/ast:$base/build/util \
+        $@

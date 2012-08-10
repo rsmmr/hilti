@@ -1,0 +1,15 @@
+=== Grammar my-grammar
+ (*)   Sequence: S   -> l1 l2 l3
+        Literal: l1  -> "l1-val"
+        Literal: l2  -> "l2-val"
+        Literal: l3  -> "l3-val"
+
+  -- Epsilon:
+     S = 0
+
+  -- First_1:
+     S = { l1 }
+
+  -- Follow:
+     S = {  }
+
