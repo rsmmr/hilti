@@ -1,11 +1,9 @@
 
-add_library (ast SHARED
+add_library (ast OBJECT
     exception.cc
     location.cc
     logger.cc
     node.cc
     type.cc
 )
-
-target_link_libraries(ast util)
 

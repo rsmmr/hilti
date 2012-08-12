@@ -129,11 +129,11 @@ while [ "$1" != "" ]; do
 
      # libhilti
         --libhilti-cflags)
-            echo "-I$base/libhilti -I$builddir/libhilti-$mode"
+            echo "-I$base/libhilti -I$builddir/libhilti"
             shift;;
 
         --libhilti-cxxflags)
-            echo "-I$base/libhilti -I$builddir/libhilti-$mode"
+            echo "-I$base/libhilti -I$builddir/libhilti"
             shift;;
 
         --libhilti-ldflags)
@@ -142,7 +142,7 @@ while [ "$1" != "" ]; do
                 papi=""
             fi
 
-            echo "$base/build/libhilti-$mode/libhilti-rt-native.a -lm -lpthread -lpcap $papi"
+            echo "$base/build/libhilti/libhilti-rt-native.a -lm -lpthread -lpcap $papi"
             shift;;
 
      # hiltic
@@ -152,18 +152,18 @@ while [ "$1" != "" ]; do
             shift;;
 
         --hiltic-flags)
-            echo "$base/libhilti/type-info.hlt $base/build/libhilti-$mode/libhilti-rt$libpostfix.bca -I$base/libhilti"
+            echo "$base/libhilti/type-info.hlt $base/build/libhilti/libhilti-rt$libpostfix.bca -I$base/libhilti"
             shift;;
 
         --hiltic-flags-main)
-            echo "$base/libhilti/type-info.hlt $base/build/libhilti-$mode/libhilti-rt-main$libpostfix.bca -I$base/libhilti"
+            echo "$base/libhilti/type-info.hlt $base/build/libhilti/libhilti-rt-main$libpostfix.bca -I$base/libhilti"
             shift;;
 
      # HILTI
         --hilti-cxxflags)
             llvm_flags=`llvm-config --cxxflags`
             llvm_flags="$llvm_flags -fexceptions -frtti" # We want exception.
-            echo "-stdlib=libc++ -std=c++0x -I$base/libhilti -I$base/build -I$base/libhilti/$builddir -I$base/hilti -I$base $llvm_flags"
+            echo "-stdlib=libc++ -std=c++0x -I$base/libhilti -I$base/build/hilti -I$base/build/libhilti -I$base/hilti -I$base $llvm_flags"
             shift;;
 
         --hilti-ldflags)

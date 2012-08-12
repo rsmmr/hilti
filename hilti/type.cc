@@ -157,6 +157,11 @@ type::function::Parameter::Parameter(shared_ptr<hilti::ID> id, shared_ptr<Type> 
 {
 }
 
+type::function::Result::Result(shared_ptr<Type> type, bool constant, Location l)
+    : ast::type::mixin::function::Result<AstInfo>(type, constant, l)
+{
+}
+
 type::Tuple::Tuple(const Location& l) : ValueType(l)
 {
     setWildcard(true);

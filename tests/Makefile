@@ -6,8 +6,9 @@ BTEST=`which btest`
 
 all: tests
 
+#@$(BTEST) -j 5 -F - -F printer -f diag.log
 tests:
-	@$(BTEST) -j 5 -F - -F printer -f diag.log
+	@$(BTEST) -j 5 -f diag.log
 
 brief:
 	@rm -f test.log
@@ -15,5 +16,5 @@ brief:
 	@echo Output in test.log
 
 hello-world:
-	@$(BTEST) -f diag.log misc/hello-world.hlt
+	@$(BTEST) -f diag.log hilti/misc/hello-world.hlt
 

@@ -141,4 +141,4 @@ configure_file (
 set_source_files_properties ( ${SRC_ASM} PROPERTIES LANGUAGE C )
 
 # Compile libffi
-add_library (hilti-ffi STATIC ${SRC_C} ${SRC_ASM})
+add_library (hilti-ffi OBJECT ${SRC_C} ${SRC_ASM})

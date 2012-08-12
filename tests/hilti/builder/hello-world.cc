@@ -1,4 +1,6 @@
 
+// @TEST-EXEC: false
+
 #include <hilti.h>
 
 using namespace hilti;

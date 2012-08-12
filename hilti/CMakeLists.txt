@@ -7,7 +7,7 @@ set(ffi     "${CMAKE_CURRENT_BINARY_DIR}/autogen/ffi")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${ffi})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${LLVM_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 set(PATH_LIBHILTI "${CMAKE_CURRENT_SOURCE_DIR}/libhilti")
 
@@ -129,9 +129,15 @@ add_library (hilti SHARED
     builder/block.cc
     builder/module.cc
 
+    instructions/channel.cc
     instructions/classifier.cc
     instructions/flow.cc
+    instructions/iosrc.cc
     instructions/misc.cc
+    instructions/operators.cc
+    instructions/port.cc
+    instructions/profiler.cc
+    instructions/thread.cc
 
     parser/driver.cc
 
@@ -182,6 +188,7 @@ add_library (hilti SHARED
     codegen/instructions/time.cc
     codegen/instructions/timer-mgr.cc
     codegen/instructions/timer.cc
+    codegen/instructions/thread.cc
     codegen/instructions/tuple.cc
     codegen/instructions/vector.cc
     codegen/linker.cc
@@ -203,8 +210,10 @@ add_library (hilti SHARED
     ${autogen}/scanner.cc
     ${autogen}/parser.cc
     ${instructions_cc}
+
+    $<TARGET_OBJECTS:ast>
+    $<TARGET_OBJECTS:util>
+    $<TARGET_OBJECTS:hilti-ffi>
 )
 
 ADD_DEPENDENCIES(hilti generate_parser_hilti)
-ADD_DEPENDENCIES(hilti instructions_autogen)
-ADD_DEPENDENCIES(hilti hilti-ffi)

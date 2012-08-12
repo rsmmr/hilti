@@ -120,8 +120,9 @@ add_library (binpac SHARED
 
     ${autogen}/visitor-interface.h
     ${autogen}/visitor-types.h
+
+    $<TARGET_OBJECTS:ast>
+    $<TARGET_OBJECTS:util>
     )
 
 ADD_DEPENDENCIES(binpac generate_parser_binpac)
-
-target_link_libraries(binpac ast)

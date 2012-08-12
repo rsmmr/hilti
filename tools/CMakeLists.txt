@@ -1,21 +1,28 @@
 
-add_executable(binpac++ binpac++.cc)
-target_link_libraries(binpac++ binpac)
+set(hilti_build "${CMAKE_CURRENT_SOURCE_DIR}/../tools/hilti-build")
 
+find_package(PAPI)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti  ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../binpac ${CMAKE_CURRENT_BINARY_DIR}/../binpac)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../util)
 
-###
+add_executable(binpac++ binpac++.cc)
+target_link_libraries(binpac++ binpac)
 
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti)
-# include_directories(${CMAKE_CURRENT_BINARY_DIR}/../hilti)
+add_executable(hiltic hiltic.cc)
+target_link_libraries(hiltic hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
+add_executable(hilti-doc hilti-doc.cc)
+target_link_libraries(hilti-doc hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
-# FindRequiredPackage(LLVM)
+add_custom_command(
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/hilti-prof.c
+    COMMAND ${hilti_build}
+    ARGS    -m -o ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof ${CMAKE_CURRENT_SOURCE_DIR}/hilti-prof.c
+    )
 
-# set(LIBS hilti hilti-ffi)
-#add_executable(hiltic hiltic.cc)
-#add_executable(hilti-doc hilti-doc.cc)
+add_custom_target(hilti-prof ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof hiltic)
 
-# target_link_libraries(hiltic ${LIBS} ${LLVM_LIBS} ${LLVM_LDFLAGS})
-# target_link_libraries(hilti-doc ${LIBS} ${LLVM_LIBS} ${LLVM_LDFLAGS})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/hilti-config.in ${CMAKE_CURRENT_BINARY_DIR}/hilti-config)
