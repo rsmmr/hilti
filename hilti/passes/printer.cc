@@ -354,7 +354,7 @@ void Printer::visit(type::function::Parameter* param)
     if ( param->id() )
         p << ' ' << param->id();
 
-    auto def = param->defaultValue();
+    auto def = param->default_();
 
     if ( def )
         p << '=' << def;

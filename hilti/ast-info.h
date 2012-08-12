@@ -55,6 +55,7 @@ struct AstInfo {
     typedef hilti::type::TypeType type_type;
     typedef hilti::type::Unknown unknown_type;
     typedef hilti::type::function::Parameter parameter;
+    typedef hilti::type::function::Result result;
 
     typedef hilti::Expression scope_value;
 };

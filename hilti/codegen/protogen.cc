@@ -108,7 +108,7 @@ void ProtoGen::visit(declaration::Function* f)
 {
     auto func = f->function();
 
-    if ( ! (f->exported() && func->type()->callingConvention() == type::function::HILTI) )
+    if ( ! (f->linkage() == Declaration::EXPORTED && func->type()->callingConvention() == type::function::HILTI) )
         return;
 
     std::ostream& out = output();

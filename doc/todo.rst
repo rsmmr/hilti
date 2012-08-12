@@ -16,6 +16,15 @@ AST Infrastructure
 * We should split type::function::Parameter into two classes, one for
   actual parameters and one for return values.
 
+* The HILTI code doesn't use the changes introduced with BinPAC yet:
+
+    - hilti::Declaration doesn't make use of linkage argument.
+
+    - Redo what common.h includes, vs. the other headers.
+
+    - Use the new scripts for declaring AST nodes, visitor interface,
+      instruction classes via macros.
+
 C/C++ Code
 ----------
 

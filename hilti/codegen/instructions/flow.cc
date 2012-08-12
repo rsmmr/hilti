@@ -12,7 +12,7 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
 {
     auto func = current<declaration::Function>();
     auto rtype = as<type::Function>(func->function()->type())->result()->type();
-    auto op1 = cg()->llvmValue(i->op1(), rtype, false);
+    auto op1 = cg()->llvmValue(i->op1(), rtype);
 
     cg()->llvmReturn(func->function()->type()->result()->type(), op1);
 }
@@ -83,7 +83,7 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
     else {
         // Standard case: dissect the tuple struct.
         auto ttype = ast::as<type::Tuple>(args->type());
-        auto tval = cg()->llvmValue(args, false);
+        auto tval = cg()->llvmValue(args);
 
         int i = 0;
         auto p = params.begin();
@@ -98,7 +98,7 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
 
     // Add default values.
     while ( p != params.end() ) {
-        auto def = (*p++)->defaultValue();
+        auto def = (*p++)->default_();
         assert(def);
         call_params->push_back(def);
     }
@@ -108,7 +108,7 @@ void StatementBuilder::visit(statement::instruction::flow::CallVoid* i)
 {
     CodeGen::expr_list params;
     prepareCall(i->op1(), i->op2(), &params);
-    auto func = cg()->llvmValue(i->op1(), false);
+    auto func = cg()->llvmValue(i->op1());
     auto ftype = ast::as<type::Function>(i->op1()->type());
     cg()->llvmCall(func, ftype, params);
 }
@@ -117,7 +117,7 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
 {
     CodeGen::expr_list params;
     prepareCall(i->op1(), i->op2(), &params);
-    auto func = cg()->llvmValue(i->op1(), false);
+    auto func = cg()->llvmValue(i->op1());
     auto ftype = ast::as<type::Function>(i->op1()->type());
     auto result = cg()->llvmCall(func, ftype, params);
     cg()->llvmStore(i->target(), result);

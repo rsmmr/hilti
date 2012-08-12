@@ -2,7 +2,7 @@
 #ifndef HILTI_COERCER_H
 #define HILTI_COERCER_H
 
-#include "ast/ast.h"
+#include <ast/coercer.h>
 
 #include "common.h"
 #include "type.h"

@@ -2,7 +2,7 @@
 #ifndef HILTI_STATEMENT_H
 #define HILTI_STATEMENT_H
 
-#include <ast/ast.h>
+#include <ast/statement.h>
 
 #include "common.h"
 #include "id.h"

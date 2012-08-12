@@ -2,6 +2,8 @@
 #ifndef HILTI_MODULE_H
 #define HILTI_MODULE_H
 
+#include <ast/module.h>
+
 #include "common.h"
 #include "id.h"
 #include "function.h"

@@ -74,7 +74,7 @@ void ScopeBuilder::visit(statement::Block* b)
         // Just a declaration without implementation.
         return;
 
-    auto scope = func->body()->scope();
+    auto scope = ast::checkedCast<statement::Block>(func->body())->scope();
 
     if ( scope->has(b->id(), false) ) {
         error(b, util::fmt("ID %s already declared", b->id()->name().c_str()));
@@ -148,7 +148,7 @@ void ScopeBuilder::visit(declaration::Function* f)
         return;
 
     // Add parameters to body's scope.
-    scope = func->body()->scope();
+    scope = ast::checkedCast<statement::Block>(func->body())->scope();
 
     for ( auto p : func->type()->parameters() ) {
         auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));

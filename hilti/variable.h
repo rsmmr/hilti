@@ -2,6 +2,8 @@
 #ifndef HILTI_VARIABLE_H
 #define HILTI_VARIABLE_H
 
+#include <ast/variable.h>
+
 #include "common.h"
 
 namespace hilti {

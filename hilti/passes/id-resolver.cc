@@ -41,7 +41,7 @@ void IdResolver::visit(Declaration* d)
     assert(module);
 
     if ( module->exported(d->id()) )
-        d->setExported(d);
+        d->setLinkage(Declaration::EXPORTED);
 }
 
 void IdResolver::visit(type::Unknown* t)

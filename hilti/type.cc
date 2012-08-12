@@ -138,7 +138,7 @@ type::trait::Parameterized::parameter_list type::TypedValueType::parameters() co
     return params;
 }
 
-type::Function::Function(shared_ptr<hilti::function::Parameter> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l)
+type::Function::Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l)
     : hilti::Type(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
     _cc = cc;
@@ -146,7 +146,7 @@ type::Function::Function(shared_ptr<hilti::function::Parameter> result, const fu
 
 type::Function::Function(const Location& l)
     : hilti::Type(l),
-    ast::type::mixin::Function<AstInfo>(this, shared_ptr<hilti::function::Parameter>(new hilti::function::Parameter(shared_ptr<hilti::Type>(new type::Void()), false)), function::parameter_list())
+    ast::type::mixin::Function<AstInfo>(this, std::make_shared<function::Result>(std::make_shared<Void>(), false, l), parameter_list())
 {
     setWildcard(true);
     _cc = function::CallingConvention::DEFAULT; // Doesn't matter.
@@ -154,11 +154,6 @@ type::Function::Function(const Location& l)
 
 type::function::Parameter::Parameter(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value, Location l)
     : ast::type::mixin::function::Parameter<AstInfo>(id, type, constant, default_value, l)
-{
-}
-
-type::function::Parameter::Parameter(shared_ptr<Type> type, bool constant, Location l)
-    : ast::type::mixin::function::Parameter<AstInfo>(type, constant, l)
 {
 }
 
@@ -282,22 +277,22 @@ shared_ptr<T> sharedPtr(T* t)
 }
 
 type::trait::Unpackable::Format _unpack_formats_bytes[] = {
-    { "BytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "BytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "A series of bytes preceded by an uint indicating its length." },
 
-    { "BytesFixed", std::make_shared<type::Integer>(64), false,
+    { "BytesFixed", std::make_shared<type::Integer>(64), nullptr, false,
       "A series of bytes of fixed length specified by an additional integer argument" },
 
-    { "BytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), false,
+    { "BytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), nullptr, false,
       "A series of bytes delimited by a final byte-sequence specified by an additional argument." },
 
-    { "SkipBytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "SkipBytesRunLength", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "Like BytesRunLength, but does not return unpacked value." },
 
-    { "SkipBytesFixed", std::make_shared<type::Integer>(64), false,
+    { "SkipBytesFixed", std::make_shared<type::Integer>(64), nullptr, false,
       "Like BytesFixed, but does not return unpacked value." },
 
-    { "SkipBytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), false,
+    { "SkipBytesDelim", std::make_shared<type::Reference>(std::make_shared<type::Bytes>()), nullptr, false,
       "Like BytesDelim, but does not return unpacked value." },
 };
 
@@ -625,30 +620,30 @@ bool type::Function::_equal(shared_ptr<hilti::Type> o) const
 }
 
 type::trait::Unpackable::Format _unpack_formats_integer[] = {
-    { "Int8", std::make_shared<type::Tuple>(), true, "8-bit signed integer in host byte order." },
-    { "Int16", std::make_shared<type::Tuple>(), true, "16-bit signed integer in host byte order." },
-    { "Int32", std::make_shared<type::Tuple>(), true, "32-bit signed integer in host byte order." },
-    { "Int64", std::make_shared<type::Tuple>(), true, "64-bit signed integer in host byte order." },
-    { "Int8Big", std::make_shared<type::Tuple>(), true, "8-bit signed integer in big-endian byte order." },
-    { "Int16Big", std::make_shared<type::Tuple>(), true, "16-bit signed integer in big-endian byte order." },
-    { "Int32Big", std::make_shared<type::Tuple>(), true, "32-bit signed integer in big-endian byte order." },
-    { "Int64Big", std::make_shared<type::Tuple>(), true, "64-bit signed integer in big-endian byte order." },
-    { "Int8Little", std::make_shared<type::Tuple>(), true, "8-bit signed integer in little-endian byte order." },
-    { "Int16Little", std::make_shared<type::Tuple>(), true, "16-bit signed integer in little-endian byte order." },
-    { "Int32Little", std::make_shared<type::Tuple>(), true, "32-bit signed integer in little-endian byte order." },
-    { "Int64Little", std::make_shared<type::Tuple>(), true, "64-bit signed integer in little-endian byte order." },
-    { "UInt8", std::make_shared<type::Tuple>(), true, "8-bit unsigned integer in host byte order." },
-    { "UInt16", std::make_shared<type::Tuple>(), true, "16-bit unsigned integer in host byte order." },
-    { "UInt32", std::make_shared<type::Tuple>(), true, "32-bit unsigned integer in host byte order." },
-    { "UInt64", std::make_shared<type::Tuple>(), true, "64-bit unsigned integer in host byte order." },
-    { "UInt8Big", std::make_shared<type::Tuple>(), true, "8-bit unsigned integer in big-endian byte order." },
-    { "UInt16Big", std::make_shared<type::Tuple>(), true, "16-bit unsigned integer in big-endian byte order." },
-    { "UInt32Big", std::make_shared<type::Tuple>(), true, "32-bit unsigned integer in big-endian byte order." },
-    { "UInt64Big", std::make_shared<type::Tuple>(), true, "64-bit unsigned integer in big-endian byte order." },
-    { "UInt8Little", std::make_shared<type::Tuple>(), true, "8-bit unsigned integer in little-endian byte order." },
-    { "UInt16Little", std::make_shared<type::Tuple>(), true, "16-bit unsigned integer in little-endian byte order." },
-    { "UInt32Little", std::make_shared<type::Tuple>(), true, "32-bit unsigned integer in little-endian byte order." },
-    { "UInt64Little", std::make_shared<type::Tuple>(), true, "64-bit unsigned integer in little-endian byte order." }
+    { "Int8", std::make_shared<type::Tuple>(), nullptr, true, "8-bit signed integer in host byte order." },
+    { "Int16", std::make_shared<type::Tuple>(), nullptr, true, "16-bit signed integer in host byte order." },
+    { "Int32", std::make_shared<type::Tuple>(), nullptr, true, "32-bit signed integer in host byte order." },
+    { "Int64", std::make_shared<type::Tuple>(), nullptr, true, "64-bit signed integer in host byte order." },
+    { "Int8Big", std::make_shared<type::Tuple>(), nullptr, true, "8-bit signed integer in big-endian byte order." },
+    { "Int16Big", std::make_shared<type::Tuple>(), nullptr, true, "16-bit signed integer in big-endian byte order." },
+    { "Int32Big", std::make_shared<type::Tuple>(), nullptr, true, "32-bit signed integer in big-endian byte order." },
+    { "Int64Big", std::make_shared<type::Tuple>(), nullptr, true, "64-bit signed integer in big-endian byte order." },
+    { "Int8Little", std::make_shared<type::Tuple>(), nullptr, true, "8-bit signed integer in little-endian byte order." },
+    { "Int16Little", std::make_shared<type::Tuple>(), nullptr, true, "16-bit signed integer in little-endian byte order." },
+    { "Int32Little", std::make_shared<type::Tuple>(), nullptr, true, "32-bit signed integer in little-endian byte order." },
+    { "Int64Little", std::make_shared<type::Tuple>(), nullptr, true, "64-bit signed integer in little-endian byte order." },
+    { "UInt8", std::make_shared<type::Tuple>(), nullptr, true, "8-bit unsigned integer in host byte order." },
+    { "UInt16", std::make_shared<type::Tuple>(), nullptr, true, "16-bit unsigned integer in host byte order." },
+    { "UInt32", std::make_shared<type::Tuple>(), nullptr, true, "32-bit unsigned integer in host byte order." },
+    { "UInt64", std::make_shared<type::Tuple>(), nullptr, true, "64-bit unsigned integer in host byte order." },
+    { "UInt8Big", std::make_shared<type::Tuple>(), nullptr, true, "8-bit unsigned integer in big-endian byte order." },
+    { "UInt16Big", std::make_shared<type::Tuple>(), nullptr, true, "16-bit unsigned integer in big-endian byte order." },
+    { "UInt32Big", std::make_shared<type::Tuple>(), nullptr, true, "32-bit unsigned integer in big-endian byte order." },
+    { "UInt64Big", std::make_shared<type::Tuple>(), nullptr, true, "64-bit unsigned integer in big-endian byte order." },
+    { "UInt8Little", std::make_shared<type::Tuple>(), nullptr, true, "8-bit unsigned integer in little-endian byte order." },
+    { "UInt16Little", std::make_shared<type::Tuple>(), nullptr, true, "16-bit unsigned integer in little-endian byte order." },
+    { "UInt32Little", std::make_shared<type::Tuple>(), nullptr, true, "32-bit unsigned integer in little-endian byte order." },
+    { "UInt64Little", std::make_shared<type::Tuple>(), nullptr, true, "64-bit unsigned integer in little-endian byte order." }
 };
 
 std::vector<type::trait::Unpackable::Format> unpack_formats_integer(makeVector(_unpack_formats_integer));
@@ -659,16 +654,16 @@ const std::vector<type::trait::Unpackable::Format>& type::Integer::unpackFormats
 }
 
 type::trait::Unpackable::Format _unpack_formats_addr[] = {
-    { "IPv4", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "IPv4", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "32-bit IPv4 address stored in host byte order." },
 
-    { "IPv4Network", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "IPv4Network", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "32-bit IPv4 address stored in network byte order." },
 
-    { "IPv6", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "IPv6", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "128-bit IPv6 address stored in host byte order." },
 
-    { "IPv6Network", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "IPv6Network", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "128-bit IPv6 address stored in network byte order." },
 };
 
@@ -680,16 +675,16 @@ const std::vector<type::trait::Unpackable::Format>& type::Address::unpackFormats
 }
 
 type::trait::Unpackable::Format _unpack_formats_port[] = {
-    { "PortTCP", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "PortTCP", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "A 16-bit TCP port value stored in host byte order." },
 
-    { "PortTCPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "PortTCPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "A 16-bit TCP port value stored in network byte order." },
 
-    { "PortUDP", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "PortUDP", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "A 16-bit UDP port value stored in host byte order." },
 
-    { "PortUDPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "PortUDPNetwork", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       "A 16-bit UDP port value stored in network byte order." },
 };
 
@@ -701,7 +696,7 @@ const std::vector<type::trait::Unpackable::Format>& type::Port::unpackFormats() 
 }
 
 type::trait::Unpackable::Format _unpack_formats_bool[] = {
-    { "Bool", std::make_shared<type::TypeByName>("Hilti::Packed"), false,
+    { "Bool", std::make_shared<type::TypeByName>("Hilti::Packed"), nullptr, false,
       R"(A single bytes and, per default, returns ``True` if that byte is non-zero
         and ``False`` otherwise. Optionally, one can specify a particular bit
         (0-7) as additional ``unpack`` arguments and the result will then

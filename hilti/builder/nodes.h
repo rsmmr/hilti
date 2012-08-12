@@ -617,7 +617,7 @@ typedef hilti::function::parameter_list parameter_list;
 ///
 /// Returns: The function node.
 inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
-                                                shared_ptr<hilti::function::Parameter> result = nullptr,
+                                                shared_ptr<hilti::function::Result> result = nullptr,
                                                 const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                 hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
                                                 shared_ptr<Type> scope = nullptr,
@@ -626,7 +626,7 @@ inline shared_ptr<declaration::Function> create(shared_ptr<ID> id,
                                                 const Location& l=Location::None) {
 
     if ( ! result )
-        result = std::make_shared<hilti::function::Parameter>(builder::void_::type(), true);
+        result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::Function>(result, params, cc, l);
     auto func = std::make_shared<Function>(id, ftype, module, scope, body, l);
@@ -658,8 +658,8 @@ inline shared_ptr<hilti::function::Parameter> parameter(shared_ptr<ID> id, share
 /// l: Location associated with the type.
 ///
 /// Returns: The result node.
-inline shared_ptr<hilti::function::Parameter> result(shared_ptr<Type> type, Location l=Location::None) {
-    return std::make_shared<hilti::function::Parameter>(nullptr, type, false, nullptr, l);
+inline shared_ptr<hilti::function::Result> result(shared_ptr<Type> type, Location l=Location::None) {
+    return std::make_shared<hilti::function::Result>(type, false, l);
 }
 
 /// Instantiates an AST node representing a function result for its type
@@ -672,8 +672,8 @@ inline shared_ptr<hilti::function::Parameter> result(shared_ptr<Type> type, Loca
 /// l: Location associated with the type.
 ///
 /// Returns: The result node.
-inline shared_ptr<hilti::function::Parameter> result(shared_ptr<Type> type, bool constant, Location l=Location::None) {
-    return std::make_shared<hilti::function::Parameter>(type, constant, l);
+inline shared_ptr<hilti::function::Result> result(shared_ptr<Type> type, bool constant, Location l=Location::None) {
+    return std::make_shared<hilti::function::Result>(type, constant, l);
 }
 
 }
@@ -708,7 +708,7 @@ typedef std::list<hook_attribute> attribute_list;
 ///
 /// Returns: The hook node.
 inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
-                                            shared_ptr<hilti::function::Parameter> result,
+                                            shared_ptr<hilti::function::Result> result,
                                             const hilti::function::parameter_list& params,
                                             shared_ptr<Module> module,
                                             shared_ptr<statement::Block> body,
@@ -742,7 +742,7 @@ inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
 ///
 /// Returns: The hook node.
 inline shared_ptr<declaration::Hook> create(shared_ptr<ID> id,
-                                            shared_ptr<hilti::function::Parameter> result,
+                                            shared_ptr<hilti::function::Result> result,
                                             const hilti::function::parameter_list& params,
                                             shared_ptr<Module> module,
                                             shared_ptr<statement::Block> body,

@@ -2,7 +2,7 @@
 #ifndef HILTI_FUNCTION_H
 #define HILTI_FUNCTION_H
 
-#include <ast/ast.h>
+#include <ast/function.h>
 
 #include "common.h"
 #include "module.h"
@@ -13,6 +13,7 @@ namespace hilti {
 
 namespace function {
 
+typedef type::function::Result Result;
 typedef type::function::Parameter Parameter;
 typedef type::function::parameter_list parameter_list;
 

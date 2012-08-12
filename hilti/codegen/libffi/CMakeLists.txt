@@ -4,8 +4,9 @@
 # For details see the COPYRIGHT file distributed with LuaDist.
 # Please note that the package source code is licensed under its own license.
 
-project ( libffi C )
-cmake_minimum_required ( VERSION 2.6 )
+
+# project ( libffi C )
+# cmake_minimum_required ( VERSION 2.6 )
 include ( dist.cmake )
 
 # NOTE: For now this only supports x86 systems, mainly OSX, Linux and Windows (32/64bit)
@@ -124,15 +125,15 @@ endif ()
 
 # Generate headers
 configure_file (
-	"${PROJECT_SOURCE_DIR}/include/ffi.h.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/ffi.h.in"
 	"${ffi}/ffi.h"
 )
 configure_file (
-	"${PROJECT_SOURCE_DIR}/fficonfig.cmake.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/fficonfig.cmake.in"
 	"${ffi}/fficonfig.h"
 )
 configure_file (
-	"${PROJECT_SOURCE_DIR}/src/x86/ffitarget.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/x86/ffitarget.h"
 	"${ffi}/ffitarget.h"
 )
 

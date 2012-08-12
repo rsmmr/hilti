@@ -2,6 +2,8 @@
 #ifndef HILTI_SCOPE_H
 #define HILTI_SCOPE_H
 
+#include <ast/scope.h>
+
 #include "common.h"
 
 namespace hilti {

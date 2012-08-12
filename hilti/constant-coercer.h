@@ -2,7 +2,7 @@
 #ifndef HILTI_CONSTANTCOERCER_H
 #define HILTI_CONSTANTCOERCER_H
 
-#include "ast/ast.h"
+#include <ast/constant-coercer.h>
 
 #include "common.h"
 #include "constant.h"

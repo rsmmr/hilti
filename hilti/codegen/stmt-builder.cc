@@ -264,7 +264,7 @@ void StatementBuilder::visit(declaration::Function* f)
 
     cg()->popFunction();
 
-    if ( f->exported() && func->type()->callingConvention() == type::function::HILTI )
+    if ( f->linkage() == Declaration::EXPORTED && func->type()->callingConvention() == type::function::HILTI )
         cg()->llvmBuildCWrapper(func);
 
     // If it's a hook, add meta information about the implementation.

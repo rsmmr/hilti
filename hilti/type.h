@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include <ast/type.h>
+
 #include "common.h"
 #include "scope.h"
 #include "visitor-interface.h"
@@ -917,6 +919,23 @@ public:
    ACCEPT_VISITOR_ROOT();
 };
 
+/// Helper type to define a function parameter or return value.
+class Result : public ast::type::mixin::function::Result<AstInfo>
+{
+public:
+    /// Constructor for a return value.
+    ///
+    /// type: The type of the return value.
+    ///
+    /// constant: A flag indicating whether the return value is constant
+    /// (i.e., a caller may not change its value.)
+    ///
+    /// l: A location associated with the expression.
+    Result(shared_ptr<Type> type, bool constant, Location l=Location::None);
+
+    ACCEPT_VISITOR_ROOT();
+};
+
 typedef ast::type::mixin::Function<AstInfo>::parameter_list parameter_list;
 
 /// HILTI's supported calling conventions.
@@ -942,7 +961,7 @@ public:
    /// cc: The function's calling convention.
    ///
    /// l: Associated location.
-   Function(shared_ptr<hilti::type::function::Parameter> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l=Location::None);
+   Function(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, hilti::type::function::CallingConvention cc, const Location& l=Location::None);
 
    /// Constructor for a function type that matches any other function type (i.e., a wildcard type).
    Function(const Location& l=Location::None);
@@ -972,7 +991,7 @@ public:
    /// params: The hooks's parameters.
    ///
    /// l: Associated location.
-   Hook(shared_ptr<hilti::type::function::Parameter> result, const function::parameter_list& args, const Location& l=Location::None)
+   Hook(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, const Location& l=Location::None)
        : Function(result, args, function::HOOK, l) {}
 
    /// Constructor for a hook type that matches any other hook type (i.e., a

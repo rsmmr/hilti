@@ -5,7 +5,8 @@
 #include <memory>
 #include <string>
 
-#include <ast/ast.h>
+#include <ast/location.h>
+#include <ast/logger.h>
 
 #include "ast-info.h"
 

@@ -41,9 +41,8 @@ public:
     /// Returns the declarartion linkage.
     Linkage linkage() const { return _linkage; }
 
-    /// Marks the declaration as exported. The interpretation is left to the
-    /// client application.
-    void setExported(bool exported) { _linkage = EXPORTED; }
+    /// Sets the declaration's linkage.
+    void setLinkage(Linkage l) { _linkage = l; }
 
     /// Returns true if the declared value is constant.
     virtual bool isConstant() const {

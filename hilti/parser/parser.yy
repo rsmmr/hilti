@@ -159,7 +159,8 @@ using namespace hilti;
 %type <operands>         operands
 %type <overlay_field>    overlay_field
 %type <overlay_fields>   overlay_fields opt_overlay_fields
-%type <param>            param result
+%type <param>            param
+%type <result>           result
 %type <params>           param_list opt_param_list
 %type <re_pattern>       re_pattern
 %type <re_patterns>      ctor_regexp

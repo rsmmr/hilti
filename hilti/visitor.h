@@ -2,6 +2,8 @@
 #ifndef HILTI_VISITOR_H
 #define HILTI_VISITOR_H
 
+#include <ast/visitor.h>
+
 #include "common.h"
 #include "visitor-interface.h"
 

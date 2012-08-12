@@ -128,7 +128,7 @@ public:
    ///
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::expression::Function> declareFunction(shared_ptr<ID> id,
-                                                           shared_ptr<hilti::function::Parameter> result = nullptr,
+                                                           shared_ptr<hilti::function::Result> result = nullptr,
                                                            const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                            hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
                                                            const Location& l=Location::None);
@@ -138,7 +138,7 @@ public:
    ///
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::expression::Function> declareFunction(const std::string& id,
-                                                           shared_ptr<hilti::function::Parameter> result = nullptr,
+                                                           shared_ptr<hilti::function::Result> result = nullptr,
                                                            const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                            hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
                                                            const Location& l=Location::None);
@@ -155,7 +155,7 @@ public:
    ///
    /// Returns: An expression referencing the hook.
    shared_ptr<hilti::expression::Function> declareHook(shared_ptr<ID> id,
-                                                       shared_ptr<hilti::function::Parameter> result = nullptr,
+                                                       shared_ptr<hilti::function::Result> result = nullptr,
                                                        const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                        const Location& l=Location::None);
 
@@ -164,7 +164,7 @@ public:
    ///
    /// Returns: An expression referencing the hook.
    shared_ptr<hilti::expression::Function> declareHook(const std::string& id,
-                                                       shared_ptr<hilti::function::Parameter> result = nullptr,
+                                                       shared_ptr<hilti::function::Result> result = nullptr,
                                                        const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                        const Location& l=Location::None);
 
@@ -190,7 +190,7 @@ public:
    ///
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::expression::Function> pushFunction(shared_ptr<ID> id,
-                                                  shared_ptr<hilti::function::Parameter> result = nullptr,
+                                                  shared_ptr<hilti::function::Result> result = nullptr,
                                                   const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                   hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
                                                   shared_ptr<Type> scope = nullptr,
@@ -219,7 +219,7 @@ public:
    ///
    /// Returns: An expression referencing the function.
    shared_ptr<hilti::expression::Function> pushFunction(const std::string& id,
-                                                  shared_ptr<hilti::function::Parameter> result = nullptr,
+                                                  shared_ptr<hilti::function::Result> result = nullptr,
                                                   const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                   hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
                                                   shared_ptr<Type> scope = nullptr,
@@ -253,7 +253,7 @@ public:
    ///
    /// Returns: An expression referencing the hook.
    shared_ptr<hilti::expression::Function> pushHook(shared_ptr<ID> id,
-                                              shared_ptr<hilti::function::Parameter> result = nullptr,
+                                              shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
                                               const hilti::hook::attribute_list& attrs = hilti::hook::attribute_list(),
@@ -283,7 +283,7 @@ public:
    ///
    /// Returns: An expression referencing the hook.
    shared_ptr<hilti::expression::Function> pushHook(const std::string& id,
-                                              shared_ptr<hilti::function::Parameter> result = nullptr,
+                                              shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
                                               const hilti::hook::attribute_list& attrs = hilti::hook::attribute_list(),
@@ -313,7 +313,7 @@ public:
    ///
    /// Returns: An expression referencing the hook.
    shared_ptr<hilti::expression::Function> pushHook(shared_ptr<ID> id,
-                                              shared_ptr<hilti::function::Parameter> result = nullptr,
+                                              shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
                                               int64_t priority = 0, int64_t group = 0,
@@ -343,7 +343,7 @@ public:
    ///
    /// Returns: An expression referencing the hook.
    shared_ptr<hilti::expression::Function> pushHook(const std::string& id,
-                                              shared_ptr<hilti::function::Parameter> result = nullptr,
+                                              shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
                                               int64_t priority = 0, int64_t group = 0,

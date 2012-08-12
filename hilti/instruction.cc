@@ -361,7 +361,7 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
         if ( ! (*o)->canCoerceTo((*p)->type()) ) {
             auto have = (*o)->type()->render();
             auto want = (*p)->type()->render();
-            error(i, util::fmt("type of parameter %d does not match function, have %s but expected %s", i, have.c_str(), want.c_str()));
+            error(*o, util::fmt("type of parameter %d does not match function, have %s but expected %s", i, have.c_str(), want.c_str()));
             return false;
         }
 
@@ -374,14 +374,14 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
         return true;
 
     if ( o != ops.end() ) {
-        error(i, util::fmt("too many arguments given, expected %d but got %d", proto.size(), ops.size()));
+        error(*o, util::fmt("too many arguments given, expected %d but got %d", proto.size(), ops.size()));
         return false;
     }
 
     // Remaining ones must have defaults.
     while ( p != proto.end() ) {
-        if ( ! (*p)->defaultValue() ) {
-            error(i, util::fmt("too few arguments given, expected %d but got %d", proto.size(), ops.size()));
+        if ( ! (*p)->default_() ) {
+            error(*p, util::fmt("too few arguments given, expected %d but got %d", proto.size(), ops.size()));
             return false;
         }
 

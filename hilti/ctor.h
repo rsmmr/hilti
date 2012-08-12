@@ -4,6 +4,8 @@
 
 #include <stdint.h>
 
+#include <ast/ctor.h>
+
 #include "common.h"
 #include "scope.h"
 #include "type.h"

@@ -14,12 +14,12 @@ set(CMAKE_C_FLAGS      "${CMAKE_C_FLAGS}   ${clang_cflags}")
 set(CMAKE_CXX_FLAGS    "${CMAKE_CXX_FLAGS} ${clang_cxxflags}")
 # set(CMAKE_LD_FLAGS     "${CMAKE_LD_FLAGS}")
 
-if ( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )
+if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
     # Changing CMAKE_C_FLAGS_DEBUG does not have any effect here?
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${clang_debug_flags}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${clang_debug_flags}")
 endif ()
 
-if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+if ( "${CMAKE_SYSTEM_NAME}" MATCHES "Darwin" )
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDARWIN")
 endif ()

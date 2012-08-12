@@ -97,7 +97,7 @@ inline bool isA(shared_ptr<NodeBase> n) {
     return std::dynamic_pointer_cast<T>(n) != 0;
 }
 
-#if 0
+#if 1
 
 /// Dynamic cast of a node pointer to a specific Node-derived class.
 ///

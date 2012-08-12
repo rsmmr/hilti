@@ -72,7 +72,7 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
     CodeGen::expr_list params;
     prepareCall(i->op1(), i->op2(), &params);
 
-    auto func = cg()->llvmValue(i->op1(), false);
+    auto func = cg()->llvmValue(i->op1());
     auto ftype = ast::as<type::Function>(i->op1()->type());
     auto job = cg()->llvmCallableBind(func, ftype, params);
 

@@ -161,7 +161,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(shared_pt
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(shared_ptr<ID> id,
-                                                              shared_ptr<hilti::function::Parameter> result,
+                                                              shared_ptr<hilti::function::Result> result,
                                                               const hilti::function::parameter_list& params,
                                                               hilti::type::function::CallingConvention cc,
                                                               shared_ptr<Type> scope,
@@ -169,7 +169,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(shared_ptr<I
                                                               const Location& l)
 {
     if ( ! result )
-        result = std::make_shared<hilti::function::Parameter>(builder::void_::type(), true);
+        result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::Function>(result, params, cc, l);
     auto func = std::make_shared<hilti::Function>(id, ftype, _module, scope, nullptr, l);
@@ -177,7 +177,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(shared_ptr<I
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(const std::string& id,
-                                                              shared_ptr<hilti::function::Parameter> result,
+                                                              shared_ptr<hilti::function::Result> result,
                                                               const hilti::function::parameter_list& params,
                                                               hilti::type::function::CallingConvention cc,
                                                               shared_ptr<Type> scope,
@@ -193,13 +193,13 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(shared_ptr<hi
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(shared_ptr<ID> id,
-                                                                       shared_ptr<hilti::function::Parameter> result,
+                                                                       shared_ptr<hilti::function::Result> result,
                                                                        const hilti::function::parameter_list& params,
                                                                        hilti::type::function::CallingConvention cc,
                                                                        const Location& l)
 {
     if ( ! result )
-        result = std::make_shared<hilti::function::Parameter>(builder::void_::type(), true);
+        result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::Function>(result, params, cc, l);
     auto func = std::make_shared<hilti::Function>(id, ftype, _module, nullptr, nullptr, l);
@@ -207,7 +207,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(shared_pt
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(const std::string& id,
-                                                                       shared_ptr<hilti::function::Parameter> result,
+                                                                       shared_ptr<hilti::function::Result> result,
                                                                        const hilti::function::parameter_list& params,
                                                                        hilti::type::function::CallingConvention cc,
                                                                        const Location& l)
@@ -216,12 +216,12 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(const std
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(shared_ptr<ID> id,
-                                                                   shared_ptr<hilti::function::Parameter> result,
+                                                                   shared_ptr<hilti::function::Result> result,
                                                                    const hilti::function::parameter_list& params,
                                                                    const Location& l)
 {
     if ( ! result )
-        result = std::make_shared<hilti::function::Parameter>(builder::void_::type(), true);
+        result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
     auto func = std::make_shared<hilti::Hook>(id, ftype, _module, nullptr, hilti::hook::attribute_list(), nullptr, l);
@@ -229,7 +229,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(shared_ptr<ID
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(const std::string& id,
-                                                                   shared_ptr<hilti::function::Parameter> result,
+                                                                   shared_ptr<hilti::function::Result> result,
                                                                    const hilti::function::parameter_list& params,
                                                                    const Location& l)
 {
@@ -238,7 +238,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(const std::st
 
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> id,
-                                                          shared_ptr<hilti::function::Parameter> result,
+                                                          shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
                                                           shared_ptr<Type> scope,
                                                           const hilti::hook::attribute_list& attrs,
@@ -246,7 +246,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> i
                                                           const Location& l)
 {
     if ( ! result )
-        result = std::make_shared<hilti::function::Parameter>(builder::void_::type(), true);
+        result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
     auto func =  std::make_shared<hilti::Hook>(id, ftype, _module, scope, attrs, nullptr, l);
@@ -254,7 +254,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> i
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(const std::string& id,
-                                                          shared_ptr<hilti::function::Parameter> result,
+                                                          shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
                                                           shared_ptr<Type> scope,
                                                           const hilti::hook::attribute_list& attrs,
@@ -266,7 +266,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(const std::strin
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> id,
-                                                          shared_ptr<hilti::function::Parameter> result,
+                                                          shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
                                                           shared_ptr<Type> scope,
                                                           int64_t priority, int64_t group,
@@ -274,7 +274,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> i
                                                           const Location& l)
 {
     if ( ! result )
-        result = std::make_shared<hilti::function::Parameter>(builder::void_::type(), true);
+        result = std::make_shared<hilti::function::Result>(builder::void_::type(), true);
 
     auto ftype = std::make_shared<hilti::type::Hook>(result, params, l);
     auto func = std::make_shared<hilti::Hook>(id, ftype, _module, scope, priority, group, nullptr, l);
@@ -282,7 +282,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> i
 }
 
 shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(const std::string& id,
-                                                          shared_ptr<hilti::function::Parameter> result,
+                                                          shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
                                                           shared_ptr<Type> scope,
                                                           int64_t priority, int64_t group,

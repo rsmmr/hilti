@@ -52,6 +52,7 @@ struct yystype {
     shared_ptr<hilti::Constant> constant;
     shared_ptr<hilti::Module> module;
     shared_ptr<hilti::Function> func;
+    shared_ptr<hilti::function::Result> result;
     shared_ptr<hilti::function::Parameter> param;
     shared_ptr<hilti::statement::try_::Catch> catch_;
     shared_ptr<hilti::type::struct_::Field> struct_field;

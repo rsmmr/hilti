@@ -77,6 +77,7 @@ namespace type {
 
    namespace function {
       class Parameter;
+      class Result;
    }
 
    namespace iterator {
@@ -205,6 +206,7 @@ public:
    virtual void visit(Function* f)          {}
    virtual void visit(Hook* f)              {}
    virtual void visit(type::function::Parameter* p) {}
+   virtual void visit(type::function::Result* p) {}
 
    // Types.
    virtual void visit(Type* t)              {}

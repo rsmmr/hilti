@@ -2,6 +2,8 @@
 #ifndef HILTI_ID_H
 #define HILTI_ID_H
 
+#include <ast/id.h>
+
 #include "common.h"
 #include "visitor-interface.h"
 

@@ -11,7 +11,7 @@ void StatementBuilder::visit(statement::instruction::timer::New* i)
     CodeGen::expr_list params;
     prepareCall(i->op2(), i->op3(), &params);
 
-    auto func = cg()->llvmValue(i->op2(), false);
+    auto func = cg()->llvmValue(i->op2());
     auto ftype = ast::as<type::Function>(i->op2()->type());
     auto callable = cg()->llvmCallableBind(func, ftype, params);
 

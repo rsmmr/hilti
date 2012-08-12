@@ -31,7 +31,7 @@ bison_target(Parser parser/parser.yy
 
 flex_target(Scanner parser/scanner.ll ${autogen}/scanner.cc)
 
-ADD_CUSTOM_TARGET(generate_parser
+ADD_CUSTOM_TARGET(generate_parser_binpac
                   DEPENDS ${autogen}/parser.cc ${autogen}/scanner.cc)
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/scanner.cc PROPERTIES GENERATED 1)
@@ -61,7 +61,6 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen}/operators)
 
 foreach(in ${operators})
    string(REPLACE ".cc" "" base "${in}")
-   #string(REPLACE "" "${autogen}/operators" base "${base}")
 
    set(h  "${autogen}/${base}.h")
    set(cc "${autogen}/${base}.cc")
@@ -122,5 +121,7 @@ add_library (binpac SHARED
     ${autogen}/visitor-interface.h
     ${autogen}/visitor-types.h
     )
+
+ADD_DEPENDENCIES(binpac generate_parser_binpac)
 
 target_link_libraries(binpac ast)

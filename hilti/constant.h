@@ -5,7 +5,9 @@
 #include <netinet/in.h>
 #include <stdint.h>
 
-#include "ast/exception.h"
+#include <ast/constant.h>
+#include <ast/exception.h>
+
 #include "common.h"
 #include "scope.h"
 #include "type.h"

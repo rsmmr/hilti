@@ -2,6 +2,8 @@
 #ifndef HILTI_EXPRESSION_H
 #define HILTI_EXPRESSION_H
 
+#include <ast/expression.h>
+
 #include "common.h"
 #include "id.h"
 #include "coercer.h"
@@ -38,7 +40,7 @@ public:
    /// exprs: A list of individual expressions.
    ///
    /// l: An associated location.
-   List(const expr_list& exprs, const Location& l=Location::None)
+   List(const expression_list& exprs, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::List<AstInfo>(this, exprs) {}
 
    ACCEPT_VISITOR(hilti::Expression);

@@ -2,6 +2,8 @@
 #ifndef HILTI_DECLARATION_H
 #define HILTI_DECLARATION_H
 
+#include <ast/declaration.h>
+
 #include "common.h"
 #include "id.h"
 #include "type.h"
@@ -18,7 +20,10 @@ public:
    /// id: The name of declared object.
    /// 
    /// l: An associated location.
-   Declaration(shared_ptr<hilti::ID> id, const Location& l=Location::None) : ast::Declaration<AstInfo>(id, l) {}
+   ///
+   /// \todo: We don't use the AST's new linkage attribute yet.
+   Declaration(shared_ptr<hilti::ID> id, const Location& l=Location::None)
+       : ast::Declaration<AstInfo>(id, LOCAL, l) {}
 
    ACCEPT_VISITOR_ROOT();
 };
