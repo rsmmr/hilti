@@ -12,20 +12,29 @@
 
 namespace binpac {
 
+class CompilerContext;
+
 /// AST node for a top-level module.
 class Module : public ast::Module<AstInfo>
 {
 public:
     /// Constructor.
     ///
+    /// ctx: The context this module is part of.
+    ///
     /// id: A non-scoped ID with the module's name.
     ///
     /// path: A file system path associated with the module.
     ///
     /// l: Associated location.
-    Module(shared_ptr<ID> id, const string& path = "-", const Location& l=Location::None);
+    Module(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, const string& path = "-", const Location& l=Location::None);
+
+    shared_ptr<CompilerContext> context() const;
 
     ACCEPT_VISITOR_ROOT();
+
+private:
+    shared_ptr<CompilerContext> _context;
 };
 
 }

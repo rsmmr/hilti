@@ -9,7 +9,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${ffi})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
-set(PATH_LIBHILTI "${CMAKE_CURRENT_SOURCE_DIR}/libhilti")
+set(PATH_LIBHILTI "${PROJECT_SOURCE_DIR}/libhilti")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/autogen/config.h)
 
@@ -62,6 +62,8 @@ set(instructions
     instructions/operators.h
     instructions/overlay.h
     instructions/port.h
+    instructions/profiler.h
+    instructions/reference.h
     instructions/regexp.h
     instructions/set.h
     instructions/string.h
@@ -182,6 +184,8 @@ add_library (hilti SHARED
     codegen/instructions/network.cc
     codegen/instructions/overlay.cc
     codegen/instructions/port.cc
+    codegen/instructions/profiler.cc
+    codegen/instructions/reference.cc
     codegen/instructions/regexp.cc
     codegen/instructions/set.cc
     codegen/instructions/struct.cc

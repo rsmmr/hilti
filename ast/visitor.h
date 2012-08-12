@@ -89,7 +89,7 @@ public:
     bool processAllPostOrder(shared_ptr<NodeBase> node);
 
     /// Visits just a single node. The methods doesn't recurse any further,
-    /// although the individual visit methods can manually do so by invoking 
+    /// although the individual visit methods can manually do so by invoking
     /// any of the #call methods.
     ///
     /// In other words, this method is external interface to visiting a single
@@ -99,7 +99,12 @@ public:
     /// node: The node to visit.
     ///
     /// Returns: True if no fatalError() has been reported.
-    bool processOne(shared_ptr<NodeBase> node);
+    bool processOne(shared_ptr<NodeBase> node) {
+        saveArgs();
+        auto b = processOneInternal(node);
+        restoreArgs();
+        return b;
+    }
 
     /// Like processOne(), but also allows the visit method to set a result
     /// value. If no result is set via setResult(), the default set with
@@ -108,34 +113,51 @@ public:
     /// node: The node to visit.
     ///
     /// result: Pointer to instance to store result in.
-    bool processOne(shared_ptr<NodeBase> node, Result* result);
+    bool processOne(shared_ptr<NodeBase> node, Result* result) {
+        saveArgs();
+        auto b = processOneInternal(node, result);
+        restoreArgs();
+        return b;
+    }
 
     /// Like processOne(), but also sets the visitors first argument. Visit
     /// methods can then retrieve it with #arg1.
     bool processOne(shared_ptr<NodeBase> node, Arg1 arg1) {
-       this->setArg1(arg1);
-       processOne(node);
+        saveArgs();
+        this->setArg1(arg1);
+        auto r = processOneInternal(node);
+        restoreArgs();
+        return r;
     }
 
     /// Like processOne(), but also sets the visitors first and second
     /// arguments. Visit methods can then retrieve it with #arg1 and #arg2.
     bool processOne(shared_ptr<NodeBase> node, Arg1 arg1, Arg2 arg2) {
-       this->setArg1(arg1);
-       this->setArg2(arg2);
-       return processOne(node);
+        saveArgs();
+        this->setArg1(arg1);
+        this->setArg2(arg2);
+        auto r = processOneInternal(node);
+        restoreArgs();
+        return r;
     }
 
     /// Like processOne(), with setting an argument and getting a result back.
     bool processOne(shared_ptr<NodeBase> node, Result* result, Arg1 arg1) {
-       this->setArg1(arg1);
-       return processOne(node, result);
+        saveArgs();
+        this->setArg1(arg1);
+        auto r = processOneInternal(node, result);
+        restoreArgs();
+        return r;
     }
 
     /// Like processOne(), with setting arguments and getting a result back.
     bool processOne(shared_ptr<NodeBase> node, Result* result, Arg1 arg1, Arg2 arg2) {
-       this->setArg1(arg1);
-       this->setArg2(arg2);
-       return processOne(node, result);
+        saveArgs();
+        this->setArg1(arg1);
+        this->setArg2(arg2);
+        auto r = processOneInternal(node, result);
+        restoreArgs();
+        return r;
     }
 
     /// Returns true if we currently in a visit method that was triggered by
@@ -363,6 +385,11 @@ private:
        return shared_ptr<T>();
     }
 
+    bool processOneInternal(shared_ptr<NodeBase> node);
+    bool processOneInternal(shared_ptr<NodeBase> node, Result* result);
+    void saveArgs();
+    void restoreArgs();
+
     typedef std::list<shared_ptr<NodeBase>> node_list;
     node_list _current;
 
@@ -381,6 +408,17 @@ private:
 
     typedef std::set<shared_ptr<NodeBase>> node_set;
     node_set _visited;
+
+    struct SavedArgs {
+        Arg1 arg1;
+        Arg2 arg2;
+        bool result_set;
+        bool default_set;
+        Result result;
+        Result default_;
+    };
+
+    std::list<SavedArgs> _saved_args;
 };
 
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
@@ -416,7 +454,33 @@ inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processAllPostOrder(shared_ptr
 }
 
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
-inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processOne(shared_ptr<NodeBase> node)
+inline void Visitor<AstInfo, Result, Arg1, Arg2>::saveArgs()
+{
+    SavedArgs args;
+    args.arg1 = _arg1;
+    args.arg2 = _arg2;
+    args.result_set = _result_set;
+    args.default_set = _default_set;
+    args.result = _result;
+    args.default_ = _default;
+    _saved_args.push_back(args);
+}
+
+template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
+inline void Visitor<AstInfo, Result, Arg1, Arg2>::restoreArgs()
+{
+    auto args = _saved_args.back();
+    _arg1 = args.arg1;
+    _arg2 = args.arg2;
+    _result_set = args.result_set;
+    _default_set = args.default_set;
+    _result = args.result;
+    _default = args.default_;
+    _saved_args.pop_back();
+}
+
+template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
+inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processOneInternal(shared_ptr<NodeBase> node)
 {
     reset();
 
@@ -432,7 +496,7 @@ inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processOne(shared_ptr<NodeBase
 }
 
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
-inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processOne(shared_ptr<NodeBase> node, Result* result)
+inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processOneInternal(shared_ptr<NodeBase> node, Result* result)
 {
     assert(result);
 

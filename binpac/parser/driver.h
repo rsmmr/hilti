@@ -9,6 +9,7 @@
 #include "attribute.h"
 #include "declaration.h"
 #include "type.h"
+#include "context.h"
 #include "visitor-interface.h"
 
 #undef YY_DECL
@@ -20,7 +21,7 @@
         binpac_parser::Driver& driver                 \
         )
 
-struct yystype {
+struct yystype_binpac {
     bool        bval;
     double      dval;
     int64_t     ival;
@@ -71,7 +72,7 @@ struct yystype {
     std::pair<shared_ptr<ID>, int> id_and_int;
 };
 
-#define YYSTYPE yystype
+#define YYSTYPE yystype_binpac
 
 #ifndef __FLEX_LEXER_H
 #define yyFlexLexer BinPACFlexLexer
@@ -87,7 +88,7 @@ class location;
 
 class Driver : public Logger {
 public:
-    shared_ptr<binpac::Module> parse(std::istream& in, const std::string& sname);
+    shared_ptr<binpac::Module> parse(shared_ptr<CompilerContext> ctx, std::istream& in, const std::string& sname);
 
     // Report parsing errors.
     void error(const std::string& m, const binpac_parser::location& l);
@@ -97,6 +98,7 @@ public:
 
     Scanner* scanner() const { return _scanner; }
     Parser* parser() const { return _parser; }
+    shared_ptr<CompilerContext> context() const { return _context; }
 
     shared_ptr<Module> module() const;
     void setModule(shared_ptr<Module> module);
@@ -121,6 +123,7 @@ public:
 
 private:
     std::string _sname;
+    shared_ptr<CompilerContext> _context = nullptr;
     shared_ptr<Module> _module = nullptr;
 
     Scanner* _scanner = 0;

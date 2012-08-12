@@ -5,6 +5,7 @@ set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
 
 set(PATH_LIBBINPAC "${CMAKE_CURRENT_SOURCE_DIR}/libpac")
 set(PATH_HILTI     "${CMAKE_CURRENT_SOURCE_DIR}/../hilti")
@@ -100,6 +101,11 @@ add_library (binpac SHARED
     visitor-interface.cc
 
     ${operators_cc}
+
+    codegen/code-builder.cc
+    codegen/codegen.cc
+    codegen/coercion-builder.cc
+    codegen/type-builder.cc
 
     parser/driver.cc
 

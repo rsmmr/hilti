@@ -9,9 +9,10 @@
 
 using namespace binpac_parser;
 
-shared_ptr<binpac::Module> Driver::parse(std::istream& in, const std::string& sname)
+shared_ptr<binpac::Module> Driver::parse(shared_ptr<CompilerContext> ctx, std::istream& in, const std::string& sname)
 {
     _sname = sname;
+    _context = ctx;
 
     Scanner scanner(&in);
     _scanner = &scanner;

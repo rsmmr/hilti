@@ -174,7 +174,7 @@ using namespace binpac;
 
 %start module;
 
-module        : MODULE local_id ';'              { auto module = std::make_shared<Module>($2, *driver.streamName(), loc(@$));
+module        : MODULE local_id ';'              { auto module = std::make_shared<Module>(driver.context(), $2, *driver.streamName(), loc(@$));
                                                   driver.setModule(module);
                                                  }
 

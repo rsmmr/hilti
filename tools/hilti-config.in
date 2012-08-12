@@ -32,6 +32,11 @@ Usage: hilti-config <options>
       --hiltic-flags        Print flags for hiltic.
       --hiltic-flags-main   Print flags for hiltic to link libhiltimain
 
+  == Options printing flags for running binpac++.
+
+      --binpac-binary       Print path of binpac++ binary
+      --binpac-flags        Print flags for binpac++.
+
 EOF
    exit 1
 }
@@ -157,6 +162,16 @@ while [ "$1" != "" ]; do
 
         --hiltic-flags-main)
             echo "$base/libhilti/type-info.hlt $base/build/libhilti/libhilti-rt-main$libpostfix.bca -I$base/libhilti"
+            shift;;
+
+     # binpac++
+
+        --binpac-binary)
+            echo "$base/build/tools/binpac++"
+            shift;;
+
+        --binpac-flags)
+            echo ""
             shift;;
 
      # HILTI

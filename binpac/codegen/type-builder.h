@@ -1,0 +1,85 @@
+
+#ifndef BINPAC_CODEGEN_TYPE_BUILDER_H
+#define BINPAC_CODEGEN_TYPE_BUILDER_H
+
+#include "common.h"
+#include "cg-visitor.h"
+
+namespace binpac {
+namespace codegen {
+
+/// Visitor that returns the HILTI type that corresponds to a BinPAC type.
+class TypeBuilder : public CGVisitor<shared_ptr<hilti::Type>>
+{
+public:
+    /// Constructor.
+    ///
+    /// cg: The code generator to use.
+    TypeBuilder(CodeGen* cg);
+    virtual ~TypeBuilder();
+
+    /// Converts a BinPAC type into its corresponding HILTI type.
+    ///
+    /// type: The type to convert.
+    ///
+    /// Returns: The HILTI type.
+    shared_ptr<hilti::Type> hiltiType(shared_ptr<Type> type);
+
+protected:
+    void visit(type::Address* a) override;
+    void visit(type::Any* a) override;
+    void visit(type::Bitset* b) override;
+    void visit(type::Block* b) override;
+    void visit(type::Bool* b) override;
+    void visit(type::Bytes* b) override;
+    void visit(type::CAddr* c) override;
+    void visit(type::Double* d) override;
+    void visit(type::Enum* e) override;
+    void visit(type::Exception* e) override;
+    void visit(type::File* f) override;
+    void visit(type::Function* f) override;
+    void visit(type::Hook* h) override;
+    void visit(type::Integer* i) override;
+    void visit(type::Interval* i) override;
+    void visit(type::Iterator* i) override;
+    void visit(type::List* l) override;
+    void visit(type::Map* m) override;
+    void visit(type::Module* m) override;
+    void visit(type::Network* n) override;
+    void visit(type::OptionalArgument* o) override;
+    void visit(type::Port* p) override;
+    void visit(type::RegExp* r) override;
+    void visit(type::Set* s) override;
+    void visit(type::String* s) override;
+    void visit(type::Time* t) override;
+    void visit(type::Tuple* t) override;
+    void visit(type::TypeByName* t) override;
+    void visit(type::TypeType* t) override;
+    void visit(type::Unit* u) override;
+    void visit(type::Unknown* u) override;
+    void visit(type::Unset* u) override;
+    void visit(type::Vector* v) override;
+    void visit(type::Void* v) override;
+    void visit(type::function::Parameter* p) override;
+    void visit(type::function::Result* r) override;
+    void visit(type::iterator::Bytes* b) override;
+    void visit(type::iterator::List* l) override;
+    void visit(type::iterator::Regexp* r) override;
+    void visit(type::iterator::Set* s) override;
+    void visit(type::iterator::Vector* v) override;
+    void visit(type::unit::Item* i) override;
+    void visit(type::unit::item::Field* f) override;
+    void visit(type::unit::item::GlobalHook* g) override;
+    void visit(type::unit::item::Property* p) override;
+    void visit(type::unit::item::Variable* v) override;
+    void visit(type::unit::item::field::Constant* c) override;
+    void visit(type::unit::item::field::RegExp* r) override;
+    void visit(type::unit::item::field::Switch* s) override;
+    void visit(type::unit::item::field::Type* t) override;
+    void visit(type::unit::item::field::switch_::Case* c) override;
+};
+
+}
+}
+
+#endif

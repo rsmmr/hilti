@@ -12,7 +12,7 @@ namespace binpac {
 /// A module context that groups a set of modules compiled jointly. This
 /// class provides the main top-level interface for parsing and compiling
 /// BinPAC++ modules.
-class CompilerContext : public Logger
+class CompilerContext : public Logger, public std::enable_shared_from_this<CompilerContext>
 {
 public:
     /// Constructor.

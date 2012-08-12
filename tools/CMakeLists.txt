@@ -8,7 +8,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../binpac ${CMAKE_CURRENT_BINARY
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../util)
 
 add_executable(binpac++ binpac++.cc)
-target_link_libraries(binpac++ binpac)
+target_link_libraries(binpac++ binpac hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
 add_executable(hiltic hiltic.cc)
 target_link_libraries(hiltic hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})

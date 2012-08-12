@@ -15,6 +15,8 @@
 #include "passes/scope-builder.h"
 #include "passes/scope-printer.h"
 
+#include "codegen/codegen.h"
+
 using namespace binpac;
 using namespace binpac::passes;
 
@@ -75,7 +77,7 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
     driver.forwardLoggingTo(this);
     driver.enableDebug(_dbg_scanner, _dbg_parser);
 
-    return driver.parse(in, sname);
+    return driver.parse(shared_from_this(), in, sname);
 }
 
 bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
@@ -115,8 +117,8 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
 
 shared_ptr<hilti::Module> CompilerContext::compile(shared_ptr<Module> module, int debug, bool verify)
 {
-    std::cerr << "compile() not implemented" << std::endl;
-    return nullptr;
+    CodeGen codegen;
+    return codegen.compile(module, debug, verify);
 }
 
 bool CompilerContext::print(shared_ptr<Module> module, std::ostream& out)

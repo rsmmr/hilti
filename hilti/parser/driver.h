@@ -21,7 +21,7 @@
         hilti_parser::Driver& driver                 \
         )
 
-struct yystype {
+struct yystype_hilti {
     bool        bval;
     int64_t     ival;
     double      dval;
@@ -70,7 +70,7 @@ struct yystype {
     hilti::instruction::Operands operands;
 };
 
-#define YYSTYPE yystype
+#define YYSTYPE yystype_hilti
 
 #ifndef __FLEX_LEXER_H
 #define yyFlexLexer HiltiFlexLexer

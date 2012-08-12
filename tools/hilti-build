@@ -14,7 +14,7 @@ Version = 0.2
 Target = "<unknown>"
 
 Cc           = "clang -gfull"                    # Note, we really need clang.
-CcOptSpec    = "-O3"                      # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
+CcOptSpec    = "-O3"                             # With clang, -O4 is LTO, which we can't do wo/ support by the system linker.
 OptOptSpec   = "-std-compile-opts -std-link-opts"
 
 # Search file in shell PATH. Returns None if not found.
@@ -150,6 +150,28 @@ def execute(cmd):
 
 ### Compile and lin function.
 
+# Compile BinPAC++ into HILTI code.
+def compilePac(input, output):
+    try:
+        flags = os.environ.get("BINPACFLAGS" % tag.upper(), "").split()
+    except:
+        flags = []
+
+    flags += runConfig(HiltiConfig, "--binpac-flags").split()
+    flags += ["-I ."]
+
+    for i in range(Options.debug):
+        flags += " -d"
+
+    flags = uniqueArgs(flags)
+
+    path = runConfig(HiltiConfig, "--binpac-binary")
+
+    binpac = "%s %s -o %s %s" % (path, flags, output, input)
+
+    if not execute(binpac):
+        error("error compiling %s, aborting" % input)
+
 # Compile C and C++ files into LLVM bitcode.
 def compileC(input, output, cxx):
 
@@ -239,10 +261,11 @@ def parseOptions():
 Input files may be end in one of the following extensions:
 
     *.hlt     - HILTI files
-    *.ll      - LLVM assember file
+    *.ll      - LLVM assember files
     *.bc      - LLVM bitcode files
-    *.c       - C files.
-    *.cc      - C++ files.
+    *.c       - C files
+    *.cc      - C++ files
+    *.pac2    - BinPAC++ files
 """
 
     optparser = optparse.OptionParser(usage="%prog [options] <input-file>", version=version)
@@ -298,7 +321,7 @@ inputs = parseOptions()
 
 files = {}
 
-for ext in [".hlt", ".c", ".cc", ".cxx", ".cpp", ".ll", ".bc"]:
+for ext in [".hlt", ".c", ".cc", ".cxx", ".cpp", ".ll", ".bc", ".pac2"]:
     files[ext] = []
 
 for input in inputs:
@@ -317,6 +340,12 @@ if Options.proto:
         runHiltic([input], output, proto=True)
 
     sys.exit(0)
+
+for input in files[".pac2"]:
+    verbose("compiling %s ..." % input)
+    output = makeOutput(input, "hlt")
+    compilePac(input, output)
+    files[".hlt"] += [output]
 
 for input in files[".c"]:
     verbose("compiling %s ..." % input)
