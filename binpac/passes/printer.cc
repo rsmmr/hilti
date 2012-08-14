@@ -934,7 +934,7 @@ void Printer::visit(type::unit::item::Variable* v)
 void Printer::visit(type::unit::item::field::Constant* c)
 {
     Printer& p = *this;
-    p << c->value();
+    p << c->default_();
 
     _printUnitFieldCommon(p, c);
 }

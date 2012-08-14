@@ -8,6 +8,7 @@ namespace hilti {
     class Expression;
     class Module;
     class Type;
+    class ID;
 
     namespace builder {
         class ModuleBuilder;
@@ -82,6 +83,21 @@ public:
     ///
     /// Returns: The coerced expression.
     shared_ptr<hilti::Expression> hiltiCoerce(shared_ptr<hilti::Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst);
+
+    /// Returns the default value for instances of a BinPAC type that aren't
+    /// further intiailized.
+    ///
+    /// type: The type to convert.
+    ///
+    /// Returns: The HILTI value, or null for HILTI's default.
+    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type);
+
+    /// Turns a BinPAC ID into a HILTI ID.
+    ///
+    /// id: The ID to convert.
+    ///
+    /// Returns: The converted ID.
+    shared_ptr<hilti::ID> hiltiID(shared_ptr<ID> id);
 
 private:
     bool _compiling = false;

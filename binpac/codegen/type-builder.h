@@ -8,8 +8,20 @@
 namespace binpac {
 namespace codegen {
 
+// Codegen information about a BinPAC++ type.
+struct TypeInfo {
+    ///  // The corresponding HILTI type. If null, one can't create instances
+    ///  of this type.
+    shared_ptr<hilti::Type>       hilti_type = nullptr;
+
+    /// The default HILTI value for instances of this type that aren't
+    /// explicitly initialized. If null, we use HILTI's default for the type
+    /// \a hilti_type
+    shared_ptr<hilti::Expression> hilti_default = nullptr;
+};
+
 /// Visitor that returns the HILTI type that corresponds to a BinPAC type.
-class TypeBuilder : public CGVisitor<shared_ptr<hilti::Type>>
+class TypeBuilder : public CGVisitor<TypeInfo>
 {
 public:
     /// Constructor.
@@ -22,8 +34,16 @@ public:
     ///
     /// type: The type to convert.
     ///
-    /// Returns: The HILTI type.
+    /// Returns: The HILTI type, or null if not defined.
     shared_ptr<hilti::Type> hiltiType(shared_ptr<Type> type);
+
+    /// Returns the default value for instances of a BinPAC type that aren't
+    /// further intiailized.
+    ///
+    /// type: The type to convert.
+    ///
+    /// Returns: The HILTI value, or null for HILTI's default.
+    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type);
 
 protected:
     void visit(type::Address* a) override;

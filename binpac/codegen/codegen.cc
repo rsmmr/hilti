@@ -82,8 +82,19 @@ shared_ptr<hilti::Type> CodeGen::hiltiType(shared_ptr<Type> type)
     return _type_builder->hiltiType(type);
 }
 
+shared_ptr<hilti::Expression> CodeGen::hiltiDefault(shared_ptr<Type> type)
+{
+    assert(_compiling);
+    return _type_builder->hiltiDefault(type);
+}
+
 shared_ptr<hilti::Expression> CodeGen::hiltiCoerce(shared_ptr<hilti::Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst)
 {
     assert(_compiling);
     return _coercion_builder->hiltiCoerce(expr, src, dst);
+}
+
+shared_ptr<hilti::ID> CodeGen::hiltiID(shared_ptr<ID> id)
+{
+    return hilti::builder::id::node(id->name(), id->location());
 }

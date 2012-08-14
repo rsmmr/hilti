@@ -963,8 +963,8 @@ public:
     /// Returns the item's type.
     shared_ptr<binpac::Type> type() const;
 
-    /// Returns the item's associated value, or null if none.
-    shared_ptr<Expression> value() const;
+    /// Returns the item's associated default value, or null if none.
+    shared_ptr<Expression> default_() const;
 
     /// Returns the item's associated condition, or null if none.
     shared_ptr<Expression> condition() const;
@@ -981,8 +981,7 @@ protected:
     ///
     /// type: The type of the item.
     ///
-    /// value: An optional value asociated with the item. For constants,
-    /// that's the constant; for typed fields, that's an optional default.
+    /// default: An optional default value asociated with the item.
     ///
     /// hooks: Hooks associated with this item.
     ///
@@ -1002,7 +1001,7 @@ protected:
 
 private:
     shared_ptr<binpac::Type> _type;
-    node_ptr<Expression> _value;
+    node_ptr<Expression> _default;
     node_ptr<Expression> _cond;
     expression_list _sinks;
 };
@@ -1058,10 +1057,6 @@ public:
          const expression_list& sinks = expression_list(),
          const Location& l=Location::None);
 
-    /// Returns the field's default value, or null if none. This is for
-    /// convinience and returns the same as \a value().
-    shared_ptr<Expression> default_() const;
-
     /// Returns the parameters passed to sub-type's parsing.
     expression_list parameters() const;
 
@@ -1101,10 +1096,6 @@ public:
 
     /// Returns the regular expression.
     const string& regexp() const;
-
-    /// Returns the field's default value, or null if none. This is for
-    /// convinience and returns the same as \a value().
-    shared_ptr<Expression> default_() const;
 
     ACCEPT_VISITOR(Field);
 

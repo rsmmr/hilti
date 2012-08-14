@@ -396,8 +396,10 @@ opt_type_attrs: type_attr opt_type_attrs         { $$ = $2; $$.push_front($1); }
               | /* empty */                      { $$ = attribute_list(); }
 
 type_attr     : ATTRIBUTE '(' expr ')'           { $$ = std::make_shared<Attribute>($1, $3, loc(@$)); }
+              | ATTRIBUTE '=' expr               { $$ = std::make_shared<Attribute>($1, $3, loc(@$)); }
 
 opt_field_args: '(' opt_exprs ')'                { $$ = $2; }
+              | /* empty */                      { $$ = expression_list(); }
 
 opt_unit_field_name
               : local_id ':'                     { $$ = $1; }

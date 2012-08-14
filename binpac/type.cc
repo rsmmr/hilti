@@ -740,7 +740,8 @@ Timer::Timer(const Location& l) : PacType(l)
 unit::Item::Item(shared_ptr<ID> id, const hook_list& hooks, const attribute_list& attrs, const Location& l) : Node(l)
 {
     _id = id;
-    *_attrs = attrs;
+    _attrs = std::make_shared<AttributeSet>(attrs);
+    
     addChild(_id);
     addChild(_attrs);
 
@@ -778,7 +779,7 @@ shared_ptr<AttributeSet> unit::Item::attributes() const
 
 unit::item::Field::Field(shared_ptr<ID> id,
                          shared_ptr<binpac::Type> type,
-                         shared_ptr<Expression> value,
+                         shared_ptr<Expression> default_,
                          shared_ptr<Expression> cond,
                          const hook_list& hooks,
                          const attribute_list& attrs,
@@ -787,11 +788,11 @@ unit::item::Field::Field(shared_ptr<ID> id,
     : Item(id, hooks, attrs, l)
 {
     _type = type;
-    _value = value;
+    _default = default_;
     _cond = cond;
 
     addChild(_type);
-    addChild(_value);
+    addChild(_default);
     addChild(_cond);
 
     for ( auto s : sinks )
@@ -806,9 +807,9 @@ shared_ptr<binpac::Type> unit::item::Field::type() const
     return _type;
 }
 
-shared_ptr<Expression> unit::item::Field::value() const
+shared_ptr<Expression> unit::item::Field::default_() const
 {
-    return _value;
+    return _default;
 }
 
 /// Returns the item's associated condition, or null if none.
@@ -861,12 +862,6 @@ expression_list unit::item::field::Type::parameters() const
     return params;
 }
 
-
-shared_ptr<Expression> unit::item::field::Type::default_() const
-{
-    return value();
-}
-
 unit::item::field::RegExp::RegExp(const string& regexp,
                            shared_ptr<ID> id,
                            shared_ptr<Expression> default_,
@@ -883,11 +878,6 @@ unit::item::field::RegExp::RegExp(const string& regexp,
 const string& unit::item::field::RegExp::regexp() const
 {
     return _regexp;
-}
-
-shared_ptr<Expression> unit::item::field::RegExp::default_() const
-{
-    return value();
 }
 
 unit::item::field::switch_::Case::Case(const expression_list& exprs, shared_ptr<Item> item, const Location& l) : Node(l)

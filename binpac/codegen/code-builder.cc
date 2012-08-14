@@ -141,6 +141,9 @@ void CodeBuilder::visit(declaration::Hook* h)
 
 void CodeBuilder::visit(declaration::Type* t)
 {
+    auto id = cg()->hiltiID(t->id());
+    auto type = cg()->hiltiType(t->type());
+    cg()->moduleBuilder()->addType(id, type, false, t->location());
 }
 
 void CodeBuilder::visit(declaration::Variable* v)

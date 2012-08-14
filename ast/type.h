@@ -487,13 +487,61 @@ template<typename T>
 inline bool hasTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<T>(t) != 0; }
 
 /// Dynamic-casts type \a t into trait class \a T.
+///
+/// \deprecated: Use checkedTrait or tryTrait instead.
 template<typename T>
 inline const T* asTrait(shared_ptr<NodeBase> t) { return dynamic_cast<const T*>(t); }
 
 /// Dynamic-casts type \a t into trait class \a T.
+///
+/// \deprecated: Use checkedTrait or tryTrait instead.
 template<typename T>
 inline T* asTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<T>(t); }
 
+}
+
+/// Dynamic-casts type \a t into trait class \a T. This version return null
+/// if the cast fails.
+template<typename T>
+inline const T* tryTrait(shared_ptr<NodeBase> t) { return dynamic_cast<const T*>(t); }
+
+/// Dynamic-casts type \a t into trait class \a T. This version return null
+/// if the cast fails.
+template<typename T>
+inline T* tryTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<T>(t); }
+
+/// Dynamic-casts type \a t into trait class \a T. This version aborts if the
+/// cast fails.
+///
+/// Returns: The cast pointer.
+template<typename T>
+inline const T* checkedTrait(shared_ptr<NodeBase> t) {
+    auto c = dynamic_cast<const T*>(t);
+
+    if ( ! c ) {
+        fprintf(stderr, "internal error: ast::checkedTrait() failed; want '%s' but got a '%s'",
+                typeid(T).name(), typeid(t.get()).name());
+        abort();
+    }
+
+    return c;
+}
+
+/// Dynamic-casts type \a t into trait class \a T. This version aborts if the
+/// cast fails.
+///
+/// Returns: The cast pointer.
+template<typename T>
+inline T* checkedTrait(shared_ptr<NodeBase> t) {
+    auto c = dynamic_cast<T*>(t);
+
+    if ( ! c ) {
+        fprintf(stderr, "internal error: ast::checkedTrait() failed; want '%s' but got a '%s'",
+                typeid(T).name(), typeid(t.get()).name());
+        abort();
+    }
+
+    return c;
 }
 
 //////////////////////// Implementations.
