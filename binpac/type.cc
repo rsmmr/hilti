@@ -956,7 +956,7 @@ shared_ptr<binpac::Type> unit::item::Variable::type() const
 }
 
 
-unit::item::Property::Property(shared_ptr<binpac::ID> id, shared_ptr<binpac::Constant> value, const Location& l)
+unit::item::Property::Property(shared_ptr<binpac::ID> id, shared_ptr<binpac::Expression> value, const Location& l)
     : Item(id, hook_list(), attribute_list(), l)
 {
     _value = value;
@@ -964,7 +964,7 @@ unit::item::Property::Property(shared_ptr<binpac::ID> id, shared_ptr<binpac::Con
 }
 
 
-shared_ptr<Constant> unit::item::Property::value() const
+shared_ptr<Expression> unit::item::Property::value() const
 {
     return _value;
 }
@@ -1094,6 +1094,16 @@ shared_ptr<unit::Item> Unit::item(shared_ptr<ID> id) const
 shared_ptr<Scope> Unit::scope() const
 {
     return _scope;
+}
+
+shared_ptr<Grammar> Unit::grammar() const
+{
+    return _grammar;
+}
+
+void Unit::setGrammar(shared_ptr<Grammar> grammar)
+{
+    _grammar = grammar;
 }
 
 bool Unit::_equal(shared_ptr<binpac::Type> ty) const

@@ -74,8 +74,18 @@ void IdResolver::visit(type::Unknown* t)
 
     auto tv = nt->typeValue();
 
+<<<<<<< HEAD
     t->replace(tv);
     tv->setID(id);
+=======
+    if ( t->parent() )
+        t->parent()->replaceChild(t->sharedPtr<hilti::Type>(), tv);
+    else
+        warning(t, "internal problem, type::Unknown does not have a parent node");
+
+    if ( ! tv->id() )
+        tv->setID(id);
+>>>>>>> 59140b0... Checkpoint.
 }
 
 void IdResolver::visit(Function* f)

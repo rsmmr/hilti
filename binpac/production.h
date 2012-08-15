@@ -5,6 +5,8 @@
 #ifndef BINPAC_PGEN_PRODUCTION_H
 #define BINPAC_PGEN_PRODUCTION_H
 
+#include <ast/visitor.h>
+
 #include "common.h"
 
 namespace binpac {
@@ -12,11 +14,11 @@ namespace binpac {
 class Grammar;
 
 /// Base class for all grammar productions.
-class Production
+class Production : public Node
 {
 public:
     typedef std::list<shared_ptr<Production>> production_list;
-    
+
     /// Constructor.
     ///
     /// symbol: A symbol associated with the production. The symbol must be
@@ -70,6 +72,8 @@ public:
     /// fields in there directly as necessary.
     ParserGenMeta* pgMeta();
 
+    ACCEPT_VISITOR_ROOT();
+
 protected:
     friend class Grammar;
 
@@ -107,6 +111,8 @@ public:
     ///
     /// l: Associated location.
     Epsilon(const Location& l = Location::None);
+
+    ACCEPT_VISITOR(Production);
 
 protected:
     string renderProduction() const override;
@@ -155,6 +161,8 @@ public:
     /// Returns the sink associated with the terminal, or null if none.
     shared_ptr<Expression> sink() const;
 
+    ACCEPT_VISITOR(Production);
+
 private:
     filter_func _filter;
     shared_ptr<Expression> _sink = nullptr;
@@ -189,6 +197,8 @@ public:
 
     /// Returns the literal.
     shared_ptr<Expression> literal() const;
+
+    ACCEPT_VISITOR(Terminal);
 
 protected:
     string renderProduction() const override;
@@ -226,6 +236,8 @@ public:
     /// l: Associated location.
     Variable(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
 
+    ACCEPT_VISITOR(Terminal);
+
 protected:
     string renderProduction() const override;
 };
@@ -249,6 +261,8 @@ public:
     /// Returns a list of RHS alternatives for this production. Each RHS is
     /// itself a list of Production instances.
     virtual alternative_list rhss() const = 0;
+
+    ACCEPT_VISITOR(Production);
 };
 
 
@@ -273,6 +287,8 @@ public:
     /// Returns a list of parameters to pass into the parser for the child
     /// grammar.
     const expression_list& parameters() const;
+
+    ACCEPT_VISITOR(NonTerminal);
 
 protected:
     string renderProduction() const override;
@@ -308,6 +324,8 @@ public:
     ///
     /// prod: The production to add to the end of the sequence.
     void add(shared_ptr<Production> prod);
+
+    ACCEPT_VISITOR(NonTerminal);
 
 protected:
     string renderProduction() const override;
@@ -355,6 +373,8 @@ public:
     /// alt2: The first alternative.
     void setAlternatives(shared_ptr<Production> alt1, shared_ptr<Production> alt2);
 
+    ACCEPT_VISITOR(NonTerminal);
+
 protected:
     friend class Grammar;
 
@@ -396,6 +416,8 @@ public:
     /// \a true case, the second for \a false.
     std::pair<shared_ptr<Production>, shared_ptr<Production>> branches() const;
 
+    ACCEPT_VISITOR(NonTerminal);
+
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
@@ -429,6 +451,8 @@ public:
     /// Returns the counter body production.
     shared_ptr<Production> body() const;
 
+    ACCEPT_VISITOR(NonTerminal);
+
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
@@ -459,6 +483,8 @@ public:
 
     /// Returns the loop body production.
     shared_ptr<Production> body() const;
+
+    ACCEPT_VISITOR(NonTerminal);
 
 protected:
     string renderProduction() const override;
@@ -502,6 +528,8 @@ public:
 
     /// Returns the default production, or null if none.
     shared_ptr<Production> default_() const;
+
+    ACCEPT_VISITOR(NonTerminal);
 
 protected:
     string renderProduction() const override;

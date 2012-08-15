@@ -137,6 +137,9 @@ static void printInstruction(Printer& p, statement::Instruction* i)
     if ( i->internal() )
         return;
 
+    if ( i->comment().size() )
+        p << "# " << i->comment() << endl;
+
     auto ops = i->operands();
 
     if ( ops[0] )
@@ -275,6 +278,9 @@ void Printer::visit(declaration::Function* f)
 
     bool has_impl = static_cast<bool>(func->body());
 
+    if ( func->initFunction() )
+        p << "init ";
+
     if ( ! has_impl )
         p << "declare ";
 
@@ -300,7 +306,9 @@ void Printer::visit(declaration::Function* f)
     }
 
     p << ftype->result() << " " << f->id() << '(';
-    printList(ftype->parameters(), ",");
+
+    printList(ftype->parameters(), ", ");
+
     p << ')';
 
     if ( hook ) {
@@ -338,6 +346,12 @@ void Printer::visit(type::function::Parameter* param)
 
     if ( def )
         p << '=' << def;
+}
+
+void Printer::visit(type::function::Result* r)
+{
+    Printer& p = *this;
+    p << r->type();
 }
 
 void Printer::visit(type::Function * t)
@@ -424,10 +438,14 @@ void Printer::visit(type::Reference* t)
 
     Printer& p = *this;
 
+    enableTypeIDs();
+
     if ( t->argType() )
         p << "ref<" << t->argType() << ">";
     else
         p << "ref<*>";
+
+    disableTypeIDs();
 }
 
 void Printer::visit(type::Exception* e)

@@ -7,6 +7,7 @@ project (root C CXX)
 
 # Do this first so that we retain the original compiler settings.
 add_subdirectory(libhilti)
+add_subdirectory(libbinpac)
 
 include(FindRequiredPackage)
 FindRequiredPackage(FLEX)

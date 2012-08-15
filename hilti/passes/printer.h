@@ -38,6 +38,7 @@ protected:
    void visit(declaration::Type* t) override;
 
    void visit(type::function::Parameter* p) override;
+   void visit(type::function::Result* r) override;
 
    void visit(type::Address* t) override;
    void visit(type::Any* t) override;

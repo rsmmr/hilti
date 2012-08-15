@@ -416,6 +416,13 @@ inline shared_ptr<hilti::Type> byName(shared_ptr<ID> id, const Location& l=Locat
     return std::make_shared<hilti::type::Unknown>(id, l);
 }
 
+/// Creates a reference to a type via its name. The named type must be
+/// defined elsewhere via a declaration::Type, and the resolver must be run
+/// to eventually link the two.
+inline shared_ptr<hilti::Type> byName(const std::string& name, const Location& l=Location::None) {
+    return std::make_shared<hilti::type::Unknown>(std::make_shared<ID>(name, l), l);
+}
+
 /// Instantiates a type::Type type.
 ///
 /// ttype: The typed type.

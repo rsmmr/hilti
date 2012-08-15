@@ -1,8 +1,3 @@
-#
-# Note that this is a standalone CMakeLists.txt that's *not* included
-# by the top-level one. That's because we change the compiler settings
-# here and don't want that to propagate across other components.
-#
 
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(libhilti C)

@@ -11,6 +11,8 @@ using namespace binpac;
 
 namespace binpac {
 
+namespace passes { class GrammarBuilder; }
+
 namespace type {
 
 namespace trait {
@@ -1211,15 +1213,15 @@ public:
     /// value: The properties value.
     ///
     /// l: An associated location.
-    Property(shared_ptr<binpac::ID> id, shared_ptr<binpac::Constant> value, const Location& l=Location::None);
+    Property(shared_ptr<binpac::ID> id, shared_ptr<binpac::Expression> value, const Location& l=Location::None);
 
     /// Returns the properties value.
-    shared_ptr<binpac::Constant> value() const;
+    shared_ptr<binpac::Expression> value() const;
 
     ACCEPT_VISITOR(Item);
 
 private:
-    node_ptr<binpac::Constant> _value;
+    node_ptr<binpac::Expression> _value;
 };
 
 /// A unit-wide hook.
@@ -1299,15 +1301,25 @@ public:
     /// This method will return null until the ScopeBuilder has run.
     shared_ptr<Scope> scope() const;
 
+    /// Returns the grammar for this type, if set. Intially, this is unset
+    /// but will be initialized by the grammar builder.
+    shared_ptr<Grammar> grammar() const;
+
     bool _equal(shared_ptr<binpac::Type> other) const override;
 
     ACCEPT_VISITOR(Type);
+
+protected:
+    friend class passes::GrammarBuilder;
+
+    void setGrammar(shared_ptr<Grammar> grammar);
 
 private:
     std::list<node_ptr<type::function::Parameter>> _params;
     std::list<node_ptr<unit::Item>> _items;
 
     shared_ptr<Scope> _scope = nullptr;
+    shared_ptr<Grammar> _grammar = nullptr;
 };
 
 ////

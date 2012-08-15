@@ -31,6 +31,13 @@ Usage: hilti-config <options>
       --hiltic-binary       Print path of hiltic binary
       --hiltic-flags        Print flags for hiltic.
       --hiltic-flags-main   Print flags for hiltic to link libhiltimain
+      --hiltic-binpac       Print flags for hiltic that BinPAC code needs in addition.
+
+  == Options printing flags for linking host application code with libbinpac.
+
+      --libbinpac-cflags    Print flags for C compiler.
+      --libbinpac-cxxflags  Print flags for C compiler.
+      --libbinpac-ldflags   Print flags for system linker.
 
   == Options printing flags for running binpac++.
 
@@ -162,6 +169,23 @@ while [ "$1" != "" ]; do
 
         --hiltic-flags-main)
             echo "$base/libhilti/type-info.hlt $base/build/libhilti/libhilti-rt-main$libpostfix.bca -I$base/libhilti"
+            shift;;
+
+        --hiltic-binpac)
+            echo "$base/libbinpac/binpac.hlt -I$base/libbinpac $base/build/libbinpac/libbinpac-rt$libpostfix.bca"
+            shift;;
+
+     # libbinpac
+        --libbinpac-cflags)
+            echo "-I$base/libbinpac -I$builddir/libbinpac"
+            shift;;
+
+        --libbinpac-cxxflags)
+            echo "-I$base/libbinpac -I$builddir/libbinpac"
+            shift;;
+
+        --libbinpac-ldflags)
+            echo "$base/build/libbinpac/libbinpac-rt$libpostfix.bca"
             shift;;
 
      # binpac++

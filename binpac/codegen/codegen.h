@@ -22,6 +22,7 @@ namespace codegen {
     class CoercionBuilder;
     class CodeBuilder;
     class TypeBuilder;
+    class ParserBuilder;
 }
 
 class CodeGen : public ast::Logger
@@ -47,6 +48,9 @@ public:
 
     /// Returns the current HILTI block builder.
     shared_ptr<hilti::builder::BlockBuilder> builder() const;
+
+    /// Returns the debug level.
+    int debugLevel() const;
 
     /// Returns the HILTI epxression resulting from evaluating a BinPAC
     /// expression. The method adds the code to the current HILTI block.
@@ -99,6 +103,26 @@ public:
     /// Returns: The converted ID.
     shared_ptr<hilti::ID> hiltiID(shared_ptr<ID> id);
 
+    /// Return the parse function for a unit type. If it doesn't exist yet,
+    /// it will be created.
+    ///
+    /// u: The unit to generate the parser for.
+    ///
+    /// Returns: The generated HILTI function with the parsing code.
+    shared_ptr<hilti::Expression> hiltiParseFunction(shared_ptr<type::Unit> u);
+
+    /// Generates the externally visible functions for parsing a unit type.
+    ///
+    /// u: The unit type to export via functions.
+    void hiltiExportParser(shared_ptr<type::Unit> unit);
+
+    // Returns the HILTI struct type for a unit's parse object.
+    //
+    /// u: The unit to return the type for.
+    ///
+    /// Returns: The type.
+    shared_ptr<hilti::Type> hiltiTypeParseObject(shared_ptr<type::Unit> unit);
+
 private:
     bool _compiling = false;
 
@@ -107,9 +131,10 @@ private:
 
     shared_ptr<hilti::builder::ModuleBuilder> _mbuilder;
 
-    unique_ptr<codegen::CoercionBuilder>     _coercion_builder;
-    unique_ptr<codegen::CodeBuilder> _code_builder;
-    unique_ptr<codegen::TypeBuilder> _type_builder;
+    unique_ptr<codegen::CodeBuilder>     _code_builder;
+    unique_ptr<codegen::CoercionBuilder> _coercion_builder;
+    unique_ptr<codegen::ParserBuilder>   _parser_builder;
+    unique_ptr<codegen::TypeBuilder>     _type_builder;
 };
 
 }

@@ -107,7 +107,12 @@ public:
     /// parser: True to enable parser debugging.
     ///
     /// scopes: True to dump the scopes once built.
-    void enableDebug(bool scanner, bool parser, bool scopes);
+    ///
+    /// grammars: True to dump generated grammars.
+    void enableDebug(bool scanner, bool parser, bool scopes, bool grammars);
+
+    /// Returns the library dirs configured.
+    const string_list& libraryPaths() const;
 
 private:
     string_list _libdirs;
@@ -120,6 +125,7 @@ private:
     bool _dbg_scanner = false;
     bool _dbg_parser = false;
     bool _dbg_scopes = false;
+    bool _dbg_grammars = false;
 };
 
 }

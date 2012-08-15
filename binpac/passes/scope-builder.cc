@@ -104,6 +104,8 @@ void ScopeBuilder::visit(declaration::Type* t)
         tscope->setParent(scope);
         scope->addChild(t->id(), tscope);
     }
+
+    t->type()->setID(t->id());
 }
 
 void ScopeBuilder::visit(declaration::Constant* c)

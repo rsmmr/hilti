@@ -16,13 +16,6 @@ TypeBuilder::~TypeBuilder()
 
 shared_ptr<hilti::Type> TypeBuilder::hiltiType(shared_ptr<Type> type)
 {
-    // If there's an ID associated with the type, use that. The corresponding
-    // declaration will create the type itself.
-    if ( type->id() ) {
-        auto id = cg()->hiltiID(type->id());
-        return hilti::builder::type::byName(id, type->location());
-    }
-
     TypeInfo result;
     bool success = processOne(type, &result);
     assert(success);
@@ -163,46 +156,10 @@ void TypeBuilder::visit(type::TypeType* t)
 
 void TypeBuilder::visit(type::Unit* u)
 {
-    hilti::builder::struct_::field_list fields;
-
-    // One struct field per non-constant unit field.
-    for ( auto f : u->fields() ) {
-        if ( ast::isA<type::unit::item::field::Constant>(f) )
-            continue;
-
-        auto id = hilti::builder::id::node(f->id()->name(), f->location());
-        auto type = cg()->hiltiType(f->type());
-        assert(type);
-
-        shared_ptr<hilti::Expression> def = nullptr;
-
-        if ( f->default_() )
-            def = cg()->hiltiExpression(f->default_());
-        else
-            def = cg()->hiltiDefault(f->type());
-
-        fields.push_back(hilti::builder::struct_::field(id, type, def, false, f->location()));
-    }
-
-    // One struct field per variable.
-    for ( auto v : u->variables() ) {
-        auto id = hilti::builder::id::node(v->id()->name(), v->location());
-        auto type = cg()->hiltiType(v->type());
-        assert(type);
-
-        shared_ptr<hilti::Expression> def = nullptr;
-
-        if ( v->default_() )
-            def = cg()->hiltiExpression(v->default_());
-        else
-            def = cg()->hiltiDefault(v->type());
-
-        fields.push_back(hilti::builder::struct_::field(id, type, def, false, v->location()));
-    }
+    assert(u->id());
 
     TypeInfo ti;
-    ti.hilti_type = hilti::builder::struct_::type(fields, u->location());
-
+    ti.hilti_type = hilti::builder::reference::type(hilti::builder::type::byName(cg()->hiltiID(u->id())));
     setResult(ti);
 }
 

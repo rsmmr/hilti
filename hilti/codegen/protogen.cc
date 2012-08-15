@@ -119,6 +119,9 @@ void ProtoGen::visit(declaration::Function* f)
 
     auto result = func->type()->result()->type();
 
+    if ( _generated.find(name1) != _generated.end() )
+        return;
+
     out << mapType(result) << ' ' << name1 << '(';
 
     for ( auto p : func->type()->parameters() )
@@ -128,6 +131,33 @@ void ProtoGen::visit(declaration::Function* f)
 
     out << mapType(result) << ' ' << name2 << "(hlt_exception* yield_excpt, ";
     out << "hlt_exception** excpt);" << std::endl;
+
+    _generated.insert(name1);
+}
+
+void ProtoGen::visit(declaration::Type* t)
+{
+    auto type = t->type();
+
+    if ( ! t->linkage() == Declaration::EXPORTED )
+        return;
+
+    // This must match the logic in CodeGen::llvmRttiPtr().
+    //
+    // TODO: We should factor this out (but we don't have access to a CodeGen
+    // here).
+    string name = util::mangle(string("hlt_type_info_hlt_") + type->render(), true, nullptr, "", false);
+    name = ::util::strreplace(name, "_ref", "");
+    name = ::util::strreplace(name, "_any", "");
+
+    if ( _generated.find(name) != _generated.end() )
+        return;
+
+    std::ostream& out = output();
+
+    out << "extern const hlt_type_info* " << name << ";" << std::endl;
+
+    _generated.insert(name);
 }
 
 

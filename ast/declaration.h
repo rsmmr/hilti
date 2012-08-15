@@ -52,22 +52,12 @@ public:
     }
 
     string render() /* override */ {
-        const char* linkage = 0;
-        switch ( _linkage ) {
-         case LOCAL:
-            linkage = "local";
-            break;
+        const char* linkage = "";
 
-         case PRIVATE:
-            linkage = "private";
-            break;
+        if ( _linkage == EXPORTED )
+            linkage = " (exported)";
 
-         case EXPORTED:
-            linkage = "exported";
-            break;
-        }
-
-        return util::fmt("%s (%s, linkage %s)", _id->name().c_str(), (isConstant() ? "const" : "non-const"), linkage);
+        return util::fmt("%s%s", _id->name(), linkage);
     }
 
 protected:

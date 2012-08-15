@@ -78,6 +78,15 @@ string util::strtoupper(const string& s)
     return t;
 }
 
+
+string util::strtrim(const string& s)
+{
+    auto t = s;
+    t.erase(t.begin(), std::find_if(t.begin(), t.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    t.erase(std::find_if(t.rbegin(), t.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), t.end());
+    return t;
+}
+
 bool util::pathExists(const string& path)
 {
     struct stat st;

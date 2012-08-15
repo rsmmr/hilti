@@ -79,7 +79,7 @@ extern int8_t __hlt_exception_match(hlt_exception*, hlt_exception_type* type);
 /// exception: The exception to print.
 ///
 /// ctx: The current execution context.
-extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx);
+extern void hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_execution_context* ctx);
 
 /// Internal function that generates the output shown to the user when an
 /// exception is not caught.  This function is intended for use outside of
@@ -88,7 +88,7 @@ extern void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_e
 /// exception: The exception to print.
 ///
 /// ctx: The current execution context.
-extern void __hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution_context* ctx);
+extern void hlt_exception_print_uncaught(hlt_exception* exception, hlt_execution_context* ctx);
 
 /// Internal function that generates the output shown to the user when an
 /// exception is not caught.  This function is intended for use when the
@@ -97,7 +97,7 @@ extern void __hlt_exception_print_uncaught(hlt_exception* exception, hlt_executi
 /// exception: The exception to print.
 ///
 /// ctx: The current execution context.
-extern void __hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_execution_context* ctx);
+extern void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt_execution_context* ctx);
 
 /// Prints out an exception objcect to stderr.
 ///

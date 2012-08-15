@@ -7,8 +7,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
 
-set(PATH_LIBBINPAC "${CMAKE_CURRENT_SOURCE_DIR}/libpac")
-set(PATH_HILTI     "${CMAKE_CURRENT_SOURCE_DIR}/../hilti")
+set(PATH_LIBBINPAC "${PROJECT_SOURCE_DIR}/libbinpac")
+set(PATH_HILTI     "${PROJECT_SOURCE_DIR}/hilti")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${autogen}/config.h)
 
@@ -83,17 +83,19 @@ endforeach ()
 add_library (binpac SHARED
     attribute.cc
     binpac.cc
-    constant.cc
-    constant-coercer.cc
-    context.cc
     coercer.cc
+    constant-coercer.cc
+    constant.cc
+    context.cc
     ctor.cc
     declaration.cc
     expression.cc
     function.cc
+    grammar.cc
     id.cc
     module.cc
     operator.cc
+    production.cc
     scope.cc
     statement.cc
     type.cc
@@ -105,19 +107,18 @@ add_library (binpac SHARED
     codegen/code-builder.cc
     codegen/codegen.cc
     codegen/coercion-builder.cc
+    codegen/parser-builder.cc
     codegen/type-builder.cc
 
     parser/driver.cc
 
-    pgen/grammar.cc
-    pgen/production.cc
-
-    passes/printer.cc
-    passes/validator.cc
+    passes/grammar-builder.cc
     passes/id-resolver.cc
     passes/operator-resolver.cc
+    passes/printer.cc
     passes/scope-builder.cc
     passes/scope-printer.cc
+    passes/validator.cc
 
     ${autogen}/operators/operators-register.cc
 

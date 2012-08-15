@@ -114,20 +114,20 @@ public:
    /// no_body: If true, don't push a body.
    ///
    /// Returns: An expression referencing the function.
-   shared_ptr<hilti::expression::Function> pushFunction(shared_ptr<hilti::Function> func, bool no_body = false);
+   shared_ptr<hilti::declaration::Function> pushFunction(shared_ptr<hilti::Function> func, bool no_body = false);
 
    /// Adds a function declaration to the module, without beginning to build the function.
    ///
    /// func: The function to declare.
    ///
    /// Returns: An expression referencing the function.
-   shared_ptr<hilti::expression::Function> declareFunction(shared_ptr<hilti::Function> func);
+   shared_ptr<hilti::declaration::Function> declareFunction(shared_ptr<hilti::Function> func);
 
    /// Adds a function declaration to the module, without beginning to build the function.
    ///
    ///
    /// Returns: An expression referencing the function.
-   shared_ptr<hilti::expression::Function> declareFunction(shared_ptr<ID> id,
+   shared_ptr<hilti::declaration::Function> declareFunction(shared_ptr<ID> id,
                                                            shared_ptr<hilti::function::Result> result = nullptr,
                                                            const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                            hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
@@ -137,7 +137,7 @@ public:
    ///
    ///
    /// Returns: An expression referencing the function.
-   shared_ptr<hilti::expression::Function> declareFunction(const std::string& id,
+   shared_ptr<hilti::declaration::Function> declareFunction(const std::string& id,
                                                            shared_ptr<hilti::function::Result> result = nullptr,
                                                            const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                            hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
@@ -148,13 +148,13 @@ public:
    /// func: The hook to declare.
    ///
    /// Returns: An expression referencing the hook.
-   shared_ptr<hilti::expression::Function> declareHook(shared_ptr<hilti::Hook> func);
+   shared_ptr<hilti::declaration::Function> declareHook(shared_ptr<hilti::Hook> func);
 
    /// Adds a hook declaration to the module, without beginning to build the hook.
    ///
    ///
    /// Returns: An expression referencing the hook.
-   shared_ptr<hilti::expression::Function> declareHook(shared_ptr<ID> id,
+   shared_ptr<hilti::declaration::Function> declareHook(shared_ptr<ID> id,
                                                        shared_ptr<hilti::function::Result> result = nullptr,
                                                        const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                        const Location& l=Location::None);
@@ -163,7 +163,7 @@ public:
    ///
    ///
    /// Returns: An expression referencing the hook.
-   shared_ptr<hilti::expression::Function> declareHook(const std::string& id,
+   shared_ptr<hilti::declaration::Function> declareHook(const std::string& id,
                                                        shared_ptr<hilti::function::Result> result = nullptr,
                                                        const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                        const Location& l=Location::None);
@@ -189,7 +189,7 @@ public:
    /// l: Location associated with the type.
    ///
    /// Returns: An expression referencing the function.
-   shared_ptr<hilti::expression::Function> pushFunction(shared_ptr<ID> id,
+   shared_ptr<hilti::declaration::Function> pushFunction(shared_ptr<ID> id,
                                                   shared_ptr<hilti::function::Result> result = nullptr,
                                                   const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                   hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
@@ -218,7 +218,7 @@ public:
    /// l: Location associated with the type.
    ///
    /// Returns: An expression referencing the function.
-   shared_ptr<hilti::expression::Function> pushFunction(const std::string& id,
+   shared_ptr<hilti::declaration::Function> pushFunction(const std::string& id,
                                                   shared_ptr<hilti::function::Result> result = nullptr,
                                                   const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                                   hilti::type::function::CallingConvention cc = hilti::type::function::HILTI,
@@ -252,7 +252,7 @@ public:
    /// l: Location associated with the type.
    ///
    /// Returns: An expression referencing the hook.
-   shared_ptr<hilti::expression::Function> pushHook(shared_ptr<ID> id,
+   shared_ptr<hilti::declaration::Function> pushHook(shared_ptr<ID> id,
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
@@ -282,7 +282,7 @@ public:
    /// l: Location associated with the type.
    ///
    /// Returns: An expression referencing the hook.
-   shared_ptr<hilti::expression::Function> pushHook(const std::string& id,
+   shared_ptr<hilti::declaration::Function> pushHook(const std::string& id,
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
@@ -312,7 +312,7 @@ public:
    /// l: Location associated with the type.
    ///
    /// Returns: An expression referencing the hook.
-   shared_ptr<hilti::expression::Function> pushHook(shared_ptr<ID> id,
+   shared_ptr<hilti::declaration::Function> pushHook(shared_ptr<ID> id,
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
@@ -342,7 +342,7 @@ public:
    /// l: Location associated with the type.
    ///
    /// Returns: An expression referencing the hook.
-   shared_ptr<hilti::expression::Function> pushHook(const std::string& id,
+   shared_ptr<hilti::declaration::Function> pushHook(const std::string& id,
                                               shared_ptr<hilti::function::Result> result = nullptr,
                                               const hilti::function::parameter_list& params = hilti::function::parameter_list(),
                                               shared_ptr<Type> scope = nullptr,
@@ -603,6 +603,26 @@ public:
    /// Returns: An expression referencing the variable.
    shared_ptr<hilti::expression::Variable> addTmp(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool reuse = false, const Location& l = Location::None);
 
+   /// Caches an AST under a given key.
+   ///
+   /// component: A component name. The value is arbitrary, but the tuple (\a
+   /// component, \a key) will be used to store the node.
+   ///
+   /// idx: An index name The value is arbitrary, but the tuple (\a component, \a
+   /// key) will be used to store the node.
+   ///
+   /// node: The node to cache.
+   void cacheNode(const std::string& component, const std::string& idx, shared_ptr<Node> node);
+
+   /// Looks up a previously cached node.
+   ///
+   /// component: The component name passed to \a cacheNode.
+   ///
+   /// idx: The index name passed to \a cacheNode.
+   ///
+   /// Returns: The cached node, or null if none.
+   shared_ptr<Node> lookupNode(const std::string& component, const std::string& idx);
+
 protected:
    friend class BlockBuilder;
 
@@ -633,6 +653,7 @@ private:
 
    shared_ptr<Module> _module;
    std::list<shared_ptr<Function>> _functions;
+   std::map<std::string, shared_ptr<Node>> _node_cache;
 };
 
 }

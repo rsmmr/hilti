@@ -52,12 +52,12 @@ shared_ptr<hilti::expression::Variable> BlockBuilder::addTmp(const std::string& 
 
 void BlockBuilder::setBlockComment(const std::string& comment)
 {
-    _block_stmt->setComment(comment);
+    _block_stmt->setComment(util::strtrim(comment));
 }
 
-void BlockBuilder::createComment(const std::string& comment)
+void BlockBuilder::addComment(const std::string& comment)
 {
-    _next_comments.push_back(comment);
+    _next_comments.push_back(util::strtrim(comment));
 }
 
 void BlockBuilder::addInstruction(shared_ptr<Statement> stmt)
@@ -115,7 +115,48 @@ std::tuple<shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>, shared_ptr<BlockB
     return std::make_tuple(true_, false_, cont);
 }
 
+void BlockBuilder::addDebugMsg(const std::string& stream, const std::string& msg)
+{
+    if ( msg.find("%") == std::string::npos )
+        addDebugMsg(stream, msg, nullptr);
+    else
+        addDebugMsg(stream, "%s", hilti::builder::string::create(msg));
+}
 
+void BlockBuilder::addDebugMsg(const std::string& stream, const std::string& msg,
+                            shared_ptr<hilti::Expression> arg1,
+                            shared_ptr<hilti::Expression> arg2,
+                            shared_ptr<hilti::Expression> arg3
+                           )
+{
+    hilti::builder::tuple::element_list elems;
+
+    if ( arg1 )
+        elems.push_back(arg1);
+
+    if ( arg2 )
+        elems.push_back(arg2);
+
+    if ( arg3 )
+        elems.push_back(arg3);
+
+    auto t = hilti::builder::tuple::create(elems);
+
+    _mbuilder->builder()->addInstruction(hilti::instruction::debug::Msg,
+                                         hilti::builder::string::create(stream),
+                                         hilti::builder::string::create(msg),
+                                         t);
+}
+
+void BlockBuilder::debugPushIndent(const std::string& stream)
+{
+    _mbuilder->builder()->addInstruction(hilti::instruction::debug::PushIndent, hilti::builder::string::create(stream));
+}
+
+void BlockBuilder::debugPopIndent(const std::string& stream)
+{
+    _mbuilder->builder()->addInstruction(hilti::instruction::debug::PopIndent, hilti::builder::string::create(stream));
+}
 
 }
 

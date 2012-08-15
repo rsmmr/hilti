@@ -76,6 +76,7 @@ string strjoin(const iterator& begin, const iterator& end, string delim="")
 extern string strreplace(const string& s, const string& o, const string& n);
 extern string strtolower(const string& s);
 extern string strtoupper(const string& s);
+extern string strtrim(const string& s);
 
 inline bool startsWith(const string& s, const string& prefix) { return s.find(prefix) == 0; }
 extern bool endsWith(const string& s, const string& suffix);

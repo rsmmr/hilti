@@ -33,6 +33,8 @@ public:
     /// parsed object as further fields.
     ///
     /// l: Associated location.
+    ///
+    /// \todo: I don't think we need attrs and params anymore?
     Grammar(const string& name, shared_ptr<Production> root, const parameter_list& params = parameter_list(),
            const parameter_list& attrs = parameter_list(), const Location& l = Location::None);
 

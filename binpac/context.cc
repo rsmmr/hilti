@@ -8,12 +8,13 @@
 
 #include "parser/driver.h"
 
-#include "passes/printer.h"
-#include "passes/validator.h"
-#include "passes/operator-resolver.h"
+#include "passes/grammar-builder.h"
 #include "passes/id-resolver.h"
+#include "passes/operator-resolver.h"
+#include "passes/printer.h"
 #include "passes/scope-builder.h"
 #include "passes/scope-printer.h"
+#include "passes/validator.h"
 
 #include "codegen/codegen.h"
 
@@ -87,11 +88,12 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
         internalError("binpac: no operators defined, did you call binpac_init()?");
     }
 
-    passes::Validator        validator;
+    passes::GrammarBuilder   grammar_builder(std::cerr);
     passes::IDResolver       id_resolver;
     passes::OperatorResolver op_resolver;
     passes::ScopeBuilder     scope_builder(this);
     passes::ScopePrinter     scope_printer(std::cerr);
+    passes::Validator        validator;
 
     if ( ! op_resolver.run(module) )
         return false;
@@ -102,11 +104,16 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( ! scope_builder.run(module) )
         return false;
 
-    if ( _dbg_scopes ) {
+    if ( _dbg_scopes )
         scope_printer.run(module);
-    }
 
     if ( ! id_resolver.run(module) )
+        return false;
+
+    if ( _dbg_grammars )
+        grammar_builder.enableDebug();
+
+    if ( ! grammar_builder.run(module) )
         return false;
 
     if ( verify && ! validator.run(module) )
@@ -133,9 +140,15 @@ bool CompilerContext::dump(shared_ptr<Node> ast, std::ostream& out)
     return true;
 }
 
-void CompilerContext::enableDebug(bool scanner, bool parser, bool scopes)
+void CompilerContext::enableDebug(bool scanner, bool parser, bool scopes, bool grammars)
 {
     _dbg_scanner = scanner;
     _dbg_parser = parser;
     _dbg_scopes = scopes;
+    _dbg_grammars = grammars;
+}
+
+const string_list& CompilerContext::libraryPaths() const
+{
+    return _libdirs;
 }

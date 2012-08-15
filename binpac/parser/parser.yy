@@ -367,7 +367,7 @@ unit_var      : VAR local_id ':' base_type opt_unit_hooks ';'
 unit_global_hook : ON hook_id unit_hook          { $$ = std::make_shared<type::unit::item::GlobalHook>($2, $3, loc(@$)); }
 
 unit_prop     : property_id ';'                  { $$ = std::make_shared<type::unit::item::Property>($1, nullptr, loc(@$)); }
-              | property_id '=' constant ';'     { $$ = std::make_shared<type::unit::item::Property>($1, $3, loc(@$)); }
+              | property_id '=' expr ';'         { $$ = std::make_shared<type::unit::item::Property>($1, $3, loc(@$)); }
 
 unit_field    : opt_unit_field_name unit_field_type opt_field_args opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks ';'
                                                  { $$ = std::make_shared<type::unit::item::field::Type>($1, $2, nullptr, $5, $7, $4, $3, $6, loc(@$)); }

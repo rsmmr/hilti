@@ -19,6 +19,7 @@ bool output_binpac = false;
 bool dbg_scanner = false;
 bool dbg_parser = false;
 bool dbg_scopes = false;
+bool dbg_grammars = false;
 
 string output = "/dev/stdout";
 binpac::string_list import_paths;
@@ -44,7 +45,7 @@ void usage()
             "\n"
             "  -A | --ast            Dump intermediary ASTs to stderr.\n"
             "  -d | --debug          Debug level for the generated code. Each time increases level. [Default: 0]\n"
-            "  -D | --cgdebug <type> Debug output during code generations; type can be scanner/parser/scopes.\n"
+            "  -D | --cgdebug <type> Debug output during code generation; type can be scanner/parser/scopes/grammars.\n"
             "  -h | --help           Print usage information.\n"
             "  -I | --import <dir>   Add directory to import path.\n"
             "  -n | --no-validate    Do not validate resulting BinPAC++ or HILTI ASTs (for debugging only).\n"
@@ -99,6 +100,11 @@ int main(int argc, char** argv)
 
             if ( strcmp(optarg, "scopes") == 0 ) {
                 dbg_scopes = true;
+                break;
+            }
+
+            if ( strcmp(optarg, "grammars") == 0 ) {
+                dbg_grammars = true;
                 break;
             }
 
@@ -159,7 +165,7 @@ int main(int argc, char** argv)
     binpac::init();
 
     auto ctx = std::make_shared<binpac::CompilerContext>(import_paths);
-    ctx->enableDebug(dbg_scanner, dbg_parser, dbg_scopes);
+    ctx->enableDebug(dbg_scanner, dbg_parser, dbg_scopes, dbg_grammars);
 
     auto module = ctx->load(input, verify);
 
@@ -168,13 +174,20 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if ( dump_ast )
+    if ( dump_ast ) {
         ctx->dump(module, cerr);
+        cerr << std::endl;
+    }
 
     if ( output_binpac )
         return ctx->print(module, out);
 
     auto hilti_module = ctx->compile(module, debug, verify);
+
+    if ( dump_ast ) {
+        hilti_module->dump(cerr);
+        cerr << std::endl;
+    }
 
     if ( ! hilti_module ) {
         error(input, "Aborting due to compilation error.");

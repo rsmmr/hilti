@@ -4,6 +4,7 @@
 #include "expression.h"
 #include "statement.h"
 #include "function.h"
+#include "grammar.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -141,9 +142,18 @@ void CodeBuilder::visit(declaration::Hook* h)
 
 void CodeBuilder::visit(declaration::Type* t)
 {
+    auto unit = ast::tryCast<type::Unit>(t->type());
+
     auto id = cg()->hiltiID(t->id());
-    auto type = cg()->hiltiType(t->type());
+    auto type = unit ? cg()->hiltiTypeParseObject(unit) : cg()->hiltiType(t->type());
+
     cg()->moduleBuilder()->addType(id, type, false, t->location());
+
+    // If this is an exported unit type, generate the parsing functions for
+    // it
+
+    if ( unit && t->linkage() == Declaration::EXPORTED )
+        cg()->hiltiExportParser(unit);
 }
 
 void CodeBuilder::visit(declaration::Variable* v)

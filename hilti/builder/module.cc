@@ -133,7 +133,7 @@ shared_ptr<ID> ModuleBuilder::uniqueID(shared_ptr<ID> id, shared_ptr<Scope> scop
     return uid;
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(shared_ptr<hilti::Function> function, bool no_body)
+shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<hilti::Function> function, bool no_body)
 {
     auto func = std::make_shared<ModuleBuilder::Function>();
     func->function = function;
@@ -154,17 +154,17 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(shared_ptr<h
     if ( ! no_body )
         pushBody();
 
-    return std::make_shared<hilti::expression::Function>(function);
+    return decl;
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(shared_ptr<hilti::Function> func)
+shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(shared_ptr<hilti::Function> func)
 {
     auto decl = std::make_shared<declaration::Function>(func, func->location());
     _module->body()->addDeclaration(decl);
-    return std::make_shared<hilti::expression::Function>(func);
+    return decl;
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(shared_ptr<ID> id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<ID> id,
                                                               shared_ptr<hilti::function::Result> result,
                                                               const hilti::function::parameter_list& params,
                                                               hilti::type::function::CallingConvention cc,
@@ -180,7 +180,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(shared_ptr<I
     return pushFunction(func, no_body);
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(const std::string& id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(const std::string& id,
                                                               shared_ptr<hilti::function::Result> result,
                                                               const hilti::function::parameter_list& params,
                                                               hilti::type::function::CallingConvention cc,
@@ -191,12 +191,12 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushFunction(const std::s
     return pushFunction(std::make_shared<ID>(id, l), result, params, cc, scope, no_body, l);
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(shared_ptr<hilti::Hook> hook)
+shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(shared_ptr<hilti::Hook> hook)
 {
     return declareFunction(hook);
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(shared_ptr<ID> id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(shared_ptr<ID> id,
                                                                        shared_ptr<hilti::function::Result> result,
                                                                        const hilti::function::parameter_list& params,
                                                                        hilti::type::function::CallingConvention cc,
@@ -210,7 +210,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(shared_pt
     return declareFunction(func);
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(const std::string& id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(const std::string& id,
                                                                        shared_ptr<hilti::function::Result> result,
                                                                        const hilti::function::parameter_list& params,
                                                                        hilti::type::function::CallingConvention cc,
@@ -219,7 +219,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareFunction(const std
     return declareFunction(std::make_shared<ID>(id, l), result, params, cc, l);
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(shared_ptr<ID> id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(shared_ptr<ID> id,
                                                                    shared_ptr<hilti::function::Result> result,
                                                                    const hilti::function::parameter_list& params,
                                                                    const Location& l)
@@ -232,7 +232,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(shared_ptr<ID
     return declareHook(func);
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(const std::string& id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(const std::string& id,
                                                                    shared_ptr<hilti::function::Result> result,
                                                                    const hilti::function::parameter_list& params,
                                                                    const Location& l)
@@ -241,7 +241,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::declareHook(const std::st
 }
 
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(shared_ptr<ID> id,
                                                           shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
                                                           shared_ptr<Type> scope,
@@ -257,7 +257,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> i
     return pushFunction(func, no_body);
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(const std::string& id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(const std::string& id,
                                                           shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
                                                           shared_ptr<Type> scope,
@@ -269,7 +269,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(const std::strin
 
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(shared_ptr<ID> id,
                                                           shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
                                                           shared_ptr<Type> scope,
@@ -285,7 +285,7 @@ shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(shared_ptr<ID> i
     return pushFunction(func, no_body);
 }
 
-shared_ptr<hilti::expression::Function> ModuleBuilder::pushHook(const std::string& id,
+shared_ptr<hilti::declaration::Function> ModuleBuilder::pushHook(const std::string& id,
                                                           shared_ptr<hilti::function::Result> result,
                                                           const hilti::function::parameter_list& params,
                                                           shared_ptr<Type> scope,
@@ -542,6 +542,21 @@ void ModuleBuilder::importModule(const std::string& id)
 {
     return importModule(std::make_shared<ID>(id));
 }
+
+void ModuleBuilder::cacheNode(const std::string& component, const std::string& idx, shared_ptr<Node> node)
+{
+    auto key = component + "$" + idx;
+    _node_cache[key] = node;
+}
+
+shared_ptr<Node> ModuleBuilder::lookupNode(const std::string& component, const std::string& idx)
+{
+    auto key = component + "$" + idx;
+    auto i = _node_cache.find(key);
+
+    return i != _node_cache.end() ? i->second : nullptr;
+}
+
 
 }
 }

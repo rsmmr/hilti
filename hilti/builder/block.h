@@ -108,7 +108,7 @@ public:
    /// be added.
    ///
    /// comment: The comment.
-   void createComment(const std::string& comment);
+   void addComment(const std::string& comment);
 
    /// Adds a statement at the current end of the block.
    ///
@@ -178,6 +178,34 @@ public:
    /// if \a cond is true, (2) the one to execute if \a cond is true, and (3)
    /// the one where to continue execution in either case.
    std::tuple<shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>> addIfElse(shared_ptr<hilti::Expression> cond, const Location& l = Location::None);
+
+   /// Helper to add a simple not-fmt debug message.
+   ///
+   /// stream: The stream to print the message to.
+   ///
+   /// msg: The message itself.
+   void addDebugMsg(const std::string& stream, const std::string& msg);
+
+   /// Helper to add a debug message with up to three format arguments.
+   ///
+   /// stream: The stream to print the message to.
+   ///
+   /// msg: The message itself.
+   void addDebugMsg(const std::string& stream, const std::string& msg,
+                 shared_ptr<hilti::Expression> arg1,
+                 shared_ptr<hilti::Expression> arg2 = nullptr,
+                 shared_ptr<hilti::Expression> arg3 = nullptr
+                 );
+
+   /// Helper to increase the debugging indent for a stream.
+   ///
+   /// stream: The stream to increase the level on.
+   void debugPushIndent(const std::string& stream);
+
+   /// Helper to decreate the debugging indent for a stream.
+   ///
+   /// stream: The stream to decreate the level on.
+   void debugPopIndent(const std::string& stream);
 
 protected:
    friend class ModuleBuilder;

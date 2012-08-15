@@ -1,6 +1,8 @@
 
 #include "validator.h"
 #include "type.h"
+#include "declaration.h"
+#include "grammar.h"
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -196,6 +198,14 @@ void Validator::visit(declaration::Hook* h)
 
 void Validator::visit(declaration::Type* t)
 {
+    auto unit = ast::tryCast<type::Unit>(t->type());
+
+    if ( unit && unit->grammar() ) {
+        string err = unit->grammar()->check();
+
+        if ( err.size() )
+            error(unit, err);
+    }
 }
 
 void Validator::visit(declaration::Variable* v)

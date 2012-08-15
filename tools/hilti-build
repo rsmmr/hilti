@@ -161,7 +161,7 @@ def compilePac(input, output):
     flags += ["-I ."]
 
     for i in range(Options.debug):
-        flags += " -d"
+        flags += ["-d"]
 
     flags = uniqueArgs(flags)
 
@@ -184,6 +184,10 @@ def compileC(input, output, cxx):
 
     flags += ["-c", "-emit-llvm", "-g", "-fno-color-diagnostics", "-O0", "-I ."]
     flags += runConfig(HiltiConfig, "--libhilti-%sflags" % tag).split()
+
+    if Options.binpac:
+        flags += runConfig(HiltiConfig, "--libbinpac-%sflags" % tag).split()
+
     flags = uniqueArgs(flags)
 
     cc = "%s %s -o %s %s" % (Cc, flags, output, input)
@@ -202,6 +206,9 @@ def runHiltic(inputs, output, proto=False):
         flags += runConfig(HiltiConfig, "--hiltic-flags-main").split()
     else:
         flags += runConfig(HiltiConfig, "--hiltic-flags").split()
+
+    if Options.binpac:
+        flags += runConfig(HiltiConfig, "--hiltic-binpac").split()
 
     flags += ["-I ."]
 
@@ -342,6 +349,8 @@ if Options.proto:
         runHiltic([input], output, proto=True)
 
     sys.exit(0)
+
+Options.binpac = ( len(files[".pac2"]) != 0)
 
 for input in files[".pac2"]:
     verbose("compiling %s ..." % input)

@@ -94,10 +94,12 @@ protected:
 
    void visit(type::Enum* c) override;
    void visit(declaration::Function* f) override;
+   void visit(declaration::Type* t) override;
 
 private:
    std::ostream& _output;
    protogen::TypeMapper type_mapper;
+   std::set<string> _generated;
 };
 
 }

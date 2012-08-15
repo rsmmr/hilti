@@ -1,6 +1,6 @@
 
-#ifndef BINPAC_PRINTER_H
-#define BINPAC_PRINTER_H
+#ifndef BINPAC_PASSES_PRINTER_H
+#define BINPAC_PASSES_PRINTER_H
 
 #include <ast/passes/printer.h>
 

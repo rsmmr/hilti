@@ -85,6 +85,9 @@ llvm::Module* hilti::linkModules(string output, const std::list<llvm::Module*>& 
 
 bool hilti::resolveAST(shared_ptr<Module> module, const path_list& libdirs)
 {
+//    std::cerr << "| 11111" << std::endl;
+//    module->dump(std::cerr);
+
     passes::ScopeBuilder scope_builder(_prepareLibDirs(libdirs));
     if ( ! scope_builder.run(module) )
         return false;
@@ -95,9 +98,16 @@ bool hilti::resolveAST(shared_ptr<Module> module, const path_list& libdirs)
         return false;
 #endif
 
+//    std::cerr << "| 2222" << std::endl;
+//    module->dump(std::cerr);
+
     passes::IdResolver id_resolver;
     if ( ! id_resolver.run(module) )
         return false;
+
+//    std::cerr << "| 3333" << std::endl;
+//    module->dump(std::cerr);
+
 
 #if 0
     if ( ! hilti::dumpAST(module, std::cerr) )

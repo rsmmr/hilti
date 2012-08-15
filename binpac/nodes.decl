@@ -10,6 +10,7 @@ Function
 Hook
 ID
 Module
+Grammar
 
 Constant
 constant::Expression
@@ -55,6 +56,20 @@ expression::ResolvedOperator
 expression::Type
 expression::UnresolvedOperator
 expression::Variable
+
+Production
+production::Boolean
+production::ChildGrammar
+production::Counter
+production::Epsilon
+production::Literal
+production::LookAhead
+production::NonTerminal
+production::Sequence
+production::Switch
+production::Terminal
+production::Variable
+production::While
 
 Statement
 statement::Block
