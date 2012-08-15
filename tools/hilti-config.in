@@ -183,7 +183,7 @@ while [ "$1" != "" ]; do
 
         --hilti-ldflags)
             llvm_flags=`llvm-config --ldflags --libs core bitreader bitwriter linker asmparser`
-            echo "$llvm_flags $base/build/libhilti.a $base/build/hilti/codegen/libffi/libhilti-ffi.a"
+            echo "-L $base/build/hilti -lhilti $llvm_flags"
             shift;;
 
         -h)

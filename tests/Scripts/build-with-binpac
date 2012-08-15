@@ -19,5 +19,6 @@ done
 clang++ -L /opt/llvm/lib/ -lc++ -lcxxrt -stdlib=libc++ -std=c++0x \
         -I $base/binpac -I $base/build/binpac -I $base/ \
         -L $base/build/binpac/ -lbinpac \
-        -Wl,-rpath,$base/build/binpac:$base/build/ast:$base/build/util \
+        `$base/build/tools/hilti-config --hilti-ldflags` \
+        -Wl,-rpath,$base/build/binpac:$base/build/hilti \
         $@
