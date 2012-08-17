@@ -7,11 +7,12 @@
 #include "util.h"
 
 extern "C" {
-#include "utf8proc.h"
+#include "3rdparty/utf8proc/utf8proc.h"
 }
 
 using namespace util;
 
+#if 0
 string util::fmt(const char* fmt, ...)
 {
     char buffer[1024];
@@ -24,6 +25,7 @@ string util::fmt(const char* fmt, ...)
 
     return string(buffer);
 }
+#endif
 
 std::list<string> util::strsplit(string s, string delim)
 {

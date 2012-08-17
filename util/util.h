@@ -9,13 +9,20 @@
 #include <string>
 #include <stdexcept>
 
+#include "3rdparty/tinyformat/tinyformat.h"
+
 namespace util {
 
 typedef std::list<std::string> path_list;
 
 using std::string;
 
-extern string fmt(const char* fmt, ...);
+template<typename... Args>
+string fmt(const char* fmt, const Args&... args)
+{
+    return tfm::format(fmt, args...);
+}
+
 extern std::list<string> strsplit(string s, string delim=" ");
 
 template<typename T>

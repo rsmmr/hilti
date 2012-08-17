@@ -1,4 +1,5 @@
+
 add_library (util OBJECT
     util.cc
-    utf8proc.c
+    3rdparty/utf8proc/utf8proc.c
 )
