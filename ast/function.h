@@ -4,6 +4,8 @@
 
 #include <list>
 
+#include <util/util.h>
+
 #include "node.h"
 
 namespace ast {
@@ -68,6 +70,10 @@ public:
 
     /// Returns the ID with the function's name. It's non-scoped.
     shared_ptr<ID> id() const { return _id; }
+
+    string render() /* override */ {
+        return util::fmt("%s (%s)", _id->name().c_str(), _ftype->render().c_str());
+    }
 
 private:
     node_ptr<Statement> _body;

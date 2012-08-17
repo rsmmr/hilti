@@ -29,7 +29,7 @@ void IdResolver::visit(expression::ID* i)
         return;
     }
 
-    i->parent()->replaceChild(id, val);
+    id->replace(val);
 
     if ( id->id()->isScoped() )
         val->setScope(id->id()->scope());
@@ -74,12 +74,8 @@ void IdResolver::visit(type::Unknown* t)
 
     auto tv = nt->typeValue();
 
-    assert(t->parent());
-
-    t->parent()->replaceChild(t->sharedPtr<hilti::Type>(), tv);
-
-    if ( ! tv->id() )
-        tv->setID(id);
+    t->replace(tv);
+    tv->setID(id);
 }
 
 void IdResolver::visit(Function* f)

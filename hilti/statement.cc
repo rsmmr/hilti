@@ -55,20 +55,20 @@ string statement::Instruction::signature() const
 
 void statement::Block::addStatement(shared_ptr<Statement> stmt)
 {
-       addComment(stmt);
+    addComment(stmt);
 
-       auto n = node_ptr<Statement>(stmt);
-       _stmts.push_back(n);
-       addChild(n);
+    auto n = node_ptr<Statement>(stmt);
+    _stmts.push_back(n);
+    addChild(n);
 }
 
 void statement::Block::addStatementAtFront(shared_ptr<Statement> stmt)
 {
-       addComment(stmt);
+    addComment(stmt);
 
-       auto n = node_ptr<Statement>(stmt);
-       _stmts.push_front(n);
-       addChild(n);
+    auto n = node_ptr<Statement>(stmt);
+    _stmts.push_front(n);
+    addChild(n);
 }
 
 void statement::Block::addStatements(const stmt_list& stmts)

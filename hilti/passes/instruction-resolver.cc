@@ -14,7 +14,7 @@ void InstructionResolver::visit(statement::instruction::Unresolved* s)
     if ( instr->instruction() ) {
         // We already know the instruction, just need to transfer the operands over.
         auto new_stmt = InstructionRegistry::globalRegistry()->resolveStatement(instr->instruction(), instr);
-        instr->parent()->replaceChild(instr, new_stmt);
+        instr->replace(new_stmt);
         return;
     }
 
@@ -50,7 +50,7 @@ void InstructionResolver::visit(statement::instruction::Unresolved* s)
                  }
 
                  auto as = (*matches.front()->factory())(matches.front(), ops, instr->location());
-                 instr->parent()->replaceChild(instr, as);
+                 instr->replace(as);
                  return;
              }
 
@@ -66,7 +66,7 @@ void InstructionResolver::visit(statement::instruction::Unresolved* s)
      case 1: {
          // Everthing is fine. Replace with the actual instruction.
          auto new_stmt = InstructionRegistry::globalRegistry()->resolveStatement(*matches.begin(), instr);
-         instr->parent()->replaceChild(instr, new_stmt);
+         instr->replace(new_stmt);
          return;
      }
 

@@ -164,7 +164,9 @@ static void printInstruction(Printer& p, statement::Instruction* i)
     if ( ops[0] )
         p << ops[0] << " = ";
 
-    p << i->id();
+    string id = util::strreplace(i->id()->name(), ".op.", "");
+
+    p << id;
 
     for ( int i = 1; i < ops.size(); ++i ) {
         if ( ops[i] )
@@ -521,7 +523,7 @@ void Printer::visit(type::Bitset* c)
 
     p << "bitset { ";
 
-    bool first = false;
+    bool first = true;
 
     for ( auto l : c->labels() ) {
 
@@ -591,7 +593,7 @@ void Printer::visit(type::Enum* c)
 
     p << "enum { ";
 
-    bool first = false;
+    bool first = true;
 
     for ( auto l : c->labels() ) {
 
@@ -942,7 +944,7 @@ void Printer::visit(constant::Tuple* t)
     Printer& p = *this;
 
     p << '(';
-    printList(t->value(), ",");
+    printList(t->value(), ", ");
     p << ')';
 }
 
@@ -997,12 +999,12 @@ void Printer::visit(constant::Network* c)
 void Printer::visit(constant::Bitset* c)
 {
     Printer& p = *this;
-    auto expr = dynamic_cast<Expression*>(c->parent());
+    auto expr = c->firstParent<Expression>();
 
     std::list<string> bits;
 
     for ( auto b : c->value() )
-        bits.push_back(scopedID(expr, b));
+        bits.push_back(scopedID(expr.get(), b));
 
     printList(bits, " | ");
 }
@@ -1018,8 +1020,8 @@ void Printer::visit(constant::Enum* c)
 {
     Printer& p = *this;
 
-    auto expr = dynamic_cast<Expression*>(c->parent());
-    p << scopedID(expr, c->value());
+    auto expr = c->firstParent<Expression>();
+    p << scopedID(expr.get(), c->value());
 }
 
 void Printer::visit(constant::Interval* c)
@@ -1064,8 +1066,12 @@ void Printer::visit(ctor::Bytes* c)
 
 void Printer::visit(ctor::List* c)
 {
+    auto rtype = ast::checkedCast<type::Reference>(c->type());
+    auto etype = ast::checkedCast<type::List>(rtype->argType())->elementType();
+
     Printer& p = *this;
-    p << "list(";
+
+    p << "list<" << etype << ">(";
     printList(c->elements(), ", ");
     p << ")";
 }
@@ -1087,8 +1093,12 @@ void Printer::visit(ctor::Map* c)
 
 void Printer::visit(ctor::Set* c)
 {
+    auto rtype = ast::checkedCast<type::Reference>(c->type());
+    auto etype = ast::checkedCast<type::Set>(rtype->argType())->elementType();
+
     Printer& p = *this;
-    p << "set(";
+
+    p << "set<" << etype << ">(";
     printList(c->elements(), ", ");
     p << ")";
 }
@@ -1096,8 +1106,12 @@ void Printer::visit(ctor::Set* c)
 
 void Printer::visit(ctor::Vector* c)
 {
+    auto rtype = ast::checkedCast<type::Reference>(c->type());
+    auto etype = ast::checkedCast<type::Vector>(rtype->argType())->elementType();
+
     Printer& p = *this;
-    p << "vector(";
+
+    p << "vector<" << etype << ">(";
     printList(c->elements(), ", ");
     p << ")";
 }

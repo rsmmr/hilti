@@ -2,6 +2,8 @@
 #ifndef AST_DECLARATION_H
 #define AST_DECLARATION_H
 
+#include <util/util.h>
+
 #include "node.h"
 #include "mixin.h"
 
@@ -18,7 +20,7 @@ class DeclarationOverrider : public Overrider<typename AstInfo::declaration>
 public:
     typedef typename AstInfo::declaration Declaration;
 
-    virtual bool _isConstant() const { assert(false); }
+    virtual bool _isConstant() const { return false; }
 };
 
 /// Base class for AST nodes representing ID declarations. A declaration
@@ -47,6 +49,25 @@ public:
     /// Returns true if the declared value is constant.
     virtual bool isConstant() const {
        return this->overrider()->_isConstant();
+    }
+
+    string render() /* override */ {
+        const char* linkage = 0;
+        switch ( _linkage ) {
+         case LOCAL:
+            linkage = "local";
+            break;
+
+         case PRIVATE:
+            linkage = "private";
+            break;
+
+         case EXPORTED:
+            linkage = "exported";
+            break;
+        }
+
+        return util::fmt("%s (%s, linkage %s)", _id->name().c_str(), (isConstant() ? "const" : "non-const"), linkage);
     }
 
 protected:

@@ -39,7 +39,7 @@ void IDResolver::visit(expression::ID* i)
         return;
     }
 
-    i->parent()->replaceChild(id, val);
+    id->replace(val);
 
     if ( id->id()->isScoped() )
         val->setScope(id->id()->scope());
@@ -74,10 +74,8 @@ void IDResolver::visit(type::Unknown* t)
     }
 
     auto tv = nt->typeValue();
-
-    assert(t->parent());
-
-    t->parent()->replaceChild(t->sharedPtr<binpac::Type>(), tv);
+    
+    t->replace(tv);
 
     if ( ! tv->id() )
         tv->setID(id);

@@ -75,6 +75,7 @@ class Visitor : public AstInfo::visitor_interface, public Logger
 {
 public:
     typedef typename AstInfo::visitor_interface VisitorInterface;
+    typedef std::list<shared_ptr<NodeBase>> node_list;
 
     /// Processes all child nodes pre-order, i.e., parent nodes are visited
     /// before their childs.
@@ -210,6 +211,19 @@ public:
        }
 
        return d;
+    }
+
+    /// Returns the current list of nodes we have traversed so far from the
+    /// top of the tree to get to the current node. The latter is included.
+    const node_list& currentNodes() const { return _current; }
+
+    /// Dumps the list of currentNodes(). This is primarily for
+    /// debugging to track down the chain of nodes.
+    void dumpCurrentNodes(std::ostream& out) {
+        out << "Current visitor nodes:" << std::endl;
+        for ( auto n : currentNodes() )
+            out << "   | " << *n << std::endl;
+        out << std::endl;
     }
 
     /// Returns the first argument given to the visitor. The argument can be
@@ -390,7 +404,6 @@ private:
     void saveArgs();
     void restoreArgs();
 
-    typedef std::list<shared_ptr<NodeBase>> node_list;
     node_list _current;
 
     Arg1 _arg1;
@@ -525,16 +538,14 @@ inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processOneInternal(shared_ptr<
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
 inline void Visitor<AstInfo, Result, Arg1, Arg2>::preOrder(shared_ptr<NodeBase> node)
 {
-
     if ( _visited.find(node) != _visited.end() )
         // Done already.
         return;
 
     _visited.insert(node);
 
-    this->callAccept(node);
-
     pushCurrent(node);
+    this->callAccept(node);
 
     for ( auto i : *node )
         this->preOrder(i);
@@ -556,9 +567,8 @@ inline void Visitor<AstInfo, Result, Arg1, Arg2>::postOrder(shared_ptr<NodeBase>
     for ( auto i : *node )
         this->preOrder(i);
 
-    popCurrent();
-
     this->callAccept(node);
+    popCurrent();
 }
 
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>

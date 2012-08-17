@@ -8,6 +8,18 @@
 
 using namespace ast;
 
+NodeBase::~NodeBase()
+{
+    for ( auto c : _childs )
+        c->_parents.remove(this);
+
+#if 0
+    // This crashes, the sharedPtr() call?
+    for ( auto p : _parents )
+        p->_childs.remove(this->sharedPtr<NodeBase>());
+#endif
+}
+
 void NodeBase::addChild(node_ptr<NodeBase> node)
 {
     if ( ! node )
@@ -23,41 +35,59 @@ void NodeBase::addChild(node_ptr<NodeBase> node)
     }
 #endif
 
-    auto n = dynamic_cast<NodeBase*>(node.get());
-
     _childs.push_back(node);
-    n->_parent = this;
+    node->_parents.push_back(this);
+}
+
+bool NodeBase::hasChild(node_ptr<NodeBase> node) const
+{
+    for ( auto c: _childs ) {
+        if ( c.get() == node.get() )
+            return true;
+    }
+
+    return false;
 }
 
 void NodeBase::removeChild(node_ptr<NodeBase> node)
 {
+    assert(hasChild(node));
+
     _childs.remove(node);
-    auto n = dynamic_cast<NodeBase*>(node.get());
-    n->_parent = 0;
+    node->_parents.remove(this);
 }
 
 void NodeBase::removeChild(node_list::iterator node)
 {
-    _childs.erase(node);
-    auto n = dynamic_cast<NodeBase*>((*node).get());
-    assert(n->_parent == this);
-    n->_parent = 0;
+    assert(hasChild(*node));
+
+    _childs.remove(*node);
+    (*node)->_parents.remove(this);
 }
 
-void NodeBase::replaceChild(shared_ptr<NodeBase> old_node, shared_ptr<NodeBase> new_node)
+void NodeBase::replace(shared_ptr<NodeBase> n)
 {
-    shared_ptr<NodeBase> o = std::dynamic_pointer_cast<NodeBase>(old_node);
-    shared_ptr<NodeBase> n = std::dynamic_pointer_cast<NodeBase>(new_node);
+    std::list<std::pair<shared_ptr<NodeBase>, NodeBase*>> add_parents;
+    std::list<std::pair<shared_ptr<NodeBase>, NodeBase*>> del_parents;
+//        for ( node_list::iterator i = p->_childs.begin(); i != p->_childs.end(); i++ ) {
+//            auto c = (*i).get();
 
-    assert(o->_parent == this);
-    o->_parent = 0;
-    n->_parent = this;
-
-    for ( auto c : _childs ) {
-        if ( c.get() == old_node.get() ) {
-            c = n;
+    for ( auto p : _parents ) {
+        for ( auto c : p->_childs ) {
+            if ( c.get() == this ) {
+                c = n;
+                add_parents.push_back(std::make_pair(n, p));
+                del_parents.push_back(std::make_pair(c, p));
+            }
         }
     }
+
+    for ( auto np : add_parents )
+        np.first->_parents.push_back(np.second);
+
+    for ( auto np : del_parents )
+        np.first->_parents.remove(np.second);
+
 }
 
 NodeBase* NodeBase::siblingOfChild(NodeBase* child) const
@@ -83,8 +113,13 @@ NodeBase::operator string() {
     int status;
     char *name = abi::__cxa_demangle(typeid(*this).name(), 0, 0, &status);
 
-    return util::fmt("%s [%d/%s %p] %s", name,
-                     _childs.size(), location.c_str(), this, s.c_str());
+    string parents = "";
+
+    for ( auto p : _parents )
+        parents += util::fmt(" p:%p", p);
+
+    return util::fmt("%s [%d/%s %p%s] %s", name,
+                     _childs.size(), location.c_str(), this, parents.c_str(), s.c_str());
 }
 
 void NodeBase::dump(std::ostream& out)

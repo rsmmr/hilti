@@ -172,7 +172,7 @@ void Printer::visit(constant::Address* a)
 void Printer::visit(constant::Bitset* b)
 {
     Printer& p = *this;
-    auto expr = dynamic_cast<Expression*>(b->parent()); // may fail
+    auto expr = b->firstParent<Expression>(); // may fail
 
     printList<shared_ptr<ID>>(b->value(), " | ", "", "",
               [&] (shared_ptr<ID> id) -> string { return scopedID(expr, id); });
@@ -193,7 +193,7 @@ void Printer::visit(constant::Double* d)
 void Printer::visit(constant::Enum* e)
 {
     Printer& p = *this;
-    auto expr = dynamic_cast<Expression*>(e->parent()); // may fail
+    auto expr = e->firstParent<Expression>(); // may fail
 
     p << scopedID(expr, e->value());
 }
@@ -461,7 +461,7 @@ void Printer::visit(expression::Variable* v)
 void Printer::visit(statement::Block* b)
 {
     // We format the top-level block without enclosing braces.
-    auto top_level = ast::tryCast<Module>(b->parent());
+    auto top_level = (b->parents().size() && ast::tryCast<Module>(b->parents().front()));
 
     Printer& p = *this;
 

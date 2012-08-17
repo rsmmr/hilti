@@ -172,36 +172,46 @@ public:
     /// Constructor.
     ///
     /// l: A location associated with the node.
-    NodeBase(const Location& l=Location::None) : _parent(0), _location(l) {}
+    NodeBase(const Location& l=Location::None) : _location(l) {}
 
     NodeBase(const NodeBase& other) {
-       _parent = 0;
        _location = other._location;
        _comment = other._comment;
        _childs = _childs;
     }
 
-    virtual ~NodeBase() {}
+    virtual ~NodeBase();
 
-    /// Returns the parent to this node. A node gets a parent once it gets
-    /// added to another node via addChild(). If a node gets added to multiple
-    /// parents, the last one will be returned.
-    NodeBase* parent() const { return _parent; }
+    /// Returns the parents of this node. A node gets a parent once it gets
+    /// added to another node via addChild().
+    const std::list<NodeBase*>& parents() const { return _parents; }
 
     /// Returns the next sibling of the given child node. Returns null if no
     /// sibling or that's not a child.
     NodeBase* siblingOfChild(NodeBase* child) const;
 
-    /// Returns the closest parent of a given type.
+    /// Returns all the parents of a given type, in the order they are
+    /// encountered when going up the tree.
     template<typename T>
-    shared_ptr<T> parent() {
-       if ( ! _parent )
-           return shared_ptr<T>();
+    std::list<shared_ptr<T>> parents() {
+        std::list<shared_ptr<T>> dst;
 
-       if ( dynamic_cast<T*>(_parent) )
-           return _parent->sharedPtr<T>();
+        for ( auto p : _parents ) {
+            if ( dynamic_cast<T*>(p) )
+                dst.push_back(p->sharedPtr<T>());
 
-       return _parent->parent<T>();
+            dst.merge(p->parents<T>());
+        }
+
+        return dst;
+    }
+
+    /// Returns the first parent of a given type, as encountered in the list
+    /// returned by parents(); null if none.
+    template<typename T>
+    shared_ptr<T> firstParent() {
+        std::list<shared_ptr<T>> p = parents<T>();
+        return p.size() ? p.front() : nullptr;
     }
 
     /// Returns the location associated with the node, or Location::None if
@@ -271,13 +281,14 @@ public:
     /// node: An iterator pointing to the child to remove.
     void removeChild(node_list::iterator node);
 
-    /// Replaces a child node with another one. Node that all node_ptr to this
-    /// child will reflect the update.
+    /// Replaces the node with another one in all of the node's parents. Note
+    /// that all corresponding node_ptr will reflect the change.
     ///
-    /// old_node: The old child node.
-    ///
-    /// new_node: The new child node.
-    void replaceChild(shared_ptr<NodeBase> old_node, shared_ptr<NodeBase> new_node);
+    /// n: The new node.
+    void replace(shared_ptr<NodeBase> n);
+
+    /// Returns true if a given node is a child of this one.
+    bool hasChild(node_ptr<NodeBase> n) const;
 
     /// Internal method. Overriden by the \c ACCEPT_* macros in visitor.h.
     virtual const char* acceptClass() const { return "<acceptClass not set>"; };
@@ -292,7 +303,7 @@ private:
     typedef std::set<const NodeBase*> node_set;
     void dump(std::ostream& out, int level, node_set* seen);
 
-    NodeBase* _parent;
+    std::list<NodeBase*>  _parents;
     Location _location;
     string _comment;
     node_list _childs;

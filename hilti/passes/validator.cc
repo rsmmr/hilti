@@ -154,21 +154,21 @@ void Validator::visit(statement::instruction::Unresolved* s)
 
 void Validator::visit(statement::instruction::flow::ReturnResult* s)
 {
-    if ( current<declaration::Hook>() ) {
+    if ( current<Hook>() ) {
         error(s, "cannot use return.result in a hook; use hook.stop instead");
         return;
     }
 
-    auto func = current<declaration::Function>();
-    _checkReturn(this, s, func->function(), s->op1());
+    auto func = current<Function>();
+    _checkReturn(this, s, func, s->op1());
 }
 
 void Validator::visit(statement::instruction::thread::GetContext* s)
 {
-    auto func = current<declaration::Function>();
+    auto func = current<Function>();
     assert(func);
 
-    auto ctx = func->function()->module()->context();
+    auto ctx = func->module()->context();
 
     if ( ! ctx )
         error(s, "module does not define an execution context");
@@ -351,11 +351,11 @@ mismatch:
 
 void Validator::visit(statement::instruction::flow::ReturnVoid* s)
 {
-    if ( current<declaration::Hook>() )
+    if ( current<Hook>() )
         return;
 
-    auto func = current<declaration::Function>();
-    _checkReturn(this, s, func->function(), nullptr);
+    auto func = current<Function>();
+    _checkReturn(this, s, func, nullptr);
 }
 
 void Validator::visit(statement::try_::Catch* s)

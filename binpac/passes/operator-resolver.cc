@@ -62,9 +62,8 @@ void OperatorResolver::visit(expression::UnresolvedOperator* o)
 
      case 1: {
          // Everthing is fine. Replace with the actual operator.
-         auto oop = o->sharedPtr<expression::UnresolvedOperator>();
          auto nop = OperatorRegistry::globalRegistry()->resolveOperator(*matches.begin(), o->operands(), o->location());
-         o->parent()->replaceChild(oop, nop);
+         o->replace(nop);
          break;
      }
 
