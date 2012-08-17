@@ -10,6 +10,10 @@ declare "C-HILTI" void abort()
 declare "C-HILTI" void sleep(double secs)
 declare "C-HILTI" void wait_for_threads()
 
+declare "C-HILTI" int<64> bytes_to_int(ref<bytes> b, int<64> base=10)
+declare "C-HILTI" ref<bytes> bytes_to_lower(ref<bytes> b)
+declare "C-HILTI" bool bytes_starts_with(ref<bytes> b, ref<bytes> s)
+
 ## Predefined exceptions.
 
 # FIXME: Add the other internal exceptions here as well.
@@ -140,4 +144,5 @@ type ProfileStyle = enum {
     Wall,        # Record after interval of <n> nsecs in wall time.
     Cycles       # Record after <n> CPU cycles. 
     }
+
 

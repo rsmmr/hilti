@@ -4,7 +4,7 @@
 // @TEST-EXEC: btest-diff out
 //
 
-#include <pgen/grammar.h>
+#include <grammar.h>
 #include <constant.h>
 #include <expression.h>
 

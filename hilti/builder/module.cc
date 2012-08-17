@@ -106,6 +106,10 @@ void ModuleBuilder::exportID(shared_ptr<hilti::ID> type)
     _module->exportID(type);
 }
 
+void ModuleBuilder::exportID(const std::string& name)
+{
+    _module->exportID(std::make_shared<ID>(name));
+}
 
 shared_ptr<ID> ModuleBuilder::uniqueID(shared_ptr<ID> id, shared_ptr<Scope> scope, bool force_unique, bool global)
 {

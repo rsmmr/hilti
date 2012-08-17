@@ -11,15 +11,8 @@ void StatementBuilder::visit(statement::instruction::interval::Equal* i)
     auto op1 = cg()->llvmValue(i->op1());
     auto op2 = cg()->llvmValue(i->op2());
 
-    auto v1 = cg()->llvmExtractValue(op1, 0);
-    auto v2 = cg()->llvmExtractValue(op2, 0);
-    auto cmp1 = cg()->builder()->CreateICmpEQ(v1, v2);
+    auto result = builder()->CreateICmpEQ(op1, op2);
 
-    v1 = cg()->llvmExtractValue(op1, 1);
-    v2 = cg()->llvmExtractValue(op2, 1);
-    auto cmp2 = cg()->builder()->CreateICmpEQ(v1, v2);
-
-    auto result = cg()->builder()->CreateAnd(cmp1, cmp2);
     cg()->llvmStore(i, result);
 }
 
@@ -57,7 +50,7 @@ void StatementBuilder::visit(statement::instruction::interval::AsInt* i)
 {
     auto op1 = cg()->llvmValue(i->op1());
 
-    auto result = cg()->builder()->CreateUDiv(op1, cg()->llvmConstInt(1000000000, 1e9));
+    auto result = cg()->builder()->CreateUDiv(op1, cg()->llvmConstInt(1000000000, 64));
     cg()->llvmStore(i, result);
 }
 

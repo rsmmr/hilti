@@ -5,6 +5,7 @@
 
 #include <libhilti.h>
 
+extern const hlt_type_info* hlt_type_info_hlt_enum_x73_A_x31_1_BC_x31_2_DEF_x31_3;
 static const hlt_enum Main_Foo_A = { 0, 1 };
 static const hlt_enum Main_Foo_BC = { 0, 2 };
 static const hlt_enum Main_Foo_DEF = { 0, 3 };

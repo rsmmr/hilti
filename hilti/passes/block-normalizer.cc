@@ -13,11 +13,6 @@ void BlockNormalizer::visit(statement::Block* b)
     if ( b->terminated() )
         return;
 
-    auto p = current<statement::Block>();
-
-    if ( ! p )
-        return;
-
     // Determine where to continue execution after block.
     //
     // 1. If we have a block sibling, go there.
@@ -26,8 +21,7 @@ void BlockNormalizer::visit(statement::Block* b)
     shared_ptr<statement::instruction::Unresolved> terminator = 0;
     statement::Block* next = nullptr;
 
-    // FIXME: This should be parent(), but that seems to ignore the first up-level node?
-    auto parent_ = current<statement::Block>();
+    auto parent_ = parent<statement::Block>();
 
     if ( parent_ ) {
         ast::NodeBase* n = b;

@@ -9,7 +9,9 @@ global tuple<ref<A>, ref<B>> t
 type myException = exception<ref<A>>
 ref<A> foo(ref<B> b)
 {
-      return.result a
+
+  
+    return.result a
   
 }
 
@@ -30,10 +32,13 @@ type B = struct {
 
 void run()
 {
-      
+
+  
+    
   
   
 }
+
 
 
 

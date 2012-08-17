@@ -95,11 +95,11 @@ public:
 
     /// Disables printing IDs for declared types. Calls to this method must
     /// match those of enableTypeIDs().
-    void disableTypeIDs() { ++_print_type_ids; }
+    void disableTypeIDs() { --_print_type_ids; }
 
     /// Enables printing IDs for declared types. Calls to this method must
     /// match those of enableTypeIDs().
-    void enableTypeIDs() { --_print_type_ids; }
+    void enableTypeIDs() { ++_print_type_ids; }
 
 private:
     template<typename AI> friend Printer<AI>& operator<<(Printer<AI>& p, Printer<AI>& (*pf)(Printer<AI>&p));

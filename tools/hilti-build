@@ -334,6 +334,8 @@ for input in inputs:
     else:
         error("unsupported input file %s" % input)
 
+Options.binpac = (len(files[".pac2"]) != 0)
+
 if Options.proto:
     for input in files[".hlt"]:
         output = Options.output if Options.output else os.path.basename(input) + ".h"

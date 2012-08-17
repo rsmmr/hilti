@@ -60,19 +60,22 @@ void StatementBuilder::visit(statement::Block* b)
             comment.str(string());
             printer.run(s);
             passes::Printer p(comment, true);
-            cg()->llvmInsertComment(comment.str() + " (" + string(s->location()) + ")");
 
-            string c = string(s->location());
+            if ( comment.str().size() ) {
+                cg()->llvmInsertComment(comment.str() + " (" + string(s->location()) + ")");
 
-            auto n = c.rfind("/");
+                string c = string(s->location());
 
-            if ( n != string::npos )
-                c = c.substr(n + 1, string::npos);
+                auto n = c.rfind("/");
 
-            c +=  + ": " + comment.str();
+                if ( n != string::npos )
+                    c = c.substr(n + 1, string::npos);
 
-            // Send it also to the hilti-trace debug stream.
-            cg()->llvmDebugPrint("hilti-trace", c);
+                c +=  + ": " + comment.str();
+
+                // Send it also to the hilti-trace debug stream.
+                cg()->llvmDebugPrint("hilti-trace", c);
+            }
         }
 
         call(s);
@@ -215,7 +218,7 @@ void StatementBuilder::visit(declaration::Function* f)
 
     assert(ftype->callingConvention() == type::function::HILTI || ftype->callingConvention() == type::function::HOOK);
 
-    auto llvm_func = cg()->llvmFunction(func, true);
+    auto llvm_func = cg()->llvmFunction(func, (hook_decl != nullptr));
 
     cg()->pushFunction(llvm_func);
 
@@ -279,6 +282,13 @@ void StatementBuilder::visit(declaration::Function* f)
         util::checkedCreateCall(builder, "call-init-func", llvm_func, args);
         delete builder;
     }
+}
+
+void StatementBuilder::visit(declaration::Type* t)
+{
+    if ( t->linkage() == Declaration::EXPORTED )
+        // Trigger generating type information.
+        cg()->llvmRttiPtr(t->type());
 }
 
 void StatementBuilder::visit(statement::ForEach* f)

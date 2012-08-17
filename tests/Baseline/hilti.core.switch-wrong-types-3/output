@@ -1,5 +1,5 @@
 
->>> switch n @default ((1,@b1),(2,"xxx"),(3,@b3))
+>>> switch n @default ((1, @b1), (2, "xxx"), (3, @b3))
 switch-wrong-types.hlt:8-10: error, types string and label do not match [pass::Validator]
 switch-wrong-types.hlt: Aborting due to verification error.
 error running hiltic, aborting

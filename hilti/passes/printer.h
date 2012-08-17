@@ -2,13 +2,16 @@
 #ifndef HILTI_PRINTER_H
 #define HILTI_PRINTER_H
 
-#include "../pass.h"
+#include <ast/passes/printer.h>
+
+#include "common.h"
+#include "ast-info.h"
 
 namespace hilti {
 namespace passes {
 
 /// Renders a HILTI AST back into HILTI source code.
-class Printer : public Pass<>
+class Printer : public ast::passes::Printer<AstInfo>
 {
 public:
    /// Constructor.
@@ -17,30 +20,7 @@ public:
    ///
    /// single_line: If true, all line separator while be turned into space so
    /// that we get a single-line version of the output.
-   ///
-   /// roll_out_types: Always roll out the types, don't print them by names.
-   Printer(std::ostream& out, bool single_line=false)
-       : Pass<>("Printer"), _out(out), _single_line(single_line) {}
-
-   /// Renders a HILTI AST back into HILTI source code.
-   ///
-   /// module: The AST to print.
-   ///
-   /// Returns: True if no errors were encountered.
-   bool run(shared_ptr<Node> module) override {
-       return processOne(module);
-   }
-
-   virtual void reset() override;
-
-   /// Returns the stream to print to.
-   std::ostream& out() const { return _out; }
-
-   /// Returns true if single-line output is desired.
-   bool singleLine() const { return _single_line; }
-
-   bool _bol = true;
-   bool _no_indent = false;
+   Printer(std::ostream& out, bool single_line=false);
 
 protected:
    void visit(Module* m) override;
@@ -136,114 +116,7 @@ protected:
    void visit(ctor::RegExp* c) override;
    void visit(ctor::Set* c) override;
    void visit(ctor::Vector* c) override;
-
-   void pushIndent() { ++_indent; _bol = true; }
-   void popIndent()   { --_indent; }
-
-   template<typename T>
-   void printList(const std::list<T>& elems, const string& separator, const string& elem_prefix = "", const string& elem_postfix = "") {
-       Printer& p = *this;
-       bool first = true;
-       for ( auto e: elems ) {
-           if ( ! first )
-               p << separator;
-
-           p << elem_prefix << e << elem_postfix;
-           first = false;
-       }
-   }
-
-private:
-   friend Printer& operator<<(Printer& p, Printer& (*pf)(Printer&p));
-   friend Printer& operator<<(Printer& p, std::ostream& (*pf)(std::ostream&));
-   friend Printer& operator<<(Printer& p, std::ios& (*pf)(std::ios&));
-   friend Printer& operator<<(Printer& p, std::ios_base& (*pf)(std::ios_base&));
-   template<typename T> friend Printer& operator<<(Printer& p, T t);
-   template<typename T> friend Printer& operator<<(Printer& p, shared_ptr<T> node);
-   template<typename T> friend Printer& operator<<(Printer& p, node_ptr<T> node);
-
-   void prepLine() {
-       if ( _bol && ! _no_indent ) {
-           for ( int i = 0; i < _indent; ++i )
-               _out << "  ";
-       }
-       _bol = false;
-       _no_indent = false;
-   }
-
-   string scopedID(Expression* expr, shared_ptr<ID> id);
-
-   // Prints a type's ID if we have it and doing so was not disabled via,
-   // disableTypeIDs(). If that's both the case returns true, else false
-   bool printTypeID(shared_ptr<Type> t) { return printTypeID(t.get()); }
-   bool printTypeID(Type* t);
-
-   // Disables printing IDs for declared types. Calls to this method must match
-   // those of enableTypeIDs().
-   void disableTypeIDs() { --_print_type_ids; }
-
-   // Enables printing IDs for declared types. Calls to this method must
-   // match those of enableTypeIDs().
-   void enableTypeIDs() { ++_print_type_ids; }
-
-   std::ostream& _out;
-   bool _single_line;
-   int _indent = 0;
-   int _print_type_ids = 1;
 };
-
-// Mimic the ostream interface.
-
-namespace printer {
-    inline Printer& endl(Printer& p) {
-        if ( p.singleLine() )
-            p.out() << ' ';
-        else
-            p.out() << std::endl;
-
-        p._bol = true;
-        return p;
-    }
-
-    inline Printer& no_indent(Printer& p) {
-        p._no_indent = true;
-        return p;
-    }
-}
-
-template<typename T>
-inline Printer& operator<<(Printer& p, T t) { p.prepLine(); p.out() << t; return p; }
-
-template<typename T>
-inline Printer& operator<<(Printer& p, shared_ptr<T> node)
-{
-    p.prepLine();
-
-    if ( node )
-        p.call(node);
-    else
-        p << "<nullptr>";
-
-    return p;
-}
-
-template<typename T>
-inline Printer& operator<<(Printer& p, node_ptr<T> node)
-{
-    p.prepLine();
-
-    if ( node )
-        p.call(node);
-    else
-        p << "<nullptr>";
-
-    return p;
-}
-
-inline Printer& operator<<(Printer& p, Printer& (*pf)(Printer&p)) { p.prepLine(); return (*pf)(p); }
-inline Printer& operator<<(Printer& p, std::ios& (*pf)(std::ios&)) { p.prepLine(); p.out() << pf; return p; }
-inline Printer& operator<<(Printer& p, std::ios_base& (*pf)(std::ios_base&)) { p.prepLine(); p.out() << pf; return p; }
-inline Printer& operator<<(Printer& p, std::ostream& (*pf)(std::ostream&)) { p.prepLine(); p.out() << pf; return p; }
 
 }
 }

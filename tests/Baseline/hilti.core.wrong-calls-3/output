@@ -1,5 +1,5 @@
 
->>> call foo (x,x)
+>>> call foo (x, x)
 wrong-calls.hlt:8-9: error, type of parameter 1 does not match function, have int<32> but expected int<16> [pass::Validator]
 wrong-calls.hlt: Aborting due to verification error.
 error running hiltic, aborting

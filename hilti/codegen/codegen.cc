@@ -501,9 +501,12 @@ void CodeGen::finishInitFunction()
     // state.
     assert(function() == _module_init_func);
 
-    if ( ! functionEmpty() )
+    if ( ! functionEmpty() ) {
+#if 0
         // Add a terminator to the function.
         builder()->CreateRetVoid();
+#endif
+    }
 
     else {
         // We haven't added anything to the function, just discard.

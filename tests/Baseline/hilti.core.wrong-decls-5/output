@@ -1,3 +1,5 @@
+
+>>> t
 wrong-decls.hlt:4-6: error, cannot create instances of a wildcard type [pass::Validator]
 wrong-decls.hlt: Aborting due to verification error.
 error running hiltic, aborting

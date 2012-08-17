@@ -650,6 +650,23 @@ inline shared_ptr<hilti::function::Parameter> parameter(shared_ptr<ID> id, share
     return std::make_shared<hilti::function::Parameter>(id, type, constant, default_value, l);
 }
 
+/// Instantiates an AST node representing a function parameter for its type description.
+///
+/// name: The name of the parameter.
+///
+/// type: The type of the parameter.
+///
+/// constant: True if it's a constant parameter.
+///
+/// default: The paramemter's default value if any.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The parameter node.
+inline shared_ptr<hilti::function::Parameter> parameter(const std::string& name, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value, Location l=Location::None) {
+    return std::make_shared<hilti::function::Parameter>(id::node(name), type, constant, default_value, l);
+}
+
 /// Instantiates an AST node representing a function result for its type
 /// description.
 ///
@@ -1628,6 +1645,24 @@ inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_p
     return std::make_shared<hilti::type::struct_::Field>(id, type, default_, internal, l);
 }
 
+/// Instanties a struct field for its type description.
+///
+/// name:  The name of the field.
+///
+/// type: The type of the field.
+///
+/// default_: An optional default value, null if no default.
+///
+/// internal: If true, the field will not be printed when the struct
+/// type is rendered as a string. Internal IDS are also skipped from
+/// ctor expressions and list conversions.
+///
+/// l: Location associated with the field.
+inline shared_ptr<hilti::type::struct_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_ = nullptr, bool internal = false, const Location& l=Location::None)
+{
+    return std::make_shared<hilti::type::struct_::Field>(id::node(name), type, default_, internal, l);
+}
+
 
 }
 
@@ -1669,6 +1704,17 @@ inline shared_ptr<hilti::type::struct_::Field> field(shared_ptr<ID> id, shared_p
     return std::make_shared<hilti::type::struct_::Field>(id, type, nullptr, false, l);
 }
 
+/// Instanties a context field for its type description.
+///
+/// name:  The name of the field.
+///
+/// type: The type of the field.
+///
+/// l: Location associated with the field.
+inline shared_ptr<hilti::type::struct_::Field> field(const std::string& name, shared_ptr<hilti::Type> type, const Location& l=Location::None)
+{
+    return std::make_shared<hilti::type::struct_::Field>(id::node(name), type, nullptr, false, l);
+}
 
 }
 
