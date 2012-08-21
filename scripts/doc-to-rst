@@ -72,7 +72,7 @@ Doc.read('/dev/stdin')
 groups = {}
 
 for section in Doc.sections():
-	if section.startswith("instruction:"):
+	if section.startswith("hilti-instruction:"):
 		idx = getDoc(section, "mnemonic")
 		group = getDoc(section, "namespace")
 

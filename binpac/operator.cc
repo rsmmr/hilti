@@ -1,4 +1,7 @@
 
+#include <stdlib.h>
+#include <cxxabi.h>
+
 #include "operator.h"
 #include "expression.h"
 #include "coercer.h"
@@ -89,11 +92,6 @@ shared_ptr<Type> Operator::type(const expression_list& ops)
     return result;
 }
 
-string Operator::render() const
-{
-    return "<no render() for operators yet>";
-}
-
 void Operator::error(Node* op, string msg) const
 {
     assert(_validator);
@@ -113,6 +111,34 @@ void Operator::validate(passes::Validator* v, const expression_list& ops)
     __validate();
     __operands.clear();
     _validator = nullptr;
+}
+
+string _clsName(shared_ptr<Type> t)
+{
+    if ( ! t )
+        return "";
+
+    int status;
+    return abi::__cxa_demangle(typeid(*t).name(), 0, 0, &status);
+}
+
+Operator::Info Operator::info() const
+{
+    auto i = operator_::OperatorDefinitions.find(_kind);
+    assert(i != operator_::OperatorDefinitions.end());
+
+    Info info;
+    info.kind = _kind;
+    info.kind_txt = i->second.kind_txt;
+    info.description = __doc();
+    info.render = render();
+    info.type_op1 = __typeOp1();
+    info.type_op2 = __typeOp2();
+    info.type_op3 = __typeOp3();
+    info.class_op1 = _clsName(info.type_op1);
+    info.class_op2 = _clsName(info.type_op2);
+    info.class_op3 = _clsName(info.type_op3);
+    return info;
 }
 
 OperatorRegistry::OperatorRegistry()
@@ -181,3 +207,64 @@ OperatorRegistry* OperatorRegistry::globalRegistry()
 
     return _registry;
 }
+
+const OperatorRegistry::operator_map& OperatorRegistry::getAll() const
+{
+    return _operators;
+}
+
+string Operator::render() const
+{
+    auto op1 = __typeOp1();
+    auto op2 = __typeOp2();
+    auto op3 = __typeOp3();
+
+    auto i = operator_::OperatorDefinitions.find(_kind);
+    assert(i != operator_::OperatorDefinitions.end());
+
+    auto op = (*i).second;
+
+    if ( op.type == operator_::UNARY_PREFIX )
+        return util::fmt("%s%s", op.display, op1->render());
+
+    if ( op.type == operator_::UNARY_POSTFIX )
+        return util::fmt("%s%s", op1->render(), op.display);
+
+    if ( op.type == operator_::BINARY )
+        return util::fmt("%s %s %s", op1->render(), op.display, op2->render());
+
+    switch ( op.kind ) {
+     case operator_::Attribute:
+        return util::fmt("%s.%s", op1->render(), op2->render());
+
+     case operator_::Call:
+        return util::fmt("%s(%s)", op1->render(), op2->render());
+
+     case operator_::DecrPostfix:
+        return util::fmt("%s--", op1->render());
+
+     case operator_::HasAttribute:
+        return util::fmt("%s?.%s", op1->render(), op2->render());
+
+     case operator_::IncrPostfix:
+        return util::fmt("%s++", op1->render());
+
+     case operator_::Index:
+        return util::fmt("%s[%s]", op1->render(), op2->render());
+
+     case operator_::IndexAssign:
+        return util::fmt("%s[%s] = %s", op1->render(), op2->render(), op3->render());
+
+     case operator_::MethodCall:
+        return util::fmt("%s.%s(%s)", op1->render(), op2->render(), op3->render());
+
+     case operator_::Size:
+        return util::fmt("|%s|", op1->render());
+
+     default:
+        fprintf(stderr, "unknown operator %d in Operator::render()", (int)op.kind);
+        assert(false);
+    }
+}
+
+

@@ -10,7 +10,7 @@
 include ( dist.cmake )
 
 # NOTE: For now this only supports x86 systems, mainly OSX, Linux and Windows (32/64bit)
-set (TARGET X86 )
+set (TARGET X86)
 
 # Check headers
 include ( CheckIncludeFiles )

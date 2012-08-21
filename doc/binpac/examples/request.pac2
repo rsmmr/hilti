@@ -1,0 +1,24 @@
+
+module Request;
+
+const Token      = /[^ \t\r\n]+/;
+const WhiteSpace = /[ \t]+/;
+const NewLine    = /\r?\n/;
+
+export type RequestLine = unit {
+    method:  Token;
+    :        WhiteSpace;
+    uri:     Token;
+    :        WhiteSpace;
+    version: Version;
+    :        NewLine;
+
+    on %done {
+        print self.method, self.uri, self.version.number;
+        }
+};
+
+type Version = unit {
+    :       /HTTP\//;
+    number: /[0-9]+\.[0-9]+/;
+};

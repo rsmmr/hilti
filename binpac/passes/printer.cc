@@ -381,21 +381,27 @@ void Printer::visit(expression::ResolvedOperator* r)
     auto op2 = (i != exprs.end()) ? *i++ : nullptr;
     auto op3 = (i != exprs.end()) ? *i++ : nullptr;
 
-    auto u = operator_::UnaryOperators.find(kind);
+    auto o = operator_::OperatorDefinitions.find(kind);
+    assert(o != operator_::OperatorDefinitions.end());
+    
+    auto op = (*o).second;
 
-    if ( u  != operator_::UnaryOperators.end() ) {
-        p << u->second << op1;
+    if ( op.type == operator_::UNARY_PREFIX ) {
+        p << op.display << op1;
         return;
     }
 
-    auto b = operator_::BinaryOperators.find(kind);
-
-    if ( b  != operator_::UnaryOperators.end() ) {
-        p << op1 << " " << b->second << " " << op2;
+    if ( op.type == operator_::UNARY_POSTFIX ) {
+        p << op1 << op.display;
         return;
     }
 
-    switch ( kind ) {
+    if ( op.type == operator_::BINARY ) {
+        p << op1 << " " << op.display << " " << op2;
+        return;
+    }
+
+    switch ( op.kind ) {
      case operator_::Attribute:
         p << op1 << "." << op2;
         break;

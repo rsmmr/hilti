@@ -227,7 +227,7 @@ public:
 };
 
 /// AST node for an expression referencing a member attribute of a another type.
-class MemberAttribute : public binpac::CustomExpression
+class MemberAttribute : public CustomExpression
 {
 public:
     /// Constructor.
@@ -238,14 +238,14 @@ public:
     MemberAttribute(shared_ptr<binpac::ID> attr, const Location& l=Location::None);
 
     /// Returns the expression member attribute ID.
-    shared_ptr<ID> attribute() const;
+    shared_ptr<binpac::ID> attribute() const;
 
     shared_ptr<Type> type() const override;
 
     ACCEPT_VISITOR(binpac::Expression);
 
 private:
-    node_ptr<binpac::ID> _attr;
+    node_ptr<binpac::ID> _attribute;
     node_ptr<binpac::Type> _type;
 };
 
@@ -254,7 +254,7 @@ private:
 /// operators are instantiated as Unresolved and later turned into instances
 /// derived from Resolved by passes::OperandResolver.
 ///
-class UnresolvedOperator : public binpac::CustomExpression
+class UnresolvedOperator : public CustomExpression
 {
 public:
     /// Constructor.
@@ -265,6 +265,7 @@ public:
     ///
     /// l: An associated location.
     UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops, const Location& l=Location::None);
+    virtual ~UnresolvedOperator();
 
     /// Returns the operator type.
     binpac::operator_::Kind kind() const;
@@ -281,7 +282,7 @@ private:
 };
 
 /// Base class for uniquenly resolved operators.
-class ResolvedOperator : public binpac::CustomExpression
+class ResolvedOperator : public CustomExpression
 {
 public:
     /// Constructor.
@@ -292,6 +293,7 @@ public:
     ///
     /// l: An associated location.
     ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops, const Location& l=Location::None);
+    ~ResolvedOperator();
 
     /// Returns the operator.
     shared_ptr<Operator> operator_() const;

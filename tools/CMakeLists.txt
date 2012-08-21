@@ -14,7 +14,7 @@ add_executable(hiltic hiltic.cc)
 target_link_libraries(hiltic hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
 add_executable(hilti-doc hilti-doc.cc)
-target_link_libraries(hilti-doc hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
+target_link_libraries(hilti-doc binpac hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
 add_custom_command(
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof

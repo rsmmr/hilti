@@ -62,7 +62,7 @@ namespace abi {
 class X86_64 : public ABI
 {
 public:
-   enum Flavor { DEFAULT, DARWIN };
+   enum Flavor { FLAVOR_DEFAULT, FLAVOR_DARWIN };
 
    X86_64(Flavor flavor) { _flavor = flavor; }
 

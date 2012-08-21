@@ -16,10 +16,10 @@ unique_ptr<ABI> ABI::createABI(CodeGen* cg)
     unique_ptr<ABI> abi;
 
     if ( triple.getArch() == llvm::Triple::x86_64 ) {
-        abi::X86_64::Flavor flavor = abi::X86_64::DEFAULT;
+        abi::X86_64::Flavor flavor = abi::X86_64::FLAVOR_DEFAULT;
 
         if ( triple.isOSDarwin() )
-            flavor = abi::X86_64::DARWIN;
+            flavor = abi::X86_64::FLAVOR_DARWIN;
 
         abi = unique_ptr<ABI>(new abi::X86_64(flavor));
     }

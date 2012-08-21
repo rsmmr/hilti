@@ -165,15 +165,15 @@ shared_ptr<ID> MemberAttribute::attribute() const
 
 string MemberAttribute::render()
 {
-    return _attribute ? _attribute.name() : "<id>";
+    return _attribute ? _attribute->name() : "<id>";
 }
 
 bool MemberAttribute::equal(shared_ptr<binpac::Type> other) const
 {
     auto mother = std::dynamic_pointer_cast<MemberAttribute>(other);
-    assert(bother);
+    assert(mother);
 
-    return _attribute ? _attribute == mother._attribute : true;
+    return _attribute ? _attribute == mother->_attribute : true;
 }
 
 type::Module::Module(const Location& l) : binpac::Type(l)

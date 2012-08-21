@@ -221,3 +221,4 @@ add_library (hilti SHARED
 )
 
 ADD_DEPENDENCIES(hilti generate_parser_hilti)
+target_link_libraries(hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})

@@ -148,7 +148,7 @@ using namespace binpac;
 %type <ctor>             ctor
 %type <declaration>      global_decl type_decl var_decl const_decl func_decl hook_decl local_decl
 %type <declarations>     opt_global_decls opt_local_decls
-%type <expression>       expr list_expr opt_list_expr opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr const_expr
+%type <expression>       expr list_expr opt_list_expr opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr const_expr member_expr
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
 %type <id>               local_id scoped_id hook_id opt_unit_field_name property_id
 %type <statement>        stmt block

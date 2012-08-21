@@ -32,6 +32,45 @@ bool Expression::initializer() const
     return false;
 }
 
+expression::CustomExpression::CustomExpression(const Location& l) : Expression(l)
+{
+}
+
+shared_ptr<Type> expression::CustomExpression::type() const
+{
+    // Must be overridden.
+    assert(false);
+}
+
+bool expression::CustomExpression::isConstant() const
+{
+    return false;
+}
+
+bool expression::CustomExpression::canCoerceTo(shared_ptr<Type> target) const
+{
+    return Coercer().canCoerceTo(type(), target);
+}
+
+shared_ptr<binpac::Expression> expression::CustomExpression::coerceTo(shared_ptr<Type> target)
+{
+#ifdef DEBUG
+    if ( ! canCoerceTo(target) ) {
+        std::cerr << util::fmt("cannot coerce expression of type %s to type %s",
+                               render().c_str(),
+                               target->render().c_str()) << std::endl;
+    }
+#endif
+
+    auto t = type();
+
+    if ( t->equal(target) )
+        return sharedPtr<binpac::Expression>();
+
+    auto coerced = new CoercedExpression(sharedPtr<binpac::Expression>(), target, location());
+    return shared_ptr<typename AstInfo::expression>(coerced);
+}
+
 expression::List::List(const expression_list& exprs, const Location& l)
     : binpac::Expression(l), ast::expression::mixin::List<AstInfo>(this, exprs)
 {
@@ -88,26 +127,26 @@ expression::CodeGen::CodeGen(shared_ptr<binpac::Type> type, void* cookie, const 
 }
 
 expression::MemberAttribute::MemberAttribute(shared_ptr<binpac::ID> id, const Location& l)
-    : binpac::CustomExpression(l)
+    : CustomExpression(l)
 {
-    _attr = attr;
+    _attribute = id;
     _type = std::make_shared<type::MemberAttribute>(id, l);
-    addChild(_attr);
+    addChild(_attribute);
     addChild(_type);
 }
 
-shared_ptr<ID> MemberAttribute::attribute() const
+shared_ptr<binpac::ID> expression::MemberAttribute::attribute() const
 {
-    return _attr;
+    return _attribute;
 }
 
-shared_ptr<Type> MemberAttribute::type() const
+shared_ptr<Type> expression::MemberAttribute::type() const
 {
     return _type;
 }
 
 expression::UnresolvedOperator::UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops, const Location& l)
-    : Expression(l)
+    : CustomExpression(l)
 {
     _kind = kind;
 
@@ -116,6 +155,10 @@ expression::UnresolvedOperator::UnresolvedOperator(binpac::operator_::Kind kind,
 
     for ( auto op : _ops )
         addChild(op);
+}
+
+expression::UnresolvedOperator::~UnresolvedOperator()
+{
 }
 
 operator_::Kind expression::UnresolvedOperator::kind() const
@@ -134,8 +177,13 @@ expression_list expression::UnresolvedOperator::operands() const
     return ops;
 }
 
+shared_ptr<Type> expression::UnresolvedOperator::type() const
+{
+    return std::make_shared<type::Unknown>(location());
+}
+
 expression::ResolvedOperator::ResolvedOperator(shared_ptr<Operator> op, const expression_list& ops, const Location& l)
-    : Expression(l)
+    : CustomExpression(l)
 {
     _op = op;
 
@@ -144,6 +192,10 @@ expression::ResolvedOperator::ResolvedOperator(shared_ptr<Operator> op, const ex
 
     for ( auto op : _ops )
         addChild(op);
+}
+
+expression::ResolvedOperator::~ResolvedOperator()
+{
 }
 
 shared_ptr<Operator> expression::ResolvedOperator::operator_() const
@@ -159,4 +211,14 @@ operator_::Kind expression::ResolvedOperator::kind() const
 const std::list<node_ptr<Expression>>& expression::ResolvedOperator::operands() const
 {
     return _ops;
+}
+
+shared_ptr<Type> expression::ResolvedOperator::type() const
+{
+    expression_list ops;
+
+    for ( auto o : _ops )
+        ops.push_back(o);
+
+    return _op->type(ops);
 }

@@ -9,6 +9,7 @@
 
 #include "common.h"
 #include "context.h"
+#include "operator.h"
 
 namespace binpac {
 
@@ -18,6 +19,9 @@ extern void init();
 
 /// Returns the current BinPAC++ version.
 extern string version();
+
+/// Returns a list of all BinPAC++ operators.
+operator_list operators();
 
 }
 
