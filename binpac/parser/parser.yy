@@ -471,7 +471,7 @@ expr          : scoped_id                        { $$ = std::make_shared<express
               | expr SHIFTLEFT expr              { $$ = makeOp(operator_::ShiftLeft, { $1, $3 }, loc(@$)); }
               | expr SHIFTRIGHT expr             { $$ = makeOp(operator_::ShiftRight, { $1, $3 }, loc(@$)); }
               | expr POW expr                    { $$ = makeOp(operator_::Power, { $1, $3 }, loc(@$)); }
-              | expr '.' id_expr                 { $$ = makeOp(operator_::Attribute, { $1, $3 }, loc(@$)); }
+              | expr '.' member_expr             { $$ = makeOp(operator_::Attribute, { $1, $3 }, loc(@$)); }
               | expr HASATTR id_expr             { $$ = makeOp(operator_::HasAttribute, { $1, $3 }, loc(@$)); }
               | expr PLUSPLUS                    { $$ = makeOp(operator_::IncrPostfix, { $1 }, loc(@$)); }
               | PLUSPLUS expr                    { $$ = makeOp(operator_::IncrPrefix, { $2 }, loc(@$)); }
@@ -491,7 +491,7 @@ expr          : scoped_id                        { $$ = std::make_shared<express
               | expr PLUSASSIGN expr             { $$ = makeOp(operator_::PlusAssign, { $1, $3 }, loc(@$)); }
               | expr MINUSASSIGN expr            { $$ = makeOp(operator_::PlusAssign, { $1, $3 }, loc(@$)); }
               | expr '[' expr ']' '=' expr       { $$ = makeOp(operator_::IndexAssign, { $1, $3, $6 }, loc(@$)); }
-              | expr '.' id_expr '(' opt_list_expr ')' { $$ = makeOp(operator_::MethodCall, { $1, $3, $5 }, loc(@$)); }
+              | expr '.' member_expr '(' opt_list_expr ')' { $$ = makeOp(operator_::MethodCall, { $1, $3, $5 }, loc(@$)); }
               | NEW id_expr                      { $$ = makeOp(operator_::New, {}, loc(@$)); }
               | NEW id_expr '(' list_expr ')'    { $$ = makeOp(operator_::New, {$2, $4}, loc(@$)); }
 
@@ -515,6 +515,8 @@ opt_expr      : expr                             { $$ = $1; }
               | /* empty */                      { $$ = nullptr; }
 
 id_expr       : local_id                         { $$ = std::make_shared<expression::ID>($1, loc(@$)); }
+
+member_expr   : local_id                         { $$ = std::make_shared<expression::MemberAttribute>($1, loc(@$)); }
 
 const_expr    : constant                         { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
 

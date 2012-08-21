@@ -39,6 +39,31 @@ public:
 
 namespace expression {
 
+/// Base class for expression nodes that aren't mixing in AST functionality.
+///
+/// This redefines the expression's virtual methods (which otherwise the
+/// mix-ins provide).
+class CustomExpression : public Expression
+{
+public:
+    /// Constructor.
+    ///
+    /// l: Associated location.
+    CustomExpression(const Location& l=Location::None);
+
+    /// Must be overridden by childs.
+    shared_ptr<Type> type() const override;
+
+    /// Can be overridden. Implementation returns always false.
+    bool isConstant() const override;
+
+    // These use the standard coercer on the returned type().
+    bool canCoerceTo(shared_ptr<Type> target) const override;
+    shared_ptr<AIExpression> coerceTo(shared_ptr<Type> target) override;
+
+    ACCEPT_VISITOR(Expression);
+};
+
 /// AST node for a list expressions.
 class List : public binpac::Expression, public ast::expression::mixin::List<AstInfo>
 {
@@ -201,11 +226,35 @@ public:
     ACCEPT_VISITOR(binpac::Expression);
 };
 
+/// AST node for an expression referencing a member attribute of a another type.
+class MemberAttribute : public binpac::CustomExpression
+{
+public:
+    /// Constructor.
+    ///
+    /// attr: The attribute ID.
+    ///
+    /// l: An associated location.
+    MemberAttribute(shared_ptr<binpac::ID> attr, const Location& l=Location::None);
+
+    /// Returns the expression member attribute ID.
+    shared_ptr<ID> attribute() const;
+
+    shared_ptr<Type> type() const override;
+
+    ACCEPT_VISITOR(binpac::Expression);
+
+private:
+    node_ptr<binpac::ID> _attr;
+    node_ptr<binpac::Type> _type;
+};
+
+
 /// A not yet resolved (and potentially overloaded) operator. Initially, all
 /// operators are instantiated as Unresolved and later turned into instances
 /// derived from Resolved by passes::OperandResolver.
 ///
-class UnresolvedOperator : public binpac::Expression
+class UnresolvedOperator : public binpac::CustomExpression
 {
 public:
     /// Constructor.
@@ -222,6 +271,8 @@ public:
 
     expression_list operands() const;
 
+    shared_ptr<Type> type() const override;
+
     ACCEPT_VISITOR(binpac::Expression);
 
 private:
@@ -230,7 +281,7 @@ private:
 };
 
 /// Base class for uniquenly resolved operators.
-class ResolvedOperator : public binpac::Expression
+class ResolvedOperator : public binpac::CustomExpression
 {
 public:
     /// Constructor.
@@ -250,6 +301,8 @@ public:
 
     /// Returns the operands.
     const std::list<node_ptr<Expression>>& operands() const;
+
+    shared_ptr<Type> type() const override;
 
     ACCEPT_VISITOR(binpac::Expression);
 

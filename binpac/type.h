@@ -257,6 +257,31 @@ public:
     ACCEPT_VISITOR(Type);
 };
 
+/// A type representing a member attribute of a composite type. The type can
+/// be narrows to match only a specific attribute value.
+class MemberAttribute : public binpac::Type
+{
+public:
+    /// Constructor.
+    ///
+    /// attr: If not given, the type matches any member attribute. If given,
+    /// it matches only the specified ID value.
+    MemberAttribute(shared_ptr<ID> attr = nullptr, const Location& l=Location::None);
+
+    /// Returns the specific member attribute the type matches, or null if
+    /// any.
+    shared_ptr<ID> attribute() const;
+
+    string render() override;
+    bool equal(shared_ptr<binpac::Type> other) const override;
+
+    ACCEPT_VISITOR(Type);
+
+private:
+    node_ptr<ID> _attribute;
+};
+
+
 /// A type representing a Module.
 class Module : public binpac::Type
 {

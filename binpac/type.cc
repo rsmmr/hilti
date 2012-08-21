@@ -152,6 +152,30 @@ Unset::Unset(const Location& l) : PacType(l)
 {
 }
 
+MemberAttribute::MemberAttribute(shared_ptr<ID> attr, const Location& l) : binpac::Type(l)
+{
+    _attribute = attr;
+    addChild(_attribute);
+}
+
+shared_ptr<ID> MemberAttribute::attribute() const
+{
+    return _attribute;
+}
+
+string MemberAttribute::render()
+{
+    return _attribute ? _attribute.name() : "<id>";
+}
+
+bool MemberAttribute::equal(shared_ptr<binpac::Type> other) const
+{
+    auto mother = std::dynamic_pointer_cast<MemberAttribute>(other);
+    assert(bother);
+
+    return _attribute ? _attribute == mother._attribute : true;
+}
+
 type::Module::Module(const Location& l) : binpac::Type(l)
 {
 }

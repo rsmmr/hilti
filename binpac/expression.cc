@@ -87,6 +87,25 @@ expression::CodeGen::CodeGen(shared_ptr<binpac::Type> type, void* cookie, const 
 {
 }
 
+expression::MemberAttribute::MemberAttribute(shared_ptr<binpac::ID> id, const Location& l)
+    : binpac::CustomExpression(l)
+{
+    _attr = attr;
+    _type = std::make_shared<type::MemberAttribute>(id, l);
+    addChild(_attr);
+    addChild(_type);
+}
+
+shared_ptr<ID> MemberAttribute::attribute() const
+{
+    return _attr;
+}
+
+shared_ptr<Type> MemberAttribute::type() const
+{
+    return _type;
+}
+
 expression::UnresolvedOperator::UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops, const Location& l)
     : Expression(l)
 {
