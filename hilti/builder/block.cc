@@ -145,14 +145,14 @@ void BlockBuilder::addDebugMsg(const std::string& stream, const std::string& msg
                                          t);
 }
 
-void BlockBuilder::debugPushIndent(const std::string& stream)
+void BlockBuilder::debugPushIndent()
 {
-    _mbuilder->builder()->addInstruction(hilti::instruction::debug::PushIndent, hilti::builder::string::create(stream));
+    _mbuilder->builder()->addInstruction(hilti::instruction::debug::PushIndent);
 }
 
-void BlockBuilder::debugPopIndent(const std::string& stream)
+void BlockBuilder::debugPopIndent()
 {
-    _mbuilder->builder()->addInstruction(hilti::instruction::debug::PopIndent, hilti::builder::string::create(stream));
+    _mbuilder->builder()->addInstruction(hilti::instruction::debug::PopIndent);
 }
 
 }

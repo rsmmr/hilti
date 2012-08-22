@@ -1,2 +1,2 @@
-module.hlt:2.1-7: error, syntax error, unexpected "'declare'", expecting "'module'"
+module.hlt:1.1-2.7: error, syntax error, unexpected "'declare'", expecting "'module'"
 error running hiltic, aborting

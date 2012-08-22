@@ -1,2 +1,2 @@
-module.hlt:2.1-4: error, syntax error, unexpected "'void'", expecting "'module'"
+module.hlt:1.1-2.4: error, syntax error, unexpected "'void'", expecting "'module'"
 error running hiltic, aborting

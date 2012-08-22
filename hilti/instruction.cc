@@ -476,6 +476,9 @@ shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStateme
     if ( stmt->internal() )
         resolved->setInternal();
 
+    for ( auto c : stmt->comments() )
+        resolved->addComment(c);
+
     return resolved;
 }
 

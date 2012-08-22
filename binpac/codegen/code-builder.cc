@@ -76,6 +76,8 @@ void CodeBuilder::visit(constant::Expression* e)
 
 void CodeBuilder::visit(constant::Integer* i)
 {
+    auto result = hilti::builder::integer::create(i->value(), i->location());
+    setResult(result);
 }
 
 void CodeBuilder::visit(constant::Interval* i)

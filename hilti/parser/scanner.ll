@@ -44,13 +44,13 @@ address    ("::")?({digits}"."){3}{digits}|({hexs}:){7}{hexs}|0x{hexs}({hexs}|:)
 %}
 
 {blank}+              yylloc->step();
-{empty_line}+         yylloc->step();
+{empty_line}          yylloc->lines(1);
 
 <INITIAL>[\n]+        yylloc->lines(yyleng); return token::NEWLINE;
-<INITIAL>{comment}    /* Eat for the time being. */;
+<INITIAL>{comment}    yylloc->lines(1); /* Eat for the time being. */;
 
 <IGNORE_NL>[\n]+      yylloc->lines(yyleng);
-<IGNORE_NL>{comment}  /* Eat in non-newline mode. */
+<IGNORE_NL>{comment}  yylloc->lines(1); /* Eat in non-newline mode. */
 
 <RE>(\\.|[^\\\/])*    yylval->sval = yytext; return token::CREGEXP;
 <RE>[/\\\n]	          return (token_type) yytext[0];

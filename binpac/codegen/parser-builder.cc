@@ -7,6 +7,7 @@
 #include "production.h"
 #include "type.h"
 #include "declaration.h"
+#include "attribute.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -92,7 +93,8 @@ shared_ptr<hilti::Expression> ParserState::hiltiArguments() const
     return hilti::builder::tuple::create(args, unit->location());
 }
 
-ParserBuilder::ParserBuilder(CodeGen* cg) : CGVisitor<shared_ptr<hilti::Expression>>(cg, "ParserBuilder")
+ParserBuilder::ParserBuilder(CodeGen* cg)
+    : CGVisitor<shared_ptr<hilti::Expression>, shared_ptr<type::unit::item::Field>>(cg, "ParserBuilder")
 {
 }
 
@@ -260,11 +262,21 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiCreateParseFunction(shared_ptr
     auto name = util::fmt("parse_%s_internal", grammar->name().c_str());
     auto func = _newParseFunction(name, unit);
 
+    if ( cg()->debugLevel() > 0 ) {
+        cg()->builder()->addDebugMsg("binpac", unit->id()->name());
+        cg()->builder()->debugPushIndent();
+    }
+
     bool success = processOne(grammar->root());
     assert(success);
 
+    if ( cg()->debugLevel() > 0 )
+        cg()->builder()->debugPopIndent();
+
     hilti::builder::tuple::element_list elems = { state()->cur, state()->lahead, state()->lahstart };
     cg()->builder()->addInstruction(hilti::instruction::flow::ReturnResult, hilti::builder::tuple::create(elems));
+
+    popState();
 
     return cg()->moduleBuilder()->popFunction();
 }
@@ -298,6 +310,16 @@ shared_ptr<hilti::Expression> ParserBuilder::_newParseFunction(const string& nam
     auto rtype = hilti::builder::function::result(_hiltiTypeParseResult());
 
     auto func = cg()->moduleBuilder()->pushFunction(name, rtype, { arg1, arg2, arg3, arg4, arg5, arg6 });
+
+    auto pstate = std::make_shared<ParserState>(u,
+                                                hilti::builder::id::create("__self"),
+                                                hilti::builder::id::create("__data"),
+                                                hilti::builder::id::create("__cur"),
+                                                hilti::builder::id::create("__lahead"),
+                                                hilti::builder::id::create("__lahstart"),
+                                                hilti::builder::id::create("__cookie"));
+    pushState(pstate);
+
     return std::make_shared<hilti::expression::Function>(func->function(), func->location());
 }
 
@@ -323,7 +345,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         auto sfield = hilti::builder::struct_::field(f->id()->name(), type, def, false, f->location());
 
         if ( f->anonymous() )
-            sfield->metaInfo()->add(std::make_shared<ast::MetaNode>("can-remove"));
+            sfield->metaInfo()->add(std::make_shared<ast::MetaNode>("opt:can-remove"));
 
         fields.push_back(sfield);
     }
@@ -370,6 +392,7 @@ void ParserBuilder::_finalizeParseObject()
 void ParserBuilder::_startingProduction(shared_ptr<Production> p)
 {
     cg()->builder()->addComment(util::fmt("Production: %s", util::strtrim(p->render().c_str())));
+    cg()->builder()->addComment("");
 
     if ( cg()->debugLevel() ) {
         _hiltiDebugVerbose(util::fmt("parsing %s", util::strtrim(p->render().c_str())));
@@ -384,6 +407,15 @@ void ParserBuilder::_finishedProduction(shared_ptr<Production> p)
 
 void ParserBuilder::_newValueForField(shared_ptr<Production> prod, shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value)
 {
+    auto name = field->id()->name();
+
+    if ( cg()->debugLevel() > 0 ) {
+        auto fmt = util::fmt("%s = %%s", name);
+        cg()->builder()->addDebugMsg("binpac", fmt, value);
+    }
+
+    cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self,
+                                    hilti::builder::string::create(name), value);
 }
 
 shared_ptr<hilti::Expression> ParserBuilder::_hiltiParserDefinition(shared_ptr<type::Unit> unit)
@@ -410,7 +442,7 @@ void ParserBuilder::_hiltiDebug(const string& msg)
 void ParserBuilder::_hiltiDebugVerbose(const string& msg)
 {
     if ( cg()->debugLevel() )
-        cg()->builder()->addDebugMsg("binpac-verbose", msg);
+        cg()->builder()->addDebugMsg("binpac-verbose", string("- ") + msg);
 }
 
 void ParserBuilder::_hiltiDebugShowToken(const string& tag, shared_ptr<hilti::Expression> token)
@@ -519,6 +551,11 @@ void ParserBuilder::visit(production::NonTerminal* n)
 void ParserBuilder::visit(production::Sequence* s)
 {
     _startingProduction(s->sharedPtr<Production>());
+
+    for ( auto p : s->sequence() )
+        processOne(p);
+
+    _finishedProduction(s->sharedPtr<Production>());
 }
 
 void ParserBuilder::visit(production::Switch* s)
@@ -536,13 +573,12 @@ void ParserBuilder::visit(production::Variable* v)
 
     bool need_val = (field->id() != nullptr);
 
-    cg()->builder()->addComment(util::fmt("Variable: %s", field->render()));
+    cg()->builder()->addComment(util::fmt("Variable: %s", field->id()->name()));
 
     shared_ptr<hilti::Expression> value;
     processOne(v->type(), &value, field);
 
-    cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self,
-                                    hilti::builder::string::create(field->id()->name()), value);
+    _newValueForField(v->sharedPtr<Production>(), field, value);
 
     cg()->builder()->addComment("");
 }
@@ -586,7 +622,7 @@ void ParserBuilder::visit(type::Bytes* b)
     else
         internalError(b, "unknown unpack format in type::Bytes");
 
-    auto result_val = cg()->builder()->addTmp("unpacked_val", _hiltiTypeBytes());
+    auto result_val = cg()->builder()->addTmp("unpacked_val", _hiltiTypeBytes(), nullptr, true);
     cg()->builder()->addInstruction(result_val, hilti::instruction::tuple::Index, result, hilti::builder::integer::create(0));
     cg()->builder()->addInstruction(state()->cur, hilti::instruction::tuple::Index, result, hilti::builder::integer::create(1));
 

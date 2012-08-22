@@ -1,2 +1,2 @@
-module.hlt:2.1-6: error, syntax error, unexpected "'global'", expecting "'module'"
+module.hlt:1.1-2.6: error, syntax error, unexpected "'global'", expecting "'module'"
 error running hiltic, aborting

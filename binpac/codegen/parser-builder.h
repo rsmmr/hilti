@@ -8,12 +8,15 @@
 #include "cg-visitor.h"
 
 namespace binpac {
+
+namespace type { namespace unit { namespace item { class Field; } } }
+
 namespace codegen {
 
 class ParserState;
 
 /// Generates code to parse input according to a grammar.
-class ParserBuilder : public CGVisitor<shared_ptr<hilti::Expression>>
+class ParserBuilder : public CGVisitor<shared_ptr<hilti::Expression>, shared_ptr<type::unit::item::Field>>
 {
 public:
     ParserBuilder(CodeGen* cg);

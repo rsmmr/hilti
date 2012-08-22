@@ -121,6 +121,7 @@ void GrammarBuilder::visit(type::unit::item::field::Type* t)
 
     auto sym = "var:" + t->id()->name();
     auto prod = std::make_shared<production::Variable>(sym, t->type());
+    prod->pgMeta()->field = t->sharedPtr<type::unit::item::Field>();
     setResult(prod);
 }
 

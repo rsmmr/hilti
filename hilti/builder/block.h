@@ -197,15 +197,11 @@ public:
                  shared_ptr<hilti::Expression> arg3 = nullptr
                  );
 
-   /// Helper to increase the debugging indent for a stream.
-   ///
-   /// stream: The stream to increase the level on.
-   void debugPushIndent(const std::string& stream);
+   /// Helper to increase the debugging indent.
+   void debugPushIndent();
 
-   /// Helper to decreate the debugging indent for a stream.
-   ///
-   /// stream: The stream to decreate the level on.
-   void debugPopIndent(const std::string& stream);
+   /// Helper to decreate the debugging indent.
+   void debugPopIndent();
 
 protected:
    friend class ModuleBuilder;

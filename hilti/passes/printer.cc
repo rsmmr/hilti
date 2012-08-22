@@ -847,25 +847,27 @@ void Printer::visit(type::Struct* t)
     pushIndent();
     enableTypeIDs();
 
-    bool first = true;
-    for ( auto f : t->fields() ) {
+    auto i = t->fields().begin();
+
+    while ( i != t->fields().end() ) {
+        auto f = *i++;
+        auto last = (i == t->fields().end());
 
         if ( f->internal() )
             continue;
 
-        if ( ! first )
-            p << "," << endl;
-
         p << f->type() << ' ' << f->id();
+
         if ( f->default_() )
             p << " &default=" << f->default_();
 
+        if ( ! last )
+            p << ",";
+
         p.printMetaInfo(f->metaInfo());
 
-        first = false;
+        p << endl;
     }
-
-    p << endl;
 
     disableTypeIDs();
     popIndent();

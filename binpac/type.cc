@@ -775,6 +775,8 @@ Timer::Timer(const Location& l) : PacType(l)
 {
 }
 
+int unit::Item::Item::_id_counter = 0;
+
 unit::Item::Item(shared_ptr<ID> id, const hook_list& hooks, const attribute_list& attrs, const Location& l) : Node(l)
 {
     if ( ! id ) {

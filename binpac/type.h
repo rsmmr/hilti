@@ -1007,6 +1007,8 @@ private:
     std::list<node_ptr<Hook>> _hooks;
 
     shared_ptr<Scope> _scope = nullptr;
+
+    static int _id_counter;
 };
 
 namespace item {
