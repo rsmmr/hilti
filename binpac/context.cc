@@ -10,6 +10,7 @@
 
 #include "passes/grammar-builder.h"
 #include "passes/id-resolver.h"
+#include "passes/normalizer.h"
 #include "passes/operator-resolver.h"
 #include "passes/printer.h"
 #include "passes/scope-builder.h"
@@ -90,12 +91,16 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
 
     passes::GrammarBuilder   grammar_builder(std::cerr);
     passes::IDResolver       id_resolver;
+    passes::Normalizer       normalizer;
     passes::OperatorResolver op_resolver;
     passes::ScopeBuilder     scope_builder(this);
     passes::ScopePrinter     scope_printer(std::cerr);
     passes::Validator        validator;
 
     if ( ! op_resolver.run(module) )
+        return false;
+
+    if ( ! normalizer.run(module) )
         return false;
 
     if ( verify && ! validator.run(module) )

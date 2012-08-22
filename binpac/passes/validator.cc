@@ -2,7 +2,9 @@
 #include "validator.h"
 #include "type.h"
 #include "declaration.h"
+#include "expression.h"
 #include "grammar.h"
+#include "attribute.h"
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -97,10 +99,6 @@ void Validator::visit(Module* m)
 }
 
 void Validator::visit(Statement* s)
-{
-}
-
-void Validator::visit(Type* t)
 {
 }
 
@@ -300,6 +298,10 @@ void Validator::visit(statement::try_::Catch* c)
 {
 }
 
+void Validator::visit(Type* t)
+{
+}
+
 void Validator::visit(type::Address* a)
 {
 }
@@ -470,6 +472,69 @@ void Validator::visit(type::unit::Item* i)
 
 void Validator::visit(type::unit::item::Field* f)
 {
+    auto attributes = f->attributes();
+    auto parseable = ast::type::tryTrait<type::trait::Parseable>(f->type());
+
+    if ( ! parseable ) {
+        error(f, "type cannot be used in unit field");
+        return;
+    }
+
+    // See if all attributes are known.
+
+    for ( auto attr : attributes->attributes() ) {
+        if ( attr->key() == "&default" )
+            continue;
+
+        bool found = false;
+
+        for ( auto pattr : parseable->parseAttributes() ) {
+            if ( pattr.key == attr->key() )
+                found = true;
+        }
+
+        if ( ! found )
+            error(attr, "unknown attribute");
+    }
+
+    // Check common attributes.
+
+    auto attr = attributes->lookup("default");
+
+    if ( attr ) {
+        if ( ! attr->value() ) {
+            error(attr, "&default attribute needs an expression");
+            return;
+        }
+
+        if ( ! attr->value()->canCoerceTo(f->type()) ) {
+            error(attr, "&default value's type does not match");
+            return;
+        }
+    }
+
+    // Check the type-specific attributes.
+    for ( auto pattr : parseable->parseAttributes() ) {
+        auto attr = attributes->lookup(pattr.key);
+
+        if ( ! attr )
+            return;
+
+        if ( attr->value() && ! pattr.type ) {
+            error(attr, "attribute does not take an expression");
+            continue;
+        }
+
+        if ( pattr.type && ! attr->value() && ! pattr.default_ ) {
+            error(attr, "attribute requires an expression");
+            continue;
+        }
+
+        if ( attr->value() && ! attr->value()->canCoerceTo(pattr.type) ) {
+            error(attr, "attribute value's type does not match");
+            continue;
+        }
+    }
 }
 
 void Validator::visit(type::unit::item::GlobalHook* g)

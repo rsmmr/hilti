@@ -17,6 +17,11 @@ shared_ptr<binpac::Type> trait::Parseable::fieldType()
     return t->sharedPtr<binpac::Type>();
 }
 
+std::list<trait::Parseable::ParseAttribute> trait::Parseable::parseAttributes() const
+{
+    return {};
+}
+
 string binpac::Type::render()
 {
     std::ostringstream s;
@@ -68,10 +73,12 @@ PacType::PacType(const attribute_list& attrs,  const Location& l) : binpac::Type
     _attrs = std::make_shared<AttributeSet>(attrs, l);
 }
 
+#if 0
 shared_ptr<AttributeSet> PacType::attributes() const
 {
     return _attrs;
 }
+#endif
 
 TypedPacType::TypedPacType(const Location& l) : PacType(l)
 {
@@ -580,6 +587,13 @@ shared_ptr<binpac::Type> Bytes::elementType()
 shared_ptr<Type> Bytes::fieldType()
 {
     return std::make_shared<type::Bytes>(location());
+}
+
+std::list<trait::Parseable::ParseAttribute> Bytes::parseAttributes() const
+{
+    return {
+        { "length", std::make_shared<type::Integer>(64, false), nullptr, false }
+    };
 }
 
 iterator::Bytes::Bytes(const Location& l) : Iterator(shared_ptr<Type>(new type::Bytes(l)))

@@ -490,7 +490,7 @@ inline bool hasTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<
 ///
 /// \deprecated: Use checkedTrait or tryTrait instead.
 template<typename T>
-inline const T* asTrait(shared_ptr<NodeBase> t) { return dynamic_cast<const T*>(t); }
+inline T* asTrait(NodeBase* t) { return dynamic_cast<T*>(t); }
 
 /// Dynamic-casts type \a t into trait class \a T.
 ///
@@ -503,24 +503,24 @@ inline T* asTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<T>(
 /// Dynamic-casts type \a t into trait class \a T. This version return null
 /// if the cast fails.
 template<typename T>
-inline const T* tryTrait(shared_ptr<NodeBase> t) { return dynamic_cast<const T*>(t); }
+inline T* tryTrait(NodeBase* t) { return dynamic_cast<T*>(t); }
 
 /// Dynamic-casts type \a t into trait class \a T. This version return null
 /// if the cast fails.
 template<typename T>
-inline T* tryTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<T>(t); }
+inline shared_ptr<T> tryTrait(shared_ptr<NodeBase> t) { return std::dynamic_pointer_cast<T>(t); }
 
 /// Dynamic-casts type \a t into trait class \a T. This version aborts if the
 /// cast fails.
 ///
 /// Returns: The cast pointer.
 template<typename T>
-inline const T* checkedTrait(shared_ptr<NodeBase> t) {
-    auto c = dynamic_cast<const T*>(t);
+inline shared_ptr<T> checkedTrait(NodeBase* t) {
+    auto c = std::dynamic_pointer_cast<T>(t);
 
     if ( ! c ) {
         fprintf(stderr, "internal error: ast::checkedTrait() failed; want '%s' but got a '%s'",
-                typeid(T).name(), typeid(t.get()).name());
+                typeid(T).name(), typeid(*t).name());
         abort();
     }
 
@@ -533,7 +533,7 @@ inline const T* checkedTrait(shared_ptr<NodeBase> t) {
 /// Returns: The cast pointer.
 template<typename T>
 inline T* checkedTrait(shared_ptr<NodeBase> t) {
-    auto c = dynamic_cast<T*>(t);
+    auto c = dynamic_cast<T*>(t.get());
 
     if ( ! c ) {
         fprintf(stderr, "internal error: ast::checkedTrait() failed; want '%s' but got a '%s'",

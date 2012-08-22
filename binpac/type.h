@@ -51,6 +51,23 @@ public:
     ///
     /// Returns: The type for parsed items.
     virtual shared_ptr<binpac::Type> fieldType();
+
+
+    /// A description of a custom type attribute, as returned by
+    /// parseAttributes*().
+    struct ParseAttribute {
+        string key;                      /// The attribute name.
+        shared_ptr<Type> type;           /// The attribute's expression type, or null for no argument.
+        shared_ptr<Expression> default_; /// A default value for the expression if none is given, or null for no default.
+        bool implicit_;                  /// If true and *default* is given, the attribute is implicitly assumed to be present even if not given.
+     };
+
+    /// Returns the custom attributes the type supports for parsing. Note
+    /// that these are added on top of any attributes supported generally by
+    /// all types (e.g., \a &default).
+    ///
+    /// The default implementation returns the empty list.
+    virtual std::list<ParseAttribute> parseAttributes() const;
 };
 
 
@@ -126,8 +143,12 @@ public:
     /// l: Associated location.
     PacType(const attribute_list& attrs,  const Location& l=Location::None);
 
+#if 0
     /// Returns the attributes associated with the type.
+    ///
+    /// \todo: Actually I don't think that types should have attributes.
     shared_ptr<AttributeSet> attributes() const;
+#endif
 
     ACCEPT_VISITOR(Type);
 
@@ -489,7 +510,7 @@ public:
     /// signed: True if it's a signed integer.
     ///
     /// l: Associated location.
-    Integer(int width, bool sign, const Location& l=Location::None);
+    Integer(int width, bool signed_, const Location& l=Location::None);
 
     /// Constructore creating an integer type matching any other integer type.
     Integer(const Location& l=Location::None);
@@ -710,6 +731,7 @@ public:
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
     shared_ptr<binpac::Type> fieldType() override;
+    std::list<ParseAttribute> parseAttributes() const override;
 
     ACCEPT_VISITOR(PacType);
 };

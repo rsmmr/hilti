@@ -24,8 +24,12 @@ public:
     ///
     /// value: The value, if any.
     ///
+    /// internal: Mark this attribute as internal. The meaning is left to the
+    /// interpretation of the user, but for example, internal type attributes
+    /// won't be printed by the printer.
+    ///
     /// l: Associated location.
-    Attribute(const string& key, shared_ptr<Expression> value = nullptr, const Location& l=Location::None);
+    Attribute(const string& key, shared_ptr<Expression> value = nullptr, bool internal=false, const Location& l=Location::None);
 
     /// Returns the attribute's key (without any leading ampersand).
     const string& key() const;
@@ -33,11 +37,18 @@ public:
     /// Returns the attribute's value, or null if not set.
     shared_ptr<Expression> value() const;
 
+    /// Sets the attributes value.
+    void setValue(shared_ptr<Expression> expr);
+
+    /// Returns whether this is an internal attribute.
+    bool internal() const;
+
     ACCEPT_VISITOR_ROOT();
 
 private:
     string _key;
     node_ptr<Expression> _value;
+    bool _internal;
 };
 
 /// A collection of attributes.
@@ -75,6 +86,9 @@ public:
 
     /// Returns a set of all attributes.
     std::list<shared_ptr<Attribute>> attributes() const;
+
+    /// Returns the number of attributes defined.
+    size_t size() const;
 
     AttributeSet& operator=(const attribute_list& attrs);
 

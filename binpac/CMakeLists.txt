@@ -114,6 +114,7 @@ add_library (binpac SHARED
 
     passes/grammar-builder.cc
     passes/id-resolver.cc
+    passes/normalizer.cc
     passes/operator-resolver.cc
     passes/printer.cc
     passes/scope-builder.cc

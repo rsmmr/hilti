@@ -7,7 +7,7 @@
 
 using namespace binpac;
 
-Attribute::Attribute(const string& key, shared_ptr<Expression> value, const Location& l) : Node(l)
+Attribute::Attribute(const string& key, shared_ptr<Expression> value, bool internal, const Location& l) : Node(l)
 {
     string k = key;
 
@@ -16,6 +16,7 @@ Attribute::Attribute(const string& key, shared_ptr<Expression> value, const Loca
 
     _key = k;
     _value = value;
+    _internal = internal;
 
     addChild(_value);
 }
@@ -29,6 +30,20 @@ const string& Attribute::key() const
 shared_ptr<Expression> Attribute::value() const
 {
     return _value;
+}
+
+void Attribute::setValue(shared_ptr<Expression> expr)
+{
+    if ( _value )
+        removeChild(_value);
+
+    _value = expr;
+    addChild(_value);
+}
+
+bool Attribute::internal() const
+{
+    return _internal;
 }
 
 AttributeSet::AttributeSet(const attribute_list& attrs, const Location& l) : Node(l)
@@ -91,6 +106,10 @@ std::list<shared_ptr<Attribute>> AttributeSet::attributes() const
     return attrs;
 }
 
+size_t AttributeSet::size() const
+{
+    return _attrs.size();
+}
 
 AttributeSet& AttributeSet::operator=(const attribute_list& attrs)
 {

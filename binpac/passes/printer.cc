@@ -29,6 +29,8 @@ static void _printUnitHooks(Printer& p, const hook_list& hooks)
 
 static void _printUnitFieldCommon(Printer& p, type::unit::item::Field* i)
 {
+    auto parseable = ast::checkedCast<type::PacType>(i->type());
+
     if ( i->condition() )
         p << "if ( " << i->condition() << " ) ";
 
@@ -72,7 +74,7 @@ void Printer::visit(Attribute* a)
     p << '&' << a->key();
 
     if ( a->value() )
-        p << '(' << a->value() << ')' << endl;
+        p << '(' << a->value() << ')';
 }
 
 void Printer::visit(AttributeSet* a)
@@ -978,6 +980,9 @@ void Printer::visit(type::unit::item::field::Type* t)
         p << t->id();
 
     p << ": " << t->type();
+
+    if ( t->attributes()->size() )
+        p << " " << t->attributes();
 
     if ( t->parameters().size() )
         printList(t->parameters(), ", ", "(", ") ");
