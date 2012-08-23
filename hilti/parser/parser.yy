@@ -169,7 +169,7 @@ using namespace hilti;
 %type <strings>          attr_list opt_attr_list
 %type <struct_field>     struct_field
 %type <struct_fields>    struct_fields opt_struct_fields
-%type <sval>             comment opt_comment opt_exception_libtype attribute re_pattern_constant 
+%type <sval>             opt_exception_libtype attribute re_pattern_constant 
 %type <type>             base_type type enum_ bitset exception opt_exception_base struct_ overlay context scope opt_scope_ref
 %type <types>            type_list
 
@@ -177,34 +177,14 @@ using namespace hilti;
 
 %start module;
 
-empty_lines   : empty_line empty_lines
-              | empty_line
-              ;
-
-empty_line    : NEWLINE
-              | ';'
-              | /* empty */
-              ;
-
-eol           : NEWLINE empty_lines
-              | ';' empty_lines
-              | COMMENT NEWLINE empty_lines
-              ;
-
-comment       : COMMENT NEWLINE                  { $$ = $1; }
-              | COMMENT NEWLINE comment          { $$ = $1 + $3; }
-              ;
-
-opt_comment   : empty_lines comment              { $$ = $2; }
-              | empty_lines                      { $$ = ""; }
+eol           : NEWLINE
               ;
 
 opt_nl        : NEWLINE opt_nl
               | /* empty */
               ;
 
-
-module        : opt_comment MODULE local_id eol  { auto moduleBuilder = std::make_shared<builder::ModuleBuilder>($3, *driver.streamName(), ::hilti::path_list(), loc(@$));
+module        : MODULE local_id eol  { auto moduleBuilder = std::make_shared<builder::ModuleBuilder>($2, *driver.streamName(), ::hilti::path_list(), loc(@$));
                                                    driver.begin(moduleBuilder);
                                                  }
 
@@ -217,7 +197,7 @@ scoped_id     : IDENT                            { $$ = builder::id::node($1, lo
               | SCOPED_IDENT                     { $$ = builder::id::node($1, loc(@$)); }
 
 global_decls  : global_decl global_decls
-              | empty_lines
+              | /* empty */
               ;
 
 global_decl   : global
@@ -229,7 +209,6 @@ global_decl   : global
               | import
               | stmt
               | export_
-              | comment
               ;
 
 global        : GLOBAL type local_id eol          { driver.moduleBuilder()->addGlobal($3, $2, nullptr, false, loc(@$)); }
@@ -251,7 +230,6 @@ stmt          : instruction                      { driver.moduleBuilder()->build
               ;
 
 stmt_list     : stmt opt_stmt_list
-              | comment opt_stmt_list
               | local opt_stmt_list
               ;
 

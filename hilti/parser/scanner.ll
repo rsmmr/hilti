@@ -23,14 +23,15 @@
 #define YY_USER_ACTION yylloc->columns(yyleng);
 %}
 
-id      [a-zA-Z_][a-zA-Z_0-9]*
-string  \"(\\.|[^\\"])*\"
-int     [+-]?[0-9]+
-blank   [ \t]
-comment [ \t]*#[^\n]*
-digits  [0-9]+
-hexs    [0-9a-fA-F]+
-address ("::")?({digits}"."){3}{digits}|({hexs}:){7}{hexs}|0x{hexs}({hexs}|:)*"::"({hexs}|:)*|(({digits}|:)({hexs}|:)*)?"::"({hexs}|:)*
+id         [a-zA-Z_][a-zA-Z_0-9]*
+string     \"(\\.|[^\\"])*\"
+int        [+-]?[0-9]+
+empty_line ^[ \t]*\n
+blank      [ \t]
+comment    [ \t]*#[^\n]*\n
+digits     [0-9]+
+hexs       [0-9a-fA-F]+
+address    ("::")?({digits}"."){3}{digits}|({hexs}:){7}{hexs}|0x{hexs}({hexs}|:)*"::"({hexs}|:)*|(({digits}|:)({hexs}|:)*)?"::"({hexs}|:)*
 
 %%
 %{
@@ -43,9 +44,10 @@ address ("::")?({digits}"."){3}{digits}|({hexs}:){7}{hexs}|0x{hexs}({hexs}|:)*":
 %}
 
 {blank}+              yylloc->step();
+{empty_line}+         yylloc->step();
 
 <INITIAL>[\n]+        yylloc->lines(yyleng); return token::NEWLINE;
-<INITIAL>{comment}    yylval->sval = yytext; return token::COMMENT;
+<INITIAL>{comment}    /* Eat for the time being. */;
 
 <IGNORE_NL>[\n]+      yylloc->lines(yyleng);
 <IGNORE_NL>{comment}  /* Eat in non-newline mode. */

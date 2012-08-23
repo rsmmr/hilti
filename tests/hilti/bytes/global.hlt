@@ -11,6 +11,6 @@ global ref<bytes> b1 = b"123"
 global ref<bytes> b2 = b"1234"
 
 void run() {
-    call Hilti::print(b1);
-    call Hilti::print(b2);
+    call Hilti::print(b1)
+    call Hilti::print(b2)
 }

@@ -22,7 +22,7 @@ void run() {
 
     local ref<Rule> r1 = (10.0.1.0/24, *, 10.0.2.0/24, 80/tcp)
 
-    call Hilti::print (r1);
+    call Hilti::print (r1)
 
     c = new classifier<Rule, int<64>>
     classifier.add c (r1, 10) 42
