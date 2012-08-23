@@ -777,9 +777,13 @@ Timer::Timer(const Location& l) : PacType(l)
 
 unit::Item::Item(shared_ptr<ID> id, const hook_list& hooks, const attribute_list& attrs, const Location& l) : Node(l)
 {
-    _id = id;
+    if ( ! id ) {
+        id = std::make_shared<ID>(util::fmt("__anon%d", ++_id_counter), l);
+        _anonymous = true;
+    }
+
     _attrs = std::make_shared<AttributeSet>(attrs);
-    
+
     addChild(_id);
     addChild(_attrs);
 
@@ -788,6 +792,11 @@ unit::Item::Item(shared_ptr<ID> id, const hook_list& hooks, const attribute_list
 
     for ( auto h : _hooks )
         addChild(h);
+}
+
+bool unit::Item::anonymous() const
+{
+    return _anonymous;
 }
 
 shared_ptr<ID> unit::Item::id() const

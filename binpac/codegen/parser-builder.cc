@@ -320,7 +320,12 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         else
             def = cg()->hiltiDefault(f->type());
 
-        fields.push_back(hilti::builder::struct_::field(f->id()->name(), type, def, false, f->location()));
+        auto sfield = hilti::builder::struct_::field(f->id()->name(), type, def, false, f->location());
+
+        if ( f->anonymous() )
+            sfield->metaInfo()->add(std::make_shared<ast::MetaNode>("can-remove"));
+
+        fields.push_back(sfield);
     }
 
     // One struct field per variable.
@@ -364,7 +369,7 @@ void ParserBuilder::_finalizeParseObject()
 
 void ParserBuilder::_startingProduction(shared_ptr<Production> p)
 {
-    cg()->builder()->addComment(util::fmt("Production: %s", p->render().c_str()));
+    cg()->builder()->addComment(util::fmt("Production: %s", util::strtrim(p->render().c_str())));
 
     if ( cg()->debugLevel() ) {
         _hiltiDebugVerbose(util::fmt("parsing %s", util::strtrim(p->render().c_str())));
@@ -526,6 +531,20 @@ void ParserBuilder::visit(production::Terminal* t)
 
 void ParserBuilder::visit(production::Variable* v)
 {
+    auto field = v->pgMeta()->field;
+    assert(field);
+
+    bool need_val = (field->id() != nullptr);
+
+    cg()->builder()->addComment(util::fmt("Variable: %s", field->render()));
+
+    shared_ptr<hilti::Expression> value;
+    processOne(v->type(), &value, field);
+
+    cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self,
+                                    hilti::builder::string::create(field->id()->name()), value);
+
+    cg()->builder()->addComment("");
 }
 
 void ParserBuilder::visit(production::While* w)
@@ -546,6 +565,32 @@ void ParserBuilder::visit(type::Bool* b)
 
 void ParserBuilder::visit(type::Bytes* b)
 {
+    auto field = arg1();
+    auto rtype = hilti::builder::tuple::type({ _hiltiTypeBytes(), _hiltiTypeIteratorBytes() });
+    auto result = cg()->builder()->addTmp("unpacked", rtype, nullptr, true);
+
+    auto end = cg()->builder()->addTmp("end", _hiltiTypeIteratorBytes(), nullptr, true);
+    cg()->builder()->addInstruction(end, hilti::instruction::operator_::End, state()->data);
+
+    auto iters = hilti::builder::tuple::create({ state()->cur, end });
+
+    auto len = field->attributes()->lookup("length");
+
+    if ( len ) {
+        auto op1 = iters;
+        auto op2 = hilti::builder::id::create("Hilti::Packed::BytesFixed");
+        auto op3 = cg()->hiltiExpression(len->value());
+        cg()->builder()->addInstruction(result, hilti::instruction::operator_::Unpack, op1, op2, op3);
+    }
+
+    else
+        internalError(b, "unknown unpack format in type::Bytes");
+
+    auto result_val = cg()->builder()->addTmp("unpacked_val", _hiltiTypeBytes());
+    cg()->builder()->addInstruction(result_val, hilti::instruction::tuple::Index, result, hilti::builder::integer::create(0));
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::tuple::Index, result, hilti::builder::integer::create(1));
+
+    setResult(result_val);
 }
 
 void ParserBuilder::visit(type::Double* d)

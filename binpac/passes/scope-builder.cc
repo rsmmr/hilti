@@ -37,7 +37,7 @@ bool ScopeBuilder::run(shared_ptr<ast::NodeBase> module)
         m->body()->scope()->addChild(other->id(), other->body()->scope());
     }
 
-    return true;
+    return errors() == 0;
 }
 
 // When the scope builder runs, the validator may not yet have been executed.

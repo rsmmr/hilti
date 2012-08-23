@@ -102,7 +102,7 @@ public:
    /// comment will be included.
    ///
    /// comment: The comment.
-   void setBlockComment(const std::string& comment);
+   void addBlockComment(const std::string& comment);
 
    /// Associates a comment with the next instruction or statement that will
    /// be added.

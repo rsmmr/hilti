@@ -626,9 +626,15 @@ public:
 protected:
    friend class BlockBuilder;
 
-   shared_ptr<ID> uniqueID(shared_ptr<ID>, shared_ptr<Scope> scope, bool force_unique, bool global);
-
 private:
+   shared_ptr<hilti::expression::Variable> _addLocal(shared_ptr<statement::Block> stmt, shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
+
+   typedef std::map<std::string, std::pair<std::string, shared_ptr<hilti::Declaration>>> declaration_map;
+
+   enum _DeclStyle { REUSE, CHECK_UNIQUE, MAKE_UNIQUE };
+   std::pair<shared_ptr<ID>, shared_ptr<Declaration>> _uniqueDecl(shared_ptr<ID> id, const std::string& kind, declaration_map* decls, _DeclStyle style, bool global);
+   void _addDecl(shared_ptr<ID> id, const std::string& kind, declaration_map* decls, shared_ptr<Declaration>);
+
    struct Body {
        shared_ptr<statement::Block> stmt;
        shared_ptr<Scope> scope;
@@ -639,6 +645,7 @@ private:
        shared_ptr<hilti::Function> function;
        Location location;
        std::list<shared_ptr<Body>> bodies;
+       declaration_map locals;
    };
 
    void Init(shared_ptr<ID> id, const std::string& path, const path_list& libdirs, const Location& l);
@@ -654,6 +661,7 @@ private:
    shared_ptr<Module> _module;
    std::list<shared_ptr<Function>> _functions;
    std::map<std::string, shared_ptr<Node>> _node_cache;
+   declaration_map _globals;
 };
 
 }

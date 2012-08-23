@@ -51,7 +51,7 @@ bool ScopeBuilder::run(shared_ptr<Node> module)
         m->body()->scope()->addChild(other->id(), other->body()->scope());
     }
 
-    return true;
+    return errors() == 0;
 }
 
 void ScopeBuilder::visit(Module* m)

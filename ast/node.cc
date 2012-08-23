@@ -145,3 +145,8 @@ void NodeBase::dump(std::ostream& out, int level, node_set* seen)
     else
         out << string(*this) << " (childs suppressed due to recursion)" << std::endl;
 }
+
+MetaInfo* NodeBase::metaInfo()
+{
+    return &_meta;
+}

@@ -87,7 +87,7 @@ void Block::addComment(shared_ptr<Node> node)
     if ( _next_comment == "" )
         return;
 
-    node->setComment(_next_comment);
+    node->addComment(_next_comment);
     _next_comment = "";
 }
 

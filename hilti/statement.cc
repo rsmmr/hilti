@@ -55,7 +55,7 @@ string statement::Instruction::signature() const
 
 void statement::Block::addStatement(shared_ptr<Statement> stmt)
 {
-    addComment(stmt);
+    _addComment(stmt);
 
     auto n = node_ptr<Statement>(stmt);
     _stmts.push_back(n);
@@ -64,7 +64,7 @@ void statement::Block::addStatement(shared_ptr<Statement> stmt)
 
 void statement::Block::addStatementAtFront(shared_ptr<Statement> stmt)
 {
-    addComment(stmt);
+    _addComment(stmt);
 
     auto n = node_ptr<Statement>(stmt);
     _stmts.push_front(n);
@@ -79,7 +79,7 @@ void statement::Block::addStatements(const stmt_list& stmts)
 
 void statement::Block::addDeclaration(shared_ptr<Declaration> decl)
 {
-    addComment(decl);
+    _addComment(decl);
 
     auto n = node_ptr<Declaration>(decl);
     _decls.push_back(n);
@@ -92,7 +92,7 @@ void statement::Block::addDeclarations(const decl_list& decls)
         addDeclaration(d);
 }
 
-void statement::Block::Init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l)
+void statement::Block::_init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l)
 {
     _id = id;
     _stmts = stmts;
@@ -109,12 +109,12 @@ void statement::Block::Init(shared_ptr<Scope> parent, shared_ptr<ID> id, const d
         addChild(i);
 }
 
-void statement::Block::addComment(shared_ptr<Node> node)
+void statement::Block::_addComment(shared_ptr<Node> node)
 {
     if ( _next_comment == "" )
         return;
 
-    node->setComment(_next_comment);
+    node->addComment(_next_comment);
     _next_comment = "";
 }
 

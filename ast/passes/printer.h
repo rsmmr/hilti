@@ -101,6 +101,14 @@ public:
     /// match those of enableTypeIDs().
     void enableTypeIDs() { ++_print_type_ids; }
 
+    void printMetaInfo(const MetaInfo* meta) {
+        if ( ! meta->size() )
+            return;
+
+        Printer& p = *this;
+        p << " # " << string(*meta);
+    }
+
 private:
     template<typename AI> friend Printer<AI>& operator<<(Printer<AI>& p, Printer<AI>& (*pf)(Printer<AI>&p));
     template<typename AI> friend Printer<AI>& operator<<(Printer<AI>& p, std::ostream& (*pf)(std::ostream&));

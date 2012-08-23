@@ -65,7 +65,7 @@ public:
    Block(shared_ptr<Scope> parent, shared_ptr<ID> id = nullptr, const Location& l=Location::None) : Statement(l) {
        decl_list decls;
        stmt_list stmts;
-       Init(parent, id, decls, stmts, l);
+       _init(parent, id, decls, stmts, l);
    }
 
    /// Constructor.
@@ -81,7 +81,7 @@ public:
    ///
    /// l: An associated location.
    Block(const decl_list& decls, const stmt_list& stmts, shared_ptr<Scope> parent, shared_ptr<ID> id = nullptr, const Location& l=Location::None) : Statement(l) {
-       Init(parent, id, decls, stmts, l);
+       _init(parent, id, decls, stmts, l);
    }
 
    /// Returns the block's name.
@@ -141,8 +141,8 @@ public:
    ACCEPT_VISITOR(Statement);
 
 private:
-   void Init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l=Location::None);
-   void addComment(shared_ptr<Node> node);
+   void _init(shared_ptr<Scope> parent, shared_ptr<ID> id, const decl_list& decls, const stmt_list& stmts, const Location& l=Location::None);
+   void _addComment(shared_ptr<Node> node);
 
    node_ptr<ID> _id;
    shared_ptr<Scope> _scope;

@@ -7,6 +7,7 @@
 #include <hilti.h>
 #include <util.h>
 
+
 using namespace std;
 
 const char* Name = "binpac";
@@ -184,14 +185,21 @@ int main(int argc, char** argv)
 
     auto hilti_module = ctx->compile(module, debug, verify);
 
+    if ( ! hilti_module ) {
+        error(input, "Aborting due to compilation error.");
+        return 1;
+    }
+
     if ( dump_ast ) {
         hilti_module->dump(cerr);
         cerr << std::endl;
     }
 
-    if ( ! hilti_module ) {
-        error(input, "Aborting due to compilation error.");
-        return 1;
+    if ( dbg_scopes ) {
+        hilti::passes::ScopePrinter scope_printer;
+
+        if ( ! scope_printer.run(hilti_module) )
+            return 1;
     }
 
     if ( ! hilti::printAST(hilti_module, out) ) {

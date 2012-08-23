@@ -137,8 +137,12 @@ static void printInstruction(Printer& p, statement::Instruction* i)
     if ( i->internal() )
         return;
 
-    if ( i->comment().size() )
-        p << "# " << i->comment() << endl;
+    for ( auto c : i->comments() ) {
+        if ( c.size() )
+            p << "# " << c << endl;
+        else
+            p << endl;
+    }
 
     auto ops = i->operands();
 
@@ -153,6 +157,8 @@ static void printInstruction(Printer& p, statement::Instruction* i)
         if ( ops[i] )
             p << " " << ops[i];
     }
+
+    p.printMetaInfo(i->metaInfo());
 }
 
 void Printer::visit(statement::instruction::Resolved* i)
@@ -853,6 +859,8 @@ void Printer::visit(type::Struct* t)
         p << f->type() << ' ' << f->id();
         if ( f->default_() )
             p << " &default=" << f->default_();
+
+        p.printMetaInfo(f->metaInfo());
 
         first = false;
     }

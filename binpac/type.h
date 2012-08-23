@@ -979,8 +979,13 @@ public:
          const attribute_list& attrs = attribute_list(),
          const Location& l=Location::None);
 
-    /// Returns the item's identifier.
+    /// Returns the item's identifier. Even for anymous items, this will
+    /// return an (internally generated) ID. Use anonymous() to check if no
+    /// ID was passed to the constructor.
     shared_ptr<ID> id() const;
+
+    /// Returns true if no ID was passed to the constructor.
+    bool anonymous() const;
 
     /// Returns the item's scope. The scope may define identifier's local to
     /// expressions and hooks associated with the item. This method will
@@ -996,6 +1001,7 @@ public:
     ACCEPT_VISITOR_ROOT();
 
 private:
+    bool _anonymous = false;
     node_ptr<ID> _id;
     node_ptr<AttributeSet> _attrs;
     std::list<node_ptr<Hook>> _hooks;

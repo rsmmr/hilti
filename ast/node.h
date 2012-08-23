@@ -11,6 +11,7 @@
 #include "common.h"
 #include "location.h"
 #include "memory.h"
+#include "meta-info.h"
 
 namespace ast {
 
@@ -176,7 +177,7 @@ public:
 
     NodeBase(const NodeBase& other) {
        _location = other._location;
-       _comment = other._comment;
+       _comments = other._comments;
        _childs = _childs;
     }
 
@@ -219,10 +220,10 @@ public:
     const Location& location() const { return _location; }
 
     /// Returns any comment that may be associated with the node.
-    const string& comment() const { return _comment; }
+    const std::list<string>& comments() const { return _comments; }
 
     /// Associates a comment with the node.
-    void setComment(const string& comment) { _comment = comment; }
+    void addComment(const string& comment) { _comments.push_back(comment); }
 
     /// Dumps out a textual representation of the node, including all its
     /// childs. For each node, its render() output will be included.
@@ -290,6 +291,10 @@ public:
     /// Returns true if a given node is a child of this one.
     bool hasChild(node_ptr<NodeBase> n) const;
 
+    /// Returns the set of meta information nodes associated with the AST
+    /// node.
+    MetaInfo* metaInfo();
+
     /// Internal method. Overriden by the \c ACCEPT_* macros in visitor.h.
     virtual const char* acceptClass() const { return "<acceptClass not set>"; };
 
@@ -305,8 +310,9 @@ private:
 
     std::list<NodeBase*>  _parents;
     Location _location;
-    string _comment;
+    std::list<string> _comments;
     node_list _childs;
+    MetaInfo _meta;
 };
 
 /// Templateized version of NodeBase. This is the class one should normally

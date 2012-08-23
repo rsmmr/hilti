@@ -28,11 +28,7 @@ shared_ptr<hilti::expression::Block> BlockBuilder::block() const
 
 shared_ptr<hilti::expression::Variable> BlockBuilder::addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
 {
-    id = _mbuilder->uniqueID(id, _body->scope(), force_unique, false);
-    auto var = std::make_shared<variable::Local>(id, type, init, l);
-    auto decl = std::make_shared<declaration::Variable>(id, var, l);
-    _block_stmt->addDeclaration(decl);
-    return std::make_shared<hilti::expression::Variable>(var, l);
+    return _mbuilder->_addLocal(_block_stmt, id, type, init, force_unique, l);
 }
 
 shared_ptr<hilti::expression::Variable> BlockBuilder::addLocal(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
@@ -50,9 +46,9 @@ shared_ptr<hilti::expression::Variable> BlockBuilder::addTmp(const std::string& 
     return addTmp(std::make_shared<ID>(id, l), type, init, reuse, l);
 }
 
-void BlockBuilder::setBlockComment(const std::string& comment)
+void BlockBuilder::addBlockComment(const std::string& comment)
 {
-    _block_stmt->setComment(util::strtrim(comment));
+    _block_stmt->addComment(util::strtrim(comment));
 }
 
 void BlockBuilder::addComment(const std::string& comment)
@@ -62,9 +58,10 @@ void BlockBuilder::addComment(const std::string& comment)
 
 void BlockBuilder::addInstruction(shared_ptr<Statement> stmt)
 {
-    auto comment = ::util::strjoin(_next_comments, "; ");
+    for ( auto c : _next_comments )
+        stmt->addComment(c);
+
     _next_comments.clear();
-    stmt->setComment(comment);
     _block_stmt->addStatement(stmt);
 }
 
