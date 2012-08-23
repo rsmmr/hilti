@@ -122,6 +122,11 @@ else
     fi
 fi
 
+# Copy libc++ headers.
+libcxx_include=$prefix/lib/c++/v1
+mkdir -p $libcxx_include
+cp -R projects/libcxx/include/* $libcxx_include
+
 # Now compile LLVM/clang with the new libaries.
 
 make -j 4 clean
