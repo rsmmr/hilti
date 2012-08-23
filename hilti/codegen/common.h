@@ -5,7 +5,7 @@
 #include <llvm/LLVMContext.h>
 #include <llvm/Metadata.h>
 #include <llvm/Module.h>
-#include <llvm/Support/IRBuilder.h>
+#include <llvm/IRBuilder.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Linker.h>
 #include <llvm/Analysis/Verifier.h>
