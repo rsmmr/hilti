@@ -784,6 +784,7 @@ unit::Item::Item(shared_ptr<ID> id, const hook_list& hooks, const attribute_list
         _anonymous = true;
     }
 
+    _id = id;
     _attrs = std::make_shared<AttributeSet>(attrs);
 
     addChild(_id);
