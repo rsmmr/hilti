@@ -4,6 +4,14 @@
 # causes trouble on Linux with libc++ (specfically, cerr doesn't work.)
 # One can however switch between the two by changing USE_LIBCXXRT below.
 
+# Copy all output to log file.
+log=`basename $0`.$$.log
+
+echo "Recording log in $log ..."
+
+exec > >(tee $log)
+exec 2>&1
+
 USE_LIBCXXRT=1
 
 if [ "$1" = "--install" ]; then
@@ -92,23 +100,25 @@ libcxx_include=$prefix/lib/c++/v1
 mkdir -p $libcxx_include
 
 if [ "$USE_LIBCXXRT" != "1" ]; then
-    ( cd projects/libcxx/lib && CXX="clang++ -I ../../libcxxabi/include" ./buildit )
-    cp projects/libcxx/lib/libc++.so.1.0 $prefix/lib
+    echo "Compiling with libc++abi instead of libcxxrt is not support currently."
+    exit 1
 
-    if [ "$install" != "" ]; then
-        ln -s $prefix/lib/libc++.so.1.0 $prefix/lib/libc++.so.1
-        ln -s $prefix/lib/libc++.so.1.0 $prefix/lib/libc++.so
-    fi
-
-    ( cd projects/libcxxabi/lib && CC="clang -L$prefix/lib" ./buildit )
-    cp projects/libcxxabi/lib/libc++abi.so.1.0 $prefix/lib
-    cp projects/libcxxabi/include/cxxabi.h $prefix/lib/c++/v1/
-
-    if [ "$install" != "" ]; then
-        ln -s $prefix/lib/libc++abi.so.1.0 $prefix/lib/libc++abi.so.1
-        ln -s $prefix/lib/libc++abi.so.1.0 $prefix/lib/libc++abi.so
-    fi
-
+    # ( cd projects/libcxx/lib && CXX="clang++ -I ../../libcxxabi/include" ./buildit )
+    # cp projects/libcxx/lib/libc++.so.1.0 $prefix/lib
+    # 
+    # if [ "$install" != "" ]; then
+    #     ln -s $prefix/lib/libc++.so.1.0 $prefix/lib/libc++.so.1
+    #     ln -s $prefix/lib/libc++.so.1.0 $prefix/lib/libc++.so
+    # fi
+    # 
+    # ( cd projects/libcxxabi/lib && CC="clang -L$prefix/lib" ./buildit )
+    # cp projects/libcxxabi/lib/libc++abi.so.1.0 $prefix/lib
+    # cp projects/libcxxabi/include/cxxabi.h $prefix/lib/c++/v1/
+    # 
+    # if [ "$install" != "" ]; then
+    #     ln -s $prefix/lib/libc++abi.so.1.0 $prefix/lib/libc++abi.so.1
+    #     ln -s $prefix/lib/libc++abi.so.1.0 $prefix/lib/libc++abi.so
+    # fi
 else
     ( cd projects/libcxxrt && rm -rf build && mkdir build && cd build && CFLAGS="-ldl" && cmake .. && make )
     ( cd projects/libcxx/lib && CXX="clang++ -I ../../libcxxrt/src -DLIBCXXRT" CC="clang -L../../libcxxrt/build/lib -lcxxrt" ./buildit )
@@ -141,3 +151,7 @@ fi
 
 make -j 4
 make install
+
+echo "===="
+echo "==== Complete log in $log"
+echo "===="
