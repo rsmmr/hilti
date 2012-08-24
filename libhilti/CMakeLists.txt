@@ -7,6 +7,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/justrx/src)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=unused-function -Werror -fno-color-diagnostics")
 
+IF( APPLE )
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDARWIN")
+ENDIF(APPLE)
+
 # These are used below in set_target_properties.
 set(c_debug_flags   "-DDEBUG -O0")
 set(c_release_flags "-O2")

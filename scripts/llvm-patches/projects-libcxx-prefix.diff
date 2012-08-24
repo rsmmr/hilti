@@ -1,0 +1,46 @@
+From 15833c43a27d534fad96688954ee310d1b67a885 Mon Sep 17 00:00:00 2001
+From: Robin Sommer <robin@icir.org>
+Date: Mon, 20 Aug 2012 22:27:23 -0700
+Subject: [PATCH] Adding a PREFIX option to change the dylib's install prefix.
+
+---
+ lib/buildit | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/lib/buildit b/lib/buildit
+index 5938a92..917aa50 100755
+--- a/lib/buildit
++++ b/lib/buildit
+@@ -22,6 +22,11 @@ then
+     CC=clang
+ fi
+ 
++if [ -z "$PREFIX" ]
++then
++	PREFIX=/usr
++fi
++
+ if [ -z $MACOSX_DEPLOYMENT_TARGET ]
+ then
+ 	if [ -z $IPHONEOS_DEPLOYMENT_TARGET ]
+@@ -52,7 +57,7 @@ case $TRIPLE in
+ 		LDSHARED_FLAGS="-o libc++.1.dylib \
+ 			-dynamiclib -nodefaultlibs -current_version 1 \
+ 			-compatibility_version 1 \
+-			-install_name /usr/lib/libc++.1.dylib \
++			-install_name $PREFIX/lib/libc++.1.dylib \
+ 			-Wl,-reexport_library,/usr/lib/libc++abi.dylib \
+ 			-Wl,-unexported_symbols_list,libc++unexp.exp  \
+ 			/usr/lib/libSystem.B.dylib"
+@@ -74,7 +79,7 @@ case $TRIPLE in
+ 			-dynamiclib -nodefaultlibs  \
+ 			-current_version ${RC_ProjectSourceVersion} \
+ 			-compatibility_version 1 \
+-			-install_name /usr/lib/libc++.1.dylib \
++			-install_name $PREFIX/lib/libc++.1.dylib \
+ 			-lSystem  \
+ 			-Wl,-unexported_symbols_list,libc++unexp.exp  \
+ 			${RE_EXPORT_LINE}  \
+-- 
+1.7.11.3
+

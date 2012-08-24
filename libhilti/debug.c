@@ -11,7 +11,7 @@
 #include "string_.h"
 #include "module/module.h"
 
-_Atomic(uint_fast64_t) _counter = 0;
+_Atomic(uint_fast64_t) _counter; // = 0 produces error on Apple?
 
 static FILE* _debug_out()
 {

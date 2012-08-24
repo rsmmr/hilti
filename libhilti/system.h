@@ -2,6 +2,9 @@
 /// Encapsulates platform-specific code.
 ///
 
+#ifndef HILTI_SYSTEM_H
+#define HILTI_SYSTEM_H
+
 #include <pthread.h>
 
 #ifdef DARWIN
@@ -19,7 +22,12 @@
 # define PTHREAD_SPIN_DESTROY(x) pthread_spin_destroy(x)
 #endif
 
-/// Sets a name for the vurrently running thread, as far as supported by the
+/// Sets a name for the currently running thread, as far as supported by the
 /// OS.
 void hlt_set_thread_name(const char* s);
 
+/// Pins the current thread to the givne core, as far as supported by the OS.
+void hlt_set_thread_affinity(int core);
+
+
+#endif

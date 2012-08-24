@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
 
 #include "channel.h"
 #include "string_.h"

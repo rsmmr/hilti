@@ -4,16 +4,17 @@
 
 #define _POSIX_SOURCE
 #define _POSIX_C_SOURCE 199309
+#define _C99_SOURCE // snprintf is gone on Darwain with the POSIX defines.
 
 #define DBG_STREAM       "hilti-threads"
 #define DBG_STREAM_STATS "hilti-threads-stats"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
 #include <errno.h>
-#include <sys/prctl.h>
+#include <inttypes.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "threading.h"
 #include "debug.h"
@@ -364,7 +365,7 @@ static void _worker_schedule(hlt_worker_thread* current, hlt_worker_thread* targ
 
 static void _debug_print_queue_stats(const hlt_thread_queue_stats* stats)
 {
-    fprintf(stderr, " elems=%lu  batches=%lu  blocked=%lu  locked=%lu\n",
+    fprintf(stderr, " elems=%" PRIu64 "  batches=%" PRIu64 "  blocked=%" PRIu64 "  locked=%" PRIu64 "\n",
             stats->elems, stats->batches, stats->blocked, stats->locked);
 }
 
@@ -380,7 +381,7 @@ static void _debug_print_job_summary(hlt_thread_mgr* mgr)
         fprintf(stderr, "=== %s\n", thread->name);
         fprintf(stderr, "  %20s : ", "read");
         _debug_print_queue_stats(hlt_thread_queue_stats_reader(queue));
-        fprintf(stderr, "  %20s : %lu   queue size: %lu  batches pending: %lu\n", "blocked jobs", kh_size(thread->jobs_blocked), hlt_thread_queue_size(thread->jobs), size);
+        fprintf(stderr, "  %20s : %" PRIu64 "   queue size: %" PRIu64 "  batches pending: %" PRIu64 "\n", "blocked jobs", kh_size(thread->jobs_blocked), hlt_thread_queue_size(thread->jobs), size);
         for ( int j = 0; j < mgr->num_workers + 1; j++ ) {
             fprintf(stderr, "  %20s[%d] : ", (j==0 ? "writer-main" : "writer-worker"), j);
             _debug_print_queue_stats(hlt_thread_queue_stats_writer(queue, j));
@@ -394,10 +395,11 @@ static void _debug_adapt_thread_name(hlt_worker_thread* thread)
     // Show queue size in top.
     uint64_t size = hlt_thread_queue_size(thread->jobs);
     char name_buffer[128];
-    snprintf(name_buffer, sizeof(name_buffer), "%s (%lu)", thread->name, size);
+    snprintf(name_buffer, sizeof(name_buffer), "%s (%" PRIu64 ")", thread->name, size);
     name_buffer[sizeof(name_buffer)-1] = '\0';
-    prctl(PR_SET_NAME, name_buffer, 0, 0, 0);
+    hlt_set_thread_name(name_buffer);
 }
+
 #endif
 
 void __hlt_thread_mgr_unblock(__hlt_thread_mgr_blockable *resource, hlt_execution_context* ctx)
@@ -414,7 +416,7 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
 
     hlt_execution_context* ctx = hlt_fiber_context(job->fiber);
 
-    DBG_LOG(DBG_STREAM, "executing job %lu with context %p and thread context %p", job->id, ctx, job->tcontext);
+    DBG_LOG(DBG_STREAM, "executing job %" PRIu64 " with context %p and thread context %p", job->id, ctx, job->tcontext);
 
     hlt_exception* excpt = 0;
 
@@ -436,7 +438,7 @@ static void _worker_run_job(hlt_worker_thread* thread, hlt_job* job)
 
     else {
         // Done with this.
-        DBG_LOG(DBG_STREAM, "done with job %lu", job->id);
+        DBG_LOG(DBG_STREAM, "done with job %" PRIu64 "", job->id);
 
         __hlt_context_set_fiber(ctx, 0);
         __hlt_context_set_thread_context(ctx, job->tcontext_type, 0);
@@ -783,7 +785,8 @@ void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, 
 
     pthread_t self = pthread_self();
 
-    prctl(PR_SET_NAME, name, 0, 0, 0);
+    hlt_set_thread_name(name);
+
     if ( pthread_setspecific(mgr->id, name) != 0 )
         _fatal_error("cannot set thread-local key");
 
@@ -806,28 +809,8 @@ void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, 
         }
     }
 
-    if ( core >= 0 ) {
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
-        (void)CPU_SET(core, &cpuset); // Cast to get around compiler warning.
-
-        // Set affinity.
-        if ( pthread_setaffinity_np(self, sizeof(cpu_set_t), &cpuset) != 0 ) {
-            fprintf(stderr, "cannot set affinity for thread %s to core %d: %s\n", name, core, strerror(errno));
-            _fatal_error("affinity error");
-        }
-
-        // Check that it worked.
-        if ( pthread_getaffinity_np(self, sizeof(cpu_set_t), &cpuset) != 0 )
-            _fatal_error("can't get thread affinity");
-
-        if ( ! CPU_ISSET(core, &cpuset) ) {
-            fprintf(stderr, "setting affinity for thread %s to core %d did not work\n", name, core);
-            _fatal_error("affinity error");
-        }
-
-        DBG_LOG(DBG_STREAM, "native thread %p pinned to core %d", self, core);
-    }
+    if ( core >= 0 )
+        hlt_set_thread_affinity(core);
 }
 
 __hlt_thread_mgr_blockable* __hlt_object_blockable(const hlt_type_info* type, const void* obj, hlt_exception** excpt, hlt_execution_context* ctx)

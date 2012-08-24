@@ -133,4 +133,5 @@ add_library (binpac SHARED
     $<TARGET_OBJECTS:util>
     )
 
-ADD_DEPENDENCIES(binpac generate_parser_binpac)
+ADD_DEPENDENCIES(binpac hilti generate_parser_binpac)
+target_link_libraries(binpac hilti)

@@ -2,6 +2,8 @@
 #ifndef HLT_THREADING_H
 #define HLT_THREADING_H
 
+#include <pthread.h>
+
 #include "types.h"
 #include "tqueue.h"
 #include "fiber.h"
