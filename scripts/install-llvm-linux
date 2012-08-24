@@ -88,6 +88,9 @@ fi
 
 # Build and install the libraries.
 
+libcxx_include=$prefix/lib/c++/v1
+mkdir -p $libcxx_include
+
 if [ "$USE_LIBCXXRT" != "1" ]; then
     ( cd projects/libcxx/lib && CXX="clang++ -I ../../libcxxabi/include" ./buildit )
     cp projects/libcxx/lib/libc++.so.1.0 $prefix/lib
@@ -112,7 +115,7 @@ else
 
     cp projects/libcxx/lib/libc++.so.1.0 $prefix/lib
     cp projects/libcxxrt/build/lib/libcxxrt.so $prefix/lib/libcxxrt.so.1.0
-    cp projects/libcxxrt/src/cxxabi.h $prefix/lib/c++/v1/
+    cp projects/libcxxrt/src/cxxabi.h $libcxx_include
 
     if [ "$install" != "" ]; then
         ln -s $prefix/lib/libc++.so.1.0 $prefix/lib/libc++.so.1
@@ -123,8 +126,6 @@ else
 fi
 
 # Copy libc++ headers.
-libcxx_include=$prefix/lib/c++/v1
-mkdir -p $libcxx_include
 cp -R projects/libcxx/include/* $libcxx_include
 
 # Now compile LLVM/clang with the new libaries.
@@ -132,7 +133,6 @@ cp -R projects/libcxx/include/* $libcxx_include
 make -j 4 clean
 
 if [ "$install" != "" ]; then
-    LD_LIBRARY_PATH=$prefix \
         LDFLAGS="-lc++ -lcxxrt -L$prefix/lib -Wl,-rpath,$prefix/lib" \
         CFLAGS="-L$prefix/lib" CXXFLAGS="-L$prefix/lib" \
         CC=clang CXX=clang++ \

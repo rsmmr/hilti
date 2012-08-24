@@ -416,6 +416,8 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> prod, shared_ptr<ty
 
     cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self,
                                     hilti::builder::string::create(name), value);
+
+    _hiltiRunHook(_hookForItem(state()->unit, field));
 }
 
 shared_ptr<hilti::Expression> ParserBuilder::_hiltiParserDefinition(shared_ptr<type::Unit> unit)
@@ -464,6 +466,40 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
                                     hilti::builder::tuple::create({ cur, hilti::builder::integer::create(5) }));
 
     cg()->builder()->addDebugMsg("binpac-verbose", "- %s is |%s...|", hilti::builder::string::create(tag), next);
+}
+
+string ParserBuilder::_hookName(const string& path)
+{
+    auto name = path;
+
+    // If the module part of the ID matches the current module, remove.
+    auto curmod = cg()->moduleBuilder()->module()->id()->name();
+
+    if ( util::startsWith(name, curmod + "::") )
+        name = name.substr(curmod.size() + 2, string::npos);
+
+    return util::strreplace(name, "::", "_");
+}
+
+void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
+{
+    auto name = _hookName(id->pathAsString());
+}
+
+void ParserBuilder::_hiltiRunHook(shared_ptr<ID> id)
+{
+}
+
+shared_ptr<binpac::ID> ParserBuilder::_hookForItem(shared_ptr<type::Unit> unit, shared_ptr<type::unit::Item> item)
+{
+    auto id = util::fmt("%s::%s::%s", cg()->moduleBuilder()->module()->id()->name(), unit->id()->name(), item->id()->name());
+    return std::make_shared<binpac::ID>(id);
+}
+
+shared_ptr<binpac::ID> ParserBuilder::_hookForUnit(shared_ptr<type::Unit> unit, const string& name)
+{
+    auto id = util::fmt("%s::%s::%s", cg()->moduleBuilder()->module()->id()->name(), unit->id()->name(), name);
+    return std::make_shared<binpac::ID>(id);
 }
 
 ////////// Visit methods.

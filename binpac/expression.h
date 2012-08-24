@@ -249,6 +249,37 @@ private:
     node_ptr<binpac::Type> _type;
 };
 
+/// AST node for an expression that references internal parser state. This is
+/// used for reserved IDs like \a $$ and \a self. The expression's type() is
+/// initially unknown until resolved later.
+class ParserState : public CustomExpression
+{
+public:
+    enum Kind {
+        SELF,        /// A \a self expression.
+        DOLLARDOLLAR /// A \a $$ expression.
+    };
+
+    /// Constructor.
+    ///
+    /// kind: The kind of expression (i.e., the specific value the expression references).
+    ///
+    /// l: An associated location.
+    ParserState(Kind kind, const Location& l=Location::None);
+
+    /// Return the kind of expression.
+    Kind kind() const;
+
+    /// Sets the expression's type. This is intended to be used from the
+    /// resolver only.
+    void setType(shared_ptr<binpac::Type> type);
+
+    shared_ptr<Type> type() const override;
+
+private:
+    Kind _kind;
+    node_ptr<binpac::Type> _type;
+};
 
 /// A not yet resolved (and potentially overloaded) operator. Initially, all
 /// operators are instantiated as Unresolved and later turned into instances

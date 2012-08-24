@@ -143,8 +143,27 @@ private:
     // Prints the given token to binpac-verbose.
     void _hiltiDebugShowToken(const string& tag, shared_ptr<hilti::Expression> token);
 
-    /// Prints the upcoming input bytes to binpac-verbose.
+    // Prints the upcoming input bytes to binpac-verbose.
     void _hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur);
+
+    // Declares a hook, or returns the current declaration if it already
+    // exists. <id> is the full path to the hooked element, including the
+    // module.
+    void _hiltiRunHook(shared_ptr<ID> id);
+
+    // Declares a hook, or returns the current declaration if it already
+    // exists. <id> is the full path to the hooked element, including the
+    // module.
+    void _hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
+
+    // Returns the full path ID for the hook referecing a unit item.
+    shared_ptr<ID> _hookForItem(shared_ptr<type::Unit>, shared_ptr<type::unit::Item> item);
+
+    // Returns the full path ID for the hook referecing a unit-global hook.
+    shared_ptr<ID> _hookForUnit(shared_ptr<type::Unit>, const string& name);
+
+    // Returns the canonical hook name, given the full path.
+    string _hookName(const string& path);
 
     std::list<shared_ptr<ParserState>> _states;
 };

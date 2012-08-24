@@ -145,6 +145,30 @@ shared_ptr<Type> expression::MemberAttribute::type() const
     return _type;
 }
 
+expression::ParserState::ParserState(Kind kind, const Location& l) : CustomExpression(l)
+{
+    _kind = kind;
+    _type = std::make_shared<type::Unknown>(l);
+    addChild(_type);
+}
+
+expression::ParserState::Kind expression::ParserState::kind() const
+{
+    return _kind;
+}
+
+shared_ptr<Type> expression::ParserState::type() const
+{
+    return _type;
+}
+
+void expression::ParserState::setType(shared_ptr<binpac::Type> type)
+{
+    removeChild(_type);
+    _type = type;
+    addChild(_type);
+}
+
 expression::UnresolvedOperator::UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops, const Location& l)
     : CustomExpression(l)
 {
@@ -222,3 +246,4 @@ shared_ptr<Type> expression::ResolvedOperator::type() const
 
     return _op->type(ops);
 }
+
