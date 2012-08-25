@@ -36,6 +36,7 @@ namespace binpac_parser { class Parser; }
 #include "statement.h"
 #include "expression.h"
 #include "type.h"
+#include "scope.h"
 
 #undef yylex
 #define yylex driver.scanner()->lex
@@ -162,7 +163,7 @@ using namespace binpac;
 %type <result>           rtype
 %type <parameters>       params opt_params
 %type <hook>             unit_hook
-%type <hooks>            opt_unit_hooks
+%type <hooks>            unit_hooks opt_unit_hooks
 %type <unit_item>        unit_field unit_item unit_prop unit_global_hook unit_var unit_switch
 %type <unit_items>       unit_items opt_unit_items
 %type <linkage>          opt_linkage
@@ -248,17 +249,7 @@ func_decl     : opt_linkage rtype local_id '(' opt_params ')' block
                                                  }
               ;
 
-hook_decl     : ON opt_linkage rtype local_id '(' opt_params ')' opt_debug opt_foreach block
-                                                 { auto ftype = std::make_shared<type::Hook>($3, $6, loc(@$));
-                                                   auto func  = std::make_shared<Hook>($4, ftype, driver.module(), $10, 0, $8, $9, loc(@$));
-                                                   $$ = std::make_shared<declaration::Hook>(func, $2, loc(@$));
-                                                 }
-
-              | DECLARE ON opt_linkage rtype local_id '(' opt_params ')' ';'
-                                                 { auto ftype = std::make_shared<type::Hook>($4, $7, loc(@$));
-                                                   auto func  = std::make_shared<Hook>($5, ftype, driver.module(), nullptr, 0, false, false, loc(@$));
-                                                   $$ = std::make_shared<declaration::Hook>(func, $3, loc(@$));
-                                                 }
+hook_decl     : ON scoped_id unit_hook           { $$ = std::make_shared<declaration::Hook>($2, $3, loc(@$)); }
               ;
 
 params        : param ',' params                 { $$ = $3; $$.push_front($1); }
@@ -291,7 +282,7 @@ opt_stmts     : stmts                            { $$ = $1; }
 
 block         : '{'                              { driver.pushBlock(std::make_shared<statement::Block>(driver.scope(), loc(@$))); }
                 opt_local_decls                  { driver.block()->addDeclarations($3); }
-                opt_stmts '}'                    { driver.popBlock()->addStatements($5); }
+                opt_stmts '}'                    { auto b = driver.popBlock(); b->addStatements($5); $$ = b; }
 
 opt_local_decls
               : local_decl opt_local_decls       { $$ = $2; $2.push_front($1); }
@@ -361,7 +352,7 @@ unit_item     : unit_var                         { $$ = $1; }
               | unit_global_hook                 { $$ = $1; }
               | unit_prop                        { $$ = $1; }
 
-unit_var      : VAR local_id ':' base_type opt_unit_hooks ';'
+unit_var      : VAR local_id ':' base_type opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::Variable>($2, $4, nullptr, $5); }
 
 unit_global_hook : ON hook_id unit_hook          { $$ = std::make_shared<type::unit::item::GlobalHook>($2, $3, loc(@$)); }
@@ -369,13 +360,13 @@ unit_global_hook : ON hook_id unit_hook          { $$ = std::make_shared<type::u
 unit_prop     : property_id ';'                  { $$ = std::make_shared<type::unit::item::Property>($1, nullptr, loc(@$)); }
               | property_id '=' expr ';'         { $$ = std::make_shared<type::unit::item::Property>($1, $3, loc(@$)); }
 
-unit_field    : opt_unit_field_name unit_field_type opt_field_args opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks ';'
+unit_field    : opt_unit_field_name unit_field_type opt_field_args opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::field::Type>($1, $2, nullptr, $5, $7, $4, $3, $6, loc(@$)); }
 
-              | const_expr opt_unit_field_cond opt_unit_hooks ';'
+              | const_expr opt_unit_field_cond opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::field::Constant>($1, $2, $3, loc(@$)); }
 
-              | opt_unit_field_name CREGEXP opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks ';'
+              | opt_unit_field_name CREGEXP opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::field::RegExp>($2, $1, nullptr, $4, $6, $3, $5, loc(@$)); }
 
 unit_switch   : SWITCH '(' expr ')' '{' unit_switch_cases '}' ';'
@@ -413,10 +404,14 @@ opt_unit_field_sinks
               : ARROW exprs                      { $$ = $2; }
               | /* empty */                      { $$ = expression_list(); }
 
-opt_unit_hooks: unit_hook opt_unit_hooks         { $$ = $2; $2.push_front($1); }
-              | /* empty */                      { $$ = hook_list(); }
+opt_unit_hooks: unit_hooks                       { $$ = $1; }
+              | ';'                              { $$ = hook_list(); }
 
-unit_hook     : opt_debug opt_foreach block      { $$ = std::make_shared<Hook>(nullptr, nullptr, nullptr, $3, 0, $1, $2, loc(@$)); }
+unit_hooks    : unit_hook unit_hooks             { $$ = $2; $2.push_front($1); }
+              | unit_hook                        { $$ = { $1 }; }
+
+unit_hook     : opt_debug opt_foreach            { driver.pushScope(std::make_shared<Scope>(driver.module()->body()->scope())); }
+                block                            { $$ = std::make_shared<Hook>($4, 0, $1, $2, loc(@$)); driver.popScope(); }
 
 opt_debug     : DEBUG_                           { $$ = true; }
               | /* empty */                      { $$ = false; }

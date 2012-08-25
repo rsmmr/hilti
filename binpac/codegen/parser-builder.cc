@@ -5,6 +5,7 @@
 #include "expression.h"
 #include "grammar.h"
 #include "production.h"
+#include "statement.h"
 #include "type.h"
 #include "declaration.h"
 #include "attribute.h"
@@ -105,7 +106,7 @@ ParserBuilder::~ParserBuilder()
 void ParserBuilder::hiltiExportParser(shared_ptr<type::Unit> unit)
 {
     auto parse_host = _hiltiCreateHostFunction(unit, false);
-    //auto parse_sink = _hiltiCreateHostFunction(unit, true);
+    // auto parse_sink = _hiltiCreateHostFunction(unit, true);
     _hiltiCreateParserInitFunction(unit, parse_host, parse_host);
 }
 
@@ -368,7 +369,6 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
     return hilti::builder::struct_::type(fields, u->location());
 }
 
-
 shared_ptr<hilti::Expression> ParserBuilder::_allocateParseObject(shared_ptr<Type> unit, bool store_in_self)
 {
     auto rt = cg()->hiltiType(unit);
@@ -417,7 +417,7 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> prod, shared_ptr<ty
     cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self,
                                     hilti::builder::string::create(name), value);
 
-    _hiltiRunHook(_hookForItem(state()->unit, field));
+    _hiltiRunHook(_hookForItem(state()->unit, field), value);
 }
 
 shared_ptr<hilti::Expression> ParserBuilder::_hiltiParserDefinition(shared_ptr<type::Unit> unit)
@@ -468,26 +468,93 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
     cg()->builder()->addDebugMsg("binpac-verbose", "- %s is |%s...|", hilti::builder::string::create(tag), next);
 }
 
-string ParserBuilder::_hookName(const string& path)
+std::pair<bool, string> ParserBuilder::_hookName(const string& path)
 {
+    bool local = false;
     auto name = path;
 
     // If the module part of the ID matches the current module, remove.
     auto curmod = cg()->moduleBuilder()->module()->id()->name();
 
-    if ( util::startsWith(name, curmod + "::") )
+    if ( util::startsWith(name, curmod + "::") ) {
+        local = true;
         name = name.substr(curmod.size() + 2, string::npos);
+    }
 
-    return util::strreplace(name, "::", "_");
+    name = util::strreplace(name, "::", "_");
+    name = string("__hook_") + name;
+
+    return std::make_pair(local, name);
 }
 
-void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
+void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::Unit> unit, shared_ptr<Statement> body, shared_ptr<Type> dollardollar)
 {
-    auto name = _hookName(id->pathAsString());
+    auto t = _hookName(id->pathAsString());
+    auto local = t.first;
+    auto name = t.second;
+
+    hilti::builder::function::parameter_list p = {
+        hilti::builder::function::parameter("__self", cg()->hiltiTypeParseObjectRef(unit), false, nullptr),
+        hilti::builder::function::parameter("__cookie", _hiltiTypeCookie(), false, nullptr)
+    };
+
+    if ( dollardollar )
+        p.push_back(hilti::builder::function::parameter("__dollardollar", cg()->hiltiType(dollardollar), false, nullptr));
+
+
+    cg()->moduleBuilder()->pushHook(name,
+                                    hilti::builder::function::result(hilti::builder::void_::type()),
+                                    p);
+
+    if ( cg()->debugLevel() > 0 ) {
+        auto msg = util::fmt("- executing hook %s@%s", id->pathAsString(), body->location());
+        cg()->builder()->addDebugMsg("binpac-verbose", msg);
+    }
+
+    bool success = processOne(body);
+    assert(success);
+
+    cg()->moduleBuilder()->popHook();
 }
 
-void ParserBuilder::_hiltiRunHook(shared_ptr<ID> id)
+void ParserBuilder::_hiltiRunHook(shared_ptr<ID> id, shared_ptr<hilti::Expression> dollardollar)
 {
+    if ( cg()->debugLevel() > 0 ) {
+        auto msg = util::fmt("- triggering hook %s", id->pathAsString());
+        cg()->builder()->addDebugMsg("binpac-verbose", msg);
+    }
+
+    auto t = _hookName(id->pathAsString());
+    auto local = t.first;
+    auto name = t.second;
+
+    // Declare the hook if it's in our module and we don't have done that yet.
+    if ( local && ! cg()->moduleBuilder()->lookupNode("hook", name) ) {
+        hilti::builder::function::parameter_list p = {
+            hilti::builder::function::parameter("__self", cg()->hiltiTypeParseObjectRef(state()->unit), false, nullptr),
+            hilti::builder::function::parameter("__cookie", _hiltiTypeCookie(), false, nullptr)
+        };
+
+        if ( dollardollar )
+            p.push_back(hilti::builder::function::parameter("__dollardollar", dollardollar->type(), false, nullptr));
+
+
+        auto hook = cg()->moduleBuilder()->declareHook(name,
+                                                       hilti::builder::function::result(hilti::builder::void_::type()),
+                                                       p);
+
+        cg()->moduleBuilder()->cacheNode("hook", name, hook);
+    }
+
+    // Run the hook.
+    hilti::builder::tuple::element_list args = { state()->self, state()->cookie };
+
+    if ( dollardollar )
+        args.push_back(dollardollar);
+
+    cg()->builder()->addInstruction(hilti::instruction::hook::Run,
+                                    hilti::builder::id::create(name),
+                                    hilti::builder::tuple::create(args));
 }
 
 shared_ptr<binpac::ID> ParserBuilder::_hookForItem(shared_ptr<type::Unit> unit, shared_ptr<type::unit::Item> item)
@@ -707,6 +774,32 @@ void ParserBuilder::visit(type::Time* t)
 
 void ParserBuilder::visit(type::Unit* u)
 {
+}
+
+void ParserBuilder::visit(type::unit::Item* i)
+{
+}
+
+void ParserBuilder::visit(type::unit::item::GlobalHook* h)
+{
+}
+
+void ParserBuilder::visit(type::unit::item::Variable* v)
+{
+}
+
+void ParserBuilder::visit(type::unit::item::Property* v)
+{
+}
+
+void ParserBuilder::visit(type::unit::item::Field* f)
+{
+    auto unit = current<type::Unit>();
+
+    for ( auto h : f->hooks() ) {
+        _hiltiDefineHook(_hookForItem(unit, f->sharedPtr<type::unit::Item>()),
+                         unit, h->body(), f->type());
+    }
 }
 
 void ParserBuilder::visit(type::unit::item::field::Constant* c)

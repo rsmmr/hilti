@@ -343,10 +343,10 @@ public:
    ///
    /// Returns: An expression referencing the hook.
    shared_ptr<hilti::declaration::Function> pushHook(const std::string& id,
-                                              shared_ptr<hilti::function::Result> result = nullptr,
-                                              const hilti::function::parameter_list& params = hilti::function::parameter_list(),
-                                              shared_ptr<Type> scope = nullptr,
-                                              int64_t priority = 0, int64_t group = 0,
+                                              shared_ptr<hilti::function::Result> result,
+                                              const hilti::function::parameter_list& params,
+                                              shared_ptr<Type> scope,
+                                              int64_t priority, int64_t group,
                                               bool no_body = false,
                                               const Location& l=Location::None);
 

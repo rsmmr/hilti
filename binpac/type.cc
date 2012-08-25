@@ -1020,11 +1020,9 @@ shared_ptr<Expression> unit::item::Property::value() const
 }
 
 unit::item::GlobalHook::GlobalHook(shared_ptr<ID> id, shared_ptr<binpac::Hook> hook, const Location& l)
-    : Item(hook->id(), hook_list(), attribute_list(), l)
+    : Item(id, hook_list(), attribute_list(), l)
 {
-    _id = id;
     _hook = hook;
-    addChild(_id);
     addChild(_hook);
 }
 

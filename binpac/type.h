@@ -1298,7 +1298,6 @@ public:
     ACCEPT_VISITOR(Item);
 
 private:
-    node_ptr<ID> _id;
     node_ptr<binpac::Hook> _hook;
 };
 

@@ -123,6 +123,13 @@ public:
     /// Returns: The type.
     shared_ptr<hilti::Type> hiltiTypeParseObject(shared_ptr<type::Unit> unit);
 
+    // Returns the HILTI reference type for a unit's parse object.
+    //
+    /// u: The unit to return the type for.
+    ///
+    /// Returns: The type.
+    shared_ptr<hilti::Type> hiltiTypeParseObjectRef(shared_ptr<type::Unit> unit);
+
 private:
     bool _compiling = false;
 

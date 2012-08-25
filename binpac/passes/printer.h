@@ -26,6 +26,7 @@ protected:
     void visit(Attribute* a) override;
     void visit(AttributeSet* a) override;
     void visit(Function* f) override;
+    void visit(Hook* f) override;
     void visit(ID* i) override;
     void visit(Module* m) override;
     void visit(constant::Address* a) override;
@@ -49,6 +50,7 @@ protected:
     void visit(ctor::Vector* v) override;
     void visit(declaration::Constant* c) override;
     void visit(declaration::Function* f) override;
+    void visit(declaration::Hook* f) override;
     void visit(declaration::Type* t) override;
     void visit(declaration::Variable* v) override;
     void visit(expression::CodeGen* c) override;

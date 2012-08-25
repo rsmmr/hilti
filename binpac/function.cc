@@ -13,13 +13,21 @@ Function::Function(shared_ptr<ID> id, shared_ptr<binpac::type::Function> ftype, 
 {
 }
 
-Hook::Hook(shared_ptr<ID> id, shared_ptr<binpac::type::Hook> ftype, shared_ptr<Module> module,
-           shared_ptr<binpac::Statement> body, int prio, bool debug, bool foreach, const Location& l)
-    : Function(id, ftype, module, body, l)
+Hook::Hook(shared_ptr<binpac::Statement> body,
+           int prio, bool debug, bool foreach, const Location& l)
+    : Node(l)
 {
+    _body = body;
     _prio = prio;
     _debug = debug;
     _foreach = foreach;
+
+    addChild(_body);
+}
+
+shared_ptr<binpac::Statement> Hook::body() const
+{
+    return _body;
 }
 
 int Hook::priority() const

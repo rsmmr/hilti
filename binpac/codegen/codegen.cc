@@ -140,6 +140,11 @@ shared_ptr<hilti::Type> CodeGen::hiltiTypeParseObject(shared_ptr<type::Unit> uni
     return t;
 }
 
+shared_ptr<hilti::Type> CodeGen::hiltiTypeParseObjectRef(shared_ptr<type::Unit> u)
+{
+    return hilti::builder::reference::type(hiltiTypeParseObject(u));
+}
+
 void CodeGen::hiltiExportParser(shared_ptr<type::Unit> unit)
 {
     _parser_builder->hiltiExportParser(unit);

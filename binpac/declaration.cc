@@ -34,13 +34,15 @@ declaration::Function::Function(shared_ptr<binpac::Function> func, Linkage linka
 {
 }
 
-declaration::Hook::Hook(shared_ptr<binpac::Hook> hook, Linkage linkage, const Location& l)
-    : Function(hook, linkage, l)
+declaration::Hook::Hook(shared_ptr<binpac::ID> id, shared_ptr<binpac::Hook> hook, const Location& l)
+    : Declaration(id, Declaration::EXPORTED, l)
 {
+    _hook = hook;
+    addChild(_hook);
 }
 
 shared_ptr<binpac::Hook> declaration::Hook::hook() const
 {
-    return ast::checkedCast<binpac::Hook>(function());
+    return _hook;
 }
 

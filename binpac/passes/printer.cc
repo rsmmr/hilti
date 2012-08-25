@@ -88,11 +88,6 @@ void Printer::visit(Function* f)
 {
     Printer& p = *this;
 
-    auto hook = ast::tryCast<Hook>(f);
-
-    if ( hook )
-        p << "on ";
-
     auto r = f->type()->result();
 
     if ( r->constant() )
@@ -120,22 +115,28 @@ void Printer::visit(Function* f)
     p << ')';
 
     if ( f->body() ) {
-
-        if ( hook ) {
-            if ( hook->debug() )
-                p << "debug ";
-
-            if ( hook->foreach() )
-                p << "foreach ";
-        }
-
         pushIndent();
         p << f->body();
-        pushIndent();
+        popIndent();
     }
 
     else
         p << ';';
+}
+
+void Printer::visit(binpac::Hook* h)
+{
+    Printer& p = *this;
+
+    if ( h->debug() )
+        p << "debug ";
+
+    if ( h->foreach() )
+        p << "foreach ";
+
+    pushIndent();
+    p << h->body();
+    popIndent();
 }
 
 void Printer::visit(ID* i)
@@ -302,6 +303,16 @@ void Printer::visit(declaration::Function* f)
     p << _linkage(f->linkage()) << f << endl;
 }
 
+void Printer::visit(declaration::Hook* h)
+{
+    Printer& p = *this;
+
+    if ( h->id() )
+        p << "on " << h->id() << " ";
+
+    p << h->hook();
+}
+
 void Printer::visit(declaration::Type* t)
 {
     Printer& p = *this;
@@ -385,7 +396,7 @@ void Printer::visit(expression::ResolvedOperator* r)
 
     auto o = operator_::OperatorDefinitions.find(kind);
     assert(o != operator_::OperatorDefinitions.end());
-    
+
     auto op = (*o).second;
 
     if ( op.type == operator_::UNARY_PREFIX ) {

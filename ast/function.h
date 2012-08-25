@@ -72,7 +72,7 @@ public:
     shared_ptr<ID> id() const { return _id; }
 
     string render() /* override */ {
-        return util::fmt("%s (%s)", _id->name().c_str(), _ftype->render().c_str());
+        return util::fmt("%s (%s)", _id ? _id->name().c_str() : "<no id>", _ftype ? _ftype->render().c_str() : "<no type>");
     }
 
 private:

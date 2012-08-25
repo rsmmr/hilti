@@ -29,15 +29,11 @@ public:
     ACCEPT_VISITOR_ROOT();
 };
 
-/// AST node for a hook.
-class Hook : public Function
+/// AST node for a hook. Note that we don't derive this from a function as in
+/// BinPAC++ hooks are actually quite differnt.
+class Hook : public Node
 {
 public:
-    /// id: A non-scoped ID with the hook's name.
-    ///
-    /// module: The module the hook is part of. Note that it will not
-    /// automatically be added to that module.
-    ///
     /// body: A statement with the hook's body. Typically, the statement type
     /// will be that of a block of statements. body can be null if this is
     /// just a hook prototype.
@@ -51,9 +47,12 @@ public:
     /// ~~binpac_enable_debug).
     ///
     /// l: Location associated with the node.
-    Hook(shared_ptr<ID> id, shared_ptr<binpac::type::Hook> ftype, shared_ptr<Module> module,
-         shared_ptr<binpac::Statement> body = nullptr, int prio = 0, bool debug = false,
+    Hook(shared_ptr<binpac::Statement> body = nullptr,
+         int prio = 0, bool debug = false,
          bool foreach = false, const Location& l=Location::None);
+
+    /// Returns the hook's body.
+    shared_ptr<binpac::Statement> body() const;
 
     /// Returns the hook's priority.
     int priority() const;
@@ -64,9 +63,10 @@ public:
     /// Returns true if this hooks is marked with \c foreach.
     bool foreach() const;
 
-    ACCEPT_VISITOR(Function)
+    ACCEPT_VISITOR_ROOT()
 
 private:
+    node_ptr<binpac::Statement> _body;
     int _prio;
     bool _debug;
     bool _foreach;

@@ -98,7 +98,7 @@ public:
 };
 
 /// AST node for declaring a hook.
-class Hook : public Function
+class Hook : public Declaration
 {
 public:
     /// Constructor.
@@ -108,12 +108,15 @@ public:
     /// linkage: The declaration's linkage.
     ///
     /// l: An associated location.
-    Hook(shared_ptr<binpac::Hook> hook, Linkage linkage, const Location& l=Location::None);
+    Hook(shared_ptr<binpac::ID> id, shared_ptr<binpac::Hook> hook, const Location& l=Location::None);
 
     /// Returns the declared hook.
     shared_ptr<binpac::Hook> hook() const;
 
-    ACCEPT_VISITOR(Function);
+    ACCEPT_VISITOR(Declaration);
+
+private:
+    node_ptr<binpac::Hook> _hook;
 };
 
 }

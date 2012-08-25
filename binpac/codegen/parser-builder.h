@@ -90,11 +90,16 @@ protected:
     void visit(type::String* s) override;
     void visit(type::Time* t) override;
     void visit(type::Unit* u) override;
+    void visit(type::unit::Item* i) override;
+    void visit(type::unit::item::Field* f) override;
     void visit(type::unit::item::field::Constant* c) override;
     void visit(type::unit::item::field::RegExp* r) override;
     void visit(type::unit::item::field::Switch* s) override;
     void visit(type::unit::item::field::Type* t) override;
     void visit(type::unit::item::field::switch_::Case* c) override;
+    void visit(type::unit::item::Variable* v) override;
+    void visit(type::unit::item::Property* p) override;
+    void visit(type::unit::item::GlobalHook* h) override;
     void visit(type::Vector* v) override;
 
 private:
@@ -148,13 +153,15 @@ private:
 
     // Declares a hook, or returns the current declaration if it already
     // exists. <id> is the full path to the hooked element, including the
-    // module.
-    void _hiltiRunHook(shared_ptr<ID> id);
+    // module. \a dolllardollar is the value for the \a $$ identifier within
+    // the hook, if it takes one (or null).
+    void _hiltiRunHook(shared_ptr<ID> id, shared_ptr<hilti::Expression> dollardollar = nullptr);
 
-    // Declares a hook, or returns the current declaration if it already
-    // exists. <id> is the full path to the hooked element, including the
-    // module.
-    void _hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
+    // Defines a hook's implementation. <id> is the full path to the hooked
+    // element, including the module. The ID of \a hook is ignored. \a
+    // dollardollar, if given, is the type for the \a $$ identifier within
+    // the hook, if it takes one.
+    void _hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar = nullptr);
 
     // Returns the full path ID for the hook referecing a unit item.
     shared_ptr<ID> _hookForItem(shared_ptr<type::Unit>, shared_ptr<type::unit::Item> item);
@@ -162,8 +169,10 @@ private:
     // Returns the full path ID for the hook referecing a unit-global hook.
     shared_ptr<ID> _hookForUnit(shared_ptr<type::Unit>, const string& name);
 
-    // Returns the canonical hook name, given the full path.
-    string _hookName(const string& path);
+    // Computes the canonical hook name, given the full path. The returned
+    // boolean indicates whether the hook is a local one (i.e., within the
+    // same module; true) or cross-module (false).
+    std::pair<bool, string> _hookName(const string& path);
 
     std::list<shared_ptr<ParserState>> _states;
 };

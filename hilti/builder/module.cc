@@ -202,7 +202,9 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(const std::
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(shared_ptr<hilti::Hook> hook)
 {
-    return declareFunction(hook);
+    auto decl = std::make_shared<declaration::Hook>(hook, hook->location());
+    _module->body()->addDeclaration(decl);
+    return decl;
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(shared_ptr<ID> id,
@@ -246,7 +248,7 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::declareHook(const std::s
                                                                    const hilti::function::parameter_list& params,
                                                                    const Location& l)
 {
-    return declareHook(id, result, params, l);
+    return declareHook(std::make_shared<hilti::ID>(id, l), result, params, l);
 }
 
 
