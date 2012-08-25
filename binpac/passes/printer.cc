@@ -370,6 +370,12 @@ void Printer::visit(expression::List* l)
     printList(l->expressions(), ", ");
 }
 
+void Printer::visit(expression::MemberAttribute* m)
+{
+    Printer& p = *this;
+    p << "<MemberAttribute>";
+}
+
 void Printer::visit(expression::Module* m)
 {
     Printer& p = *this;
@@ -380,6 +386,24 @@ void Printer::visit(expression::Parameter* pa)
 {
     Printer& p = *this;
     p << pa->parameter()->id();
+}
+
+void Printer::visit(expression::ParserState* s)
+{
+    Printer& p = *this;
+
+    switch ( s->kind() ) {
+     case expression::ParserState::SELF:
+        p << "self";
+        break;
+
+     case expression::ParserState::DOLLARDOLLAR:
+        p << "$$";
+        break;
+
+     default:
+        internalError("unknown ParserState kind");
+    }
 }
 
 void Printer::visit(expression::ResolvedOperator* r)

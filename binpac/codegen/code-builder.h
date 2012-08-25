@@ -77,8 +77,10 @@ protected:
     void visit(expression::Function* f) override;
     void visit(expression::ID* i) override;
     void visit(expression::List* l) override;
+    void visit(expression::MemberAttribute* m) override;
     void visit(expression::Module* m) override;
     void visit(expression::Parameter* p) override;
+    void visit(expression::ParserState* p) override;
     void visit(expression::Type* t) override;
     void visit(expression::UnresolvedOperator* u) override;
     void visit(expression::Variable* v) override;

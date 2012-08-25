@@ -149,3 +149,9 @@ void CodeGen::hiltiExportParser(shared_ptr<type::Unit> unit)
 {
     _parser_builder->hiltiExportParser(unit);
 }
+
+void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
+{
+    _parser_builder->hiltiUnitHooks(unit);
+}
+

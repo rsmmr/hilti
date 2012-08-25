@@ -35,10 +35,12 @@ public:
     void visit(declaration::Type* t) override;
     void visit(declaration::Constant* t) override;
     void visit(declaration::Function* t) override;
+    void visit(declaration::Hook* t) override;
 
 private:
     CompilerContext* _context;
     shared_ptr<Scope> _checkDecl(Declaration* decl);
+    void _populateHookScope(shared_ptr<Hook> hook);
 };
 
 }

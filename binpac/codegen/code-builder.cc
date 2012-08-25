@@ -152,10 +152,13 @@ void CodeBuilder::visit(declaration::Type* t)
     cg()->moduleBuilder()->addType(id, type, false, t->location());
 
     // If this is an exported unit type, generate the parsing functions for
-    // it
-
+    // it.
     if ( unit && t->linkage() == Declaration::EXPORTED )
         cg()->hiltiExportParser(unit);
+
+    // For units, generate the embedded hooks.
+    if ( unit )
+        cg()->hiltiUnitHooks(unit);
 }
 
 void CodeBuilder::visit(declaration::Variable* v)
@@ -195,12 +198,36 @@ void CodeBuilder::visit(expression::List* l)
 {
 }
 
+void CodeBuilder::visit(expression::MemberAttribute* m)
+{
+}
+
 void CodeBuilder::visit(expression::Module* m)
 {
 }
 
 void CodeBuilder::visit(expression::Parameter* p)
 {
+}
+
+void CodeBuilder::visit(expression::ParserState* p)
+{
+    shared_ptr<hilti::Expression> expr = nullptr;
+
+    switch ( p->kind() ) {
+     case expression::ParserState::SELF:
+        expr = hilti::builder::id::create("__self");
+        break;
+
+     case expression::ParserState::DOLLARDOLLAR:
+        expr = hilti::builder::id::create("__dollardollar");
+        break;
+
+     default:
+        internalError("unknown ParserState kind");
+    }
+
+    setResult(expr);
 }
 
 void CodeBuilder::visit(expression::Type* t)

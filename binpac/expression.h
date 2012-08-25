@@ -276,6 +276,8 @@ public:
 
     shared_ptr<Type> type() const override;
 
+    ACCEPT_VISITOR(binpac::Expression);
+
 private:
     Kind _kind;
     node_ptr<binpac::Type> _type;

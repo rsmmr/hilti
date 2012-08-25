@@ -116,6 +116,11 @@ public:
     /// u: The unit type to export via functions.
     void hiltiExportParser(shared_ptr<type::Unit> unit);
 
+    /// Generates the implementation of unit-embedded hooks.
+    ///
+    /// u: The unit type to generate the hooks for.
+    void hiltiUnitHooks(shared_ptr<type::Unit> unit);
+
     // Returns the HILTI struct type for a unit's parse object.
     //
     /// u: The unit to return the type for.

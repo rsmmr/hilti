@@ -29,7 +29,7 @@ blank     [ \t]
 comment   [ \t]*#[^\n]*
 digits    [0-9]+
 hexs      [0-9a-fA-F]+
-id        [a-zA-Z_][a-zA-Z_0-9]*
+id        [a-zA-Z_][a-zA-Z_0-9]*|\$\$
 int       [+-]?[0-9]+
 property  %[a-zA-Z_][a-zA-Z_0-9]*
 string    \"(\\.|[^\\"])*\"

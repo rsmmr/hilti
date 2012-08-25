@@ -65,8 +65,11 @@ void ScopeBuilder::visit(statement::Block* b)
 
     auto func = current<hilti::Function>();
 
+    if ( ! func ) // TODO: Too bad current() doesn't follow the class hierarchy ... 
+        func = current<hilti::Hook>();
+
     if ( ! func ) {
-        error(b, util::fmt("declaration of block is not part of a function"));
+        error(b, util::fmt("declaration of block is not part of a function %p", b));
         return;
     }
 

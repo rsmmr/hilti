@@ -50,8 +50,10 @@ expression::Ctor
 expression::Function
 expression::ID
 expression::List
+expression::MemberAttribute
 expression::Module
 expression::Parameter
+expression::ParserState
 expression::ResolvedOperator
 expression::Type
 expression::UnresolvedOperator

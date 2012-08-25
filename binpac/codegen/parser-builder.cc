@@ -110,6 +110,16 @@ void ParserBuilder::hiltiExportParser(shared_ptr<type::Unit> unit)
     _hiltiCreateParserInitFunction(unit, parse_host, parse_host);
 }
 
+void ParserBuilder::hiltiUnitHooks(shared_ptr<type::Unit> unit)
+{
+    for ( auto f : unit->fields() ) {
+        for ( auto h : f->hooks() ) {
+            _hiltiDefineHook(_hookForItem(unit, f->sharedPtr<type::unit::Item>()),
+                             unit, h->body(), f->type());
+        }
+    }
+}
+
 void ParserBuilder::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit,
                                                    shared_ptr<hilti::Expression> parse_host,
                                                    shared_ptr<hilti::Expression> parse_sink)
@@ -511,8 +521,7 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::Unit> u
         cg()->builder()->addDebugMsg("binpac-verbose", msg);
     }
 
-    bool success = processOne(body);
-    assert(success);
+    cg()->hiltiStatement(body);
 
     cg()->moduleBuilder()->popHook();
 }
@@ -794,12 +803,6 @@ void ParserBuilder::visit(type::unit::item::Property* v)
 
 void ParserBuilder::visit(type::unit::item::Field* f)
 {
-    auto unit = current<type::Unit>();
-
-    for ( auto h : f->hooks() ) {
-        _hiltiDefineHook(_hookForItem(unit, f->sharedPtr<type::unit::Item>()),
-                         unit, h->body(), f->type());
-    }
 }
 
 void ParserBuilder::visit(type::unit::item::field::Constant* c)
