@@ -140,6 +140,7 @@ void CodeBuilder::visit(declaration::Function* f)
 
 void CodeBuilder::visit(declaration::Hook* h)
 {
+    cg()->hiltiDefineHook(h->id(), h->hook());
 }
 
 void CodeBuilder::visit(declaration::Type* t)
@@ -284,6 +285,12 @@ void CodeBuilder::visit(statement::Print* p)
     auto e = exprs.begin();
 
     while ( e != exprs.end() ) {
+        if ( e != exprs.begin() ) {
+            auto op = hilti::builder::string::create(" ");
+            auto t = hilti::builder::tuple::create({ op, hilti::builder::boolean::create(false, loc) }, loc);
+            builder()->addInstruction(hilti::instruction::flow::CallVoid, print, t);
+        }
+
         auto op = hiltiExpression(*e++);
 
         if ( e != exprs.end() ) {

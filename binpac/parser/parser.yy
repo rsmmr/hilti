@@ -189,7 +189,7 @@ local_id      : IDENT                            { $$ = std::make_shared<ID>($1,
 scoped_id     : IDENT                            { $$ = std::make_shared<ID>($1, loc(@$)); }
               | SCOPED_IDENT                     { $$ = std::make_shared<ID>($1, loc(@$)); }
 
-hook_id       : local_id                         { $$ = $1; }
+hook_id       : scoped_id                        { $$ = $1; }
               | PROPERTY                         { $$ = std::make_shared<ID>($1, loc(@$)); } /* for %init/%done */
 
 property_id   : PROPERTY                         { $$ = std::make_shared<ID>($1, loc(@$)); }
@@ -249,7 +249,7 @@ func_decl     : opt_linkage rtype local_id '(' opt_params ')' block
                                                  }
               ;
 
-hook_decl     : ON scoped_id unit_hook           { $$ = std::make_shared<declaration::Hook>($2, $3, loc(@$)); }
+hook_decl     : ON hook_id unit_hook             { $$ = std::make_shared<declaration::Hook>($2, $3, loc(@$)); }
               ;
 
 params        : param ',' params                 { $$ = $3; $$.push_front($1); }
@@ -355,7 +355,7 @@ unit_item     : unit_var                         { $$ = $1; }
 unit_var      : VAR local_id ':' base_type opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::Variable>($2, $4, nullptr, $5); }
 
-unit_global_hook : ON hook_id unit_hook          { $$ = std::make_shared<type::unit::item::GlobalHook>($2, $3, loc(@$)); }
+unit_global_hook : ON hook_id unit_hooks         { $$ = std::make_shared<type::unit::item::GlobalHook>($2, $3, loc(@$)); }
 
 unit_prop     : property_id ';'                  { $$ = std::make_shared<type::unit::item::Property>($1, nullptr, loc(@$)); }
               | property_id '=' expr ';'         { $$ = std::make_shared<type::unit::item::Property>($1, $3, loc(@$)); }

@@ -42,6 +42,13 @@ public:
     // Returns the HILTI struct type for a unit's parse object.
     shared_ptr<hilti::Type> hiltiTypeParseObject(shared_ptr<type::Unit> unit);
 
+    /// Adds an external implementation of a unit hook.
+    ///
+    /// id: The hook's ID (full path).
+    ///
+    /// hook: The hook itself.
+    void hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
+
 protected:
     /// Returns the current parsing state.
     shared_ptr<ParserState> state() const;

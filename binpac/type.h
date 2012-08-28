@@ -967,7 +967,7 @@ class Item : public Node
 public:
     /// id: The name of the item. Can be null for anonymous items.
     ///
-    /// type: The type of the item.
+    /// type: The type of the item, or null for no associated type.
     ///
     /// hooks: Hooks associated with this item.
     ///
@@ -975,6 +975,7 @@ public:
     ///
     /// l: Location associated with the item.
     Item(shared_ptr<ID> id,
+         const shared_ptr<Type> type = nullptr, 
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
          const Location& l=Location::None);
@@ -983,6 +984,9 @@ public:
     /// return an (internally generated) ID. Use anonymous() to check if no
     /// ID was passed to the constructor.
     shared_ptr<ID> id() const;
+
+    /// Returns the item's type.
+    shared_ptr<binpac::Type> type() const;
 
     /// Returns true if no ID was passed to the constructor.
     bool anonymous() const;
@@ -1003,6 +1007,7 @@ public:
 private:
     bool _anonymous = false;
     node_ptr<ID> _id;
+    shared_ptr<binpac::Type> _type;
     node_ptr<AttributeSet> _attrs;
     std::list<node_ptr<Hook>> _hooks;
 
@@ -1017,9 +1022,6 @@ namespace item {
 class Field : public Item
 {
 public:
-    /// Returns the item's type.
-    shared_ptr<binpac::Type> type() const;
-
     /// Returns the item's associated default value, or null if none.
     shared_ptr<Expression> default_() const;
 
@@ -1057,7 +1059,6 @@ protected:
          const Location& l=Location::None);
 
 private:
-    shared_ptr<binpac::Type> _type;
     node_ptr<Expression> _default;
     node_ptr<Expression> _cond;
     expression_list _sinks;
@@ -1246,14 +1247,10 @@ public:
     /// Returns the variable's default, or null if none.
     shared_ptr<Expression> default_() const;
 
-    /// Returns the variable's type.
-    shared_ptr<binpac::Type> type() const;
-
     ACCEPT_VISITOR(Item);
 
 private:
     node_ptr<Expression> _default;
-    node_ptr<binpac::Type> _type;
 };
 
 /// A unit property.
@@ -1287,18 +1284,12 @@ public:
     ///
     /// id: The name of the hook.
     ///
-    /// hook: The hook.
+    /// hooks: The hooks.
     ///
     /// l: An associated location.
-    GlobalHook(shared_ptr<ID> id, shared_ptr<binpac::Hook> hook, const Location& l=Location::None);
-
-    /// Returns the hook.
-    shared_ptr<binpac::Hook> hook() const;
+    GlobalHook(shared_ptr<ID> id, hook_list& hooks, const Location& l=Location::None);
 
     ACCEPT_VISITOR(Item);
-
-private:
-    node_ptr<binpac::Hook> _hook;
 };
 
 }
@@ -1339,7 +1330,7 @@ public:
 
     /// Returns a list of all global-wide hooks. This is a convinience method
     /// that prefilters all items for this tyoe,
-    std::list<shared_ptr<unit::item::GlobalHook>> hooks() const;
+    std::list<shared_ptr<unit::item::GlobalHook>> globalHooks() const;
 
     /// Returns a list of all properties. This is a convinience method that
     /// prefilters all items for this tyoe,

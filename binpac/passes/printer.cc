@@ -949,7 +949,8 @@ void Printer::visit(type::unit::item::GlobalHook* g)
 {
     Printer& p = *this;
 
-    p << "on " << g->id() << " " << g->hook();
+    p << "on " << g->id();
+    _printUnitHooks(p, g->hooks());
 }
 
 void Printer::visit(type::unit::item::Property* pr)

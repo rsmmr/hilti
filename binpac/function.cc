@@ -1,6 +1,7 @@
 
 #include "function.h"
 #include "module.h"
+#include "scope.h"
 #include "statement.h"
 #include "type.h"
 
@@ -25,9 +26,9 @@ Hook::Hook(shared_ptr<binpac::Statement> body,
     addChild(_body);
 }
 
-shared_ptr<binpac::Statement> Hook::body() const
+shared_ptr<statement::Block> Hook::body() const
 {
-    return _body;
+    return ast::checkedCast<statement::Block>(_body);;
 }
 
 int Hook::priority() const
@@ -45,3 +46,15 @@ bool Hook::foreach() const
     return _foreach;
 }
 
+shared_ptr<type::Unit> Hook::unit() const
+{
+    return _unit;
+}
+
+void Hook::setUnit(shared_ptr<type::Unit> unit)
+{
+    _unit = unit;
+
+    if ( _body )
+        body()->scope()->setParent(unit->scope());
+}

@@ -777,7 +777,7 @@ Timer::Timer(const Location& l) : PacType(l)
 
 int unit::Item::Item::_id_counter = 0;
 
-unit::Item::Item(shared_ptr<ID> id, const hook_list& hooks, const attribute_list& attrs, const Location& l) : Node(l)
+unit::Item::Item(shared_ptr<ID> id, shared_ptr<Type> type, const hook_list& hooks, const attribute_list& attrs, const Location& l) : Node(l)
 {
     if ( ! id ) {
         id = std::make_shared<ID>(util::fmt("__anon%d", ++_id_counter), l);
@@ -785,9 +785,11 @@ unit::Item::Item(shared_ptr<ID> id, const hook_list& hooks, const attribute_list
     }
 
     _id = id;
+    _type = type;
     _attrs = std::make_shared<AttributeSet>(attrs);
 
     addChild(_id);
+    addChild(_type);
     addChild(_attrs);
 
     for ( auto h : hooks )
@@ -805,6 +807,11 @@ bool unit::Item::anonymous() const
 shared_ptr<ID> unit::Item::id() const
 {
     return _id;
+}
+
+shared_ptr<Type> unit::Item::type() const
+{
+    return _type;
 }
 
 shared_ptr<Scope> unit::Item::scope() const
@@ -835,13 +842,11 @@ unit::item::Field::Field(shared_ptr<ID> id,
                          const attribute_list& attrs,
                          const expression_list& sinks,
                          const Location& l)
-    : Item(id, hooks, attrs, l)
+    : Item(id, type, hooks, attrs, l)
 {
-    _type = type;
     _default = default_;
     _cond = cond;
 
-    addChild(_type);
     addChild(_default);
     addChild(_cond);
 
@@ -850,11 +855,6 @@ unit::item::Field::Field(shared_ptr<ID> id,
 
     for ( auto s : _sinks )
         addChild(s);
-}
-
-shared_ptr<binpac::Type> unit::item::Field::type() const
-{
-    return _type;
 }
 
 shared_ptr<Expression> unit::item::Field::default_() const
@@ -986,12 +986,9 @@ unit::item::field::Switch::case_list unit::item::field::Switch::cases() const
 }
 
 unit::item::Variable::Variable(shared_ptr<binpac::ID> id, shared_ptr<binpac::Type> type, shared_ptr<Expression> default_, const hook_list& hooks, const Location& l)
-    : Item(id, hooks, attribute_list(), l)
+    : Item(id, type, hooks, attribute_list(), l)
 {
-    _type = type;
     _default = default_;
-
-    addChild(_type);
     addChild(_default);
 }
 
@@ -1000,14 +997,8 @@ shared_ptr<Expression> unit::item::Variable::default_() const
     return _default;
 }
 
-shared_ptr<binpac::Type> unit::item::Variable::type() const
-{
-    return _type;
-}
-
-
 unit::item::Property::Property(shared_ptr<binpac::ID> id, shared_ptr<binpac::Expression> value, const Location& l)
-    : Item(id, hook_list(), attribute_list(), l)
+    : Item(id, nullptr, hook_list(), attribute_list(), l)
 {
     _value = value;
     addChild(value);
@@ -1019,16 +1010,9 @@ shared_ptr<Expression> unit::item::Property::value() const
     return _value;
 }
 
-unit::item::GlobalHook::GlobalHook(shared_ptr<ID> id, shared_ptr<binpac::Hook> hook, const Location& l)
-    : Item(id, hook_list(), attribute_list(), l)
+unit::item::GlobalHook::GlobalHook(shared_ptr<ID> id, hook_list& hooks, const Location& l)
+    : Item(id, nullptr, hooks, attribute_list(), l)
 {
-    _hook = hook;
-    addChild(_hook);
-}
-
-shared_ptr<binpac::Hook> unit::item::GlobalHook::hook() const
-{
-    return _hook;
 }
 
 Unit::Unit(const parameter_list& params, const unit_item_list& items, const Location& l)
@@ -1044,8 +1028,9 @@ Unit::Unit(const parameter_list& params, const unit_item_list& items, const Loca
 
     for ( auto d : _items )
         addChild(d);
-}
 
+    _scope = std::make_shared<Scope>();
+}
 
 Unit::Unit(const Location& l) : PacType(l)
 {
@@ -1100,7 +1085,7 @@ std::list<shared_ptr<unit::item::Variable>> Unit::variables() const
     return m;
 }
 
-std::list<shared_ptr<unit::item::GlobalHook>> Unit::hooks() const
+std::list<shared_ptr<unit::item::GlobalHook>> Unit::globalHooks() const
 {
     std::list<shared_ptr<unit::item::GlobalHook>> m;
 

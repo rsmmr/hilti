@@ -155,3 +155,7 @@ void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
     _parser_builder->hiltiUnitHooks(unit);
 }
 
+void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
+{
+   _parser_builder->hiltiDefineHook(id, hook);
+}

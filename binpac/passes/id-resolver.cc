@@ -1,6 +1,7 @@
 
 #include "id-resolver.h"
 
+#include "declaration.h"
 #include "expression.h"
 #include "statement.h"
 #include "scope.h"
@@ -74,9 +75,56 @@ void IDResolver::visit(type::Unknown* t)
     }
 
     auto tv = nt->typeValue();
-    
+
     t->replace(tv);
 
     if ( ! tv->id() )
         tv->setID(id);
+}
+
+void IDResolver::visit(declaration::Hook* h)
+{
+    // Determine the unit that we belong to. For a path "a::b::c::, "a::b"
+    // must reference its type.
+    auto path = h->id()->path();
+    path.pop_back();
+
+    if ( ! path.size() ) {
+        error(h, "id does not reference a hook field");
+        return;
+    }
+
+    auto module = current<Module>();
+    assert(module);
+
+    auto expr = module->body()->scope()->lookup(std::make_shared<ID>(path));
+
+    if ( ! expr ) {
+        error(h, "id does not lead to a unit type");
+        return;
+    }
+
+    if ( ! expr ) {
+        error(h, "unknown id");
+        return;
+    }
+
+    auto texpr = ast::tryCast<expression::Type>(expr);
+
+    if ( ! texpr ) {
+        error(h, "id does not reference a type");
+        return;
+    }
+
+    auto unit = ast::tryCast<type::Unit>(texpr->typeValue());
+
+    if ( ! unit ) {
+        error(h, "id does not lead to a unit type");
+        return;
+    }
+
+    // It's important here to run pre-order: setting the scope here links 
+    // the hook's scope to the unit's before descending down into the
+    // statement.
+    h->hook()->setUnit(unit);
 }

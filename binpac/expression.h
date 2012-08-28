@@ -226,7 +226,8 @@ public:
     ACCEPT_VISITOR(binpac::Expression);
 };
 
-/// AST node for an expression referencing a member attribute of a another type.
+/// AST node for an expression referencing a member attribute of a another
+/// type.
 class MemberAttribute : public CustomExpression
 {
 public:

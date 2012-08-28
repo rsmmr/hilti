@@ -110,12 +110,33 @@ void ParserBuilder::hiltiExportParser(shared_ptr<type::Unit> unit)
     _hiltiCreateParserInitFunction(unit, parse_host, parse_host);
 }
 
+void ParserBuilder::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
+{
+    auto unit = hook->unit();
+    assert(unit);
+
+    auto i = unit->item(id);
+    assert(i && i->type());
+    _hiltiDefineHook(_hookForItem(unit, i), unit, hook->body(), i->type());
+}
+
 void ParserBuilder::hiltiUnitHooks(shared_ptr<type::Unit> unit)
 {
-    for ( auto f : unit->fields() ) {
-        for ( auto h : f->hooks() ) {
-            _hiltiDefineHook(_hookForItem(unit, f->sharedPtr<type::unit::Item>()),
-                             unit, h->body(), f->type());
+    for ( auto i : unit->items() ) {
+        if ( ! i->type() )
+            continue;
+
+        for ( auto h : i->hooks() ) {
+            _hiltiDefineHook(_hookForItem(unit, i->sharedPtr<type::unit::Item>()),
+                             unit, h->body(), i->type());
+        }
+    }
+
+    for ( auto g : unit->globalHooks() ) {
+        for ( auto h : g->hooks() ) {
+            auto i = unit->item(g->id());
+            assert(i && i->type());
+            _hiltiDefineHook(_hookForItem(unit, i), unit, h->body(), i->type());
         }
     }
 }
@@ -517,7 +538,7 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::Unit> u
                                     p);
 
     if ( cg()->debugLevel() > 0 ) {
-        auto msg = util::fmt("- executing hook %s@%s", id->pathAsString(), body->location());
+        auto msg = util::fmt("- executing hook %s@%s", id->pathAsString(), string(body->location()));
         cg()->builder()->addDebugMsg("binpac-verbose", msg);
     }
 

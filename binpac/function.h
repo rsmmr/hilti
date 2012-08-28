@@ -52,7 +52,11 @@ public:
          bool foreach = false, const Location& l=Location::None);
 
     /// Returns the hook's body.
-    shared_ptr<binpac::Statement> body() const;
+    shared_ptr<statement::Block> body() const;
+
+    /// Returns the unit type the hook is part of. Note that this is
+    /// initially unset until the resolver passes have run.
+    shared_ptr<type::Unit> unit() const;
 
     /// Returns the hook's priority.
     int priority() const;
@@ -63,10 +67,15 @@ public:
     /// Returns true if this hooks is marked with \c foreach.
     bool foreach() const;
 
+    /// Sets the unit type that this hook is part of. Should be called only
+    /// form the resolver passes.This also links the hook's scope to the unit's.
+    void setUnit(shared_ptr<type::Unit> unit);
+
     ACCEPT_VISITOR_ROOT()
 
 private:
     node_ptr<binpac::Statement> _body;
+    node_ptr<type::Unit> _unit = nullptr;
     int _prio;
     bool _debug;
     bool _foreach;

@@ -74,15 +74,6 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
     return scope;
 }
 
-void ScopeBuilder::_populateHookScope(shared_ptr<Hook> hook)
-{
-    // Insert the magic identifiers into a hook's scope.
-    auto scope = ast::checkedCast<statement::Block>(hook->body())->scope();
-
-    scope->insert(std::make_shared<ID>("self"), std::make_shared<expression::ParserState>(expression::ParserState::SELF));
-    scope->insert(std::make_shared<ID>("$$"), std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR));
-}
-
 void ScopeBuilder::visit(declaration::Variable* v)
 {
     auto scope = _checkDecl(v);
@@ -116,13 +107,19 @@ void ScopeBuilder::visit(declaration::Type* t)
 
     t->type()->setID(t->id());
 
-    // If this is a unit, populate the hooks scopes.
+    // If this is a unit, populate it's scope.
     auto unit = ast::tryCast<type::Unit>(t->type());
 
     if ( unit ) {
-        for ( auto i : unit->items() )
+        auto uscope = unit->scope();
+        uscope->insert(std::make_shared<ID>("self"), std::make_shared<expression::ParserState>(expression::ParserState::SELF));
+        uscope->insert(std::make_shared<ID>("$$"), std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR));
+        uscope->setParent(current<Module>()->body()->scope());
+
+        for ( auto i : unit->items() ) {
             for ( auto h : i->hooks() )
-                _populateHookScope(h);
+                h->setUnit(unit);
+        }
     }
 }
 
@@ -162,10 +159,5 @@ void ScopeBuilder::visit(declaration::Function* f)
         auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
         scope->insert(p->id(), pexpr);
     }
-}
-
-void ScopeBuilder::visit(declaration::Hook* t)
-{
-    _populateHookScope(t->hook());
 }
 

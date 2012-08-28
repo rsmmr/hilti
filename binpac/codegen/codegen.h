@@ -135,6 +135,13 @@ public:
     /// Returns: The type.
     shared_ptr<hilti::Type> hiltiTypeParseObjectRef(shared_ptr<type::Unit> unit);
 
+    /// Adds an external implementation of a unit hook.
+    ///
+    /// id: The hook's ID (full path).
+    ///
+    /// hook: The hook itself.
+    void hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
+
 private:
     bool _compiling = false;
 
