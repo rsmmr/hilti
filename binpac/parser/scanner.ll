@@ -146,8 +146,9 @@ True                  yylval->bval = 1; return token::CBOOL;
 {string}              yylval->sval = util::expandEscapes(string(yytext, 1, strlen(yytext) - 2)); return token::CSTRING;
 b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strlen(yytext) - 3)); return token::CBYTES;
 
-{id}                  yylval->sval = yytext; return token::IDENT;
-{id}(::{id}){1,}      yylval->sval = yytext; return token::SCOPED_IDENT;
+{id}                   yylval->sval = yytext; return token::IDENT;
+{id}(::{id}){1,}       yylval->sval = yytext; return token::SCOPED_IDENT;
+{id}(::{property}){1,} yylval->sval = yytext; return token::SCOPED_IDENT;
 
 [,=:;<>(){}/|*/&^%!+-] return (token_type) yytext[0];
 

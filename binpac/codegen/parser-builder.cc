@@ -115,9 +115,14 @@ void ParserBuilder::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
     auto unit = hook->unit();
     assert(unit);
 
-    auto i = unit->item(id);
-    assert(i && i->type());
-    _hiltiDefineHook(_hookForItem(unit, i), unit, hook->body(), i->type());
+    if ( util::startsWith(id->local(), "%") )
+        _hiltiDefineHook(_hookForUnit(unit, id->local()), unit, hook->body(), nullptr);
+
+    else {
+        auto i = unit->item(id);
+        assert(i && i->type());
+        _hiltiDefineHook(_hookForItem(unit, i), unit, hook->body(), i->type());
+    }
 }
 
 void ParserBuilder::hiltiUnitHooks(shared_ptr<type::Unit> unit)
@@ -134,9 +139,15 @@ void ParserBuilder::hiltiUnitHooks(shared_ptr<type::Unit> unit)
 
     for ( auto g : unit->globalHooks() ) {
         for ( auto h : g->hooks() ) {
-            auto i = unit->item(g->id());
-            assert(i && i->type());
-            _hiltiDefineHook(_hookForItem(unit, i), unit, h->body(), i->type());
+
+            if ( util::startsWith(g->id()->local(), "%") )
+                _hiltiDefineHook(_hookForUnit(unit, g->id()->local()), unit, h->body(), nullptr);
+
+            else {
+                auto i = unit->item(g->id());
+                assert(i && i->type());
+                _hiltiDefineHook(_hookForItem(unit, i), unit, h->body(), i->type());
+            }
         }
     }
 }
@@ -414,10 +425,12 @@ shared_ptr<hilti::Expression> ParserBuilder::_allocateParseObject(shared_ptr<Typ
 
 void ParserBuilder::_prepareParseObject()
 {
+    _hiltiRunHook(_hookForUnit(state()->unit, "%init"), nullptr);
 }
 
 void ParserBuilder::_finalizeParseObject()
 {
+    _hiltiRunHook(_hookForUnit(state()->unit, "%done"), nullptr);
 }
 
 void ParserBuilder::_startingProduction(shared_ptr<Production> p)
@@ -513,6 +526,7 @@ std::pair<bool, string> ParserBuilder::_hookName(const string& path)
     }
 
     name = util::strreplace(name, "::", "_");
+    name = util::strreplace(name, "%", "__0x37");
     name = string("__hook_") + name;
 
     return std::make_pair(local, name);

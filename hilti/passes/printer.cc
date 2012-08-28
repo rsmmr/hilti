@@ -62,7 +62,7 @@ void Printer::visit(statement::Block* b)
 
 //    p << "==== Block start" << endl;
 
-    bool in_function = in<declaration::Function>();
+    bool in_function = in<declaration::Function>() || in<declaration::Hook>();
 
     if ( in_function ) {
         if ( b->id() && b->id()->pathAsString().size() )

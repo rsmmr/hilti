@@ -61,6 +61,15 @@ public:
        return _path.back();
     }
 
+    /// Returns the local component of the identifier. For \c Foo::bar this
+    /// returns \c bar (as it does for \c bar).
+    ///
+    /// \note: This is currently the same as name(), but will replace it
+    /// eventually; name() will then return pathAsString().
+    string local() const {
+       return _path.back();
+    }
+
     /// Returns the scope of the ID. If it's not scoped, that's the empty string.
     string scope() const {
        component_list p = _path;
