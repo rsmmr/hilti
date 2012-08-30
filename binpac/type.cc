@@ -133,6 +133,8 @@ Unknown::Unknown(const Location& l) : binpac::Type(l)
 
 Unknown::Unknown(shared_ptr<ID> id, const Location& l)
 {
+    _id = id;
+    addChild(_id);
 }
 
 shared_ptr<ID> Unknown::id() const

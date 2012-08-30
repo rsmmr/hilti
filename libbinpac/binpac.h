@@ -29,6 +29,7 @@ typedef struct {
     int32_t internal;                    // HILTI-internal.
     hlt_string name;                     /// Short descriptive name.
     hlt_string description;              /// Longer textual description.
+    int32_t params;                      /// Number of additional (type) parameters that the parse functions receive.
     hlt_list* mime_types;                /// list<string> of all MIME types handled by this parser.
     binpac_parse_function* parse_func;   /// The C function performing the parsing.
     binpac_resume_function* resume_func; /// The C function resuming parsing after a yield.

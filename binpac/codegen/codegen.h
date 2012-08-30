@@ -52,6 +52,10 @@ public:
     /// Returns the debug level.
     int debugLevel() const;
 
+    /// Returns the type of the currently parsed unit. The method must only
+    /// be called when parsing is in progress.
+    shared_ptr<type::Unit> unit() const;
+
     /// Returns the HILTI epxression resulting from evaluating a BinPAC
     /// expression. The method adds the code to the current HILTI block.
     ///
@@ -128,8 +132,8 @@ public:
     /// Returns: The type.
     shared_ptr<hilti::Type> hiltiTypeParseObject(shared_ptr<type::Unit> unit);
 
-    // Returns the HILTI reference type for a unit's parse object.
-    //
+    /// Returns the HILTI reference type for a unit's parse object.
+    ///
     /// u: The unit to return the type for.
     ///
     /// Returns: The type.
@@ -141,6 +145,21 @@ public:
     ///
     /// hook: The hook itself.
     void hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
+
+    /// Returns a HILTI expression referencing the current parser object
+    /// (assuming parsing is in process; if not aborts());
+    shared_ptr<hilti::Expression> hiltiSelf();
+
+    /// Parses a unit value from the current input position. Must be called
+    /// only while parsing is in progress. This method is primarily for the
+    /// CoderBuilder.
+    ///
+    /// u: The type of the unit to parse.
+    ///
+    /// params: The type parameters to pass into the parser.
+    ///
+    /// Returns: The parsed value.
+    shared_ptr<hilti::Expression> hiltiParseUnit(shared_ptr<type::Unit> u, const expression_list& params);
 
 private:
     bool _compiling = false;

@@ -20,6 +20,9 @@ CodeBuilder::~CodeBuilder()
 
 void CodeBuilder::hiltiStatement(shared_ptr<Statement> stmt)
 {
+    if ( ! ast::tryCast<statement::Block>(stmt) )
+        cg()->builder()->addComment(util::fmt("Statement: %s", stmt->render()));
+
     bool success = processOne(stmt);
     assert(success);
 }
@@ -108,6 +111,8 @@ void CodeBuilder::visit(constant::Tuple* t)
 
 void CodeBuilder::visit(ctor::Bytes* b)
 {
+    auto result = hilti::builder::bytes::create(b->value(), b->location());
+    setResult(result);
 }
 
 void CodeBuilder::visit(ctor::List* l)
@@ -185,6 +190,11 @@ void CodeBuilder::visit(expression::Constant* c)
 
 void CodeBuilder::visit(expression::Ctor* c)
 {
+    shared_ptr<hilti::Node> result = nullptr;
+    bool success = processOne(c->ctor(), &result);
+    assert(success);
+    assert(result);
+    setResult(result);
 }
 
 void CodeBuilder::visit(expression::Function* f)
@@ -224,6 +234,25 @@ void CodeBuilder::visit(expression::ParserState* p)
         expr = hilti::builder::id::create("__dollardollar");
         break;
 
+     case expression::ParserState::PARAMETER: {
+         shared_ptr<hilti::Type> ftype = nullptr;
+
+         auto fname = util::fmt("__p_%s", p->id()->name());
+
+         for ( auto p : cg()->unit()->parameters() ) {
+             if ( p->id()->name() == p->id()->name() ) {
+                 ftype = cg()->hiltiType(p->type());
+                 break;
+             }
+         }
+
+         assert(ftype);
+
+         expr = cg()->moduleBuilder()->addTmp("param", ftype, nullptr, false);
+         cg()->builder()->addInstruction(expr, hilti::instruction::struct_::Get, cg()->hiltiSelf(), hilti::builder::string::create(fname));
+         break;
+     }
+
      default:
         internalError("unknown ParserState kind");
     }
@@ -249,7 +278,7 @@ void CodeBuilder::visit(statement::Block* b)
         processOne(d);
 
     for ( auto s : b->statements() )
-        processOne(s);
+        hiltiStatement(s);
 }
 
 void CodeBuilder::visit(statement::Expression* e)

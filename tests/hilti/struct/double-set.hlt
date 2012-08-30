@@ -1,0 +1,23 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = struct {
+    string foo
+    }
+
+void run() {
+    local ref<A> a
+    local string s
+
+    a = new A
+    struct.set a "foo" "1111"
+    struct.set a "foo" "2222"
+    s = struct.get a "foo"
+    call Hilti::print(s)
+}

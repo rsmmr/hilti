@@ -41,11 +41,13 @@ public:
        _indent = 0;
        _bol = true;
        _print_type_ids = 1;
+       _linefeeds = 0;
     }
 
     // These should really be private.
     bool _bol = true;
     bool _no_indent = false;
+    int  _linefeeds = 0;
     int  _print_type_ids = 1;
 
     /// Increases indentation level in output by one.
@@ -125,6 +127,7 @@ private:
        }
        _bol = false;
        _no_indent = false;
+       _linefeeds = 0;
     }
 
     std::ostream& _out;
@@ -162,9 +165,10 @@ inline Printer<AstInfo>& endl(Printer<AstInfo>& p)
 {
     if ( p.singleLine() )
         p.out() << ' ';
-    else
+    else if ( ! p._linefeeds )
         p.out() << std::endl;
 
+    ++p._linefeeds;
     p._bol = true;
     return p;
 }

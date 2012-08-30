@@ -1007,7 +1007,7 @@ public:
 private:
     bool _anonymous = false;
     node_ptr<ID> _id;
-    shared_ptr<binpac::Type> _type;
+    node_ptr<binpac::Type> _type;
     node_ptr<AttributeSet> _attrs;
     std::list<node_ptr<Hook>> _hooks;
 

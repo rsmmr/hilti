@@ -76,6 +76,11 @@ int CodeGen::debugLevel() const
     return _debug;
 }
 
+shared_ptr<binpac::type::Unit> CodeGen::unit() const
+{
+    return _parser_builder->unit();
+}
+
 shared_ptr<hilti::Expression> CodeGen::hiltiExpression(shared_ptr<Expression> expr, shared_ptr<Type> coerce_to)
 {
     assert(_compiling);
@@ -158,4 +163,14 @@ void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
 void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
 {
    _parser_builder->hiltiDefineHook(id, hook);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiSelf()
+{
+    return _parser_builder->hiltiSelf();
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiParseUnit(shared_ptr<type::Unit> u, const expression_list& params)
+{
+    return _parser_builder->hiltiParseUnit(u, params);
 }

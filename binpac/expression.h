@@ -257,19 +257,26 @@ class ParserState : public CustomExpression
 {
 public:
     enum Kind {
-        SELF,        /// A \a self expression.
-        DOLLARDOLLAR /// A \a $$ expression.
+        SELF,         /// A \a self expression.
+        DOLLARDOLLAR, /// A \a $$ expression.
+        PARAMETER     /// A type parameter, with \a id giving its name. 
     };
 
     /// Constructor.
     ///
     /// kind: The kind of expression (i.e., the specific value the expression references).
     ///
+    /// id: An optional ID associated with the state reference. Depends on
+    /// the kind whether it's needed.
+    ///
     /// l: An associated location.
-    ParserState(Kind kind, const Location& l=Location::None);
+    ParserState(Kind kind, shared_ptr<binpac::ID> id = nullptr, const Location& l=Location::None);
 
     /// Return the kind of expression.
     Kind kind() const;
+
+    /// Returns the associated ID, if set.
+    shared_ptr<binpac::ID> id() const;
 
     /// Sets the expression's type. This is intended to be used from the
     /// resolver only.
@@ -281,6 +288,7 @@ public:
 
 private:
     Kind _kind;
+    node_ptr<binpac::ID> _id;
     node_ptr<binpac::Type> _type;
 };
 

@@ -3067,9 +3067,9 @@ void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, int field
 void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const string& field, shared_ptr<Expression> val)
 {
     auto fd = _getField(this, stype, field);
-    auto lval = llvmCoerceTo(llvmValue(val), val->type(), fd.second->type());
+    auto cval = val->coerceTo(fd.second->type());
+    auto lval = llvmValue(cval);
     llvmStructSet(stype, sval, field, lval);
-    llvmDtor(lval, fd.second->type(), false, "llvmStructSet");
 }
 
 void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, int field, llvm::Value* val)

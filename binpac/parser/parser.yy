@@ -161,7 +161,7 @@ using namespace binpac;
 %type <bval>             opt_debug opt_foreach opt_param_const
 %type <parameter>        param
 %type <result>           rtype
-%type <parameters>       params opt_params
+%type <parameters>       params opt_params opt_unit_params
 %type <hook>             unit_hook
 %type <hooks>            unit_hooks opt_unit_hooks
 %type <unit_item>        unit_field unit_item unit_prop unit_global_hook unit_var unit_switch
@@ -292,7 +292,7 @@ local_decl    : LOCAL local_id ':' type opt_expr { auto v = std::make_shared<var
                                                    $$ = std::make_shared<declaration::Variable>($2, Declaration::PRIVATE, v, loc(@$)); }
 
 type          : base_type                        { $$ = $1; }
-              | scoped_id                        { $$ = std::make_shared<type::TypeByName>($1, loc(@$)); }
+              | scoped_id                        { $$ = std::make_shared<type::Unknown>($1, loc(@$)); }
 
 base_type     : ANY                              { $$ = std::make_shared<type::Any>(loc(@$)); }
               | ADDR                             { $$ = std::make_shared<type::Address>(loc(@$)); }
@@ -336,7 +336,11 @@ id_with_int   : local_id                         { $$ = std::make_pair($1, -1); 
               | local_id '=' CINTEGER            { $$ = std::make_pair($1, $3); }
               ;
 
-unit          : UNIT opt_params '{' opt_unit_items '}'
+opt_unit_params
+              : '(' opt_params ')'               { $$ = $2; }
+              | /* empty */                      { $$ = parameter_list(); }
+
+unit          : UNIT opt_unit_params '{' opt_unit_items '}'
                                                  { $$ = std::make_shared<type::Unit>($2, $4, loc(@$)); }
 
 unit_items    : unit_item unit_items             { $$ = $2; $$.push_front($1); }

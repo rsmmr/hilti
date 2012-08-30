@@ -29,8 +29,6 @@ static void _printUnitHooks(Printer& p, const hook_list& hooks)
 
 static void _printUnitFieldCommon(Printer& p, type::unit::item::Field* i)
 {
-    auto parseable = ast::checkedCast<type::PacType>(i->type());
-
     if ( i->condition() )
         p << "if ( " << i->condition() << " ) ";
 
@@ -399,6 +397,10 @@ void Printer::visit(expression::ParserState* s)
 
      case expression::ParserState::DOLLARDOLLAR:
         p << "$$";
+        break;
+
+     case expression::ParserState::PARAMETER:
+        p << s->id();
         break;
 
      default:

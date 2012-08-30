@@ -13,6 +13,7 @@ type FilterUnsupported = exception<string>
 type Parser = struct {
     string name,                  # Short descriptive name.
     string description,           # Longer textual description.
+    int<32> params,               # Number of additional (type) parameters that the parse functions receive.
     ref<list<string>> mime_types, # MIME types handled by this parser.
     caddr parse_func,             # The C function performing the parsing.
     caddr resume_func,            # The C function resuming parsing after a yield.

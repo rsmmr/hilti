@@ -22,6 +22,10 @@ public:
     ParserBuilder(CodeGen* cg);
     virtual ~ParserBuilder();
 
+    /// Returns the type of the currently parsed unit. The method must only
+    /// be called when parsing is in progress.
+    shared_ptr<type::Unit> unit() const;
+
     /// Generates the function to parse input according to a unit's grammar.
     ///
     /// u: The unit to generate the parser for.
@@ -48,6 +52,20 @@ public:
     ///
     /// hook: The hook itself.
     void hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
+
+    /// Returns a HILTI expression referencing the current parser object
+    /// (assuming parsing is in process; if not aborts());
+    shared_ptr<hilti::Expression> hiltiSelf();
+
+    /// Parses a unit value from the current input position. Must be called
+    /// only while parsing is in progress.
+    ///
+    /// u: The type of the unit to parse.
+    ///
+    /// params: The type parameters to pass into the parser.
+    ///
+    /// Returns: The parsed value.
+    shared_ptr<hilti::Expression> hiltiParseUnit(shared_ptr<type::Unit> u, const expression_list& params);
 
 protected:
     /// Returns the current parsing state.
@@ -115,6 +133,9 @@ protected:
     void visit(type::Vector* v) override;
 
 private:
+    // TODO: This should be defined in the HILTI namespace.
+    typedef std::list<shared_ptr<hilti::Expression>> hilti_expression_list;
+
     // Pushes an empty parse function with the right standard signature.
     //
     // Returns: An expression referencing the function.
@@ -125,7 +146,7 @@ private:
 
     // Initializes the current parse object before starting the parsing
     // process.
-    void _prepareParseObject();
+    void _prepareParseObject(const hilti_expression_list& params);
 
     // Finalizes the current parser when the parsing process has finished.
     void _finalizeParseObject();

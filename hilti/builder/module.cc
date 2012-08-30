@@ -130,7 +130,7 @@ std::pair<shared_ptr<ID>, shared_ptr<Declaration>> ModuleBuilder::_uniqueDecl(sh
         if ( style == CHECK_UNIQUE )
             fatalError(::util::fmt("ModuleBuilder: ID %s already defined", uid->name()));
 
-        std::string s = ::util::fmt("%s.%d", id->name().c_str(), ++i);
+        std::string s = ::util::fmt("%s_%d", id->name().c_str(), ++i);
         uid = std::make_shared<ID>(s, uid->location());
     }
 

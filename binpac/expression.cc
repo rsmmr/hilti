@@ -145,16 +145,25 @@ shared_ptr<Type> expression::MemberAttribute::type() const
     return _type;
 }
 
-expression::ParserState::ParserState(Kind kind, const Location& l) : CustomExpression(l)
+expression::ParserState::ParserState(Kind kind, shared_ptr<binpac::ID> id, const Location& l) : CustomExpression(l)
 {
     _kind = kind;
-    _type = std::make_shared<type::Unknown>(l);
+    _id = id;
+
     addChild(_type);
+    addChild(_id);
+
+    _type = std::make_shared<type::Unknown>(l);
 }
 
 expression::ParserState::Kind expression::ParserState::kind() const
 {
     return _kind;
+}
+
+shared_ptr<binpac::ID> expression::ParserState::id() const
+{
+    return _id;
 }
 
 shared_ptr<Type> expression::ParserState::type() const

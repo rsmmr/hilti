@@ -116,6 +116,9 @@ void ScopeBuilder::visit(declaration::Type* t)
         uscope->insert(std::make_shared<ID>("$$"), std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR));
         uscope->setParent(current<Module>()->body()->scope());
 
+        for ( auto p : unit->parameters() )
+            uscope->insert(p->id(), std::make_shared<expression::ParserState>(expression::ParserState::PARAMETER, p->id()));
+
         for ( auto i : unit->items() ) {
             for ( auto h : i->hooks() )
                 h->setUnit(unit);
