@@ -2,6 +2,8 @@
 #ifndef BINPAC_EXPRESSION_H
 #define BINPAC_EXPRESSION_H
 
+#include <vector>
+
 #include <ast/expression.h>
 
 #include "common.h"
@@ -239,7 +241,7 @@ public:
     MemberAttribute(shared_ptr<binpac::ID> attr, const Location& l=Location::None);
 
     /// Returns the expression member attribute ID.
-    shared_ptr<binpac::ID> attribute() const;
+    shared_ptr<binpac::ID> id() const;
 
     shared_ptr<Type> type() const override;
 
@@ -270,7 +272,7 @@ public:
     /// the kind whether it's needed.
     ///
     /// l: An associated location.
-    ParserState(Kind kind, shared_ptr<binpac::ID> id = nullptr, const Location& l=Location::None);
+    ParserState(Kind kind, shared_ptr<binpac::ID> id = nullptr, shared_ptr<Type> type = nullptr, const Location& l=Location::None);
 
     /// Return the kind of expression.
     Kind kind() const;
@@ -340,11 +342,20 @@ public:
     /// Returns the operator.
     shared_ptr<Operator> operator_() const;
 
+    /// Returns the first operator, or null if none.
+    shared_ptr<Expression> op1() const;
+
+    /// Returns the second operator, or null if none.
+    shared_ptr<Expression> op2() const;
+
+    /// Returns the third operator, or null if none.
+    shared_ptr<Expression> op3() const;
+
     /// Returns the operator type.
     binpac::operator_::Kind kind() const;
 
     /// Returns the operands.
-    const std::list<node_ptr<Expression>>& operands() const;
+    expression_list operands() const;
 
     shared_ptr<Type> type() const override;
 
@@ -354,7 +365,7 @@ protected:
 
 private:
     shared_ptr<Operator> _op;
-    std::list<node_ptr<Expression>> _ops;
+    std::vector<node_ptr<Expression>> _ops;
 };
 
 }

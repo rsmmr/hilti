@@ -42,6 +42,7 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/parser.cc  PROPERTIES GENERATED 1)
 
 set(operators
     operators/integer.cc
+    operators/unit.cc
 )
 
 add_custom_command(

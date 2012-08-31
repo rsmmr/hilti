@@ -97,9 +97,6 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     passes::ScopePrinter     scope_printer(std::cerr);
     passes::Validator        validator;
 
-    if ( ! op_resolver.run(module) )
-        return false;
-
     if ( ! scope_builder.run(module) )
         return false;
 
@@ -107,6 +104,9 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
         scope_printer.run(module);
 
     if ( ! id_resolver.run(module) )
+        return false;
+
+    if ( ! op_resolver.run(module) )
         return false;
 
     if ( verify && ! validator.run(module) )

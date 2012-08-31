@@ -16,6 +16,7 @@ enum Kind {
     None = 0,
     Assign,
     Attribute,
+    AttributeAssign,
     BitAnd,
     BitOr,
     BitXor,

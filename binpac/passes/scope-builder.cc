@@ -112,7 +112,7 @@ void ScopeBuilder::visit(declaration::Type* t)
 
     if ( unit ) {
         auto uscope = unit->scope();
-        uscope->insert(std::make_shared<ID>("self"), std::make_shared<expression::ParserState>(expression::ParserState::SELF));
+        uscope->insert(std::make_shared<ID>("self"), std::make_shared<expression::ParserState>(expression::ParserState::SELF, nullptr, unit));
         uscope->insert(std::make_shared<ID>("$$"), std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR));
         uscope->setParent(current<Module>()->body()->scope());
 

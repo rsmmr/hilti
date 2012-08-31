@@ -283,11 +283,13 @@ public:
 class MemberAttribute : public binpac::Type
 {
 public:
-    /// Constructor.
+    /// Constructor for a type that matches only a specific attribute.
     ///
-    /// attr: If not given, the type matches any member attribute. If given,
-    /// it matches only the specified ID value.
-    MemberAttribute(shared_ptr<ID> attr = nullptr, const Location& l=Location::None);
+    /// attr: The attribute value to match.
+    MemberAttribute(shared_ptr<ID> attr, const Location& l=Location::None);
+
+    /// Constructor for a wildcard map type.
+    MemberAttribute(const Location& l=Location::None);
 
     /// Returns the specific member attribute the type matches, or null if
     /// any.

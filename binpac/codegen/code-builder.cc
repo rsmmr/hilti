@@ -2,9 +2,12 @@
 #include "code-builder.h"
 #include "declaration.h"
 #include "expression.h"
+#include "type.h"
 #include "statement.h"
 #include "function.h"
 #include "grammar.h"
+
+#include "autogen/operators/unit.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -354,4 +357,21 @@ void CodeBuilder::visit(expression::operator_::integer::Minus* i)
 
 void CodeBuilder::visit(expression::operator_::integer::Plus* i)
 {
+}
+
+void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
+{
+    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+
+    auto item = unit->item(attr->id());
+    assert(item && item->type());
+
+    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->type()), nullptr, false);
+    cg()->builder()->addInstruction(ival,
+                                    hilti::instruction::struct_::Get,
+                                    cg()->hiltiExpression(i->op1()),
+                                    hilti::builder::string::create(attr->id()->name()));
+
+    setResult(ival);
 }

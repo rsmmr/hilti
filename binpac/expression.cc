@@ -135,7 +135,7 @@ expression::MemberAttribute::MemberAttribute(shared_ptr<binpac::ID> id, const Lo
     addChild(_type);
 }
 
-shared_ptr<binpac::ID> expression::MemberAttribute::attribute() const
+shared_ptr<binpac::ID> expression::MemberAttribute::id() const
 {
     return _attribute;
 }
@@ -145,15 +145,15 @@ shared_ptr<Type> expression::MemberAttribute::type() const
     return _type;
 }
 
-expression::ParserState::ParserState(Kind kind, shared_ptr<binpac::ID> id, const Location& l) : CustomExpression(l)
+expression::ParserState::ParserState(Kind kind, shared_ptr<binpac::ID> id, shared_ptr<Type> type, const Location& l) : CustomExpression(l)
 {
     _kind = kind;
     _id = id;
+    _type = _type ? std::make_shared<type::Unknown>(l) : type;
 
     addChild(_type);
     addChild(_id);
-
-    _type = std::make_shared<type::Unknown>(l);
+    addChild(_type);
 }
 
 expression::ParserState::Kind expression::ParserState::kind() const
@@ -241,9 +241,14 @@ operator_::Kind expression::ResolvedOperator::kind() const
     return _op->kind();
 }
 
-const std::list<node_ptr<Expression>>& expression::ResolvedOperator::operands() const
+expression_list expression::ResolvedOperator::operands() const
 {
-    return _ops;
+    expression_list ops;
+
+    for ( auto o : _ops )
+        ops.push_back(o);
+
+    return ops;
 }
 
 shared_ptr<Type> expression::ResolvedOperator::type() const
@@ -256,3 +261,17 @@ shared_ptr<Type> expression::ResolvedOperator::type() const
     return _op->type(ops);
 }
 
+shared_ptr<Expression> expression::ResolvedOperator::op1() const
+{
+    return _ops.size() >= 1 ? _ops[0] : nullptr;
+}
+
+shared_ptr<Expression> expression::ResolvedOperator::op2() const
+{
+    return _ops.size() >= 2 ? _ops[1] : nullptr;
+}
+
+shared_ptr<Expression> expression::ResolvedOperator::op3() const
+{
+    return _ops.size() >= 3 ? _ops[2] : nullptr;
+}

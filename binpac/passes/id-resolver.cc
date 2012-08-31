@@ -25,15 +25,28 @@ bool IDResolver::run(shared_ptr<ast::NodeBase> module)
 
 void IDResolver::visit(expression::ID* i)
 {
-    auto body = current<statement::Block>();
+    shared_ptr<Scope> scope = nullptr;
 
-    if ( ! body ) {
-        error(i, "ID expression outside of any scope");
-        return;
+    // If we're right inside a unit, use that as our reference. Otherwise,
+    // the closed Block.
+    auto unit = i->firstParent<type::Unit>();
+
+    if ( unit )
+        scope = unit->scope();
+
+    else {
+        auto body = current<statement::Block>();
+
+        if ( ! body ) {
+            error(i, "ID expression outside of any scope");
+            return;
+        }
+
+        scope = body->scope();
     }
 
     auto id = i->sharedPtr<expression::ID>();
-    auto val = body->scope()->lookup(id->id());
+    auto val = scope->lookup(id->id());
 
     if ( ! val ) {
         error(i, util::fmt("unknown ID %s", id->id()->pathAsString().c_str()));

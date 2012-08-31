@@ -63,6 +63,7 @@ class $CLASS : public ResolvedOperator
 {
 public:
     $CLASS(shared_ptr<Operator> op, const expression_list& ops, const Location& l);
+    ACCEPT_VISITOR(::binpac::expression::ResolvedOperator);
 };
 
 } // namespace $NAMESPACE

@@ -167,6 +167,11 @@ MemberAttribute::MemberAttribute(shared_ptr<ID> attr, const Location& l) : binpa
     addChild(_attribute);
 }
 
+MemberAttribute::MemberAttribute(const Location& l) : binpac::Type(l)
+{
+    setWildcard(true);
+}
+
 shared_ptr<ID> MemberAttribute::attribute() const
 {
     return _attribute;
@@ -182,7 +187,7 @@ bool MemberAttribute::equal(shared_ptr<binpac::Type> other) const
     auto mother = std::dynamic_pointer_cast<MemberAttribute>(other);
     assert(mother);
 
-    return _attribute ? _attribute == mother->_attribute : true;
+    return _attribute && mother->_attribute ? _attribute == mother->_attribute : true;
 }
 
 type::Module::Module(const Location& l) : binpac::Type(l)
