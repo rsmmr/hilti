@@ -7,7 +7,7 @@ MESSAGE(STATUS "Adapting compiler settings")
 
 set(clang_debug_flags  "-DDEBUG -Wno-error=unused-function -Werror -O0")
 
-set(clang_cflags_Linux               "-lcxxrt") # TODO: Why not in ldflags?
+set(clang_cflags_Linux               "-lcxxrt -ldl") # TODO: Why not in ldflags?
 set(clang_ldflags_Linux              "")
 set(clang_shared_linker_flags_Linux  "-Wl,--no-undefined") # Let it warn about undefind symbols. Default on Darwin.
 

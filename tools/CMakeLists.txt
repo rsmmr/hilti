@@ -18,7 +18,7 @@ target_link_libraries(hilti-doc binpac hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
 add_custom_command(
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/hilti-prof.c
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/hilti-prof.c hilti-rt-dbg hilti-rt
     COMMAND ${hilti_build}
     ARGS    -m -o ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof ${CMAKE_CURRENT_SOURCE_DIR}/hilti-prof.c
     )
