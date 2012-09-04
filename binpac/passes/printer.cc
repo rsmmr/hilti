@@ -49,7 +49,7 @@ static string _linkage(Declaration::Linkage linkage)
         return "";
 
      case Declaration::EXPORTED:
-        return "export";
+        return "export ";
 
      default:
         fprintf(stderr, "unknown linkage %d in Printer::_linkage()", (int)linkage);
@@ -899,7 +899,7 @@ void Printer::visit(type::Unit* u)
         p << i;
 
     popIndent();
-    p << "}" << endl;
+    p << "}";
 }
 
 void Printer::visit(type::Unknown* u)
@@ -985,13 +985,13 @@ void Printer::visit(type::unit::item::field::Constant* c)
     _printUnitFieldCommon(p, c);
 }
 
-void Printer::visit(type::unit::item::field::RegExp* r)
+void Printer::visit(type::unit::item::field::Ctor* r)
 {
     Printer& p = *this;
     if ( r->id() )
         p << r->id();
 
-    p << ": /" << r->regexp() << "/ ";
+    p << ": " << r->ctor();
 
     _printUnitFieldCommon(p, r);
 }

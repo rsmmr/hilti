@@ -108,20 +108,53 @@ shared_ptr<Expression> Terminal::sink() const
     return _sink;
 }
 
-Literal::Literal(const string& symbol, shared_ptr<Expression> literal, shared_ptr<Expression> expr, filter_func filter, const Location& l)
-    : Terminal(symbol, expr ? expr->type() : literal->type(), expr, filter, l)
+Literal::Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+    : Terminal(symbol, expr ? expr->type() : type, expr, filter, l)
 {
-    _literal = literal;
 }
 
-shared_ptr<Expression> Literal::literal() const
+production::Constant::Constant(const string& symbol, shared_ptr<binpac::Constant> constant, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+    : Literal(symbol, ast::type::checkedTrait<type::trait::Parseable>(constant->type())->fieldType(), expr, filter, l)
 {
-    return _literal;
+    _const = constant;
+    addChild(_const);
 }
 
-string Literal::renderProduction() const
+shared_ptr<binpac::Constant> production::Constant::constant() const
 {
-    return _literal->render();
+    return _const;
+}
+
+string production::Constant::renderProduction() const
+{
+    return _const->render() + util::fmt(" (%s)", type()->render());
+}
+
+shared_ptr<Expression> production::Constant::literal() const
+{
+    return std::make_shared<expression::Constant>(_const);
+}
+
+production::Ctor::Ctor(const string& symbol, shared_ptr<binpac::Ctor> ctor, shared_ptr<Expression> expr, filter_func filter, const Location& l)
+    : Literal(symbol, ast::type::checkedTrait<type::trait::Parseable>(ctor->type())->fieldType(), expr, filter, l)
+{
+    _ctor = ctor;
+    addChild(_ctor);
+}
+
+shared_ptr<binpac::Ctor> production::Ctor::ctor() const
+{
+    return _ctor;
+}
+
+string production::Ctor::renderProduction() const
+{
+    return _ctor->render() + util::fmt(" (%s)", type()->render());
+}
+
+shared_ptr<Expression> production::Ctor::literal() const
+{
+    return std::make_shared<expression::Ctor>(_ctor);
 }
 
 production::Variable::Variable(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)

@@ -128,6 +128,12 @@ void TypeBuilder::visit(type::Port* p)
 
 void TypeBuilder::visit(type::RegExp* r)
 {
+    TypeInfo ti;
+
+    auto t = hilti::builder::regexp::type(hilti::builder::regexp::attribute_list(), r->location());
+    ti.hilti_type = hilti::builder::reference::type(t, r->location());
+
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Set* s)
@@ -231,7 +237,7 @@ void TypeBuilder::visit(type::unit::item::field::Constant* c)
 {
 }
 
-void TypeBuilder::visit(type::unit::item::field::RegExp* r)
+void TypeBuilder::visit(type::unit::item::field::Ctor* c)
 {
 }
 

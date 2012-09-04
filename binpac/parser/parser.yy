@@ -149,7 +149,7 @@ using namespace binpac;
 %type <ctor>             ctor
 %type <declaration>      global_decl type_decl var_decl const_decl func_decl hook_decl local_decl
 %type <declarations>     opt_global_decls opt_local_decls
-%type <expression>       expr list_expr opt_list_expr opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr const_expr member_expr
+%type <expression>       expr list_expr opt_list_expr opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
 %type <id>               local_id scoped_id hook_id opt_unit_field_name property_id
 %type <statement>        stmt block
@@ -171,6 +171,9 @@ using namespace binpac;
 %type <attributes>       opt_type_attrs
 %type <switch_case>      unit_switch_case
 %type <switch_cases>     unit_switch_cases
+%type <re_patterns>      re_patterns
+%type <re_pattern>       re_pattern
+%type <sval>             re_pattern_constant
 %%
 
 %start module;
@@ -367,11 +370,11 @@ unit_prop     : property_id ';'                  { $$ = std::make_shared<type::u
 unit_field    : opt_unit_field_name unit_field_type opt_field_args opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::field::Type>($1, $2, nullptr, $5, $7, $4, $3, $6, loc(@$)); }
 
-              | const_expr opt_unit_field_cond opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::Constant>($1, $2, $3, loc(@$)); }
+              | opt_unit_field_name constant opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::field::Constant>($1, $2, $4, $6, $3, $5, loc(@$)); }
 
-              | opt_unit_field_name CREGEXP opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::RegExp>($2, $1, nullptr, $4, $6, $3, $5, loc(@$)); }
+              | opt_unit_field_name ctor opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::field::Ctor>($1, $2, nullptr, $4, $6, $3, $5, loc(@$)); }
 
 unit_switch   : SWITCH '(' expr ')' '{' unit_switch_cases '}' ';'
                                                  { $$ = std::make_shared<type::unit::item::field::Switch>($3, $6, hook_list(), loc(@$)); }
@@ -438,7 +441,7 @@ constant      : CINTEGER                         { $$ = std::make_shared<constan
               ;
 
 ctor          : CBYTES                           { $$ = std::make_shared<ctor::Bytes>($1, loc(@$)); }
-//            | ctor_regexp                      { $$ = std::make_shared<ctor::Regexp>($1, loc(@$)); }
+              | re_patterns                      { $$ = std::make_shared<ctor::RegExp>($1, attribute_list(), loc(@$)); }
 
               | LIST                '(' opt_exprs ')' { $$ = std::make_shared<ctor::List>(nullptr, $3, loc(@$)); }
               | LIST   '<' type '>' '(' opt_exprs ')' { $$ = std::make_shared<ctor::List>($3, $6, loc(@$)); }
@@ -451,6 +454,16 @@ ctor          : CBYTES                           { $$ = std::make_shared<ctor::B
               | VECTOR '<' type '>' '(' opt_exprs ')' { $$ = std::make_shared<ctor::Vector>($3, $6, loc(@$)); }
 
               ;
+
+re_patterns   : re_patterns '|' re_pattern       { $$ = $1; $$.push_back($3); }
+              | re_pattern                       { $$ = ctor::RegExp::pattern_list(); $$.push_back($1); }
+
+re_pattern    : re_pattern_constant              { $$ = std::make_pair($1, ""); }
+              | re_pattern_constant IDENT        { $$ = std::make_pair($1, $2); }
+
+re_pattern_constant
+              : '/' { driver.enablePatternMode(); } CREGEXP { driver.disablePatternMode(); } '/' { $$ = $3; }
+
 
 expr          : scoped_id                        { $$ = std::make_shared<expression::ID>($1, loc(@$)); }
               | '(' expr ')'                     { $$ = $2; }
@@ -517,8 +530,6 @@ opt_expr      : expr                             { $$ = $1; }
 id_expr       : local_id                         { $$ = std::make_shared<expression::ID>($1, loc(@$)); }
 
 member_expr   : local_id                         { $$ = std::make_shared<expression::MemberAttribute>($1, loc(@$)); }
-
-const_expr    : constant                         { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
 
 exprs         : expr ',' exprs                   { $$ = $3; $$.push_front($1); }
               | expr                             { $$ = expression_list(); $$.push_back($1); }

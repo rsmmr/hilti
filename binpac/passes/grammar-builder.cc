@@ -102,10 +102,15 @@ void GrammarBuilder::visit(type::unit::item::field::Constant* c)
         return;
 }
 
-void GrammarBuilder::visit(type::unit::item::field::RegExp* r)
+void GrammarBuilder::visit(type::unit::item::field::Ctor* c)
 {
     if ( ! _in_decl )
         return;
+
+    auto sym = "ctor:" + c->id()->name();
+    auto prod = std::make_shared<production::Ctor>(sym, c->ctor());
+    prod->pgMeta()->field = c->sharedPtr<type::unit::item::Field>();
+    setResult(prod);
 }
 
 void GrammarBuilder::visit(type::unit::item::field::Switch* s)

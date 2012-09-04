@@ -116,7 +116,7 @@ protected:
     void visit(type::unit::item::Property* ) override;
     void visit(type::unit::item::Variable* ) override;
     void visit(type::unit::item::field::Constant* ) override;
-    void visit(type::unit::item::field::RegExp* ) override;
+    void visit(type::unit::item::field::Ctor* ) override;
     void visit(type::unit::item::field::Switch* ) override;
     void visit(type::unit::item::field::Type* ) override;
     void visit(type::unit::item::field::switch_::Case* ) override;

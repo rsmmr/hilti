@@ -28,6 +28,9 @@ public:
     /// l: An associated location.
     Constant(const Location& l=Location::None);
 
+    /// Returns a readable representation of the constant.
+    string render() override;
+
     ACCEPT_VISITOR_ROOT();
 };
 

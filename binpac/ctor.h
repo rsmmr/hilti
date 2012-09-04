@@ -8,6 +8,7 @@
 #include <ast/visitor.h>
 
 #include "common.h"
+#include "passes/printer.h"
 
 namespace binpac {
 
@@ -19,6 +20,9 @@ public:
     ///
     /// l: An associated location.
     Ctor(const Location& l=Location::None);
+
+    /// Returns a readable representation of the ctor.
+    string render() override;
 
     ACCEPT_VISITOR_ROOT();
 };
@@ -182,10 +186,23 @@ public:
 
     /// Constructor.
     ///
-    /// patterns: List of patterns.
+    /// regexp: The regexp.
+    ///
+    /// flags: The string with flags.
+    ///
+    /// attrs: Type attributes that will become part of the returned type::RegExp.
     ///
     /// l: An associated location.
-    RegExp(const pattern_list& patterns, const Location& l=Location::None);
+    RegExp(const string& regexp, const string& flags, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
+
+    /// Constructor.
+    ///
+    /// patterns: List of patterns.
+    ///
+    /// attrs: Type attributes that will become part of the returned type::RegExp.
+    ///
+    /// l: An associated location.
+    RegExp(const pattern_list& patterns, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
 
     /// Returns the pattern.
     const pattern_list& patterns() const;

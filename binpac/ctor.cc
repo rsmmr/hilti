@@ -3,12 +3,20 @@
 #include "id.h"
 #include "expression.h"
 #include "type.h"
+#include "passes/printer.h"
 
 using namespace binpac;
 using namespace binpac::ctor;
 
 Ctor::Ctor(const Location& l) : ast::Ctor<AstInfo>(l)
 {
+}
+
+string Ctor::render()
+{
+    std::ostringstream s;
+    passes::Printer(s, true).run(sharedPtr<Node>());
+    return s.str();
 }
 
 Bytes::Bytes(const string& b, const Location& l) : Ctor(l)
@@ -144,14 +152,20 @@ Map::element_list Map::elements() const
         shared_ptr<Expression> e2 = e.second;
         elems.push_back(std::make_pair(e1, e2));
     }
-    
+
     return elems;
 }
 
-RegExp::RegExp(const pattern_list& patterns, const Location& l)
+RegExp::RegExp(const string& regexp, const string& flags, const attribute_list& attrs, const Location& l)
+{
+    _patterns = { pattern(regexp, flags) };
+    _type = std::make_shared<type::RegExp>(attrs, l);
+}
+
+RegExp::RegExp(const pattern_list& patterns, const attribute_list& attrs, const Location& l)
 {
     _patterns = patterns;
-    _type = std::make_shared<type::RegExp>(attribute_list(), l);
+    _type = std::make_shared<type::RegExp>(attrs, l);
     addChild(_type);
 }
 

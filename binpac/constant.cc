@@ -15,6 +15,13 @@ Constant::Constant(const Location& l)
 {
 }
 
+string Constant::render()
+{
+    std::ostringstream s;
+    passes::Printer(s, true).run(sharedPtr<Node>());
+    return s.str();
+}
+
 ConstantParseError::ConstantParseError(Constant* c, const string& msg)
     : ast::RuntimeError(msg, c)
 {

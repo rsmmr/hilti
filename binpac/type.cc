@@ -591,11 +591,6 @@ shared_ptr<binpac::Type> Bytes::elementType()
     return shared_ptr<Type>(new iterator::Bytes(location()));
 }
 
-shared_ptr<Type> Bytes::fieldType()
-{
-    return std::make_shared<type::Bytes>(location());
-}
-
 std::list<trait::Parseable::ParseAttribute> Bytes::parseAttributes() const
 {
     return {
@@ -650,11 +645,6 @@ shared_ptr<binpac::Type> List::elementType()
     return argType();
 }
 
-shared_ptr<binpac::Type> List::fieldType()
-{
-    return argType();
-}
-
 Vector::Vector(shared_ptr<Type> etype, const Location& l)
 : TypedPacType(etype, l)
 {
@@ -674,11 +664,6 @@ shared_ptr<binpac::Type> Vector::elementType()
     return argType();
 }
 
-shared_ptr<binpac::Type> Vector::fieldType()
-{
-    return argType();
-}
-
 Set::Set(shared_ptr<Type> etype, const Location& l)
 : TypedPacType(etype, l)
 {
@@ -694,11 +679,6 @@ shared_ptr<binpac::Type> Set::iterType()
 }
 
 shared_ptr<binpac::Type> Set::elementType()
-{
-    return argType();
-}
-
-shared_ptr<binpac::Type> Set::fieldType()
 {
     return argType();
 }
@@ -772,6 +752,10 @@ trait::Parameterized::type_parameter_list RegExp::parameters() const
     return params;
 }
 
+shared_ptr<binpac::Type> RegExp::fieldType()
+{
+    return std::make_shared<type::Bytes>();
+}
 
 TimerMgr::TimerMgr(const Location& l) : PacType(l)
 {
@@ -886,8 +870,14 @@ expression_list unit::item::Field::sinks() const
 }
 
 
-unit::item::field::Constant::Constant(shared_ptr<Expression> val, shared_ptr<Expression> cond, const hook_list& hooks, const Location& l)
-    : Field(nullptr, val->type(), val, cond, hooks, attribute_list(), expression_list(), l)
+unit::item::field::Constant::Constant(shared_ptr<ID> id,
+                                      shared_ptr<binpac::Constant> val,
+                                      shared_ptr<Expression> cond,
+                                      const hook_list& hooks,
+                                      const attribute_list& attrs,
+                                      const expression_list& sinks,
+                                      const Location& l)
+    : Field(id, val->type(), std::make_shared<expression::Constant>(val), cond, hooks, attrs, sinks, l)
 {
 }
 
@@ -919,22 +909,22 @@ expression_list unit::item::field::Type::parameters() const
     return params;
 }
 
-unit::item::field::RegExp::RegExp(const string& regexp,
-                           shared_ptr<ID> id,
+unit::item::field::Ctor::Ctor(shared_ptr<ID> id,
+                           shared_ptr<binpac::Ctor> ctor,
                            shared_ptr<Expression> default_,
                            shared_ptr<Expression> cond,
                            const hook_list& hooks,
                            const attribute_list& attrs,
                            const expression_list& sinks,
                            const Location& l)
-    : Field(id, std::make_shared<type::RegExp>(l), default_, cond, hooks, attrs, sinks, l)
+    : Field(id, ctor->type(), (default_ ? default_ : std::make_shared<expression::Ctor>(ctor)), cond, hooks, attrs, sinks, l)
 {
-    _regexp = regexp;
+    _ctor = ctor;
 }
 
-const string& unit::item::field::RegExp::regexp() const
+shared_ptr<binpac::Ctor> unit::item::field::Ctor::ctor() const
 {
-    return _regexp;
+    return _ctor;
 }
 
 unit::item::field::switch_::Case::Case(const expression_list& exprs, shared_ptr<Item> item, const Location& l) : Node(l)

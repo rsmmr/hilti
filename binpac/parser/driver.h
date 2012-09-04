@@ -8,6 +8,7 @@
 #include "common.h"
 #include "attribute.h"
 #include "declaration.h"
+#include "ctor.h"
 #include "type.h"
 #include "context.h"
 #include "visitor-interface.h"
@@ -64,6 +65,8 @@ struct yystype_binpac {
     hook_list hooks;
     unit_item_list unit_items;
     binpac::type::unit::item::field::Switch::case_list switch_cases;
+    ctor::RegExp::pattern_list re_patterns;
+    ctor::RegExp::pattern re_pattern;
 
     std::list<string> strings;
     std::list<std::pair<shared_ptr<ID>, int>> id_and_ints;

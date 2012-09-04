@@ -52,7 +52,6 @@ public:
     /// Returns: The type for parsed items.
     virtual shared_ptr<binpac::Type> fieldType();
 
-
     /// A description of a custom type attribute, as returned by
     /// parseAttributes*().
     struct ParseAttribute {
@@ -732,7 +731,6 @@ public:
 
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
-    shared_ptr<binpac::Type> fieldType() override;
     std::list<ParseAttribute> parseAttributes() const override;
 
     ACCEPT_VISITOR(PacType);
@@ -830,7 +828,6 @@ public:
 
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
-    shared_ptr<binpac::Type> fieldType() override;
 
     ACCEPT_VISITOR(PacType);
 };
@@ -851,7 +848,6 @@ public:
 
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
-    shared_ptr<binpac::Type> fieldType() override;
 
     ACCEPT_VISITOR(PacType);
 };
@@ -872,7 +868,6 @@ public:
 
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
-    shared_ptr<binpac::Type> fieldType() override;
 
     ACCEPT_VISITOR(PacType);
 };
@@ -928,6 +923,7 @@ public:
 
     bool _equal(shared_ptr<binpac::Type> other) const override;
     type_parameter_list parameters() const override;
+    shared_ptr<binpac::Type> fieldType() override;
 
     ACCEPT_VISITOR(Type);
 
@@ -1068,27 +1064,6 @@ private:
 
 namespace field {
 
-/// A constant unit field.
-class Constant : public Field
-{
-public:
-    /// Constructor.
-    ///
-    /// id: The name of the item. Can be null for anonymous items.
-    ///
-    /// val: The constant's value.
-    ///
-    /// hooks: Hooks associated with this item.
-    ///
-    /// l: Location associated with the item.
-    Constant(shared_ptr<Expression> value = nullptr,
-             shared_ptr<Expression> cond = nullptr,
-             const hook_list& hooks = hook_list(),
-             const Location& l=Location::None);
-
-    ACCEPT_VISITOR(Field);
-};
-
 /// A unit field based on its type.
 class Type : public Field
 {
@@ -1126,17 +1101,41 @@ private:
     std::list<node_ptr<Expression>> _params;
 };
 
-/// A unit field defined by a regular expression.
-class RegExp : public Field
+/// A constant unit field.
+class Constant : public Field
 {
 public:
     /// Constructor.
     ///
-    /// regex: The regular expression for parsing the field.
-    ///
     /// id: The name of the item. Can be null for anonymous items.
     ///
-    /// default_: The field's default, or null if none.
+    /// value: The constant's value.
+    ///
+    /// hooks: Hooks associated with this item.
+    ///
+    /// l: Location associated with the item.
+    Constant(shared_ptr<ID> id = nullptr,
+             shared_ptr<binpac::Constant> value = nullptr,
+             shared_ptr<Expression> cond = nullptr,
+             const hook_list& hooks = hook_list(),
+             const attribute_list& attrs = attribute_list(),
+             const expression_list& sinks = expression_list(),
+             const Location& l=Location::None);
+
+    ACCEPT_VISITOR(Field);
+};
+
+/// A unit field defined by a ctor expression.
+class Ctor : public Field
+{
+public:
+    /// Constructor.
+    ///
+    /// id: The name of the item. Can be null for anonymous items.
+    //
+    /// ctor: The ctor expression for parsing the field.
+    ///
+    /// default_: The field's default, or null if the \a ctor is the default.
     ///
     /// hooks: Hooks associated with this item.
     ///
@@ -1145,22 +1144,22 @@ public:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    RegExp(const string& regexp,
-           shared_ptr<ID> id,
-           shared_ptr<Expression> default_,
-           shared_ptr<Expression> cond = nullptr,
-           const hook_list& hooks = hook_list(),
-           const attribute_list& attrs = attribute_list(),
-           const expression_list& sinks = expression_list(),
-           const Location& l=Location::None);
+    Ctor(shared_ptr<ID> id,
+         shared_ptr<binpac::Ctor> ctor,
+         shared_ptr<Expression> default_,
+         shared_ptr<Expression> cond = nullptr,
+         const hook_list& hooks = hook_list(),
+         const attribute_list& attrs = attribute_list(),
+         const expression_list& sinks = expression_list(),
+         const Location& l=Location::None);
 
     /// Returns the regular expression.
-    const string& regexp() const;
+    shared_ptr<binpac::Ctor> ctor() const;
 
     ACCEPT_VISITOR(Field);
 
 private:
-    string _regexp;
+    shared_ptr<binpac::Ctor> _ctor;
 };
 
 namespace switch_ {

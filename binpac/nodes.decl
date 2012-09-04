@@ -70,6 +70,8 @@ production::NonTerminal
 production::Sequence
 production::Switch
 production::Terminal
+production::Constant
+production::Ctor
 production::Variable
 production::While
 
@@ -132,7 +134,7 @@ type::unit::item::GlobalHook
 type::unit::item::Property
 type::unit::item::Variable
 type::unit::item::field::Constant
-type::unit::item::field::RegExp
+type::unit::item::field::Ctor
 type::unit::item::field::Switch
 type::unit::item::field::Type
 type::unit::item::field::switch_::Case

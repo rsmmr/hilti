@@ -759,7 +759,11 @@ void ParserBuilder::visit(production::Epsilon* e)
 {
 }
 
-void ParserBuilder::visit(production::Literal* l)
+void ParserBuilder::visit(production::Constant* l)
+{
+}
+
+void ParserBuilder::visit(production::Ctor* l)
 {
 }
 
@@ -923,7 +927,7 @@ void ParserBuilder::visit(type::unit::item::field::Constant* c)
 {
 }
 
-void ParserBuilder::visit(type::unit::item::field::RegExp* r)
+void ParserBuilder::visit(type::unit::item::field::Ctor* c)
 {
 }
 

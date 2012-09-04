@@ -61,10 +61,6 @@ public:
         /// If the production corresponds to an until condition, this stores the
         /// corresponding field.
         shared_ptr<type::unit::item::Field> until = nullptr;
-
-        /// A flag indicating that HILTI struct using this production should not
-        /// contain an item for its name.
-        bool no_id = false;
     };
 
     /// Returns a pointer to the production's meta information maintained
@@ -170,41 +166,84 @@ private:
 };
 
 
-/// A literal. A literal is anythig which can be directly scanned for as a
-/// sequence of bytes.
-///
-/// \note We may generalize this eventually to other types of literals.
+/// Base class for a literal. A literal is anythig which can be directly
+/// scanned for as a sequence of bytes.
 class Literal : public Terminal
 {
 public:
     /// Constructor.
     ///
-    /// literal: The literal, which must be of type type::Bytes.
+    /// type: The literal's type. Can be null of \a expr is given (if so,
+    /// it's ignored and the expression's type is taken).
     ///
-    /// expr: An optional expression that will be evaluated after the terminal
-    /// has been parsed but before its value is assigned to its destination
-    /// variable. If the expression is given, *its* value is actually assigned
-    /// to the destination variable instead (and also determined the type of
-    /// that). This can be used, e.g., into coerce the parsed value into a
-    /// different type.
+    /// expr: An optional expression that will be evaluated after the
+    /// terminal has been parsed but before its value is assigned to its
+    /// destination variable. If the expression is given, *its* value is
+    /// actually assigned to the destination variable instead (and also
+    /// determined the type of that). This can be used, e.g., into coerce the
+    /// parsed value into a different type.
     ///
     /// filter: An optional function called when a value has been parsed for
-    /// this terminatal. The function's return value is then used instead of the
-    /// parsed value subsequently.
+    /// this terminatal. The function's return value is then used instead of
+    /// the parsed value subsequently.
     ///
     /// l: Associated location.
-    Literal(const string& symbol, shared_ptr<Expression> literal, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+    Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
 
-    /// Returns the literal.
-    shared_ptr<Expression> literal() const;
+    /// Returns an expression representing the literal.
+    virtual shared_ptr<Expression> literal() const = 0;
 
     ACCEPT_VISITOR(Terminal);
+};
+
+/// A literal represented by a constant.
+class Constant : public Literal
+{
+public:
+    /// Constructor.
+    ///
+    /// constant: The constant.
+    ///
+    /// l: Associated location.
+    Constant(const string& symbol, shared_ptr<binpac::Constant> constant, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+
+    /// Returns the literal.
+    shared_ptr<binpac::Constant> constant() const;
+
+    shared_ptr<Expression> literal() const override;
+
+    ACCEPT_VISITOR(Literal);
 
 protected:
     string renderProduction() const override;
 
 private:
-    shared_ptr<Expression> _literal;
+    shared_ptr<binpac::Constant> _const;
+};
+
+/// A literal represented by a ctor.
+class Ctor : public Literal
+{
+public:
+    /// Constructor.
+    ///
+    /// ctor: The ctor.
+    ///
+    /// l: Associated location.
+    Ctor(const string& symbol, shared_ptr<binpac::Ctor> ctor, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
+
+    /// Returns the literal.
+    shared_ptr<binpac::Ctor> ctor() const;
+
+    shared_ptr<Expression> literal() const override;
+
+    ACCEPT_VISITOR(Literal);
+
+protected:
+    string renderProduction() const override;
+
+private:
+    shared_ptr<binpac::Ctor> _ctor;
 };
 
 

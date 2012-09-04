@@ -96,7 +96,8 @@ protected:
     void visit(production::ChildGrammar* c) override;
     void visit(production::Counter* c) override;
     void visit(production::Epsilon* e) override;
-    void visit(production::Literal* l) override;
+    void visit(production::Constant* c) override;
+    void visit(production::Ctor* c) override;
     void visit(production::LookAhead* l) override;
     void visit(production::NonTerminal* n) override;
     void visit(production::Sequence* s) override;
@@ -123,7 +124,7 @@ protected:
     void visit(type::unit::Item* i) override;
     void visit(type::unit::item::Field* f) override;
     void visit(type::unit::item::field::Constant* c) override;
-    void visit(type::unit::item::field::RegExp* r) override;
+    void visit(type::unit::item::field::Ctor* r) override;
     void visit(type::unit::item::field::Switch* s) override;
     void visit(type::unit::item::field::Type* t) override;
     void visit(type::unit::item::field::switch_::Case* c) override;

@@ -1535,7 +1535,7 @@ public:
    /// Constructor.
    ///
    /// attrs: List of optional attributes controlling specifics of the
-   /// regular expression. These must include the ampersand, e.g., \c &nosub.
+   /// regular expression. Currently, no attributes are defined.
    ///
    /// l: Associated location.
    RegExp(const attribute_list& attrs, const Location& l=Location::None) : HeapType(l) {

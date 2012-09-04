@@ -553,7 +553,7 @@ void Validator::visit(type::unit::item::field::Constant* c)
 {
 }
 
-void Validator::visit(type::unit::item::field::RegExp* r)
+void Validator::visit(type::unit::item::field::Ctor* t)
 {
 }
 
