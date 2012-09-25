@@ -26,6 +26,8 @@ struct jit_compile_info
 {
     LLVMModuleRef module;
     LLVMBuilderRef builder;
+    LLVMPassManagerRef pass_mgr;
+    LLVMExecutionEngineRef exec_engine;
     jrx_dfa *dfa;
 };
 
@@ -246,6 +248,7 @@ LLVMValueRef _jit_codegen_ccl_fn (jit_compile_info *ci, jrx_ccl_id id)
     LLVMBuildRet(b, JIT_TRUE);
 
     LLVMVerifyFunction(fn, LLVMAbortProcessAction);
+    LLVMRunFunctionPassManager(ci->pass_mgr, fn);
     return fn;
 }
 
@@ -433,6 +436,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
     }
 
     LLVMVerifyFunction(fn, LLVMAbortProcessAction);
+    LLVMRunFunctionPassManager(ci->pass_mgr, fn);
     return fn;
 }
 
@@ -464,7 +468,98 @@ extern void _jit_ext_save_match_state(jrx_match_state *ms,
     //ms->jit_state = state_fn;
 }
 
-/** Compilation */
-void COMPILE(jrx_dfa *dfa) {
+
+/* Compilation */
+
+jit_compile_info* jit_init_compile_info(jrx_dfa *dfa)
+{
+    char *err;
+
+    jit_compile_info *ci = malloc(sizeof(jit_compile_info));
+    assert(ci && "jit_init_compile_info: malloc failed");
+
+    LLVMModuleRef module = LLVMModuleCreateWithName("is this name important?");
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+
+    LLVMExecutionEngineRef exec_engine;
+    if (LLVMCreateExecutionEngineForModule(&exec_engine, module, &err)) {
+        assert(0 && "jit_init_compile_info: execution engine creation failed");
+
+        fprintf(stderr, "error: %s\n", err);
+        LLVMDisposeMessage(err);
+        //jit_free_compile_info(ci);
+        return NULL;
+    }
+
+    LLVMPassManagerRef pass_mgr = LLVMCreateFunctionPassManagerForModule(module);
+    LLVMAddTargetData (LLVMGetExecutionEngineTargetData (exec_engine), pass_mgr);
+    /* Optimization passes
+    LLVMAddConstantPropagationPass(pass_mgr);
+    LLVMAddPromoteMemoryToRegisterPass(pass_mgr);
+    LLVMAddInstructionCombiningPass(pass_mgr);
+    LLVMAddReassociatePass (pass_mgr);
+    LLVMAddGVNPass(pass_mgr);
+    LLVMAddCFGSimplificationPass(pass_mgr);
+    */
+    LLVMInitializeFunctionPassManager (pass_mgr);
+
+    ci->dfa = dfa;
+    ci->module = module;
+    ci->builder = builder;
+    ci->exec_engine = exec_engine;
+    ci->pass_mgr = pass_mgr;
+
+    return ci;
+}
+
+void jit_free_compile_info(jit_compile_info *ci)
+{
+    LLVMDisposePassManager(ci->pass_mgr);
+    LLVMDisposeBuilder(ci->builder);
+    LLVMDisposeModule(ci->module);
+    LLVMDisposeExecutionEngine(ci->exec_engine);
+    free(ci);
+}
+
+void jit_regset_compile(jrx_regex_t *preg)
+{
+    LLVMInitializeNativeTarget();
+    LLVMLinkInJIT();
+
+    jit_compile_info *ci = jit_init_compile_info(preg->dfa);
+    int id;
+
+    // Codegen all ccls
+    // TODO: CCLs should be codegened on creation
+    for (id = 0; id < vec_ccl_size(preg->dfa->ccls->ccls); id++) {
+        _jit_codegen_ccl_fn(ci, id);
+    }
+
+    // Codegen all states
+    // TODO: Lazy codegen
+    for (id = 0; id < vec_dfa_state_size(preg->dfa->states); id++) {
+        _jit_codegen_dfa_state_fn(ci, id);
+    }
+
+    // Dump module
+    LLVMDumpModule(ci->module);
+}
+
+
+/* Execution */
+int jit_regexec_partial_min(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms, int find_partial_matches)
+{
+    // Save orig offset
+    //lookup state fn based on ms->state
+    //Call w/ necessary params
+    // Update offset = orig_offset + (len - faux offset)
+    //Return result
+
+    return 0;
+}
+
+
+void jit_regfree(jrx_regex_t *preg)
+{
 
 }
