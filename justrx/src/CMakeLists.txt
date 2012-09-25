@@ -25,6 +25,7 @@ set(SRCS
     ccl.c dfa.c dfa-interpreter-std.c dfa-interpreter-min.c jlocale.c
     jrx.c nfa.c util.c
 
+    fib.c llvm_tests.c
     jit.c dummy.cpp
 
     # Generated.
