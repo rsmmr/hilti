@@ -46,7 +46,7 @@ LLVMTypeRef JITMatchStateStructType()
     // Turns out that opaque types are not equivelant???
     static LLVMTypeRef type = NULL;
     if (!type)
-        type = LLVMOpaqueType();
+        type = LLVMStructType(NULL, 0, 0);
     return type;
 }
 
