@@ -125,7 +125,7 @@ else
 
     cp projects/libcxx/lib/libc++.so.1.0 $prefix/lib
     cp projects/libcxxrt/build/lib/libcxxrt.so $prefix/lib/libcxxrt.so.1.0
-    cp projects/libcxxrt/src/cxxabi.h $libcxx_include
+    cp projects/libcxxrt/src/*.h $libcxx_include
 
     if [ "$install" != "" ]; then
         ln -s $prefix/lib/libc++.so.1.0 $prefix/lib/libc++.so.1

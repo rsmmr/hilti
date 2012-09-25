@@ -1020,8 +1020,8 @@ namespace item {
 class Field : public Item
 {
 public:
-    /// Returns the item's associated default value, or null if none.
-    shared_ptr<Expression> default_() const;
+    /// Returns the item's associated value, or null if none.
+    shared_ptr<Expression> value() const;
 
     /// Returns the item's associated condition, or null if none.
     shared_ptr<Expression> condition() const;
@@ -1038,8 +1038,6 @@ protected:
     ///
     /// type: The type of the item.
     ///
-    /// default: An optional default value asociated with the item.
-    ///
     /// hooks: Hooks associated with this item.
     ///
     /// attrs: Attributes associated with the item.
@@ -1049,7 +1047,6 @@ protected:
     /// l: Location associated with the item.
     Field(shared_ptr<ID> id,
          shared_ptr<binpac::Type> type,
-         shared_ptr<Expression> value = nullptr,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
@@ -1057,7 +1054,6 @@ protected:
          const Location& l=Location::None);
 
 private:
-    node_ptr<Expression> _default;
     node_ptr<Expression> _cond;
     expression_list _sinks;
 };
@@ -1069,8 +1065,6 @@ class Type : public Field
 {
 public:
     /// id: The name of the item. Can be null for anonymous items.
-    ///
-    /// default_: The field's default, or null if none.
     ///
     /// hooks: Hooks associated with this item.
     ///
@@ -1084,7 +1078,6 @@ public:
     /// l: Location associated with the item.
     Type(shared_ptr<ID> id,
          shared_ptr<binpac::Type> type,
-         shared_ptr<Expression> default_ = nullptr,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
@@ -1109,20 +1102,26 @@ public:
     ///
     /// id: The name of the item. Can be null for anonymous items.
     ///
-    /// value: The constant's value.
+    /// const_: The constant's value.
     ///
     /// hooks: Hooks associated with this item.
     ///
     /// l: Location associated with the item.
     Constant(shared_ptr<ID> id = nullptr,
-             shared_ptr<binpac::Constant> value = nullptr,
+             shared_ptr<binpac::Constant> const_ = nullptr,
              shared_ptr<Expression> cond = nullptr,
              const hook_list& hooks = hook_list(),
              const attribute_list& attrs = attribute_list(),
              const expression_list& sinks = expression_list(),
              const Location& l=Location::None);
 
+    /// Returns the constant.
+    shared_ptr<binpac::Constant> constant() const;
+
     ACCEPT_VISITOR(Field);
+
+private:
+    node_ptr<binpac::Constant> _const;
 };
 
 /// A unit field defined by a ctor expression.
@@ -1135,8 +1134,6 @@ public:
     //
     /// ctor: The ctor expression for parsing the field.
     ///
-    /// default_: The field's default, or null if the \a ctor is the default.
-    ///
     /// hooks: Hooks associated with this item.
     ///
     /// attrs: Attributes associated with the item.
@@ -1146,7 +1143,6 @@ public:
     /// l: Location associated with the item.
     Ctor(shared_ptr<ID> id,
          shared_ptr<binpac::Ctor> ctor,
-         shared_ptr<Expression> default_,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
@@ -1159,7 +1155,7 @@ public:
     ACCEPT_VISITOR(Field);
 
 private:
-    shared_ptr<binpac::Ctor> _ctor;
+    node_ptr<binpac::Ctor> _ctor;
 };
 
 namespace switch_ {

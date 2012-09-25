@@ -827,7 +827,6 @@ shared_ptr<AttributeSet> unit::Item::attributes() const
 
 unit::item::Field::Field(shared_ptr<ID> id,
                          shared_ptr<binpac::Type> type,
-                         shared_ptr<Expression> default_,
                          shared_ptr<Expression> cond,
                          const hook_list& hooks,
                          const attribute_list& attrs,
@@ -835,10 +834,8 @@ unit::item::Field::Field(shared_ptr<ID> id,
                          const Location& l)
     : Item(id, type, hooks, attrs, l)
 {
-    _default = default_;
     _cond = cond;
 
-    addChild(_default);
     addChild(_cond);
 
     for ( auto s : sinks )
@@ -846,11 +843,6 @@ unit::item::Field::Field(shared_ptr<ID> id,
 
     for ( auto s : _sinks )
         addChild(s);
-}
-
-shared_ptr<Expression> unit::item::Field::default_() const
-{
-    return _default;
 }
 
 /// Returns the item's associated condition, or null if none.
@@ -871,26 +863,32 @@ expression_list unit::item::Field::sinks() const
 
 
 unit::item::field::Constant::Constant(shared_ptr<ID> id,
-                                      shared_ptr<binpac::Constant> val,
+                                      shared_ptr<binpac::Constant> const_,
                                       shared_ptr<Expression> cond,
                                       const hook_list& hooks,
                                       const attribute_list& attrs,
                                       const expression_list& sinks,
                                       const Location& l)
-    : Field(id, val->type(), std::make_shared<expression::Constant>(val), cond, hooks, attrs, sinks, l)
+    : Field(id, const_->type(), cond, hooks, attrs, sinks, l)
 {
+    _const = const_;
+    addChild(_const);
+}
+
+shared_ptr<binpac::Constant> unit::item::field::Constant::constant() const
+{
+    return _const;
 }
 
 unit::item::field::Type::Type(shared_ptr<ID> id,
                        shared_ptr<binpac::Type> type,
-                       shared_ptr<Expression> default_,
                        shared_ptr<Expression> cond,
                        const hook_list& hooks,
                        const attribute_list& attrs,
                        const expression_list& params,
                        const expression_list& sinks,
                        const Location& l)
-    : Field(id, type, default_, cond, hooks, attrs, sinks, l)
+    : Field(id, type, cond, hooks, attrs, sinks, l)
 {
     for ( auto p : params )
         _params.push_back(p);
@@ -911,15 +909,15 @@ expression_list unit::item::field::Type::parameters() const
 
 unit::item::field::Ctor::Ctor(shared_ptr<ID> id,
                            shared_ptr<binpac::Ctor> ctor,
-                           shared_ptr<Expression> default_,
                            shared_ptr<Expression> cond,
                            const hook_list& hooks,
                            const attribute_list& attrs,
                            const expression_list& sinks,
                            const Location& l)
-    : Field(id, ctor->type(), (default_ ? default_ : std::make_shared<expression::Ctor>(ctor)), cond, hooks, attrs, sinks, l)
+    : Field(id, ctor->type(), cond, hooks, attrs, sinks, l)
 {
     _ctor = ctor;
+    addChild(_ctor);
 }
 
 shared_ptr<binpac::Ctor> unit::item::field::Ctor::ctor() const
@@ -955,7 +953,7 @@ shared_ptr<unit::Item> unit::item::field::switch_::Case::item() const
 }
 
 unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, const hook_list& hooks, const Location& l)
-    : Field(nullptr, nullptr, nullptr, nullptr, hooks, attribute_list(), expression_list(), l)
+    : Field(nullptr, nullptr, nullptr, hooks, attribute_list(), expression_list(), l)
 {
     _expr = expr;
     addChild(_expr);

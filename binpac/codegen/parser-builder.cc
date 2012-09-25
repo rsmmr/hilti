@@ -396,12 +396,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
         auto type = cg()->hiltiType(f->type());
         assert(type);
 
-        shared_ptr<hilti::Expression> def = nullptr;
-
-        if ( f->default_() )
-            def = cg()->hiltiExpression(f->default_());
-        else
-            def = cg()->hiltiDefault(f->type());
+        shared_ptr<hilti::Expression> def = cg()->hiltiDefault(f->type());
 
         auto sfield = hilti::builder::struct_::field(f->id()->name(), type, def, false, f->location());
 

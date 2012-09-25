@@ -368,13 +368,13 @@ unit_prop     : property_id ';'                  { $$ = std::make_shared<type::u
               | property_id '=' expr ';'         { $$ = std::make_shared<type::unit::item::Property>($1, $3, loc(@$)); }
 
 unit_field    : opt_unit_field_name unit_field_type opt_field_args opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::Type>($1, $2, nullptr, $5, $7, $4, $3, $6, loc(@$)); }
+                                                 { $$ = std::make_shared<type::unit::item::field::Type>($1, $2, $5, $7, $4, $3, $6, loc(@$)); }
 
               | opt_unit_field_name constant opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::field::Constant>($1, $2, $4, $6, $3, $5, loc(@$)); }
 
               | opt_unit_field_name ctor opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::Ctor>($1, $2, nullptr, $4, $6, $3, $5, loc(@$)); }
+                                                 { $$ = std::make_shared<type::unit::item::field::Ctor>($1, $2, $4, $6, $3, $5, loc(@$)); }
 
 unit_switch   : SWITCH '(' expr ')' '{' unit_switch_cases '}' ';'
                                                  { $$ = std::make_shared<type::unit::item::field::Switch>($3, $6, hook_list(), loc(@$)); }

@@ -783,14 +783,15 @@ void __hlt_thread_mgr_init_native_thread(hlt_thread_mgr* mgr, const char* name, 
     if ( ! mgr )
         return;
 
-    pthread_t self = pthread_self();
-
     hlt_set_thread_name(name);
 
     if ( pthread_setspecific(mgr->id, name) != 0 )
         _fatal_error("cannot set thread-local key");
 
+#ifdef DEBUG
+    pthread_t self = pthread_self();
     DBG_LOG(DBG_STREAM, "native thread %p assigned name '%s'", self, name);
+#endif    
 
     // Set core affinity if specified for this thread.
     int core = -1;
