@@ -180,12 +180,37 @@ iBegin(hook, Stop, "hook.stop")
     iOp1(optype::optional(optype::any), true)
 
     iValidate {
-        auto hook = validator()->current<declaration::Hook>();
+        // To find out if hook.stop is used outside of a hook, we walk up the
+        // current path. If we aren't the child of an expression, the we need
+        // to find a hook declaration.
+        auto nodes = validator()->currentNodes();
 
-        if ( ! hook ) {
+        shared_ptr<declaration::Hook> hook = nullptr;
+        bool ok = false;
+
+        for ( auto i = nodes.rbegin(); i != nodes.rend(); i++ ) {
+            auto n = *i;
+
+            hook = ast::tryCast<declaration::Hook>(n);
+
+            if ( hook ) {
+                ok = true;
+                break;
+            }
+
+            if ( ast::tryCast<Expression>(n) ) {
+                ok = true;
+                break;
+            }
+        }
+
+        if ( ! ok ) {
             error(nullptr, "hook.stop must only be used inside a hook");
             return;
         }
+
+        if ( ! hook )
+            return;
 
         auto htype = hook->hook()->type();
         auto rtype = htype->result()->type();

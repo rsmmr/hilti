@@ -150,7 +150,8 @@ using namespace hilti;
 %type <enum_label>       enum_label
 %type <enum_labels>      enum_labels
 %type <expr>             expr expr_lhs opt_default_expr tuple_elem constant ctor opt_expr
-%type <exprs>            opt_tuple_elem_list tuple_elem_list tuple exprs opt_exprs
+%type <exprs>            exprs opt_exprs
+%type <exprs2>           opt_tuple_elem_list tuple_elem_list tuple
 %type <hook_attribute>   hook_attr
 %type <hook_attributes>  opt_hook_attrs
 %type <id>               local_id scoped_id mnemonic label scope_field
@@ -184,7 +185,7 @@ opt_nl        : NEWLINE opt_nl
               | /* empty */
               ;
 
-module        : MODULE local_id eol  { auto moduleBuilder = std::make_shared<builder::ModuleBuilder>($2, *driver.streamName(), ::hilti::path_list(), loc(@$));
+module        : MODULE local_id eol              { auto moduleBuilder = std::make_shared<builder::ModuleBuilder>(driver.compilerContext(), $2, *driver.streamName(), loc(@$));
                                                    driver.begin(moduleBuilder);
                                                  }
 
@@ -436,6 +437,7 @@ expr          : constant                         { $$ = $1; }
               | ctor                             { $$ = $1; }
               | scoped_id                        { $$ = builder::id::create($1, loc(@$)); }
               | base_type                        { $$ = builder::type::create($1, loc(@$)); }
+              | base_type '(' ')'                { $$ = builder::expression::default_($1, loc(@$)); }
               ;
 
 opt_expr      : expr                             { $$ = $1; }
@@ -552,17 +554,17 @@ opt_default_expr : '=' expr                      { $$ = $2; }
 body          : opt_nl '{' opt_nl                { driver.moduleBuilder()->pushBody(true, loc(@$)); }
                 blocks opt_nl '}'                { auto body = driver.moduleBuilder()->popBody(); $$ = body->block(); }
 
-blocks        :                                  { driver.context()->label = nullptr; }
+blocks        :                                  { driver.parserContext()->label = nullptr; }
                 block_content more_blocks
 
-              | label                            { driver.context()->label = $1; }
+              | label                            { driver.parserContext()->label = $1; }
                 block_content more_blocks
 
-more_blocks   : label                            { driver.context()->label = $1; }
+more_blocks   : label                            { driver.parserContext()->label = $1; }
                 block_content more_blocks
               | /* empty */
 
-block_content :                                  { driver.moduleBuilder()->pushBuilder(driver.context()->label, loc(@$)); }
+block_content :                                  { driver.moduleBuilder()->pushBuilder(driver.parserContext()->label, loc(@$)); }
                 opt_stmt_list                    { driver.moduleBuilder()->popBuilder(); }
 
 label         : LABEL_IDENT ':' opt_nl           { $$ = builder::id::node($1, loc(@$));; }

@@ -21,6 +21,7 @@ using ast::as;
 
 namespace hilti {
     typedef std::list<string> path_list;
+    typedef std::list<string> string_list;
 };
 
 #endif

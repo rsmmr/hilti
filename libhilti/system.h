@@ -2,8 +2,8 @@
 /// Encapsulates platform-specific code.
 ///
 
-#ifndef HILTI_SYSTEM_H
-#define HILTI_SYSTEM_H
+#ifndef LIBHILTI_SYSTEM_H
+#define LIBHILTI_SYSTEM_H
 
 #include <pthread.h>
 
@@ -29,5 +29,7 @@ void hlt_set_thread_name(const char* s);
 /// Pins the current thread to the givne core, as far as supported by the OS.
 void hlt_set_thread_affinity(int core);
 
+/// Resets getopt() state so that one can start scanning another array.
+void hlt_reset_getopt();
 
 #endif

@@ -1,0 +1,26 @@
+#! /usr/bin/env bash
+#
+# Move $1 to $2 if (1) $2 doesn't exist or (2) $1 differs from $2 in its content.
+
+if [ $# != 2 ]; then
+    echo "usage: `basename $0` <new> <old>"
+    exit 1
+fi
+
+new=$1
+old=$2
+
+if [ -e $old ]; then
+    sha1=`shasum $old | awk '{print $1}'`
+    sha2=`shasum $new | awk '{print $1}'`
+
+    if [ "$sha1" != "$sha2" ]; then
+        cp -p $new $old
+    fi
+else
+    cp -p $new $old
+fi
+
+rm -f $new
+
+

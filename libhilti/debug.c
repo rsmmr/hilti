@@ -43,21 +43,18 @@ static int _want_stream(const char* s, hlt_exception** excpt, hlt_execution_cont
 
     // FIXME: It's not very efficient to go through the stream-list every
     // time. Let's see if it's worth optimizing this even for the debug mode.
-    char* t;
-    char *saveptr;
-    char* copy = strdup(dbg);
-    char* c = copy;
 
-    while ( (t = strtok_r(c, ":", &saveptr)) ) {
-        if ( strcmp(s, t) == 0 ) {
-            free(copy);
+    const char* end = dbg + strlen(dbg);
+    const char* j;
+    for ( const char* i = dbg; i < end; i = j + 1 ) {
+        j = i;
+
+        while ( *j && *j != ':' )
+            ++j;
+
+        if ( strlen(s) == j - i && strncmp(s, i, j - i) == 0 )
             return 1;
-        }
-
-        c = 0;
     }
-
-    free(copy);
 
     return 0;
 }
@@ -95,24 +92,23 @@ void __hlt_debug_done()
 
 void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    const char* s = hlt_string_to_native(stream, excpt, ctx);
+    char* s = hlt_string_to_native(stream, excpt, ctx);
 
-    if ( ! _want_stream(s, excpt, ctx) )
+    if ( ! _want_stream(s, excpt, ctx) ) {
+        hlt_free(s);
         return;
+    }
 
     char prefix[128];
 
     _make_prefix(s, prefix, sizeof(prefix), excpt, ctx);
 
     hlt_string usr = hilti_fmt(fmt, type, tuple, excpt, ctx);
-
     hlt_string indent = hlt_string_from_asciiz("  ", excpt, ctx);
+    GC_CCTOR(indent, hlt_string);
 
-    for ( int i = ctx->debug_indent; i; --i ) {
-        hlt_string tmp = usr;
-        usr = hlt_string_concat(indent, usr, excpt, ctx);
-        GC_DTOR(tmp, hlt_string);
-    }
+    for ( int i = ctx->debug_indent; i; --i )
+        usr = hlt_string_concat_and_unref(indent, usr, excpt, ctx);
 
     GC_DTOR(indent, hlt_string);
 
@@ -127,9 +123,8 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     flockfile(out);
 
     hlt_string p = hlt_string_from_asciiz(prefix, excpt, ctx);
-    hlt_string r = hlt_string_concat(p, usr, excpt, ctx);
+    hlt_string r = hlt_string_concat_and_unref(p, usr, excpt, ctx);
     hlt_string_print_n(out, r, 1, 256, excpt, ctx);
-    GC_DTOR(p, hlt_string);
     GC_DTOR(r, hlt_string);
 
     fflush(out);

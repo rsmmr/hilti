@@ -14,8 +14,8 @@ public:
    /// Constructor.
    ///
    /// libdirs: List of directories to search for imported library files.
-   ScopeBuilder(const path_list& libdirs) : Pass<>("ScopeBuilder") {
-       _libdirs = libdirs;
+   ScopeBuilder(CompilerContext* ctx) : Pass<>("ScopeBuilder") {
+       _context = ctx;
    }
 
    virtual ~ScopeBuilder() {}
@@ -34,7 +34,7 @@ protected:
    void visit(declaration::Function* t) override;
 
 private:
-   path_list _libdirs;
+   CompilerContext* _context;
    shared_ptr<Scope> _checkDecl(Declaration* decl);
 };
 
@@ -43,7 +43,7 @@ private:
 class ScopePrinter : public Pass<>
 {
 public:
-   ScopePrinter() : Pass<>("ScopePrinter") {}
+   ScopePrinter(std::ostream& out) : Pass<>("ScopePrinter"), _out(out) {}
    virtual ~ScopePrinter() {}
 
    /// Dumps out the contents of all scopes in an AST.
@@ -57,6 +57,9 @@ public:
 
 protected:
    void visit(statement::Block* b) override;
+
+private:
+   std::ostream& _out;
 };
 
 }

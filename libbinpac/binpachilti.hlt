@@ -2,7 +2,7 @@
 # Internal BinPAC++ code supporting the code generator.
 #
 
-module BinPAC
+module BinPACHilti
 
 type ParseSuccess = exception<string>
 type ParseError = exception<string>
@@ -27,7 +27,7 @@ export Parser
 # Registers a parser with the HILTI runtime. Note that this function is not
 # thread-safe and must only be called during initialization before any threads
 # have been started.
-declare "C-HILTI" void register_parser(ref<Parser> parser)
+declare "C-HILTI" void register_parser(ref<Parser> parser, type pobj)
 
 # Runs a module's init function passed in with it's C stub.
 # (This is only needed because we can't call the stub (easily) from C.

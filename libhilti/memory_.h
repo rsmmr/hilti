@@ -2,8 +2,8 @@
 /// Memory management.
 ///
 
-#ifndef HILTI_MEMORY_H
-#define HILTI_MEMORY_H
+#ifndef LIBHILTI_MEMORY_H
+#define LIBHILTI_MEMORY_H
 
 #include "types.h"
 

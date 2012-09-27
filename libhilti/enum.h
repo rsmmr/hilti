@@ -2,8 +2,8 @@
 // Support functions for HILTI's enum data type.
 //
 
-#ifndef HILTI_ENUM_H
-#define HILTI_ENUM_H
+#ifndef LIBHILTI_ENUM_H
+#define LIBHILTI_ENUM_H
 
 #include "exceptions.h"
 

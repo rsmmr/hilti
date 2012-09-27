@@ -2,8 +2,8 @@
 /// libhilti initialization code.
 ///
 
-#ifndef HILTI_INIT_H
-#define HILTI_INIT_H
+#ifndef LIBHILTI_INIT_H
+#define LIBHILTI_INIT_H
 
 /// Initializes the HILTI run-time library. Must be called once at startup
 /// before any other libhilti functionality can be used. The one exception to

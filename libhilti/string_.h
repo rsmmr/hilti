@@ -18,8 +18,8 @@
 /// Note that an empty string is represented by a nullptr. The library
 /// functions all handle a nullptr accordingly.
 
-#ifndef HILTI_STRING_H
-#define HILTI_STRING_H
+#ifndef LIBHILTI_STRING_H
+#define LIBHILTI_STRING_H
 
 #include <stdio.h>
 
@@ -29,8 +29,6 @@
 
 /// Type for the size of, and offsets into, a string.
 typedef int64_t hlt_string_size;
-
-struct hlt_bytes;
 
 /// The internal representation of a HILTI string object. Note that \ref
 /// hlt_string is a \a pointer to an instance of this struct.

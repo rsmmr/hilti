@@ -3,8 +3,8 @@
 /// collected.
 ///
 
-#ifndef HILTI_EXCEPTIONS_H
-#define HILTI_EXCEPTIONS_H
+#ifndef LIBHILTI_EXCEPTIONS_H
+#define LIBHILTI_EXCEPTIONS_H
 
 #include <assert.h>
 

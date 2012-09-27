@@ -1,6 +1,6 @@
 
-#ifndef HILTI_VECTOR_H
-#define HILTI_VECTOR_H
+#ifndef LIBHILTI_VECTOR_H
+#define LIBHILTI_VECTOR_H
 
 #include "exceptions.h"
 #include "interval.h"

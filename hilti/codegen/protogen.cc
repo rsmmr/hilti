@@ -139,7 +139,7 @@ void ProtoGen::visit(declaration::Type* t)
 {
     auto type = t->type();
 
-    if ( ! t->linkage() == Declaration::EXPORTED )
+    if ( t->linkage() != Declaration::EXPORTED )
         return;
 
     // This must match the logic in CodeGen::llvmRttiPtr().

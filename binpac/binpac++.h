@@ -2,8 +2,8 @@
 /// User-visible top-level include file.
 ///
 
-#ifndef BINPAC_H
-#define BINPAC_H
+#ifndef BINPACXX_H
+#define BINPACXX_H
 
 #include <fstream>
 

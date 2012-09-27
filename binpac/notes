@@ -1,0 +1,6 @@
+
+-  IDResolver::visit(expression::ID* i) should climb up the list of
+   parents and take the first of *either* unit or stmt scope it finds.
+
+-  Add a new production "LoopForever" and use that foro &until
+   parsing, instead of the current Until(false) work-around.

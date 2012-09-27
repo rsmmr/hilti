@@ -21,7 +21,10 @@ public:
    /// Returns an expression referencing the block. The expression can
    /// directly be used with instructions taking a label argument, just as
    /// branch instructions.
-   shared_ptr<hilti::expression::Block> block() const;
+   shared_ptr<hilti::Expression> block() const;
+
+   /// Returns the block statement wrapped by this builder.
+   shared_ptr<hilti::statement::Block> statement() const;
 
    /// Returns the ModuleBuilder() that this builder is associated with.
    ModuleBuilder* moduleBuilder() const;
@@ -202,6 +205,31 @@ public:
 
    /// Helper to decreate the debugging indent.
    void debugPopIndent();
+
+   /// Helper to raise an internal error.
+   ///
+   /// msg: A message to associate with the internal error.
+   void addInternalError(const std::string& msg);
+
+   /// Helper to raise an exception with an optional argument.
+   ///
+   /// excpt: The fully-qualified name of the exception.
+   ///
+   /// arg: The argument, or null.
+   void addThrow(const std::string& excpt, shared_ptr<hilti::Expression> arg = nullptr);
+
+   typedef std::list<std::pair<shared_ptr<hilti::Expression>, shared_ptr<hilti::builder::BlockBuilder>>> case_list;
+
+   /// Helper to create a switch statement.
+   ///
+   /// expr: The switch expression.
+   ///
+   /// default_: The default branch.
+   ///
+   /// cases: The list of switch cases.
+   void addSwitch(shared_ptr<hilti::Expression> expr,
+                  shared_ptr<hilti::builder::BlockBuilder> default_,
+                  const case_list& cases);
 
 protected:
    friend class ModuleBuilder;

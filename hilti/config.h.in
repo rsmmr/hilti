@@ -2,10 +2,29 @@
 #ifndef HILTI_CONFIG_H
 #define HILTI_CONFIG_H
 
+#include <string>
+
+using std::string;
+
 namespace hilti {
 
-static const char* CONFIG_HILTI_VERSION = "${PROJECT_VERSION}";
-static const char* CONFIG_PATH_LIBHILTI = "${PATH_LIBHILTI}";
+struct Configuration {
+    string version = "${PROJECT_VERSION}";
+
+    std::list<string> library_dirs = { "${PATH_LIBHILTI}" };
+
+    string runtime_library_bca      = "${PROJECT_BINARY_DIR}/libhilti/libhilti-rt.bc";
+    string runtime_library_dbg_bca  = "${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-dbg.bc";
+    string runtime_library_native_a = "${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a";
+    string runtime_typeinfo_hlt     = "${PROJECT_SOURCE_DIR}/libhilti/type-info.hlt";
+    std::list<string> jit_dylds     = { "libpapi.so", "libpcap.so" };
+};
+
+inline const Configuration& configuration()
+{
+    static Configuration cfg;
+    return cfg;
+}
 
 }
 

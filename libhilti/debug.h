@@ -2,8 +2,8 @@
 /// Debugging output infrastructure.
 ///
 
-#ifndef HILTI_DEBUG_H
-#define HILTI_DEBUG_H
+#ifndef LIBHILTI_DEBUG_H
+#define LIBHILTI_DEBUG_H
 
 #include "types.h"
 

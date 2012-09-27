@@ -19,6 +19,11 @@ string Ctor::render()
     return s.str();
 }
 
+Ctor::pattern_list Ctor::patterns() const
+{
+    return {};
+}
+
 Bytes::Bytes(const string& b, const Location& l) : Ctor(l)
 {
     _value = b;
@@ -174,7 +179,7 @@ shared_ptr<Type> RegExp::type() const
     return _type;
 }
 
-const RegExp::pattern_list& RegExp::patterns() const
+Ctor::pattern_list RegExp::patterns() const
 {
     return _patterns;
 }

@@ -34,7 +34,7 @@ protected:
     void visit(constant::Bool* b) override;
     void visit(constant::Double* d) override;
     void visit(constant::Enum* e) override;
-    void visit(constant::Expression* e) override;
+    // void visit(constant::Expression* e) override;
     void visit(constant::Integer* i) override;
     void visit(constant::Interval* i) override;
     void visit(constant::Network* n) override;
@@ -75,6 +75,7 @@ protected:
     void visit(statement::NoOp* n) override;
     void visit(statement::Print* p) override;
     void visit(statement::Return* r) override;
+    void visit(statement::Stop* r) override;
     void visit(statement::Try* t) override;
     void visit(statement::try_::Catch* c) override;
     void visit(type::Address* a) override;
@@ -118,7 +119,8 @@ protected:
     void visit(type::unit::item::field::Constant* ) override;
     void visit(type::unit::item::field::Ctor* ) override;
     void visit(type::unit::item::field::Switch* ) override;
-    void visit(type::unit::item::field::Type* ) override;
+    void visit(type::unit::item::field::AtomicType* ) override;
+    void visit(type::unit::item::field::Unit* ) override;
     void visit(type::unit::item::field::switch_::Case* ) override;
     void visit(variable::Global* g) override;
     void visit(variable::Local* l) override;

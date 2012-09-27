@@ -4,8 +4,8 @@
 /// Functions for classifiers.
 /// @}
 
-#ifndef HILTI_CLASSIFIER_H
-#define HILTI_CLASSIFIER_H
+#ifndef LIBHILTI_CLASSIFIER_H
+#define LIBHILTI_CLASSIFIER_H
 
 #include <stdint.h>
 

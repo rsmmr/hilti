@@ -16,10 +16,24 @@ namespace binpac {
 class Ctor : public ast::Ctor<AstInfo>
 {
 public:
+    /// A pattern is a tuple of two strings. The first element is the regexp
+    /// itself, and the second a string with optional patterns flags.
+    /// Currently, no flags are supported though.
+    typedef std::pair<string, string> pattern;
+
+    /// A list of patterns.
+    typedef std::list<pattern> pattern_list;
+
     /// Constructor.
     ///
     /// l: An associated location.
     Ctor(const Location& l=Location::None);
+
+    /// Returns a set of regular expressions corresponding to the ctor. This
+    /// for using the ctor as a literal when parsing. The default
+    /// implementation returns an empty list, which indicates no support for
+    /// use as a literal.
+    virtual pattern_list patterns() const;
 
     /// Returns a readable representation of the ctor.
     string render() override;
@@ -176,14 +190,6 @@ private:
 class RegExp : public Ctor
 {
 public:
-    /// A pattern is a tuple of two strings. The first element is the regexp
-    /// itself, and the second a string with optional patterns flags.
-    /// Currently, no flags are supported though.
-    typedef std::pair<string, string> pattern;
-
-    /// A list of patterns.
-    typedef std::list<pattern> pattern_list;
-
     /// Constructor.
     ///
     /// regexp: The regexp.
@@ -205,7 +211,7 @@ public:
     RegExp(const pattern_list& patterns, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
 
     /// Returns the pattern.
-    const pattern_list& patterns() const;
+    pattern_list patterns() const override;
 
     /// Returns the type of the constructed object. Pattern constants are
     /// always of type \c regexp<>. To add further type attributes, they need

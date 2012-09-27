@@ -21,5 +21,5 @@ wrong-args.hlt:23-24: error, operands do not match instruction new
     new: timer, <function>, tuple<> -> ref<timer>
     new: vector<*>, [ ref<timer_mgr> ] -> ref<vector<*>>
  [pass::InstructionResolver]
-wrong-args.hlt: Aborting due to resolver error.
+wrong-args.hlt: Aborting due to verification error.
 error running hiltic, aborting

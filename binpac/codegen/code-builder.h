@@ -48,7 +48,7 @@ protected:
     void visit(constant::Bool* b) override;
     void visit(constant::Double* d) override;
     void visit(constant::Enum* e) override;
-    void visit(constant::Expression* e) override;
+    // void visit(constant::Expression* e) override;
     void visit(constant::Integer* i) override;
     void visit(constant::Interval* i) override;
     void visit(constant::Network* n) override;
@@ -92,6 +92,7 @@ protected:
     void visit(statement::NoOp* n) override;
     void visit(statement::Print* p) override;
     void visit(statement::Return* r) override;
+    void visit(statement::Stop* s) override;
     void visit(statement::Try* t) override;
     void visit(statement::try_::Catch* c) override;
 

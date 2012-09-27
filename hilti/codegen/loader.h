@@ -93,6 +93,7 @@ protected:
    virtual void visit(expression::Coerced* e) override;
    virtual void visit(expression::Constant* e) override;
    virtual void visit(expression::Ctor* e) override;
+   virtual void visit(expression::Default* e) override;
    virtual void visit(expression::Function* e) override;
    virtual void visit(expression::Parameter* e) override;
    virtual void visit(expression::Variable* e) override;

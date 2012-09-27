@@ -1,5 +1,5 @@
 
-#include "binpac.h"
+#include "libbinpac++.h"
 #include "exceptions.h"
 
 hlt_exception_type binpac_exception_binpac = { "BinPACException", &hlt_exception_unspecified, 0 };

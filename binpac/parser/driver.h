@@ -51,8 +51,10 @@ struct yystype_binpac {
     shared_ptr<binpac::type::function::Parameter> parameter;
     shared_ptr<binpac::type::function::Result> result;
     shared_ptr<binpac::type::unit::Item> unit_item;
+    shared_ptr<binpac::type::unit::item::Field> unit_field;
     shared_ptr<binpac::type::unit::item::field::switch_::Case> switch_case;
     shared_ptr<binpac::statement::try_::Catch> catch_;
+    shared_ptr<binpac::type::integer::Bits> bits_spec;
 
     attribute_list attributes;
     parameter_list params;
@@ -65,6 +67,7 @@ struct yystype_binpac {
     hook_list hooks;
     unit_item_list unit_items;
     binpac::type::unit::item::field::Switch::case_list switch_cases;
+    binpac::type::Integer::bits_list bits;
     ctor::RegExp::pattern_list re_patterns;
     ctor::RegExp::pattern re_pattern;
 
@@ -91,7 +94,7 @@ class location;
 
 class Driver : public Logger {
 public:
-    shared_ptr<binpac::Module> parse(shared_ptr<CompilerContext> ctx, std::istream& in, const std::string& sname);
+    shared_ptr<binpac::Module> parse(CompilerContext* ctx, std::istream& in, const std::string& sname);
 
     // Report parsing errors.
     void error(const std::string& m, const binpac_parser::location& l);
@@ -101,7 +104,7 @@ public:
 
     Scanner* scanner() const { return _scanner; }
     Parser* parser() const { return _parser; }
-    shared_ptr<CompilerContext> context() const { return _context; }
+    CompilerContext* context() const { return _context; }
 
     shared_ptr<Module> module() const;
     void setModule(shared_ptr<Module> module);
@@ -126,7 +129,7 @@ public:
 
 private:
     std::string _sname;
-    shared_ptr<CompilerContext> _context = nullptr;
+    CompilerContext* _context = nullptr;
     shared_ptr<Module> _module = nullptr;
 
     Scanner* _scanner = 0;

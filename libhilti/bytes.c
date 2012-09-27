@@ -681,6 +681,7 @@ int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_bytes end, 
     normalize_pos(&end, 0);
 
     if ( is_end(*pos) || hlt_iterator_bytes_eq(*pos, end, excpt, ctx) ) {
+        GC_DTOR(*pos, hlt_iterator_bytes);
         hlt_set_exception(excpt, &hlt_exception_would_block, 0);
         return 0;
     }

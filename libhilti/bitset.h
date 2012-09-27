@@ -7,8 +7,8 @@
 /// A bitset is represented as an ``uint64_t``, with bits in there set as
 /// determined by the corresponding type definition. 
 
-#ifndef HILTI_BITSET_H
-#define HILTI_BITSET_H
+#ifndef LIBHILTI_BITSET_H
+#define LIBHILTI_BITSET_H
 
 #include "exceptions.h"
 

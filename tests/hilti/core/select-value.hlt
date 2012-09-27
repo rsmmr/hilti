@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+void run() {
+
+    local int<64> i
+
+    i = select.value 3 ((1, 10), (2, 20), (3, 30), (4,40)) -1
+    call Hilti::print (i)
+
+    i = select.value 3 ((1, 10), (2, 20), (4,40)) -1
+    call Hilti::print (i)
+
+    i = select.value 3 ((1, 10), (2, 20), (4,40))
+    call Hilti::print (i)
+
+    return.void
+}
+

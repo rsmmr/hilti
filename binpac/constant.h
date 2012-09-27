@@ -45,6 +45,7 @@ public:
     ConstantParseError(shared_ptr<Constant> c, const string& msg);
 };
 
+#if 0
 /// AST node for a constant represented by an expression. The expression must
 /// have a constant value, not suprsingly.
 class Expression : public Constant
@@ -71,7 +72,7 @@ private:
     node_ptr<binpac::Expression> _expr;
     node_ptr<Type> _type;
 };
-
+#endif
 
 /// AST node for a constant of type String.
 class String : public ast::SpecificConstant<AstInfo, Constant, string>
@@ -250,7 +251,7 @@ public:
     /// Throws: ConstantParseError if the label is not defined by the type.
     Enum(shared_ptr<ID> label, shared_ptr<Type> etype, const Location& l=Location::None);
 
-    /// Returns the bits set in the constant.
+    /// Returns the enum label.
     shared_ptr<ID> value() const;
 
     /// Returns the enum's type.

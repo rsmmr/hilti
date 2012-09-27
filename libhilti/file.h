@@ -12,8 +12,8 @@
 /// a specialized IOSource.
 ///
 
-#ifndef HILTI_FILE_H
-#define HILTI_FILE_H
+#ifndef LIBHILTI_FILE_H
+#define LIBHILTI_FILE_H
 
 #include "enum.h"
 #include "bytes.h"

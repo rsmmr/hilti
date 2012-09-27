@@ -1,6 +1,6 @@
 /*
 
-@TEST-EXEC:  hilti-build -v %INPUT -m -o a.out
+@TEST-EXEC:  hilti-build -v %INPUT -o a.out
 @TEST-EXEC:  ./a.out >output 2>&1
 @TEST-EXEC:  btest-diff output
 

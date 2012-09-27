@@ -27,14 +27,14 @@ public:
     /// path: A file system path associated with the module.
     ///
     /// l: Associated location.
-    Module(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, const string& path = "-", const Location& l=Location::None);
+    Module(CompilerContext* ctx, shared_ptr<ID> id, const string& path = "-", const Location& l=Location::None);
 
-    shared_ptr<CompilerContext> context() const;
+    CompilerContext* context() const;
 
     ACCEPT_VISITOR_ROOT();
 
 private:
-    shared_ptr<CompilerContext> _context;
+    CompilerContext* _context;
 };
 
 }

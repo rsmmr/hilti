@@ -1,27 +1,35 @@
 
 #include "module.h"
+#include "context.h"
 
 using namespace hilti;
 
-Module::module_map Module::_modules;
-
-Module::Module(shared_ptr<ID> id, const string& path, const Location& l)
+Module::Module(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, const string& path, const Location& l)
     : ast::Module<AstInfo>(id, path, l)
 {
+    assert(id);
+
+    _context = ctx;
+
     shared_ptr<hilti::statement::Block> body(new hilti::statement::Block(nullptr, nullptr, l));
+    body->scope()->setID(id);
     setBody(body);
 
     // Implicitly always import the internal libhilti module.
-    import("libhilti");
+    if ( id->name() != "hlt" )
+        import("libhilti");
 
     // Implicitly always export Main::run().
     if ( util::strtolower(id->name()) == "main" )
         exportID("run", true);
-
-    _modules.insert(make_pair(path, this));
 }
 
-shared_ptr<type::Context> Module::context() const
+shared_ptr<CompilerContext> Module::compilerContext() const
+{
+    return _context;
+}
+
+shared_ptr<type::Context> Module::executionContext() const
 {
     auto expr = body()->scope()->lookup(std::make_shared<ID>("Context"), false);
 
@@ -35,10 +43,3 @@ shared_ptr<type::Context> Module::context() const
 
     return ctx;
 }
-
-shared_ptr<Module> Module::getExistingModule(const string& path)
-{
-    auto i = _modules.find(path);
-    return (i != _modules.end()) ? i->second->sharedPtr<Module>() : shared_ptr<Module>();
-}
-

@@ -2,8 +2,8 @@
 /// @{
 /// Functions for manipulating boolean values.
 
-#ifndef HILTI_BOOL_H
-#define HILTI_BOOL_H
+#ifndef LIBHILTI_BOOL_H
+#define LIBHILTI_BOOL_H
 
 #include "exceptions.h"
 

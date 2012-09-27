@@ -4,8 +4,8 @@
 /// each writer but not across writers. We enumerate all writer threads, and
 /// each write operation must specify which thread is doing the write.
 
-#ifndef HILTI_TQUEUE_H
-#define HILTI_TQUEUE_H
+#ifndef LIBHILTI_TQUEUE_H
+#define LIBHILTI_TQUEUE_H
 
 #include <stdint.h>
 

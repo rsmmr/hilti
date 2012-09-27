@@ -1,5 +1,5 @@
 
 >>> Bar
 module.hlt:4-4: error, unknown ID Bar [pass::IdResolver]
-module.hlt: Aborting due to resolver error.
+module.hlt: Aborting due to verification error.
 error running hiltic, aborting

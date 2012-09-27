@@ -11,6 +11,8 @@
 #       operators-register.cc
 #
 
+scripts=`pwd`/`dirname $0`
+
 function getoperators
 {
     grep -h '^[\t ]*opBegin' | sed 's/.*opBegin(\(.*\)).*/\1/g' | sed 's/, /::/g' | sort
@@ -60,15 +62,15 @@ if [ "$kind" == "-h" ]; then
     #### operators-exoression-builder.h with visit() methods for the expression builder.
     #### operators-register.cc with calls to operators register functions.
 
-    cat </dev/null >$dst/operators-visits.h
-    cat </dev/null >$dst/operators-expression-builder.h
+    cat </dev/null >$dst/operators-visits.h.tmp
+    cat </dev/null >$dst/operators-expression-builder.h.tmp
 
-    cat </dev/null >$dst/operators-declare.h <<EOF
+    cat </dev/null >$dst/operators-declare.h.tmp <<EOF
 namespace binpac {
 EOF
 
 
-    cat >$dst/operators-register.cc <<EOF
+    cat >$dst/operators-register.cc.tmp <<EOF
 
 namespace binpac {
 
@@ -78,24 +80,24 @@ EOF
 
     cat $tmp | while read line; do
         ns=`echo $line | sed 's/\(.*\)::\(.*\)/\1/g'`
-        cls=`echo $line | sed 's/\(.*\)::\(.*\)/\2/g'`
-        echo "namespace expression { namespace operator_ { namespace $ns { class $cls; } } };" >>$dst/operators-declare.h
+        cls=`echo $line | sed 's/\(.*\)::\([^: ]*\) *\( *:[^:].*\)\{0,\}/\2/g'`
+        echo "namespace expression { namespace operator_ { namespace $ns { class $cls; } } };" >>$dst/operators-declare.h.tmp
 
-        echo "       virtual void visit(expression::operator_::$ns::$cls* i) {}" >>$dst/operators-visits.h
+        echo "       virtual void visit(expression::operator_::$ns::$cls* i) {}" >>$dst/operators-visits.h.tmp
 
-        echo "       void visit(expression::operator_::$ns::$cls* i) override;" >>$dst/operators-expression-builder.h
+        echo "       void visit(expression::operator_::$ns::$cls* i) override;" >>$dst/operators-expression-builder.h.tmp
 
         name=`echo $line | sed 's/::/_/g'`
-        echo "    extern void __register_${ns}_${cls}(); __register_${ns}_${cls}();" >>$dst/operators-register.cc
+        echo "    extern void __register_${ns}_${cls}(); __register_${ns}_${cls}();" >>$dst/operators-register.cc.tmp
     done
 
-    cat >>$dst/operators-register.cc <<EOF
+    cat >>$dst/operators-register.cc.tmp <<EOF
 }
 
 }
 EOF
 
-    cat >>$dst/operators-declare.h <<EOF
+    cat >>$dst/operators-declare.h.tmp <<EOF
 }
 EOF
 
@@ -103,6 +105,13 @@ EOF
     date +%s >$TIMESTAMP
 
 fi
+
+#### Put live if content has changed compared to last run.
+
+$scripts/install-if-changed $dst/operators-register.cc.tmp $dst/operators-register.cc
+$scripts/install-if-changed $dst/operators-declare.h.tmp $dst/operators-declare.h
+$scripts/install-if-changed $dst/operators-expression-builder.h.tmp $dst/operators-expression-builder.h
+$scripts/install-if-changed $dst/operators-visits.h.tmp $dst/operators-visits.h
 
 #### Cleanup.
 

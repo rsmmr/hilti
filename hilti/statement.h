@@ -95,6 +95,9 @@ public:
    /// Returns the block's scope.
    shared_ptr<Scope> scope() const { return _scope; }
 
+   /// Sets the block's scope.
+   void setScope(shared_ptr<Scope> scope) { _scope = scope; }
+
    /// Returns the block's statements.
    const stmt_list& statements() const { return _stmts; }
 
@@ -111,7 +114,7 @@ public:
 
    /// Adds a statement to the block.
    ///
-   /// stmt: The statement.
+    /// stmt: The statement.
    void addStatement(shared_ptr<Statement> stmt);
 
    /// Adds a statement to the front of the block.
@@ -137,6 +140,9 @@ public:
    /// Returns true if the last statement of the block is a terminator
    /// instruction.
    bool terminated() const;
+
+   /// Remove statements after a terminator.
+   void removeUseless();
 
    ACCEPT_VISITOR(Statement);
 

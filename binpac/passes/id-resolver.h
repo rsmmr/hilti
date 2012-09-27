@@ -30,6 +30,7 @@ protected:
     void visit(expression::ID* i) override;
     void visit(type::Unknown* t) override;
     void visit(declaration::Hook* t) override;
+    void visit(type::unit::item::field::Unknown* f) override;
 
 private:
     std::set<string> _locals;

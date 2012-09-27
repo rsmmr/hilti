@@ -149,7 +149,7 @@ expression::ParserState::ParserState(Kind kind, shared_ptr<binpac::ID> id, share
 {
     _kind = kind;
     _id = id;
-    _type = _type ? std::make_shared<type::Unknown>(l) : type;
+    _type = type ? type : std::make_shared<type::Unknown>(l);
 
     addChild(_type);
     addChild(_id);
@@ -174,7 +174,7 @@ shared_ptr<Type> expression::ParserState::type() const
 void expression::ParserState::setType(shared_ptr<binpac::Type> type)
 {
     removeChild(_type);
-    _type = type;
+    _type = (type ? type : std::make_shared<type::Unknown>(location()));
     addChild(_type);
 }
 

@@ -10,15 +10,16 @@ namespace codegen {
 
 // Codegen information about a BinPAC++ type.
 struct TypeInfo {
+    typedef std::function<shared_ptr<hilti::Expression> (CodeGen* cg, shared_ptr<binpac::Type> t)> expression_callback;
+
     ///  // The corresponding HILTI type. If null, one can't create instances
     ///  of this type.
     shared_ptr<hilti::Type>       hilti_type = nullptr;
 
     /// The default HILTI value for instances of this type that aren't
-    /// explicitly initialized. If null, we use HILTI's default for the type
-    /// \a hilti_type
+    /// explicitly initialized. If null, we use HILTI's default for the type.
     shared_ptr<hilti::Expression> hilti_default = nullptr;
-};
+    };
 
 /// Visitor that returns the HILTI type that corresponds to a BinPAC type.
 class TypeBuilder : public CGVisitor<TypeInfo>
@@ -95,7 +96,8 @@ protected:
     void visit(type::unit::item::field::Constant* c) override;
     void visit(type::unit::item::field::Ctor* c) override;
     void visit(type::unit::item::field::Switch* s) override;
-    void visit(type::unit::item::field::Type* t) override;
+    void visit(type::unit::item::field::AtomicType* t) override;
+    void visit(type::unit::item::field::Unit* t) override;
     void visit(type::unit::item::field::switch_::Case* c) override;
 };
 

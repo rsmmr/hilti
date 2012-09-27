@@ -29,7 +29,8 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type)
     bool success = processOne(type, &result);
     assert(success);
 
-    return result.hilti_default;
+    return result.hilti_default ? result.hilti_default
+                                : hilti::builder::expression::default_(result.hilti_type);
 }
 
 void TypeBuilder::visit(type::Address* a)
@@ -72,6 +73,21 @@ void TypeBuilder::visit(type::Double* d)
 
 void TypeBuilder::visit(type::Enum* e)
 {
+    TypeInfo ti;
+
+    hilti::builder::enum_::label_list labels;
+
+    for ( auto l : e->labels() ) {
+        if ( l.first->name() == "Undef" )
+            continue;
+
+        auto id = hilti::builder::id::node(l.first->name(), l.first->location());
+        labels.push_back(std::make_pair(id, l.second));
+    }
+
+    ti.hilti_type = hilti::builder::enum_::type(labels, e->location());
+
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Exception* e)
@@ -92,6 +108,9 @@ void TypeBuilder::visit(type::Hook* h)
 
 void TypeBuilder::visit(type::Integer* i)
 {
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::integer::type(i->width());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Interval* i)
@@ -104,6 +123,12 @@ void TypeBuilder::visit(type::Iterator* i)
 
 void TypeBuilder::visit(type::List* l)
 {
+    auto item = hiltiType(l->elementType());
+
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::reference::type(hilti::builder::list::type(item, l->location()));
+    ti.hilti_default = hilti::builder::list::create(item, {}, l->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Map* m)
@@ -245,7 +270,11 @@ void TypeBuilder::visit(type::unit::item::field::Switch* s)
 {
 }
 
-void TypeBuilder::visit(type::unit::item::field::Type* t)
+void TypeBuilder::visit(type::unit::item::field::AtomicType* t)
+{
+}
+
+void TypeBuilder::visit(type::unit::item::field::Unit* t)
 {
 }
 

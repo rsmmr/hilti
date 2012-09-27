@@ -1,0 +1,24 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+# Make sure we catch wrong types for type-based default constructor.
+
+module Main
+
+import Hilti
+
+void run() {
+    call Hilti::print(bytes())
+}
+
+# @TEST-START-NEXT
+
+module Main
+
+import Hilti
+
+void run() {
+    call Hilti::print(any())
+}
+

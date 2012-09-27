@@ -273,10 +273,13 @@ Return::Return(shared_ptr<binpac::Expression> expr, const Location& l) : Stateme
 {
     _expr = expr;
     addChild(_expr);
-
 }
 
 shared_ptr<binpac::Expression> Return::expression() const
 {
     return _expr;
+}
+
+Stop::Stop(const Location& l)
+{
 }

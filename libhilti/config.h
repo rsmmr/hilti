@@ -2,8 +2,8 @@
 // Infrastructure to configure libhilti runtime behaviour.
 //
 
-#ifndef HILTI_CONFIG_H
-#define HILTI_CONFIG_H
+#ifndef LIBHILTI_CONFIG_H
+#define LIBHILTI_CONFIG_H
 
 #include <stdio.h>
 

@@ -1,5 +1,5 @@
 
 >>> c1
 wrong-constants.hlt:7-7: error, constant initialized with non-constant expression
-wrong-constants.hlt: Aborting due to parse error.
+wrong-constants.hlt: Aborting due to verification error.
 error running hiltic, aborting

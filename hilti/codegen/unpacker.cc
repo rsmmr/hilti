@@ -275,9 +275,6 @@ static void _integerUnpack(CodeGen* cg, const UnpackArgs& args, const UnpackResu
     cg->llvmCreateStore(args.begin, result.iter_ptr);
     cg->llvmCctor(result.iter_ptr, iter_type, true, "integer.unpack");
 
-    // We'll do another cctor below but need this to unref in the exception case.
-    cg->llvmDtorAfterInstruction(result.iter_ptr, iter_type, true);
-
     llvm::Value* unpacked = cg->llvmConstNull(itype);
 
     // Extract the bytes.
@@ -305,7 +302,6 @@ static void _integerUnpack(CodeGen* cg, const UnpackArgs& args, const UnpackResu
         unpacked = cg->llvmExtractBits(unpacked, low, high);
     }
 
-    cg->llvmCctor(result.iter_ptr, iter_type, true, "integer.unpack");
     cg->llvmCreateStore(unpacked, result.value_ptr);
 }
 
@@ -593,9 +589,6 @@ void Unpacker::visit(type::Bool* t)
     cg()->llvmCreateStore(args.begin, result.iter_ptr);
     cg()->llvmCctor(result.iter_ptr, iter_type, true, "integer.unpack");
 
-    // We'll do another cctor below but need this to unref in the exception case.
-    cg()->llvmDtorAfterInstruction(result.iter_ptr, iter_type, true);
-
     llvm::Value* value = cg()->llvmCallC("__hlt_bytes_extract_one", { result.iter_ptr, args.end }, true);
 
     // Select subset of bits if requested.
@@ -606,7 +599,6 @@ void Unpacker::visit(type::Bool* t)
 
     auto unpacked = cg()->builder()->CreateICmpNE(value, cg()->llvmConstInt(0, 8));
 
-    cg()->llvmCctor(result.iter_ptr, iter_type, true, "integer.unpack");
     cg()->llvmCreateStore(unpacked, result.value_ptr);
 }
 

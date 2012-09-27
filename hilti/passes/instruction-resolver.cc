@@ -7,27 +7,23 @@ InstructionResolver::~InstructionResolver()
 {
 }
 
-void InstructionResolver::visit(statement::instruction::Unresolved* s)
+void InstructionResolver::processInstruction(shared_ptr<statement::Instruction> instr, shared_ptr<ID> id)
 {
-    auto instr = s->sharedPtr<statement::instruction::Unresolved>();
+#if 0
+    std::cerr << "<<" << s->render() << std::endl;
 
-    if ( instr->instruction() ) {
-        // We already know the instruction, just need to transfer the operands over.
-        auto new_stmt = InstructionRegistry::globalRegistry()->resolveStatement(instr->instruction(), instr);
-        instr->replace(new_stmt);
-        return;
+    int i = 0;
+    for ( auto o : s->operands() ) {
+        if ( o ) {
+            std::cerr << "   " << i++ << " " << o->type()->render() << std::endl;
+            o->type()->dump(std::cerr);
+        }
     }
 
-    auto id = s->id();
-    auto name = s->id()->name();
+    std::cerr << "<<" << s->render() << std::endl;
+#endif
 
-    if ( util::startsWith(name, ".op.") )
-        // These are dummy instructions used only to provide a single class
-        // for the builder interface to access overloaded operators. We use
-        // the non-prefixed name instead to do the lookup.
-        id = std::make_shared<ID>(name.substr(4, std::string::npos));
-
-    auto matches = InstructionRegistry::globalRegistry()->getMatching(id, s->operands());
+    auto matches = InstructionRegistry::globalRegistry()->getMatching(id, instr->operands());
 
     string error_msg;
 
@@ -39,13 +35,13 @@ void InstructionResolver::visit(statement::instruction::Unresolved* s)
 
              auto body = current<statement::Block>();
 
-             if ( body->scope()->lookup(s->id()) ) {
+             if ( body->scope()->lookup(id) ) {
                  auto assign = std::make_shared<ID>("assign");
-                 instruction::Operands ops = { instr->target(), builder::id::create(s->id()), nullptr, nullptr };
+                 instruction::Operands ops = { instr->target(), builder::id::create(instr->id()), nullptr, nullptr };
                  auto matches = InstructionRegistry::globalRegistry()->getMatching(assign, ops);
 
                  if ( matches.size() != 1 ) {
-                     error(s, util::fmt("unsupporte assign operation (%d)", matches.size()));
+                     error(instr, util::fmt("unsupporte assign operation (%d)", matches.size()));
                      return;
                  }
 
@@ -54,7 +50,7 @@ void InstructionResolver::visit(statement::instruction::Unresolved* s)
                  return;
              }
 
-              error(s, util::fmt("unknown instruction %s", s->id()->name().c_str()));
+              error(instr, util::fmt("unknown instruction %s", id->name().c_str()));
              return;
          }
 
@@ -75,12 +71,55 @@ void InstructionResolver::visit(statement::instruction::Unresolved* s)
     }
 
     error_msg += "  got:\n";
-    error_msg += "    " + s->signature() + "\n";
+    error_msg += "    " + instr->signature() + "\n";
 
     error_msg += "  expected one of:\n";
 
     for ( auto a : InstructionRegistry::globalRegistry()->byName(id->name()) )
         error_msg += "    " + string(*a) + "\n";
 
-    error(s, error_msg);
+    error(instr, error_msg);
+}
+
+void InstructionResolver::visit(statement::instruction::Unresolved* s)
+{
+    auto instr = s->sharedPtr<statement::instruction::Unresolved>();
+
+    if ( instr->instruction() ) {
+        // We already know the instruction, just need to transfer the operands over.
+        auto new_stmt = InstructionRegistry::globalRegistry()->resolveStatement(instr->instruction(), instr);
+        instr->replace(new_stmt);
+        return;
+    }
+
+    // TODO: Do we need this special-casing here, or is the corresponding
+    // part in Resolved() sufficeint?
+
+    auto id = s->id();
+    auto name = s->id()->name();
+
+    if ( util::startsWith(name, ".op.") )
+        // These are dummy instructions used only to provide a single class
+        // for the builder interface to access overloaded operators. We use
+        // the non-prefixed name instead to do the lookup.
+        id = std::make_shared<ID>(name.substr(4, std::string::npos));
+
+    return processInstruction(instr, id);
+}
+
+void InstructionResolver::visit(statement::instruction::Resolved* s)
+{
+    auto instr = s->sharedPtr<statement::instruction::Resolved>();
+
+    auto id = s->id();
+    auto name = s->id()->name();
+
+    if ( ! util::startsWith(name, ".op.") )
+        return;
+
+    // These are dummy instructions used only to provide a single class
+    // for the builder interface to access overloaded operators. We use
+    // the non-prefixed name instead to do the lookup.
+    id = std::make_shared<ID>(name.substr(4, std::string::npos));
+    return processInstruction(instr, id);
 }

@@ -4,15 +4,14 @@
 
 int sleep = 0;
 
-#include <libhilti.h>
-
 #include <stdio.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
 #include <sys/resource.h>
 
-#include <binpac.h>
+#include <libhilti.h>
+#include <libbinpac++.h>
 
 int debug = 0;
 int debug_hooks = 0;
@@ -128,17 +127,30 @@ static binpac_parser* findParser(const char* name)
     hlt_iterator_list i = hlt_list_begin(parsers, &excpt, ctx);
     hlt_iterator_list end = hlt_list_end(parsers, &excpt, ctx);
 
+    binpac_parser* result = 0;
+
     while ( ! (hlt_iterator_list_eq(i, end, &excpt, ctx) || excpt) ) {
         binpac_parser* p = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
 
-        if ( hlt_string_cmp(hname, p->name, &excpt, ctx) == 0 )
-            return p;
+        if ( hlt_string_cmp(hname, p->name, &excpt, ctx) == 0 ) {
+            result = p;
+            break;
+        }
 
+        GC_DTOR(p, hlt_Parser);
+
+        hlt_iterator_list j = i;
         i = hlt_iterator_list_incr(i, &excpt, ctx);
+        GC_DTOR(j, hlt_iterator_list);
     }
 
+
+    GC_DTOR(i, hlt_iterator_list);
+    GC_DTOR(end, hlt_iterator_list);
+    GC_DTOR(parsers, hlt_iterator_list);
+
     check_exception(excpt);
-    return 0;
+    return result;
 }
 
 hlt_bytes* readAllInput()
@@ -185,7 +197,10 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
     if ( ! chunk_size ) {
         // Feed all input at once.
         hlt_bytes_freeze(input, 1, &excpt, ctx);
-        (*p->parse_func)(input, 0, &excpt, ctx);
+        void *pobj = (*p->parse_func)(input, 0, &excpt, ctx);
+        GC_DTOR_GENERIC(&pobj, p->type_info);
+        GC_DTOR(input, hlt_bytes);
+        GC_DTOR(cur, hlt_iterator_bytes);
         check_exception(excpt);
         return;
     }
@@ -826,19 +841,26 @@ int main(int argc, char** argv)
         // If we have exactly one parser, that's the one we'll use.
         if ( hlt_list_size(parsers, &excpt, ctx) == 1 ) {
             hlt_iterator_list i = hlt_list_begin(parsers, &excpt, ctx);
-            request = reply = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
+            request = *(binpac_parser**) hlt_iterator_list_deref(i, &excpt, ctx);
             assert(request);
+            GC_CCTOR(request, hlt_Parser);
+            reply = request;
+            GC_DTOR(i, hlt_iterator_list);
+            GC_DTOR(parsers, hlt_list);
         }
 
         else {
             // If we don't have any parsers, we do nothing and just exit
             // normally.
-            if ( hlt_list_size(parsers, &excpt, ctx) == 0 )
+            int64_t size = hlt_list_size(parsers, &excpt, ctx);
+            GC_DTOR(parsers, hlt_list);
+
+            if ( size == 0 )
                 exit(0);
 
             fprintf(stderr, "no parser specified; see usage for list.\n");
             exit(1);
-            }
+        }
     }
 
     else {
@@ -862,8 +884,10 @@ int main(int argc, char** argv)
             }
         }
 
-        else
+        else {
+            GC_CCTOR(request, hlt_Parser);
             reply = request;
+        }
     }
 
     assert(request && reply);
@@ -886,6 +910,9 @@ int main(int argc, char** argv)
         hlt_profiler_stop(profiler_tag, &excpt, hlt_global_execution_context());
         GC_DTOR(profiler_tag, hlt_string);
     }
+
+    GC_DTOR(request, hlt_Parser);
+    GC_DTOR(reply, hlt_Parser);
 
     exit(0);
 }

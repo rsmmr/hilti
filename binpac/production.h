@@ -8,6 +8,7 @@
 #include <ast/visitor.h>
 
 #include "common.h"
+#include "ctor.h"
 
 namespace binpac {
 
@@ -44,6 +45,13 @@ public:
     /// possible derivation is sufficient.
     virtual bool nullable() const;
 
+    /// Returns true if running out of data while parsing this production
+    /// should not be considered an error.
+    ///
+    /// Can be overridden by derived classes. The default implmentation
+    /// returns true iff the producion is nullable().
+    virtual bool eodOk() const;
+
     /// Returns a readable representation of the production, suitable to
     /// include in error message and debugging output.
     string render() const;
@@ -78,13 +86,6 @@ protected:
     /// that may chose to skip it and refer to the production just by its
     /// symbol).
     virtual string renderProduction() const = 0;
-
-    /// Returns true if running out of data while parsing this production
-    /// should not be considered an error.
-    ///
-    /// Can be overridden by derived classes. The default implmentation
-    /// returns true iff the producion is nullable().
-    virtual bool eodOk() const;
 
     /// May attempt to simplify the production's internal representation. The
     /// default does nothing.
@@ -171,7 +172,10 @@ private:
 class Literal : public Terminal
 {
 public:
-    /// Constructor.
+    typedef ctor::RegExp::pattern_list pattern_list;
+
+    /// Constructor. A literal is a production that can be parsed via one or
+    /// more regular expressions.
     ///
     /// type: The literal's type. Can be null of \a expr is given (if so,
     /// it's ignored and the expression's type is taken).
@@ -190,10 +194,21 @@ public:
     /// l: Associated location.
     Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
 
+    /// Returns a unique ID for this literal. The ID is unique across all
+    /// grammars and guaranteed to be positive.
+    int tokenID() const;
+
     /// Returns an expression representing the literal.
     virtual shared_ptr<Expression> literal() const = 0;
 
+    /// Returns a set of regular expressions corresponding to the literal.
+    virtual pattern_list patterns() const = 0;
+
     ACCEPT_VISITOR(Terminal);
+private:
+    int _id;
+
+    static int _id_counter;
 };
 
 /// A literal represented by a constant.
@@ -211,6 +226,7 @@ public:
     shared_ptr<binpac::Constant> constant() const;
 
     shared_ptr<Expression> literal() const override;
+    pattern_list patterns() const override;
 
     ACCEPT_VISITOR(Literal);
 
@@ -236,6 +252,7 @@ public:
     shared_ptr<binpac::Ctor> ctor() const;
 
     shared_ptr<Expression> literal() const override;
+    pattern_list patterns() const override;
 
     ACCEPT_VISITOR(Literal);
 
@@ -455,12 +472,13 @@ public:
     /// \a true case, the second for \a false.
     std::pair<shared_ptr<Production>, shared_ptr<Production>> branches() const;
 
+    bool eodOk() const override;
+
     ACCEPT_VISITOR(NonTerminal);
 
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
-    bool eodOk() const override;
 
 private:
     shared_ptr<Expression> _expr;
@@ -485,7 +503,7 @@ public:
     Counter(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> body, const Location& l = Location::None);
 
     /// Returns the counter expression.
-    shared_ptr<Expression> expression() const;
+    shared_ptr<binpac::Expression> expression() const;
 
     /// Returns the counter body production.
     shared_ptr<Production> body() const;
@@ -534,6 +552,33 @@ private:
     shared_ptr<Production> _body;
 };
 
+/// A production executing until interrupted by a foreach hook.
+class Loop : public NonTerminal
+{
+public:
+    /// Constructor.
+    ///
+    /// body: The production to be repeated.
+    ///
+    /// symbol: A symbol associated with the production. The symbol must be
+    /// unique within the grammar the production is (or will be) part of.
+    ///
+    /// l: Associated location.
+    Loop(const string& symbol, shared_ptr<Production> body, const Location& l = Location::None);
+
+    /// Returns the loop body production.
+    shared_ptr<Production> body() const;
+
+    ACCEPT_VISITOR(NonTerminal);
+
+protected:
+    string renderProduction() const override;
+    alternative_list rhss() const override;
+
+private:
+    shared_ptr<Production> _body;
+};
+
 /// Alternatives between which we decide based on which value out of a set of
 /// options is matched; plus a default if none.
 class Switch : public NonTerminal
@@ -568,12 +613,13 @@ public:
     /// Returns the default production, or null if none.
     shared_ptr<Production> default_() const;
 
+    bool eodOk() const override;
+
     ACCEPT_VISITOR(NonTerminal);
 
 protected:
     string renderProduction() const override;
     alternative_list rhss() const override;
-    bool eodOk() const override;
 
 private:
     case_list _cases;

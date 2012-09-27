@@ -3,8 +3,8 @@
 
 shared_ptr<binpac::production::Literal> literal(const char* sym, const char* val)
 {
-    auto c = std::make_shared<binpac::expression::Constant>(std::make_shared<binpac::constant::String>(val));
-    return std::make_shared<binpac::production::Literal>(sym, c);
+    auto c = std::make_shared<binpac::ctor::Bytes>(val);
+    return std::make_shared<binpac::production::Ctor>(sym, c);
 }
 
 shared_ptr<binpac::production::Sequence> sequence(const char* sym, const binpac::Production::production_list seq)

@@ -1,14 +1,14 @@
 === Grammar my-grammar
         Epsilon: <eps> -> ()
- (*)  LookAhead: All -> {HdrKey}: List2 | {"[\\r\\n]"}: nl
+ (*)  LookAhead: All -> {HdrKey}: List2 | {b"[\\r\\n]"}: nl
        Variable: HdrKey -> (type bytes)
        Variable: HdrVal -> (type bytes)
        Sequence: Header -> HdrKey ws colon ws HdrVal nl
        Sequence: List1 -> Header List2
       LookAhead: List2 -> {HdrKey}: List1 | {}: <eps>
-        Literal: colon -> ":"
-        Literal: nl  -> "[\\r\\n]"
-        Literal: ws  -> "[ \\t]*"
+           Ctor: colon -> b":" (bytes)
+           Ctor: nl  -> b"[\\r\\n]" (bytes)
+           Ctor: ws  -> b"[ \\t]*" (bytes)
 
   -- Epsilon:
      All = 1

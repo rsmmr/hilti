@@ -1,7 +1,8 @@
 
 #include <pthread.h>
+#include <getopt.h>
 
-#ifdef HAVE_LINUX
+#ifdef __linux__
 #include <sys/prctl.h>
 #endif
 
@@ -9,7 +10,7 @@
 
 void hlt_set_thread_name(const char* s)
 {
-#ifdef HAVE_LINUX
+#ifdef __linux__
 	prctl(PR_SET_NAME, s, 0, 0, 0);
 #endif
 
@@ -45,5 +46,17 @@ void hlt_set_thread_affinity(int core)
     }
 
     DBG_LOG(DBG_STREAM, "native thread %p pinned to core %d", self, core);
+#endif
+}
+
+void hlt_reset_getopt()
+{
+    // Methods differ here, see man pages.
+#ifdef __linux__
+    optind = 0;
+#else
+    // Works on Apple, not clear it works on BSD in general ...
+    optreset = 1;
+    optind = 1;
 #endif
 }

@@ -1,8 +1,8 @@
 /// \addtogroup regexp
 /// @{
 
-#ifndef HILTI_REGEXP_H
-#define HILTI_REGEXP_H
+#ifndef LIBHILTI_REGEXP_H
+#define LIBHILTI_REGEXP_H
 
 #include "bytes.h"
 #include "vector.h"

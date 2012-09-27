@@ -16,8 +16,8 @@
 /// \addtogroup iosrc
 /// @{
 
-#ifndef HILTI_IOSRC_H
-#define HILTI_IOSRC_H
+#ifndef LIBHILTI_IOSRC_H
+#define LIBHILTI_IOSRC_H
 
 #include "types.h"
 #include "enum.h"

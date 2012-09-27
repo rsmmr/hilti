@@ -108,9 +108,17 @@ shared_ptr<Expression> Terminal::sink() const
     return _sink;
 }
 
+int Literal::_id_counter = 0;
+
 Literal::Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
     : Terminal(symbol, expr ? expr->type() : type, expr, filter, l)
 {
+    _id = ++_id_counter;
+}
+
+int Literal::tokenID() const
+{
+    return _id;
 }
 
 production::Constant::Constant(const string& symbol, shared_ptr<binpac::Constant> constant, shared_ptr<Expression> expr, filter_func filter, const Location& l)
@@ -135,6 +143,12 @@ shared_ptr<Expression> production::Constant::literal() const
     return std::make_shared<expression::Constant>(_const);
 }
 
+Literal::pattern_list production::Constant::patterns() const
+{
+    assert(false);
+    return {};
+}
+
 production::Ctor::Ctor(const string& symbol, shared_ptr<binpac::Ctor> ctor, shared_ptr<Expression> expr, filter_func filter, const Location& l)
     : Literal(symbol, ast::type::checkedTrait<type::trait::Parseable>(ctor->type())->fieldType(), expr, filter, l)
 {
@@ -155,6 +169,12 @@ string production::Ctor::renderProduction() const
 shared_ptr<Expression> production::Ctor::literal() const
 {
     return std::make_shared<expression::Ctor>(_ctor);
+}
+
+Literal::pattern_list production::Ctor::patterns() const
+{
+    assert(_ctor->patterns().size());
+    return _ctor->patterns();
 }
 
 production::Variable::Variable(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
@@ -391,6 +411,27 @@ string While::renderProduction() const
 }
 
 NonTerminal::alternative_list While::rhss() const
+{
+    return { { _body } };
+}
+
+Loop::Loop(const string& symbol, shared_ptr<Production> body, const Location& l)
+    : NonTerminal(symbol, nullptr, l)
+{
+    _body = body;
+}
+
+shared_ptr<Production> Loop::body() const
+{
+    return _body;
+}
+
+string Loop::renderProduction() const
+{
+    return util::fmt("loop: %s", _body->symbol().c_str());
+}
+
+NonTerminal::alternative_list Loop::rhss() const
 {
     return { { _body } };
 }

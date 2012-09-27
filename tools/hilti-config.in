@@ -30,7 +30,6 @@ Usage: hilti-config <options>
 
       --hiltic-binary       Print path of hiltic binary
       --hiltic-flags        Print flags for hiltic.
-      --hiltic-flags-main   Print flags for hiltic to link libhiltimain
       --hiltic-binpac       Print flags for hiltic that BinPAC code needs in addition.
 
   == Options printing flags for linking host application code with libbinpac.
@@ -119,16 +118,16 @@ while [ "$1" != "" ]; do
     # General options.
 
         --version)
-            echo "HILTI 0.2"
+            echo -n "HILTI 0.2"
             shift;;
 
         --distbase)
-            echo $base
+            echo -n $base
             shift;;
 
         --prefix)
             # No installation yet.
-            echo $base
+            echo -n $base
             shift;;
 
         --debug)
@@ -136,16 +135,16 @@ while [ "$1" != "" ]; do
             shift;;
 
         --libhilti)
-            echo "$base/libhilti"
+            echo -n "$base/libhilti"
             shift;;
 
      # libhilti
         --libhilti-cflags)
-            echo "-I$base/libhilti -I$builddir/libhilti"
+            echo -n "-I$base/libhilti -I$builddir/libhilti"
             shift;;
 
         --libhilti-cxxflags)
-            echo "-I$base/libhilti -I$builddir/libhilti"
+            echo -n "-I$base/libhilti -I$builddir/libhilti"
             shift;;
 
         --libhilti-ldflags)
@@ -154,60 +153,58 @@ while [ "$1" != "" ]; do
                 papi=""
             fi
 
-            echo "$base/build/libhilti/libhilti-rt-native.a -lm -lpthread -lpcap $papi"
+            echo -n "$base/build/libhilti/libhilti-rt-native.a -lm -lpthread -lpcap $papi"
             shift;;
 
      # hiltic
 
         --hiltic-binary)
-            echo "$base/build/tools/hiltic"
+            echo -n "$base/build/tools/hiltic"
             shift;;
 
         --hiltic-flags)
-            echo "$base/libhilti/type-info.hlt $base/build/libhilti/libhilti-rt$libpostfix.bca -I$base/libhilti"
-            shift;;
-
-        --hiltic-flags-main)
-            echo "$base/libhilti/type-info.hlt $base/build/libhilti/libhilti-rt-main$libpostfix.bca -I$base/libhilti"
+            # echo -n "$base/libhilti/type-info.hlt $base/build/libhilti/libhilti-rt$libpostfix.bc -I$base/libhilti"
+            echo -n "$base/build/libhilti/libhilti-rt$libpostfix.bc -I$base/libhilti"
             shift;;
 
         --hiltic-binpac)
-            echo "$base/libbinpac/binpac.hlt -I$base/libbinpac $base/build/libbinpac/libbinpac-rt$libpostfix.bca"
+            #echo -n "$base/libbinpac/binpachilti.hlt -I$base/build/libbinpac/autogen -I$base/libbinpac $base/build/libbinpac/libbinpac-rt$libpostfix.bc"
+            echo -n "-I$base/build/libbinpac/autogen -I$base/libbinpac $base/build/libbinpac/libbinpac-rt$libpostfix.bc"
             shift;;
 
      # libbinpac
         --libbinpac-cflags)
-            echo "-I$base/libbinpac -I$builddir/libbinpac"
+            echo -n "-I$base/libbinpac -I$builddir/libbinpac"
             shift;;
 
         --libbinpac-cxxflags)
-            echo "-I$base/libbinpac -I$builddir/libbinpac"
+            echo -n "-I$base/libbinpac -I$builddir/libbinpac"
             shift;;
 
         --libbinpac-ldflags)
-            echo "$base/build/libbinpac/libbinpac-rt$libpostfix.bca"
+            echo -n "$base/build/libbinpac/libbinpac-rt$libpostfix.bc"
             shift;;
 
      # binpac++
 
         --binpac-binary)
-            echo "$base/build/tools/binpac++"
+            echo -n "$base/build/tools/binpac++"
             shift;;
 
         --binpac-flags)
-            echo ""
+            echo -n ""
             shift;;
 
      # HILTI
         --hilti-cxxflags)
             llvm_flags=`llvm-config --cxxflags`
             llvm_flags="$llvm_flags -fexceptions -frtti" # We want exception.
-            echo "-stdlib=libc++ -std=c++0x -I$base/libhilti -I$base/build/hilti -I$base/build/libhilti -I$base/hilti -I$base $llvm_flags"
+            echo -n "-stdlib=libc++ -std=c++0x -I$base/libhilti -I$base/build/hilti -I$base/build/libhilti -I$base/hilti -I$base $llvm_flags"
             shift;;
 
         --hilti-ldflags)
             llvm_flags=`llvm-config --ldflags --libs core bitreader bitwriter linker asmparser`
-            echo "-L $base/build/hilti -lhilti $llvm_flags"
+            echo -n "-L $base/build/hilti -lhilti $llvm_flags"
             shift;;
 
         -h)
@@ -215,8 +212,12 @@ while [ "$1" != "" ]; do
         *)
             usage;;
     esac
+
+    echo -n " "
+
 done
 
+echo
 
 
 

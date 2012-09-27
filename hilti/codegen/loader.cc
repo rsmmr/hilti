@@ -128,6 +128,12 @@ void Loader::visit(expression::Ctor* e)
     CGVisitor<_LoadResult, shared_ptr<Type>>::setResult(result);
 }
 
+void Loader::visit(expression::Default* e)
+{
+    auto val = cg()->typeInfo(e->type())->init_val;
+    setResult(val, true, false);
+}
+
 void Loader::visit(expression::Coerced* e)
 {
     auto val = llvmValue(e->expression(), true);

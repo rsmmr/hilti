@@ -15,6 +15,8 @@ class ModuleBuilder : public ast::Logger
 public:
    /// Constructor setting up building a new module.
    ///
+   /// ctx: The compiler context the module is part of.
+   ///
    /// id: The name of the module.
    ///
    /// path: A file system path associated with the module.
@@ -22,10 +24,12 @@ public:
    /// libdirs: Directories where to search other modules when importing.
    ///
    /// l: A location associated with the module.
-   ModuleBuilder(shared_ptr<hilti::ID> id, const std::string& path = "-", const path_list& libdirs = path_list(), const Location& l = Location::None);
+   ModuleBuilder(shared_ptr<CompilerContext> ctx, shared_ptr<hilti::ID> id, const std::string& path = "-", const Location& l = Location::None);
 
    /// Constructor setting up building a new module.
    ///
+   /// ctx: The compiler context the module is part of.
+   ///
    /// id: The name of the module.
    ///
    /// path: A file system path associated with the module.
@@ -33,28 +37,10 @@ public:
    /// libdirs: Directories where to search other modules when importing.
    ///
    /// l: A location associated with the module.
-   ModuleBuilder(const std::string& id, const std::string& path = "-", const path_list& libdirs = path_list(), const Location& l = Location::None);
+   ModuleBuilder(shared_ptr<CompilerContext> ctx, const std::string& id, const std::string& path = "-", const Location& l = Location::None);
 
    /// Destructor.
    ~ModuleBuilder();
-
-   /// Finalizes building a module. By default, this also resolved and
-   /// validates the module.
-   ///
-   /// resolve: If false, does not resolve the module.
-   ///
-   /// validate: If false, does not validate the module.
-   ///
-   /// Returns: True if everything succeeed. module() will then return the
-   /// final module.
-   ///
-   /// \note If \a resolve is false, validation will almost certainly fail.
-   bool finalize(bool resolve = true, bool validate = true);
-
-   /// Prints out the module as HILTI source code. This must be called only after finalize.
-   ///
-   /// out: The stream where to print it to.
-   void print(std::ostream& out);
 
    /// Imports another module into the current's namespace.
    ///
@@ -82,6 +68,12 @@ public:
    /// type: The type to export.
    void exportType(shared_ptr<hilti::Type> type);
 
+   /// Finishes the building process. This must be called before using the
+   /// compiled module, it will resolve an still unresolved references.
+   ///
+   /// Returns: The finalized module, or null on error.
+   shared_ptr<hilti::Module> finalize(bool verify = true);
+
    /// Returns the module's AST being built. Note that before calling
    /// finalize(), this remains in an unresolved state.
    shared_ptr<hilti::Module> module() const;
@@ -99,10 +91,10 @@ public:
    /// global instruction block.
    shared_ptr<BlockBuilder> builder() const;
 
-   /// Returns the block associated with the top builder on the current
-   /// function's stack. If no function is current being built, returns the
-   /// module's global instruction block.
-   shared_ptr<hilti::expression::Block> block() const;
+   /// Returns an expression referencing the block associated with the top
+   /// builder on the current function's stack. If no function is current
+   /// being built, returns the module's global instruction block.
+   shared_ptr<hilti::Expression> block() const;
 
    /// Pushes a HILTI function onto the stack of functions currently being
    /// built. function() will now return this function. By default, the
@@ -469,7 +461,7 @@ public:
    /// l: An associated location.
    ///
    /// Returns: An expression referencing the global.
-   shared_ptr<hilti::expression::Constant> addConstant(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique = false, const Location& l = Location::None);
+   shared_ptr<hilti::Expression> addConstant(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique = false, const Location& l = Location::None);
 
    /// Adds a global constant to the module.
    ///
@@ -487,7 +479,7 @@ public:
    /// l: An associated location.
    ///
    /// Returns: An expression referencing the global.
-   shared_ptr<hilti::expression::Constant> addConstant(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique = false, const Location& l = Location::None);
+   shared_ptr<hilti::Expression> addConstant(const std::string& id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique = false, const Location& l = Location::None);
 
    /// Adds a local variable to the current function.
    ///
@@ -623,17 +615,36 @@ public:
    /// Returns: The cached node, or null if none.
    shared_ptr<Node> lookupNode(const std::string& component, const std::string& idx);
 
+   typedef std::function<void ()> cache_builder_callback;
+
+   /// Builds a block the first time it's called from within the same
+   /// function, then caches that block and returns it on subsequent calls.
+   ///
+   /// tag: Tag to identify the block.
+   ///
+   /// callback: The callback to build the block. When called, the new block
+   /// builder will have been pushed already, and it will be removed
+   /// afterwards.
+   shared_ptr<BlockBuilder> cacheBlockBuilder(const std::string& tag, cache_builder_callback cb);
+
 protected:
    friend class BlockBuilder;
 
 private:
    shared_ptr<hilti::expression::Variable> _addLocal(shared_ptr<statement::Block> stmt, shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
 
-   typedef std::map<std::string, std::pair<std::string, shared_ptr<hilti::Declaration>>> declaration_map;
+   struct DeclarationMapValue {
+       std::string kind = "";
+       shared_ptr<hilti::Type> type = nullptr;
+       shared_ptr<hilti::Declaration> declaration = nullptr;
+   };
+
+   typedef std::map<std::string, DeclarationMapValue> declaration_map;
 
    enum _DeclStyle { REUSE, CHECK_UNIQUE, MAKE_UNIQUE };
-   std::pair<shared_ptr<ID>, shared_ptr<Declaration>> _uniqueDecl(shared_ptr<ID> id, const std::string& kind, declaration_map* decls, _DeclStyle style, bool global);
-   void _addDecl(shared_ptr<ID> id, const std::string& kind, declaration_map* decls, shared_ptr<Declaration>);
+   std::pair<shared_ptr<ID>, shared_ptr<Declaration>> _uniqueDecl(shared_ptr<ID> id, shared_ptr<Type> type, const std::string& kind, declaration_map* decls, _DeclStyle style, bool global);
+   void _addDecl(shared_ptr<ID> id, shared_ptr<Type> type, const std::string& kind, declaration_map* decls, shared_ptr<Declaration>);
+   shared_ptr<ID> _normalizeID(shared_ptr<ID> id) const;
 
    struct Body {
        shared_ptr<statement::Block> stmt;
@@ -646,9 +657,11 @@ private:
        Location location;
        std::list<shared_ptr<Body>> bodies;
        declaration_map locals;
+       std::map<std::string, shared_ptr<BlockBuilder>> builders;
+       std::set<std::string> labels;
    };
 
-   void Init(shared_ptr<ID> id, const std::string& path, const path_list& libdirs, const Location& l);
+   void Init(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, const std::string& path, const Location& l);
    shared_ptr<Function> _currentFunction() const;
    shared_ptr<Body> _currentBody() const;
    shared_ptr<BlockBuilder> _currentBuilder() const;

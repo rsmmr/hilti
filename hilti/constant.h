@@ -144,7 +144,7 @@ private:
 class Tuple : public Constant
 {
 public:
-   typedef std::list<node_ptr<Expression>> element_list;
+   typedef std::list<shared_ptr<Expression>> element_list;
 
    /// Constructor.
    ///
@@ -154,7 +154,7 @@ public:
    Tuple(const element_list& elems, const Location& l=Location::None);
 
    /// Returns a list of the constant's elements.
-   const std::list<shared_ptr<Expression>> value() const;
+   element_list value() const;
 
    /// Returns the type of the constant.
    shared_ptr<Type> type() const override;
@@ -162,7 +162,7 @@ public:
    ACCEPT_VISITOR(Constant);
 
 private:
-   element_list _elems;
+   std::list<node_ptr<Expression>> _elems;
 };
 
 /// Internal representation for IP addresses.

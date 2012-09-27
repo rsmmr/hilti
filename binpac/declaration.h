@@ -45,7 +45,7 @@ public:
     ACCEPT_VISITOR(binpac::Declaration);
 };
 
-/// AST node for declaring a constant.
+/// AST node for declaring a constant value.
 class Constant : public binpac::Declaration, public ast::declaration::mixin::Constant<AstInfo>
 {
 public:
@@ -55,10 +55,10 @@ public:
     /// 
     /// linkage: The declaration's linkage.
     ///
-    /// constant: The declared constant.
+    /// expr: The declared value.
     ///
     /// l: An associated location.
-    Constant(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Constant> constant, const Location& l=Location::None);
+    Constant(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Expression> value, const Location& l=Location::None);
 
     ACCEPT_VISITOR(binpac::Declaration);
 };

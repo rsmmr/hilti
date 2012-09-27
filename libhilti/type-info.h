@@ -3,8 +3,8 @@
 //
 // FIXME: Eventually, hiltic will generate these prototypes for us.
 
-#ifndef HILTI_TYPE_INFO_H
-#define HILTI_TYPE_INFO_H
+#ifndef LIBHILTI_TYPE_INFO_H
+#define LIBHILTI_TYPE_INFO_H
 
 extern const hlt_type_info* hlt_type_info_hlt_int_32;
 extern const hlt_type_info* hlt_type_info_hlt_int_64;

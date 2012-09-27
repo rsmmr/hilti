@@ -117,6 +117,7 @@ add_library (hilti SHARED
     coercer.cc
     constant-coercer.cc
     constant.cc
+    context.cc
     ctor.cc
     expression.cc
     hilti.cc

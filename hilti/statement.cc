@@ -97,7 +97,7 @@ void statement::Block::_init(shared_ptr<Scope> parent, shared_ptr<ID> id, const 
     _id = id;
     _stmts = stmts;
     _decls = decls;
-    _scope = unique_ptr<Scope>(new Scope(parent));
+    _scope = std::make_shared<Scope>(parent);
 
     if ( _id )
         addChild(_id);
@@ -137,6 +137,25 @@ bool statement::Block::terminated() const
         return false;
 
     return i->instruction()->terminator();
+}
+
+void statement::Block::removeUseless()
+{
+    for ( stmt_list::iterator i = _stmts.begin(); i != _stmts.end(); i++ ) {
+
+        auto s = ast::tryCast<statement::instruction::Resolved>(*i);
+
+        if ( ! s )
+            continue;
+
+        if ( s->instruction()->terminator() ) {
+            for ( stmt_list::iterator j = ++i; j != _stmts.end(); j++ )
+                removeChild(*j);
+
+            _stmts.erase(i, _stmts.end());
+            break;
+        }
+    }
 }
 
 statement::instruction::Resolved::Resolved(shared_ptr<hilti::Instruction> instruction, const hilti::instruction::Operands& ops, const Location& l)
@@ -208,3 +227,4 @@ shared_ptr<ID> statement::ForEach::ForEach::id() const
 {
     return _id;
 }
+

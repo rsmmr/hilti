@@ -21,9 +21,15 @@ ModuleBuilder* BlockBuilder::moduleBuilder() const
     return _mbuilder;
 }
 
-shared_ptr<hilti::expression::Block> BlockBuilder::block() const
+shared_ptr<hilti::Expression> BlockBuilder::block() const
 {
-    return std::make_shared<hilti::expression::Block>(_block_stmt);
+    assert(_block_stmt->id() && _block_stmt->id()->name().size());
+    return builder::label::create(_block_stmt->id()->name());
+}
+
+shared_ptr<hilti::statement::Block> BlockBuilder::statement() const
+{
+    return _block_stmt;
 }
 
 shared_ptr<hilti::expression::Variable> BlockBuilder::addLocal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
@@ -90,13 +96,9 @@ shared_ptr<statement::Instruction> BlockBuilder::addInstruction(shared_ptr<Expre
 std::tuple<shared_ptr<BlockBuilder>, shared_ptr<BlockBuilder>> BlockBuilder::addIf(shared_ptr<Expression> cond, const Location& l)
 {
     auto true_ = _mbuilder->newBuilder("if-true", l);
-    auto false_ = _mbuilder->newBuilder("if-false", l);
     auto cont = _mbuilder->newBuilder("if-cont", l);
 
-    //_mbuilder->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, true_, false_, l);
-    _mbuilder->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, true_->block(), false_->block(), l);
-
-    false_->addInstruction(hilti::instruction::flow::Jump, cont->block(), nullptr, nullptr, l);
+    _mbuilder->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, true_->block(), cont->block(), l);
 
     return std::make_tuple(true_, cont);
 }
@@ -154,6 +156,40 @@ void BlockBuilder::debugPopIndent()
 {
     _mbuilder->builder()->addInstruction(hilti::instruction::debug::PopIndent);
 }
+
+void BlockBuilder::addInternalError(const std::string& msg)
+{
+    _mbuilder->builder()->addInstruction(hilti::instruction::debug::InternalError, builder::string::create(msg));
+}
+
+void BlockBuilder::addThrow(const std::string& ename, shared_ptr<hilti::Expression> arg)
+{
+    auto etype = builder::type::byName(ename);
+    auto excpt = _mbuilder->addTmp("excpt", builder::reference::type(etype), nullptr, true);
+
+    if ( ! arg )
+        _mbuilder->builder()->addInstruction(excpt, ::hilti::instruction::exception::New, hilti::builder::type::create(etype));
+    else
+        _mbuilder->builder()->addInstruction(excpt, ::hilti::instruction::exception::NewWithArg, hilti::builder::type::create(etype), arg);
+
+    _mbuilder->builder()->addInstruction(::hilti::instruction::exception::Throw, excpt);
+}
+
+void BlockBuilder::addSwitch(shared_ptr<hilti::Expression> expr,
+                             shared_ptr<hilti::builder::BlockBuilder> default_,
+                             const case_list& cases)
+{
+
+    std::list<shared_ptr<hilti::Expression>> tuple;
+
+    for ( auto c : cases ) {
+        std::list<shared_ptr<hilti::Expression>> pair = { c.first, c.second->block() };
+        tuple.push_back(builder::tuple::create(pair));
+    }
+
+    _mbuilder->builder()->addInstruction(::hilti::instruction::flow::Switch, expr, default_->block(), builder::tuple::create(tuple));
+}
+
 
 }
 

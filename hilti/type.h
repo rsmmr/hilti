@@ -148,7 +148,7 @@ private:
 }
 
 /// Trait class marking a type with parameters.
-class Parameterized : public Trait
+class Parameterized : public virtual Trait
 {
 public:
    typedef std::list<shared_ptr<parameter::Base>> parameter_list;
@@ -165,7 +165,7 @@ public:
 };
 
 /// Trait class marking a composite type that has a series of subtypes.
-class TypeList : public Trait
+class TypeList : public virtual Trait
 {
 public:
    typedef std::list<shared_ptr<hilti::Type>> type_list;
@@ -176,12 +176,12 @@ public:
 
 /// Trait class marking types which's instances are garbage collected by the
 /// HILTI run-time.
-class GarbageCollected : public Trait
+class GarbageCollected : public virtual Trait
 {
 };
 
 /// Trait class marking a type that provides iterators.
-class Iterable : public Trait
+class Iterable : public virtual Trait
 {
 public:
    /// Returns the type for an iterator over this type.
@@ -192,26 +192,26 @@ public:
 };
 
 /// Trait class marking a type that can be hashed for storing in containers.
-class Hashable : public Trait
+class Hashable : public virtual Trait
 {
 public:
 };
 
 /// Trait class marking a container type.
-class Container : public Trait, public Iterable
+class Container : public virtual Trait, public Iterable
 {
 };
 
 /// Trait class marking a type that provides yielding until a resource
 /// becomes available (i.e., it can acts as argument in a \c yield instruction).
 /// Theses types must provide a \a blockable function in their type information.
-class Blockable : public Trait
+class Blockable : public virtual Trait
 {
 };
 
 /// Trait class marking types which's instances can be unpacked from binary
 /// data via the Unpacker.
-class Unpackable : public Trait
+class Unpackable : public virtual Trait
 {
 public:
    /// Description of an unpack format supported by the type.
@@ -239,7 +239,7 @@ public:
 
 /// Trait class marking types which can be used within a classifier rule.
 /// HILTI run-time.
-class Classifiable : public Trait
+class Classifiable : public virtual Trait
 {
 public:
    typedef std::list<shared_ptr<Type>> type_list;
@@ -494,7 +494,7 @@ public:
    /// l: Associated location.
    Block(const Location& l=Location::None) : hilti::Type(l)  {}
    virtual ~Block();
-   ACCEPT_VISITOR(Block);
+   ACCEPT_VISITOR(hilti::Type);
 };
 
 /// A type representing a Module.

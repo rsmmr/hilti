@@ -14,6 +14,8 @@ namespace binpac {
 class ConstantCoercer : public ast::ConstantCoercer<AstInfo>
 {
 public:
+   void visit(constant::Integer* i) override;
+   void visit(constant::Tuple* t) override;
 };
 
 

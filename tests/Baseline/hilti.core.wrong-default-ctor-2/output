@@ -1,0 +1,5 @@
+
+>>> any()
+wrong-default-ctor.hlt:7-7: error, constructor's type needs to be of value type [pass::Validator]
+wrong-default-ctor.hlt: Aborting due to verification error.
+error running hiltic, aborting

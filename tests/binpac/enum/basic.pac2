@@ -1,0 +1,12 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  ./a.out >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+type Foo = enum { AAA = 1, BBB, CCC, DDD = 3 };
+
+print Foo::AAA, Foo::BBB, Foo::CCC, Foo::DDD, Foo::Undef;
+

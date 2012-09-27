@@ -10,12 +10,14 @@ if len(sys.argv) != 4:
 
 macros = {}
 files = {}
+outputs = []
 
 cls_macro = None
 cls_value = "<No class>"
+cls_value_arg = None
 cls_ns = "<No namespace>"
-stdifdef = os.getcwd().upper().replace(".", "_").replace("/", "_").replace("+", "_").replace("-", "_")
 basename = os.path.splitext(os.path.basename(sys.argv[2]))[0]
+stdifdef = os.getcwd().upper().replace(".", "_").replace("/", "_").replace("+", "_").replace("-", "_") + "_" + basename.upper()
 
 state = "macro"
 
@@ -52,12 +54,14 @@ for line in open(sys.argv[1]):
 
 		if not file in files:
 			out = os.path.join(sys.argv[3], basename + "." + file)
-			files[file] = open(out, "w")
+			outtmp = out + ".tmp"
+			files[file] = open(outtmp, "w")
+			outputs += [(outtmp, out, files[file])]
 
 		if file == "h":
-			regexp = re.compile("^ *%s(\((.*)\))?.*" % name)
+			regexp = re.compile("^[\t ]*%s(\((.*)\))?.*" % name)
 		else:
-			regexp = re.compile("^ *%s(\((.*)\))?" % name)
+			regexp = re.compile("^[\t ]*%s(\((.*)\))?" % name)
 
 		macros[name] += [(regexp, file, files[file], content)]
 
@@ -68,6 +72,7 @@ noreplace = False
 for (name, items) in macros.items():
 	for val in items:
 		(regexp, fname, file, content) = val
+
 		content = content.replace("$STDIFDEF", stdifdef)
 		content = content.replace("$BASENAME", basename)
 		if name == "<<HEADER>>":
@@ -89,22 +94,44 @@ for line in open(sys.argv[2]):
 				arg = str(m.group(2))
 
 				if name == cls_macro:
-					n = arg.split("::")
 
-					if len(n) == 1:
-						cls_value = arg
+					# We parse name of the following format here:
+					# [NAMESPACE::]CLASS [: CLASSARG]
+					#
+					# The pieces are assigned to the corresponding variables.
+					# NAMESPACE defaults to empty; CLASSARG defaults to CLASS.
 
-					else:
-						cls_ns = n[0]
-						cls_value = n[1]
+					arg = arg.replace("::", "!!!") # Hack for easier parsing.
+
+					try:
+						(c, cls_value_arg) = arg.split(":")
+					except ValueError:
+						c = arg
+						cls_value_arg = None
+
+					c = c.strip()
+
+					try:
+						(cls_ns, cls_value) = c.split("!!!")
+					except ValueError:
+						cls_ns = ""
+						cls_value = c
+
+					if not cls_value_arg:
+						cls_value_arg = cls_value
+
+				cls_value = cls_value.strip()
+				cls_value_arg = cls_value_arg.strip()
+				cls_ns = cls_ns.strip()
 
 				out = regexp.sub(content, line)
 				out = out.replace("$1", arg)
+				out = out.replace("$CLASSARG", cls_value_arg)
 				out = out.replace("$CLASS", cls_value)
 				out = out.replace("$NAMESPACE", cls_ns)
 				out = out.replace("$STDIFDEF", stdifdef)
 
-				if nr != last_nrs.get(fname, 0):
+				if nr != last_nrs.get(fname, -1):
 					print >>file, "#line %d \"%s\"" % (nr, os.path.abspath(sys.argv[2]))
 
 				last_nrs[fname] = nr
@@ -112,7 +139,7 @@ for line in open(sys.argv[2]):
 				found = True
 
 	if not found and "cc" in files:
-		if nr != last_nrs.get("cc", -1) + 1:
+		if nr != last_nrs.get("cc", -2) + 1:
 			print >>files["cc"], "#line %d \"%s\"" % (nr, os.path.abspath(sys.argv[2]))
 
 		last_nrs["cc"] = nr
@@ -125,3 +152,9 @@ for (name, items) in macros.items():
 		(regexp, fname, file, content) = val
 		if name == "<<FOOTER>>":
 			print >>file, content
+
+scripts = os.path.dirname(sys.argv[0])
+
+for (new, old, file) in outputs:
+	file.close()
+	os.system("%s/install-if-changed %s %s" % (scripts, new, old))

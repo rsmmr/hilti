@@ -130,6 +130,7 @@ type Packed = enum {
 
 type AddrFamily = enum { IPv4, IPv6 }
 type Protocol = enum { TCP, UDP }
+type ByteOrder = enum { Little, Big }
 type ExpireStrategy = enum { Create, Access }
 type IOSrc = enum { PcapLive, PcapOffline }
 type FileMode = enum { Create, Append }

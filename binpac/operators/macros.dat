@@ -27,7 +27,7 @@ protected:
 > opOp1 h
    shared_ptr<Type> __typeOp1() const;
 ===
-> opOp1 h
+> opOp2 h
    shared_ptr<Type> __typeOp2() const;
 ===
 > opOp3 h
@@ -81,7 +81,7 @@ public:
 
 namespace binpac {
 
-operator_::$NAMESPACE::$CLASS::$CLASS() : Operator(operator_::$CLASS, _factory)
+operator_::$NAMESPACE::$CLASS::$CLASS() : Operator(operator_::$CLASSARG, _factory)
 {
 }
 

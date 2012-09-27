@@ -297,7 +297,7 @@ class Trait
 {
 public:
     Trait() {}
-    virtual ~Trait() {};
+    virtual ~Trait();
 };
 
 namespace trait {
@@ -401,7 +401,7 @@ private:
 
 /// Trait class marking a type with parameters.
 template<typename AstInfo>
-class Parameterized : public Trait
+class Parameterized : public virtual Trait
 {
 public:
     typedef typename AstInfo::type AIType;
@@ -446,7 +446,7 @@ public:
 
 /// Trait class marking a composite type that has a series of subtypes.
 template<typename AstInfo>
-class TypeList : public Trait
+class TypeList : public virtual Trait
 {
 public:
     typedef typename AstInfo::type AIType;
@@ -458,7 +458,7 @@ public:
 
 /// Trait class marking a type that provides iterators.
 template<typename AstInfo>
-class Iterable : public Trait
+class Iterable : public virtual Trait
 {
 public:
     typedef typename AstInfo::type AIType;
@@ -471,7 +471,7 @@ public:
 };
 
 /// Trait class marking a type that can be hashed for storing in containers.
-class Hashable : public Trait
+class Hashable : public virtual Trait
 {
 public:
 };
@@ -537,7 +537,7 @@ inline T* checkedTrait(shared_ptr<NodeBase> t) {
 
     if ( ! c ) {
         fprintf(stderr, "internal error: ast::checkedTrait() failed; want '%s' but got a '%s'",
-                typeid(T).name(), typeid(t.get()).name());
+                typeid(T).name(), typeid(*t.get()).name());
         abort();
     }
 

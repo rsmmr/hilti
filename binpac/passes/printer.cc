@@ -153,10 +153,6 @@ void Printer::visit(Module* m)
     bool sep = false;
 
     for ( auto i : m->importedIDs() ) {
-        if ( i->name() == "libhilti" )
-            // Will always be implicitly loaded.
-            continue;
-
         p << "import " << i << endl;
         sep = true;
     }
@@ -199,11 +195,13 @@ void Printer::visit(constant::Enum* e)
     p << scopedID(expr, e->value());
 }
 
+#if 0
 void Printer::visit(constant::Expression* e)
 {
     Printer& p = *this;
     p << e->expression();
 }
+#endif
 
 void Printer::visit(constant::Integer* i)
 {
@@ -371,7 +369,7 @@ void Printer::visit(expression::List* l)
 void Printer::visit(expression::MemberAttribute* m)
 {
     Printer& p = *this;
-    p << "<MemberAttribute>";
+    p << m->id();
 }
 
 void Printer::visit(expression::Module* m)
@@ -445,6 +443,10 @@ void Printer::visit(expression::ResolvedOperator* r)
         p << op1 << "." << op2;
         break;
 
+     case operator_::AttributeAssign:
+        p << op1 << "." << op2 << " = " << op3;
+        break;
+
      case operator_::Call:
         p << op1 << "(" << op2 << ")";
         break;
@@ -470,7 +472,7 @@ void Printer::visit(expression::ResolvedOperator* r)
         break;
 
      case operator_::MethodCall:
-        p << op1 << "." << op2 << "(" << op3 << ")";
+        p << op1 << "." << op2 << op3;
         break;
 
      case operator_::Size:
@@ -579,6 +581,12 @@ void Printer::visit(statement::Return* r)
         p << " " << r->expression();
 
     p << ";" << endl;
+}
+
+void Printer::visit(statement::Stop* r)
+{
+    Printer& p = *this;
+    p << "stop;";
 }
 
 void Printer::visit(statement::Try* t)
@@ -1010,7 +1018,22 @@ void Printer::visit(type::unit::item::field::Switch* s)
     p << "}" << endl;
 }
 
-void Printer::visit(type::unit::item::field::Type* t)
+void Printer::visit(type::unit::item::field::AtomicType* t)
+{
+    Printer& p = *this;
+
+    if ( t->id() )
+        p << t->id();
+
+    p << ": " << t->type();
+
+    if ( t->attributes()->size() )
+        p << " " << t->attributes();
+
+    _printUnitFieldCommon(p, t);
+}
+
+void Printer::visit(type::unit::item::field::Unit* t)
 {
     Printer& p = *this;
 

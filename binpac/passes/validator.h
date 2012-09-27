@@ -90,7 +90,7 @@ protected:
     void visit(constant::Bool* b) override;
     void visit(constant::Double* d) override;
     void visit(constant::Enum* e) override;
-    void visit(constant::Expression* e) override;
+    // void visit(constant::Expression* e) override;
     void visit(constant::Integer* i) override;
     void visit(constant::Interval* i) override;
     void visit(constant::Network* n) override;
@@ -177,10 +177,14 @@ protected:
     void visit(type::unit::item::GlobalHook* g) override;
     void visit(type::unit::item::Property* p) override;
     void visit(type::unit::item::Variable* v) override;
+    void visit(type::unit::item::field::Container* f) override;
+    void visit(type::unit::item::field::container::List* f) override;
     void visit(type::unit::item::field::Constant* c) override;
     void visit(type::unit::item::field::Ctor* r) override;
     void visit(type::unit::item::field::Switch* s) override;
-    void visit(type::unit::item::field::Type* t) override;
+    void visit(type::unit::item::field::AtomicType* t) override;
+    void visit(type::unit::item::field::Unit* t) override;
+    void visit(type::unit::item::field::Unknown* f) override;
     void visit(type::unit::item::field::switch_::Case* c) override;
     void visit(variable::Global* g) override;
     void visit(variable::Local* l) override;

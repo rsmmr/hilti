@@ -2,17 +2,17 @@
         Epsilon: <eps> -> ()
        Sequence: FFs -> Fact Facts
        Sequence: Fact -> no st
-      LookAhead: Facts -> {"!"}: FFs | {"?"}: <eps>
+      LookAhead: Facts -> {b"!"}: FFs | {b"?"}: <eps>
        Sequence: FsQ -> Facts Question
        Sequence: Question -> qu st
        Sequence: SS  -> pl Session pr Session
-      LookAhead: Session -> {"!", "?"}: FsQ | {"("}: SS
+      LookAhead: Session -> {b"!", b"?"}: FsQ | {b"("}: SS
  (*)   Sequence: Start -> Session hs
-        Literal: hs  -> "#"
-        Literal: no  -> "!"
-        Literal: pl  -> "("
-        Literal: pr  -> ")"
-        Literal: qu  -> "?"
+           Ctor: hs  -> b"#" (bytes)
+           Ctor: no  -> b"!" (bytes)
+           Ctor: pl  -> b"(" (bytes)
+           Ctor: pr  -> b")" (bytes)
+           Ctor: qu  -> b"?" (bytes)
        Variable: st  -> (type bytes)
 
   -- Epsilon:

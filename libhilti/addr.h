@@ -6,8 +6,8 @@
 ///
 /// A HILTI address is represented as an instance of ``hlt_addr``.
 
-#ifndef HILTI_ADDR_H
-#define HILTI_ADDR_H
+#ifndef LIBHILTI_ADDR_H
+#define LIBHILTI_ADDR_H
 
 #include "exceptions.h"
 #include "rtti.h"

@@ -19,6 +19,7 @@
 
 #include "types.h"
 #include "config.h"
+#include "memory_.h"
 #include "context.h"
 #include "globals.h"
 #include "debug.h"

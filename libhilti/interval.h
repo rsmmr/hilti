@@ -2,8 +2,8 @@
 // Support functions HILTI's interval data type.
 //
 
-#ifndef HILTI_INTERVAL_H
-#define HILTI_INTERVAL_H
+#ifndef LIBHILTI_INTERVAL_H
+#define LIBHILTI_INTERVAL_H
 
 #include "exceptions.h"
 

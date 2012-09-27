@@ -39,16 +39,22 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module, int debug,
     try {
         hilti::path_list paths = module->context()->libraryPaths();
         auto id = hilti::builder::id::node(module->id()->name(), module->id()->location());
-        _mbuilder = std::make_shared<hilti::builder::ModuleBuilder>(id, module->path(), paths, module->location());
+        auto ctx = module->context()->hiltiContext();
+        _mbuilder = std::make_shared<hilti::builder::ModuleBuilder>(ctx, id, module->path(), module->location());
         _mbuilder->importModule("Hilti");
-        _mbuilder->importModule("BinPAC");
+        _mbuilder->importModule("BinPACHilti");
+
+        if ( util::strtolower(module->id()->name()) != "binpac" )
+            _mbuilder->importModule("BinPAC");
 
         _code_builder->processOne(module);
 
-        if ( verify )
-            _mbuilder->finalize(true, verify);
+        auto module = _mbuilder->finalize();
 
-        return _mbuilder->module();
+        if ( ! module )
+            return verify ? nullptr : _mbuilder->module();
+
+        return module;
     }
 
     catch ( const ast::FatalLoggerError& err ) {
@@ -113,7 +119,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCoerce(shared_ptr<hilti::Expression>
 
 shared_ptr<hilti::ID> CodeGen::hiltiID(shared_ptr<ID> id)
 {
-    return hilti::builder::id::node(id->name(), id->location());
+    return hilti::builder::id::node(id->pathAsString(), id->location());
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiParseFunction(shared_ptr<type::Unit> u)
@@ -158,6 +164,11 @@ void CodeGen::hiltiExportParser(shared_ptr<type::Unit> unit)
 void CodeGen::hiltiUnitHooks(shared_ptr<type::Unit> unit)
 {
     _parser_builder->hiltiUnitHooks(unit);
+}
+
+void CodeGen::hiltiRunFieldHooks(shared_ptr<type::unit::Item> item)
+{
+    _parser_builder->hiltiRunFieldHooks(item);
 }
 
 void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)

@@ -33,6 +33,7 @@ ConstantParseError::ConstantParseError(shared_ptr<Constant> c, const string& msg
 {
 }
 
+#if 0
 constant::Expression::Expression(shared_ptr<Type> type, shared_ptr<binpac::Expression> expr, const Location& l)
 {
     _expr = expr;
@@ -51,6 +52,7 @@ shared_ptr<Type> constant::Expression::type() const
 {
     return _type;
 }
+#endif
 
 String::String(const string& value, const Location& l)
     : ast::SpecificConstant<AstInfo, Constant, string>(value, shared_ptr<Type>(new type::String()), l)

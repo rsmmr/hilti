@@ -33,6 +33,7 @@ typedef struct {
     hlt_list* mime_types;                /// list<string> of all MIME types handled by this parser.
     binpac_parse_function* parse_func;   /// The C function performing the parsing.
     binpac_resume_function* resume_func; /// The C function resuming parsing after a yield.
+    hlt_type_info* type_info;            /// Type information for the parsed struct.
 
     __binpac_parse_sink_function* parse_func_sink;   // The C function performing the parsing for sink.write. For internal use only. 
     __binpac_resume_sink_function* resume_func_sink; // The C function resuming sink parsing after a yield. For internal use only.
@@ -43,6 +44,10 @@ typedef struct {
 /// Must be called exactly once at program startup to initialize the BinPAC
 /// runtime.
 extern void binpac_init();
+
+/// Terminate the binpac runtime. If not called explicitly, it will be
+/// automatically run at termination.
+extern void binpac_done();
 
 /// Returns a list of all BinPAC generated parsers available.
 ///

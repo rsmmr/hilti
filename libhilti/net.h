@@ -2,8 +2,8 @@
 // Support functions HILTI's net data type.
 //
 
-#ifndef HILTI_NET_H
-#define HILTI_NET_H
+#ifndef LIBHILTI_NET_H
+#define LIBHILTI_NET_H
 
 #include "exceptions.h"
 

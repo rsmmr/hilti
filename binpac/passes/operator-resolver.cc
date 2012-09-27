@@ -29,7 +29,7 @@ static string _fmtOpCandidates(const operator_list& candidates, const expression
     s += "candidate operators:\n";
 
     for ( auto c : candidates )
-        s += "    " + c->render();
+        s += "    " + c->render() + "\n";
 
     return s;
 }
@@ -45,7 +45,7 @@ OperatorResolver::~OperatorResolver()
 
 bool OperatorResolver::run(shared_ptr<ast::NodeBase> module)
 {
-    return processAllPreOrder(module);
+    return processAllPostOrder(module);
 }
 
 void OperatorResolver::visit(expression::UnresolvedOperator* o)

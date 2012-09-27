@@ -140,6 +140,7 @@ protected:
    void visit(expression::CodeGen* e) override;
    void visit(expression::Constant* e) override;
    void visit(expression::Ctor* e) override;
+   void visit(expression::Default* e) override;
    void visit(expression::Function* e) override;
    void visit(expression::ID* e) override;
    void visit(expression::Module* e) override;

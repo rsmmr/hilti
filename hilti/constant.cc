@@ -21,9 +21,10 @@ static shared_ptr<Type> _tuple_type(const constant::Tuple::element_list& elems, 
 
 constant::Tuple::Tuple(const element_list& elems, const Location& l) : Constant(l)
 {
-    _elems = elems;
-
     for ( auto e : elems )
+        _elems.push_back(e);
+
+    for ( auto e : _elems )
         addChild(e);
 }
 
@@ -37,9 +38,9 @@ shared_ptr<Type> constant::Tuple::type() const
     return shared_ptr<type::Tuple>(new type::Tuple(types, location()));
 }
 
-const std::list<shared_ptr<Expression>> constant::Tuple::value() const
+constant::Tuple::element_list constant::Tuple::value() const
 {
-    std::list<shared_ptr<Expression>> l;
+    element_list l;
 
     for ( auto e : _elems )
         l.push_back(e);
@@ -183,7 +184,7 @@ constant::Enum::Enum(shared_ptr<ID> value, shared_ptr<Type> etype, const Locatio
 
     // Check that we know the label.
     for ( auto l : _etype->labels() ) {
-        if ( value == l.first )
+        if ( *value == *l.first )
             return;
     }
 

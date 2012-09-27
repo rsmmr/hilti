@@ -21,8 +21,8 @@
 /// all their timers. That allows for efficient lookups and updating.
 /// @}
 
-#ifndef HILTI_TIMER_H
-#define HILTI_TIMER_H
+#ifndef LIBHILTI_TIMER_H
+#define LIBHILTI_TIMER_H
 
 #include "time_.h"
 #include "list.h"

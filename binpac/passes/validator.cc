@@ -3,8 +3,10 @@
 #include "type.h"
 #include "declaration.h"
 #include "expression.h"
+#include "statement.h"
 #include "grammar.h"
 #include "attribute.h"
+#include "scope.h"
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -126,9 +128,11 @@ void Validator::visit(constant::Enum* e)
 {
 }
 
+#if 0
 void Validator::visit(constant::Expression* e)
 {
 }
+#endif
 
 void Validator::visit(constant::Integer* i)
 {
@@ -356,6 +360,20 @@ void Validator::visit(type::Hook* h)
 
 void Validator::visit(type::Integer* i)
 {
+    auto w = i->width();
+
+    if ( i->bits().size() ) {
+        if ( w != 8 && w != 16 && w != 32 && w != 64 )
+            error(i, "bitfield's width must be 8, 16, 32, or 64");
+
+        if ( i->signed_() )
+            error(i, "bitfield's underlying integer type must be unsigned");
+    }
+
+    for ( auto b : i->bits() ) {
+        if ( b->lower() > b->upper() || b->lower() < 0 || b->upper() >= w )
+            error(b, "invalid bit range");
+    }
 }
 
 void Validator::visit(type::Interval* i)
@@ -483,7 +501,7 @@ void Validator::visit(type::unit::item::Field* f)
     // See if all attributes are known.
 
     for ( auto attr : attributes->attributes() ) {
-        if ( attr->key() == "&default" )
+        if ( attr->key() == "default" )
             continue;
 
         bool found = false;
@@ -494,7 +512,7 @@ void Validator::visit(type::unit::item::Field* f)
         }
 
         if ( ! found )
-            error(attr, "unknown attribute");
+            error(f, util::fmt("unsupported attribute %s", attr->key()));
     }
 
     // Check common attributes.
@@ -530,7 +548,20 @@ void Validator::visit(type::unit::item::Field* f)
             continue;
         }
 
-        if ( attr->value() && ! attr->value()->canCoerceTo(pattr.type) ) {
+        auto ptype = pattr.type;
+
+        // Resolve TypeByName's manually here.
+        auto tbn = ast::tryCast<type::TypeByName>(ptype);
+
+        if ( tbn ) {
+            auto module = current<Module>();
+            assert(module);
+            auto t = module->body()->scope()->lookup(tbn->id());
+            assert(t);
+            ptype = ast::checkedCast<expression::Type>(t)->typeValue();
+        }
+
+        if ( attr->value() && ! attr->value()->canCoerceTo(ptype) ) {
             error(attr, "attribute value's type does not match");
             continue;
         }
@@ -549,6 +580,14 @@ void Validator::visit(type::unit::item::Variable* v)
 {
 }
 
+void Validator::visit(type::unit::item::field::Container* f)
+{
+}
+
+void Validator::visit(type::unit::item::field::container::List* f)
+{
+}
+
 void Validator::visit(type::unit::item::field::Constant* c)
 {
 }
@@ -561,7 +600,15 @@ void Validator::visit(type::unit::item::field::Switch* s)
 {
 }
 
-void Validator::visit(type::unit::item::field::Type* t)
+void Validator::visit(type::unit::item::field::AtomicType* t)
+{
+}
+
+void Validator::visit(type::unit::item::field::Unit* t)
+{
+}
+
+void Validator::visit(type::unit::item::field::Unknown* f)
 {
 }
 

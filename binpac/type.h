@@ -38,9 +38,11 @@ typedef ast::type::trait::Container<AstInfo> Container;
 
 /// Trait class marking a type that can be parsed from an input stream. Only
 /// these types can be used inside a ~~Unit.
-class Parseable : public trait::Trait
+class Parseable : public virtual trait::Trait
 {
 public:
+    virtual ~Parseable();
+
     /// Returns the type of values directly parsed by this type. This type
     /// will become the type of the corresponding Unit item. While usually
     /// the parsed type is the same as the type itself (and that's what the
@@ -71,7 +73,7 @@ public:
 
 
 /// Trait class marking a type to which a Sink can directly be attached.
-class Sinkable : public trait::Trait
+class Sinkable : public virtual trait::Trait
 {
 };
 
@@ -499,11 +501,54 @@ public:
     ACCEPT_VISITOR(PacType);
 };
 
+namespace integer {
+
+/// Class describing one element of an integer's bitfield.
+class Bits : public Node
+{
+public:
+    /// Constructor.
+    ///
+    /// id: The name associated with the bits.
+    ///
+    /// lower: The lower bit of the range.
+    ///
+    /// upper: The upper bit of the range (inclusive).
+    ///
+    /// attrs: Optional type attributes associated with the bits.
+    ///
+    /// l: Associated location.
+    Bits(shared_ptr<ID> id, int lower, int upper, const attribute_list& attrs = attribute_list(), const Location& l=Location::None);
+
+    /// Returns the name associated with the bits.
+    shared_ptr<ID> id() const;
+
+    /// Returns the lower bit of the range.
+    int lower() const;
+
+    /// Returns the upper bit of the range (inclusive).
+    int upper() const;
+
+    /// Returns the attributes associated with the bits.
+    shared_ptr<AttributeSet> attributes() const;
+
+    ACCEPT_VISITOR_ROOT();
+
+private:
+    node_ptr<ID> _id;
+    node_ptr<AttributeSet> _attrs;
+    int _lower;
+    int _upper;
+};
+
+}
 
 /// Type for integer values.
 class Integer : public PacType, public trait::Parameterized, public trait::Parseable, public trait::Hashable
 {
 public:
+    typedef std::list<shared_ptr<integer::Bits>> bits_list;
+
     /// Constructor.
     ///
     /// width: The bit width for the type.
@@ -522,12 +567,23 @@ public:
     /// Returns true if it's a signed integer type.
     bool signed_() const;
 
+    /// Associated names with subsets of bits.
+    void setBits(const bits_list& bits);
+
+    /// Returns the names associated with subsets of bits.
+    bits_list bits() const;
+
+    /// Returns the bits associated with a given name, or null if no such name.
+    shared_ptr<integer::Bits> bits(shared_ptr<ID> id) const;
+
     bool _equal(shared_ptr<binpac::Type> other) const override;
     type_parameter_list parameters() const override;
+    std::list<ParseAttribute> parseAttributes() const override;
 
     ACCEPT_VISITOR(PacType);
 
 private:
+    std::list<node_ptr<integer::Bits>> _bits;
     int _width;
     int _signed;
 };
@@ -813,7 +869,7 @@ public:
 }
 
 /// Type for list objects.
-class List : public TypedPacType, public trait::Container, public trait::Parseable
+class List : public TypedPacType, public trait::Parseable, public trait::Container
 {
 public:
     /// Constructor.
@@ -828,6 +884,7 @@ public:
 
     shared_ptr<binpac::Type> iterType() override;
     shared_ptr<binpac::Type> elementType() override;
+    std::list<ParseAttribute> parseAttributes() const override;
 
     ACCEPT_VISITOR(PacType);
 };
@@ -973,7 +1030,7 @@ public:
     ///
     /// l: Location associated with the item.
     Item(shared_ptr<ID> id,
-         const shared_ptr<Type> type = nullptr, 
+         const shared_ptr<Type> type = nullptr,
          const hook_list& hooks = hook_list(),
          const attribute_list& attrs = attribute_list(),
          const Location& l=Location::None);
@@ -983,16 +1040,19 @@ public:
     /// ID was passed to the constructor.
     shared_ptr<ID> id() const;
 
-    /// Returns the item's type.
-    shared_ptr<binpac::Type> type() const;
+    /// Returns the item's type. If not overridden, this returns the type
+    /// passed into the constructor.
+    virtual shared_ptr<binpac::Type> type();
 
     /// Returns true if no ID was passed to the constructor.
     bool anonymous() const;
 
+#if 0
     /// Returns the item's scope. The scope may define identifier's local to
     /// expressions and hooks associated with the item. This method will
     /// return null until the ScopeBuilder has run.
     shared_ptr<Scope> scope() const;
+#endif
 
     /// Returns the hooks associated with this item.
     hook_list hooks() const;
@@ -1001,6 +1061,14 @@ public:
     shared_ptr<AttributeSet> attributes() const;
 
     ACCEPT_VISITOR_ROOT();
+
+protected:
+    /// Adds a hook to the item. Note that this must be called before we
+    /// resolve the AST.
+    void addHook(shared_ptr<binpac::Hook> hook);
+
+    /// Changes the item's type.
+    void setType(shared_ptr<binpac::Type> type);
 
 private:
     bool _anonymous = false;
@@ -1029,6 +1097,9 @@ public:
     /// Returns the list of attached sinks.
     expression_list sinks() const;
 
+    /// Returns the parameters passed to sub-type's parsing.
+    expression_list parameters() const;
+
     ACCEPT_VISITOR(Item);
 
 protected:
@@ -1042,26 +1113,66 @@ protected:
     ///
     /// attrs: Attributes associated with the item.
     ///
+    /// params: List of parameters passed to sub-type's parsing.
+    ///
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
     Field(shared_ptr<ID> id,
-         shared_ptr<binpac::Type> type,
-         shared_ptr<Expression> cond = nullptr,
-         const hook_list& hooks = hook_list(),
-         const attribute_list& attrs = attribute_list(),
-         const expression_list& sinks = expression_list(),
-         const Location& l=Location::None);
+          shared_ptr<binpac::Type> type,
+          shared_ptr<Expression> cond = nullptr,
+          const hook_list& hooks = hook_list(),
+          const attribute_list& attrs = attribute_list(),
+          const expression_list& params = expression_list(),
+          const expression_list& sinks = expression_list(),
+          const Location& l=Location::None);
 
 private:
     node_ptr<Expression> _cond;
-    expression_list _sinks;
+    std::list<node_ptr<Expression>> _sinks;
+    std::list<node_ptr<Expression>> _params;
 };
 
 namespace field {
 
-/// A unit field based on its type.
-class Type : public Field
+/// A unit field that's type we don't know yet: we need to look up an ID later.
+class Unknown : public Field
+{
+public:
+    /// id: The name of the item. Can be null for anonymous items.
+    ///
+    /// scope_id: The ID to lookup to resolve the field.
+    ///
+    /// hooks: Hooks associated with this item.
+    ///
+    /// attrs: Attributes associated with the item.
+    ///
+    /// params: List of parameters passed to sub-type's parsing. Only relevant
+    /// if \a type is Unit type.
+    ///
+    /// sinks: Expressions referencing attached sinks, if any.
+    ///
+    /// l: Location associated with the item.
+    Unknown(shared_ptr<ID> id,
+         shared_ptr<binpac::ID> scope_id,
+         shared_ptr<Expression> cond = nullptr,
+         const hook_list& hooks = hook_list(),
+         const attribute_list& attrs = attribute_list(),
+         const expression_list& params = expression_list(),
+         const expression_list& sinks = expression_list(),
+         const Location& l=Location::None);
+
+    /// Returns the ID to resolve the field.
+    shared_ptr<binpac::ID> scopeID() const;
+
+    ACCEPT_VISITOR(Field);
+
+private:
+    node_ptr<binpac::ID> _scope_id;
+};
+
+/// A unit field based on an atomic type.
+class AtomicType : public Field
 {
 public:
     /// id: The name of the item. Can be null for anonymous items.
@@ -1076,7 +1187,34 @@ public:
     /// sinks: Expressions referencing attached sinks, if any.
     ///
     /// l: Location associated with the item.
-    Type(shared_ptr<ID> id,
+    AtomicType(shared_ptr<ID> id,
+               shared_ptr<binpac::Type> type,
+               shared_ptr<Expression> cond = nullptr,
+               const hook_list& hooks = hook_list(),
+               const attribute_list& attrs = attribute_list(),
+               const expression_list& sinks = expression_list(),
+               const Location& l=Location::None);
+
+    ACCEPT_VISITOR(Field);
+};
+
+/// A unit field based on a sub-unit type.
+class Unit : public Field
+{
+public:
+    /// id: The name of the item. Can be null for anonymous items.
+    ///
+    /// hooks: Hooks associated with this item.
+    ///
+    /// attrs: Attributes associated with the item.
+    ///
+    /// params: List of parameters passed to sub-type's parsing. Only relevant
+    /// if \a type is Unit type.
+    ///
+    /// sinks: Expressions referencing attached sinks, if any.
+    ///
+    /// l: Location associated with the item.
+    Unit(shared_ptr<ID> id,
          shared_ptr<binpac::Type> type,
          shared_ptr<Expression> cond = nullptr,
          const hook_list& hooks = hook_list(),
@@ -1085,13 +1223,7 @@ public:
          const expression_list& sinks = expression_list(),
          const Location& l=Location::None);
 
-    /// Returns the parameters passed to sub-type's parsing.
-    expression_list parameters() const;
-
     ACCEPT_VISITOR(Field);
-
-private:
-    std::list<node_ptr<Expression>> _params;
 };
 
 /// A constant unit field.
@@ -1157,6 +1289,80 @@ public:
 private:
     node_ptr<binpac::Ctor> _ctor;
 };
+
+/// Base class for container types that parse other fields recursively.
+class Container : public Field
+{
+public:
+    /// Constructor.
+    ///
+    /// id: The name of the item. Can be null for anonymous items.
+    //
+    /// field: The field to parse recursively.
+    ///
+    /// hooks: Hooks associated with this item.
+    ///
+    /// attrs: Attributes associated with the item.
+    ///
+    /// sinks: Expressions referencing attached sinks, if any.
+    ///
+    /// l: Location associated with the item.
+    Container(shared_ptr<ID> id,
+         shared_ptr<Field> field,
+         shared_ptr<Expression> cond = nullptr,
+         const hook_list& hooks = hook_list(),
+         const attribute_list& attrs = attribute_list(),
+         const expression_list& sinks = expression_list(),
+         const Location& l=Location::None);
+
+    /// Returns the regular expression.
+    shared_ptr<Field> field() const;
+
+    ACCEPT_VISITOR(Field);
+
+private:
+    node_ptr<Field> _field;
+};
+
+namespace container {
+
+/// Base class for container types that parse other fields recursively.
+class List : public Container
+{
+public:
+    /// Constructor.
+    ///
+    /// id: The name of the item. Can be null for anonymous items.
+    //
+    /// field: The field to parse recursively.
+    ///
+    /// hooks: Hooks associated with this item.
+    ///
+    /// attrs: Attributes associated with the item.
+    ///
+    /// sinks: Expressions referencing attached sinks, if any.
+    ///
+    /// l: Location associated with the item.
+    List(shared_ptr<ID> id,
+         shared_ptr<Field> field,
+         shared_ptr<Expression> cond = nullptr,
+         const hook_list& hooks = hook_list(),
+         const attribute_list& attrs = attribute_list(),
+         const expression_list& sinks = expression_list(),
+         const Location& l=Location::None);
+
+    /// Returns the field to parse to fill the container.
+    shared_ptr<Field> field() const;
+
+    shared_ptr<binpac::Type> type() override;
+
+    ACCEPT_VISITOR(Container);
+
+private:
+    node_ptr<Field> _field;
+};
+
+}
 
 namespace switch_ {
 
@@ -1230,7 +1436,7 @@ public:
     ///
     /// type: The variable's type.
     ///
-    /// default_: An optional default value.
+    /// default_: An optional default value. This will be turned into a &default attribute.
     ///
     /// hooks: Hooks associated with this item.
     ///
@@ -1241,13 +1447,12 @@ public:
              const hook_list& hooks = hook_list(),
              const Location& l=Location::None);
 
-    /// Returns the variable's default, or null if none.
+    /// Returns the variable's default, or null if none. This is just a
+    /// convinience method that returns the value of the items \c &default
+    /// attribute.
     shared_ptr<Expression> default_() const;
 
     ACCEPT_VISITOR(Item);
-
-private:
-    node_ptr<Expression> _default;
 };
 
 /// A unit property.
@@ -1332,6 +1537,9 @@ public:
     /// Returns a list of all properties. This is a convinience method that
     /// prefilters all items for this tyoe,
     std::list<shared_ptr<unit::item::Property>> properties() const;
+
+    /// Returns the property of a given name, or null if no such.
+    shared_ptr<unit::item::Property> property(const string& prop) const;
 
     /// Returns the item of a given name, or null if there's no such item.
     ///

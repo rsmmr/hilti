@@ -34,6 +34,8 @@ bool Operator::match(const expression_list& ops, bool coerce)
     auto o = ops.begin();
     auto t = types.begin();
 
+    int i = 1;
+
     while ( o != ops.end() ) {
         if ( t == types.end() )
             // Too many arguments.
@@ -90,6 +92,15 @@ shared_ptr<Type> Operator::type(const expression_list& ops)
     auto result = __typeResult();
     __operands.clear();
     return result;
+}
+
+bool Operator::canCoerceTo(shared_ptr<Expression> op, shared_ptr<Type> type)
+{
+    if ( op->canCoerceTo(type) )
+        return true;
+
+    error(op, util::fmt("operand is of type %s but expected type", op->type(), type));
+    return false;
 }
 
 void Operator::error(Node* op, string msg) const
@@ -236,6 +247,9 @@ string Operator::render() const
     switch ( op.kind ) {
      case operator_::Attribute:
         return util::fmt("%s.%s", op1->render(), op2->render());
+
+     case operator_::AttributeAssign:
+        return util::fmt("%s.%s = %s", op1->render(), op2->render(), op3->render());
 
      case operator_::Call:
         return util::fmt("%s(%s)", op1->render(), op2->render());

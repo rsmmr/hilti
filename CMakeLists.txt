@@ -1,5 +1,7 @@
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(scripts "${CMAKE_CURRENT_SOURCE_DIR}/scripts")
+
 include(EnableClang)
 
 cmake_minimum_required(VERSION 2.8.5 FATAL_ERROR)
@@ -20,8 +22,6 @@ check_include_files (alloca.h HAVE_ALLOCA_H)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${LLVM_INCLUDE_DIR})
 
 include(DefaultCompilerSettings)
-
-set(scripts "${CMAKE_CURRENT_SOURCE_DIR}/scripts")
 
 add_subdirectory(hilti)
 add_subdirectory(ast)

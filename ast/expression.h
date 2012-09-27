@@ -367,6 +367,34 @@ private:
     node_ptr<AIType> __type;
 };
 
+/// A mix-in class to define an expression constructing a type's default value.
+template<typename AstInfo>
+class Default : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
+{
+public:
+    typedef typename AstInfo::type AIType;
+    typedef typename AstInfo::type_type TypeType;
+    typedef typename AstInfo::expression Expression;
+
+    /// Constructor.
+    ///
+    /// target: The expression we're mixed in with.
+    ///
+    /// type: The referenced type.
+    Default(Expression* target, shared_ptr<AIType> type) : __EXPRESSION_MIXIN(target, this) {
+       __type = type;
+       target->addChild(__type);
+    }
+
+    /// Returns the expression's tyoe.
+    shared_ptr<AIType> _type() const /* override */ { return __type; }
+
+    /// Always returns true. Types don't change.
+    bool _isConstant() const /* override */ { return true; }
+
+private:
+    node_ptr<AIType> __type;
+};
 
 /// A mix-in class to define an expression referencing a code block.
 template<typename AstInfo>

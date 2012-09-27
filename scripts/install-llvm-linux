@@ -12,6 +12,9 @@ echo "Recording log in $log ..."
 exec > >(tee $log)
 exec 2>&1
 
+# Built libraries with RTTI.
+export REQUIRES_RTTI=1
+
 USE_LIBCXXRT=1
 
 if [ "$1" = "--install" ]; then

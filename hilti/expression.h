@@ -108,6 +108,21 @@ public:
    ACCEPT_VISITOR(hilti::Expression);
 };
 
+/// AST node for an expression constructing a type's default value.
+class Default : public hilti::Expression, public ast::expression::mixin::Default<AstInfo>
+{
+public:
+   /// Constructor.
+   ///
+   /// type: The type.
+   ///
+   /// l: An associated location.
+   Default(shared_ptr<hilti::Type> type, const Location& l=Location::None)
+       : hilti::Expression(l), ast::expression::mixin::Default<AstInfo>(this, type) {}
+
+   ACCEPT_VISITOR(hilti::Expression);
+};
+
 /// AST node for an expression referencing a statement block.
 class Block : public hilti::Expression, public ast::expression::mixin::Block<AstInfo>
 {

@@ -2,8 +2,8 @@
 // Run-time information about HILTI types.
 //
 
-#ifndef HILTI_RTTI_H
-#define HILTI_RTTI_H
+#ifndef LIBHILTI_RTTI_H
+#define LIBHILTI_RTTI_H
 
 #include <stdint.h>
 

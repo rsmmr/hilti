@@ -6,6 +6,10 @@
 #include "module.h"
 
 namespace hilti { class Module; }
+namespace hilti { class CompilerContext; }
+namespace llvm  { class Module; }
+
+#include "libhilti/types.h"
 
 namespace binpac {
 
@@ -19,7 +23,7 @@ public:
     ///
     /// libdirs: List of directories to search for relative paths. The current
     /// directly will be tried first.
-    CompilerContext(const string_list& libdirs);
+    CompilerContext(const string_list& libdirs = string_list());
 
     /// Reads a BinPAC++ source file and returns the parsed AST. The function
     /// searches the file in the paths given and reads it in. It then uses uses
@@ -81,6 +85,63 @@ public:
     /// ownership to the caller.
     shared_ptr<hilti::Module> compile(shared_ptr<Module> module, int debug = 0, bool verify = true);
 
+    /// Links a set of compiled BinPAC++ modules into a single LLVM module.
+    /// All modules produced by compileModule() must be linked (and all
+    /// together that will run as one executable). A module must not be
+    /// linked more than once.
+    ///
+    /// output: The name of the output module. This is mainly for
+    /// informational purposes.
+    ///
+    /// modules: All the HILTI modules that should be linked together. In
+    /// addition to modules generate by compileModule(), this can include
+    /// further ones created in other ways.
+    ///
+    /// paths: Paths to search for any library files.
+    ///
+    /// libs: Additional native libraries to link in (optional).
+    ///
+    /// bca: Additional LLVM bitcode archives to link in (*.bca; optional).
+    ///
+    /// dylds: Additional dynamic libraries to be loaded. The given libraries
+    /// will be searched along the usual runtime path by the system linker
+    /// (optional).
+    ///
+    /// debug: The debug level to activate for linking. The higher, the more
+    /// debugging code will be compiled in. Zero disables all debugging. This
+    /// also controls whether the debug or release runtime library will be
+    /// linked in with \a add_stdlibs.
+    ///
+    /// verify: True if the resulting LLVM module should be checked for
+    /// correctness. This should normally be on except for debugging.
+    ///
+    /// profile: True for adding profiling instrumentation at the HILTI level.
+    ///
+    /// add_stdlibs: Link in BinPAC++'s standard runtime libraries (and HILTI
+    /// standard libraries as well.
+    ///
+    /// Returns: The composite LLVM module, or null if errors are encountered.
+    llvm::Module* linkModules(string output, std::list<shared_ptr<hilti::Module>> modules,
+                              path_list paths = path_list(), std::list<string> libs = std::list<string>(),
+                              path_list bcas = path_list(), path_list dylds = path_list(),
+                              bool debug = false, bool verify = true, bool profile = false, bool add_stdlibs = true);
+
+    typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
+
+    /// JITs an LLVM module returned by linkModules() and returns a pointer
+    /// to the native Returns a pointer to a JIT-compiled, native version of
+    /// binpac_parsers(). That function returns a description of all parsers
+    /// that have been compiled in; see libbinpac++.h for more information.
+    ///
+    /// module: The module. The function takes ownership.
+    ///
+    /// optimize: The optimization level for LLVM code generation,
+    /// corresponding to \c -Ox
+    ///
+    /// Returns: The execution engine to use with nativeBinpacParser(). Null
+    /// on error; an error message will have been reported.
+    binpac_parsers_func jitBinpacParser(llvm::Module* module, int optimize);
+
     /// Renders an AST back into BinPAC++ source code.
     ///
     /// module: The AST to render.
@@ -100,32 +161,52 @@ public:
     /// Returns: True if no errors are encountered.
     bool dump(shared_ptr<Node> ast, std::ostream& out);
 
-    /// Enables additional debugging output.
+    /// Enables additional debugging output during code generation.
     ///
-    /// scanner: True to enable lexer debugging.
+    /// string: A label for the desired information. \a debugStreams()
+    /// returns the available list.
     ///
-    /// parser: True to enable parser debugging.
+    /// Returns: True if the label does not correspond to a valid debug
+    /// stream.
+    bool enableDebug(const string& label);
+
+    /// Enables additional debugging output during code generation.
     ///
-    /// scopes: True to dump the scopes once built.
+    /// labels: A set of labels, one for each of the desired streams. \a
+    /// debugStreams() returns the available list.
     ///
-    /// grammars: True to dump generated grammars.
-    void enableDebug(bool scanner, bool parser, bool scopes, bool grammars);
+    /// Returns: True if the label does not correspond to a valid debug
+    /// stream.
+    bool enableDebug(std::set<string>& labels);
+
+    /// Returns true if a given debug stream is active.
+    ///
+    /// string: The label for the desired information. \a debugStreams()
+    /// returns the available list.
+    bool debugging(const string& label);
 
     /// Returns the library dirs configured.
     const string_list& libraryPaths() const;
 
+    /// Returns the HILTI context for building the HILTI modules.
+    shared_ptr<hilti::CompilerContext> hiltiContext() const;
+
+    /// Returns the available debug streams during code generation.
+    static std::list<string> debugStreams();
+
+    /// Returns true if the given lavel correspnds to a valid debugging
+    /// stream.
+    static bool validDebugStream(const string& label);
+
 private:
     string_list _libdirs;
+    std::set<string> _debug_streams;
+    shared_ptr<hilti::CompilerContext> _hilti_context;
 
     /// We keep a global map of all module nodes we have instantiated so far,
     /// indexed by their path. This is for avoid duplicate imports, in
     /// particular when encountering cycles.
     std::map<string, shared_ptr<Module>> _modules;
-
-    bool _dbg_scanner = false;
-    bool _dbg_parser = false;
-    bool _dbg_scopes = false;
-    bool _dbg_grammars = false;
 };
 
 }

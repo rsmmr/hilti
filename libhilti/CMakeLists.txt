@@ -47,6 +47,16 @@ add_custom_command(
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/hilti-hlt.h PROPERTIES GENERATED 1)
 
+### Generate type-info for the library.
+
+add_custom_command(
+    OUTPUT   ${autogen}/type-info.o
+    COMMAND  ${hiltic} -b -C -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/type-info.hlt -o ${autogen}/type-info.o
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/type-info.hlt ${hiltic}
+)
+
+SET_SOURCE_FILES_PROPERTIES(${autogen}/type-info.bc PROPERTIES GENERATED 1)
+
 ### Generate the justrx parser.
 
 bison_target(JRXParser justrx/src/re-parse.y
@@ -75,7 +85,7 @@ set(SRCS callable.c config.c context.c debug.c globals.c init.c memory_.c int.c
     bool.c addr.c bitset.c caddr.c double.c enum.c interval.c
     net.c port.c time.c hook.c timer.c threading.c list.c fiber.c
     vector.c map_set.c struct.c regexp.c tqueue.c file.c cmdqueue.c
-    system.c classifier.c iosrc.c profiler.c channel.c
+    system.c classifier.c iosrc.c profiler.c channel.c main.c
 
     module/fmt.c
     module/misc.c
@@ -114,18 +124,14 @@ add_custom_command(
 add_custom_target(build_asm
                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libhilti-rt-native.a)
 
-add_library(hilti-rt-dbg       STATIC ${SRCS})
-add_library(hilti-rt-main-dbg  STATIC main.c ${SRCS})
-add_library(hilti-rt           STATIC ${SRCS})
-add_library(hilti-rt-main      STATIC main.c ${SRCS})
+add_library(hilti-rt-dbg       STATIC ${SRCS} ${autogen}/type-info.o)
+add_library(hilti-rt           STATIC ${SRCS} ${autogen}/type-info.o)
 
 add_dependencies(hilti-rt-dbg      generate_jrx_parser build_asm hiltic)
-add_dependencies(hilti-rt-main-dbg generate_jrx_parser build_asm hiltic)
 add_dependencies(hilti-rt          generate_jrx_parser build_asm hiltic)
-add_dependencies(hilti-rt-main     generate_jrx_parser build_asm hiltic)
 
-set_target_properties(hilti-rt-dbg hilti-rt-main-dbg PROPERTIES COMPILE_FLAGS ${c_debug_flags})
-set_target_properties(hilti-rt     hilti-rt-main     PROPERTIES COMPILE_FLAGS ${c_release_flags})
+set_target_properties(hilti-rt-dbg PROPERTIES COMPILE_FLAGS ${c_debug_flags})
+set_target_properties(hilti-rt     PROPERTIES COMPILE_FLAGS ${c_release_flags})
 
 include(ShowCompilerSettings)
 

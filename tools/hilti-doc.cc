@@ -5,7 +5,7 @@
 
 #include <hilti.h>
 #include <binpac/type.h>
-#include <binpac/binpac.h>
+#include <binpac/binpac++.h>
 #include <time.h>
 
 using namespace std;

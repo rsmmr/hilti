@@ -49,15 +49,18 @@ public:
 
 private:
    bool isHiltiModule(llvm::Module* module);
-   void addModuleInfo(const std::list<string>& module_names, llvm::Module* module);
-   void addGlobalsInfo(const std::list<string>& module_names, llvm::Module* module);
-   void joinFunctions(const char* new_func, const char* meta, llvm::FunctionType* default_ftype, const std::list<string>& module_names, llvm::Module* module);
+   llvm::NamedMDNode* moduleMeta(llvm::Module* module, shared_ptr<ID> id);
+   void addModuleInfo(llvm::Module* dst, const std::list<string>& module_names, llvm::Module* module);
+   void addGlobalsInfo(llvm::Module* dst, const std::list<string>& module_names, llvm::Module* module);
+   void joinFunctions(llvm::Module* dst, const char* new_func, const char* meta, llvm::FunctionType* default_ftype, const std::list<string>& module_names, llvm::Module* module);
    void makeHooks(const std::list<string>& module_names, llvm::Module* module);
    void error(const llvm::Linker& linker, const string& where, const string& file, const string& error="");
 
    path_list _paths;
    path_list _libs;
    path_list _bcas;
+
+   llvm::Type* _execution_context_type = nullptr;
 };
 
 }

@@ -5,6 +5,7 @@
 #include "id.h"
 #include "type.h"
 #include "variable.h"
+#include "expression.h"
 
 using namespace binpac;
 
@@ -19,8 +20,8 @@ declaration::Variable::Variable(shared_ptr<binpac::ID> id, Linkage linkage, shar
 }
 
 
-declaration::Constant::Constant(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Constant> constant, const Location& l)
-    : binpac::Declaration(id, linkage, l), ast::declaration::mixin::Constant<AstInfo>(this, constant)
+declaration::Constant::Constant(shared_ptr<binpac::ID> id, Linkage linkage, shared_ptr<binpac::Expression> value, const Location& l)
+    : binpac::Declaration(id, linkage, l), ast::declaration::mixin::Constant<AstInfo>(this, value)
 {
 }
 

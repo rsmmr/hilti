@@ -30,8 +30,8 @@
 /// however once created, positions can be dererenced, incremented, and
 /// decremented efficiently.
 
-#ifndef HILTI_bytes_H
-#define HILTI_bytes_H
+#ifndef LIBHILTI_bytes_H
+#define LIBHILTI_bytes_H
 
 #include "types.h"
 #include "rtti.h"
@@ -224,7 +224,7 @@ extern int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt, hlt_e
 /// pos: The position from where to extract the byte. After reading the
 /// byte, the iterator is incremented to the next position, or
 /// hlt_bytes_end() if the end has been reached. If *pos* is already the
-/// *end* position (or the end of the bytes object), it is left unchanged and
+/// *end* position (or the end of the bytes object), it is *dtored* and
 /// a ~~ValueError exception is raised.
 ///
 /// end: End position.

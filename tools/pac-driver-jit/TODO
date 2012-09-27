@@ -1,0 +1,7 @@
+
+- Still crashes.
+
+- Currently we #undef DEBUG as we're always linking with the libhilti
+  non-debug library. Do we want two binaries?
+
+- Does optimization and leak-checking work?

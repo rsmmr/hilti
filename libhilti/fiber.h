@@ -1,6 +1,6 @@
 
-#ifndef HILTI_FIBER_H
-#define HILTI_FIBER_H
+#ifndef LIBHILTI_FIBER_H
+#define LIBHILTI_FIBER_H
 
 #include <stdint.h>
 

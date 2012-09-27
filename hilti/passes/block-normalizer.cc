@@ -10,6 +10,8 @@ using namespace passes;
 
 void BlockNormalizer::visit(statement::Block* b)
 {
+    b->removeUseless();
+
     if ( b->terminated() )
         return;
 

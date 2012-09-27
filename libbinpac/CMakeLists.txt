@@ -23,6 +23,7 @@ set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
 set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic")
+set(binpac "${CMAKE_CURRENT_BINARY_DIR}/../tools/binpac++")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -std=gnu89 -D_GNU_SOURCE")
@@ -31,23 +32,52 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -std=gnu89 -D_GNU_SOURCE")
 
 add_custom_command(
     OUTPUT   ${autogen}/binpac-hlt.h
-    COMMAND  ${hiltic} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/binpac.hlt -o ${autogen}/binpac-hlt.h
-    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpac.hlt ${hiltic}
+    COMMAND  ${hiltic} -P -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt -o ${autogen}/binpac-hlt.h
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt ${hiltic}
 )
 
 SET_SOURCE_FILES_PROPERTIES(${autogen}/binpac-hlt.h PROPERTIES GENERATED 1)
 
+### Generate HILTI code for BinPAC standard library code.
+
+add_custom_command(
+    OUTPUT   ${autogen}/binpac.hlt
+    COMMAND  ${binpac} ${CMAKE_CURRENT_SOURCE_DIR}/binpac.pac2 -o ${autogen}/binpac.hlt
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpac.pac2 ${binpac}
+)
+
+SET_SOURCE_FILES_PROPERTIES(${autogen}/binpac.hlt PROPERTIES GENERATED 1)
+
+add_custom_target(binpac.hlt ALL DEPENDS ${autogen}/binpac.hlt)
+
+### Generate bitcode for the library.
+
+add_custom_command(
+    OUTPUT   ${autogen}/binpachilti.o
+    COMMAND  ${hiltic} -b -C -I ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt -o ${autogen}/binpachilti.o
+    DEPENDS  ${CMAKE_CURRENT_SOURCE_DIR}/binpachilti.hlt ${hiltic}
+)
+
+# add_custom_command(
+#     OUTPUT   ${autogen}/binpac.o
+#     COMMAND  ${hiltic} -b -C -I ${CMAKE_CURRENT_SOURCE_DIR} ${autogen}/binpac.hlt -o ${autogen}/binpac.o
+#     DEPENDS  ${autogen}/binpac.hlt ${hiltic}
+# )
+
+SET_SOURCE_FILES_PROPERTIES(${autogen}/binpachilti.hlt PROPERTIES GENERATED 1)
+# SET_SOURCE_FILES_PROPERTIES(${autogen}/binpac.hlt PROPERTIES GENERATED 1)
+
 #### Build the library.
 
 set(SRCS
-    binpac.c
+    libbinpac++.c
     exceptions.c
 
     ${autogen}/binpac-hlt.h
 )
 
-add_library(binpac-rt-dbg       STATIC ${SRCS})
-add_library(binpac-rt           STATIC ${SRCS})
+add_library(binpac-rt-dbg       STATIC ${SRCS} ${autogen}/binpachilti.o)
+add_library(binpac-rt           STATIC ${SRCS} ${autogen}/binpachilti.o)
 
 add_dependencies(binpac-rt-dbg  hiltic)
 add_dependencies(binpac-rt      hiltic)

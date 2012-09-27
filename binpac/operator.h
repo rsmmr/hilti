@@ -98,6 +98,7 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(ShiftRight, ">>", BINARY),
 
     _OP(Attribute, "<Attribute>", OTHER),
+    _OP(AttributeAssign, "<AttribteAssign>", OTHER),
     _OP(Call, "<Call>", OTHER),
     _OP(HasAttribute, "<HasAttribute>", OTHER),
     _OP(Index, "<INdex>", OTHER),
@@ -169,7 +170,6 @@ public:
     /// Returns information about the operator for use in the reference documentation.
     Info info() const;
 
-protected:
     /// Returns the current validator.
     passes::Validator* validator() const { return _validator; }
 
@@ -189,6 +189,16 @@ protected:
     /// one of the virtual methods working on operands.
     const shared_ptr<Expression> op3() const { assert(__operands.size() >= 3); auto i = __operands.begin(); ++i; ++i; return *i; }
 
+    /// Checks whether an operand can be coerced into a given type. If not,
+    /// an error is reported.
+    ///
+    /// op: The operand
+    ///
+    /// type: The type.
+    ///
+    /// Returns: True if coercable.
+    bool canCoerceTo(shared_ptr<Expression> op, shared_ptr<Type> type);
+
     /// Method to report errors found by validate(). This forwards to the
     /// current passes::Validator.
     ///
@@ -204,6 +214,8 @@ protected:
     ///
     /// msg: An error message for the user.
     void error(shared_ptr<Node> op, string msg) const;
+
+protected:
 
     /// Returns a factory function that instantiates a resolved operator
     /// expression for this operator with the given operands.

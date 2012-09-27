@@ -5,9 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "binpac.h"
+#include "libbinpac++.h"
 
 static int       _initialized = 0;
+static int       _done = 0;
 static hlt_list* _parsers = 0;
 static int8_t    _debugging = 0;
 
@@ -20,11 +21,23 @@ static void _ensure_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
 void binpac_init()
 {
     _initialized = 1;
+    atexit(binpac_done);
+}
+
+void binpac_done()
+{
+    if ( _done )
+        return;
+
+    _done = 1;
+
+    GC_DTOR(_parsers, hlt_list);
 }
 
 hlt_list* binpac_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     _ensure_parsers(excpt, ctx);
+    GC_CCTOR(_parsers, hlt_list);
     return _parsers;
 }
 
@@ -45,9 +58,10 @@ void binpac_fatal_error(const char* msg)
 }
 
 // Note that this function can be called before binpac_init().
-void binpac_register_parser(binpac_parser* parser, hlt_exception** excpt, hlt_execution_context* ctx)
+void binpachilti_register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     _ensure_parsers(excpt, ctx);
+    parser->type_info = pobj;
     hlt_list_push_back(_parsers, hlt_type_info_hlt_Parser, &parser, excpt, ctx);
 
 #if 0

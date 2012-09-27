@@ -93,6 +93,7 @@ protected:
    void visit(expression::Module* e) override;
    void visit(expression::Parameter* e) override;
    void visit(expression::Type* e) override;
+   void visit(expression::Default* e) override;
    void visit(expression::Variable* e) override;
 
    void visit(constant::Address* c) override;

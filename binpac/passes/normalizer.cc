@@ -5,6 +5,7 @@
 #include "type.h"
 #include "expression.h"
 #include "attribute.h"
+#include "statement.h"
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -28,9 +29,12 @@ void Normalizer::visit(type::unit::Item* i)
 
 void Normalizer::visit(type::unit::item::Field* f)
 {
+    if ( ! f->type() )
+        return;
+
     // Insert defaults for attributes lacking it.
-    auto parseable = ast::type::checkedTrait<type::trait::Parseable>(f->type());
     auto attributes = f->attributes();
+    auto parseable = ast::type::checkedTrait<type::trait::Parseable>(f->type());
 
     std::set<string> seen;
 
@@ -58,4 +62,8 @@ void Normalizer::visit(type::unit::item::Field* f)
             // Insert attribute with default value.
             attributes->add(std::make_shared<Attribute>(pattr.key, pattr.default_, true, f->location()));
     }
+}
+
+void Normalizer::visit(type::unit::item::field::Container* c)
+{
 }

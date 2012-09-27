@@ -2,8 +2,8 @@
 // Support functions HILTI's double data type.
 //
 
-#ifndef HILTI_DOUBLE_H
-#define HILTI_DOUBLE_H
+#ifndef LIBHILTI_DOUBLE_H
+#define LIBHILTI_DOUBLE_H
 
 #include "exceptions.h"
 

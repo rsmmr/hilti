@@ -62,7 +62,8 @@ struct yystype_hilti {
     std::list<shared_ptr<hilti::Type>> types;
 
     hilti::function::parameter_list params;
-    std::list<node_ptr<hilti::Expression>> exprs;
+    std::list<node_ptr<hilti::Expression>> exprs; // FIXME: This should be replaced with expr2.
+    std::list<shared_ptr<hilti::Expression>> exprs2;
     std::list<node_ptr<hilti::statement::try_::Catch>> catches;
 
     std::list<string> strings;
@@ -88,13 +89,13 @@ class Parser;
 class Scanner;
 class location;
 
-struct Context {
+struct ParserContext {
    shared_ptr<ID> label;
 };
 
 class Driver : public ast::Logger {
 public:
-   shared_ptr<hilti::Module> parse(std::istream& in, const std::string& sname);
+   shared_ptr<hilti::Module> parse(shared_ptr<CompilerContext> ctx, std::istream& in, const std::string& sname);
 
    // Report parsing errors.
    void error(const std::string& m, const hilti_parser::location& l);
@@ -119,19 +120,30 @@ public:
 
    Scanner* scanner() const { return _scanner; }
    Parser* parser() const { return _parser; }
-   Context* context() const { return _context; }
+   ParserContext* parserContext() const { return _parser_context; }
+   shared_ptr<CompilerContext> compilerContext() const { return _compiler_context; }
 
    void disableLineMode();
    void enableLineMode();
    void disablePatternMode();
    void enablePatternMode();
 
+   /// Enables additional debugging output.
+   ///
+   /// scanner: True to enable lexer debugging.
+   ///
+   /// parser: True to enable parser debugging.
+   void enableDebug(bool scanner, bool parser);
+
 private:
    std::string _sname;
+   bool _dbg_scanner = false;
+   bool _dbg_parser = false;
 
-   Context* _context = 0;
+   ParserContext* _parser_context = 0;
    Scanner* _scanner = 0;
    Parser* _parser = 0;
+   shared_ptr<CompilerContext> _compiler_context = 0;
    shared_ptr<builder::ModuleBuilder> _mbuilder = 0;
 };
 

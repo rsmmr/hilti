@@ -85,7 +85,7 @@ else ()
   exec_program(${LLVM_CONFIG_EXEC} ARGS --cxxflags   OUTPUT_VARIABLE LLVM_CXXFLAGS )
   exec_program(${LLVM_CONFIG_EXEC} ARGS --ldflags    OUTPUT_VARIABLE LLVM_LDFLAGS )
 
-  set(llvm_libs "core bitreader bitwriter linker asmparser")
+  set(llvm_libs "core bitreader bitwriter linker asmparser interpreter executionengine jit mcjit runtimedyld nativecodegen")
   exec_program(${LLVM_CONFIG_EXEC} ARGS --libs ${llvm_libs} OUTPUT_VARIABLE LLVM_LIBS)
 
   set(LLVM_LIBS "${LLVM_LIBS} -Wl,-rpath,${LLVM_LIB_DIR}")

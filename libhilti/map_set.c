@@ -37,11 +37,6 @@ typedef struct __hlt_map {
     __khval_map_t *vals;
 } kh_map_t;
 
-struct __hlt_iterator_map {
-    hlt_map* map;  // Null if at end position.
-    khiter_t iter;
-};
-
 typedef struct __hlt_set {
     __hlt_gchdr __gchdr;    // Header for memory management.
     const hlt_type_info* tkey;   // Key type.
@@ -55,11 +50,6 @@ typedef struct __hlt_set {
     __khkey_t *keys;
     __khval_set_t *vals;
 } kh_set_t;
-
-struct __hlt_iterator_set {
-    hlt_set* set;  // Null if at end position.
-    khiter_t iter;
-};
 
 __HLT_RTTI_GC_TYPE(__hlt_map_timer_cookie,  HLT_TYPE_MAP_TIMER_COOKIE)
 __HLT_RTTI_GC_TYPE(__hlt_set_timer_cookie,  HLT_TYPE_SET_TIMER_COOKIE)

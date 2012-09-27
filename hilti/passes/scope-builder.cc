@@ -44,12 +44,12 @@ bool ScopeBuilder::run(shared_ptr<Node> module)
         return false;
 
     for ( auto i : m->importedIDs() ) {
-        shared_ptr<Module> other = hilti::loadModule(i, _libdirs, true);
-        if ( ! other )
-            fatalError("import failed");
-
-        m->body()->scope()->addChild(other->id(), other->body()->scope());
-    }
+        auto mscope = _context->scopeAlias(i);
+        assert(mscope);
+        assert(mscope->id());
+        mscope->setParent(m->body()->scope());
+        m->body()->scope()->addChild(mscope->id(), mscope);
+    };
 
     return errors() == 0;
 }
@@ -128,9 +128,7 @@ void ScopeBuilder::visit(declaration::Constant* c)
     if ( ! scope )
         return;
 
-    auto constant = c->constant();
-    auto expr = shared_ptr<expression::Constant>(new expression::Constant(constant, constant->location()));
-    scope->insert(c->id(), expr);
+    scope->insert(c->id(), c->constant());
 }
 
 void ScopeBuilder::visit(declaration::Function* f)
@@ -161,7 +159,13 @@ void ScopeBuilder::visit(declaration::Function* f)
 
 void ScopePrinter::visit(statement::Block* b)
 {
-    b->scope()->dump(std::cerr);
-    std::cerr << "+++++" << std::endl;
+    auto mod = current<Module>();
+
+    _out << "Module " << ( mod ? mod->id()->name() : string("<null>") ) << std::endl;
+
+    b->scope()->dump(_out);
+    _out << std::endl;
+    _out << "+++++" << std::endl;
+    _out << std::endl;
 }
 

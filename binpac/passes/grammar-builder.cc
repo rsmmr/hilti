@@ -6,6 +6,9 @@
 #include "type.h"
 #include "grammar.h"
 #include "production.h"
+#include "attribute.h"
+#include "expression.h"
+#include "constant.h"
 
 using namespace binpac;
 using namespace binpac::passes;
@@ -21,7 +24,7 @@ GrammarBuilder::~GrammarBuilder()
 
 bool GrammarBuilder::run(shared_ptr<ast::NodeBase> ast)
 {
-    _in_decl = false;
+    _in_decl = 0;;
     _counters.clear();
     return processAllPreOrder(ast);
 }
@@ -63,9 +66,9 @@ void GrammarBuilder::visit(declaration::Type* d)
     if ( ! unit )
         return;
 
-    _in_decl = true;
+    ++_in_decl;
     auto production = compileOne(unit);
-    _in_decl = false;
+    --_in_decl;
 
     auto grammar = std::make_shared<Grammar>(d->id()->name(), production);
 
@@ -119,7 +122,7 @@ void GrammarBuilder::visit(type::unit::item::field::Switch* s)
         return;
 }
 
-void GrammarBuilder::visit(type::unit::item::field::Type* t)
+void GrammarBuilder::visit(type::unit::item::field::AtomicType* t)
 {
     if ( ! _in_decl )
         return;
@@ -130,8 +133,69 @@ void GrammarBuilder::visit(type::unit::item::field::Type* t)
     setResult(prod);
 }
 
+void GrammarBuilder::visit(type::unit::item::field::Unit* u)
+{
+    if ( ! _in_decl )
+        return;
+
+    ++_in_decl;
+    auto unit = compileOne(u->type());
+    --_in_decl;
+
+    setResult(unit);
+}
+
 void GrammarBuilder::visit(type::unit::item::field::switch_::Case* c)
 {
     if ( ! _in_decl )
         return;
+}
+
+void GrammarBuilder::visit(type::unit::item::field::container::List* l)
+{
+    if ( ! _in_decl )
+        return;
+
+    auto until = l->attributes()->lookup("until");
+    auto length = l->attributes()->lookup("length");
+
+    auto sym = "list:" + l->id()->name();
+
+    ++_in_decl;
+    auto field = compileOne(l->field());
+    --_in_decl;
+
+    if ( until ) {
+        // We use a Loop production here. type::Container installs a &foreach
+        // hook that stops the iteration once the condition is satisfied.
+        // Doing it this way allows the condition to run in the hook's scope,
+        // with access to "$$".
+        auto l1 = std::make_shared<production::Loop>(sym, field, l->location());
+        l1->pgMeta()->field = l->sharedPtr<type::unit::item::Field>();
+        setResult(l1);
+    }
+
+    else if ( length ) {
+        auto l1 = std::make_shared<production::Counter>(sym, length->value(), field, l->location());
+        l1->pgMeta()->field = l->sharedPtr<type::unit::item::Field>();
+        setResult(l1);
+    }
+
+    else {
+        // No attributes, use look-ahead to figure out when to stop parsing.
+        //
+        // Left-factored & right-recursive.
+        //
+        // List1 -> Item List2
+        // List2 -> Epsilon | List1
+
+        auto epsilon = std::make_shared<production::Epsilon>(l->location());
+        auto l1 = std::make_shared<production::Sequence>(sym + ":l1", Production::production_list(), nullptr, l->location());
+        auto l2 = std::make_shared<production::LookAhead>(sym + ":l2", epsilon, l1, l->location());
+
+        l1->add(field);
+        l1->add(l2);
+
+        setResult(l2);
+    }
 }

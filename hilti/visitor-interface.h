@@ -133,6 +133,7 @@ namespace expression {
    class Constant;
    class Constant;
    class Ctor;
+   class Default;
    class Function;
    class ID;
    class List;
@@ -308,6 +309,7 @@ public:
    virtual void visit(expression::Coerced* e)   {}
    virtual void visit(expression::Constant* e)  {}
    virtual void visit(expression::Ctor* e)      {}
+   virtual void visit(expression::Default* e)   {}
    virtual void visit(expression::Function* e)  {}
    virtual void visit(expression::ID* e)        {}
    virtual void visit(expression::List* e)      {}

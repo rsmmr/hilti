@@ -22,18 +22,10 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-CompilerContext::CompilerContext(const string_list& libdirs)
-{
-    // Always add libbinpac to the path list.
-    auto paths = libdirs;
-    paths.push_front(".");
-    paths.push_front(CONFIG_PATH_LIBBINPAC);
-
-    _libdirs = paths;
-}
-
 shared_ptr<Module> CompilerContext::load(string path, bool verify, bool finalize)
 {
+    path = util::strtolower(path);
+
     if ( ! util::endsWith(path, ".pac2") )
         path += ".pac2";
 
@@ -77,9 +69,9 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
 {
     binpac_parser::Driver driver;
     driver.forwardLoggingTo(this);
-    driver.enableDebug(_dbg_scanner, _dbg_parser);
+    driver.enableDebug(debugging("scanner"), debugging("parser"));
 
-    return driver.parse(shared_from_this(), in, sname);
+    return driver.parse(this, in, sname);
 }
 
 bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
@@ -100,7 +92,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( ! scope_builder.run(module) )
         return false;
 
-    if ( _dbg_scopes )
+    if ( debugging("scopes") )
         scope_printer.run(module);
 
     if ( ! id_resolver.run(module) )
@@ -115,7 +107,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( ! normalizer.run(module) )
         return false;
 
-    if ( _dbg_grammars )
+    if ( debugging("grammars") )
         grammar_builder.enableDebug();
 
     if ( ! grammar_builder.run(module) )
@@ -145,15 +137,37 @@ bool CompilerContext::dump(shared_ptr<Node> ast, std::ostream& out)
     return true;
 }
 
-void CompilerContext::enableDebug(bool scanner, bool parser, bool scopes, bool grammars)
-{
-    _dbg_scanner = scanner;
-    _dbg_parser = parser;
-    _dbg_scopes = scopes;
-    _dbg_grammars = grammars;
-}
-
 const string_list& CompilerContext::libraryPaths() const
 {
     return _libdirs;
 }
+
+shared_ptr<hilti::CompilerContext> CompilerContext::hiltiContext() const
+{
+    return _hilti_context;
+}
+
+bool CompilerContext::debugging(const string& label)
+{
+    return _debug_streams.find(label) != _debug_streams.end();
+}
+
+bool CompilerContext::enableDebug(std::set<string>& labels)
+{
+    for ( auto l : labels )
+        enableDebug(l);
+
+    return true;
+}
+
+std::list<string> CompilerContext::debugStreams()
+{
+    return { "grammars", "parser", "scanner", "scopes" };
+}
+
+bool CompilerContext::validDebugStream(const string& label)
+{
+    auto streams = debugStreams();
+    return std::find(streams.begin(), streams.end(), label) != streams.end();
+}
+

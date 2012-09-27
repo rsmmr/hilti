@@ -13,6 +13,21 @@ shared_ptr<T> _sptr(T* ptr) { return shared_ptr<T>(ptr); }
 
 typedef std::list<shared_ptr<hilti::Type>> type_list;
 
+namespace expression {
+
+/// Instantiates the default value of a type.
+///
+/// t: The type.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expressoin
+inline shared_ptr<hilti::Expression> default_(shared_ptr<hilti::Type> t, const Location& l=Location::None) {
+    return std::make_shared<hilti::expression::Default>(t, l);
+}
+
+}
+
 namespace any {
 
 /// Instantiates an type::Any type.
@@ -63,10 +78,10 @@ namespace integer {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::Constant> create(int64_t i, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> create(int64_t i, const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Integer>(i, 64, l);
-    return std::make_shared<expression::Constant>(c, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
 /// Instantiates an type::Integer type.
@@ -91,10 +106,10 @@ namespace string {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::Constant> create(const ::string& s, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> create(const ::string& s, const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::String>(s, l);
-    return std::make_shared<expression::Constant>(c, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
 /// Instantiates a type::String type.
@@ -117,10 +132,10 @@ namespace boolean {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::Constant> create(bool b, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> create(bool b, const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Bool>(b, l);
-    return std::make_shared<expression::Constant>(c, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
 /// Instantiates a type::Bool type.
@@ -143,10 +158,10 @@ namespace double_ {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::Constant> create(double d, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> create(double d, const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Double>(d, l);
-    return std::make_shared<expression::Constant>(c, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
 /// Instantiates a type::Double type.
@@ -171,10 +186,10 @@ typedef hilti::constant::Tuple::element_list element_list;
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::Constant> create(const element_list& elems, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> create(const element_list& elems, const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Tuple>(elems, l);
-    return std::make_shared<expression::Constant>(c, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
 /// Instantiates a type::Tuple type.
@@ -232,10 +247,10 @@ namespace reference {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::Constant> createNull(const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> createNull(const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Reference>(l);
-    return std::make_shared<expression::Constant>(c, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
 /// Instantiates a type::Reference type.
@@ -307,10 +322,10 @@ namespace label {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::Constant> create(const ::string& id, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> create(const ::string& id, const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Label>(id, l);
-    return std::make_shared<expression::Constant>(c, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
 /// Instantiates a type::Label type.
@@ -336,9 +351,9 @@ namespace codegen {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::CodeGen> create(shared_ptr<hilti::Type> t, void* cookie, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::CodeGen> create(shared_ptr<hilti::Type> t, void* cookie, const Location& l=Location::None)
 {
-    return std::make_shared<expression::CodeGen>(t, cookie, l);
+    return std::make_shared<hilti::expression::CodeGen>(t, cookie, l);
 }
 
 }
@@ -346,6 +361,8 @@ inline shared_ptr<expression::CodeGen> create(shared_ptr<hilti::Type> t, void* c
 namespace module {
 
 /// Instantiates an AST node representing a top-level module.
+///
+/// ctx: The compiler context the module is part of.
 ///
 /// id: The name of the module.
 ///
@@ -355,8 +372,8 @@ namespace module {
 /// l: Location associated with the type.
 ///
 /// Returns: The module node.
-inline shared_ptr<Module> create(shared_ptr<ID> id, ::string file = "-", const Location& l=Location::None) {
-    return std::make_shared<Module>(id, file, l);
+inline shared_ptr<Module> create(shared_ptr<CompilerContext> ctx, shared_ptr<ID> id, ::string file = "-", const Location& l=Location::None) {
+    return std::make_shared<Module>(ctx, id, file, l);
 }
 
 }
@@ -476,8 +493,8 @@ namespace id {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::ID> create(shared_ptr<ID> id, const Location& l=Location::None) {
-    return std::make_shared<expression::ID>(id, l);
+inline shared_ptr<hilti::expression::ID> create(shared_ptr<ID> id, const Location& l=Location::None) {
+    return std::make_shared<hilti::expression::ID>(id, l);
 }
 
 /// Instantiates an AST expression node representing an ID reference.
@@ -487,7 +504,7 @@ inline shared_ptr<expression::ID> create(shared_ptr<ID> id, const Location& l=Lo
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::ID> create(::string s, const Location& l=Location::None) {
+inline shared_ptr<hilti::expression::ID> create(::string s, const Location& l=Location::None) {
     return create(std::make_shared<ID>(s, l));
 }
 
@@ -512,10 +529,10 @@ namespace unset {
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<expression::Constant> create(const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> create(const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Unset>(l);
-    return std::make_shared<expression::Constant>(c, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
 }

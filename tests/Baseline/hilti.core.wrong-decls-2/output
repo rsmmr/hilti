@@ -1,3 +1,3 @@
 wrong-decls.hlt:5.15: error, syntax error, unexpected '*', expecting integer
-wrong-decls.hlt: Aborting due to parse error.
+wrong-decls.hlt: Aborting due to verification error.
 error running hiltic, aborting

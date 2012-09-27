@@ -1,0 +1,16 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  printf "FooooooBaaaar" | ./a.out >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+const F = /Fo*/;
+
+export type test = unit {
+    a: F;
+    b: /Ba*r/;
+
+    on %done { print self; }
+};

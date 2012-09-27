@@ -2,8 +2,8 @@
 // Support functions HILTI's time data type.
 //
 
-#ifndef HILTI_TIME_H
-#define HILTI_TIME_H
+#ifndef LIBHILTI_TIME_H
+#define LIBHILTI_TIME_H
 
 #include "exceptions.h"
 

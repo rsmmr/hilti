@@ -23,7 +23,7 @@
 using namespace hilti;
 using namespace codegen;
 
-CodeGen::CodeGen(const path_list& libdirs, int cg_debug_level)
+CodeGen::CodeGen(const path_list& libdirs)
     : _coercer(new Coercer(this)),
       _loader(new Loader(this)),
       _storer(new Storer(this)),
@@ -36,7 +36,6 @@ CodeGen::CodeGen(const path_list& libdirs, int cg_debug_level)
 {
     _libdirs = libdirs;
     setLoggerName("codegen");
-    debugSetLevel(cg_debug_level);
 }
 
 CodeGen::~CodeGen()
@@ -50,6 +49,9 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
 
     _hilti_module = hltmod;
     _functions.clear();
+
+    if ( hltmod->compilerContext()->debugging("codegen") )
+        debugSetLevel(1);
 
     if ( ! _collector->run(hltmod) )
         return nullptr;
@@ -480,14 +482,34 @@ void CodeGen::popBuilder()
     _functions.back()->builders.pop_back();
 }
 
+llvm::Function* CodeGen::llvmPushLinkerJoinableFunction(const string& name)
+{
+    // We use a void pointer here for the execution context to avoid type
+    // trouble a link time when merging modules.
+    //
+    // Also, the linker can in principle deal with more and other arguments
+    // as well, the joined function will have the same signature as the one
+    // we create here. However, when using custom types, things can get
+    // messed up if the same function is also declared in libhilti.
+
+    llvm_parameter_list params;
+    params.push_back(std::make_pair(symbols::ArgExecutionContext, llvmTypePtr())); // Name must match w/ linker.
+
+    auto func = llvmAddFunction(name, llvmTypeVoid(), params, false, type::function::C);
+    pushFunction(func, true, false, true);
+
+    auto arg1 = func->arg_begin();
+    auto ctx = builder()->CreateBitCast(arg1, llvmTypePtr(llvmTypeExecutionContext()));
+    _functions.back()->context = ctx;
+    _functions.back()->abort_on_excpt = true;
+
+    return func;
+}
+
 void CodeGen::createInitFunction()
 {
     string name = util::mangle(_hilti_module->id(), true, nullptr, "init.module");
-
-    CodeGen::parameter_list no_params;
-    _module_init_func = llvmAddFunction(name, llvmTypeVoid(), no_params, false, type::function::HILTI_C);
-
-    pushFunction(_module_init_func, true, false, true);
+    _module_init_func = llvmPushLinkerJoinableFunction(name);
 }
 
 llvm::Function* CodeGen::llvmModuleInitFunction()
@@ -555,10 +577,7 @@ void CodeGen::createGlobalsInitFunction()
 
     // Create a function that initializes our globals with defaults.
     auto name = util::mangle(_hilti_module->id(), true, nullptr, "init.globals");
-    CodeGen::parameter_list no_params;
-    _globals_init_func = llvmAddFunction(name, llvmTypeVoid(), no_params, false, type::function::HILTI_C);
-
-    pushFunction(_globals_init_func, true, true, true);
+    _globals_init_func = llvmPushLinkerJoinableFunction(name);
 
 #ifdef OLDSTRING
     // Init the global string constants.
@@ -588,9 +607,7 @@ void CodeGen::createGlobalsInitFunction()
     // Create a function that that destroys all the memory managed objects in
     // there.
     name = util::mangle(_hilti_module->id(), true, nullptr, "dtor.globals");
-    _globals_dtor_func = llvmAddFunction(name, llvmTypeVoid(), no_params, false, type::function::HILTI_C);
-
-    pushFunction(_globals_dtor_func, true, true);
+    _globals_dtor_func = llvmPushLinkerJoinableFunction(name);
 
     for ( auto g : _collector->globals() ) {
         auto val = llvmGlobal(g);
@@ -636,10 +653,13 @@ void CodeGen::createLinkerData()
     llvm::Value *version = llvm::ConstantInt::get(llvm::Type::getInt16Ty(llvmContext()), 1);
     llvm::Value *id = llvm::MDString::get(llvmContext(), _hilti_module->id()->name());
     llvm::Value *file = llvm::MDString::get(llvmContext(), _hilti_module->path());
+    llvm::Value *ctxtype = llvm::Constant::getNullValue(llvmTypePtr(llvmTypeExecutionContext()));
 
+    // Note, the order here must match with the MetaModule* constants.
     md->addOperand(util::llvmMdFromValue(llvmContext(), version));
     md->addOperand(util::llvmMdFromValue(llvmContext(), id));
     md->addOperand(util::llvmMdFromValue(llvmContext(), file));
+    md->addOperand(util::llvmMdFromValue(llvmContext(), ctxtype));
 
     // Add the MD function arrays that the linker will merge.
 
@@ -1475,7 +1495,7 @@ llvm::Function* CodeGen::llvmFunction(shared_ptr<ID> id)
     auto expr = _hilti_module->body()->scope()->lookup(id);
 
     if ( ! expr )
-        internalError(string("unknown function ") + id->name() + " in llvmFunction()");
+        internalError(string("unknown function ") + id->pathAsString() + " in llvmFunction()");
 
     if ( ! ast::isA<expression::Function>(expr) )
         internalError(string("ID ") + id->name() + " is not a function in llvmFunction()");
@@ -1609,13 +1629,20 @@ void CodeGen::llvmBuildFunctionCleanup()
         auto cont = newBuilder("cont");
         auto tmp = unref.first.first;
         auto val = builder()->CreateLoad(tmp);
-        auto is_null = builder()->CreateIsNull(val);
 
+        llvm::Value* ptr_val = unref.first.second ? val : tmp;
+
+        if ( val->getType()->isStructTy() ) {
+            llvmDtor(ptr_val, unref.second, true, "function-cleanup-struct-tmp");
+            llvmCreateStore(llvmConstNull(val->getType()), tmp);
+            return;
+        }
+
+        auto is_null = builder()->CreateIsNull(val);
         llvmCreateCondBr(is_null, cont, dtor);
 
         pushBuilder(dtor);
 
-        llvm::Value* ptr_val = unref.first.second ? val : tmp;
         llvmDtor(ptr_val, unref.second, true, "function-cleanup-tmp");
 
         llvmCreateStore(llvmConstNull(val->getType()), tmp);
@@ -1807,13 +1834,13 @@ llvm::Value* CodeGen::llvmCurrentVID()
 
 llvm::Value* CodeGen::llvmCurrentThreadContext()
 {
-    if ( ! _hilti_module->context() )
+    if ( ! _hilti_module->executionContext() )
         return nullptr;
 
     value_list args;
     args.push_back(llvmExecutionContext());
     auto ctx = llvmCallC("__hlt_context_get_thread_context", args, false, false);
-    return builder()->CreateBitCast(ctx, llvmType(_hilti_module->context()));
+    return builder()->CreateBitCast(ctx, llvmType(_hilti_module->executionContext()));
 }
 
 void CodeGen::llvmSetCurrentThreadContext(shared_ptr<Type> type, llvm::Value* ctx)

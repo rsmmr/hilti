@@ -7,6 +7,8 @@
 #include "function.h"
 #include "grammar.h"
 
+#include "autogen/operators/integer.h"
+#include "autogen/operators/list.h"
 #include "autogen/operators/unit.h"
 
 using namespace binpac;
@@ -66,6 +68,8 @@ void CodeBuilder::visit(constant::Bitset* b)
 
 void CodeBuilder::visit(constant::Bool* b)
 {
+    auto result = hilti::builder::boolean::create(b);
+    setResult(result);
 }
 
 void CodeBuilder::visit(constant::Double* d)
@@ -74,11 +78,22 @@ void CodeBuilder::visit(constant::Double* d)
 
 void CodeBuilder::visit(constant::Enum* e)
 {
+    assert(e->type()->id());
+
+    auto expr =  e->firstParent<Expression>();
+    assert(expr);
+
+    ID::component_list path = { expr->scope(), e->value()->name() };
+    auto fq = std::make_shared<ID>(path, e->location());
+    auto result = hilti::builder::id::create(cg()->hiltiID(fq));
+    setResult(result);
 }
 
+#if 0
 void CodeBuilder::visit(constant::Expression* e)
 {
 }
+#endif
 
 void CodeBuilder::visit(constant::Integer* i)
 {
@@ -286,6 +301,7 @@ void CodeBuilder::visit(statement::Block* b)
 
 void CodeBuilder::visit(statement::Expression* e)
 {
+    cg()->hiltiExpression(e->expression());
 }
 
 void CodeBuilder::visit(statement::ForEach* f)
@@ -294,6 +310,36 @@ void CodeBuilder::visit(statement::ForEach* f)
 
 void CodeBuilder::visit(statement::IfElse* i)
 {
+    auto cond = cg()->hiltiExpression(i->condition());
+    auto cont = cg()->moduleBuilder()->newBuilder("if-cont");
+    auto true_ = cg()->moduleBuilder()->newBuilder("if-true");
+    auto false_ = i->statementFalse() ? cg()->moduleBuilder()->newBuilder("if-false")
+                                      : shared_ptr<hilti::builder::BlockBuilder>();
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, true_->block(),
+                                    false_ ? false_->block() : cont->block());
+
+    cg()->moduleBuilder()->pushBuilder(true_);
+    cg()->hiltiStatement(i->statementTrue());
+
+    if ( ! cg()->builder()->statement()->terminated() )
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+
+    cg()->moduleBuilder()->popBuilder(true_);
+
+    if ( i->statementFalse() ) {
+        cg()->moduleBuilder()->pushBuilder(false_);
+        cg()->hiltiStatement(i->statementFalse());
+
+        if ( ! cg()->builder()->statement()->terminated() )
+            cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+
+        cg()->moduleBuilder()->popBuilder(false_);
+    }
+
+    cg()->moduleBuilder()->pushBuilder(cont);
+
+    // Leave on stack.
 }
 
 void CodeBuilder::visit(statement::NoOp* n)
@@ -341,6 +387,11 @@ void CodeBuilder::visit(statement::Return* r)
 {
 }
 
+void CodeBuilder::visit(statement::Stop* r)
+{
+    builder()->addInstruction(hilti::instruction::hook::Stop, hilti::builder::boolean::create(true));
+}
+
 void CodeBuilder::visit(statement::Try* t)
 {
 }
@@ -351,12 +402,59 @@ void CodeBuilder::visit(statement::try_::Catch* c)
 
 ///////// Operators
 
+static shared_ptr<hilti::type::Integer> _intResultType(binpac::expression::ResolvedOperator* op)
+{
+    auto t1 = ast::checkedCast<binpac::type::Integer>(op->op1()->type());
+    auto t2 = ast::checkedCast<binpac::type::Integer>(op->op2()->type());
+
+    int w = std::max(t1->width(), t2->width());
+    return hilti::builder::integer::type(w);
+}
+
 void CodeBuilder::visit(expression::operator_::integer::Minus* i)
 {
+    auto result = builder()->addTmp("sum", _intResultType(i));
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto op2 = cg()->hiltiExpression(i->op2());
+    cg()->builder()->addInstruction(result, hilti::instruction::integer::Add, op1, op2);
+    setResult(result);
 }
 
 void CodeBuilder::visit(expression::operator_::integer::Plus* i)
 {
+    auto result = builder()->addTmp("diff", _intResultType(i));
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto op2 = cg()->hiltiExpression(i->op2());
+    cg()->builder()->addInstruction(result, hilti::instruction::integer::Sub, op1, op2);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::integer::Equal* i)
+{
+    auto result = builder()->addTmp("equal", hilti::builder::boolean::type());
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto op2 = cg()->hiltiExpression(i->op2());
+    cg()->builder()->addInstruction(result, hilti::instruction::integer::Equal, op1, op2);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::integer::Attribute* i)
+{
+    auto itype = ast::checkedCast<type::Integer>(i->op1()->type());
+    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+
+    auto bits = itype->bits(attr->id());
+    assert(bits);
+
+    auto result = cg()->builder()->addTmp("bits", cg()->hiltiType(itype));
+
+    cg()->builder()->addInstruction(result,
+                                    hilti::instruction::integer::Mask,
+                                    cg()->hiltiExpression(i->op1()),
+                                    hilti::builder::integer::create(bits->lower()),
+                                    hilti::builder::integer::create(bits->upper()));
+
+    setResult(result);
 }
 
 void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
@@ -375,3 +473,37 @@ void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
 
     setResult(ival);
 }
+
+void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
+{
+    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+    auto expr = cg()->hiltiExpression(i->op3());
+
+    auto item = unit->item(attr->id());
+    assert(item && item->type());
+
+    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->type()), nullptr, false);
+    cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
+                                    cg()->hiltiExpression(i->op1()),
+                                    hilti::builder::string::create(attr->id()->name()),
+                                    expr);
+
+    cg()->hiltiRunFieldHooks(item);
+
+    setResult(expr);
+}
+
+void CodeBuilder::visit(expression::operator_::list::PushBack* i)
+{
+    auto op1 = cg()->hiltiExpression(i->op1());
+
+    auto tuple = ast::checkedCast<expression::Constant>(i->op3())->constant();
+    auto params = ast::checkedCast<constant::Tuple>(tuple)->value();
+
+    auto param1 = cg()->hiltiExpression(*params.begin());
+    cg()->builder()->addInstruction(hilti::instruction::list::PushBack, op1, param1);
+
+    setResult(op1);
+}
+

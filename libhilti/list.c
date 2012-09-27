@@ -107,14 +107,20 @@ static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_
     else
         l->tail = n->prev;
 
+    // We don't ref/unref n->next here as we just move ownership. But we
+    // ref/unref n once to avoid potentially deleting it while we move
+    // pointers around.
+
+    GC_CCTOR(n, __hlt_list_node);
+
     if ( n->prev ) {
-        GC_ASSIGN(n->prev->next, n->next, __hlt_list_node);
+        GC_ASSIGN_REFED(n->prev->next, n->next, __hlt_list_node);
     }
     else {
-        GC_ASSIGN(l->head, n->next, __hlt_list_node);
+        GC_ASSIGN_REFED(l->head, n->next, __hlt_list_node);
     }
 
-    GC_CLEAR(n->next, __hlt_list_node);
+    n->next = 0;
     n->prev = 0;
     n->invalid = 1;
     --l->size;
@@ -123,6 +129,8 @@ static void _unlink(hlt_list* l, __hlt_list_node* n, hlt_exception** excpt, hlt_
         hlt_timer_cancel(n->timer, excpt, ctx);
 
     n->timer = 0;
+
+    GC_DTOR(n, __hlt_list_node);
 }
 
 // Returns a ref'ed node.
@@ -381,6 +389,11 @@ hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_
     const hlt_list* l = *((const hlt_list**)obj);
     hlt_string s = prefix;
     hlt_string result = 0;
+
+    if ( ! l ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
 
     for ( __hlt_list_node* n = l->head; n; n = n->next ) {
 

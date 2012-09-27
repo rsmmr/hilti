@@ -4,8 +4,8 @@
 /// Functions for maps and sets. They share sufficient code to be implemented in the same module.
 /// @}
 
-#ifndef HILTI_MAP_SET_H
-#define HILTI_MAP_SET_H
+#ifndef LIBHILTI_MAP_SET_H
+#define LIBHILTI_MAP_SET_H
 
 #include "exceptions.h"
 
@@ -16,6 +16,17 @@ typedef struct __hlt_set hlt_set;            /// Type for representing a HILTI s
 typedef struct __hlt_iterator_set hlt_iterator_set;  /// Type for representing an iterator to a HILTI set.
 
 typedef void* __khkey_t;
+
+struct __hlt_iterator_map {
+    hlt_map* map;  // Null if at end position.
+    hlt_hash iter; // Same type as khiter_t.
+};
+
+struct __hlt_iterator_set {
+    hlt_set* set;  // Null if at end position.
+    hlt_hash iter; // Same type as khiter_t.
+};
+
 
 /// Cookie for map entry expiration timers.
 typedef struct {

@@ -4,11 +4,16 @@
 #include "constant.h"
 #include "declaration.h"
 #include "expression.h"
+#include "statement.h"
 #include "scope.h"
 #include "passes/printer.h"
 
 using namespace binpac;
 using namespace type;
+
+trait::Parseable::~Parseable()
+{
+}
 
 shared_ptr<binpac::Type> trait::Parseable::fieldType()
 {
@@ -187,7 +192,7 @@ bool MemberAttribute::equal(shared_ptr<binpac::Type> other) const
     auto mother = std::dynamic_pointer_cast<MemberAttribute>(other);
     assert(mother);
 
-    return _attribute && mother->_attribute ? _attribute == mother->_attribute : true;
+    return _attribute && mother->_attribute ? (*_attribute == *mother->_attribute) : true;
 }
 
 type::Module::Module(const Location& l) : binpac::Type(l)
@@ -391,6 +396,49 @@ Time::Time(const Location& l) : PacType(l)
 {
 }
 
+integer::Bits::Bits(shared_ptr<ID> id, int lower, int upper, const attribute_list& attrs, const Location& l)
+{
+    _id = id;
+    _attrs = std::make_shared<AttributeSet>(attrs);
+    _lower = lower;
+    _upper = upper;
+
+    addChild(_id);
+    addChild(_attrs);
+}
+
+shared_ptr<integer::Bits> Integer::bits(shared_ptr<ID> id) const
+{
+    for ( auto b : _bits ) {
+        if ( *b->id() == *id )
+            return b;
+    }
+
+    return nullptr;
+}
+
+shared_ptr<ID> integer::Bits::id() const
+{
+    return _id;
+}
+
+
+int integer::Bits::lower() const
+{
+    return _lower;
+}
+
+
+int integer::Bits::upper() const
+{
+    return _upper;
+}
+
+shared_ptr<AttributeSet> integer::Bits::attributes() const
+{
+    return _attrs;
+}
+
 Integer::Integer(int width, bool sign, const Location& l) : PacType(l)
 {
     _width = width;
@@ -413,9 +461,39 @@ bool Integer::signed_() const
     return _signed;
 }
 
+void Integer::setBits(const bits_list& bits)
+{
+    for ( auto b : _bits )
+        removeChild(b);
+
+    _bits.clear();
+
+    for ( auto b : bits )
+        _bits.push_back(b);
+
+    for ( auto b : _bits )
+        addChild(b);
+}
+
+Integer::bits_list Integer::bits() const
+{
+    bits_list bits;
+    for ( auto b : _bits )
+        bits.push_back(b);
+
+    return bits;
+}
+
 bool Integer::_equal(shared_ptr<binpac::Type> other) const
 {
     return trait::Parameterized::equal(other);
+}
+
+std::list<trait::Parseable::ParseAttribute> Integer::parseAttributes() const
+{
+    return {
+        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false }
+    };
 }
 
 trait::Parameterized::type_parameter_list Integer::parameters() const
@@ -645,6 +723,14 @@ shared_ptr<binpac::Type> List::elementType()
     return argType();
 }
 
+std::list<trait::Parseable::ParseAttribute> List::parseAttributes() const
+{
+    return {
+        { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
+        { "until", std::make_shared<type::Bool>(), nullptr, false }
+    };
+}
+
 Vector::Vector(shared_ptr<Type> etype, const Location& l)
 : TypedPacType(etype, l)
 {
@@ -800,15 +886,17 @@ shared_ptr<ID> unit::Item::id() const
     return _id;
 }
 
-shared_ptr<Type> unit::Item::type() const
+shared_ptr<Type> unit::Item::type()
 {
     return _type;
 }
 
+#if 0
 shared_ptr<Scope> unit::Item::scope() const
 {
     return _scope;
 }
+#endif
 
 hook_list unit::Item::hooks() const
 {
@@ -818,6 +906,19 @@ hook_list unit::Item::hooks() const
         hooks.push_back(h);
 
     return hooks;
+}
+
+void unit::Item::addHook(shared_ptr<binpac::Hook> hook)
+{
+    _hooks.push_back(hook);
+    addChild(_hooks.back());
+}
+
+void unit::Item::setType(shared_ptr<binpac::Type> type)
+{
+    removeChild(_type);
+    _type = type;
+    addChild(_type);
 }
 
 shared_ptr<AttributeSet> unit::Item::attributes() const
@@ -830,19 +931,25 @@ unit::item::Field::Field(shared_ptr<ID> id,
                          shared_ptr<Expression> cond,
                          const hook_list& hooks,
                          const attribute_list& attrs,
+                         const expression_list& params,
                          const expression_list& sinks,
                          const Location& l)
     : Item(id, type, hooks, attrs, l)
 {
     _cond = cond;
-
     addChild(_cond);
 
     for ( auto s : sinks )
         _sinks.push_back(s);
 
+    for ( auto p : params )
+        _params.push_back(p);
+
     for ( auto s : _sinks )
         addChild(s);
+
+    for ( auto p : _params )
+        addChild(p);
 }
 
 /// Returns the item's associated condition, or null if none.
@@ -861,6 +968,15 @@ expression_list unit::item::Field::sinks() const
     return sinks;
 }
 
+expression_list unit::item::Field::parameters() const
+{
+    expression_list params;
+
+    for ( auto p : _params )
+        params.push_back(p);
+
+    return params;
+}
 
 unit::item::field::Constant::Constant(shared_ptr<ID> id,
                                       shared_ptr<binpac::Constant> const_,
@@ -869,7 +985,7 @@ unit::item::field::Constant::Constant(shared_ptr<ID> id,
                                       const attribute_list& attrs,
                                       const expression_list& sinks,
                                       const Location& l)
-    : Field(id, const_->type(), cond, hooks, attrs, sinks, l)
+    : Field(id, const_->type(), cond, hooks, attrs, expression_list(), sinks, l)
 {
     _const = const_;
     addChild(_const);
@@ -880,7 +996,37 @@ shared_ptr<binpac::Constant> unit::item::field::Constant::constant() const
     return _const;
 }
 
-unit::item::field::Type::Type(shared_ptr<ID> id,
+unit::item::field::Unknown::Unknown(shared_ptr<ID> id,
+                                    shared_ptr<binpac::ID> scope_id,
+                                    shared_ptr<Expression> cond,
+                                    const hook_list& hooks,
+                                    const attribute_list& attrs,
+                                    const expression_list& params,
+                                    const expression_list& sinks,
+                                    const Location& l)
+    : Field(id, nullptr, cond, hooks, attrs, params, sinks, l)
+{
+    _scope_id = scope_id;
+    addChild(_scope_id);
+}
+
+shared_ptr<binpac::ID> unit::item::field::Unknown::scopeID() const
+{
+    return _scope_id;
+}
+
+unit::item::field::AtomicType::AtomicType(shared_ptr<ID> id,
+                       shared_ptr<binpac::Type> type,
+                       shared_ptr<Expression> cond,
+                       const hook_list& hooks,
+                       const attribute_list& attrs,
+                       const expression_list& sinks,
+                       const Location& l)
+    : Field(id, type, cond, hooks, attrs, expression_list(), sinks, l)
+{
+}
+
+unit::item::field::Unit::Unit(shared_ptr<ID> id,
                        shared_ptr<binpac::Type> type,
                        shared_ptr<Expression> cond,
                        const hook_list& hooks,
@@ -888,23 +1034,8 @@ unit::item::field::Type::Type(shared_ptr<ID> id,
                        const expression_list& params,
                        const expression_list& sinks,
                        const Location& l)
-    : Field(id, type, cond, hooks, attrs, sinks, l)
+    : Field(id, type, cond, hooks, attrs, params, sinks, l)
 {
-    for ( auto p : params )
-        _params.push_back(p);
-
-    for ( auto p : _params )
-        addChild(p);
-}
-
-expression_list unit::item::field::Type::parameters() const
-{
-    expression_list params;
-
-    for ( auto p : _params )
-        params.push_back(p);
-
-    return params;
 }
 
 unit::item::field::Ctor::Ctor(shared_ptr<ID> id,
@@ -914,7 +1045,7 @@ unit::item::field::Ctor::Ctor(shared_ptr<ID> id,
                            const attribute_list& attrs,
                            const expression_list& sinks,
                            const Location& l)
-    : Field(id, ctor->type(), cond, hooks, attrs, sinks, l)
+    : Field(id, ctor->type(), cond, hooks, attrs, expression_list(), sinks, l)
 {
     _ctor = ctor;
     addChild(_ctor);
@@ -923,6 +1054,92 @@ unit::item::field::Ctor::Ctor(shared_ptr<ID> id,
 shared_ptr<binpac::Ctor> unit::item::field::Ctor::ctor() const
 {
     return _ctor;
+}
+
+unit::item::field::Container::Container(shared_ptr<ID> id,
+                                        shared_ptr<Field> field,
+                                        shared_ptr<Expression> cond,
+                                        const hook_list& hooks,
+                                        const attribute_list& attrs,
+                                        const expression_list& sinks,
+                                        const Location& l)
+    : Field(id, std::make_shared<type::Bytes>(), cond, hooks, attrs, expression_list(), sinks, l)
+{
+    _field = field;
+    addChild(_field);
+
+    // Containters always get a high-priority foreach hook that adds the
+    // parsed element.
+    auto body_push = std::make_shared<statement::Block>(nullptr, l);
+
+    auto self = std::make_shared<expression::ID>(std::make_shared<ID>("self", l), l);
+    auto dd = std::make_shared<expression::ID>(std::make_shared<ID>("$$", l), l);
+    expression_list dd_list = { dd };
+    auto params = std::make_shared<constant::Tuple>(dd_list, l);
+    auto name = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>(id->name(), l), l);
+
+    expression_list ops = { self, name };
+    auto op1 = std::make_shared<expression::UnresolvedOperator>(operator_::Attribute, ops, l);
+    auto op2 = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>("push_back", l), l);
+    auto op3 = std::make_shared<expression::Constant>(params, l);
+
+    ops = { op1, op2, op3 };
+    auto push_back = std::make_shared<expression::UnresolvedOperator>(operator_::MethodCall, ops, l);
+    body_push->addStatement(std::make_shared<statement::Expression>(push_back, l));
+
+    auto hook_push = std::make_shared<binpac::Hook>(body_push, 254, false, true, l);
+    addHook(hook_push);
+
+    // If they have an &until, they also get another (even higher priority)
+    // hook that checks the condition.
+
+    auto until = attributes()->lookup("until");
+
+    if ( until ) {
+        auto stop = std::make_shared<statement::Block>(nullptr, l);
+        stop->addStatement(std::make_shared<statement::Stop>(l));
+
+        auto body_until = std::make_shared<statement::Block>(nullptr, l);
+        body_until->addStatement(std::make_shared<statement::IfElse>(until->value(), stop, nullptr, l));
+
+        auto hook_until = std::make_shared<binpac::Hook>(body_until, 255, false, true, l);
+        addHook(hook_until);
+
+        until->setValue(nullptr); // FIXME.
+    }
+}
+
+shared_ptr<unit::item::Field> unit::item::field::Container::field() const
+{
+    return _field;
+}
+
+unit::item::field::container::List::List(shared_ptr<ID> id,
+                                        shared_ptr<Field> field,
+                                        shared_ptr<Expression> cond,
+                                        const hook_list& hooks,
+                                        const attribute_list& attrs,
+                                        const expression_list& sinks,
+                                        const Location& l)
+    : Container(id, field, cond, hooks, attrs, sinks, l)
+{
+    _field = field;
+    addChild(_field);
+}
+
+shared_ptr<unit::item::Field> unit::item::field::container::List::field() const
+{
+    return _field;
+}
+
+shared_ptr<binpac::Type> unit::item::field::container::List::type()
+{
+    // FIXME: This is odd ... We should be able to return the new type
+    // directly, but if we do, some checkedTrait later fail with random
+    // crashes. Not sure what's going on, but storing the type via setType()
+    // appears to fix the problem.
+    setType(std::make_shared<type::List>(_field->type()));
+    return unit::Item::type();
 }
 
 unit::item::field::switch_::Case::Case(const expression_list& exprs, shared_ptr<Item> item, const Location& l) : Node(l)
@@ -953,7 +1170,7 @@ shared_ptr<unit::Item> unit::item::field::switch_::Case::item() const
 }
 
 unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& cases, const hook_list& hooks, const Location& l)
-    : Field(nullptr, nullptr, nullptr, hooks, attribute_list(), expression_list(), l)
+    : Field(nullptr, nullptr, nullptr, hooks, attribute_list(), expression_list(), expression_list(), l)
 {
     _expr = expr;
     addChild(_expr);
@@ -981,22 +1198,23 @@ unit::item::field::Switch::case_list unit::item::field::Switch::cases() const
 }
 
 unit::item::Variable::Variable(shared_ptr<binpac::ID> id, shared_ptr<binpac::Type> type, shared_ptr<Expression> default_, const hook_list& hooks, const Location& l)
-    : Item(id, type, hooks, attribute_list(), l)
+    : Item(id, type, hooks,
+           default_ ? attribute_list({ std::make_shared<Attribute>("default", default_) }) : attribute_list(),
+           l)
 {
-    _default = default_;
-    addChild(_default);
 }
 
 shared_ptr<Expression> unit::item::Variable::default_() const
 {
-    return _default;
+    auto attr = attributes()->lookup("default");
+    return attr ? attr->value() : nullptr;
 }
 
 unit::item::Property::Property(shared_ptr<binpac::ID> id, shared_ptr<binpac::Expression> value, const Location& l)
     : Item(id, nullptr, hook_list(), attribute_list(), l)
 {
     _value = value;
-    addChild(value);
+    addChild(_value);
 }
 
 
@@ -1108,6 +1326,19 @@ std::list<shared_ptr<unit::item::Property>> Unit::properties() const
     return m;
 }
 
+shared_ptr<unit::item::Property> Unit::property(const string& prop) const
+{
+    std::list<shared_ptr<unit::item::Property>> m;
+
+    for ( auto i : _items ) {
+        auto f = ast::tryCast<unit::item::Property>(i);
+
+        if ( f && f->id()->name() == string("%") + prop )
+            return f;
+    }
+
+    return nullptr;
+}
 
 shared_ptr<unit::Item> Unit::item(shared_ptr<ID> id) const
 {

@@ -565,7 +565,7 @@ inline void Visitor<AstInfo, Result, Arg1, Arg2>::postOrder(shared_ptr<NodeBase>
     pushCurrent(node);
 
     for ( auto i : *node )
-        this->preOrder(i);
+        this->postOrder(i);
 
     this->callAccept(node);
     popCurrent();

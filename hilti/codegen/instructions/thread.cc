@@ -9,7 +9,7 @@ using namespace codegen;
 void StatementBuilder::visit(statement::instruction::thread::GetContext* i)
 {
     auto tctx = cg()->llvmCurrentThreadContext();
-    auto ty = cg()->hiltiModule()->context();
+    auto ty = cg()->hiltiModule()->executionContext();
     assert(ty);
 
     tctx = cg()->builder()->CreateBitCast(tctx, cg()->llvmType(ty));
@@ -19,7 +19,7 @@ void StatementBuilder::visit(statement::instruction::thread::GetContext* i)
 
 void StatementBuilder::visit(statement::instruction::thread::SetContext* i)
 {
-    auto ty = cg()->hiltiModule()->context();
+    auto ty = cg()->hiltiModule()->executionContext();
     assert(ty);
 
     auto op1 = cg()->llvmValue(i->op1(), builder::reference::type(ty));
@@ -122,9 +122,9 @@ void StatementBuilder::visit(statement::instruction::thread::Schedule* i)
         assert(callee->module());
 
         auto src_scope = func->scope();
-        auto src_context = func->module()->context();
+        auto src_context = func->module()->executionContext();
         auto dst_scope = callee->scope();
-        auto dst_context = callee->module()->context();
+        auto dst_context = callee->module()->executionContext();
 
         tctx = _promoteContext(cg(), tctx, src_scope, src_context, dst_scope, dst_context);
         tctx = cg()->builder()->CreateBitCast(tctx, cg()->llvmTypePtr());

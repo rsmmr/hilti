@@ -36,13 +36,15 @@ protected:
     void visit(type::unit::item::field::Constant* c) override;
     void visit(type::unit::item::field::Ctor* r) override;
     void visit(type::unit::item::field::Switch* s) override;
-    void visit(type::unit::item::field::Type* t) override;
+    void visit(type::unit::item::field::AtomicType* t) override;
+    void visit(type::unit::item::field::Unit* t) override;
     void visit(type::unit::item::field::switch_::Case* c) override;
+    void visit(type::unit::item::field::container::List* l) override;
 
 private:
     bool _debug = false;
     std::ostream& _debug_out;
-    bool _in_decl;
+    int _in_decl;
     int _unit_counter = 1;
     std::map<string, int> _counters;
 };

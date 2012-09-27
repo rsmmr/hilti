@@ -1,5 +1,5 @@
 
-#include "binpac.h"
+#include "binpac++.h"
 
 // Automatically generated.
 namespace binpac { extern void __registerAllOperators(); }
@@ -11,7 +11,7 @@ void binpac::init()
 
 string binpac::version()
 {
-    return CONFIG_BINPAC_VERSION;
+    return configuration().version;
 }
 
 binpac::operator_list binpac::operators()

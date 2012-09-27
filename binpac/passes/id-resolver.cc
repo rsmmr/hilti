@@ -1,10 +1,11 @@
 
 #include "id-resolver.h"
 
+#include "attribute.h"
 #include "declaration.h"
 #include "expression.h"
-#include "statement.h"
 #include "scope.h"
+#include "statement.h"
 #include "type.h"
 
 using namespace binpac;
@@ -25,24 +26,31 @@ bool IDResolver::run(shared_ptr<ast::NodeBase> module)
 
 void IDResolver::visit(expression::ID* i)
 {
+    // Find the nearest to scope.
     shared_ptr<Scope> scope = nullptr;
 
-    // If we're right inside a unit, use that as our reference. Otherwise,
-    // the closed Block.
-    auto unit = i->firstParent<type::Unit>();
+    auto nodes = currentNodes();
 
-    if ( unit )
-        scope = unit->scope();
+    for ( auto i = nodes.rbegin(); i != nodes.rend(); i++ ) {
+        auto n = *i;
 
-    else {
-        auto body = current<statement::Block>();
+        auto unit = ast::tryCast<type::Unit>(n);
+        auto block = ast::tryCast<statement::Block>(n);
 
-        if ( ! body ) {
-            error(i, "ID expression outside of any scope");
-            return;
+        if ( block ) {
+            scope = block->scope();
+            break;
         }
 
-        scope = body->scope();
+        if ( unit ) {
+            scope = unit->scope();
+            break;
+        }
+    }
+
+    if ( ! scope ) {
+        error(i, "ID expression outside of any scope");
+        return;
     }
 
     auto id = i->sharedPtr<expression::ID>();
@@ -88,7 +96,6 @@ void IDResolver::visit(type::Unknown* t)
     }
 
     auto tv = nt->typeValue();
-
     t->replace(tv);
 
     if ( ! tv->id() )
@@ -136,8 +143,63 @@ void IDResolver::visit(declaration::Hook* h)
         return;
     }
 
-    // It's important here to run pre-order: setting the scope here links 
+    // It's important here to run pre-order: setting the scope here links
     // the hook's scope to the unit's before descending down into the
     // statement.
     h->hook()->setUnit(unit);
+}
+
+void IDResolver::visit(type::unit::item::field::Unknown* f)
+{
+    auto body = current<statement::Block>();
+
+    if ( ! body ) {
+        error(f, "ID expression outside of any scope");
+        return;
+    }
+
+    auto id = f->scopeID();
+
+    if ( ! id )
+        return;
+
+    auto expr = body->scope()->lookup(id);
+
+    if ( ! expr ) {
+        error(f, util::fmt("unknown ID %s", id->pathAsString()));
+        return;
+    }
+
+    auto attributes = f->attributes()->attributes();
+    auto condition = f->condition();
+    auto hooks = f->hooks();
+    auto name = f->id();
+    auto location = f->location();
+    auto params = f->parameters();
+    auto sinks = f->sinks();
+
+    shared_ptr<type::unit::item::Field> nfield = nullptr;
+
+    auto ctor = ast::tryCast<expression::Ctor>(expr);
+    auto constant = ast::tryCast<expression::Constant>(expr);
+    auto type = ast::tryCast<expression::Type>(expr);
+
+    if ( ctor )
+        nfield = std::make_shared<type::unit::item::field::Ctor>(name, ctor->ctor(), condition, hooks, attributes, sinks, location);
+
+    if ( constant )
+        nfield = std::make_shared<type::unit::item::field::Constant>(name, constant->constant(), condition, hooks, attributes, sinks, location);
+
+    if ( type ) {
+        auto tval = type->typeValue();
+        auto unit = ast::tryCast<type::Unit>(tval);
+
+        if ( unit )
+            nfield = std::make_shared<type::unit::item::field::Unit>(name, unit, condition, hooks, attributes, params, sinks, location);
+        else
+            nfield = std::make_shared<type::unit::item::field::AtomicType>(name, tval, condition, hooks, attributes, sinks, location);
+    }
+
+    assert(nfield);
+    f->replace(nfield);
 }

@@ -1,11 +1,10 @@
 // $Id$
 
-#ifndef HILTI_LIST_H
-#define HILTI_LIST_H
+#ifndef LIBHILTI_LIST_H
+#define LIBHILTI_LIST_H
 
 #include "exceptions.h"
 
-typedef struct __hlt_list hlt_list;
 typedef struct __hlt_list_node __hlt_list_node;
 typedef struct __hlt_iterator_list hlt_iterator_list;
 

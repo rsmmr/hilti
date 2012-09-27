@@ -2,8 +2,8 @@
 // Support functions HILTI's port data type.
 //
 
-#ifndef HILTI_PORT_H
-#define HILTI_PORT_H
+#ifndef LIBHILTI_PORT_H
+#define LIBHILTI_PORT_H
 
 #include "exceptions.h"
 

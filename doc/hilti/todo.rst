@@ -25,6 +25,12 @@ AST Infrastructure
     - Use the new scripts for declaring AST nodes, visitor interface,
       instruction classes via macros.
 
+HILTI Instruction Set
+---------------------
+
+- the ``struct`` commands should take normal IDs, rather than strings,
+  for field names.
+
 C/C++ Code
 ----------
 
@@ -40,6 +46,10 @@ Code Cleanup
   will then always return the full path.
 
 - Use ``std::make_shared`` consistently.
+
+- The CompilerContext uses its own debugging facilities to enables
+  "streams"; we should switch the logger over to that instead of using
+  "levels".
 
 Links
 -----

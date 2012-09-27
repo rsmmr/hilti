@@ -55,11 +55,11 @@ public:
    ///
    /// id: The name of declared constant.
    /// 
-   /// constant: The declared constant.
+   /// expr: The declared expression.
    ///
    /// l: An associated location.
-   Constant(shared_ptr<hilti::ID> id, shared_ptr<hilti::Constant> constant, const Location& l=Location::None)
-       : hilti::Declaration(id, l), ast::declaration::mixin::Constant<AstInfo>(this, constant) {}
+   Constant(shared_ptr<hilti::ID> id, shared_ptr<hilti::Expression> expr, const Location& l=Location::None)
+       : hilti::Declaration(id, l), ast::declaration::mixin::Constant<AstInfo>(this, expr) {}
 
    ACCEPT_VISITOR(hilti::Declaration);
 };

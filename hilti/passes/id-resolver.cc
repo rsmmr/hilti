@@ -75,7 +75,13 @@ void IdResolver::visit(type::Unknown* t)
     auto tv = nt->typeValue();
 
     t->replace(tv);
-    tv->setID(id);
+
+    if ( tv->id() ) {
+        if ( ! tv->id()->isScoped() )
+            tv->setID(id);
+    }
+    else
+        tv->setID(id);
 }
 
 void IdResolver::visit(Function* f)

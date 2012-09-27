@@ -12,6 +12,7 @@ typedef struct __hlt_type_info hlt_type_info;
 typedef struct __hlt_thread_mgr hlt_thread_mgr;
 typedef struct __hlt_callable hlt_callable;
 typedef struct __hlt_timer_mgr hlt_timer_mgr;
+typedef struct __hlt_list hlt_list;
 
 typedef struct __hlt_thread_mgr_blockable __hlt_thread_mgr_blockable;
 typedef struct __hlt_profiler_state __hlt_profiler_state;

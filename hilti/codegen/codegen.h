@@ -45,6 +45,12 @@ namespace symbols {
     static const char* TypeGlobals      = "hlt.globals.type";
     static const char* FuncGlobalsBase  = "hlt.globals.base";
 
+    // Indices of fields in MetaModule.
+    static const int MetaModuleVersion = 0;
+    static const int MetaModuleID = 1;
+    static const int MetaModuleFile = 2;
+    static const int MetaModuleExecutionContextType= 3;
+
     // Symbols created by the linker for access by libhilti.
     static const char* FunctionGlobalsInit = "__hlt_globals_init";
     static const char* FunctionGlobalsDtor = "__hlt_globals_dtor";
@@ -94,10 +100,7 @@ public:
    ///
    /// libdirs: Path where to find library modules that the code generator
    /// may need.
-   ///
-   /// cg: Debug level indicator the verbosity of the output the generator
-   /// produces during code generation. The higher, the more output.
-   CodeGen(const path_list& libdirs, int cg_debug_level);
+   CodeGen(const path_list& libdirs);
    virtual ~CodeGen();
 
    /// Main entry method for compiling a HILTI AST into an LLVM module.
@@ -2050,6 +2053,11 @@ private:
 
    // Creates exported type information.
    void createRtti();
+
+   // Creates a new function "name(void* ctx)" that the linker can later join
+   // with other functions of the same signature. Inside the function, ctx
+   // will be cast to an execution context (see method for more information).
+   llvm::Function* llvmPushLinkerJoinableFunction(const string& name);
 
    // Fills the current funtions's exit block and links it with all the
    // exit_points via a PHI instruction.

@@ -155,7 +155,7 @@ bool printTypeID(Printer<AstInfo>* printer, Ty* t)
     if ( ! t->id() )
         return false;
 
-    (*printer) << t->id();
+    (*printer) << t->id()->pathAsString();
     return true;
 }
 

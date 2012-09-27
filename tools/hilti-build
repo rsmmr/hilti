@@ -167,7 +167,7 @@ def compilePac(input, output):
 
     path = runConfig(HiltiConfig, "--binpac-binary")
 
-    binpac = "%s %s -o %s %s" % (path, flags, output, input)
+    binpac = "%s %s %s -o %s" % (path, input, flags, output)
 
     if not execute(binpac):
         error("error compiling %s, aborting" % input)
@@ -202,10 +202,7 @@ def runHiltic(inputs, output, proto=False):
     except:
         flags = []
 
-    if Options.libhiltimain:
-        flags += runConfig(HiltiConfig, "--hiltic-flags-main").split()
-    else:
-        flags += runConfig(HiltiConfig, "--hiltic-flags").split()
+    flags += runConfig(HiltiConfig, "--hiltic-flags").split()
 
     if Options.binpac:
         flags += runConfig(HiltiConfig, "--hiltic-binpac").split()
@@ -224,9 +221,9 @@ def runHiltic(inputs, output, proto=False):
     path = runConfig(HiltiConfig, "--hiltic-binary")
 
     if not proto:
-        hiltic = "%s %s -b -o %s %s" % (path, flags, output, inputs)
+        hiltic = "%s %s %s -b -o %s" % (path, inputs, flags, output)
     else:
-        hiltic = "%s %s -P -o %s %s" % (path, flags, output, inputs)
+        hiltic = "%s %s %s -P -o %s" % (path, inputs, flags, output)
 
     if not execute(hiltic):
         error("error running hiltic, aborting")
@@ -279,8 +276,6 @@ Input files may be end in one of the following extensions:
 
     optparser.add_option("-o", "--output", action="store", type="string", dest="output", default=None,
                          help="Name of destination (mandatory).", metavar="FILE")
-    optparser.add_option("-m", "--main", action="store_false", dest="libhiltimain", default=True,
-                         help="Link with libhilti instead of libhiltimain.")
     optparser.add_option("-T", "--time", action="store_true", dest="time", default=False,
                          help="Time individual steps (implies --verbose)")
     optparser.add_option("-t", "--tmps", action="store_true", dest="tmps", default=False,
@@ -297,6 +292,8 @@ Input files may be end in one of the following extensions:
                          help="Produce a bitcode file for JITing rather than an executable.")
     optparser.add_option("-d", "--debug", action="count", dest="debug", default=0,
                          help="Compile HILTI code with debugging support; multiple times increases level.")
+    optparser.add_option("-B", "--binpac", action="store_true", dest="binpac", default=False,
+                         help="Activate BinPAC++ support even if not *.pac2 files are given.")
 #    optparser.add_option("-S", "--stack-size", action="store", type="int", dest="stack", default=0,
 #                         help="Default HILTI stack size. Default is allocate each frame independently.")
 #    optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
@@ -341,7 +338,8 @@ for input in inputs:
     else:
         error("unsupported input file %s" % input)
 
-Options.binpac = (len(files[".pac2"]) != 0)
+if not Options.binpac:
+    Options.binpac = (len(files[".pac2"]) != 0)
 
 if Options.proto:
     for input in files[".hlt"]:
@@ -349,8 +347,6 @@ if Options.proto:
         runHiltic([input], output, proto=True)
 
     sys.exit(0)
-
-Options.binpac = ( len(files[".pac2"]) != 0)
 
 for input in files[".pac2"]:
     verbose("compiling %s ..." % input)

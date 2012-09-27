@@ -19,6 +19,9 @@ fi
 src=$2
 prefix=$3
 
+# Built libraries with RTTI.
+export REQUIRES_RTTI=1
+
 export PATH=$prefix/bin:$PATH
 
 if [ "$update" != "" ]; then

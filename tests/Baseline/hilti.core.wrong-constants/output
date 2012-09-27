@@ -1,5 +1,5 @@
 
 >>> "string"
 wrong-constants.hlt:9-9: error, constant initialization does not match type
-wrong-constants.hlt: Aborting due to parse error.
+wrong-constants.hlt: Aborting due to verification error.
 error running hiltic, aborting

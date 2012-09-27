@@ -75,6 +75,7 @@ using namespace binpac;
 %token         ADDR
 %token         ANY
 %token         ARROW
+%token         BITFIELD
 %token         BITSET
 %token         BOOL
 %token         BYTES
@@ -83,6 +84,7 @@ using namespace binpac;
 %token         CONSTANT
 %token         DEBUG_
 %token         DECLARE
+%token         DOTDOT
 %token         DOUBLE
 %token         END            0 "end of file"
 %token         ENUM
@@ -97,6 +99,10 @@ using namespace binpac;
 %token         IMPORT
 %token         IN
 %token         INT
+%token         INT8
+%token         INT16
+%token         INT32
+%token         INT64
 %token         INTERVAL
 %token         ITER
 %token         LIST
@@ -115,6 +121,11 @@ using namespace binpac;
 %token         TRY
 %token         TUPLE
 %token         TYPE
+%token         UINT
+%token         UINT8
+%token         UINT16
+%token         UINT32
+%token         UINT64
 %token         UNIT
 %token         VAR
 %token         VECTOR
@@ -139,12 +150,15 @@ using namespace binpac;
 %token         MOD
 %token         ELSE
 %token         OR
+%token         STOP
 
 // %type <expression>       expr
 // %type <expressions>      exprs
 //  %type <attributes>       attr_list opt_attr_list
 // %type <types>            type_list
 
+%type <bits>             bitfield_bits
+%type <bits_spec>        bitfield_bits_spec
 %type <constant>         constant
 %type <ctor>             ctor
 %type <declaration>      global_decl type_decl var_decl const_decl func_decl hook_decl local_decl
@@ -154,8 +168,8 @@ using namespace binpac;
 %type <id>               local_id scoped_id hook_id opt_unit_field_name property_id
 %type <statement>        stmt block
 %type <statements>       stmts opt_stmts
-%type <type>             base_type type enum_ bitset unit unit_field_type
-%type <type_and_expr>    type_or_init
+%type <type>             base_type type enum_ bitset unit atomic_type container_type bitfield
+%type <type_and_expr>    type_or_init type_or_opt_init
 %type <id_and_int>       id_with_int
 %type <id_and_ints>      id_with_ints
 %type <bval>             opt_debug opt_foreach opt_param_const
@@ -164,8 +178,9 @@ using namespace binpac;
 %type <parameters>       params opt_params opt_unit_params
 %type <hook>             unit_hook
 %type <hooks>            unit_hooks opt_unit_hooks
-%type <unit_item>        unit_field unit_item unit_prop unit_global_hook unit_var unit_switch
+%type <unit_item>        unit_item unit_prop unit_global_hook unit_var unit_switch
 %type <unit_items>       unit_items opt_unit_items
+%type <unit_field>       unit_field unit_field_in_container
 %type <linkage>          opt_linkage
 %type <attribute>        type_attr
 %type <attributes>       opt_type_attrs
@@ -212,21 +227,33 @@ global_decl   : type_decl                        { $$ = $1; }
               | stmt                             { driver.module()->body()->addStatement($1); }
               ;
 
-var_decl      : opt_linkage GLOBAL local_id type_or_init ';'
+var_decl      : opt_linkage GLOBAL local_id type_or_opt_init ';'
                                                  { auto var = std::make_shared<variable::Global>($3, $4.first, $4.second, loc(@$));
                                                    $$ = std::make_shared<declaration::Variable>($3, $1, var, loc(@$));
                                                  }
 
-const_decl    : opt_linkage CONST  local_id type_or_init ';'
-                                                 { auto var = std::make_shared<constant::Expression>($4.first, $4.second, loc(@$));
-                                                   $$ = std::make_shared<declaration::Constant>($3, $1, var, loc(@$));
+const_decl    : opt_linkage CONST local_id type_or_init ';'
+                                                 { auto type = $4.first;
+                                                   auto init = $4.second;
+
+                                                   if ( init->canCoerceTo(type) )
+                                                       init = init->coerceTo(type);
+                                                   else {
+                                                       error(@$, "cannot coerce init expression to type");
+                                                       type = init->type();
+                                                   }
+
+                                                   $$ = std::make_shared<declaration::Constant>($3, $1, init, loc(@$));
                                                  }
 
 opt_linkage   : EXPORT                           { $$ = Declaration::EXPORTED; }
               | /* empty */                      { $$ = Declaration::PRIVATE; }
 
 
-type_or_init  : ':' base_type opt_init_expr      { $$ = std::make_tuple($2, $3); }
+type_or_init  : ':' base_type init_expr          { $$ = std::make_tuple($2, $3); }
+              | init_expr                        { $$ = std::make_tuple($1->type(), $1); }
+
+type_or_opt_init  : ':' base_type opt_init_expr  { $$ = std::make_tuple($2, $3); }
               | init_expr                        { $$ = std::make_tuple($1->type(), $1); }
 
 opt_init_expr : init_expr                        { $$ = $1; }
@@ -274,6 +301,7 @@ stmt          : block                            { $$ = $1; }
               | expr ';'                         { $$ = std::make_shared<statement::Expression>($1, loc(@$)); }
               | PRINT exprs ';'                  { $$ = std::make_shared<statement::Print>($2, loc(@$)); }
               | RETURN opt_expr ';'              { $$ = std::make_shared<statement::Return>($2, loc(@$)); }
+              | STOP ';'                         { $$ = std::make_shared<statement::Stop>(loc(@$)); }
               | IF '(' expr ')' stmt             { $$ = std::make_shared<statement::IfElse>($3, $5, nullptr, loc(@$)); }
               | IF '(' expr ')' stmt ELSE stmt   { $$ = std::make_shared<statement::IfElse>($3, $5, $7, loc(@$)); }
 
@@ -297,7 +325,10 @@ local_decl    : LOCAL local_id ':' type opt_expr { auto v = std::make_shared<var
 type          : base_type                        { $$ = $1; }
               | scoped_id                        { $$ = std::make_shared<type::Unknown>($1, loc(@$)); }
 
-base_type     : ANY                              { $$ = std::make_shared<type::Any>(loc(@$)); }
+base_type     : atomic_type                      { $$ = $1; }
+              | container_type                   { $$ = $1; }
+
+atomic_type   : ANY                              { $$ = std::make_shared<type::Any>(loc(@$)); }
               | ADDR                             { $$ = std::make_shared<type::Address>(loc(@$)); }
               | BOOL                             { $$ = std::make_shared<type::Bool>(loc(@$)); }
               | BYTES                            { $$ = std::make_shared<type::Bytes>(loc(@$)); }
@@ -312,18 +343,33 @@ base_type     : ANY                              { $$ = std::make_shared<type::A
               | TIMER                            { $$ = std::make_shared<type::Timer>(loc(@$)); }
               | VOID                             { $$ = std::make_shared<type::Void>(loc(@$)); }
 
-              | INT '<' CINTEGER '>'             { $$ = std::make_shared<type::Integer>($3, loc(@$)); }
-              | ITER '<' type '>'                { $$ = std::make_shared<type::Iterator>($3, loc(@$)); }
-              | LIST '<' type '>'                { $$ = std::make_shared<type::List>($3, loc(@$)); }
-              | MAP '<' type ',' type '>'        { $$ = std::make_shared<type::Map>($3, $5, loc(@$)); }
-              | REGEXP                           { $$ = std::make_shared<type::RegExp>(attribute_list(), loc(@$)); }
-              | SET  '<' type '>'                { $$ = std::make_shared<type::Set>($3, loc(@$)); }
-//            | TUPLE '<' type_list '>'          { $$ = std::make_shared<type::Tuple>($3, loc(@$)); }
-              | VECTOR '<' type '>'              { $$ = std::make_shared<type::Vector>($3, loc(@$)); }
+              | INT '<' CINTEGER '>'             { $$ = std::make_shared<type::Integer>($3, true, loc(@$)); }
+              | INT8                             { $$ = std::make_shared<type::Integer>(8, true, loc(@$)); }
+              | INT16                            { $$ = std::make_shared<type::Integer>(16, true, loc(@$)); }
+              | INT32                            { $$ = std::make_shared<type::Integer>(32, true, loc(@$)); }
+              | INT64                            { $$ = std::make_shared<type::Integer>(64, true, loc(@$)); }
 
+              | UINT '<' CINTEGER '>'            { $$ = std::make_shared<type::Integer>($3, false, loc(@$)); }
+              | UINT8                             { $$ = std::make_shared<type::Integer>(8, false, loc(@$)); }
+              | UINT16                            { $$ = std::make_shared<type::Integer>(16, false, loc(@$)); }
+              | UINT32                            { $$ = std::make_shared<type::Integer>(32, false, loc(@$)); }
+              | UINT64                            { $$ = std::make_shared<type::Integer>(64, false, loc(@$)); }
+
+              | ITER '<' type '>'                { $$ = std::make_shared<type::Iterator>($3, loc(@$)); }
+              | REGEXP                           { $$ = std::make_shared<type::RegExp>(attribute_list(), loc(@$)); }
+//            | TUPLE '<' type_list '>'          { $$ = std::make_shared<type::Tuple>($3, loc(@$)); }
+
+              | bitfield                         { $$ = $1; }
               | bitset                           { $$ = $1; }
               | enum_                            { $$ = $1; }
               | unit                             { $$ = $1; }
+              ;
+
+container_type:
+                LIST '<' type '>'                { $$ = std::make_shared<type::List>($3, loc(@$)); }
+              | MAP '<' type ',' type '>'        { $$ = std::make_shared<type::Map>($3, $5, loc(@$)); }
+              | SET  '<' type '>'                { $$ = std::make_shared<type::Set>($3, loc(@$)); }
+              | VECTOR '<' type '>'              { $$ = std::make_shared<type::Vector>($3, loc(@$)); }
               ;
 
 bitset        : BITSET '{' id_with_ints '}'      { $$ = std::make_shared<type::Bitset>($3, loc(@$)); }
@@ -338,6 +384,21 @@ id_with_ints  : id_with_ints ',' id_with_int     { $$ = $1; $$.push_back($3); }
 id_with_int   : local_id                         { $$ = std::make_pair($1, -1); }
               | local_id '=' CINTEGER            { $$ = std::make_pair($1, $3); }
               ;
+
+bitfield      : BITFIELD '(' CINTEGER ')' '{' bitfield_bits '}'
+                                                 { auto itype = std::make_shared<type::Integer>($3, false, loc(@$));
+                                                   itype->setBits($6);
+                                                   $$ = itype;
+                                                 }
+
+bitfield_bits:  bitfield_bits_spec bitfield_bits { $$ = $2; $$.push_back($1); }
+              | /* empty */                      { $$ = type::Integer::bits_list(); }
+
+bitfield_bits_spec
+              : local_id ':' CINTEGER DOTDOT CINTEGER opt_type_attrs ';'
+                                                 { $$ = std::make_shared<type::integer::Bits>($1, $3, $5, $6, loc(@$)); }
+              | local_id ':' CINTEGER opt_type_attrs ';'
+                                                 { $$ = std::make_shared<type::integer::Bits>($1, $3, $3, $4, loc(@$)); }
 
 opt_unit_params
               : '(' opt_params ')'               { $$ = $2; }
@@ -359,22 +420,37 @@ unit_item     : unit_var                         { $$ = $1; }
               | unit_global_hook                 { $$ = $1; }
               | unit_prop                        { $$ = $1; }
 
-unit_var      : VAR local_id ':' base_type opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::Variable>($2, $4, nullptr, $5); }
+unit_var      : VAR local_id ':' base_type opt_init_expr opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::Variable>($2, $4, $5, $6, loc(@$)); }
 
 unit_global_hook : ON hook_id unit_hooks         { $$ = std::make_shared<type::unit::item::GlobalHook>($2, $3, loc(@$)); }
 
 unit_prop     : property_id ';'                  { $$ = std::make_shared<type::unit::item::Property>($1, nullptr, loc(@$)); }
               | property_id '=' expr ';'         { $$ = std::make_shared<type::unit::item::Property>($1, $3, loc(@$)); }
 
-unit_field    : opt_unit_field_name unit_field_type opt_field_args opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
-                                                 { $$ = std::make_shared<type::unit::item::field::Type>($1, $2, $5, $7, $4, $3, $6, loc(@$)); }
+unit_field    : opt_unit_field_name atomic_type opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::field::AtomicType>($1, $2, $4, $6, $3, $5, loc(@$)); }
 
               | opt_unit_field_name constant opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::field::Constant>($1, $2, $4, $6, $3, $5, loc(@$)); }
 
               | opt_unit_field_name ctor opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::field::Ctor>($1, $2, $4, $6, $3, $5, loc(@$)); }
+
+              | opt_unit_field_name LIST '<' atomic_type '>' opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 {
+                                                  auto t = std::make_shared<type::unit::item::field::AtomicType>(nullptr, $4, nullptr, hook_list(), attribute_list(), expression_list(), loc(@$));
+                                                  $$ = std::make_shared<type::unit::item::field::container::List>($1, t, $7, $9, $6, $8, loc(@$)); }
+
+              | opt_unit_field_name LIST '<' unit_field_in_container '>' opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::field::container::List>($1, $4, $7, $9, $6, $8, loc(@$)); }
+
+              | opt_unit_field_name local_id opt_field_args opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
+                                                 { $$ = std::make_shared<type::unit::item::field::Unknown>($1, $2, $5, $7, $4, $3, $6, loc(@$)); }
+
+unit_field_in_container :
+              local_id opt_field_args          { $$ = std::make_shared<type::unit::item::field::Unknown>(nullptr, $1, nullptr, hook_list(), attribute_list(), $2, expression_list(), loc(@$)); }
+
 
 unit_switch   : SWITCH '(' expr ')' '{' unit_switch_cases '}' ';'
                                                  { $$ = std::make_shared<type::unit::item::field::Switch>($3, $6, hook_list(), loc(@$)); }
@@ -387,8 +463,6 @@ unit_switch_cases
 unit_switch_case
               : exprs ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>($1, $3, loc(@$)); }
               | '*'   ARROW unit_field           { $$ = std::make_shared<type::unit::item::field::switch_::Case>(expression_list(), $3, loc(@$)); }
-
-unit_field_type: type                            { $$ = $1; }
 
 opt_type_attrs: type_attr opt_type_attrs         { $$ = $2; $$.push_front($1); }
               | /* empty */                      { $$ = attribute_list(); }

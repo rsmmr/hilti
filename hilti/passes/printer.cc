@@ -226,6 +226,13 @@ void Printer::visit(expression::Type* t)
     p << (id ? scopedID(t, id) : t->type()->render());
 }
 
+void Printer::visit(expression::Default* t)
+{
+    Printer& p = *this;
+    auto id = t->type()->id();
+    p << t->type()->render() << "()";
+}
+
 void Printer::visit(expression::Block* b)
 {
     Printer& p = *this;
@@ -612,6 +619,8 @@ void Printer::visit(type::Enum* c)
 
         first = false;
     }
+
+    p << " }";
 }
 
 void Printer::visit(type::Interval* c)

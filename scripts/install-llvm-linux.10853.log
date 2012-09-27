@@ -1,0 +1,1 @@
+usage: install-llvm-linux [--install|--update] <where-to-clone-into> <install-prefix>

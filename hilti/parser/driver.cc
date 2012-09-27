@@ -7,20 +7,21 @@
 
 using namespace hilti_parser;
 
-shared_ptr<hilti::Module> Driver::parse(std::istream& in, const std::string& sname)
+shared_ptr<hilti::Module> Driver::parse(shared_ptr<CompilerContext> ctx, std::istream& in, const std::string& sname)
 {
     _sname = sname;
+    _compiler_context = ctx;
 
-    Context context;
-    _context = &context;
+    ParserContext context;
+    _parser_context = &context;
 
     Scanner scanner(&in);
     _scanner = &scanner;
-    _scanner->set_debug(0);
+    _scanner->set_debug(_dbg_scanner);
 
     Parser parser(*this);
     _parser = &parser;
-    _parser->set_debug_level(0);
+    _parser->set_debug_level(_dbg_parser);
     _parser->parse();
 
     auto module = _mbuilder->module();
@@ -61,4 +62,10 @@ void Driver::disablePatternMode()
 void Driver::enablePatternMode()
 {
     _scanner->enablePatternMode();
+}
+
+void Driver::enableDebug(bool scanner, bool parser)
+{
+    _dbg_scanner = scanner;
+    _dbg_parser = parser;
 }

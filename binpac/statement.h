@@ -310,6 +310,19 @@ private:
     shared_ptr<binpac::Expression> _expr;
 };
 
+/// A hook "stop" statement, as used in \c foreach hooks.
+class Stop : public Statement
+{
+public:
+    /// Constructor.
+    ///
+    /// l: Associated location information.
+    Stop(const Location& l=Location::None);
+
+    ACCEPT_VISITOR(Statement);
+};
+
+
 }
 
 }

@@ -122,26 +122,26 @@ class Constant : public __DECLARATION_MIXIN, public DeclarationOverrider<AstInfo
 public:
     typedef typename AstInfo::declaration Declaration;
     typedef typename AstInfo::id ID;
-    typedef typename AstInfo::constant AIConstant;
+    typedef typename AstInfo::expression AIExpression;
 
     // Constructor.
     //
     // id: The ID associated with the constant.
     //
     // constant: The constant being declared.
-    Constant(Declaration* target, shared_ptr<AIConstant> constant) : __DECLARATION_MIXIN(target, this) {
-       _constant = constant;
-       target->addChild(_constant);
+    Constant(Declaration* target, shared_ptr<AIExpression> expr) : __DECLARATION_MIXIN(target, this) {
+       _expr = expr;
+       target->addChild(_expr);
     }
 
-    /// Returns the declared constant.
-    shared_ptr<AIConstant> constant() const { return _constant; }
+    /// Returns the declared value.
+    shared_ptr<AIExpression> constant() const { return _expr; }
 
     /// Constants are always constant.
     bool isConstant() const /* override */ { return true; }
 
 private:
-    node_ptr<AIConstant> _constant;
+    node_ptr<AIExpression> _expr;
 };
 
 /// A mix-in class to define a type declaration.

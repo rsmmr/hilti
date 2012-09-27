@@ -4,8 +4,8 @@
  *
  */
 
-#ifndef HILTI_CHANNEL_H
-#define HILTI_CHANNEL_H
+#ifndef LIBHILTI_CHANNEL_H
+#define LIBHILTI_CHANNEL_H
 
 #include "types.h"
 #include "exceptions.h"

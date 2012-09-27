@@ -2,8 +2,8 @@
 /// Support functions for HILTI's integer data type.
 ///
 
-#ifndef HILTI_INT_H
-#define HILTI_INT_H
+#ifndef LIBHILTI_INT_H
+#define LIBHILTI_INT_H
 
 #include "types.h"
 

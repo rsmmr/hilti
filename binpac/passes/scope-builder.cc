@@ -30,6 +30,13 @@ bool ScopeBuilder::run(shared_ptr<ast::NodeBase> module)
         return false;
 
     for ( auto i : m->importedIDs() ) {
+
+        auto m1 = util::strtolower(i->pathAsString());
+        auto m2 = util::strtolower(m->id()->pathAsString());
+
+        if ( m1 == m2 )
+            continue;
+
         shared_ptr<Module> other = _context->load(i->name());
         if ( ! other )
             fatalError("import failed");
@@ -113,15 +120,25 @@ void ScopeBuilder::visit(declaration::Type* t)
     if ( unit ) {
         auto uscope = unit->scope();
         uscope->insert(std::make_shared<ID>("self"), std::make_shared<expression::ParserState>(expression::ParserState::SELF, nullptr, unit));
-        uscope->insert(std::make_shared<ID>("$$"), std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR));
         uscope->setParent(current<Module>()->body()->scope());
 
         for ( auto p : unit->parameters() )
             uscope->insert(p->id(), std::make_shared<expression::ParserState>(expression::ParserState::PARAMETER, p->id()));
 
         for ( auto i : unit->items() ) {
-            for ( auto h : i->hooks() )
+            for ( auto h : i->hooks() ) {
                 h->setUnit(unit);
+
+                shared_ptr<Type> dd = nullptr;
+
+                if ( ! h->foreach() )
+                    dd = i->type();
+                else
+                    dd = ast::type::checkedTrait<type::trait::Container>(i->type())->elementType();
+
+                h->body()->scope()->insert(std::make_shared<ID>("$$"),
+                                           std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR, nullptr, dd));
+            }
         }
     }
 }
@@ -133,9 +150,7 @@ void ScopeBuilder::visit(declaration::Constant* c)
     if ( ! scope )
         return;
 
-    auto constant = c->constant();
-    auto expr = shared_ptr<expression::Constant>(new expression::Constant(constant, constant->location()));
-    scope->insert(c->id(), expr);
+    scope->insert(c->id(), c->constant());
 }
 
 void ScopeBuilder::visit(declaration::Function* f)

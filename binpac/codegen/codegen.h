@@ -125,6 +125,12 @@ public:
     /// u: The unit type to generate the hooks for.
     void hiltiUnitHooks(shared_ptr<type::Unit> unit);
 
+    /// Generates code to execute the hooks associated with an unit item.
+    /// This must only be called while a unit is being parsed.
+    ///
+    /// f: The field.
+    void hiltiRunFieldHooks(shared_ptr<type::unit::Item> item);
+
     // Returns the HILTI struct type for a unit's parse object.
     //
     /// u: The unit to return the type for.

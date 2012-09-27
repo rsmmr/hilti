@@ -14,8 +14,8 @@
 // The queue mechanism is not visible at the HILTI level, this API is
 // strictly internal.
 
-#ifndef HILTI_CMDQUEUE_H
-#define HILTI_CMDQUEUE_H
+#ifndef LIBHILTI_CMDQUEUE_H
+#define LIBHILTI_CMDQUEUE_H
 
 #include <stdint.h>
 

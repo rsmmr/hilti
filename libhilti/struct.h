@@ -2,8 +2,8 @@
 /// Support functions for HILTI's struct data type.
 ///
 
-#ifndef HILTI_TUPLE_H
-#define HILTI_TUPLE_H
+#ifndef LIBHILTI_TUPLE_H
+#define LIBHILTI_TUPLE_H
 
 #include "types.h"
 

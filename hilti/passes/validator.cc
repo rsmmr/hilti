@@ -168,7 +168,7 @@ void Validator::visit(statement::instruction::thread::GetContext* s)
     auto func = current<Function>();
     assert(func);
 
-    auto ctx = func->module()->context();
+    auto ctx = func->module()->executionContext();
 
     if ( ! ctx )
         error(s, "module does not define an execution context");
@@ -186,7 +186,7 @@ void Validator::visit(statement::instruction::thread::SetContext* s)
     auto m = current<Module>();
     assert(m);
 
-    auto ctx = m->context();
+    auto ctx = m->executionContext();
 
     if ( ! ctx )
         error(s, "module does not define an execution context");
@@ -293,9 +293,9 @@ void Validator::visit(statement::instruction::thread::Schedule* s)
         assert(callee->module());
 
         auto src_scope = func->scope();
-        auto src_context = module->context();
+        auto src_context = module->executionContext();
         auto dst_scope = callee->scope();
-        auto dst_context = callee->module()->context();
+        auto dst_context = callee->module()->executionContext();
 
         if ( ! src_context ) {
             error(s, "current module does not define a thread context");
@@ -392,7 +392,7 @@ void Validator::visit(declaration::Type* t)
     auto scope = ast::as<type::Scope>(t->type());
 
     if ( scope ) {
-        auto context = current<Module>()->context();
+        auto context = current<Module>()->executionContext();
 
         if ( ! context ) {
             error(t, "module does not define a context");
@@ -794,7 +794,13 @@ void Validator::visit(expression::Constant* e)
 void Validator::visit(expression::Ctor* e)
 {
     if ( ! ast::isA<type::ValueType>(e->type()) )
-        internalError(e, "ctor expression's type need to be of heap type");
+        internalError(e, "ctor expression's type needs to be of value type");
+}
+
+void Validator::visit(expression::Default* e)
+{
+    if ( ! ast::isA<type::ValueType>(e->type()) )
+        error(e, "constructor's type needs to be of value type");
 }
 
 void Validator::visit(expression::Function* e)

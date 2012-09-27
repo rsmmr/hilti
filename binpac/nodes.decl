@@ -13,7 +13,7 @@ Module
 Grammar
 
 Constant
-constant::Expression
+# constant::Expression
 constant::String
 constant::Bool
 constant::Integer
@@ -74,6 +74,7 @@ production::Constant
 production::Ctor
 production::Variable
 production::While
+production::Loop
 
 Statement
 statement::Block
@@ -83,6 +84,7 @@ statement::IfElse
 statement::NoOp
 statement::Print
 statement::Return
+statement::Stop
 statement::Try
 statement::try_::Catch
 
@@ -121,6 +123,7 @@ type::Unknown
 type::Unset
 type::Vector
 type::Void
+type::integer::Bits
 type::iterator::Bytes
 type::iterator::List
 type::iterator::Regexp
@@ -134,9 +137,13 @@ type::unit::item::GlobalHook
 type::unit::item::Property
 type::unit::item::Variable
 type::unit::item::field::Constant
+type::unit::item::field::Container
+type::unit::item::field::container::List
 type::unit::item::field::Ctor
 type::unit::item::field::Switch
-type::unit::item::field::Type
+type::unit::item::field::AtomicType
+type::unit::item::field::Unit
+type::unit::item::field::Unknown
 type::unit::item::field::switch_::Case
 
 Variable

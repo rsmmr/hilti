@@ -6,5 +6,5 @@ wrong-op-types.hlt:5-6: error, operands do not match instruction int.add
   expected one of:
     int.add: int<*>, int<*> -> int<*>
  [pass::InstructionResolver]
-wrong-op-types.hlt: Aborting due to resolver error.
+wrong-op-types.hlt: Aborting due to verification error.
 error running hiltic, aborting
