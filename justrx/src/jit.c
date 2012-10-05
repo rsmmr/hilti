@@ -55,7 +55,7 @@ LLVMTypeRef JITDFAStateFnType()
 {
     /*
     Prototype:
-    jrx_accept_id stateX (char* string, jrx_offset length, jrx_offset offset, jrx_char prev_cp,
+    jrx_accept_id stateX (char* string, jrx_offset end_offset, jrx_offset cur_offset, jrx_char prev_cp,
                           jrx_accept_id last_accept_id, jrx_offset last_accept_offset,
                           jrx_assertion first, jrx_assertion last,
                           opaque *match_state)
@@ -278,7 +278,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
 
     // Parameters
     LLVMValueRef str = LLVMGetParam(fn, 0);
-    LLVMValueRef len = LLVMGetParam(fn, 1); // Len does not include trailing null
+    LLVMValueRef end_offset = LLVMGetParam(fn, 1); // Offset of last character
     LLVMValueRef offset = LLVMGetParam(fn, 2);
     LLVMValueRef prev_cp = LLVMGetParam(fn, 3);
     LLVMValueRef last_accept_id = LLVMGetParam(fn, 4);
@@ -303,7 +303,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
         last_accept_offset = offset;
     }
 
-    // If offset>len:
+    // If offset>end_offset:
     // set this fcn as the cur state
     // set prev to last_cp
     // return last_accept. this might be -1 to indicate partial match
@@ -312,7 +312,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
         LLVMBasicBlockRef save_state_block = LLVMAppendBasicBlock(fn, "save_state");
         LLVMBasicBlockRef skip_block = LLVMAppendBasicBlock(fn, "");
 
-        LLVMValueRef if_past_end = LLVMBuildICmp(b, LLVMIntUGT, offset, len, "offset>len");
+        LLVMValueRef if_past_end = LLVMBuildICmp(b, LLVMIntUGT, offset, end_offset, "offset>end_offset");
         LLVMBuildCondBr(b, if_past_end, save_state_block, skip_block);
 
         LLVMPositionBuilderAtEnd(b, save_state_block);
@@ -347,7 +347,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
         if ((requested_assertions & JRX_ASSERTION_EOD) ||
             (requested_assertions & JRX_ASSERTION_EOL)) {
             current_assertions =
-                LLVMBuildSelect(b, LLVMBuildICmp(b, LLVMIntEQ, offset, len, "offset==len"),
+                LLVMBuildSelect(b, LLVMBuildICmp(b, LLVMIntEQ, offset, end_offset, "offset==end_offset"),
                                 LLVMBuildOr(b, current_assertions, assert_last, ""),
                                 current_assertions,
                                 "");
@@ -401,7 +401,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
             LLVMBuildCondBr(b, ccl_match, transition_block, next_block);
 
             LLVMPositionBuilderAtEnd(b, transition_block);
-            LLVMValueRef trans_fn_args[] = { str, len, offset, cp,
+            LLVMValueRef trans_fn_args[] = { str, end_offset, offset, cp,
                                              last_accept_id, last_accept_offset,
                                              JIT_ASSERTION(JRX_ASSERTION_NONE), assert_last,
                                              match_state };
