@@ -55,13 +55,14 @@ LLVMTypeRef JITDFAStateFnType()
 {
     /*
     Prototype:
-    jrx_accept_id stateX (char* string, jrx_offset length, jrx_char prev_cp,
+    jrx_accept_id stateX (char* string, jrx_offset length, jrx_offset offset, jrx_char prev_cp,
                           jrx_accept_id last_accept_id, jrx_offset last_accept_offset,
                           jrx_assertion first, jrx_assertion last,
                           opaque *match_state)
     */
     LLVMTypeRef arg_types[] = {
             LLVMPointerType(LLVMInt8Type(), 0),
+            JRX_OFFSET_LLVM_TYPE,
             JRX_OFFSET_LLVM_TYPE,
             JRX_CHAR_LLVM_TYPE,
             JRX_ACCEPT_ID_LLVM_TYPE,
@@ -70,7 +71,7 @@ LLVMTypeRef JITDFAStateFnType()
             JRX_ASSERTION_LLVM_TYPE,
             LLVMPointerType(JIT_MATCH_STATE_STRUCT_LLVM_TYPE, 0)
         };
-    return LLVMFunctionType(JRX_ACCEPT_ID_LLVM_TYPE, arg_types, 8, 0);
+    return LLVMFunctionType(JRX_ACCEPT_ID_LLVM_TYPE, arg_types, 9, 0);
 }
 
 #define JIT_SAVE_FN_LLVM_TYPE JITSaveStateFnType()
@@ -277,27 +278,32 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
 
     // Parameters
     LLVMValueRef str = LLVMGetParam(fn, 0);
-    LLVMValueRef len = LLVMGetParam(fn, 1);
-    LLVMValueRef prev_cp = LLVMGetParam(fn, 2);
-    LLVMValueRef last_accept_id = LLVMGetParam(fn, 3);
-    LLVMValueRef last_accept_offset = LLVMGetParam(fn, 4);
-    LLVMValueRef assert_first = LLVMGetParam(fn, 5);
-    LLVMValueRef assert_last = LLVMGetParam(fn, 6);
-    LLVMValueRef match_state = LLVMGetParam(fn, 7);
+    LLVMValueRef len = LLVMGetParam(fn, 1); // Len does not include trailing null
+    LLVMValueRef offset = LLVMGetParam(fn, 2);
+    LLVMValueRef prev_cp = LLVMGetParam(fn, 3);
+    LLVMValueRef last_accept_id = LLVMGetParam(fn, 4);
+    LLVMValueRef last_accept_offset = LLVMGetParam(fn, 5);
+    LLVMValueRef assert_first = LLVMGetParam(fn, 6);
+    LLVMValueRef assert_last = LLVMGetParam(fn, 7);
+    LLVMValueRef match_state = LLVMGetParam(fn, 8);
 
     // Make entry
     LLVMPositionBuilderAtEnd(b, LLVMAppendBasicBlock(fn, "entry"));
-    LLVMValueRef cp = LLVMBuildZExt(b, LLVMBuildLoad(b, str, ""),
-                                       JRX_CHAR_LLVM_TYPE, "cp");
+    LLVMValueRef cp;
+    {
+        LLVMValueRef idx[] = { offset };
+        cp = LLVMBuildZExt(b, LLVMBuildLoad(b, LLVMBuildGEP(b, str, idx, 1, "str+offset"), "str[offset]"),
+                              JRX_CHAR_LLVM_TYPE, "cp");
+    }
 
     // If this is an Accept state, set last_accept to my aid
     if (state->accepts) {
         jrx_accept_id aid = vec_dfa_accept_get(state->accepts, 0).aid;
         last_accept_id = JIT_ACCEPT_ID(aid);
-        last_accept_offset = len;
+        last_accept_offset = offset;
     }
 
-    // If len==0:
+    // If offset>len:
     // set this fcn as the cur state
     // set prev to last_cp
     // return last_accept. this might be -1 to indicate partial match
@@ -306,7 +312,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
         LLVMBasicBlockRef save_state_block = LLVMAppendBasicBlock(fn, "save_state");
         LLVMBasicBlockRef skip_block = LLVMAppendBasicBlock(fn, "");
 
-        LLVMValueRef if_past_end = LLVMBuildICmp(b, LLVMIntEQ, len, JIT_ZERO, "len==0");
+        LLVMValueRef if_past_end = LLVMBuildICmp(b, LLVMIntUGT, offset, len, "offset>len");
         LLVMBuildCondBr(b, if_past_end, save_state_block, skip_block);
 
         LLVMPositionBuilderAtEnd(b, save_state_block);
@@ -325,10 +331,10 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
     // If any transition ccl requires an assertion,
     // determine what assertions apply here, otherwise don't bother
     LLVMValueRef current_assertions = JIT_ASSERTION(JRX_ASSERTION_NONE);
+    jrx_assertion requested_assertions = necessary_assertions(state, ci->dfa->ccls);
+    if (requested_assertions != JRX_ASSERTION_NONE)
     {
         JIT_ENTER_BLOCK(b, fn, "assertions");
-
-        jrx_assertion requested_assertions = necessary_assertions(state, ci->dfa->ccls);
 
         if ((requested_assertions & JRX_ASSERTION_BOD) ||
             (requested_assertions & JRX_ASSERTION_BOL)) {
@@ -341,7 +347,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
         if ((requested_assertions & JRX_ASSERTION_EOD) ||
             (requested_assertions & JRX_ASSERTION_EOL)) {
             current_assertions =
-                LLVMBuildSelect(b, LLVMBuildICmp(b, LLVMIntEQ, len, JIT_ONE, "len==1"),
+                LLVMBuildSelect(b, LLVMBuildICmp(b, LLVMIntEQ, offset, len, "offset==len"),
                                 LLVMBuildOr(b, current_assertions, assert_last, ""),
                                 current_assertions,
                                 "");
@@ -376,9 +382,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
     {
         JIT_ENTER_BLOCK(b, fn, "increment");
 
-        LLVMValueRef idx[] = { JIT_ONE };
-        str = LLVMBuildGEP(b, str, idx, 1, "str++");
-        len = LLVMBuildSub(b, len, JIT_ONE, "len--");
+        offset = LLVMBuildAdd(b, offset, JIT_ONE, "offset++");
     }
 
     // For each transition
@@ -397,12 +401,12 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
             LLVMBuildCondBr(b, ccl_match, transition_block, next_block);
 
             LLVMPositionBuilderAtEnd(b, transition_block);
-            LLVMValueRef trans_fn_args[] = { str, len, cp,
+            LLVMValueRef trans_fn_args[] = { str, len, offset, cp,
                                              last_accept_id, last_accept_offset,
                                              JIT_ASSERTION(JRX_ASSERTION_NONE), assert_last,
                                              match_state };
             LLVMValueRef trans_result = LLVMBuildCall(b, jit_dfa_state_fn_ref(ci, trans.succ),
-                                                      trans_fn_args, 8, "");
+                                                      trans_fn_args, 9, "");
             LLVMSetTailCall(trans_result, 1); // do i need to use LLVMGetLastInstruction?
             LLVMBuildRet(b, trans_result);
 
@@ -461,10 +465,10 @@ extern void _jit_ext_save_match_state(jrx_match_state *ms,
                                       jrx_dfa_state_id state_id,
                                       int (*state_fn)() )
 {
-    ms->acc       = accept_id;
-    ms->offset    = accept_offset;
-    ms->previous  = prev_cp;
-    ms->state     = state_id;
+    ms->acc       =  accept_id;
+    ms->offset    += accept_offset;
+    ms->previous  =  prev_cp;
+    ms->state     =  state_id;
     //ms->jit_state = state_fn;
 }
 
@@ -549,10 +553,8 @@ void jit_regset_compile(jrx_regex_t *preg)
 /* Execution */
 int jit_regexec_partial_min(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms, int find_partial_matches)
 {
-    // Save orig offset
     //lookup state fn based on ms->state
-    //Call w/ necessary params
-    // Update offset = orig_offset + (len - faux offset)
+    //Call w/ necessary params & len - 1
     //Return result
 
     return 0;
