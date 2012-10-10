@@ -19,9 +19,9 @@
 // _isword
 #include "jlocale.h"
 
+#include "jit.h"
 
 /** Compiler meta */
-typedef struct jrx_jit jrx_jit;
 struct jrx_jit
 {
     LLVMModuleRef module;
@@ -29,7 +29,9 @@ struct jrx_jit
     LLVMPassManagerRef pass_mgr;
     LLVMExecutionEngineRef exec_engine;
     jrx_dfa *dfa;
+    jrx_accept_id (*initial_state)();
 };
+//typedef struct jrx_jit jrx_jit;
 
 
 /** LLVM Types */
@@ -149,7 +151,7 @@ LLVMValueRef jit_dfa_state_fn_ref(jrx_jit *jit, jrx_dfa_state_id id)
     LLVMValueRef func = LLVMGetNamedFunction(jit->module, name);
     if (!func) {
         func = LLVMAddFunction(jit->module, name, JIT_STATE_FN_LLVM_TYPE);
-        LLVMSetFunctionCallConv(func, LLVMFastCallConv);
+        LLVMSetFunctionCallConv(func, LLVMCCallConv);
     }
 
     free(name);
@@ -459,13 +461,13 @@ extern void _jit_ext_save_match_state(jrx_match_state *ms,
                                       jrx_offset accept_offset,
                                       jrx_char prev_cp,
                                       jrx_dfa_state_id state_id,
-                                      int (*state_fn)() )
+                                      jrx_accept_id (*state_fn)() )
 {
     ms->acc       = accept_id;
     ms->offset    = accept_offset;
     ms->previous  = prev_cp;
     ms->state     = state_id;
-    //ms->jit_state = state_fn;
+    ms->jit_state = state_fn;
 }
 
 
@@ -474,6 +476,9 @@ extern void _jit_ext_save_match_state(jrx_match_state *ms,
 jrx_jit* _jit_init(jrx_dfa *dfa)
 {
     char *err;
+
+    LLVMInitializeNativeTarget();
+    LLVMLinkInJIT();
 
     jrx_jit *jit = malloc(sizeof(jrx_jit));
     assert(jit && "_jit_init: malloc failed");
@@ -512,7 +517,7 @@ jrx_jit* _jit_init(jrx_dfa *dfa)
     return jit;
 }
 
-void jit_delete(jrx_jit *jit)
+extern void jit_delete(jrx_jit *jit)
 {
     LLVMDisposePassManager(jit->pass_mgr);
     LLVMDisposeBuilder(jit->builder);
@@ -521,11 +526,8 @@ void jit_delete(jrx_jit *jit)
     free(jit);
 }
 
-jrx_jit* jit_from_dfa(jrx_dfa *dfa)
+extern jrx_jit* jit_from_dfa(jrx_dfa *dfa)
 {
-    LLVMInitializeNativeTarget();
-    LLVMLinkInJIT();
-
     jrx_jit *jit = _jit_init(dfa);
     unsigned id = 0;
 
@@ -541,30 +543,30 @@ jrx_jit* jit_from_dfa(jrx_dfa *dfa)
         _jit_codegen_dfa_state_fn(jit, id);
     }
 
-    // Generate dispatch fn
-    //
+    // Save initial state
+    jit->initial_state = LLVMGetPointerToGlobal(jit->exec_engine,
+            jit_dfa_state_fn_ref(jit, dfa->initial));
 
     // Dump module
-    LLVMDumpModule(jit->module);
+    if ( dfa->options & JRX_OPTION_DEBUG )
+        LLVMDumpModule(jit->module);
 
     return jit;
 }
 
 
 /* Execution */
-int jit_regexec_partial_min(const jrx_regex_t *preg, const char *buffer, unsigned int len, jrx_assertion first, jrx_assertion last, jrx_match_state* ms, int find_partial_matches)
+extern int jit_regexec_partial_min(const jrx_regex_t *preg,
+        const char *buffer, unsigned int len,
+        jrx_assertion first, jrx_assertion last,
+        jrx_match_state* ms, int find_partial_matches)
 {
-    // Save orig offset
-    //lookup state fn based on ms->state
-    //Call w/ necessary params
-    // Update offset = orig_offset + (len - faux offset)
-    //Return result
-
-    return 0;
+    if ( ! ms->jit_state )
+        ms->jit_state = preg->jit->initial_state;
+    return ms->jit_state(
+            buffer, len, ms->previous,
+            ms->acc, ms->offset,
+            first, last,
+            ms);
 }
 
-
-void jit_regfree(jrx_regex_t *preg)
-{
-
-}

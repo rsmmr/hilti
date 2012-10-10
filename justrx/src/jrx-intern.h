@@ -27,6 +27,7 @@ static const jrx_option JRX_OPTION_DEBUG = 1 << 2;               // Print debug 
 static const jrx_option JRX_OPTION_NO_CAPTURE = 1 << 3;          // Do not capture subgroups.
 static const jrx_option JRX_OPTION_STD_MATCHER = 1 << 4;         // Use the standard matcher.
 static const jrx_option JRX_OPTION_DONT_ANCHOR = 1 << 5;         // Don't anchor RE at the beginning.
+static const jrx_option JRX_OPTION_JIT_MATCHER = 1 << 6;         // Uset the JIT matcher.
 //static const jrx_option OPTIONS_INCREMENTAL_DFA = 1 << 4;  // Build DFA incrementally.
 
 // Predefined standard character classes.

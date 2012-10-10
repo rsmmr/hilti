@@ -34,6 +34,7 @@ struct jrx_dfa;
 struct set_match_accept;
 struct jrx_match_state;
 typedef struct jrx_match_state jrx_match_state;
+struct jrx_jit;
 
 struct jrx_match_state {
     jrx_offset offset;        ///< Offset of next input byte.
@@ -50,6 +51,9 @@ struct jrx_match_state {
 
     // The following are only used with the minimal matcher.
     jrx_accept_id acc;
+
+    // The following is only used with the JIT matcher.
+    jrx_accept_id (*jit_state)();
 };
 
 typedef struct {
@@ -59,6 +63,7 @@ typedef struct {
     int nmatch;                // Max. number of subexpression caller is interested in; -1 for all.
     struct jrx_nfa* nfa;       // Compiled NFA, or NULL.
     struct jrx_dfa* dfa;       // Compiled DFA, or NULL.
+    struct jrx_jit* jit;       // Compiled JIT env, or NULL.
     const char* errmsg;        // Most recent error message, or NULL if none.
 } jrx_regex_t;
 
@@ -84,6 +89,7 @@ typedef struct jrx_regmatch_t {
 #define REG_DEBUG        (1 << 6)   //< Enable debugging output to stderr.
 #define REG_STD_MATCHER  (1 << 7)   //< Force usage of the (slower) standard matcher even with REG_NOSUB.
 #define REG_ANCHOR       (1 << 8)   //< Anchor matching at beginning. The effect is that of an implicit '^' at the beginning.
+#define REG_JIT_MATCHER  (1 << 9)   //< Enable use of the experimental JIT matcher
 
 // Non-standard error codes..
 #define REG_OK           0       //< Everything is fine.

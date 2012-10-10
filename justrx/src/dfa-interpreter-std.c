@@ -152,6 +152,7 @@ jrx_match_state* jrx_match_state_init(const jrx_regex_t *preg, jrx_offset begin,
     ms->state = dfa->initial;
     ms->current_tags = 0;
     ms->acc = -1;
+    ms->jit_state = 0;
 
     if ( (dfa->options & JRX_OPTION_STD_MATCHER) ) {
         ms->accepts = set_match_accept_create(0);

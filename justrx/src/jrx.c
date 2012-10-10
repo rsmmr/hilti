@@ -2,6 +2,7 @@
 #include "jrx-intern.h"
 #include "dfa-interpreter-std.h"
 #include "dfa-interpreter-min.h"
+#include "jit.h"
 
 // Collects the right options based
 static jrx_option _options(jrx_regex_t *preg)
@@ -163,6 +164,7 @@ void jrx_regset_init(jrx_regex_t *preg, int nmatch, int cflags)
     preg->cflags = cflags;
     preg->nfa = 0;
     preg->dfa = 0;
+    preg->jit = 0;
     preg->errmsg = 0;
 }
 
@@ -193,6 +195,13 @@ int jrx_regset_finalize(jrx_regex_t *preg)
     preg->dfa = dfa;
     preg->re_nsub = dfa->max_capture;
 
+    if ( preg->cflags & REG_JIT_MATCHER ) {
+        preg->jit = jit_from_dfa(dfa);
+
+        if ( ! preg->jit )
+            return REG_EMEM;
+    }
+
     return REG_OK;
 }
 
@@ -218,6 +227,8 @@ int jrx_regexec_partial(const jrx_regex_t *preg, const char *buffer, unsigned in
 
     if ( preg->cflags & REG_STD_MATCHER )
         rc = _regexec_partial_std(preg, buffer, len, first, last, ms, find_partial_matches);
+    else if ( preg->cflags & REG_JIT_MATCHER )
+        rc = jit_regexec_partial_min(preg, buffer, len, first, last, ms, find_partial_matches);
     else
         rc = _regexec_partial_min(preg, buffer, len, first, last, ms, find_partial_matches);
 
@@ -289,6 +300,9 @@ void jrx_regfree(jrx_regex_t *preg)
 
     if ( preg->dfa )
         dfa_delete(preg->dfa);
+
+    if ( preg->jit )
+        jit_delete(preg->jit);
 }
 
 size_t jrx_regerror(int errcode, const jrx_regex_t *preg, char *errbuf, size_t errbuf_size)

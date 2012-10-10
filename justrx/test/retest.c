@@ -129,5 +129,8 @@ int main(int argc, char**argv)
     fprintf(stderr, "\n=== Minimal matcher\n");
     do_match(argv, argc, opt, debug | REG_NOSUB, data);
 
+    fprintf(stderr, "\n=== JIT matcher\n");
+    do_match(argv, argc, opt, debug | REG_NOSUB | REG_JIT_MATCHER, data);
+
     exit(0);
 }
