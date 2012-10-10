@@ -21,8 +21,8 @@
 
 
 /** Compiler meta */
-typedef struct jit_compile_info jit_compile_info;
-struct jit_compile_info
+typedef struct jrx_jit jrx_jit;
+struct jrx_jit
 {
     LLVMModuleRef module;
     LLVMBuilderRef builder;
@@ -120,18 +120,18 @@ LLVMTypeRef JITSaveStateFnType()
 /* Function references */
 
 /** Get reference to ccl match function, creating the function if necessary */
-LLVMValueRef jit_ccl_fn_ref(jit_compile_info *ci, jrx_ccl_id id)
+LLVMValueRef jit_ccl_fn_ref(jrx_jit *jit, jrx_ccl_id id)
 {
     char *name;
     asprintf(&name, "ccl_%u", id);
 
-    LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
+    LLVMValueRef func = LLVMGetNamedFunction(jit->module, name);
     if (!func) {
         /* Prototype:
            bool cclX (jrx_char cp, jrx_assertion assertions)
         */
         LLVMTypeRef arg_types[] = { JRX_CHAR_LLVM_TYPE, JRX_ASSERTION_LLVM_TYPE };
-        func = LLVMAddFunction(ci->module, name,
+        func = LLVMAddFunction(jit->module, name,
                                LLVMFunctionType(JIT_BOOL_LLVM_TYPE, arg_types, 2, 0));
         LLVMSetFunctionCallConv(func, LLVMFastCallConv);
     }
@@ -141,14 +141,14 @@ LLVMValueRef jit_ccl_fn_ref(jit_compile_info *ci, jrx_ccl_id id)
 }
 
 /** Get reference to dfa state function, creating the function if necessary */
-LLVMValueRef jit_dfa_state_fn_ref(jit_compile_info *ci, jrx_dfa_state_id id)
+LLVMValueRef jit_dfa_state_fn_ref(jrx_jit *jit, jrx_dfa_state_id id)
 {
     char *name;
     asprintf(&name, "state_%u", id);
 
-    LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
+    LLVMValueRef func = LLVMGetNamedFunction(jit->module, name);
     if (!func) {
-        func = LLVMAddFunction(ci->module, name, JIT_STATE_FN_LLVM_TYPE);
+        func = LLVMAddFunction(jit->module, name, JIT_STATE_FN_LLVM_TYPE);
         LLVMSetFunctionCallConv(func, LLVMFastCallConv);
     }
 
@@ -156,36 +156,36 @@ LLVMValueRef jit_dfa_state_fn_ref(jit_compile_info *ci, jrx_dfa_state_id id)
     return func;
 }
 
-LLVMValueRef jit_dfa_state_jammed_fn_ref(jit_compile_info *ci)
+LLVMValueRef jit_dfa_state_jammed_fn_ref(jrx_jit *jit)
 {
     char *name = "_jit_ext_state_jammed";
-    LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
+    LLVMValueRef func = LLVMGetNamedFunction(jit->module, name);
     if (!func) {
-        func = LLVMAddFunction(ci->module, name, JIT_STATE_FN_LLVM_TYPE);
+        func = LLVMAddFunction(jit->module, name, JIT_STATE_FN_LLVM_TYPE);
         LLVMSetFunctionCallConv(func, LLVMCCallConv);
     }
     return func;
 }
 
-LLVMValueRef jit_local_word_boundary_fn_ref(jit_compile_info *ci)
+LLVMValueRef jit_local_word_boundary_fn_ref(jrx_jit *jit)
 {
     char *name = "_jit_ext_local_word_boundary";
-    LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
+    LLVMValueRef func = LLVMGetNamedFunction(jit->module, name);
     if (!func) {
         LLVMTypeRef arg_types[] = { JRX_CHAR_LLVM_TYPE, JRX_CHAR_LLVM_TYPE };
-        func = LLVMAddFunction(ci->module, name,
+        func = LLVMAddFunction(jit->module, name,
                 LLVMFunctionType(JIT_BOOL_LLVM_TYPE, arg_types, 2, 0));
         LLVMSetFunctionCallConv(func, LLVMCCallConv);
     }
     return func;
 }
 
-LLVMValueRef jit_save_match_state_fn_ref(jit_compile_info *ci)
+LLVMValueRef jit_save_match_state_fn_ref(jrx_jit *jit)
 {
     char *name = "_jit_ext_save_match_state";
-    LLVMValueRef func = LLVMGetNamedFunction(ci->module, name);
+    LLVMValueRef func = LLVMGetNamedFunction(jit->module, name);
     if (!func) {
-        func = LLVMAddFunction(ci->module, name, JIT_SAVE_FN_LLVM_TYPE);
+        func = LLVMAddFunction(jit->module, name, JIT_SAVE_FN_LLVM_TYPE);
         LLVMSetFunctionCallConv(func, LLVMCCallConv);
     }
     return func;
@@ -196,14 +196,14 @@ LLVMValueRef jit_save_match_state_fn_ref(jit_compile_info *ci)
 
 /* CCL Match  */
 
-LLVMValueRef _jit_codegen_ccl_fn (jit_compile_info *ci, jrx_ccl_id id)
+LLVMValueRef _jit_codegen_ccl_fn (jrx_jit *jit, jrx_ccl_id id)
 {
-    jrx_ccl *ccl = vec_ccl_get(ci->dfa->ccls->ccls, id);
+    jrx_ccl *ccl = vec_ccl_get(jit->dfa->ccls->ccls, id);
     assert(ccl);
-    LLVMValueRef fn = jit_ccl_fn_ref(ci, id);
+    LLVMValueRef fn = jit_ccl_fn_ref(jit, id);
     assert(LLVMCountBasicBlocks(fn) == 0);
 
-    LLVMBuilderRef b = ci->builder;
+    LLVMBuilderRef b = jit->builder;
 
     LLVMValueRef cp = LLVMGetParam(fn, 0);
     LLVMValueRef have_assertions = LLVMGetParam(fn, 1);
@@ -248,7 +248,7 @@ LLVMValueRef _jit_codegen_ccl_fn (jit_compile_info *ci, jrx_ccl_id id)
     LLVMBuildRet(b, JIT_TRUE);
 
     LLVMVerifyFunction(fn, LLVMAbortProcessAction);
-    LLVMRunFunctionPassManager(ci->pass_mgr, fn);
+    LLVMRunFunctionPassManager(jit->pass_mgr, fn);
     return fn;
 }
 
@@ -266,14 +266,14 @@ jrx_assertion necessary_assertions(jrx_dfa_state* state, jrx_ccl_group* with_ccl
     return assertions;
 }
 
-LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id)
+LLVMValueRef _jit_codegen_dfa_state_fn(jrx_jit *jit, jrx_dfa_state_id id)
 {
-    jrx_dfa_state* state = vec_dfa_state_get(ci->dfa->states, id);
+    jrx_dfa_state* state = vec_dfa_state_get(jit->dfa->states, id);
     assert(state);
-    LLVMValueRef fn = jit_dfa_state_fn_ref(ci, id);
+    LLVMValueRef fn = jit_dfa_state_fn_ref(jit, id);
     assert(LLVMCountBasicBlocks(fn) == 0);
 
-    LLVMBuilderRef b = ci->builder;
+    LLVMBuilderRef b = jit->builder;
 
     // Parameters
     LLVMValueRef str = LLVMGetParam(fn, 0);
@@ -316,7 +316,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
                                               prev_cp,
                                               JIT_STATE_ID(id),
                                               fn };
-        LLVMBuildCall(b, jit_save_match_state_fn_ref(ci), save_state_fn_args, 6 , "");
+        LLVMBuildCall(b, jit_save_match_state_fn_ref(jit), save_state_fn_args, 6 , "");
         LLVMBuildRet(b, last_accept_id);
 
         LLVMPositionBuilderAtEnd(b, skip_block);
@@ -328,7 +328,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
     {
         JIT_ENTER_BLOCK(b, fn, "assertions");
 
-        jrx_assertion requested_assertions = necessary_assertions(state, ci->dfa->ccls);
+        jrx_assertion requested_assertions = necessary_assertions(state, jit->dfa->ccls);
 
         if ((requested_assertions & JRX_ASSERTION_BOD) ||
             (requested_assertions & JRX_ASSERTION_BOL)) {
@@ -349,7 +349,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
 
         LLVMValueRef local_word_boundary_fn_args[] = { prev_cp, cp };
         LLVMValueRef on_word_boundary =
-            LLVMBuildCall(b, jit_local_word_boundary_fn_ref(ci),
+            LLVMBuildCall(b, jit_local_word_boundary_fn_ref(jit),
                           local_word_boundary_fn_args, 2,
                           "on_local_word_boundary");
 
@@ -392,7 +392,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
             LLVMBasicBlockRef next_block = LLVMAppendBasicBlock(fn, "check_ccl");
 
             LLVMValueRef ccl_fn_args[] = { cp, current_assertions };
-            LLVMValueRef ccl_match = LLVMBuildCall(b, jit_ccl_fn_ref(ci, trans.ccl),
+            LLVMValueRef ccl_match = LLVMBuildCall(b, jit_ccl_fn_ref(jit, trans.ccl),
                                                    ccl_fn_args, 2, "");
             LLVMBuildCondBr(b, ccl_match, transition_block, next_block);
 
@@ -401,7 +401,7 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
                                              last_accept_id, last_accept_offset,
                                              JIT_ASSERTION(JRX_ASSERTION_NONE), assert_last,
                                              match_state };
-            LLVMValueRef trans_result = LLVMBuildCall(b, jit_dfa_state_fn_ref(ci, trans.succ),
+            LLVMValueRef trans_result = LLVMBuildCall(b, jit_dfa_state_fn_ref(jit, trans.succ),
                                                       trans_fn_args, 8, "");
             LLVMSetTailCall(trans_result, 1); // do i need to use LLVMGetLastInstruction?
             LLVMBuildRet(b, trans_result);
@@ -428,15 +428,15 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jit_compile_info *ci, jrx_dfa_state_id id
                                               last_accept_offset,
                                               prev_cp,
                                               JIT_STATE_ID(-1),
-                                              jit_dfa_state_jammed_fn_ref(ci) };
-        LLVMBuildCall(b, jit_save_match_state_fn_ref(ci),
+                                              jit_dfa_state_jammed_fn_ref(jit) };
+        LLVMBuildCall(b, jit_save_match_state_fn_ref(jit),
                       save_state_fn_args, 6 , "");
 
         LLVMBuildRet(b, last_accept_id);
     }
 
     LLVMVerifyFunction(fn, LLVMAbortProcessAction);
-    LLVMRunFunctionPassManager(ci->pass_mgr, fn);
+    LLVMRunFunctionPassManager(jit->pass_mgr, fn);
     return fn;
 }
 
@@ -471,23 +471,23 @@ extern void _jit_ext_save_match_state(jrx_match_state *ms,
 
 /* Compilation */
 
-jit_compile_info* jit_init_compile_info(jrx_dfa *dfa)
+jrx_jit* _jit_init(jrx_dfa *dfa)
 {
     char *err;
 
-    jit_compile_info *ci = malloc(sizeof(jit_compile_info));
-    assert(ci && "jit_init_compile_info: malloc failed");
+    jrx_jit *jit = malloc(sizeof(jrx_jit));
+    assert(jit && "_jit_init: malloc failed");
 
     LLVMModuleRef module = LLVMModuleCreateWithName("is this name important?");
     LLVMBuilderRef builder = LLVMCreateBuilder();
 
     LLVMExecutionEngineRef exec_engine;
     if (LLVMCreateExecutionEngineForModule(&exec_engine, module, &err)) {
-        assert(0 && "jit_init_compile_info: execution engine creation failed");
+        assert(0 && "_jit_init: execution engine creation failed");
 
         fprintf(stderr, "error: %s\n", err);
         LLVMDisposeMessage(err);
-        //jit_free_compile_info(ci);
+        //jit_free_compile_info(jit);
         return NULL;
     }
 
@@ -503,46 +503,51 @@ jit_compile_info* jit_init_compile_info(jrx_dfa *dfa)
     */
     LLVMInitializeFunctionPassManager (pass_mgr);
 
-    ci->dfa = dfa;
-    ci->module = module;
-    ci->builder = builder;
-    ci->exec_engine = exec_engine;
-    ci->pass_mgr = pass_mgr;
+    jit->dfa = dfa;
+    jit->module = module;
+    jit->builder = builder;
+    jit->exec_engine = exec_engine;
+    jit->pass_mgr = pass_mgr;
 
-    return ci;
+    return jit;
 }
 
-void jit_free_compile_info(jit_compile_info *ci)
+void jit_delete(jrx_jit *jit)
 {
-    LLVMDisposePassManager(ci->pass_mgr);
-    LLVMDisposeBuilder(ci->builder);
-    LLVMDisposeModule(ci->module);
-    LLVMDisposeExecutionEngine(ci->exec_engine);
-    free(ci);
+    LLVMDisposePassManager(jit->pass_mgr);
+    LLVMDisposeBuilder(jit->builder);
+    LLVMDisposeModule(jit->module);
+    LLVMDisposeExecutionEngine(jit->exec_engine);
+    free(jit);
 }
 
-void jit_regset_compile(jrx_regex_t *preg)
+jrx_jit* jit_from_dfa(jrx_dfa *dfa)
 {
     LLVMInitializeNativeTarget();
     LLVMLinkInJIT();
 
-    jit_compile_info *ci = jit_init_compile_info(preg->dfa);
-    int id;
+    jrx_jit *jit = _jit_init(dfa);
+    unsigned id = 0;
 
     // Codegen all ccls
     // TODO: CCLs should be codegened on creation
-    for (id = 0; id < vec_ccl_size(preg->dfa->ccls->ccls); id++) {
-        _jit_codegen_ccl_fn(ci, id);
+    for (id = 0; id < vec_ccl_size(dfa->ccls->ccls); id++) {
+        _jit_codegen_ccl_fn(jit, id);
     }
 
     // Codegen all states
     // TODO: Lazy codegen
-    for (id = 0; id < vec_dfa_state_size(preg->dfa->states); id++) {
-        _jit_codegen_dfa_state_fn(ci, id);
+    for (id = 0; id < vec_dfa_state_size(dfa->states); id++) {
+        _jit_codegen_dfa_state_fn(jit, id);
     }
 
+    // Generate dispatch fn
+    //
+
     // Dump module
-    LLVMDumpModule(ci->module);
+    LLVMDumpModule(jit->module);
+
+    return jit;
 }
 
 
