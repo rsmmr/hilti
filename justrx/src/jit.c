@@ -31,28 +31,33 @@ struct jrx_jit
     jrx_dfa *dfa;
     jrx_accept_id (*initial_state)();
 };
-//typedef struct jrx_jit jrx_jit;
 
 
 /** LLVM Types */
-#define JIT_BOOL_LLVM_TYPE      LLVMInt1Type()
-#define JRX_ACCEPT_ID_LLVM_TYPE LLVMInt16Type()
-#define JRX_OFFSET_LLVM_TYPE    LLVMInt32Type()
-#define JRX_CHAR_LLVM_TYPE      LLVMInt32Type()
-#define JRX_ASSERTION_LLVM_TYPE LLVMInt16Type()
-#define JRX_STATE_ID_LLVM_TYPE  LLVMInt32Type()
+#define JIT_BOOL_LLVM_TYPE                LLVMInt1Type()
+#define JRX_ACCEPT_ID_LLVM_TYPE           LLVMInt16Type()
+#define JRX_OFFSET_LLVM_TYPE              LLVMInt32Type()
+#define JRX_CHAR_LLVM_TYPE                LLVMInt32Type()
+#define JRX_ASSERTION_LLVM_TYPE           LLVMInt16Type()
+#define JRX_STATE_ID_LLVM_TYPE            LLVMInt32Type()
+#define JIT_MATCH_STATE_STRUCT_LLVM_TYPE  LLVMStructType(NULL, 0, 0)
+#define JIT_CCL_FN_LLVM_TYPE              JITCCLStateFnType()
+#define JIT_STATE_FN_LLVM_TYPE            JITDFAStateFnType()
+#define JIT_SAVE_FN_LLVM_TYPE             JITSaveStateFnType()
 
-#define JIT_MATCH_STATE_STRUCT_LLVM_TYPE JITMatchStateStructType()
-LLVMTypeRef JITMatchStateStructType()
+LLVMTypeRef JITCCLStateFnType()
 {
-    // Turns out that opaque types are not equivelant???
-    static LLVMTypeRef type = NULL;
-    if (!type)
-        type = LLVMStructType(NULL, 0, 0);
+    /* Prototype:
+       bool cclX (jrx_char cp, jrx_assertion assertions)
+    */
+    static LLVMTypeRef type = 0;
+    if (!type) {
+        LLVMTypeRef arg_types[] = { JRX_CHAR_LLVM_TYPE, JRX_ASSERTION_LLVM_TYPE };
+        type = LLVMFunctionType(JIT_BOOL_LLVM_TYPE, arg_types, 2, 0);
+    }
     return type;
 }
 
-#define JIT_STATE_FN_LLVM_TYPE JITDFAStateFnType()
 LLVMTypeRef JITDFAStateFnType()
 {
     /*
@@ -62,7 +67,9 @@ LLVMTypeRef JITDFAStateFnType()
                           jrx_assertion first, jrx_assertion last,
                           opaque *match_state)
     */
-    LLVMTypeRef arg_types[] = {
+    static LLVMTypeRef type = 0;
+    if (!type) {
+        LLVMTypeRef arg_types[] = {
             LLVMPointerType(LLVMInt8Type(), 0),
             JRX_OFFSET_LLVM_TYPE,
             JRX_CHAR_LLVM_TYPE,
@@ -72,10 +79,11 @@ LLVMTypeRef JITDFAStateFnType()
             JRX_ASSERTION_LLVM_TYPE,
             LLVMPointerType(JIT_MATCH_STATE_STRUCT_LLVM_TYPE, 0)
         };
-    return LLVMFunctionType(JRX_ACCEPT_ID_LLVM_TYPE, arg_types, 8, 0);
+        type = LLVMFunctionType(JRX_ACCEPT_ID_LLVM_TYPE, arg_types, 8, 0);
+    }
+    return type;
 }
 
-#define JIT_SAVE_FN_LLVM_TYPE JITSaveStateFnType()
 LLVMTypeRef JITSaveStateFnType()
 {
     /* Prototype:
@@ -83,15 +91,19 @@ LLVMTypeRef JITSaveStateFnType()
                         jrx_accept_id accept_id, jrx_offset accept_offset, jrx_char prev_cp,
                         jrx_dfa_state_id state_id, JIT_STATE_FN_TYPE state_fn)
     */
-    LLVMTypeRef arg_types[] = {
-        LLVMPointerType(JIT_MATCH_STATE_STRUCT_LLVM_TYPE, 0),
-        JRX_ACCEPT_ID_LLVM_TYPE,
-        JRX_OFFSET_LLVM_TYPE,
-        JRX_CHAR_LLVM_TYPE,
-        JRX_STATE_ID_LLVM_TYPE,
-        LLVMPointerType(JIT_STATE_FN_LLVM_TYPE, 0)
-    };
-    return LLVMFunctionType(LLVMVoidType(), arg_types, 6, 0);
+    static LLVMTypeRef type = 0;
+    if (!type) {
+        LLVMTypeRef arg_types[] = {
+            LLVMPointerType(JIT_MATCH_STATE_STRUCT_LLVM_TYPE, 0),
+            JRX_ACCEPT_ID_LLVM_TYPE,
+            JRX_OFFSET_LLVM_TYPE,
+            JRX_CHAR_LLVM_TYPE,
+            JRX_STATE_ID_LLVM_TYPE,
+            LLVMPointerType(JIT_STATE_FN_LLVM_TYPE, 0)
+        };
+        type = LLVMFunctionType(LLVMVoidType(), arg_types, 6, 0);
+    }
+    return type;
 }
 
 /** LLVM Constants */
@@ -129,12 +141,7 @@ LLVMValueRef jit_ccl_fn_ref(jrx_jit *jit, jrx_ccl_id id)
 
     LLVMValueRef func = LLVMGetNamedFunction(jit->module, name);
     if (!func) {
-        /* Prototype:
-           bool cclX (jrx_char cp, jrx_assertion assertions)
-        */
-        LLVMTypeRef arg_types[] = { JRX_CHAR_LLVM_TYPE, JRX_ASSERTION_LLVM_TYPE };
-        func = LLVMAddFunction(jit->module, name,
-                               LLVMFunctionType(JIT_BOOL_LLVM_TYPE, arg_types, 2, 0));
+        func = LLVMAddFunction(jit->module, name, JIT_CCL_FN_LLVM_TYPE);
         LLVMSetFunctionCallConv(func, LLVMFastCallConv);
     }
 
@@ -215,14 +222,13 @@ LLVMValueRef _jit_codegen_ccl_fn (jrx_jit *jit, jrx_ccl_id id)
     LLVMBasicBlockRef success_block = LLVMAppendBasicBlock(fn, "success");
     LLVMBasicBlockRef next_block = LLVMAppendBasicBlock(fn, "range check");
 
-    // Only generate code to check assertions if necessary [see if this is optimized out]
+    // TODO: Only generate code to check assertions if necessary [see if this is optimized out]
     LLVMPositionBuilderAtEnd(b, check_assertions_block);
     LLVMValueRef want_assertions = JIT_ASSERTION(ccl->assertions);
     LLVMValueRef applicable_assertions =
         LLVMBuildAnd(b, want_assertions, have_assertions, "want & have");
     LLVMValueRef assertions_match =
         LLVMBuildICmp(b, LLVMIntEQ, want_assertions, applicable_assertions, "applicable == wanted");
-
     LLVMBuildCondBr(b, assertions_match, next_block, failed_block);
 
     // Check to see if code point is within any of our character ranges
@@ -278,14 +284,14 @@ LLVMValueRef _jit_codegen_dfa_state_fn(jrx_jit *jit, jrx_dfa_state_id id)
     LLVMBuilderRef b = jit->builder;
 
     // Parameters
-    LLVMValueRef str = LLVMGetParam(fn, 0);
-    LLVMValueRef len = LLVMGetParam(fn, 1);
-    LLVMValueRef prev_cp = LLVMGetParam(fn, 2);
-    LLVMValueRef last_accept_id = LLVMGetParam(fn, 3);
+    LLVMValueRef str                = LLVMGetParam(fn, 0);
+    LLVMValueRef len                = LLVMGetParam(fn, 1);
+    LLVMValueRef prev_cp            = LLVMGetParam(fn, 2);
+    LLVMValueRef last_accept_id     = LLVMGetParam(fn, 3);
     LLVMValueRef last_accept_offset = LLVMGetParam(fn, 4);
-    LLVMValueRef assert_first = LLVMGetParam(fn, 5);
-    LLVMValueRef assert_last = LLVMGetParam(fn, 6);
-    LLVMValueRef match_state = LLVMGetParam(fn, 7);
+    LLVMValueRef assert_first       = LLVMGetParam(fn, 5);
+    LLVMValueRef assert_last        = LLVMGetParam(fn, 6);
+    LLVMValueRef match_state        = LLVMGetParam(fn, 7);
 
     // Make entry
     LLVMPositionBuilderAtEnd(b, LLVMAppendBasicBlock(fn, "entry"));
@@ -493,7 +499,7 @@ jrx_jit* _jit_init(jrx_dfa *dfa)
         fprintf(stderr, "error: %s\n", err);
         LLVMDisposeMessage(err);
         //jit_free_compile_info(jit);
-        return NULL;
+        return 0;
     }
 
     LLVMPassManagerRef pass_mgr = LLVMCreateFunctionPassManagerForModule(module);
@@ -563,6 +569,8 @@ extern int jit_regexec_partial_min(const jrx_regex_t *preg,
 {
     if ( ! ms->jit_state )
         ms->jit_state = preg->jit->initial_state;
+    assert(ms->jit_state && "jit_regex_partial_min: attempted to execute uncompiled JIT matcher");
+
     return ms->jit_state(
             buffer, len, ms->previous,
             ms->acc, ms->offset,
