@@ -63,16 +63,6 @@ public:
     /// (assuming parsing is in process; if not aborts());
     shared_ptr<hilti::Expression> hiltiSelf();
 
-    /// Parses a unit value from the current input position. Must be called
-    /// only while parsing is in progress.
-    ///
-    /// u: The type of the unit to parse.
-    ///
-    /// params: The type parameters to pass into the parser.
-    ///
-    /// Returns: The parsed value.
-    shared_ptr<hilti::Expression> hiltiParseUnit(shared_ptr<type::Unit> u, const expression_list& params);
-
 protected:
     /// Returns the current parsing state.
     shared_ptr<ParserState> state() const;

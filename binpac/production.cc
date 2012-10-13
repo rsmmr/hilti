@@ -192,11 +192,18 @@ NonTerminal::NonTerminal(const string& symbol, shared_ptr<Type> type, const Loca
 {
 }
 
-ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<type::Unit> type, const Location& l)
+ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<Production> child, shared_ptr<type::Unit> type, const Location& l)
     : NonTerminal(symbol, type, l)
 {
+    _child = child;
 }
 
+shared_ptr<type::Unit> ChildGrammar::childType() const
+{
+    return ast::checkedCast<type::Unit>(type());
+}
+
+#if 0
 void ChildGrammar::setParameters(const expression_list& params)
 {
     _params = params;
@@ -206,16 +213,17 @@ const expression_list& ChildGrammar::parameters() const
 {
     return _params;
 }
+#endif
 
 string ChildGrammar::renderProduction() const
 {
-    return type()->render();
+    return _child->symbol();
 }
 
 NonTerminal::alternative_list ChildGrammar::rhss() const
 {
-    assert(false); // need the garmmar builder here.
-    return { };
+    alternative_list rhss = { { _child } };
+    return rhss;
 }
 
 Sequence::Sequence(const string& symbol, const production_list& seq, shared_ptr<Type> type, const Location& l)

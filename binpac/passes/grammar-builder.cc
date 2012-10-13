@@ -139,10 +139,19 @@ void GrammarBuilder::visit(type::unit::item::field::Unit* u)
         return;
 
     ++_in_decl;
-    auto unit = compileOne(u->type());
+    auto chprod = compileOne(u->type());
     --_in_decl;
 
-    setResult(unit);
+    string name;
+
+    if ( u->id() )
+        name = u->id()->name();
+    else
+        name = util::fmt("unit%d", _unit_counter++);
+
+    auto child = std::make_shared<production::ChildGrammar>(name, chprod, ast::checkedCast<type::Unit>(u->type()), u->location());
+    child->pgMeta()->field = u->sharedPtr<type::unit::item::field::Unit>();
+    setResult(child);
 }
 
 void GrammarBuilder::visit(type::unit::item::field::switch_::Case* c)

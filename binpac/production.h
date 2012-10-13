@@ -328,11 +328,17 @@ class ChildGrammar : public NonTerminal
 public:
     /// Constructor.
     ///
-    /// type: The unit type defining the child grammar.
+    /// child: The production for the child unit type, corresponding to *child*.
+    ///
+    /// type: The unit type.
     ///
     /// l: Associated location.
-    ChildGrammar(const string& symbol, shared_ptr<type::Unit> type, const Location& l = Location::None);
+    ChildGrammar(const string& symbol, shared_ptr<Production> child, shared_ptr<type::Unit> type, const Location& l = Location::None);
 
+    /// Returns the child type.
+    shared_ptr<type::Unit> childType() const;
+
+#if 0
     typedef std::list<shared_ptr<Expression>> expression_list;
 
     /// Sets a list of parameters passed into the parser for the child grammar.
@@ -343,6 +349,7 @@ public:
     /// Returns a list of parameters to pass into the parser for the child
     /// grammar.
     const expression_list& parameters() const;
+#endif
 
     ACCEPT_VISITOR(NonTerminal);
 
@@ -351,7 +358,8 @@ protected:
     alternative_list rhss() const override;
 
 private:
-    expression_list _params;
+    shared_ptr<Production> _child;
+    // expression_list _params;
 };
 
 
