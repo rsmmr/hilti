@@ -107,8 +107,10 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     hlt_string indent = hlt_string_from_asciiz("  ", excpt, ctx);
     GC_CCTOR(indent, hlt_string);
 
-    for ( int i = ctx->debug_indent; i; --i )
+    for ( int i = ctx->debug_indent; i; --i ) {
+        GC_CCTOR(indent, hlt_string);
         usr = hlt_string_concat_and_unref(indent, usr, excpt, ctx);
+    }
 
     GC_DTOR(indent, hlt_string);
 
