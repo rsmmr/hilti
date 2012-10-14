@@ -253,21 +253,10 @@ void CodeBuilder::visit(expression::ParserState* p)
         break;
 
      case expression::ParserState::PARAMETER: {
-         shared_ptr<hilti::Type> ftype = nullptr;
-
-         auto fname = util::fmt("__p_%s", p->id()->name());
-
-         for ( auto p : cg()->unit()->parameters() ) {
-             if ( p->id()->name() == p->id()->name() ) {
-                 ftype = cg()->hiltiType(p->type());
-                 break;
-             }
-         }
-
-         assert(ftype);
-
+         auto fname = hilti::builder::string::create(util::fmt("__p_%s", p->id()->name()));
+         auto ftype = cg()->hiltiType(p->type());
          expr = cg()->moduleBuilder()->addTmp("param", ftype, nullptr, false);
-         cg()->builder()->addInstruction(expr, hilti::instruction::struct_::Get, cg()->hiltiSelf(), hilti::builder::string::create(fname));
+         cg()->builder()->addInstruction(expr, hilti::instruction::struct_::Get, cg()->hiltiSelf(), fname);
          break;
      }
 

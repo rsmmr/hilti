@@ -253,8 +253,7 @@ private:
 };
 
 /// AST node for an expression that references internal parser state. This is
-/// used for reserved IDs like \a $$ and \a self. The expression's type() is
-/// initially unknown until resolved later.
+/// used for reserved IDs like \a $$ and \a self.
 class ParserState : public CustomExpression
 {
 public:
@@ -269,16 +268,28 @@ public:
     /// kind: The kind of expression (i.e., the specific value the expression references).
     ///
     /// id: An optional ID associated with the state reference. Depends on
-    /// the kind whether it's needed.
+    /// the kind whether it's needed, otherwise null.
+    ///
+    /// unit: The unit type which the referenced parser state belongs to.
+    ///
+    /// type: The type of the expression; if null it will be unknown
+    /// initially and resolved later. Currently, that works only for \a PARAMETERs.
     ///
     /// l: An associated location.
-    ParserState(Kind kind, shared_ptr<binpac::ID> id = nullptr, shared_ptr<Type> type = nullptr, const Location& l=Location::None);
+    ///
+    /// \note: The resolving of \a PARAMETER types happens actually right
+    /// inside the type() method here: once the unit type is resolved, it
+    /// starts returning the right type.
+    ParserState(Kind kind, shared_ptr<binpac::ID> id, shared_ptr<Type> unit, shared_ptr<Type> type = nullptr, const Location& l=Location::None);
 
     /// Return the kind of expression.
     Kind kind() const;
 
     /// Returns the associated ID, if set.
     shared_ptr<binpac::ID> id() const;
+
+    /// Returns the unit type which the referenced parser state belongs to.
+    shared_ptr<Type> unit() const;
 
     /// Sets the expression's type. This is intended to be used from the
     /// resolver only.
@@ -292,6 +303,7 @@ private:
     Kind _kind;
     node_ptr<binpac::ID> _id;
     node_ptr<binpac::Type> _type;
+    node_ptr<binpac::Type> _unit;
 };
 
 /// A not yet resolved (and potentially overloaded) operator. Initially, all

@@ -511,6 +511,13 @@ void ParserBuilder::_prepareParseObject(const hilti_expression_list& params)
 void ParserBuilder::_finalizeParseObject()
 {
     _hiltiRunHook(_hookForUnit(state()->unit, "%done"), false, nullptr);
+
+    // Clear the parameters to avoid ref-counting cycles.
+    for ( auto p : state()->unit->parameters() ) {
+        auto name = util::fmt("__p_%s", p->id()->name());
+        auto field = hilti::builder::string::create(util::fmt("__p_%s", p->id()->name()));
+        cg()->builder()->addInstruction(hilti::instruction::struct_::Unset, state()->self, field);
+    }
 }
 
 void ParserBuilder::_startingProduction(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field)

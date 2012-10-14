@@ -180,8 +180,3 @@ shared_ptr<hilti::Expression> CodeGen::hiltiSelf()
 {
     return _parser_builder->hiltiSelf();
 }
-
-shared_ptr<hilti::Expression> CodeGen::hiltiParseUnit(shared_ptr<type::Unit> u, const expression_list& params)
-{
-    return _parser_builder->hiltiParseUnit(u, params);
-}

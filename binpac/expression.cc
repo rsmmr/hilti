@@ -145,15 +145,21 @@ shared_ptr<Type> expression::MemberAttribute::type() const
     return _type;
 }
 
-expression::ParserState::ParserState(Kind kind, shared_ptr<binpac::ID> id, shared_ptr<Type> type, const Location& l) : CustomExpression(l)
+expression::ParserState::ParserState(Kind kind, shared_ptr<binpac::ID> id, shared_ptr<Type> unit, shared_ptr<Type> type, const Location& l) : CustomExpression(l)
 {
     _kind = kind;
     _id = id;
-    _type = type ? type : std::make_shared<type::Unknown>(l);
+    _type = type;
+    _unit = unit;
 
     addChild(_type);
     addChild(_id);
-    addChild(_type);
+    addChild(_unit);
+}
+
+shared_ptr<Type> expression::ParserState::unit() const
+{
+    return _unit;
 }
 
 expression::ParserState::Kind expression::ParserState::kind() const
@@ -168,7 +174,22 @@ shared_ptr<binpac::ID> expression::ParserState::id() const
 
 shared_ptr<Type> expression::ParserState::type() const
 {
-    return _type;
+    if ( _type )
+        return _type;
+
+    assert(_kind == PARAMETER);
+
+    auto utype = ast::tryCast<type::Unit>(_unit);
+
+    if ( ! utype )
+        return std::make_shared<type::Unknown>(location());
+
+    for ( auto p : utype->parameters() ) {
+        if ( *p->id() == *_id )
+            return p->type();
+    }
+
+    return std::make_shared<type::Unknown>(location());
 }
 
 void expression::ParserState::setType(shared_ptr<binpac::Type> type)
