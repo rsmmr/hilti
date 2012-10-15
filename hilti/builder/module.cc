@@ -552,17 +552,25 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::addLocal(const std::strin
 
 shared_ptr<hilti::expression::Variable> ModuleBuilder::addTmp(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool reuse, const Location& l)
 {
+    auto local = (_currentFunction()->function != nullptr);
+
     id = std::make_shared<ID>("__tmp_" + id->name(), id->location());
 
-    auto t = _uniqueDecl(id, type, "tmp", &_currentFunction()->locals, (reuse ? REUSE : MAKE_UNIQUE), false);
+    auto t = _uniqueDecl(id, type, "tmp", local ? &_currentFunction()->locals : &_globals, (reuse ? REUSE : MAKE_UNIQUE), false);
     id = t.first;
     auto decl = t.second ? ast::checkedCast<declaration::Variable>(t.second) : nullptr;
 
     if ( ! decl ) {
-        auto var = std::make_shared<variable::Local>(id, type, init, l);
+        shared_ptr<Variable> var = nullptr;
+
+        if ( local )
+            var = std::make_shared<variable::Local>(id, type, init, l);
+        else
+            var = std::make_shared<variable::Global>(id, type, init, l);
+
         decl = std::make_shared<declaration::Variable>(id, var, l);
         _currentBody()->stmt->addDeclaration(decl);
-        _addDecl(id, type, "tmp", &_currentFunction()->locals, decl);
+        _addDecl(id, type, "tmp", local ? &_currentFunction()->locals : &_globals, decl);
     }
 
     return std::make_shared<hilti::expression::Variable>(decl->variable(), l);

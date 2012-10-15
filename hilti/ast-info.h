@@ -48,6 +48,7 @@ struct AstInfo {
     typedef hilti::statement::Block body_statement;
 
     typedef hilti::type::Any any_type;
+    typedef hilti::type::Void void_type;
     typedef hilti::type::OptionalArgument optional_type;
     typedef hilti::type::Block block_type;
     typedef hilti::type::Function function_type;

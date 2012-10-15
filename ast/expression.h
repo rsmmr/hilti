@@ -140,6 +140,7 @@ class List : public __EXPRESSION_MIXIN, public ExpressionOverrider<AstInfo>
 public:
     typedef typename AstInfo::expression Expression;
     typedef typename AstInfo::type Type;
+    typedef typename AstInfo::void_type VoidType;
 
     typedef std::list<shared_ptr<Expression>> expression_list;
 
@@ -166,10 +167,15 @@ public:
         return exprs;
     }
 
+    /// Returns true if the last list expression is contant.
+    bool _isConstant() const /* override */ {
+       return _exprs.size() ? _exprs.back()->isConstant() : true;
+    }
+
     /// Returns the evaluation type of the list expression. The type is the
     /// type of the last expression in the list, or null if the list is empty.
     shared_ptr<Type> _type() const /* override */ {
-       return _exprs.size() ? (*_exprs.back()).type() : shared_ptr<Type>();
+        return _exprs.size() ? _exprs.back()->type() : std::make_shared<VoidType>();
     }
 
 private:
