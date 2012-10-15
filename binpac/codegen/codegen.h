@@ -14,6 +14,10 @@ namespace hilti {
         class ModuleBuilder;
         class BlockBuilder;
     }
+
+    namespace declaration {
+        class Function;
+    }
 }
 
 namespace binpac {
@@ -152,9 +156,17 @@ public:
     /// hook: The hook itself.
     void hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook);
 
+    /// Adds a function to the current module.
+    ///
+    /// function: The function.
+    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<ID> id, shared_ptr<Function> func);
+
     /// Returns a HILTI expression referencing the current parser object
     /// (assuming parsing is in process; if not aborts());
     shared_ptr<hilti::Expression> hiltiSelf();
+
+    /// Returns the HILTI type for the cookie argument.
+    shared_ptr<hilti::Type> hiltiTypeCookie();
 
 private:
     bool _compiling = false;

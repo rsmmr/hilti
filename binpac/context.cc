@@ -98,6 +98,8 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( ! id_resolver.run(module) )
         return false;
 
+    // module->dump(std::cerr);
+
     if ( ! op_resolver.run(module) )
         return false;
 

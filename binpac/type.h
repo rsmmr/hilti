@@ -732,6 +732,13 @@ public:
     ACCEPT_VISITOR_ROOT();
 };
 
+/// BinPAC++'s supported calling conventions.
+enum CallingConvention {
+    DEFAULT,    /// Default calling convention.
+    HILTI_C,    /// C-compatible calling convention, but with extra HILTI run-time parameters.
+    C           /// C-compatable calling convention, with no messing around with parameters.
+};
+
 }
 
 /// Type for functions.
@@ -746,14 +753,23 @@ public:
     /// cc: The function's calling convention.
     ///
     /// l: Associated location.
-    Function(shared_ptr<binpac::type::function::Result> result, const parameter_list& args, const Location& l=Location::None);
+    Function(shared_ptr<binpac::type::function::Result> result, const parameter_list& args, function::CallingConvention cc = function::DEFAULT, const Location& l=Location::None);
 
     /// Constructor for a function type that matches any other function type (i.e., a wildcard type).
     Function(const Location& l=Location::None);
 
+    /// Returns the function's calling convention.
+    function::CallingConvention callingConvention() const;
+
+    /// Sets the function's calling convention.
+    void setCallingConvention(function::CallingConvention cc);
+
     bool _equal(shared_ptr<binpac::Type> other) const override;
 
     ACCEPT_VISITOR(binpac::Type);
+
+private:
+    function::CallingConvention _cc;
 };
 
 /// Type for hooks.

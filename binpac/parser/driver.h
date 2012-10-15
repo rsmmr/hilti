@@ -70,6 +70,7 @@ struct yystype_binpac {
     binpac::type::Integer::bits_list bits;
     ctor::RegExp::pattern_list re_patterns;
     ctor::RegExp::pattern re_pattern;
+    type::function::CallingConvention cc;
 
     std::list<string> strings;
     std::list<std::pair<shared_ptr<ID>, int>> id_and_ints;

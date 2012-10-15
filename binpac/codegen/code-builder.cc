@@ -10,6 +10,7 @@
 #include "autogen/operators/integer.h"
 #include "autogen/operators/list.h"
 #include "autogen/operators/unit.h"
+#include "autogen/operators/function.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -159,6 +160,7 @@ void CodeBuilder::visit(declaration::Constant* c)
 
 void CodeBuilder::visit(declaration::Function* f)
 {
+    cg()->hiltiDefineFunction(f->id(), f->function());
 }
 
 void CodeBuilder::visit(declaration::Hook* h)
@@ -217,6 +219,9 @@ void CodeBuilder::visit(expression::Ctor* c)
 
 void CodeBuilder::visit(expression::Function* f)
 {
+    auto id = cg()->hiltiID(f->function()->id());
+    auto result = hilti::builder::id::create(id, f->location());
+    setResult(result);
 }
 
 void CodeBuilder::visit(expression::ID* i)
@@ -237,6 +242,8 @@ void CodeBuilder::visit(expression::Module* m)
 
 void CodeBuilder::visit(expression::Parameter* p)
 {
+    auto result = hilti::builder::id::create(cg()->hiltiID(p->parameter()->id()), p->location());
+    setResult(result);
 }
 
 void CodeBuilder::visit(expression::ParserState* p)
@@ -374,6 +381,13 @@ void CodeBuilder::visit(statement::Print* p)
 
 void CodeBuilder::visit(statement::Return* r)
 {
+    if ( ! r->expression() )
+        builder()->addInstruction(hilti::instruction::flow::ReturnVoid);
+
+    else {
+        auto val = cg()->hiltiExpression(r->expression());
+        builder()->addInstruction(hilti::instruction::flow::ReturnResult, val);
+    }
 }
 
 void CodeBuilder::visit(statement::Stop* r)
@@ -494,5 +508,55 @@ void CodeBuilder::visit(expression::operator_::list::PushBack* i)
     cg()->builder()->addInstruction(hilti::instruction::list::PushBack, op1, param1);
 
     setResult(op1);
+}
+
+void CodeBuilder::visit(expression::operator_::function::Call* i)
+{
+    auto ftype = ast::checkedCast<type::Function>(i->op1()->type());
+    auto args = ast::checkedCast<expression::List>(i->op2());
+    auto hilti_func = cg()->hiltiExpression(i->op1());
+
+    hilti::builder::tuple::element_list hilti_arg_list;
+
+    for ( auto a : args->expressions() )
+        hilti_arg_list.push_back(hiltiExpression(a));
+
+
+    switch ( ftype->callingConvention() ) {
+     case type::function::DEFAULT:
+     case type::function::HILTI_C: {
+         shared_ptr<hilti::Expression> cookie = nullptr;
+
+         if ( in<declaration::Function>() )
+             cookie = hilti::builder::id::create("__cookie", i->location());
+         else
+             cookie = hilti::builder::reference::createNull(i->location());
+
+        hilti_arg_list.push_back(cookie);
+        break;
+     }
+
+     case type::function::C:
+        break;
+
+     default:
+        internalError("unexpected calling convention in expression::operator_::function::Call()");
+    }
+
+    auto hilti_args = hilti::builder::tuple::create(hilti_arg_list);
+
+    shared_ptr<hilti::Expression> result = nullptr;
+
+    if ( ftype->result() && ! ast::isA<type::Void>(ftype->result()->type()) ) {
+        result = cg()->builder()->addTmp("result", cg()->hiltiType(ftype->result()->type()));
+        cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, hilti_func, hilti_args);
+    }
+
+    else {
+        result = hilti::builder::id::create("<no return value>"); // Dummy ID; this should never be accessed ...
+        cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid, hilti_func, hilti_args);
+    }
+
+    setResult(result);
 }
 

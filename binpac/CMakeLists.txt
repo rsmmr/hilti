@@ -45,6 +45,7 @@ set(operators
     operators/integer.cc
     operators/list.cc
     operators/unit.cc
+    operators/function.cc
 )
 
 add_custom_command(

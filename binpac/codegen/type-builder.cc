@@ -208,6 +208,9 @@ void TypeBuilder::visit(type::Vector* v)
 
 void TypeBuilder::visit(type::Void* v)
 {
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::void_::type();
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::function::Parameter* p)

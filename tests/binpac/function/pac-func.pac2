@@ -1,0 +1,25 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  ./a.out >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+void foo()
+{
+    print b"foo";
+    return;
+}
+
+bytes bar(b1: bytes, b2: bytes)
+{
+    print b1;
+    print b2;
+
+    return b"servus";
+}
+
+foo();
+
+print bar(b"foo", b"bar");

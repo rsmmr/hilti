@@ -30,11 +30,6 @@ static shared_ptr<hilti::Type> _hiltiTypeLookAhead()
     return hilti::builder::integer::type(32);
 }
 
-static shared_ptr<hilti::Type> _hiltiTypeCookie()
-{
-    return hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::UserCookie"));
-}
-
 static shared_ptr<hilti::Type> _hiltiTypeParseResult()
 {
     // (__cur, __lahead, __lahstart).
@@ -282,7 +277,7 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiCreateHostFunction(shared_ptr
     auto rtype = hilti::builder::function::result(utype);
 
     auto arg1 = hilti::builder::function::parameter("__data", _hiltiTypeBytes(), false, nullptr);
-    auto arg2 = hilti::builder::function::parameter("__cookie", _hiltiTypeCookie(), false, nullptr);
+    auto arg2 = hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr);
 
     hilti::builder::function::parameter_list args = { arg1, arg2 };
 
@@ -399,7 +394,7 @@ shared_ptr<hilti::Expression> ParserBuilder::_newParseFunction(const string& nam
     auto arg3 = hilti::builder::function::parameter("__cur", _hiltiTypeIteratorBytes(), false, nullptr);
     auto arg4 = hilti::builder::function::parameter("__lahead", _hiltiTypeLookAhead(), false, nullptr);
     auto arg5 = hilti::builder::function::parameter("__lahstart", _hiltiTypeIteratorBytes(), false, nullptr);
-    auto arg6 = hilti::builder::function::parameter("__cookie", _hiltiTypeCookie(), false, nullptr);
+    auto arg6 = hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr);
 
     auto rtype = hilti::builder::function::result(_hiltiTypeParseResult());
 
@@ -663,7 +658,7 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, bool foreach, shared_ptr
 
     hilti::builder::function::parameter_list p = {
         hilti::builder::function::parameter("__self", cg()->hiltiTypeParseObjectRef(unit), false, nullptr),
-        hilti::builder::function::parameter("__cookie", _hiltiTypeCookie(), false, nullptr)
+        hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr)
     };
 
     if ( dollardollar )
@@ -708,7 +703,7 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<ID> id, bo
     if ( local && ! cg()->moduleBuilder()->lookupNode("hook", name) ) {
         hilti::builder::function::parameter_list p = {
             hilti::builder::function::parameter("__self", cg()->hiltiTypeParseObjectRef(state()->unit), false, nullptr),
-            hilti::builder::function::parameter("__cookie", _hiltiTypeCookie(), false, nullptr)
+            hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr)
         };
 
         if ( dollardollar )

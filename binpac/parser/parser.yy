@@ -159,6 +159,7 @@ using namespace binpac;
 
 %type <bits>             bitfield_bits
 %type <bits_spec>        bitfield_bits_spec
+%type <cc>               opt_cc
 %type <constant>         constant
 %type <ctor>             ctor
 %type <declaration>      global_decl type_decl var_decl const_decl func_decl hook_decl local_decl
@@ -266,15 +267,15 @@ import        : IMPORT local_id ';'              { driver.module()->import($2); 
 type_decl     : opt_linkage TYPE local_id '=' type ';'
                                                  { $$ = std::make_shared<declaration::Type>($3, $1, $5, loc(@$)); }
 
-func_decl     : opt_linkage rtype local_id '(' opt_params ')' block
-                                                 { auto ftype = std::make_shared<type::Function>($2, $5, loc(@$));
-                                                   auto func  = std::make_shared<Function>($3, ftype, driver.module(), $7, loc(@$));
+func_decl     : opt_linkage opt_cc rtype local_id '(' opt_params ')' block
+                                                 { auto ftype = std::make_shared<type::Function>($3, $6, $2, loc(@$));
+                                                   auto func  = std::make_shared<Function>($4, ftype, driver.module(), $8, loc(@$));
                                                    $$ = std::make_shared<declaration::Function>(func, $1, loc(@$));
                                                  }
 
-              | DECLARE opt_linkage rtype local_id '(' opt_params ')' ';'
-                                                 { auto ftype = std::make_shared<type::Function>($3, $6, loc(@$));
-                                                   auto func  = std::make_shared<Function>($4, ftype, driver.module(), nullptr, loc(@$));
+              | DECLARE opt_linkage opt_cc rtype local_id '(' opt_params ')' ';'
+                                                 { auto ftype = std::make_shared<type::Function>($4, $7, $3, loc(@$));
+                                                   auto func  = std::make_shared<Function>($5, ftype, driver.module(), nullptr, loc(@$));
                                                    $$ = std::make_shared<declaration::Function>(func, $2, loc(@$));
                                                  }
               ;
@@ -292,6 +293,12 @@ param         : opt_param_const local_id ':' type
                                                  { $$ = std::make_shared<type::function::Parameter>($2, $4, $1, nullptr, loc(@$)); }
 
 rtype         : opt_param_const type             { $$ = std::make_shared<type::function::Result>($2, $1, loc(@$)); }
+
+opt_cc        : CSTRING                          { if ( $1 == "C-HILTI" ) $$ = type::function::HILTI_C;
+                                                   else if ( $1 == "C" ) $$ = type::function::C;
+                                                   else error(@$, "unknown calling convention");
+                                                 }
+              | /* empty */                      { $$ = type::function::DEFAULT; }
 
 opt_param_const
               : CONST                            { $$ = true; }

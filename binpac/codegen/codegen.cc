@@ -176,7 +176,62 @@ void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
    _parser_builder->hiltiDefineHook(id, hook);
 }
 
+shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr<ID> id, shared_ptr<Function> func)
+{
+    auto name = hiltiID(id);
+    auto ftype = func->type();
+    auto rtype = ftype->result() ? hiltiType(ftype->result()->type()) : hilti::builder::void_::type();
+    auto result = hilti::builder::function::result(rtype);
+
+    hilti::builder::function::parameter_list params;
+
+    for ( auto p : ftype->parameters() ) {
+        shared_ptr<hilti::Expression> def = p->default_() ? hiltiExpression(p->default_()) : nullptr;
+        auto hp = hilti::builder::function::parameter(hiltiID(p->id()), hiltiType(p->type()), p->constant(), def);
+        params.push_back(hp);
+    }
+
+    auto cookie = hilti::builder::function::parameter("__cookie", hiltiTypeCookie(), false, nullptr);
+
+    hilti::type::function::CallingConvention cc;
+
+    switch ( ftype->callingConvention() ) {
+     case type::function::DEFAULT:
+        cc = hilti::type::function::HILTI;
+        params.push_back(cookie);
+        break;
+
+     case type::function::HILTI_C:
+        cc = hilti::type::function::HILTI_C;
+        params.push_back(cookie);
+        break;
+
+     case type::function::C:
+        cc = hilti::type::function::C;
+        break;
+
+     default:
+        internalError("unexpected calling convention in hiltiDefineFunction()");
+    }
+
+    if ( func->body() ) {
+        auto decl = moduleBuilder()->pushFunction(name, result, params, cc, nullptr, false, func->location());
+        hiltiStatement(func->body());
+        moduleBuilder()->popFunction();
+        return decl;
+    }
+
+    else
+        return moduleBuilder()->declareFunction(name, result, params, cc, func->location());
+}
+
 shared_ptr<hilti::Expression> CodeGen::hiltiSelf()
 {
     return _parser_builder->hiltiSelf();
 }
+
+shared_ptr<hilti::Type> CodeGen::hiltiTypeCookie()
+{
+    return hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::UserCookie"));
+}
+

@@ -47,6 +47,8 @@ bool Operator::match(const expression_list& ops, bool coerce)
         }
 
         else {
+            assert((*o)->type());
+
             if ( ! (*o)->type()->equal(*t) )
                 return false;
         }

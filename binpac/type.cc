@@ -600,9 +600,10 @@ string Exception::libraryType() const
     return _libtype;
 }
 
-type::Function::Function(shared_ptr<type::function::Result> result, const parameter_list& args, const Location& l)
+type::Function::Function(shared_ptr<type::function::Result> result, const parameter_list& args, type::function::CallingConvention cc, const Location& l)
 : binpac::Type(l), ast::type::mixin::Function<AstInfo>(this, result, args)
 {
+    _cc = cc;
 }
 
 type::Function::Function(const Location& l)
@@ -610,6 +611,16 @@ type::Function::Function(const Location& l)
     ast::type::mixin::Function<AstInfo>(this, std::make_shared<function::Result>(std::make_shared<Void>(), false, l), parameter_list())
 {
     setWildcard(true);
+}
+
+type::function::CallingConvention type::Function::callingConvention() const
+{
+    return _cc;
+}
+
+void type::Function::setCallingConvention(type::function::CallingConvention cc)
+{
+    _cc = cc;
 }
 
 bool type::Function::_equal(shared_ptr<binpac::Type> o) const
@@ -647,7 +658,7 @@ function::Result::Result(shared_ptr<Type> type, bool constant, Location l)
 }
 
 type::Hook::Hook(shared_ptr<binpac::type::function::Result> result, const parameter_list& args, const Location& l)
-: Function(result, args, l)
+    : Function(result, args, type::function::DEFAULT)
 {
 }
 
