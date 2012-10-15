@@ -128,8 +128,8 @@ extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char
 #define GC_ASSIGN(obj, val, tag) \
    { \
    tag* tmp = val; \
-   __hlt_object_cctor(hlt_type_info_##tag, (void*)&val, __hlt_make_location(__FILE__,__LINE__)); \
-   __hlt_object_dtor(hlt_type_info_##tag, (void*)&obj, __hlt_make_location(__FILE__,__LINE__)); \
+   __hlt_object_cctor(&hlt_type_info_##tag, (void*)&val, __hlt_make_location(__FILE__,__LINE__)); \
+   __hlt_object_dtor(&hlt_type_info_##tag, (void*)&obj, __hlt_make_location(__FILE__,__LINE__)); \
    obj = tmp; \
    }
 
@@ -137,7 +137,7 @@ extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char
 #define GC_ASSIGN_REFED(obj, val, tag) \
    { \
    tag* tmp = val; \
-   __hlt_object_dtor(hlt_type_info_##tag, (void*)&obj, __hlt_make_location(__FILE__,__LINE__)); \
+   __hlt_object_dtor(&hlt_type_info_##tag, (void*)&obj, __hlt_make_location(__FILE__,__LINE__)); \
    obj = tmp; \
    }
 
@@ -145,21 +145,21 @@ extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char
 #define GC_INIT(obj, val, tag) \
    { \
    obj = val; \
-   __hlt_object_cctor(hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \
+   __hlt_object_cctor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \
    }
 
 /// XXX
 #define GC_NEW(tag) \
-   __hlt_object_new(hlt_type_info_##tag, sizeof(tag), __hlt_make_location(__FILE__,__LINE__));
+   __hlt_object_new(&hlt_type_info_##tag, sizeof(tag), __hlt_make_location(__FILE__,__LINE__));
 
 /// XXX
 #define GC_NEW_CUSTOM_SIZE(tag, size) \
-   __hlt_object_new(hlt_type_info_##tag, size, __hlt_make_location(__FILE__,__LINE__));
+   __hlt_object_new(&hlt_type_info_##tag, size, __hlt_make_location(__FILE__,__LINE__));
 
 /// XXX
 #define GC_DTOR(obj, tag) \
    { \
-       __hlt_object_dtor(hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \
+       __hlt_object_dtor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \
    }
 
 /// XXX
@@ -171,7 +171,7 @@ extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char
 /// XXX
 #define GC_CCTOR(obj, tag) \
    { \
-       __hlt_object_cctor(hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \
+       __hlt_object_cctor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \
    }
 
 /// XXX
@@ -183,7 +183,7 @@ extern void* __hlt_object_new(const hlt_type_info* ti, uint64_t size, const char
 /// XXX
 #define GC_CLEAR(obj, tag) \
    { \
-       __hlt_object_dtor(hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \
+       __hlt_object_dtor(&hlt_type_info_##tag, &obj, __hlt_make_location(__FILE__,__LINE__)); \
        obj = 0; \
    }
 

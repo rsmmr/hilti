@@ -15,7 +15,7 @@ static int8_t    _debugging = 0;
 static void _ensure_parsers(hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! _parsers )
-        _parsers = hlt_list_new(hlt_type_info_hlt_Parser, 0, excpt, ctx);
+        _parsers = hlt_list_new(&hlt_type_info_hlt_Parser, 0, excpt, ctx);
 }
 
 void binpac_init()
@@ -62,7 +62,7 @@ void binpachilti_register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt
 {
     _ensure_parsers(excpt, ctx);
     parser->type_info = pobj;
-    hlt_list_push_back(_parsers, hlt_type_info_hlt_Parser, &parser, excpt, ctx);
+    hlt_list_push_back(_parsers, &hlt_type_info_hlt_Parser, &parser, excpt, ctx);
 
 #if 0
     binpac_mime_register_parser(parser, excpt, ctx);

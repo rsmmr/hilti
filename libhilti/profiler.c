@@ -71,12 +71,12 @@ typedef struct kh_hlt_profiler_table_t kh_hlt_profiler_table_t;
 
 static inline hlt_hash __kh_string_hash_func(hlt_string tag, const hlt_type_info* type)
 {
-    return hlt_string_hash(hlt_type_info_hlt_string, &tag, 0, 0);
+    return hlt_string_hash(&hlt_type_info_hlt_string, &tag, 0, 0);
 }
 
 static inline int8_t __kh_string_equal_func(hlt_string tag1, hlt_string tag2, const hlt_type_info* type)
 {
-    return hlt_string_equal(hlt_type_info_hlt_string, &tag1, hlt_type_info_hlt_string, &tag2, 0, 0);
+    return hlt_string_equal(&hlt_type_info_hlt_string, &tag1, &hlt_type_info_hlt_string, &tag2, 0, 0);
 }
 
 KHASH_INIT(table, hlt_string, __hlt_profiler*, 1, __kh_string_hash_func, __kh_string_equal_func)

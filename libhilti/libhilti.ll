@@ -91,7 +91,7 @@
 %hlt.exception.type = type {
     i8*,
     i8*,
-    i8**
+    i8*
 }
 
 ; A classifier key. This must match with what classifier.h defines as hlt_classifier_field.

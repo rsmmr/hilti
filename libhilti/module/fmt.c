@@ -68,7 +68,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
 
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
     hlt_type_info* fmt_type = types[*type_param];
-    const void *fmt_arg = tuple + offsets[(*type_param)++];
+    const void *fmt_arg = *type_param < type->num_params ? tuple + offsets[(*type_param)++] : 0;
 
     switch ( p[(*i)++] ) {
 
@@ -136,7 +136,7 @@ static void _do_fmt(hlt_string fmt, const hlt_type_info* type, const void* tuple
         break;
 
       case 'p':
-        if ( * (void **)fmt_arg ) {
+        if ( fmt_arg && * (void **)fmt_arg ) {
             snprintf(tmp, tmp_size, "%p", * (void **)fmt_arg);
             _add_asciiz(tmp, buffer, bpos, dst, excpt, ctx);
         }

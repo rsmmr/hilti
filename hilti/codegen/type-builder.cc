@@ -237,8 +237,12 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
             auto pe = dynamic_cast<type::trait::parameter::Enum *>(p.get());
             auto pa = dynamic_cast<type::trait::parameter::Attribute *>(p.get());
 
-            if ( pt )
-                vals.push_back(cg()->llvmRtti(pt->type()));
+            if ( pt ) {
+                if ( ! _rtti_type_only )
+                    vals.push_back(cg()->llvmRtti(pt->type()));
+                else
+                    vals.push_back(cg()->llvmConstNull(cg()->llvmTypePtr(cg()->llvmTypeRtti())));
+            }
 
             else if ( pi )
                 vals.push_back(cg()->llvmConstInt(pi->value(), 64));
@@ -259,6 +263,14 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
     }
 
     return cg()->llvmConstStruct(vals);
+}
+
+llvm::Type* TypeBuilder::llvmRttiType(shared_ptr<hilti::Type> type)
+{
+    _rtti_type_only = true;
+    auto rtti = llvmRtti(type);
+    _rtti_type_only = false;
+    return rtti->getType();
 }
 
 void TypeBuilder::visit(type::Any* a)

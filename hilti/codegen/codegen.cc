@@ -766,22 +766,34 @@ llvm::Constant* CodeGen::llvmInitVal(shared_ptr<hilti::Type> type)
     return cacheConstant("type.init_val", type->render(), ti->init_val);
 }
 
-llvm::GlobalVariable *CodeGen::llvmRttiPtr(shared_ptr<hilti::Type> type)
+llvm::Constant* CodeGen::llvmRtti(shared_ptr<hilti::Type> type)
 {
-    llvm::Constant* val = lookupCachedConstant("type.rtti", type->render());
-
-    if ( val ) {
-        auto v = llvm::cast<llvm::GlobalVariable>(val);
-        assert(v);
-        return v;
-    }
+    string name = util::mangle(string("hlt_type_info_hlt_") + type->render(), true, nullptr, "", false);
 
     // We add the global here first and cache it before we call llvmRtti() so
     // the recursive calls function properly.
-    string name = util::mangle(string("hlt_type_info_hlt_") + type->render(), true, nullptr, "", false);
     name = ::util::strreplace(name, "_ref", "");
     name = ::util::strreplace(name, "_any", "");
 
+    auto val = lookupCachedConstant("type.rtti", name);
+
+    if ( val )
+        return val;
+
+    auto ti = llvmAddGlobal(name, llvmConstNull(_type_builder->llvmRttiType(type)), true);
+    ti->setConstant(true);
+
+    auto casted = llvm::ConstantExpr::getBitCast(ti, llvmTypePtr(llvmTypeRtti()));
+    cacheConstant("type.rtti", name, casted);
+
+    llvm::Constant* tival = _type_builder->llvmRtti(type);
+    ti->setInitializer(tival);
+    ti->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+
+    return casted;
+}
+
+#if 0
     llvm::Constant* cval = llvmConstNull(llvmTypePtr(llvmTypeRtti()));
     auto constant1 = llvmAddConst(name, cval, true);
     constant1->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
@@ -802,6 +814,7 @@ llvm::Constant* CodeGen::llvmRtti(shared_ptr<hilti::Type> type)
 {
     return llvmRttiPtr(type)->getInitializer();
 }
+#endif
 
 llvm::Type* CodeGen::llvmTypeVoid() {
     return llvm::Type::getVoidTy(llvmContext());
@@ -865,10 +878,10 @@ llvm::Constant* CodeGen::llvmExceptionTypeObject(shared_ptr<type::Exception> exc
 
         auto name = llvmConstAsciizPtr(id);
         auto base = llvmExceptionTypeObject(ast::as<type::Exception>(excpt->baseType()));
-        auto arg  = excpt->argType() ? llvmRttiPtr(excpt->argType()) : llvmConstNull(llvmTypePtr(llvmTypeRtti()));
+        auto arg  = excpt->argType() ? llvmRtti(excpt->argType()) : llvmConstNull(llvmTypePtr(llvmTypeRtti()));
 
         base = llvm::ConstantExpr::getBitCast(base, llvmTypePtr());
-        arg = llvm::ConstantExpr::getBitCast(arg, llvmTypePtr(llvmTypePtr()));
+        arg = llvm::ConstantExpr::getBitCast(arg, llvmTypePtr());
 
         constant_list elems;
         elems.push_back(name);

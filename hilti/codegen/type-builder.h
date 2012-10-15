@@ -204,6 +204,15 @@ public:
    /// Returns: The corresponding LLVM value.
    llvm::Constant* llvmRtti(shared_ptr<hilti::Type> type);
 
+   /// Returns the concretet LLVM type for a type's RTTI object. Note that
+   /// this is not the generic \a hlt_type_info but the specific type for
+   /// this HILTi type.
+   ///
+   /// type: The type to return the RTTI for.
+   ///
+   /// Returns: The corresponding LLVM value.
+   llvm::Type* llvmRttiType(shared_ptr<hilti::Type> type);
+
 protected:
 // void visit(type::Function* f) override;
    void visit(type::Address* t) override;
@@ -272,6 +281,9 @@ private:
 
    // We acculumate struct dtor functions first and then build them at the end.
    std::list<std::pair<type::Struct*, llvm::Function*>> _struct_dtors;
+
+   bool _rtti_type_only = false;
+
 };
 
 

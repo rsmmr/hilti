@@ -155,7 +155,7 @@ void ProtoGen::visit(declaration::Type* t)
 
     std::ostream& out = output();
 
-    out << "extern const hlt_type_info* " << name << ";" << std::endl;
+    out << "extern const hlt_type_info " << name << ";" << std::endl;
 
     _generated.insert(name);
 }

@@ -52,7 +52,7 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
     obj = *((char**)obj);
 
     if ( ! obj )
-        return 0;
+        return hlt_string_from_asciiz("<null>", excpt, ctx);
 
     uint32_t mask = *((uint32_t*)(obj + sizeof(__hlt_gchdr)));
 
@@ -82,6 +82,8 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
         s = hlt_string_concat_and_unref(s, equal, excpt, ctx);
 
         uint32_t is_set = (mask & (1 << i));
+
+        assert(types[i]);
 
         if ( ! is_set ) {
             hlt_string not_set = hlt_string_from_asciiz("(not set)", excpt, ctx);

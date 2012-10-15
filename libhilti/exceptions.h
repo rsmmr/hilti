@@ -19,7 +19,7 @@ struct __hlt_type_info;
 typedef struct hlt_exception_type {
     const char* name;                       //< Name of the exception.
     struct hlt_exception_type* parent;      //< The type this one derives from.
-    const struct __hlt_type_info** argtype; //< The type of the exception's argument, or 0 if no argument.
+    const struct __hlt_type_info* argtype; //< The type of the exception's argument, or 0 if no argument.
 } hlt_exception_type;
 
 /// A HILTI exception instance.

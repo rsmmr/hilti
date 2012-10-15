@@ -653,6 +653,7 @@ public:
    /// Returns: The corresponding LLVM value.
    llvm::Constant* llvmRtti(shared_ptr<hilti::Type> type);
 
+#if 0
    /// Returns a pointer to a pointer to the LLVM RTTI object for a HILTI
    /// type.
    ///
@@ -662,6 +663,7 @@ public:
    ///
    /// Returns: The corresponding LLVM value.
    llvm::GlobalVariable* llvmRttiPtr(shared_ptr<hilti::Type> type);
+#endif
 
    /// Returns the LLVM type the code generator uses for void function
    /// results.

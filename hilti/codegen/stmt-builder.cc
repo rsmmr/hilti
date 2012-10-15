@@ -288,7 +288,7 @@ void StatementBuilder::visit(declaration::Type* t)
 {
     if ( t->linkage() == Declaration::EXPORTED )
         // Trigger generating type information.
-        cg()->llvmRttiPtr(t->type());
+        cg()->llvmRtti(t->type());
 }
 
 void StatementBuilder::visit(statement::ForEach* f)

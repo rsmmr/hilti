@@ -55,7 +55,7 @@ hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}
 void hlt_exception_dtor(hlt_type_info* ti, hlt_exception* excpt)
 {
     if ( excpt->arg ) {
-        GC_DTOR_GENERIC(excpt->arg, *excpt->type->argtype);
+        GC_DTOR_GENERIC(excpt->arg, excpt->type->argtype);
         hlt_free(excpt->arg);
     }
 
@@ -70,9 +70,9 @@ hlt_exception* hlt_exception_new(hlt_exception_type* type, void* arg, const char
 
     if ( arg ) {
         hlt_exception* e;
-        excpt->arg = hlt_malloc((*type->argtype)->size);
-        memcpy(excpt->arg, &arg, (*type->argtype)->size);
-        GC_CCTOR_GENERIC(excpt->arg, *type->argtype);
+        excpt->arg = hlt_malloc(type->argtype->size);
+        memcpy(excpt->arg, &arg, type->argtype->size);
+        GC_CCTOR_GENERIC(excpt->arg, type->argtype);
     }
 
     else
@@ -151,7 +151,7 @@ static void __exception_print(const char* prefix, hlt_exception* exception, hlt_
     fprintf(stderr, "%s%s", prefix, exception->type->name);
 
     if ( exception->arg ) {
-        hlt_string arg = hlt_string_from_object(*exception->type->argtype, exception->arg, &excpt, ctx);
+        hlt_string arg = hlt_string_from_object(exception->type->argtype, exception->arg, &excpt, ctx);
         fprintf(stderr, " with argument '");
         hlt_string_print(stderr, arg, 0, &excpt, ctx);
         fprintf(stderr, "'");

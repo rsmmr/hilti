@@ -145,7 +145,7 @@ struct __hlt_type_info {
 /// Macro to define type information for an internal garbage collected type.
 #define __HLT_RTTI_GC_TYPE(id, type) \
    void id##_dtor(hlt_type_info*, id*); \
-   const hlt_type_info __hlt_type_info_##id = { \
+   const hlt_type_info hlt_type_info_##id = { \
        type, \
        sizeof(id), \
        #id, \
@@ -158,12 +158,12 @@ struct __hlt_type_info {
        (void (*)(const struct __hlt_type_info*, void *))id##_dtor, \
        (void (*)(const struct __hlt_type_info*, void *))__hlt_object_ref, \
    }; \
-   \
-   const hlt_type_info* hlt_type_info_##id = &__hlt_type_info_##id;
 
 #define __HLT_DECLARE_RTTI_GC_TYPE(id) \
-   extern const hlt_type_info* hlt_type_info_##id; \
+   extern const hlt_type_info hlt_type_info_##id; \
 
+/// Returns true if the two type informations refer to equivalent types.
+int8_t hlt_type_equal(const hlt_type_info* ti1, const hlt_type_info* ti2);
 
 // Include prototypes for compiler-generated type information.
 #include "type-info.h"

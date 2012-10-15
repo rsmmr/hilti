@@ -17,14 +17,14 @@ int main()
     hlt_port a;
 
     a = hlt_port_from_asciiz("80/tcp", &excpt, ctx);
-    s = hlt_port_to_string(hlt_type_info_hlt_port, &a, 0, &excpt, ctx);
+    s = hlt_port_to_string(&hlt_type_info_hlt_port, &a, 0, &excpt, ctx);
     hlt_string_print(stdout, s, 1, &excpt, ctx);
     assert(! excpt);
 
     GC_DTOR(s, hlt_string);
 
     a = hlt_port_from_asciiz("53/udp", &excpt, ctx);
-    s = hlt_port_to_string(hlt_type_info_hlt_port, &a, 0, &excpt, ctx);
+    s = hlt_port_to_string(&hlt_type_info_hlt_port, &a, 0, &excpt, ctx);
     hlt_string_print(stdout, s, 1, &excpt, ctx);
     assert(! excpt);
 

@@ -150,7 +150,7 @@ void* hlt_vector_get(hlt_vector* v, hlt_vector_idx i, hlt_exception** excpt, hlt
 
 void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    assert(elemtype == v->type);
+    assert(hlt_type_equal(v->type, elemtype));
 
     if ( i >= v->capacity ) {
         // Allocate more memory.
@@ -181,7 +181,7 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
 
 void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    assert(elemtype == v->type);
+    assert(hlt_type_equal(v->type, elemtype));
 
     ++v->last;
 
@@ -305,7 +305,7 @@ hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int3
 
     for ( hlt_vector_idx i = 0; i <= v->last; i++ ) {
 
-        hlt_string istr = hlt_int_to_string(hlt_type_info_hlt_int_64, &i, options, excpt, ctx);
+        hlt_string istr = hlt_int_to_string(&hlt_type_info_hlt_int_64, &i, options, excpt, ctx);
 
         s = hlt_string_concat_and_unref(s, istr, excpt, ctx);
 

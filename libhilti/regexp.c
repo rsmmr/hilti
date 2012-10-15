@@ -432,7 +432,7 @@ static inline void _set_group(hlt_vector* vec, hlt_iterator_bytes begin, int i, 
     hlt_regexp_range span;
     span.begin = hlt_iterator_bytes_incr_by(begin, so, excpt, ctx);
     span.end = hlt_iterator_bytes_incr_by(begin, eo, excpt, ctx);
-    hlt_vector_set(vec, i, hlt_type_info_hlt_tuple_iterator_bytes_iterator_bytes, &span, excpt, ctx);
+    hlt_vector_set(vec, i, &hlt_type_info_hlt_tuple_iterator_bytes_iterator_bytes, &span, excpt, ctx);
     GC_DTOR(span.begin, hlt_iterator_bytes);
     GC_DTOR(span.end, hlt_iterator_bytes);
 }
@@ -449,7 +449,7 @@ hlt_vector *hlt_regexp_bytes_groups(hlt_regexp* re, const hlt_iterator_bytes beg
     def_span.begin = hlt_bytes_generic_end(excpt, ctx);
     def_span.end = hlt_bytes_generic_end(excpt, ctx);
 
-    hlt_vector* vec = hlt_vector_new(hlt_type_info_hlt_tuple_iterator_bytes_iterator_bytes, &def_span, 0, excpt, ctx);
+    hlt_vector* vec = hlt_vector_new(&hlt_type_info_hlt_tuple_iterator_bytes_iterator_bytes, &def_span, 0, excpt, ctx);
 
     GC_DTOR(def_span.begin, hlt_iterator_bytes);
     GC_DTOR(def_span.end, hlt_iterator_bytes);
