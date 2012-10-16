@@ -31,7 +31,7 @@ shared_ptr<CompilerContext> Module::compilerContext() const
 
 shared_ptr<type::Context> Module::executionContext() const
 {
-    auto expr = body()->scope()->lookup(std::make_shared<ID>("Context"), false);
+    auto expr = body()->scope()->lookupUnique(std::make_shared<ID>("Context"), false);
 
     if ( ! expr )
         return nullptr;

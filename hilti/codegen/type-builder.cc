@@ -248,7 +248,7 @@ llvm::Constant* TypeBuilder::llvmRtti(shared_ptr<hilti::Type> type)
                 vals.push_back(cg()->llvmConstInt(pi->value(), 64));
 
             else if ( pe ) {
-                auto expr = cg()->hiltiModule()->body()->scope()->lookup(pe->label());
+                auto expr = cg()->hiltiModule()->body()->scope()->lookupUnique(pe->label());
                 assert(expr);
                 auto val = ast::as<type::Enum>(expr->type())->labelValue(pe->label());
                 vals.push_back(cg()->llvmConstInt(val, 64));

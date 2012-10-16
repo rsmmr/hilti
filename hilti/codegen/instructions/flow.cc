@@ -91,7 +91,7 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
         for ( shared_ptr<hilti::Type> t : ttype->typeList() ) {
             llvm::Value* val = cg()->llvmExtractValue(tval, i++);
             auto expr = shared_ptr<Expression>(new expression::CodeGen(t, val));
-            call_params->push_back(expr);
+            call_params->push_back(expr->coerceTo(((*p)->type())));
             ++p;
         }
     }

@@ -268,6 +268,20 @@ void Validator::visit(expression::Variable* v)
 
 void Validator::visit(statement::Block* b)
 {
+    for ( auto i : b->scope()->map() ) {
+        auto exprs = i.second;
+
+        if ( exprs->size() <= 1 )
+            continue;
+
+        // Only functions can be overloaded.
+        for ( auto e : *exprs ) {
+            if ( ! ast::isA<expression::Function>(e) ) {
+                error(b, util::fmt("ID %s defined more than once", i.first));
+                break;
+            }
+        }
+    }
 }
 
 void Validator::visit(statement::Expression* e)
@@ -556,7 +570,7 @@ void Validator::visit(type::unit::item::Field* f)
         if ( tbn ) {
             auto module = current<Module>();
             assert(module);
-            auto t = module->body()->scope()->lookup(tbn->id());
+            auto t = module->body()->scope()->lookupUnique(tbn->id());
             assert(t);
             ptype = ast::checkedCast<expression::Type>(t)->typeValue();
         }

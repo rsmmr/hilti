@@ -51,6 +51,9 @@ Code Cleanup
   "streams"; we should switch the logger over to that instead of using
   "levels".
 
+- Now that scopes can associate more than one expression with each
+  ID, we should port hooks over to using that.
+
 Links
 -----
 

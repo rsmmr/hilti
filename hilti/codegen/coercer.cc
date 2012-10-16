@@ -128,6 +128,13 @@ void codegen::Coercer::visit(type::Reference* r)
             setResult(nregexp);
             return;
         }
+
+        // Case void* pointers to their destination type.
+        if ( val->getType() == llvm::Type::getInt8PtrTy(cg()->llvmContext()) ) {
+            auto casted = cg()->builder()->CreateBitCast(val, cg()->llvmType(dst));
+            setResult(casted);
+            return;
+        }
     }
 
     assert(false);

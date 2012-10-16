@@ -54,12 +54,19 @@ void IDResolver::visit(expression::ID* i)
     }
 
     auto id = i->sharedPtr<expression::ID>();
-    auto val = scope->lookup(id->id());
+    auto vals = scope->lookup(id->id());
 
-    if ( ! val ) {
+    if ( ! vals.size() ) {
         error(i, util::fmt("unknown ID %s", id->id()->pathAsString().c_str()));
         return;
     }
+
+    if ( vals.size() > 1 ) {
+        error(i, util::fmt("ID %s defined more than once", id->id()->pathAsString().c_str()));
+            return;
+    }
+
+    auto val = vals.front();
 
     id->replace(val);
 
@@ -81,12 +88,20 @@ void IDResolver::visit(type::Unknown* t)
     if ( ! id )
         return;
 
-    auto val = body->scope()->lookup(id);
+    auto vals = body->scope()->lookup(id);
 
-    if ( ! val ) {
+    if ( ! vals.size() ) {
         error(t, util::fmt("unknown type ID %s", id->pathAsString().c_str()));
         return;
     }
+
+    if ( vals.size() > 1 ) {
+        error(t, util::fmt("ID %s defined more than once", id->pathAsString().c_str()));
+        return;
+    }
+
+    auto val = vals.front();
+
 
     auto nt = ast::tryCast<expression::Type>(val);
 
@@ -117,17 +132,19 @@ void IDResolver::visit(declaration::Hook* h)
     auto module = current<Module>();
     assert(module);
 
-    auto expr = module->body()->scope()->lookup(std::make_shared<ID>(path));
+    auto exprs = module->body()->scope()->lookup(std::make_shared<ID>(path));
 
-    if ( ! expr ) {
-        error(h, "id does not lead to a unit type");
-        return;
-    }
-
-    if ( ! expr ) {
+    if ( ! exprs.size() ) {
         error(h, "unknown id");
         return;
     }
+
+    if ( exprs.size() > 1 ) {
+        error(h, util::fmt("ID %s references more than one object", h->id()->pathAsString()));
+        return;
+    }
+
+    auto expr = exprs.front();
 
     auto texpr = ast::tryCast<expression::Type>(expr);
 
@@ -163,12 +180,19 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
     if ( ! id )
         return;
 
-    auto expr = body->scope()->lookup(id);
+    auto exprs = body->scope()->lookup(id);
 
-    if ( ! expr ) {
+    if ( ! exprs.size() ) {
         error(f, util::fmt("unknown ID %s", id->pathAsString()));
         return;
     }
+
+    if ( exprs.size() > 1 ) {
+        error(f, util::fmt("ID %s references more than one object", id->pathAsString()));
+        return;
+    }
+
+    auto expr = exprs.front();
 
     auto attributes = f->attributes()->attributes();
     auto condition = f->condition();

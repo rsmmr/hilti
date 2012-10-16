@@ -22,12 +22,28 @@ void IdResolver::visit(expression::ID* i)
     }
 
     auto id = i->sharedPtr<expression::ID>();
-    auto val = body->scope()->lookup(id->id());
+    auto vals = body->scope()->lookup(id->id());
 
-    if ( ! val ) {
+    if ( ! vals.size() ) {
         error(i, util::fmt("unknown ID %s", id->id()->pathAsString().c_str()));
         return;
     }
+
+    if ( vals.size() > 1 ) {
+
+        // This is ok if all hooks.
+        for ( auto e : vals ) {
+            auto func = ast::tryCast<expression::Function>(e);
+
+            if ( func && ast::isA<Hook>(func->function()) )
+                continue;
+
+            error(i, util::fmt("ID %s defined more than once", id->id()->pathAsString().c_str()));
+            return;
+        }
+    }
+
+    auto val = vals.front();
 
     id->replace(val);
 
@@ -58,12 +74,19 @@ void IdResolver::visit(type::Unknown* t)
     if ( ! id )
         return;
 
-    auto val = body->scope()->lookup(id);
+    auto vals = body->scope()->lookup(id);
 
-    if ( ! val ) {
+    if ( ! vals.size() ) {
         error(t, util::fmt("unknown type ID %s", id->pathAsString().c_str()));
         return;
     }
+
+    if ( vals.size() > 1 ) {
+        error(t, util::fmt("ID %s defined more than once", id->pathAsString().c_str()));
+        return;
+    }
+
+    auto val = vals.front();
 
     auto nt = ast::as<expression::Type>(val);
 

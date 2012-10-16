@@ -4,6 +4,7 @@
 
 #include <map>
 #include <set>
+#include <list>
 #include <iostream>
 #include <typeinfo>
 
@@ -24,7 +25,7 @@ public:
 
 private:
     typedef std::map<string, shared_ptr<Scope<AstInfo>>> scope_map;
-    typedef std::map<string, Value> value_map;
+    typedef std::map<string, shared_ptr<std::list<Value>>> value_map;
 
     struct Data {
         shared_ptr<ID> id = nullptr;
@@ -76,13 +77,33 @@ public:
     /// identifier local to this scope.
     const value_map& map() const { return _data->values; }
 
-    /// Inserts an identifier into the scope.
+    /// Inserts an identifier into the scope. If the ID already exists, the
+    /// value is added to its list.
     ///
     /// id: The ID. It must not be scoped.
+    ///
     /// value: The value to associate with the ID.
     bool insert(shared_ptr<ID> id, Value Value); // must not be scoped.
 
-    /// Look ups an ID.
+    /// Lookups an ID.
+    ///
+    /// id: The ID, which may be scoped or unscoped.
+    ///
+    /// traverse: If true, the lookup traverses parent and child scopes as appropiate.
+    ///
+    /// Returns: The list of values associated with the ID, or an empty list
+    /// if it was not found.
+    std::list<Value> lookup(shared_ptr<ID> id, bool traverse=true) const {
+       auto val = find(id, traverse);
+       if ( val.size() )
+           return val;
+
+       return _parent && traverse ? _parent->lookup(id, traverse) : val;
+    }
+
+    /// Lookups an ID under the assumption that is must only have at max 1
+    /// value associated with it. If it has more, that's an internal error
+    /// and aborts execution.
     ///
     /// id: The ID, which may be scoped or unscoped.
     ///
@@ -90,12 +111,10 @@ public:
     ///
     /// Returns: The value associated with the ID, or null if it was not
     /// found.
-    const Value lookup(shared_ptr<ID> id, bool traverse=true) const {
-       auto val = find(id, traverse);
-       if ( val )
-           return val;
-
-       return _parent && traverse ? _parent->lookup(id, traverse) : val;
+    const Value lookupUnique(shared_ptr<ID> id, bool traverse=true) const {
+        auto vals = lookup(id, traverse);
+        assert(vals.size() <= 1);
+        return vals.size() ? vals.front() : nullptr;
     }
 
     /// Returns true if an ID exists.
@@ -106,8 +125,8 @@ public:
     /// appropiate.
     ///
     bool has(shared_ptr<ID> id, bool traverse=true) const {
-       auto val = find(id, traverse);
-       if ( val )
+       auto vals = find(id, traverse);
+       if ( vals.size() )
            return true;
 
        return _parent && traverse ? _parent->has(id, traverse) : false;
@@ -142,8 +161,8 @@ public:
 
 private:
     // Internal helpers doing the lookip opeations.
-    inline Value find(shared_ptr<ID> id, bool traverse) const;
-    inline Value find(typename ID::component_list::const_iterator begin, typename ID::component_list::const_iterator end, bool traverse) const;
+    inline std::list<Value> find(shared_ptr<ID> id, bool traverse) const;
+    inline std::list<Value> find(typename ID::component_list::const_iterator begin, typename ID::component_list::const_iterator end, bool traverse) const;
 
     // Recursive version of dump().
     void dump(std::ostream& out, int level, std::set<const Scope*>* seen);
@@ -157,9 +176,17 @@ inline bool Scope<AstInfo>::insert(shared_ptr<ID> id, Value value)
 {
     assert(! id->isScoped());
 
-    remove(id); // Remove first if already exists.
+    auto i = _data->values.find(id->name());
 
-    auto result = _data->values.insert(typename value_map::value_type(id->name(), value));
+    if ( i != _data->values.end() )
+        i->second->push_back(value);
+
+    else {
+        auto list = std::make_shared<std::list<Value>>();
+        list->push_back(value);
+        _data->values.insert(typename value_map::value_type(id->name(), list));
+    }
+
     return true;
 }
 
@@ -184,10 +211,10 @@ inline void Scope<AstInfo>::clear()
 }
 
 template<typename AstInfo>
-inline shared_ptr<typename AstInfo::scope_value> Scope<AstInfo>::find(typename ID::component_list::const_iterator begin, typename ID::component_list::const_iterator end, bool traverse) const
+inline std::list<shared_ptr<typename AstInfo::scope_value>> Scope<AstInfo>::find(typename ID::component_list::const_iterator begin, typename ID::component_list::const_iterator end, bool traverse) const
 {
     if ( begin == end )
-        return nullptr;
+        return std::list<Value>();
 
     auto head = *begin;
     ++begin;
@@ -200,13 +227,13 @@ inline shared_ptr<typename AstInfo::scope_value> Scope<AstInfo>::find(typename I
             goto try_childs;
 
         // Found.
-        return val->second;
+        return *val->second;
     }
 
 try_childs:
 
     if ( ! traverse )
-        return nullptr;
+        return std::list<Value>();
 
     auto child = _data->childs.find(head);
 
@@ -215,11 +242,11 @@ try_childs:
         return child->second->find(begin, end, traverse);
 
     // Not found.
-    return nullptr;
+    return std::list<Value>();
 }
 
 template<typename AstInfo>
-inline shared_ptr<typename AstInfo::scope_value> Scope<AstInfo>::find(shared_ptr<ID> id, bool traverse) const
+inline std::list<shared_ptr<typename AstInfo::scope_value>> Scope<AstInfo>::find(shared_ptr<ID> id, bool traverse) const
 {
     assert(traverse || ! id->isScoped());
     const typename ID::component_list& path = id->path();
@@ -257,8 +284,19 @@ inline void Scope<AstInfo>::dump(std::ostream& out, int level, std::set<const Sc
 
     out << std::endl;
 
-    for ( auto v : _data->values )
-        out << indent << "  " << string(v.first) << " -> " << string(*v.second) << std::endl;
+    for ( auto v : _data->values ) {
+        out << indent << "  " << string(v.first) << " -> ";
+
+        bool first = true;
+
+        for ( auto i : *v.second ) {
+            if ( ! first )
+                out << indent << "    ";
+
+            out << string(*i) << " " << std::endl;
+            first = false;
+        }
+    }
 
     for ( auto c : _data->childs ) {
         out << indent << "  " << c.first << std::endl;

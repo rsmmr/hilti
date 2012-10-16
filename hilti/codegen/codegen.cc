@@ -1003,7 +1003,7 @@ llvm::Constant* CodeGen::llvmConstStruct(llvm::Type* type, const constant_list& 
 
 llvm::Value* CodeGen::llvmEnum(const string& label)
 {
-    auto expr = _hilti_module->body()->scope()->lookup((std::make_shared<ID>(label)));
+    auto expr = _hilti_module->body()->scope()->lookupUnique((std::make_shared<ID>(label)));
 
     if ( ! expr )
         throw ast::InternalError("llvmEnum: unknown enum label %s" + label);
@@ -1505,7 +1505,7 @@ void CodeGen::llvmAddHookMetaData(shared_ptr<Hook> hook, llvm::Value *llvm_func)
 
 llvm::Function* CodeGen::llvmFunction(shared_ptr<ID> id)
 {
-    auto expr = _hilti_module->body()->scope()->lookup(id);
+    auto expr = _hilti_module->body()->scope()->lookupUnique(id);
 
     if ( ! expr )
         internalError(string("unknown function ") + id->pathAsString() + " in llvmFunction()");
@@ -1746,7 +1746,7 @@ void CodeGen::llvmRaiseException(const string& exception, shared_ptr<Node> node,
 
 llvm::Value* CodeGen::llvmExceptionNew(const string& exception, const Location& l, llvm::Value* arg)
 {
-    auto expr = _hilti_module->body()->scope()->lookup((std::make_shared<ID>(exception)));
+    auto expr = _hilti_module->body()->scope()->lookupUnique((std::make_shared<ID>(exception)));
 
     if ( ! expr )
         internalError(::util::fmt("unknown exception %s", exception.c_str()), l);
@@ -1935,7 +1935,7 @@ void CodeGen::llvmCheckException()
 
 llvm::Value* CodeGen::llvmMatchException(const string& name, llvm::Value* excpt)
 {
-    auto expr = _hilti_module->body()->scope()->lookup((std::make_shared<ID>(name)));
+    auto expr = _hilti_module->body()->scope()->lookupUnique((std::make_shared<ID>(name)));
 
     if ( ! expr )
         internalError(::util::fmt("unknown exception %s", name.c_str()));
@@ -2694,7 +2694,7 @@ llvm::Value* CodeGen::llvmCall(shared_ptr<Function> func, const expr_list args, 
 llvm::Value* CodeGen::llvmCall(const string& name, const expr_list args, bool excpt_check)
 {
     auto id = shared_ptr<ID>(new ID(name));
-    auto expr = _hilti_module->body()->scope()->lookup(id);
+    auto expr = _hilti_module->body()->scope()->lookupUnique(id);
 
     if ( ! expr )
         internalError(string("unknown function ") + id->name() + " in llvmCall()");
@@ -3240,7 +3240,7 @@ llvm::Value* CodeGen::llvmObjectNew(shared_ptr<Type> type, llvm::StructType* llv
 
 shared_ptr<Type> CodeGen::typeByName(const string& name)
 {
-    auto expr = _hilti_module->body()->scope()->lookup(std::make_shared<ID>(name));
+    auto expr = _hilti_module->body()->scope()->lookupUnique(std::make_shared<ID>(name));
 
     if ( ! expr )
         internalError(string("unknown type ") + name + " in typeByName()");
@@ -3530,7 +3530,7 @@ void CodeGen::llvmProfilerStart(llvm::Value* tag, llvm::Value* style, llvm::Valu
         tmgr = llvmConstNull(llvmType(rtmgr));
     }
 
-    auto eexpr = _hilti_module->body()->scope()->lookup((std::make_shared<ID>("Hilti::ProfileStyle")));
+    auto eexpr = _hilti_module->body()->scope()->lookupUnique((std::make_shared<ID>("Hilti::ProfileStyle")));
     assert(eexpr);
 
     expr_list args = {

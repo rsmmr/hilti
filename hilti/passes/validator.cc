@@ -109,13 +109,20 @@ void Validator::visit(Module* m)
     // Make sure we have a Main::run function.
     if ( util::strtolower(m->id()->name()) == "main" ) {
 
-        auto run = m->body()->scope()->lookup(std::make_shared<ID>("run"));
+        auto runs = m->body()->scope()->lookup(std::make_shared<ID>("run"));
 
-        if ( ! run )
+        if ( ! runs.size() )
             error(m, "module Main must define a run() function");
 
-        else if ( ! ast::isA<expression::Function>(run) )
-            error(m, "in module Main, ID 'run' must be a function");
+        else if ( runs.size() > 1 )
+            error(m, "module Main must define only one run() function");
+
+        else {
+            auto run = runs.front();
+
+            if ( ! ast::isA<expression::Function>(run) )
+                error(m, "in module Main, ID 'run' must be a function");
+        }
     }
 }
 
@@ -125,6 +132,22 @@ void Validator::visit(ID* id)
 
 void Validator::visit(statement::Block* s)
 {
+    for ( auto i : s->scope()->map() ) {
+        auto exprs = i.second;
+
+        if ( exprs->size() > 1 ) {
+            // This is ok for hooks.
+            for ( auto e : *exprs ) {
+                auto func = ast::tryCast<expression::Function>(e);
+
+                if ( func && ast::isA<Hook>(func->function()) )
+                    continue;
+
+                error(s, util::fmt("ID %s defined more than once", i.first));
+                return;
+            }
+        }
+    }
 }
 
 void Validator::visit(statement::Try* s)
@@ -413,10 +436,10 @@ void Validator::visit(declaration::Hook* f)
 
     auto other = block->scope()->lookup(f->id());
 
-    if ( f->id()->isScoped() && ! other )
+    if ( f->id()->isScoped() && ! other.size() )
         error(f, util::fmt("external hook %s not declared", f->id()->pathAsString().c_str()));
 
-    if ( other && ! f->hook()->type()->equal(other->type()) )
+    if ( other.size() && ! f->hook()->type()->equal(other.front()->type()) )
         error(f, util::fmt("inconsistent definitions for hook %s", f->id()->pathAsString().c_str()));
 }
 

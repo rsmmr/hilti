@@ -10,6 +10,7 @@
 
 #include "passes/grammar-builder.h"
 #include "passes/id-resolver.h"
+#include "passes/overload-resolver.h"
 #include "passes/normalizer.h"
 #include "passes/operator-resolver.h"
 #include "passes/printer.h"
@@ -83,6 +84,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
 
     passes::GrammarBuilder   grammar_builder(std::cerr);
     passes::IDResolver       id_resolver;
+    passes::OverloadResolver overload_resolver;
     passes::Normalizer       normalizer;
     passes::OperatorResolver op_resolver;
     passes::ScopeBuilder     scope_builder(this);
@@ -98,7 +100,8 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( ! id_resolver.run(module) )
         return false;
 
-    // module->dump(std::cerr);
+    if ( ! overload_resolver.run(module) )
+        return false;
 
     if ( ! op_resolver.run(module) )
         return false;

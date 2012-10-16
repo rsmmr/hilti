@@ -298,7 +298,7 @@ void StatementBuilder::visit(statement::ForEach* f)
     auto iterable = ast::as<type::trait::Iterable>(t);
     assert(iterable);
 
-    auto var = f->body()->scope()->lookup(f->id());
+    auto var = f->body()->scope()->lookupUnique(f->id());
     assert(var);
 
     // Add the local iteration variable..
