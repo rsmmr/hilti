@@ -2569,7 +2569,7 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
             assert(! ast::isA<hilti::type::TypeType>(arg_type)); // Not supported.
 
             // Can pass directly but need context.
-            auto arg_value = llvmValue(coerced);
+            auto arg_value = llvmValue(coerced, ptype);
             llvm_args.push_back(arg_value);
             break;
          }
@@ -2584,7 +2584,7 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
                  break;
              }
 
-             auto arg_value = llvmValue(coerced);
+             auto arg_value = llvmValue(coerced, ptype);
 
              if ( typeInfo(ptype)->pass_type_info ) {
                  auto rtti = llvmRtti(arg_type);
@@ -2605,7 +2605,7 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
             assert(! ast::isA<hilti::type::TypeType>(arg_type)); // Not supported.
 
             // Don't mess with arguments.
-            auto arg_value = llvmValue(coerced);
+            auto arg_value = llvmValue(coerced, ptype);
             llvm_args.push_back(arg_value);
             break;
          }
@@ -3108,7 +3108,7 @@ void CodeGen::llvmStructSet(shared_ptr<Type> stype, llvm::Value* sval, const str
 {
     auto fd = _getField(this, stype, field);
     auto cval = val->coerceTo(fd.second->type());
-    auto lval = llvmValue(cval);
+    auto lval = llvmValue(cval, fd.second->type());
     llvmStructSet(stype, sval, field, lval);
 }
 
