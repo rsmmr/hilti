@@ -87,6 +87,30 @@ string util::strtrim(const string& s)
     return t;
 }
 
+uint64_t hash(const string& str)
+{
+    uint64_t h = 0;
+
+    for ( int i = 0; i < str.size(); i++ )
+        h = (h << 5) - h + (uint64_t)str[i];
+
+	return h;
+}
+
+string uitoa_n(uint64_t value, int base, int n)
+{
+    static char dig[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    string s;
+
+	do {
+		s.append(1, dig[value % base]);
+		value /= base;
+	} while ( value && (n < 0 || s.size() < n - 1 ));
+
+	return s;
+}
+
 bool util::pathExists(const string& path)
 {
     struct stat st;

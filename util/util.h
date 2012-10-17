@@ -81,6 +81,21 @@ extern string strtrim(const string& s);
 inline bool startsWith(const string& s, const string& prefix) { return s.find(prefix) == 0; }
 extern bool endsWith(const string& s, const string& suffix);
 
+/// Returns a simple (non-crypto) hash value of a string.
+extern uint64_t hash(const string& str);
+
+/// Converts an integer into a string relative to a given base.
+///
+/// value: The value.
+///
+/// base: The base.
+///
+/// n: The max number of characters to include. If the final string would
+/// longer than this, it's cut off. If smaller than zero, includes all.
+///
+/// Returns: The string.
+extern string uitoa_n(uint64_t value, int base, int n = -1);
+
 /// Expands escape sequences. The following escape sequences are supported:
 ///
 ///    ============   ============================
