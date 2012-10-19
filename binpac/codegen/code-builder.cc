@@ -160,7 +160,7 @@ void CodeBuilder::visit(declaration::Constant* c)
 
 void CodeBuilder::visit(declaration::Function* f)
 {
-    cg()->hiltiDefineFunction(f->id(), f->function());
+    cg()->hiltiDefineFunction(f->function());
 }
 
 void CodeBuilder::visit(declaration::Hook* h)
@@ -219,7 +219,7 @@ void CodeBuilder::visit(expression::Ctor* c)
 
 void CodeBuilder::visit(expression::Function* f)
 {
-    auto id = cg()->hiltiID(f->function()->id());
+    auto id = cg()->hiltiFunctionName(f->function());
     auto result = hilti::builder::id::create(id, f->location());
     setResult(result);
 }
@@ -523,7 +523,7 @@ void CodeBuilder::visit(expression::operator_::function::Call* i)
 
 
     switch ( ftype->callingConvention() ) {
-     case type::function::DEFAULT:
+     case type::function::BINPAC:
      case type::function::HILTI_C: {
          shared_ptr<hilti::Expression> cookie = nullptr;
 

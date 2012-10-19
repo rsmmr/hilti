@@ -176,9 +176,9 @@ void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
    _parser_builder->hiltiDefineHook(id, hook);
 }
 
-shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr<ID> id, shared_ptr<Function> func)
+shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr<Function> func)
 {
-    auto name = hiltiID(id);
+    auto name = hiltiFunctionName(func);
     auto ftype = func->type();
     auto rtype = ftype->result() ? hiltiType(ftype->result()->type()) : hilti::builder::void_::type();
     auto result = hilti::builder::function::result(rtype);
@@ -196,7 +196,7 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
     hilti::type::function::CallingConvention cc;
 
     switch ( ftype->callingConvention() ) {
-     case type::function::DEFAULT:
+     case type::function::BINPAC:
         cc = hilti::type::function::HILTI;
         params.push_back(cookie);
         break;
@@ -223,6 +223,18 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
 
     else
         return moduleBuilder()->declareFunction(name, result, params, cc, func->location());
+}
+
+shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> func)
+{
+    if ( func->type()->callingConvention() != type::function::BINPAC )
+        return hiltiID(func->id());
+
+    // To make overloaded functions unique, we add a hash of the signature.
+    auto type = func->type()->render();
+    auto name = util::fmt("%s__%s", func->id()->name(), util::uitoa_n(util::hash(type), 64, 4));
+
+    return hilti::builder::id::node(name, func->location());
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiSelf()

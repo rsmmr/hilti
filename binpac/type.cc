@@ -658,7 +658,7 @@ function::Result::Result(shared_ptr<Type> type, bool constant, Location l)
 }
 
 type::Hook::Hook(shared_ptr<binpac::type::function::Result> result, const parameter_list& args, const Location& l)
-    : Function(result, args, type::function::DEFAULT)
+    : Function(result, args, type::function::BINPAC)
 {
 }
 

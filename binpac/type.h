@@ -734,7 +734,7 @@ public:
 
 /// BinPAC++'s supported calling conventions.
 enum CallingConvention {
-    DEFAULT,    /// Default calling convention.
+    BINPAC,     /// Standard calling convention for BinPAC++ function.
     HILTI_C,    /// C-compatible calling convention, but with extra HILTI run-time parameters.
     C           /// C-compatable calling convention, with no messing around with parameters.
 };
@@ -753,7 +753,7 @@ public:
     /// cc: The function's calling convention.
     ///
     /// l: Associated location.
-    Function(shared_ptr<binpac::type::function::Result> result, const parameter_list& args, function::CallingConvention cc = function::DEFAULT, const Location& l=Location::None);
+    Function(shared_ptr<binpac::type::function::Result> result, const parameter_list& args, function::CallingConvention cc = function::BINPAC, const Location& l=Location::None);
 
     /// Constructor for a function type that matches any other function type (i.e., a wildcard type).
     Function(const Location& l=Location::None);

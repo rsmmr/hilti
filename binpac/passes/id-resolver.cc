@@ -62,8 +62,16 @@ void IDResolver::visit(expression::ID* i)
     }
 
     if ( vals.size() > 1 ) {
-        error(i, util::fmt("ID %s defined more than once", id->id()->pathAsString().c_str()));
-            return;
+        // Only functions can be overloaded.
+        for ( auto v: vals ) {
+            if ( ! ast::tryCast<expression::Function>(v) ) {
+                error(i, util::fmt("ID %s defined more than once", id->id()->pathAsString().c_str()));
+                return;
+            }
+        }
+
+        // We resolve these later with overload-resolver.
+        return;
     }
 
     auto val = vals.front();

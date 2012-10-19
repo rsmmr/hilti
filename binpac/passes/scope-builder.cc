@@ -71,14 +71,7 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
         return 0;
     }
 
-    auto scope = block->scope();
-
-    if ( (! is_hook) && scope->has(decl->id(), false) ) {
-        error(decl, util::fmt("ID %s already declared", decl->id()->name().c_str()));
-        return 0;
-    }
-
-    return scope;
+    return block->scope();
 }
 
 void ScopeBuilder::visit(declaration::Variable* v)

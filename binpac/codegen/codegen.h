@@ -159,7 +159,7 @@ public:
     /// Adds a function to the current module.
     ///
     /// function: The function.
-    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<ID> id, shared_ptr<Function> func);
+    shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<Function> func);
 
     /// Returns a HILTI expression referencing the current parser object
     /// (assuming parsing is in process; if not aborts());
@@ -167,6 +167,9 @@ public:
 
     /// Returns the HILTI type for the cookie argument.
     shared_ptr<hilti::Type> hiltiTypeCookie();
+
+    /// Returns the HILTI-level name for a function.
+    shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<binpac::Function> func);
 
 private:
     bool _compiling = false;

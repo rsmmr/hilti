@@ -87,7 +87,7 @@ string util::strtrim(const string& s)
     return t;
 }
 
-uint64_t hash(const string& str)
+uint64_t util::hash(const string& str)
 {
     uint64_t h = 0;
 
@@ -97,7 +97,7 @@ uint64_t hash(const string& str)
 	return h;
 }
 
-string uitoa_n(uint64_t value, int base, int n)
+string util::uitoa_n(uint64_t value, int base, int n)
 {
     static char dig[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

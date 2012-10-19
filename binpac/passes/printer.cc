@@ -732,7 +732,14 @@ void Printer::visit(type::Function* f)
         return;
 
     Printer& p = *this;
-    p << "(type function)";
+
+    auto rtype = f->result() ? f->result()->type()->render() : string("void");
+    std::list<string> args;
+
+    for ( auto p : f->parameters() )
+        args.push_back(p->type()->render());
+
+    p << util::fmt("function(%s) : %s", util::strjoin(args.begin(), args.end(), ", "), rtype);
 }
 
 void Printer::visit(type::Hook* h)

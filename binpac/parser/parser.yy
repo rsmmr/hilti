@@ -298,7 +298,7 @@ opt_cc        : CSTRING                          { if ( $1 == "C-HILTI" ) $$ = t
                                                    else if ( $1 == "C" ) $$ = type::function::C;
                                                    else error(@$, "unknown calling convention");
                                                  }
-              | /* empty */                      { $$ = type::function::DEFAULT; }
+              | /* empty */                      { $$ = type::function::BINPAC; }
 
 opt_param_const
               : CONST                            { $$ = true; }

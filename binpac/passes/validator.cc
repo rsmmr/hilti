@@ -274,8 +274,8 @@ void Validator::visit(statement::Block* b)
         if ( exprs->size() <= 1 )
             continue;
 
-        // Only functions can be overloaded.
         for ( auto e : *exprs ) {
+            // Only functions can be overloaded.
             if ( ! ast::isA<expression::Function>(e) ) {
                 error(b, util::fmt("ID %s defined more than once", i.first));
                 break;

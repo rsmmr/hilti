@@ -27,7 +27,7 @@ public:
     bool run(shared_ptr<ast::NodeBase> ast) override;
 
 protected:
-    void visit(expression::ID* i) override;
+    void visit(expression::UnresolvedOperator* o) override;
 };
 
 }
