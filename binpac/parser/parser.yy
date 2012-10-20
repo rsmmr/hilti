@@ -155,7 +155,6 @@ using namespace binpac;
 // %type <expression>       expr
 // %type <expressions>      exprs
 //  %type <attributes>       attr_list opt_attr_list
-// %type <types>            type_list
 
 %type <bits>             bitfield_bits
 %type <bits_spec>        bitfield_bits_spec
@@ -190,6 +189,7 @@ using namespace binpac;
 %type <re_patterns>      re_patterns
 %type <re_pattern>       re_pattern
 %type <sval>             re_pattern_constant
+%type <types>            types
 %%
 
 %start module;
@@ -323,10 +323,11 @@ block         : '{'                              { driver.pushBlock(std::make_sh
                 opt_stmts '}'                    { auto b = driver.popBlock(); b->addStatements($5); $$ = b; }
 
 opt_local_decls
-              : local_decl opt_local_decls       { $$ = $2; $2.push_front($1); }
+              : local_decl opt_local_decls       { $$ = $2; $$.push_front($1); }
               | /* empty */                      { $$ = declaration_list(); }
 
-local_decl    : LOCAL local_id ':' type opt_expr { auto v = std::make_shared<variable::Local>($2, $4, $5, loc(@$));
+local_decl    : LOCAL local_id type_or_opt_init ';'
+                                                 { auto v = std::make_shared<variable::Local>($2, $3.first, $3.second, loc(@$));
                                                    $$ = std::make_shared<declaration::Variable>($2, Declaration::PRIVATE, v, loc(@$)); }
 
 type          : base_type                        { $$ = $1; }
@@ -348,6 +349,7 @@ atomic_type   : ANY                              { $$ = std::make_shared<type::A
               | STRING                           { $$ = std::make_shared<type::String>(loc(@$)); }
               | TIME                             { $$ = std::make_shared<type::Time>(loc(@$)); }
               | TIMER                            { $$ = std::make_shared<type::Timer>(loc(@$)); }
+              | TYPE                             { $$ = std::make_shared<type::TypeType>(loc(@$)); }
               | VOID                             { $$ = std::make_shared<type::Void>(loc(@$)); }
 
               | INT '<' CINTEGER '>'             { $$ = std::make_shared<type::Integer>($3, true, loc(@$)); }
@@ -364,7 +366,7 @@ atomic_type   : ANY                              { $$ = std::make_shared<type::A
 
               | ITER '<' type '>'                { $$ = std::make_shared<type::Iterator>($3, loc(@$)); }
               | REGEXP                           { $$ = std::make_shared<type::RegExp>(attribute_list(), loc(@$)); }
-//            | TUPLE '<' type_list '>'          { $$ = std::make_shared<type::Tuple>($3, loc(@$)); }
+              | TUPLE '<' types '>'          { $$ = std::make_shared<type::Tuple>($3, loc(@$)); }
 
               | bitfield                         { $$ = $1; }
               | bitset                           { $$ = $1; }
@@ -383,6 +385,9 @@ bitset        : BITSET '{' id_with_ints '}'      { $$ = std::make_shared<type::B
 
 enum_         : ENUM '{' id_with_ints '}'        { $$ = std::make_shared<type::Enum>($3, loc(@$)); }
               ;
+
+types         : base_type ',' types              { $$ = $3; $$.push_front($1); }
+              | base_type                        { $$ = type_list(); $$.push_back($1); }
 
 id_with_ints  : id_with_ints ',' id_with_int     { $$ = $1; $$.push_back($3); }
               | id_with_int                      { $$ = std::list<std::pair<shared_ptr<ID>, int>>(); $$.push_back($1); }
@@ -518,7 +523,7 @@ constant      : CINTEGER                         { $$ = std::make_shared<constan
               | INTERVAL '(' CINTEGER ')'        { $$ = std::make_shared<constant::Interval>((uint64_t)$3, loc(@$)); }
               | TIME '(' CDOUBLE ')'             { $$ = std::make_shared<constant::Time>($3, loc(@$)); }
               | TIME '(' CINTEGER ')'            { $$ = std::make_shared<constant::Time>((uint64_t)$3, loc(@$)); }
-//            | tuple                            { $$ = std::make_shared<constant::Tuple>($1, loc(@$));  }
+              | '(' opt_exprs ')'                { $$ = std::make_shared<constant::Tuple>($2, loc(@$)); }
               ;
 
 ctor          : CBYTES                           { $$ = std::make_shared<ctor::Bytes>($1, loc(@$)); }
@@ -551,8 +556,10 @@ expr          : scoped_id                        { $$ = std::make_shared<express
               | ctor                             { $$ = std::make_shared<expression::Ctor>($1, loc(@$)); }
               | constant                         { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
               | CAST '<' type '>' '(' expr ')'   { $$ = std::make_shared<expression::Coerced>($6, $3, loc(@$)); }
+              | expr '=' expr                    { $$ = std::make_shared<expression::Assign>($1, $3, loc(@$)); }
+              | base_type '(' ')'                { $$ = std::make_shared<expression::Default>($1, loc(@$)); }
 
-              /* Operators */
+              /* Overloaded operators */
 
               | expr '(' opt_list_expr ')'       { $$ = makeOp(operator_::Call, { $1, $3 }, loc(@$)); }
               | expr '[' expr ']'                { $$ = makeOp(operator_::Index, { $1, $3 }, loc(@$)); }
@@ -574,7 +581,6 @@ expr          : scoped_id                        { $$ = std::make_shared<express
               | '*' expr                         { $$ = makeOp(operator_::Deref, { $2 }, loc(@$)); }
               | '!' expr                         { $$ = makeOp(operator_::Not, { $2 }, loc(@$)); }
               | '|' expr '|'                     { $$ = makeOp(operator_::Size, { $2 }, loc(@$)); }
-              | expr '=' expr                    { $$ = makeOp(operator_::Assign, { $1, $3 }, loc(@$)); }
               | expr '+' expr                    { $$ = makeOp(operator_::Plus, { $1, $3 }, loc(@$)); }
               | expr '-' expr                    { $$ = makeOp(operator_::Minus, { $1, $3 }, loc(@$)); }
               | expr '*' expr                    { $$ = makeOp(operator_::Mult, { $1, $3 }, loc(@$)); }

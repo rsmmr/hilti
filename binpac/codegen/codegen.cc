@@ -105,10 +105,10 @@ shared_ptr<hilti::Type> CodeGen::hiltiType(shared_ptr<Type> type)
     return _type_builder->hiltiType(type);
 }
 
-shared_ptr<hilti::Expression> CodeGen::hiltiDefault(shared_ptr<Type> type)
+shared_ptr<hilti::Expression> CodeGen::hiltiDefault(shared_ptr<Type> type, bool null_on_default)
 {
     assert(_compiling);
-    return _type_builder->hiltiDefault(type);
+    return _type_builder->hiltiDefault(type, null_on_default);
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiCoerce(shared_ptr<hilti::Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst)

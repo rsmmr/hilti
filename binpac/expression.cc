@@ -199,6 +199,30 @@ void expression::ParserState::setType(shared_ptr<binpac::Type> type)
     addChild(_type);
 }
 
+expression::Assign::Assign(shared_ptr<Expression> dst, shared_ptr<Expression> src, const Location& l)
+    : CustomExpression(l)
+{
+    _src = src;
+    _dst = dst;
+    addChild(_src);
+    addChild(_dst);
+}
+
+shared_ptr<Expression> expression::Assign::source() const
+{
+    return _src;
+}
+
+shared_ptr<Expression> expression::Assign::destination() const
+{
+    return _dst;
+}
+
+shared_ptr<Type> expression::Assign::type() const
+{
+    return _dst->type();
+}
+
 expression::UnresolvedOperator::UnresolvedOperator(binpac::operator_::Kind kind, const expression_list& ops, const Location& l)
     : CustomExpression(l)
 {
@@ -296,3 +320,4 @@ shared_ptr<Expression> expression::ResolvedOperator::op3() const
 {
     return _ops.size() >= 3 ? _ops[2] : nullptr;
 }
+

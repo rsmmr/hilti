@@ -306,6 +306,34 @@ private:
     node_ptr<binpac::Type> _unit;
 };
 
+/// AST node for an assigment,
+class Assign : public CustomExpression
+{
+public:
+    /// Constructor.
+    ///
+    /// dst: The target node.
+    ///
+    /// src: The source node.
+    ///
+    /// l: An associated location.
+    Assign(shared_ptr<Expression> dst, shared_ptr<Expression> src, const Location& l=Location::None);
+
+    /// Returns the assignment's source expression.
+    shared_ptr<Expression> source() const;
+
+    /// Returns the assignment's destination expression.
+    shared_ptr<Expression> destination() const;
+
+    shared_ptr<Type> type() const override;
+
+    ACCEPT_VISITOR(binpac::Expression);
+
+private:
+    node_ptr<Expression> _src;
+    node_ptr<Expression> _dst;
+};
+
 /// A not yet resolved (and potentially overloaded) operator. Initially, all
 /// operators are instantiated as Unresolved and later turned into instances
 /// derived from Resolved by passes::OperandResolver.

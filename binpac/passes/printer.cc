@@ -242,7 +242,9 @@ void Printer::visit(constant::Time* t)
 void Printer::visit(constant::Tuple* t)
 {
     Printer& p = *this;
-    printList(t->value(), ", ", "(", ")");
+    p << '(';
+    printList(t->value(), ", ");
+    p << ')';
 }
 
 void Printer::visit(ctor::Bytes* b)
@@ -254,7 +256,9 @@ void Printer::visit(ctor::Bytes* b)
 void Printer::visit(ctor::List* l)
 {
     Printer& p = *this;
-    printList(l->elements(), ", ", "[", "]");
+    p << '[';
+    printList(l->elements(), ", ");
+    p << ']';
 }
 
 void Printer::visit(ctor::Map* m)
@@ -322,6 +326,12 @@ void Printer::visit(declaration::Variable* v)
 {
     Printer& p = *this;
     p << _linkage(v->linkage()) << v->variable();
+}
+
+void Printer::visit(expression::Assign* a)
+{
+    Printer& p = *this;
+    p << a->destination() << " = " << a->source();
 }
 
 void Printer::visit(expression::CodeGen* c)

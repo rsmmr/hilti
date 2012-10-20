@@ -1,5 +1,5 @@
 
->>> (Unresolved operator 7: bar, b"B")
+>>> (Unresolved operator 6: bar, b"B")
 wrong-overload.pac2:18-18: error, Ambigious call of overloaded function [pass::OverloadResolver]
 wrong-overload.pac2: Aborting due to input error.
 error compiling /da/home/robin/work/binpacpp/hilti2/tests/.tmp/binpac.function.wrong-overload/wrong-overload.pac2, aborting

@@ -1,0 +1,27 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT testhilti.hlt -o a.out
+# @TEST-EXEC:  ./a.out >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import TestHilti;
+
+print TestHilti::test();
+
+# @TEST-START-FILE testhilti.pac2
+
+module TestHilti;
+
+declare "C-HILTI" int<32> test();
+
+# @TEST-END-FILE
+
+# @TEST-START-FILE testhilti.hlt
+
+int<32> test() {
+    return.result 42;
+}
+
+# @TEST-END-FILE

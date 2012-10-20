@@ -43,6 +43,7 @@ declaration::Function
 declaration::Hook
 
 Expression
+expression::Assign
 expression::CodeGen
 expression::Coerced
 expression::Constant

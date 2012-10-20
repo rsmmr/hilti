@@ -293,8 +293,6 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiCreateHostFunction(shared_ptr
 
             if ( p->default_() )
                 def = cg()->hiltiExpression(p->default_());
-            else
-                def = cg()->hiltiDefault(p->type());
 
             args.push_back(hilti::builder::function::parameter(cg()->hiltiID(p->id()), type, true, def));
         }
@@ -497,7 +495,9 @@ void ParserBuilder::_prepareParseObject(const hilti_expression_list& params)
         auto id = hilti::builder::string::create(v->id()->name());
         auto attr = v->attributes()->lookup("default");
         auto def = attr ? cg()->hiltiExpression(attr->value()) : cg()->hiltiDefault(v->type());
-        cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self, id, def);
+
+        if ( def )
+            cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self, id, def);
     }
 
     _hiltiRunHook(_hookForUnit(state()->unit, "%init"), false, nullptr);
@@ -542,8 +542,12 @@ void ParserBuilder::_startingProduction(shared_ptr<Production> p, shared_ptr<typ
 
     cg()->moduleBuilder()->pushBuilder(set_default);
     auto ftype = ast::type::checkedTrait<type::trait::Parseable>(field->type())->fieldType();
+
     auto def = cg()->hiltiDefault(ftype);
-    cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self, name, def);
+
+    if ( def )
+        cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self, name, def);
+
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
     cg()->moduleBuilder()->popBuilder(set_default);
 

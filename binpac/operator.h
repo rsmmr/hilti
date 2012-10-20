@@ -14,7 +14,6 @@ namespace operator_ {
 
 enum Kind {
     None = 0,
-    Assign,
     Attribute,
     AttributeAssign,
     BitAnd,
@@ -76,7 +75,6 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(DecrPostfix, "--", UNARY_POSTFIX),
     _OP(IncrPostfix, "--", UNARY_POSTFIX),
 
-    _OP(Assign, "=", BINARY),
     _OP(BitAnd, "&", BINARY),
     _OP(BitOr, "|", BINARY),
     _OP(BitXor, "^", BINARY),

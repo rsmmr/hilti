@@ -214,6 +214,12 @@ void Validator::visit(declaration::Variable* v)
 {
 }
 
+void Validator::visit(expression::Assign* a)
+{
+    if ( ! a->source()->canCoerceTo(a->destination()->type()) )
+        error(a->source(), "incompatible type for assigment");
+}
+
 void Validator::visit(expression::CodeGen* c)
 {
 }

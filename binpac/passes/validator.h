@@ -109,6 +109,7 @@ protected:
     void visit(declaration::Hook* h) override;
     void visit(declaration::Type* t) override;
     void visit(declaration::Variable* v) override;
+    void visit(expression::Assign* a) override;
     void visit(expression::CodeGen* c) override;
     void visit(expression::Coerced* c) override;
     void visit(expression::Constant* c) override;

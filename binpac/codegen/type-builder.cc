@@ -23,14 +23,14 @@ shared_ptr<hilti::Type> TypeBuilder::hiltiType(shared_ptr<Type> type)
     return result.hilti_type;
 }
 
-shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type)
+shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type, bool null_on_default)
 {
     TypeInfo result;
     bool success = processOne(type, &result);
     assert(success);
 
     return result.hilti_default ? result.hilti_default
-                                : hilti::builder::expression::default_(result.hilti_type);
+                                : (null_on_default ? shared_ptr<hilti::Expression>() : hilti::builder::expression::default_(result.hilti_type));
 }
 
 void TypeBuilder::visit(type::Address* a)
@@ -39,6 +39,11 @@ void TypeBuilder::visit(type::Address* a)
 
 void TypeBuilder::visit(type::Any* a)
 {
+    TypeInfo ti;
+
+    ti.hilti_type = hilti::builder::any::type(a->location());
+
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Bitset* b)
@@ -51,6 +56,12 @@ void TypeBuilder::visit(type::Block* b)
 
 void TypeBuilder::visit(type::Bool* b)
 {
+    TypeInfo ti;
+
+    auto t = hilti::builder::bytes::type(b->location());
+    ti.hilti_type = hilti::builder::boolean::type( b->location());
+
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Bytes* b)
@@ -167,6 +178,9 @@ void TypeBuilder::visit(type::Set* s)
 
 void TypeBuilder::visit(type::String* s)
 {
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::string::type(s->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Time* t)
@@ -175,6 +189,14 @@ void TypeBuilder::visit(type::Time* t)
 
 void TypeBuilder::visit(type::Tuple* t)
 {
+    hilti::builder::type_list types;
+
+    for ( auto t : t->typeList() )
+        types.push_back(cg()->hiltiType(t));
+
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::tuple::type(types, t->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::TypeByName* t)

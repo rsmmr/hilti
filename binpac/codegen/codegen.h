@@ -101,8 +101,11 @@ public:
     ///
     /// type: The type to convert.
     ///
+    /// null_on_default: If true, returns null if the type uses the HILTI
+    /// default as its default.
+    ///
     /// Returns: The HILTI value, or null for HILTI's default.
-    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type);
+    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default = false);
 
     /// Turns a BinPAC ID into a HILTI ID.
     ///

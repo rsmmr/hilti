@@ -7,10 +7,11 @@
 #include "function.h"
 #include "grammar.h"
 
+#include "autogen/operators/function.h"
 #include "autogen/operators/integer.h"
 #include "autogen/operators/list.h"
+#include "autogen/operators/tuple.h"
 #include "autogen/operators/unit.h"
-#include "autogen/operators/function.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -69,7 +70,7 @@ void CodeBuilder::visit(constant::Bitset* b)
 
 void CodeBuilder::visit(constant::Bool* b)
 {
-    auto result = hilti::builder::boolean::create(b);
+    auto result = hilti::builder::boolean::create(b->value());
     setResult(result);
 }
 
@@ -126,6 +127,13 @@ void CodeBuilder::visit(constant::Time* t)
 
 void CodeBuilder::visit(constant::Tuple* t)
 {
+    hilti::builder::tuple::element_list elems;
+
+    for ( auto e : t->value() )
+        elems.push_back(cg()->hiltiExpression(e));
+
+    auto result = hilti::builder::tuple::create(elems, t->location());
+    setResult(result);
 }
 
 void CodeBuilder::visit(ctor::Bytes* b)
@@ -189,6 +197,40 @@ void CodeBuilder::visit(declaration::Type* t)
 
 void CodeBuilder::visit(declaration::Variable* v)
 {
+    auto var = v->variable();
+    auto id = cg()->hiltiID(v->id());
+    auto type = cg()->hiltiType(var->type());
+
+    auto local = ast::as<variable::Local>(var);
+    auto global = ast::as<variable::Global>(var);
+
+    if ( local ) {
+        auto local = cg()->moduleBuilder()->addLocal(id, type, nullptr, nullptr, v->location());
+        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true);
+
+        if ( hltinit )
+            cg()->builder()->addInstruction(local, hilti::instruction::operator_::Assign, hltinit);
+    }
+
+    else if ( global ) {
+        auto global = cg()->moduleBuilder()->addGlobal(id, type, nullptr, nullptr, v->location());
+        cg()->moduleBuilder()->pushModuleInit();
+
+        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true);
+
+        if ( hltinit )
+            cg()->builder()->addInstruction(global, hilti::instruction::operator_::Assign, hltinit);
+
+        cg()->moduleBuilder()->popModuleInit();
+    }
+}
+
+void CodeBuilder::visit(expression::Assign* a)
+{
+    auto target = cg()->hiltiExpression(a->destination());
+    auto op1 = cg()->hiltiExpression(a->source(), a->destination()->type());
+    cg()->builder()->addInstruction(target, hilti::instruction::operator_::Assign, op1);
+    setResult(target);
 }
 
 void CodeBuilder::visit(expression::CodeGen* c)
@@ -284,6 +326,7 @@ void CodeBuilder::visit(expression::UnresolvedOperator* u)
 
 void CodeBuilder::visit(expression::Variable* v)
 {
+    call(v->variable());
 }
 
 void CodeBuilder::visit(statement::Block* b)
@@ -560,3 +603,41 @@ void CodeBuilder::visit(expression::operator_::function::Call* i)
     setResult(result);
 }
 
+void CodeBuilder::visit(expression::operator_::tuple::Equal* i)
+{
+    auto result = builder()->addTmp("equal", hilti::builder::boolean::type());
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto op2 = cg()->hiltiExpression(i->op2());
+    cg()->builder()->addInstruction(result, hilti::instruction::tuple::Equal, op1, op2);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::tuple::Index* i)
+{
+    auto tuple = ast::checkedCast<type::Tuple>(i->op1()->type());
+    auto types = tuple->typeList();
+
+    auto idx = ast::checkedCast<expression::Constant>(i->op2());
+    auto const_ = ast::checkedCast<constant::Integer>(idx->constant());
+
+    auto t = types.begin();
+    std::advance(t, const_->value());
+
+    auto result = builder()->addTmp("elem", cg()->hiltiType(*t));
+    auto op1 = cg()->hiltiExpression(i->op1());
+    auto op2 = cg()->hiltiExpression(i->op2());
+    cg()->builder()->addInstruction(result, hilti::instruction::tuple::Index, op1, op2);
+    setResult(result);
+}
+
+void CodeBuilder::visit(variable::Local* v)
+{
+    auto result = hilti::builder::id::create(cg()->hiltiID(v->id()));
+    setResult(result);
+}
+
+void CodeBuilder::visit(variable::Global* v)
+{
+    auto result = hilti::builder::id::create(cg()->hiltiID(v->id()));
+    setResult(result);
+}

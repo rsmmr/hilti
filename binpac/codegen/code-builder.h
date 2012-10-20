@@ -70,6 +70,7 @@ protected:
     void visit(declaration::Type* t) override;
     void visit(declaration::Variable* v) override;
 
+    void visit(expression::Assign* a) override;
     void visit(expression::CodeGen* c) override;
     void visit(expression::Coerced* c) override;
     void visit(expression::Constant* c) override;
@@ -95,6 +96,9 @@ protected:
     void visit(statement::Stop* s) override;
     void visit(statement::Try* t) override;
     void visit(statement::try_::Catch* c) override;
+
+    void visit(variable::Global* v) override;
+    void visit(variable::Local* v) override;
 
     /// Automatically generated visit() methods for ResolverOperator-derived
     /// classes.
