@@ -381,6 +381,26 @@ shared_ptr<BlockBuilder> ModuleBuilder::pushBuilder(const std::string& id, const
     return pushBuilder(std::make_shared<ID>(id, l), l);
 }
 
+shared_ptr<BlockBuilder> ModuleBuilder::pushModuleInit()
+{
+    if ( ! _init ) {
+        auto decl = pushFunction("__init_module", nullptr, function::parameter_list());
+        decl->function()->setInitFunction();
+        _init = _currentFunction();
+    }
+
+    else
+        _functions.push_back(_init);
+
+    auto body = _currentBody();
+    return body->builders.back();
+}
+
+void ModuleBuilder::popModuleInit()
+{
+    popFunction();
+}
+
 shared_ptr<BlockBuilder> ModuleBuilder::popBuilder(shared_ptr<BlockBuilder> builder)
 {
     auto body = _currentBody();

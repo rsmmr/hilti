@@ -395,6 +395,14 @@ public:
    /// Removes the top-most block builder from a function's stack.
    shared_ptr<BlockBuilder> popBuilder();
 
+   /// Pushes a new body onto the stack that will be executed in the context
+   /// of a module-wide \a init function. This can be used to initialize
+   /// globals. This must be popped with popModuleInit().
+   shared_ptr<BlockBuilder> pushModuleInit();
+
+   /// Pops the most recent body pushed with pushModuleInit().
+   void popModuleInit();
+
    /// Instantiates a new block builder.
    ///
    /// name: The block's name. The method will always create a new block and
@@ -675,6 +683,7 @@ private:
    std::list<shared_ptr<Function>> _functions;
    std::map<std::string, shared_ptr<Node>> _node_cache;
    declaration_map _globals;
+   shared_ptr<Function> _init = nullptr;
 };
 
 }
