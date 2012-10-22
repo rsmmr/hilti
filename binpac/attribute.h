@@ -9,8 +9,6 @@
 
 #include "common.h"
 
-using namespace binpac;
-
 namespace binpac {
 
 /// An key/value attribute.

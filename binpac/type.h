@@ -7,8 +7,6 @@
 #include "common.h"
 #include "id.h"
 
-using namespace binpac;
-
 namespace binpac {
 
 namespace passes { class GrammarBuilder; }
@@ -734,9 +732,12 @@ public:
 
 /// BinPAC++'s supported calling conventions.
 enum CallingConvention {
-    BINPAC,     /// Standard calling convention for BinPAC++ function.
-    HILTI_C,    /// C-compatible calling convention, but with extra HILTI run-time parameters.
-    C           /// C-compatable calling convention, with no messing around with parameters.
+    BINPAC,         /// Default calling convention for BinPAC++ functions.
+    BINPAC_HILTI,   /// A HILTI function with additional implicit BinPAC++ parameters.
+    HILTI,          /// A HILTI function.
+    BINPAC_HILTI_C, /// A function with HILTI-C calling convention and additional implicit BinPAC++ parameters.
+    HILTI_C,        /// A function with HILTI-C calling convention.
+    C               /// A function with standard C calling convention.
 };
 
 }

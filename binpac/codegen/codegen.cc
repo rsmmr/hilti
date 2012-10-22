@@ -201,9 +201,22 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
         params.push_back(cookie);
         break;
 
-     case type::function::HILTI_C:
+     case type::function::BINPAC_HILTI_C:
         cc = hilti::type::function::HILTI_C;
         params.push_back(cookie);
+        break;
+
+     case type::function::BINPAC_HILTI:
+        cc = hilti::type::function::HILTI;
+        params.push_back(cookie);
+        break;
+
+     case type::function::HILTI_C:
+        cc = hilti::type::function::HILTI_C;
+        break;
+
+     case type::function::HILTI:
+        cc = hilti::type::function::HILTI;
         break;
 
      case type::function::C:
@@ -233,6 +246,24 @@ shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> fu
     // To make overloaded functions unique, we add a hash of the signature.
     auto type = func->type()->render();
     auto name = util::fmt("%s__%s", func->id()->name(), util::uitoa_n(util::hash(type), 64, 4));
+
+    return hilti::builder::id::node(name, func->location());
+}
+
+shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<expression::Function> expr)
+{
+    auto func = expr->function();
+    auto id = func->id()->name();
+
+    if ( expr->scope().size() )
+        id = util::fmt("%s::%s", expr->scope(), id);
+
+    if ( func->type()->callingConvention() != type::function::BINPAC )
+        return hilti::builder::id::node(id, func->id()->location());
+
+    // To make overloaded functions unique, we add a hash of the signature.
+    auto type = func->type()->render();
+    auto name = util::fmt("%s__%s", id, util::uitoa_n(util::hash(type), 64, 4));
 
     return hilti::builder::id::node(name, func->location());
 }

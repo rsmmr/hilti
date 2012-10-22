@@ -1,4 +1,6 @@
 
+using namespace binpac;
+
 static bool _checkOperands(Operator* op, shared_ptr<Expression> op1, shared_ptr<Expression> op2)
 {
     auto t1 = ast::checkedCast<type::Integer>(op1->type());

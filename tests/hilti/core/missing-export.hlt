@@ -1,0 +1,23 @@
+#
+# @TEST-EXEC-FAIL: hilti-build %INPUT -o a.out >output 2>&1
+# @TEST-EXEC:      btest-diff output
+#
+
+module test
+
+import TestHilti
+
+global int<32> x
+
+x = call TestHilti::test()
+
+# @TEST-START-FILE testhilti.hlt
+
+module TestHilti
+
+int<32> test()
+{
+    return.result 42
+}
+
+# @TEST-END-FILE

@@ -7,14 +7,17 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti  ${CMAKE_CURRENT_BINARY
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../binpac ${CMAKE_CURRENT_BINARY_DIR}/../binpac)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../util)
 
+add_executable(hilti-config hilti-config.cc $<TARGET_OBJECTS:util>)
+target_link_libraries(hilti-config ${LLVM_LIBS} ${LLVM_LDFLAGS}) # TODO: Should not be needed.
+
 add_executable(binpac++ binpac++.cc)
-target_link_libraries(binpac++ binpac hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
+target_link_libraries(binpac++ binpacxx hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
 add_executable(hiltic hiltic.cc)
 target_link_libraries(hiltic hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
 add_executable(hilti-doc hilti-doc.cc)
-target_link_libraries(hilti-doc binpac hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
+target_link_libraries(hilti-doc binpacxx hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
 add_subdirectory(pac-driver-jit)
 
@@ -27,4 +30,3 @@ add_custom_command(
 
 add_custom_target(hilti-prof ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hilti-prof hiltic)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/hilti-config.in ${CMAKE_CURRENT_BINARY_DIR}/hilti-config)

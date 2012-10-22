@@ -48,6 +48,7 @@ expression::CodeGen
 expression::Coerced
 expression::Constant
 expression::Ctor
+expression::Default
 expression::Function
 expression::ID
 expression::List

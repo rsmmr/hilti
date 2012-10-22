@@ -183,8 +183,11 @@ public:
     ///
     /// add_stdlibs: Link in HILTI's standard runtime libraries.
     ///
+    /// add_sharedlibs: Link in system-wide shared libraries that the runtime
+    /// will need.
+    ///
     /// Returns: The composite LLVM module, or null if errors are encountered.
-    llvm::Module* linkModules(string output, std::list<llvm::Module*> modules, path_list paths, std::list<string> libs, path_list bcas, path_list dylds, bool debug, bool verify, bool add_stdlibs);
+    llvm::Module* linkModules(string output, std::list<llvm::Module*> modules, path_list paths, std::list<string> libs, path_list bcas, path_list dylds, bool debug, bool verify, bool add_stdlibs, bool add_sharedlibs);
 
     /// JITs an LLVM module retuned by linkModules().
     ///

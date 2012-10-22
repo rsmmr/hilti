@@ -9,7 +9,7 @@
 #include <llvm/Target/TargetOptions.h>
 
 #include "hilti-intern.h"
-#include "autogen/config.h"
+#include "autogen/hilti-config.h"
 
 using namespace hilti;
 using namespace hilti::passes;
@@ -18,7 +18,7 @@ CompilerContext::CompilerContext(const string_list& libdirs)
 {
     string_list paths = libdirs;
 
-    for ( auto p : hilti::configuration().library_dirs )
+    for ( auto p : hilti::configuration().hilti_library_dirs )
         paths.push_back(p);
 
     paths.push_front(".");  // Always add cwd at the front.
@@ -279,7 +279,7 @@ bool CompilerContext::writeBitcode(llvm::Module* module, std::ostream& out)
     return true;
 }
 
-llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module*> modules, path_list paths, std::list<string> libs, path_list bcas, path_list dylds, bool debug, bool verify, bool add_stdlibs)
+llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module*> modules, path_list paths, std::list<string> libs, path_list bcas, path_list dylds, bool debug, bool verify, bool add_stdlibs, bool add_sharedlibs)
 {
     if ( debugging("context" ) ) {
         std::list<string> names;
@@ -300,12 +300,12 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
 
     if ( add_stdlibs ) {
 
+#if 0
         auto type_info = loadModule(configuration().runtime_typeinfo_hlt);
 
         if ( ! type_info )
             return nullptr;
 
-#if 0
         auto type_info_llvm = compile(type_info, debug);
 
         if ( ! type_info_llvm )
@@ -314,19 +314,27 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         modules.push_back(type_info_llvm);
 #endif
 
-        for ( auto d : configuration().jit_dylds )
-            dylds.push_back(d);
-
         if ( debug )
-            linker.addBitcodeArchive(configuration().runtime_library_bca);
+            linker.addBitcodeArchive(configuration().runtime_library_bca_dbg);
         else
-            linker.addBitcodeArchive(configuration().runtime_library_dbg_bca);
+            linker.addBitcodeArchive(configuration().runtime_library_bca);
 
-        linker.addNativeLibrary(configuration().runtime_library_native_a);
+        linker.addNativeLibrary(configuration().runtime_library_a);
+    }
+
+    if ( add_sharedlibs ) {
+        for ( auto d : configuration().runtime_shared_libraries )
+            dylds.push_back(d);
     }
 
     for ( auto d : dylds ) {
         string errormsg;
+
+        if ( ! util::startsWith(d, configuration().shared_library_prefix) )
+            d = configuration().shared_library_prefix + d;
+
+        if ( ! util::endsWith(d, configuration().shared_library_suffix) )
+            d = d + configuration().shared_library_suffix;
 
         if ( ! llvm::sys::DynamicLibrary::getPermanentLibrary(d.c_str(), &errormsg).isValid() ) {
             error(errormsg);

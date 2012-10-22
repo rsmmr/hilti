@@ -12,7 +12,7 @@ add_dependencies(pac-driver-jit
     ${PROJECT_BINARY_DIR}/libbinpac/libbinpac-rt.bc
 )
 
-target_link_libraries(pac-driver-jit binpac hilti ${LLVM_LIBS} ${LLVM_LDFLAGS}
+target_link_libraries(pac-driver-jit binpacxx hilti ${LLVM_LIBS} ${LLVM_LDFLAGS}
     ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt.bc
     ${PROJECT_BINARY_DIR}/libbinpac/libbinpac-rt.bc
     pcap papi

@@ -394,7 +394,7 @@ int main(int argc, char** argv)
     llvm::Module* linked_module = nullptr;
 
     if ( ! disable_linker ) {
-        linked_module = ctx->linkModules(output, modules, paths, libs, bcas, dylds, debug, verify, add_stdlibs);
+        linked_module = ctx->linkModules(output, modules, paths, libs, bcas, dylds, debug, verify, add_stdlibs, jit);
 
         if ( ! linked_module )
             error(output, "Aborted linking.");

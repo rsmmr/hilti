@@ -138,6 +138,21 @@ public:
     ACCEPT_VISITOR(binpac::Expression);
 };
 
+/// AST node for an expression constructing a type's default value.
+class Default : public binpac::Expression, public ast::expression::mixin::Default<AstInfo>
+{
+public:
+   /// Constructor.
+   ///
+   /// type: The type.
+   ///
+   /// l: An associated location.
+   Default(shared_ptr<binpac::Type> type, const Location& l=Location::None)
+       : binpac::Expression(l), ast::expression::mixin::Default<AstInfo>(this, type) {}
+
+   ACCEPT_VISITOR(binpac::Expression);
+};
+
 /// AST node for an expression referencing a module.
 class Module : public binpac::Expression, public ast::expression::mixin::Module<AstInfo>
 {

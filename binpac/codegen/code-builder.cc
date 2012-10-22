@@ -144,6 +144,16 @@ void CodeBuilder::visit(ctor::Bytes* b)
 
 void CodeBuilder::visit(ctor::List* l)
 {
+    auto ltype = ast::checkedCast<type::List>(l->type());
+    auto etype = cg()->hiltiType(ltype->elementType());
+
+    hilti::builder::list::element_list elems;
+
+    for ( auto e : l->elements() )
+        elems.push_back(cg()->hiltiExpression(e));
+
+    auto result = hilti::builder::list::create(etype, elems, l->location());
+    setResult(result);
 }
 
 void CodeBuilder::visit(ctor::Map* m)
@@ -259,9 +269,15 @@ void CodeBuilder::visit(expression::Ctor* c)
     setResult(result);
 }
 
+void CodeBuilder::visit(expression::Default* c)
+{
+    auto result = cg()->hiltiDefault(c->type());
+    setResult(result);
+}
+
 void CodeBuilder::visit(expression::Function* f)
 {
-    auto id = cg()->hiltiFunctionName(f->function());
+    auto id = cg()->hiltiFunctionName(f->sharedPtr<expression::Function>());
     auto result = hilti::builder::id::create(id, f->location());
     setResult(result);
 }
@@ -564,10 +580,18 @@ void CodeBuilder::visit(expression::operator_::function::Call* i)
     for ( auto a : args->expressions() )
         hilti_arg_list.push_back(hiltiExpression(a));
 
+    if ( ftype->callingConvention() == type::function::BINPAC_HILTI_C ||
+         ftype->callingConvention() == type::function::HILTI_C ||
+         ftype->callingConvention() == type::function::HILTI ||
+         ftype->callingConvention() == type::function::BINPAC_HILTI ) {
+        if ( i->op1()->scope().size() )
+            cg()->moduleBuilder()->importModule(hilti::builder::id::node(i->op1()->scope()));
+    }
 
     switch ( ftype->callingConvention() ) {
      case type::function::BINPAC:
-     case type::function::HILTI_C: {
+     case type::function::BINPAC_HILTI:
+     case type::function::BINPAC_HILTI_C: {
          shared_ptr<hilti::Expression> cookie = nullptr;
 
          if ( in<declaration::Function>() )
@@ -579,6 +603,8 @@ void CodeBuilder::visit(expression::operator_::function::Call* i)
         break;
      }
 
+     case type::function::HILTI:
+     case type::function::HILTI_C:
      case type::function::C:
         break;
 

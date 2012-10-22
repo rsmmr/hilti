@@ -1,0 +1,98 @@
+
+#ifndef HILTI_CONFIG_H
+#define HILTI_CONFIG_H
+
+#include <list>
+#include <string>
+
+using std::string;
+
+namespace hilti {
+
+struct Configuration {
+    string version       = "${HILTI_VERSION}";
+    string prefix        = "${PROJECT_SOURCE_DIR}";
+    string distbase      = "${PROJECT_SOURCE_DIR}";
+    string path_hiltic   = "${PROJECT_BINARY_DIR}/tools/hiltic";
+
+    string shared_library_prefix = "${CMAKE_SHARED_MODULE_PREFIX}";
+    string shared_library_suffix = "${CMAKE_SHARED_MODULE_SUFFIX}";
+
+    //// Compiler configuration.
+
+    std::list<string> compiler_include_dirs = {
+        "${PROJECT_SOURCE_DIR}",
+        "${PROJECT_BINARY_DIR}",
+        "${PROJECT_SOURCE_DIR}/hilti", // FIXME: Need to unify includes.
+        "${PROJECT_BINARY_DIR}/hilti",
+    };
+
+    std::list<string> compiler_cflags = {
+    };
+
+    std::list<string> compiler_cxxflags = {
+        "-fexceptions",
+        "-frtti",
+        "-stdlib=libc++",
+        "-std=c++0x"
+    };
+
+    std::list<string> compiler_ldflags = {
+        "-L${PROJECT_BINARY_DIR}/hilti",
+        "-Wl,-rpath,${PROJECT_BINARY_DIR}/hilti"
+    };
+
+    string compiler_llvm_libraries = "${LLVM_LIBS}";
+
+    std::list<string> compiler_shared_libraries = {
+        "hilti"
+    };
+
+    //// Runtime configuration.
+
+    string runtime_library_bca      = "${PROJECT_BINARY_DIR}/libhilti/libhilti-rt.bc";
+    string runtime_library_bca_dbg  = "${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-dbg.bc";
+    string runtime_library_a        = "${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a";
+    string runtime_typeinfo_hlt     = "${PROJECT_SOURCE_DIR}/libhilti/type-info.hlt";
+
+    std::list<string> runtime_include_dirs = {
+        "${PROJECT_SOURCE_DIR}",
+        "${PROJECT_BINARY_DIR}",
+        "${PROJECT_SOURCE_DIR}/libhilti",
+        "${PROJECT_BINARY_DIR}/libhilti",
+    };
+
+    std::list<string> runtime_cflags = {
+    };
+
+    std::list<string> runtime_cxxflags = {
+    };
+
+    std::list<string> runtime_ldflags = {
+        "-L${PROJECT_BINARY_DIR}/libhilti",
+        "-Wl,-rpath,${PROJECT_BINARY_DIR}/libhilti"
+    };
+
+    std::list<string> runtime_shared_libraries = {
+        "m",
+        "pthread",
+        "papi",
+        "pcap"
+    };
+
+    ////
+
+    std::list<string> hilti_library_dirs = {
+        "${PROJECT_SOURCE_DIR}/libhilti"
+    };
+};
+
+inline const Configuration& configuration()
+{
+    static Configuration cfg;
+    return cfg;
+}
+
+}
+
+#endif

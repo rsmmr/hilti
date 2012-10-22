@@ -1,25 +1,23 @@
 
 // FIXME: Due to namespace issues, we can't have this in context.cc.
 
-#include "autogen/config.h"
+#include "autogen/binpac-config.h"
 
 #include "context.h"
 #include "hilti/context.h"
 
 binpac::CompilerContext::CompilerContext(const string_list& libdirs)
 {
-    // Always add libbinpac to the path list.
     auto paths = libdirs;
-    paths.push_front(".");
 
-    for ( auto p : configuration().library_dirs )
+    for ( auto p : configuration().binpac_library_dirs )
         paths.push_back(p);
 
     _libdirs = paths;
     _hilti_context = std::make_shared<hilti::CompilerContext>(paths);
 }
 
-llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules, path_list paths, std::list<string> libs, path_list bcas, path_list dylds, bool debug, bool verify, bool profile, bool add_stdlibs)
+llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules, path_list paths, std::list<string> libs, path_list bcas, path_list dylds, bool debug, bool verify, bool profile, bool add_stdlibs, bool add_sharedlibs)
 {
 #if 0
     if ( add_stdlibs ) {
@@ -30,7 +28,7 @@ llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shar
 
         modules.push_back(runtime_hlt);
     }
-#endif    
+#endif
 
     std::list<llvm::Module*> llvm_modules;
 
@@ -45,12 +43,12 @@ llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shar
 
     if ( add_stdlibs ) {
         if ( debug )
-            bcas.push_back(configuration().runtime_dbg_bca);
+            bcas.push_back(configuration().runtime_library_bca_dbg);
         else
-            bcas.push_back(configuration().runtime_bca);
+            bcas.push_back(configuration().runtime_library_bca);
     };
 
-    return _hilti_context->linkModules(output, llvm_modules, paths, libs, bcas, dylds, debug, verify, add_stdlibs);
+    return _hilti_context->linkModules(output, llvm_modules, paths, libs, bcas, dylds, debug, verify, add_stdlibs, add_sharedlibs);
 }
 
 binpac::CompilerContext::binpac_parsers_func binpac::CompilerContext::jitBinpacParser(llvm::Module* module, int optimize)

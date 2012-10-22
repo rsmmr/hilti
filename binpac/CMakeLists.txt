@@ -7,11 +7,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
 
-set(PATH_LIBBINPAC         "${PROJECT_SOURCE_DIR}/libbinpac")
-set(PATH_LIBBINPAC_AUTOGEN "${PROJECT_BINARY_DIR}/libbinpac/autogen")
-set(PATH_HILTI             "${PROJECT_SOURCE_DIR}/hilti")
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${autogen}/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/binpac-config.h.in ${autogen}/binpac-config.h)
 
 add_custom_command(
    OUTPUT   ${autogen}/visitor-types.h
@@ -85,7 +81,7 @@ endforeach ()
 
 ### Build libpac.
 
-add_library (binpac SHARED
+add_library (binpacxx SHARED
     attribute.cc
     binpac++.cc
     coercer.cc
@@ -141,5 +137,5 @@ add_library (binpac SHARED
     $<TARGET_OBJECTS:util>
     )
 
-ADD_DEPENDENCIES(binpac hilti generate_parser_binpac)
-target_link_libraries(binpac hilti)
+ADD_DEPENDENCIES(binpacxx hilti generate_parser_binpac)
+target_link_libraries(binpacxx hilti)

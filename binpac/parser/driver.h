@@ -35,9 +35,9 @@ struct yystype_binpac {
     ctor::RegExp::pattern_list re_patterns;
 #endif
 
-    Declaration::Linkage linkage;
+    binpac::Declaration::Linkage linkage;
 
-    shared_ptr<Attribute> attribute;
+    shared_ptr<binpac::Attribute> attribute;
     shared_ptr<binpac::Constant> constant;
     shared_ptr<binpac::Ctor> ctor;
     shared_ptr<binpac::Declaration> declaration;
@@ -56,27 +56,27 @@ struct yystype_binpac {
     shared_ptr<binpac::statement::try_::Catch> catch_;
     shared_ptr<binpac::type::integer::Bits> bits_spec;
 
-    attribute_list attributes;
-    parameter_list params;
-    declaration_list declarations;
-    expression_list expressions;
-    parameter_list parameters;
-    id_list ids;
-    statement_list statements;
-    type_list types;
-    hook_list hooks;
-    unit_item_list unit_items;
+    binpac::attribute_list attributes;
+    binpac::parameter_list params;
+    binpac::declaration_list declarations;
+    binpac::expression_list expressions;
+    binpac::parameter_list parameters;
+    binpac::id_list ids;
+    binpac::statement_list statements;
+    binpac::type_list types;
+    binpac::hook_list hooks;
+    binpac::unit_item_list unit_items;
     binpac::type::unit::item::field::Switch::case_list switch_cases;
     binpac::type::Integer::bits_list bits;
-    ctor::RegExp::pattern_list re_patterns;
-    ctor::RegExp::pattern re_pattern;
-    type::function::CallingConvention cc;
+    binpac::ctor::RegExp::pattern_list re_patterns;
+    binpac::ctor::RegExp::pattern re_pattern;
+    binpac::type::function::CallingConvention cc;
 
     std::list<string> strings;
-    std::list<std::pair<shared_ptr<ID>, int>> id_and_ints;
+    std::list<std::pair<shared_ptr<binpac::ID>, int>> id_and_ints;
 
-    std::pair<shared_ptr<Type>, shared_ptr<Expression>> type_and_expr;
-    std::pair<shared_ptr<ID>, int> id_and_int;
+    std::pair<shared_ptr<binpac::Type>, shared_ptr<binpac::Expression>> type_and_expr;
+    std::pair<shared_ptr<binpac::ID>, int> id_and_int;
 };
 
 #define YYSTYPE yystype_binpac
@@ -93,9 +93,9 @@ class Parser;
 class Scanner;
 class location;
 
-class Driver : public Logger {
+class Driver : public ast::Logger {
 public:
-    shared_ptr<binpac::Module> parse(CompilerContext* ctx, std::istream& in, const std::string& sname);
+    shared_ptr<binpac::Module> parse(binpac::CompilerContext* ctx, std::istream& in, const std::string& sname);
 
     // Report parsing errors.
     void error(const std::string& m, const binpac_parser::location& l);
@@ -105,18 +105,18 @@ public:
 
     Scanner* scanner() const { return _scanner; }
     Parser* parser() const { return _parser; }
-    CompilerContext* context() const { return _context; }
+    binpac::CompilerContext* context() const { return _context; }
 
-    shared_ptr<Module> module() const;
-    void setModule(shared_ptr<Module> module);
+    shared_ptr<binpac::Module> module() const;
+    void setModule(shared_ptr<binpac::Module> module);
 
-    void pushScope(shared_ptr<Scope> scope);
-    shared_ptr<Scope> popScope();
-    shared_ptr<Scope> scope() const;
+    void pushScope(shared_ptr<binpac::Scope> scope);
+    shared_ptr<binpac::Scope> popScope();
+    shared_ptr<binpac::Scope> scope() const;
 
-    void pushBlock(shared_ptr<statement::Block> block);
-    shared_ptr<statement::Block> popBlock();
-    shared_ptr<statement::Block> block() const;
+    void pushBlock(shared_ptr<binpac::statement::Block> block);
+    shared_ptr<binpac::statement::Block> popBlock();
+    shared_ptr<binpac::statement::Block> block() const;
 
     void disablePatternMode();
     void enablePatternMode();
@@ -130,8 +130,8 @@ public:
 
 private:
     std::string _sname;
-    CompilerContext* _context = nullptr;
-    shared_ptr<Module> _module = nullptr;
+    binpac::CompilerContext* _context = nullptr;
+    shared_ptr<binpac::Module> _module = nullptr;
 
     Scanner* _scanner = 0;
     Parser* _parser = 0;
@@ -139,8 +139,8 @@ private:
     bool _dbg_scanner = false;
     bool _dbg_parser = false;
 
-    std::list<shared_ptr<Scope>> _scopes;
-    std::list<shared_ptr<statement::Block>> _blocks;
+    std::list<shared_ptr<binpac::Scope>> _scopes;
+    std::list<shared_ptr<binpac::statement::Block>> _blocks;
 };
 
 }

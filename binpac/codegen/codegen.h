@@ -174,6 +174,9 @@ public:
     /// Returns the HILTI-level name for a function.
     shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<binpac::Function> func);
 
+    /// Returns the HILTI-level name for a function.
+    shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<expression::Function> func);
+
 private:
     bool _compiling = false;
 

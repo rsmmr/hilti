@@ -1,0 +1,42 @@
+#
+# @TEST-EXEC:  hilti-build -t -d %INPUT testhilti.c -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import TestHilti;
+
+TestHilti::test("foo", (1, True, b"abc"));
+
+# @TEST-START-FILE testhilti.pac2
+
+module TestHilti;
+
+declare "BINPAC-HILTI-C" void test(name: string, t: tuple<*>);
+
+# @TEST-END-FILE
+
+# @TEST-START-FILE testhilti.hlt
+
+module TestHilti
+
+import BinPACHilti
+
+declare "C-HILTI" void test(string name, tuple<*> t, ref<BinPACHilti::UserCookie> c)
+
+# @TEST-END-FILE
+
+# @TEST-START-FILE testhilti.c
+
+#include "libhilti.h"
+
+void testhilti_test(hlt_string s, const hlt_type_info* ti, void* tuple, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    fprintf(stderr, "In C:\n");
+    hilti_print(&hlt_type_info_hlt_string, &s, 1, excpt, ctx);
+    hilti_print(ti, tuple, 1, excpt, ctx);
+}
+
+# @TEST-END-FILE

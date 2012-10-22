@@ -120,11 +120,14 @@ public:
     /// add_stdlibs: Link in BinPAC++'s standard runtime libraries (and HILTI
     /// standard libraries as well.
     ///
+    /// add_sharedlibs: Link in system-wide shared libraries that the runtime
+    /// will need.
+    ///
     /// Returns: The composite LLVM module, or null if errors are encountered.
     llvm::Module* linkModules(string output, std::list<shared_ptr<hilti::Module>> modules,
                               path_list paths = path_list(), std::list<string> libs = std::list<string>(),
                               path_list bcas = path_list(), path_list dylds = path_list(),
-                              bool debug = false, bool verify = true, bool profile = false, bool add_stdlibs = true);
+                              bool debug = false, bool verify = true, bool profile = false, bool add_stdlibs = true, bool add_sharedlibs = true);
 
     typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
 

@@ -60,8 +60,8 @@ def findConfigTool(tool):
 # Run a *-config tool to get an option.
 def runConfig(path, option):
     try:
-        options = [option]
-        if Options and not Options.optimize:
+        options = option.split()
+        if Options and Options.debug > 0:
             options = ["--debug"] + options
 
         return subprocess.Popen([path] + options, stdout=subprocess.PIPE).communicate()[0].strip()
@@ -157,17 +157,14 @@ def compilePac(input, output):
     except:
         flags = []
 
-    flags += runConfig(HiltiConfig, "--binpac-flags").split()
-    flags += ["-I ."]
-
     for i in range(Options.debug):
         flags += ["-d"]
 
     flags = uniqueArgs(flags)
 
-    path = runConfig(HiltiConfig, "--binpac-binary")
+    path = runConfig(HiltiConfig, "--binpac++-binary")
 
-    binpac = "%s %s %s -o %s" % (path, input, flags, output)
+    binpac = "%s %s %s -o %s" % (path, flags, input, output)
 
     if not execute(binpac):
         error("error compiling %s, aborting" % input)
@@ -183,10 +180,7 @@ def compileC(input, output, cxx):
         flags = []
 
     flags += ["-c", "-emit-llvm", "-g", "-fno-color-diagnostics", "-O0", "-I ."]
-    flags += runConfig(HiltiConfig, "--libhilti-%sflags" % tag).split()
-
-    if Options.binpac:
-        flags += runConfig(HiltiConfig, "--libbinpac-%sflags" % tag).split()
+    flags += runConfig(HiltiConfig, "--runtime --%sflags" % tag).split()
 
     flags = uniqueArgs(flags)
 
@@ -202,28 +196,31 @@ def runHiltic(inputs, output, proto=False):
     except:
         flags = []
 
-    flags += runConfig(HiltiConfig, "--hiltic-flags").split()
-
-    if Options.binpac:
-        flags += runConfig(HiltiConfig, "--hiltic-binpac").split()
-
-    flags += ["-I ."]
-
-    flags = uniqueArgs(flags)
+    if not proto:
+        flags += ["-b"]
+        flags += ["-s"]
+    else:
+        flags += ["-P"]
 
     for i in range(Options.debug):
-        flags += " -d"
+        flags += ["-d"]
 
     for i in range(Options.profile):
-        flags += " -F"
+        flags += ["-F"]
+
+    includes = runConfig(HiltiConfig, "--binpac++-libdirs")
+
+    flags += ["-I%s" % i for i in includes.split()]
+
+    flags = uniqueArgs(flags)
 
     inputs = " ".join(inputs)
     path = runConfig(HiltiConfig, "--hiltic-binary")
 
     if not proto:
-        hiltic = "%s %s %s -b -o %s" % (path, inputs, flags, output)
+        hiltic = "%s %s %s -o %s" % (path, inputs, flags, output)
     else:
-        hiltic = "%s %s %s -P -o %s" % (path, inputs, flags, output)
+        hiltic = "%s %s %s -o %s" % (path, inputs, flags, output)
 
     if not execute(hiltic):
         error("error running hiltic, aborting")
@@ -239,7 +236,10 @@ def nativeLink(input, output):
         flags = []
 
     flags += ["-g"]
-    flags += runConfig(HiltiConfig, "--libhilti-ldflags").split()
+    flags += runConfig(HiltiConfig, "--runtime --libs").split()
+
+    if Options.binpac:
+        flags += runConfig(HiltiConfig, "--binpac++-runtime-libs").split()
 
     if Options.optimize:
         flags += [CcOptSpec]

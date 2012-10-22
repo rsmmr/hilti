@@ -358,6 +358,12 @@ void Printer::visit(expression::Ctor* c)
     p << c->ctor();
 }
 
+void Printer::visit(expression::Default* d)
+{
+    Printer& p = *this;
+    p << d->type() << "()";
+}
+
 void Printer::visit(expression::Function* f)
 {
     Printer& p = *this;

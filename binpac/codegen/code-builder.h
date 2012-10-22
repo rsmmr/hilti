@@ -75,6 +75,7 @@ protected:
     void visit(expression::Coerced* c) override;
     void visit(expression::Constant* c) override;
     void visit(expression::Ctor* c) override;
+    void visit(expression::Default* d) override;
     void visit(expression::Function* f) override;
     void visit(expression::ID* i) override;
     void visit(expression::List* l) override;

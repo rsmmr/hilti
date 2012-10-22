@@ -14,7 +14,7 @@ print TestHilti::test();
 
 module TestHilti;
 
-declare "HILTI" int<32> test();
+declare "BINPAC-HILTI" int<32> test();
 
 # @TEST-END-FILE
 
@@ -25,8 +25,9 @@ module TestHilti
 import Hilti
 import BinPACHilti
 
-int<32> test()
+int<32> test(ref<BinPACHilti::UserCookie> c)
 {
+    call Hilti::print (c)
     return.result 42
 }
 

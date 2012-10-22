@@ -1,0 +1,5 @@
+
+>>> TestHilti::test [scope: TestHilti]
+testhilti.hlt:4-4: error, calling function from external module that is not exported [pass::Validator]
+missing-export.hlt: Aborting due to verification error.
+error running hiltic, aborting

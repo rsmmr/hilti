@@ -41,6 +41,8 @@ namespace binpac_parser { class Parser; }
 #undef yylex
 #define yylex driver.scanner()->lex
 
+using namespace binpac;
+
 inline ast::Location loc(const binpac_parser::Parser::location_type& ploc)
 {
     if ( ploc.begin.filename == ploc.end.filename )
@@ -53,8 +55,6 @@ inline shared_ptr<Expression> makeOp(binpac::operator_::Kind kind, const express
 {
     return std::make_shared<expression::UnresolvedOperator>(kind, ops, l);
 }
-
-using namespace binpac;
 
 %}
 
@@ -294,7 +294,11 @@ param         : opt_param_const local_id ':' type
 
 rtype         : opt_param_const type             { $$ = std::make_shared<type::function::Result>($2, $1, loc(@$)); }
 
-opt_cc        : CSTRING                          { if ( $1 == "C-HILTI" ) $$ = type::function::HILTI_C;
+opt_cc        : CSTRING                          {
+                                                   if ( $1 == "HILTI" ) $$ = type::function::HILTI;
+                                                   else if ( $1 == "BINPAC-HILTI" ) $$ = type::function::BINPAC_HILTI;
+                                                   else if ( $1 == "BINPAC-HILTI-C" ) $$ = type::function::BINPAC_HILTI_C;
+                                                   else if ( $1 == "HILTI-C" ) $$ = type::function::HILTI_C;
                                                    else if ( $1 == "C" ) $$ = type::function::C;
                                                    else error(@$, "unknown calling convention");
                                                  }
@@ -349,7 +353,6 @@ atomic_type   : ANY                              { $$ = std::make_shared<type::A
               | STRING                           { $$ = std::make_shared<type::String>(loc(@$)); }
               | TIME                             { $$ = std::make_shared<type::Time>(loc(@$)); }
               | TIMER                            { $$ = std::make_shared<type::Timer>(loc(@$)); }
-              | TYPE                             { $$ = std::make_shared<type::TypeType>(loc(@$)); }
               | VOID                             { $$ = std::make_shared<type::Void>(loc(@$)); }
 
               | INT '<' CINTEGER '>'             { $$ = std::make_shared<type::Integer>($3, true, loc(@$)); }
@@ -366,7 +369,8 @@ atomic_type   : ANY                              { $$ = std::make_shared<type::A
 
               | ITER '<' type '>'                { $$ = std::make_shared<type::Iterator>($3, loc(@$)); }
               | REGEXP                           { $$ = std::make_shared<type::RegExp>(attribute_list(), loc(@$)); }
-              | TUPLE '<' types '>'          { $$ = std::make_shared<type::Tuple>($3, loc(@$)); }
+              | TUPLE '<' types '>'              { $$ = std::make_shared<type::Tuple>($3, loc(@$)); }
+              | TUPLE '<' '*' '>'                { $$ = std::make_shared<type::Tuple>(loc(@$)); }
 
               | bitfield                         { $$ = $1; }
               | bitset                           { $$ = $1; }
@@ -530,8 +534,8 @@ ctor          : CBYTES                           { $$ = std::make_shared<ctor::B
               | re_patterns                      { $$ = std::make_shared<ctor::RegExp>($1, attribute_list(), loc(@$)); }
 
               | LIST                '(' opt_exprs ')' { $$ = std::make_shared<ctor::List>(nullptr, $3, loc(@$)); }
-              | LIST   '<' type '>' '(' opt_exprs ')' { $$ = std::make_shared<ctor::List>($3, $6, loc(@$)); }
               |                     '[' opt_exprs ']' { $$ = std::make_shared<ctor::List>(nullptr, $2, loc(@$)); }
+              | LIST   '<' type '>' '(' opt_exprs ')' { $$ = std::make_shared<ctor::List>($3, $6, loc(@$)); }
 
               | SET                 '(' opt_exprs ')' { $$ = std::make_shared<ctor::Set>(nullptr, $3, loc(@$)); }
               | SET    '<' type '>' '(' opt_exprs ')' { $$ = std::make_shared<ctor::Set>($3, $6, loc(@$)); }
@@ -557,7 +561,7 @@ expr          : scoped_id                        { $$ = std::make_shared<express
               | constant                         { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
               | CAST '<' type '>' '(' expr ')'   { $$ = std::make_shared<expression::Coerced>($6, $3, loc(@$)); }
               | expr '=' expr                    { $$ = std::make_shared<expression::Assign>($1, $3, loc(@$)); }
-              | base_type '(' ')'                { $$ = std::make_shared<expression::Default>($1, loc(@$)); }
+              | atomic_type '(' ')'                { $$ = std::make_shared<expression::Default>($1, loc(@$)); }
 
               /* Overloaded operators */
 

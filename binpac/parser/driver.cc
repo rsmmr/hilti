@@ -7,6 +7,7 @@
 #include "module.h"
 #include "autogen/parser.h"
 
+using namespace binpac;
 using namespace binpac_parser;
 
 shared_ptr<binpac::Module> Driver::parse(CompilerContext* ctx, std::istream& in, const std::string& sname)

@@ -828,6 +828,11 @@ void Validator::visit(expression::Default* e)
 
 void Validator::visit(expression::Function* e)
 {
+    auto func = e->function();
+
+    if ( ! (*func->module()->id() == *current<Module>()->id()) &&
+         ! func->module()->exported(func->id()) )
+        error(e, "calling function from external module that is not exported");
 }
 
 void Validator::visit(expression::ID* e)

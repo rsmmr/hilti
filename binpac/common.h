@@ -6,7 +6,7 @@
 #include <string>
 #include <list>
 
-#include "autogen/config.h"
+#include "autogen/binpac-config.h"
 
 #include <ast/location.h>
 #include <ast/logger.h>
@@ -24,10 +24,11 @@ using std::string;
 using std::unique_ptr;
 using std::shared_ptr;
 
-using ast::Location;
-using ast::Logger;
-
 namespace binpac {
+
+    typedef ast::Location Location;
+    typedef ast::Logger Logger;
+
     class Operator;
 
     typedef std::list<shared_ptr<Attribute>> attribute_list;
