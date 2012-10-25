@@ -200,7 +200,7 @@ private:
     void _hiltiDefineHook(shared_ptr<ID> id, bool foreach, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar = nullptr, int priority = 0);
 
     // Returns the full path ID for the hook referecing a unit item.
-    shared_ptr<ID> _hookForItem(shared_ptr<type::Unit>, shared_ptr<type::unit::Item> item, bool foreach);
+    shared_ptr<ID> _hookForItem(shared_ptr<type::Unit>, shared_ptr<type::unit::Item> item, bool foreach, bool private_);
 
     // Returns the full path ID for the hook referecing a unit-global hook.
     shared_ptr<ID> _hookForUnit(shared_ptr<type::Unit>, const string& name);

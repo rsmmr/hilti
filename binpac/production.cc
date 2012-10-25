@@ -474,8 +474,15 @@ string Switch::renderProduction() const
     if ( _default )
         r += util::fmt("* -> %s", _default->symbol().c_str());
 
-    for ( auto c : _cases )
-        r += util::fmt(" / [%s] -> %s", c.first->render().c_str(), c.second->symbol().c_str());
+    for ( auto c : _cases ) {
+
+        std::list<string> exprs;
+
+        for ( auto e : c.first )
+            exprs.push_back(e->render());
+
+        r += util::fmt(" / [%s] -> %s", util::strjoin(exprs, ","), c.second->symbol().c_str());
+    }
 
     return r;
 }

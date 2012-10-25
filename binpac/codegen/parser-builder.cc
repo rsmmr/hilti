@@ -138,24 +138,25 @@ void ParserBuilder::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
         auto i = unit->item(id);
         assert(i && i->type());
         auto dd = hook->foreach() ? ast::type::checkedTrait<type::trait::Container>(i->type())->elementType() : nullptr;
-        _hiltiDefineHook(_hookForItem(unit, i, hook->foreach()), hook->foreach(), unit, hook->body(), dd, hook->priority());
+        _hiltiDefineHook(_hookForItem(unit, i, hook->foreach(), false), hook->foreach(), unit, hook->body(), dd, hook->priority());
     }
 }
 
 void ParserBuilder::hiltiRunFieldHooks(shared_ptr<type::unit::Item> item)
 {
-    _hiltiRunHook(_hookForItem(state()->unit, item, false), false, nullptr);
+    _hiltiRunHook(_hookForItem(state()->unit, item, false, true), false, nullptr);
+    _hiltiRunHook(_hookForItem(state()->unit, item, false, false), false, nullptr);
 }
 
 void ParserBuilder::hiltiUnitHooks(shared_ptr<type::Unit> unit)
 {
-    for ( auto i : unit->items() ) {
+    for ( auto i : unit->flattenedItems() ) {
         if ( ! i->type() )
             continue;
 
         for ( auto h : i->hooks() ) {
             auto dd = h->foreach() ? ast::type::checkedTrait<type::trait::Container>(i->type())->elementType() : nullptr;
-            _hiltiDefineHook(_hookForItem(unit, i->sharedPtr<type::unit::Item>(), h->foreach()),
+            _hiltiDefineHook(_hookForItem(unit, i->sharedPtr<type::unit::Item>(), h->foreach(), true),
                              h->foreach(), unit, h->body(), dd, h->priority());
         }
     }
@@ -170,7 +171,7 @@ void ParserBuilder::hiltiUnitHooks(shared_ptr<type::Unit> unit)
                 auto i = unit->item(g->id());
                 assert(i && i->type());
                 auto dd = h->foreach() ? ast::type::checkedTrait<type::trait::Container>(i->type())->elementType() : nullptr;
-                _hiltiDefineHook(_hookForItem(unit, i, h->foreach()), h->foreach(), unit, h->body(), dd, h->priority());
+                _hiltiDefineHook(_hookForItem(unit, i, h->foreach(), false), h->foreach(), unit, h->body(), dd, h->priority());
             }
         }
     }
@@ -407,20 +408,34 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
 {
     hilti::builder::struct_::field_list fields;
 
+    std::set<string> have;
+
     // One struct field per non-constant unit field.
-    for ( auto f : u->fields() ) {
+    for ( auto f : u->flattenedFields() ) {
         if ( ast::isA<type::unit::item::field::Constant>(f) )
+            continue;
+
+        if ( ! f->type() )
+            continue;
+
+        auto name = f->id()->name();
+
+        if ( have.find(name) != have.end() )
+            // Duplicate field names are ok with switch cases as long as the
+            // types match. That (and otherwise forbidden duplicates) should
+            // have already been checked where we get here ...
             continue;
 
         auto ftype = ast::type::checkedTrait<type::trait::Parseable>(f->type())->fieldType();
         auto type = cg()->hiltiType(ftype);
         assert(type);
 
-        auto sfield = hilti::builder::struct_::field(f->id()->name(), type, nullptr, false, f->location());
+        auto sfield = hilti::builder::struct_::field(name, type, nullptr, false, f->location());
 
         if ( f->anonymous() )
             sfield->metaInfo()->add(std::make_shared<ast::MetaNode>("opt:can-remove"));
 
+        have.insert(name);
         fields.push_back(sfield);
     }
 
@@ -476,7 +491,7 @@ void ParserBuilder::_prepareParseObject(const hilti_expression_list& params)
     }
 
     // Initialize non-constant fields with their explicit &defaults.
-    for ( auto f : u->fields() ) {
+    for ( auto f : u->flattenedFields() ) {
         if ( ast::isA<type::unit::item::field::Constant>(f) )
             continue;
 
@@ -581,7 +596,7 @@ void ParserBuilder::_newValueForField(shared_ptr<type::unit::item::Field> field,
                                         hilti::builder::string::create(name));
     }
 
-    _hiltiRunHook(_hookForItem(state()->unit, field, false), false, nullptr);
+    hiltiRunFieldHooks(field);
 
     _last_parsed_value = value;
 }
@@ -751,10 +766,12 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<ID> id, bo
 
 }
 
-shared_ptr<binpac::ID> ParserBuilder::_hookForItem(shared_ptr<type::Unit> unit, shared_ptr<type::unit::Item> item, bool foreach)
+shared_ptr<binpac::ID> ParserBuilder::_hookForItem(shared_ptr<type::Unit> unit, shared_ptr<type::unit::Item> item, bool foreach, bool private_)
 {
     string fe = foreach ? "%foreach" : "";
-    auto id = util::fmt("%s::%s::%s%s", cg()->moduleBuilder()->module()->id()->name(), unit->id()->name(), item->id()->name(), fe);
+    string pr = private_ ? util::fmt("%%intern%%%p", item.get()) : "%extern";
+
+    auto id = util::fmt("%s::%s::%s%s%s", cg()->moduleBuilder()->module()->id()->name(), unit->id()->name(), item->id()->name(), fe, pr);
     return std::make_shared<binpac::ID>(id);
 }
 
@@ -1113,7 +1130,7 @@ void ParserBuilder::visit(production::Counter* c)
 
     // Run foreach hook.
     assert(_last_parsed_value);
-    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true), true, _last_parsed_value);
+    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, false), true, _last_parsed_value);
     cg()->builder()->addInstruction(i, hilti::instruction::integer::Decr, i);
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, cont->block(), loop->block());
 
@@ -1231,6 +1248,42 @@ void ParserBuilder::visit(production::Sequence* s)
 
 void ParserBuilder::visit(production::Switch* s)
 {
+    _startingProduction(s->sharedPtr<Production>(), nullptr);
+
+    auto cont = cg()->moduleBuilder()->newBuilder("switch-cont");
+
+    hilti::builder::BlockBuilder::case_list cases;
+
+    // Build the branches.
+    for ( auto c : s->alternatives() ) {
+        auto builder = cg()->moduleBuilder()->pushBuilder("switch-case");
+        processOne(c.second);
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+        cg()->moduleBuilder()->popBuilder(builder);
+
+        for ( auto e : c.first ) {
+            auto expr = cg()->hiltiExpression(e);
+            cases.push_back(std::make_pair(expr, builder));
+        }
+    }
+
+    // Build default branch, raising a parse error if none given.
+    auto default_ = cg()->moduleBuilder()->pushBuilder("switch-default");
+
+    if ( s->default_() )
+        processOne(s->default_());
+    else
+        _hiltiParseError("no matching switch case");
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+    cg()->moduleBuilder()->popBuilder(default_);
+
+    auto expr = cg()->hiltiExpression(s->expression());
+    cg()->builder()->addSwitch(expr, default_, cases);
+
+    cg()->moduleBuilder()->pushBuilder(cont);
+
+    _finishedProduction(s->sharedPtr<Production>());
 }
 
 void ParserBuilder::visit(production::Terminal* t)
@@ -1286,7 +1339,7 @@ void ParserBuilder::visit(production::Until* w)
 
     cg()->moduleBuilder()->pushBuilder(cont);
     assert(_last_parsed_value);
-    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true), true, _last_parsed_value);
+    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, false), true, _last_parsed_value);
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, done->block(), loop->block());
     cg()->moduleBuilder()->popBuilder(cont);
 
@@ -1318,7 +1371,7 @@ void ParserBuilder::visit(production::Loop* l)
 
     // Run foreach hook.
     assert(_last_parsed_value);
-    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true), true, _last_parsed_value);
+    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, false), true, _last_parsed_value);
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, done->block(), loop->block());
     cg()->moduleBuilder()->popBuilder(loop);
 

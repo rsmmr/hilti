@@ -592,7 +592,7 @@ private:
 class Switch : public NonTerminal
 {
 public:
-    typedef std::list<std::pair<shared_ptr<Expression>, shared_ptr<Production>>> case_list;
+    typedef std::list<std::pair<std::list<shared_ptr<Expression>>, shared_ptr<Production>>> case_list;
 
     /// Constructor.
     ///

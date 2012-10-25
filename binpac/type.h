@@ -1398,6 +1398,9 @@ public:
     /// Returns the case's expression.
     expression_list expressions() const;
 
+    /// Returns true if this is the default case.
+    bool default_() const;
+
     /// Returns the case's implementation item.
     shared_ptr<Item> item() const;
 
@@ -1539,9 +1542,19 @@ public:
     /// Returns the list of unit items.
     unit_item_list items() const;
 
+    /// Returns a "flattened" list of all of the units items. This descends
+    /// into items that recursively contain further items and adds them all
+    /// to the list as well.
+    unit_item_list flattenedItems() const;
+
     /// Returns a list of all fields. This is a convinience method that
     /// prefilters all items for this tyoe,
     std::list<shared_ptr<unit::item::Field>> fields() const;
+
+    /// Returns a "flattened" list of all of the unit's fields. This descends
+    /// into fields that recursively contain further items and adds them all
+    /// to the list as well.
+    std::list<shared_ptr<unit::item::Field>> flattenedFields() const;
 
     /// Returns a list of all variables. This is a convinience method that
     /// prefilters all items for this tyoe,

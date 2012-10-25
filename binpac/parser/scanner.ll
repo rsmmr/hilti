@@ -54,7 +54,6 @@ string    \"(\\.|[^\\"])*\"
 
 addr                  return token::ADDR;
 any                   return token::ANY;
-arrow                 return token::ARROW;
 attribute             return token::ATTRIBUTE;
 bitfield              return token::BITFIELD;
 bitset                return token::BITSET;
@@ -142,6 +141,7 @@ void                  return token::VOID;
 \+\+                  return token::PLUSPLUS;
 \|\|                  return token::OR;
 \.\.                  return token::DOTDOT;
+->                    return token::ARROW;
 
 False                 yylval->bval = 0; return token::CBOOL;
 True                  yylval->bval = 1; return token::CBOOL;

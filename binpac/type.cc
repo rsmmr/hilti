@@ -1165,6 +1165,11 @@ unit::item::field::switch_::Case::Case(const expression_list& exprs, shared_ptr<
     addChild(_item);
 }
 
+bool unit::item::field::switch_::Case::default_() const
+{
+    return _exprs.size() == 0;
+}
+
 expression_list unit::item::field::switch_::Case::expressions() const
 {
     expression_list exprs;
@@ -1281,11 +1286,53 @@ unit_item_list Unit::items() const
     return items;
 }
 
+
+static void _flatten(shared_ptr<type::unit::Item> i, unit_item_list* dst)
+{
+    // If it's a switch, descend.
+    auto switch_ = ast::tryCast<type::unit::item::field::Switch>(i);
+
+    if ( switch_ ) {
+        for ( auto c : switch_->cases() ) {
+            _flatten(c->item(), dst);
+        }
+
+        return;
+    }
+
+    dst->push_back(i);
+}
+
+unit_item_list Unit::flattenedItems() const
+{
+    unit_item_list items;
+
+    for ( auto i : _items )
+        _flatten(i, &items);
+
+    return items;
+}
+
+
 std::list<shared_ptr<unit::item::Field>> Unit::fields() const
 {
     std::list<shared_ptr<unit::item::Field>> m;
 
     for ( auto i : _items ) {
+        auto f = ast::tryCast<unit::item::Field>(i);
+
+        if ( f )
+            m.push_back(f);
+    }
+
+    return m;
+}
+
+std::list<shared_ptr<unit::item::Field>> Unit::flattenedFields() const
+{
+    std::list<shared_ptr<unit::item::Field>> m;
+
+    for ( auto i : flattenedItems() ) {
         auto f = ast::tryCast<unit::item::Field>(i);
 
         if ( f )
@@ -1353,7 +1400,7 @@ shared_ptr<unit::item::Property> Unit::property(const string& prop) const
 
 shared_ptr<unit::Item> Unit::item(shared_ptr<ID> id) const
 {
-    for ( auto i : _items ) {
+    for ( auto i : flattenedItems() ) {
         if ( i->id()->name() == id->name() )
             return i;
     }

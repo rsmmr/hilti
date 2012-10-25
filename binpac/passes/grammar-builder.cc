@@ -120,6 +120,24 @@ void GrammarBuilder::visit(type::unit::item::field::Switch* s)
 {
     if ( ! _in_decl )
         return;
+
+    production::Switch::case_list cases;
+    shared_ptr<Production> default_ = nullptr;
+
+    for ( auto c : s->cases() ) {
+        if ( c->default_() ) {
+            default_ = compileOne(c->item());
+            continue;
+        }
+
+        auto pcase = std::make_pair(c->expressions(), compileOne(c->item()));
+        cases.push_back(pcase);
+    }
+
+    auto sym = "switch:" + s->id()->name();
+    auto prod = std::make_shared<production::Switch>(sym, s->expression(), cases, default_, s->location());
+    prod->pgMeta()->field = s->sharedPtr<type::unit::item::Field>();
+    setResult(prod);
 }
 
 void GrammarBuilder::visit(type::unit::item::field::AtomicType* t)

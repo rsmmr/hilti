@@ -618,6 +618,30 @@ void Validator::visit(type::unit::item::field::Ctor* t)
 
 void Validator::visit(type::unit::item::field::Switch* s)
 {
+    int defaults = 0;
+
+    std::set<string> have;
+
+    for ( auto c : s->cases() ) {
+
+        if ( c->default_() )
+            ++defaults;
+
+        for ( auto e : c->expressions() ) {
+            if ( ! e->canCoerceTo(s->expression()->type()) )
+                error(e, "case value does not match switch expression");
+
+            auto render = e->render();
+
+            if ( have.find(render) != have.end() )
+                error(e, "duplicate case");
+
+            have.insert(render);
+        }
+    }
+
+    if ( defaults > 1 )
+        error(s, "more than one default case");
 }
 
 void Validator::visit(type::unit::item::field::AtomicType* t)

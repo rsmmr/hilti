@@ -16,6 +16,9 @@ int sleep = 0;
 int debug = 0;
 int debug_hooks = 0;
 
+    binpac_parser* request = 0;
+    binpac_parser* reply = 0;
+
 static void check_exception(hlt_exception* excpt)
 {
     if ( excpt ) {
@@ -24,8 +27,12 @@ static void check_exception(hlt_exception* excpt)
 
         if ( excpt->type == &hlt_exception_yield )
             exit(0);
-        else
+        else {
+            GC_DTOR(excpt, hlt_exception);
+            GC_DTOR(request, hlt_Parser);
+            GC_DTOR(reply, hlt_Parser);
             exit(1);
+        }
     }
 }
 
@@ -830,9 +837,6 @@ int main(int argc, char** argv)
         return 0;
     }
 #endif
-
-    binpac_parser* request = 0;
-    binpac_parser* reply = 0;
 
     if ( ! parser ) {
         hlt_exception* excpt = 0;
