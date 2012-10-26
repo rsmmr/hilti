@@ -37,7 +37,7 @@ protected:
    void __validate() override;
 ===
 > opMatch h
-   void __match() override;
+   bool __match() override;
 ===
 > opDoc h
    string __doc() const override;
@@ -115,8 +115,8 @@ shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeOp3() const
 > opValidate cc
 void operator_::$NAMESPACE::$CLASS::__validate()
 ===
-> opMatch h
-void operator_::$NAMESPACE::$CLASS::__match()
+> opMatch cc
+bool operator_::$NAMESPACE::$CLASS::__match()
 ===
 > opDoc cc
 string operator_::$NAMESPACE::$CLASS::__doc() const

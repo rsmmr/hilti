@@ -1,5 +1,5 @@
 #
-# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  hilti-build -t -d %INPUT ${PAC_DRIVER} -o a.out
 # @TEST-EXEC:  printf '\x01\x00\x02\x00\x00\x00\x03' | ./a.out >output
 # @TEST-EXEC:  btest-diff output
 #
@@ -11,9 +11,9 @@ type ExampleEnum = enum {
 };
 
 export type test = unit {
-       a: uint8 &convert=ExampleEnum;
-       b: uint16 &convert=ExampleEnum;
-       c: uint32 &convert=ExampleEnum
+       a: uint8 &convert=ExampleEnum($$);
+       b: uint16 &convert=ExampleEnum($$);
+       c: uint32 &convert=ExampleEnum($$)
           { print self.a; print self.b; print self.c; }
 };
 

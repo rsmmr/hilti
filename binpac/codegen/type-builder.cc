@@ -96,7 +96,9 @@ void TypeBuilder::visit(type::Enum* e)
         labels.push_back(std::make_pair(id, l.second));
     }
 
+    ti.hilti_default = hilti::builder::id::create(util::fmt("%s::Undef", e->id()->name()));
     ti.hilti_type = hilti::builder::enum_::type(labels, e->location());
+    ti.hilti_type->setID(cg()->hiltiID(e->id()));
 
     setResult(ti);
 }

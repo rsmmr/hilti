@@ -43,6 +43,7 @@ set(operators
     operators/list.cc
     operators/tuple.cc
     operators/unit.cc
+    operators/enum.cc
 )
 
 add_custom_command(

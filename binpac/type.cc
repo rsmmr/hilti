@@ -364,7 +364,7 @@ bool Enum::_equal(shared_ptr<Type> other) const
     auto i2 = eother->_labels.begin();
 
     for ( ; i1 != _labels.end(); ++i1, ++i2 ) {
-        if ( i1->first != i2->first || i1->second != i2->second )
+        if ( i1->first->name() != i2->first->name() || i1->second != i2->second )
             return false;
     }
 

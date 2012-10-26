@@ -12,6 +12,7 @@
 #include "autogen/operators/list.h"
 #include "autogen/operators/tuple.h"
 #include "autogen/operators/unit.h"
+#include "autogen/operators/enum.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -594,6 +595,20 @@ void CodeBuilder::visit(expression::operator_::function::Call* i)
         cookie = hilti::builder::reference::createNull(i->location());
 
     auto result = cg()->hiltiCall(func, args, cookie);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::enum_::Call* i)
+{
+    auto type = ast::checkedCast<type::TypeType>(i->op1()->type())->typeType();
+    auto etype = ast::checkedCast<type::Enum>(type);
+    auto args = ast::checkedCast<expression::List>(i->op2())->expressions();
+    assert(args.size() == 1);
+    auto value = args.front();
+
+    auto result = cg()->builder()->addTmp("enum", cg()->hiltiType(etype));
+    cg()->builder()->addInstruction(result, hilti::instruction::enum_::FromInt, cg()->hiltiExpression(value));
+
     setResult(result);
 }
 
