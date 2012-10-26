@@ -584,6 +584,19 @@ void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::In
 
 void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
 {
+    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
+
+    auto item = unit->item(attr->id());
+    assert(item && item->type());
+
+    auto has = cg()->builder()->addTmp("has", hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(has,
+                                    hilti::instruction::struct_::IsSet,
+                                    cg()->hiltiExpression(i->op1()),
+                                    hilti::builder::string::create(attr->id()->name()));
+
+    setResult(has);
 }
 
 void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::New* i)

@@ -118,6 +118,8 @@ bool ParserBuilder::parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* 
 {
     bool success = false;
     shared_ptr<type::unit::item::Field> field;
+    shared_ptr<hilti::builder::BlockBuilder> cont;
+    shared_ptr<hilti::builder::BlockBuilder> true_;
 
     auto prod = ast::tryCast<Production>(node);
 
@@ -125,27 +127,22 @@ bool ParserBuilder::parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* 
         field = ast::tryCast<type::unit::item::Field>(prod->pgMeta()->field);
 
     if ( field && field->condition() ) {
+        // Evaluate if() condition.
         auto blocks = cg()->builder()->addIf(cg()->hiltiExpression(field->condition()));
         auto true_ = std::get<0>(blocks);
-        auto cont = std::get<1>(blocks);
+        cont = std::get<1>(blocks);
         cg()->moduleBuilder()->pushBuilder(true_);
-
-        if ( result )
-            success = processOne(node, result, f);
-        else
-            success = processOne(node);
-
-        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
-        cg()->moduleBuilder()->popBuilder(true_);
-
-        cg()->moduleBuilder()->pushBuilder(cont);
     }
 
-    else {
-        if ( result )
-            success = processOne(node, result, f);
-        else
-            success = processOne(node);
+    if ( result )
+        success = processOne(node, result, f);
+    else
+        success = processOne(node);
+
+    if ( true_ ) {
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+        cg()->moduleBuilder()->popBuilder(true_);
+        cg()->moduleBuilder()->pushBuilder(cont);
     }
 
     return success;

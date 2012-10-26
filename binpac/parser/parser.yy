@@ -576,7 +576,7 @@ expr          : scoped_id                        { $$ = std::make_shared<express
               | expr POW expr                    { $$ = makeOp(operator_::Power, { $1, $3 }, loc(@$)); }
               | expr '.' member_expr             { $$ = makeOp(operator_::Attribute, { $1, $3 }, loc(@$)); }
               | expr '.' member_expr '=' expr    { $$ = makeOp(operator_::AttributeAssign, { $1, $3, $5 }, loc(@$)); }
-              | expr HASATTR id_expr             { $$ = makeOp(operator_::HasAttribute, { $1, $3 }, loc(@$)); }
+              | expr HASATTR member_expr         { $$ = makeOp(operator_::HasAttribute, { $1, $3 }, loc(@$)); }
               | expr PLUSPLUS                    { $$ = makeOp(operator_::IncrPostfix, { $1 }, loc(@$)); }
               | PLUSPLUS expr                    { $$ = makeOp(operator_::IncrPrefix, { $2 }, loc(@$)); }
               | expr MINUSMINUS                  { $$ = makeOp(operator_::DecrPostfix, { $1 }, loc(@$)); }
