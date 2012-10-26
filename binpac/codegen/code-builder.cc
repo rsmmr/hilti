@@ -7,12 +7,13 @@
 #include "function.h"
 #include "grammar.h"
 
+#include "autogen/operators/bool.h"
+#include "autogen/operators/enum.h"
 #include "autogen/operators/function.h"
 #include "autogen/operators/integer.h"
 #include "autogen/operators/list.h"
 #include "autogen/operators/tuple.h"
 #include "autogen/operators/unit.h"
-#include "autogen/operators/enum.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -532,6 +533,14 @@ void CodeBuilder::visit(expression::operator_::integer::Attribute* i)
     setResult(result);
 }
 
+void CodeBuilder::visit(expression::operator_::bool_::Not* i)
+{
+    auto result = builder()->addTmp("not", hilti::builder::boolean::type());
+    auto op1 = cg()->hiltiExpression(i->op1());
+    cg()->builder()->addInstruction(result, hilti::instruction::boolean::Not, op1);
+    setResult(result);
+}
+
 void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
 {
     auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
@@ -567,6 +576,30 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
     cg()->hiltiRunFieldHooks(item);
 
     setResult(expr);
+}
+
+void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Input* i)
+{
+}
+
+void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
+{
+}
+
+void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
+{
+}
+
+void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Offset* i)
+{
+}
+
+void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::SetInput* i)
+{
+}
+
+void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::AddFilter* i)
+{
 }
 
 void CodeBuilder::visit(expression::operator_::list::PushBack* i)

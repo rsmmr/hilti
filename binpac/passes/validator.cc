@@ -527,6 +527,9 @@ void Validator::visit(type::unit::item::Field* f)
         if ( attr->key() == "convert" )
             continue;
 
+        if ( attr->key() == "parse" )
+            continue;
+
         bool found = false;
 
         for ( auto pattr : parseable->parseAttributes() ) {

@@ -38,12 +38,13 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/parser.cc  PROPERTIES GENERATED 1)
 ### Auto-generate all the boiler-plate stuff for operators.
 
 set(operators
+    operators/bool.cc
+    operators/enum.cc
     operators/function.cc
     operators/integer.cc
     operators/list.cc
     operators/tuple.cc
     operators/unit.cc
-    operators/enum.cc
 )
 
 add_custom_command(

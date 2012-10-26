@@ -213,6 +213,19 @@ public:
     /// msg: An error message for the user.
     void error(shared_ptr<Node> op, string msg) const;
 
+    /// Helper method to check that an argument tuple is of an expected type
+    /// for a function or method call.. If not, it reports an error. Note
+    /// that this method expects a constant tuple.
+    ///
+    /// tuple: The tuple expression; must be of a \a expression::Constant and
+    ///        of type \a type::Tuple, otherwise will abort.
+    ///
+    /// types: The expected types of the tuple elements.
+    ///
+    /// Returns: True if all tuple elements can be coerced to their
+    /// corresponding type.
+    bool checkCallArgs(shared_ptr<Expression> tuple, const type_list& types);
+
 protected:
 
     /// Returns a factory function that instantiates a resolved operator

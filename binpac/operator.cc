@@ -126,6 +126,32 @@ void Operator::validate(passes::Validator* v, const expression_list& ops)
     _validator = nullptr;
 }
 
+bool Operator::checkCallArgs(shared_ptr<Expression> tuple, const type_list& types)
+{
+    auto const_ = ast::checkedCast<expression::Constant>(tuple);
+    auto elems = ast::checkedCast<constant::Tuple>(const_->constant())->value();
+
+    if ( elems.size() != types.size() ) {
+        error(tuple, "wrong number of arguments");
+        return false;
+    }
+
+    auto e = elems.begin();
+    auto t = types.begin();
+
+    while ( e != elems.end() ) {
+        if ( ! (*e)->canCoerceTo(*t) ) {
+            error(*e, "argument type mismatch");
+            return false;
+        }
+
+        ++e;
+        ++t;
+    }
+
+    return true;
+}
+
 string _clsName(shared_ptr<Type> t)
 {
     if ( ! t )

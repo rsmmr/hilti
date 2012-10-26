@@ -1537,6 +1537,9 @@ public:
     /// Returns the type's parameters.
     parameter_list parameters() const;
 
+    /// Returns a list with type's parameter types.
+    type_list parameterTypes() const;
+
     /// Returns the list of unit items.
     unit_item_list items() const;
 

@@ -1276,6 +1276,16 @@ parameter_list Unit::parameters() const
     return params;
 }
 
+type_list Unit::parameterTypes() const
+{
+    type_list types;
+
+    for ( auto p : _params )
+        types.push_back(p->type());
+
+    return types;
+}
+
 unit_item_list Unit::items() const
 {
     unit_item_list items;
