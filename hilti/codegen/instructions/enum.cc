@@ -87,6 +87,7 @@ void StatementBuilder::visit(statement::instruction::enum_::FromInt* i)
     cg()->llvmCreateBr(block_cont);
     cg()->popBuilder();
 
+    op1 = cg()->builder()->CreateZExt(op1, cg()->llvmTypeInt(64));
     auto switch_ = builder()->CreateSwitch(op1, block_unknown->GetInsertBlock());
 
     std::set<int> have_vals;

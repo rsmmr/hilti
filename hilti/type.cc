@@ -436,7 +436,7 @@ bool type::Enum::_equal(shared_ptr<Type> other) const
     auto i2 = eother->_labels.begin();
 
     for ( ; i1 != _labels.end(); ++i1, ++i2 ) {
-        if ( i1->first != i2->first || i1->second != i2->second )
+        if ( i1->first->name() != i2->first->name() || i1->second != i2->second )
             return false;
     }
 
@@ -479,9 +479,9 @@ type::trait::Parameterized::parameter_list type::RegExp::parameters() const
 type::struct_::Field::Field(shared_ptr<ID> id, shared_ptr<hilti::Type> type, shared_ptr<Expression> default_, bool internal, const Location& l)
     : Node(l), _id(id), _type(type), _default(default_), _internal(internal)
 {
-    addChild(id);
-    addChild(type);
-    addChild(default_);
+    addChild(_id);
+    addChild(_type);
+    addChild(_default);
 }
 
 shared_ptr<Expression> type::struct_::Field::default_() const
