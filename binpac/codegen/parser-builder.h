@@ -72,6 +72,10 @@ public:
     shared_ptr<binpac::Type> itemType(shared_ptr<type::unit::Item> item);
 
 protected:
+    /// Parse a given entity. This a wrapper around processOne() that adds
+    /// additional logic around it.
+    bool parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result = nullptr, shared_ptr<type::unit::item::Field> field = nullptr);
+
     /// Returns the current parsing state.
     shared_ptr<ParserState> state() const;
 
