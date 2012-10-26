@@ -1,0 +1,41 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  cat test.txt | ./a.out -p HTTP::Request >output
+# @TEST-EXEC:  btest-diff output
+
+module HTTP;
+
+const Token      = /[^ \t\n\r\n]+/;
+const URI        = /[^ \t\n\r\n]+/;
+const WhiteSpace = /[ \t]+/;
+const NewLine    = /[\r\n]+/;
+const Version    = /HTTP\/[0-9]\.[0-9]/;
+
+type RequestLine = unit {
+    method:  Token;
+    :        WhiteSpace;
+    uri:     URI;
+    :        WhiteSpace;
+    version: Version;
+    :        NewLine;
+    };
+
+type Message = unit {
+    msg:     /Message/;
+    };
+
+export type Request = unit {
+    request: RequestLine;
+    message: Message
+       {
+       print self.request.method;
+       print self.request.uri;
+       print self.request.version;
+       print self.message.msg;
+       }
+    };
+
+### @TEST-START-FILE test.txt
+GET index.html HTTP/1.0
+Message
+### # @TEST-END-FILE

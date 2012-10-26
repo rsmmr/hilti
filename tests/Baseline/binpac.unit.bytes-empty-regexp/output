@@ -1,0 +1,4 @@
+[binpac] test
+[binpac]    a = '1234'
+[binpac]    ws = ''
+[binpac]    b = '67890'

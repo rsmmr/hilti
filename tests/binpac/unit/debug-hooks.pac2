@@ -1,0 +1,29 @@
+#
+# @TEST-EXEC:       ( binpac++ -d %INPUT | grep -q FOO )
+# @TEST-EXEC-FAIL:  ( binpac++    %INPUT | grep -q FOO )
+# @TEST-EXEC:       hilti-build %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:       echo 1234567890 | ./a.out >output 2>&1
+# @TEST-EXEC:       echo -- >>output
+# @TEST-EXEC:       echo 1234567890 | ./a.out -B >>output 2>&1
+# @TEST-EXEC:       btest-diff output
+
+module Mini;
+
+export type test = unit {
+
+       a: bytes &length=4 %debug {
+           print "FOO A.inline";
+           }
+
+       b: bytes &length=6 {
+           self.foo = b"foo";
+           }
+
+       var foo: bytes %debug {
+           print "FOO foo.inline";
+           }
+
+       %debug on a { print "FOO A", self.a; }
+       %debug on b { print "FOO B", self.b; }
+       %debug on foo { print "FOO foo", self.foo; }
+};

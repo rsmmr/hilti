@@ -1,0 +1,58 @@
+#
+# @TEST-EXEC:  hilti-build2 -t -d -m %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  echo 123456666677777 | ./a.out -p A::tA >output
+# @TEST-EXEC:  btest-diff output
+
+module A;
+
+import b;
+
+export type tA = unit {
+       a: bytes &length=5;
+       B: B::tB;
+
+       on %init {
+           print "tA";
+       }
+};
+
+on tA::a {
+    print "tA: a", self.a;
+    }
+
+on B::tB::x {
+    print "tA: x-1", self.x;
+    }
+
+on B::tB::x {
+    print "tA: x-2", self.x;
+    }
+
+### @TEST-START-FILE b.pac2
+module B;
+
+export type tB = unit {
+       x: bytes &length=5;
+       y: bytes &length=5;
+
+       on %init {
+           print "tB";
+       }
+};
+
+extern int64 Hilti::bytes_to_int(b: bytes, base: uint64);
+
+on tB::x {
+    print "tB: x-1 $", self.x;
+    }
+
+on tB::x {
+    print "tB: x-2 $", self.x;
+    }
+
+on tB::y {
+    print "tB: y $", Hilti::bytes_to_int(self.y, 10);
+    }
+### @TEST-END-FILE test.txt
+
+

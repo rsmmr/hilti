@@ -1,0 +1,15 @@
+#
+# @TEST-EXEC:  hilti-build2 -m %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  echo 1234567890abcdeFGHJI | ./a.out >output
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+export type test = unit {
+       a: bytes &length=4 { print self.offset(); }
+       b: bytes &length=6 { print self.offset(); }
+       c: bytes &length=5 { print self.offset(); }
+       d: bytes &length=(self.offset() - 10) {
+            print self.d;
+            }
+};
