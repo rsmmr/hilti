@@ -26,5 +26,12 @@ void ScopePrinter::visit(statement::Block* b)
 {
     _out << "<<< Scope for " << b->render() << std::endl;
     b->scope()->dump(_out);
-    _out << ">>>" << std::endl;
+    _out << ">>>" << std::endl << std::endl;
+}
+
+void ScopePrinter::visit(type::unit::Item * i)
+{
+    _out << "<<< Scope for " << i->render() << std::endl;
+    i->scope()->dump(_out);
+    _out << ">>>" << std::endl << std::endl;
 }

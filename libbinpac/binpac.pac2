@@ -12,3 +12,11 @@ type Filter = enum {
     BASE64 = 1,  # MIME base64 decoding.
     GZIP = 2     # gzipd decompression.
 };
+
+#### Functions defined in hilti.hlt.
+
+# Converts a bytes instance an integer.
+# import "HILTI" int64 Hilti::bytes_to_int(b: bytes, base: int<64>);
+
+# Lower-cases a bytes instance.
+# import "HILTI  bytes Hilti::bytes_to_lower(b: bytes);

@@ -426,7 +426,7 @@ shared_ptr<hilti::Type> ParserBuilder::hiltiTypeParseObject(shared_ptr<type::Uni
             // have already been checked where we get here ...
             continue;
 
-        auto ftype = ast::type::checkedTrait<type::trait::Parseable>(f->type())->fieldType();
+        auto ftype = itemType(f);
         auto type = cg()->hiltiType(ftype);
         assert(type);
 
@@ -556,8 +556,7 @@ void ParserBuilder::_startingProduction(shared_ptr<Production> p, shared_ptr<typ
     auto cont = std::get<1>(branches);
 
     cg()->moduleBuilder()->pushBuilder(set_default);
-    auto ftype = ast::type::checkedTrait<type::trait::Parseable>(field->type())->fieldType();
-
+    auto ftype = itemType(field);
     auto def = cg()->hiltiDefault(ftype);
 
     if ( def )
@@ -580,17 +579,21 @@ void ParserBuilder::_newValueForField(shared_ptr<type::unit::item::Field> field,
 {
     auto name = field->id()->name();
 
+    if ( value )
+        value = _hiltiProcessFieldValue(field, value);
+
     if ( cg()->debugLevel() > 0 && ! ast::isA<type::Unit>(field->type()))
         cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", name), value);
 
     if ( value ) {
-        if ( storingValues() )
+        if ( storingValues() ) {
             cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self,
                                             hilti::builder::string::create(name), value);
+        }
     }
 
     else {
-        auto ftype = ast::type::checkedTrait<type::trait::Parseable>(field->type())->fieldType();
+        auto ftype = itemType(field);
         value = cg()->moduleBuilder()->addTmp("field-val", cg()->hiltiType(ftype));
         cg()->builder()->addInstruction(value, hilti::instruction::struct_::Get, state()->self,
                                         hilti::builder::string::create(name));
@@ -680,8 +683,10 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, bool foreach, shared_ptr
         hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr)
     };
 
-    if ( dollardollar )
+    if ( dollardollar ) {
         p.push_back(hilti::builder::function::parameter("__dollardollar", cg()->hiltiType(dollardollar), false, nullptr));
+        cg()->hiltiBindDollarDollar(hilti::builder::id::create("__dollardollar"));
+    }
 
     shared_ptr<hilti::Type> rtype = nullptr;
 
@@ -698,6 +703,9 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, bool foreach, shared_ptr
     _hiltiDebugVerbose(msg);
 
     cg()->hiltiStatement(body);
+
+    if ( dollardollar )
+        cg()->hiltiUnbindDollarDollar();
 
     popState();
 
@@ -727,7 +735,6 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiRunHook(shared_ptr<ID> id, bo
 
         if ( dollardollar )
             p.push_back(hilti::builder::function::parameter("__dollardollar", dollardollar->type(), false, nullptr));
-
 
         shared_ptr<hilti::Type> rtype = nullptr;
 
@@ -985,6 +992,38 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiIntUnpackFormat(int width, bo
     cg()->builder()->addInstruction(result, hilti::instruction::Misc::SelectValue, hltbo, tuple);
 
     return result;
+}
+
+shared_ptr<binpac::Type> ParserBuilder::itemType(shared_ptr<type::unit::Item> item)
+{
+    auto field = ast::tryCast<type::unit::item::Field>(item);
+
+    if ( ! field )
+        return item->type();
+
+    auto ftype = ast::type::checkedTrait<type::trait::Parseable>(field->type())->fieldType();
+
+    auto convert = field->attributes()->lookup("convert");
+
+    if ( convert )
+        return convert->value()->type();
+
+    return ftype;
+}
+
+shared_ptr<hilti::Expression> ParserBuilder::_hiltiProcessFieldValue(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value)
+{
+    auto ftype = ast::type::checkedTrait<type::trait::Parseable>(field->type())->fieldType();
+    auto convert = field->attributes()->lookup("convert");
+
+    if ( convert ) {
+        cg()->hiltiBindDollarDollar(value);
+        auto dd = cg()->builder()->addTmp("__dollardollar", value->type(), value);
+        value = cg()->hiltiExpression(convert->value());
+        cg()->hiltiUnbindDollarDollar();
+    }
+
+    return value;
 }
 
 void ParserBuilder::disableStoringValues()

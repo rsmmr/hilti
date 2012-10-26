@@ -51,6 +51,9 @@ static string _linkage(Declaration::Linkage linkage)
      case Declaration::EXPORTED:
         return "export ";
 
+     case Declaration::IMPORTED:
+        return "import ";
+
      default:
         fprintf(stderr, "unknown linkage %d in Printer::_linkage()", (int)linkage);
         abort();

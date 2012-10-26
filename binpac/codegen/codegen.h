@@ -164,6 +164,17 @@ public:
     /// function: The function.
     shared_ptr<hilti::declaration::Function> hiltiDefineFunction(shared_ptr<Function> func);
 
+    /// Calls a function.
+    ///
+    /// func: The function to call.
+    ///
+    /// args: The arguments.
+    ///
+    /// cookie: If we are currently parsing, the user's cookie; otherwise null.
+    ///
+    /// Returns: The function's result, or null for void functions.
+    shared_ptr<hilti::Expression> hiltiCall(shared_ptr<expression::Function> func, const expression_list& args, shared_ptr<hilti::Expression> cookie);
+
     /// Returns a HILTI expression referencing the current parser object
     /// (assuming parsing is in process; if not aborts());
     shared_ptr<hilti::Expression> hiltiSelf();
@@ -176,6 +187,22 @@ public:
 
     /// Returns the HILTI-level name for a function.
     shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<expression::Function> func);
+
+    /// Returns the final type of an item. This takes into account
+    /// transformations like &convert for fields.
+    ///
+    /// item: The item.
+    ///
+    /// Returns: The final type.
+    shared_ptr<binpac::Type> itemType(shared_ptr<type::unit::Item> item);
+
+    /// Binds the $$ identifier to a given value.
+    ///
+    /// val: The value.
+    void hiltiBindDollarDollar(shared_ptr<hilti::Expression> val);
+
+    /// Unbinds the $$ identifier.
+    void hiltiUnbindDollarDollar();
 
 private:
     bool _compiling = false;

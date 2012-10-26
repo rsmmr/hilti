@@ -62,11 +62,11 @@ public:
     /// Adds a child scope.
     ///
     /// id: The name of child's scope. If that's, e.g., \c Foo, lookup() now
-    /// searches there when \c Foo::bar is queried.
+    /// searches there when \c Foo::bar is queried. If the ID is scoped, it
+    /// will be inserted \a without the scope.
     ///
     /// child: The child scope.
     void addChild(shared_ptr<ID> id, shared_ptr<Scope> child) {
-       assert(! id->isScoped());
        _data->childs.insert(typename scope_map::value_type(id->name(), child));
         // TODO: Should this set chold->parent? We might need to use new the
         // alias support more if changed.
@@ -174,8 +174,6 @@ private:
 template<typename AstInfo>
 inline bool Scope<AstInfo>::insert(shared_ptr<ID> id, Value value)
 {
-    assert(! id->isScoped());
-
     auto i = _data->values.find(id->name());
 
     if ( i != _data->values.end() )

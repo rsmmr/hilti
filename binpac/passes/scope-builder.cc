@@ -59,7 +59,7 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
         return 0;
     }
 
-    if ( id->isScoped() && ! is_hook ) {
+    if ( id->isScoped() && ! is_hook && decl->linkage() != Declaration::IMPORTED ) {
         error(decl, "declared ID cannot have a scope");
         return 0;
     }
@@ -119,18 +119,30 @@ void ScopeBuilder::visit(declaration::Type* t)
             uscope->insert(p->id(), std::make_shared<expression::ParserState>(expression::ParserState::PARAMETER, p->id(), unit));
 
         for ( auto i : unit->items() ) {
+
+            auto iscope = i->scope();
+
+            iscope->setParent(uscope);
+            uscope->addChild(std::make_shared<ID>(util::fmt("__item_%s", i->id()->name())), iscope);
+            auto dd = i->type();
+
+            iscope->insert(std::make_shared<ID>("$$"),
+                           std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR, nullptr, unit, dd));
+
             for ( auto h : i->hooks() ) {
                 h->setUnit(unit);
 
-                shared_ptr<Type> dd = nullptr;
+                if ( h->body() ) {
+                    h->body()->scope()->setParent(iscope);
+                    iscope->addChild(std::make_shared<ID>(util::fmt("__hook_%p", h.get())), iscope);
+                }
 
-                if ( ! h->foreach() )
-                    dd = i->type();
-                else
-                    dd = ast::type::checkedTrait<type::trait::Container>(i->type())->elementType();
-
-                h->body()->scope()->insert(std::make_shared<ID>("$$"),
-                                           std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR, nullptr, unit, dd));
+                if ( h->foreach() ) {
+                    // The overrides the item's scope's $$.
+                    auto dd = ast::type::checkedTrait<type::trait::Container>(i->type())->elementType();
+                    h->body()->scope()->insert(std::make_shared<ID>("$$"),
+                                               std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR, nullptr, unit, dd));
+                }
             }
         }
     }
@@ -156,7 +168,9 @@ void ScopeBuilder::visit(declaration::Function* f)
     auto func = f->function()->sharedPtr<Function>();
     auto expr = shared_ptr<expression::Function>(new expression::Function(func, func->location()));
 
-    if ( ! f->id()->isScoped() )
+    auto is_hook = dynamic_cast<declaration::Hook*>(f);
+
+    if ( ! is_hook )
         scope->insert(f->id(), expr);
 
     if ( ! func->body() )

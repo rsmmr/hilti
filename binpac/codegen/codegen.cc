@@ -253,9 +253,9 @@ shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> fu
 shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<expression::Function> expr)
 {
     auto func = expr->function();
-    auto id = func->id()->name();
+    auto id = func->id()->pathAsString();
 
-    if ( expr->scope().size() )
+    if ( ! func->id()->isScoped() && expr->scope().size() )
         id = util::fmt("%s::%s", expr->scope(), id);
 
     if ( func->type()->callingConvention() != type::function::BINPAC )
@@ -268,6 +268,58 @@ shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<expression::Function
     return hilti::builder::id::node(name, func->location());
 }
 
+shared_ptr<hilti::Expression> CodeGen::hiltiCall(shared_ptr<expression::Function> func, const expression_list& args, shared_ptr<hilti::Expression> cookie)
+{
+    auto ftype = func->function()->type();
+    auto hilti_func = hiltiExpression(func);
+
+    hilti::builder::tuple::element_list hilti_arg_list;
+
+    for ( auto a : args )
+        hilti_arg_list.push_back(hiltiExpression(a));
+
+    if ( ftype->callingConvention() == type::function::BINPAC_HILTI_C ||
+         ftype->callingConvention() == type::function::HILTI_C ||
+         ftype->callingConvention() == type::function::HILTI ||
+         ftype->callingConvention() == type::function::BINPAC_HILTI ) {
+        if ( func->scope().size() )
+            moduleBuilder()->importModule(hilti::builder::id::node(func->scope()));
+    }
+
+    switch ( ftype->callingConvention() ) {
+     case type::function::BINPAC:
+     case type::function::BINPAC_HILTI:
+     case type::function::BINPAC_HILTI_C: {
+        hilti_arg_list.push_back(cookie);
+        break;
+     }
+
+     case type::function::HILTI:
+     case type::function::HILTI_C:
+     case type::function::C:
+        break;
+
+     default:
+        internalError("unexpected calling convention in expression::operator_::function::Call()");
+    }
+
+    auto hilti_args = hilti::builder::tuple::create(hilti_arg_list);
+
+    shared_ptr<hilti::Expression> result = nullptr;
+
+    if ( ftype->result() && ! ast::isA<type::Void>(ftype->result()->type()) ) {
+        result = builder()->addTmp("result", hiltiType(ftype->result()->type()));
+        builder()->addInstruction(result, hilti::instruction::flow::CallResult, hilti_func, hilti_args);
+    }
+
+    else {
+        result = hilti::builder::id::create("<no return value>"); // Dummy ID; this should never be accessed ...
+        builder()->addInstruction(hilti::instruction::flow::CallVoid, hilti_func, hilti_args);
+    }
+
+    return result;
+}
+
 shared_ptr<hilti::Expression> CodeGen::hiltiSelf()
 {
     return _parser_builder->hiltiSelf();
@@ -276,5 +328,20 @@ shared_ptr<hilti::Expression> CodeGen::hiltiSelf()
 shared_ptr<hilti::Type> CodeGen::hiltiTypeCookie()
 {
     return hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::UserCookie"));
+}
+
+shared_ptr<binpac::Type> CodeGen::itemType(shared_ptr<type::unit::Item> item)
+{
+    return _parser_builder->itemType(item);
+}
+
+void CodeGen::hiltiBindDollarDollar(shared_ptr<hilti::Expression> val)
+{
+    _code_builder->hiltiBindDollarDollar(val);
+}
+
+void CodeGen::hiltiUnbindDollarDollar()
+{
+    _code_builder->hiltiBindDollarDollar(0);
 }
 

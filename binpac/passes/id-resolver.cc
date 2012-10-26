@@ -36,9 +36,15 @@ void IDResolver::visit(expression::ID* i)
 
         auto unit = ast::tryCast<type::Unit>(n);
         auto block = ast::tryCast<statement::Block>(n);
+        auto item = ast::tryCast<type::unit::Item>(n);
 
         if ( block ) {
             scope = block->scope();
+            break;
+        }
+
+        if ( item ) {
+            scope = item->scope();
             break;
         }
 

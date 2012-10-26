@@ -35,7 +35,7 @@ public:
 
     /// A linkage type for the declaration, with interpretation left to the
     /// client application.
-    enum Linkage { LOCAL, PRIVATE, EXPORTED };
+    enum Linkage { LOCAL, PRIVATE, EXPORTED, IMPORTED };
 
     /// Returns the ID being declared.
     shared_ptr<ID> id() const { return _id; }

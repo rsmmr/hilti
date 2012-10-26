@@ -73,7 +73,6 @@ cport                 return token::CPORT;
 cregexp               return token::CREGEXP;
 cstring               return token::CSTRING;
 debug                 return token::DEBUG_;
-declare               return token::DECLARE;
 double                return token::DOUBLE;
 else                  return token::ELSE;
 enum                  return token::ENUM;

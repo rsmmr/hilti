@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  echo 12345 | ./a.out >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+# These are implemented in libhilti.
+extern int64 Hilti::bytes_to_int(b: bytes);
+
+int64 to_int(b: bytes)
+{
+     return Hilti::bytes_to_int(b);
+}
+
+const RE = /[0-9]+/;
+
+export type test = unit {
+       a: RE &convert=to_int
+          { print self.a; }
+};

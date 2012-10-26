@@ -68,7 +68,7 @@ public:
     bool foreach() const;
 
     /// Sets the unit type that this hook is part of. Should be called only
-    /// form the resolver passes.This also links the hook's scope to the unit's.
+    /// form the resolver passes.
     void setUnit(shared_ptr<type::Unit> unit);
 
     ACCEPT_VISITOR_ROOT()

@@ -63,6 +63,14 @@ public:
     /// (assuming parsing is in process; if not aborts());
     shared_ptr<hilti::Expression> hiltiSelf();
 
+    /// Returns the final type of an item. This takes into account
+    /// transformations like &convert for fields.
+    ///
+    /// item: The item.
+    ///
+    /// Returns: The final type.
+    shared_ptr<binpac::Type> itemType(shared_ptr<type::unit::Item> item);
+
 protected:
     /// Returns the current parsing state.
     shared_ptr<ParserState> state() const;
@@ -247,6 +255,10 @@ private:
     // BinPAC::ByteOrder (as, e.g., returned by _fieldByteOrder(). If \a
     // byteorder is null, network order is used as default.
     shared_ptr<hilti::Expression> _hiltiIntUnpackFormat(int width, bool signed_, shared_ptr<binpac::Expression> byteorder);
+
+    // Processes a parsed field values before it's stored in the parsed
+    // object. This applies transformations like &convert.
+    shared_ptr<hilti::Expression> _hiltiProcessFieldValue(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value);
 
     // Disables saving parsed values in a parse objects. This is primarily
     // for parsing container items that aren't directly stored there.

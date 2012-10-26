@@ -121,9 +121,23 @@ expression::Coerced::Coerced(shared_ptr<binpac::Expression> expr, shared_ptr<bin
 {
 }
 
-expression::CodeGen::CodeGen(shared_ptr<binpac::Type> type, void* cookie, const Location& l)
-    : binpac::Expression(l), ast::expression::mixin::CodeGen<AstInfo>(this, type, cookie)
+expression::CodeGen::CodeGen(shared_ptr<binpac::Type> type, shared_ptr<hilti::Expression> value, const Location& l)
+    : CustomExpression(l)
 {
+    _type = type;
+    _value = value;
+
+    addChild(_type);
+}
+
+shared_ptr<hilti::Expression> expression::CodeGen::value() const
+{
+    return _value;
+}
+
+shared_ptr<Type> expression::CodeGen::type() const
+{
+    return _type;
 }
 
 expression::MemberAttribute::MemberAttribute(shared_ptr<binpac::ID> id, const Location& l)

@@ -31,6 +31,7 @@ public:
 
 protected:
     void visit(statement::Block* b) override;
+    void visit(type::unit::Item * i) override;
 
 private:
     std::ostream& _out;

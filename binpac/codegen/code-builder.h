@@ -38,6 +38,11 @@ public:
     /// Returns: The computed HILTI expression.
     shared_ptr<hilti::Expression> hiltiExpression(shared_ptr<Expression> expr, shared_ptr<Type> coerce_to = nullptr);
 
+    /// Binds the $$ identifier to a given value.
+    ///
+    /// val: The value. Null unbinds.
+    void hiltiBindDollarDollar(shared_ptr<hilti::Expression> val);
+
 protected:
     void visit(Module* f) override;
     void visit(Function* f) override;
@@ -104,6 +109,10 @@ protected:
     /// Automatically generated visit() methods for ResolverOperator-derived
     /// classes.
     #include "autogen/operators/operators-expression-builder.h"
+
+private:
+    shared_ptr<hilti::Expression> _dollardollar = nullptr;
+
 };
 
 }

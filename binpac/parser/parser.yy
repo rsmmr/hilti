@@ -83,7 +83,6 @@ inline shared_ptr<Expression> makeOp(binpac::operator_::Kind kind, const express
 %token         CONST
 %token         CONSTANT
 %token         DEBUG_
-%token         DECLARE
 %token         DOTDOT
 %token         DOUBLE
 %token         END            0 "end of file"
@@ -273,10 +272,10 @@ func_decl     : opt_linkage opt_cc rtype local_id '(' opt_params ')' block
                                                    $$ = std::make_shared<declaration::Function>(func, $1, loc(@$));
                                                  }
 
-              | DECLARE opt_linkage opt_cc rtype local_id '(' opt_params ')' ';'
-                                                 { auto ftype = std::make_shared<type::Function>($4, $7, $3, loc(@$));
-                                                   auto func  = std::make_shared<Function>($5, ftype, driver.module(), nullptr, loc(@$));
-                                                   $$ = std::make_shared<declaration::Function>(func, $2, loc(@$));
+              | IMPORT opt_cc rtype scoped_id '(' opt_params ')' ';'
+                                                 { auto ftype = std::make_shared<type::Function>($3, $6, $2, loc(@$));
+                                                   auto func  = std::make_shared<Function>($4, ftype, driver.module(), nullptr, loc(@$));
+                                                   $$ = std::make_shared<declaration::Function>(func, Declaration::IMPORTED, loc(@$));
                                                  }
               ;
 
@@ -561,7 +560,7 @@ expr          : scoped_id                        { $$ = std::make_shared<express
               | constant                         { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
               | CAST '<' type '>' '(' expr ')'   { $$ = std::make_shared<expression::Coerced>($6, $3, loc(@$)); }
               | expr '=' expr                    { $$ = std::make_shared<expression::Assign>($1, $3, loc(@$)); }
-              | atomic_type '(' ')'                { $$ = std::make_shared<expression::Default>($1, loc(@$)); }
+/*            | atomic_type '(' ')'                { $$ = std::make_shared<expression::Default>($1, loc(@$)); } */
 
               /* Overloaded operators */
 

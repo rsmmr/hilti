@@ -885,6 +885,8 @@ unit::Item::Item(shared_ptr<ID> id, shared_ptr<Type> type, const hook_list& hook
 
     for ( auto h : _hooks )
         addChild(h);
+
+    _scope = std::make_shared<Scope>(); // The scope builder will initialize  this and link it in.
 }
 
 bool unit::Item::anonymous() const
@@ -902,12 +904,10 @@ shared_ptr<Type> unit::Item::type()
     return _type;
 }
 
-#if 0
 shared_ptr<Scope> unit::Item::scope() const
 {
     return _scope;
 }
-#endif
 
 hook_list unit::Item::hooks() const
 {

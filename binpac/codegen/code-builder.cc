@@ -47,6 +47,11 @@ shared_ptr<hilti::Expression> CodeBuilder::hiltiExpression(shared_ptr<Expression
     return ast::checkedCast<hilti::Expression>(result);
 }
 
+void CodeBuilder::hiltiBindDollarDollar(shared_ptr<hilti::Expression> val)
+{
+    _dollardollar = val;
+}
+
 void CodeBuilder::visit(Module* m)
 {
     hiltiStatement(m->body());
@@ -178,6 +183,9 @@ void CodeBuilder::visit(declaration::Constant* c)
 
 void CodeBuilder::visit(declaration::Function* f)
 {
+    if ( f->linkage() == Declaration::IMPORTED )
+        return;
+
     cg()->hiltiDefineFunction(f->function());
 }
 
@@ -245,6 +253,7 @@ void CodeBuilder::visit(expression::Assign* a)
 
 void CodeBuilder::visit(expression::CodeGen* c)
 {
+    setResult(c->value());
 }
 
 void CodeBuilder::visit(expression::Coerced* c)
@@ -314,7 +323,10 @@ void CodeBuilder::visit(expression::ParserState* p)
         break;
 
      case expression::ParserState::DOLLARDOLLAR:
-        expr = hilti::builder::id::create("__dollardollar");
+        if ( ! _dollardollar )
+            internalError("$$ not bound in CodeBuilder::visit(expression::ParserState* p)");
+
+        expr = _dollardollar;
         break;
 
      case expression::ParserState::PARAMETER: {
@@ -478,7 +490,7 @@ void CodeBuilder::visit(expression::operator_::integer::Minus* i)
     auto result = builder()->addTmp("sum", _intResultType(i));
     auto op1 = cg()->hiltiExpression(i->op1());
     auto op2 = cg()->hiltiExpression(i->op2());
-    cg()->builder()->addInstruction(result, hilti::instruction::integer::Add, op1, op2);
+    cg()->builder()->addInstruction(result, hilti::instruction::integer::Sub, op1, op2);
     setResult(result);
 }
 
@@ -487,7 +499,7 @@ void CodeBuilder::visit(expression::operator_::integer::Plus* i)
     auto result = builder()->addTmp("diff", _intResultType(i));
     auto op1 = cg()->hiltiExpression(i->op1());
     auto op2 = cg()->hiltiExpression(i->op2());
-    cg()->builder()->addInstruction(result, hilti::instruction::integer::Sub, op1, op2);
+    cg()->builder()->addInstruction(result, hilti::instruction::integer::Add, op1, op2);
     setResult(result);
 }
 
@@ -527,7 +539,7 @@ void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
     auto item = unit->item(attr->id());
     assert(item && item->type());
 
-    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->type()), nullptr, false);
+    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(cg()->itemType(item)), nullptr, false);
     cg()->builder()->addInstruction(ival,
                                     hilti::instruction::struct_::Get,
                                     cg()->hiltiExpression(i->op1()),
@@ -545,7 +557,7 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
     auto item = unit->item(attr->id());
     assert(item && item->type());
 
-    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(item->type()), nullptr, false);
+    auto ival = cg()->builder()->addTmp("item", cg()->hiltiType(cg()->itemType(item)), nullptr, false);
     cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
                                     cg()->hiltiExpression(i->op1()),
                                     hilti::builder::string::create(attr->id()->name()),
@@ -571,61 +583,17 @@ void CodeBuilder::visit(expression::operator_::list::PushBack* i)
 
 void CodeBuilder::visit(expression::operator_::function::Call* i)
 {
-    auto ftype = ast::checkedCast<type::Function>(i->op1()->type());
-    auto args = ast::checkedCast<expression::List>(i->op2());
-    auto hilti_func = cg()->hiltiExpression(i->op1());
+    auto func = ast::checkedCast<expression::Function>(i->op1());
+    auto args = ast::checkedCast<expression::List>(i->op2())->expressions();
 
-    hilti::builder::tuple::element_list hilti_arg_list;
+    shared_ptr<hilti::Expression> cookie = nullptr;
 
-    for ( auto a : args->expressions() )
-        hilti_arg_list.push_back(hiltiExpression(a));
+    if ( in<declaration::Function>() )
+        cookie = hilti::builder::id::create("__cookie", i->location());
+    else
+        cookie = hilti::builder::reference::createNull(i->location());
 
-    if ( ftype->callingConvention() == type::function::BINPAC_HILTI_C ||
-         ftype->callingConvention() == type::function::HILTI_C ||
-         ftype->callingConvention() == type::function::HILTI ||
-         ftype->callingConvention() == type::function::BINPAC_HILTI ) {
-        if ( i->op1()->scope().size() )
-            cg()->moduleBuilder()->importModule(hilti::builder::id::node(i->op1()->scope()));
-    }
-
-    switch ( ftype->callingConvention() ) {
-     case type::function::BINPAC:
-     case type::function::BINPAC_HILTI:
-     case type::function::BINPAC_HILTI_C: {
-         shared_ptr<hilti::Expression> cookie = nullptr;
-
-         if ( in<declaration::Function>() )
-             cookie = hilti::builder::id::create("__cookie", i->location());
-         else
-             cookie = hilti::builder::reference::createNull(i->location());
-
-        hilti_arg_list.push_back(cookie);
-        break;
-     }
-
-     case type::function::HILTI:
-     case type::function::HILTI_C:
-     case type::function::C:
-        break;
-
-     default:
-        internalError("unexpected calling convention in expression::operator_::function::Call()");
-    }
-
-    auto hilti_args = hilti::builder::tuple::create(hilti_arg_list);
-
-    shared_ptr<hilti::Expression> result = nullptr;
-
-    if ( ftype->result() && ! ast::isA<type::Void>(ftype->result()->type()) ) {
-        result = cg()->builder()->addTmp("result", cg()->hiltiType(ftype->result()->type()));
-        cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, hilti_func, hilti_args);
-    }
-
-    else {
-        result = hilti::builder::id::create("<no return value>"); // Dummy ID; this should never be accessed ...
-        cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid, hilti_func, hilti_args);
-    }
-
+    auto result = cg()->hiltiCall(func, args, cookie);
     setResult(result);
 }
 

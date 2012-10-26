@@ -16,6 +16,10 @@
 #include "variable.h"
 #include "module.h"
 
+namespace hilti {
+    class Expression;
+}
+
 namespace binpac {
 
 /// Base class for expression nodes.
@@ -227,20 +231,30 @@ public:
     ACCEPT_VISITOR(binpac::Expression);
 };
 
-/// AST node for an expression that's used internal by the code generator.
-class CodeGen : public binpac::Expression, public ast::expression::mixin::CodeGen<AstInfo>
+/// AST node for an expression encapsulating an already computed HILTI value
+/// during code generation.
+class CodeGen : public CustomExpression
 {
 public:
     /// Constructor.
     ///
     /// type: The type of the expression.
     ///
-    /// cookie: A value left to the interpretation of the code generator.
+    /// value: The HILTI value
     ///
     /// l: An associated location.
-    CodeGen(shared_ptr<binpac::Type> type, void* cookie, const Location& l=Location::None);
+    CodeGen(shared_ptr<binpac::Type> type, shared_ptr<hilti::Expression> value, const Location& l=Location::None);
+
+    /// Returns the HILTI value.
+    shared_ptr<hilti::Expression> value() const;
+
+    shared_ptr<Type> type() const override;
 
     ACCEPT_VISITOR(binpac::Expression);
+
+private:
+    node_ptr<Type> _type;
+    shared_ptr<hilti::Expression> _value;
 };
 
 /// AST node for an expression referencing a member attribute of a another

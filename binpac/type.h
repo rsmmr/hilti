@@ -1064,12 +1064,10 @@ public:
     /// Returns true if no ID was passed to the constructor.
     bool anonymous() const;
 
-#if 0
     /// Returns the item's scope. The scope may define identifier's local to
     /// expressions and hooks associated with the item. This method will
     /// return null until the ScopeBuilder has run.
     shared_ptr<Scope> scope() const;
-#endif
 
     /// Returns the hooks associated with this item.
     hook_list hooks() const;
@@ -1094,7 +1092,7 @@ private:
     node_ptr<AttributeSet> _attrs;
     std::list<node_ptr<Hook>> _hooks;
 
-    shared_ptr<Scope> _scope = nullptr;
+    shared_ptr<Scope> _scope;
 
     static int _id_counter;
 };

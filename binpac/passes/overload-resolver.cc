@@ -55,10 +55,16 @@ void OverloadResolver::visit(expression::UnresolvedOperator* o)
         auto n = *i;
 
         auto unit = ast::tryCast<type::Unit>(n);
+        auto item = ast::tryCast<type::unit::Item>(n);
         auto block = ast::tryCast<statement::Block>(n);
 
         if ( block ) {
             scope = block->scope();
+            break;
+        }
+
+        if ( item ) {
+            scope = item->scope();
             break;
         }
 
