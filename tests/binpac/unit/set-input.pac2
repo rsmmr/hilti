@@ -7,7 +7,8 @@ module Mini;
 
 type Foo = unit {
     a:   bytes &length=5 {
-            self.saved = self.set_input(self.input());
+            self.saved = self.input();
+            self.set_position(self.saved);
          }
 
     var saved: iter<bytes>;
@@ -17,7 +18,7 @@ export type test = unit {
     a: bytes &length=5;
     f: Foo;
     b: bytes &length=5 {
-           self.set_input(self.f.saved);
+           self.set_position(self.f.saved);
            }
     c: bytes &length=5;
 

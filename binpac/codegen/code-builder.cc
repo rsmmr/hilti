@@ -6,6 +6,7 @@
 #include "statement.h"
 #include "function.h"
 #include "grammar.h"
+#include "constant.h"
 
 #include "autogen/operators/bool.h"
 #include "autogen/operators/enum.h"
@@ -14,6 +15,7 @@
 #include "autogen/operators/list.h"
 #include "autogen/operators/tuple.h"
 #include "autogen/operators/unit.h"
+#include "autogen/operators/bytes.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -52,6 +54,12 @@ shared_ptr<hilti::Expression> CodeBuilder::hiltiExpression(shared_ptr<Expression
 void CodeBuilder::hiltiBindDollarDollar(shared_ptr<hilti::Expression> val)
 {
     _dollardollar = val;
+}
+
+expression_list CodeBuilder::callParameters(shared_ptr<Expression> tupleop)
+{
+    auto tuple = ast::checkedCast<expression::Constant>(tupleop)->constant();
+    return ast::checkedCast<constant::Tuple>(tuple)->value();
 }
 
 void CodeBuilder::visit(Module* m)
@@ -541,6 +549,23 @@ void CodeBuilder::visit(expression::operator_::bool_::Not* i)
     setResult(result);
 }
 
+void CodeBuilder::visit(expression::operator_::iterBytes::Deref* i)
+{
+    auto result = builder()->addTmp("byte", hilti::builder::integer::type(8));
+    auto op1 = cg()->hiltiExpression(i->op1());
+    cg()->builder()->addInstruction(result, hilti::instruction::operator_::Deref, op1);
+    setResult(result);
+}
+
+void CodeBuilder::visit(expression::operator_::iterBytes::IncrPostfix* i)
+{
+    auto result = builder()->addTmp("iter", hilti::builder::iterator::typeBytes());
+    auto op1 = cg()->hiltiExpression(i->op1());
+    cg()->builder()->addInstruction(result, hilti::instruction::operator_::Assign, op1);
+    cg()->builder()->addInstruction(op1, hilti::instruction::operator_::Incr, op1);
+    setResult(result);
+}
+
 void CodeBuilder::visit(expression::operator_::unit::Attribute* i)
 {
     auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
@@ -578,10 +603,6 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
     setResult(expr);
 }
 
-void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Input* i)
-{
-}
-
 void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
 {
     auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
@@ -601,14 +622,66 @@ void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Ha
 
 void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
 {
+    auto ttype = ast::checkedCast<type::TypeType>(i->op1()->type());
+    auto unit = ast::checkedCast<type::Unit>(ttype->typeType());
+    auto params = i->op2() ? callParameters(i->op2()) : expression_list();
+
+    auto func = cg()->hiltiFunctionNew(unit);
+
+    std::list<shared_ptr<hilti::Expression>> hparams;
+
+    for ( auto p : params )
+        hparams.push_back(cg()->hiltiExpression(p));
+
+    hparams.push_back(hilti::builder::reference::createNull());
+    hparams.push_back(hilti::builder::reference::createNull());
+    hparams.push_back(cg()->hiltiCookie());
+
+    auto result = cg()->builder()->addTmp("pobj", cg()->hiltiType(unit));
+    cg()->builder()->addInstruction(result, hilti::instruction::flow::CallResult, func, hilti::builder::tuple::create(hparams));
+
+    setResult(result);
+}
+
+void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Input* i)
+{
+    auto self = cg()->hiltiSelf();
+    auto result = cg()->moduleBuilder()->addTmp("input", hilti::builder::iterator::typeBytes());
+    cg()->builder()->addInstruction(result, hilti::instruction::struct_::Get, self, hilti::builder::string::create("__input"));
+    setResult(result);
 }
 
 void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Offset* i)
 {
+    auto self = cg()->hiltiSelf();
+
+    auto result = cg()->moduleBuilder()->addTmp("offset", hilti::builder::integer::type(64));
+    auto input = cg()->moduleBuilder()->addTmp("input", hilti::builder::iterator::typeBytes());
+    auto cur = cg()->moduleBuilder()->addTmp("cur", hilti::builder::iterator::typeBytes());
+
+    cg()->builder()->addInstruction(input, hilti::instruction::struct_::Get, self, hilti::builder::string::create("__input"));
+    cg()->builder()->addInstruction(cur, hilti::instruction::struct_::Get, self, hilti::builder::string::create("__cur"));
+    cg()->builder()->addInstruction(result, hilti::instruction::bytes::Diff, input, cur);
+
+    setResult(result);
 }
 
-void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::SetInput* i)
+void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::SetPosition* i)
 {
+    auto self = cg()->hiltiSelf();
+
+    auto old = cg()->moduleBuilder()->addTmp("old_cur", hilti::builder::iterator::typeBytes());
+    auto op1 = cg()->hiltiExpression(i->op1());
+
+    auto tuple = ast::checkedCast<expression::Constant>(i->op3())->constant();
+    auto params = ast::checkedCast<constant::Tuple>(tuple)->value();
+
+    auto param1 = cg()->hiltiExpression(*params.begin());
+
+    cg()->builder()->addInstruction(old, hilti::instruction::struct_::Get, self, hilti::builder::string::create("__cur"));
+    cg()->builder()->addInstruction(hilti::instruction::struct_::Set, self, hilti::builder::string::create("__cur"), param1);
+
+    setResult(old);
 }
 
 void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::AddFilter* i)
@@ -631,7 +704,8 @@ void CodeBuilder::visit(expression::operator_::list::PushBack* i)
 void CodeBuilder::visit(expression::operator_::function::Call* i)
 {
     auto func = ast::checkedCast<expression::Function>(i->op1());
-    auto args = ast::checkedCast<expression::List>(i->op2())->expressions();
+    auto tuple = ast::checkedCast<expression::Constant>(i->op2());
+    auto args = ast::checkedCast<constant::Tuple>(tuple)->value();
 
     shared_ptr<hilti::Expression> cookie = nullptr;
 

@@ -177,7 +177,9 @@ void Validator::visit(statement::instruction::Unresolved* s)
 
 void Validator::visit(statement::instruction::flow::ReturnResult* s)
 {
-    if ( current<Hook>() ) {
+    auto decl = current<Declaration>();
+
+    if ( decl && ast::tryCast<declaration::Hook>(decl) ) {
         error(s, "cannot use return.result in a hook; use hook.stop instead");
         return;
     }

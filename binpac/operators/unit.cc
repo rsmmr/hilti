@@ -130,7 +130,7 @@ opBegin(unit::Input : MethodCall)
     }
 opEnd
 
-static const string _doc_set_input =
+static const string _doc_set_position =
    R"(
     Changes the position in the input stream to continue parsing from. The
     new position is a new ``iter<bytes>`` where subsequent parsing will
@@ -145,12 +145,12 @@ static const string _doc_set_input =
     collection may need to hold on to it significantly longer.
    )";
 
-opBegin(unit::SetInput : MethodCall)
+opBegin(unit::SetPosition : MethodCall)
     opOp1(std::make_shared<type::Unit>())
-    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_input")))
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_position")))
     opOp3(std::make_shared<type::Tuple>())
 
-    opDoc(_doc_set_input)
+    opDoc(_doc_set_position)
 
     opValidate() {
         type_list args = { std::make_shared<type::iterator::Bytes>() };

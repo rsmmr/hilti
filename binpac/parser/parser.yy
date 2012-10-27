@@ -158,11 +158,11 @@ inline shared_ptr<Expression> makeOp(binpac::operator_::Kind kind, const express
 %type <bits>             bitfield_bits
 %type <bits_spec>        bitfield_bits_spec
 %type <cc>               opt_cc
-%type <constant>         constant
+%type <constant>         constant tuple
 %type <ctor>             ctor
 %type <declaration>      global_decl type_decl var_decl const_decl func_decl hook_decl local_decl
 %type <declarations>     opt_global_decls opt_local_decls
-%type <expression>       expr list_expr opt_list_expr opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr
+%type <expression>       expr opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
 %type <id>               local_id scoped_id hook_id opt_unit_field_name property_id
 %type <statement>        stmt block
@@ -253,7 +253,7 @@ opt_linkage   : EXPORT                           { $$ = Declaration::EXPORTED; }
 type_or_init  : ':' base_type init_expr          { $$ = std::make_tuple($2, $3); }
               | init_expr                        { $$ = std::make_tuple($1->type(), $1); }
 
-type_or_opt_init  : ':' base_type opt_init_expr  { $$ = std::make_tuple($2, $3); }
+type_or_opt_init  : ':' type opt_init_expr       { $$ = std::make_tuple($2, $3); }
               | init_expr                        { $$ = std::make_tuple($1->type(), $1); }
 
 opt_init_expr : init_expr                        { $$ = $1; }
@@ -361,12 +361,13 @@ atomic_type   : ANY                              { $$ = std::make_shared<type::A
               | INT64                            { $$ = std::make_shared<type::Integer>(64, true, loc(@$)); }
 
               | UINT '<' CINTEGER '>'            { $$ = std::make_shared<type::Integer>($3, false, loc(@$)); }
-              | UINT8                             { $$ = std::make_shared<type::Integer>(8, false, loc(@$)); }
-              | UINT16                            { $$ = std::make_shared<type::Integer>(16, false, loc(@$)); }
-              | UINT32                            { $$ = std::make_shared<type::Integer>(32, false, loc(@$)); }
-              | UINT64                            { $$ = std::make_shared<type::Integer>(64, false, loc(@$)); }
-
-              | ITER '<' type '>'                { $$ = std::make_shared<type::Iterator>($3, loc(@$)); }
+              | UINT8                            { $$ = std::make_shared<type::Integer>(8, false, loc(@$)); }
+              | UINT16                           { $$ = std::make_shared<type::Integer>(16, false, loc(@$)); }
+              | UINT32                           { $$ = std::make_shared<type::Integer>(32, false, loc(@$)); }
+              | UINT64                           { $$ = std::make_shared<type::Integer>(64, false, loc(@$)); }
+              | ITER '<' type '>'                { auto iterable = ast::type::checkedTrait<type::trait::Iterable>($3);
+                                                   $$ = iterable->iterType();
+                                                 }
               | REGEXP                           { $$ = std::make_shared<type::RegExp>(attribute_list(), loc(@$)); }
               | TUPLE '<' types '>'              { $$ = std::make_shared<type::Tuple>($3, loc(@$)); }
               | TUPLE '<' '*' '>'                { $$ = std::make_shared<type::Tuple>(loc(@$)); }
@@ -526,7 +527,10 @@ constant      : CINTEGER                         { $$ = std::make_shared<constan
               | INTERVAL '(' CINTEGER ')'        { $$ = std::make_shared<constant::Interval>((uint64_t)$3, loc(@$)); }
               | TIME '(' CDOUBLE ')'             { $$ = std::make_shared<constant::Time>($3, loc(@$)); }
               | TIME '(' CINTEGER ')'            { $$ = std::make_shared<constant::Time>((uint64_t)$3, loc(@$)); }
-              | '(' opt_exprs ')'                { $$ = std::make_shared<constant::Tuple>($2, loc(@$)); }
+              | tuple                            { $$ = $1; }
+              ;
+
+tuple         : '(' opt_exprs ')'                { $$ = std::make_shared<constant::Tuple>($2, loc(@$)); }
               ;
 
 ctor          : CBYTES                           { $$ = std::make_shared<ctor::Bytes>($1, loc(@$)); }
@@ -564,7 +568,7 @@ expr          : scoped_id                        { $$ = std::make_shared<express
 
               /* Overloaded operators */
 
-              | expr '(' opt_list_expr ')'       { $$ = makeOp(operator_::Call, { $1, $3 }, loc(@$)); }
+              | expr tuple_expr                  { $$ = makeOp(operator_::Call, { $1, $2 }, loc(@$)); }
               | expr '[' expr ']'                { $$ = makeOp(operator_::Index, { $1, $3 }, loc(@$)); }
               | expr AND expr                    { $$ = makeOp(operator_::LogicalAnd, { $1, $3 }, loc(@$)); }
               | expr OR expr                     { $$ = makeOp(operator_::LogicalOr, { $1, $3 }, loc(@$)); }
@@ -594,9 +598,9 @@ expr          : scoped_id                        { $$ = std::make_shared<express
               | expr PLUSASSIGN expr             { $$ = makeOp(operator_::PlusAssign, { $1, $3 }, loc(@$)); }
               | expr MINUSASSIGN expr            { $$ = makeOp(operator_::PlusAssign, { $1, $3 }, loc(@$)); }
               | expr '[' expr ']' '=' expr       { $$ = makeOp(operator_::IndexAssign, { $1, $3, $6 }, loc(@$)); }
-              | expr '.' member_expr '(' opt_list_expr ')' { $$ = makeOp(operator_::MethodCall, { $1, $3, $5 }, loc(@$)); }
-              | NEW id_expr                      { $$ = makeOp(operator_::New, {}, loc(@$)); }
-              | NEW id_expr '(' list_expr ')'    { $$ = makeOp(operator_::New, {$2, $4}, loc(@$)); }
+              | expr '.' member_expr tuple_expr  { $$ = makeOp(operator_::MethodCall, { $1, $3, $4 }, loc(@$)); }
+              | NEW id_expr                      { $$ = makeOp(operator_::New, {$2 }, loc(@$)); }
+              | NEW id_expr tuple_expr           { $$ = makeOp(operator_::New, {$2, $3}, loc(@$)); }
 
               /* Operators derived from other operators. */
 
@@ -621,16 +625,13 @@ id_expr       : local_id                         { $$ = std::make_shared<express
 
 member_expr   : local_id                         { $$ = std::make_shared<expression::MemberAttribute>($1, loc(@$)); }
 
+tuple_expr    : tuple                            { $$ = std::make_shared<expression::Constant>($1, loc(@$)); }
+
 exprs         : expr ',' exprs                   { $$ = $3; $$.push_front($1); }
               | expr                             { $$ = expression_list(); $$.push_back($1); }
 
 opt_exprs     : exprs                            { $$ = $1; }
               | /* empty */                      { $$ = expression_list(); }
-
-list_expr     : exprs                            { $$ = std::make_shared<expression::List>($1, loc(@$)); ; }
-
-opt_list_expr : list_expr                        { $$ = $1; }
-              | /* empty */                      { $$ = std::make_shared<expression::List>(expression_list(), loc(@$)); }
 
 %%
 

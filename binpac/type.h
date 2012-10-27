@@ -1586,6 +1586,16 @@ public:
     /// but will be initialized by the grammar builder.
     shared_ptr<Grammar> grammar() const;
 
+    /// Returns true if parsing this unit type requires to buffer to the
+    /// input until it's fully processed. This is initially always false, but
+    /// the op-resolver pass will set it as neccessary based on the operations
+    /// that are performed with the type.
+    bool buffering() const;
+
+    /// Enables buffering for this type as returned by buffering(). Mainly
+    /// for internal use.
+    void enableBuffering();
+
     bool _equal(shared_ptr<binpac::Type> other) const override;
 
     ACCEPT_VISITOR(Type);
@@ -1596,6 +1606,8 @@ protected:
     void setGrammar(shared_ptr<Grammar> grammar);
 
 private:
+    bool _buffering = false;
+
     std::list<node_ptr<type::function::Parameter>> _params;
     std::list<node_ptr<unit::Item>> _items;
 

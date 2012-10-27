@@ -26,6 +26,10 @@ protected:
     void visit(type::unit::Item* i);
     void visit(type::unit::item::Field* f);
     void visit(type::unit::item::field::Container* c);
+
+    void visit(binpac::expression::operator_::unit::Input* i);
+    void visit(binpac::expression::operator_::unit::Offset* i);
+    void visit(binpac::expression::operator_::unit::SetPosition* i);
 };
 
 }

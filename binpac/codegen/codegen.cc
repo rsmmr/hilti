@@ -325,6 +325,11 @@ shared_ptr<hilti::Expression> CodeGen::hiltiSelf()
     return _parser_builder->hiltiSelf();
 }
 
+shared_ptr<hilti::Expression> CodeGen::hiltiCookie()
+{
+    return _parser_builder->hiltiCookie();
+}
+
 shared_ptr<hilti::Type> CodeGen::hiltiTypeCookie()
 {
     return hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::UserCookie"));
@@ -345,3 +350,7 @@ void CodeGen::hiltiUnbindDollarDollar()
     _code_builder->hiltiBindDollarDollar(0);
 }
 
+shared_ptr<hilti::Expression> CodeGen::hiltiFunctionNew(shared_ptr<type::Unit> unit)
+{
+    return _parser_builder->hiltiFunctionNew(unit);
+}

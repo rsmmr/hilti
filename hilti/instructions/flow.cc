@@ -7,9 +7,9 @@
 
 iBeginCC(flow)
     iValidateCC(ReturnResult) {
-        auto hook = validator()->current<declaration::Hook>();
+        auto decl = validator()->current<Declaration>();
 
-        if ( hook ) {
+        if ( decl && ast::tryCast<declaration::Hook>(decl) ) {
             error(nullptr, "return.result must not be used inside a hook; use hook.stop instead");
             return;
         }

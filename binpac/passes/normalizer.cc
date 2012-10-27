@@ -7,6 +7,8 @@
 #include "attribute.h"
 #include "statement.h"
 
+#include "autogen/operators/unit.h"
+
 using namespace binpac;
 using namespace binpac::passes;
 
@@ -66,4 +68,22 @@ void Normalizer::visit(type::unit::item::Field* f)
 
 void Normalizer::visit(type::unit::item::field::Container* c)
 {
+}
+
+void Normalizer::visit(binpac::expression::operator_::unit::SetPosition* i)
+{
+    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    unit->enableBuffering();
+}
+
+void Normalizer::visit(binpac::expression::operator_::unit::Offset* i)
+{
+    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    unit->enableBuffering();
+}
+
+void Normalizer::visit(binpac::expression::operator_::unit::Input* i)
+{
+    auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
+    unit->enableBuffering();
 }

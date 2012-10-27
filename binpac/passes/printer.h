@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "ast-info.h"
+#include "operator.h"
 
 namespace binpac {
 namespace passes {
@@ -23,6 +24,8 @@ public:
     Printer(std::ostream& out, bool single_line = false);
 
 protected:
+    void printOperator(operator_::Kind kind, const expression_list& exprs);
+
     void visit(Attribute* a) override;
     void visit(AttributeSet* a) override;
     void visit(Function* f) override;

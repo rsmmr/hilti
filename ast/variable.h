@@ -57,6 +57,13 @@ public:
     /// Returns the type of the variable.
     shared_ptr<Type> type() const { return _type; }
 
+    /// Sets the type of the variable.
+    void setType(shared_ptr<Type> type) {
+        this->removeChild(_type);
+        _type = type;
+        this->addChild(_type);
+    }
+
     /// Returns the initialization expression of the variable, or null if
     /// none.
     shared_ptr<Expression> init() const { return _init; }

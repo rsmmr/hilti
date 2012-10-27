@@ -71,9 +71,10 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(Deref, "*", UNARY_PREFIX),
     _OP(DecrPrefix, "--", UNARY_PREFIX),
     _OP(IncrPrefix, "--", UNARY_PREFIX),
+    _OP(New, "new ", UNARY_PREFIX),
 
     _OP(DecrPostfix, "--", UNARY_POSTFIX),
-    _OP(IncrPostfix, "--", UNARY_POSTFIX),
+    _OP(IncrPostfix, "++", UNARY_POSTFIX),
 
     _OP(BitAnd, "&", BINARY),
     _OP(BitOr, "|", BINARY),
@@ -173,19 +174,19 @@ public:
 
     /// Returns the current set of operands. This is only defined while
     /// executing one of the virtual methods working on operands.
-    const expression_list& operands() const { return __operands; }
+    const expression_list& operands() const { assert(__operands.size()); return __operands.back(); }
 
     /// Returns the current 1st operand. This is only defined while executing
     /// one of the virtual methods working on operands.
-    const shared_ptr<Expression> op1() const { assert(__operands.size() >= 1); auto i = __operands.begin(); return *i; }
+    const shared_ptr<Expression> op1() const { assert(operands().size() >= 1); auto i = operands().begin(); return *i; }
 
     /// Returns the current 2nd operand. This is only defined while executing
     /// one of the virtual methods working on operands.
-    const shared_ptr<Expression> op2() const { assert(__operands.size() >= 2); auto i = __operands.begin(); ++i; return *i; }
+    const shared_ptr<Expression> op2() const { assert(operands().size() >= 2); auto i = operands().begin(); ++i; return *i; }
 
     /// Returns the current 3rd operand. This is only defined while executing
     /// one of the virtual methods working on operands.
-    const shared_ptr<Expression> op3() const { assert(__operands.size() >= 3); auto i = __operands.begin(); ++i; ++i; return *i; }
+    const shared_ptr<Expression> op3() const { assert(operands().size() >= 3); auto i = operands().begin(); ++i; ++i; return *i; }
 
     /// Checks whether an operand can be coerced into a given type. If not,
     /// an error is reported.
@@ -252,13 +253,16 @@ protected:
     virtual string                 __doc() const { return "<No documentation>"; }
 
 private:
+    void pushOperands(const expression_list& ops) { __operands.push_back(ops); }
+    void popOperands() { __operands.pop_back(); }
+
     friend class OperatorRegistry;
 
     operator_::Kind _kind;
     expression_factory _factory;
 
     passes::Validator* _validator = 0;
-    expression_list __operands;
+    std::list<expression_list> __operands;
 };
 
 /// Singleton class that provides a register of all available BinPAC++

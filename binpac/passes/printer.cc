@@ -425,14 +425,12 @@ void Printer::visit(expression::ParserState* s)
     }
 }
 
-void Printer::visit(expression::ResolvedOperator* r)
+void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
 {
     Printer& p = *this;
 
-    auto exprs = r->operands();
     auto i = exprs.begin();
 
-    auto kind = r->kind();
     auto op1 = (i != exprs.end()) ? *i++ : nullptr;
     auto op2 = (i != exprs.end()) ? *i++ : nullptr;
     auto op3 = (i != exprs.end()) ? *i++ : nullptr;
@@ -503,20 +501,31 @@ void Printer::visit(expression::ResolvedOperator* r)
     }
 }
 
-void Printer::visit(expression::Type* t)
+void Printer::visit(expression::ResolvedOperator* r)
 {
     Printer& p = *this;
-    p << t->typeValue() << endl;
+
+    auto exprs = r->operands();
+    auto kind = r->kind();
+
+    printOperator(kind, exprs);
 }
 
 void Printer::visit(expression::UnresolvedOperator* u)
 {
     Printer& p = *this;
 
-    p << "(Unresolved operator " << u->kind() << ": ";
-    printList(u->operands(), ", ");
+    p << "(Unresolved operator ";
+    printOperator(u->kind(), u->operands());
     p << ")";
 }
+
+void Printer::visit(expression::Type* t)
+{
+    Printer& p = *this;
+    p << t->typeValue() << endl;
+}
+
 
 void Printer::visit(expression::Variable* v)
 {

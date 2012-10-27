@@ -44,6 +44,11 @@ public:
     void hiltiBindDollarDollar(shared_ptr<hilti::Expression> val);
 
 protected:
+    /// Extracts the expression list from a call's tuple of parameters. It's
+    /// an internal error if the expr is not constant, or does not have the
+    /// right type.
+    expression_list callParameters(shared_ptr<Expression> tupleop);
+
     void visit(Module* f) override;
     void visit(Function* f) override;
     void visit(Hook* h) override;

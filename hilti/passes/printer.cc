@@ -859,11 +859,21 @@ void Printer::visit(type::Struct* t)
     auto i = t->fields().begin();
 
     while ( i != t->fields().end() ) {
+#if 0
+        for ( auto j = i; ++j != t->fields().end(); ) {
+            if ( ! (*j)->internal() )
+                last = false;
+                break;
+        }
+#endif
+
         auto f = *i++;
         auto last = (i == t->fields().end());
 
+#if 0
         if ( f->internal() )
             continue;
+#endif            
 
         p << f->type() << ' ' << f->id();
 

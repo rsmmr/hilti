@@ -247,6 +247,9 @@ void TypeBuilder::visit(type::function::Result* r)
 
 void TypeBuilder::visit(type::iterator::Bytes* b)
 {
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::iterator::typeBytes(b->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::iterator::List* l)

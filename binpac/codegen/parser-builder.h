@@ -46,6 +46,14 @@ public:
     // Returns the HILTI struct type for a unit's parse object.
     shared_ptr<hilti::Type> hiltiTypeParseObject(shared_ptr<type::Unit> unit);
 
+    // Returns the new() function that instantiates a new parser object. In
+    // addition to the type parameters, the returned function receives three:
+    // parameters: the user cookie; a ``hlt_sink *`` with the sink the parser
+    // is connected to (NULL if none); and a ``bytes`` object with the MIME
+    // type associated with the input (empty if None). The function also runs
+    // the %init hook.
+    shared_ptr<hilti::Expression> hiltiFunctionNew(shared_ptr<type::Unit> unit);
+
     /// Adds an external implementation of a unit hook.
     ///
     /// id: The hook's ID (full path).
@@ -62,6 +70,10 @@ public:
     /// Returns a HILTI expression referencing the current parser object
     /// (assuming parsing is in process; if not aborts());
     shared_ptr<hilti::Expression> hiltiSelf();
+
+    /// Returns a HILTI expression referencing the current user cookie.
+    /// (assuming parsing is in process; if not aborts());
+    shared_ptr<hilti::Expression> hiltiCookie();
 
     /// Returns the final type of an item. This takes into account
     /// transformations like &convert for fields.
@@ -156,7 +168,7 @@ private:
 
     // Initializes the current parse object before starting the parsing
     // process.
-    void _prepareParseObject(const hilti_expression_list& params);
+    void _prepareParseObject(const hilti_expression_list& params, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
 
     // Finalizes the current parser when the parsing process has finished.
     void _finalizeParseObject();
@@ -274,6 +286,16 @@ private:
 
     // Returns true if storing values in the parse object is enabled.
     bool storingValues();
+
+    /// Save the current input position in the parser object.
+    void _hiltiSaveInputPostion();
+
+    // Update the curren input position from what's stored in the parser object.
+    void _hiltiUpdateInputPostion();
+
+    /// Turns a unit's parameters into a HILTI function parameter list,
+    /// adding to the given list.
+    void _hiltiUnitParameters(shared_ptr<type::Unit> unit, hilti::builder::function::parameter_list* args) const;
 
     std::list<shared_ptr<ParserState>> _states;
     shared_ptr<hilti::Expression> _last_parsed_value;

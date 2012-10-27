@@ -1464,3 +1464,14 @@ bool Unit::_equal(shared_ptr<binpac::Type> ty) const
 
     return true;
 }
+
+bool Unit::buffering() const
+{
+    return _buffering;
+}
+
+void Unit::enableBuffering()
+{
+    _buffering = true;
+}
+

@@ -177,7 +177,11 @@ public:
 
     /// Returns a HILTI expression referencing the current parser object
     /// (assuming parsing is in process; if not aborts());
+    ///
     shared_ptr<hilti::Expression> hiltiSelf();
+    /// Returns a HILTI expression referencing the current user cookie
+    /// (assuming parsing is in process; if not aborts());
+    shared_ptr<hilti::Expression> hiltiCookie();
 
     /// Returns the HILTI type for the cookie argument.
     shared_ptr<hilti::Type> hiltiTypeCookie();
@@ -203,6 +207,15 @@ public:
 
     /// Unbinds the $$ identifier.
     void hiltiUnbindDollarDollar();
+
+    /// Returns the new() function that instantiates a new parser object. In
+    /// addition to the type parameters, the returned function receives two
+    /// parameters: a ``hlt_sink *`` with the sink the parser is connected to
+    /// (NULL if none); and a ``bytes`` object with the MIME type associated
+    /// with the input (empty if None). The function also runs the %init hook.
+    ///
+    /// unit: The unit type to return the function for.
+    shared_ptr<hilti::Expression> hiltiFunctionNew(shared_ptr<type::Unit> unit);
 
 private:
     bool _compiling = false;

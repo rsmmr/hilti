@@ -36,7 +36,13 @@ bool Operator::match(const expression_list& ops, bool coerce)
 
     int i = 1;
 
+//    fprintf(stderr, "\n");
+
     while ( o != ops.end() ) {
+//        fprintf(stderr, "%s -> %s\n", (*o)->render().c_str(), (*t)->render().c_str());
+//        fprintf(stderr, "  X %s\n", typeid(*(*o).get()).name());
+//        fprintf(stderr, "  X %s\n", typeid(*(*o)->type().get()).name());
+
         if ( t == types.end() )
             // Too many arguments.
             return false;
@@ -53,6 +59,8 @@ bool Operator::match(const expression_list& ops, bool coerce)
                 return false;
         }
 
+//        fprintf(stderr, "  Match\n");
+
         ++o;
         ++t;
     }
@@ -66,9 +74,9 @@ bool Operator::match(const expression_list& ops, bool coerce)
     }
 
     // Match so far, now do any operand specific matching.
-    __operands = ops;
+    pushOperands(ops);
     bool result = __match();
-    __operands.clear();
+    popOperands();
 
     return result;
 }
@@ -76,9 +84,9 @@ bool Operator::match(const expression_list& ops, bool coerce)
 void Operator::validate(passes::Validator* vld, shared_ptr<Type> result, const expression_list& ops)
 {
     _validator = vld;
-    __operands = ops;
+    pushOperands(ops);
     __validate();
-    __operands.clear();
+    popOperands();
     _validator = nullptr;
 
     auto expected = type(ops);
@@ -90,9 +98,9 @@ void Operator::validate(passes::Validator* vld, shared_ptr<Type> result, const e
 
 shared_ptr<Type> Operator::type(const expression_list& ops)
 {
-    __operands = ops;
+    pushOperands(ops);
     auto result = __typeResult();
-    __operands.clear();
+    popOperands();
     return result;
 }
 
@@ -120,9 +128,9 @@ void Operator::error(shared_ptr<Node> op, string msg) const
 void Operator::validate(passes::Validator* v, const expression_list& ops)
 {
     _validator = v;
-    __operands = ops;
+    pushOperands(ops);
     __validate();
-    __operands.clear();
+    popOperands();
     _validator = nullptr;
 }
 

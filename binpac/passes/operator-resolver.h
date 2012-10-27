@@ -29,6 +29,10 @@ public:
 
 protected:
     void visit(expression::UnresolvedOperator* i) override;
+    void visit(Variable* i);
+
+private:
+    std::list<expression::UnresolvedOperator*> _unknowns;
 };
 
 }

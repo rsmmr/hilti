@@ -39,6 +39,7 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/parser.cc  PROPERTIES GENERATED 1)
 
 set(operators
     operators/bool.cc
+    operators/bytes.cc
     operators/enum.cc
     operators/function.cc
     operators/integer.cc
