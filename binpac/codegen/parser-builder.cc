@@ -120,6 +120,7 @@ bool ParserBuilder::parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* 
     shared_ptr<type::unit::item::Field> field;
     shared_ptr<hilti::builder::BlockBuilder> cont;
     shared_ptr<hilti::builder::BlockBuilder> true_;
+    shared_ptr<ParserState> pstate;
 
     auto prod = ast::tryCast<Production>(node);
 
@@ -134,10 +135,26 @@ bool ParserBuilder::parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* 
         cg()->moduleBuilder()->pushBuilder(true_);
     }
 
+    if ( field && field->attributes()->has("parse") ) {
+        // Change input to what &parse attribute gives.
+        auto input = cg()->hiltiExpression(field->attributes()->lookup("parse")->value());
+
+        auto cur = cg()->builder()->addTmp("parse_cur", _hiltiTypeIteratorBytes());
+        auto lah = cg()->builder()->addTmp("parse_lahead", _hiltiTypeLookAhead(), _hiltiLookAheadNone());
+        auto lahstart = cg()->builder()->addTmp("parse_lahstart", _hiltiTypeIteratorBytes());
+        cg()->builder()->addInstruction(cur, hilti::instruction::iterBytes::Begin, input);
+
+        pstate = std::make_shared<ParserState>(state()->unit, state()->self, input, cur, lah, lahstart, state()->cookie);
+        pushState(pstate);
+    }
+
     if ( result )
         success = processOne(node, result, f);
     else
         success = processOne(node);
+
+    if ( pstate )
+        popState();
 
     if ( true_ ) {
         cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
