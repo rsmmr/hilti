@@ -31,6 +31,14 @@ void binpac_done()
 
     _done = 1;
 
+    hlt_exception* excpt = 0;
+
+    hlt_execution_context* ctx = hlt_global_execution_context();
+    binpachilti_mime_unregister_all(&excpt, ctx);
+
+    if ( excpt )
+        hlt_exception_print_uncaught(excpt, ctx);
+
     GC_DTOR(_parsers, hlt_list);
 }
 
@@ -63,10 +71,7 @@ void binpachilti_register_parser(binpac_parser* parser, hlt_type_info* pobj, hlt
     _ensure_parsers(excpt, ctx);
     parser->type_info = pobj;
     hlt_list_push_back(_parsers, &hlt_type_info_hlt_Parser, &parser, excpt, ctx);
-
-#if 0
-    binpac_mime_register_parser(parser, excpt, ctx);
-#endif
+    binpachilti_mime_register_parser(parser, excpt, ctx);
 }
 
 void call_init_func(void (*func)(hlt_exception** excpt, hlt_execution_context* ctx))

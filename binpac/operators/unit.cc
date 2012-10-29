@@ -240,6 +240,56 @@ opBegin(unit::AddFilter : MethodCall)
     }
 opEnd
 
+static const string _doc_disconnect =
+   R"(
+    Disconnect the unit from its parent sink. The unit gets signaled a
+    regular end of data, so if it still has input pending, that might be
+    processed before the method returns.  If the unit is not connected to a
+    sink, the method does not have any effect.
+   )";
+
+opBegin(unit::Disconnect : MethodCall)
+    opOp1(std::make_shared<type::Unit>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("disconnect")))
+    opOp3(std::make_shared<type::Tuple>())
+
+    opDoc(_doc_disconnect)
+
+    opValidate() {
+        type_list args = { };
+        checkCallArgs(op3(), args);
+    }
+
+    opResult() {
+        return std::make_shared<type::Void>();
+    }
+opEnd
+
+static const string _doc_mime_type =
+   R"(
+   Returns the MIME type that was specified when the unit was
+   instantiated (e.g., via ~~sink.connect_mime_type()). Returns an
+   empty ``bytes`` object if none was specified. This method can
+   only be called for exported types.
+   )";
+
+opBegin(unit::MimeType : MethodCall)
+    opOp1(std::make_shared<type::Unit>())
+    opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("mime_type")))
+    opOp3(std::make_shared<type::Tuple>())
+
+    opDoc(_doc_mime_type)
+
+    opValidate() {
+        type_list args = { };
+        checkCallArgs(op3(), args);
+    }
+
+    opResult() {
+        return std::make_shared<type::Bytes>();
+    }
+opEnd
+
 
 
 

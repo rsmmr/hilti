@@ -406,8 +406,10 @@ shared_ptr<BlockBuilder> ModuleBuilder::popBuilder(shared_ptr<BlockBuilder> buil
     auto body = _currentBody();
     auto i = std::find(body->builders.begin(), body->builders.end(), builder);
 
-    if ( i == body->builders.end() )
+    if ( i == body->builders.end() ) {
+        abort();
         internalError("unbalanced builder push/pop");
+    }
 
     body->builders.erase(i, body->builders.end());
     return builder;
@@ -589,7 +591,7 @@ shared_ptr<hilti::expression::Variable> ModuleBuilder::addTmp(shared_ptr<hilti::
             var = std::make_shared<variable::Global>(id, type, init, l);
 
         decl = std::make_shared<declaration::Variable>(id, var, l);
-        _currentBody()->stmt->addDeclaration(decl);
+        _currentFunction()->bodies.front()->stmt->addDeclaration(decl);
         _addDecl(id, type, "tmp", local ? &_currentFunction()->locals : &_globals, decl);
     }
 

@@ -155,6 +155,7 @@ static binpac_parser* findParser(const char* name)
     GC_DTOR(i, hlt_iterator_list);
     GC_DTOR(end, hlt_iterator_list);
     GC_DTOR(parsers, hlt_iterator_list);
+    GC_DTOR(hname, hlt_string);
 
     check_exception(excpt);
     return result;
@@ -220,19 +221,20 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
     int8_t done = 0;
     hlt_exception* resume = 0;
 
-    input = hlt_bytes_new(&excpt, ctx);
+    hlt_bytes* incr_input = hlt_bytes_new(&excpt, ctx);
 
     while ( ! done ) {
         cur_end = hlt_iterator_bytes_incr_by(cur, chunk_size, &excpt, ctx);
         done = hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx);
 
         chunk = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
-        hlt_bytes_append(input, chunk, &excpt, ctx);
+        hlt_bytes_append(incr_input, chunk, &excpt, ctx);
+        GC_DTOR(chunk, hlt_bytes);
 
         if ( done )
-            hlt_bytes_freeze(input, 1, &excpt, ctx);
+            hlt_bytes_freeze(incr_input, 1, &excpt, ctx);
 
-        int frozen = hlt_bytes_is_frozen(input, &excpt, ctx);
+        int frozen = hlt_bytes_is_frozen(incr_input, &excpt, ctx);
 
         check_exception(excpt);
 
@@ -240,14 +242,16 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
             if ( debug )
                 fprintf(stderr, "--- pac-driver: starting parsing (eod=%d).\n", frozen);
 
-            (*p->parse_func)(input, 0, &excpt, ctx);
+            void *pobj = (*p->parse_func)(incr_input, 0, &excpt, ctx);
+            GC_DTOR_GENERIC(&pobj, p->type_info);
         }
 
         else {
             if ( debug )
                 fprintf(stderr, "--- pac-driver: resuming parsing (eod=%d).\n", frozen);
 
-            (*p->resume_func)(resume, &excpt, ctx);
+            void *pobj = (*p->resume_func)(resume, &excpt, ctx);
+            GC_DTOR_GENERIC(&pobj, p->type_info);
         }
 
         if ( excpt ) {
@@ -267,11 +271,18 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
             if ( debug )
                 fprintf(stderr, "pac-driver: end of input reached even though more could be parsed.");
 
+            GC_DTOR(cur_end, hlt_iterator_bytes);
             break;
         }
 
+        GC_DTOR(cur, hlt_iterator_bytes);
         cur = cur_end;
     }
+
+    GC_DTOR(end, hlt_iterator_bytes);
+    GC_DTOR(input, hlt_bytes);
+    GC_DTOR(incr_input, hlt_bytes);
+    GC_DTOR(cur, hlt_iterator_bytes);
 }
 
 static void input_error(const char* line)

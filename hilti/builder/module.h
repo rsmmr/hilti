@@ -684,6 +684,14 @@ private:
    std::map<std::string, shared_ptr<Node>> _node_cache;
    declaration_map _globals;
    shared_ptr<Function> _init = nullptr;
+
+   struct TryCatch {
+       shared_ptr<statement::Block> try_;
+       statement::Try::catch_list catches;
+   };
+
+   std::list<std::shared_ptr<TryCatch>> _tries;
+
 };
 
 }

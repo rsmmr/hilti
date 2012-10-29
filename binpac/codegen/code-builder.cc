@@ -16,6 +16,7 @@
 #include "autogen/operators/tuple.h"
 #include "autogen/operators/unit.h"
 #include "autogen/operators/bytes.h"
+#include "autogen/operators/sink.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -60,6 +61,15 @@ expression_list CodeBuilder::callParameters(shared_ptr<Expression> tupleop)
 {
     auto tuple = ast::checkedCast<expression::Constant>(tupleop)->constant();
     return ast::checkedCast<constant::Tuple>(tuple)->value();
+}
+
+shared_ptr<binpac::Expression> CodeBuilder::callParameter(shared_ptr<Expression> tupleop, int i)
+{
+    auto exprs = callParameters(tupleop);
+    auto e = exprs.begin();
+    std::advance(e, i);
+    assert(e != exprs.end());
+    return *e;
 }
 
 void CodeBuilder::visit(Module* m)
@@ -603,7 +613,7 @@ void CodeBuilder::visit(expression::operator_::unit::AttributeAssign* i)
     setResult(expr);
 }
 
-void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
+void CodeBuilder::visit(binpac::expression::operator_::unit::HasAttribute* i)
 {
     auto unit = ast::checkedCast<type::Unit>(i->op1()->type());
     auto attr = ast::checkedCast<expression::MemberAttribute>(i->op2());
@@ -620,7 +630,7 @@ void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Ha
     setResult(has);
 }
 
-void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
+void CodeBuilder::visit(binpac::expression::operator_::unit::New* i)
 {
     auto ttype = ast::checkedCast<type::TypeType>(i->op1()->type());
     auto unit = ast::checkedCast<type::Unit>(ttype->typeType());
@@ -643,17 +653,17 @@ void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Ne
     setResult(result);
 }
 
-void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Input* i)
+void CodeBuilder::visit(binpac::expression::operator_::unit::Input* i)
 {
-    auto self = cg()->hiltiSelf();
+    auto self = cg()->hiltiExpression(i->op1());
     auto result = cg()->moduleBuilder()->addTmp("input", hilti::builder::iterator::typeBytes());
     cg()->builder()->addInstruction(result, hilti::instruction::struct_::Get, self, hilti::builder::string::create("__input"));
     setResult(result);
 }
 
-void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Offset* i)
+void CodeBuilder::visit(binpac::expression::operator_::unit::Offset* i)
 {
-    auto self = cg()->hiltiSelf();
+    auto self = cg()->hiltiExpression(i->op1());
 
     auto result = cg()->moduleBuilder()->addTmp("offset", hilti::builder::integer::type(64));
     auto input = cg()->moduleBuilder()->addTmp("input", hilti::builder::iterator::typeBytes());
@@ -666,9 +676,9 @@ void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Of
     setResult(result);
 }
 
-void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::SetPosition* i)
+void CodeBuilder::visit(binpac::expression::operator_::unit::SetPosition* i)
 {
-    auto self = cg()->hiltiSelf();
+    auto self = cg()->hiltiExpression(i->op1());
 
     auto old = cg()->moduleBuilder()->addTmp("old_cur", hilti::builder::iterator::typeBytes());
     auto op1 = cg()->hiltiExpression(i->op1());
@@ -684,8 +694,61 @@ void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::Se
     setResult(old);
 }
 
-void binpac::codegen::CodeBuilder::visit(binpac::expression::operator_::unit::AddFilter* i)
+void CodeBuilder::visit(binpac::expression::operator_::unit::AddFilter* i)
 {
+    auto self = cg()->hiltiExpression(i->op1());
+    auto filter = callParameter(i->op3(), 0);
+
+    // TODO: This cast here isn't ideal, better way?
+    auto filter_type = cg()->hiltiCastEnum(cg()->hiltiExpression(filter), hilti::builder::type::byName("BinPACHilti::Filter"));
+
+    auto head = cg()->builder()->addTmp("filter", hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::ParseFilter")));
+
+    cg()->builder()->addInstruction(head,
+                                    hilti::instruction::struct_::GetDefault,
+                                    self,
+                                    hilti::builder::string::create("__filter"),
+                                    hilti::builder::reference::createNull());
+
+    cg()->builder()->addInstruction(head,
+                                    hilti::instruction::flow::CallResult,
+                                    hilti::builder::id::create("BinPACHilti::filter_add"),
+                                    hilti::builder::tuple::create( { head, filter_type } ));
+
+    cg()->builder()->addInstruction(hilti::instruction::struct_::Set, self, hilti::builder::string::create("__filter"), head);
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::unit::Disconnect* i)
+{
+    auto self = cg()->hiltiExpression(i->op1());
+    auto sink = cg()->builder()->addTmp("sink", cg()->hiltiType(std::make_shared<type::Sink>()));
+
+    cg()->builder()->addInstruction(sink,
+                                    hilti::instruction::struct_::GetDefault,
+                                    self,
+                                    hilti::builder::string::create("__sink"),
+                                    hilti::builder::reference::createNull());
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_disconnect"),
+                                    hilti::builder::tuple::create( { sink, self } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::unit::MimeType* i)
+{
+    auto self = cg()->hiltiExpression(i->op1());
+    auto mt = cg()->builder()->addLocal("mt", hilti::builder::reference::type(hilti::builder::bytes::type()));
+
+    cg()->builder()->addInstruction(mt,
+                                    hilti::instruction::struct_::Get,
+                                    self,
+                                    hilti::builder::string::create("__mimetype"));
+
+    setResult(mt);
 }
 
 void CodeBuilder::visit(expression::operator_::list::PushBack* i)
@@ -770,3 +833,110 @@ void CodeBuilder::visit(variable::Global* v)
     auto result = hilti::builder::id::create(cg()->hiltiID(v->id()));
     setResult(result);
 }
+
+void CodeBuilder::visit(binpac::expression::operator_::sink::Close* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_close"),
+                                    hilti::builder::tuple::create( { sink } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::sink::Connect* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto unit = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    // Check that it's not already connected.
+    auto old_sink = cg()->builder()->addTmp("old_sink", cg()->hiltiType(std::make_shared<type::Sink>()));
+
+    cg()->builder()->addInstruction(old_sink,
+                                    hilti::instruction::struct_::GetDefault,
+                                    unit,
+                                    hilti::builder::string::create("__sink"),
+                                    hilti::builder::reference::createNull());
+
+    auto branches = cg()->builder()->addIf(old_sink);
+    auto sink_set = std::get<0>(branches);
+    auto cont = std::get<1>(branches);
+
+    cg()->moduleBuilder()->pushBuilder(sink_set);
+    cg()->builder()->addThrow("BinPACHilti::UnitAlreadyConnected");
+    cg()->moduleBuilder()->popBuilder(sink_set);
+
+    // Connect it.
+
+    cg()->moduleBuilder()->pushBuilder(cont);
+
+    auto parser = cg()->builder()->addTmp("parser", hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::Parser")));
+
+    cg()->builder()->addInstruction(parser,
+                                    hilti::instruction::struct_::Get,
+                                    unit,
+                                    hilti::builder::string::create("__parser"));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_connect"),
+                                    hilti::builder::tuple::create( { sink, unit, parser } ));
+
+    // Set the __sink field.
+    cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
+                                    unit,
+                                    hilti::builder::string::create("__sink"),
+                                    sink);
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::sink::ConnectMimeTypeString* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto mtype = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_connect_mimetype_string"),
+                                    hilti::builder::tuple::create( { sink, mtype, cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::sink::ConnectMimeTypeBytes* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto mtype = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_connect_mimetype_bytes"),
+                                    hilti::builder::tuple::create( { sink, mtype, cg()->hiltiCookie() } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::sink::Write* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto data = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    cg()->hiltiWriteToSink(sink, data);
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+
+void CodeBuilder::visit(binpac::expression::operator_::sink::AddFilter* i)
+{
+    auto sink = cg()->hiltiExpression(i->op1());
+    auto filter = cg()->hiltiExpression(callParameter(i->op3(), 0));
+
+    // TODO: This cast here isn't ideal, better way?
+    auto filter_type = cg()->hiltiCastEnum(filter, hilti::builder::type::byName("BinPACHilti::Filter"));
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::CallVoid,
+                                    hilti::builder::id::create("BinPACHilti::sink_add_filter"),
+                                    hilti::builder::tuple::create( { sink, filter_type } ));
+
+    setResult(std::make_shared<hilti::expression::Void>());
+}
+

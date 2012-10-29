@@ -1633,6 +1633,10 @@ public:
    /// Marks the field as internal.
    void setInternal() { _internal = true; }
 
+   /// Marks the field as one the optimizer can remove if it doesn't see it
+   /// in use. This add the \c opt:can-remove meta attribute.
+   void setCanRemove() { metaInfo()->add(std::make_shared<ast::MetaNode>("opt:can-remove")); }
+
    ACCEPT_VISITOR_ROOT();
 
 private:

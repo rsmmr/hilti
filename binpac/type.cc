@@ -683,7 +683,8 @@ shared_ptr<binpac::Type> Bytes::elementType()
 std::list<trait::Parseable::ParseAttribute> Bytes::parseAttributes() const
 {
     return {
-        { "length", std::make_shared<type::Integer>(64, false), nullptr, false }
+        { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
+        { "eod", nullptr, nullptr, false }
     };
 }
 
@@ -1475,3 +1476,21 @@ void Unit::enableBuffering()
     _buffering = true;
 }
 
+bool Unit::exported() const
+{
+    return _exported;
+}
+
+void Unit::setExported()
+{
+    _exported = true;
+}
+
+Sink::Sink(const Location& l) : PacType(l)
+{
+}
+
+
+Sink::~Sink()
+{
+}

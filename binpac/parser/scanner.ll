@@ -107,6 +107,7 @@ property              return token::PROPERTY;
 regexp                return token::REGEXP;
 return                return token::RETURN;
 set                   return token::SET;
+sink                  return token::SINK;
 stop                  return token::STOP;
 string                return token::STRING;
 switch                return token::SWITCH;

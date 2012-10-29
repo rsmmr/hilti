@@ -113,6 +113,7 @@ inline shared_ptr<Expression> makeOp(binpac::operator_::Kind kind, const express
 %token         PORT
 %token         REGEXP
 %token         SET
+%token         SINK
 %token         STRING
 %token         SWITCH
 %token         TIME
@@ -349,6 +350,7 @@ atomic_type   : ANY                              { $$ = std::make_shared<type::A
               | INTERVAL                         { $$ = std::make_shared<type::Interval>(loc(@$)); }
               | NET                              { $$ = std::make_shared<type::Network>(loc(@$)); }
               | PORT                             { $$ = std::make_shared<type::Port>(loc(@$)); }
+              | SINK                             { $$ = std::make_shared<type::Sink>(loc(@$)); }
               | STRING                           { $$ = std::make_shared<type::String>(loc(@$)); }
               | TIME                             { $$ = std::make_shared<type::Time>(loc(@$)); }
               | TIMER                            { $$ = std::make_shared<type::Timer>(loc(@$)); }
@@ -485,6 +487,7 @@ opt_type_attrs: type_attr opt_type_attrs         { $$ = $2; $$.push_front($1); }
 
 type_attr     : ATTRIBUTE '(' expr ')'           { $$ = std::make_shared<Attribute>($1, $3, loc(@$)); }
               | ATTRIBUTE '=' expr               { $$ = std::make_shared<Attribute>($1, $3, loc(@$)); }
+              | ATTRIBUTE                        { $$ = std::make_shared<Attribute>($1, nullptr, loc(@$)); }
 
 opt_field_args: '(' opt_exprs ')'                { $$ = $2; }
               | /* empty */                      { $$ = expression_list(); }

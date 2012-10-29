@@ -136,28 +136,40 @@ void Operator::validate(passes::Validator* v, const expression_list& ops)
 
 bool Operator::checkCallArgs(shared_ptr<Expression> tuple, const type_list& types)
 {
+    auto result = matchArgsInternal(tuple, types);
+    if ( ! result.first )
+        return true;
+
+    error(result.first, result.second);
+    return false;
+}
+
+bool Operator::matchCallArgs(shared_ptr<Expression> tuple, const type_list& types)
+{
+    auto result = matchArgsInternal(tuple, types);
+    return (result.first == nullptr);
+}
+
+std::pair<shared_ptr<Node>, string> Operator::matchArgsInternal(shared_ptr<Expression> tuple, const type_list& types)
+{
     auto const_ = ast::checkedCast<expression::Constant>(tuple);
     auto elems = ast::checkedCast<constant::Tuple>(const_->constant())->value();
 
-    if ( elems.size() != types.size() ) {
-        error(tuple, "wrong number of arguments");
-        return false;
-    }
+    if ( elems.size() != types.size() )
+        return std::make_pair(tuple, "wrong number of arguments");
 
     auto e = elems.begin();
     auto t = types.begin();
 
     while ( e != elems.end() ) {
-        if ( ! (*e)->canCoerceTo(*t) ) {
-            error(*e, "argument type mismatch");
-            return false;
-        }
+        if ( ! (*e)->canCoerceTo(*t) )
+            return std::make_pair(*e, "argument type mismatch");
 
         ++e;
         ++t;
     }
 
-    return true;
+    return std::make_pair(nullptr, "");
 }
 
 string _clsName(shared_ptr<Type> t)

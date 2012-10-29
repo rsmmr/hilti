@@ -12,15 +12,16 @@ int main()
 {
     hlt_init();
 
+    hlt_execution_context* ctx = hlt_global_execution_context();
     hlt_exception* excpt0 = 0;
     hlt_exception* excpt1 = 0;
     hlt_exception** excpt = 0;
 
     fprintf(stderr, "Starting first in C\n");
-    foo_test(0, &excpt0);
+    foo_test(0, &excpt0, ctx);
 
     fprintf(stderr, "Starting second in C\n");
-    foo_test(1, &excpt1);
+    foo_test(1, &excpt1, ctx);
 
     int i = 1;
 
@@ -34,7 +35,7 @@ int main()
 
         assert((*excpt)->type == &hlt_exception_yield);
         fprintf(stderr, "Back in C and resuming %d\n", i);
-        foo_test_resume(*excpt, excpt);
+        foo_test_resume(*excpt, excpt, ctx);
 
         i = 1 - i;
     }

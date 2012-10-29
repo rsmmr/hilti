@@ -170,12 +170,12 @@ void StatementBuilder::visit(statement::try_::Catch* c)
     if ( c->variable() ) {
         // Initialize the local variable providing access to the exception.
         auto name = c->variable()->internalName();
-        addr = cg()->llvmAddLocal(name, c->type());
+        auto local = cg()->llvmAddLocal(name, c->type());
 
         // Can't init the local directly as that might end up in the wrong
         // block.
         // cg()->llvmCreateStore(cg()->llvmCurrentException(), addr);
-        cg()->llvmGCAssign(addr, cg()->llvmCurrentException(), c->variable()->type(), false);
+        cg()->llvmGCAssign(local, cg()->llvmCurrentException(), c->variable()->type(), false, true);
     }
 
     cg()->llvmClearException();
@@ -200,7 +200,6 @@ void StatementBuilder::visit(declaration::Variable* v)
 
     auto init = local->init() ? cg()->llvmValue(local->init(), local->type(), true) : nullptr;
     auto name = local->internalName();
-    assert(name.size());
 
     cg()->llvmAddLocal(name, local->type(), init);
 }

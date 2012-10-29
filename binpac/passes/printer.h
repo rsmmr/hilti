@@ -106,6 +106,7 @@ protected:
     void visit(type::Port* p) override;
     void visit(type::RegExp* r) override;
     void visit(type::Set* s) override;
+    void visit(type::Sink* s) override;
     void visit(type::String* s) override;
     void visit(type::Time* t) override;
     void visit(type::Tuple* t) override;

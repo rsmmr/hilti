@@ -127,10 +127,10 @@ void ProtoGen::visit(declaration::Function* f)
     for ( auto p : func->type()->parameters() )
         out << mapType(p->type()) << " " << p->id()->name() << ", ";
 
-    out << "hlt_exception** excpt);" << std::endl;
+    out << "hlt_exception** excpt, hlt_execution_context* ctx);" << std::endl;
 
     out << mapType(result) << ' ' << name2 << "(hlt_exception* yield_excpt, ";
-    out << "hlt_exception** excpt);" << std::endl;
+    out << "hlt_exception** excpt, hlt_execution_context* ctx);" << std::endl;
 
     _generated.insert(name1);
 }

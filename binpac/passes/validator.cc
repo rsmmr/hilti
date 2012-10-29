@@ -436,6 +436,10 @@ void Validator::visit(type::Set* s)
 {
 }
 
+void Validator::visit(type::Sink* s)
+{
+}
+
 void Validator::visit(type::String* s)
 {
 }

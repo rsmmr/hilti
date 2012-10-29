@@ -354,3 +354,24 @@ shared_ptr<hilti::Expression> CodeGen::hiltiFunctionNew(shared_ptr<type::Unit> u
 {
     return _parser_builder->hiltiFunctionNew(unit);
 }
+
+shared_ptr<hilti::Expression> CodeGen::hiltiCastEnum(shared_ptr<hilti::Expression> val, shared_ptr<hilti::Type> dst)
+{
+    auto i = builder()->addTmp("eval", hilti::builder::integer::type(64));
+    auto e = builder()->addTmp("enum", dst);
+    builder()->addInstruction(i, hilti::instruction::enum_::ToInt, val);
+    builder()->addInstruction(e, hilti::instruction::enum_::FromInt, i);
+    return e;
+}
+
+void CodeGen::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data)
+{
+    _parser_builder->hiltiWriteToSink(sink, data);
+}
+
+void CodeGen::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end)
+{
+    auto data = builder()->addTmp("data", hilti::builder::reference::type(hilti::builder::bytes::type()));
+    builder()->addInstruction(data, hilti::instruction::bytes::Sub, begin, end);
+    return hiltiWriteToSink(sink, data);
+}

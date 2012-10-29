@@ -165,7 +165,7 @@ void BlockBuilder::addInternalError(const std::string& msg)
 void BlockBuilder::addThrow(const std::string& ename, shared_ptr<hilti::Expression> arg)
 {
     auto etype = builder::type::byName(ename);
-    auto excpt = _mbuilder->addTmp("excpt", builder::reference::type(etype), nullptr, true);
+    auto excpt = _mbuilder->addTmp("excpt", builder::reference::type(etype), nullptr);
 
     if ( ! arg )
         _mbuilder->builder()->addInstruction(excpt, ::hilti::instruction::exception::New, hilti::builder::type::create(etype));
@@ -190,6 +190,70 @@ void BlockBuilder::addSwitch(shared_ptr<hilti::Expression> expr,
     _mbuilder->builder()->addInstruction(::hilti::instruction::flow::Switch, expr, default_->block(), builder::tuple::create(tuple));
 }
 
+void BlockBuilder::beginTryCatch()
+{
+    auto body = _mbuilder->pushBody(true);
+    auto try_ = _mbuilder->pushBuilder("try");
+
+    _mbuilder->_tries.push_back(std::make_shared<ModuleBuilder::TryCatch>());
+    assert(_mbuilder->_tries.size());
+}
+
+void BlockBuilder::endTryCatch()
+{
+    assert(_mbuilder->_tries.size());
+
+    _mbuilder->popBuilder();
+    auto try_ = _mbuilder->popBody();
+
+    auto cont = _mbuilder->newBuilder("try-cont");
+
+    auto t = _mbuilder->_tries.back();
+    auto stmt = builder::block::try_(try_->block(), t->catches);
+    //_mbuilder->_tries.pop_back();
+
+    _mbuilder->builder()->statement()->addStatement(stmt);
+    _mbuilder->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+    _mbuilder->pushBuilder(cont);
+}
+
+void BlockBuilder::pushCatch(shared_ptr<Type> type, shared_ptr<ID> id)
+{
+    assert(_mbuilder->_tries.size());
+
+    _mbuilder->pushBody(true);
+    _mbuilder->pushBuilder("catch");
+
+    auto body = _mbuilder->_currentBody()->stmt;
+    auto catch_ = builder::block::catch_(type, id, body, Location::None);
+    _mbuilder->_tries.back()->catches.push_back(catch_);
+}
+
+void BlockBuilder::popCatch()
+{
+    assert(_mbuilder->_tries.size());
+
+    _mbuilder->popBody();
+}
+
+void BlockBuilder::pushCatchAll()
+{
+    assert(_mbuilder->_tries.size());
+
+    _mbuilder->pushBody(true);
+    _mbuilder->pushBuilder("catch-all");
+
+    auto body = _mbuilder->_currentBody()->stmt;
+    auto catch_ = builder::block::catchAll(body, Location::None);
+    _mbuilder->_tries.back()->catches.push_back(catch_);
+}
+
+void BlockBuilder::popCatchAll()
+{
+    assert(_mbuilder->_tries.size());
+
+    _mbuilder->popBody();
+}
 
 }
 

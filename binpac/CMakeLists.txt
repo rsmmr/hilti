@@ -46,6 +46,7 @@ set(operators
     operators/list.cc
     operators/tuple.cc
     operators/unit.cc
+    operators/sink.cc
 )
 
 add_custom_command(

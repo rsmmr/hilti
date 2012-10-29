@@ -23,6 +23,7 @@ public:
     bool run(shared_ptr<ast::NodeBase> ast) override;
 
 protected:
+    void visit(declaration::Type* t);
     void visit(type::unit::Item* i);
     void visit(type::unit::item::Field* f);
     void visit(type::unit::item::field::Container* c);

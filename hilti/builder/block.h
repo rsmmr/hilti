@@ -231,6 +231,14 @@ public:
                   shared_ptr<hilti::builder::BlockBuilder> default_,
                   const case_list& cases);
 
+   /// XXX
+   void beginTryCatch();
+   void endTryCatch();
+   void pushCatch(shared_ptr<Type> type, shared_ptr<ID> id);
+   void popCatch();
+   void pushCatchAll();
+   void popCatchAll();
+
 protected:
    friend class ModuleBuilder;
 

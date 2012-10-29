@@ -887,6 +887,15 @@ void Printer::visit(type::String* s)
     p << "string";
 }
 
+void Printer::visit(type::Sink* s)
+{
+    if ( printTypeID(this, s) )
+        return;
+
+    Printer& p = *this;
+    p << "sink";
+}
+
 void Printer::visit(type::Time* t)
 {
     if ( printTypeID(this, t) )

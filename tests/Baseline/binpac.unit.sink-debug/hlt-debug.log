@@ -1,0 +1,18 @@
+00000001 [binpac-sinks/main-thread]     connected parser Sub [0xda6590] to sink 0xda5f30
+00000002 [binpac/main-thread]           Main
+00000003 [binpac/main-thread]             a = 12345
+00000004 [binpac-sinks/main-thread]     starting to write to sink 0xda5f30
+00000005 [binpac-sinks/main-thread]     writing to sink 0xda5f30: |12345|
+00000006 [binpac-sinks/main-thread]     - start writing to sink 0xda5f30 for parser 0xda6590
+00000007 [binpac/main-thread]             Sub
+00000008 [binpac-sinks/main-thread]     - writing to sink 0xda5f30 suspended for parser 0xda6590
+00000009 [binpac-sinks/main-thread]     done writing to sink 0xda5f30
+00000010 [binpac/main-thread]               b = 678901234567890123456789\x00123456789012345678901234567890
+00000011 [binpac-sinks/main-thread]     starting to write to sink 0xda5f30
+00000012 [binpac-sinks/main-thread]     writing to sink 0xda5f30: |678901234567890123456789\x00123456789012345678901 ...|
+00000013 [binpac-sinks/main-thread]     - resuming writing to sink 0xda5f30 for parser 0xda6590
+00000014 [binpac/main-thread]               s1 = 12345678901234567890123456789\x001234567890123456789012345
+00000015 [binpac-sinks/main-thread]     - writing to sink 0xda5f30 finished for parser 0xda6590
+00000016 [binpac-sinks/main-thread]     done writing to sink 0xda5f30
+00000017 [binpac-sinks/main-thread]     closing sink 0xda5f30
+00000018 [binpac-sinks/main-thread]     closed sink 0xda5f30, disconnected all parsers

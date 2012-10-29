@@ -1,11 +1,12 @@
 
 #include <util/util.h>
 
-#include "normalizer.h"
-#include "type.h"
-#include "expression.h"
 #include "attribute.h"
+#include "declaration.h"
+#include "expression.h"
+#include "normalizer.h"
 #include "statement.h"
+#include "type.h"
 
 #include "autogen/operators/unit.h"
 
@@ -23,6 +24,14 @@ Normalizer::~Normalizer()
 bool Normalizer::run(shared_ptr<ast::NodeBase> ast)
 {
     return processAllPreOrder(ast);
+}
+
+void Normalizer::visit(declaration::Type* t)
+{
+    auto unit = ast::tryCast<type::Unit>(t->type());
+
+    if ( unit && t->linkage() == Declaration::EXPORTED )
+        unit->setExported();
 }
 
 void Normalizer::visit(type::unit::Item* i)

@@ -67,9 +67,9 @@ public:
 
    /// Returns an internal name set by the ID resolver. This name will be
    /// unique across the function the local is defined in (even if there are
-   /// other locals of the same name in other blocks.) Returns an empty
-   /// string as long as the resolver hasn't run.
-   const string& internalName() { return _internal_name; }
+   /// other locals of the same name in other blocks.) Returns the ID itself
+   /// as long as nobody has set anything.
+   string internalName() { return _internal_name.size() ? _internal_name : id()->name(); }
 
    /// Sets the internal name returned by internalName. This should be called
    /// only by the ID resolver.

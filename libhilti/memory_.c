@@ -291,6 +291,7 @@ void* hlt_free_list_alloc(hlt_free_list* list, size_t size)
     if ( list->pool ) {
         b = list->pool;
         list->pool = list->pool->next;
+        bzero(b, sizeof(__hlt_free_list_block) + size); // Make contents consistent.
     }
     else {
         b = (__hlt_free_list_block*) hlt_malloc(sizeof(__hlt_free_list_block) + size);

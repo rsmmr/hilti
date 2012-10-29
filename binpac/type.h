@@ -794,7 +794,7 @@ public:
 };
 
 /// Type for bytes instances.
-class Bytes : public PacType, public trait::Parseable, public trait::Hashable, public trait::Iterable
+class Bytes : public PacType, public trait::Parseable, public trait::Hashable, public trait::Iterable, public trait::Sinkable
 {
 public:
     /// Constructor.
@@ -1596,6 +1596,14 @@ public:
     /// for internal use.
     void enableBuffering();
 
+    /// Returns true if this unit type has been exported. This is initially
+    /// always false, but the normalizer pass will set it as neccessary based
+    /// on the operations that are performed with the type.
+    bool exported() const;
+
+    /// Marks the type as being exported. Mainly for internal use.
+    void setExported();
+
     bool _equal(shared_ptr<binpac::Type> other) const override;
 
     ACCEPT_VISITOR(Type);
@@ -1607,12 +1615,24 @@ protected:
 
 private:
     bool _buffering = false;
+    bool _exported = false;
 
     std::list<node_ptr<type::function::Parameter>> _params;
     std::list<node_ptr<unit::Item>> _items;
 
     shared_ptr<Scope> _scope = nullptr;
     shared_ptr<Grammar> _grammar = nullptr;
+};
+
+/// A sink for parsing data with another parser.
+class Sink : public PacType
+{
+public:
+    /// Constructor.
+    Sink(const Location& l=Location::None);
+    ~Sink();
+
+    ACCEPT_VISITOR(PacType);
 };
 
 ////

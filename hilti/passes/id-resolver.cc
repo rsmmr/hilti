@@ -109,21 +109,30 @@ void IdResolver::visit(type::Unknown* t)
 
 void IdResolver::visit(Function* f)
 {
-    _locals.clear();
 }
 
-void IdResolver::visit(variable::Local* v)
+void IdResolver::visit(declaration::Variable* d)
 {
     // Assign unique intername names to all local variables.
 
+    auto v = ast::tryCast<variable::Local>(d->variable());
+    if ( ! v )
+        return;
+
+    auto func = current<Function>();
+    if ( ! func )
+        return;
+
     int cnt = 1;
-    auto name = v->id()->name();
+
+    auto base = ::util::fmt("%s%%%s", func->id()->name(), v->id()->name());
+    auto name = base;
 
     while ( 1 ) {
         if ( _locals.find(name) == _locals.end() )
             break;
 
-        name = util::fmt("%s.%d", v->id()->name().c_str(), ++cnt);
+        name = util::fmt("%s.%d", base, ++cnt);
     };
 
     v->setInternalName(name);

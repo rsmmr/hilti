@@ -227,6 +227,18 @@ public:
     /// corresponding type.
     bool checkCallArgs(shared_ptr<Expression> tuple, const type_list& types);
 
+    /// Helper method to match that an argument tuple is of an expected type
+    /// for a function or method call. If not, it return false, but does not report an error.
+    ///
+    /// tuple: The tuple expression; must be of a \a expression::Constant and
+    ///        of type \a type::Tuple, otherwise will abort.
+    ///
+    /// types: The expected types of the tuple elements.
+    ///
+    /// Returns: True if all tuple elements can be coerced to their
+    /// corresponding type.
+    bool matchCallArgs(shared_ptr<Expression> tuple, const type_list& types);
+
 protected:
 
     /// Returns a factory function that instantiates a resolved operator
@@ -255,6 +267,7 @@ protected:
 private:
     void pushOperands(const expression_list& ops) { __operands.push_back(ops); }
     void popOperands() { __operands.pop_back(); }
+    std::pair<shared_ptr<Node>, string> matchArgsInternal(shared_ptr<Expression> tuple, const type_list& types);
 
     friend class OperatorRegistry;
 

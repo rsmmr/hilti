@@ -17,6 +17,7 @@ type Parser = struct {
     ref<list<string>> mime_types, # MIME types handled by this parser.
     caddr parse_func,             # The C function performing the parsing.
     caddr resume_func,            # The C function resuming parsing after a yield.
+    caddr type_info,              # Type info for the parser. Filled in at the C level.
     caddr parse_func_sink,        # The C function performing the parsing for a sink.
     caddr resume_func_sink,       # The C function resuming sink parsing after a yield.
     caddr new_func                # The C function to create a new instance (may be null).
@@ -31,7 +32,7 @@ declare "C-HILTI" void register_parser(ref<Parser> parser, type pobj)
 
 # Runs a module's init function passed in with it's C stub.
 # (This is only needed because we can't call the stub (easily) from C.
-declare "C" void call_init_func(caddr func)
+# declare "C" void call_init_func(caddr func)
 
 # Support functions for sinks.
 type Sink = struct {
@@ -39,12 +40,15 @@ type Sink = struct {
     # See sink.c for it's definition.
 }
 
+# Type place-holder for the user-defined parser argument.
+type UserCookie = struct { }
+
 declare "C-HILTI" ref<Sink> sink_new()
 declare "C-HILTI" void sink_connect(ref<Sink> sink, any pobj, ref<Parser> parser)
 declare "C-HILTI" void sink_disconnect(ref<Sink> sink, any pobj)
 declare "C-HILTI" void sink_write(ref<Sink> sink, ref<bytes> data, ref<UserCookie> user)
 declare "C-HILTI" void sink_close(ref<Sink> sink)
-declare "C-HILTI" void sink_filter(ref<Sink> sink, ref<ParseFilter> filter)
+declare "C-HILTI" void sink_add_filter(ref<Sink> sink, Filter ftype)
 
 # Support functions for filters.
 type ParseFilter = struct {
@@ -54,17 +58,17 @@ type ParseFilter = struct {
 
 # Available filter types.
 type Filter = enum {
+    NONE = 0,    # Place-holder.
     BASE64 = 1,  # MIME base64 decoding.
     GZIP = 2     # gzipd decompression.
 }
 
-declare "C-HILTI" ref<ParseFilter> filter_new(Filter ftype)
-declare "C-HILTI" ref<ParseFilter> filter_add(ref<ParseFilter> head, ref<ParseFilter> add)
-declare "C-HILTI" ref<bytes> filter_decode(ref<ParseFilter> filter, ref<bytes> data)
-declare "C-HILTI" void filter_close(ref<ParseFilter> filter)
+declare "C-HILTI" ref<ParseFilter> filter_add(ref<ParseFilter> head, Filter ftype)
+declare "C-HILTI" void filter_close(ref<ParseFilter> head)
+declare "C-HILTI" ref<bytes> filter_decode(ref<ParseFilter> head, ref<bytes> data)
 
-declare "C-HILTI" void mime_connect_by_bytes(ref<Sink> sink, ref<bytes> mtype)
-declare "C-HILTI" void mime_connect_by_string(ref<Sink> sink, string mtype)
+declare "C-HILTI" void sink_connect_mimetype_bytes(ref<Sink> sink, ref<bytes> mtype, ref<UserCookie> user)
+declare "C-HILTI" void sink_connect_mimetype_string(ref<Sink> sink, string mtype, ref<UserCookie> user)
 
 # Debugging.
 declare "C-HILTI" void enable_debugging(bool enabled)
@@ -130,6 +134,3 @@ ref<bytes> next_bytes(iterator<bytes> cur, int<64> n) {
 }
 
 export next_bytes
-
-# Type place-holder for the user-defined parser argument.
-type UserCookie = struct { }

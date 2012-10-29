@@ -7,6 +7,7 @@
 
 #include <libhilti.h>
 
+#include "rtti.h"
 #include "autogen/binpac-hlt.h"
 
 /// The main entry function to a BinPAC-generated parser.
@@ -14,12 +15,12 @@ typedef void* binpac_parse_function(hlt_bytes* data, void* user, hlt_exception**
 typedef void* binpac_resume_function(hlt_exception* yield, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Internal functions for parsing from sink.write.
-typedef void* __binpac_parse_sink_function(void* pobj, hlt_bytes* data, int8_t reserved, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
-typedef void* __binpac_resume_sink_function(hlt_exception* yield, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void __binpac_parse_sink_function(void* pobj, hlt_bytes* data, void* user, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void __binpac_resume_sink_function(hlt_exception* yield, hlt_exception** excpt, hlt_execution_context* ctx);
 
 // Internal function to create an instance of a parser.
 struct binpac_sink;
-typedef void* __binpac_new_function(struct binpac_sink* sink, hlt_bytes* mimetype, hlt_exception** excpt, hlt_execution_context* ctx);
+typedef void* __binpac_new_function(struct binpac_sink* sink, hlt_bytes* mimetype, void* cookie, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Structure defining an BinPAC generated parser.
 ///

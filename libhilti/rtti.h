@@ -66,6 +66,8 @@
 #define HLT_TYPE_ITERATOR_MAP    104
 #define HLT_TYPE_ITERATOR_IOSRC  105
 
+#define HLT_TYPE_EXTERN_BINPAC   10000 // Space for BinPAC++'s types. FIXME: Better way to do this?
+
 // Default context for numeric operations.
 #define HLT_CONVERT_NONE     0x00  // Not given, implies doing signed operations.
 #define HLT_CONVERT_UNSIGNED 0x01  // Numeric operations assume an unsigned context.

@@ -1,7 +1,7 @@
 #
-# @TEST-EXEC:  hilti-build -D %INPUT ${PAC_DRIVER} -o a.out
-# @TEST-EXEC:  printf '12345678901234567890123456789\000123456789012345678901234567890' | HILTI_DEBUG=binpac-sinks ./a.out -p Mini::Main >output
-# @TEST-EXEC:  btest-diff output
+# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  printf '12345678901234567890123456789\000123456789012345678901234567890' | HILTI_DEBUG=binpac-sinks:binpac ./a.out -p Main
+# @TEST-EXEC:  btest-diff hlt-debug.log
 
 module Mini;
 

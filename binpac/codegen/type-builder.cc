@@ -185,6 +185,13 @@ void TypeBuilder::visit(type::String* s)
     setResult(ti);
 }
 
+void TypeBuilder::visit(type::Sink* s)
+{
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::Sink"));
+    setResult(ti);
+}
+
 void TypeBuilder::visit(type::Time* t)
 {
 }

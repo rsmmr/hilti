@@ -115,6 +115,7 @@ type::OptionalArgument
 type::Port
 type::RegExp
 type::Set
+type::Sink
 type::String
 type::Time
 type::Tuple

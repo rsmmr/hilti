@@ -27,7 +27,7 @@ protected:
    void visit(Declaration* d) override;
    void visit(Function* f) override;
    void visit(type::Unknown* t) override;
-   void visit(variable::Local* v) override;
+   void visit(declaration::Variable* d) override;
    void visit(statement::ForEach* s) override;
 
 private:

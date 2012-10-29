@@ -70,8 +70,13 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/binpachilti.hlt PROPERTIES GENERATED 1)
 #### Build the library.
 
 set(SRCS
-    libbinpac++.c
     exceptions.c
+    filter.c
+    libbinpac++.c
+    mime.c
+    sink.c
+
+    3rdparty/libb64-1.2/src/cdecode.c
 
     ${autogen}/binpac-hlt.h
 )

@@ -1149,11 +1149,13 @@ llvm::Value* CodeGen::llvmAddLocal(const string& name, shared_ptr<Type> type, ll
     auto builder = newBuilder(&block, true);
 
     auto local = builder->CreateAlloca(llvm_type, 0, name);
+    builder->CreateStore(typeInfo(type)->init_val, local);
 
     if ( init ) {
         if ( init_in_entry_block )
             pushBuilder(builder);
 
+        llvmGCClear(local, type);
         llvmCreateStore(init, local);
 
         if ( init_in_entry_block )
@@ -2132,13 +2134,13 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     // Build the entry function.
 
-    auto llvm_func = llvmAddFunction(func, false, type::function::HILTI_C, name, true);
+    auto llvm_func = llvmAddFunction(func, false, type::function::HILTI_C, name, false);
     rf1 = llvm_func;
 
     auto args = llvm_func->arg_begin();
 
     pushFunction(llvm_func);
-    _functions.back()->context = llvmGlobalExecutionContext();
+    //_functions.back()->context = llvmGlobalExecutionContext();  // FIXME: Use context argument.
 
     llvmClearException();
 
@@ -2148,12 +2150,13 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     for ( auto a : ftype->parameters() )
         params.push_back(builder::codegen::create(a->type(), arg++));
 
+    llvmDebugPrint("hilti-trace", "FIBER 1");
     auto result = llvmCallInNewFiber(llvmFunction(func), ftype, params);
 
     // Copy exception over.
     auto ctx_excpt = llvmCurrentException();
     auto last_arg = llvm_func->arg_end();
-    llvmGCAssign(--last_arg, ctx_excpt, builder::reference::type(builder::exception::typeAny()), false);
+    llvmGCAssign(--(--last_arg), ctx_excpt, builder::reference::type(builder::exception::typeAny()), false);
 
     if ( rtype->equal(shared_ptr<Type>(new type::Void())) )
         llvmReturn();
@@ -2168,11 +2171,11 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     name = util::mangle(func->id()->name() + "_resume", true, func->module()->id(), "", false);
 
     parameter_list fparams = { std::make_pair("yield_excpt", builder::reference::type(builder::exception::typeAny())) };
-    llvm_func = llvmAddFunction(name, llvm_func->getReturnType(), fparams, false, type::function::HILTI_C, true);
+    llvm_func = llvmAddFunction(name, llvm_func->getReturnType(), fparams, false, type::function::HILTI_C, false);
     rf2 = llvm_func;
 
     pushFunction(llvm_func);
-    _functions.back()->context = llvmGlobalExecutionContext();
+    //_functions.back()->context = llvmGlobalExecutionContext(); // FIXME: Use context argument.
 
     llvmClearException();
 
@@ -2185,6 +2188,7 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     llvmDtor(yield_excpt, builder::reference::type(builder::exception::typeAny()), false, "c-wrapper/resume");
 
+    llvmDebugPrint("hilti-trace", "FIBER 2");
     result = llvmFiberStart(fiber, rtype);
 
     // Copy exception over.
@@ -3080,6 +3084,8 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     llvm::Value* result = nullptr;
 
     if ( default_ ) {
+        result_ok->dump();
+        def->dump();
         auto phi = builder()->CreatePHI(result_ok->getType(), 2);
         phi->addIncoming(result_ok, ok_exit->GetInsertBlock());
         phi->addIncoming(def, block_not_set->GetInsertBlock());

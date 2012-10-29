@@ -217,6 +217,26 @@ public:
     /// unit: The unit type to return the function for.
     shared_ptr<hilti::Expression> hiltiFunctionNew(shared_ptr<type::Unit> unit);
 
+    /// Converts an enum value from one type into an enum value of another by
+    /// casting the integer value over.
+    shared_ptr<hilti::Expression> hiltiCastEnum(shared_ptr<hilti::Expression> val, shared_ptr<hilti::Type> dst);
+
+    /// Writes a new chunk of data into a sink.
+    ///
+    /// sink: The sink to write to.
+    ///
+    /// data: The data to write into the sink.
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data);
+
+    /// Writes a new chunk of data into a sink.
+    ///
+    /// begin: Start iterator of data to write.
+    ///
+    /// end: End iterator of data to write.
+    ///
+    /// data: The data to write into the sink.
+    void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end);
+
 private:
     bool _compiling = false;
 
