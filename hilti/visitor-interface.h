@@ -142,6 +142,7 @@ namespace expression {
    class Parameter;
    class Type;
    class Variable;
+   class Void;
 }
 
 namespace declaration {
@@ -317,6 +318,7 @@ public:
    virtual void visit(expression::Parameter* e) {}
    virtual void visit(expression::Type* e)      {}
    virtual void visit(expression::Variable* e)  {}
+   virtual void visit(expression::Void* e)  {}
 
    // Declarations.
    virtual void visit(Declaration* d)           {}

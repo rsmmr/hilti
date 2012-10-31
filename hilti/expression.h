@@ -234,6 +234,25 @@ public:
    ACCEPT_VISITOR(hilti::Expression);
 };
 
+/// AST node for a void value to be returned by functions that don't have
+/// anything to return. This is a place-holder that should never be further
+/// used.
+class Void : public hilti::Expression
+{
+public:
+    /// Constructor.
+    ///
+    /// l: An associated location.
+    Void(const Location& l=Location::None) : hilti::Expression(l) {}
+
+    shared_ptr<Type> type() const override {
+        return std::make_shared<type::Void>(location());
+    }
+
+    ACCEPT_VISITOR(hilti::Expression);
+};
+
+
 }
 
 }

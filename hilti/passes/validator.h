@@ -147,6 +147,7 @@ protected:
    void visit(expression::Parameter* e) override;
    void visit(expression::Type* e) override;
    void visit(expression::Variable* e) override;
+   void visit(expression::Void* e) override;
 
    void visit(constant::Address* c) override;
    void visit(constant::Bitset* c) override;

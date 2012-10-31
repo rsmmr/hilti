@@ -352,7 +352,7 @@ bool Instruction::checkCallParameters(shared_ptr<type::Function> func, shared_pt
 
     auto proto = func->parameters();
 
-    int i = 0;
+    int i = 1;
 
     auto p = proto.begin();
     auto o = ops.begin();

@@ -853,6 +853,11 @@ void Validator::visit(expression::Type* e)
 {
 }
 
+void Validator::visit(expression::Void* e)
+{
+    error(e, "void expression encountered that should never be used");
+}
+
 void Validator::visit(expression::Variable* e)
 {
 }

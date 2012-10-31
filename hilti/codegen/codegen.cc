@@ -3084,8 +3084,6 @@ llvm::Value* CodeGen::llvmStructGet(shared_ptr<Type> stype, llvm::Value* sval, c
     llvm::Value* result = nullptr;
 
     if ( default_ ) {
-        result_ok->dump();
-        def->dump();
         auto phi = builder()->CreatePHI(result_ok->getType(), 2);
         phi->addIncoming(result_ok, ok_exit->GetInsertBlock());
         phi->addIncoming(def, block_not_set->GetInsertBlock());

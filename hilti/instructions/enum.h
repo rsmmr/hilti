@@ -55,4 +55,16 @@ iBegin(enum_, FromInt, "enum.from_int")
 
 iEnd
 
+iBegin(enum_, ToInt, "enum.to_int")
+    iTarget(optype::integer)
+    iOp1(optype::enum_, true)
+
+    iValidate {
+    }
+
+    iDoc(R"(    
+        Converts the enum *op1* into an integer value.enum. If the enum is undefined, it will return -1.
+    )")
+
+iEnd
 

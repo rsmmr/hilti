@@ -115,3 +115,15 @@ void StatementBuilder::visit(statement::instruction::enum_::FromInt* i)
     cg()->llvmStore(i, result);
 }
 
+void StatementBuilder::visit(statement::instruction::enum_::ToInt* i)
+{
+    auto ty_target = as<type::Integer>(i->target()->type());
+
+    auto op1 = cg()->llvmValue(i->op1());
+    auto undef = _getUndef(cg(), op1);
+    auto val = _getVal(cg(), op1);
+    val = builder()->CreateTrunc(val, cg()->llvmTypeInt(ty_target->width()));
+    auto result = cg()->builder()->CreateSelect(undef, cg()->llvmConstInt(-1, ty_target->width()), val);
+
+    cg()->llvmStore(i, result);
+}
