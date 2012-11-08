@@ -9,6 +9,14 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${ffi})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
+find_package(PAPI)
+
+if (${PAPI_FOUND} STREQUAL "TRUE" )
+    set(HAVE_PAPI "1")
+else ()
+    set(HAVE_PAPI "0")
+endif ()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/hilti-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/autogen/hilti-config.h)
 
 ### Build libffi.

@@ -76,8 +76,10 @@ struct Configuration {
     std::list<string> runtime_shared_libraries = {
         "m",
         "pthread",
-        "papi",
-        "pcap"
+        "pcap",
+#if ${HAVE_PAPI}
+        "papi"
+#endif
     };
 
     ////

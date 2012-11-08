@@ -135,7 +135,7 @@ add_library (binpacxx SHARED
 
     ${autogen}/visitor-interface.h
     ${autogen}/visitor-types.h
-    ${autogen}/config.h
+    ${autogen}/binpac-config.h
     
     $<TARGET_OBJECTS:ast>
     $<TARGET_OBJECTS:util>
