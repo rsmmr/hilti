@@ -49,12 +49,12 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module, int debug,
 
         _code_builder->processOne(module);
 
-        auto module = _mbuilder->finalize();
+        auto m = _mbuilder->finalize();
 
-        if ( ! module )
+        if ( ! m )
             return verify ? nullptr : _mbuilder->module();
 
-        return module;
+        return m;
     }
 
     catch ( const ast::FatalLoggerError& err ) {

@@ -155,6 +155,7 @@ True                  yylval->bval = 1; return token::CBOOL;
 [-+]?{digits}\.{digits} yylval->dval = strtod(yytext, 0); return token::CDOUBLE;
 
 {int}                 yylval->ival = strtoll(yytext, 0, 10); return token::CINTEGER;
+0x{hexs}              yylval->ival = strtoll(yytext + 2, 0, 16); return token::CINTEGER;
 {string}              yylval->sval = util::expandEscapes(string(yytext, 1, strlen(yytext) - 2)); return token::CSTRING;
 b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strlen(yytext) - 3)); return token::CBYTES;
 

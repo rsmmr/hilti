@@ -520,6 +520,10 @@ opt_foreach   : FOREACH                          { $$ = true; }
               | /* empty */                      { $$ = false; }
 
 constant      : CINTEGER                         { $$ = std::make_shared<constant::Integer>($1, 64, loc(@$)); }
+              | UINT '<' CINTEGER '>' '(' CINTEGER ')'
+                                                 { $$ = std::make_shared<constant::Integer>($6, $3, false, loc(@$)); }
+              |  INT '<' CINTEGER '>' '(' CINTEGER ')'
+                                                 { $$ = std::make_shared<constant::Integer>($6, $3, true, loc(@$)); }
               | CBOOL                            { $$ = std::make_shared<constant::Bool>($1, loc(@$)); }
               | CDOUBLE                          { $$ = std::make_shared<constant::Double>($1, loc(@$)); }
               | CSTRING                          { $$ = std::make_shared<constant::String>($1, loc(@$)); }

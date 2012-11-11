@@ -103,6 +103,11 @@ void GrammarBuilder::visit(type::unit::item::field::Constant* c)
 {
     if ( ! _in_decl )
         return;
+
+    auto sym = "const:" + c->id()->name();
+    auto prod = std::make_shared<production::Constant>(sym, c->constant());
+    prod->pgMeta()->field = c->sharedPtr<type::unit::item::Field>();
+    setResult(prod);
 }
 
 void GrammarBuilder::visit(type::unit::item::field::Ctor* c)

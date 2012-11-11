@@ -141,6 +141,9 @@ protected:
     void visit(ctor::Bytes* b) override;
     void visit(ctor::RegExp* r) override;
 
+    void visit(expression::Ctor* c) override;
+    void visit(expression::Constant* c) override;
+
     void visit(production::Boolean* b) override;
     void visit(production::ChildGrammar* c) override;
     void visit(production::Counter* c) override;
@@ -338,6 +341,7 @@ private:
     
     std::list<shared_ptr<ParserState>> _states;
     shared_ptr<hilti::Expression> _last_parsed_value;
+    shared_ptr<production::Literal> _cur_literal;
     int _store_values;
 };
 

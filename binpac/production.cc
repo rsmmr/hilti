@@ -145,7 +145,6 @@ shared_ptr<Expression> production::Constant::literal() const
 
 Literal::pattern_list production::Constant::patterns() const
 {
-    assert(false);
     return {};
 }
 
@@ -173,7 +172,6 @@ shared_ptr<Expression> production::Ctor::literal() const
 
 Literal::pattern_list production::Ctor::patterns() const
 {
-    assert(_ctor->patterns().size());
     return _ctor->patterns();
 }
 

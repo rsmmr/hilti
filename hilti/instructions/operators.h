@@ -58,9 +58,7 @@ iBegin(operator_, Unequal, "unequal")
     iTarget(optype::boolean)
     iOp1(optype::any, true)
     iOp2(optype::any, true)
-    iValidate {
-        equalTypes(op1, op2);
-    }
+    iValidate {}
     iDoc(R"(
         Compares two values of the same type, returning true if they don't match. This operator
         is defined for all types that offer an ``equal`` operator.
