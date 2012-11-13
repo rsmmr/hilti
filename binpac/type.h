@@ -1064,6 +1064,10 @@ public:
     /// Returns true if no ID was passed to the constructor.
     bool anonymous() const;
 
+    /// Marks this field as an anonymos one (i.e., as if no ID has been
+    /// passed to the ctor). Primarily for internal use.
+    void setAnonymous();
+
     /// Returns the item's scope. The scope may define identifier's local to
     /// expressions and hooks associated with the item. This method will
     /// return null until the ScopeBuilder has run.

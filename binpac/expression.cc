@@ -191,6 +191,10 @@ shared_ptr<Type> expression::ParserState::type() const
     if ( _type )
         return _type;
 
+    // TODO: I believe we don't need the following code anymore now that we
+    // have the unit-scope-builder pass. We should now give the type to the
+    // parameter expressions there directly.
+
     assert(_kind == PARAMETER);
 
     auto utype = ast::tryCast<type::Unit>(_unit);

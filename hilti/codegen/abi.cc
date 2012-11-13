@@ -308,7 +308,7 @@ llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::V
 
     if ( cargs.return_in_mem ) {
         // Add initial parameter for return value.
-        agg_ret = cg()->llvmAddTmp("agg.sret", cargs.return_type, nullptr, true, 8);
+        agg_ret = cg()->llvmAddTmp("agg.sret", cargs.return_type, nullptr, false, 8);
         nargs.push_back(agg_ret);
     }
 

@@ -1,0 +1,3 @@
+<a=[<x=1, y=2571>, <x=1, y=3085>], b=2, c=3599>
+<a=[], b=2, c=3599>
+hilti: uncaught exception, BinPACHilti::ParseError with argument 'none of the expected look-ahead tokens found' (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/binpac.list.parse-lahead-int/parse-lahead-int.hb15396.tmp.hlt:885-886)

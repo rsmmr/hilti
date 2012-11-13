@@ -19,6 +19,12 @@ IDResolver::~IDResolver()
 {
 }
 
+bool IDResolver::run(shared_ptr<ast::NodeBase> module, bool report_unresolved)
+{
+    _report_unresolved = report_unresolved;
+    return run(module);
+}
+
 bool IDResolver::run(shared_ptr<ast::NodeBase> module)
 {
     return processAllPreOrder(module);
@@ -63,7 +69,8 @@ void IDResolver::visit(expression::ID* i)
     auto vals = scope->lookup(id->id());
 
     if ( ! vals.size() ) {
-        error(i, util::fmt("unknown ID %s", id->id()->pathAsString().c_str()));
+        if ( _report_unresolved )
+            error(i, util::fmt("unknown ID %s", id->id()->pathAsString().c_str()));
         return;
     }
 
@@ -105,7 +112,8 @@ void IDResolver::visit(type::Unknown* t)
     auto vals = body->scope()->lookup(id);
 
     if ( ! vals.size() ) {
-        error(t, util::fmt("unknown type ID %s", id->pathAsString().c_str()));
+        if ( _report_unresolved )
+            error(t, util::fmt("unknown type ID %s", id->pathAsString().c_str()));
         return;
     }
 
@@ -149,7 +157,8 @@ void IDResolver::visit(declaration::Hook* h)
     auto exprs = module->body()->scope()->lookup(std::make_shared<ID>(path));
 
     if ( ! exprs.size() ) {
-        error(h, "unknown id");
+        if ( _report_unresolved )
+            error(h, "unknown id");
         return;
     }
 
@@ -197,7 +206,8 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
     auto exprs = body->scope()->lookup(id);
 
     if ( ! exprs.size() ) {
-        error(f, util::fmt("unknown ID %s", id->pathAsString()));
+        if ( _report_unresolved )
+            error(f, util::fmt("unknown ID %s", id->pathAsString()));
         return;
     }
 
@@ -240,4 +250,7 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
 
     assert(nfield);
     f->replace(nfield);
+
+    if ( f->anonymous() )
+        nfield->setAnonymous();
 }

@@ -74,27 +74,6 @@ static shared_ptr<hilti::Type> _hiltiTypeMatchResult()
 class binpac::codegen::ParserState
 {
 public:
-    typedef std::list<shared_ptr<hilti::Expression>> parameter_list;
-
-    ParserState(shared_ptr<binpac::type::Unit> unit,
-           shared_ptr<hilti::Expression> self = nullptr,
-           shared_ptr<hilti::Expression> data = nullptr,
-           shared_ptr<hilti::Expression> cur = nullptr,
-           shared_ptr<hilti::Expression> lahead = nullptr,
-           shared_ptr<hilti::Expression> lahstart = nullptr,
-           shared_ptr<hilti::Expression> cookie = nullptr
-           );
-
-    shared_ptr<hilti::Expression> hiltiArguments() const;
-
-    shared_ptr<binpac::type::Unit> unit;
-    shared_ptr<hilti::Expression> self;
-    shared_ptr<hilti::Expression> data;
-    shared_ptr<hilti::Expression> cur;
-    shared_ptr<hilti::Expression> lahead;
-    shared_ptr<hilti::Expression> lahstart;
-    shared_ptr<hilti::Expression> cookie;
-
     // The mode onveys to the parsers of literals what the caller wants them
     // to do. This is needed to for doing look-ahead parsing, and hence not
     // relevant for fields that aren't literals.
@@ -103,14 +82,49 @@ public:
         DEFAULT,
 
         // Try to parse the field, but do not raise an error if it fails. If
-        // it works, move cur as normal; if it fails, leave cur untouched.
+        // it works, move cur as normal; if it fails, set cur to end.
         TRY,
 
         // We have parsed the field before as part of a look-ahead, and know
         // that it matches. Now we need to get actualy value for the iterator
-        // range (lahstart, cur).
+        // range (lahstart, cur); the visit methods must then return the
+        // parsed value.
         LAHEAD_REPARSE,
-    } mode;
+    };
+
+    typedef std::list<shared_ptr<hilti::Expression>> parameter_list;
+
+    ParserState(shared_ptr<binpac::type::Unit> unit,
+           shared_ptr<hilti::Expression> self = nullptr,
+           shared_ptr<hilti::Expression> data = nullptr,
+           shared_ptr<hilti::Expression> cur = nullptr,
+           shared_ptr<hilti::Expression> lahead = nullptr,
+           shared_ptr<hilti::Expression> lahstart = nullptr,
+           shared_ptr<hilti::Expression> cookie = nullptr,
+           LiteralMode mode = DEFAULT
+           );
+
+    shared_ptr<hilti::Expression> hiltiArguments() const;
+
+    shared_ptr<ParserState> clone() const {
+        return std::make_shared<ParserState>(unit,
+                                             self,
+                                             data,
+                                             cur,
+                                             lahead,
+                                             lahstart,
+                                             cookie,
+                                             mode);
+    }
+
+    shared_ptr<binpac::type::Unit> unit;
+    shared_ptr<hilti::Expression> self;
+    shared_ptr<hilti::Expression> data;
+    shared_ptr<hilti::Expression> cur;
+    shared_ptr<hilti::Expression> lahead;
+    shared_ptr<hilti::Expression> lahstart;
+    shared_ptr<hilti::Expression> cookie;
+    LiteralMode mode;
 };
 
 ParserState::ParserState(shared_ptr<binpac::type::Unit> arg_unit,
@@ -119,7 +133,8 @@ ParserState::ParserState(shared_ptr<binpac::type::Unit> arg_unit,
                shared_ptr<hilti::Expression> arg_cur,
                shared_ptr<hilti::Expression> arg_lahead,
                shared_ptr<hilti::Expression> arg_lahstart,
-               shared_ptr<hilti::Expression> arg_cookie
+               shared_ptr<hilti::Expression> arg_cookie,
+               LiteralMode arg_mode
                )
 {
     unit = arg_unit;
@@ -129,7 +144,7 @@ ParserState::ParserState(shared_ptr<binpac::type::Unit> arg_unit,
     lahead = (arg_lahead ? arg_lahead : hilti::builder::id::create("__lahead"));
     lahstart = (arg_lahstart ? arg_lahstart : hilti::builder::id::create("__lahstart"));
     cookie = (arg_cookie ? arg_cookie : hilti::builder::id::create("__cookie"));
-    mode = DEFAULT;
+    mode = arg_mode;
 }
 
 shared_ptr<hilti::Expression> ParserState::hiltiArguments() const
@@ -148,6 +163,51 @@ ParserBuilder::~ParserBuilder()
 }
 
 bool ParserBuilder::parse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result, shared_ptr<type::unit::item::Field> f)
+{
+    auto prod = ast::tryCast<Production>(node);
+
+    if ( ! prod || prod->atomic() )
+        return _hiltiParse(node, result, f);
+
+    // We wrap productions into their own functions to handle cycles
+    // correctly.
+
+    auto name = util::fmt("__parse_%s_%s", state()->unit->id()->name(), prod->symbol());
+    name = util::strreplace(name, ":", "_");
+
+    auto func = cg()->moduleBuilder()->lookupNode("parse-func", name);
+
+    if ( ! func ) {
+        // Don't have the function yet, create it.
+        auto nfunc = _newParseFunction(name, state()->unit);
+        cg()->moduleBuilder()->cacheNode("parse-func", name, nfunc);
+
+        if ( ! _hiltiParse(node, result, f) )
+            return false;
+
+        hilti::builder::tuple::element_list elems = { state()->cur, state()->lahead, state()->lahstart };
+        cg()->builder()->addInstruction(hilti::instruction::flow::ReturnResult, hilti::builder::tuple::create(elems));
+
+        popState();
+
+        cg()->moduleBuilder()->popFunction();
+
+        func = nfunc;
+    }
+
+    // Call the function.
+    auto efunc = ast::checkedCast<hilti::Expression>(func);
+
+    auto presult = cg()->builder()->addTmp("presult", _hiltiTypeParseResult());
+    cg()->builder()->addInstruction(presult, hilti::instruction::flow::CallResult, efunc, state()->hiltiArguments());
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::tuple::Index, presult, hilti::builder::integer::create(0));
+    cg()->builder()->addInstruction(state()->lahead, hilti::instruction::tuple::Index, presult, hilti::builder::integer::create(1));
+    cg()->builder()->addInstruction(state()->lahstart, hilti::instruction::tuple::Index, presult, hilti::builder::integer::create(2));
+
+    return true;
+}
+
+bool ParserBuilder::_hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result, shared_ptr<type::unit::item::Field> f)
 {
     bool success = false;
     shared_ptr<type::unit::item::Field> field;
@@ -524,7 +584,7 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiCreateParseFunction(shared_ptr
 
     _last_parsed_value = nullptr;
     _store_values = 1;
-    bool success = parse(grammar->root());
+    bool success = _hiltiParse(grammar->root(), nullptr, nullptr);
     assert(success);
 
     hilti::builder::tuple::element_list elems = { state()->cur, state()->lahead, state()->lahstart };
@@ -838,11 +898,12 @@ void ParserBuilder::_startingProduction(shared_ptr<Production> p, shared_ptr<typ
 
     if ( cg()->debugLevel() ) {
         _hiltiDebugVerbose(util::fmt("parsing %s", util::strtrim(p->render().c_str())));
-        _hiltiDebugShowToken("look-ahead", state()->lahead);
         _hiltiDebugShowInput("input", state()->cur);
+        _hiltiDebugShowToken("look-ahead", state()->lahead);
+        _hiltiDebugShowInput("look-ahead-start", state()->lahstart);
     }
 
-    if ( ! field || ! storingValues() )
+    if ( ! (field && storingValues()) )
         return;
 
     // Initalize the struct field with the HILTI default value if not already
@@ -876,35 +937,46 @@ void ParserBuilder::_finishedProduction(shared_ptr<Production> p)
     cg()->builder()->addComment("");
 }
 
-void ParserBuilder::_newValueForField(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value)
+void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value)
 {
-    auto name = field->id()->name();
+    if ( field ) {
 
-    if ( value )
-        value = _hiltiProcessFieldValue(field, value);
+        auto name = field->id()->name();
 
-    if ( cg()->debugLevel() > 0 && ! ast::isA<type::Unit>(field->type()))
-        cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", name), value);
+        if ( value )
+            value = _hiltiProcessFieldValue(field, value);
 
-    if ( value ) {
-        if ( storingValues() ) {
-            cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self,
-                                            hilti::builder::string::create(name), value);
+        if ( value ) {
+            if ( storingValues() ) {
+                cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self,
+                                                hilti::builder::string::create(name), value);
+            }
         }
+
+        else {
+            auto ftype = itemType(field);
+            value = cg()->moduleBuilder()->addTmp("field-val", cg()->hiltiType(ftype));
+            cg()->builder()->addInstruction(value, hilti::instruction::struct_::Get, state()->self,
+                                            hilti::builder::string::create(name));
+        }
+
+        if ( cg()->debugLevel() > 0 && ! ast::isA<type::Unit>(field->type()))
+            cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", name), value);
     }
 
-    else {
-        auto ftype = itemType(field);
-        value = cg()->moduleBuilder()->addTmp("field-val", cg()->hiltiType(ftype));
-        cg()->builder()->addInstruction(value, hilti::instruction::struct_::Get, state()->self,
-                                        hilti::builder::string::create(name));
+    if ( p && p->pgMeta()->for_each ) {
+        auto stop = _hiltiRunHook(_hookForItem(state()->unit, p->pgMeta()->for_each, true, true), true, value);
+        if ( ! stop )
+            stop = _hiltiRunHook(_hookForItem(state()->unit, p->pgMeta()->for_each, true, false), true, value);
+
+        // FIXME: We ignore stop here. Can we pay attention to that here?
     }
 
-    _hiltiSaveInputPostion();
-
-    hiltiRunFieldHooks(field);
-
-    _hiltiUpdateInputPostion();
+    if ( field ) {
+        _hiltiSaveInputPostion();
+        hiltiRunFieldHooks(field);
+        _hiltiUpdateInputPostion();
+    }
 
     _last_parsed_value = value;
 }
@@ -941,7 +1013,7 @@ void ParserBuilder::_hiltiDebugShowToken(const string& tag, shared_ptr<hilti::Ex
     if ( cg()->debugLevel() == 0 )
         return;
 
-    cg()->builder()->addDebugMsg("binpac-verbose", "- %s is %s", hilti::builder::string::create(tag), token);
+    cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is %s", hilti::builder::string::create(tag), token);
 }
 
 void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur)
@@ -978,7 +1050,7 @@ void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Ex
 
     cg()->builder()->addInstruction(frozen, hilti::instruction::bytes::IsFrozenIterBytes, cur);
 
-    cg()->builder()->addDebugMsg("binpac-verbose", "- %s is |%s...| (lit-mode: %s; frozen: %s)",
+    cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is |%s...| (lit-mode: %s; frozen: %s)",
                                  hilti::builder::string::create(tag), next, mode, frozen);
 }
 
@@ -1125,7 +1197,206 @@ shared_ptr<binpac::ID> ParserBuilder::_hookForUnit(shared_ptr<type::Unit> unit, 
     return std::make_shared<binpac::ID>(id);
 }
 
-shared_ptr<hilti::Expression> ParserBuilder::_hiltiMatchTokenInit(const string& name, const std::list<shared_ptr<production::Literal>>& literals)
+void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod, const std::list<shared_ptr<production::Terminal>>& terms, bool must_find)
+{
+    assert(terms.size());
+
+    std::list<shared_ptr<production::Terminal>> regexps;
+    std::list<shared_ptr<production::Terminal>> other;
+
+    string lahs;
+    string id_name;
+
+    bool first = true;
+
+    for ( auto l : terms ) {
+        if ( ast::isA<type::RegExp>(l->type()) )
+            regexps.push_back(l);
+        else
+            other.push_back(l);
+
+        if ( ! first )
+            lahs += ", ";
+
+        lahs += util::fmt("%s (id %d)", util::strtrim(l->renderTerminal()), l->tokenID());
+        id_name += util::fmt("%s_%d", id_name, l->tokenID());
+
+        first = false;
+    }
+
+    cg()->builder()->addComment(util::fmt("Searching for look-ahead tokenss: %s", lahs));
+    _hiltiDebugVerbose(util::fmt("fetching look-ahead out of tokens {%s}", lahs));
+
+    auto done = cg()->moduleBuilder()->newBuilder("get-lah-done");
+    auto loop = cg()->moduleBuilder()->newBuilder("get-lah-loop");
+
+    auto cur = state()->cur;
+    auto token = cg()->moduleBuilder()->addTmp("token", _hiltiTypeLookAhead(), nullptr, true);
+    auto value = cg()->moduleBuilder()->addTmp("data", _hiltiTypeBytes());
+    auto ncur = cg()->moduleBuilder()->addTmp("ncur", _hiltiTypeIteratorBytes());
+
+    cg()->builder()->addInstruction(ncur, hilti::instruction::operator_::Assign, cur);
+
+    // We handle regexps literals jointly first by matching them all in
+    // parallel.
+
+    shared_ptr<hilti::Expression> mstate = nullptr;
+
+    if ( regexps.size() )
+        mstate = _hiltiMatchTokenInit(id_name, regexps);
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, loop->block());
+
+    cg()->moduleBuilder()->pushBuilder(loop);
+
+    shared_ptr<hilti::builder::BlockBuilder> re_done = nullptr;
+
+    if ( regexps.size() ) {
+        re_done = cg()->moduleBuilder()->newBuilder("lahead-regexp-done");
+
+        auto mresult = _hiltiMatchTokenAdvance(mstate);
+        cg()->builder()->addInstruction(token, hilti::instruction::tuple::Index, mresult, hilti::builder::integer::create(0));
+
+        auto found = cg()->moduleBuilder()->pushBuilder("lahead-regexp-found");
+        cg()->builder()->addInstruction(ncur, hilti::instruction::tuple::Index, mresult, hilti::builder::integer::create(1));
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, re_done->block());
+        cg()->moduleBuilder()->popBuilder(found);
+
+        hilti::builder::BlockBuilder::case_list cases;
+
+        for ( auto r : regexps ) {
+            auto tid = hilti::builder::integer::create(r->tokenID());
+            cases.push_back(std::make_pair(tid, found));
+        }
+
+        auto default_ = _hiltiAddMatchTokenErrorCases(prod, &cases, loop, regexps, re_done);
+        cg()->builder()->addSwitch(token, default_, cases);
+    }
+
+    if ( re_done )
+        cg()->moduleBuilder()->pushBuilder(re_done);
+
+    // Now iterate through the non-regexps.
+
+    shared_ptr<hilti::Expression> try_cur = nullptr;
+    shared_ptr<hilti::Expression> eod = nullptr;
+
+    if ( other.size() ) {
+        try_cur = cg()->moduleBuilder()->addTmp("try_cur", _hiltiTypeIteratorBytes());
+        eod = cg()->builder()->addTmp("eod", _hiltiTypeIteratorBytes());
+        cg()->builder()->addInstruction(eod, hilti::instruction::iterBytes::End, state()->data);
+    }
+
+    for ( auto t : other ) {
+
+        auto l = ast::tryCast<production::Literal>(t);
+
+        if ( ! l )
+            continue;
+
+        cg()->builder()->addComment(util::fmt("Looking for non-regexp token %s ...", l->render()));
+
+        _cur_literal = l;
+
+        cg()->builder()->addInstruction(try_cur, hilti::instruction::operator_::Assign, cur);
+
+        pushState(state()->clone());
+
+        state()->mode = ParserState::TRY;
+        state()->cur = try_cur;
+
+        auto field = l->pgMeta()->field;
+        assert(field);
+
+        _hiltiDebugShowInput(util::fmt("U %s try_cur", l->render()), try_cur);
+        _hiltiDebugShowInput(util::fmt("U %s ncur", l->render()), ncur);
+        shared_ptr<hilti::Expression> value;
+        processOne(l->literal(), &value, field);
+
+        // If the cur isn't set to end, we have a match.
+        auto cond = cg()->moduleBuilder()->addTmp("cond", hilti::builder::boolean::type());
+        cg()->builder()->addInstruction(cond, hilti::instruction::operator_::Unequal, try_cur, eod);
+        _hiltiDebugShowInput(util::fmt("X %s try_cur", l->render()), try_cur);
+        auto branches = cg()->builder()->addIf(cond);
+        auto found = std::get<0>(branches);
+        auto done = std::get<1>(branches);
+
+        //
+
+        cg()->moduleBuilder()->pushBuilder(found);
+
+        // We take the match if it's longer than what we already have.
+        auto old_len = cg()->moduleBuilder()->addTmp("old_len", hilti::builder::integer::type(64));
+        auto new_len = cg()->moduleBuilder()->addTmp("new_len", hilti::builder::integer::type(64));
+
+        cg()->builder()->addInstruction(old_len, hilti::instruction::bytes::Diff, cur, ncur);
+        cg()->builder()->addInstruction(new_len, hilti::instruction::bytes::Diff, cur, try_cur);
+
+        // If same length, it's ambigious and we abort parsing.
+        cg()->builder()->addInstruction(cond, hilti::instruction::integer::Equal, new_len, old_len);
+
+        auto blocks = cg()->builder()->addIf(cond);
+        auto ambigious = std::get<0>(blocks);
+        auto non_ambigious = std::get<1>(blocks);
+
+        cg()->moduleBuilder()->pushBuilder(ambigious);
+        _hiltiParseError("ambigious look-ahead tokens");
+        cg()->moduleBuilder()->popBuilder(ambigious);
+
+        cg()->moduleBuilder()->pushBuilder(non_ambigious);
+
+        cg()->builder()->addInstruction(cond, hilti::instruction::integer::Ugt, new_len, old_len);
+        auto new_token = cg()->moduleBuilder()->newBuilder("new_token");
+
+        cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, cond, new_token->block(), done->block());
+
+        cg()->moduleBuilder()->pushBuilder(new_token);
+        auto token_id = hilti::builder::integer::create(l->tokenID());
+        cg()->builder()->addInstruction(token, hilti::instruction::operator_::Assign, token_id);
+        cg()->builder()->addInstruction(ncur, hilti::instruction::operator_::Assign, try_cur);
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+        cg()->moduleBuilder()->popBuilder(new_token);
+
+        cg()->moduleBuilder()->popBuilder(found);
+
+        //
+
+        cg()->moduleBuilder()->pushBuilder(done); // Leave on stack.
+
+        popState();
+
+        _cur_literal = nullptr;
+    }
+
+    // Done checking all the possible token, see if we found the right one.
+
+    auto found_lah = cg()->moduleBuilder()->pushBuilder("get-lah-found");
+    cg()->builder()->addInstruction(state()->lahead, hilti::instruction::operator_::Assign, token);
+    cg()->builder()->addInstruction(state()->lahstart, hilti::instruction::operator_::Assign, state()->cur);
+    cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Assign, ncur);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    cg()->moduleBuilder()->popBuilder(found_lah);
+
+    hilti::builder::BlockBuilder::case_list cases;
+
+    for ( auto l : terms ) {
+        auto tid = hilti::builder::integer::create(l->tokenID());
+        cases.push_back(std::make_pair(tid, found_lah));
+    }
+
+    auto default_ = _hiltiAddMatchTokenErrorCases(prod, &cases, nullptr, terms, (must_find ? nullptr : done));
+    cg()->builder()->addSwitch(token, default_, cases);
+
+    cg()->moduleBuilder()->popBuilder(loop);
+
+    cg()->moduleBuilder()->pushBuilder(done);
+
+    if ( cg()->debugLevel() > 0 )
+        cg()->builder()->addDebugMsg("binpac-verbose", "- new look-ahead is %s", state()->lahead);
+
+}
+
+shared_ptr<hilti::Expression> ParserBuilder::_hiltiMatchTokenInit(const string& name, const std::list<shared_ptr<production::Terminal>>& terms)
 {
     auto mstate = cg()->builder()->addTmp("match", _hiltiTypeMatchTokenState());
 
@@ -1134,7 +1405,10 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiMatchTokenInit(const string& 
     if ( ! glob ) {
         std::list<std::pair<string, string>> tokens;
 
-        for ( auto l : literals ) {
+        for ( auto t : terms ) {
+            // FIXME: Really shouldn't have to do this cast here. Should we
+            // pass in a list of Literals instead?
+            auto l = ast::checkedCast<production::Literal>(t);
             for ( auto p : l->patterns() )
                 tokens.push_back(std::make_pair(util::fmt("%s{#%d}", p.first, l->tokenID()), ""));
         }
@@ -1166,20 +1440,39 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiMatchTokenAdvance(shared_ptr<
 shared_ptr<hilti::builder::BlockBuilder> ParserBuilder::_hiltiAddMatchTokenErrorCases(shared_ptr<Production> prod,
                                                                              hilti::builder::BlockBuilder::case_list* cases,
                                                                              shared_ptr<hilti::builder::BlockBuilder> repeat,
-                                                                             std::list<shared_ptr<production::Literal>> expected
-                                                                            )
+                                                                             std::list<shared_ptr<production::Terminal>> expected,
+                                                                             shared_ptr<hilti::builder::BlockBuilder> cont
+                                                                             )
 {
+    shared_ptr<hilti::builder::BlockBuilder> b = nullptr;
+
     // Not found.
-    auto b = cg()->moduleBuilder()->cacheBlockBuilder("not-found", [&] () {
-        _hiltiParseError("expected symbol(s) not found");
-    });
+    if ( ! cont ) {
+        b = cg()->moduleBuilder()->cacheBlockBuilder("not-found", [&] () {
+            _hiltiParseError("expected symbol(s) not found");
+        });
+    }
+
+    else {
+        b = cg()->moduleBuilder()->pushBuilder("not-found");
+        cg()->builder()->addInstruction(hilti::instruction::flow::Jump, cont->block());
+        cg()->moduleBuilder()->popBuilder(b);
+    }
 
     cases->push_back(std::make_pair(_hiltiLookAheadNone(), b));
 
     // Insufficient input.
-    b = cg()->moduleBuilder()->cacheBlockBuilder("insufficient-input", [&] () {
-        _hiltiYieldAndTryAgain(prod, b, repeat);
-    });
+    if ( repeat ) {
+        b = cg()->moduleBuilder()->cacheBlockBuilder("insufficient-input", [&] () {
+            _hiltiYieldAndTryAgain(prod, repeat);
+        });
+    }
+
+    else {
+        b = cg()->moduleBuilder()->cacheBlockBuilder("insufficient-input-unexpected", [&] () {
+            cg()->builder()->addInternalError("unexpected yield");
+        });
+    }
 
     cases->push_back(std::make_pair(hilti::builder::integer::create(-1), b));
 
@@ -1197,7 +1490,7 @@ void ParserBuilder::_hiltiParseError(const string& msg)
     cg()->builder()->addThrow("BinPACHilti::ParseError", hilti::builder::string::create(msg));
 }
 
-void ParserBuilder::_hiltiYieldAndTryAgain(shared_ptr<Production> prod, shared_ptr<hilti::builder::BlockBuilder> builder, shared_ptr<hilti::builder::BlockBuilder> cont)
+void ParserBuilder::_hiltiYieldAndTryAgain(shared_ptr<Production> prod, shared_ptr<hilti::builder::BlockBuilder> cont)
 {
     if ( ! prod->eodOk() ) {
         _hiltiInsufficientInputHandler();
@@ -1253,9 +1546,11 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiUnpack(shared_ptr<Type> target
     cg()->builder()->addInstruction(blocked, hilti::instruction::operator_::Assign, hilti::builder::boolean::create(true));
     cg()->builder()->popCatch();
 
-    cg()->builder()->pushCatchAll();
-    cg()->builder()->addThrow("BinPACHilti::ParseError", hilti::builder::string::create("unpack failed"));
-    cg()->builder()->popCatchAll();
+    if ( state()->mode != ParserState::TRY ) {
+        cg()->builder()->pushCatchAll();
+        cg()->builder()->addThrow("BinPACHilti::ParseError", hilti::builder::string::create("unpack failed"));
+        cg()->builder()->popCatchAll();
+    }
 
     cg()->builder()->endTryCatch();
 
@@ -1648,27 +1943,35 @@ void ParserBuilder::visit(constant::Integer* i)
 
     cg()->builder()->addComment(util::fmt("Integer constant: %s", field->id()->name()));
 
+    if ( state()->mode == ParserState::LAHEAD_REPARSE ) {
+        auto value = cg()->hiltiExpression(std::make_shared<expression::Constant>(i->sharedPtr<constant::Integer>()));
+        setResult(value);
+        return;
+    }
+
     // We parse the field normally according to its type, and then compare
     // the value against the constant we expec.t
     shared_ptr<hilti::Expression> value;
     processOne(field->type(), &value, field);
 
-    if ( state()->mode != ParserState::LAHEAD_REPARSE ) {
+    auto expr = std::make_shared<expression::Constant>(i->sharedPtr<constant::Integer>());
+    auto mismatch = cg()->builder()->addTmp("mismatch", hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(mismatch, hilti::instruction::operator_::Unequal, value, cg()->hiltiExpression(expr));
 
-        auto expr = std::make_shared<expression::Constant>(i->sharedPtr<constant::Integer>());
-        auto mismatch = cg()->builder()->addTmp("mismatch", hilti::builder::boolean::type());
-        cg()->builder()->addInstruction(mismatch, hilti::instruction::operator_::Unequal, value, cg()->hiltiExpression(expr));
+    auto branches = cg()->builder()->addIf(mismatch);
+    auto error = std::get<0>(branches);
+    auto cont = std::get<1>(branches);
 
-        auto branches = cg()->builder()->addIf(mismatch);
-        auto error = std::get<0>(branches);
-        auto cont = std::get<1>(branches);
+    cg()->moduleBuilder()->pushBuilder(error);
 
-        cg()->moduleBuilder()->pushBuilder(error);
+    if ( state()->mode == ParserState::TRY )
+        cg()->builder()->addInstruction(state()->cur, hilti::instruction::iterBytes::End, state()->data);
+    else
         _hiltiParseError(util::fmt("integer constant expected (%s)", i->render()));
-        cg()->moduleBuilder()->popBuilder(error);
 
-        cg()->moduleBuilder()->pushBuilder(cont);
-    }
+    cg()->moduleBuilder()->popBuilder(error);
+
+    cg()->moduleBuilder()->pushBuilder(cont);
 
     setResult(value);
 }
@@ -1712,7 +2015,7 @@ void ParserBuilder::visit(ctor::RegExp* r)
 
     auto lit = _cur_literal;
 
-    cg()->builder()->addComment(util::fmt("RegExpt ctor: %s", field->id()->name()));
+    cg()->builder()->addComment(util::fmt("RegExp ctor: %s", field->id()->name()));
 
     auto done = cg()->moduleBuilder()->newBuilder("done-regexp");
     auto loop = cg()->moduleBuilder()->newBuilder("regexp-loop");
@@ -1720,7 +2023,7 @@ void ParserBuilder::visit(ctor::RegExp* r)
     auto token_id = hilti::builder::integer::create(lit->tokenID());
     auto name = util::fmt("__literal_%d", lit->tokenID());
 
-    auto symbol = cg()->moduleBuilder()->addTmp("token", hilti::builder::integer::type(32), nullptr, true);
+    auto symbol = cg()->moduleBuilder()->addTmp("token", _hiltiTypeLookAhead(), nullptr, true);
     auto value = cg()->moduleBuilder()->addTmp("data", _hiltiTypeBytes());
     auto ncur = cg()->moduleBuilder()->addTmp("ncur", _hiltiTypeIteratorBytes());
 
@@ -1737,7 +2040,6 @@ void ParserBuilder::visit(ctor::RegExp* r)
     auto found_lit = cg()->moduleBuilder()->pushBuilder("found-literal");
     cg()->builder()->addInstruction(value, hilti::instruction::bytes::Sub, state()->cur, ncur);
     cg()->builder()->addInstruction(state()->cur, hilti::instruction::operator_::Assign, ncur); // Move input position.
-                                    found_lit->addInstruction(hilti::instruction::flow::Jump, done->block());
     cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
     cg()->moduleBuilder()->popBuilder(found_lit);
 
@@ -1767,7 +2069,9 @@ void ParserBuilder::visit(production::ChildGrammar* c)
     auto field = c->pgMeta()->field;
     assert(field);
 
-    _startingProduction(c->sharedPtr<Production>(), field);
+    bool in_container = (c->container() != nullptr);
+
+    _startingProduction(c->sharedPtr<Production>(), (in_container ? nullptr : field));
 
     auto child = c->childType();
     auto subself = _allocateParseObject(child, false);
@@ -1786,7 +2090,11 @@ void ParserBuilder::visit(production::ChildGrammar* c)
     auto child_func = cg()->hiltiParseFunction(child);
 
     if ( cg()->debugLevel() > 0 ) {
-        _hiltiDebug(field->id()->name());
+        if ( ! field->anonymous() )
+            _hiltiDebug(field->id()->name());
+        else
+            _hiltiDebug(field->type()->render());
+
         cg()->builder()->debugPushIndent();
     }
 
@@ -1803,7 +2111,24 @@ void ParserBuilder::visit(production::ChildGrammar* c)
     cg()->builder()->addInstruction(state()->lahead, hilti::instruction::tuple::Index, child_result, hilti::builder::integer::create(1));
     cg()->builder()->addInstruction(state()->lahstart, hilti::instruction::tuple::Index, child_result, hilti::builder::integer::create(2));
 
-    _newValueForField(field, subself);
+    _newValueForField(c->sharedPtr<Production>(), (in_container ? nullptr : field), subself);
+
+    _finishedProduction(c->sharedPtr<Production>());
+}
+
+void ParserBuilder::visit(production::Enclosure* c)
+{
+    auto field = c->pgMeta()->field;
+    assert(field);
+
+    // We support enclosures only for containers currently.
+    assert(ast::isA<type::unit::item::field::Container>(field));
+
+    _startingProduction(c->sharedPtr<Production>(), field);
+
+    parse(c->child());
+
+    _newValueForField(c->sharedPtr<Production>(), field, nullptr);
     _finishedProduction(c->sharedPtr<Production>());
 }
 
@@ -1832,7 +2157,10 @@ void ParserBuilder::visit(production::Counter* c)
 
     // Run foreach hook.
     assert(_last_parsed_value);
-    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, false), true, _last_parsed_value);
+    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, true), true, _last_parsed_value);
+    if ( ! stop )
+        stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, false), true, _last_parsed_value);
+
     cg()->builder()->addInstruction(i, hilti::instruction::integer::Decr, i);
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, cont->block(), loop->block());
 
@@ -1840,7 +2168,7 @@ void ParserBuilder::visit(production::Counter* c)
 
     cg()->moduleBuilder()->pushBuilder(cont);
 
-    _newValueForField(field, nullptr);
+    _newValueForField(c->sharedPtr<Production>(), field, nullptr);
     _finishedProduction(c->sharedPtr<Production>());
 
     // Leave builder on stack.
@@ -1857,9 +2185,10 @@ void ParserBuilder::visit(production::Literal* l)
 
     _startingProduction(l->sharedPtr<Production>(), field);
 
-    cg()->builder()->addComment(util::fmt("Literal: %s", field->id()->name()));
+    cg()->builder()->addComment(util::fmt("Literal: %s (id %d)", field->id()->name(), l->tokenID()));
 
-    auto literal = cg()->moduleBuilder()->addTmp("literal", cg()->hiltiType(l->type()));
+    auto ltype = ast::type::checkedTrait<type::trait::Parseable>(l->type())->fieldType();
+    auto literal = cg()->moduleBuilder()->addTmp("literal", cg()->hiltiType(ltype));
 
     // See if we have a look-ahead symbol.
     auto cond = cg()->builder()->addTmp("cond", hilti::builder::boolean::type(), nullptr, true);
@@ -1895,6 +2224,8 @@ void ParserBuilder::visit(production::Literal* l)
 
     auto consume_lahead = cg()->moduleBuilder()->pushBuilder("consume-lahead");
 
+    _hiltiDebugVerbose("consuming look-ahead ...");
+
     // Still need to get the value for the look-ahead symbol.
     ParserState::LiteralMode old_mode = state()->mode;
     state()->mode = ParserState::LAHEAD_REPARSE;
@@ -1921,7 +2252,7 @@ void ParserBuilder::visit(production::Literal* l)
 
     cg()->moduleBuilder()->pushBuilder(done);
 
-    _newValueForField(field, literal);
+    _newValueForField(l->sharedPtr<Production>(), field, literal);
     _finishedProduction(l->sharedPtr<Production>());
 
     // Leave builder on stack.
@@ -1930,6 +2261,98 @@ void ParserBuilder::visit(production::Literal* l)
 void ParserBuilder::visit(production::LookAhead* l)
 {
     _startingProduction(l->sharedPtr<Production>(), nullptr);
+
+    auto done = cg()->moduleBuilder()->newBuilder("lah-done");
+
+    // If we don't have a look-ahead symbol pending, get one.
+
+    auto need_lah = cg()->builder()->addTmp("need_lah", hilti::builder::boolean::type());
+    cg()->builder()->addInstruction(need_lah, hilti::instruction::operator_::Equal, state()->lahead, _hiltiLookAheadNone());
+
+    auto branches = cg()->builder()->addIf(need_lah);
+    auto no_lahead = std::get<0>(branches);
+    auto have_lahead = std::get<1>(branches);
+
+    cg()->moduleBuilder()->pushBuilder(no_lahead);
+
+    std::list<shared_ptr<production::Terminal>> terms;
+
+    for ( auto l : l->lookAheads().first )
+        terms.push_back(l);
+
+    for ( auto l : l->lookAheads().second )
+        terms.push_back(l);
+
+    auto defaults = l->defaultAlternatives();
+    assert(! (defaults.first && defaults.second));
+
+    bool must_find = (defaults.first && defaults.second);
+    _hiltiGetLookAhead(l->sharedPtr<production::LookAhead>(), terms, must_find);
+
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, have_lahead->block());
+    cg()->moduleBuilder()->popBuilder(no_lahead);
+
+    // Block when expected symbol for alternative 1 is found.
+    auto found_alt1 = cg()->moduleBuilder()->pushBuilder("found-alt1-lah");
+    cg()->builder()->addComment("Look-ahead alternative 1");
+    parse(l->alternatives().first);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    cg()->moduleBuilder()->popBuilder(found_alt1);
+
+    // Block when expected symbol for alternative 2 is found.
+    auto found_alt2 = cg()->moduleBuilder()->pushBuilder("found-alt2-lah");
+    cg()->builder()->addComment("Look-ahead alternative 2");
+    parse(l->alternatives().second);
+    cg()->builder()->addInstruction(hilti::instruction::flow::Jump, done->block());
+    cg()->moduleBuilder()->popBuilder(found_alt2);
+
+    // Block when an unexpected look-ahead symbol is found, which shoudln't
+    // happen at this point anymore and thus triggers an internal error.
+    auto wrong_symbol = cg()->moduleBuilder()->pushBuilder("wrong-lah");
+    cg()->builder()->addInternalError("unexpected lahead symbol set");
+    cg()->moduleBuilder()->popBuilder(wrong_symbol);
+
+    // Now that we for sure have a lahead symbol pending, make sure it's one
+    // of those we expect.
+
+    cg()->moduleBuilder()->pushBuilder(have_lahead);
+
+    hilti::builder::BlockBuilder::case_list cases;
+
+    for ( auto l : l->lookAheads().first ) {
+        auto tid = hilti::builder::integer::create(l->tokenID());
+        cases.push_back(std::make_pair(tid, found_alt1));
+    }
+
+    for ( auto l : l->lookAheads().second ) {
+        auto tid = hilti::builder::integer::create(l->tokenID());
+        cases.push_back(std::make_pair(tid, found_alt2));
+    }
+
+    // See if one of the two is the default alternative to take when no
+    // look-ahead symbol is found.
+
+    if ( defaults.first )
+        cases.push_back(std::make_pair(_hiltiLookAheadNone(), found_alt1));
+
+    else if ( defaults.second )
+        cases.push_back(std::make_pair(_hiltiLookAheadNone(), found_alt2));
+
+    else {
+        auto not_found = cg()->moduleBuilder()->pushBuilder("lahead-not-found");
+        _hiltiParseError("none of the expected look-ahead tokens found");
+        cg()->moduleBuilder()->popBuilder(not_found);
+
+        cases.push_back(std::make_pair(_hiltiLookAheadNone(), not_found));
+    }
+
+    cg()->builder()->addSwitch(state()->lahead, wrong_symbol, cases);
+
+    cg()->moduleBuilder()->popBuilder(have_lahead);
+
+    cg()->moduleBuilder()->pushBuilder(done);
+
+    // Leave on stack.
 
     _finishedProduction(l->sharedPtr<Production>());
 }
@@ -2004,7 +2427,7 @@ void ParserBuilder::visit(production::Variable* v)
     shared_ptr<hilti::Expression> value;
     parse(v->type(), &value, field);
 
-    _newValueForField(field, value);
+    _newValueForField(v->sharedPtr<Production>(), field, value);
     _finishedProduction(v->sharedPtr<Production>());
 }
 
@@ -2041,7 +2464,11 @@ void ParserBuilder::visit(production::Until* w)
 
     cg()->moduleBuilder()->pushBuilder(cont);
     assert(_last_parsed_value);
-    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, false), true, _last_parsed_value);
+
+    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, true), true, _last_parsed_value);
+    if ( ! stop )
+        stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, false), true, _last_parsed_value);
+
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, done->block(), loop->block());
     cg()->moduleBuilder()->popBuilder(cont);
 
@@ -2049,7 +2476,7 @@ void ParserBuilder::visit(production::Until* w)
 
     cg()->moduleBuilder()->pushBuilder(done);
 
-    _newValueForField(field, nullptr);
+    _newValueForField(w->sharedPtr<Production>(), field, nullptr);
     _finishedProduction(w->sharedPtr<Production>());
 
     // Leave builder on stack.
@@ -2073,13 +2500,17 @@ void ParserBuilder::visit(production::Loop* l)
 
     // Run foreach hook.
     assert(_last_parsed_value);
-    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, false), true, _last_parsed_value);
+
+    auto stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, true), true, _last_parsed_value);
+    if ( ! stop )
+        stop = _hiltiRunHook(_hookForItem(state()->unit, field, true, false), true, _last_parsed_value);
+
     cg()->builder()->addInstruction(hilti::instruction::flow::IfElse, stop, done->block(), loop->block());
     cg()->moduleBuilder()->popBuilder(loop);
 
     cg()->moduleBuilder()->pushBuilder(done);
 
-    _newValueForField(field, nullptr);
+    _newValueForField(l->sharedPtr<Production>(), field, nullptr);
     _finishedProduction(l->sharedPtr<Production>());
 
     // Leave builder on stack.

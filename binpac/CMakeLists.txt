@@ -126,6 +126,7 @@ add_library (binpacxx SHARED
     passes/printer.cc
     passes/scope-builder.cc
     passes/scope-printer.cc
+    passes/unit-scope-builder.cc
     passes/validator.cc
 
     ${autogen}/operators/operators-register.cc

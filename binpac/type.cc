@@ -895,6 +895,11 @@ bool unit::Item::anonymous() const
     return _anonymous;
 }
 
+void unit::Item::setAnonymous()
+{
+    _anonymous = true;
+}
+
 shared_ptr<ID> unit::Item::id() const
 {
     return _id;
@@ -1310,6 +1315,14 @@ static void _flatten(shared_ptr<type::unit::Item> i, unit_item_list* dst)
 
         return;
     }
+
+#if 0
+    // Same for containers.
+    auto container = ast::tryCast<type::unit::item::field::Container>(i);
+
+    if ( container )
+        _flatten(container->field(), dst);
+#endif        
 
     dst->push_back(i);
 }

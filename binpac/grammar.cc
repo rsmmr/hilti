@@ -4,6 +4,7 @@
 #include <util/util.h>
 
 #include "grammar.h"
+#include "expression.h"
 
 using namespace binpac;
 
@@ -61,6 +62,9 @@ string Grammar::check() const
 {
     string msg;
 
+    for ( auto p : _lah_errors )
+        msg += util::fmt("%s: look-ahead cannot depend on non-terminal\n", _productionLocation(p).c_str());
+
     for ( auto p : _nterms ) {
         auto lap = std::dynamic_pointer_cast<production::LookAhead>(p);
 
@@ -72,10 +76,17 @@ string Grammar::check() const
         std::set<string> syms1, syms2;
 
         for ( auto p : laheads.first )
-            syms1.insert(p->symbol());
+            syms1.insert(util::fmt("%s (%s)", p->renderTerminal(), p->type()->render()));
 
         for ( auto p : laheads.second )
-            syms2.insert(p->symbol());
+            syms2.insert(util::fmt("%s (%s)", p->renderTerminal(), p->type()->render()));
+
+        auto defaults = lap->defaultAlternatives();
+
+        if ( defaults.first && defaults.second ) {
+            msg += util::fmt("%s: no look-ahead token for either alternative\n", _productionLocation(p).c_str());
+            break;
+        }
 
         auto isect = util::set_intersection(syms1, syms2);
 
@@ -83,8 +94,8 @@ string Grammar::check() const
             msg += util::fmt("%s is ambigious for look-ahead symbol(s) { %s }\n", _productionLocation(lap).c_str(), util::strjoin(isect, ", ").c_str());
 
         for ( auto q : util::set_union(laheads.first, laheads.second) ) {
-            if ( std::dynamic_pointer_cast<production::Variable>(q) )
-                msg += util::fmt("%s: look-ahead cannot depend on variable\n", _productionLocation(p).c_str());
+            if ( ! std::dynamic_pointer_cast<production::Terminal>(q) )
+                msg += util::fmt("%s: look-ahead cannot depend on non-terminal\n", _productionLocation(p).c_str());
                 break;
         }
     }
@@ -328,8 +339,9 @@ void Grammar::_computeTables()
                         changed = _add(&_follow, rhs, _follow[sym], changed);
 
                     for ( auto j = next; j != last; ++j ) {
-                        if ( _isNullable(next, j) )
-                            changed = _add(&_follow, rhs, _first[(*j)->symbol()], changed);
+                        if ( _isNullable(next, j) ) {
+                            changed = _add(&_follow, rhs, _getFirst(*j), changed);
+                        }
                     }
                 }
             }
@@ -362,7 +374,6 @@ void Grammar::_computeTables()
                 laheads[i] = util::set_union(laheads[i], { term });
 
             if ( _isNullable(rhs.begin(), rhs.end()) ) {
-
                 for ( auto term : _follow[sym] )
                     laheads[i] = util::set_union(laheads[i], { term });
             }
@@ -372,12 +383,18 @@ void Grammar::_computeTables()
         production::LookAhead::look_aheads v0;
         production::LookAhead::look_aheads v1;
 
+        std::set<string> lahs;
+
         for ( auto i = 0; i < 2; ++i ) {
             for ( auto s : laheads[i] ) {
                 auto p = _prods.find(s);
                 assert(p != _prods.end());
                 auto t = std::dynamic_pointer_cast<production::Terminal>(p->second);
-                assert(t);
+
+                if ( ! t ) {
+                    _lah_errors.push_back(p->second);
+                    break;
+                }
 
                 if ( i == 0 )
                     v0.insert(t);

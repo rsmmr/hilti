@@ -99,6 +99,8 @@ private:
     production_map _prods;
     nterm_list _nterms;
 
+    production_list _lah_errors;
+
     std::map<string, bool> _nullable;
     std::map<string, symbol_set> _first;
     std::map<string, symbol_set> _follow;

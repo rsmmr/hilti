@@ -1,11 +1,11 @@
 === Grammar my-grammar
         Epsilon: <eps> -> ()
- (*)  LookAhead: All -> {HdrKey}: List2 | {b"[\\r\\n]"}: nl
+ (*)  LookAhead: All -> {}: List2 | {b"[\\r\\n]"}: nl
        Variable: HdrKey -> (type bytes)
        Variable: HdrVal -> (type bytes)
        Sequence: Header -> HdrKey ws colon ws HdrVal nl
        Sequence: List1 -> Header List2
-      LookAhead: List2 -> {HdrKey}: List1 | {}: <eps>
+      LookAhead: List2 -> {}: List1 | {}: <eps>
            Ctor: colon -> b":" (bytes)
            Ctor: nl  -> b"[\\r\\n]" (bytes)
            Ctor: ws  -> b"[ \\t]*" (bytes)
@@ -28,6 +28,6 @@
      List1 = {  }
      List2 = {  }
 
-Grammar error: grammar my-grammar, production All: look-ahead cannot depend on variable
-grammar my-grammar, production List2: look-ahead cannot depend on variable
+Grammar error: grammar my-grammar, production HdrKey: look-ahead cannot depend on non-literal
+grammar my-grammar, production HdrKey: look-ahead cannot depend on non-literal
 

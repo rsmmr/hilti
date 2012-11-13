@@ -56,6 +56,18 @@ public:
     /// include in error message and debugging output.
     string render() const;
 
+    /// Returns true if this production does not recursively contain other
+    /// instructions.
+    virtual bool atomic() const = 0;
+
+    /// If this production corresponds to a container's item field, sets the
+    /// container.
+    void setContainer(shared_ptr<type::unit::item::field::Container> c);
+
+    /// If this production corresponds to a container's item field, returns
+    /// the container.
+    shared_ptr<type::unit::item::field::Container> container() const;
+
     /// A struct for the parser generator to associate information with a
     /// production.
     struct ParserGenMeta {
@@ -65,10 +77,6 @@ public:
         /// If the production corresponds to a for-each hook, this stores the
         /// corresponding field.
         shared_ptr<type::unit::item::Field> for_each = nullptr;
-
-        /// If the production corresponds to an until condition, this stores the
-        /// corresponding field.
-        shared_ptr<type::unit::item::Field> until = nullptr;
     };
 
     /// Returns a pointer to the production's meta information maintained
@@ -93,6 +101,8 @@ protected:
 
 private:
     shared_ptr<Type> _type;
+    shared_ptr<type::unit::item::field::Container> _container;
+
     string _symbol;
     ParserGenMeta _pgmeta;
     Location _location;
@@ -114,6 +124,7 @@ public:
 protected:
     string renderProduction() const override;
     bool nullable() const override;
+    bool atomic() const override;
 };
 
 /// Base class for terminals.
@@ -160,10 +171,23 @@ public:
 
     ACCEPT_VISITOR(Production);
 
+    /// Returns a unique ID for this terminal. The ID is unique across all
+    /// grammars and guaranteed to be positive.
+    int tokenID() const;
+
+    /// XXX
+    virtual string renderTerminal() const = 0;
+
+protected:
+    bool atomic() const override;
+
 private:
     filter_func _filter;
     shared_ptr<Expression> _sink = nullptr;
     shared_ptr<Expression> _expr = nullptr;
+
+    mutable int _id;
+    static std::map<string, int> _token_ids;
 };
 
 
@@ -194,21 +218,15 @@ public:
     /// l: Associated location.
     Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr = nullptr, filter_func filter = nullptr, const Location& l = Location::None);
 
-    /// Returns a unique ID for this literal. The ID is unique across all
-    /// grammars and guaranteed to be positive.
-    int tokenID() const;
-
     /// Returns an expression representing the literal.
     virtual shared_ptr<Expression> literal() const = 0;
 
     /// Returns a set of regular expressions corresponding to the literal.
     virtual pattern_list patterns() const = 0;
 
-    ACCEPT_VISITOR(Terminal);
-private:
-    int _id;
+    string renderTerminal() const override;
 
-    static int _id_counter;
+    ACCEPT_VISITOR(Terminal);
 };
 
 /// A literal represented by a constant.
@@ -294,6 +312,8 @@ public:
 
     ACCEPT_VISITOR(Terminal);
 
+    string renderTerminal() const override;
+
 protected:
     string renderProduction() const override;
 };
@@ -319,8 +339,10 @@ public:
     virtual alternative_list rhss() const = 0;
 
     ACCEPT_VISITOR(Production);
-};
 
+protected:
+    bool atomic() const override;
+};
 
 /// A type described by another grammar from an independent type::Unit type.
 class ChildGrammar : public NonTerminal
@@ -362,6 +384,33 @@ private:
     // expression_list _params;
 };
 
+/// A wrapper that forwards directly to another grammar (within the same unit
+/// type). This can be used to hook into starting/finishing parsing that
+/// other grammar.
+class Enclosure : public NonTerminal
+{
+public:
+    /// Constructor.
+    ///
+    /// child: The enclosed child production.
+    ///
+    /// type: The unit type.
+    ///
+    /// l: Associated location.
+    Enclosure(const string& symbol, shared_ptr<Production> child, const Location& l = Location::None);
+
+    /// Returns the enclosed child production.
+    shared_ptr<Production> child() const;
+
+    ACCEPT_VISITOR(NonTerminal);
+
+protected:
+    string renderProduction() const override;
+    alternative_list rhss() const override;
+
+private:
+    shared_ptr<Production> _child;
+};
 
 /// A sequence of other productions.
 class Sequence : public NonTerminal
@@ -426,6 +475,11 @@ public:
     /// second alternative, respectively. Each set contains the ~~Literals for
     /// which the corresponding alternative should be selected.
     std::pair<look_aheads, look_aheads> lookAheads() const;
+
+    /// Returns a boolean for each alternative indicating whether the
+    /// corresponding look-ahead set contains a variable, which makes it a
+    /// default alternative if the other ones doesn't match.
+    std::pair<bool, bool> defaultAlternatives();
 
     /// Returns the two alternatives.
     std::pair<shared_ptr<Production>, shared_ptr<Production>> alternatives() const;

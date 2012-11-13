@@ -34,16 +34,14 @@
      SS = { pl }
      Session = { no, pl, qu }
      Start = { no, pl, qu }
-     hs = {  }
-     pr = {  }
 
   -- Follow:
      FFs = { qu }
      Fact = { no, qu }
      Facts = { qu }
-     FsQ = {  }
-     Question = {  }
-     SS = {  }
-     Session = {  }
+     FsQ = { hs, pr }
+     Question = { hs, pr }
+     SS = { hs, pr }
+     Session = { hs, pr }
      Start = {  }
 

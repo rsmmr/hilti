@@ -1,0 +1,19 @@
+=== Grammar my-grammar
+        Epsilon: <eps> -> ()
+ (*)   Sequence: All -> List2 colon
+      LookAhead: List2 -> {b"[ \\t]*"}: ws | {b":"}: <eps>
+           Ctor: colon -> b":" (bytes)
+           Ctor: ws  -> b"[ \\t]*" (bytes)
+
+  -- Epsilon:
+     All = 0
+     List2 = 1
+
+  -- First_1:
+     All = { colon, ws }
+     List2 = { ws }
+
+  -- Follow:
+     All = {  }
+     List2 = { colon }
+

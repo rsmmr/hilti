@@ -15,6 +15,7 @@ namespace passes {
 class IDResolver : public ast::Pass<AstInfo>
 {
 public:
+    /// Constructor.
     IDResolver();
 
     virtual ~IDResolver();
@@ -23,8 +24,11 @@ public:
     ///
     /// module: The AST to resolve.
     ///
+    /// report_unresolved: If true, IDs that we can't resolve are reported as
+    /// errorr; if false, they are simply left untouched.
+    ///
     /// Returns: True if no errors were encountered.
-    bool run(shared_ptr<ast::NodeBase> ast) override;
+    bool run(shared_ptr<ast::NodeBase> ast, bool report_unresolved);
 
 protected:
     void visit(expression::ID* i) override;
@@ -33,6 +37,9 @@ protected:
     void visit(type::unit::item::field::Unknown* f) override;
 
 private:
+    bool run(shared_ptr<ast::NodeBase> ast) override;
+
+    bool _report_unresolved = true;
     std::set<string> _locals;
 };
 

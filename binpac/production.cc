@@ -33,6 +33,17 @@ bool Production::nullable() const
     return false;
 }
 
+void Production::setContainer(shared_ptr<type::unit::item::field::Container> c)
+{
+    _container = c;
+}
+
+shared_ptr<type::unit::item::field::Container> Production::container() const
+{
+    return _container;
+}
+
+
 string Production::render() const
 {
     string location = "";
@@ -81,11 +92,19 @@ bool Epsilon::nullable() const
     return true;
 }
 
+bool Epsilon::atomic() const
+{
+    return true;
+}
+
+std::map<string, int> Terminal::_token_ids;
+
 Terminal::Terminal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
     : Production(symbol, type, l)
 {
     _expr = expr;
     _filter = filter;
+    _id = 0; // Will be set on first use by tokenID().
 }
 
 Terminal::filter_func Terminal::filter() const
@@ -108,17 +127,42 @@ shared_ptr<Expression> Terminal::sink() const
     return _sink;
 }
 
-int Literal::_id_counter = 0;
+bool Terminal::atomic() const
+{
+    return true;
+}
+
+int Terminal::tokenID() const
+{
+    // We use static map here to keep the IDs consistent across grammars;
+    // that's importat when parsing sub-grammars.
+
+    if ( _id )
+        return _id;
+
+    string idx = util::fmt("%s-%s", renderTerminal(), type()->render());
+
+    auto i = _token_ids.find(idx);
+
+    if ( i != _token_ids.end() )
+        _id = i->second;
+
+    else {
+        _id = _token_ids.size() + 1;
+        _token_ids.insert(std::make_pair(idx, _id));
+    }
+
+    return _id;
+}
 
 Literal::Literal(const string& symbol, shared_ptr<Type> type, shared_ptr<Expression> expr, filter_func filter, const Location& l)
     : Terminal(symbol, expr ? expr->type() : type, expr, filter, l)
 {
-    _id = ++_id_counter;
 }
 
-int Literal::tokenID() const
+string Literal::renderTerminal() const
 {
-    return _id;
+    return literal()->render();
 }
 
 production::Constant::Constant(const string& symbol, shared_ptr<binpac::Constant> constant, shared_ptr<Expression> expr, filter_func filter, const Location& l)
@@ -135,7 +179,7 @@ shared_ptr<binpac::Constant> production::Constant::constant() const
 
 string production::Constant::renderProduction() const
 {
-    return _const->render() + util::fmt(" (%s)", type()->render());
+    return _const->render() + util::fmt(" (%s/id %d)", type()->render(), tokenID());
 }
 
 shared_ptr<Expression> production::Constant::literal() const
@@ -149,7 +193,7 @@ Literal::pattern_list production::Constant::patterns() const
 }
 
 production::Ctor::Ctor(const string& symbol, shared_ptr<binpac::Ctor> ctor, shared_ptr<Expression> expr, filter_func filter, const Location& l)
-    : Literal(symbol, ast::type::checkedTrait<type::trait::Parseable>(ctor->type())->fieldType(), expr, filter, l)
+    : Literal(symbol, ctor->type(), expr, filter, l)
 {
     _ctor = ctor;
     addChild(_ctor);
@@ -162,7 +206,7 @@ shared_ptr<binpac::Ctor> production::Ctor::ctor() const
 
 string production::Ctor::renderProduction() const
 {
-    return _ctor->render() + util::fmt(" (%s)", type()->render());
+    return _ctor->render() + util::fmt(" (%s/id %d)", type()->render(), tokenID());
 }
 
 shared_ptr<Expression> production::Ctor::literal() const
@@ -185,9 +229,19 @@ string production::Variable::renderProduction() const
     return util::fmt("(type %s)", type()->render().c_str());
 }
 
+string production::Variable::renderTerminal() const
+{
+    return type()->render();
+}
+
 NonTerminal::NonTerminal(const string& symbol, shared_ptr<Type> type, const Location& l)
     : Production(symbol, type, l)
 {
+}
+
+bool NonTerminal::atomic() const
+{
+    return false;
 }
 
 ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<Production> child, shared_ptr<type::Unit> type, const Location& l)
@@ -222,6 +276,28 @@ NonTerminal::alternative_list ChildGrammar::rhss() const
 {
     alternative_list rhss = { { _child } };
     return rhss;
+}
+
+Enclosure::Enclosure(const string& symbol, shared_ptr<Production> child, const Location& l)
+    : NonTerminal(symbol, nullptr, l)
+{
+    _child = child;
+}
+
+shared_ptr<Production> Enclosure::child() const
+{
+    return _child;
+}
+
+NonTerminal::alternative_list Enclosure::rhss() const
+{
+    alternative_list rhss = { { _child } };
+    return rhss;
+}
+
+string Enclosure::renderProduction() const
+{
+    return _child->symbol();
 }
 
 Sequence::Sequence(const string& symbol, const production_list& seq, shared_ptr<Type> type, const Location& l)
@@ -283,6 +359,24 @@ std::pair<shared_ptr<Production>, shared_ptr<Production>> LookAhead::alternative
     return _alts;
 }
 
+std::pair<bool, bool> LookAhead::defaultAlternatives()
+{
+    bool d1 = false;
+    bool d2 = false;
+
+    for ( auto t : _lahs.first ) {
+        if ( ast::isA<production::Variable>(t) )
+            d1 = true;
+    }
+
+    for ( auto t : _lahs.second ) {
+        if ( ast::isA<production::Variable>(t) )
+            d2 = true;
+    }
+
+    return std::make_pair(d1, d2);
+}
+
 void LookAhead::setAlternatives(shared_ptr<Production> alt1, shared_ptr<Production> alt2)
 {
     _alts = std::make_pair(alt1, alt2);
@@ -310,11 +404,9 @@ static string _fmtAlt(const production::LookAhead* p, int i)
         if ( ! first )
             lahs += ", ";
 
-        auto lit = std::dynamic_pointer_cast<production::Literal>(l);
-        if ( lit )
-            lahs += lit->literal()->render();
-        else
-            lahs += l->symbol();
+        auto term = std::dynamic_pointer_cast<production::Terminal>(l);
+        lahs += term->renderTerminal();
+        lahs += util::fmt(" (id %d)", term ? term->tokenID() : -1);
 
         first = false;
     }

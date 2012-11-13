@@ -107,7 +107,7 @@ protected:
     /// _hiltiInsufficientInputHandler.
     ///
     /// target_type: The type being unpacked.
-    /// 
+    ///
     /// op1, op2, op3: Same as with the regular ``unpack`` instruction.
     ///
     /// callback: function - A function that will be called for
@@ -146,6 +146,7 @@ protected:
 
     void visit(production::Boolean* b) override;
     void visit(production::ChildGrammar* c) override;
+    void visit(production::Enclosure* e) override;
     void visit(production::Counter* c) override;
     void visit(production::Epsilon* e) override;
     void visit(production::Literal* l) override;
@@ -196,6 +197,10 @@ private:
     // Returns: An expression referencing the function.
     shared_ptr<hilti::Expression> _newParseFunction(const string& name, shared_ptr<type::Unit> unit);
 
+    /// Generates the body code for parsing a given node. Same parameters as
+    /// parse().
+    bool _hiltiParse(shared_ptr<Node> node, shared_ptr<hilti::Expression>* result, shared_ptr<type::unit::item::Field> f);
+
     // Allocates and initializes a new parse object.
     shared_ptr<hilti::Expression> _allocateParseObject(shared_ptr<Type> unit, bool store_in_self);
 
@@ -217,7 +222,7 @@ private:
     // doing the actual assignment and triggering the corresponding hook. If
     // value is nullptr, the fields current value is taken to trigger the
     // hook.
-    void _newValueForField(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value);
+    void _newValueForField(shared_ptr<Production> p, shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value);
 
     // Creates the host-facing parser function. If sink is true, we generate
     // a slightly different version for internal use with sinks.
@@ -267,9 +272,13 @@ private:
     // same module; true) or cross-module (false).
     std::pair<bool, string> _hookName(const string& path);
 
+    // Scans for a look-ahead symbol out of an expected set and sets the
+    // state()->lah* accordingly if found. Raises a parse error if not.
+    void _hiltiGetLookAhead(shared_ptr<Production> prod, const std::list<shared_ptr<production::Terminal>>& terms, bool must_find);
+
     // Generates HILTI code to initialize the matching state for finding the
     // next token.
-    shared_ptr<hilti::Expression> _hiltiMatchTokenInit(const string& name, const std::list<shared_ptr<production::Literal>>& literals);
+    shared_ptr<hilti::Expression> _hiltiMatchTokenInit(const string& name, const std::list<shared_ptr<production::Terminal>>& terms);
 
     // Performs the matching of the next token. Throws execeptions if the matching fails.
     shared_ptr<hilti::Expression> _hiltiMatchTokenAdvance(shared_ptr<hilti::Expression> mstate);
@@ -278,7 +287,8 @@ private:
     shared_ptr<hilti::builder::BlockBuilder> _hiltiAddMatchTokenErrorCases(shared_ptr<Production> prod,
                                                                            hilti::builder::BlockBuilder::case_list* cases,
                                                                            shared_ptr<hilti::builder::BlockBuilder> repeat,
-                                                                           std::list<shared_ptr<production::Literal>> expected
+                                                                           std::list<shared_ptr<production::Terminal>> expected,
+                                                                           shared_ptr<hilti::builder::BlockBuilder> cont = nullptr
                                                                           );
 
     // Raises a ParseError exception.
@@ -286,7 +296,7 @@ private:
 
     // Gnerates the HILTI code to handle an out-of-input situation by
     // retrying next time if possible.
-    void _hiltiYieldAndTryAgain(shared_ptr<Production> prod, shared_ptr<hilti::builder::BlockBuilder> builder, shared_ptr<hilti::builder::BlockBuilder> cont);
+    void _hiltiYieldAndTryAgain(shared_ptr<Production> prod, shared_ptr<hilti::builder::BlockBuilder> cont);
 
     // Generates the HILTI code to report insufficient input during matching.
     shared_ptr<hilti::Expression> _hiltiInsufficientInputHandler(bool eod_ok = false, shared_ptr<hilti::Expression> iter = nullptr);
@@ -333,12 +343,12 @@ private:
     // Helper to transparently pipe input through a chain of filters if a
     // parsing object has defined any. It adjust the parsing arguments
     // appropiately so that subsequent code doesn't notice the filtering.
-    // 
+    //
     // resume: True if this method is called after resuming parsing because
     // of having insufficient inout earlier. False if it's the initial
     // parsing step for a newly instantiated parser.
     void _hiltiFilterInput(bool resume);
-    
+
     std::list<shared_ptr<ParserState>> _states;
     shared_ptr<hilti::Expression> _last_parsed_value;
     shared_ptr<production::Literal> _cur_literal;

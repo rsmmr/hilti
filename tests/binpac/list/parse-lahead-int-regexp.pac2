@@ -1,0 +1,21 @@
+#
+# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
+# @TEST-EXEC:  printf "\x01\x0a\x0b\x01\x0c\x0dXXX\x05" | ./a.out -p Test >output
+# @TEST-EXEC:  printf "XXX\x05" | ./a.out -p Test >>output
+# @TEST-EXEC:  btest-diff output
+#
+
+module HTTP;
+
+type Item = unit {
+    x: uint<8>(0x01);
+    y: uint<16>;
+};
+
+export type Test = unit {
+    a: list<Item>;
+    b: /XXX/;
+    c: uint<8>;
+
+    on %done { print self; }
+    };

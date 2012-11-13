@@ -73,7 +73,7 @@ void GrammarBuilder::visit(declaration::Type* d)
     auto grammar = std::make_shared<Grammar>(d->id()->name(), production);
 
     if ( _debug )
-        grammar->printTables(_debug_out);
+        grammar->printTables(_debug_out, true);
 
     unit->setGrammar(grammar);
 }
@@ -195,6 +195,7 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
 
     ++_in_decl;
     auto field = compileOne(l->field());
+    field->setContainer(l->sharedPtr<type::unit::item::field::Container>());
     --_in_decl;
 
     if ( until ) {
@@ -228,6 +229,10 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
         l1->add(field);
         l1->add(l2);
 
-        setResult(l2);
+        auto c = std::make_shared<production::Enclosure>(sym, l2, l->location());
+        c->pgMeta()->field = l->sharedPtr<type::unit::item::Field>();
+        field->pgMeta()->for_each = c->pgMeta()->field;
+
+        setResult(c);
     }
 }

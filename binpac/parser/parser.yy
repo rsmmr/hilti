@@ -522,8 +522,18 @@ opt_foreach   : FOREACH                          { $$ = true; }
 constant      : CINTEGER                         { $$ = std::make_shared<constant::Integer>($1, 64, loc(@$)); }
               | UINT '<' CINTEGER '>' '(' CINTEGER ')'
                                                  { $$ = std::make_shared<constant::Integer>($6, $3, false, loc(@$)); }
-              |  INT '<' CINTEGER '>' '(' CINTEGER ')'
+              | UINT8 '(' CINTEGER ')'           { $$ = std::make_shared<constant::Integer>($3, 8, false, loc(@$)); }
+              | UINT16 '(' CINTEGER ')'          { $$ = std::make_shared<constant::Integer>($3, 16, false, loc(@$)); }
+              | UINT32 '(' CINTEGER ')'          { $$ = std::make_shared<constant::Integer>($3, 32, false, loc(@$)); }
+              | UINT64 '(' CINTEGER ')'          { $$ = std::make_shared<constant::Integer>($3, 64, false, loc(@$)); }
+
+              | INT '<' CINTEGER '>' '(' CINTEGER ')'
                                                  { $$ = std::make_shared<constant::Integer>($6, $3, true, loc(@$)); }
+              | INT8 '(' CINTEGER ')'            { $$ = std::make_shared<constant::Integer>($3, 8, true, loc(@$)); }
+              | INT16 '(' CINTEGER ')'           { $$ = std::make_shared<constant::Integer>($3, 16, true, loc(@$)); }
+              | INT32 '(' CINTEGER ')'           { $$ = std::make_shared<constant::Integer>($3, 32, true, loc(@$)); }
+              | INT64 '(' CINTEGER ')'           { $$ = std::make_shared<constant::Integer>($3, 64, true, loc(@$)); }
+
               | CBOOL                            { $$ = std::make_shared<constant::Bool>($1, loc(@$)); }
               | CDOUBLE                          { $$ = std::make_shared<constant::Double>($1, loc(@$)); }
               | CSTRING                          { $$ = std::make_shared<constant::String>($1, loc(@$)); }

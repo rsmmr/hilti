@@ -1,0 +1,18 @@
+#
+# @TEST-EXEC-FAIL:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module HTTP;
+
+type Item = unit {
+    x: uint<8>;
+    y: uint<16>;
+};
+
+export type Test = unit {
+    a: list<Item>;
+    b: uint<16>;
+
+    on %done { print self; }
+    };

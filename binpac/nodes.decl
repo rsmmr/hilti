@@ -66,6 +66,7 @@ production::Boolean
 production::ChildGrammar
 production::Counter
 production::Epsilon
+production::Enclosure
 production::Literal
 production::LookAhead
 production::NonTerminal

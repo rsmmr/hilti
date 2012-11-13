@@ -16,6 +16,7 @@
 #include "passes/printer.h"
 #include "passes/scope-builder.h"
 #include "passes/scope-printer.h"
+#include "passes/unit-scope-builder.h"
 #include "passes/validator.h"
 
 #include "codegen/codegen.h"
@@ -89,6 +90,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     passes::OperatorResolver op_resolver;
     passes::ScopeBuilder     scope_builder(this);
     passes::ScopePrinter     scope_printer(std::cerr);
+    passes::UnitScopeBuilder unit_scope_builder;
     passes::Validator        validator;
 
     if ( ! scope_builder.run(module) )
@@ -97,7 +99,13 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( debugging("scopes") )
         scope_printer.run(module);
 
-    if ( ! id_resolver.run(module) )
+    if ( ! id_resolver.run(module, false) )
+        return false;
+
+    if ( ! unit_scope_builder.run(module) )
+        return false;
+
+    if ( ! id_resolver.run(module, true) )
         return false;
 
     if ( ! overload_resolver.run(module) )

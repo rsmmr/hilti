@@ -407,7 +407,6 @@ shared_ptr<BlockBuilder> ModuleBuilder::popBuilder(shared_ptr<BlockBuilder> buil
     auto i = std::find(body->builders.begin(), body->builders.end(), builder);
 
     if ( i == body->builders.end() ) {
-        abort();
         internalError("unbalanced builder push/pop");
     }
 
