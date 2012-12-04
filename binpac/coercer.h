@@ -15,6 +15,7 @@ namespace binpac {
 class Coercer : public ast::Coercer<AstInfo>
 {
 public:
+   void visit(type::Integer* i);
 };
 
 }

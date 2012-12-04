@@ -34,3 +34,32 @@ shared_ptr<hilti::Expression> CoercionBuilder::hiltiCoerce(shared_ptr<hilti::Exp
 
     return result;
 }
+
+void CoercionBuilder::visit(type::Integer* i)
+{
+    auto val = arg1();
+    auto dst = arg2();
+
+    shared_ptr<type::Bool> dst_b = ast::as<type::Bool>(dst);
+
+    if ( dst_b ) {
+        setResult(val); // HILTI coerces this.
+        return;
+    }
+
+    auto dst_i = ast::as<type::Integer>(dst);
+
+    if ( dst_i ) {
+        auto tmp = cg()->builder()->addTmp("ext_int", cg()->hiltiType(dst_i));
+
+        if ( dst_i->signed_() )
+            cg()->builder()->addInstruction(tmp, hilti::instruction::integer::SExt, val);
+        else
+            cg()->builder()->addInstruction(tmp, hilti::instruction::integer::ZExt, val);
+
+        setResult(tmp);
+        return;
+    }
+
+    assert(false);
+}

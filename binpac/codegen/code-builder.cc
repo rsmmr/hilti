@@ -278,6 +278,9 @@ void CodeBuilder::visit(expression::CodeGen* c)
 
 void CodeBuilder::visit(expression::Coerced* c)
 {
+    auto expr = cg()->hiltiExpression(c->expression());
+    auto coerced = cg()->hiltiCoerce(expr, c->expression()->type(), c->type());
+    setResult(coerced);
 }
 
 void CodeBuilder::visit(expression::Constant* c)
@@ -496,29 +499,33 @@ void CodeBuilder::visit(statement::try_::Catch* c)
 
 ///////// Operators
 
-static shared_ptr<hilti::type::Integer> _intResultType(binpac::expression::ResolvedOperator* op)
+static shared_ptr<binpac::type::Integer> _intResultType(binpac::expression::ResolvedOperator* op)
 {
     auto t1 = ast::checkedCast<binpac::type::Integer>(op->op1()->type());
     auto t2 = ast::checkedCast<binpac::type::Integer>(op->op2()->type());
 
+    assert(t1->signed_() == t2->signed_());
+
     int w = std::max(t1->width(), t2->width());
-    return hilti::builder::integer::type(w);
+    return std::make_shared<binpac::type::Integer>(w, t1->signed_());
 }
 
 void CodeBuilder::visit(expression::operator_::integer::Minus* i)
 {
-    auto result = builder()->addTmp("sum", _intResultType(i));
-    auto op1 = cg()->hiltiExpression(i->op1());
-    auto op2 = cg()->hiltiExpression(i->op2());
+    auto rtype = _intResultType(i);
+    auto result = builder()->addTmp("diff", cg()->hiltiType(rtype));
+    auto op1 = cg()->hiltiExpression(i->op1(), rtype);
+    auto op2 = cg()->hiltiExpression(i->op2(), rtype);
     cg()->builder()->addInstruction(result, hilti::instruction::integer::Sub, op1, op2);
     setResult(result);
 }
 
 void CodeBuilder::visit(expression::operator_::integer::Plus* i)
 {
-    auto result = builder()->addTmp("diff", _intResultType(i));
-    auto op1 = cg()->hiltiExpression(i->op1());
-    auto op2 = cg()->hiltiExpression(i->op2());
+    auto rtype = _intResultType(i);
+    auto result = builder()->addTmp("sum", cg()->hiltiType(rtype));
+    auto op1 = cg()->hiltiExpression(i->op1(), rtype);
+    auto op2 = cg()->hiltiExpression(i->op2(), rtype);
     cg()->builder()->addInstruction(result, hilti::instruction::integer::Add, op1, op2);
     setResult(result);
 }
@@ -526,8 +533,9 @@ void CodeBuilder::visit(expression::operator_::integer::Plus* i)
 void CodeBuilder::visit(expression::operator_::integer::Equal* i)
 {
     auto result = builder()->addTmp("equal", hilti::builder::boolean::type());
-    auto op1 = cg()->hiltiExpression(i->op1());
-    auto op2 = cg()->hiltiExpression(i->op2());
+    auto itype = _intResultType(i);
+    auto op1 = cg()->hiltiExpression(i->op1(), itype);
+    auto op2 = cg()->hiltiExpression(i->op2(), itype);
     cg()->builder()->addInstruction(result, hilti::instruction::integer::Equal, op1, op2);
     setResult(result);
 }

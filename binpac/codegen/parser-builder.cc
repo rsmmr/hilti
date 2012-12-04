@@ -2542,7 +2542,7 @@ void ParserBuilder::visit(type::Bytes* b)
     if ( len ) {
         auto op1 = iters;
         auto op2 = hilti::builder::id::create("Hilti::Packed::BytesFixed");
-        auto op3 = cg()->hiltiExpression(len->value());
+        auto op3 = cg()->hiltiExpression(len->value(), std::make_shared<type::Integer>(64, false));
         auto result_val = hiltiUnpack(b->sharedPtr<type::Bytes>(), op1, op2, op3);
         setResult(result_val);
         return;

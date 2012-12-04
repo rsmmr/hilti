@@ -785,7 +785,11 @@ void Printer::visit(type::Integer* i)
         return;
 
     Printer& p = *this;
-    p << "int<" << i->width() << ">";
+
+    if ( i->signed_() )
+        p << "int<" << i->width() << ">";
+    else
+        p << "uint<" << i->width() << ">";
 }
 
 void Printer::visit(type::Interval* i)

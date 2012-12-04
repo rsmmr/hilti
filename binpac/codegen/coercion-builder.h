@@ -34,6 +34,7 @@ public:
     shared_ptr<hilti::Expression> hiltiCoerce(shared_ptr<hilti::Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst);
 
 protected:
+   void visit(type::Integer* i);
 };
 
 }

@@ -56,9 +56,11 @@ shared_ptr<binpac::Expression> expression::CustomExpression::coerceTo(shared_ptr
 {
 #ifdef DEBUG
     if ( ! canCoerceTo(target) ) {
-        std::cerr << util::fmt("cannot coerce expression of type %s to type %s",
-                               render().c_str(),
-                               target->render().c_str()) << std::endl;
+        std::cerr << util::fmt("debug check failed: cannot coerce expression of type %s to type %s (%s / %s)",
+                               type()->render().c_str(),
+                               target->render().c_str(),
+                               render(), string(location())) << std::endl;
+        abort();
     }
 #endif
 

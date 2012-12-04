@@ -592,7 +592,7 @@ void Validator::visit(type::unit::item::Field* f)
         }
 
         if ( attr->value() && ! attr->value()->canCoerceTo(ptype) ) {
-            error(attr, "attribute value's type does not match");
+            wrongType(attr->value(), "attribute value's type does not match", attr->value()->type(), ptype);
             continue;
         }
     }
