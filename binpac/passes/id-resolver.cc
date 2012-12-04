@@ -37,9 +37,6 @@ void IDResolver::visit(expression::ID* i)
 
     auto nodes = currentNodes();
 
-    auto module = current<Module>();
-    assert(module);
-
     for ( auto i = nodes.rbegin(); i != nodes.rend(); i++ ) {
         auto n = *i;
 
@@ -63,8 +60,11 @@ void IDResolver::visit(expression::ID* i)
         }
     }
 
-    if ( ! scope )
+    if ( ! scope ) {
+        auto module = current<Module>();
+        assert(module);
         scope = module->body()->scope();
+    }
 
     auto id = i->sharedPtr<expression::ID>();
     auto vals = scope->lookup(id->id());
@@ -72,6 +72,7 @@ void IDResolver::visit(expression::ID* i)
     if ( ! vals.size() ) {
         if ( _report_unresolved )
             error(i, util::fmt("unknown ID %s", id->id()->pathAsString().c_str()));
+
         return;
     }
 
