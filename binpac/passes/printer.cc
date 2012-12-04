@@ -160,6 +160,15 @@ void Printer::visit(Module* m)
         sep = true;
     }
 
+    for ( auto pr : m->properties() ) {
+        p << "%" << pr->key();
+
+        if ( pr->value() )
+            p << " = " << pr->value();
+
+        p << ";" << endl;
+    }
+
     p << m->body();
 }
 
@@ -1015,7 +1024,12 @@ void Printer::visit(type::unit::item::Property* pr)
 {
     Printer& p = *this;
 
-    p << pr->id() << " = " << pr->value() << ";";
+    p << pr->id();
+
+    if ( pr->property()->value() )
+        p << " = " << pr->property()->value();
+
+    p << ";";
 }
 
 void Printer::visit(type::unit::item::Variable* v)

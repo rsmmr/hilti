@@ -165,7 +165,7 @@ inline shared_ptr<Expression> makeOp(binpac::operator_::Kind kind, const express
 %type <declarations>     opt_global_decls opt_local_decls
 %type <expression>       expr opt_expr opt_unit_field_cond opt_init_expr init_expr id_expr member_expr tuple_expr
 %type <expressions>      exprs opt_exprs opt_unit_field_sinks opt_field_args
-%type <id>               local_id scoped_id hook_id opt_unit_field_name property_id
+%type <id>               local_id scoped_id hook_id opt_unit_field_name
 %type <statement>        stmt block
 %type <statements>       stmts opt_stmts
 %type <type>             base_type type enum_ bitset unit atomic_type container_type bitfield
@@ -182,7 +182,7 @@ inline shared_ptr<Expression> makeOp(binpac::operator_::Kind kind, const express
 %type <unit_items>       unit_items opt_unit_items
 %type <unit_field>       unit_field unit_field_in_container
 %type <linkage>          opt_linkage
-%type <attribute>        type_attr
+%type <attribute>        type_attr property
 %type <attributes>       opt_type_attrs
 %type <switch_case>      unit_switch_case
 %type <switch_cases>     unit_switch_cases
@@ -211,7 +211,8 @@ scoped_id     : IDENT                            { $$ = std::make_shared<ID>($1,
 hook_id       : scoped_id                        { $$ = $1; }
               | PROPERTY                         { $$ = std::make_shared<ID>($1, loc(@$)); } /* for %init/%done */
 
-property_id   : PROPERTY                         { $$ = std::make_shared<ID>($1, loc(@$)); }
+property      : PROPERTY ';'                     { $$ = std::make_shared<Attribute>($1, nullptr, loc(@$)); }
+              | PROPERTY '=' expr ';'            { $$ = std::make_shared<Attribute>($1, $3, loc(@$)); }
 
 opt_global_decls
               : global_decl opt_global_decls     { $$ = $2; if ( $1 ) $$.push_front($1); }
@@ -224,6 +225,7 @@ global_decl   : type_decl                        { $$ = $1; }
               | func_decl                        { $$ = $1; }
               | hook_decl                        { $$ = $1; }
 
+              | property                         { driver.module()->addProperty($1); }
               | import                           { $$ = nullptr; }
               | stmt                             { driver.module()->body()->addStatement($1); }
               ;
@@ -443,8 +445,7 @@ unit_var      : VAR local_id ':' base_type opt_init_expr opt_unit_hooks
 
 unit_global_hook : ON hook_id unit_hooks         { $$ = std::make_shared<type::unit::item::GlobalHook>($2, $3, loc(@$)); }
 
-unit_prop     : property_id ';'                  { $$ = std::make_shared<type::unit::item::Property>($1, nullptr, loc(@$)); }
-              | property_id '=' expr ';'         { $$ = std::make_shared<type::unit::item::Property>($1, $3, loc(@$)); }
+unit_prop     : property                         { $$ = std::make_shared<type::unit::item::Property>($1, loc(@$)); }
 
 unit_field    : opt_unit_field_name atomic_type opt_type_attrs opt_unit_field_cond opt_unit_field_sinks opt_unit_hooks
                                                  { $$ = std::make_shared<type::unit::item::field::AtomicType>($1, $2, $4, $6, $3, $5, loc(@$)); }

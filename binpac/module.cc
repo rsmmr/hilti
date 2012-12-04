@@ -2,6 +2,7 @@
 #include "module.h"
 #include "statement.h"
 #include "type.h"
+#include "attribute.h"
 
 using namespace binpac;
 
@@ -19,4 +20,34 @@ Module::Module(CompilerContext* ctx, shared_ptr<ID> id, const string& path, cons
 CompilerContext* Module::context() const
 {
     return _context;
+}
+
+void Module::addProperty(shared_ptr<Attribute> prop)
+{
+    _properties.push_back(prop);
+    addChild(_properties.back());
+}
+
+std::list<shared_ptr<Attribute>> Module::properties() const
+{
+    std::list<shared_ptr<Attribute>> props;
+
+    for ( auto p : _properties )
+        props.push_back(p);
+
+    return props;
+}
+
+shared_ptr<Attribute> Module::property(const string& prop) const
+{
+    Attribute pp(prop);
+
+    shared_ptr<Attribute> result = nullptr;
+
+    for( auto p : _properties ) {
+        if ( pp == *p )
+            result = p;
+    }
+
+    return result;
 }

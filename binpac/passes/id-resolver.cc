@@ -37,6 +37,9 @@ void IDResolver::visit(expression::ID* i)
 
     auto nodes = currentNodes();
 
+    auto module = current<Module>();
+    assert(module);
+
     for ( auto i = nodes.rbegin(); i != nodes.rend(); i++ ) {
         auto n = *i;
 
@@ -60,10 +63,8 @@ void IDResolver::visit(expression::ID* i)
         }
     }
 
-    if ( ! scope ) {
-        error(i, "ID expression outside of any scope");
-        return;
-    }
+    if ( ! scope )
+        scope = module->body()->scope();
 
     auto id = i->sharedPtr<expression::ID>();
     auto vals = scope->lookup(id->id());

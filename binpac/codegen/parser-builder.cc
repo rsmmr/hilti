@@ -336,10 +336,10 @@ void ParserBuilder::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit,
     hilti::builder::list::element_list mtypes;
 
     for ( auto p : unit->properties() ) {
-        if ( p->id()->name() != "%mimetype" )
+        if ( ! (*p->property() == Attribute("mimetype")) )
             continue;
 
-        mtypes.push_back(cg()->hiltiExpression(p->value()));
+        mtypes.push_back(cg()->hiltiExpression(p->property()->value()));
         }
 
 
@@ -1620,25 +1620,22 @@ shared_ptr<binpac::Expression> ParserBuilder::_fieldByteOrder(shared_ptr<type::u
 {
     shared_ptr<binpac::Expression> order = nullptr;
 
-    // See if the unit has a byte order property defined.
-    auto prop_order = unit->property("byteorder");
+    auto module = unit->firstParent<Module>();
+    assert(module);
 
-    if ( prop_order )
-        order = prop_order->value();
-
-    // See if the field has a byte order defined.
+    // See if the module, unit, or field has a byte order property defined.
+    auto module_order = module->property("byteorder");
+    auto unit_order = unit->property("byteorder");
     auto field_order = field->attributes()->lookup("byteorder");
 
     if ( field_order )
         order = field_order->value();
 
-    else {
-        // See if the unit has a byteorder property.
-        auto unit_order = unit->property("byteorder");
+    else if ( unit_order )
+        order = unit_order->property()->value();
 
-        if ( unit_order )
-            order = unit_order->value();
-    }
+    else if ( module_order )
+        order = module_order->value();
 
     return order;
 }

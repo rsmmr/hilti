@@ -1232,17 +1232,16 @@ shared_ptr<Expression> unit::item::Variable::default_() const
     return attr ? attr->value() : nullptr;
 }
 
-unit::item::Property::Property(shared_ptr<binpac::ID> id, shared_ptr<binpac::Expression> value, const Location& l)
-    : Item(id, nullptr, hook_list(), attribute_list(), l)
+unit::item::Property::Property(shared_ptr<Attribute> prop, const Location& l)
+    : Item(std::make_shared<ID>("%" + prop->key()), nullptr, hook_list(), attribute_list(), l)
 {
-    _value = value;
-    addChild(_value);
+    _property = prop;
+    addChild(_property);
 }
 
-
-shared_ptr<Expression> unit::item::Property::value() const
+shared_ptr<Attribute> unit::item::Property::Property::property() const
 {
-    return _value;
+    return _property;
 }
 
 unit::item::GlobalHook::GlobalHook(shared_ptr<ID> id, hook_list& hooks, const Location& l)
@@ -1410,12 +1409,19 @@ std::list<shared_ptr<unit::item::Property>> Unit::properties() const
 
 shared_ptr<unit::item::Property> Unit::property(const string& prop) const
 {
+    Attribute pp(prop);
+
     std::list<shared_ptr<unit::item::Property>> m;
 
     for ( auto i : _items ) {
         auto f = ast::tryCast<unit::item::Property>(i);
 
-        if ( f && f->id()->name() == string("%") + prop )
+        if ( ! f )
+            continue;
+
+        assert(f->property());
+
+        if ( pp == *f->property() )
             return f;
     }
 

@@ -17,8 +17,8 @@ class Attribute : public Node
 public:
     /// Constructor.
     ///
-    /// key: The key value. If it starts with an ampersand, that will be
-    /// removed before storing it.
+    /// key: The key value. If it starts with an ampersand/percent/dot, that
+    /// will be removed before storing it.
     ///
     /// value: The value, if any.
     ///
@@ -40,6 +40,9 @@ public:
 
     /// Returns whether this is an internal attribute.
     bool internal() const;
+
+    /// Returns true if the property names match.
+    bool operator==(const Attribute& other) const;
 
     ACCEPT_VISITOR_ROOT();
 

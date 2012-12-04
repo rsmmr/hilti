@@ -11,7 +11,7 @@ Attribute::Attribute(const string& key, shared_ptr<Expression> value, bool inter
 {
     string k = key;
 
-    while ( k.size() && k[0] == '&' )
+    while ( k.size() && (strchr("&%.", k[0]) != 0) )
         k = k.substr(1, std::string::npos);
 
     _key = k;
@@ -44,6 +44,11 @@ void Attribute::setValue(shared_ptr<Expression> expr)
 bool Attribute::internal() const
 {
     return _internal;
+}
+
+bool Attribute::operator==(const Attribute& other) const
+{
+    return _key == other.key();
 }
 
 AttributeSet::AttributeSet(const attribute_list& attrs, const Location& l) : Node(l)
@@ -120,3 +125,4 @@ AttributeSet& AttributeSet::operator=(const attribute_list& attrs)
 
     return *this;
 }
+

@@ -1483,21 +1483,18 @@ class Property : public Item
 public:
     /// Constructor.
     ///
-    /// id: The name of declared property. If it does not have a leading dot,
-    /// that will be added.
-    ///
-    /// value: The properties value.
+    /// prop: The property being declared.
     ///
     /// l: An associated location.
-    Property(shared_ptr<binpac::ID> id, shared_ptr<binpac::Expression> value, const Location& l=Location::None);
+    Property(shared_ptr<Attribute> prop, const Location& l=Location::None);
 
-    /// Returns the properties value.
-    shared_ptr<binpac::Expression> value() const;
+    /// Returns the property.
+    shared_ptr<Attribute> property() const;
 
     ACCEPT_VISITOR(Item);
 
 private:
-    node_ptr<binpac::Expression> _value;
+    node_ptr<Attribute> _property;
 };
 
 /// A unit-wide hook.
