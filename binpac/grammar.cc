@@ -88,6 +88,11 @@ string Grammar::check() const
             break;
         }
 
+        if ( syms1.size() == 0 && syms2.size() == 0 ) {
+            msg += util::fmt("no look-ahead symbol for either alternative in %s\n", _productionLocation(lap));
+            break;
+        }
+
         auto isect = util::set_intersection(syms1, syms2);
 
         if ( isect.size() )
@@ -158,18 +163,28 @@ void Grammar::printTables(std::ostream& out, bool verbose)
 
 void Grammar::_addProduction(shared_ptr<Production> p)
 {
-    if ( std::dynamic_pointer_cast<production::Epsilon>(p) ) {
+    auto epsilon = std::dynamic_pointer_cast<production::Epsilon>(p);
+
+    if ( epsilon ) {
         // We use our own internal instance for all epsilon productions.
         p = _epsilon;
     }
 
-    auto sym = p->symbol();
-
-    if ( _prods.find(sym) != _prods.end() )
-        // Already added.
+    if ( _prods_set.find(p) != _prods_set.end() )
+        // Already added this.
         return;
 
+    // Create a unique symbol.
+    int cnt = 1;
+    auto sym = p->symbol();
+
+    while ( _prods.find(sym) != _prods.end() ) {
+        sym = util::fmt("%s.%d", p->symbol(), ++cnt);
+    }
+
+    p->setSymbol(sym);
     _prods.insert(std::make_pair(sym, p));
+    _prods_set.insert(p);
 
     auto nterm = std::dynamic_pointer_cast<production::NonTerminal>(p);
 

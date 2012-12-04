@@ -97,6 +97,7 @@ private:
     shared_ptr<Production> _root;
 
     production_map _prods;
+    production_set _prods_set;
     nterm_list _nterms;
 
     production_list _lah_errors;

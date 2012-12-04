@@ -99,6 +99,9 @@ protected:
     /// default does nothing.
     virtual void simplify();
 
+    /// Rename the production.
+    void setSymbol(const string& sym);
+
 private:
     shared_ptr<Type> _type;
     shared_ptr<type::unit::item::field::Container> _container;

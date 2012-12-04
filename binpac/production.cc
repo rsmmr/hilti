@@ -23,6 +23,11 @@ const string& Production::symbol() const
     return _symbol;
 }
 
+void Production::setSymbol(const string& sym)
+{
+    _symbol = sym;
+}
+
 shared_ptr<Type> Production::type() const
 {
     return _type;
