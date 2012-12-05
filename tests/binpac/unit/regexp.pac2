@@ -1,6 +1,5 @@
 #
-# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
-# @TEST-EXEC:  printf "FooooooBaaaar" | ./a.out >output
+# @TEST-EXEC:  printf "FooooooBaaaar" | pac-driver-test %INPUT >output    
 # @TEST-EXEC:  btest-diff output
 #
 

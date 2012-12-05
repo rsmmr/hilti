@@ -12,7 +12,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-OverloadResolver::OverloadResolver() : Pass<AstInfo>("OverloadResolver")
+OverloadResolver::OverloadResolver() : Pass<AstInfo>("binpac::OverloadResolver")
 {
 }
 
@@ -41,7 +41,8 @@ void OverloadResolver::visit(expression::UnresolvedOperator* o)
 
     auto i = operands.begin();
     auto id = ast::tryCast<expression::ID>(*i++);
-    auto args = ast::checkedCast<expression::List>(*i)->expressions();
+    auto tuple = ast::checkedCast<expression::Constant>(*i)->constant();
+    auto args = ast::checkedCast<constant::Tuple>(tuple)->value();
 
     if ( ! id )
         return;

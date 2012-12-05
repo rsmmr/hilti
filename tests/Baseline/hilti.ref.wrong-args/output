@@ -1,5 +1,5 @@
 
 >>> b = assign a
-wrong-args.hlt:21-22: error, operand not compatible with target [pass::Validator]
+wrong-args.hlt:21-22: error, operand not compatible with target [pass::hilti::Validator]
 wrong-args.hlt: Aborting due to verification error.
 error running hiltic, aborting

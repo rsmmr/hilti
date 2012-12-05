@@ -1,0 +1,8 @@
+# $Id$
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+print list(1, 2, 3);

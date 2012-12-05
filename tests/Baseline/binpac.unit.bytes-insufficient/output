@@ -1,3 +1,2 @@
-[binpac] test
-[binpac]    a = '1234'
-hilti: uncaught exception, ParseError with argument insufficient input (from bytes-insufficient.pac2.tmp.hlt:507)
+<a=1234, b=(not set)>
+hilti: uncaught exception, BinPACHilti::ParseError with argument 'insufficient input' (from /da/home/robin/work/binpacpp/hilti2/tests/.tmp/binpac.unit.bytes-insufficient/bytes-insufficient.hb26202.tmp.hlt:237-238)

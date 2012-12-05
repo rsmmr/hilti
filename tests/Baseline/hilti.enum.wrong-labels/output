@@ -1,5 +1,5 @@
 
 >>> A
-wrong-labels.hlt:14-14: error, unknown ID A [pass::IdResolver]
+wrong-labels.hlt:14-14: error, unknown ID A [pass::hilti::IdResolver]
 wrong-labels.hlt: Aborting due to verification error.
 error running hiltic, aborting

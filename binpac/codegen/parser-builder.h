@@ -75,13 +75,12 @@ public:
     /// (assuming parsing is in process; if not aborts());
     shared_ptr<hilti::Expression> hiltiCookie();
 
-    /// Returns the final type of an item. This takes into account
-    /// transformations like &convert for fields.
+    /// Writes a new chunk of data into a field's sinks.
     ///
-    /// item: The item.
+    /// field: The field.
     ///
-    /// Returns: The final type.
-    shared_ptr<binpac::Type> itemType(shared_ptr<type::unit::Item> item);
+    /// data: The data to write into the sinks.
+    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data);
 
     /// Writes a new chunk of data into a sink.
     ///
@@ -189,13 +188,14 @@ protected:
     void visit(type::Vector* v) override;
 
 private:
-    // TODO: This should be defined in the HILTI namespace.
-    typedef std::list<shared_ptr<hilti::Expression>> hilti_expression_list;
+    typedef std::list<std::pair<shared_ptr<hilti::Expression>, shared_ptr<Type>>> hilti_expression_type_list;
 
-    // Pushes an empty parse function with the right standard signature.
+    // Pushes an empty parse function with the right standard signature. If
+    // value_type is given, the function return tuple will contain an
+    // additional element of that type for passing back the parsed value.
     //
     // Returns: An expression referencing the function.
-    shared_ptr<hilti::Expression> _newParseFunction(const string& name, shared_ptr<type::Unit> unit);
+    shared_ptr<hilti::Expression> _newParseFunction(const string& name, shared_ptr<type::Unit> unit, shared_ptr<hilti::Type> value_type = nullptr);
 
     /// Generates the body code for parsing a given node. Same parameters as
     /// parse().
@@ -206,7 +206,7 @@ private:
 
     // Initializes the current parse object before starting the parsing
     // process.
-    void _prepareParseObject(const hilti_expression_list& params, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
+    void _prepareParseObject(const hilti_expression_type_list& params, shared_ptr<hilti::Expression> cur, shared_ptr<hilti::Expression> sink = nullptr, shared_ptr<hilti::Expression> mimetype = nullptr);
 
     // Finalizes the current parser when the parsing process has finished.
     void _finalizeParseObject();
@@ -252,14 +252,16 @@ private:
     // the hook, if it takes one (or null). If \a foreach is true, returns a
     // boolean expression that is true if the hook has called "hook.stop
     // true". If \a foreach is false, returns null.
-    shared_ptr<hilti::Expression> _hiltiRunHook(shared_ptr<ID> id, bool foreach, shared_ptr<hilti::Expression> dollardollar = nullptr);
+    shared_ptr<hilti::Expression> _hiltiRunHook(shared_ptr<binpac::type::Unit> unit, shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, shared_ptr<hilti::Expression> dollardollar = nullptr);
 
     // Defines a hook's implementation. <id> is the full path to the hooked
     // element, including the module. <forach> is true if this is a \c
     // &foreach hook. The ID of \a hook is ignored. \a dollardollar, if
     // given, is the type for the \a $$ identifier within the hook, if it
-    // takes one.
-    void _hiltiDefineHook(shared_ptr<ID> id, bool foreach, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar = nullptr, int priority = 0);
+    // takes one. If <debug> is true, the hook will only be compiled in at
+    // non-zero debugging levels, and it will only be executed at run-time if
+    // explicitly enabled via libbinpac.
+    void _hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::Item> item, bool foreach, bool debug, shared_ptr<type::Unit> unit, shared_ptr<Statement> block, shared_ptr<Type> dollardollar = nullptr, int priority = 0);
 
     // Returns the full path ID for the hook referecing a unit item.
     shared_ptr<ID> _hookForItem(shared_ptr<type::Unit>, shared_ptr<type::unit::Item> item, bool foreach, bool private_);
@@ -315,10 +317,6 @@ private:
     // byteorder is null, network order is used as default.
     shared_ptr<hilti::Expression> _hiltiIntUnpackFormat(int width, bool signed_, shared_ptr<binpac::Expression> byteorder);
 
-    // Processes a parsed field values before it's stored in the parsed
-    // object. This applies transformations like &convert.
-    shared_ptr<hilti::Expression> _hiltiProcessFieldValue(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> value);
-
     // Disables saving parsed values in a parse objects. This is primarily
     // for parsing container items that aren't directly stored there.
     void disableStoringValues();
@@ -348,6 +346,9 @@ private:
     // of having insufficient inout earlier. False if it's the initial
     // parsing step for a newly instantiated parser.
     void _hiltiFilterInput(bool resume);
+
+    // Helper for bytes parsing, implements &chunked.
+    void _hiltiCheckChunk(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> length_op);
 
     std::list<shared_ptr<ParserState>> _states;
     shared_ptr<hilti::Expression> _last_parsed_value;

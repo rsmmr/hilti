@@ -59,10 +59,6 @@ KHASH_INIT(blocked_jobs, const void*, hlt_blocked_job*, 1, __kh_ptr_hash_func, _
 // maximum load of 1.0.
 #define QUEUE_MAX_LOAD   (QUEUE_BATCH_SIZE * 3 * mgr->num_workers)
 
-#ifdef DEBUG
-uint64_t job_counter = 0;
-#endif
-
 static void _fatal_error(const char* msg)
 {
     fprintf(stderr, "libhilti threading: %s\n", msg);
@@ -142,14 +138,14 @@ void hlt_thread_mgr_delete(hlt_thread_mgr* mgr)
 
 int8_t __hlt_thread_mgr_terminating()
 {
-    return __hlt_global_thread_mgr_terminate;
+    return __hlt_globals()->thread_mgr_terminate;
 }
 
 // Flag all threads to terminate immediately. Safe to call from all threads.
 void _kill_all_threads(hlt_thread_mgr* mgr)
 {
     DBG_LOG(DBG_STREAM, "terminating all threads");
-    __hlt_global_thread_mgr_terminate = 1;
+    __hlt_globals()->thread_mgr_terminate = 1;
 }
 
 void __hlt_thread_mgr_uncaught_exception_in_thread(hlt_exception* excpt, hlt_execution_context* ctx)
@@ -352,7 +348,7 @@ static void _worker_schedule(hlt_worker_thread* current, hlt_worker_thread* targ
     job->tcontext_type = tcontext_type;
     job->tcontext = tcontext;
 #if DEBUG
-    job->id = ++job_counter;
+    job->id = ++__hlt_globals()->job_counter;
 #endif
 
     GC_CCTOR_GENERIC(&job->tcontext, tcontext_type);

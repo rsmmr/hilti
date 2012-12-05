@@ -20,6 +20,8 @@ enum Kind {
     BitOr,
     BitXor,
     Call,
+    Coerce,
+    Cast,
     DecrPostfix,
     DecrPrefix,
     Deref,
@@ -50,7 +52,7 @@ enum Kind {
     Size,
 };
 
-enum OpType { UNARY_PREFIX, UNARY_POSTFIX, BINARY, OTHER };
+enum OpType { UNARY_PREFIX, UNARY_POSTFIX, BINARY, BINARY_COMMUTATIVE, OTHER };
 
 #define _OP(kind, display, type) {kind, OperatorDef(kind, #kind, display, type)}
 
@@ -70,7 +72,7 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(SignPos, "-", UNARY_PREFIX),
     _OP(Deref, "*", UNARY_PREFIX),
     _OP(DecrPrefix, "--", UNARY_PREFIX),
-    _OP(IncrPrefix, "--", UNARY_PREFIX),
+    _OP(IncrPrefix, "++", UNARY_PREFIX),
     _OP(New, "new ", UNARY_PREFIX),
 
     _OP(DecrPostfix, "--", UNARY_POSTFIX),
@@ -80,16 +82,15 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(BitOr, "|", BINARY),
     _OP(BitXor, "^", BINARY),
     _OP(Div, "/", BINARY),
-    _OP(Equal, "==", BINARY),
+    _OP(Equal, "==", BINARY_COMMUTATIVE),
     _OP(Greater, ">", BINARY),
-    _OP(IncrPrefix, "++", BINARY),
     _OP(LogicalAnd, "&&", BINARY),
     _OP(LogicalOr, "||", BINARY),
     _OP(Lower, "<", BINARY),
     _OP(Minus, "-", BINARY),
     _OP(Mod, "mod", BINARY),
-    _OP(Mult, "*", BINARY),
-    _OP(Not, "!", BINARY),
+    _OP(Mult, "*", BINARY_COMMUTATIVE),
+    _OP(Not, "!", BINARY_COMMUTATIVE),
     _OP(Plus, "+", BINARY),
     _OP(PlusAssign, "+=", BINARY),
     _OP(Power, "**", BINARY),
@@ -99,6 +100,8 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(Attribute, "<Attribute>", OTHER),
     _OP(AttributeAssign, "<AttribteAssign>", OTHER),
     _OP(Call, "<Call>", OTHER),
+    _OP(Coerce, "<Coerce>", OTHER),
+    _OP(Cast, "<Cast>", OTHER),
     _OP(HasAttribute, "<HasAttribute>", OTHER),
     _OP(Index, "<INdex>", OTHER),
     _OP(IndexAssign, "<IndexAssign>", OTHER),
@@ -127,8 +130,10 @@ public:
     ///
     /// ops: The operands.
     ///
+    /// new_ops: TODO.
+    ///
     /// coerce: True if coercing the operands for a match is ok.
-    bool match(const expression_list& ops, bool coerce);
+    bool match(const expression_list& ops, bool coerce, expression_list* new_ops);
 
     /// Checks the correct usage of the operator, given a set of operands and
     /// the expected result type.
@@ -138,6 +143,8 @@ public:
     /// result: Expected result type.
     ///
     /// ops: The operands.
+    ///
+    /// \todo: \a result is currently unused and I believe we can remove it. Right?
     void validate(passes::Validator* vld, shared_ptr<Type> result, const expression_list& ops);
 
     /// Returns the operator's result type, given a set of operands.
@@ -159,6 +166,11 @@ public:
         shared_ptr<Type> type_op1;    /// Type of the operator's first operand.
         shared_ptr<Type> type_op2;    /// Type of the operator's second operand.
         shared_ptr<Type> type_op3;    /// Type of the operator's third operand.
+        std::pair<string, shared_ptr<Type>> type_callarg1; /// Name and type of first method call argument.
+        std::pair<string, shared_ptr<Type>> type_callarg2; /// Name and type of first method call argument.
+        std::pair<string, shared_ptr<Type>> type_callarg3; /// Name and type of first method call argument.
+        std::pair<string, shared_ptr<Type>> type_callarg4; /// Name and type of first method call argument.
+        std::pair<string, shared_ptr<Type>> type_callarg5; /// Name and type of first method call argument.
         string class_op1;             /// Name of class of the operator's first operand.
         string class_op2;             /// Name of class of the operator's second operand.
         string class_op3;             /// Name of class of the operator's third operand.
@@ -188,6 +200,11 @@ public:
     /// one of the virtual methods working on operands.
     const shared_ptr<Expression> op3() const { assert(operands().size() >= 3); auto i = operands().begin(); ++i; ++i; return *i; }
 
+    /// Returns true if the operator has a given operand defined.
+    ///
+    /// n: The operand in the range from 1 to 3.
+    bool hasOp(int n);
+
     /// Checks whether an operand can be coerced into a given type. If not,
     /// an error is reported.
     ///
@@ -197,6 +214,15 @@ public:
     ///
     /// Returns: True if coercable.
     bool canCoerceTo(shared_ptr<Expression> op, shared_ptr<Type> type);
+
+    /// Checks whether two types are equal. If not, an error is reported.
+    ///
+    /// type1: The first type.
+    ///
+    /// type2: The seconf type.
+    ///
+    /// Returns: True if coercable.
+    bool sameType(shared_ptr<Type> type1, shared_ptr<Type> type2);
 
     /// Method to report errors found by validate(). This forwards to the
     /// current passes::Validator.
@@ -219,7 +245,8 @@ public:
     /// that this method expects a constant tuple.
     ///
     /// tuple: The tuple expression; must be of a \a expression::Constant and
-    ///        of type \a type::Tuple, otherwise will abort.
+    ///        of type \a type::Tuple, otherwise will abort. Can be null to
+    ///        specify an empty tuple.
     ///
     /// types: The expected types of the tuple elements.
     ///
@@ -231,7 +258,8 @@ public:
     /// for a function or method call. If not, it return false, but does not report an error.
     ///
     /// tuple: The tuple expression; must be of a \a expression::Constant and
-    ///        of type \a type::Tuple, otherwise will abort.
+    ///        of type \a type::Tuple, otherwise will abort. Can be null to
+    ///        specify an empty tuple.
     ///
     /// types: The expected types of the tuple elements.
     ///
@@ -240,10 +268,12 @@ public:
     bool matchCallArgs(shared_ptr<Expression> tuple, const type_list& types);
 
 protected:
-
     /// Returns a factory function that instantiates a resolved operator
     /// expression for this operator with the given operands.
     expression_factory factory() const { return _factory; }
+
+    /// For method calls, returns a list of argument types.
+    type_list _callArgs() const;
 
     /// Validates whether a set of operands is valid for the instruction.
     /// Errors are reported via the given passes::Validator instance (which is
@@ -257,8 +287,14 @@ protected:
     // The follwing may be overridden by derived classes via macros.
     virtual shared_ptr<Type> __typeOp1() const    { return nullptr; }
     virtual shared_ptr<Type> __typeOp2() const    { return nullptr; }
-    virtual shared_ptr<Type> __typeOp3() const    { return nullptr; }
+    virtual shared_ptr<Type> __typeOp3() const; // This one default to type::Tuple for MethodCalls.
     virtual shared_ptr<Type> __typeResult() const = 0;
+
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg1() const { return std::make_pair("", nullptr); }
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg2() const { return std::make_pair("", nullptr); }
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg3() const { return std::make_pair("", nullptr); }
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg4() const { return std::make_pair("", nullptr); }
+    virtual std::pair<string, shared_ptr<Type>> __typeCallArg5() const { return std::make_pair("", nullptr); }
 
     virtual bool                   __match() { return true; };
     virtual void                   __validate() { };
@@ -287,6 +323,7 @@ public:
     ~OperatorRegistry();
 
     typedef std::unordered_multimap<operator_::Kind, shared_ptr<Operator>, std::hash<int>> operator_map;
+    typedef std::list<std::pair<shared_ptr<Operator>, expression_list>> matching_result;
 
     /// Returns a list of operators of a given Kind matching a set of
     /// operands. This is the main function for overload resolution.
@@ -295,8 +332,16 @@ public:
     ///
     /// ops: The operands to match all the instructions with the given name for.
     ///
-    /// Returns: A list of instructions compatatible with \a id and \a ops.
-    operator_list getMatching(operator_::Kind kind, const expression_list& ops) const;
+    /// try_coercion: If true and there's not direct match for the operands'
+    /// types, the method also tries to coerce the operands as necessary to
+    /// get a match.
+    ///
+    /// Returns: A list of (operators, operands) pairs. The operands are the
+    /// ones found to be compatible, and each comes with a set of operands to
+    /// use with them. Usally, these operands are just those passed into the
+    /// method, however the matching process may adapt them to make them
+    /// compatible.
+    matching_result getMatching(operator_::Kind kind, const expression_list& ops, bool try_coercion = true, bool try_commutative = true) const;
 
     /// Returns all operators of a given kind.
     ///

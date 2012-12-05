@@ -13,7 +13,7 @@ class Collector : public Pass<>
 {
 public:
    /// Constructor.
-   Collector() : Pass<>("codegen::Collector") {}
+   Collector() : Pass<>("hilti::codegen::Collector") {}
 
    /// Collects information about an AST.
    bool run(shared_ptr<hilti::Node> module) override {

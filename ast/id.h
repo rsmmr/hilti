@@ -51,9 +51,22 @@ public:
 
     /// Returns the identifier as single string. For scoped identifiers, the
     /// path components will be joined by \c ::.
-    string pathAsString() const {
-       return util::strjoin(_path, "::");
-       }
+    ///
+    /// relative_to: If given and the full names starts with a initial
+    /// component like it, then that one is removed. Typically, one would
+    /// pass in a module name here and the method then returns the ID as to
+    /// be used from inside that module.
+    string pathAsString(shared_ptr<ID> relative_to = nullptr) const {
+        auto p1 = _path;
+        auto p2 = relative_to ? relative_to->_path : component_list();
+
+        while ( p1.size() && p2.size() && p1.front() == p2.front() ) {
+            p1.pop_front();
+            p2.pop_front();
+        }
+
+        return util::strjoin(p1, "::");
+    }
 
     /// Returns the local component of the identifier. For \c Foo::bar this
     /// returns \c bar (as it does for \c bar).

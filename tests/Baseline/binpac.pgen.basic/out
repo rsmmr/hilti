@@ -1,8 +1,8 @@
 === Grammar my-grammar
  (*)   Sequence: S   -> l1 l2 l3
-           Ctor: l1  -> b"l1-val" (bytes)
-           Ctor: l2  -> b"l2-val" (bytes)
-           Ctor: l3  -> b"l3-val" (bytes)
+           Ctor: l1  -> b"l1-val" (bytes/id 1)
+           Ctor: l2  -> b"l2-val" (bytes/id 2)
+           Ctor: l3  -> b"l3-val" (bytes/id 3)
 
   -- Epsilon:
      S = 0

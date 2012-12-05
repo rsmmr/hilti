@@ -60,6 +60,11 @@ int8_t binpac_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ct
     return _debugging;
 }
 
+int8_t binpachilti_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    return binpac_debugging_enabled(excpt, ctx);
+}
+
 void binpac_fatal_error(const char* msg)
 {
     fprintf(stderr, "fatal binpac error: %s", msg);
@@ -90,3 +95,4 @@ void binpac_debug_print_ptr(hlt_string tag, const hlt_type_info* type, void** pt
     const char* s = hlt_string_to_native(tag, excpt, ctx);
     fprintf(stderr, "debug: %s %p\n", s, *ptr);
 }
+

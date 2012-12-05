@@ -1,4 +1,0 @@
-[binpac] test
-[binpac]    a = '1234'
-[binpac]    b = '567890\x0a'
-1234 567890\x0a

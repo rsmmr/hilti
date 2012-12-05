@@ -1,0 +1,114 @@
+# $Id$
+#
+# TODO:
+#
+#    * Do we want to put bitfields into the unit namespace?
+#    * Nicer way to consume the pointer in the Label's switch?
+
+module DNS;
+
+type RDType = enum {
+    A = 1, NS = 2, MD = 3, MF = 4, CNAME = 5, SOA = 6, MB = 7, MG = 8, MR = 9,
+    NULL = 10, WKS = 11, PTR = 12, HINFO = 13, MINFO = 14, MX = 15, TXT = 16,
+    AAAA = 28, NBS = 32, A6 = 38, EDNS = 41 };
+
+export type Message = unit {
+    header:     Header;
+    question:   list<Question(self)>       &length=self.header.qdcount;
+    answer:     list<ResourceRecord(self)> &length=self.header.ancount;
+    authority:  list<ResourceRecord(self)> &length=self.header.nscount;
+    additional: list<ResourceRecord(self)> &length=self.header.arcount;
+};
+
+type Header = unit {
+    id : uint16;
+       : bitfield(16) {
+            qr: 0;
+            opcode: 1..3;
+            aa: 4;
+            tc: 5;
+            rd: 6;
+            ra: 7;
+            z:  9..11;
+            rcode: 12..15;
+        };
+
+    qdcount: uint16;
+    ancount: uint16;
+    nscount: uint16;
+    arcount: uint16;
+};
+
+type Question = unit(msg: Message) {
+    qname:  Name(msg);
+    qtype:  uint16;
+    qclass: uint16;
+};
+
+type ResourceRecord = unit(msg: Message) {
+    name:   Name(msg);
+    ty:     uint16 &convert=RDType($$);
+    class:  uint16;
+    ttl:    uint32;
+    rdlen:  uint16;
+
+    switch ( self.ty ) {
+	    RDType::NS, RDType::CNAME, RDType::PTR
+                     -> labels:  Name(msg);
+        RDType::A    -> a:       addr &ipv4;
+        RDType::AAAA -> a:       addr &ipv6;
+	    RDType::MX   -> mx:      RDataMX(msg);
+	    RDType::SOA  -> soa:     RDataSOA(msg);
+
+        *            -> rdata:   bytes &length=self.rdlen;
+    };
+};
+
+type RDataMX = unit(msg: Message) {
+    preference: uint16;
+    name:	    Name(msg);
+};
+
+type RDataSOA = unit(msg: Message) {
+    mname:      Name(msg);
+    rname:      Name(msg);
+    serial:     uint32;
+    refresh:    uint32;
+    retry:      uint32;
+    expire:     uint32;
+    minimum:    uint32;
+};
+
+type Name = unit(msg: Message) {
+    : list<Label(msg, self)> &until($$.len == 0 || $$.len.compressed != 0);
+
+    # Parsed labels are collected in this list.
+    var labels: list<bytes>;
+};
+
+type Pointer = unit(msg: Message, label: Label) {
+    len: bitfield(16) {
+        offset: 0..13;
+        };
+
+    name: Name(msg) &parse(msg.input() + self.len.offset);
+    };
+
+type Label = unit(msg: Message, name: Name) {
+    len: bitfield(8) {
+        offset: 0..5;
+        compressed: 6..7;
+        };
+
+    switch ( self.len.compressed ) {
+        0 ->    label: bytes &length=self.len {
+                    name.labels.push_back(self.label);
+                    }
+
+        3 ->    ptr: Pointer(msg, self) &parse(self.input()) {
+                    name.labels += self.ptr.name.labels;
+                    self.set_position(self.input() + 2); # Consume the pointer.
+                    }
+        };
+};
+

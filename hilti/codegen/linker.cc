@@ -188,7 +188,9 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
         makeHooks(module_names, linker.getModule());
     }
 
-    return linker.releaseModule();
+    auto module = linker.releaseModule();
+    assert(module);
+    return module;
 }
 
 bool Linker::isHiltiModule(llvm::Module* module)
@@ -329,8 +331,8 @@ void Linker::makeHooks(const std::list<string>& module_names, llvm::Module* modu
             // Already declared, make sure it matches.
             auto other = (*h).second;
 
-            if ( decl.func != other.func || decl.result != other.result )
-                fatalError(::util::fmt("inconsistent declarations found for hook %s", name.str().c_str()));
+            //if ( decl.func != other.func || decl.result != other.result )
+            //    fatalError(::util::fmt("inconsistent declarations found for hook %s", name.str().c_str()));
         }
     }
 

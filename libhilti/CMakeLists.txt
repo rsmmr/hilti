@@ -29,10 +29,11 @@ if (${PAPI_FOUND} STREQUAL "TRUE" )
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_PAPI")
 endif ()
 
+set(scripts "${CMAKE_SOURCE_DIR}/scripts")
 set(autogen "${CMAKE_CURRENT_BINARY_DIR}/autogen")
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
-set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic")
+set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic-nojit")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -std=gnu89 -D_GNU_SOURCE")
@@ -127,8 +128,8 @@ add_custom_target(build_asm
 add_library(hilti-rt-dbg       STATIC ${SRCS} ${autogen}/type-info.o)
 add_library(hilti-rt           STATIC ${SRCS} ${autogen}/type-info.o)
 
-add_dependencies(hilti-rt-dbg      generate_jrx_parser build_asm hiltic)
-add_dependencies(hilti-rt          generate_jrx_parser build_asm hiltic)
+add_dependencies(hilti-rt-dbg      generate_jrx_parser build_asm hiltic-nojit)
+add_dependencies(hilti-rt          generate_jrx_parser build_asm hiltic-nojit)
 
 set_target_properties(hilti-rt-dbg PROPERTIES COMPILE_FLAGS ${c_debug_flags})
 set_target_properties(hilti-rt     PROPERTIES COMPILE_FLAGS ${c_release_flags})

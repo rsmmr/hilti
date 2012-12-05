@@ -6,27 +6,9 @@
 
 module Test;
 
-import TestHilti;
+import "BINPAC-HILTI-C" void TestHilti::test(name: string, t: tuple<*>);
 
 TestHilti::test("foo", (1, True, b"abc"));
-
-# @TEST-START-FILE testhilti.pac2
-
-module TestHilti;
-
-declare "BINPAC-HILTI-C" void test(name: string, t: tuple<*>);
-
-# @TEST-END-FILE
-
-# @TEST-START-FILE testhilti.hlt
-
-module TestHilti
-
-import BinPACHilti
-
-declare "C-HILTI" void test(string name, tuple<*> t, ref<BinPACHilti::UserCookie> c)
-
-# @TEST-END-FILE
 
 # @TEST-START-FILE testhilti.c
 

@@ -143,6 +143,9 @@ void Validator::visit(statement::Block* s)
                 if ( func && ast::isA<Hook>(func->function()) )
                     continue;
 
+                if ( i.first.find("::") != string::npos )
+                    break;
+
                 error(s, util::fmt("ID %s defined more than once", i.first));
                 return;
             }
@@ -438,8 +441,12 @@ void Validator::visit(declaration::Hook* f)
 
     auto other = block->scope()->lookup(f->id());
 
+#if 0
+    // Allow to define external hooks without declaring them first. That
+    // allows for declaring hooks without importing the other module.
     if ( f->id()->isScoped() && ! other.size() )
         error(f, util::fmt("external hook %s not declared", f->id()->pathAsString().c_str()));
+#endif
 
     if ( other.size() && ! f->hook()->type()->equal(other.front()->type()) )
         error(f, util::fmt("inconsistent definitions for hook %s", f->id()->pathAsString().c_str()));

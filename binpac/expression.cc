@@ -32,27 +32,39 @@ bool Expression::initializer() const
     return false;
 }
 
-expression::CustomExpression::CustomExpression(const Location& l) : Expression(l)
+bool Expression::canCoerceTo(shared_ptr<Type> target) const
 {
+#if 0
+    std::cerr << "canCoerceTo: "
+              << const_cast<Expression *>(this)->render()
+              << " " << type()->render()
+              << " -> " << target->render()
+              << std::endl;
+#endif
+
+    bool result = false;
+
+    // TODO: We arent't using the expression constant coercion support here;
+    // we should probably adapt the AST classes so that we can remove the
+    // Coercer there (whihc however will break HILTI, which then should
+    // implement data-type specific coercion in simialr way as we do here.)
+    // And then this code should move there.
+    auto const_ = dynamic_cast<const expression::Constant *>(this);
+
+//    std::cerr << "    " << (const_ ? "is a constant" : "is not a constant") << std::endl;
+
+    if ( const_ && ConstantCoercer().canCoerceTo(const_->constant(), target) ) {
+//        std::cerr << "    const-coerce succeeds" << std::endl;
+        result = true;
+    }
+    else
+        result = Coercer().canCoerceTo(type(), target);
+
+//    std::cerr << "    " << (result ? "true" : "false") << std::endl;
+    return result;
 }
 
-shared_ptr<Type> expression::CustomExpression::type() const
-{
-    // Must be overridden.
-    assert(false);
-}
-
-bool expression::CustomExpression::isConstant() const
-{
-    return false;
-}
-
-bool expression::CustomExpression::canCoerceTo(shared_ptr<Type> target) const
-{
-    return Coercer().canCoerceTo(type(), target);
-}
-
-shared_ptr<binpac::Expression> expression::CustomExpression::coerceTo(shared_ptr<Type> target)
+shared_ptr<binpac::Expression> Expression::coerceTo(shared_ptr<Type> target)
 {
 #ifdef DEBUG
     if ( ! canCoerceTo(target) ) {
@@ -66,11 +78,29 @@ shared_ptr<binpac::Expression> expression::CustomExpression::coerceTo(shared_ptr
 
     auto t = type();
 
-    if ( t->equal(target) )
+    if ( t->equal(target) || ast::isA<type::Any>(target) )
         return sharedPtr<binpac::Expression>();
 
-    auto coerced = new CoercedExpression(sharedPtr<binpac::Expression>(), target, location());
-    return shared_ptr<typename AstInfo::expression>(coerced);
+    auto const_ = dynamic_cast<const expression::Constant *>(this);
+    if ( const_ && ConstantCoercer().canCoerceTo(const_->constant(), target) )
+        return std::make_shared<expression::Constant>(ConstantCoercer().coerceTo(const_->constant(), target));
+
+    return std::make_shared<CoercedExpression>(sharedPtr<binpac::Expression>(), target, location());
+}
+
+expression::CustomExpression::CustomExpression(const Location& l) : Expression(l)
+{
+}
+
+shared_ptr<Type> expression::CustomExpression::type() const
+{
+    // Must be overridden.
+    assert(false);
+}
+
+bool expression::CustomExpression::isConstant() const
+{
+    return false;
 }
 
 expression::List::List(const expression_list& exprs, const Location& l)
@@ -290,6 +320,9 @@ expression::ResolvedOperator::ResolvedOperator(shared_ptr<Operator> op, const ex
 
     for ( auto op : _ops )
         addChild(op);
+
+    _type = _op->type(operands());
+    addChild(_type);
 }
 
 expression::ResolvedOperator::~ResolvedOperator()
@@ -318,12 +351,7 @@ expression_list expression::ResolvedOperator::operands() const
 
 shared_ptr<Type> expression::ResolvedOperator::type() const
 {
-    expression_list ops;
-
-    for ( auto o : _ops )
-        ops.push_back(o);
-
-    return _op->type(ops);
+    return _type;
 }
 
 shared_ptr<Expression> expression::ResolvedOperator::op1() const
@@ -339,5 +367,17 @@ shared_ptr<Expression> expression::ResolvedOperator::op2() const
 shared_ptr<Expression> expression::ResolvedOperator::op3() const
 {
     return _ops.size() >= 3 ? _ops[2] : nullptr;
+}
+
+expression::PlaceHolder::PlaceHolder(shared_ptr<binpac::Type> type, const Location& l)
+    : CustomExpression(l)
+{
+    _type = type;
+    addChild(_type);
+}
+
+shared_ptr<Type> expression::PlaceHolder::type() const
+{
+    return _type;
 }
 

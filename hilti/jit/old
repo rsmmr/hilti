@@ -1,0 +1,24 @@
+#include "lli-mm.cc"
+
+llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module, int optimize)
+{
+}
+
+void* CompilerContext::nativeFunction(llvm::ExecutionEngine* ee, llvm::Module* module, const string& function)
+{
+    auto func = module->getFunction(function);
+
+    if ( ! func ) {
+        error(util::fmt("jit: no function of name %s in module %s", function, module->getModuleIdentifier()));
+        return 0;
+    }
+
+    auto fp = ee->getPointerToFunction(func);
+
+    if ( ! fp ) {
+        error(util::fmt("jit: cannt get pointer to function %s in module %s", function, module->getModuleIdentifier()));
+        return 0;
+    }
+
+    return fp;
+}

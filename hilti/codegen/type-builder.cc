@@ -941,7 +941,22 @@ void TypeBuilder::visit(type::Struct* t)
 {
     auto llvm_type_only = arg1();
 
-    string sname = t->id() ? t->id()->pathAsString() : t->render();
+    string sname;
+
+    if ( t->id() ) {
+        sname = t->id()->pathAsString();
+
+        if ( ! t->id()->isScoped() ) {
+            auto m = t->firstParent<Module>();
+            if ( m )
+                sname = ::util::fmt("%s::%s", m->id()->name(), sname);
+        }
+    }
+
+    else
+        sname = t->render();
+
+    sname = util::mangle(sname, true);
 
     llvm::StructType* stype = nullptr;
 

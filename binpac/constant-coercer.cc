@@ -12,10 +12,13 @@ void ConstantCoercer::visit(constant::Integer* i)
 
     auto dst_i = ast::tryCast<type::Integer>(arg1());
 
-    if ( dst_i && i->value() <=   1l << dst_i->width()
-               && i->value() >= -(1l << dst_i->width()) ) {
-        auto c = new constant::Integer(i->value(), dst_i->width(), i->location());
-        setResult(shared_ptr<Constant>(c));
+    if ( dst_i ) {
+        if ( dst_i->width() == 64 ||
+             (i->value() <= 1l << dst_i->width() && i->value() >= -(1l << dst_i->width())) ) {
+            auto c = new constant::Integer(i->value(), dst_i->width(), i->location());
+            setResult(shared_ptr<Constant>(c));
+        }
+
         return;
     }
 

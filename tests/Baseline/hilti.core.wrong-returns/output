@@ -1,5 +1,5 @@
 
 >>> return.void
-wrong-returns.hlt:10-11: error, function must return a value [pass::Validator]
+wrong-returns.hlt:10-11: error, function must return a value [pass::hilti::Validator]
 wrong-returns.hlt: Aborting due to verification error.
 error running hiltic, aborting

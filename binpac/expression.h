@@ -36,6 +36,10 @@ public:
     /// always returns false.
     virtual bool initializer() const;
 
+    // We use our own coercer.
+    bool canCoerceTo(shared_ptr<Type> target) const override;
+    shared_ptr<AIExpression> coerceTo(shared_ptr<Type> target) override;
+
     string render() override;
 
     operator string();
@@ -62,10 +66,6 @@ public:
 
     /// Can be overridden. Implementation returns always false.
     bool isConstant() const override;
-
-    // These use the standard coercer on the returned type().
-    bool canCoerceTo(shared_ptr<Type> target) const override;
-    shared_ptr<AIExpression> coerceTo(shared_ptr<Type> target) override;
 
     ACCEPT_VISITOR(Expression);
 };
@@ -434,8 +434,30 @@ protected:
 
 private:
     shared_ptr<Operator> _op;
+    node_ptr<Type> _type;
     std::vector<node_ptr<Expression>> _ops;
 };
+
+/// AST node for an expression that's just a temporary place-holder for a not
+/// known value.
+class PlaceHolder : public CustomExpression
+{
+public:
+    /// Constructor.
+    ///
+    /// type: The type of the expression.
+    ///
+    /// l: An associated location.
+    PlaceHolder(shared_ptr<binpac::Type> type, const Location& l=Location::None);
+
+    shared_ptr<Type> type() const override;
+
+    ACCEPT_VISITOR(binpac::Expression);
+
+private:
+    node_ptr<Type> _type;
+};
+
 
 }
 

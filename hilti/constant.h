@@ -390,13 +390,26 @@ public:
 
    /// Constructor.
    ///
-   /// time: Nano seconds since epoch.
+   /// time: Seconds since epoch.
    ///
    /// l: An associated location.
    ///
    /// Throws: ConstantParseError if the \a time isn't parseable.
    Time(uint64_t time, const Location& l=Location::None) : Constant(l) {
        _time = (uint64_t) (time * 1e9);
+   }
+
+   /// Constructor.
+   ///
+   /// time: Nano seconds since epoch.
+   ///
+   /// takes_nsecs: Just a marker that this methods takes nsecs.
+   ///
+   /// l: An associated location.
+   ///
+   /// Throws: ConstantParseError if the \a time isn't parseable.
+   Time(uint64_t time, bool takes_nsecs, const Location& l=Location::None) : Constant(l) {
+       _time = time;
    }
 
    /// Returns the time as nano seconds since the epoch.
@@ -430,13 +443,26 @@ public:
 
    /// Constructor.
    ///
-   /// interv: Nano seconds.
+   /// interv: seconds.
    ///
    /// l: An associated location.
    ///
    /// Throws: ConstantParseError if the \a interv isn't parseable.
    Interval(double interv, const Location& l=Location::None) : Constant(l) {
        _interv = (uint64_t) (interv * 1e9);
+   }
+
+   /// Constructor.
+   ///
+   /// interv: Nano seconds.
+   ///
+   /// nsecs: Just a marker that this methods takes nsecs.
+   ///
+   /// l: An associated location.
+   ///
+   /// Throws: ConstantParseError if the \a interv isn't parseable.
+   Interval(uint64_t interv, bool takes_nsecs, const Location& l=Location::None) : Constant(l) {
+       _interv = interv;
    }
 
    /// Returns the interval in nano seconds.

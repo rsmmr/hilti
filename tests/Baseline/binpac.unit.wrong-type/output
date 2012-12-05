@@ -1,1 +1,4 @@
-wrong-type.pac2:12: validation error, types do not match in assigment (test2 <- test)
+
+>>> new test 
+wrong-type.pac2:11-11: error, incompatible type for assigment [pass::binpac::Validator]
+wrong-type.pac2: Aborting due to input error.

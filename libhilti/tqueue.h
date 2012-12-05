@@ -9,8 +9,6 @@
 
 #include <stdint.h>
 
-typedef struct __hlt_thread_queue hlt_thread_queue;
-
 /// Creates a new thread-safe multiple-writer-single-reader queue.
 ///
 /// writers: Number of concurrent writer to support.

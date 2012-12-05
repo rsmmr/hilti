@@ -14,7 +14,7 @@ using namespace binpac;
 using namespace binpac::passes;
 
 GrammarBuilder::GrammarBuilder(std::ostream& out)
-    : ast::Pass<AstInfo, shared_ptr<Production>>("GrammarBuilder"), _debug_out(out)
+    : ast::Pass<AstInfo, shared_ptr<Production>>("binpac::GrammarBuilder"), _debug_out(out)
 {
 }
 
@@ -34,13 +34,41 @@ void GrammarBuilder::enableDebug()
     _debug = true;
 }
 
+GrammarBuilder::production_map GrammarBuilder::_compiled;
+
 shared_ptr<Production> GrammarBuilder::compileOne(shared_ptr<Node> n)
 {
+    auto p = _compiled.find(n);
+
+    if ( p != _compiled.end() )
+        return p->second;
+
+    _compiled.insert(std::make_pair(n, std::make_shared<production::Unknown>(n)));
+
     shared_ptr<Production> production = nullptr;
     bool success = processOne(n, &production);
     assert(success);
     assert(production);
+
+    _compiled.erase(n);
+    _compiled.insert(std::make_pair(n, production));
+
     return production;
+}
+
+void GrammarBuilder::_resolveUnknown(shared_ptr<Production> production)
+{
+    auto unknown = ast::tryCast<production::Unknown>(production);
+
+    if ( unknown ) {
+        auto n = unknown->node();
+        auto p = _compiled.find(n);
+        assert( p != _compiled.end());
+        production->replace(n);
+    }
+
+    for ( auto c : production->childs() )
+        _resolveUnknown(c);
 }
 
 string GrammarBuilder::counter(const string& key)
@@ -69,6 +97,8 @@ void GrammarBuilder::visit(declaration::Type* d)
     ++_in_decl;
     auto production = compileOne(unit);
     --_in_decl;
+
+    _resolveUnknown(production);
 
     auto grammar = std::make_shared<Grammar>(d->id()->name(), production);
 
@@ -235,4 +265,22 @@ void GrammarBuilder::visit(type::unit::item::field::container::List* l)
 
         setResult(c);
     }
+}
+
+void GrammarBuilder::visit(type::unit::item::field::container::Vector* v)
+{
+    if ( ! _in_decl )
+        return;
+
+    auto length = v->length();
+    auto sym = "vector:" + v->id()->name();
+
+    ++_in_decl;
+    auto field = compileOne(v->field());
+    field->setContainer(v->sharedPtr<type::unit::item::field::Container>());
+    --_in_decl;
+
+    auto l1 = std::make_shared<production::Counter>(sym, v->length(), field, v->location());
+    l1->pgMeta()->field = v->sharedPtr<type::unit::item::Field>();
+    setResult(l1);
 }

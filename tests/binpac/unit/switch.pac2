@@ -1,9 +1,8 @@
 #
-# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
-# @TEST-EXEC:  echo 1234567890 | ./a.out >output
-# @TEST-EXEC:  echo 2234567890 | ./a.out >>output
-# @TEST-EXEC:  echo 3234567890 | ./a.out >>output
-# @TEST-EXEC:  echo 4234567890 | ./a.out >>output
+# @TEST-EXEC:  echo 1234567890 | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  echo 2234567890 | pac-driver-test %INPUT >>output
+# @TEST-EXEC:  echo 3234567890 | pac-driver-test %INPUT >>output
+# @TEST-EXEC:  echo 4234567890 | pac-driver-test %INPUT >>output
 # @TEST-EXEC:  btest-diff output
 #
 

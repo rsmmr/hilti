@@ -253,6 +253,7 @@ ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<Production> child, s
     : NonTerminal(symbol, type, l)
 {
     _child = child;
+    addChild(_child);
 }
 
 shared_ptr<type::Unit> ChildGrammar::childType() const
@@ -287,6 +288,7 @@ Enclosure::Enclosure(const string& symbol, shared_ptr<Production> child, const L
     : NonTerminal(symbol, nullptr, l)
 {
     _child = child;
+    addChild(_child);
 }
 
 shared_ptr<Production> Enclosure::child() const
@@ -346,7 +348,10 @@ NonTerminal::alternative_list Sequence::rhss() const
 LookAhead::LookAhead(const string& symbol, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
-    _alts = std::make_pair(alt1, alt2);
+    _alt1 = alt1;
+    _alt2 = alt2;
+    addChild(_alt1);
+    addChild(_alt2);
 }
 
 std::pair<LookAhead::look_aheads, LookAhead::look_aheads> LookAhead::lookAheads() const
@@ -361,7 +366,7 @@ void LookAhead::setLookAheads(const look_aheads& lah1, const look_aheads& lah2)
 
 std::pair<shared_ptr<Production>, shared_ptr<Production>> LookAhead::alternatives() const
 {
-    return _alts;
+    return std::make_pair(_alt1, _alt2);
 }
 
 std::pair<bool, bool> LookAhead::defaultAlternatives()
@@ -384,7 +389,16 @@ std::pair<bool, bool> LookAhead::defaultAlternatives()
 
 void LookAhead::setAlternatives(shared_ptr<Production> alt1, shared_ptr<Production> alt2)
 {
-    _alts = std::make_pair(alt1, alt2);
+    if ( _alt1 )
+        removeChild(_alt1);
+
+    if ( _alt2 )
+        removeChild(_alt2);
+        
+    _alt1 = alt1;
+    _alt2 = alt2;
+    addChild(_alt1);
+    addChild(_alt2);
 }
 
 static string _fmtAlt(const production::LookAhead* p, int i)
@@ -427,14 +441,17 @@ string LookAhead::renderProduction() const
 
 NonTerminal::alternative_list LookAhead::rhss() const
 {
-    return { { _alts.first }, { _alts.second } };
+    return { { _alt1 }, { _alt2 } };
 }
 
 Boolean::Boolean(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Production> alt1, shared_ptr<Production> alt2, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
     _expr = expr;
-    _branches = std::make_pair(alt1, alt2);
+    _alt1 = alt1;
+    _alt2 = alt2;
+    addChild(_alt1);
+    addChild(_alt2);
 }
 
 shared_ptr<Expression> Boolean::expression() const
@@ -444,17 +461,17 @@ shared_ptr<Expression> Boolean::expression() const
 
 std::pair<shared_ptr<Production>, shared_ptr<Production>> Boolean::branches() const
 {
-    return _branches;
+    return std::make_pair(_alt1, _alt2);
 }
 
 string Boolean::renderProduction() const
 {
-    return util::fmt("true: %s / false: %s", _branches.first->symbol().c_str(), _branches.second->symbol().c_str());
+    return util::fmt("true: %s / false: %s", _alt1->symbol().c_str(), _alt2->symbol().c_str());
 }
 
 NonTerminal::alternative_list Boolean::rhss() const
 {
-    return { { _branches.first }, { _branches.second } };
+    return { { _alt1 }, { _alt2 } };
 }
 
 bool Boolean::eodOk() const
@@ -469,6 +486,7 @@ Counter::Counter(const string& symbol, shared_ptr<Expression> expr, shared_ptr<P
 {
     _expr = expr;
     _body = body;
+    addChild(_body);
 }
 
 shared_ptr<Expression> Counter::expression() const
@@ -496,6 +514,7 @@ While::While(const string& symbol, shared_ptr<Expression> expr, shared_ptr<Produ
 {
     _expr = expr;
     _body = body;
+    addChild(_body);
 }
 
 shared_ptr<Expression> While::expression() const
@@ -522,6 +541,7 @@ Loop::Loop(const string& symbol, shared_ptr<Production> body, const Location& l)
     : NonTerminal(symbol, nullptr, l)
 {
     _body = body;
+    addChild(_body);
 }
 
 shared_ptr<Production> Loop::body() const
@@ -543,8 +563,13 @@ Switch::Switch(const string& symbol, shared_ptr<Expression> expr, const case_lis
     : NonTerminal(symbol, nullptr, l)
 {
     _expr = expr;
-    _cases = cases;
     _default = default_;
+    addChild(_default);
+
+    for ( auto c: cases ) {
+        _cases.push_back(std::make_pair(c.first, c.second));
+        addChild(_cases.back().second);
+    }
 }
 
 shared_ptr<Expression> Switch::expression() const
@@ -552,9 +577,14 @@ shared_ptr<Expression> Switch::expression() const
     return _expr;
 }
 
-const Switch::case_list& Switch::alternatives() const
+Switch::case_list Switch::alternatives() const
 {
-    return _cases;
+    case_list cases;
+
+    for ( auto c : _cases )
+        cases.push_back(std::make_pair(c.first, c.second));
+
+    return cases;
 }
 
 shared_ptr<Production> Switch::default_() const
@@ -597,4 +627,26 @@ bool Switch::eodOk() const
     // Always false. If one of the branches is ok with no data, it will
     // indicate so itself.
     return false;
+}
+
+Unknown::Unknown(shared_ptr<Node> node) : Production("<unknown>", nullptr, Location::None)
+{
+    _node = node;
+}
+
+shared_ptr<Node> Unknown::node() const
+{
+    return _node;
+}
+
+bool Unknown::atomic() const
+{
+    // This object shouldn't exist anymore at the time this is called.
+    assert(false);
+
+}
+
+string Unknown::renderProduction() const
+{
+    return "<unresolved production>";
 }

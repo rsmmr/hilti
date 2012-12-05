@@ -5,7 +5,7 @@ wrong-operators.hlt:11-12: error, operands do not match instruction new
     new: int<32> -> int<32>
   expected one of:
     new: bytes -> ref<bytes>
-    new: callable, <function>, tuple<> -> ref<callable>
+    new: callable, <function>, tuple<*> -> ref<callable>
     new: channel<*>, [ int<64> ] -> ref<channel<*>>
     new: classifier<*> -> ref<classifier<*>>
     new: exception -> ref<exception>
@@ -18,8 +18,8 @@ wrong-operators.hlt:11-12: error, operands do not match instruction new
     new: set<*>, [ ref<timer_mgr> ] -> ref<set<*>>
     new: struct , [ ref<timer_mgr> ] -> ref<struct >
     new: timer_mgr -> ref<timer_mgr>
-    new: timer, <function>, tuple<> -> ref<timer>
+    new: timer, <function>, tuple<*> -> ref<timer>
     new: vector<*>, [ ref<timer_mgr> ] -> ref<vector<*>>
- [pass::InstructionResolver]
+ [pass::hilti::InstructionResolver]
 wrong-operators.hlt: Aborting due to verification error.
 error running hiltic, aborting

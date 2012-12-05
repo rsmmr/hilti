@@ -1,0 +1,11 @@
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+global b = b"12345ABBBBC67890";
+
+print b.startswith(b"12345");
+print b.startswith(b"Foo");

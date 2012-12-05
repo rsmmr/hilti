@@ -1,8 +1,8 @@
 
 >>> my_hook
-wrong-type.hlt:14-14: error, inconsistent definitions for hook my_hook [pass::Validator]
+wrong-type.hlt:14-14: error, inconsistent definitions for hook my_hook [pass::hilti::Validator]
 
 >>> my_hook
-wrong-type.hlt:19-19: error, inconsistent definitions for hook my_hook [pass::Validator]
+wrong-type.hlt:19-19: error, inconsistent definitions for hook my_hook [pass::hilti::Validator]
 wrong-type.hlt: Aborting due to verification error.
 error running hiltic, aborting

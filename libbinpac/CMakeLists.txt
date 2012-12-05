@@ -75,8 +75,10 @@ set(SRCS
     libbinpac++.c
     mime.c
     sink.c
+    base64.c
 
     3rdparty/libb64-1.2/src/cdecode.c
+    3rdparty/libb64-1.2/src/cencode.c
 
     ${autogen}/binpac-hlt.h
 )

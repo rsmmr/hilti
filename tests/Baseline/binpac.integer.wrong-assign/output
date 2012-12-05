@@ -1,0 +1,4 @@
+
+>>> a 
+wrong-assign.pac2:6-8: error, incompatible type for assigment [pass::binpac::Validator]
+wrong-assign.pac2: Aborting due to input error.

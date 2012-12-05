@@ -1,9 +1,9 @@
 
-opBegin(tuple::Equal)
+opBegin(tuple::CoerceTuple : Coerce)
     opOp1(std::make_shared<type::Tuple>())
-    opOp2(std::make_shared<type::Tuple>())
+    opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Tuple>()))
 
-    opDoc("Compares two tuples for equality.")
+    opDoc("Tuples coerce to other tupes if all their elements coerce individually.")
 
     opValidate() {
         auto types1 = ast::checkedCast<type::Tuple>(op1()->type())->typeList();
@@ -26,6 +26,21 @@ opBegin(tuple::Equal)
             ++i1;
             ++i2;
         }
+    }
+
+    opResult() {
+        auto ttype = ast::checkedCast<type::TypeType>(op2()->type())->typeType();
+        return ast::checkedCast<type::Tuple>(ttype);
+    }
+opEnd
+
+opBegin(tuple::Equal)
+    opOp1(std::make_shared<type::Tuple>())
+    opOp2(std::make_shared<type::Tuple>())
+
+    opDoc("Compares two tuples for equality.")
+
+    opValidate() {
     }
 
     opResult() {

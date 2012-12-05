@@ -96,12 +96,12 @@ Double::Double(double value, const Location& l)
 
 Time::Time(double time, const Location& l) : Constant(l)
 {
-    _time = (uint64_t) (time * 1e9);
+    _nsecs = (uint64_t) (time * 1e9);
 }
 
 Time::Time(uint64_t time, const Location& l) : Constant(l)
 {
-    _time = (uint64_t) (time * 1e9);
+    _nsecs = (uint64_t) (time * 1e9);
 }
 
 shared_ptr<Type> Time::type() const {
@@ -110,12 +110,12 @@ shared_ptr<Type> Time::type() const {
 
 Interval::Interval(uint64_t interv, const Location& l) : Constant(l)
 {
-    _interv = (uint64_t) (interv * 1e9);
+    _nsecs = (uint64_t) (interv * 1e9);
 }
 
 Interval::Interval(double interv, const Location& l) : Constant(l)
 {
-    _interv = (uint64_t) (interv * 1e9);
+    _nsecs = (uint64_t) (interv * 1e9);
 }
 
 shared_ptr<Type> Interval::type() const
@@ -218,10 +218,10 @@ expression_list Tuple::value() const
 
 uint64_t Time::value() const
 {
-    return _time;
+    return _nsecs;
 }
 
 const uint64_t Interval::value() const
 {
-    return _interv;
+    return _nsecs;
 }

@@ -42,6 +42,9 @@ extern void* hlt_list_front(hlt_list* l, hlt_exception** excpt, hlt_execution_co
 // Returns the last element of the list.
 extern void* hlt_list_back(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Appends all elements of l2 to l1.
+extern void hlt_list_append(hlt_list* l1, hlt_list* l2, hlt_exception** excpt, hlt_execution_context* ctx);
+
 // Returns the number of elements in the list.
 extern int64_t hlt_list_size(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx);
 

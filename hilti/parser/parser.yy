@@ -212,8 +212,8 @@ global_decl   : global
               | export_
               ;
 
-global        : GLOBAL type local_id eol          { driver.moduleBuilder()->addGlobal($3, $2, nullptr, false, loc(@$)); }
-              | GLOBAL type local_id '=' expr eol { driver.moduleBuilder()->addGlobal($3, $2, $5, false, loc(@$)); }
+global        : GLOBAL type scoped_id eol          { driver.moduleBuilder()->addGlobal($3, $2, nullptr, false, loc(@$)); }
+              | GLOBAL type scoped_id '=' expr eol { driver.moduleBuilder()->addGlobal($3, $2, $5, false, loc(@$)); }
               ;
 
 const_        : CONST type local_id '=' expr eol  { driver.moduleBuilder()->addConstant($3, $2, $5, false, loc(@$)); }
@@ -223,7 +223,7 @@ local         : LOCAL type local_id eol          { driver.moduleBuilder()->addLo
               | LOCAL type local_id '=' expr eol { driver.moduleBuilder()->addLocal($3, $2, $5, false, loc(@$)); }
               ;
 
-type_decl     : TYPE local_id '=' type eol       { driver.moduleBuilder()->addType($2, $4, false, loc(@$)); }
+type_decl     : TYPE scoped_id '=' type eol       { driver.moduleBuilder()->addType($2, $4, false, loc(@$)); }
 
 context_decl  : CONTEXT context eol              { driver.moduleBuilder()->addContext($2, loc(@$)); }
 
@@ -456,9 +456,9 @@ constant      : CINTEGER                         { $$ = builder::integer::create
               | CADDRESS '/' CINTEGER            { $$ = builder::network::create($1, $3, loc(@$)); }
               | CPORT                            { $$ = builder::port::create($1, loc(@$)); }
               | INTERVAL '(' CDOUBLE ')'         { $$ = builder::interval::create($3, loc(@$)); }
-              | INTERVAL '(' CINTEGER ')'        { $$ = builder::interval::create($3, loc(@$)); }
+              | INTERVAL '(' CINTEGER ')'        { $$ = builder::interval::create((uint64_t)$3, loc(@$)); }
               | TIME '(' CDOUBLE ')'             { $$ = builder::time::create($3, loc(@$)); }
-              | TIME '(' CINTEGER ')'            { $$ = builder::time::create($3, loc(@$)); }
+              | TIME '(' CINTEGER ')'            { $$ = builder::time::create((uint64_t)$3, loc(@$)); }
               | tuple                            { $$ = builder::tuple::create($1, loc(@$));  }
               ;
 
@@ -489,8 +489,8 @@ map_elem      : expr ':' expr                    { $$ = builder::map::element($1
 import        : IMPORT local_id eol              { driver.moduleBuilder()->importModule($2); }
               ;
 
-export_       : EXPORT local_id eol              { driver.moduleBuilder()->exportID($2); }
-              | EXPORT type eol                  { driver.moduleBuilder()->exportType($2); }
+export_       : EXPORT scoped_id eol              { driver.moduleBuilder()->exportID($2); }
+              | EXPORT base_type eol             { driver.moduleBuilder()->exportType($2); }
               ;
 
 function      : opt_init opt_cc result local_id '(' opt_param_list ')' opt_scope_ref
@@ -499,7 +499,7 @@ function      : opt_init opt_cc result local_id '(' opt_param_list ')' opt_scope
                                                  }
                 body opt_nl                      {  auto func = driver.moduleBuilder()->popFunction(); }
 
-              | DECLARE opt_cc result local_id '(' opt_param_list ')' eol
+              | DECLARE opt_cc result scoped_id '(' opt_param_list ')' eol
                                                  {  driver.moduleBuilder()->declareFunction($4, $3, $6, $2, loc(@$));
                                                     driver.moduleBuilder()->exportID($4);
                                                  }
@@ -517,7 +517,7 @@ hook          : HOOK result scoped_id '(' opt_param_list ')' opt_scope_ref opt_h
                 body opt_nl                      {  driver.moduleBuilder()->popHook(); }
 
 
-              | DECLARE HOOK result local_id '(' opt_param_list ')' eol
+              | DECLARE HOOK result scoped_id '(' opt_param_list ')' eol
                                                  {  driver.moduleBuilder()->declareHook($4, $3, $6, loc(@$)); }
               ;
 

@@ -1,6 +1,5 @@
 #
-# @TEST-EXEC:  hilti-build %INPUT ${PAC_DRIVER} -o a.out
-# @TEST-EXEC:  echo 'VFhrZ2JHbDBkR3hsSUdacGJIUmxjaUIwWlhOMElRbz0K' | HILTI_DEBUG=$HILTI_DEBUG:binpac-sinks ./a.out -p Main >output
+# @TEST-EXEC:  echo 'VFhrZ2JHbDBkR3hsSUdacGJIUmxjaUIwWlhOMElRbz0K' | pac-driver-test %INPUT -- -p Mini::Main >output
 # @TEST-EXEC:  btest-diff output
 
 module Mini;

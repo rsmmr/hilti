@@ -1,0 +1,19 @@
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+global b1 = b"Test";
+global b2 = b"";
+global b3: bytes;
+
+print b1, |b1|;
+print b2, |b2|;
+print b3, |b3|;
+
+print b"Test", |b"Test"|;
+print b"", |b""|;
+
+

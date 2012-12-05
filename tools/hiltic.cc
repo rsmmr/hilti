@@ -6,6 +6,7 @@
 #include <llvm/Module.h>
 
 #include <hilti.h>
+#include <hilti/jit/libhilti-jit.h>
 
 using namespace std;
 
@@ -23,7 +24,7 @@ bool output_bitcode = false;
 bool output_prototypes = false;
 bool dump_ast = false;
 bool verify = true;
-bool jit = false;
+bool use_jit = false;
 bool add_stdlibs = false;
 bool disable_linker = false;
 
@@ -68,7 +69,9 @@ void usage()
             "  -F | --profile        Profile level. Each time increases level. [Default: 0]\n"
             "  -h | --help           Print usage information.\n"
             "  -l | --llvm           Output the final LLVM assembly.\n"
+#ifndef HILTIC_NO_JIT
             "  -j | --jit            JIT the final LLVM bitcode to native code and execute main().\n"
+#endif
             "  -s | --add-stdlibs    Add standard HILTI runtime libraries (implied with -j).\n"
             "  -L | --llvm-always    Like -l, but don't verify correctness first.\n"
             "  -V | --llvm-first     Like -L, but print each file individually to stdout and don't link.\n"
@@ -183,12 +186,19 @@ llvm::Module* compileHILTI(std::shared_ptr<hilti::CompilerContext> ctx, string p
 
 bool runJIT(shared_ptr<hilti::CompilerContext> ctx, llvm::Module* module, std::list<string> jitargs)
 {
-    auto ee = ctx->jitModule(module, optlevel);
-
-    if ( ! ee )
+#ifdef HILTIC_NO_JIT
+    error(0, "No JIT support compiled into this version of hiltic.");
+    return false;
+#else
+    if ( ! ctx->jitModule(module, optlevel) )
         return false;
 
-    auto main = (int (*)(int , const char**)) ctx->nativeFunction(ee, module, "__libhilti_main");
+    hlt_init_jit(ctx);
+
+    auto libmain = (int (*)(int , const char**)) ctx->nativeFunction("__libhilti_main");
+
+    if ( ! libmain )
+        error(0, "internal error: no __libhilti_main in compiled module");
 
     // Create argv[] for the main() function we'll call.
     int argc = jitargs.size() + 1;
@@ -201,9 +211,10 @@ bool runJIT(shared_ptr<hilti::CompilerContext> ctx, llvm::Module* module, std::l
 
     argv[i] = nullptr;
 
-    (*main)(argc, argv);
+    (*libmain)(argc, argv);
 
     return true;
+#endif
 }
 
 int main(int argc, char** argv)
@@ -284,7 +295,7 @@ int main(int argc, char** argv)
             break;
 
          case 'j':
-            jit = true;
+            use_jit = true;
             add_stdlibs = true;
             ++num_output_types;
             break;
@@ -329,7 +340,7 @@ int main(int argc, char** argv)
     if ( disable_linker && num_input_files != 1 )
         error("", "Cannot use more than one input file when not linking");
 
-    if ( disable_linker && jit )
+    if ( disable_linker && use_jit )
         error("", "Cannot use JIT when not linking");
 
     if ( num_output_types == 0 )
@@ -342,7 +353,7 @@ int main(int argc, char** argv)
         if ( output_bitcode )
             error("", "No output file given.");
 
-        if ( jit )
+        if ( use_jit )
             output = "<JIT code>";
         else
             output = "/dev/stdout";
@@ -394,7 +405,7 @@ int main(int argc, char** argv)
     llvm::Module* linked_module = nullptr;
 
     if ( ! disable_linker ) {
-        linked_module = ctx->linkModules(output, modules, paths, libs, bcas, dylds, debug, verify, add_stdlibs, jit);
+        linked_module = ctx->linkModules(output, modules, paths, libs, bcas, dylds, debug, verify, add_stdlibs, use_jit);
 
         if ( ! linked_module )
             error(output, "Aborted linking.");
@@ -403,7 +414,7 @@ int main(int argc, char** argv)
     else
         linked_module = modules.front();
 
-    if ( jit ) {
+    if ( use_jit ) {
         if ( ! runJIT(ctx, linked_module, jitargs) )
             return 1;
         else

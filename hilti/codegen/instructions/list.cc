@@ -128,6 +128,14 @@ void StatementBuilder::visit(statement::instruction::list::PushFront* i)
     cg()->llvmCall("hlt::list_push_front", args);
 }
 
+void StatementBuilder::visit(statement::instruction::list::Append* i)
+{
+    CodeGen::expr_list args;
+    args.push_back(i->op1());
+    args.push_back(i->op2());
+    cg()->llvmCall("hlt::list_append", args);
+}
+
 void StatementBuilder::visit(statement::instruction::list::Size* i)
 {
     CodeGen::expr_list args;

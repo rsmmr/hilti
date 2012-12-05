@@ -1,17 +1,17 @@
 === Grammar my-grammar
         Epsilon: <eps> -> ()
-      LookAhead: A   -> {b"a", b"b", b"c"}: <eps> | {b"a"}: a
+      LookAhead: A   -> {b"a" (id 1), b"b" (id 2), b"c" (id 3)}: <eps> | {b"a" (id 1)}: a
        Sequence: ABA -> A B A
        Sequence: AD  -> A D
-      LookAhead: B   -> {b"a"}: <eps> | {b"b"}: bD
-      LookAhead: C   -> {b"a", b"c"}: AD | {b"b"}: b
-      LookAhead: D   -> {b"a"}: aA | {b"c"}: c
- (*)  LookAhead: S   -> {b"a", b"b"}: ABA | {b"c"}: cC
-           Ctor: a   -> b"a" (bytes)
+      LookAhead: B   -> {b"a" (id 1)}: <eps> | {b"b" (id 2)}: bD
+      LookAhead: C   -> {b"a" (id 1), b"c" (id 3)}: AD | {b"b" (id 2)}: b
+      LookAhead: D   -> {b"a" (id 1)}: aA | {b"c" (id 3)}: c
+ (*)  LookAhead: S   -> {b"a" (id 1), b"b" (id 2)}: ABA | {b"c" (id 3)}: cC
+           Ctor: a   -> b"a" (bytes/id 1)
        Sequence: aA  -> a A
-           Ctor: b   -> b"b" (bytes)
+           Ctor: b   -> b"b" (bytes/id 2)
        Sequence: bD  -> b D
-           Ctor: c   -> b"c" (bytes)
+           Ctor: c   -> b"c" (bytes/id 3)
        Sequence: cC  -> c C
 
   -- Epsilon:
@@ -50,5 +50,5 @@
      bD = { a }
      cC = {  }
 
-Grammar error: grammar my-grammar, production A is ambigious for look-ahead symbol(s) { a }
+Grammar error: grammar my-grammar, production A is ambigious for look-ahead symbol(s) { b"a" (bytes) }
 

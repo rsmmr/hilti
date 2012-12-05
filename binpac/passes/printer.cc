@@ -355,7 +355,7 @@ void Printer::visit(expression::CodeGen* c)
 void Printer::visit(expression::Coerced* c)
 {
     Printer& p = *this;
-    p << "cast<" << c->type() << ">(" << c->expression() << ")";
+    p << "coerce<" << c->type() << ">(" << c->expression() << ")";
 }
 
 void Printer::visit(expression::Constant* c)
@@ -459,7 +459,7 @@ void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
         return;
     }
 
-    if ( op.type == operator_::BINARY ) {
+    if ( op.type == operator_::BINARY || op.type == operator_::BINARY_COMMUTATIVE ) {
         p << op1 << " " << op.display << " " << op2;
         return;
     }
@@ -475,6 +475,14 @@ void Printer::printOperator(operator_::Kind kind, const expression_list& exprs)
 
      case operator_::Call:
         p << op1 << "(" << op2 << ")";
+        break;
+
+     case operator_::Cast:
+        p << "cast<" << op2 <<  ">(" << op1 << ")";
+        break;
+
+     case operator_::Coerce:
+        p << "coerce<" << op2 <<  ">(" << op1 << ")";
         break;
 
      case operator_::DecrPostfix:
@@ -653,7 +661,7 @@ void Printer::visit(type::Any* a)
         return;
 
     Printer& p = *this;
-    p << "(type hook)";
+    p << "(type any)";
 }
 
 void Printer::visit(type::Bitset* c)

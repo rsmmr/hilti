@@ -72,6 +72,8 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
         }
 
         _module = new ::llvm::Module(util::mangle(hltmod->id(), false), llvmContext());
+        _module->setTargetTriple(llvm::Triple::normalize(LLVM_HOSTTRIPLE));
+
         _abi = std::move(ABI::createABI(this));
 
         createInitFunction();
@@ -464,6 +466,30 @@ IRBuilder* CodeGen::newBuilder(string name, bool reuse, bool create)
 IRBuilder* CodeGen::newBuilder(llvm::BasicBlock* block, bool insert_at_beginning)
 {
     return util::newBuilder(this, block, insert_at_beginning);
+}
+
+string CodeGen::mangleGlobal(shared_ptr<ID> id, shared_ptr<Module> mod, string prefix, bool internal)
+{
+    string m = "";
+
+    if ( id->isScoped() ) {
+        auto p = id->path();
+        auto mod = p.front();
+        p.pop_front();
+        m = ::util::fmt("%s::%s", ::util::strtolower(mod), ::util::strjoin(p, "::"));
+    }
+
+    else {
+        if ( ! mod )
+            mod = id->firstParent<Module>();
+
+        if ( mod )
+            m = ::util::fmt("%s::%s", ::util::strtolower(mod->id()->name()), id->name());
+        else
+            m = id->name();
+    }
+
+    return util::mangle(std::make_shared<ID>(m), true, nullptr, prefix, internal);
 }
 
 IRBuilder* CodeGen::builderForLabel(const string& name)
@@ -1355,7 +1381,7 @@ llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, 
 
 llvm::Function* CodeGen::llvmAddFunction(const string& name, llvm::Type* rtype, llvm_parameter_list params, bool internal, bool force_name)
 {
-    auto mangled_name = force_name ? name : util::mangle(name, true, nullptr, "", false);
+    auto mangled_name = force_name ? name : mangleGlobal(std::make_shared<ID>(name));
 
     auto llvm_linkage = internal ? llvm::Function::InternalLinkage : llvm::Function::ExternalLinkage;
     auto llvm_cc = llvm::CallingConv::C;
@@ -1391,7 +1417,7 @@ llvm::Function* CodeGen::llvmAddFunction(shared_ptr<Function> func, bool interna
     for ( auto p : func->type()->parameters() )
         params.push_back(make_pair(p->id()->name(), p->type()));
 
-    auto name = use_name.size() ? use_name : util::mangle(func->id(), true, func->module()->id(), "", internal);
+    auto name = use_name.size() ? use_name : mangleGlobal(func->id(), func->module(), "", internal);
 
     auto rtype = llvmType(func->type()->result()->type());
 
@@ -1404,6 +1430,7 @@ llvm::Function* CodeGen::llvmFunction(shared_ptr<Function> func, bool force_new)
         // Don't mess with the name.
         return llvmAddFunction(func, false, type::function::C);
 
+    bool is_hook = ast::isA<Hook>(func);
     bool internal = true;
 
     if ( func->module()->exported(func->id()) )
@@ -1412,19 +1439,23 @@ llvm::Function* CodeGen::llvmFunction(shared_ptr<Function> func, bool force_new)
     if ( func->type()->callingConvention() != type::function::HILTI )
         internal = false;
 
+    if ( is_hook )
+        internal = false;
+
     string prefix;
 
-    if ( ast::isA<Hook>(func) )
-        prefix = ".hlt.hook";
+    if ( is_hook )
+        prefix = ::util::fmt(".hlt.%s", _hilti_module->id()->name());
+
     else if ( func->type()->callingConvention() == type::function::HILTI && ! internal )
-        prefix = "hlt.";
+        prefix = "hlt";
 
     int cnt = 0;
 
     string name;
 
     while ( true ) {
-        name = util::mangle(func->id(), true, func->module()->id(), prefix, internal);
+        name = mangleGlobal(func->id(), func->module(), prefix, internal);
 
         if ( ++cnt > 1 )
             name += ::util::fmt(".%d", cnt);
@@ -1443,7 +1474,15 @@ llvm::Function* CodeGen::llvmFunction(shared_ptr<Function> func, bool force_new)
 
 llvm::Function* CodeGen::llvmFunctionHookRun(shared_ptr<Hook> hook)
 {
-    auto cname = util::mangle(hook->id(), true, hook->module()->id(), "hook.run", true);
+    string hname;
+    auto hid = hook->id();
+
+    if ( hid->isScoped() )
+        hname = hid->pathAsString();
+    else
+        hname = ::util::fmt("%s::%s", hook->module()->id()->name(), hid->name());
+
+    auto cname = util::mangle(hname, true);
     auto fval = lookupCachedValue("function-hook", cname);
 
     if ( fval )
@@ -2110,7 +2149,7 @@ llvm::Constant* CodeGen::llvmConstExtractValue(llvm::Constant* aggr, unsigned in
 std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Function> func)
 {
     // Name must match with ProtoGen::visit(declaration::Function* f).
-    auto name = util::mangle(func->id(), true, func->module()->id(), "", false);
+    auto name = mangleGlobal(func->id(), func->module());
 
     auto rf1 = lookupCachedValue("c-wrappers", "entry-" + name);
     auto rf2 = lookupCachedValue("c-wrappers", "resume-" + name);

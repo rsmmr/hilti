@@ -12,7 +12,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-ScopeBuilder::ScopeBuilder(CompilerContext* context) : Pass<AstInfo>("ScopeBuilder")
+ScopeBuilder::ScopeBuilder(CompilerContext* context) : Pass<AstInfo>("binpac::ScopeBuilder")
 {
     _context = context;
 }
@@ -83,7 +83,7 @@ void ScopeBuilder::visit(declaration::Variable* v)
 
     auto var = v->variable()->sharedPtr<Variable>();
     auto expr = std::make_shared<expression::Variable>(var, var->location());
-    scope->insert(v->id(), expr);
+    scope->insert(v->id(), expr, true);
 }
 
 void ScopeBuilder::visit(declaration::Type* t)
@@ -95,7 +95,7 @@ void ScopeBuilder::visit(declaration::Type* t)
 
     auto type = t->type();
     auto expr = shared_ptr<expression::Type>(new expression::Type(type, type->location()));
-    scope->insert(t->id(), expr);
+    scope->insert(t->id(), expr, true);
 
     // Link in any type-specific scope the type may define.
     auto tscope = t->type()->typeScope();
@@ -115,7 +115,7 @@ void ScopeBuilder::visit(declaration::Constant* c)
     if ( ! scope )
         return;
 
-    scope->insert(c->id(), c->constant());
+    scope->insert(c->id(), c->constant(), true);
 }
 
 void ScopeBuilder::visit(declaration::Function* f)
@@ -131,7 +131,7 @@ void ScopeBuilder::visit(declaration::Function* f)
     auto is_hook = dynamic_cast<declaration::Hook*>(f);
 
     if ( ! is_hook )
-        scope->insert(f->id(), expr);
+        scope->insert(f->id(), expr, true);
 
     if ( ! func->body() )
         // Just a declaration without implementation.
@@ -142,7 +142,7 @@ void ScopeBuilder::visit(declaration::Function* f)
 
     for ( auto p : func->type()->parameters() ) {
         auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
-        scope->insert(p->id(), pexpr);
+        scope->insert(p->id(), pexpr, true);
     }
 }
 

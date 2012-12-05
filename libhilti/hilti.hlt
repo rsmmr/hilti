@@ -99,6 +99,10 @@ type Packed = enum {
     IPv6,           # 128-bit IPv6 address stored in host byte order.
     IPv4Network,    # 32-bit IPv4 address stored in network byte order.
     IPv6Network,    # 128-bit IPv6 address stored in network byte order.
+    IPv4Little,     # 32-bit IPv4 address stored in little endian order.
+    IPv4Big,        # 32-bit IPv4 address stored in big endian order.
+    IPv6Big,        # 128-bit IPv6 address stored in big endian order.
+    IPv6Little,     # 128-bit IPv6 address stored in little endian order.
     # %doc-packed-addr-end
 
     # Port

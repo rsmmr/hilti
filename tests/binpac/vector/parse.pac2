@@ -1,0 +1,33 @@
+# $Id$
+#
+# @TEST-EXEC:  cat test.txt | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  btest-diff output
+
+module HTTP;
+
+const LINE = /[^\n]+\n/;
+const DASHES = /---\n/;
+
+type Item = unit {
+    line:   LINE;
+};
+
+export type Test = unit {
+    lines: Item[5]
+           foreach { print $$; }
+    last: LINE;
+
+    on %done {
+        print self;
+        }
+
+    };
+
+### @TEST-START-FILE test.txt
+AAA
+BBB
+CCC
+DDD
+EEE
+XXX
+## # @TEST-END-FILE

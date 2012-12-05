@@ -1,5 +1,5 @@
 
 >>> switch n @default (1, 2, 3)
-switch-wrong-types.hlt:8-10: error, not a tuple [pass::Validator]
+switch-wrong-types.hlt:8-10: error, not a tuple [pass::hilti::Validator]
 switch-wrong-types.hlt: Aborting due to verification error.
 error running hiltic, aborting

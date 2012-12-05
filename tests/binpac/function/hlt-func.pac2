@@ -1,0 +1,9 @@
+# $Id$
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+import "HILTI-C" bytes Hilti::bytes_to_lower(b: bytes);
+print Hilti::bytes_to_lower(b"AbCdEfG");

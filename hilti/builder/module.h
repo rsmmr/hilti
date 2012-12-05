@@ -52,6 +52,16 @@ public:
    /// module: The name of the module to import.
    void importModule(const std::string& id);
 
+   /// Returns true if a given ID has been imported.
+   ///
+   /// module: The name of the module to check for.
+   bool idImported(shared_ptr<ID> id) const;
+
+   /// Returns true if a module of then given name has been imported.
+   ///
+   /// module: The name of the module to check for.
+   bool idImported(const std::string& id) const;
+
    /// Exports an ID so that it can be accessed from other modules.
    ///
    /// id: The id to export.
@@ -435,6 +445,11 @@ public:
    ///
    /// Returns: An expression referencing the global.
    shared_ptr<hilti::expression::Variable> addGlobal(shared_ptr<hilti::ID> id, shared_ptr<Type> type, shared_ptr<Expression> init = nullptr, bool force_unique = false, const Location& l = Location::None);
+
+   /// Returns true if there is already a global declaration under a given id.
+   ///
+   /// id: The name to rest.
+   bool declared(shared_ptr<hilti::ID> id);
 
    /// Adds a global variable to the module.
    ///

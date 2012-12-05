@@ -1,5 +1,5 @@
 
 >>> call foo ()
-wrong-calls.hlt:9-10: error, function value not used [pass::Validator]
+wrong-calls.hlt:9-10: error, function value not used [pass::hilti::Validator]
 wrong-calls.hlt: Aborting due to verification error.
 error running hiltic, aborting

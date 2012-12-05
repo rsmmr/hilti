@@ -35,6 +35,16 @@ iBegin(operator_, Incr, ".op.incr")
     )")
 iEnd
 
+iBegin(operator_, IncrBy, ".op.incr_by")
+    iTarget(optype::any)
+    iOp1(optype::any, true)
+    iOp2(optype::int64, true)
+    iValidate {}
+    iDoc(R"(
+        Increments an iterator by a given number of elements.
+    )")
+iEnd
+
 iBegin(operator_, Deref, ".op.deref")
     iTarget(optype::any)
     iOp1(optype::any, true)

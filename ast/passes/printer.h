@@ -140,8 +140,11 @@ namespace printer {
 template<typename Expr, typename Id>
 string scopedID(Expr expr, Id id)
 {
-    if ( expr && expr->scope().size() )
-        return expr->scope() + "::" + id->pathAsString();
+    if ( expr && expr->scope().size() ) {
+        auto path = id->pathAsString();
+        auto scope = expr->scope() + "::";
+        return util::startsWith(path, scope) ? path : scope + path;
+    }
     else
         return id->pathAsString();
 }

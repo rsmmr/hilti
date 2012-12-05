@@ -1,0 +1,6 @@
+[binpac] test
+[binpac]    f1 = '16909060'
+[binpac]    f2 = '67305985'
+[binpac]    f3 = '16909060'
+[binpac]    a1 = '1'
+[binpac]    a2 = '258'

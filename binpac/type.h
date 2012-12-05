@@ -199,6 +199,8 @@ public:
     /// l: Associated location.
     Iterator(shared_ptr<Type> ttype, const Location& l=Location::None);
 
+    bool equal(shared_ptr<Type> other) const override;
+
     ACCEPT_VISITOR(TypedPacType);
 
 private:
@@ -295,7 +297,7 @@ public:
     shared_ptr<ID> attribute() const;
 
     string render() override;
-    bool equal(shared_ptr<binpac::Type> other) const override;
+    bool _equal(shared_ptr<binpac::Type> other) const override;
 
     ACCEPT_VISITOR(Type);
 
@@ -347,6 +349,8 @@ public:
     ///
     /// l: Associated location.
     Address(const Location& l=Location::None);
+
+    std::list<ParseAttribute> parseAttributes() const override;
 
     ACCEPT_VISITOR(PacType);
 };
@@ -1061,6 +1065,11 @@ public:
     /// passed into the constructor.
     virtual shared_ptr<binpac::Type> type();
 
+    /// Return's the item's type as used inside the parse object. This is by
+    /// default the type()'s fieldType() but may be adapted with, e.g., \a
+    /// &convert.
+    virtual shared_ptr<binpac::Type> fieldType();
+
     /// Returns true if no ID was passed to the constructor.
     bool anonymous() const;
 
@@ -1079,6 +1088,19 @@ public:
     /// Returns the attributes associated with the item.
     shared_ptr<AttributeSet> attributes() const;
 
+    /// Disables code generation for this item's hooks. Calls to \a
+    /// disableHook and \a enableHook must match for code generation to
+    /// happen.
+    void disableHooks();
+
+    /// Enable code generation for this item's hooks. Calls to \a disableHook
+    /// and \a enableHook must match for code generation to happen.
+    void enableHooks();
+
+    /// Returns true if the code generator should trigger the hooks for this
+    /// item. By default, they are enabled.
+    bool hooksEnabled();
+
     ACCEPT_VISITOR_ROOT();
 
 protected:
@@ -1091,6 +1113,7 @@ protected:
 
 private:
     bool _anonymous = false;
+    int _do_hooks = 1;
     node_ptr<ID> _id;
     node_ptr<binpac::Type> _type;
     node_ptr<AttributeSet> _attrs;
@@ -1118,6 +1141,8 @@ public:
 
     /// Returns the parameters passed to sub-type's parsing.
     expression_list parameters() const;
+
+    shared_ptr<binpac::Type> fieldType() override;
 
     ACCEPT_VISITOR(Item);
 
@@ -1345,7 +1370,7 @@ private:
 
 namespace container {
 
-/// Base class for container types that parse other fields recursively.
+/// A list field
 class List : public Container
 {
 public:
@@ -1381,6 +1406,49 @@ private:
     node_ptr<Field> _field;
 };
 
+// A vector field.
+class Vector : public Container
+{
+public:
+    /// Constructor.
+    ///
+    /// id: The name of the item. Can be null for anonymous items.
+    //
+    /// field: The field to parse as vector elements.
+    ///
+    /// length: An expression indicating how often field is to be repeated.
+    ///
+    /// hooks: Hooks associated with this item.
+    ///
+    /// attrs: Attributes associated with the item.
+    ///
+    /// sinks: Expressions referencing attached sinks, if any.
+    ///
+    /// l: Location associated with the item.
+    Vector(shared_ptr<ID> id,
+         shared_ptr<Field> field,
+         shared_ptr<Expression> length,
+         shared_ptr<Expression> cond = nullptr,
+         const hook_list& hooks = hook_list(),
+         const attribute_list& attrs = attribute_list(),
+         const expression_list& sinks = expression_list(),
+         const Location& l=Location::None);
+
+    /// Returns the field to parse vector elements.
+    shared_ptr<Field> field() const;
+
+    /// Returns the expression indicating the length of the parsed vector.
+    shared_ptr<Expression> length() const;
+
+    shared_ptr<binpac::Type> type() override;
+
+    ACCEPT_VISITOR(Container);
+
+private:
+    node_ptr<Field> _field;
+    node_ptr<Expression> _length;
+};
+
 }
 
 namespace switch_ {
@@ -1410,7 +1478,7 @@ public:
 
 private:
     std::list<node_ptr<Expression>> _exprs;
-    shared_ptr<Item> _item;
+    node_ptr<Item> _item;
 };
 
 }

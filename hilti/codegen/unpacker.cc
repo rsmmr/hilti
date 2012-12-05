@@ -456,7 +456,7 @@ static void _addrUnpack4(CodeGen* cg, const UnpackArgs& args, const UnpackResult
 {
     auto iter_type = builder::iterator::typeBytes();
 
-    auto fmt = cg->llvmEnum(nbo ? "Hilti::Packed::Int32Big" : "Hilti::Packed::Int32");
+    auto fmt = cg->llvmEnum(nbo ? "Hilti::Packed::Int32Big" : "Hilti::Packed::Int32Little");
     auto a = cg->llvmConstInt(0, 64);
     auto b = cg->llvmUnpack(builder::integer::type(32), args.begin, args.end, fmt, nullptr, nullptr, args.location);
 
@@ -471,7 +471,7 @@ static void _addrUnpack6(CodeGen* cg, const UnpackArgs& args, const UnpackResult
 {
     auto iter_type = builder::iterator::typeBytes();
 
-    auto fmt = cg->llvmEnum(nbo ? "Hilti::Packed::Int64Big" : "Hilti::Packed::Int64");
+    auto fmt = cg->llvmEnum(nbo ? "Hilti::Packed::Int64Big" : "Hilti::Packed::Int64Little");
     auto a = cg->llvmUnpack(builder::integer::type(64), args.begin, args.end, fmt, nullptr, nullptr, args.location);
     auto b = cg->llvmUnpack(builder::integer::type(64), a.second, args.end, fmt, nullptr, nullptr, args.location);
     cg->llvmDtor(a.second, iter_type, false, "unpack.addr");
@@ -498,10 +498,12 @@ void Unpacker::visit(type::Address* t)
 
     CodeGen::case_list cases;
 
+    bool host_is_nbo = (cg()->abi()->byteOrder() == ABI::BigEndian);
+
     cases.push_back(CodeGen::SwitchCase(
         "addr-ipv4",
         cg()->llvmEnum("Hilti::Packed::IPv4"),
-        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack4(cg, args, result, false); return nullptr; }
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack4(cg, args, result, host_is_nbo); return nullptr; }
     ));
 
     cases.push_back(CodeGen::SwitchCase(
@@ -511,14 +513,38 @@ void Unpacker::visit(type::Address* t)
     ));
 
     cases.push_back(CodeGen::SwitchCase(
+        "addr-ipv4-little",
+        cg()->llvmEnum("Hilti::Packed::IPv4Little"),
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack4(cg, args, result, false); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "addr-ipv4-big",
+        cg()->llvmEnum("Hilti::Packed::IPv4Big"),
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack4(cg, args, result, true); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
         "addr-ipv6",
         cg()->llvmEnum("Hilti::Packed::IPv6"),
-        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack6(cg, args, result, false); return nullptr; }
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack6(cg, args, result, host_is_nbo); return nullptr; }
     ));
 
     cases.push_back(CodeGen::SwitchCase(
         "addr-ipv6-network",
         cg()->llvmEnum("Hilti::Packed::IPv6Network"),
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack6(cg, args, result, true); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "addr-ipv6-little",
+        cg()->llvmEnum("Hilti::Packed::IPv6Little"),
+        [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack6(cg, args, result, false); return nullptr; }
+    ));
+
+    cases.push_back(CodeGen::SwitchCase(
+        "addr-ipv6-big",
+        cg()->llvmEnum("Hilti::Packed::IPv6Big"),
         [&] (CodeGen* cg) -> llvm::Value* { _addrUnpack6(cg, args, result, true); return nullptr; }
     ));
 

@@ -1,5 +1,5 @@
 
->>> tuple<>
-wrong-calls.hlt:4-4: error, HILTI functions cannot have parameter of type tuple<*> [pass::Validator]
+>>> tuple<*>
+wrong-calls.hlt:4-4: error, HILTI functions cannot have parameter of type tuple<*> [pass::hilti::Validator]
 wrong-calls.hlt: Aborting due to verification error.
 error running hiltic, aborting

@@ -1,0 +1,9 @@
+<id=13928, qdcount=1, nscount=2, arcount=0, ancount=2>
+
+[<qname=<Label=<label=, len=0, ptr=(not set)>, labels=[www, joelonsoftware, com, ]>, qtype=1, qclass=1>]
+
+[<soa=(not set), name=<Label=<label=(not set), len=-64, ptr=<name=<Label=<label=, len=0, ptr=(not set)>, labels=[www, joelonsoftware, com, ]>, len=-16372>>, labels=[www, joelonsoftware, com, ]>, class=1, rdlen=2, labels=<Label=<label=(not set), len=-64, ptr=<name=<Label=<label=, len=0, ptr=(not set)>, labels=[joelonsoftware, com, ]>, len=-16368>>, labels=[joelonsoftware, com, ]>, rdata=(not set), ty=CNAME, mx=(not set), ttl=2187, a=(not set)>, <soa=(not set), name=<Label=<label=(not set), len=-64, ptr=<name=<Label=<label=, len=0, ptr=(not set)>, labels=[joelonsoftware, com, ]>, len=-16368>>, labels=[joelonsoftware, com, ]>, class=1, rdlen=4, labels=(not set), rdata=(not set), ty=A, mx=(not set), ttl=2188, a=64.34.80.173>]
+
+[<soa=(not set), name=<Label=<label=(not set), len=-64, ptr=<name=<Label=<label=, len=0, ptr=(not set)>, labels=[joelonsoftware, com, ]>, len=-16368>>, labels=[joelonsoftware, com, ]>, class=1, rdlen=16, labels=<Label=<label=(not set), len=-64, ptr=<name=<Label=<label=, len=0, ptr=(not set)>, labels=[com, ]>, len=-16353>>, labels=[dns3, fogcreek, com, ]>, rdata=(not set), ty=NS, mx=(not set), ttl=2188, a=(not set)>, <soa=(not set), name=<Label=<label=(not set), len=-64, ptr=<name=<Label=<label=, len=0, ptr=(not set)>, labels=[joelonsoftware, com, ]>, len=-16368>>, labels=[joelonsoftware, com, ]>, class=1, rdlen=7, labels=<Label=<label=(not set), len=-64, ptr=<name=<Label=<label=(not set), len=-64, ptr=<name=<Label=<label=, len=0, ptr=(not set)>, labels=[com, ]>, len=-16353>>, labels=[fogcreek, com, ]>, len=-16297>>, labels=[dns5, fogcreek, com, ]>, rdata=(not set), ty=NS, mx=(not set), ttl=2188, a=(not set)>]
+
+[]

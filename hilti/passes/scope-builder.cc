@@ -13,10 +13,12 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
         return 0;
     }
 
+#if 0 // It can now.
     if ( id->isScoped() && ! is_hook ) {
         error(decl, "declared ID cannot have a scope");
         return 0;
     }
+#endif
 
     auto block = current<statement::Block>();
 
@@ -28,8 +30,15 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
     auto scope = block->scope();
 
     if ( (! is_hook) && scope->has(decl->id(), false) ) {
-        error(decl, util::fmt("ID %s already declared", decl->id()->name().c_str()));
-        return 0;
+        // TODO: We allow scoped here so that we can have both an import for
+        // a module and also individually prototyped functions from there.
+        // However, what we should really do is allow declarations that are
+        // equivalent, but for that we need to add infrastructure to find out
+        // if two declarations are declaring the same.
+        if ( ! decl->id()->isScoped() ) {
+            error(decl, util::fmt("ID %s already declared", decl->id()->name().c_str()));
+            return 0;
+        }
     }
 
     return scope;
@@ -63,21 +72,31 @@ void ScopeBuilder::visit(statement::Block* b)
     if ( ! b->id() )
         return;
 
+    shared_ptr<Scope> scope = nullptr;
+
     auto func = current<hilti::Function>();
 
     if ( ! func ) // TODO: Too bad current() doesn't follow the class hierarchy ... 
         func = current<hilti::Hook>();
 
-    if ( ! func ) {
-        error(b, util::fmt("declaration of block is not part of a function %p", b));
-        return;
+    if ( func ) {
+        if ( ! func->body() )
+            // Just a declaration without implementation.
+            return;
+
+        scope = ast::checkedCast<statement::Block>(func->body())->scope();
     }
 
-    if ( ! func->body() )
-        // Just a declaration without implementation.
-        return;
+    else {
+        auto module = current<hilti::Module>();
 
-    auto scope = ast::checkedCast<statement::Block>(func->body())->scope();
+        if ( ! module ) {
+            error(b, util::fmt("declaration of block is not part of a function or module"));
+            return;
+        }
+
+        scope = module->body()->scope();
+    }
 
     if ( scope->has(b->id(), false) ) {
         error(b, util::fmt("ID %s already declared", b->id()->name().c_str()));
@@ -110,7 +129,7 @@ void ScopeBuilder::visit(declaration::Type* t)
 
     auto type = t->type();
     auto expr = shared_ptr<expression::Type>(new expression::Type(type, type->location()));
-    scope->insert(t->id(), expr);
+    scope->insert(t->id(), expr, true);
 
     // Link in any type-specific scope the type may define.
     auto tscope = t->type()->typeScope();
@@ -141,8 +160,8 @@ void ScopeBuilder::visit(declaration::Function* f)
     auto func = f->function()->sharedPtr<Function>();
     auto expr = shared_ptr<expression::Function>(new expression::Function(func, func->location()));
 
-    if ( ! f->id()->isScoped() )
-        scope->insert(f->id(), expr);
+    // if ( ! f->id()->isScoped() )
+    scope->insert(f->id(), expr, true);
 
     if ( ! func->body() )
         // Just a declaration without implementation.

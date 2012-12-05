@@ -71,4 +71,9 @@ extern void binpac_enable_debugging(int8_t enabled);
 /// Returns: 1 if enabled, 0 otherwise.
 extern int8_t binpac_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ctx);
 
+// Internal wrapper around binpac_debugging_enabled() to make it accessible
+// from the BinPACHilti namespace.
+extern int8_t binpachilti_debugging_enabled(hlt_exception** excpt, hlt_execution_context* ctx);
+
+
 #endif

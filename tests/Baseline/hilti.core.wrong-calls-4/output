@@ -1,5 +1,5 @@
 
 >>> x = call foo ()
-wrong-calls.hlt:8-9: error, function does not return a value [pass::Validator]
+wrong-calls.hlt:8-9: error, function does not return a value [pass::hilti::Validator]
 wrong-calls.hlt: Aborting due to verification error.
 error running hiltic, aborting

@@ -2,10 +2,59 @@
 /// libhilti's global state.
 ///
 
+#ifndef LIBHILTI_GLOBALS_H
+#define LIBHILTI_GLOBALS_H
+
 #include <pthread.h>
 
 #include "hook.h"
 #include "types.h"
+
+// A struct holding all of libhilti's internal global variables.
+//
+// Note: Global variables should be limited to a mininum, and must be ensured
+// that they are used in a thread-safe fashion. All globals *must be* listed
+// in this struct, no exception (other than the global pointer to this struct
+// :)
+
+struct __hlt_global_state {
+    hlt_execution_context* context;    // The global execution context.
+
+    // These are managed by the corresponding subsystems. Access shouldn't be
+    // happening from elsehwere. They must be initialized by their
+    // corresponding *_init() functions (though they are guarenteed to be set
+    // to zero initially).
+
+    // config.
+    hlt_config* config;
+
+    // cmdqueue.c
+    hlt_thread_queue* cmd_queue;
+    pthread_t queue_manager;
+
+    // threading.c
+    hlt_thread_mgr*        thread_mgr; // The global thread manager.
+    int8_t thread_mgr_terminate;
+#ifdef DEBUG
+    uint64_t job_counter;
+#endif
+
+    // hook.c
+    hlt_hook_state* hook_state;
+    pthread_mutex_t hook_state_lock; // Lock to protect access to hook_state.
+
+    // file.c
+    __hlt_file_info* files;
+    pthread_mutex_t files_lock; // Lock to protect access to files.
+
+    // profile.c
+    int8_t profiling_enabled;
+    int8_t papi_available;
+    int papi_set;
+};
+
+// A type holding all of libhilti's global state.
+typedef struct __hlt_global_state __hlt_global_state;
 
 /// Returns the global execution context used by the main thread.
 ///
@@ -25,15 +74,26 @@ extern void __hlt_global_set_thread_mgr(hlt_thread_mgr* mgr);
 /// Initializes all global state. The function is called from hlt_init().
 extern void __hlt_global_state_init();
 
-/// Cleans up all global state. The function is called from hlt_done();
-extern void __hlt_global_state__done();
+/// Cleans up all global state. The function is called from hlt_done(). Note
+/// that when multiple instance of libhilti share a set of global state (via
+/// \a __hlt_global_state_set), they all must call this function before it's
+/// gets released. Note however that this function is not thread-safe.
+///
+/// \todo: Should it be thread-safe?
+extern void __hlt_global_state_done();
 
-/// The current hook state. This must only modified by
-/// ~~__hlt_hook_group_enable, which protects accesses via the lock.
-extern hlt_hook_state* __hlt_global_hook_state;
-extern pthread_mutex_t __hlt_global_hook_state_lock;
+/// Returns a pointer to the set of global state. This is primarily for use
+/// with \a __hlt_global_state_set().
+///
+/// \todo: Should this function be thread-safe?
+extern __hlt_global_state*  __hlt_globals();
 
-/// Flag to signal worker threads to terminate. This must only be accessed by
-/// the thread mgr. Use __hlt_thread_mgr_terminating() to query.
-extern int8_t __hlt_global_thread_mgr_terminate;
+/// Instructs libhilti to use a different set of global state. This can be
+/// used when a process has loaded libhilti twice (e.g., itself and via JIT),
+/// to sync the two instances. This can be used instead or after
+/// __hlt_global_state_init().
+///
+/// \todo: Should this function be thread-safe?
+extern void __hlt_globals_set(__hlt_global_state* state);
 
+#endif

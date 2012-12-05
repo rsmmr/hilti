@@ -9,7 +9,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-ScopePrinter::ScopePrinter(std::ostream& out) : Pass<AstInfo>("ScopePrinter"), _out(out)
+ScopePrinter::ScopePrinter(std::ostream& out) : Pass<AstInfo>("binpac::ScopePrinter"), _out(out)
 {
 }
 

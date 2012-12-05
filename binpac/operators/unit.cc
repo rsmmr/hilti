@@ -18,10 +18,12 @@ opBegin(unit::Attribute)
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
         auto i = unit->item(attr->id());
-        assert(i);
-        assert(i->type());
+        if ( ! i )
+            // Error will be reported by validation.
+            return std::make_shared<type::Unknown>();
 
-        return i->type();
+        assert(i->fieldType());
+        return i->fieldType();
     }
 opEnd
 
@@ -64,10 +66,14 @@ opBegin(unit::AttributeAssign)
         auto attr = ast::checkedCast<expression::MemberAttribute>(op2());
 
         auto i = unit->item(attr->id());
-        assert(i);
-        assert(i->type());
 
-        return i->type();
+        if ( ! i )
+            // Error will be reported by validation.
+            return std::make_shared<type::Unknown>();
+
+        assert(i->fieldType());
+
+        return i->fieldType();
     }
 opEnd
 
@@ -83,16 +89,14 @@ opBegin(unit::New)
     }
 
     opValidate() {
-        auto unit = ast::checkedCast<type::Unit>(op1()->type());
+        auto ttype = ast::checkedCast<type::TypeType>(op1()->type());
+        auto unit = ast::checkedCast<type::Unit>(ttype->typeType());
 
-        auto tuple = op2();
-        if ( ! tuple ) {
-            expression_list types = {};
-            auto empty = std::make_shared<constant::Tuple>(types);
-            tuple = std::make_shared<expression::Constant>(empty);
-        }
+        if ( hasOp(2) )
+            checkCallArgs(op2(), unit->parameterTypes());
 
-        checkCallArgs(tuple, unit->parameterTypes());
+        else
+            checkCallArgs(nullptr, unit->parameterTypes());
     }
 
     opResult() {
@@ -116,14 +120,8 @@ static const string _doc_input =
 opBegin(unit::Input : MethodCall)
     opOp1(std::make_shared<type::Unit>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("input")))
-    opOp3(std::make_shared<type::Tuple>())
 
     opDoc(_doc_input)
-
-    opValidate() {
-        type_list args = {};
-        checkCallArgs(op3(), args);
-    }
 
     opResult() {
         return std::make_shared<type::iterator::Bytes>();
@@ -148,14 +146,9 @@ static const string _doc_set_position =
 opBegin(unit::SetPosition : MethodCall)
     opOp1(std::make_shared<type::Unit>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("set_position")))
-    opOp3(std::make_shared<type::Tuple>())
+    opCallArg1("b", std::make_shared<type::iterator::Bytes>())
 
     opDoc(_doc_set_position)
-
-    opValidate() {
-        type_list args = { std::make_shared<type::iterator::Bytes>() };
-        checkCallArgs(op3(), args);
-    }
 
     opResult() {
         return std::make_shared<type::iterator::Bytes>();
@@ -185,13 +178,8 @@ static const string _doc_offset =
 opBegin(unit::Offset : MethodCall)
     opOp1(std::make_shared<type::Unit>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("offset")))
-    opOp3(std::make_shared<type::Tuple>())
 
     opDoc(_doc_offset)
-
-    opValidate() {
-        checkCallArgs(op3(), {});
-    }
 
     opResult() {
         return std::make_shared<type::Integer>(64, false);
@@ -226,13 +214,12 @@ static const string _doc_add_filter =
 opBegin(unit::AddFilter : MethodCall)
     opOp1(std::make_shared<type::Unit>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("add_filter")))
-    opOp3(std::make_shared<type::Tuple>())
+    opCallArg1("f", std::make_shared<type::Enum>())
 
     opDoc(_doc_add_filter)
 
     opValidate() {
-        type_list args = { std::make_shared<type::Enum>() }; // FIXME: Check for actual type.
-        checkCallArgs(op3(), args);
+        // FIXME: Check for actual type.
     }
 
     opResult() {
@@ -251,14 +238,8 @@ static const string _doc_disconnect =
 opBegin(unit::Disconnect : MethodCall)
     opOp1(std::make_shared<type::Unit>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("disconnect")))
-    opOp3(std::make_shared<type::Tuple>())
 
     opDoc(_doc_disconnect)
-
-    opValidate() {
-        type_list args = { };
-        checkCallArgs(op3(), args);
-    }
 
     opResult() {
         return std::make_shared<type::Void>();
@@ -276,14 +257,8 @@ static const string _doc_mime_type =
 opBegin(unit::MimeType : MethodCall)
     opOp1(std::make_shared<type::Unit>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("mime_type")))
-    opOp3(std::make_shared<type::Tuple>())
 
     opDoc(_doc_mime_type)
-
-    opValidate() {
-        type_list args = { };
-        checkCallArgs(op3(), args);
-    }
 
     opResult() {
         return std::make_shared<type::Bytes>();

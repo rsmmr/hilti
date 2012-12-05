@@ -56,6 +56,7 @@ expression::MemberAttribute
 expression::Module
 expression::Parameter
 expression::ParserState
+expression::PlaceHolder
 expression::ResolvedOperator
 expression::Type
 expression::UnresolvedOperator
@@ -143,6 +144,7 @@ type::unit::item::Variable
 type::unit::item::field::Constant
 type::unit::item::field::Container
 type::unit::item::field::container::List
+type::unit::item::field::container::Vector
 type::unit::item::field::Ctor
 type::unit::item::field::Switch
 type::unit::item::field::AtomicType

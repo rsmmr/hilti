@@ -1,0 +1,18 @@
+# $Id$
+#
+# @TEST-EXEC-FAIL: binpac++ %INPUT >output 2>&1
+# @TEST-EXEC:      btest-diff output
+
+module HTTP;
+
+const LINE = /[^\n]+\n/;
+
+type Item = unit {
+    line:   LINE;
+};
+
+export type Test = unit {
+    lines: list<Item>;
+    end: LINE;
+    };
+

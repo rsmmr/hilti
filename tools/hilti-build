@@ -160,6 +160,9 @@ def compilePac(input, output):
     for i in range(Options.debug):
         flags += ["-d"]
 
+    for i in ImportPaths:
+        flags += ["-I %s" % i]
+
     flags = uniqueArgs(flags)
 
     path = runConfig(HiltiConfig, "--binpac++-binary")
@@ -296,8 +299,8 @@ Input files may be end in one of the following extensions:
                          help="Activate BinPAC++ support even if not *.pac2 files are given.")
 #    optparser.add_option("-S", "--stack-size", action="store", type="int", dest="stack", default=0,
 #                         help="Default HILTI stack size. Default is allocate each frame independently.")
-#    optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
-#                         help="Add DIR to search path for imports", metavar="DIR")
+    optparser.add_option("-I", "--import-path", action="callback", callback=import_path_callback, type="string",
+                         help="Add DIR to search path for imports", metavar="DIR")
     optparser.add_option("-F", "--profile", action="count", dest="profile", default=0,
                          help="Enable profiling support; each time this option is given, the profiling level is increased by one")
 
@@ -320,6 +323,7 @@ Input files may be end in one of the following extensions:
 ### Main.
 
 HiltiConfig = findConfigTool("hilti-config")
+ImportPaths = []
 
 inputs = parseOptions()
 

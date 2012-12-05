@@ -1,0 +1,12 @@
+# $Id$
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1  -t   
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+global myList: list<string>;
+
+myList.push_back("hello");
+
+print myList;

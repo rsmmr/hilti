@@ -33,6 +33,21 @@ protected:
 > opOp3 h
    shared_ptr<Type> __typeOp3() const;
 ===
+> opCallArg1 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg1() const;
+===
+> opCallArg2 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg2() const;
+===
+> opCallArg3 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg3() const;
+===
+> opCallArg4 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg4() const;
+===
+> opCallArg5 h
+   std::pair<string, shared_ptr<Type>> __typeCallArg5() const;
+===
 > opValidate h
    void __validate() override;
 ===
@@ -110,6 +125,36 @@ shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeOp2() const
 shared_ptr<Type> operator_::$NAMESPACE::$CLASS::__typeOp3() const
 {
     return $1;
+}
+===
+> opCallArg1 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg1() const
+{
+    return std::make_pair($1, $2);
+}
+===
+> opCallArg2 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg2() const
+{
+    return std::make_pair($1, $2);
+}
+===
+> opCallArg3 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg3() const
+{
+    return std::make_pair($1, $2);
+}
+===
+> opCallArg4 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg4() const
+{
+    return std::make_pair($1, $2);
+}
+===
+> opCallArg5 cc
+std::pair<string, shared_ptr<Type>> operator_::$NAMESPACE::$CLASS::__typeCallArg5() const
+{
+    return std::make_pair($1, $2);
 }
 ===
 > opValidate cc

@@ -1,0 +1,82 @@
+# $Id$
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output      
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+global a: uint16 = 10;
+global b: uint32 = 20;
+global c: uint32 = 40;
+global d: uint64 = 30;
+
+global s1: int16 = -40;
+global s2: int32 = 40;
+
+global a1: int16 = 14;
+global a2: int32 = 14;
+global a3: int32 = 15;
+
+print 10 * 20;
+print a * b;
+
+print 40 / 10;
+print c / a;
+
+print 10 / 3;
+print a / 3;
+
+print 10 mod 3;
+print a mod 3;
+
+print a + b;
+print b - a;
+
+print b + c;
+print c - b;
+
+print a + 1;
+print 100 - b;
+
+print 55 + 45;
+print 100 - 45;
+
+print a <= b;
+print a >= b;
+
+print s1 <= s2;
+print s2 >= s1;
+
+print a1 <= a2;
+print a1 < a2;
+print a3 < a2;
+
+print a1 >= a2;
+print a1 > a2;
+print a3 > a2;
+
+print "";
+
+print -4 < 5;
+print -4 > 5;
+
+print 6 >= 8;
+print 8 <= 6;
+print 6 > 8;
+print 8 < 6;
+
+print -4 < -5;
+print -4 > -5;
+print -4 <= -5;
+print -4 >= -5;
+
+print 2 ** 9;
+a = 3;
+b = 4;
+print a ** b;
+
+
+
+
+
+

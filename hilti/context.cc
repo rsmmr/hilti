@@ -2,14 +2,11 @@
 #include <fstream>
 #include <util/util.h>
 
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/MCJIT.h>
-#include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/DynamicLibrary.h>
-#include <llvm/Target/TargetOptions.h>
 
 #include "hilti-intern.h"
 #include "autogen/hilti-config.h"
+#include "jit/jit.h"
 
 using namespace hilti;
 using namespace hilti::passes;
@@ -24,6 +21,11 @@ CompilerContext::CompilerContext(const string_list& libdirs)
     paths.push_front(".");  // Always add cwd at the front.
 
     _libdirs = paths;
+}
+
+CompilerContext::~CompilerContext()
+{
+    delete _jit;
 }
 
 string CompilerContext::searchModule(shared_ptr<ID> id)
@@ -292,14 +294,21 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
 
     codegen::Linker linker(libs);
 
-    for ( auto l : libs )
-        linker.addNativeLibrary(l);
+    for ( auto l : libs ) {
+        if ( debugging("context" ) )
+            std::cerr << "Linker: adding native library " << l << std::endl;
 
-    for ( auto b : bcas )
+        linker.addNativeLibrary(l);
+    }
+
+    for ( auto b : bcas ) {
+        if ( debugging("context" ) )
+            std::cerr << "Linker: adding bitcode library " << b << std::endl;
+
         linker.addBitcodeArchive(b);
+    }
 
     if ( add_stdlibs ) {
-
 #if 0
         auto type_info = loadModule(configuration().runtime_typeinfo_hlt);
 
@@ -314,10 +323,15 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         modules.push_back(type_info_llvm);
 #endif
 
-        if ( debug )
-            linker.addBitcodeArchive(configuration().runtime_library_bca_dbg);
-        else
-            linker.addBitcodeArchive(configuration().runtime_library_bca);
+        auto rlbca = debug ? configuration().runtime_library_bca_dbg : configuration().runtime_library_bca;
+
+        if ( debugging("context" ) )
+            std::cerr << "Linker: adding bitcode runtime library " << rlbca << std::endl;
+
+        linker.addBitcodeArchive(rlbca);
+
+        if ( debugging("context" ) )
+            std::cerr << "Linker: adding native runtime library " << configuration().runtime_library_a << std::endl;
 
         linker.addNativeLibrary(configuration().runtime_library_a);
     }
@@ -336,7 +350,11 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         if ( ! util::endsWith(d, configuration().shared_library_suffix) )
             d = d + configuration().shared_library_suffix;
 
-        if ( ! llvm::sys::DynamicLibrary::getPermanentLibrary(d.c_str(), &errormsg).isValid() ) {
+        if ( debugging("context" ) )
+            std::cerr << "Linker: adding dynamic library " << d << std::endl;
+
+        // Sic. This returns true on error ...
+        if ( llvm::sys::DynamicLibrary::LoadLibraryPermanently(d.c_str(), &errormsg) ) {
             error(errormsg);
             return nullptr;
         }
@@ -354,89 +372,37 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
     return linker.link(output, modules, verify, debugging("linker"));
 }
 
-#include "lli-mm.cc"
-
-llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module, int optimize)
+bool CompilerContext::jitModule(llvm::Module* module, int optimize)
 {
+    if ( ! _jit )
+        _jit = new jit::JIT(this);
+
     if ( debugging("context" ) )
         std::cerr << util::fmt("JITing module %s ...", module->getModuleIdentifier()) << std::endl;
 
-    auto opt = llvm::CodeGenOpt::Default;
+    _ee = _jit->jitModule(module, optimize);
+    _module = module;
 
-    switch ( optimize ) {
-     case 0:
-        opt = llvm::CodeGenOpt::None;
-        break;
-
-     case 1:
-        opt = llvm::CodeGenOpt::Less;
-        break;
-
-     case 2:
-        opt = llvm::CodeGenOpt::Default;
-        break;
-
-     case 3:
-        opt = llvm::CodeGenOpt::Aggressive;
-        break;
-
-     default:
-        error("unsupported optimization level");
-        return 0;
-    }
-
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
-
-    string errormsg;
-
-    JITMemoryManager *JMM = new LLIMCJITMemoryManager();
-
-    llvm::EngineBuilder builder(module);
-    builder.setJITMemoryManager(JMM);
-    builder.setEngineKind(llvm::EngineKind::JIT);
-    builder.setUseMCJIT(true);
-    builder.setOptLevel(opt);
-    builder.setErrorStr(&errormsg);
-
-    llvm::TargetOptions Options;
-    Options.JITExceptionHandling = false;
-    Options.JITEmitDebugInfo = true;
-    Options.JITEmitDebugInfoToDisk = true;
-    builder.setTargetOptions(Options);
-
-    auto ee = builder.create();
-    if ( ! ee ) {
-        error(util::fmt("LLVM jit error: %s", errormsg));
-        return nullptr;
-    }
-
-    ee->DisableLazyCompilation(true);
-    ee->runStaticConstructorsDestructors(false);
-
-    return ee;
+    return (_ee != nullptr);
 }
 
-void* CompilerContext::nativeFunction(llvm::ExecutionEngine* ee, llvm::Module* module, const string& function)
+void* CompilerContext::nativeFunction(const string& function)
 {
+    if ( ! _jit ) {
+        std::cerr << "internal error: CompilerContext::nativeFunction() called CompilerContext:jitModule()" << std::endl;
+        exit(1);
+    }
+
+    if ( ! _ee ) {
+        std::cerr << "internal error: CompilerContext::nativeFunction() called after CompilerContext:jitModule() failed" << std::endl;
+        exit(1);
+    }
+
     if ( debugging("context" ) )
         std::cerr << util::fmt("Getting native function %s ...", function) << std::endl;
 
-    auto func = module->getFunction(function);
-
-    if ( ! func ) {
-        error(util::fmt("jit: no function of name %s in module %s", function, module->getModuleIdentifier()));
-        return 0;
-    }
-
-    auto fp = ee->getPointerToFunction(func);
-
-    if ( ! fp ) {
-        error(util::fmt("jit: cannt get pointer to function %s in module %s", function, module->getModuleIdentifier()));
-        return 0;
-    }
-
-    return fp;
+    assert(_module);
+    return _jit->nativeFunction(_ee, _module, function);
 }
 
 const string_list& CompilerContext::libraryPaths() const

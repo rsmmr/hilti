@@ -6,16 +6,19 @@
 
 // Forward declare a few of our core types here to avoid dependencies.
 typedef struct __hlt_string* hlt_string;
+typedef struct __hlt_config hlt_config;
 typedef struct __hlt_exception hlt_exception;
 typedef struct __hlt_execution_context hlt_execution_context;
 typedef struct __hlt_type_info hlt_type_info;
 typedef struct __hlt_thread_mgr hlt_thread_mgr;
+typedef struct __hlt_thread_queue hlt_thread_queue;
 typedef struct __hlt_callable hlt_callable;
 typedef struct __hlt_timer_mgr hlt_timer_mgr;
 typedef struct __hlt_list hlt_list;
 
 typedef struct __hlt_thread_mgr_blockable __hlt_thread_mgr_blockable;
 typedef struct __hlt_profiler_state __hlt_profiler_state;
+typedef struct __hlt_file_info __hlt_file_info;
 
 /// Type for hash values.
 typedef uint64_t hlt_hash;

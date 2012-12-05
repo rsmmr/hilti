@@ -1,0 +1,24 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+global ref<list<string>> gl1 = list<string>("foo", "bar")
+global ref<list<string>> gl2 = list<string>("123", "456")
+global ref<list<string>> gl3 = list<string>()
+
+void run() {
+    call Hilti::print(gl1)
+
+    list.append gl1 gl2
+    call Hilti::print(gl1)
+    call Hilti::print(gl2)
+
+    list.append gl1 gl3
+    call Hilti::print(gl1)
+    call Hilti::print(gl3)
+}

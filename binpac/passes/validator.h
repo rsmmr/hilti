@@ -119,6 +119,7 @@ protected:
     void visit(expression::List* l) override;
     void visit(expression::Module* m) override;
     void visit(expression::Parameter* p) override;
+    void visit(expression::ParserState* p) override;
     void visit(expression::ResolvedOperator* r) override;
     void visit(expression::Type* t) override;
     void visit(expression::UnresolvedOperator* u) override;
@@ -181,6 +182,7 @@ protected:
     void visit(type::unit::item::Variable* v) override;
     void visit(type::unit::item::field::Container* f) override;
     void visit(type::unit::item::field::container::List* f) override;
+    void visit(type::unit::item::field::container::Vector* f) override;
     void visit(type::unit::item::field::Constant* c) override;
     void visit(type::unit::item::field::Ctor* r) override;
     void visit(type::unit::item::field::Switch* s) override;

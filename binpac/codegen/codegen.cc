@@ -4,10 +4,10 @@
 #include "codegen.h"
 
 #include "code-builder.h"
-#include "coercion-builder.h"
 #include "parser-builder.h"
 #include "type-builder.h"
 #include "context.h"
+#include "attribute.h"
 
 #include "module.h"
 #include "statement.h"
@@ -30,11 +30,12 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module, int debug,
     _compiling = true;
     _debug = debug;
     _verify = verify;
+    _imported_types.clear();
 
     _code_builder = unique_ptr<codegen::CodeBuilder>(new codegen::CodeBuilder(this));
-    _coercion_builder = unique_ptr<codegen::CoercionBuilder>(new codegen::CoercionBuilder(this));
     _parser_builder = unique_ptr<codegen::ParserBuilder>(new codegen::ParserBuilder(this));
     _type_builder = unique_ptr<codegen::TypeBuilder>(new codegen::TypeBuilder(this));
+    _coercer = unique_ptr<Coercer>(new Coercer());
 
     try {
         hilti::path_list paths = module->context()->libraryPaths();
@@ -47,7 +48,42 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module, int debug,
         if ( util::strtolower(module->id()->name()) != "binpac" )
             _mbuilder->importModule("BinPAC");
 
+        auto name = ::util::fmt("__entry");
+        builder()->addInstruction(::hilti::instruction::flow::CallVoid, hilti::builder::id::create(name), hilti::builder::tuple::create({}));
+        auto entry = _mbuilder->pushFunction(name);
+
+        _module = module;
         _code_builder->processOne(module);
+
+        _mbuilder->popFunction();
+
+        // Add types that need to be imported from other modules. Note that
+        // we may add further types to the list as we proceed, that's what
+        // the outer loop is for.
+
+        std::set<string> done;
+
+        while ( _imported_types.size() != done.size() ) {
+            for ( auto t : _imported_types ) {
+                if ( done.find(t.first) != done.end() )
+                    continue;
+
+                auto id = std::make_shared<ID>(t.first);
+                auto type = t.second;
+                auto unit = ast::tryCast<type::Unit>(type);
+                auto hlttype = unit ? hiltiTypeParseObject(unit) : hiltiType(type);
+
+                auto hid = hiltiID(id);
+                if ( ! moduleBuilder()->declared(hid) )
+                    moduleBuilder()->addType(hid, hlttype);
+
+                done.insert(t.first);
+            }
+        }
+
+        // _mbuilder->module()->compilerContext()->print(_mbuilder->module(), std::cerr);
+
+        _module = nullptr;
 
         auto m = _mbuilder->finalize();
 
@@ -61,6 +97,11 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module, int debug,
         // Message has already been printed.
         return nullptr;
     }
+}
+
+shared_ptr<binpac::Module> CodeGen::module() const
+{
+    return _module;
 }
 
 shared_ptr<hilti::builder::ModuleBuilder> CodeGen::moduleBuilder() const
@@ -111,15 +152,45 @@ shared_ptr<hilti::Expression> CodeGen::hiltiDefault(shared_ptr<Type> type, bool 
     return _type_builder->hiltiDefault(type, null_on_default);
 }
 
-shared_ptr<hilti::Expression> CodeGen::hiltiCoerce(shared_ptr<hilti::Expression> expr, shared_ptr<Type> src, shared_ptr<Type> dst)
+shared_ptr<hilti::Expression> CodeGen::hiltiCoerce(shared_ptr<hilti::Expression> hexpr, shared_ptr<Type> src, shared_ptr<Type> dst)
 {
     assert(_compiling);
-    return _coercion_builder->hiltiCoerce(expr, src, dst);
+
+    auto expr = std::make_shared<expression::CodeGen>(src, hexpr);
+    auto cexpr = _coercer->coerceTo(expr, dst);
+
+    if ( ! cexpr )
+        internalError(util::fmt("coercion failed in CodeGen::hiltiCoerce(): cannot coerce HILTI expression of BinPAC++ type %s to type %s (%s / %s)",
+                               src->render().c_str(),
+                               dst->render().c_str(),
+                               hexpr->render(), string(hexpr->location())));
+
+    return hiltiExpression(cexpr);
 }
 
-shared_ptr<hilti::ID> CodeGen::hiltiID(shared_ptr<ID> id)
+shared_ptr<hilti::ID> CodeGen::hiltiID(shared_ptr<ID> id, bool qualify)
 {
-    return hilti::builder::id::node(id->pathAsString(), id->location());
+    auto uid = hilti::builder::id::node(id->pathAsString(), id->location());
+
+    if ( ! qualify )
+        return  uid;
+
+    auto mod = id->firstParent<Module>();
+    assert(mod);
+
+    string name;
+
+    if ( ! uid->isScoped() ) {
+        if ( mod->id()->name() != module()->id()->name() )
+            name = util::fmt("%s::%s", mod->id()->name(), uid->name());
+        else
+            name = uid->name();
+    }
+
+    else
+        name = uid->pathAsString(hiltiID(module()->id()));
+
+    return hilti::builder::id::node(name, id->location());
 }
 
 shared_ptr<hilti::Expression> CodeGen::hiltiParseFunction(shared_ptr<type::Unit> u)
@@ -178,6 +249,13 @@ void CodeGen::hiltiDefineHook(shared_ptr<ID> id, shared_ptr<Hook> hook)
 
 shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr<Function> func)
 {
+#if 0
+    // If it's scoped and we import the module, assume the module declares
+    // the function.
+    if ( func->id()->isScoped() && moduleBuilder()->idImported(func->id()->path().front()))
+        return nullptr;
+#endif
+
     auto name = hiltiFunctionName(func);
     auto ftype = func->type();
     auto rtype = ftype->result() ? hiltiType(ftype->result()->type()) : hilti::builder::void_::type();
@@ -194,6 +272,7 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
     auto cookie = hilti::builder::function::parameter("__cookie", hiltiTypeCookie(), false, nullptr);
 
     hilti::type::function::CallingConvention cc;
+    bool export_ = false;
 
     switch ( ftype->callingConvention() ) {
      case type::function::BINPAC:
@@ -217,6 +296,7 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
 
      case type::function::HILTI:
         cc = hilti::type::function::HILTI;
+        export_ = true;
         break;
 
      case type::function::C:
@@ -226,6 +306,9 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
      default:
         internalError("unexpected calling convention in hiltiDefineFunction()");
     }
+
+    if ( export_ )
+        moduleBuilder()->exportID(name);
 
     if ( func->body() ) {
         auto decl = moduleBuilder()->pushFunction(name, result, params, cc, nullptr, false, func->location());
@@ -240,8 +323,15 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
 
 shared_ptr<hilti::ID> CodeGen::hiltiFunctionName(shared_ptr<binpac::Function> func)
 {
-    if ( func->type()->callingConvention() != type::function::BINPAC )
-        return hiltiID(func->id());
+    if ( func->type()->callingConvention() != type::function::BINPAC ) {
+        auto id = func->id();
+        auto mod = func->firstParent<Module>();
+
+        if ( mod && ! id->isScoped() )
+            return hilti::builder::id::node(::util::fmt("%s::%s", mod->id()->name(), id->name()));
+
+        return hilti::builder::id::node(id->pathAsString());
+    }
 
     // To make overloaded functions unique, we add a hash of the signature.
     auto type = func->type()->render();
@@ -283,7 +373,8 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCall(shared_ptr<expression::Function
          ftype->callingConvention() == type::function::HILTI ||
          ftype->callingConvention() == type::function::BINPAC_HILTI ) {
         if ( func->scope().size() )
-            moduleBuilder()->importModule(hilti::builder::id::node(func->scope()));
+            hiltiDefineFunction(func->function());
+            // moduleBuilder()->importModule(hilti::builder::id::node(func->scope()));
     }
 
     switch ( ftype->callingConvention() ) {
@@ -335,11 +426,6 @@ shared_ptr<hilti::Type> CodeGen::hiltiTypeCookie()
     return hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::UserCookie"));
 }
 
-shared_ptr<binpac::Type> CodeGen::itemType(shared_ptr<type::unit::Item> item)
-{
-    return _parser_builder->itemType(item);
-}
-
 void CodeGen::hiltiBindDollarDollar(shared_ptr<hilti::Expression> val)
 {
     _code_builder->hiltiBindDollarDollar(val);
@@ -364,6 +450,11 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCastEnum(shared_ptr<hilti::Expressio
     return e;
 }
 
+void CodeGen::hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data)
+{
+    _parser_builder->hiltiWriteToSinks(field, data);
+}
+
 void CodeGen::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> data)
 {
     _parser_builder->hiltiWriteToSink(sink, data);
@@ -374,4 +465,24 @@ void CodeGen::hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hi
     auto data = builder()->addTmp("data", hilti::builder::reference::type(hilti::builder::bytes::type()));
     builder()->addInstruction(data, hilti::instruction::bytes::Sub, begin, end);
     return hiltiWriteToSink(sink, data);
+}
+
+shared_ptr<hilti::Expression> CodeGen::hiltiApplyAttributesToValue(shared_ptr<hilti::Expression> val, shared_ptr<AttributeSet> attrs)
+{
+    auto convert = attrs->lookup("convert");
+
+    if ( convert ) {
+        hiltiBindDollarDollar(val);
+        auto dd = builder()->addTmp("__dollardollar", val->type());
+        builder()->addInstruction(dd, hilti::instruction::operator_::Assign, val);
+        val = hiltiExpression(convert->value());
+        hiltiUnbindDollarDollar();
+    }
+
+    return val;
+}
+
+void CodeGen::hiltiImportType(shared_ptr<ID> id, shared_ptr<Type> t)
+{
+    _imported_types.insert(std::make_pair(id->pathAsString(), t));
 }

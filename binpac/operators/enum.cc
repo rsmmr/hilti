@@ -1,4 +1,19 @@
 
+opBegin(enum_::Equal)
+    opOp1(std::make_shared<type::Bool>())
+    opOp2(std::make_shared<type::Bool>())
+
+    opDoc("Compared two boolean values.")
+
+    opValidate() {
+        sameType(op1()->type(), op2()->type());
+    }
+
+    opResult() {
+        return std::make_shared<type::Bool>();
+    }
+opEnd
+
 opBegin(enum_::Call)
     opOp1(std::make_shared<type::TypeType>())
     opOp2(std::make_shared<type::Any>())
@@ -6,12 +21,8 @@ opBegin(enum_::Call)
     opDoc("Converts an integer into an enum.")
 
     opMatch() {
-        auto type = ast::checkedCast<type::TypeType>(op1()->type())->typeType();
-        return ast::isA<type::Enum>(type);
-    }
-
-    opValidate() {
-        auto ftype = ast::checkedCast<type::TypeType>(op1()->type());
+        auto type = ast::tryCast<type::TypeType>(op1()->type());
+        return type && ast::isA<type::Enum>(type->typeType());
     }
 
     opResult() {

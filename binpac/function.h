@@ -71,6 +71,10 @@ public:
     /// form the resolver passes.
     void setUnit(shared_ptr<type::Unit> unit);
 
+    /// Turns this hook into a debug hook that executes only when compiled in
+    /// debugging mode.
+    void setDebug();
+
     ACCEPT_VISITOR_ROOT()
 
 private:

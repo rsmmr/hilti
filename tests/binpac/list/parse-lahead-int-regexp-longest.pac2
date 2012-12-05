@@ -1,7 +1,6 @@
 #
-# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
-# @TEST-EXEC:  printf "A\x0a\x0bA\x0c\x0dAAA\x05" | ./a.out -p Test >output
-# @TEST-EXEC:  printf "AAA\x05" | ./a.out -p Test >>output
+# @TEST-EXEC:  printf "A\x0a\x0bA\x0c\x0dAAA\x05" | pac-driver-test %INPUT >output    
+# @TEST-EXEC:  printf "AAA\x05" | pac-driver-test %INPUT >>output
 # @TEST-EXEC:  btest-diff output
 #
 

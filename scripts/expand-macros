@@ -81,8 +81,15 @@ for (name, items) in macros.items():
 nr = 0
 last_nrs = {}
 
+#split_re = re.compile(r'([,]|, *"[^"]+"))')
+
+split_re = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''')
+
 for line in open(sys.argv[2]):
 	found = False
+
+	if line.strip().startswith("//"):
+		continue
 
 	for (name, items) in macros.items():
 		for val in items:
@@ -91,7 +98,14 @@ for line in open(sys.argv[2]):
 			m = regexp.match(line)
 
 			if m:
-				arg = str(m.group(2))
+				# Split at commands, but only if outside of quotation marks.
+				args = split_re.split(str(m.group(2)).strip())
+				args = [arg.strip() for arg in args[1:-1] if arg != ","]
+
+				try:
+					arg = args[0]
+				except IndexError:
+					arg = ""
 
 				if name == cls_macro:
 
@@ -101,7 +115,12 @@ for line in open(sys.argv[2]):
 					# The pieces are assigned to the corresponding variables.
 					# NAMESPACE defaults to empty; CLASSARG defaults to CLASS.
 
-					arg = arg.replace("::", "!!!") # Hack for easier parsing.
+					args = [arg.replace("::", "!!!") for arg in args] # Hack for easier parsing.
+
+					try:
+						arg = args[0]
+					except IndexError:
+						arg = ""
 
 					try:
 						(c, cls_value_arg) = arg.split(":")
@@ -125,7 +144,13 @@ for line in open(sys.argv[2]):
 				cls_ns = cls_ns.strip()
 
 				out = regexp.sub(content, line)
-				out = out.replace("$1", arg)
+
+				for i in range(1, 10):
+					if i <= len(args):
+						out = out.replace("$%d" % i, args[i-1])
+					else:
+						out = out.replace("$%d" % i, "")
+
 				out = out.replace("$CLASSARG", cls_value_arg)
 				out = out.replace("$CLASS", cls_value)
 				out = out.replace("$NAMESPACE", cls_ns)

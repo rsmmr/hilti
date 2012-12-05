@@ -383,7 +383,7 @@ protected:
     alternative_list rhss() const override;
 
 private:
-    shared_ptr<Production> _child;
+    node_ptr<Production> _child;
     // expression_list _params;
 };
 
@@ -412,7 +412,7 @@ protected:
     alternative_list rhss() const override;
 
 private:
-    shared_ptr<Production> _child;
+    node_ptr<Production> _child;
 };
 
 /// A sequence of other productions.
@@ -508,7 +508,8 @@ protected:
 
 private:
     std::pair<look_aheads, look_aheads> _lahs;
-    std::pair<shared_ptr<Production>, shared_ptr<Production>> _alts;
+    node_ptr<Production> _alt1;
+    node_ptr<Production> _alt2;
 };
 
 /// A pair of alternatives between which we decide based on a boolean
@@ -547,7 +548,8 @@ protected:
 
 private:
     shared_ptr<Expression> _expr;
-    std::pair<shared_ptr<Production>, shared_ptr<Production>> _branches;
+    node_ptr<Production> _alt1;
+    node_ptr<Production> _alt2;
 };
 
 /// A production executing a given number of times.
@@ -581,7 +583,7 @@ protected:
 
 private:
     shared_ptr<Expression> _expr;
-    shared_ptr<Production> _body;
+    node_ptr<Production> _body;
 };
 
 /// A production executing as long as condition is true.
@@ -614,7 +616,7 @@ protected:
 
 private:
     shared_ptr<Expression> _expr;
-    shared_ptr<Production> _body;
+    node_ptr<Production> _body;
 };
 
 /// A production executing until interrupted by a foreach hook.
@@ -641,7 +643,7 @@ protected:
     alternative_list rhss() const override;
 
 private:
-    shared_ptr<Production> _body;
+    node_ptr<Production> _body;
 };
 
 /// Alternatives between which we decide based on which value out of a set of
@@ -673,7 +675,7 @@ public:
     shared_ptr<Expression> expression() const;
 
     /// Returns the alternatives.
-    const case_list& alternatives() const;
+    case_list alternatives() const;
 
     /// Returns the default production, or null if none.
     shared_ptr<Production> default_() const;
@@ -687,10 +689,35 @@ protected:
     alternative_list rhss() const override;
 
 private:
-    case_list _cases;
+    std::list<std::pair<std::list<shared_ptr<Expression>>, node_ptr<Production>>> _cases;
     shared_ptr<Expression> _expr;
-    shared_ptr<Production> _default;
+    node_ptr<Production> _default;
 };
+
+/// An internal class representing a production to be resolved later. This is
+/// for supporting recursive grammars.
+class Unknown : public Production
+{
+public:
+    /// Constructor.
+    ///
+    /// node: The node with which's production this unknown is to be replaced with later.
+    Unknown(shared_ptr<Node> node);
+
+    /// Returns the node that needs resolving.
+    shared_ptr<Node> node() const;
+
+    bool atomic() const override;
+
+    ACCEPT_VISITOR(Production);
+
+protected:
+    string renderProduction() const override;
+
+private:
+    shared_ptr<Node> _node;
+};
+
 
 }
 

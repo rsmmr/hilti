@@ -226,6 +226,11 @@ public:
    /// Returns: The LLVM IRBuilder.
    IRBuilder* newBuilder(llvm::BasicBlock* block, bool insert_at_beginning = false);
 
+   /// Mangles the ID of a global. This is similar to \a util::mangle but
+   /// takes module names into a account by adding either the module given as
+   /// prefix, or the current module if not given.
+   string mangleGlobal(shared_ptr<ID> id, shared_ptr<Module> mod = nullptr, string prefix = "", bool internal = false);
+
    /// Returns the builder associated with a block label. This first this is
    /// called for a given pair label/function, a new builder is created and
    /// returned. Subsequent calls for the same pair will then return the same

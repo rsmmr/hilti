@@ -12,7 +12,7 @@ class BlockNormalizer : public Pass<>
 {
 public:
    /// Constructor.
-   BlockNormalizer() : Pass<>("codegen::BlockNormalizer") {}
+   BlockNormalizer() : Pass<>("hilti::codegen::BlockNormalizer") {}
 
    /// Collects information about an AST.
    bool run(shared_ptr<hilti::Node> module) override {

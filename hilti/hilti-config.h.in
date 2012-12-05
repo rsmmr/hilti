@@ -48,6 +48,10 @@ struct Configuration {
         "hilti"
     };
 
+    std::list<string> compiler_shared_libraries_jit = {
+        "hiltijit"
+    };
+
     //// Runtime configuration.
 
     string runtime_library_bca      = "${PROJECT_BINARY_DIR}/libhilti/libhilti-rt.bc";

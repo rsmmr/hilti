@@ -1,0 +1,81 @@
+#
+# @TEST-NO-FILTER: printer
+#
+# @TEST-EXEC:  hilti-build module.hlt test.hlt %INPUT  -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Main
+
+import Test
+
+void run() {
+    call Test::do_work ()
+}
+
+@TEST-START-FILE module.hlt
+
+module Module
+
+import Hilti
+
+type Test::Foo = struct {
+    string s
+}
+
+declare hook void Test::my_other_hook(ref<Test::Foo> f)
+declare hook void Test::my_other_hook_empty(ref<Test::Foo> f)
+
+hook void Test::my_hook(ref<Test::Foo> f) {
+    call Hilti::print("external hook function.")
+    call Hilti::print(f)
+
+    hook.run Test::my_other_hook(f)
+    hook.run Test::my_other_hook_empty(f)
+
+    return.void
+}
+
+@TEST-END-FILE
+
+@TEST-START-FILE test.hlt
+
+module Test
+
+import Hilti
+
+type Foo = struct {
+    string s
+}
+
+declare hook void my_hook(ref<Foo> f)
+declare hook void my_other_hook(ref<Foo> f)
+declare hook void my_other_hook_empty(ref<Foo> f)
+
+hook void my_hook(ref<Foo> f) {
+    call Hilti::print("internal hook function.")
+    call Hilti::print(f)
+    return.void
+}
+
+hook void my_other_hook(ref<Foo> f) {
+    call Hilti::print("internal other_hook function.")
+    call Hilti::print(f)
+    return.void
+}
+
+void do_work()
+{
+    local ref<Foo> s
+    s = new Foo
+    struct.set s "s" "foo"
+    hook.run my_hook(s)
+}
+
+export do_work
+export my_hook
+
+@TEST-END-FILE
+
+

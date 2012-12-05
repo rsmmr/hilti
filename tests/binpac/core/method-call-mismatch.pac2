@@ -1,0 +1,10 @@
+#
+# @TEST-EXEC-FAIL: binpac++ %INPUT >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+global b: bytes;
+
+print b.startswith(122345);

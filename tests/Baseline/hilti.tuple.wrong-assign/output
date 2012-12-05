@@ -1,5 +1,5 @@
 
 >>> a = assign 42
-wrong-assign.hlt:12-12: error, operand not compatible with target [pass::Validator]
+wrong-assign.hlt:12-12: error, operand not compatible with target [pass::hilti::Validator]
 wrong-assign.hlt: Aborting due to verification error.
 error running hiltic, aborting

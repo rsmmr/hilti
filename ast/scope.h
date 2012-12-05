@@ -83,7 +83,13 @@ public:
     /// id: The ID. It must not be scoped.
     ///
     /// value: The value to associate with the ID.
-    bool insert(shared_ptr<ID> id, Value Value); // must not be scoped.
+    ///
+    /// use_scope: If true, the name will be inserted with it's
+    /// fully-qualified ID right into this scope. Look-ups will only find
+    /// that if they are likewise fully-qualified. If false, any scope
+    /// qualifiers are ignored (i.e., we assume the ID is local to this
+    /// scope).
+    bool insert(shared_ptr<ID> id, Value Value, bool use_scope = false);
 
     /// Lookups an ID.
     ///
@@ -172,9 +178,10 @@ private:
 };
 
 template<typename AstInfo>
-inline bool Scope<AstInfo>::insert(shared_ptr<ID> id, Value value)
+inline bool Scope<AstInfo>::insert(shared_ptr<ID> id, Value value, bool use_scope)
 {
-    auto i = _data->values.find(id->name());
+    auto name = use_scope ? id->pathAsString() : id->name();
+    auto i = _data->values.find(name);
 
     if ( i != _data->values.end() )
         i->second->push_back(value);
@@ -182,7 +189,7 @@ inline bool Scope<AstInfo>::insert(shared_ptr<ID> id, Value value)
     else {
         auto list = std::make_shared<std::list<Value>>();
         list->push_back(value);
-        _data->values.insert(typename value_map::value_type(id->name(), list));
+        _data->values.insert(typename value_map::value_type(name, list));
     }
 
     return true;
@@ -191,9 +198,7 @@ inline bool Scope<AstInfo>::insert(shared_ptr<ID> id, Value value)
 template<typename AstInfo>
 inline bool Scope<AstInfo>::remove(shared_ptr<ID> id)
 {
-    assert(! id->isScoped());
-
-    auto i = _data->values.find(id->name());
+    auto i = _data->values.find(id->pathAsString());
     if ( i == _data->values.end() )
         return false;
 
@@ -246,7 +251,12 @@ try_childs:
 template<typename AstInfo>
 inline std::list<shared_ptr<typename AstInfo::scope_value>> Scope<AstInfo>::find(shared_ptr<ID> id, bool traverse) const
 {
-    assert(traverse || ! id->isScoped());
+    // Try a direct lookup on the full path first.
+    auto i = _data->values.find(id->pathAsString());
+    if ( i != _data->values.end() )
+        return *i->second;
+
+    // Now try the path-based lookup.
     const typename ID::component_list& path = id->path();
     return find(path.begin(), path.end(), traverse);
 }

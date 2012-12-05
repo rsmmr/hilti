@@ -23,7 +23,7 @@ export type test = unit {
            print "FOO foo.inline";
            }
 
-       %debug on a { print "FOO A", self.a; }
-       %debug on b { print "FOO B", self.b; }
-       %debug on foo { print "FOO foo", self.foo; }
+       on a %debug { print "FOO A", self.a; }
+       on b %debug { print "FOO B", self.b; }
+       on foo %debug { print "FOO foo", self.foo; }
 };

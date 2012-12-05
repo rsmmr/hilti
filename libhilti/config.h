@@ -10,7 +10,7 @@
 #include "types.h"
 
 /// Configuration parameters for the HILTI runtime system..
-typedef struct
+struct __hlt_config
 {
     /// Number of worker threads to spawn.
     unsigned num_workers;
@@ -48,7 +48,7 @@ typedef struct
     /// itself.
     const char* core_affinity;
 
-} hlt_config;
+};
 
 /// Returns the current configuration. The returned value cannot be directly
 /// modified. To change a setting, copy it by value and modify as desired.

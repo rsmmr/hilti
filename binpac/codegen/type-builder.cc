@@ -1,6 +1,7 @@
 
 #include "type-builder.h"
 #include "type.h"
+#include "module.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -35,14 +36,15 @@ shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type, b
 
 void TypeBuilder::visit(type::Address* a)
 {
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::address::type(a->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Any* a)
 {
     TypeInfo ti;
-
     ti.hilti_type = hilti::builder::any::type(a->location());
-
     setResult(ti);
 }
 
@@ -70,6 +72,7 @@ void TypeBuilder::visit(type::Bytes* b)
 
     auto t = hilti::builder::bytes::type(b->location());
     ti.hilti_type = hilti::builder::reference::type(t, b->location());
+    ti.hilti_default = hilti::builder::bytes::create("", b->location());
 
     setResult(ti);
 }
@@ -80,6 +83,9 @@ void TypeBuilder::visit(type::CAddr* c)
 
 void TypeBuilder::visit(type::Double* d)
 {
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::double_::type(d->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Enum* e)
@@ -96,9 +102,15 @@ void TypeBuilder::visit(type::Enum* e)
         labels.push_back(std::make_pair(id, l.second));
     }
 
-    ti.hilti_default = hilti::builder::id::create(util::fmt("%s::Undef", e->id()->name()));
+    ti.hilti_default = hilti::builder::id::create(util::fmt("%s::Undef", e->id()->pathAsString()));
     ti.hilti_type = hilti::builder::enum_::type(labels, e->location());
-    ti.hilti_type->setID(cg()->hiltiID(e->id()));
+
+    auto id = cg()->hiltiID(e->id(), true);
+
+    if ( id->isScoped() )
+        cg()->hiltiImportType(std::make_shared<ID>(id->pathAsString()), e->sharedPtr<Type>());
+
+    ti.hilti_type->setID(id);
 
     setResult(ti);
 }
@@ -128,6 +140,9 @@ void TypeBuilder::visit(type::Integer* i)
 
 void TypeBuilder::visit(type::Interval* i)
 {
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::interval::type(i->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Iterator* i)
@@ -194,6 +209,9 @@ void TypeBuilder::visit(type::Sink* s)
 
 void TypeBuilder::visit(type::Time* t)
 {
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::time::type(t->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Tuple* t)
@@ -203,8 +221,13 @@ void TypeBuilder::visit(type::Tuple* t)
     for ( auto t : t->typeList() )
         types.push_back(cg()->hiltiType(t));
 
+    auto tt = hilti::builder::tuple::type(types, t->location());
+
+    if ( t->wildcard() )
+        tt->setWildcard(true);
+
     TypeInfo ti;
-    ti.hilti_type = hilti::builder::tuple::type(types, t->location());
+    ti.hilti_type = tt;
     setResult(ti);
 }
 
@@ -220,8 +243,13 @@ void TypeBuilder::visit(type::Unit* u)
 {
     assert(u->id());
 
+    auto uid = cg()->hiltiID(u->id(), true);
+
+    if ( uid->isScoped() )
+        cg()->hiltiImportType(std::make_shared<ID>(uid->pathAsString()), u->sharedPtr<Type>());
+
     TypeInfo ti;
-    ti.hilti_type = hilti::builder::reference::type(hilti::builder::type::byName(cg()->hiltiID(u->id())));
+    ti.hilti_type = hilti::builder::reference::type(hilti::builder::type::byName(uid));
     setResult(ti);
 }
 
@@ -235,6 +263,12 @@ void TypeBuilder::visit(type::Unset* u)
 
 void TypeBuilder::visit(type::Vector* v)
 {
+    auto item = hiltiType(v->elementType());
+
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::reference::type(hilti::builder::vector::type(item, v->location()));
+    ti.hilti_default = hilti::builder::vector::create(item, {}, v->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::Void* v)

@@ -25,6 +25,9 @@ AST Infrastructure
     - Use the new scripts for declaring AST nodes, visitor interface,
       instruction classes via macros.
 
+* BinPAC doesn't use the coercer anymore and HILTI shouldn't either,
+  or better: we should reorg it so that both can use it again.
+
 HILTI Instruction Set
 ---------------------
 

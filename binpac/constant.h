@@ -293,7 +293,7 @@ public:
 
     /// Constructor.
     ///
-    /// time: Nano seconds since epoch.
+    /// time: Seconds since epoch.
     ///
     /// l: An associated location.
     ///
@@ -309,7 +309,7 @@ public:
     ACCEPT_VISITOR(Constant);
 
 private:
-    uint64_t _time;
+    uint64_t _nsecs;
 };
 
 /// AST node for a constant of type Interval.
@@ -327,7 +327,7 @@ public:
 
     /// Constructor.
     ///
-    /// interv: Nano seconds.
+    /// interv: Seconds.
     ///
     /// l: An associated location.
     ///
@@ -343,7 +343,7 @@ public:
     ACCEPT_VISITOR(Constant);
 
 private:
-    uint64_t _interv;
+    uint64_t _nsecs;
 };
 
 }

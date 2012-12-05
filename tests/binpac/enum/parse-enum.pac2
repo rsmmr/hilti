@@ -1,0 +1,34 @@
+#
+# @TEST-EXEC:  printf '\x00\x0a\x00\x0a\xff\xff\x00\x02' | pac-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+import BinPAC;
+
+type Foo = enum {
+    A = 10,
+    B,
+    C = 20
+    };
+
+type Bar = enum {
+    D = 0,
+    E = 1,
+    F = 2
+    };
+
+export type test = unit {
+    a: uint16;
+    b: uint16 &convert=Foo($$);
+    c: uint16 &convert=Foo($$);
+    d: uint16 &convert=Bar($$);
+
+    on %done {
+        print self.a;
+        print self.b;
+        print self.c;
+        print self.d;
+        }
+};

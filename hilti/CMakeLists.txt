@@ -8,6 +8,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${ffi})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/libhilti ${CMAKE_BINARY_DIR}/libhilti)
 
 find_package(PAPI)
 
@@ -211,6 +212,9 @@ add_library (hilti SHARED
     codegen/unpacker.cc
     codegen/util.cc
 
+    jit/jit.cc
+    jit/llvm/SectionMemoryManager.cpp
+
     ${autogen}/instructions.h
     ${autogen}/instructions-declare.h
     ${autogen}/instructions-visits.h
@@ -229,3 +233,6 @@ add_library (hilti SHARED
 
 ADD_DEPENDENCIES(hilti generate_parser_hilti)
 target_link_libraries(hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
+
+add_library (hilti-jit SHARED jit/libhilti-jit.cc)
+

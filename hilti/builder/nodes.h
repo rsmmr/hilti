@@ -974,6 +974,34 @@ inline shared_ptr<hilti::expression::Constant> create(double secs, const Locatio
     return std::make_shared<hilti::expression::Constant>(c, l);
 }
 
+/// Instantiates an AST expression node representing an Interval constant.
+///
+/// secs: The seconds representing the interval.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(uint64_t secs, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Interval>(secs, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing an Interval constant.
+///
+/// nsecs: The seconds representing the interval.
+///
+/// takes_nsecs: Just a marker that this methods takes nsecs.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(uint64_t nsecs, bool takes_nsecs, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Interval>(nsecs, true, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
 /// Instantiates an type::Interval type.
 ///
 /// l: Location associated with the type.
@@ -997,6 +1025,34 @@ namespace time {
 inline shared_ptr<hilti::expression::Constant> create(double secs, const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Time>(secs, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing an Time constant.
+///
+/// secs: Seconds since the epoch.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(uint64_t secs, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Time>(secs, l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
+/// Instantiates an AST expression node representing an Time constant.
+///
+/// nsecs: Nano seconds since the epoch.
+///
+/// takes_nsecs: Just a marker that this methods takes nsecs.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(uint64_t nsecs, bool takes_nsecs, const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::Time>(nsecs, true, l);
     return std::make_shared<hilti::expression::Constant>(c, l);
 }
 

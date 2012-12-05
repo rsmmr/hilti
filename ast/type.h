@@ -412,7 +412,8 @@ public:
     /// instance of the same type class.
     bool equal(shared_ptr<AIType> other) const {
        auto pother = dynamic_cast<type::trait::Parameterized<AstInfo> *>(other.get());
-       assert(pother);
+       if ( ! pother )
+            return false;
 
        auto params = parameters();
        auto oparams = pother->parameters();

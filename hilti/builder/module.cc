@@ -80,8 +80,8 @@ void ModuleBuilder::exportID(const std::string& name)
 
 shared_ptr<ID> ModuleBuilder::_normalizeID(shared_ptr<ID> id) const
 {
-    if ( id->name().find("-") )
-        id = builder::id::node(util::strreplace(id->name(), "-", "_"), id->location());
+    if ( id->pathAsString().find("-") )
+        id = builder::id::node(util::strreplace(id->pathAsString(), "-", "_"), id->location());
 
     return id;
 }
@@ -94,7 +94,7 @@ std::pair<shared_ptr<ID>, shared_ptr<Declaration>> ModuleBuilder::_uniqueDecl(sh
     shared_ptr<ID> uid = id;
 
     while ( true ) {
-        auto d = decls->find(uid->name());
+        auto d = decls->find(uid->pathAsString(_module->id()));
 
         if ( d == decls->end() )
             return std::make_pair(uid, nullptr);
@@ -105,9 +105,9 @@ std::pair<shared_ptr<ID>, shared_ptr<Declaration>> ModuleBuilder::_uniqueDecl(sh
             return std::make_pair(uid, (*d).second.declaration);
 
         if ( style == CHECK_UNIQUE )
-            fatalError(::util::fmt("ModuleBuilder: ID %s already defined", uid->name()));
+            fatalError(::util::fmt("ModuleBuilder: ID %s already defined", uid->pathAsString(_module->id())));
 
-        std::string s = ::util::fmt("%s_%d", id->name().c_str(), ++i);
+        std::string s = ::util::fmt("%s_%d", id->pathAsString(_module->id()), ++i);
         uid = std::make_shared<ID>(s, uid->location());
     }
 
@@ -120,7 +120,7 @@ void ModuleBuilder::_addDecl(shared_ptr<ID> id, shared_ptr<Type> type, const std
     dv.kind = kind;
     dv.type = type;
     dv.declaration = decl;
-    decls->insert(std::make_pair(id->name(), dv));
+    decls->insert(std::make_pair(id->pathAsString(_module->id()), dv));
 }
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<hilti::Function> function, bool no_body)
@@ -465,6 +465,13 @@ shared_ptr<hilti::Expression> ModuleBuilder::block() const
     return builder()->block();
 }
 
+bool ModuleBuilder::declared(shared_ptr<hilti::ID> id)
+{
+    id = _normalizeID(id);
+    auto d = _globals.find(id->pathAsString(_module->id()));
+    return d != _globals.end();
+}
+
 shared_ptr<hilti::expression::Variable> ModuleBuilder::addGlobal(shared_ptr<ID> id, shared_ptr<Type> type, shared_ptr<Expression> init, bool force_unique, const Location& l)
 {
     auto t = _uniqueDecl(id, type, "global", &_globals, (force_unique ? MAKE_UNIQUE : CHECK_UNIQUE), true);
@@ -612,6 +619,23 @@ void ModuleBuilder::importModule(shared_ptr<ID> id)
 void ModuleBuilder::importModule(const std::string& id)
 {
     return importModule(std::make_shared<ID>(id));
+}
+
+bool ModuleBuilder::idImported(shared_ptr<ID> id) const
+{
+    auto m = util::strtolower(id->name());
+
+    for ( auto i : _module->importedIDs() ) {
+        if ( m == util::strtolower(i->pathAsString()) )
+            return true;
+    }
+
+    return false;
+}
+
+bool ModuleBuilder::idImported(const std::string& id) const
+{
+    return idImported(std::make_shared<ID>(id));
 }
 
 void ModuleBuilder::cacheNode(const std::string& component, const std::string& idx, shared_ptr<Node> node)

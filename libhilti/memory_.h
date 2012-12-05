@@ -86,7 +86,7 @@ extern void* __hlt_calloc(uint64_t count, uint64_t size, const char* type, const
 ///
 /// \note This shouldn't be called directly by user code. Use the macro \c
 /// hlt_calloc instead.
-extern void* __hlt_realloc(void *ptr, uint64_t size, const char* type, const char* location);
+extern void* __hlt_realloc(void* ptr, uint64_t size, const char* type, const char* location);
 
 /// Frees an unmanaged memory chunk formerly allocated with ``hlt_malloc``.
 /// This operates pretty much like the standard ``free``.
@@ -100,7 +100,7 @@ extern void* __hlt_realloc(void *ptr, uint64_t size, const char* type, const cha
 ///
 /// location: A string describing the location where the object is allocaged.
 /// This is for debugging purposes only.
-extern void __hlt_free(void *ptr, const char* type, const char* location);
+extern void __hlt_free(void* ptr, const char* type, const char* location);
 
 #define hlt_malloc(size)        __hlt_malloc(size, "-", __hlt_make_location(__FILE__,__LINE__))
 #define hlt_calloc(count, size) __hlt_calloc(count, size, "-", __hlt_make_location(__FILE__,__LINE__))

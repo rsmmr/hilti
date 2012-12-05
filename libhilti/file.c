@@ -8,10 +8,11 @@
 
 #include "file.h"
 #include "memory_.h"
+#include "globals.h"
 #include "autogen/hilti-hlt.h"
 
 // This struct describes one currently open file. We memory-manage this ourselves.
-typedef struct __hlt_file_info {
+struct __hlt_file_info {
     hlt_string path;    // The path of the file.
     int fd;             // The file descriptor.
     int writers;        // The number of file objects having the file open from the OS perspective.
@@ -19,7 +20,7 @@ typedef struct __hlt_file_info {
 
     struct __hlt_file_info* next; // We keep them in a list.
     struct __hlt_file_info* prev;
-} __hlt_file_info;
+};
 
 // A HILTI file object. This is one reference-counted.
 struct __hlt_file {
@@ -43,13 +44,6 @@ typedef struct __hlt_cmd_file {
     hlt_enum param_mode;       // For type 0: The mode.
 } __hlt_cmd_file;
 
-// The list of currently open files. Read and write accesses to this list
-// must be protected via the lock below.
-static __hlt_file_info* files = 0;
-
-// Lock to protect access to the list of open files;
-pthread_mutex_t files_lock;
-
 void hlt_file_dtor(hlt_type_info* ti, hlt_file* f)
 {
     GC_DTOR(f->path, hlt_string);
@@ -69,7 +63,7 @@ static inline void acqire_lock(int* i)
 
     hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, i);
 
-    if ( pthread_mutex_lock(&files_lock) != 0 )
+    if ( pthread_mutex_lock(&__hlt_globals()->files_lock) != 0 )
         fatal_error("cannot lock mutex");
 }
 
@@ -78,7 +72,7 @@ static inline void release_lock(int i)
     if ( ! hlt_is_multi_threaded() )
         return;
 
-    if ( pthread_mutex_unlock(&files_lock) != 0 )
+    if ( pthread_mutex_unlock(&__hlt_globals()->files_lock) != 0 )
         fatal_error("cannot unlock mutex");
 
     hlt_pthread_setcancelstate(i, NULL);
@@ -86,13 +80,13 @@ static inline void release_lock(int i)
 
 void __hlt_files_init()
 {
-    if ( hlt_is_multi_threaded() && pthread_mutex_init(&files_lock, 0) != 0 )
+    if ( hlt_is_multi_threaded() && pthread_mutex_init(&__hlt_globals()->files_lock, 0) != 0 )
         fatal_error("cannot init mutex");
 }
 
 void __hlt_files_done()
 {
-    __hlt_file_info* info = files;
+    __hlt_file_info* info = __hlt_globals()->files;
 
     while ( info ) {
         close(info->fd);
@@ -104,7 +98,7 @@ void __hlt_files_done()
         info = next;
     }
 
-    if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&files_lock) != 0 )
+    if ( hlt_is_multi_threaded() && pthread_mutex_destroy(&__hlt_globals()->files_lock) != 0 )
         fatal_error("cannot destroy mutex");
 }
 
@@ -140,7 +134,7 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
     // something smarter ...
 
     __hlt_file_info* info;
-    for ( info = files; info; info = info->next ) {
+    for ( info = __hlt_globals()->files; info; info = info->next ) {
         if ( hlt_string_cmp(path, info->path, excpt, ctx) == 0 ) {
             ++info->writers;
             goto init_instance;
@@ -153,12 +147,12 @@ void hlt_file_open(hlt_file* file, hlt_string path, hlt_enum type, hlt_enum mode
     info->writers = 1;
     info->error = 0;
     info->prev = 0;
-    info->next = files;
+    info->next = __hlt_globals()->files;
 
-    if ( files )
-        files->prev = info;
+    if ( __hlt_globals()->files )
+        __hlt_globals()->files->prev = info;
 
-    files = info;
+    __hlt_globals()->files = info;
 
 init_instance:
     file->info = info;
@@ -373,14 +367,14 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
 
               // Delete from list.
               __hlt_file_info* cur;
-              for ( cur = files; cur; cur = cur->next ) {
+              for ( cur = __hlt_globals()->files; cur; cur = cur->next ) {
                   if ( cur != cmd->info )
                       continue;
 
                   if ( cur->prev )
                       cur->prev->next = cur->next;
                   else
-                      files = cur->next;
+                      __hlt_globals()->files = cur->next;
 
                   if ( cur->next )
                       cur->next->prev = cur->prev;

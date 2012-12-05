@@ -1,5 +1,5 @@
 
 >>> int<0>
-wrong-width.hlt:5-5: error, integer type's width must be 8, 16, 32, or 64. [pass::Validator]
+wrong-width.hlt:5-5: error, integer type's width must be 8, 16, 32, or 64. [pass::hilti::Validator]
 wrong-width.hlt: Aborting due to verification error.
 error running hiltic, aborting

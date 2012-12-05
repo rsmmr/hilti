@@ -15,6 +15,7 @@ namespace llvm {
 namespace hilti {
 
 namespace passes { class ScopeBuilder; }
+namespace jit { class JIT; }
 
 /// A module context that groups a set of modules compiled jointly. This
 /// class provides the main top-level interface for parsing, compiling, and
@@ -27,6 +28,9 @@ public:
     /// libdirs: List of directories to search for imports and other library
     /// files. The current directory will always be tried first.
     CompilerContext(const string_list& libdirs);
+
+    /// Destructor.
+    ~CompilerContext();
 
     /// Reads a HILTI module from a file returns the parsed AST. It uses uses
     /// parse() for parsing and, by default, also fully finalizes the module.
@@ -195,22 +199,19 @@ public:
     ///
     /// optimize: The optimization level, corresponding to \c -Ox
     ///
-    /// Returns: The execution engine to use with nativeFunction(). Null on
-    /// error; an error message will have been reported.
-    llvm::ExecutionEngine* jitModule(llvm::Module* module, int optimize);
+    /// Returns: True if successful.
+    bool jitModule(llvm::Module* module, int optimize);
 
-    /// Returns a pointer to a compiled, native function after a module has beed JITed.
-    ///
-    /// ee: The engine returned by jitModule().
-    ///
-    /// module: The module that defines the target function.
+    /// Returns a pointer to a compiled, native function after a module has
+    /// beed JITed. This must only be called after \c jitModule() and will
+    /// inspect the module return there.
     ///
     /// function: The name of the function.
     ///
     /// Returns: A pointer to the function (which must be suitably casted),
     /// or null if that function doesn't exist (an error message will have
     /// been reported).
-    void* nativeFunction(llvm::ExecutionEngine* ee, llvm::Module* module, const string& function);
+    void* nativeFunction(const string& function);
 
     /// Dumps out an AST in (somewhat) readable format for debugging.
     ///
@@ -271,6 +272,9 @@ private:
 
     string_list _libdirs;
     std::set<string> _debug_streams;
+    jit::JIT* _jit = nullptr;
+    llvm::ExecutionEngine* _ee = nullptr;
+    llvm::Module* _module = nullptr;
 
     /// We keep global maps of all module nodes and, separately, their
     /// scopes, both indexed by their path. This is for avoiding duplicate

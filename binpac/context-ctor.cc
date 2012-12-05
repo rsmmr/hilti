@@ -5,6 +5,7 @@
 
 #include "context.h"
 #include "hilti/context.h"
+#include "jit/libhilti-jit.h"
 
 binpac::CompilerContext::CompilerContext(const string_list& libdirs)
 {
@@ -51,19 +52,13 @@ llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shar
     return _hilti_context->linkModules(output, llvm_modules, paths, libs, bcas, dylds, debug, verify, add_stdlibs, add_sharedlibs);
 }
 
-binpac::CompilerContext::binpac_parsers_func binpac::CompilerContext::jitBinpacParser(llvm::Module* module, int optimize)
+llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules,
+                                           bool debug, bool profile)
 {
-    auto ee = _hilti_context->jitModule(module, optimize);
-
-    if ( ! ee )
-        return nullptr;
-
-    auto func = _hilti_context->nativeFunction(ee, module, "binpac_parsers");
-
-    if ( ! func )
-        return nullptr;
-
-    return (binpac_parsers_func)func;
+    return linkModules(output, modules,
+                       path_list(), std::list<string>(),
+                       path_list(), path_list(),
+                       debug, true, profile);
 }
 
 bool binpac::CompilerContext::enableDebug(const string& label)

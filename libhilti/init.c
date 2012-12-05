@@ -37,13 +37,7 @@ void hlt_init()
         exit(1);
     }
 
-    __hlt_config_init();
-    __hlt_debug_init();
-    __hlt_cmd_queue_init();
     __hlt_global_state_init();
-    __hlt_hooks_init();
-    __hlt_threading_init();
-    __hlt_profiler_init();
 
     hlt_execution_context* ctx = hlt_global_execution_context();
     __hlt_modules_init(ctx);
@@ -51,8 +45,21 @@ void hlt_init()
     atexit(hlt_done);
 }
 
+void __hlt_init_from_state(__hlt_global_state* state)
+{
+    if ( _init_called ) {
+        fprintf(stderr, "internal error: __hlt_init_from_state() called after hlt_init(). Maybe called hlt_init() in addition to hlt_jit_init()?\n");
+        abort();
+    }
+
+    __hlt_globals_set(state);
+}
+
 void hlt_done()
 {
+    if ( ! _init_called )
+        return;
+
     if ( _done_called )
         return;
 
@@ -60,18 +67,5 @@ void hlt_done()
 
     hlt_exception* excpt = 0;
 
-    __hlt_threading_done(&excpt);
-    __hlt_profiler_done(); // Must come after threading is done.
-
-    if ( excpt ) {
-        hlt_exception_print_uncaught(excpt, hlt_global_execution_context());
-        GC_DTOR(excpt, hlt_exception);
-    }
-
-    __hlt_hooks_done();
     __hlt_global_state_done();
-    __hlt_cmd_queue_done();
-    __hlt_debug_done();
-    __hlt_config_done();
 }
-

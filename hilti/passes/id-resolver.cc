@@ -31,12 +31,15 @@ void IdResolver::visit(expression::ID* i)
 
     if ( vals.size() > 1 ) {
 
-        // This is ok if all hooks.
+        // This is ok if all hooks or one of them is scoped.
         for ( auto e : vals ) {
             auto func = ast::tryCast<expression::Function>(e);
 
             if ( func && ast::isA<Hook>(func->function()) )
                 continue;
+
+            if ( id->id()->isScoped() )
+                break;
 
             error(i, util::fmt("ID %s defined more than once", id->id()->pathAsString().c_str()));
             return;

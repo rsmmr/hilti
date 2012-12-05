@@ -1,6 +1,5 @@
 #
-# @TEST-EXEC:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out
-# @TEST-EXEC:  printf 1234567890 | ./a.out >output
+# @TEST-EXEC:  printf 1234567890 | pac-driver-test %INPUT >output
 # @TEST-EXEC:  btest-diff output
 
 module Mini;

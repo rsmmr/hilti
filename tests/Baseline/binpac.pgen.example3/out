@@ -1,14 +1,14 @@
 === Grammar my-grammar
         Epsilon: <eps> -> ()
- (*)  LookAhead: All -> {}: List2 | {b"[\\r\\n]"}: nl
+ (*)  LookAhead: All -> {bytes (id 1)}: List2 | {b"[\\r\\n]" (id 2)}: nl
        Variable: HdrKey -> (type bytes)
        Variable: HdrVal -> (type bytes)
        Sequence: Header -> HdrKey ws colon ws HdrVal nl
        Sequence: List1 -> Header List2
-      LookAhead: List2 -> {}: List1 | {}: <eps>
-           Ctor: colon -> b":" (bytes)
-           Ctor: nl  -> b"[\\r\\n]" (bytes)
-           Ctor: ws  -> b"[ \\t]*" (bytes)
+      LookAhead: List2 -> {bytes (id 1)}: List1 | {}: <eps>
+           Ctor: colon -> b":" (bytes/id 3)
+           Ctor: nl  -> b"[\\r\\n]" (bytes/id 2)
+           Ctor: ws  -> b"[ \\t]*" (bytes/id 4)
 
   -- Epsilon:
      All = 1
@@ -27,7 +27,4 @@
      Header = { HdrKey }
      List1 = {  }
      List2 = {  }
-
-Grammar error: grammar my-grammar, production HdrKey: look-ahead cannot depend on non-literal
-grammar my-grammar, production HdrKey: look-ahead cannot depend on non-literal
 

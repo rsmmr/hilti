@@ -1,0 +1,17 @@
+# $Id$
+#
+# @TEST-EXEC:  pac-driver-test %INPUT >output      
+# @TEST-EXEC:  btest-diff output
+
+module Test;
+
+global f: double = 15.5;
+global i: int32 = 2;
+global i2: uint8 = 3;
+
+print f * i;
+print f * i2;
+
+print f + 2;
+
+print -2 + f;

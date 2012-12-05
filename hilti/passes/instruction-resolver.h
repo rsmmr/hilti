@@ -15,7 +15,7 @@ namespace passes {
 class InstructionResolver : public Pass<>
 {
 public:
-   InstructionResolver() : Pass<>("InstructionResolver") {}
+   InstructionResolver() : Pass<>("hilti::InstructionResolver") {}
    virtual ~InstructionResolver();
 
    /// Resolves instruction references.

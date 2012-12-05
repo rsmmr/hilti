@@ -56,3 +56,8 @@ void Hook::setUnit(shared_ptr<type::Unit> unit)
     _unit = unit;
     body()->scope()->setParent(_unit->scope());
 }
+
+void Hook::setDebug()
+{
+    _debug = true;
+}

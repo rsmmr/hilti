@@ -24,13 +24,14 @@
 %}
 
 address4  ({digits}"."){3}{digits}
-address6  \[("::")?({digits}"."){3}{digits}|({hexs}:){7}{hexs}|0x{hexs}({hexs}|:)*"::"({hexs}|:)*|(({digits}|:)({hexs}|:)*)?"::"({hexs}|:)*\]
+address6  ("["({hexs}:){7}{hexs}"]")|("["0x{hexs}({hexs}|:)*"::"({hexs}|:)*"]")|("["({hexs}|:)*"::"({hexs}|:)*"]")|("["({hexs}|:)*"::"({hexs}|:)*({digits}"."){3}{digits}"]")
+
 attribute \&[a-zA-Z_][a-zA-Z_0-9]*
 blank     [ \t]
 comment   [ \t]*#[^\n]*
 digits    [0-9]+
 hexs      [0-9a-fA-F]+
-id        [a-zA-Z_][a-zA-Z_0-9]*|[$][$]
+id        [a-zA-Z_][a-zA-Z_0-9-]*|[$][$]
 int       [+-]?[0-9]+
 property  %[a-zA-Z_][a-zA-Z_0-9]*
 string    \"(\\.|[^\\"])*\"
@@ -63,16 +64,11 @@ caddr                 return token::CADDR;
 caddress              return token::CADDRESS;
 cast                  return token::CAST;
 catch                 return token::CATCH;
-cbool                 return token::CBOOL;
-cbytes                return token::CBYTES;
-cdouble               return token::CDOUBLE;
-cinteger              return token::CINTEGER;
 const                 return token::CONST;
 constant              return token::CONSTANT;
 cport                 return token::CPORT;
 cregexp               return token::CREGEXP;
 cstring               return token::CSTRING;
-debug                 return token::DEBUG_;
 double                return token::DOUBLE;
 else                  return token::ELSE;
 enum                  return token::ENUM;
@@ -150,7 +146,7 @@ True                  yylval->bval = 1; return token::CBOOL;
 {property}            yylval->sval = yytext; return token::PROPERTY;
 {digits}\/(tcp|udp)   yylval->sval = yytext; return token::CPORT;
 {address4}            yylval->sval = yytext; return token::CADDRESS;
-{address6}            yylval->sval = string(yytext, 1, strlen(yytext) - 1); return token::CADDRESS;
+{address6}            yylval->sval = string(yytext, 1, strlen(yytext) - 2); return token::CADDRESS;
 
 [-+]?{digits}\.{digits} yylval->dval = strtod(yytext, 0); return token::CDOUBLE;
 
@@ -159,9 +155,14 @@ True                  yylval->bval = 1; return token::CBOOL;
 {string}              yylval->sval = util::expandEscapes(string(yytext, 1, strlen(yytext) - 2)); return token::CSTRING;
 b{string}             yylval->sval = util::expandEscapes(string(yytext, 2, strlen(yytext) - 3)); return token::CBYTES;
 
+{id}(\/{id}){1,}      yylval->sval = yytext; return token::PATH_IDENT;
+
+
 {id}                   yylval->sval = yytext; return token::IDENT;
-{id}(::{id}){1,}       yylval->sval = yytext; return token::SCOPED_IDENT;
-{id}(::{property}){1,} yylval->sval = yytext; return token::SCOPED_IDENT;
+{id}(::{id}){1,}(::{property})?       yylval->sval = yytext; return token::SCOPED_IDENT;
+{id}(::{property})?    yylval->sval = yytext; return token::SCOPED_IDENT;
+
+
 
 [][.,=:;<>(){}/|*/&^%!+-] return (token_type) yytext[0];
 

@@ -5,6 +5,6 @@ wrong-op-number.hlt:13-14: error, operands do not match instruction int.add
     int.add:  -> int<32>
   expected one of:
     int.add: int<*>, int<*> -> int<*>
- [pass::InstructionResolver]
+ [pass::hilti::InstructionResolver]
 wrong-op-number.hlt: Aborting due to verification error.
 error running hiltic, aborting

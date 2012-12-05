@@ -16,6 +16,7 @@
 #include <errno.h>
 
 #include "profiler.h"
+#include "globals.h"
 #include "debug.h"
 #include "util.h"
 #include "utf8proc.h"
@@ -26,14 +27,10 @@
 typedef hlt_hash khint_t;
 #include "3rdparty/khash/khash.h"
 
-static int8_t profiling_enabled = 0;
-static int8_t papi_available = 0;
-
 #ifdef HAVE_PAPI
 #include <papi.h>
 
 #define PAPI_NUM_EVENTS 2
-static int papi_set = PAPI_NULL;
 
 #endif
 
@@ -104,7 +101,7 @@ void init_papi()
         goto error;
 		}
 
-    ret = PAPI_create_eventset(&papi_set);
+    ret = PAPI_create_eventset(&__hlt_globals()->papi_set);
 
     if ( ret != PAPI_OK ) {
         DBG_LOG("hilti-profiler", "PAPI: cannot create event set, %s", PAPI_strerror(ret));
@@ -112,13 +109,13 @@ void init_papi()
     }
 
     // Note: Increase PAPI_NUM_EVENTS if adding more events.
-    ret = PAPI_add_event(papi_set, PAPI_TOT_CYC);
+    ret = PAPI_add_event(__hlt_globals()->papi_set, PAPI_TOT_CYC);
 	if ( ret != PAPI_OK ) {
         DBG_LOG("hilti-profiler", "PAPI: cannot add PAPI_TOT_CYC to event set, %s", PAPI_strerror(ret));
         goto error;
     }
 
-    ret = PAPI_add_event(papi_set, PAPI_L1_DCM);
+    ret = PAPI_add_event(__hlt_globals()->papi_set, PAPI_L1_DCM);
 	if ( ret != PAPI_OK ) {
         DBG_LOG("hilti-profiler", "PAPI: cannot add PAPI_L1_DCM to event set, %s", PAPI_strerror(ret));
         goto error;
@@ -126,7 +123,7 @@ void init_papi()
 
 	PAPI_option_t options;
 	memset(&options, 0, sizeof(options));
-	options.domain.eventset = papi_set;
+	options.domain.eventset = __hlt_globals()->papi_set;
 	options.domain.domain = PAPI_DOM_ALL;
 
     ret = PAPI_set_opt(PAPI_DOMAIN, &options);
@@ -136,24 +133,24 @@ void init_papi()
         goto error;
 		}
 
-    if ( (ret = PAPI_start(papi_set)) != PAPI_OK) {
+    if ( (ret = PAPI_start(__hlt_globals()->papi_set)) != PAPI_OK) {
         DBG_LOG("hilti-profiler", "PAPI: cannot start counters, %s", PAPI_strerror(ret));
         goto error;
 		}
 
-    papi_available = 1;
+    __hlt_globals()->papi_available = 1;
     return;
 
 error:
-    papi_available = 0;
+    __hlt_globals()->papi_available = 0;
     }
 
 void read_papi(long_long* cnts)
 {
-    if ( ! papi_available )
+    if ( ! __hlt_globals()->papi_available )
         goto error;
 
-    int ret = PAPI_read(papi_set, cnts);
+    int ret = PAPI_read(__hlt_globals()->papi_set, cnts);
 
     if ( ret == PAPI_OK)
         return;
@@ -433,22 +430,22 @@ void hlt_profiler_timer_expire(hlt_string tag, hlt_exception** excpt, hlt_execut
 
 void __hlt_profiler_init()
 {
-    profiling_enabled = hlt_config_get()->profiling;
+    __hlt_globals()->profiling_enabled = hlt_config_get()->profiling;
 
 #ifdef HAVE_PAPI
-    if ( profiling_enabled )
+    if ( __hlt_globals()->profiling_enabled )
         init_papi();
 #endif
 }
 
 void __hlt_profiler_done()
 {
-    profiling_enabled = 0;
+    __hlt_globals()->profiling_enabled = 0;
 }
 
 void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_timer_mgr* tmgr, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! profiling_enabled )
+    if ( ! __hlt_globals()->profiling_enabled )
         return;
 
     if ( ! ctx->pstate ) {
@@ -535,7 +532,7 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
 
 void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! profiling_enabled )
+    if ( ! __hlt_globals()->profiling_enabled )
         return;
 
     if ( ! ctx->pstate->profilers ) {
@@ -588,7 +585,7 @@ void hlt_profiler_update(hlt_string tag, uint64_t user_delta, hlt_exception** ex
 
 void hlt_profiler_stop(hlt_string tag, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    if ( ! profiling_enabled )
+    if ( ! __hlt_globals()->profiling_enabled )
         return;
 
     if ( ! ctx->pstate->profilers ) {

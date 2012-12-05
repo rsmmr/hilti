@@ -1,44 +1,69 @@
 
 #include <assert.h>
+#include <string.h>
 
 #include "context.h"
 #include "globals.h"
 
-// Note: Global variables should be limited to a mininum, and must be ensured
-// that they are used in a thread-safe fashion.
-
-hlt_hook_state* __hlt_global_hook_state = 0;
-pthread_mutex_t __hlt_global_hook_state_lock;
-int8_t          __hlt_global_thread_mgr_terminate = 0;
-
-static hlt_execution_context* _global_execution_context = 0;
-static hlt_thread_mgr*        _global_thread_mgr = 0;
+static __hlt_global_state  our_globals;
+static __hlt_global_state* globals = &our_globals;
 
 void __hlt_global_state_init()
 {
-    _global_execution_context = __hlt_execution_context_new(HLT_VID_MAIN);
+    globals->context = __hlt_execution_context_new(HLT_VID_MAIN);
+
+    __hlt_config_init();
+    __hlt_debug_init();
+    __hlt_cmd_queue_init();
+    __hlt_hooks_init();
+    __hlt_threading_init();
+    __hlt_profiler_init();
 }
 
 void __hlt_global_state_done()
 {
-    GC_DTOR(_global_execution_context, hlt_execution_context);
-    _global_execution_context = 0;
+    hlt_exception* excpt = 0;
+
+    __hlt_threading_done(&excpt);
+    __hlt_profiler_done(); // Must come after threading is done.
+
+    if ( excpt ) {
+        hlt_exception_print_uncaught(excpt, globals->context);
+        GC_DTOR(excpt, hlt_exception);
+    }
+
+    __hlt_hooks_done();
+    __hlt_cmd_queue_done();
+    __hlt_debug_done();
+    __hlt_config_done();
+
+    GC_DTOR(globals->context, hlt_execution_context);
 }
+
+__hlt_global_state* __hlt_globals()
+{
+    return globals;
+}
+
+void __hlt_globals_set(__hlt_global_state* state)
+{
+    globals = state;
+}
+
 
 hlt_execution_context* hlt_global_execution_context()
 {
-    assert(_global_execution_context);
-    return _global_execution_context;
+    return globals->context;
 }
 
 hlt_thread_mgr* hlt_global_thread_mgr()
 {
-    return _global_thread_mgr;
+    return globals->thread_mgr;
 }
 
 void __hlt_global_set_thread_mgr(hlt_thread_mgr* mgr)
 {
-    _global_thread_mgr = mgr;
+    globals->thread_mgr = mgr;
 }
 
 

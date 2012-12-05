@@ -10,13 +10,11 @@ static const string _doc_connect =
 opBegin(sink::Connect : MethodCall)
     opOp1(std::make_shared<type::Sink>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect")))
-    opOp3(std::make_shared<type::Tuple>())
+    opCallArg1("u", std::make_shared<type::Unit>())
 
     opDoc(_doc_connect)
 
     opValidate() {
-        type_list args = { std::make_shared<type::Unit>() };
-        checkCallArgs(op3(), args);
     }
 
     opResult() {
@@ -36,14 +34,9 @@ static const string _doc_connect_mime_type =
 opBegin(sink::ConnectMimeTypeBytes : MethodCall)
     opOp1(std::make_shared<type::Sink>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect_mime_type")))
-    opOp3(std::make_shared<type::Tuple>())
+    opCallArg1("b", std::make_shared<type::Bytes>())
 
     opDoc(_doc_connect)
-
-    opMatch() {
-        type_list args = { std::make_shared<type::Bytes>() };
-        return matchCallArgs(op3(), args);
-    }
 
     opValidate() {
         type_list args = { std::make_shared<type::Bytes>() };
@@ -58,14 +51,9 @@ opEnd
 opBegin(sink::ConnectMimeTypeString : MethodCall)
     opOp1(std::make_shared<type::Sink>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("connect_mime_type")))
-    opOp3(std::make_shared<type::Tuple>())
+    opCallArg1("b", std::make_shared<type::String>())
 
     opDoc(_doc_connect)
-
-    opMatch() {
-        type_list args = { std::make_shared<type::String>() };
-        return matchCallArgs(op3(), args);
-    }
 
     opValidate() {
         type_list args = { std::make_shared<type::String>() };
@@ -94,13 +82,11 @@ static const string _doc_write =
 opBegin(sink::Write : MethodCall)
     opOp1(std::make_shared<type::Sink>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("write")))
-    opOp3(std::make_shared<type::Tuple>())
+    opCallArg1("b", std::make_shared<type::Bytes>())
 
     opDoc(_doc_write)
 
     opValidate() {
-        type_list args = { std::make_shared<type::Bytes>() };
-        checkCallArgs(op3(), args);
     }
 
     opResult() {
@@ -121,13 +107,10 @@ static const string _doc_close =
 opBegin(sink::Close : MethodCall)
     opOp1(std::make_shared<type::Sink>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("close")))
-    opOp3(std::make_shared<type::Tuple>())
 
     opDoc(_doc_close)
 
     opValidate() {
-        type_list args = {};
-        checkCallArgs(op3(), args);
     }
 
     opResult() {
@@ -137,7 +120,7 @@ opEnd
 
 static const string _doc_add_filter =
    R"(
-    Adds an input filter as specificed by the argument (of type ~~BinPAC::Filter) to the
+    Adds an input filter as specificed by *t* (of type ~~BinPAC::Filter) to the
     sink. The filter will receive all input written into the sink first,
     transform it according to its semantics, and then parser attached to the
     unit will parse the *output* of the filter.
@@ -161,13 +144,12 @@ static const string _doc_add_filter =
 opBegin(sink::AddFilter : MethodCall)
     opOp1(std::make_shared<type::Sink>())
     opOp2(std::make_shared<type::MemberAttribute>(std::make_shared<ID>("add_filter")))
-    opOp3(std::make_shared<type::Tuple>())
+    opCallArg1("t", std::make_shared<type::Enum>())
 
     opDoc(_doc_add_filter)
 
     opValidate() {
-        type_list args = { std::make_shared<type::Enum>() }; // FIXME: Check for actual type.
-        checkCallArgs(op3(), args);
+        // TODO: Check enum for actual type.
     }
 
     opResult() {

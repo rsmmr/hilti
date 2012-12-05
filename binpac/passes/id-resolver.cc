@@ -11,7 +11,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-IDResolver::IDResolver() : Pass<AstInfo>("IDResolver")
+IDResolver::IDResolver() : Pass<AstInfo>("binpac::IDResolver")
 {
 }
 
@@ -67,7 +67,7 @@ void IDResolver::visit(expression::ID* i)
     }
 
     auto id = i->sharedPtr<expression::ID>();
-    auto vals = scope->lookup(id->id());
+    auto vals = scope->lookup(id->id(), true);
 
     if ( ! vals.size() ) {
         if ( _report_unresolved )
@@ -88,6 +88,22 @@ void IDResolver::visit(expression::ID* i)
         // We resolve these later with overload-resolver.
         return;
     }
+
+#if 0
+    // Check for $$ here because we're going to replace it and thus the
+    // valdiator won't see ID anymore.
+    if ( id->id()->name() == "$$" ) {
+        auto h = i->firstParent<Hook>();
+
+        if ( h && h->foreach() )
+            return;
+
+        if ( (! h) && i->firstParent<type::Unit>() )
+            return;
+
+        error(i, util::fmt("$$ not defined here"));
+    }
+#endif    
 
     auto val = vals.front();
 
@@ -111,7 +127,7 @@ void IDResolver::visit(type::Unknown* t)
     if ( ! id )
         return;
 
-    auto vals = body->scope()->lookup(id);
+    auto vals = body->scope()->lookup(id, true);
 
     if ( ! vals.size() ) {
         if ( _report_unresolved )
@@ -137,7 +153,7 @@ void IDResolver::visit(type::Unknown* t)
     auto tv = nt->typeValue();
     t->replace(tv);
 
-    if ( ! tv->id() )
+    if ( ! tv->id() || ! (tv->id()->isScoped() && id->isScoped()) )
         tv->setID(id);
 }
 
@@ -156,7 +172,8 @@ void IDResolver::visit(declaration::Hook* h)
     auto module = current<Module>();
     assert(module);
 
-    auto exprs = module->body()->scope()->lookup(std::make_shared<ID>(path));
+    auto uid = std::make_shared<ID>(path);
+    auto exprs = module->body()->scope()->lookup(uid, true);
 
     if ( ! exprs.size() ) {
         if ( _report_unresolved )
@@ -189,6 +206,11 @@ void IDResolver::visit(declaration::Hook* h)
     // the hook's scope to the unit's before descending down into the
     // statement.
     h->hook()->setUnit(unit);
+
+    auto mid = h->firstParent<Module>()->id();
+    assert(mid);
+
+    unit->setID(std::make_shared<ID>(uid->pathAsString(mid)));
 }
 
 void IDResolver::visit(type::unit::item::field::Unknown* f)
@@ -203,9 +225,9 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
     auto id = f->scopeID();
 
     if ( ! id )
-        return;
+        internalError(f, "field::Unknown without scope ID");
 
-    auto exprs = body->scope()->lookup(id);
+    auto exprs = body->scope()->lookup(id, true);
 
     if ( ! exprs.size() ) {
         if ( _report_unresolved )
@@ -249,6 +271,8 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
         else
             nfield = std::make_shared<type::unit::item::field::AtomicType>(name, tval, condition, hooks, attributes, sinks, location);
     }
+
+    nfield->scope()->setParent(f->scope()->parent());
 
     assert(nfield);
     f->replace(nfield);

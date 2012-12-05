@@ -129,21 +129,29 @@ public:
                               path_list bcas = path_list(), path_list dylds = path_list(),
                               bool debug = false, bool verify = true, bool profile = false, bool add_stdlibs = true, bool add_sharedlibs = true);
 
-    typedef hlt_list* (*binpac_parsers_func)(hlt_exception** excpt, hlt_execution_context* ctx);
-
-    /// JITs an LLVM module returned by linkModules() and returns a pointer
-    /// to the native Returns a pointer to a JIT-compiled, native version of
-    /// binpac_parsers(). That function returns a description of all parsers
-    /// that have been compiled in; see libbinpac++.h for more information.
+    /// Links a set of compiled BinPAC++ modules into a single LLVM module.
+    /// All modules produced by compileModule() must be linked (and all
+    /// together that will run as one executable). A module must not be
+    /// linked more than once. This is reduced version of \c linkModules that
+    /// offers less options; it sets all other options to their default.
     ///
-    /// module: The module. The function takes ownership.
+    /// output: The name of the output module. This is mainly for
+    /// informational purposes.
     ///
-    /// optimize: The optimization level for LLVM code generation,
-    /// corresponding to \c -Ox
+    /// modules: All the HILTI modules that should be linked together. In
+    /// addition to modules generate by compileModule(), this can include
+    /// further ones created in other ways.
     ///
-    /// Returns: The execution engine to use with nativeBinpacParser(). Null
-    /// on error; an error message will have been reported.
-    binpac_parsers_func jitBinpacParser(llvm::Module* module, int optimize);
+    /// debug: The debug level to activate for linking. The higher, the more
+    /// debugging code will be compiled in. Zero disables all debugging. This
+    /// also controls whether the debug or release runtime library will be
+    /// linked in with \a add_stdlibs.
+    ///
+    /// profile: True for adding profiling instrumentation at the HILTI level.
+    ///
+    /// Returns: The composite LLVM module, or null if errors are encountered.
+    llvm::Module* linkModules(string output, std::list<shared_ptr<hilti::Module>> modules,
+                              bool debug = false, bool profile = false);
 
     /// Renders an AST back into BinPAC++ source code.
     ///

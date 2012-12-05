@@ -1,5 +1,5 @@
 
 >>> exception<bool> : A
-wrong-inherit.hlt:7-7: error, exception type must have same argument type as its parent type, which has string [pass::Validator]
+wrong-inherit.hlt:7-7: error, exception type must have same argument type as its parent type, which has string [pass::hilti::Validator]
 wrong-inherit.hlt: Aborting due to verification error.
 error running hiltic, aborting

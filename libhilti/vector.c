@@ -72,7 +72,7 @@ static inline void _access_entry(hlt_vector* v, hlt_vector_idx i, hlt_exception*
 }
 
 // Val is not yet ref'ed.
-static inline void _set_entry(hlt_vector* v, hlt_vector_idx i, void *val, hlt_exception** excpt, hlt_execution_context* ctx)
+static inline void _set_entry(hlt_vector* v, hlt_vector_idx i, void *val, int dtor, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     // Cancel old timer if active.
     if ( v->tmgr && v->timers && v->timers[i] ) {
@@ -82,7 +82,9 @@ static inline void _set_entry(hlt_vector* v, hlt_vector_idx i, void *val, hlt_ex
 
     void* dst = v->elems + i * v->type->size;
 
-    GC_DTOR_GENERIC(dst, v->type);
+    if ( dtor )
+        GC_DTOR_GENERIC(dst, v->type);
+
     memcpy(dst, val, v->type->size);
     GC_CCTOR_GENERIC(dst, v->type);
 
@@ -176,11 +178,12 @@ void hlt_vector_set(hlt_vector* v, hlt_vector_idx i, const hlt_type_info* elemty
     if ( i > v->last )
         v->last = i;
 
-    _set_entry(v, i, val, excpt, ctx);
+    _set_entry(v, i, val, 1, excpt, ctx);
 }
 
 void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* val, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    assert(v);
     assert(hlt_type_equal(v->type, elemtype));
 
     ++v->last;
@@ -197,8 +200,8 @@ void hlt_vector_push_back(hlt_vector* v, const hlt_type_info* elemtype, void* va
         assert(v->timers);
         v->timers[v->last] = 0;
     }
-    
-    _set_entry(v, v->last, val, excpt, ctx);
+
+    _set_entry(v, v->last, val, 0, excpt, ctx);
 }
 
 hlt_vector_idx hlt_vector_size(hlt_vector* v, hlt_exception** excpt, hlt_execution_context* ctx)

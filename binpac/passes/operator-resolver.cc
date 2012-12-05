@@ -21,7 +21,7 @@ static string _fmtOps(const expression_list& ops)
     return s + ")";
 }
 
-static string _fmtOpCandidates(const operator_list& candidates, const expression_list& ops)
+static string _fmtOpCandidates(const OperatorRegistry::matching_result& candidates, const expression_list& ops)
 {
     string s = "";
 
@@ -29,13 +29,13 @@ static string _fmtOpCandidates(const operator_list& candidates, const expression
     s += "candidate operators:\n";
 
     for ( auto c : candidates )
-        s += "    " + c->render() + "\n";
+        s += "    " + c.first->render() + "\n";
 
     return s;
 }
 
 
-OperatorResolver::OperatorResolver() : Pass<AstInfo>("OperatorResolver")
+OperatorResolver::OperatorResolver() : Pass<AstInfo>("binpac::OperatorResolver")
 {
 }
 
@@ -62,7 +62,12 @@ bool OperatorResolver::run(shared_ptr<ast::NodeBase> module)
 
     for ( auto o : _unknowns ) {
         auto all = OperatorRegistry::globalRegistry()->byKind(o->kind());
-        error(o, "no matching operator found for types\n" + _fmtOpCandidates(all, o->operands()));
+        OperatorRegistry::matching_result matches;
+
+        for ( auto a : all )
+            matches.push_back(std::make_pair(a, expression_list()));
+
+        error(o, "no matching operator found for types\n" + _fmtOpCandidates(matches, o->operands()));
     }
 
     return _unknowns.size() == 0;
@@ -70,8 +75,7 @@ bool OperatorResolver::run(shared_ptr<ast::NodeBase> module)
 
 void OperatorResolver::visit(expression::UnresolvedOperator* o)
 {
-    auto ops = o->operands();
-    auto matches = OperatorRegistry::globalRegistry()->getMatching(o->kind(), ops);
+    auto matches = OperatorRegistry::globalRegistry()->getMatching(o->kind(), o->operands());
 
     switch ( matches.size() ) {
      case 0: {
@@ -82,13 +86,14 @@ void OperatorResolver::visit(expression::UnresolvedOperator* o)
 
      case 1: {
          // Everthing is fine. Replace with the actual operator.
-         auto nop = OperatorRegistry::globalRegistry()->resolveOperator(*matches.begin(), o->operands(), o->location());
+         auto match = matches.front();
+         auto nop = OperatorRegistry::globalRegistry()->resolveOperator(match.first, match.second, o->location());
          o->replace(nop);
          break;
      }
 
      default:
-        error(o, "operator use is ambigious\n" + _fmtOpCandidates(matches, ops));
+        error(o, "operator use is ambigious\n" + _fmtOpCandidates(matches, o->operands()));
         break;
     }
 }

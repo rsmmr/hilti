@@ -114,6 +114,10 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( ! op_resolver.run(module) )
         return false;
 
+    // The operators may have some unresolved types, too.
+    if ( ! id_resolver.run(module, true) )
+        return false;
+
     if ( verify && ! validator.run(module) )
         return false;
 

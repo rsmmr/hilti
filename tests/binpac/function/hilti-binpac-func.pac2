@@ -6,17 +6,9 @@
 
 module Test;
 
-import TestHilti;
+import "BINPAC-HILTI" int<32> TestHilti::test();
 
 print TestHilti::test();
-
-# @TEST-START-FILE testhilti.pac2
-
-module TestHilti;
-
-declare "BINPAC-HILTI" int<32> test();
-
-# @TEST-END-FILE
 
 # @TEST-START-FILE testhilti.hlt
 

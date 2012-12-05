@@ -1,6 +1,6 @@
 #
-# @TEST-EXEC-FAIL:  hilti-build -d %INPUT ${PAC_DRIVER} -o a.out >output 2>&1
-# @TEST-EXEC:       btest-diff output
+# @TEST-EXEC-FAIL: binpac++ %INPUT >output 2>&1
+# @TEST-EXEC:      btest-diff output
 #
 
 module Test;

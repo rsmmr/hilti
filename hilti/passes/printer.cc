@@ -497,9 +497,14 @@ void Printer::visit(type::Tuple* t)
 
     Printer& p = *this;
 
-    p << "tuple<";
-    printList(t->typeList(), ", ");
-    p << ">";
+    if ( ! t->wildcard() ) {
+        p << "tuple<";
+        printList(t->typeList(), ", ");
+        p << ">";
+    }
+
+    else
+        p << "tuple<*>";
 }
 
 void Printer::visit(type::TypeType* t)
@@ -1053,14 +1058,14 @@ void Printer::visit(constant::Interval* c)
 {
     Printer& p = *this;
 
-    p << "interval(" << std::showpoint << (c->value() / 1e9) << ")";
+    p << "interval(" << std::showpoint << std::fixed << (c->value() / 1e9) << ")";
 }
 
 void Printer::visit(constant::Time* c)
 {
     Printer& p = *this;
 
-    p << "time(" << std::showpoint << (c->value() / 1e9) << ")";
+    p << "time(" << std::showpoint << std::fixed << (c->value() / 1e9) << ")";
 }
 
 void Printer::visit(constant::Port* c)

@@ -20,6 +20,14 @@ string fmtPacType(shared_ptr<binpac::Type> t)
     return t ? t->render() : "";
 }
 
+string fmtPacCallArg(std::pair<string, shared_ptr<binpac::Type>> t)
+{
+    if ( ! t.second )
+        return "";
+
+    return t.first + ": " + t.second->render();
+}
+
 string fmtHiltiExpr(shared_ptr<hilti::Expression> e)
 {
     return e ? e->render() : "";
@@ -85,6 +93,11 @@ int main(int argc, char** argv)
         cout << "type_op1="         << fmtPacType(info.type_op1) << endl;
         cout << "type_op2="         << fmtPacType(info.type_op2) << endl;
         cout << "type_op3="         << fmtPacType(info.type_op3) << endl;
+        cout << "type_callarg1="    << fmtPacCallArg(info.type_callarg1) << endl;
+        cout << "type_callarg2="    << fmtPacCallArg(info.type_callarg2) << endl;
+        cout << "type_callarg3="    << fmtPacCallArg(info.type_callarg3) << endl;
+        cout << "type_callarg4="    << fmtPacCallArg(info.type_callarg4) << endl;
+        cout << "type_callarg5="    << fmtPacCallArg(info.type_callarg5) << endl;
         cout << "class_op1="        << info.class_op1 << endl;
         cout << "class_op2="        << info.class_op2 << endl;
         cout << "class_op3="        << info.class_op3 << endl;

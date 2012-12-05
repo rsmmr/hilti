@@ -1,4 +1,4 @@
 
 >>> 2
-switch-wrong-case.pac2:14-14: error, case value does not match switch expression [pass::Validator]
+switch-wrong-case.pac2:14-14: error, case value does not match switch expression [pass::binpac::Validator]
 switch-wrong-case.pac2: Aborting due to input error.

@@ -14,7 +14,7 @@ public:
    /// Constructor.
    ///
    /// libdirs: List of directories to search for imported library files.
-   ScopeBuilder(CompilerContext* ctx) : Pass<>("ScopeBuilder") {
+   ScopeBuilder(CompilerContext* ctx) : Pass<>("hilti::ScopeBuilder") {
        _context = ctx;
    }
 

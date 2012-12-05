@@ -1,8 +1,8 @@
 
 >>> i1 = int.sub i2 i2
-mixing-widths.hlt:7-7: error, operand type int<16> is not compatible with target type int<8> [pass::Validator]
+mixing-widths.hlt:7-7: error, operand type int<16> is not compatible with target type int<8> [pass::hilti::Validator]
 
 >>> i1 = int.sub i2 i2
-mixing-widths.hlt:7-7: error, operand type int<16> is not compatible with target type int<8> [pass::Validator]
+mixing-widths.hlt:7-7: error, operand type int<16> is not compatible with target type int<8> [pass::hilti::Validator]
 mixing-widths.hlt: Aborting due to verification error.
 error running hiltic, aborting

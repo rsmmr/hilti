@@ -1,5 +1,5 @@
 
 >>> call Func ()
-wrong-context-call.hlt:23-24: error, cannot call function with a different scope; use thread.schedule [pass::Validator]
+wrong-context-call.hlt:23-24: error, cannot call function with a different scope; use thread.schedule [pass::hilti::Validator]
 wrong-context-call.hlt: Aborting due to verification error.
 error running hiltic, aborting

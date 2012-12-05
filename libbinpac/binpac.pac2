@@ -13,10 +13,13 @@ type Filter = enum {
     GZIP = 2     # gzipd decompression.
 };
 
+import "HILTI-C" bytes base64_encode(b: bytes);
+import "HILTI-C" bytes base64_decode(b: bytes);
+
 #### Functions defined in hilti.hlt.
 
 # Converts a bytes instance an integer.
-# import "HILTI" int64 Hilti::bytes_to_int(b: bytes, base: int<64>);
+import "HILTI" int64 Hilti::bytes_to_int(b: bytes, base: int<64>);
 
 # Lower-cases a bytes instance.
-# import "HILTI  bytes Hilti::bytes_to_lower(b: bytes);
+import "HILTI"  bytes Hilti::bytes_to_lower(b: bytes);

@@ -9,7 +9,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-UnitScopeBuilder::UnitScopeBuilder() : Pass<AstInfo>("UnitScopeBuilder")
+UnitScopeBuilder::UnitScopeBuilder() : Pass<AstInfo>("binpac::UnitScopeBuilder")
 {
 }
 
@@ -37,7 +37,7 @@ void UnitScopeBuilder::visit(declaration::Type* t)
     for ( auto p : unit->parameters() )
         uscope->insert(p->id(), std::make_shared<expression::ParserState>(expression::ParserState::PARAMETER, p->id(), unit));
 
-    for ( auto i : unit->items() ) {
+    for ( auto i : unit->flattenedItems() ) {
 
         auto iscope = i->scope();
 
@@ -63,6 +63,7 @@ void UnitScopeBuilder::visit(declaration::Type* t)
                 h->body()->scope()->insert(std::make_shared<ID>("$$"),
                                            std::make_shared<expression::ParserState>(expression::ParserState::DOLLARDOLLAR, nullptr, unit, dd));
             }
+
         }
     }
 }

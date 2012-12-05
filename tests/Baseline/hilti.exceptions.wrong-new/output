@@ -1,5 +1,5 @@
 
 >>> e = new myException
-wrong-new.hlt:13-13: error, exception takes an argument of type string [pass::Validator]
+wrong-new.hlt:13-13: error, exception takes an argument of type string [pass::hilti::Validator]
 wrong-new.hlt: Aborting due to verification error.
 error running hiltic, aborting

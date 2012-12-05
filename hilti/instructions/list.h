@@ -214,6 +214,20 @@ iBegin(list, PushFront, "list.push_front")
 
 iEnd
 
+iBegin(list, Append, "list.append")
+    iOp1(optype::refList, false)
+    iOp2(optype::refList, true)
+
+    iValidate {
+        equalTypes(elementType(referencedType(op1)), elementType(referencedType(op2)));
+    }
+
+    iDoc(R"(
+        Appends all elements of *op2* to *op1*.
+    )")
+
+iEnd
+
 iBegin(list, Size, "list.size")
     iTarget(optype::int64)
     iOp1(optype::refList, true)

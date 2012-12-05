@@ -41,7 +41,10 @@ shared_ptr<Type> Bytes::type() const
 
 List::List(shared_ptr<Type> etype, const expression_list& elems, const Location& l) : Ctor(l)
 {
-    assert(etype);
+    assert(etype || elems.size());
+
+    if ( ! etype )
+        etype = elems.front()->type();
 
     for ( auto e : elems )
         _elems.push_back(e);
@@ -70,7 +73,10 @@ shared_ptr<Type> List::type() const
 
 Vector::Vector(shared_ptr<Type> etype, const expression_list& elems, const Location& l) : Ctor(l)
 {
-    assert(etype);
+    assert(etype || elems.size());
+
+    if ( ! etype )
+        etype = elems.front()->type();
 
     for ( auto e : elems )
         _elems.push_back(e);

@@ -126,6 +126,15 @@ Iterator::Iterator(shared_ptr<Type> ttype, const Location& l) : TypedPacType(tty
 {
 }
 
+bool Iterator::equal(shared_ptr<Type> other) const
+{
+    // Allow matching of derived classes against an iterator wildcard.
+    if ( ast::tryCast<Iterator>(other) && (wildcard() || other->wildcard()) )
+        return true;
+
+    return trait::Parameterized::equal(other);
+}
+
 Any::Any(const Location& l) : binpac::Type(l)
 {
     setMatchesAny(true);
@@ -187,7 +196,7 @@ string MemberAttribute::render()
     return _attribute ? _attribute->name() : "<id>";
 }
 
-bool MemberAttribute::equal(shared_ptr<binpac::Type> other) const
+bool MemberAttribute::_equal(shared_ptr<binpac::Type> other) const
 {
     auto mother = std::dynamic_pointer_cast<MemberAttribute>(other);
     assert(mother);
@@ -211,6 +220,15 @@ String::String(const Location& l) : PacType(l)
 
 Address::Address(const Location& l) : PacType(l)
 {
+}
+
+std::list<trait::Parseable::ParseAttribute> Address::parseAttributes() const
+{
+    return {
+        { "byteorder", std::make_shared<type::TypeByName>(std::make_shared<ID>("BinPAC::ByteOrder")), nullptr, false },
+        { "ipv4", nullptr, nullptr, false },
+        { "ipv6", nullptr, nullptr, false }
+    };
 }
 
 Network::Network(const Location& l) : PacType(l)
@@ -486,6 +504,11 @@ Integer::bits_list Integer::bits() const
 
 bool Integer::_equal(shared_ptr<binpac::Type> other) const
 {
+    auto iother = ast::checkedCast<type::Integer>(other);
+
+    if ( signed_() != iother->signed_() )
+        return false;
+
     return trait::Parameterized::equal(other);
 }
 
@@ -677,13 +700,17 @@ shared_ptr<Type> Bytes::iterType()
 
 shared_ptr<binpac::Type> Bytes::elementType()
 {
-    return shared_ptr<Type>(new iterator::Bytes(location()));
+    return std::make_shared<type::Integer>(8, false, location());
 }
 
 std::list<trait::Parseable::ParseAttribute> Bytes::parseAttributes() const
 {
+    auto one = std::make_shared<expression::Constant>(std::make_shared<constant::Integer>(1, 64, false));
+
     return {
         { "length", std::make_shared<type::Integer>(64, false), nullptr, false },
+        { "chunked", std::make_shared<type::Integer>(64, false), one, false },
+        { "until", std::make_shared<type::Bytes>(), nullptr, false },
         { "eod", nullptr, nullptr, false }
     };
 }
@@ -910,6 +937,16 @@ shared_ptr<Type> unit::Item::type()
     return _type;
 }
 
+shared_ptr<Type> unit::Item::fieldType()
+{
+    auto parseable = ast::type::tryTrait<type::trait::Parseable>(type());
+
+    if ( parseable )
+        return parseable->fieldType();
+    else
+        return type();
+}
+
 shared_ptr<Scope> unit::Item::scope() const
 {
     return _scope;
@@ -943,6 +980,21 @@ shared_ptr<AttributeSet> unit::Item::attributes() const
     return _attrs;
 }
 
+void unit::Item::disableHooks()
+{
+    --_do_hooks;
+}
+
+void unit::Item::enableHooks()
+{
+    ++_do_hooks;
+}
+
+bool unit::Item::hooksEnabled()
+{
+    return _do_hooks != 0;
+}
+
 unit::item::Field::Field(shared_ptr<ID> id,
                          shared_ptr<binpac::Type> type,
                          shared_ptr<Expression> cond,
@@ -968,6 +1020,19 @@ unit::item::Field::Field(shared_ptr<ID> id,
     for ( auto p : _params )
         addChild(p);
 }
+
+shared_ptr<Type> unit::item::Field::fieldType()
+{
+    auto ftype = Item::fieldType();
+
+    auto convert = attributes()->lookup("convert");
+
+    if ( convert )
+        return convert->value()->type();
+
+    return ftype;
+}
+
 
 /// Returns the item's associated condition, or null if none.
 shared_ptr<Expression> unit::item::Field::condition() const
@@ -1083,6 +1148,8 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
     : Field(id, std::make_shared<type::Bytes>(), cond, hooks, attrs, expression_list(), sinks, l)
 {
     _field = field;
+    _field->scope()->setParent(scope());
+
     addChild(_field);
 
     // Containters always get a high-priority foreach hook that adds the
@@ -1093,7 +1160,7 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
     auto dd = std::make_shared<expression::ID>(std::make_shared<ID>("$$", l), l);
     expression_list dd_list = { dd };
     auto params = std::make_shared<constant::Tuple>(dd_list, l);
-    auto name = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>(id->name(), l), l);
+    auto name = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>(Item::id()->name(), l), l);
 
     expression_list ops = { self, name };
     auto op1 = std::make_shared<expression::UnresolvedOperator>(operator_::Attribute, ops, l);
@@ -1155,7 +1222,46 @@ shared_ptr<binpac::Type> unit::item::field::container::List::type()
     // directly, but if we do, some checkedTrait later fail with random
     // crashes. Not sure what's going on, but storing the type via setType()
     // appears to fix the problem.
-    setType(std::make_shared<type::List>(_field->type()));
+    auto parseable = ast::type::tryTrait<type::trait::Parseable>(_field->type());
+    setType(std::make_shared<type::List>(parseable->fieldType()));
+    return unit::Item::type();
+}
+
+unit::item::field::container::Vector::Vector(shared_ptr<ID> id,
+                                        shared_ptr<Field> field,
+                                        shared_ptr<Expression> length,
+                                        shared_ptr<Expression> cond,
+                                        const hook_list& hooks,
+                                        const attribute_list& attrs,
+                                        const expression_list& sinks,
+                                        const Location& l)
+    : Container(id, field, cond, hooks, attrs, sinks, l)
+{
+    _field = field;
+    _length = length;
+    addChild(_field);
+    addChild(_length);
+}
+
+shared_ptr<unit::item::Field> unit::item::field::container::Vector::field() const
+{
+    return _field;
+}
+
+shared_ptr<Expression> unit::item::field::container::Vector::length() const
+{
+    return _length;
+}
+
+
+shared_ptr<binpac::Type> unit::item::field::container::Vector::type()
+{
+    // FIXME: This is odd ... We should be able to return the new type
+    // directly, but if we do, some checkedTrait later fail with random
+    // crashes. Not sure what's going on, but storing the type via setType()
+    // appears to fix the problem.
+    auto parseable = ast::type::tryTrait<type::trait::Parseable>(_field->type());
+    setType(std::make_shared<type::Vector>(parseable->fieldType()));
     return unit::Item::type();
 }
 
@@ -1202,6 +1308,9 @@ unit::item::field::Switch::Switch(shared_ptr<Expression> expr, const case_list& 
 
     for ( auto c : _cases )
         addChild(c);
+
+    for ( auto c : _cases )
+        c->item()->scope()->setParent(scope());
 }
 
 shared_ptr<Expression> unit::item::field::Switch::expression() const
@@ -1312,7 +1421,7 @@ static void _flatten(shared_ptr<type::unit::Item> i, unit_item_list* dst)
             _flatten(c->item(), dst);
         }
 
-        return;
+        // return;
     }
 
 #if 0
@@ -1321,7 +1430,7 @@ static void _flatten(shared_ptr<type::unit::Item> i, unit_item_list* dst)
 
     if ( container )
         _flatten(container->field(), dst);
-#endif        
+#endif
 
     dst->push_back(i);
 }

@@ -11,7 +11,7 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-Validator::Validator() : Pass<AstInfo>("Validator")
+Validator::Validator() : Pass<AstInfo>("binpac::Validator")
 {
 }
 
@@ -256,8 +256,14 @@ void Validator::visit(expression::Parameter* p)
 {
 }
 
+void Validator::visit(expression::ParserState* p)
+{
+}
+
 void Validator::visit(expression::ResolvedOperator* r)
 {
+    auto op = r->operator_();
+    op->validate(this, nullptr, r->operands());
 }
 
 void Validator::visit(expression::Type* t)
@@ -266,6 +272,7 @@ void Validator::visit(expression::Type* t)
 
 void Validator::visit(expression::UnresolvedOperator* u)
 {
+    error(u, "operator left unresolved");
 }
 
 void Validator::visit(expression::Variable* v)
@@ -618,6 +625,10 @@ void Validator::visit(type::unit::item::field::container::List* f)
 {
 }
 
+void Validator::visit(type::unit::item::field::container::Vector* f)
+{
+}
+
 void Validator::visit(type::unit::item::field::Constant* c)
 {
 }
@@ -638,8 +649,10 @@ void Validator::visit(type::unit::item::field::Switch* s)
             ++defaults;
 
         for ( auto e : c->expressions() ) {
-            if ( ! e->canCoerceTo(s->expression()->type()) )
+            if ( ! e->canCoerceTo(s->expression()->type()) ) {
                 error(e, "case value does not match switch expression");
+                break;
+            }
 
             auto render = e->render();
 

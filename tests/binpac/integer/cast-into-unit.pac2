@@ -1,0 +1,19 @@
+# $Id$
+#
+# @TEST-EXEC:  printf '\x00\x05WORKS' | HILTI_DEBUG=binpac pac-driver-test %INPUT >output 2>&1    
+# @TEST-EXEC:  btest-diff output
+
+module Mini;
+
+import BinPAC;
+
+type MyUnit = unit(s: uint64) {
+    b: bytes &length = s
+        { print self.b; }
+};
+
+export type test = unit {
+    a: uint16;
+    text: MyUnit(self.a);
+};
+

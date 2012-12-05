@@ -30,6 +30,7 @@ public:
 protected:
     shared_ptr<Production> compileOne(shared_ptr<Node> n);
     string counter(const string& key);
+    void _resolveUnknown(shared_ptr<Production> production);
 
     void visit(declaration::Type* d) override;
     void visit(type::Unit* u) override;
@@ -40,6 +41,7 @@ protected:
     void visit(type::unit::item::field::Unit* t) override;
     void visit(type::unit::item::field::switch_::Case* c) override;
     void visit(type::unit::item::field::container::List* l) override;
+    void visit(type::unit::item::field::container::Vector* l) override;
 
 private:
     bool _debug = false;
@@ -47,6 +49,9 @@ private:
     int _in_decl;
     int _unit_counter = 1;
     std::map<string, int> _counters;
+
+    typedef std::map<shared_ptr<Node>, shared_ptr<Production>> production_map;
+    static production_map _compiled;
 };
 
 }

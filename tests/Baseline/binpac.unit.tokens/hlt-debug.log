@@ -1,0 +1,35 @@
+00000001 [binpac-verbose/main-thread]   - - triggering hook Mini::test::%init
+00000002 [binpac/main-thread]           test
+00000003 [binpac-verbose/main-thread]     - parsing Sequence: test -> ctor:__anon1 ctor:__anon2 ctor:__anon3 ctor:__anon4
+00000004 [binpac-verbose/main-thread]       * input is |FooBa...| (lit-mode: default; frozen: True)
+00000005 [binpac-verbose/main-thread]       * look-ahead is 0
+00000006 [binpac-verbose/main-thread]       * look-ahead-start is |...| (lit-mode: default; frozen: False)
+00000007 [binpac-verbose/main-thread]     - parsing Ctor: ctor:__anon1 -> /Foo/ (regexp/id 1)
+00000008 [binpac-verbose/main-thread]       * input is |FooBa...| (lit-mode: default; frozen: True)
+00000009 [binpac-verbose/main-thread]       * look-ahead is 0
+00000010 [binpac-verbose/main-thread]       * look-ahead-start is |...| (lit-mode: default; frozen: False)
+00000011 [binpac/main-thread]             __anon1 = Foo
+00000012 [binpac-verbose/main-thread]     - - triggering hook Mini::test::__anon1%intern%0x17461e0
+00000013 [binpac-verbose/main-thread]     - - triggering hook Mini::test::__anon1%extern
+00000014 [binpac-verbose/main-thread]     - parsing Ctor: ctor:__anon2 -> /Bar/ (regexp/id 2)
+00000015 [binpac-verbose/main-thread]       * input is |BarFo...| (lit-mode: default; frozen: True)
+00000016 [binpac-verbose/main-thread]       * look-ahead is 0
+00000017 [binpac-verbose/main-thread]       * look-ahead-start is |FooBa...| (lit-mode: default; frozen: True)
+00000018 [binpac/main-thread]             __anon2 = Bar
+00000019 [binpac-verbose/main-thread]     - - triggering hook Mini::test::__anon2%intern%0x1746f28
+00000020 [binpac-verbose/main-thread]     - - triggering hook Mini::test::__anon2%extern
+00000021 [binpac-verbose/main-thread]     - parsing Ctor: ctor:__anon3 -> /Foo[0-9]*Bar/ (regexp/id 3)
+00000022 [binpac-verbose/main-thread]       * input is |Foo12...| (lit-mode: default; frozen: True)
+00000023 [binpac-verbose/main-thread]       * look-ahead is 0
+00000024 [binpac-verbose/main-thread]       * look-ahead-start is |BarFo...| (lit-mode: default; frozen: True)
+00000025 [binpac/main-thread]             __anon3 = Foo123Bar
+00000026 [binpac-verbose/main-thread]     - - triggering hook Mini::test::__anon3%intern%0x1747c18
+00000027 [binpac-verbose/main-thread]     - - triggering hook Mini::test::__anon3%extern
+00000028 [binpac-verbose/main-thread]     - parsing Ctor: ctor:__anon4 -> /Bar/ (regexp/id 2)
+00000029 [binpac-verbose/main-thread]       * input is |Bar\x0a...| (lit-mode: default; frozen: True)
+00000030 [binpac-verbose/main-thread]       * look-ahead is 0
+00000031 [binpac-verbose/main-thread]       * look-ahead-start is |Foo12...| (lit-mode: default; frozen: True)
+00000032 [binpac/main-thread]             __anon4 = Bar
+00000033 [binpac-verbose/main-thread]     - - triggering hook Mini::test::__anon4%intern%0x1748950
+00000034 [binpac-verbose/main-thread]     - - triggering hook Mini::test::__anon4%extern
+00000035 [binpac-verbose/main-thread]   - - triggering hook Mini::test::%done

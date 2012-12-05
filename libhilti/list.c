@@ -223,6 +223,14 @@ void hlt_list_push_back(hlt_list* l, const hlt_type_info* type, void* val, hlt_e
     _link(l, n, l->tail);
 }
 
+void hlt_list_append(hlt_list* l1, hlt_list* l2, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    assert(hlt_type_equal(l1->type, l2->type));
+
+    for ( __hlt_list_node* n = l2->head; n; n = n->next )
+        hlt_list_push_back(l1, l2->type, &n->data, excpt, ctx);
+}
+
 void hlt_list_pop_front(hlt_list* l, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     if ( ! l->head ) {

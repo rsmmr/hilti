@@ -23,7 +23,6 @@ namespace hilti {
 namespace binpac {
 
 namespace codegen {
-    class CoercionBuilder;
     class CodeBuilder;
     class TypeBuilder;
     class ParserBuilder;
@@ -46,6 +45,9 @@ public:
     ///
     /// Returns: The HILTI module, or null if an error occured.
     shared_ptr<hilti::Module> compile(shared_ptr<Module> module, int debug, bool verify);
+
+    /// Returns the currently compiled module, or null if none.
+    shared_ptr<Module> module() const;
 
     /// Returns the current HILTI module builder.
     shared_ptr<hilti::builder::ModuleBuilder> moduleBuilder() const;
@@ -111,8 +113,12 @@ public:
     ///
     /// id: The ID to convert.
     ///
+    /// qualify: If true, the ID will be scoped acoording to the current
+    /// module. That means that if it's parent module is a different one, a
+    /// corresponding namespace will be inserted.
+    ///
     /// Returns: The converted ID.
-    shared_ptr<hilti::ID> hiltiID(shared_ptr<ID> id);
+    shared_ptr<hilti::ID> hiltiID(shared_ptr<ID> id, bool qualify = false);
 
     /// Return the parse function for a unit type. If it doesn't exist yet,
     /// it will be created.
@@ -192,14 +198,6 @@ public:
     /// Returns the HILTI-level name for a function.
     shared_ptr<hilti::ID> hiltiFunctionName(shared_ptr<expression::Function> func);
 
-    /// Returns the final type of an item. This takes into account
-    /// transformations like &convert for fields.
-    ///
-    /// item: The item.
-    ///
-    /// Returns: The final type.
-    shared_ptr<binpac::Type> itemType(shared_ptr<type::unit::Item> item);
-
     /// Binds the $$ identifier to a given value.
     ///
     /// val: The value.
@@ -221,6 +219,13 @@ public:
     /// casting the integer value over.
     shared_ptr<hilti::Expression> hiltiCastEnum(shared_ptr<hilti::Expression> val, shared_ptr<hilti::Type> dst);
 
+    /// Writes a new chunk of data into a field's sinks.
+    ///
+    /// field: The field.
+    ///
+    /// data: The data to write into the sink.
+    void hiltiWriteToSinks(shared_ptr<type::unit::item::Field> field, shared_ptr<hilti::Expression> data);
+
     /// Writes a new chunk of data into a sink.
     ///
     /// sink: The sink to write to.
@@ -237,8 +242,25 @@ public:
     /// data: The data to write into the sink.
     void hiltiWriteToSink(shared_ptr<hilti::Expression> sink, shared_ptr<hilti::Expression> begin, shared_ptr<hilti::Expression> end);
 
+    /// Applies transformation attributes (such as \a convert) to a value, if
+    /// present.
+    ///
+    /// val: The value.
+    ///
+    /// attrs: The set of attributes to apply. The method filters for the
+    /// ones supported and ignores all other ones.
+    ///
+    /// Returns: The transformed value, which may be just \c val if no
+    /// transformation applied.
+    shared_ptr<hilti::Expression> hiltiApplyAttributesToValue(shared_ptr<hilti::Expression> val, shared_ptr<AttributeSet> attrs);
+
+    /// XXX
+    void hiltiImportType(shared_ptr<ID> id, shared_ptr<Type> t);
+
 private:
     bool _compiling = false;
+    shared_ptr<Module> _module = nullptr;
+    std::map<string, shared_ptr<Type>> _imported_types;
 
     int _debug;
     bool _verify;
@@ -246,9 +268,9 @@ private:
     shared_ptr<hilti::builder::ModuleBuilder> _mbuilder;
 
     unique_ptr<codegen::CodeBuilder>     _code_builder;
-    unique_ptr<codegen::CoercionBuilder> _coercion_builder;
     unique_ptr<codegen::ParserBuilder>   _parser_builder;
     unique_ptr<codegen::TypeBuilder>     _type_builder;
+    unique_ptr<Coercer>     _coercer;
 };
 
 }

@@ -11,7 +11,7 @@ namespace passes {
 class Validator : public Pass<>
 {
 public:
-   Validator() : Pass<>("Validator") {}
+   Validator() : Pass<>("hilti::Validator") {}
    virtual ~Validator();
 
    /// Verifies a given module.

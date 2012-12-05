@@ -1,5 +1,5 @@
 
 >>> Hilti::print
-missing-import.hlt:15-15: error, unknown ID Hilti::print [pass::IdResolver]
+missing-import.hlt:15-15: error, unknown ID Hilti::print [pass::hilti::IdResolver]
 missing-import.hlt: Aborting due to verification error.
 error running hiltic, aborting

@@ -4,7 +4,7 @@ switch-wrong-types.hlt:8-10: error, operands do not match instruction switch
   got:
     switch: int<32>, label, string
   expected one of:
-    switch: any, label, tuple<>
- [pass::InstructionResolver]
+    switch: any, label, tuple<*>
+ [pass::hilti::InstructionResolver]
 switch-wrong-types.hlt: Aborting due to verification error.
 error running hiltic, aborting

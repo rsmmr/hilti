@@ -6,6 +6,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${autogen})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
+include_directories(${CMAKE_SOURCE_DIR}/libhilti ${CMAKE_BINARY_DIR}/libhilti)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/binpac-config.h.in ${autogen}/binpac-config.h)
 
@@ -38,15 +39,21 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/parser.cc  PROPERTIES GENERATED 1)
 ### Auto-generate all the boiler-plate stuff for operators.
 
 set(operators
+    operators/address.cc
     operators/bool.cc
     operators/bytes.cc
+    operators/double.cc
     operators/enum.cc
     operators/function.cc
     operators/integer.cc
+    operators/interval.cc
+    operators/iterator.cc
     operators/list.cc
+    operators/sink.cc
+    operators/time.cc
     operators/tuple.cc
     operators/unit.cc
-    operators/sink.cc
+    operators/vector.cc
 )
 
 add_custom_command(
@@ -112,9 +119,32 @@ add_library (binpacxx SHARED
 
     codegen/code-builder.cc
     codegen/codegen.cc
-    codegen/coercion-builder.cc
     codegen/parser-builder.cc
     codegen/type-builder.cc
+
+    codegen/operators/address.cc
+    codegen/operators/bitset.cc
+    codegen/operators/bool.cc
+    codegen/operators/bytes.cc
+    codegen/operators/double.cc
+    codegen/operators/double.cc
+    codegen/operators/enum.cc
+    codegen/operators/function.cc
+    codegen/operators/integer.cc
+    codegen/operators/interval.cc
+    codegen/operators/iterator.cc
+    codegen/operators/list.cc
+    codegen/operators/map.cc
+    codegen/operators/network.cc
+    codegen/operators/port.cc
+    codegen/operators/regexp.cc
+    codegen/operators/set.cc
+    codegen/operators/sink.cc
+    codegen/operators/string.cc
+    codegen/operators/time.cc
+    codegen/operators/tuple.cc
+    codegen/operators/unit.cc
+    codegen/operators/vector.cc
 
     parser/driver.cc
 
@@ -137,7 +167,7 @@ add_library (binpacxx SHARED
     ${autogen}/visitor-interface.h
     ${autogen}/visitor-types.h
     ${autogen}/binpac-config.h
-    
+
     $<TARGET_OBJECTS:ast>
     $<TARGET_OBJECTS:util>
     )

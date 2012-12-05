@@ -1,5 +1,5 @@
 
 >>> i1 = int.zext i2
-mixing-widths.hlt:7-7: error, width of operand cannot be larger than that of target [pass::Validator]
+mixing-widths.hlt:7-7: error, width of operand cannot be larger than that of target [pass::hilti::Validator]
 mixing-widths.hlt: Aborting due to verification error.
 error running hiltic, aborting

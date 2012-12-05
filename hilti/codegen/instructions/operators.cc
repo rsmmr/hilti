@@ -22,6 +22,11 @@ void StatementBuilder::visit(statement::instruction::operator_::Incr* i)
     assert(false); // Not used.
 }
 
+void StatementBuilder::visit(statement::instruction::operator_::IncrBy* i)
+{
+    assert(false); // Not used.
+}
+
 void StatementBuilder::visit(statement::instruction::operator_::Deref* i)
 {
     assert(false); // Not used.
