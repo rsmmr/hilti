@@ -72,7 +72,7 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
         }
 
         _module = new ::llvm::Module(util::mangle(hltmod->id(), false), llvmContext());
-        _module->setTargetTriple(llvm::Triple::normalize(LLVM_HOSTTRIPLE));
+        // _module->setTargetTriple(llvm::Triple::normalize(LLVM_HOSTTRIPLE));
 
         _abi = std::move(ABI::createABI(this));
 

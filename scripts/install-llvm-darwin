@@ -1,6 +1,13 @@
 #! /usr/bin/env bash
 #
 
+# git version to checkout.
+VERSION_LLVM=release_32
+VERSION_CLANG=release_32
+VERSION_LIBCXX=release_32
+VERSION_COMPILERRT=release_32
+VERSION_LIBCXXABI=release_32
+
 if [ "$1" = "--install" ]; then
     mode=install
     install=1
@@ -47,10 +54,26 @@ if [ "$install" != "" ]; then
     git clone http://llvm.org/git/llvm.git `basename $src`
     ( cd $src/tools && git clone http://llvm.org/git/clang.git )
     ( cd $src/projects && git clone http://llvm.org/git/libcxx )
+    ( cd $src/projects && git clone http://llvm.org/git/libcxxabi )
+    ( cd $src/projects && git clone http://llvm.org/git/compiler-rt )
+
+    ( cd $src && git checkout ${VERSION_LLVM} )
+    ( cd $src/tools/clang && git checkout ${VERSION_CLANG}  )
+    ( cd $src/projects/libcxx && git checkout ${VERSION_LIBCXX} )
+    ( cd $src/projects/libcxxabi && git checkout ${VERSION_LIBCXXABI} )
+    ( cd $src/projects/compiler-rt && git checkout ${VERSION_COMPILERRT} )
 else
+    ( cd $src && git checkout ${VERSION_LLVM} )
+    ( cd $src/tools/clang && git checkout ${VERSION_CLANG}  )
+    ( cd $src/projects/libcxx && git checkout ${VERSION_LIBCXX} )
+    ( cd $src/projects/libcxxabi && git checkout ${VERSION_LIBCXXABI} )
+    ( cd $src/projects/compiler-rt && git checkout ${VERSION_COMPILERRT} )
+
     ( cd $src && git pull --rebase )
     ( cd $src/tools/clang && git pull --rebase )
     ( cd $src/projects/libcxx && git pull --rebase )
+    ( cd $src/projects/libcxxabi && git pull --rebase )
+    ( cd $src/projects/compiler-rt && git pull --rebase )
 fi
 
 # # Apply any patches we might need.
@@ -60,7 +83,7 @@ for i in $patches/*; do
      ( cd `echo $b | awk -v src=$src -F - '{printf("%s/%s/%s", src, $1, $2);}'` && pwd && cat $i | git am -3 )
 done
 
-# To bootstrap, compile and install LLVM and clang initially without libc++.
+# To bootstrap, compile and install LLVM and clang once.
 cd $src
 
 if [ "$install" != "" ]; then
@@ -71,17 +94,24 @@ if [ "$install" != "" ]; then
 fi
 
 clang_version=`$prefix/bin/clang++ --version 2>&1 | grep ^clang | awk '{print $3}'`
-
-# Build libc++ with the new clang and install.
-
-( cd projects/libcxx/lib && CXX=$prefix/bin/clang++ PREFIX=$prefix TRIPLE=-apple- ./buildit )
-
-# libcxx_include=$prefix/lib/clang/${clang_version}/include
 libcxx_include=$prefix/lib/c++/v1
 mkdir -p $libcxx_include
-cp -R projects/libcxx/include/* $libcxx_include
 
-cp  projects/libcxx/lib/libc++.1.dylib $prefix/lib
+### Build libc++abi with the new clang and install.
+### Note that even though it's in the llvm/projects directory, it's not automatically included in the built
+### as it doesn't provide a CMakeLists.txt yet.
+
+( cd projects/libcxxabi/lib && CXX=$prefix/bin/clang++ PREFIX=$prefix TRIPLE=-apple- ./buildit )
+cp -R projects/libcxxabi/include/* $libcxx_include
+cp projects/libcxxabi/lib/libc++abi.dylib $prefix/lib
+
+### Build libc++ with the new clang and install.
+### Note that even though it's in the llvm/projects directory, it's not automatically included in the built.
+### (In fact, libcxx is explicitly *excluded* llvm/projects/CMakeLists.txt).
+
+( cd projects/libcxx/lib && CXX=$prefix/bin/clang++ PREFIX=$prefix TRIPLE=-apple- ./buildit )
+cp -R projects/libcxx/include/* $libcxx_include
+cp projects/libcxx/lib/libc++.1.dylib $prefix/lib
 rm -f $prefix/lib/libc++.dylib
 ln -s $prefix/lib/libc++.1.dylib $prefix/lib/libc++.dylib
 
@@ -89,10 +119,11 @@ ln -s $prefix/lib/libc++.1.dylib $prefix/lib/libc++.dylib
 
 if [ "$install" != "" ]; then
     make clean
-    CC=$prefix/bin/clang CXX=$prefix/bin/clang++ \
-    CFLAGS="-L$prefix/lib" CXXFLAGS="-L$prefix/lib" \
-    LDFLAGS="-L$prefix/lib -Wl,-rpath,$prefix/lib" \
-    ./configure --prefix=/opt/llvm --enable-optimized --enable-libcpp
+    CC=$prefix/bin/clang
+        CXX=$prefix/bin/clang++ \
+        CFLAGS="-L$prefix/lib" CXXFLAGS="-L$prefix/lib" \
+        LDFLAGS="-L$prefix/lib -Wl,-rpath,$prefix/lib" \
+        ./configure --prefix=/opt/llvm --enable-optimized --enable-libcpp
 fi
 
 make -j 4

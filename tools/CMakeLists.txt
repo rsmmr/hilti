@@ -7,7 +7,7 @@ if (${PAPI_FOUND} STREQUAL "TRUE" )
     set(PAPI "papi")
 endif ()
 
-set(hilti_libs        hilti hilti-jit ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt.bc ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap ${PAPI})
+set(hilti_libs        hilti hilti-jit ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt.bc ${PROJECT_BINARY_DIR}/libhilti/libhilti-rt-native.a ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap ${PAPI})
 set(hilti_libs_no_jit hilti ${LLVM_LIBS} ${LLVM_LDFLAGS} pcap ${PAPI})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hilti  ${CMAKE_CURRENT_BINARY_DIR}/../hilti)
