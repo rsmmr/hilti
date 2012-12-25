@@ -56,6 +56,6 @@
 #include "file.h"
 #include "profiler.h"
 #include "classifier.h"
-#include "util.h"
+#include "hutil.h"
 
 #endif

@@ -90,7 +90,7 @@ class Scanner;
 class location;
 
 struct ParserContext {
-   shared_ptr<ID> label;
+    shared_ptr<hilti::ID> label;
 };
 
 class Driver : public ast::Logger {

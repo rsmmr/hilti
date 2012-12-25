@@ -120,7 +120,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
 
     // Just a double-check ...
     if ( ! InstructionRegistry::globalRegistry()->getAll().size() ) {
-        internalError("hilti: no operators defined, did you call hilti_init()?");
+        internalError("hilti: no operators defined, did you call hilti::init()?");
     }
 
     passes::IdResolver          id_resolver;

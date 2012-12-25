@@ -37,14 +37,21 @@ struct Configuration {
         "-std=c++0x"
     };
 
+    string compiler_llvm_cxxflags = "${LLVM_CXXFLAGS}";
+
     std::list<string> compiler_ldflags = {
         "-L${PROJECT_BINARY_DIR}/hilti",
         "-Wl,-rpath,${PROJECT_BINARY_DIR}/hilti"
     };
 
     string compiler_llvm_libraries = "${LLVM_LIBS}";
+    string compiler_llvm_ldflags = "${LLVM_LDFLAGS}";
 
     std::list<string> compiler_shared_libraries = {
+#ifdef __linux__
+        "cxxrt",
+        "dl",
+#endif
         "hilti"
     };
 

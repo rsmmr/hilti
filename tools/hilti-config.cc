@@ -138,6 +138,10 @@ int main(int argc, char** argv)
             appendList(&cxxflags, hilti_config.compiler_cxxflags);
             appendList(&ldflags, hilti_config.compiler_ldflags);
             appendList(&libs, hilti_config.compiler_shared_libraries, "-l");
+
+            // LLVM.
+            appendList(&cxxflags, util::strsplit(hilti_config.compiler_llvm_cxxflags));
+            appendList(&ldflags, util::strsplit(hilti_config.compiler_llvm_ldflags));
             appendList(&libs, util::strsplit(hilti_config.compiler_llvm_libraries));
         }
 

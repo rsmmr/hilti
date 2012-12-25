@@ -80,7 +80,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
 {
     // Just a double-check ...
     if ( ! OperatorRegistry::globalRegistry()->byKind(operator_::Plus).size() ) {
-        internalError("binpac: no operators defined, did you call binpac_init()?");
+        internalError("binpac: no operators defined, did you call binpac::init()?");
     }
 
     passes::GrammarBuilder   grammar_builder(std::cerr);

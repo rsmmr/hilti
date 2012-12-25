@@ -32,7 +32,7 @@ std::list<string> util::strsplit(string s, string delim)
     std::list<string> l;
 
     while ( true ) {
-        size_t p = s.find("::");
+        size_t p = s.find(delim);
 
         if ( p == string::npos )
             break;
@@ -40,7 +40,7 @@ std::list<string> util::strsplit(string s, string delim)
         l.push_back(s.substr(0, p));
 
         // FIXME: Don't understand why directly assigning to s doesn't work.
-        string t = s.substr(p+2, string::npos);
+        string t = s.substr(p + delim.size(), string::npos);
         s = t;
     }
 

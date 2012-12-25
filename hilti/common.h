@@ -14,12 +14,11 @@ using std::string;
 using std::unique_ptr;
 using std::shared_ptr;
 
-using ast::Location;
-using ast::InternalError;
-
-using ast::as;
-
 namespace hilti {
+    using ast::Location;
+    using ast::InternalError;
+    using ast::as;
+
     typedef std::list<string> path_list;
     typedef std::list<string> string_list;
 };
