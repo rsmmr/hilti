@@ -5,6 +5,7 @@
 #include <ast/scope.h>
 
 #include "common.h"
+#include "id.h"
 
 namespace hilti {
 

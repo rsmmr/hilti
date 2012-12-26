@@ -34,8 +34,11 @@ struct Configuration {
         "-Wl,-rpath,${PROJECT_BINARY_DIR}/binpac"
     };
 
-    std::list<string> compiler_shared_libraries = {
+    std::list<string> compiler_static_libraries = {
         "binpacxx"
+    };
+
+    std::list<string> compiler_shared_libraries = {
     };
 
     ////

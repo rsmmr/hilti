@@ -92,7 +92,7 @@ endforeach ()
 
 ### Build libpac.
 
-add_library (binpacxx SHARED
+add_library (binpacxx STATIC
     attribute.cc
     binpac++.cc
     coercer.cc

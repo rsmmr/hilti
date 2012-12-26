@@ -120,7 +120,7 @@ SET_SOURCE_FILES_PROPERTIES(${autogen}/instructions-define.cc  PROPERTIES GENERA
 
 ### Build libhilti.
 
-add_library (hilti SHARED
+add_library (hilti STATIC
     coercer.cc
     constant-coercer.cc
     constant.cc
@@ -234,5 +234,5 @@ add_library (hilti SHARED
 ADD_DEPENDENCIES(hilti generate_parser_hilti)
 target_link_libraries(hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
-add_library (hilti-jit SHARED jit/libhilti-jit.cc)
+add_library (hilti-jit STATIC jit/libhilti-jit.cc)
 

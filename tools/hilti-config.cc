@@ -137,6 +137,7 @@ int main(int argc, char** argv)
             appendList(&cxxflags, hilti_config.compiler_include_dirs, "-I");
             appendList(&cxxflags, hilti_config.compiler_cxxflags);
             appendList(&ldflags, hilti_config.compiler_ldflags);
+            appendList(&libs, hilti_config.compiler_static_libraries, "-l");
             appendList(&libs, hilti_config.compiler_shared_libraries, "-l");
 
             // LLVM.
@@ -166,6 +167,7 @@ int main(int argc, char** argv)
             appendList(&cxxflags, binpac_config.compiler_include_dirs, "-I");
             appendList(&cxxflags, binpac_config.compiler_cxxflags);
             appendList(&ldflags, binpac_config.compiler_ldflags);
+            appendList(&libs, binpac_config.compiler_static_libraries, "-l");
             appendList(&libs, binpac_config.compiler_shared_libraries, "-l");
         }
 

@@ -47,16 +47,22 @@ struct Configuration {
     string compiler_llvm_libraries = "${LLVM_LIBS}";
     string compiler_llvm_ldflags = "${LLVM_LDFLAGS}";
 
+    std::list<string> compiler_static_libraries = {
+        "hilti"
+    };
+
     std::list<string> compiler_shared_libraries = {
 #ifdef __linux__
         "cxxrt",
         "dl",
 #endif
-        "hilti"
+    };
+
+    std::list<string> compiler_static_libraries_jit = {
+        "hiltijit"
     };
 
     std::list<string> compiler_shared_libraries_jit = {
-        "hiltijit"
     };
 
     //// Runtime configuration.

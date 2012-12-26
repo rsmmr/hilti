@@ -16,7 +16,7 @@ set(clang_ldflags_Darwin             "")
 set(clang_shared_linker_flags_Darwin "-undefined dynamic_lookup") # Don't warn about undefined symbols.
 
 set(clang_cflags              "${clang_cflags_${CMAKE_SYSTEM_NAME}} -L${LLVM_LIB_DIR} -fPIC -Qunused-arguments -Wno-error=logical-op-parentheses -fno-color-diagnostics -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-set(clang_cxxflags            "${clang_cflags} -stdlib=libc++ -std=c++0x")
+set(clang_cxxflags            "${clang_cflags} -stdlib=libc++ -std=c++0x -frtti")
 set(clang_ldflags             "${clang_ldflags_${CMAKE_SYSTEM_NAME}} -lc++")
 set(clang_shared_linker_flags "${clang_shared_linker_flags_${CMAKE_SYSTEM_NAME}}")
 
