@@ -5,6 +5,8 @@
 #include "common.h"
 #include "cg-visitor.h"
 
+#include <hilti/ast-info.h>
+
 namespace binpac {
 namespace codegen {
 

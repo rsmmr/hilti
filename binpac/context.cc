@@ -20,11 +20,12 @@
 #include "passes/validator.h"
 
 #include "codegen/codegen.h"
+#include "codegen/type-builder.h"
 
 using namespace binpac;
 using namespace binpac::passes;
 
-shared_ptr<Module> CompilerContext::load(string path, bool verify, bool finalize)
+shared_ptr<binpac::Module> CompilerContext::load(string path, bool verify, bool finalize)
 {
     path = util::strtolower(path);
 
@@ -188,3 +189,8 @@ bool CompilerContext::validDebugStream(const string& label)
     return std::find(streams.begin(), streams.end(), label) != streams.end();
 }
 
+shared_ptr<hilti::Type> binpac::CompilerContext::hiltiType(shared_ptr<binpac::Type> type)
+{
+    codegen::TypeBuilder tb(nullptr);
+    return tb.hiltiType(type);
+}

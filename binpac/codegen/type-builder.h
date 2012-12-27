@@ -27,7 +27,9 @@ class TypeBuilder : public CGVisitor<TypeInfo>
 public:
     /// Constructor.
     ///
-    /// cg: The code generator to use.
+    /// cg: The code generator to use. This may be left null if one just
+    /// wants to call hiltiType() outside of code generation (but not other
+    /// methods).
     TypeBuilder(CodeGen* cg);
     virtual ~TypeBuilder();
 

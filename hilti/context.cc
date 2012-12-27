@@ -5,6 +5,7 @@
 #include <llvm/Support/DynamicLibrary.h>
 
 #include "hilti-intern.h"
+#include "parser/driver.h"
 #include "autogen/hilti-config.h"
 #include "jit/jit.h"
 

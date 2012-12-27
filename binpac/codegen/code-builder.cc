@@ -1,4 +1,6 @@
 
+#include <hilti/hilti.h>
+
 #include "code-builder.h"
 #include "declaration.h"
 #include "expression.h"

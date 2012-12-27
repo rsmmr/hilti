@@ -675,6 +675,23 @@ int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt, hlt_executio
     return i;
 }
 
+int8_t* hlt_bytes_to_raw_buffer(const hlt_bytes* b, int8_t* buffer, hlt_bytes_size buffer_size, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    for ( const __hlt_bytes_chunk* c = b->head; c; c = c->next ) {
+        hlt_bytes_size chunk_size = (c->end - c->start);
+        hlt_bytes_size n = (chunk_size > buffer_size ? buffer_size : chunk_size);
+        memcpy(buffer, c->start, n);
+
+        if ( chunk_size > buffer_size )
+            return 0;
+
+        buffer += n;
+        buffer_size -= n;
+    }
+
+    return buffer;
+}
+
 int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     normalize_pos(pos, 0);

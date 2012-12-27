@@ -5,7 +5,7 @@
 #include "common.h"
 #include "module.h"
 
-namespace hilti { class Module; }
+namespace hilti { class Module; class Type; }
 namespace hilti { class CompilerContext; }
 namespace llvm  { class Module; }
 
@@ -152,6 +152,14 @@ public:
     /// Returns: The composite LLVM module, or null if errors are encountered.
     llvm::Module* linkModules(string output, std::list<shared_ptr<hilti::Module>> modules,
                               bool debug = false, bool profile = false);
+
+    /// Returns the HILTI type that the code generator will use for a given
+    /// BinPAC++ type.
+    ///
+    /// type: The BinPAC++ type.
+    ///
+    /// Returns: The corresponding HILTI type.
+    shared_ptr<::hilti::Type> hiltiType(shared_ptr<binpac::Type> type);
 
     /// Renders an AST back into BinPAC++ source code.
     ///

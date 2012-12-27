@@ -165,7 +165,7 @@ int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt
     return memcmp(obj1, obj2, type1->size) == 0;
 }
 
-int8_t safe_write(int fd, const char* data, int len)
+int8_t __hlt_safe_write(int fd, const char* data, int len)
 {
 	while ( len > 0 ) {
 		int n = write(fd, data, len);

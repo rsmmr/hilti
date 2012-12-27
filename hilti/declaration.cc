@@ -4,6 +4,13 @@
 
 using namespace hilti;
 
+string Declaration::render()
+{
+    std::ostringstream s;
+    passes::Printer(s, true).run(sharedPtr<Node>());
+    return s.str();
+}
+
 declaration::Function::Function(shared_ptr<hilti::Function> func, const Location& l)
     : hilti::Declaration(func->id(), l), ast::declaration::mixin::Function<AstInfo>(this, func)
 {

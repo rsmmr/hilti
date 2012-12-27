@@ -8,3 +8,5 @@
 #include "grammar.h"
 #include "constant.h"
 
+#include <hilti/hilti.h>
+

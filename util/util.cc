@@ -6,8 +6,11 @@
 
 #include "util.h"
 
-extern "C" {
+namespace utf8 {
+// We include these here directly, and withan a namespace, so that the
+// function names don't clash with those in libhilti-rt.
 #include "3rdparty/utf8proc/utf8proc.h"
+#include "3rdparty/utf8proc/utf8proc.c"
 }
 
 using namespace util;
@@ -191,7 +194,7 @@ string util::expandEscapes(const string& s)
                  throw std::runtime_error("cannot decode character");
 
              uint8_t tmp[4];
-             int len = utf8proc_encode_char(val, tmp);
+             int len = utf8::utf8proc_encode_char(val, tmp);
 
              if ( ! len )
                  throw std::runtime_error("cannot encode unicode code point");
@@ -209,7 +212,7 @@ string util::expandEscapes(const string& s)
                  throw std::runtime_error("cannot decode character");
 
              uint8_t tmp[4];
-             int len = utf8proc_encode_char(val, tmp);
+             int len = utf8::utf8proc_encode_char(val, tmp);
 
              if ( ! len )
                  throw std::runtime_error("cannot encode unicode code point");
@@ -249,7 +252,7 @@ string util::escapeUTF8(const string& s)
     while ( p < e ) {
         int32_t cp;
 
-        ssize_t n = utf8proc_iterate((const uint8_t *)p, e - p, &cp);
+        ssize_t n = utf8::utf8proc_iterate((const uint8_t *)p, e - p, &cp);
 
         if ( n < 0 ) {
             esc += "<illegal UTF8 sequence>";

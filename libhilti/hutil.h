@@ -97,6 +97,6 @@ extern hlt_hash hlt_default_hash(const hlt_type_info* type, const void* obj, hlt
 extern int8_t hlt_default_equal(const hlt_type_info* type1, const void* obj1, const hlt_type_info* type2, const void* obj2, hlt_exception** excpt, hlt_execution_context* ctx);
 
 /// Wrapper around the standard \a write(2) that restarts on \c EINTR.
-extern int8_t safe_write(int fd, const char* data, int len);
+extern int8_t __hlt_safe_write(int fd, const char* data, int len);
 
 #endif

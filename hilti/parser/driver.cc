@@ -3,6 +3,7 @@
 
 #include "driver.h"
 #include "scanner.h"
+#include "builder/module.h"
 #include "autogen/parser.h"
 
 using namespace hilti_parser;

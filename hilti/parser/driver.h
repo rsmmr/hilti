@@ -10,7 +10,6 @@
 #include "../variable.h"
 #include "../type.h"
 #include "../ctor.h"
-#include "../builder/builder.h"
 
 #undef YY_DECL
 #define	YY_DECL						                 \
@@ -81,6 +80,10 @@ struct yystype_hilti {
 
 namespace hilti {
     class Module;
+
+    namespace builder {
+        class ModuleBuilder;
+    }
 }
 
 namespace hilti_parser {

@@ -43,6 +43,8 @@ Usage: hilti-config [options]
     --cxxflags              Print flags for C++ compiler.
     --ldflags               Print flags for linker.
     --libs                  Print libraries for linker.
+    --libs-shared           Print shared libraries for linker.
+    --libfiles-static       Print fully qualified paths to all static libraries.
 
 == Options for running the command-line compilers.
 
@@ -76,6 +78,26 @@ void appendList(std::list<string>* dst, const string& s, const string& prefix = 
     dst->push_back(prefix + s);
 }
 
+void appendListFile(std::list<string>* dst, const string& s, const std::list<string>& search_paths, const string& prefix = "", const string& postfix = "")
+{
+    auto base = prefix + s + postfix;
+
+    auto path = ::util::findInPaths(base, search_paths);
+
+    if ( path.size() == 0 ) {
+        std::cerr << "warning: cannot find library " << s << std::endl;
+        return;
+    }
+
+    dst->push_back(path);
+}
+
+void appendListFile(std::list<string>* dst, const std::list<string>& l, const std::list<string>& search_paths, const string& prefix = "", const string& postfix = "")
+{
+    for ( auto i : l )
+        appendListFile(dst, i, search_paths, prefix, postfix);
+}
+
 int main(int argc, char** argv)
 {
     bool want_hilti = true;
@@ -88,6 +110,8 @@ int main(int argc, char** argv)
     std::list<string> cxxflags;
     std::list<string> ldflags;
     std::list<string> libs;
+    std::list<string> libs_shared;
+    std::list<string> libfiles_static;
 
     std::list<string> options;
 
@@ -127,36 +151,6 @@ int main(int argc, char** argv)
     auto hilti_config = hilti::configuration();
     auto binpac_config = binpac::configuration();
 
-    ////// HILTI
-
-    if ( want_hilti ) {
-
-        if ( want_compiler ) {
-            appendList(&cflags, hilti_config.compiler_include_dirs, "-I");
-            appendList(&cflags, hilti_config.compiler_cflags);
-            appendList(&cxxflags, hilti_config.compiler_include_dirs, "-I");
-            appendList(&cxxflags, hilti_config.compiler_cxxflags);
-            appendList(&ldflags, hilti_config.compiler_ldflags);
-            appendList(&libs, hilti_config.compiler_static_libraries, "-l");
-            appendList(&libs, hilti_config.compiler_shared_libraries, "-l");
-
-            // LLVM.
-            appendList(&cxxflags, util::strsplit(hilti_config.compiler_llvm_cxxflags));
-            appendList(&ldflags, util::strsplit(hilti_config.compiler_llvm_ldflags));
-            appendList(&libs, util::strsplit(hilti_config.compiler_llvm_libraries));
-        }
-
-        if ( want_runtime ) {
-            appendList(&cflags, hilti_config.runtime_cflags);
-            appendList(&cflags, hilti_config.runtime_include_dirs, "-I");
-            appendList(&cxxflags, hilti_config.runtime_cflags);
-            appendList(&cxxflags, hilti_config.runtime_include_dirs, "-I");
-            appendList(&ldflags, hilti_config.runtime_ldflags);
-            appendList(&libs, hilti_config.runtime_shared_libraries, "-l");
-            appendList(&libs, hilti_config.runtime_library_a);
-        }
-    }
-
     ////// BinPAC++
 
     if ( want_binpac ) {
@@ -169,6 +163,8 @@ int main(int argc, char** argv)
             appendList(&ldflags, binpac_config.compiler_ldflags);
             appendList(&libs, binpac_config.compiler_static_libraries, "-l");
             appendList(&libs, binpac_config.compiler_shared_libraries, "-l");
+            appendList(&libs_shared, binpac_config.compiler_shared_libraries, "-l");
+            appendListFile(&libfiles_static, binpac_config.compiler_static_libraries, binpac_config.compiler_library_dirs, "lib", ".a");
         }
 
         if ( want_runtime ) {
@@ -178,6 +174,44 @@ int main(int argc, char** argv)
             appendList(&cxxflags, binpac_config.runtime_include_dirs, "-I");
             appendList(&ldflags, binpac_config.runtime_ldflags);
             appendList(&libs, binpac_config.runtime_shared_libraries, "-l");
+            appendList(&libs_shared, binpac_config.runtime_shared_libraries, "-l");
+       }
+    }
+
+    ////// HILTI
+
+    if ( want_hilti ) {
+
+        if ( want_compiler ) {
+            appendList(&cflags, hilti_config.compiler_include_dirs, "-I");
+            appendList(&cflags, hilti_config.compiler_cflags);
+            appendList(&cxxflags, hilti_config.compiler_include_dirs, "-I");
+            appendList(&cxxflags, hilti_config.compiler_cxxflags);
+            appendList(&ldflags, hilti_config.compiler_ldflags);
+            appendList(&libs, hilti_config.compiler_static_libraries, "-l");
+            appendList(&libs, hilti_config.compiler_shared_libraries, "-l");
+            appendList(&libs_shared, hilti_config.compiler_shared_libraries, "-l");
+            appendListFile(&libfiles_static, hilti_config.compiler_static_libraries, hilti_config.compiler_library_dirs, "lib", ".a");
+
+            // LLVM.
+            appendList(&cxxflags, util::strsplit(hilti_config.compiler_llvm_cxxflags));
+            appendList(&ldflags, util::strsplit(hilti_config.compiler_llvm_ldflags));
+
+            for ( auto l : util::strsplit(hilti_config.compiler_llvm_libraries) ) {
+                appendList(&libs, l);
+                appendListFile(&libfiles_static, l.substr(2), hilti_config.compiler_library_dirs, "lib", ".a");
+            }
+        }
+
+        if ( want_runtime ) {
+            appendList(&cflags, hilti_config.runtime_cflags);
+            appendList(&cflags, hilti_config.runtime_include_dirs, "-I");
+            appendList(&cxxflags, hilti_config.runtime_cflags);
+            appendList(&cxxflags, hilti_config.runtime_include_dirs, "-I");
+            appendList(&ldflags, hilti_config.runtime_ldflags);
+            appendList(&libs, hilti_config.runtime_shared_libraries, "-l");
+            appendList(&libs_shared, hilti_config.runtime_shared_libraries, "-l");
+            appendList(&libs, hilti_config.runtime_library_a);
         }
     }
 
@@ -223,6 +257,22 @@ int main(int argc, char** argv)
         if ( opt == "--libs" ) {
             need_component = true;
             printList(out, libs);
+            continue;
+        }
+
+        if ( opt == "--libs-shared" ) {
+            need_component = true;
+            printList(out, libs_shared);
+            continue;
+        }
+
+        if ( opt == "--libfiles-static" ) {
+
+            if ( want_runtime )
+                std::cerr << "warning: --libfiles not supported for --runtime yet" << std::endl;
+
+            need_component = true;
+            printList(out, libfiles_static);
             continue;
         }
 

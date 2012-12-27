@@ -853,7 +853,7 @@ void Printer::visit(type::Struct* t)
     auto kind = ast::isA<type::Context>(t->sharedPtr<type::Struct>()) ? "context" : "struct";
 
     if ( ! t->fields().size() ) {
-        p << kind << endl;
+        p << kind << " { }" << endl;
         return;
     }
 

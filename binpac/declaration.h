@@ -22,6 +22,9 @@ public:
     /// l: An associated location.
     Declaration(shared_ptr<binpac::ID> id, Linkage linkage, const Location& l=Location::None);
 
+   /// Returns a readable one-line representation of the declaration.
+   string render() override;
+
     ACCEPT_VISITOR_ROOT();
 };
 

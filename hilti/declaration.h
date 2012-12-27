@@ -25,6 +25,9 @@ public:
    Declaration(shared_ptr<hilti::ID> id, const Location& l=Location::None)
        : ast::Declaration<AstInfo>(id, LOCAL, l) {}
 
+   /// Returns a readable one-line representation of the declaration.
+   string render() override;
+
    ACCEPT_VISITOR_ROOT();
 };
 

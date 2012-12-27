@@ -219,6 +219,22 @@ extern hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execut
 /// ``hlt_bytes_len(b)`` number of bytes are valid.
 extern int8_t* hlt_bytes_to_raw(const hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx);
 
+/// Converts a bytes object into a raw C buffer provided by the user.
+///
+/// b: The object to convert.
+///
+/// buffer: The buffer to copy the raw data into.
+///
+/// buffer_size: The number of bytes available in \a buffer. If not
+/// sufficient, no more will be written into it.
+///
+/// \hlt_c
+///
+/// Returns: A pointer to one beyond the last byte written, or null if the
+/// buffer did not have sufficient size (in which case it will still have
+/// been filled upto its mac.).
+extern int8_t* hlt_bytes_to_raw_buffer(const hlt_bytes* b, int8_t* buffer, hlt_bytes_size buffer_size, hlt_exception** excpt, hlt_execution_context* ctx);
+
 /// Returns one byte from a bytes object.
 ///
 /// pos: The position from where to extract the byte. After reading the

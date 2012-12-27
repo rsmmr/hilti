@@ -22,7 +22,6 @@
 #include "variable.h"
 
 #include "passes/passes.h"
-#include "parser/driver.h"
 #include "builder/builder.h"
 #include "codegen/codegen.h"
 #include "codegen/linker.h"

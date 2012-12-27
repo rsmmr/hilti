@@ -9,6 +9,13 @@
 
 using namespace binpac;
 
+string Declaration::render()
+{
+    std::ostringstream s;
+    passes::Printer(s, true).run(sharedPtr<Node>());
+    return s.str();
+}
+
 Declaration::Declaration(shared_ptr<binpac::ID> id, Linkage linkage, const Location& l)
     : ast::Declaration<AstInfo>(id, linkage, l)
 {

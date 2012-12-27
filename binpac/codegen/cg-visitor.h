@@ -2,9 +2,8 @@
 #ifndef BINPAC_CODEGEN_CG_VISITOR_H
 #define BINPAC_CODEGEN_CG_VISITOR_H
 
-#include <hilti.h>
-
 #include <ast/visitor.h>
+#include <hilti/ast-info.h>
 
 #include "codegen.h"
 
@@ -24,8 +23,11 @@ public:
     /// logger_name: An identifying name passed on the Logger framework.
     CGVisitor(CodeGen* cg, const string& logger_name) {
         _codegen = cg;
-        this->forwardLoggingTo(cg);
-        this->setLoggerName(logger_name);
+
+        if ( cg ) {
+            this->forwardLoggingTo(cg);
+            this->setLoggerName(logger_name);
+        }
     }
 
     /// Returns the code generator this visitor is attached to.
@@ -36,6 +38,7 @@ public:
     ///
     /// Returns: The current HILTI builder.
     shared_ptr<hilti::builder::BlockBuilder> builder() const {
+        assert(_codegen);
         return _codegen->builder();
     }
 
@@ -44,6 +47,7 @@ public:
     ///
     /// Returns: The current HILTI builder.
     shared_ptr<hilti::builder::ModuleBuilder> moduleBuilder() const {
+        assert(_codegen);
         return _codegen->moduleBuilder();
     }
 

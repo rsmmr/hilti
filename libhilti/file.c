@@ -342,7 +342,7 @@ void __hlt_file_cmd_internal(__hlt_cmd* c)
               return;
 
           if ( cmd->len ) {
-              if ( ! safe_write(cmd->info->fd, cmd->data, cmd->len) )
+              if ( ! __hlt_safe_write(cmd->info->fd, cmd->data, cmd->len) )
                   cmd->info->error = 1;
 
               hlt_free(cmd->data);

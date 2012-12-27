@@ -3,6 +3,8 @@
 #include "type.h"
 #include "module.h"
 
+#include <hilti/builder/builder.h>
+
 using namespace binpac;
 using namespace binpac::codegen;
 
@@ -105,12 +107,14 @@ void TypeBuilder::visit(type::Enum* e)
     ti.hilti_default = hilti::builder::id::create(util::fmt("%s::Undef", e->id()->pathAsString()));
     ti.hilti_type = hilti::builder::enum_::type(labels, e->location());
 
-    auto id = cg()->hiltiID(e->id(), true);
+    if ( cg() ) {
+        auto id = cg()->hiltiID(e->id(), true);
 
-    if ( id->isScoped() )
-        cg()->hiltiImportType(std::make_shared<ID>(id->pathAsString()), e->sharedPtr<Type>());
+        if ( id->isScoped() )
+            cg()->hiltiImportType(std::make_shared<ID>(id->pathAsString()), e->sharedPtr<Type>());
 
-    ti.hilti_type->setID(id);
+        ti.hilti_type->setID(id);
+    }
 
     setResult(ti);
 }
@@ -219,7 +223,7 @@ void TypeBuilder::visit(type::Tuple* t)
     hilti::builder::type_list types;
 
     for ( auto t : t->typeList() )
-        types.push_back(cg()->hiltiType(t));
+        types.push_back(hiltiType(t));
 
     auto tt = hilti::builder::tuple::type(types, t->location());
 
@@ -243,10 +247,25 @@ void TypeBuilder::visit(type::Unit* u)
 {
     assert(u->id());
 
-    auto uid = cg()->hiltiID(u->id(), true);
+    shared_ptr<hilti::ID> uid = nullptr;
 
-    if ( uid->isScoped() )
-        cg()->hiltiImportType(std::make_shared<ID>(uid->pathAsString()), u->sharedPtr<Type>());
+    if ( cg() ) {
+        uid = cg()->hiltiID(u->id(), true);
+
+        if ( uid->isScoped() )
+            cg()->hiltiImportType(std::make_shared<ID>(uid->pathAsString()), u->sharedPtr<Type>());
+    }
+
+    else {
+        uid = hilti::builder::id::node(u->id()->pathAsString());
+
+        if ( ! uid->isScoped() ) {
+            auto mod = u->id()->firstParent<Module>();
+            assert(mod);
+            string name = util::fmt("%s::%s", mod->id()->name(), uid->name());
+            uid = hilti::builder::id::node(name);
+        }
+    }
 
     TypeInfo ti;
     ti.hilti_type = hilti::builder::reference::type(hilti::builder::type::byName(uid));
