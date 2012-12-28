@@ -5,7 +5,7 @@
 
 MESSAGE(STATUS "Adapting compiler settings")
 
-set(clang_debug_flags  "-DDEBUG -Wno-error=unused-function -Werror -O0")
+set(clang_debug_flags  "-DDEBUG -Wno-error=unused-function -Werror -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 
 set(clang_cflags_Linux               "-lcxxrt -ldl") # FIXME: Why does not work in ldflags?
 set(clang_ldflags_Linux              "")

@@ -212,6 +212,9 @@ int main(int argc, char** argv)
             appendList(&libs, hilti_config.runtime_shared_libraries, "-l");
             appendList(&libs_shared, hilti_config.runtime_shared_libraries, "-l");
             appendList(&libs, hilti_config.runtime_library_a);
+
+            if ( want_debug )
+                appendList(&ldflags, hilti_config.runtime_ldflags_dbg);
         }
     }
 

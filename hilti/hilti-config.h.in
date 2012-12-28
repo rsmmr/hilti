@@ -15,8 +15,8 @@ struct Configuration {
     string distbase      = "${PROJECT_SOURCE_DIR}";
     string path_hiltic   = "${PROJECT_BINARY_DIR}/tools/hiltic";
 
-    string shared_library_prefix = "${CMAKE_SHARED_MODULE_PREFIX}";
-    string shared_library_suffix = "${CMAKE_SHARED_MODULE_SUFFIX}";
+    string shared_library_prefix = "${CMAKE_SHARED_LIBRARY_PREFIX}";
+    string shared_library_suffix = "${CMAKE_SHARED_LIBRARY_SUFFIX}";
 
     //// Compiler configuration.
 
@@ -95,10 +95,15 @@ struct Configuration {
         "-Wl,-rpath,${PROJECT_BINARY_DIR}/libhilti"
     };
 
+    std::list<string> runtime_ldflags_dbg = {
+    };
+
     std::list<string> runtime_shared_libraries = {
+        "pcap",
+#ifdef __linux__
         "m",
         "pthread",
-        "pcap",
+#endif
 #if ${HAVE_PAPI}
         "papi"
 #endif
