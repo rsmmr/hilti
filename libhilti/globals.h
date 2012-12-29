@@ -25,8 +25,13 @@ struct __hlt_global_state {
     // corresponding *_init() functions (though they are guarenteed to be set
     // to zero initially).
 
-    // config.
+    // config.c
     hlt_config* config;
+
+    // config.c and debug.c
+    // We maintain this here to keep it around even after the global
+    // context has gone away.
+    char* debug_streams;
 
     // cmdqueue.c
     hlt_thread_queue* cmd_queue;

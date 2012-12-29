@@ -16,8 +16,7 @@ void run() {
      try {
        local ref<myException> e
        e = new myException
-       exception.throw e  # - This one triggers the segfault.
-
+       exception.throw e
        call Hilti::print ("Cannot be reached")
      }
 

@@ -64,6 +64,9 @@ def runConfig(path, option):
         if Options and Options.debug > 0:
             options = ["--debug"] + options
 
+        if not Options.binpac:
+            options = ["--disable-binpac++"] + options
+
         return subprocess.Popen([path] + options, stdout=subprocess.PIPE).communicate()[0].strip()
     except:
         return ""
@@ -201,21 +204,29 @@ def runHiltic(inputs, output, proto=False):
 
     if not proto:
         flags += ["-b"]
-        flags += ["-s"]
+        # flags += ["-s"]
     else:
         flags += ["-P"]
 
-    for i in range(Options.debug):
-        flags += ["-d"]
+    if Options.debug:
+        # Will add below.
+        flags = [f for f in flags if f != "-d"]
 
-    for i in range(Options.profile):
-        flags += ["-F"]
+    if Options.profile:
+        # Will add below.
+        flags = [f for f in flags if f != "-F"]
 
     includes = runConfig(HiltiConfig, "--binpac++-libdirs")
 
     flags += ["-I%s" % i for i in includes.split()]
 
     flags = uniqueArgs(flags)
+
+    for i in range(Options.debug):
+        flags += " -d"
+
+    for i in range(Options.profile):
+        flags += " -F"
 
     inputs = " ".join(inputs)
     path = runConfig(HiltiConfig, "--hiltic-binary")
@@ -241,8 +252,8 @@ def nativeLink(input, output):
     flags += ["-g"]
     flags += runConfig(HiltiConfig, "--runtime --libs").split()
 
-    if Options.binpac:
-        flags += runConfig(HiltiConfig, "--binpac++-runtime-libs").split()
+    # if Options.binpac:
+    #    flags += runConfig(HiltiConfig, "--binpac++-runtime-libs").split()
 
     if Options.optimize:
         flags += [CcOptSpec]

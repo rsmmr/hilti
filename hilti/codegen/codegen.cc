@@ -72,7 +72,8 @@ llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verif
         }
 
         _module = new ::llvm::Module(util::mangle(hltmod->id(), false), llvmContext());
-        // _module->setTargetTriple(llvm::Triple::normalize(LLVM_HOSTTRIPLE));
+        _module->setTargetTriple(llvm::Triple::normalize(LLVM_DEFAULT_TARGET_TRIPLE));
+        _data_layout = new llvm::DataLayout(_module);
 
         _abi = std::move(ABI::createABI(this));
 
@@ -1689,7 +1690,7 @@ void CodeGen::llvmBuildFunctionCleanup()
         if ( val->getType()->isStructTy() ) {
             llvmDtor(ptr_val, unref.second, true, "function-cleanup-struct-tmp");
             llvmCreateStore(llvmConstNull(val->getType()), tmp);
-            return;
+            continue;
         }
 
         auto is_null = builder()->CreateIsNull(val);
@@ -2093,6 +2094,17 @@ llvm::StoreInst* CodeGen::llvmCreateStore(llvm::Value *val, llvm::Value *ptr, bo
         _dumpStore(val, ptr, "CodeGen", "operand types do not match");
 
     return builder()->CreateStore(val, ptr, isVolatile);
+}
+
+llvm::AllocaInst *CodeGen::llvmCreateAlloca(llvm::Type* t, llvm::Value *array_size, const llvm::Twine& name)
+{
+    if ( ! function() )
+        // Not sure this can actually happen.
+        return builder()->CreateAlloca(t);
+
+    llvm::BasicBlock& block(function()->getEntryBlock());
+
+    return newBuilder(&block, true)->CreateAlloca(t, array_size, name);
 }
 
 llvm::BranchInst* CodeGen::llvmCreateBr(IRBuilder* b)
@@ -3646,5 +3658,3 @@ void CodeGen::llvmProfilerUpdate(const string& tag, int64_t arg)
 
     llvmProfilerUpdate(ltag, larg);
 }
-
-

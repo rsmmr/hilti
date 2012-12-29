@@ -64,7 +64,7 @@ struct Configuration {
     };
 
     std::list<string> compiler_static_libraries_jit = {
-        "hiltijit"
+        "hilti-jit"
     };
 
     std::list<string> compiler_shared_libraries_jit = {

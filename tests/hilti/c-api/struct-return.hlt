@@ -20,6 +20,7 @@ declare "C" tuple<int<8>,int<8>,int<8>> fi()
 declare "C" tuple<int<32>,int<32>,int<32>> fj()
 declare "C" tuple<int<32>,int<64>> fk()
 declare "C" tuple<double,string> fl()
+declare "C" tuple<double,int<8>> fm()
 
 import Hilti
 
@@ -36,6 +37,7 @@ void run() {
     local tuple<int<32>,int<32>,int<32>> t323232
     local tuple<int<32>,int<64>> t3264
     local tuple<double,string> tds
+    local tuple<double,int<8>> tdi
 
     t8 = call fa()
     call Hilti::print(t8)
@@ -67,6 +69,9 @@ void run() {
 
     tds = call fl()
     call Hilti::print(tds)
+
+    tdi = call fm()
+    call Hilti::print(tdi)
 
 }
 

@@ -190,12 +190,15 @@ bool runJIT(shared_ptr<hilti::CompilerContext> ctx, llvm::Module* module, std::l
     error(0, "No JIT support compiled into this version of hiltic.");
     return false;
 #else
-    if ( ! ctx->jitModule(module, optlevel) )
+
+    auto ee =  ctx->jitModule(module, optlevel);
+
+    if ( ! ee )
         return false;
 
-    hlt_init_jit(ctx);
+    hlt_init_jit(ctx, module, ee);
 
-    auto libmain = (int (*)(int , const char**)) ctx->nativeFunction("__libhilti_main");
+    auto libmain = (int (*)(int , const char**)) ctx->nativeFunction(module, ee, "__libhilti_main");
 
     if ( ! libmain )
         error(0, "internal error: no __libhilti_main in compiled module");

@@ -159,6 +159,12 @@ void CompilerContext::addModule(shared_ptr<Module> module)
     if ( path == "-" || path == "" )
         path = util::fmt("<no path for %s>", module->id()->pathAsString());
 
+    for ( auto m : _modules ) {
+        if ( m.second == module )
+            // Already added.
+            return;
+    }
+
     _modules.insert(std::make_pair(path, module));
 }
 
@@ -168,7 +174,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
         std::cerr << util::fmt("Finalizing context...") << std::endl;
 
     if ( module )
-        _modules.insert(std::make_pair(module->path(), module));
+        addModule(module);
 
     // This is implictly imported by all modules.
     importModule(std::make_shared<ID>("libhilti"));
@@ -373,7 +379,7 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
     return linker.link(output, modules, verify, debugging("linker"));
 }
 
-bool CompilerContext::jitModule(llvm::Module* module, int optimize)
+llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module, int optimize)
 {
     if ( ! _jit )
         _jit = new jit::JIT(this);
@@ -381,29 +387,18 @@ bool CompilerContext::jitModule(llvm::Module* module, int optimize)
     if ( debugging("context" ) )
         std::cerr << util::fmt("JITing module %s ...", module->getModuleIdentifier()) << std::endl;
 
-    _ee = _jit->jitModule(module, optimize);
-    _module = module;
-
-    return (_ee != nullptr);
+    return _jit->jitModule(module, optimize);
 }
 
-void* CompilerContext::nativeFunction(const string& function)
+void* CompilerContext::nativeFunction(llvm::Module* module, llvm::ExecutionEngine* ee, const string& function)
 {
-    if ( ! _jit ) {
-        std::cerr << "internal error: CompilerContext::nativeFunction() called CompilerContext:jitModule()" << std::endl;
-        exit(1);
-    }
-
-    if ( ! _ee ) {
-        std::cerr << "internal error: CompilerContext::nativeFunction() called after CompilerContext:jitModule() failed" << std::endl;
-        exit(1);
-    }
-
     if ( debugging("context" ) )
-        std::cerr << util::fmt("Getting native function %s ...", function) << std::endl;
+        std::cerr << util::fmt("Getting native function %s from module %s ...", function, module->getModuleIdentifier()) << std::endl;
 
-    assert(_module);
-    return _jit->nativeFunction(_ee, _module, function);
+    if ( ! _jit )
+        _jit = new jit::JIT(this);
+
+    return _jit->nativeFunction(ee, module, function);
 }
 
 const string_list& CompilerContext::libraryPaths() const

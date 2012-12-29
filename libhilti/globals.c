@@ -6,13 +6,18 @@
 #include "globals.h"
 
 static __hlt_global_state  our_globals;
-static __hlt_global_state* globals = &our_globals;
+static __hlt_global_state* globals = 0;
 
 void __hlt_global_state_init()
 {
-    globals->context = __hlt_execution_context_new(HLT_VID_MAIN);
+    globals = &our_globals;
+
+    memset(&our_globals, 0, sizeof(our_globals));
 
     __hlt_config_init();
+
+    globals->context = __hlt_execution_context_new(HLT_VID_MAIN);
+
     __hlt_debug_init();
     __hlt_cmd_queue_init();
     __hlt_hooks_init();
@@ -38,6 +43,9 @@ void __hlt_global_state_done()
     __hlt_config_done();
 
     GC_DTOR(globals->context, hlt_execution_context);
+
+    if ( globals->debug_streams )
+        free(globals->debug_streams);
 }
 
 __hlt_global_state* __hlt_globals()

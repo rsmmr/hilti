@@ -244,6 +244,21 @@ abi::X86_64::ClassifiedArguments abi::X86_64::classifyArguments(const string& na
 
 #include "libffi/src/x86/ffi64.h"
 
+llvm::Type* ABI::mapToIntType(llvm::StructType* stype)
+{
+    llvm::Type* rtype = 0;
+
+    int i = 8 * cg()->llvmDataLayout()->getTypeAllocSize(stype);
+
+    if ( i < 128 )
+        // This condition is just a guess ...
+        rtype = cg()->llvmTypeInt(i);
+
+    // Leave null otherwise.
+
+    return rtype;
+}
+
 /// FIXME: We currently just generally pass structures in memory for HILTI
 /// calling convention. For HILTI_C cc we leave them untouched.
 llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtype, const ABI::arg_list& args, llvm::GlobalValue::LinkageTypes linkage, llvm::Module* module, type::function::CallingConvention cc)
@@ -273,9 +288,26 @@ llvm::Function* abi::X86_64::createFunction(const string& name, llvm::Type* rtyp
         }
 
         else {
-            ntypes.push_back(cargs.arg_types[i]);
+            auto t = cargs.arg_types[i];
+
+            auto stype = llvm::dyn_cast<llvm::StructType>(t);
+            if ( stype ) {
+                auto itype = mapToIntType(stype);
+                if ( itype )
+                    t = itype;
+            }
+
+            ntypes.push_back(t);
             nnames.push_back(args[i].first);
         }
+    }
+
+    auto stype = llvm::dyn_cast<llvm::StructType>(cargs.return_type);
+
+    if ( stype && ! cargs.return_in_mem ) {
+        auto itype = mapToIntType(stype);
+        if ( itype )
+            rtype = itype;
     }
 
     auto ftype = llvm::FunctionType::get(rtype, ntypes, false);
@@ -323,14 +355,40 @@ llvm::Value* abi::X86_64::createCall(llvm::Function *callee, std::vector<llvm::V
             nargs.push_back(agg);
         }
 
-        else
+        else {
+            auto stype = llvm::dyn_cast<llvm::StructType>(llvm_type);
+            if ( stype ) {
+                auto itype = mapToIntType(stype);
+                if ( itype ) {
+                    auto tmp = cg()->llvmCreateAlloca(llvm_type);
+                    cg()->llvmCreateStore(llvm_val, tmp);
+                    auto casted = cg()->builder()->CreateBitCast(tmp, cg()->llvmTypePtr(itype));
+                    llvm_val = cg()->builder()->CreateLoad(casted);
+                }
+            }
+
             nargs.push_back(llvm_val);
+        }
     }
 
     llvm::Value* result = cg()->llvmCreateCall(callee, nargs);
 
     if ( cargs.return_in_mem )
         result = cg()->builder()->CreateLoad(agg_ret);
+
+    else {
+        auto stype = llvm::dyn_cast<llvm::StructType>(cargs.return_type);
+
+        if ( stype ) {
+            auto itype = mapToIntType(stype);
+            if ( itype ) {
+                auto tmp = cg()->llvmCreateAlloca(itype);
+                cg()->llvmCreateStore(result, tmp);
+                auto casted = cg()->builder()->CreateBitCast(tmp, cg()->llvmTypePtr(stype));
+                result = cg()->builder()->CreateLoad(casted);
+            }
+        }
+    }
 
     return result;
 }

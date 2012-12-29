@@ -86,7 +86,12 @@ else ()
   exec_program(${LLVM_CONFIG_EXEC} ARGS --ldflags    OUTPUT_VARIABLE LLVM_LDFLAGS )
 
   # llvm-config includes stuff we don't want.
-  STRING(REPLACE "-fno-exceptions" "" LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
+  set(cflags_to_remove "-fno-exceptions" "-O." "-fomit-frame-pointer" "-stdlib=libc\\+\\+" "-D_DEBUG")
+
+  foreach(f ${cflags_to_remove})
+      STRING(REGEX REPLACE "${f}" "" LLVM_CFLAGS   "${LLVM_CFLAGS}")
+      STRING(REGEX REPLACE "${f}" "" LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
+  endforeach()
 
   set(llvm_libs "core bitreader bitwriter linker asmparser interpreter executionengine jit mcjit runtimedyld nativecodegen")
   exec_program(${LLVM_CONFIG_EXEC} ARGS --libs ${llvm_libs} OUTPUT_VARIABLE LLVM_LIBS)

@@ -1,0 +1,59 @@
+#
+# @TEST-EXEC:  hilti-build -P %INPUT
+# @TEST-EXEC:  hilti-build -t %INPUT %DIR/struct-params-c.c -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+#
+# Tests a number of variants for returning structs by value from C to HILTI.
+
+module Main
+
+declare "C" void fa(tuple<int<8>> q)
+declare "C" void fb(tuple<int<16>> q)
+declare "C" void fc(tuple<int<32>> q)
+declare "C" void fd(tuple<int<64>> q)
+declare "C" void fe(tuple<int<8>,int<8>> q)
+declare "C" void ff(tuple<int<16>,int<16>> q)
+declare "C" void fg(tuple<int<32>,int<32>> q)
+declare "C" void fh(tuple<int<64>,int<64>> q)
+declare "C" void fi(tuple<int<8>,int<8>,int<8>> q)
+declare "C" void fj(tuple<int<32>,int<32>,int<32>> q)
+declare "C" void fk(tuple<int<32>,int<64>> q)
+declare "C" void fl(tuple<double,string> q)
+declare "C" void fm(tuple<double,int<8>> q)
+
+import Hilti
+
+void run() {
+    local tuple<int<8>> t8 = (1)
+    local tuple<int<16>> t16 = (1)
+    local tuple<int<32>> t32 = (1)
+    local tuple<int<64>> t64 = (1)
+    local tuple<int<8>,int<8>> t88 = (1,2)
+    local tuple<int<16>,int<16>> t1616 = (1,2)
+    local tuple<int<32>,int<32>> t3232 = (1,2)
+    local tuple<int<64>,int<64>> t6464 = (1,2)
+    local tuple<int<8>,int<8>,int<8>> t888 = (1,2,3)
+    local tuple<int<32>,int<32>,int<32>> t323232 = (1,2,3)
+    local tuple<int<32>,int<64>> t3264 = (1,2)
+    local tuple<double,string> tds = (42.0, "OK")
+    local tuple<double,int<8>> tdi = (42.0, 99)
+
+    call Hilti::print("start")
+
+    call fa(t8)
+    call fb(t16)
+    call fc(t32)
+    call fd(t64)
+    call fe(t88)
+    call ff(t1616)
+    call fg(t3232)
+    call fh(t6464)
+    call fi(t888)
+    call fj(t323232)
+    call fk(t3264)
+    call fl(tds)
+    call fm(tdi)
+}
+
+

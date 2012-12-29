@@ -5,7 +5,8 @@
 
 MESSAGE(STATUS "Adapting compiler settings")
 
-set(clang_debug_flags  "-DDEBUG -Wno-error=unused-function -Werror -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+set(clang_debug_flags    "-DDEBUG -D_DEBUG -Wno-error=unused-function -Werror -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+set(clang_release_flags  "-DNDEBUG -O3")
 
 set(clang_cflags_Linux               "-lcxxrt -ldl") # FIXME: Why does not work in ldflags?
 set(clang_ldflags_Linux              "")
@@ -29,6 +30,9 @@ if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
     # Changing CMAKE_C_FLAGS_DEBUG does not have any effect here?
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${clang_debug_flags}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${clang_debug_flags}")
+else ()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${clang_release_flags}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${clang_release_flags}")
 endif ()
 
 #IF( APPLE )

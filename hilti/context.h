@@ -194,7 +194,16 @@ public:
     /// will need.
     ///
     /// Returns: The composite LLVM module, or null if errors are encountered.
-    llvm::Module* linkModules(string output, std::list<llvm::Module*> modules, path_list paths, std::list<string> libs, path_list bcas, path_list dylds, bool debug, bool verify, bool add_stdlibs, bool add_sharedlibs);
+    llvm::Module* linkModules(string output,
+                              std::list<llvm::Module*> modules,
+                              path_list paths = {},
+                              std::list<string> libs = {},
+                              path_list bcas = {},
+                              path_list dylds = {},
+                              bool debug = true,
+                              bool verify = true,
+                              bool add_stdlibs = true,
+                              bool add_sharedlibs = true);
 
     /// JITs an LLVM module retuned by linkModules().
     ///
@@ -202,19 +211,23 @@ public:
     ///
     /// optimize: The optimization level, corresponding to \c -Ox
     ///
-    /// Returns: True if successful.
-    bool jitModule(llvm::Module* module, int optimize);
+    /// Returns: The LLVM execution engine that was used for JITing the
+    /// module, or null if there was an error. This passes ownership of the
+    /// engine to the caller.
+    llvm::ExecutionEngine* jitModule(llvm::Module* module, int optimize);
 
     /// Returns a pointer to a compiled, native function after a module has
-    /// beed JITed. This must only be called after \c jitModule() and will
-    /// inspect the module return there.
+    /// beed JITed. This must only be called after jitModule().
+    ///
+    /// module: The LLVM module that was passed to jitModule().
+    ///
+    /// ee: The LLVM execution engine that jitModule() returned.
     ///
     /// function: The name of the function.
     ///
     /// Returns: A pointer to the function (which must be suitably casted),
-    /// or null if that function doesn't exist (an error message will have
-    /// been reported).
-    void* nativeFunction(const string& function);
+    /// or null if that function doesn't exist.
+    void* nativeFunction(llvm::Module* module, llvm::ExecutionEngine* ee, const string& function);
 
     /// Dumps out an AST in (somewhat) readable format for debugging.
     ///
@@ -276,8 +289,6 @@ private:
     string_list _libdirs;
     std::set<string> _debug_streams;
     jit::JIT* _jit = nullptr;
-    llvm::ExecutionEngine* _ee = nullptr;
-    llvm::Module* _module = nullptr;
 
     /// We keep global maps of all module nodes and, separately, their
     /// scopes, both indexed by their path. This is for avoiding duplicate

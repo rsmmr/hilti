@@ -393,16 +393,18 @@ bool jitPac2(const std::list<string>& pac2, bool debug, int optlevel)
         return false;
     }
 
-    if ( ! PacContext->hiltiContext()->jitModule(llvm_module, optlevel) ) {
+    auto ee = PacContext->hiltiContext()->jitModule(llvm_module, optlevel);
+
+    if ( ! ee ) {
         fprintf(stderr, "jit failed");
         return false;
     }
 
     // TODO: This should be done by jitModule, which however then needs to
     // move into hilti-jit.
-    hlt_init_jit(PacContext->hiltiContext());
+    hlt_init_jit(PacContext->hiltiContext(), llvm_module, ee);
 
-    auto func = PacContext->hiltiContext()->nativeFunction("binpac_parsers");
+    auto func = PacContext->hiltiContext()->nativeFunction(llvm_module, ee, "binpac_parsers");
 
     if ( ! func ) {
         fprintf(stderr, "jitBinpacParser error: no function 'binpac_parsers'");

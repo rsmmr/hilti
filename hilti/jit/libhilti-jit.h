@@ -16,18 +16,28 @@
 
 #include <memory>
 
-namespace hilti { class CompilerContext; }
+namespace hilti {
+    class CompilerContext;
+}
 
-/// Initializes the HILTI run-time library with JIT support. This must be
-/// called instead of \a hlt_init() from host applications intending to use
-/// the JIT. In a blatant violation of layering rules, the function also
-/// takes care of calling \a binpac_init if available.
+namespace llvm {
+    class Module;
+    class ExecutionEngine;
+}
+
+/// Initializes the HILTI run-time library with JIT support for a given
+/// module. This must be called instead of \a hlt_init() from host
+/// applications intending to use the JIT. In a blatant violation of layering
+/// rules, the function also takes care of calling \a binpac_init if
+/// available.
 ///
 /// This is supported only for C++ applications.
 ///
-/// \todo: We defined this inline here so that it's included directly into
-/// the caller. That avoid linker errors with hlt_init_from_state() that I
-/// haven't figured out otherwise yet.
-extern void hlt_init_jit(std::shared_ptr<hilti::CompilerContext> ctx);
+/// ctx: The HILTI context being used.
+///
+/// module: The LLVM module that was passed to jitModule().
+///
+/// ee: The LLVM execution engine that jitModule() returned.
+extern void hlt_init_jit(std::shared_ptr<hilti::CompilerContext> ctx, llvm::Module* module, llvm::ExecutionEngine* ee);
 
 #endif

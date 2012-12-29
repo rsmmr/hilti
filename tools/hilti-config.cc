@@ -64,7 +64,7 @@ Example: hilti-config --compiler --cxxflags --debug
 
 void printList(stringstream& out, const std::list<string>& l)
 {
-    out << util::strjoin(l, " ") << std::endl;
+    out << util::strjoin(l, " ") << " ";
 }
 
 void appendList(std::list<string>* dst, const std::list<string>& l, const string& prefix = "")
@@ -173,6 +173,12 @@ int main(int argc, char** argv)
             appendList(&cxxflags, binpac_config.runtime_cflags);
             appendList(&cxxflags, binpac_config.runtime_include_dirs, "-I");
             appendList(&ldflags, binpac_config.runtime_ldflags);
+
+            if ( want_debug )
+                appendList(&libs, binpac_config.runtime_library_bca_dbg);
+            else
+                appendList(&libs, binpac_config.runtime_library_bca);
+
             appendList(&libs, binpac_config.runtime_shared_libraries, "-l");
             appendList(&libs_shared, binpac_config.runtime_shared_libraries, "-l");
        }
@@ -189,11 +195,17 @@ int main(int argc, char** argv)
             appendList(&cxxflags, hilti_config.compiler_cxxflags);
             appendList(&ldflags, hilti_config.compiler_ldflags);
             appendList(&libs, hilti_config.compiler_static_libraries, "-l");
+            appendList(&libs, hilti_config.compiler_static_libraries_jit, "-l");
             appendList(&libs, hilti_config.compiler_shared_libraries, "-l");
             appendList(&libs_shared, hilti_config.compiler_shared_libraries, "-l");
             appendListFile(&libfiles_static, hilti_config.compiler_static_libraries, hilti_config.compiler_library_dirs, "lib", ".a");
 
             // LLVM.
+            if ( want_debug ) {
+                appendList(&cflags, "-D_DEBUG", "");
+                appendList(&cxxflags, "-D_DEBUG", "");
+            }
+
             appendList(&cxxflags, util::strsplit(hilti_config.compiler_llvm_cxxflags));
             appendList(&ldflags, util::strsplit(hilti_config.compiler_llvm_ldflags));
 
@@ -209,9 +221,15 @@ int main(int argc, char** argv)
             appendList(&cxxflags, hilti_config.runtime_cflags);
             appendList(&cxxflags, hilti_config.runtime_include_dirs, "-I");
             appendList(&ldflags, hilti_config.runtime_ldflags);
+
+            if ( want_debug )
+                appendList(&libs, hilti_config.runtime_library_bca_dbg);
+            else
+                appendList(&libs, hilti_config.runtime_library_bca);
+
             appendList(&libs, hilti_config.runtime_shared_libraries, "-l");
-            appendList(&libs_shared, hilti_config.runtime_shared_libraries, "-l");
             appendList(&libs, hilti_config.runtime_library_a);
+            appendList(&libs_shared, hilti_config.runtime_shared_libraries, "-l");
 
             if ( want_debug )
                 appendList(&ldflags, hilti_config.runtime_ldflags_dbg);
@@ -220,6 +238,7 @@ int main(int argc, char** argv)
 
     bool need_component = false;
     stringstream out;
+    stringstream lout;
 
     for ( auto opt : options ) {
 
@@ -241,31 +260,31 @@ int main(int argc, char** argv)
 
         if ( opt == "--cflags" ) {
             need_component = true;
-            printList(out, cflags);
+            printList(lout, cflags);
             continue;
         }
 
         if ( opt == "--cxxflags" ) {
             need_component = true;
-            printList(out, cxxflags);
+            printList(lout, cxxflags);
             continue;
         }
 
         if ( opt == "--ldflags" ) {
             need_component = true;
-            printList(out, ldflags);
+            printList(lout, ldflags);
             continue;
         }
 
         if ( opt == "--libs" ) {
             need_component = true;
-            printList(out, libs);
+            printList(lout, libs);
             continue;
         }
 
         if ( opt == "--libs-shared" ) {
             need_component = true;
-            printList(out, libs_shared);
+            printList(lout, libs_shared);
             continue;
         }
 
@@ -275,7 +294,7 @@ int main(int argc, char** argv)
                 std::cerr << "warning: --libfiles not supported for --runtime yet" << std::endl;
 
             need_component = true;
-            printList(out, libfiles_static);
+            printList(lout, libfiles_static);
             continue;
         }
 
@@ -285,7 +304,7 @@ int main(int argc, char** argv)
         }
 
         if ( opt == "--hiltic-libdirs" ) {
-            printList(out, hilti_config.hilti_library_dirs);
+            printList(lout, hilti_config.hilti_library_dirs);
             continue;
         }
 
@@ -303,7 +322,7 @@ int main(int argc, char** argv)
         }
 
         if ( opt == "--binpac++-libdirs" ) {
-            printList(out, binpac_config.binpac_library_dirs);
+            printList(lout, binpac_config.binpac_library_dirs);
             continue;
         }
 
@@ -325,8 +344,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
-
     cout << out.str();
+    cout << lout.str() << std::endl;
 
     return 0;
 }

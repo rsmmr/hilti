@@ -36,7 +36,11 @@ static FILE* _debug_out()
 
 static int _want_stream(const char* s, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    const char* dbg = hlt_config_get()->debug_streams;
+    const char* dbg = __hlt_globals()->debug_streams;
+
+    if ( ! dbg )
+        // Fallback for when debug_streams hasn't been set yet.
+        dbg = getenv("HILTI_DEBUG");
 
     if ( ! dbg )
         return 0;

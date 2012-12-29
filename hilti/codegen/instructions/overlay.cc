@@ -72,11 +72,14 @@ static std::pair<llvm::Value*, llvm::Value*> _emitOne(CodeGen* cg, shared_ptr<ty
 
     llvm::Value* fmt = cg->llvmValue(field->format());
     llvm::Value* arg = nullptr;
+    shared_ptr<Type> arg_type = nullptr;
 
-    if ( field->formatArg() )
+    if ( field->formatArg() ) {
         arg = cg->llvmValue(field->formatArg());
+        arg_type = field->formatArg()->type();
+    }
 
-    auto unpacked = cg->llvmUnpack(field->type(), begin, cg->llvmIterBytesEnd(), fmt, arg, field->format()->type(), l);
+    auto unpacked = cg->llvmUnpack(field->type(), begin, cg->llvmIterBytesEnd(), fmt, arg, arg_type, l);
     auto val = unpacked.first;
     auto end = unpacked.second;
 

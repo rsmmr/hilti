@@ -47,6 +47,8 @@ protected:
    typedef std::vector<llvm::Type*> argument_type_list;
    ffi_cif* getCIF(const string& name, llvm::Type* rtype, const ABI::argument_type_list& args);
 
+   llvm::Type* mapToIntType(llvm::StructType* stype);
+
 private:
    string _triple;
    CodeGen* _cg = nullptr;

@@ -63,6 +63,11 @@ struct L {
     hlt_string s;
 };
 
+struct M {
+    double d;
+    int8_t i;
+};
+
 struct A fa() {
     struct A q;
     q.x = 1;
@@ -145,6 +150,15 @@ struct L fl() {
     l.d = 42.0;
     l.s = hlt_string_from_asciiz("OK", &excpt, hlt_global_execution_context());
     return l;
+}
+
+struct M fm() {
+    hlt_exception* excpt = 0;
+
+    struct M m;
+    m.d = 42.0;
+    m.i = 99;
+    return m;
 }
 
 void LLL()

@@ -132,6 +132,9 @@ public:
    /// Returns the LLVM context to use with all LLVM calls.
    llvm::LLVMContext& llvmContext() { return llvm::getGlobalContext(); }
 
+   /// Returns the LLVM data layout for the currently being built module.
+   llvm::DataLayout* llvmDataLayout() { return _data_layout; }
+
    /// Returns the LLVM builder to use for inserting code at the current
    /// location. For each LLVM function being built, a stack of builder is
    /// maintained and manipulated via pushBuilder() and popBuilder().
@@ -1351,6 +1354,11 @@ public:
    /// debugging outout and abort execution.
    llvm::StoreInst* llvmCreateStore(llvm::Value *val, llvm::Value *ptr, bool isVolatile=false);
 
+   /// Wrapper methods that creates an alloca instruction but preferable puts
+   /// it into the starting block of the current function, where LLVM is more
+   /// likely to optimize it away.
+   llvm::AllocaInst *llvmCreateAlloca(llvm::Type* t, llvm::Value *array_size = 0, const llvm::Twine& name="");
+
    /// Wrapper method to create an LLVM \c branch instruction that takes
    /// builders instead of blocks.
    llvm::BranchInst* llvmCreateBr(IRBuilder* builder);
@@ -2042,7 +2050,6 @@ public:
    /// arg: The argument for the update.
    void llvmProfilerUpdate(const string& tag, int64_t arg);
 
-
 private:
    // Creates/finishes the module intialization function that will receive all global
    // code, and pushes it onto the stack.
@@ -2173,6 +2180,7 @@ private:
    shared_ptr<hilti::Module> _hilti_module = nullptr;
    llvm::Module* _libhilti = nullptr;
    llvm::Module* _module = nullptr;
+   llvm::DataLayout* _data_layout = nullptr;
    llvm::Function* _module_init_func = nullptr;
    llvm::Function* _globals_init_func = nullptr;
    llvm::Function* _globals_dtor_func = nullptr;

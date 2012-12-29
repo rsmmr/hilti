@@ -17,8 +17,8 @@ wrong-args.hlt:18-19: error, operands do not match instruction new
     new: regexp<> -> ref<regexp<>>
     new: set<*>, [ ref<timer_mgr> ] -> ref<set<*>>
     new: struct { } , [ ref<timer_mgr> ] -> ref<struct { } >
-    new: timer, <function>, tuple<*> -> ref<timer>
     new: timer_mgr -> ref<timer_mgr>
+    new: timer, <function>, tuple<*> -> ref<timer>
     new: vector<*>, [ ref<timer_mgr> ] -> ref<vector<*>>
  [pass::hilti::InstructionResolver]
 wrong-args.hlt: Aborting due to verification error.
