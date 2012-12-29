@@ -12,7 +12,7 @@ void CodeBuilder::visit(expression::operator_::function::Call* i)
 
     shared_ptr<hilti::Expression> cookie = nullptr;
 
-    if ( in<declaration::Function>() )
+    if ( in<declaration::Function>() || in<declaration::Hook>() )
         cookie = hilti::builder::id::create("__cookie", i->location());
     else
         cookie = hilti::builder::reference::createNull(i->location());

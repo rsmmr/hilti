@@ -81,8 +81,10 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module, int debug,
             }
         }
 
-        // _mbuilder->module()->compilerContext()->print(_mbuilder->module(), std::cerr);
-
+#if 0
+        _mbuilder->module()->compilerContext()->dump(_mbuilder->module(), std::cerr);
+        _mbuilder->module()->compilerContext()->print(_mbuilder->module(), std::cerr);
+#endif
         _module = nullptr;
 
         auto m = _mbuilder->finalize();

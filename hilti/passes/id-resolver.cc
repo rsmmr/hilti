@@ -30,7 +30,6 @@ void IdResolver::visit(expression::ID* i)
     }
 
     if ( vals.size() > 1 ) {
-
         // This is ok if all hooks or one of them is scoped.
         for ( auto e : vals ) {
             auto func = ast::tryCast<expression::Function>(e);

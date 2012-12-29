@@ -69,7 +69,7 @@ void ScopeBuilder::visit(Module* m)
 
 void ScopeBuilder::visit(statement::Block* b)
 {
-    if ( ! b->id() )
+    if ( ! b->id() || ! b->id()->name().size() )
         return;
 
     shared_ptr<Scope> scope = nullptr;
@@ -174,6 +174,10 @@ void ScopeBuilder::visit(declaration::Function* f)
         auto pexpr = shared_ptr<expression::Parameter>(new expression::Parameter(p, p->location()));
         scope->insert(p->id(), pexpr);
     }
+}
+
+void ScopeBuilder::visit(declaration::Hook* t)
+{
 }
 
 void ScopePrinter::visit(statement::Block* b)

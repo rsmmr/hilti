@@ -60,6 +60,38 @@ static string _linkage(Declaration::Linkage linkage)
     }
 
     // Can't be reached.
+    abort();
+    return "";
+}
+
+static string _callingConvention(type::function::CallingConvention cc)
+{
+    switch( cc ) {
+     case type::function::BINPAC:
+        return ""; // Default.
+
+     case type::function::BINPAC_HILTI:
+        return "\"BINPAC-HILTI\"";
+
+     case type::function::HILTI:
+        return "\"HILTI\"";
+
+     case type::function::BINPAC_HILTI_C:
+        return "\"BINPAC-HILTI-C\"";
+
+     case type::function::HILTI_C:
+        return "\"HILTI-C\"";
+
+     case type::function::C:
+        return "\"C\"";
+
+     default:
+        fprintf(stderr, "unknown calling convention %d in Printer::_callingConvention()", (int)cc);
+        abort();
+    }
+
+    // Can't be reached.
+    abort();
     return "";
 }
 
@@ -312,7 +344,29 @@ void Printer::visit(declaration::Constant* c)
 void Printer::visit(declaration::Function* f)
 {
     Printer& p = *this;
-    p << _linkage(f->linkage()) << f << endl;
+
+    auto func = f->function();
+    auto ftype = func->type();
+    bool has_impl = static_cast<bool>(func->body());
+
+    p << _linkage(f->linkage()) << _callingConvention(ftype->callingConvention());
+
+    p << ftype->result() << " " << f->id() << '(';
+
+    printList(ftype->parameters(), ", ");
+
+    p << ')';
+
+    if ( has_impl ) {
+        p << endl;
+        p << '{' << endl;
+        p << func->body();
+        p << '}' << endl;
+        p << endl;
+    }
+
+    else
+        p << ";" << endl;
 }
 
 void Printer::visit(declaration::Hook* h)

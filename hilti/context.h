@@ -96,13 +96,16 @@ public:
     /// Adds an externally built module to the context.
     void addModule(shared_ptr<Module> module);
 
-    /// Finalizes the currently built module. This resolves all still unresolved references.
+    /// Finalizes a built module. This resolves all still unresolved
+    /// references.
+    ///
+    /// module: The module.
     ///
     /// verify: If false, no correctness verification is done. Only applies
     /// if \a finalize is true.
     ///
     /// Returns: True if no error occured.
-    bool finalize(bool verify);
+    bool finalize(shared_ptr<Module> module, bool verify);
 
     /// Compiles an AST into a LLVM module. This is the main interface to the
     /// code generater. The AST must have passed through finalize(). After

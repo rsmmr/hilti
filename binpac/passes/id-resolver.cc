@@ -37,12 +37,18 @@ void IDResolver::visit(expression::ID* i)
 
     auto nodes = currentNodes();
 
+    // std::cerr << "Lookup: " << i->id()->pathAsString() << std::endl;
+
     for ( auto i = nodes.rbegin(); i != nodes.rend(); i++ ) {
         auto n = *i;
 
         auto unit = ast::tryCast<type::Unit>(n);
         auto block = ast::tryCast<statement::Block>(n);
         auto item = ast::tryCast<type::unit::Item>(n);
+
+        // std::cerr << "  block: " << block.get() << std::endl;
+        // std::cerr << "  item: "  << item.get() << std::endl;
+        // std::cerr << "  unit: "  << unit.get() << std::endl;
 
         if ( block ) {
             scope = block->scope();
@@ -64,10 +70,24 @@ void IDResolver::visit(expression::ID* i)
         auto module = current<Module>();
         assert(module);
         scope = module->body()->scope();
+        // std::cerr << "  module: " << module.get() << std::endl;
     }
 
     auto id = i->sharedPtr<expression::ID>();
     auto vals = scope->lookup(id->id(), true);
+
+    if ( ! vals.size() ) {
+        // We we're inside an externally defined hook, make sure to also
+        // search the global scope of the module where it's defined.
+        auto imod = i->firstParent<Module>();
+        if ( imod ) {
+            // std::cerr << "  imod: " << imod.get() << std::endl;
+            // std::cerr << "  imod SCOPE: ";
+            scope = imod->body()->scope();
+            // scope->dump(std::cerr);
+            vals = scope->lookup(id->id(), true);
+        }
+    }
 
     if ( ! vals.size() ) {
         if ( _report_unresolved )
@@ -231,7 +251,7 @@ void IDResolver::visit(type::unit::item::field::Unknown* f)
 
     if ( ! exprs.size() ) {
         if ( _report_unresolved )
-            error(f, util::fmt("unknown ID %s", id->pathAsString()));
+            error(f, util::fmt("unknown field ID %s", id->pathAsString()));
         return;
     }
 

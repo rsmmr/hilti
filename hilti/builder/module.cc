@@ -149,6 +149,14 @@ shared_ptr<hilti::declaration::Function> ModuleBuilder::pushFunction(shared_ptr<
 
 shared_ptr<hilti::declaration::Function> ModuleBuilder::declareFunction(shared_ptr<hilti::Function> func)
 {
+    auto decls = _module->body()->declarations();
+
+    for ( auto d : decls ) {
+        if ( d->id()->pathAsString() == func->id()->pathAsString() )
+            // TODO: Should double-check that declarations match.
+            return ast::checkedCast<declaration::Function>(d);
+    }
+
     auto decl = std::make_shared<declaration::Function>(func, func->location());
     _module->body()->addDeclaration(decl);
     return decl;
@@ -429,9 +437,7 @@ shared_ptr<hilti::Module> ModuleBuilder::module() const
 
 shared_ptr<hilti::Module> ModuleBuilder::finalize(bool verify)
 {
-    _module->compilerContext()->addModule(_module);
-
-    if ( ! _module->compilerContext()->finalize(verify) )
+    if ( ! _module->compilerContext()->finalize(_module, verify) )
         return nullptr;
 
     return _module;

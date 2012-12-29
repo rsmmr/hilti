@@ -107,7 +107,7 @@ shared_ptr<Module> CompilerContext::loadModule(const string& p, bool verify, boo
     _modules.insert(std::make_pair(path, module));
 
     if ( finalize ) {
-        if ( ! CompilerContext::finalize(verify) )
+        if ( ! CompilerContext::finalize(nullptr, verify) )
             return nullptr;
     }
 
@@ -162,13 +162,13 @@ void CompilerContext::addModule(shared_ptr<Module> module)
     _modules.insert(std::make_pair(path, module));
 }
 
-bool CompilerContext::finalize(bool verify)
+bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
 {
     if ( debugging("context" ) )
         std::cerr << util::fmt("Finalizing context...") << std::endl;
 
-    if ( ! _modules.size() )
-        return true;
+    if ( module )
+        _modules.insert(std::make_pair(module->path(), module));
 
     // This is implictly imported by all modules.
     importModule(std::make_shared<ID>("libhilti"));
