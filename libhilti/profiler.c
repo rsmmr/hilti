@@ -18,7 +18,7 @@
 #include "profiler.h"
 #include "globals.h"
 #include "debug.h"
-#include "util.h"
+#include "hutil.h"
 #include "utf8proc.h"
 #include "string_.h"
 #include "timer.h"

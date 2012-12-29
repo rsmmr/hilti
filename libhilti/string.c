@@ -18,7 +18,7 @@
 #include "rtti.h"
 #include "memory_.h"
 #include "utf8proc.h"
-#include "util.h"
+#include "hutil.h"
 
 void hlt_string_dtor(hlt_type_info* ti, hlt_string* s)
 {

@@ -9,7 +9,7 @@
 #include "exceptions.h"
 #include "string_.h"
 #include "rtti.h"
-#include "util.h"
+#include "hutil.h"
 #include "globals.h"
 
 #include <string.h>

@@ -20,7 +20,7 @@ void run() {
     first = begin b
     last = end b
 
-    t = unpack (first,last) Hilti::Packed::BytesDelim b"\xff" # Delim not found.
+    t = unpack (first,last) Hilti::Packed::BytesDelim b"\xff"
     sub = tuple.index t 0
     nfirst = tuple.index t 1
     diff = bytes.diff first nfirst

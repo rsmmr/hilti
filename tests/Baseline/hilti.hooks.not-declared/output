@@ -1,8 +1,0 @@
-
->>> my_hook
-not-declared.hlt:10-10: error, external hook Test::my_hook not declared [pass::hilti::Validator]
-
->>> my_hook
-not-declared.hlt:15-15: error, external hook Test::my_hook not declared [pass::hilti::Validator]
-not-declared.hlt: Aborting due to verification error.
-error running hiltic, aborting

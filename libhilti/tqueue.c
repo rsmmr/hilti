@@ -7,7 +7,7 @@
 
 #include "memory_.h"
 #include "tqueue.h"
-#include "util.h"
+#include "hutil.h"
 #include "system.h"
 
 typedef struct __batch {

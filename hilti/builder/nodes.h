@@ -186,7 +186,7 @@ typedef hilti::constant::Tuple::element_list element_list;
 /// l: Location associated with the type.
 ///
 /// Returns: The expression node.
-inline shared_ptr<hilti::expression::Constant> create(const element_list& elems, const Location& l=Location::None)
+inline shared_ptr<hilti::expression::Constant> create(const element_list elems, const Location& l=Location::None)
 {
     auto c = std::make_shared<constant::Tuple>(elems, l);
     return std::make_shared<hilti::expression::Constant>(c, l);

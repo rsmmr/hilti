@@ -1,8 +1,10 @@
 
->>> my_hook
+>>> hook void my_hook(int<32> i) { 
+  call Hilti::print ("2nd hook function.")   return.void  }  
 wrong-type.hlt:14-14: error, inconsistent definitions for hook my_hook [pass::hilti::Validator]
 
->>> my_hook
+>>> hook bool my_hook() { 
+  call Hilti::print ("2nd hook function.")   hook.stop True  }  
 wrong-type.hlt:19-19: error, inconsistent definitions for hook my_hook [pass::hilti::Validator]
 wrong-type.hlt: Aborting due to verification error.
 error running hiltic, aborting

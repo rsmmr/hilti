@@ -12,7 +12,7 @@
 using namespace hilti;
 using namespace hilti::passes;
 
-CompilerContext::CompilerContext(const string_list& libdirs)
+CompilerContext::CompilerContext(const string_list libdirs)
 {
     string_list paths = libdirs;
 

@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <sys/resource.h>
 
-#include "util.h"
+#include "hutil.h"
 #include "globals.h"
 #include "rtti.h"
 #include "globals.h"

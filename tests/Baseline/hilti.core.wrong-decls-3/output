@@ -1,5 +1,5 @@
 
->>> foo
+>>> local tuple<*> foo
 wrong-decls.hlt:5-6: error, cannot create instances of a wildcard type [pass::hilti::Validator]
 wrong-decls.hlt: Aborting due to verification error.
 error running hiltic, aborting

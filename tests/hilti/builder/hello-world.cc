@@ -1,24 +1,27 @@
+//
+// @TEST-EXEC: ${CXX} -o a.out `${HILTI_CONFIG} --compiler --cxxflags --ldflags --libs` tests/hilti/builder/hello-world.cc 
+// @TEST-EXEC: ./a.out >output
+// @TEST-EXEC: btest-diff output
+//
 
-// @TEST-EXEC: false
+#include <memory>
 
-#include <hilti.h>
+#include <hilti/hilti.h>
 
 using namespace hilti;
 
 int main(int argc, char** argv)
 {
-    builder::ModuleBuilder m("HelloWorld");
+    auto ctx = std::make_shared<CompilerContext>();
+    auto m = std::make_shared<builder::ModuleBuilder>(ctx, "HelloWorld");
 
-    auto main = builder::function::create(builder::id::create("main"));
+    m->importModule("Hilti");
 
-    m.pushFunction(main);
+    m->pushFunction("main");
+    auto args = builder::tuple::create( { builder::string::create("Hello, world!") } );
+    m->builder()->addInstruction(instruction::flow::CallVoid, builder::string::create("Hilti::print"), args);
+    m->popFunction();
 
-    builder::tuple::element_list args = { builder::string::create("Hello, world!") };
-    m->addInstruction(instruction::Call, builder::string::create("Hilti::print", args))
-
-    m.popFunction();
-
-    m.finalize();
-
-    printModule(m.module());
+    m->finalize();
+    ctx->print(m->module(), std::cout);
 }

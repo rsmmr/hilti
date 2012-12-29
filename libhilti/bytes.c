@@ -18,7 +18,7 @@
 #include "exceptions.h"
 #include "string_.h"
 #include "globals.h"
-#include "util.h"
+#include "hutil.h"
 #include "threading.h"
 
 typedef struct {

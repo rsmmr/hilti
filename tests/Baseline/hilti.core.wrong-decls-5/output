@@ -1,5 +1,5 @@
 
->>> t
+>>> global tuple<*> t
 wrong-decls.hlt:4-6: error, cannot create instances of a wildcard type [pass::hilti::Validator]
 wrong-decls.hlt: Aborting due to verification error.
 error running hiltic, aborting

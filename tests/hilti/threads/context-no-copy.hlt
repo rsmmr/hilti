@@ -2,7 +2,7 @@
 # reuses the original context object.
 #
 # @TEST-EXEC:  hilti-build %INPUT -o a.out
-# @TEST-EXEC:  ./a.out | sort | uniq -c | wc -l >output
+# @TEST-EXEC:  ./a.out | sort | uniq -c | wc -l | awk '{print $1}' >output
 # @TEST-EXEC:  btest-diff output
 
 module Main

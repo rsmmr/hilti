@@ -27,7 +27,7 @@ public:
     ///
     /// libdirs: List of directories to search for imports and other library
     /// files. The current directory will always be tried first.
-    CompilerContext(const string_list& libdirs);
+    CompilerContext(const string_list libdirs = string_list());
 
     /// Destructor.
     ~CompilerContext();

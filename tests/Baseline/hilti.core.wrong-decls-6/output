@@ -1,5 +1,5 @@
 
->>> a
+>>> global any a
 wrong-decls.hlt:4-6: error, variable type must be a value type, but is any [pass::hilti::Validator]
 wrong-decls.hlt: Aborting due to verification error.
 error running hiltic, aborting

@@ -11,7 +11,7 @@
 
 #include "net.h"
 #include "string_.h"
-#include "util.h"
+#include "hutil.h"
 
 static inline int is_v4(const hlt_net net)
 {

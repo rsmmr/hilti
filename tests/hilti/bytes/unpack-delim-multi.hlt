@@ -29,7 +29,7 @@ void run() {
     call Hilti::print(out)
 
     try {
-        t = unpack (first,last) Hilti::Packed::BytesDelim b"FooBar" # Delim not found.
+        t = unpack (first,last) Hilti::Packed::BytesDelim b"FooBar"
     }
 
     catch {
