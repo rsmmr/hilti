@@ -142,31 +142,70 @@ void listParsers()
 
         hlt_string_print(stderr, p->description, 0, &excpt, ctx);
 
-        if ( p->mime_types && hlt_list_size(p->mime_types, &excpt, ctx) ) {
-            fputs(" [", stderr);
+        int first = 1;
 
+        if ( p->ports ) {
+            hlt_iterator_list j = hlt_list_begin(p->ports, &excpt, ctx);
+            hlt_iterator_list end2 = hlt_list_end(p->ports, &excpt, ctx);
+
+            while ( ! (hlt_iterator_list_eq(j, end2, &excpt, ctx) || excpt) ) {
+                if ( first )
+                    fputs("  [", stderr);
+                else
+                    fputs(", ", stderr);
+
+                hlt_port p = *(hlt_port*) hlt_iterator_list_deref(j, &excpt, ctx);
+                hlt_string s = hlt_port_to_string(&hlt_type_info_hlt_port, &p, 0, &excpt, ctx);
+                hlt_string_print(stderr, s, 0, &excpt, ctx);
+                GC_DTOR(s, hlt_string);
+
+                hlt_iterator_list j2 = j;
+                j = hlt_iterator_list_incr(j, &excpt, ctx);
+                GC_DTOR(j2, hlt_iterator_list);
+                first = 0;
+            }
+
+            GC_DTOR(j, hlt_iterator_list);
+            GC_DTOR(end2, hlt_iterator_list);
+        }
+
+        if ( p->mime_types ) {
             hlt_iterator_list j = hlt_list_begin(p->mime_types, &excpt, ctx);
             hlt_iterator_list end2 = hlt_list_end(p->mime_types, &excpt, ctx);
 
-            int8_t first = 1;
             while ( ! (hlt_iterator_list_eq(j, end2, &excpt, ctx) || excpt) ) {
-                if ( ! first )
+                if ( first )
+                    fputs("  [", stderr);
+                else
                     fputs(", ", stderr);
 
                 hlt_string s = *(hlt_string*) hlt_iterator_list_deref(j, &excpt, ctx);
                 hlt_string_print(stderr, s, 0, &excpt, ctx);
+                GC_DTOR(s, hlt_string);
 
-                first = 0;
+                hlt_iterator_list j2 = j;
                 j = hlt_iterator_list_incr(j, &excpt, ctx);
+                GC_DTOR(j2, hlt_iterator_list);
+                first = 0;
             }
 
-            fputc(']', stderr);
+            GC_DTOR(j, hlt_iterator_list);
+            GC_DTOR(end2, hlt_iterator_list);
         }
+
+        if ( ! first )
+            fputc(']', stderr);
 
         fputc('\n', stderr);
 
+        GC_DTOR(p, hlt_Parser);
+        hlt_iterator_list i2 = i;
         i = hlt_iterator_list_incr(i, &excpt, ctx);
+        GC_DTOR(i2, hlt_iterator_list);
     }
+
+    GC_DTOR(i, hlt_iterator_list);
+    GC_DTOR(end, hlt_iterator_list);
 
     check_exception(excpt);
 
@@ -174,6 +213,8 @@ void listParsers()
         fprintf(stderr, "    None.\n");
 
     fputs("\n", stderr);
+
+    GC_DTOR(parsers, hlt_list);
 }
 
 static binpac_parser* findParser(const char* name)

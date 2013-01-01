@@ -181,6 +181,9 @@ void TypeBuilder::visit(type::OptionalArgument* o)
 
 void TypeBuilder::visit(type::Port* p)
 {
+    TypeInfo ti;
+    ti.hilti_type = hilti::builder::port::type(p->location());
+    setResult(ti);
 }
 
 void TypeBuilder::visit(type::RegExp* r)

@@ -378,20 +378,34 @@ void ParserBuilder::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit,
     auto parser = _hiltiParserDefinition(unit);
     auto funcs = cg()->builder()->addTmp("funcs", hilti::builder::tuple::type({ hilti::builder::caddr::type(), hilti::builder::caddr::type() }));
 
-    hilti::builder::list::element_list mtypes;
-
-    for ( auto p : unit->properties() ) {
-        if ( ! (*p->property() == Attribute("mimetype")) )
-            continue;
-
-        mtypes.push_back(cg()->hiltiExpression(p->property()->value()));
-        }
-
     auto module = unit->firstParent<Module>();
     assert(module);
 
     auto fname = ::util::fmt("%s::%s", module->id()->name(), unit->id()->pathAsString());
-    auto mime_types = hilti::builder::list::create(hilti::builder::string::type(), mtypes, unit->location());
+
+    hilti::builder::list::element_list mtypes;
+    hilti::builder::list::element_list ports;
+
+    auto props_mtype = unit->properties("mimetype");
+    auto props_port = unit->properties("port");
+
+    for ( auto p : props_mtype )
+        mtypes.push_back(cg()->hiltiExpression(p->property()->value()));
+
+    for ( auto p : props_port )
+        ports.push_back(cg()->hiltiExpression(p->property()->value()));
+
+    auto hilti_mtypes = hilti::builder::list::create(hilti::builder::string::type(), mtypes, unit->location());
+    auto hilti_ports  = hilti::builder::list::create(hilti::builder::port::type(), ports, unit->location());
+
+    auto descr = unit->property("description");
+
+    shared_ptr<hilti::Expression> hilti_descr = nullptr;
+
+    if ( descr )
+        hilti_descr = cg()->hiltiExpression(descr->property()->value());
+    else
+        hilti_descr = hilti::builder::string::create("No description.");
 
     cg()->builder()->addInstruction(parser, hilti::instruction::struct_::New,
                                     hilti::builder::id::create("BinPACHilti::Parser"));
@@ -404,7 +418,12 @@ void ParserBuilder::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit,
     cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
                                     parser,
                                     hilti::builder::string::create("description"),
-                                    hilti::builder::string::create("No description yet."));
+                                    hilti_descr);
+
+    cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
+                                    parser,
+                                    hilti::builder::string::create("ports"),
+                                    hilti_ports);
 
     cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
                                     parser,
@@ -414,7 +433,7 @@ void ParserBuilder::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit,
     cg()->builder()->addInstruction(hilti::instruction::struct_::Set,
                                     parser,
                                     hilti::builder::string::create("mime_types"),
-                                    mime_types);
+                                    hilti_mtypes);
 
     auto f = cg()->builder()->addTmp("f", hilti::builder::caddr::type());
 

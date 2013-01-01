@@ -1516,9 +1516,9 @@ std::list<shared_ptr<unit::item::Property>> Unit::properties() const
     return m;
 }
 
-shared_ptr<unit::item::Property> Unit::property(const string& prop) const
+std::list<shared_ptr<unit::item::Property>> Unit::properties(const string& name) const
 {
-    Attribute pp(prop);
+    Attribute pp(name);
 
     std::list<shared_ptr<unit::item::Property>> m;
 
@@ -1531,10 +1531,16 @@ shared_ptr<unit::item::Property> Unit::property(const string& prop) const
         assert(f->property());
 
         if ( pp == *f->property() )
-            return f;
+            m.push_back(i);
     }
 
-    return nullptr;
+    return m;
+}
+
+shared_ptr<unit::item::Property> Unit::property(const string& prop) const
+{
+    auto all = properties(prop);
+    return all.size() > 0 ? all.front() : nullptr;
 }
 
 shared_ptr<unit::Item> Unit::item(shared_ptr<ID> id) const

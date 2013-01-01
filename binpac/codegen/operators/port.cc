@@ -7,4 +7,6 @@ using namespace binpac::codegen;
 
 void CodeBuilder::visit(constant::Port* p)
 {
+    auto c = hilti::builder::port::create(p->value());
+    setResult(c);
 }

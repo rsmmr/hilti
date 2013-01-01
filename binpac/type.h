@@ -1638,7 +1638,11 @@ public:
     /// prefilters all items for this tyoe,
     std::list<shared_ptr<unit::item::Property>> properties() const;
 
-    /// Returns the property of a given name, or null if no such.
+    /// Returns a list of all properties with a given name.
+    std::list<shared_ptr<unit::item::Property>> properties(const string& name) const;
+
+    /// Returns the property of a given name, or null if none. If there's
+    /// more than one property with the given name, one of them is returned.
     shared_ptr<unit::item::Property> property(const string& prop) const;
 
     /// Returns the item of a given name, or null if there's no such item.
