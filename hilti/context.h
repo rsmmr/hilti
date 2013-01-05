@@ -229,6 +229,18 @@ public:
     /// or null if that function doesn't exist.
     void* nativeFunction(llvm::Module* module, llvm::ExecutionEngine* ee, const string& function);
 
+    struct FunctionMapping {
+        const char* name; /// Name of the function.
+        void *func;       /// Address of the function.
+    };
+
+    /// Installs a table to resolve functions at JIT time that are located
+    /// statically inside the main process.
+    ///
+    /// mappings: An array of name-to-address mappings. The last entry must
+    /// be null pointers to mark the end of the array.
+    void installFunctionTable(const FunctionMapping* ftable);
+
     /// Dumps out an AST in (somewhat) readable format for debugging.
     ///
     /// ast: The AST to dump. This can be a partial AST, i.e., it doesn't need

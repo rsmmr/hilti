@@ -4,6 +4,8 @@
 
 #include <ast/logger.h>
 
+#include "../context.h"
+
 namespace llvm {
     class ExecutionEngine;
     class SectionMemoryManager;
@@ -11,14 +13,16 @@ namespace llvm {
 
 namespace hilti {
 
-class CompilerContext;
-
 namespace jit {
+
+class MemoryManager;
 
 // Central JIT engine.
 class JIT : public ast::Logger
 {
 public:
+    typedef CompilerContext::FunctionMapping FunctionMapping;
+
     JIT(CompilerContext* ctx);
     ~JIT();
 
@@ -44,9 +48,16 @@ public:
     /// or null if that function doesn't exist.
     void* nativeFunction(llvm::ExecutionEngine* ee, llvm::Module* module, const string& function);
 
+    /// Installs a table to resolve functions that are located statically
+    /// inside the main process.
+    ///
+    /// mappings: An array of name-to-address mappings. The last entry must
+    /// be null pointers to mark the end of the array.
+    void installFunctionTable(const FunctionMapping* ftable);
+
 private:
     CompilerContext* _ctx;
-    llvm::SectionMemoryManager* _mm;
+    MemoryManager* _mm;
 };
 
 }

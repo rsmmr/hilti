@@ -14,10 +14,37 @@
 using namespace hilti;
 using namespace hilti::jit;
 
+class hilti::jit::MemoryManager : public llvm::SectionMemoryManager
+{
+public:
+    void installFunctionTable(const JIT::FunctionMapping* functions);
+    void* getPointerToNamedFunction(const std::string &Name, bool AbortOnFailure = true) override;
+
+private:
+    const JIT::FunctionMapping* _functions = 0;
+};
+
+void MemoryManager::installFunctionTable(const JIT::FunctionMapping* functions)
+{
+    _functions = functions;
+}
+
+void* MemoryManager::getPointerToNamedFunction(const std::string& name, bool abort_on_failure)
+{
+    for ( int i = 0; _functions[i].name; i++ ) {
+        if ( name == _functions[i].name ) {
+            void *addr = _functions[i].func;
+            return addr;
+        }
+    }
+
+    return llvm::SectionMemoryManager::getPointerToNamedFunction(name, abort_on_failure);
+}
+
 JIT::JIT(CompilerContext* ctx)
 {
     _ctx = ctx;
-    _mm = new llvm::SectionMemoryManager;
+    _mm = new MemoryManager;
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -101,4 +128,9 @@ void* JIT::nativeFunction(llvm::ExecutionEngine* ee, llvm::Module* module, const
 
     _mm->invalidateInstructionCache();
     return fp;
+}
+
+void JIT::installFunctionTable(const FunctionMapping* mappings)
+{
+    _mm->installFunctionTable(mappings);
 }

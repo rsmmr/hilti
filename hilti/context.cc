@@ -401,6 +401,17 @@ void* CompilerContext::nativeFunction(llvm::Module* module, llvm::ExecutionEngin
     return _jit->nativeFunction(ee, module, function);
 }
 
+void CompilerContext::installFunctionTable(const FunctionMapping* ftable)
+{
+    if ( debugging("context" ) )
+        std::cerr << util::fmt("Installing custom function table ...") << std::endl;
+
+    if ( ! _jit )
+        _jit = new jit::JIT(this);
+
+    _jit->installFunctionTable(ftable);
+}
+
 const string_list& CompilerContext::libraryPaths() const
 {
     return _libdirs;
