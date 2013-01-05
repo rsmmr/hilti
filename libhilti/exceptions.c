@@ -196,3 +196,16 @@ void __hlt_exception_print_uncaught_abort(hlt_exception* exception, hlt_executio
     hlt_abort();
 }
 
+hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    const hlt_exception* e = *((const hlt_exception**)obj);
+
+    if ( ! e ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+
+    // FIXME: This should include the same information as the print()
+    // functions.
+    return hlt_string_from_asciiz(e->type->name, excpt, ctx);
+}

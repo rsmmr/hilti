@@ -14,6 +14,9 @@ struct Configuration {
     string prefix        = "${PROJECT_SOURCE_DIR}";
     string distbase      = "${PROJECT_SOURCE_DIR}";
     string path_hiltic   = "${PROJECT_BINARY_DIR}/tools/hiltic";
+    string path_clang    = "${LLVM_CLANG_EXEC}";
+    string path_clangxx  = "${LLVM_CLANGXX_EXEC}";
+    string path_llvm_config = "${LLVM_CONFIG_EXEC}";
 
     string shared_library_prefix = "${CMAKE_SHARED_LIBRARY_PREFIX}";
     string shared_library_suffix = "${CMAKE_SHARED_LIBRARY_SUFFIX}";

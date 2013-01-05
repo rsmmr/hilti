@@ -274,7 +274,6 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
     auto cookie = hilti::builder::function::parameter("__cookie", hiltiTypeCookie(), false, nullptr);
 
     hilti::type::function::CallingConvention cc;
-    bool export_ = false;
 
     switch ( ftype->callingConvention() ) {
      case type::function::BINPAC:
@@ -298,7 +297,6 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
 
      case type::function::HILTI:
         cc = hilti::type::function::HILTI;
-        export_ = true;
         break;
 
      case type::function::C:
@@ -309,8 +307,8 @@ shared_ptr<hilti::declaration::Function> CodeGen::hiltiDefineFunction(shared_ptr
         internalError("unexpected calling convention in hiltiDefineFunction()");
     }
 
-    if ( export_ )
-        moduleBuilder()->exportID(name);
+    // TODO: Do we always want to export these?
+    moduleBuilder()->exportID(name);
 
     if ( func->body() ) {
         auto decl = moduleBuilder()->pushFunction(name, result, params, cc, nullptr, false, func->location());

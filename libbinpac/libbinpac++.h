@@ -25,7 +25,7 @@ typedef void* __binpac_new_function(struct binpac_sink* sink, hlt_bytes* mimetyp
 /// Structure defining an BinPAC generated parser.
 ///
 /// TODO: hiltic should generate the prototype for this struct.
-typedef struct {
+typedef struct __binpac_parser {
     __hlt_gchdr __gchdr;                 // HILTI-internal.
     int32_t internal;                    // HILTI-internal.
     hlt_string name;                     /// Short descriptive name.

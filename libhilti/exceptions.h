@@ -106,6 +106,11 @@ extern void hlt_exception_print_uncaught_in_thread(hlt_exception* exception, hlt
 /// ctx: The current execution context.
 extern void hlt_exception_print(hlt_exception* exception, hlt_execution_context* ctx);
 
+/// Converts an exception into a string.
+///
+/// Include: include-to-string-sig.txt
+hlt_string hlt_exception_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx);
+
 #define __hlt_stringify2(arg) #arg
 #define __hlt_stringify(arg) __hlt_stringify2(arg)
 

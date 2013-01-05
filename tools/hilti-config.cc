@@ -56,6 +56,12 @@ Usage: hilti-config [options]
     --binpac++-libdirs      Print standard BinPAC++ library directories.
     --binpac++-runtime-libs Print the full path of the HILTI run-time library.
 
+== Enviroment information
+
+    --clang                 Print the full path to the clang used to compile HILTI.
+    --clang++               Print the full path to the clang used to compile HILTI.
+    --llvm-config           Print the full path to the llvm-config used to compile HILTI.
+
 
 Example: hilti-config --compiler --cxxflags --debug
 
@@ -174,13 +180,21 @@ int main(int argc, char** argv)
             appendList(&cxxflags, binpac_config.runtime_include_dirs, "-I");
             appendList(&ldflags, binpac_config.runtime_ldflags);
 
-            if ( want_debug )
+            if ( want_debug ) {
                 appendList(&libs, binpac_config.runtime_library_bca_dbg);
-            else
+                appendList(&libfiles_static, binpac_config.runtime_library_bca_dbg);
+            }
+
+            else {
                 appendList(&libs, binpac_config.runtime_library_bca);
+                appendList(&libfiles_static, binpac_config.runtime_library_bca);
+            }
 
             appendList(&libs, binpac_config.runtime_shared_libraries, "-l");
             appendList(&libs_shared, binpac_config.runtime_shared_libraries, "-l");
+
+
+
        }
     }
 
@@ -199,6 +213,7 @@ int main(int argc, char** argv)
             appendList(&libs, hilti_config.compiler_shared_libraries, "-l");
             appendList(&libs_shared, hilti_config.compiler_shared_libraries, "-l");
             appendListFile(&libfiles_static, hilti_config.compiler_static_libraries, hilti_config.compiler_library_dirs, "lib", ".a");
+            appendListFile(&libfiles_static, hilti_config.compiler_static_libraries_jit, hilti_config.compiler_library_dirs, "lib", ".a");
 
             // LLVM.
             if ( want_debug ) {
@@ -222,13 +237,19 @@ int main(int argc, char** argv)
             appendList(&cxxflags, hilti_config.runtime_include_dirs, "-I");
             appendList(&ldflags, hilti_config.runtime_ldflags);
 
-            if ( want_debug )
+            if ( want_debug ) {
                 appendList(&libs, hilti_config.runtime_library_bca_dbg);
-            else
+                appendList(&libfiles_static, hilti_config.runtime_library_bca_dbg);
+            }
+
+            else {
                 appendList(&libs, hilti_config.runtime_library_bca);
+                appendList(&libfiles_static, hilti_config.runtime_library_bca);
+            }
 
             appendList(&libs, hilti_config.runtime_shared_libraries, "-l");
             appendList(&libs, hilti_config.runtime_library_a);
+            appendList(&libfiles_static, hilti_config.runtime_library_a);
             appendList(&libs_shared, hilti_config.runtime_shared_libraries, "-l");
 
             if ( want_debug )
@@ -255,6 +276,21 @@ int main(int argc, char** argv)
         if ( opt == "--version" ) {
             out << "HILTI "    << hilti_config.version << std::endl;
             out << "BinPAC++ " << binpac_config.version << std::endl;
+            continue;
+        }
+
+        if ( opt == "--clang" ) {
+            out << hilti_config.path_clang << std::endl;
+            continue;
+        }
+
+        if ( opt == "--clang++" ) {
+            out << hilti_config.path_clangxx << std::endl;
+            continue;
+        }
+
+        if ( opt == "--llvm-config" ) {
+            out << hilti_config.path_llvm_config << std::endl;
             continue;
         }
 
@@ -289,10 +325,6 @@ int main(int argc, char** argv)
         }
 
         if ( opt == "--libfiles-static" ) {
-
-            if ( want_runtime )
-                std::cerr << "warning: --libfiles not supported for --runtime yet" << std::endl;
-
             need_component = true;
             printList(lout, libfiles_static);
             continue;
@@ -345,7 +377,9 @@ int main(int argc, char** argv)
     }
 
     cout << out.str();
-    cout << lout.str() << std::endl;
+
+    if ( lout.str().size() )
+        cout << lout.str() << std::endl;
 
     return 0;
 }
