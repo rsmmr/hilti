@@ -1,0 +1,22 @@
+#
+# @TEST-EXEC:  printf "\x02\x02\x03\x04\x05" | pac-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+# - &length seems to want a uint64, doesn't coerce.
+#
+# - If I do the cast manually, this still fails and the "ints"
+#   integers aren't parsed.  I have no clue what's happening with that. 
+#   It seems like you can't use a variable for the &length value.
+
+module Mini;
+
+export type test = unit {
+    a: int8;
+
+    ints: list< int<8> > &length=self.a
+      { print self; }
+
+    b: int8;
+
+    on %done { print self; }
+};

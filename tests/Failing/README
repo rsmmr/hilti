@@ -1,0 +1,2 @@
+This directory contains that are currently failing, but supposed to
+work eventually. These tests are specifically excluded in btest.cfg.
