@@ -532,6 +532,9 @@ shared_ptr<hilti::Expression> ModuleBuilder::addConstant(const std::string& id, 
 
 shared_ptr<hilti::expression::Type> ModuleBuilder::addType(shared_ptr<hilti::ID> id, shared_ptr<Type> type, bool force_unique, const Location& l)
 {
+    if ( id->isScoped() )
+        id = std::make_shared<ID>(id->pathAsString(_module->id()), id->location());
+
     auto t = _uniqueDecl(id, type, "type", &_globals, (force_unique ? MAKE_UNIQUE : CHECK_UNIQUE), true);
     id = t.first;
     auto decl = t.second ? ast::checkedCast<declaration::Type>(t.second) : nullptr;

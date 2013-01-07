@@ -377,7 +377,9 @@ void binpachilti_sink_close(binpac_sink* sink, hlt_exception** excpt, hlt_execut
 
 void binpachilti_sink_add_filter(binpac_sink* sink, hlt_enum ftype, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    binpac_filter* old_filter = sink->filter;
     sink->filter = binpachilti_filter_add(sink->filter, ftype, excpt, ctx);
+    GC_DTOR(old_filter, binpac_filter);
 
     DBG_LOG("binpac-sinks", "attached filter %s to sink %p", sink->filter->def->name, sink);
 }

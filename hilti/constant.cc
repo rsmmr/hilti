@@ -67,6 +67,15 @@ shared_ptr<Type> constant::Reference::type() const
         return shared_ptr<type::Reference>(new type::Reference(location()));
 }
 
+constant::CAddr::CAddr(const Location& l) : Constant(l)
+{
+}
+
+shared_ptr<Type> constant::CAddr::type() const
+{
+    return std::make_shared<type::CAddr>(location());
+}
+
 constant::AddressVal::AddressVal(Constant* c, const string& addr)
 {
     int result = 0;

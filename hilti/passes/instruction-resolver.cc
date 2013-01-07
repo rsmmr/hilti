@@ -85,15 +85,12 @@ void InstructionResolver::visit(statement::instruction::Unresolved* s)
 {
     auto instr = s->sharedPtr<statement::instruction::Unresolved>();
 
-    if ( instr->instruction() ) {
+    if ( instr->instruction() && ! util::startsWith(instr->instruction()->id()->name(), ".op.") ) {
         // We already know the instruction, just need to transfer the operands over.
         auto new_stmt = InstructionRegistry::globalRegistry()->resolveStatement(instr->instruction(), instr);
         instr->replace(new_stmt);
         return;
     }
-
-    // TODO: Do we need this special-casing here, or is the corresponding
-    // part in Resolved() sufficeint?
 
     auto id = s->id();
     auto name = s->id()->name();

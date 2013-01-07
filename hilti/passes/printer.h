@@ -99,6 +99,7 @@ protected:
    void visit(constant::Address* c) override;
    void visit(constant::Bitset* c) override;
    void visit(constant::Bool* c) override;
+   void visit(constant::CAddr* c) override;
    void visit(constant::Double* c) override;
    void visit(constant::Enum* c) override;
    void visit(constant::Integer* c) override;

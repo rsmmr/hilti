@@ -881,6 +881,10 @@ void Validator::visit(constant::Bool* c)
 {
 }
 
+void Validator::visit(constant::CAddr* c)
+{
+}
+
 void Validator::visit(constant::Double* c)
 {
 }

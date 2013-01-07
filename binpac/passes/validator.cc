@@ -568,6 +568,20 @@ void Validator::visit(type::unit::item::Field* f)
         }
     }
 
+    attr = attributes->lookup("convert");
+
+    if ( attr ) {
+        if ( ! attr->value() ) {
+            error(attr, "&convert attribute needs an expression");
+            return;
+        }
+
+        if ( ! ast::isA<type::PacType>(attr->value()->type()) ) {
+            error(attr, "invalid type for &convert's expression");
+            return;
+        }
+    }
+
     // Check the type-specific attributes.
     for ( auto pattr : parseable->parseAttributes() ) {
         auto attr = attributes->lookup(pattr.key);

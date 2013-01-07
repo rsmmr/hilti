@@ -26,14 +26,20 @@ shared_ptr<hilti::Type> TypeBuilder::hiltiType(shared_ptr<Type> type)
     return result.hilti_type;
 }
 
-shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type, bool null_on_default)
+shared_ptr<hilti::Expression> TypeBuilder::hiltiDefault(shared_ptr<Type> type, bool null_on_default, bool can_be_unset)
 {
     TypeInfo result;
     bool success = processOne(type, &result);
     assert(success);
 
-    return result.hilti_default ? result.hilti_default
-                                : (null_on_default ? shared_ptr<hilti::Expression>() : hilti::builder::expression::default_(result.hilti_type));
+    auto val = result.hilti_default ? result.hilti_default
+        : (null_on_default ? shared_ptr<hilti::Expression>() : hilti::builder::expression::default_(result.hilti_type));
+
+    if ( result.always_initialize || ! can_be_unset )
+        return val;
+
+    else
+        return nullptr;
 }
 
 void TypeBuilder::visit(type::Address* a)
@@ -160,6 +166,7 @@ void TypeBuilder::visit(type::List* l)
     TypeInfo ti;
     ti.hilti_type = hilti::builder::reference::type(hilti::builder::list::type(item, l->location()));
     ti.hilti_default = hilti::builder::list::create(item, {}, l->location());
+    ti.always_initialize = true;
     setResult(ti);
 }
 
@@ -290,6 +297,7 @@ void TypeBuilder::visit(type::Vector* v)
     TypeInfo ti;
     ti.hilti_type = hilti::builder::reference::type(hilti::builder::vector::type(item, v->location()));
     ti.hilti_default = hilti::builder::vector::create(item, {}, v->location());
+    ti.always_initialize = true;
     setResult(ti);
 }
 

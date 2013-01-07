@@ -106,8 +106,12 @@ public:
     /// null_on_default: If true, returns null if the type uses the HILTI
     /// default as its default.
     ///
+    /// can_be_unset: If true, the method can return null to indicate that a
+    /// value should be left unset by default. If false, there will always a
+    /// value returned (unless \a null_on_default is set).
+    ///
     /// Returns: The HILTI value, or null for HILTI's default.
-    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default = false);
+    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default, bool can_be_unset);
 
     /// Turns a BinPAC ID into a HILTI ID.
     ///

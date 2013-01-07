@@ -114,12 +114,12 @@ shared_ptr<Module> CompilerContext::loadModule(const string& p, bool verify, boo
     return module;
 }
 
-static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast::Logger& before)
+static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const string& before)
 {
     if ( ctx->debugging("dump-ast") ) {
         std::cerr << std::endl
             << "===" << std::endl
-            << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
+            << "=== AST for " << module->id()->pathAsString() << " before hilti::" << before << std::endl
             << "===" << std::endl
             << std::endl;
 
@@ -129,12 +129,17 @@ static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast
     if ( ctx->debugging("print-ast") ) {
         std::cerr << std::endl
             << "===" << std::endl
-            << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
+            << "=== AST for " << module->id()->pathAsString() << " before hilti::" << before << std::endl
             << "===" << std::endl
             << std::endl;
 
         ctx->print(module, std::cerr);
     }
+}
+
+static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast::Logger& before)
+{
+    _debugAST(ctx, module, before.loggerName());
 }
 
 bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
@@ -290,6 +295,8 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module, int debug, boo
 {
     if ( debugging("context" ) )
         std::cerr << util::fmt("Compiling module %s ...", module->id()->pathAsString()) << std::endl;
+
+    _debugAST(this, module, "CodeGen");
 
     codegen::CodeGen cg(module->compilerContext()->libraryPaths());
     return cg.generateLLVM(module, verify, debug, profile);

@@ -104,6 +104,7 @@ protected:
    virtual void visit(constant::Address* c) override;
    virtual void visit(constant::Bitset* c) override;
    virtual void visit(constant::Bool* b) override;
+   virtual void visit(constant::CAddr* b) override;
    virtual void visit(constant::Double* c) override;
    virtual void visit(constant::Enum* c) override;
    virtual void visit(constant::Integer* c) override;

@@ -198,6 +198,10 @@ InstructionRegistry::instr_list InstructionRegistry::byName(const string& name) 
 
 bool Instruction::matchesOperands(const instruction::Operands& ops, bool coerce)
 {
+    if ( ::util::startsWith(_id->name(), ".op.") )
+        // Never return these.
+        return false;
+
 #if 0
     fprintf(stderr, "--- %s  coerce %d\n", string(*this).c_str(), coerce);
     fprintf(stderr, "0 %s | %s\n", ops[0] ? ops[0]->render().c_str() : "-", __typeOp0() ? __typeOp0()->render().c_str() : "-");

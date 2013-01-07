@@ -1,0 +1,28 @@
+#
+# @TEST-EXEC:  echo 1234567890 | pac-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Mini;
+
+export type test = unit {
+
+       on %init {
+        print self;
+        }
+
+       a: bytes &length=1;       # Remains uninitialized.
+       b: int8;                  # Remains uninitialized.
+       c: list<int8> &length=1;  # Remains uninitialized.
+
+       var d: bytes;        # Remains uninitialized.
+       var e: list<bytes>;  # Initialized to empty list.
+};
+
+global A: bytes; # Initialized to empty.
+global B: int8; # Initialized to 0.
+global C: list<bytes>;  # Initialized to empty list.
+
+print "A", A;
+print "B", B;
+print "C", C;
