@@ -423,7 +423,7 @@ shared_ptr<hilti::Expression> CodeGen::hiltiCookie()
 
 shared_ptr<hilti::Type> CodeGen::hiltiTypeCookie()
 {
-    return hilti::builder::reference::type(hilti::builder::type::byName("BinPACHilti::UserCookie"));
+    return hilti::builder::type::byName("BinPACHilti::UserCookie");
 }
 
 void CodeGen::hiltiBindDollarDollar(shared_ptr<hilti::Expression> val)
