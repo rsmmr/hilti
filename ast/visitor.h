@@ -18,18 +18,18 @@ namespace ast {
 // FIXME: The methods should all be declared "override" as well but that
 // gives compiler errors.
 
-#define ACCEPT_VISITOR(base)                         \
+#define ACCEPT_VISITOR(base)                          \
     void accept(VisitorInterface* visitor) override { \
-       this->base::accept(visitor);                  \
-       visitor->visit(this);                         \
+       this->base::accept(visitor);                   \
+       visitor->visit(this);                          \
     }                                                 \
     const char* acceptClass() const override {        \
-       return typeid(*this).name();                  \
+       return typeid(*this).name();                   \
     }
 
-#define ACCEPT_VISITOR_ROOT()                        \
+#define ACCEPT_VISITOR_ROOT()                         \
     void accept(VisitorInterface* visitor) /* override */ { \
-       visitor->visit(this);                         \
+       visitor->visit(this);                          \
     }                                                 \
     const char* acceptClass() const  {        \
        return typeid(*this).name();                  \
@@ -50,6 +50,12 @@ namespace ast {
     const char* acceptClass() const  {        \
        return typeid(*this).name();                  \
     }
+
+/// Enables verbose debugging for *all* visitors.
+extern void enableDebuggingForAllVisitors(bool enabled = true);
+
+/// Returns true if verbose debugging is enabled for all visitor.
+extern bool debuggingAllVisitors();
 
 /// Base class for all AST visitors.
 ///
@@ -249,6 +255,7 @@ public:
     /// traversal.
     void call(shared_ptr<NodeBase> node) {
        this->pushCurrent(node);
+       this->printDebug(node);
        this->callAccept(node);
        this->popCurrent();
     }
@@ -331,6 +338,18 @@ public:
        Logger::warning(msg, _loc_nodes.back());
     }
 
+    /// Enables verbose debugging for this visitor. This will log all
+    /// visits()to stderr.
+    void enableDebugging(bool enabled) {
+        _debug = enabled;
+    }
+
+    /// Returns whether visit() logging is enabled (either specifically for
+    /// this visitor, or globally for all).
+    bool debugging() const {
+        return _debug || debuggingAllVisitors();
+    }
+
 protected:
     /// Sets the first argument. visit methods can then retrieve it with
     /// #arg1.
@@ -369,6 +388,21 @@ protected:
 
     void preOrder(shared_ptr<NodeBase> node);
     void postOrder(shared_ptr<NodeBase> node);
+
+    // Prints the debug output for the current visit() call.
+    virtual void printDebug(shared_ptr<NodeBase> node) {
+#ifdef DEBUG
+        if ( ! debugging() )
+             return;
+
+        std::cerr << '[' << this->loggerName() << "::visit()]";
+
+        for ( auto i = _current.size(); i > 0; --i )
+            std::cerr << "  ";
+
+        std::cerr << string(*node) << std::endl;
+#endif
+    }
 
 private:
 
@@ -410,6 +444,7 @@ private:
     Arg2 _arg2;
     int _errors = 0;
     int _level = 0;
+    bool _debug = false;
 
     std::list<NodeBase *> _loc_nodes = { nullptr }; // Initial null element.
 
@@ -545,6 +580,7 @@ inline void Visitor<AstInfo, Result, Arg1, Arg2>::preOrder(shared_ptr<NodeBase> 
     _visited.insert(node);
 
     pushCurrent(node);
+    this->printDebug(node);
     this->callAccept(node);
 
     for ( auto i : *node )
@@ -567,6 +603,7 @@ inline void Visitor<AstInfo, Result, Arg1, Arg2>::postOrder(shared_ptr<NodeBase>
     for ( auto i : *node )
         this->postOrder(i);
 
+    this->printDebug(node);
     this->callAccept(node);
     popCurrent();
 }

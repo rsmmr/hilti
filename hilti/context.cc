@@ -114,6 +114,29 @@ shared_ptr<Module> CompilerContext::loadModule(const string& p, bool verify, boo
     return module;
 }
 
+static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast::Logger& before)
+{
+    if ( ctx->debugging("dump-ast") ) {
+        std::cerr << std::endl
+            << "===" << std::endl
+            << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
+            << "===" << std::endl
+            << std::endl;
+
+        ctx->dump(module, std::cerr);
+    }
+
+    if ( ctx->debugging("print-ast") ) {
+        std::cerr << std::endl
+            << "===" << std::endl
+            << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
+            << "===" << std::endl
+            << std::endl;
+
+        ctx->print(module, std::cerr);
+    }
+}
+
 bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
 {
     if ( debugging("context" ) )
@@ -129,19 +152,29 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
     passes::BlockNormalizer     block_normalizer;
     passes::Validator           validator;
 
+    _debugAST(this, module, instruction_resolver);
+
     if ( ! instruction_resolver.run(module) )
         return false;
+
+    _debugAST(this, module, block_normalizer);
 
     if ( ! block_normalizer.run(module) )
         return false;
 
     // Run these again, we have inserted new instructions.
 
+    _debugAST(this, module, id_resolver);
+
     if ( ! id_resolver.run(module) )
         return false;
 
+    _debugAST(this, module, instruction_resolver);
+
     if ( ! instruction_resolver.run(module) )
         return false;
+
+    _debugAST(this, module, validator);
 
     if ( verify && ! validator.run(module) )
         return false;
@@ -185,11 +218,15 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
         passes::ScopeBuilder scope_builder(this);
         passes::ScopePrinter scope_printer(std::cerr);
 
+        _debugAST(this, module, scope_builder);
+
         if ( ! scope_builder.run(module) )
             return false;
 
-        if ( debugging("scopes") )
+        if ( debugging("scopes") ) {
+            _debugAST(this, module, scope_printer);
             scope_printer.run(module);
+        }
 
     }
 
@@ -197,6 +234,9 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
         auto module = m.second;
 
         passes::IdResolver id_resolver;
+
+        _debugAST(this, module, id_resolver);
+
         if ( ! id_resolver.run(module) )
             return false;
     }
@@ -428,6 +468,10 @@ bool CompilerContext::enableDebug(const string& label)
         return false;
 
     _debug_streams.insert(label);
+
+    if ( label == "visitors" )
+        ast::enableDebuggingForAllVisitors();
+
     return true;
 }
 
@@ -441,7 +485,7 @@ bool CompilerContext::enableDebug(std::set<string>& labels)
 
 std::list<string> CompilerContext::debugStreams()
 {
-    return { "codegen", "linker", "parser", "scanner", "scopes", "context" };
+    return { "codegen", "linker", "parser", "scanner", "scopes", "context", "dump-ast", "print-ast", "visitors" };
 }
 
 bool CompilerContext::validDebugStream(const string& label)
