@@ -17,7 +17,7 @@ module TestHilti
 import Hilti
 import BinPACHilti
 
-int<32> test(ref<BinPACHilti::UserCookie> c)
+int<32> test(BinPACHilti::UserCookie c)
 {
     call Hilti::print (c)
     return.result 42

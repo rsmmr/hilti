@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  cat %DIR/data.ms-root-certs.sst | pac-driver-test %INPUT ${PARSERS}/ms-cert.pac2 >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module PrintCerts;
+
+import BinPAC;
+
+import parsers/ms-cert;
+
+on MSCerts::SerializedCertificateEntry::certificate
+{
+    print "-----BEGIN CERTIFICATE-----";
+    print BinPAC::base64_encode(self.certificate);
+    print "-----END CERTIFICATE-----\n";
+}

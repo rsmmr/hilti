@@ -13,7 +13,7 @@ export type test = unit {
            print "B>", self.v1;
            }
 
-       var v1: int<32> {
+       var v1: int<32> = 0 {
            print "V1", self.v1;
            }
 
