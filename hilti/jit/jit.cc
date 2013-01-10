@@ -31,10 +31,12 @@ void MemoryManager::installFunctionTable(const JIT::FunctionMapping* functions)
 
 void* MemoryManager::getPointerToNamedFunction(const std::string& name, bool abort_on_failure)
 {
-    for ( int i = 0; _functions[i].name; i++ ) {
-        if ( name == _functions[i].name ) {
-            void *addr = _functions[i].func;
-            return addr;
+    if ( _functions ) {
+        for ( int i = 0; _functions[i].name; i++ ) {
+            if ( name == _functions[i].name ) {
+                void *addr = _functions[i].func;
+                return addr;
+            }
         }
     }
 

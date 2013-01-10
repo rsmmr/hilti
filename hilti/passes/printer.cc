@@ -957,6 +957,12 @@ void Printer::visit(constant::Bool* b)
     p << (b->value() ? "True" : "False");
 }
 
+void Printer::visit(constant::CAddr* c)
+{
+    Printer& p = *this;
+    p << "Null"; // Only possible constant.
+}
+
 void Printer::visit(constant::Label* b)
 {
     Printer& p = *this;

@@ -69,5 +69,9 @@ bool binpac::CompilerContext::enableDebug(const string& label)
         return false;
 
     _debug_streams.insert(label);
+
+    if ( label == "visitors" )
+        ast::enableDebuggingForAllVisitors();
+
     return true;
 }

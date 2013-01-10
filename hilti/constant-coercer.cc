@@ -74,13 +74,13 @@ void ConstantCoercer::visit(constant::Reference* r)
 
     auto dst_ref = ast::as<type::Reference>(arg1());
 
-    if ( dst_ref->wildcard() ) {
+    if ( dst_ref && dst_ref->wildcard() ) {
         // Null coerces into all reference types.
         setResult(r->sharedPtr<constant::Reference>());
         return;
     }
 
-    if ( dst_ref && r->type()->wildcard() ) {
+    if ( dst_ref ) {
         // Null coerces into all reference types.
         setResult(std::make_shared<constant::Reference>(dst_ref));
         return;
@@ -91,6 +91,14 @@ void ConstantCoercer::visit(constant::Reference* r)
     if ( dst_bool ) {
         // The only possible constant is null, and that's false.
         auto c = new constant::Bool(false, r->location());
+        setResult(shared_ptr<Constant>(c));
+    }
+
+    auto dst_caddr = ast::as<type::CAddr>(arg1());
+
+    if ( dst_caddr ) {
+        // Null also coerces into a null pointer.
+        auto c = new constant::CAddr(r->location());
         setResult(shared_ptr<Constant>(c));
     }
 }

@@ -6,5 +6,6 @@ add_library (ast OBJECT
     meta-info.cc
     node.cc
     type.cc
+    visitor.cc
 )
 

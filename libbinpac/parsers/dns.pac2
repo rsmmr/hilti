@@ -107,8 +107,15 @@ type Label = unit(msg: Message, name: Name) {
 
         3 ->    ptr: Pointer(msg, self) &parse(self.input()) {
                     name.labels += self.ptr.name.labels;
-                    self.set_position(self.input() + 2); # Consume the pointer.
+                    self.adjust = 2; # Consume the additional byte in %done.
                     }
-        };
+    };
+
+    on %done {
+        if ( self.adjust > 0 )
+            self.set_position(self.input() + self.adjust);
+    }
+
+    var adjust: uint<64> = 0;
 };
 

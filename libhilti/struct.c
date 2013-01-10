@@ -63,6 +63,8 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
 
     hlt_type_info** types = (hlt_type_info**) &type->type_params;
 
+    int printed = 0;
+
     for ( int i = 0; i < type->num_params; i++ ) {
 
         if ( array[i].field[0] && array[i].field[1] &&
@@ -70,7 +72,7 @@ hlt_string hlt_struct_to_string(const hlt_type_info* type, void* obj, int32_t op
             // Don't print internal names.
             continue;
 
-        if ( i >  0 ) {
+        if ( printed++ >  0 ) {
             GC_CCTOR(separator, hlt_string)
             s = hlt_string_concat_and_unref(s, separator, excpt, ctx);
         }

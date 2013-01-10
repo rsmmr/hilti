@@ -63,7 +63,7 @@ on RequestLine::version %debug {
 type ReplyLine = unit {
     version: Version;
     :        WhiteSpace;
-    status:  Integer &convert=dec_to_uint;
+    status:  Integer &convert=dec_to_uint($$);
     :        OptionalWhiteSpace;
     reason:  RestOfLine;
     :        NewLine;
@@ -115,7 +115,7 @@ const HeaderName  = /[^:\r\n]+/;
 const HeaderValue = /[^\r\n]*/;
 
 type Header = unit(msg: Message) {
-    name:    HeaderName &convert=to_lower;
+    name:    HeaderName &convert=to_lower($$);
     :        /:[\t ]*/;
     content: HeaderValue;
     :        NewLine;
@@ -166,7 +166,7 @@ type Chunks = unit(body: Body, msg: Message) {
 };
 
 type Chunk = unit(body: Body) {
-    length:    HexInteger &convert=hex_to_uint;
+    length:    HexInteger &convert=hex_to_uint($$);
     :          OptionalWhiteSpace;
     extension: RestOfLine;
     :          NewLine;
@@ -175,8 +175,8 @@ type Chunk = unit(body: Body) {
 };
 
 # These are implemented in libhilti.
-import int64 Hilti::bytes_to_int(b: bytes, base: uint64);
-import bytes Hilti::bytes_to_lower(b: bytes);
+import "HILTI-C" int64 Hilti::bytes_to_int(b: bytes, base: uint64);
+import "HILTI-C" bytes Hilti::bytes_to_lower(b: bytes);
 
 # These will eventually move into libbinpac.
 bytes to_lower(b: bytes)

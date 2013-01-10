@@ -97,7 +97,9 @@ void CodeBuilder::visit(declaration::Type* t)
     auto id = cg()->hiltiID(t->id());
     auto type = unit ? cg()->hiltiTypeParseObject(unit) : cg()->hiltiType(t->type());
 
-    cg()->moduleBuilder()->addType(id, type, false, t->location());
+    // If the ID is already declared, we assume it's equivalent.
+    if ( ! (int)cg()->moduleBuilder()->declared(id) )
+        cg()->moduleBuilder()->addType(id, type, false, t->location());
 
     // If this is an exported unit type, generate the parsing functions for
     // it.
@@ -120,7 +122,7 @@ void CodeBuilder::visit(declaration::Variable* v)
 
     if ( local ) {
         auto local = cg()->moduleBuilder()->addLocal(id, type, nullptr, nullptr, v->location());
-        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true);
+        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true, false);
 
         if ( hltinit )
             cg()->builder()->addInstruction(local, hilti::instruction::operator_::Assign, hltinit);
@@ -130,7 +132,7 @@ void CodeBuilder::visit(declaration::Variable* v)
         auto global = cg()->moduleBuilder()->addGlobal(id, type, nullptr, nullptr, v->location());
         cg()->moduleBuilder()->pushModuleInit();
 
-        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true);
+        auto hltinit = var->init() ? cg()->hiltiExpression(var->init()) : cg()->hiltiDefault(var->type(), true, false);
 
         if ( hltinit )
             cg()->builder()->addInstruction(global, hilti::instruction::operator_::Assign, hltinit);
@@ -179,7 +181,7 @@ void CodeBuilder::visit(expression::Ctor* c)
 
 void CodeBuilder::visit(expression::Default* c)
 {
-    auto result = cg()->hiltiDefault(c->type());
+    auto result = cg()->hiltiDefault(c->type(), false, false);
     setResult(result);
 }
 

@@ -111,6 +111,11 @@ public:
         p << " # " << string(*meta);
     }
 
+protected:
+    void printDebug(shared_ptr<NodeBase> node) override {
+        // No debug printing as they would recurse.
+    }
+
 private:
     template<typename AI> friend Printer<AI>& operator<<(Printer<AI>& p, Printer<AI>& (*pf)(Printer<AI>&p));
     template<typename AI> friend Printer<AI>& operator<<(Printer<AI>& p, std::ostream& (*pf)(std::ostream&));

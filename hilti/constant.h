@@ -140,6 +140,22 @@ private:
    node_ptr<Type> _type;
 };
 
+/// AST node for a constant of type \c caddr. This can be only \c null (which
+/// technically is a references but coerces into this).
+class CAddr : public Constant
+{
+public:
+   /// Constructor. This creates a \c null constant.
+   ///
+   /// l: An associated location.
+   CAddr(const Location& l=Location::None);
+
+   /// Returns the type of the constant.
+   shared_ptr<Type> type() const override;
+
+   ACCEPT_VISITOR(Constant);
+};
+
 /// AST node for a constant of type Tuple.
 class Tuple : public Constant
 {

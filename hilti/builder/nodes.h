@@ -56,6 +56,17 @@ inline shared_ptr<hilti::type::Void> type(const Location& l=Location::None) {
 
 namespace caddr {
 
+/// Instantiates an AST expression node representing a caddr null value.
+///
+/// l: Location associated with the type.
+///
+/// Returns: The expression node.
+inline shared_ptr<hilti::expression::Constant> create(const Location& l=Location::None)
+{
+    auto c = std::make_shared<constant::CAddr>(l);
+    return std::make_shared<hilti::expression::Constant>(c, l);
+}
+
 /// Instantiates a type::Void type.
 ///
 /// l: Location associated with the type.

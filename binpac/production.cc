@@ -249,6 +249,24 @@ bool NonTerminal::atomic() const
     return false;
 }
 
+bool NonTerminal::nullable() const
+{
+    if ( rhss().size() )
+        return true;
+
+    for ( auto r : rhss() ) {
+        for ( auto s : r ) {
+            if ( ! s->nullable() )
+                goto next;
+        }
+        return true;
+next:
+        continue;
+    }
+
+    return false;
+}
+
 ChildGrammar::ChildGrammar(const string& symbol, shared_ptr<Production> child, shared_ptr<type::Unit> type, const Location& l)
     : NonTerminal(symbol, type, l)
 {

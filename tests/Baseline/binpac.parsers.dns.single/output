@@ -1,0 +1,9 @@
+<id=13928, qdcount=1, ancount=2, nscount=2, arcount=0>
+
+[<qname=<labels=[www, joelonsoftware, com, ]>, qtype=1, qclass=1>]
+
+[<name=<labels=[www, joelonsoftware, com, ]>, ty=CNAME, class=1, ttl=2187, rdlen=2, labels=<labels=[joelonsoftware, com, ]>, a=(not set), mx=(not set), soa=(not set), rdata=(not set)>, <name=<labels=[joelonsoftware, com, ]>, ty=A, class=1, ttl=2188, rdlen=4, labels=(not set), a=64.34.80.173, mx=(not set), soa=(not set), rdata=(not set)>]
+
+[<name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=16, labels=<labels=[dns3, fogcreek, com, ]>, a=(not set), mx=(not set), soa=(not set), rdata=(not set)>, <name=<labels=[joelonsoftware, com, ]>, ty=NS, class=1, ttl=2188, rdlen=7, labels=<labels=[dns5, fogcreek, com, ]>, a=(not set), mx=(not set), soa=(not set), rdata=(not set)>]
+
+[]

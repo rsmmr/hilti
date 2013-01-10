@@ -1,10 +1,7 @@
-# $Id$
 #
-# @TEST-EXEC:  cat %DIR/single.dat | pac-driver-test %INPUT -- -p DNS::Message >output  parsers/dns.pac2
-# TEST-EXEC:  cat %DIR/single.dat | pac-driver-test -i 1 -- -p DNS::Message >output-incremental
-
+# @TEST-EXEC:  cat %DIR/single.dat | pac-driver-test %INPUT ${PARSERS}/dns.pac2 -- -p DNS::Message >output
 # @TEST-EXEC:  btest-diff output
-# @TEST-EXEC:  diff -q output output-incremental
+#
 
 module Test;
 

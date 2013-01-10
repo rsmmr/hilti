@@ -19,6 +19,11 @@ struct TypeInfo {
     /// The default HILTI value for instances of this type that aren't
     /// explicitly initialized. If null, we use HILTI's default for the type.
     shared_ptr<hilti::Expression> hilti_default = nullptr;
+
+    /// If true, instances of this value will always be intialized with \a
+    /// hilti_default even if we could leave an instance unset (like in a
+    /// union). That's typically useful for containters.
+    bool always_initialize = false;
     };
 
 /// Visitor that returns the HILTI type that corresponds to a BinPAC type.
@@ -48,8 +53,12 @@ public:
     /// null_on_default: If true, returns null if the type uses the HILTI
     /// default as its default.
     ///
+    /// can_be_unset: If true, the method can return null to indicate that a
+    /// value should be left unset by default. If false, there will always a
+    /// value returned (unless \a null_on_default is set).
+    ///
     /// Returns: The HILTI value, or null for HILTI's default.
-    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default);
+    shared_ptr<hilti::Expression> hiltiDefault(shared_ptr<Type> type, bool null_on_default, bool can_be_unset);
 
 protected:
     void visit(type::Address* a) override;

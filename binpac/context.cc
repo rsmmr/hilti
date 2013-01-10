@@ -77,6 +77,29 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
     return driver.parse(this, in, sname);
 }
 
+static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast::Logger& before)
+{
+    if ( ctx->debugging("dump-ast") ) {
+        std::cerr << std::endl
+            << "===" << std::endl
+            << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
+            << "===" << std::endl
+            << std::endl;
+
+        ctx->dump(module, std::cerr);
+    }
+
+    if ( ctx->debugging("print-ast") ) {
+        std::cerr << std::endl
+            << "===" << std::endl
+            << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
+            << "===" << std::endl
+            << std::endl;
+
+        ctx->print(module, std::cerr);
+    }
+}
+
 bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
 {
     // Just a double-check ...
@@ -94,33 +117,54 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     passes::UnitScopeBuilder unit_scope_builder;
     passes::Validator        validator;
 
+    _debugAST(this, module, scope_builder);
+
     if ( ! scope_builder.run(module) )
         return false;
 
     if ( debugging("scopes") )
         scope_printer.run(module);
 
+    _debugAST(this, module, id_resolver);
+
     if ( ! id_resolver.run(module, false) )
         return false;
+
+    _debugAST(this, module, unit_scope_builder);
 
     if ( ! unit_scope_builder.run(module) )
         return false;
 
+    _debugAST(this, module, id_resolver);
+
     if ( ! id_resolver.run(module, true) )
         return false;
 
+    _debugAST(this, module, overload_resolver);
+
     if ( ! overload_resolver.run(module) )
         return false;
+
+    _debugAST(this, module, op_resolver);
 
     if ( ! op_resolver.run(module) )
         return false;
 
     // The operators may have some unresolved types, too.
+    _debugAST(this, module, id_resolver);
     if ( ! id_resolver.run(module, true) )
         return false;
 
-    if ( verify && ! validator.run(module) )
-        return false;
+    _debugAST(this, module, validator);
+
+    if ( verify ) {
+        _debugAST(this, module, validator);
+
+        if ( ! validator.run(module) )
+            return false;
+    }
+
+    _debugAST(this, module, normalizer);
 
     if ( ! normalizer.run(module) )
         return false;
@@ -128,11 +172,17 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( debugging("grammars") )
         grammar_builder.enableDebug();
 
+    _debugAST(this, module, grammar_builder);
+
     if ( ! grammar_builder.run(module) )
         return false;
 
-    if ( verify && ! validator.run(module) )
-        return false;
+    if ( verify ) {
+        _debugAST(this, module, validator);
+
+        if ( ! validator.run(module) )
+            return false;
+    }
 
     return true;
 }
@@ -180,7 +230,7 @@ bool CompilerContext::enableDebug(std::set<string>& labels)
 
 std::list<string> CompilerContext::debugStreams()
 {
-    return { "grammars", "parser", "scanner", "scopes" };
+    return { "grammars", "parser", "scanner", "scopes", "dump-ast", "print-ast", "visitors" };
 }
 
 bool CompilerContext::validDebugStream(const string& label)

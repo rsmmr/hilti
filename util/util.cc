@@ -269,7 +269,7 @@ string util::escapeUTF8(const string& s)
             esc += "\\n";
 
         else if ( cp == '\r' )
-            esc += "\\t";
+            esc += "\\r";
 
         else if ( cp == '\t' )
             esc += "\\t";
@@ -307,7 +307,7 @@ string util::escapeBytes(const string& s)
             esc += "\\n";
 
         else if ( *p == '\r' )
-            esc += "\\t";
+            esc += "\\r";
 
         else if ( *p == '\t' )
             esc += "\\t";

@@ -345,6 +345,7 @@ public:
 
 protected:
     bool atomic() const override;
+    bool nullable() const override;
 };
 
 /// A type described by another grammar from an independent type::Unit type.

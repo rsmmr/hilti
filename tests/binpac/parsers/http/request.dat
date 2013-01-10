@@ -1,0 +1,5 @@
+GET / HTTP/1.1
+User-Agent: curl/7.19.7 (universal-apple-darwin10.0) libcurl/7.19.7 OpenSSL/0.9.8l zlib/1.2.3
+Host: www.icir.org
+Accept: */*
+

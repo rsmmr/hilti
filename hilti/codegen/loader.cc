@@ -181,6 +181,12 @@ void Loader::visit(constant::Bool* b)
     setResult(val, false, false);
 }
 
+void Loader::visit(constant::CAddr* b)
+{
+    auto val = cg()->llvmConstNull(cg()->llvmTypePtr());
+    setResult(val, false, false);
+}
+
 void Loader::visit(constant::Label* l)
 {
     auto b = cg()->builderForLabel(l->value());

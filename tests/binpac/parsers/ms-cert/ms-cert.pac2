@@ -1,14 +1,13 @@
 #
-# @TEST-EXEC:  cat %DIR/data.ms-root-certs.sst | HILTI_DEBUG=binpac pac-driver-test %INPUT >output  -I ${PARSERS} ${PARSERS}/ms-cert.pac2    
+# @TEST-EXEC:  cat %DIR/data.ms-root-certs.sst | pac-driver-test %INPUT ${PARSERS}/ms-cert.pac2 >output
 # @TEST-EXEC:  btest-diff output
-# @TEST-EXEC:  btest-diff hlt-debug.log
 #
 
 module PrintCerts;
 
 import BinPAC;
 
-import ms-cert;
+import parsers/ms-cert;
 
 on MSCerts::SerializedCertificateEntry::certificate
 {

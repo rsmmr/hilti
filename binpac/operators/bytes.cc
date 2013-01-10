@@ -67,7 +67,7 @@ opBegin(bytes::Match : MethodCall)
     }
 
     opResult() {
-        return std::make_shared<type::Integer>(64, false);
+        return std::make_shared<type::Bytes>();
     }
 opEnd
 
