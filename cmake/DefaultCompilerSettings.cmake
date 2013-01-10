@@ -12,7 +12,8 @@ set(clang_cflags_Linux               "-lcxxrt -ldl") # FIXME: Why does not work 
 set(clang_ldflags_Linux              "")
 set(clang_shared_linker_flags_Linux  "")
 
-set(clang_cflags_Darwin              "-DDARWIN")
+ # On Mac force the triple, as OS and custom clang sometimes disagree.
+set(clang_cflags_Darwin              "-DDARWIN -Xclang -triple -Xclang ${LLVM_TRIPLE}")
 set(clang_ldflags_Darwin             "")
 set(clang_shared_linker_flags_Darwin "-undefined dynamic_lookup") # Don't warn about undefined symbols.
 

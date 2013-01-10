@@ -5,6 +5,7 @@
 # [Robin] Removed messages outputting the variables; added that to EnableLLVM.cmake instead.
 # [Robin] Removed llvm-gcc/g++ stuff.
 # [Robin] General cleanup, and renamed some of the output variables.
+# [Robin] Added LLVM_TRIPLE.
 #
 # NOTE: This is a modified version of the module originally found in the OpenGTL project
 # at www.opengtl.org
@@ -23,6 +24,8 @@
 # LLVM_CONFIG_EXEC  Path of the llvm-config executable.
 # LLVM_CLANG_EXEC   Path of the clang executable.
 # LLVM_CLANGXX_EXEC Path of the clang++ executable.
+#
+# LLVM_TRIPLE       Triple used to configure LLVM.
 #
 # [Disabled for now. -Robin] LLVM_LIBS_JIT : ldflags needed to link against a LLVM JIT
 # [Disabled for now. -Robin] LLVM_LIBS_JIT_OBJECTS : objects you need to add to your source when using LLVM JIT
@@ -84,6 +87,8 @@ else ()
   exec_program(${LLVM_CONFIG_EXEC} ARGS --cflags     OUTPUT_VARIABLE LLVM_CFLAGS )
   exec_program(${LLVM_CONFIG_EXEC} ARGS --cxxflags   OUTPUT_VARIABLE LLVM_CXXFLAGS )
   exec_program(${LLVM_CONFIG_EXEC} ARGS --ldflags    OUTPUT_VARIABLE LLVM_LDFLAGS )
+
+  exec_program(${LLVM_CONFIG_EXEC} ARGS --host-target OUTPUT_VARIABLE LLVM_TRIPLE)
 
   # llvm-config includes stuff we don't want.
   set(cflags_to_remove "-fno-exceptions" "-O." "-fomit-frame-pointer" "-stdlib=libc\\+\\+" "-D_DEBUG")

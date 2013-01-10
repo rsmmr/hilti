@@ -9,6 +9,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=unused-function -Werror -fno-colo
 
 IF( APPLE )
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDARWIN")
+    # On Mac force the triple, as OS and custom clang sometimes disagree.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -triple -Xclang ${LLVM_TRIPLE}")
 ENDIF(APPLE)
 
 # These are used below in set_target_properties.
