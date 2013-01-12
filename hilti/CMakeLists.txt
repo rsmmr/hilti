@@ -235,4 +235,5 @@ ADD_DEPENDENCIES(hilti generate_parser_hilti)
 target_link_libraries(hilti ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
 add_library (hilti-jit STATIC jit/libhilti-jit.cc)
+ADD_DEPENDENCIES(hilti-jit hilti)
 
