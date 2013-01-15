@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+#
+# Strips out ANSI escape codes.
+
+sed "s:\x1B\[[0-9;]*[mK]::g"

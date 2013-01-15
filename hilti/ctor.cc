@@ -6,6 +6,11 @@
 
 using namespace hilti;
 
+std::list<shared_ptr<hilti::Expression>> Ctor::flatten()
+{
+    return {};
+}
+
 shared_ptr<Type> ctor::Bytes::type() const
 {
     auto b = shared_ptr<type::Bytes>(new type::Bytes(location()));
@@ -26,6 +31,16 @@ ctor::List::List(shared_ptr<Type> etype, const element_list& elems, const Locati
     addChild(_type);
 }
 
+std::list<shared_ptr<hilti::Expression>> ctor::List::flatten()
+{
+    std::list<shared_ptr<hilti::Expression>> l;
+
+    for ( auto e : _elems )
+        l.merge(e->flatten());
+
+    return l;
+}
+
 ctor::Vector::Vector(shared_ptr<Type> etype, const element_list& elems, const Location& l) : Ctor(l)
 {
     assert(etype);
@@ -40,6 +55,16 @@ ctor::Vector::Vector(shared_ptr<Type> etype, const element_list& elems, const Lo
     addChild(_type);
 }
 
+std::list<shared_ptr<hilti::Expression>> ctor::Vector::flatten()
+{
+    std::list<shared_ptr<hilti::Expression>> l;
+
+    for ( auto e : _elems )
+        l.merge(e->flatten());
+
+    return l;
+}
+
 ctor::Set::Set(shared_ptr<Type> etype, const element_list& elems, const Location& l) : Ctor(l)
 {
     assert(etype);
@@ -52,6 +77,16 @@ ctor::Set::Set(shared_ptr<Type> etype, const element_list& elems, const Location
         addChild(e);
 
     addChild(_type);
+}
+
+std::list<shared_ptr<hilti::Expression>> ctor::Set::flatten()
+{
+    std::list<shared_ptr<hilti::Expression>> l;
+
+    for ( auto e : _elems )
+        l.merge(e->flatten());
+
+    return l;
 }
 
 ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_list& elems, const Location& l) : Ctor(l)
@@ -69,6 +104,19 @@ ctor::Map::Map(shared_ptr<Type> ktype, shared_ptr<Type> vtype, const element_lis
     }
 
     addChild(_type);
+}
+
+std::list<shared_ptr<hilti::Expression>> ctor::Map::flatten()
+{
+    std::list<shared_ptr<hilti::Expression>> l;
+
+    for ( auto e : _elems ) {
+        l.merge(e.first->flatten());
+        l.merge(e.second->flatten());
+    }
+
+    return l;
+
 }
 
 ctor::RegExp::RegExp(const pattern_list& patterns, const Location& l)

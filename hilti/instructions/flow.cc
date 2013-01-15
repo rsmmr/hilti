@@ -15,6 +15,10 @@ iBeginCC(flow)
         }
     }
 
+    iSuccessorsCC(ReturnResult) {
+        return std::set<shared_ptr<Expression>>();
+    }
+
     iDocCC(ReturnResult, "")
 iEndCC
 
@@ -22,11 +26,19 @@ iBeginCC(flow)
     iValidateCC(ReturnVoid) {
     }
 
+    iSuccessorsCC(ReturnVoid) {
+        return std::set<shared_ptr<Expression>>();
+    }
+
     iDocCC(ReturnVoid, "")
 iEndCC
 
 iBeginCC(flow)
     iValidateCC(BlockEnd) {
+    }
+
+    iSuccessorsCC(BlockEnd) {
+        return std::set<shared_ptr<Expression>>();
     }
 
     iDocCC(BlockEnd, "Internal instruction marking the end of a block that doesn't have any other terminator.")
@@ -108,6 +120,10 @@ iBeginCC(flow)
     iValidateCC(IfElse) {
     }
 
+    iSuccessorsCC(IfElse) {
+        return { op2, op3 };
+    }
+
     iDocCC(IfElse, R"(
         Transfers control label *op2* if *op1* is true, and to *op3*
         otherwise.
@@ -117,6 +133,10 @@ iEndCC
 
 iBeginCC(flow)
     iValidateCC(Jump) {
+    }
+
+    iSuccessorsCC(Jump) {
+        return { op1 };
     }
 
     iDocCC(Jump, R"(
@@ -167,6 +187,28 @@ iBeginCC(flow)
             canCoerceTo(t1, ty_op1);
             equalTypes(t2->type(), builder::label::type());
         }
+    }
+
+    iSuccessorsCC(Switch) {
+        std::set<shared_ptr<Expression>> succ = { op2 };
+
+        auto a1 = ast::as<expression::Constant>(op3);
+        auto a2 = ast::as<constant::Tuple>(a1->constant());
+
+        for ( auto i : a2->value() ) {
+            auto t = ast::as<type::Tuple>(i->type());
+            auto c1 = ast::as<expression::Constant>(i);
+            auto c2 = ast::as<constant::Tuple>(c1->constant());
+
+            auto list = c2->value();
+            auto j = list.begin();
+            auto t1 = *j++;
+            auto t2 = *j++;
+
+            succ.insert(t2);
+        }
+
+        return succ;
     }
 
     iDocCC(Switch, R"(

@@ -118,109 +118,27 @@
 
 #include "instructions/define-instruction.h"
 
-iBegin(hook, DisableGroup, "hook.disable_group")
+iBeginH(hook, DisableGroup, "hook.disable_group")
     iOp1(optype::int64, true)
+iEndH
 
-    iValidate {
-    }
-
-    iDoc(R"(    
-        Disables the hook group given by *op1* globally.
-    )")
-
-iEnd
-
-iBegin(hook, EnableGroup, "hook.enable_group")
+iBeginH(hook, EnableGroup, "hook.enable_group")
     iOp1(optype::int64, true)
+iEndH
 
-    iValidate {
-    }
-
-    iDoc(R"(    
-        Enables the hook group given by *op1* globally.
-    )")
-
-iEnd
-
-iBegin(hook, GroupEnabled, "hook.group_enabled")
+iBeginH(hook, GroupEnabled, "hook.group_enabled")
     iTarget(optype::boolean)
     iOp1(optype::int64, true)
+iEndH
 
-    iValidate {
-    }
-
-    iDoc(R"(    
-        Sets *target* to ``True`` if hook group *op1* is enabled, and to
-        *False* otherwise.
-    )")
-
-iEnd
-
-iBegin(hook, Run, "hook.run")
+iBeginH(hook, Run, "hook.run")
     iTarget(optype::optional(optype::any))
     iOp1(optype::hook, true)
     iOp2(optype::tuple, true)
+iEndH
 
-    iValidate {
-        auto htype = as<type::Hook>(op1->type());
-        auto rtype = htype->result()->type();
-        checkCallParameters(htype, op2);
-        checkCallResult(rtype, target ? target->type() : nullptr);
-    }
-
-    iDoc(R"(    
-        Executes the hook *op1* with arguments *op2*, storing the hook's
-        return value in *target*.
-    )")
-
-iEnd
-
-iBegin(hook, Stop, "hook.stop")
+iBeginH(hook, Stop, "hook.stop")
     iTerminator()
     iOp1(optype::optional(optype::any), true)
-
-    iValidate {
-        // To find out if hook.stop is used outside of a hook, we walk up the
-        // current path. If we aren't the child of an expression, the we need
-        // to find a hook declaration.
-        auto nodes = validator()->currentNodes();
-
-        shared_ptr<declaration::Hook> hook = nullptr;
-        bool ok = false;
-
-        for ( auto i = nodes.rbegin(); i != nodes.rend(); i++ ) {
-            auto n = *i;
-
-            hook = ast::tryCast<declaration::Hook>(n);
-
-            if ( hook ) {
-                ok = true;
-                break;
-            }
-
-            if ( ast::tryCast<Expression>(n) ) {
-                ok = true;
-                break;
-            }
-        }
-
-        if ( ! ok ) {
-            error(nullptr, "hook.stop must only be used inside a hook");
-            return;
-        }
-
-        if ( ! hook )
-            return;
-
-        auto htype = hook->hook()->type();
-        auto rtype = htype->result()->type();
-        checkCallResult(rtype, op1);
-    }
-
-    iDoc(R"(    
-        Stops the execution of the current hook and returns *op1* as the hooks
-        value (if one is needed).
-    )")
-
-iEnd
+iEndH
 

@@ -23,6 +23,12 @@ public:
    Ctor(const Location& l=Location::None)
        : ast::Ctor<AstInfo>(l) {}
 
+   /// Returns a fully flattened list of all atomic sub-expressions.
+   ///
+   /// Can be overridden by derived classes. The default returns just an
+   /// empty list.
+    virtual std::list<shared_ptr<hilti::Expression>> flatten();
+
    ACCEPT_VISITOR_ROOT();
 };
 
@@ -76,6 +82,8 @@ public:
    /// wildcard type.
    shared_ptr<Type> type() const { return _type; }
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
+
    ACCEPT_VISITOR(Ctor);
 
 private:
@@ -106,6 +114,8 @@ public:
    /// wildcard type.
    shared_ptr<Type> type() const { return _type; }
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
+
    ACCEPT_VISITOR(Ctor);
 
 private:
@@ -135,6 +145,8 @@ public:
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
    shared_ptr<Type> type() const { return _type; }
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
 
    ACCEPT_VISITOR(Ctor);
 
@@ -168,6 +180,8 @@ public:
    /// elements, the type will infered from those. If not, it will be a
    /// wildcard type.
    shared_ptr<Type> type() const { return _type; }
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
 
    ACCEPT_VISITOR(Ctor);
 

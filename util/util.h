@@ -224,31 +224,31 @@ std::set<A> map_values(const std::map<A, B> m)
 
 // Returns the difference of two sets. This is a convience wrapper around
 // std::set_difference.
-template<typename A>
-std::set<A> set_difference(std::set<A> a, std::set<A> b)
+template<typename A, typename Compare = std::less<A>>
+std::set<A, Compare> set_difference(std::set<A, Compare> a, std::set<A, Compare> b)
 {
-    std::set<A> r;
-    std::set_difference(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()));
+    std::set<A, Compare> r;
+    std::set_difference(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()), Compare());
     return r;
 }
 
 // Returns the intersection of two sets. This is a convience wrapper around
 // std::set_intersection.
-template<typename A>
-std::set<A> set_intersection(std::set<A> a, std::set<A> b)
+template<typename A, typename Compare = std::less<A>>
+std::set<A, Compare> set_intersection(std::set<A, Compare> a, std::set<A, Compare> b)
 {
-    std::set<A> r;
-    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()));
+    std::set<A, Compare> r;
+    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()), Compare());
     return r;
 }
 
 // Returns the union of two sets. This is a convience wrapper around
 // std::set_union.
-template<typename A>
-std::set<A> set_union(std::set<A> a, std::set<A> b)
+template<typename A, typename Compare = std::less<A>>
+std::set<A, Compare> set_union(std::set<A, Compare> a, std::set<A, Compare> b)
 {
-    std::set<A> r;
-    std::set_union(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()));
+    std::set<A, Compare> r;
+    std::set_union(a.begin(), a.end(), b.begin(), b.end(), std::inserter(r, r.end()), Compare());
     return r;
 }
 

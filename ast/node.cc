@@ -38,14 +38,55 @@ void NodeBase::addChild(node_ptr<NodeBase> node)
     node->_parents.push_back(this);
 }
 
-bool NodeBase::hasChild(node_ptr<NodeBase> node) const
+bool NodeBase::hasChildInternal(node_ptr<NodeBase> node, bool recursive, std::set<shared_ptr<NodeBase>>* done) const
 {
     for ( auto c: _childs ) {
+
+        if ( done->find(c) != done->end() )
+            continue;
+
+        done->insert(c);
+
         if ( c.get() == node.get() )
+            return true;
+
+        if ( recursive && c->hasChildInternal(node, true, done) )
             return true;
     }
 
     return false;
+}
+
+bool NodeBase::hasChild(node_ptr<NodeBase> node, bool recursive) const
+{
+    std::set<shared_ptr<NodeBase>> done;
+    return hasChildInternal(node, recursive, &done);
+}
+
+NodeBase::node_list NodeBase::childs(bool recursive) const
+{
+    if ( ! recursive )
+        return _childs;
+
+    std::set<shared_ptr<NodeBase>> childs;
+    childsInternal(this, recursive, &childs);
+
+    node_list result;
+    for ( auto c : childs )
+        result.push_back(c);
+
+    return result;
+}
+
+void NodeBase::childsInternal(const NodeBase* node, bool recursive, std::set<shared_ptr<NodeBase>>* childs) const
+{
+    for ( auto c : node->_childs ) {
+        if ( childs->find(c) != childs->end() )
+            continue;
+
+        childs->insert(c);
+        childsInternal(c.get(), recursive, childs);
+    }
 }
 
 void NodeBase::removeChild(node_ptr<NodeBase> node)
@@ -76,7 +117,7 @@ void NodeBase::replace(shared_ptr<NodeBase> n)
             if ( c.get() == this ) {
                 c = n;
                 add_parents.push_back(std::make_pair(n, p));
-                del_parents.push_back(std::make_pair(c, p));
+                // del_parents.push_back(std::make_pair(c, p));
             }
         }
     }

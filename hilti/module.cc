@@ -43,3 +43,19 @@ shared_ptr<type::Context> Module::executionContext() const
 
     return ctx;
 }
+
+shared_ptr<passes::CFG> Module::cfg() const
+{
+    return _cfg;
+}
+
+shared_ptr<passes::Liveness> Module::liveness() const
+{
+    return _liveness;
+}
+
+void Module::setPasses(shared_ptr<passes::CFG> cfg, shared_ptr<passes::Liveness> liveness)
+{
+    _cfg = cfg;
+    _liveness = liveness;
+}

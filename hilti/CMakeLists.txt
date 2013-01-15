@@ -142,6 +142,7 @@ add_library (hilti STATIC
     instructions/channel.cc
     instructions/classifier.cc
     instructions/flow.cc
+    instructions/hook.cc
     instructions/iosrc.cc
     instructions/misc.cc
     instructions/operators.cc
@@ -158,6 +159,8 @@ add_library (hilti STATIC
     passes/printer.cc
     passes/scope-builder.cc
     passes/validator.cc
+    passes/cfg.cc
+    passes/liveness.cc
 
     codegen/abi.cc
     codegen/asm-annotater.cc

@@ -6,7 +6,7 @@ candidate operators:
     address.family()
     bytes.begin()
     bytes.end()
-    bytes.match(regexp,[ uint<0> ])
+    bytes.match(regexp,[ int<0> ])
     bytes.startswith(bytes)
     interval.nsecs()
     list<<nullptr>>.push_back((type any))

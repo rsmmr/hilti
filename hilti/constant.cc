@@ -10,6 +10,11 @@
 
 using namespace hilti;
 
+std::list<shared_ptr<hilti::Expression>> Constant::flatten()
+{
+    return {};
+}
+
 static shared_ptr<Type> _tuple_type(const constant::Tuple::element_list& elems, const Location& l)
 {
     type::Tuple::type_list types;
@@ -44,6 +49,16 @@ constant::Tuple::element_list constant::Tuple::value() const
 
     for ( auto e : _elems )
         l.push_back(e);
+
+    return l;
+}
+
+std::list<shared_ptr<hilti::Expression>> constant::Tuple::flatten()
+{
+    std::list<shared_ptr<hilti::Expression>> l;
+
+    for ( auto e : _elems )
+        l.merge(e->flatten());
 
     return l;
 }

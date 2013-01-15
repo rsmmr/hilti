@@ -87,13 +87,17 @@ public:
     /// before their childs.
     ///
     /// node: The node where to start visiting.
-    bool processAllPreOrder(shared_ptr<NodeBase> node);
+    ///
+    /// reverse: If true, visits siblings in reverse order.
+    bool processAllPreOrder(shared_ptr<NodeBase> node, bool reverse = false);
 
     /// Processes all child nodes pre-order, i.e., parent nodes are visited
     /// after their childs.
     ///
     /// node: The node where to start visiting.
-    bool processAllPostOrder(shared_ptr<NodeBase> node);
+    ///
+    /// reverse: If true, visits siblings in reverse order.
+    bool processAllPostOrder(shared_ptr<NodeBase> node, bool reverse = false);
 
     /// Visits just a single node. The methods doesn't recurse any further,
     /// although the individual visit methods can manually do so by invoking
@@ -386,8 +390,8 @@ protected:
        Logger::reset();
     }
 
-    void preOrder(shared_ptr<NodeBase> node);
-    void postOrder(shared_ptr<NodeBase> node);
+    void preOrder(shared_ptr<NodeBase> node, bool reverse = false);
+    void postOrder(shared_ptr<NodeBase> node, bool reverse = false);
 
     // Prints the debug output for the current visit() call.
     virtual void printDebug(shared_ptr<NodeBase> node) {
@@ -470,12 +474,12 @@ private:
 };
 
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
-inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processAllPreOrder(shared_ptr<NodeBase> node)
+inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processAllPreOrder(shared_ptr<NodeBase> node, bool reverse)
 {
     reset();
 
     try {
-        preOrder(node);
+        preOrder(node, reverse);
         return (errors() == 0);
     }
 
@@ -486,12 +490,12 @@ inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processAllPreOrder(shared_ptr<
 }
 
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
-inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processAllPostOrder(shared_ptr<NodeBase> node)
+inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processAllPostOrder(shared_ptr<NodeBase> node, bool reverse)
 {
     reset();
 
     try {
-        postOrder(node);
+        postOrder(node, reverse);
         return (errors() == 0);
     }
 
@@ -571,7 +575,7 @@ inline bool Visitor<AstInfo, Result, Arg1, Arg2>::processOneInternal(shared_ptr<
 }
 
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
-inline void Visitor<AstInfo, Result, Arg1, Arg2>::preOrder(shared_ptr<NodeBase> node)
+inline void Visitor<AstInfo, Result, Arg1, Arg2>::preOrder(shared_ptr<NodeBase> node, bool reverse)
 {
     if ( _visited.find(node) != _visited.end() )
         // Done already.
@@ -583,14 +587,21 @@ inline void Visitor<AstInfo, Result, Arg1, Arg2>::preOrder(shared_ptr<NodeBase> 
     this->printDebug(node);
     this->callAccept(node);
 
-    for ( auto i : *node )
-        this->preOrder(i);
+    if ( ! reverse ) {
+        for ( auto i = node->begin(); i != node->end(); i++ )
+            this->preOrder(*i);
+    }
+
+    else {
+        for ( auto i = node->rbegin(); i != node->rend(); i++ )
+            this->preOrder(*i);
+    }
 
     popCurrent();
 }
 
 template<typename AstInfo, typename Result, typename Arg1, typename Arg2>
-inline void Visitor<AstInfo, Result, Arg1, Arg2>::postOrder(shared_ptr<NodeBase> node)
+inline void Visitor<AstInfo, Result, Arg1, Arg2>::postOrder(shared_ptr<NodeBase> node, bool reverse)
 {
     if ( _visited.find(node) != _visited.end() )
         // Done already.
@@ -600,8 +611,15 @@ inline void Visitor<AstInfo, Result, Arg1, Arg2>::postOrder(shared_ptr<NodeBase>
 
     pushCurrent(node);
 
-    for ( auto i : *node )
-        this->postOrder(i);
+    if ( ! reverse ) {
+        for ( auto i = node->begin(); i != node->end(); i++ )
+            this->postOrder(*i);
+    }
+
+    else {
+        for ( auto i = node->rbegin(); i != node->rend(); i++ )
+            this->postOrder(*i);
+    }
 
     this->printDebug(node);
     this->callAccept(node);

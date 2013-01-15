@@ -473,6 +473,59 @@ Instruction::Info Instruction::info() const
     return info;
 }
 
+std::set<shared_ptr<statement::Block>> Instruction::successors(const hilti::instruction::Operands& ops, shared_ptr<Scope> scope) const
+{
+    auto exprs = __successors(ops);
+
+    // Resolve expressions into blocks.
+    std::set<shared_ptr<statement::Block>> succ;
+
+    for ( auto e : exprs ) {
+        // This can be a block expression or a label. In the latter case, we
+        // look it up in the scope we got.
+
+        shared_ptr<Expression> expr = nullptr;
+
+        auto c = ast::tryCast<expression::Constant>(e);
+
+        if ( c ) {
+            auto l = ast::checkedCast<constant::Label>(c->constant());
+            auto exprs = scope->lookup(std::make_shared<ID>(l->value()));
+            assert(exprs.size() == 1);
+            expr = exprs.front();
+        }
+
+        else
+            expr = e;
+
+        auto s = ast::checkedCast<expression::Block>(expr);
+        succ.insert(s->block());
+    }
+
+    return succ;
+}
+
+std::pair<shared_ptr<Type>, bool> Instruction::typeOperand(int n) const
+{
+    switch ( n ) {
+     case 1:
+        return std::make_pair(__typeOp1(), false);
+
+     case 2:
+        return std::make_pair(__typeOp2(), false);
+
+     case 3:
+        return std::make_pair(__typeOp3(), false);
+
+    }
+    return std::make_pair(nullptr, false);
+}
+
+shared_ptr<Type> Instruction::typeTarget() const
+{
+    return __typeOp0();
+}
+
 shared_ptr<statement::instruction::Resolved> InstructionRegistry::resolveStatement(shared_ptr<Instruction> instr, shared_ptr<statement::Instruction> stmt)
 {
     auto resolved = resolveStatement(instr, stmt->operands(), stmt->location());

@@ -1,0 +1,81 @@
+module Main
+
+import Hilti
+
+void run()
+{
+
+  local ref<list<int<32>>> l
+  local string s
+  local string addl
+  
+  
+      # pred: { <none> } succ: { [0026] }
+      # def: { run%l } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { run%l }
+      [0025] l = assign list<int<32>>(1, 2, 3, 4, 5)
+      # pred: { [0025] } succ: { [0016] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { run%l } live-out: { run%l }
+      [0026] call Hilti::print ("A", True)
+      # pred: { [0026], [0039] } succ: { [0015], [0029] }
+      # def: { run%s } clear: { run%s, x } mod: { <none> } read: { run%l }
+      # live-in: { run%l } live-out: { run%l }
+      [0016] for ( x in l ) {
+    
+      
+          # pred: { [0016], [0037] } succ: { [0027], [0038] }
+          # def: { run%s } clear: { run%s, y } mod: { x } read: { run%l }
+          # live-in: { run%l, x } live-out: { run%l, x }
+          [0015] for ( y in l ) {
+        
+          
+              # pred: { [0015] } succ: { [0028] }
+              # def: { run%s } clear: { <none> } mod: { x, y } read: { <none> }
+              # live-in: { run%l, x, y } live-out: { run%l, run%s, x }
+              [0027] s = call Hilti::fmt ("%d %d", (x, y))
+              # pred: { [0027] } succ: { [0036] }
+              # def: { <none> } clear: { <none> } mod: { run%s } read: { <none> }
+              # live-in: { run%l, run%s, x } live-out: { run%l, x }
+              [0028] call Hilti::print (s)
+              # pred: { [0028] } succ: { [0037] }
+              # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+              # live-in: { run%l, x } live-out: { run%l, x }
+              [0036] block.end
+          
+            # pred: { [0036] } succ: { [0015] }
+            # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+            # live-in: { run%l, x } live-out: { run%l, x }
+            [0037] block.end
+        }
+        
+        
+          # pred: { [0015] } succ: { [0039] }
+          # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+          # live-in: { run%l } live-out: { run%l }
+          [0038] block.end
+      
+        # pred: { [0038] } succ: { [0016] }
+        # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+        # live-in: { run%l } live-out: { run%l }
+        [0039] block.end
+    }
+    
+    
+      # pred: { [0016] } succ: { [0030] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      [0029] call Hilti::print ("B", True)
+      # pred: { [0029] } succ: { <none> }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      [0030] return.void
+  
+}
+
+
+
+  # pred: { <none> } succ: { <none> }
+  # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+  # live-in: { <none> } live-out: { <none> }
+  [0040] block.end

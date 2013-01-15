@@ -1,0 +1,29 @@
+module Main
+
+import Hilti
+
+void run()
+{
+
+  
+      # pred: { <none> } succ: { [0018] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      [0014] call Hilti::print ("Hello, World!", True)
+      # pred: { [0014] } succ: { [0019] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      [0018] block.end
+  
+    # pred: { [0018] } succ: { <none> }
+    # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+    # live-in: { <none> } live-out: { <none> }
+    [0019] block.end
+}
+
+
+
+  # pred: { <none> } succ: { <none> }
+  # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+  # live-in: { <none> } live-out: { <none> }
+  [0020] block.end

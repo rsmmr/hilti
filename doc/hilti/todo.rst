@@ -28,12 +28,6 @@ AST Infrastructure
 * BinPAC doesn't use the coercer anymore and HILTI shouldn't either,
   or better: we should reorg it so that both can use it again.
 
-HILTI Instruction Set
----------------------
-
-- the ``struct`` commands should take normal IDs, rather than strings,
-  for field names.
-
 C/C++ Code
 ----------
 
@@ -83,6 +77,11 @@ Instruction Set
 
 - callables and hooks aren't integrated into the context/scope scheme
   yet.
+
+- the ``struct`` commands should take normal IDs, rather than strings,
+  for field names.
+
+- the "const" markers for instructions arguments aren't used/propagated.
 
 Optimizations
 -------------
@@ -137,6 +136,11 @@ HILTI Level
   In addition, this analysis could also be used to generally better
   use variables once we figured out that their old values won't be
   used anymore. 
+
+- We should add information to instructions which exception they can
+  throw. That can simply the CFG quite a bit by removing lots of
+  edges we have to add now to account for the fact that all we can say
+  is that every instruction may throw any exception.
 
 LLVM Level
 ~~~~~~~~~~

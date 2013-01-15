@@ -30,6 +30,7 @@ public:
 protected:
    void visit(statement::instruction::Unresolved* i) override;
    void visit(statement::instruction::Resolved* i) override;
+   void visit(statement::Block *s) override;
 
 private:
    void processInstruction(shared_ptr<statement::Instruction> instr, shared_ptr<ID> id);

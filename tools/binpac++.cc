@@ -13,6 +13,7 @@ const char* Name = "binpac";
 
 int  debug = 0;
 bool dump_ast = false;
+bool cfg = false;
 bool verify = true;
 bool resolve = true;
 bool output_binpac = false;
@@ -32,6 +33,7 @@ static struct option long_options[] = {
     { "help",    no_argument, 0, 'h' },
     { "print",   no_argument, 0, 'p' },
     { "print-always",   no_argument, 0, 'W' },
+    { "cfg",   no_argument, 0, 'c' },
     { "prototypes", no_argument, 0, 'P' },
     { "output",  required_argument, 0, 'o' },
     { "version", no_argument, 0, 'v' },
@@ -51,6 +53,7 @@ void usage()
             "Options:\n"
             "\n"
             "  -A | --ast            Dump intermediary ASTs to stderr.\n"
+            "  -c | --cfg            When outputting HILTI code, include control/data flow information.\n"
             "  -d | --debug          Debug level for the generated code. Each time increases level. [Default: 0]\n"
             "  -D | --cgdebug <type> Debug output during code generation; type can be " << dbgstr << ".\n"
             "  -h | --help           Print usage information.\n"
@@ -82,7 +85,7 @@ void error(const string& file, const string& msg)
 int main(int argc, char** argv)
 {
     while ( true ) {
-        int c = getopt_long(argc, argv, "AdD:o:nO:WlspI:vh", long_options, 0);
+        int c = getopt_long(argc, argv, "AcdD:o:nO:WlspI:vh", long_options, 0);
 
         if ( c < 0 )
             break;
@@ -90,6 +93,10 @@ int main(int argc, char** argv)
         switch (c) {
          case 'A':
             dump_ast = true;
+            break;
+
+         case 'c':
+            cfg = true;
             break;
 
          case 'd':
@@ -222,7 +229,7 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    if ( ! ctx->hiltiContext()->print(hilti_module, out) ) {
+    if ( ! ctx->hiltiContext()->print(hilti_module, out, cfg) ) {
         error(input, "Aborting due to HILTI printer error.");
         return 1;
     }

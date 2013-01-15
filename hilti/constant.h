@@ -25,6 +25,12 @@ public:
    Constant(const Location& l=Location::None)
        : ast::Constant<AstInfo>(l) {}
 
+   /// Returns a fully flattened list of all atomic sub-expressions.
+   ///
+   /// Can be overridden by derived classes. The default returns just an
+   /// empty list.
+   virtual std::list<shared_ptr<hilti::Expression>> flatten();
+
    ACCEPT_VISITOR_ROOT();
 };
 
@@ -174,6 +180,8 @@ public:
 
    /// Returns the type of the constant.
    shared_ptr<Type> type() const override;
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
 
    ACCEPT_VISITOR(Constant);
 

@@ -9,5 +9,7 @@
 #include "validator.h"
 #include "collector.h"
 #include "block-normalizer.h"
+#include "cfg.h"
+#include "liveness.h"
 
 #endif

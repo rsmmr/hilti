@@ -7,14 +7,105 @@ using namespace hilti;
 using namespace hilti::passes;
 using namespace ast::passes::printer; // For 'endl'.
 
-Printer::Printer(std::ostream& out, bool single_line)
+static string _statementName(Statement* stmt)
+{
+    return util::fmt("[%0.4lu]", stmt->number());
+}
+
+static string _blockName(Statement* stmt)
+{
+    auto b = ast::tryCast<statement::Block>(stmt);
+
+    if ( ! b )
+        return "<non-block-stmt>";
+
+    if ( b->id() )
+        return b->id()->pathAsString();
+
+    return util::fmt("<anonymous block %p / %s>", stmt, _statementName(stmt));
+}
+
+Printer::Printer(std::ostream& out, bool single_line, bool cfg)
     : ast::passes::Printer<AstInfo>(out, single_line)
 {
+    _cfg = cfg;
+}
+
+bool Printer::includeFlow() const
+{
+    return _cfg && _module && _module->cfg();
+}
+
+static string _variableSetToString(const Statement::variable_set& vars)
+{
+    std::set<string> svars;
+
+    for ( auto v : vars )
+        svars.insert(v->name);
+
+    return svars.size() ? util::strjoin(svars, ", ") : "<none>";
+}
+
+void Printer::printFlow(Statement* stmt, const string& prefix)
+{
+    if ( ! includeFlow() )
+        return;
+
+    auto cfg = _module->cfg();
+
+    std::set<string> succ;
+    for ( auto s : *cfg->successors(stmt->sharedPtr<Statement>()) )
+        succ.insert(_statementName(s.get()));
+
+    std::set<string> pred;
+    for ( auto s : *cfg->predecessors(stmt->sharedPtr<Statement>()) )
+        pred.insert(_statementName(s.get()));
+
+    string spred = (pred.size() ? util::strjoin(pred, ", ") : "<none>");
+    string ssucc = (succ.size() ? util::strjoin(succ, ", ") : "<none>");
+
+    auto fi = stmt->flowInfo();
+    auto sdefined = _variableSetToString(fi.defined);
+    auto scleared = _variableSetToString(fi.cleared);
+    auto smodified = _variableSetToString(fi.modified);
+    auto sread = _variableSetToString(fi.read);
+
+    string sin = "n/a";
+    string sout = "n/a";
+
+    if ( _module->liveness() ) {
+        auto liveness = _module->liveness()->liveness(stmt->sharedPtr<Statement>());
+        sin = _variableSetToString(*liveness.first);
+        sout = _variableSetToString(*liveness.second);
+    }
+
+    string s = "";
+
+    if ( prefix.size() )
+        s = prefix + " ";
+
+    string pre = util::fmt("  \33[1;30m");
+    string post = "\33[0m";
+
+    Printer& p = *this;
+
+    p << util::fmt("%s# %spred: { %s } succ: { %s }%s", pre, s, spred, ssucc, post) << endl;
+    p << util::fmt("%s# def: { %s } clear: { %s } mod: { %s } read: { %s }", pre, sdefined, scleared, smodified, sread) << endl;
+    p << util::fmt("%s# live-in: { %s } live-out: { %s }%s", pre, sin, sout, post) << endl;
+    p << util::fmt("%s%s%s ", pre, _statementName(stmt), post);
 }
 
 void Printer::visit(Module* m)
 {
+    _module = m;
+
     Printer& p = *this;
+
+    if ( _cfg && ! m->cfg() )
+        p << "# No control flow graph available." << endl;
+
+    if ( _cfg && ! m->liveness() )
+        p << "# No liveness information available." << endl;
 
     p << "module " << m->id() << endl;
     p << endl;
@@ -60,8 +151,6 @@ void Printer::visit(statement::Block* b)
 {
     Printer& p = *this;
 
-//    p << "==== Block start" << endl;
-
     bool in_function = in<declaration::Function>() || in<declaration::Hook>();
 
     if ( in_function ) {
@@ -78,19 +167,46 @@ void Printer::visit(statement::Block* b)
     if ( b->declarations().size() )
         p << endl;
 
+#if 0
+    printFlow(b, "--- Begin of block");
+    p << endl;
+
+    if ( includeFlow() ) {
+        auto cfg = _module->cfg();
+
+        std::set<string> succ;
+        for ( auto s : *cfg->successors(b->sharedPtr<Statement>()) )
+            succ.insert(_blockName(s.get()));
+
+        std::set<string> pred;
+        for ( auto s : *cfg->predecessors(b->sharedPtr<Statement>()) )
+            pred.insert(_blockName(s.get()));
+
+        string strp = (pred.size() ? util::strjoin(pred, ", ") : "<none>");
+        string strs = (succ.size() ? util::strjoin(succ, ", ") : "<none>");
+
+        p << "# Block predecessors: " << strp << endl;
+        p << "# Block successors  : " << strs << endl;
+    }
+#endif
+
     for ( auto s : b->statements() )
         p << s << endl;
 
+#if 0
+    if ( includeFlow() )
+        p << "# -- End of block " << _statementName(b) << endl;
+#endif
+
     if ( in_function && parent<statement::Block>() )
         popIndent();
-
-//    p << "==== Block end" << endl;
 }
 
 void Printer::visit(statement::Try* s)
 {
     Printer& p = *this;
 
+    printFlow(s);
     p << "try {" << endl;
     p << s->block();
     p << "}" << endl;
@@ -126,7 +242,9 @@ void Printer::visit(statement::ForEach* s)
 {
     Printer& p = *this;
 
-    p << "for ( " << s->id()->name() << " in " << s->sequence() << " ) {" << endl;
+    printFlow(s);
+    p << "for ( " << s->id()->name() << " in " << s->sequence() << " ) {";
+    p << endl;
     p << s->body();
     p << "}" << endl;
     p << endl;
@@ -134,7 +252,7 @@ void Printer::visit(statement::ForEach* s)
 
 static void printInstruction(Printer& p, statement::Instruction* i)
 {
-    if ( i->internal() )
+    if ( i->internal() && ! p.includeFlow() )
         return;
 
     for ( auto c : i->comments() ) {
@@ -143,6 +261,8 @@ static void printInstruction(Printer& p, statement::Instruction* i)
         else
             p << endl;
     }
+
+    p.printFlow(i);
 
     auto ops = i->operands();
 
@@ -878,7 +998,7 @@ void Printer::visit(type::Struct* t)
 #if 0
         if ( f->internal() )
             continue;
-#endif            
+#endif
 
         p << f->type() << ' ' << f->id();
 

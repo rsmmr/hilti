@@ -1,0 +1,3 @@
+# @TEST-EXEC:  hiltic -p -c ${TESTBASE}/hilti/core/foreach.hlt | ${SCRIPTS}/remove-ansi >output
+# @TEST-EXEC:  btest-diff output
+

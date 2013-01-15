@@ -185,6 +185,27 @@ public:
    /// Returns true if the instruction is a block terminator.
    bool terminator() const { return __terminator(); }
 
+   /// Returns the instructions successors blocks. For non-terminators, it
+   /// will always returns an empty set.
+   ///
+   /// ops: The operands to use,
+   ///
+   /// scope: The scope to look blocks up in.
+   ///
+   /// Returns: A set of successor blocks.
+   std::set<shared_ptr<statement::Block>> successors(const hilti::instruction::Operands& ops, shared_ptr<Scope> scope) const;
+
+   /// Returns the type of operand 1-3. The first element is the type itself,
+   /// and the second indicates whether the operand is constant (true) or not
+   /// (false). Returns \c (null, false) if the operand isn't used.
+   ///
+   /// \todo: Right now \a constant will always be false as we don't honor
+   /// yet what the instruction definition specifies.
+   std::pair<shared_ptr<Type>, bool> typeOperand(int n) const;
+
+   /// Returns the type of the target, or null if no target.
+   shared_ptr<Type> typeTarget() const;
+
    operator string() const;
 
    /// Method to report errors found by validate(). This forwards to the
@@ -415,6 +436,9 @@ protected:
 
    // For internal use only. Will be overridden automagically via macros.
    virtual shared_ptr<Expression> __defaultOp3() const { return nullptr; }
+
+   // For internal use only. Will be overridden automagically via macros.
+   virtual std::set<shared_ptr<Expression>> __successors(const hilti::instruction::Operands& ops) const { return std::set<shared_ptr<Expression>>(); }
 
    // For internal use only. Will be overridden automagically via macros.
    virtual bool __terminator() const { return false; }

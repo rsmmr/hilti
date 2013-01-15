@@ -23,6 +23,12 @@ public:
    /// l: An associated location.
    Expression(const Location& l=Location::None) : ast::Expression<AstInfo>(l) {}
 
+   /// Returns a fully flattened list of all atomic sub-expressions.
+   ///
+   /// Must be overridden by derived classes. For atomic expressision, the
+   /// returned list should contain just the epxression itself.
+   virtual std::list<shared_ptr<hilti::Expression>> flatten() = 0;
+
    /// Returns a readable one-line representation of the expression.
    string render() override;
 
@@ -43,6 +49,8 @@ public:
    List(const expression_list& exprs, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::List<AstInfo>(this, exprs) {}
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
+
    ACCEPT_VISITOR(hilti::Expression);
 };
 
@@ -60,6 +68,8 @@ public:
    Ctor(shared_ptr<hilti::Ctor> ctor, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Ctor<AstInfo>(this, ctor) {}
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
+
    ACCEPT_VISITOR(hilti::Expression);
 };
 
@@ -74,6 +84,8 @@ public:
    /// l: An associated location.
    Constant(shared_ptr<hilti::Constant> constant, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Constant<AstInfo>(this, constant) {}
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override;
 
    ACCEPT_VISITOR(hilti::Expression);
 };
@@ -90,6 +102,8 @@ public:
    Variable(shared_ptr<hilti::Variable> var, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Variable<AstInfo>(this, var) {}
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
+
    ACCEPT_VISITOR(hilti::Expression);
 };
 
@@ -104,6 +118,8 @@ public:
    /// l: An associated location.
    Type(shared_ptr<hilti::Type> type, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Type<AstInfo>(this, type) {}
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
 
    ACCEPT_VISITOR(hilti::Expression);
 };
@@ -120,6 +136,8 @@ public:
    Default(shared_ptr<hilti::Type> type, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Default<AstInfo>(this, type) {}
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
+
    ACCEPT_VISITOR(hilti::Expression);
 };
 
@@ -134,6 +152,8 @@ public:
    /// l: An associated location.
    Block(shared_ptr<hilti::statement::Block> block, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Block<AstInfo>(this, block) {}
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
 
    ACCEPT_VISITOR(hilti::Expression);
 };
@@ -150,6 +170,8 @@ public:
    Module(shared_ptr<hilti::Module> module, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Module<AstInfo>(this, module) {}
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
+
    ACCEPT_VISITOR(hilti::Expression);
 };
 
@@ -164,6 +186,8 @@ public:
    /// l: An associated location.
    Function(shared_ptr<hilti::Function> func, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Function<AstInfo>(this, func) {}
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
 
    ACCEPT_VISITOR(hilti::Expression);
 };
@@ -180,6 +204,8 @@ public:
    Parameter(shared_ptr<hilti::type::function::Parameter> param, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Parameter<AstInfo>(this, param) {}
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
+
    ACCEPT_VISITOR(hilti::Expression);
 };
 
@@ -194,6 +220,8 @@ public:
    /// l: An associated location.
    ID(shared_ptr<hilti::ID> id, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::ID<AstInfo>(this, id) {}
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
 
    ACCEPT_VISITOR(hilti::Expression);
 };
@@ -214,6 +242,8 @@ public:
    Coerced(shared_ptr<hilti::Expression> expr, shared_ptr<hilti::Type> dst, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::Coerced<AstInfo>(this, expr, dst) {}
 
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
+
    ACCEPT_VISITOR(hilti::Expression);
 };
 
@@ -230,6 +260,8 @@ public:
    /// l: An associated location.
    CodeGen(shared_ptr<hilti::Type> type, void* cookie, const Location& l=Location::None)
        : hilti::Expression(l), ast::expression::mixin::CodeGen<AstInfo>(this, type, cookie) {}
+
+   std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
 
    ACCEPT_VISITOR(hilti::Expression);
 };
@@ -248,6 +280,8 @@ public:
     shared_ptr<Type> type() const override {
         return std::make_shared<type::Void>(location());
     }
+
+    std::list<shared_ptr<hilti::Expression>> flatten() override { return { this->sharedPtr<hilti::Expression>() }; }
 
     ACCEPT_VISITOR(hilti::Expression);
 };

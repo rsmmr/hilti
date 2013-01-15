@@ -218,6 +218,16 @@
 
 /// Marks an instruction as a block terminator.
 #define iTerminator() \
+       std::set<shared_ptr<Expression>> __successors(const hilti::instruction::Operands& ops) const override; \
        bool __terminator() const override { return true; }
+
+/// Returns the successors of a terminator instructions.
+#define iSuccessorsCC(cls) \
+       } \
+       std::set<shared_ptr<Expression>> cls::__successors(const hilti::instruction::Operands& ops) const { \
+           shared_ptr<Expression> target = __get_op(0); \
+           shared_ptr<Expression> op1 = __get_op(1); \
+           shared_ptr<Expression> op2 = __get_op(2); \
+           shared_ptr<Expression> op3 = __get_op(3); \
 
 #endif

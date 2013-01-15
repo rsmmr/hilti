@@ -184,6 +184,22 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
     if ( verify && ! validator.run(module) )
         return false;
 
+    auto cfg = std::make_shared<passes::CFG>(this);
+
+    _debugAST(this, module, *cfg);
+
+    if ( ! cfg->run(module) )
+        return false;
+
+    auto liveness = std::make_shared<passes::Liveness>(this, cfg);
+
+    _debugAST(this, module, *liveness);
+
+    if ( ! liveness->run(module) )
+        return false;
+
+    module->setPasses(cfg, liveness);
+
     return true;
 }
 
@@ -302,9 +318,9 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module, int debug, boo
     return cg.generateLLVM(module, verify, debug, profile);
 }
 
-bool CompilerContext::print(shared_ptr<Module> module, std::ostream& out)
+bool CompilerContext::print(shared_ptr<Module> module, std::ostream& out, bool cfg)
 {
-    passes::Printer printer(out);
+    passes::Printer printer(out, false, cfg);
     return printer.run(module);
 }
 

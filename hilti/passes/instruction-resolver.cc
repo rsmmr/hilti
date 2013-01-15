@@ -62,7 +62,9 @@ void InstructionResolver::processInstruction(shared_ptr<statement::Instruction> 
      case 1: {
          // Everthing is fine. Replace with the actual instruction.
          auto new_stmt = InstructionRegistry::globalRegistry()->resolveStatement(*matches.begin(), instr);
+         //std::cerr << "O "; instr->dump(std::cerr);
          instr->replace(new_stmt);
+         //std::cerr << "N "; new_stmt->dump(std::cerr);
          return;
      }
 
@@ -119,4 +121,22 @@ void InstructionResolver::visit(statement::instruction::Resolved* s)
     // the non-prefixed name instead to do the lookup.
     id = std::make_shared<ID>(name.substr(4, std::string::npos));
     return processInstruction(instr, id);
+}
+
+void InstructionResolver::visit(statement::Block* block)
+{
+    // Link the statements within the block. Due to preorder traversal, this
+    // will run after intstruction have been resolved.
+
+    shared_ptr<Statement> prev = nullptr;
+
+    for ( auto s : block->statements() ) {
+        if ( prev )
+            prev->setSuccessor(s);
+
+        prev = s;
+    }
+
+    if ( prev )
+        prev->setSuccessor(nullptr);
 }

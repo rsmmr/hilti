@@ -12,6 +12,11 @@
 
 namespace hilti {
 
+namespace passes {
+    class CFG;
+    class Liveness;
+}
+
 class CompilerContext;
 
 /// AST node for a top-level module.
@@ -38,10 +43,27 @@ public:
     /// been finalized.
     shared_ptr<type::Context> executionContext() const;
 
+    /// Returns the module's control flow graph. Note that this will return
+    /// null if the pass has not yet been run by the CompilerContext.
+    shared_ptr<passes::CFG> cfg() const;
+
+    /// Returns the module's liveness analysis. Note that this will return
+    /// null if the pass has not yet been run by the CompilerContext.
+    shared_ptr<passes::Liveness> liveness() const;
+
     ACCEPT_VISITOR_ROOT();
+
+protected:
+    friend class CompilerContext;
+
+    /// Sets control- and data flow passes that have run on the module.
+    /// Normally only called from the CompilerContext.
+    void setPasses(shared_ptr<passes::CFG> cfg, shared_ptr<passes::Liveness> liveness);
 
 private:
     shared_ptr<CompilerContext> _context;
+    shared_ptr<passes::CFG> _cfg = nullptr;
+    shared_ptr<passes::Liveness> _liveness = nullptr;
 };
 
 }

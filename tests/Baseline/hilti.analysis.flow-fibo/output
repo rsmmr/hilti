@@ -1,0 +1,83 @@
+module Main
+
+import Hilti
+
+int<32> fibo(int<32> n)
+{
+
+  local int<32> f1
+  local int<32> f2
+  local bool cond
+  
+  
+      # pred: { <none> } succ: { [0030] }
+      # def: { fibo%cond } clear: { <none> } mod: { p:n } read: { <none> }
+      # live-in: { p:n } live-out: { fibo%cond, p:n }
+      [0029] cond = int.slt n 2
+      # pred: { [0029] } succ: { [0031], [0037] }
+      # def: { <none> } clear: { <none> } mod: { fibo%cond } read: { <none> }
+      # live-in: { fibo%cond, p:n } live-out: { p:n }
+      [0030] if.else cond @done @recurse
+  
+  @recurse:
+      # pred: { [0030] } succ: { [0032] }
+      # def: { p:n } clear: { <none> } mod: { p:n } read: { <none> }
+      # live-in: { p:n } live-out: { p:n }
+      [0031] n = int.sub n 1
+      # pred: { [0031] } succ: { [0033] }
+      # def: { fibo%f1 } clear: { <none> } mod: { p:n } read: { <none> }
+      # live-in: { p:n } live-out: { fibo%f1, p:n }
+      [0032] f1 = call fibo (n)
+      # pred: { [0032] } succ: { [0034] }
+      # def: { p:n } clear: { <none> } mod: { p:n } read: { <none> }
+      # live-in: { fibo%f1, p:n } live-out: { fibo%f1, p:n }
+      [0033] n = int.sub n 1
+      # pred: { [0033] } succ: { [0035] }
+      # def: { fibo%f2 } clear: { <none> } mod: { p:n } read: { <none> }
+      # live-in: { fibo%f1, p:n } live-out: { fibo%f1, fibo%f2 }
+      [0034] f2 = call fibo (n)
+      # pred: { [0034] } succ: { [0036] }
+      # def: { fibo%f1 } clear: { <none> } mod: { fibo%f1, fibo%f2 } read: { <none> }
+      # live-in: { fibo%f1, fibo%f2 } live-out: { fibo%f1 }
+      [0035] f1 = int.add f1 f2
+      # pred: { [0035] } succ: { <none> }
+      # def: { <none> } clear: { <none> } mod: { fibo%f1 } read: { <none> }
+      # live-in: { fibo%f1 } live-out: { <none> }
+      [0036] return.result f1
+  
+  @done:
+      # pred: { [0030] } succ: { <none> }
+      # def: { <none> } clear: { <none> } mod: { p:n } read: { <none> }
+      # live-in: { p:n } live-out: { <none> }
+      [0037] return.result n
+  
+}
+
+
+void run()
+{
+
+  local int<32> f
+  
+  
+      # pred: { <none> } succ: { [0039] }
+      # def: { run%f } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { run%f }
+      [0038] f = call fibo (10)
+      # pred: { [0038] } succ: { [0040] }
+      # def: { <none> } clear: { <none> } mod: { run%f } read: { <none> }
+      # live-in: { run%f } live-out: { <none> }
+      [0039] call Hilti::print (f)
+      # pred: { [0039] } succ: { <none> }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      [0040] return.void
+  
+}
+
+
+
+  # pred: { <none> } succ: { <none> }
+  # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+  # live-in: { <none> } live-out: { <none> }
+  [0042] block.end

@@ -20,9 +20,15 @@ public:
    ///
    /// single_line: If true, all line separator while be turned into space so
    /// that we get a single-line version of the output.
-   Printer(std::ostream& out, bool single_line=false);
+   ///
+   /// cfg: If true, include control/data flow information in output if available.
+   Printer(std::ostream& out, bool single_line = false, bool cfg = false);
+
+   bool includeFlow() const;
+   void printFlow(Statement* stmt, const string& prefix = "");
 
 protected:
+
    void visit(Module* m) override;
    void visit(ID* id) override;
 
@@ -119,6 +125,10 @@ protected:
    void visit(ctor::RegExp* c) override;
    void visit(ctor::Set* c) override;
    void visit(ctor::Vector* c) override;
+
+private:
+   Module* _module = nullptr;
+   bool _cfg;
 };
 
 }

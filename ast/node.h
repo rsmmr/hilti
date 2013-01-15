@@ -120,16 +120,27 @@ public:
     /// Returns all the parents of a given type, in the order they are
     /// encountered when going up the tree.
     template<typename T>
+    void _parentsInternal(NodeBase* n, std::list<shared_ptr<T>>* dst, std::set<NodeBase *>* done) {
+        for ( auto p : n->_parents ) {
+            if ( done->find(p) != done->end() )
+                continue;
+
+            done->insert(p);
+
+            if ( dynamic_cast<T*>(p) )
+                dst->push_back(p->sharedPtr<T>());
+
+            _parentsInternal(p, dst, done);
+        }
+    }
+
+    /// Returns all the parents of a given type, in the order they are
+    /// encountered when going up the tree.
+    template<typename T>
     std::list<shared_ptr<T>> parents() {
         std::list<shared_ptr<T>> dst;
-
-        for ( auto p : _parents ) {
-            if ( dynamic_cast<T*>(p) )
-                dst.push_back(p->sharedPtr<T>());
-
-            dst.merge(p->parents<T>());
-        }
-
+        std::set<NodeBase *> done;
+        _parentsInternal(this, &dst, &done);
         return dst;
     }
 
@@ -166,14 +177,21 @@ public:
 
     typedef std::list<node_ptr<NodeBase> > node_list;
 
-    /// Returns a list of all child nodes. Child nodes are added via addChild().
-    const node_list& childs() const { return _childs; }
+    /// Returns a list of all child nodes, recursively if requestd. Child
+    /// nodes are added via addChild().
+    node_list childs(bool recursive = false) const;
 
     /// Returns an iterator to the first child node.
     node_list::const_iterator begin() const { return _childs.begin(); }
 
     /// Returns an iterator marking the end of the child list.
     node_list::const_iterator end() const { return _childs.end(); }
+
+    /// Returns a reverse iterator to the lastt child node.
+    node_list::const_reverse_iterator rbegin() const { return _childs.rbegin(); }
+
+    /// Returns a reverse iterator marking the end of the reversed child list.
+    node_list::const_reverse_iterator rend() const { return _childs.rend(); }
 
     /// Returns a shared_ptr for the node, cast to a sepcified type. The cast
     /// must not fail, behaviour is undefined if it does.
@@ -215,7 +233,10 @@ public:
     void replace(shared_ptr<NodeBase> n);
 
     /// Returns true if a given node is a child of this one.
-    bool hasChild(node_ptr<NodeBase> n) const;
+    ///
+    /// recursive: If true, descend the tree recursively for seaching the
+    /// child
+    bool hasChild(node_ptr<NodeBase> n, bool recursive = false) const;
 
     /// Returns the set of meta information nodes associated with the AST
     /// node.
@@ -230,6 +251,9 @@ public:
 
 private:
     NodeBase& operator = (const NodeBase&); // No assignment.
+
+    bool hasChildInternal(node_ptr<NodeBase> node, bool recursive, std::set<shared_ptr<NodeBase>>* done) const;
+    void childsInternal(const NodeBase* node, bool recursive, std::set<shared_ptr<NodeBase>>* childs) const;
 
     typedef std::set<const NodeBase*> node_set;
     void dump(std::ostream& out, int level, node_set* seen);

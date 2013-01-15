@@ -1,5 +1,5 @@
 
 >>> Test
-<no location>:: error, grammar Test, production list:a:l2 (/da/home/robin/work/binpacpp/hilti2/tests/.tmp/binpac.list.parse-lahead-int-ambigious/parse-lahead-int-ambigious.pac2:14-14) is ambigious for look-ahead symbol(s) { 1 (uint<8>) }
+<no location>:: error, grammar Test, production list:a:l2 (/home/robin/work/binpacpp/hilti2/tests/.tmp/binpac.list.parse-lahead-int-ambigious/parse-lahead-int-ambigious.pac2:14-14) is ambigious for look-ahead symbol(s) { 1 (uint<8>) }
  [pass::binpac::Validator]
 parse-lahead-int-ambigious.pac2: Aborting due to input error.

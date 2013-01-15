@@ -27,6 +27,7 @@ bool verify = true;
 bool use_jit = false;
 bool add_stdlibs = false;
 bool disable_linker = false;
+bool cfg = false;
 
 set<string> cgdbg;
 string output;
@@ -40,10 +41,11 @@ static struct option long_options[] = {
     { "help",    no_argument, 0, 'h' },
     { "print",   no_argument, 0, 'p' },
     { "print-always",   no_argument, 0, 'W' },
+    { "cfg",   no_argument, 0, 'c' },
     { "prototypes", no_argument, 0, 'P' },
     { "output",  required_argument, 0, 'o' },
     { "version", no_argument, 0, 'v' },
-    { "profile", no_argument, 0, 'p' },
+    { "profile", no_argument, 0, 'F' },
     { "jit", no_argument, 0, 'j' },
     { "opt", required_argument, 0, 'O' },
     { "add-stdlibs", no_argument, 0, 's' },
@@ -78,6 +80,7 @@ void usage()
             "  -o | --output <file>  Specify output file.                    [Default: stdout].\n"
             "  -O | --opt <n>        Optimization level from 0-3             [Default: 0].\n"
             "  -p | --print          Just output all parsed HILTI code again.\n"
+            "  -c | --cfg            Add control/data flow information to output of -p.\n"
             "  -P | --prototypes     Generate C prototypes for HILTI module.\n"
             "  -W | --print-always   Like -p, but don't verify correctness first.\n"
             "  -I | --import <dir>   Search library files in <dir>. Can be given multiple times.\n"
@@ -145,7 +148,7 @@ llvm::Module* compileHILTI(std::shared_ptr<hilti::CompilerContext> ctx, string p
         if ( num_input_files > 1 )
             out << "<<< Begin " << path << endl;
 
-        bool success = ctx->print(module, out);
+        bool success = ctx->print(module, out, cfg);
 
         if ( num_input_files > 1 )
             out << ">>> End " << path << endl;
@@ -225,7 +228,7 @@ int main(int argc, char** argv)
     int num_output_types = 0;
 
     while ( true ) {
-        int c = getopt_long(argc, argv, "AdD:hjpFPWbClLsVo:O:vI:", long_options, 0);
+        int c = getopt_long(argc, argv, "AdD:hjpcFPWbClLsVo:O:vI:", long_options, 0);
 
         if ( c < 0 )
             break;
@@ -259,6 +262,10 @@ int main(int argc, char** argv)
          case 'p':
             output_hilti = true;
             ++num_output_types;
+            break;
+
+         case 'c':
+            cfg = true;
             break;
 
          case 'P':
