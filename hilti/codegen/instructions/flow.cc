@@ -12,13 +12,15 @@ void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
 {
     auto func = current<declaration::Function>();
     auto rtype = as<type::Function>(func->function()->type())->result()->type();
-    auto op1 = cg()->llvmValue(i->op1(), rtype);
-
-    cg()->llvmReturn(func->function()->type()->result()->type(), op1);
+    auto op1 = cg()->llvmValue(i->op1(), rtype, true);
+    cg()->llvmBuildInstructionCleanup();
+    cg()->llvmReturn(func->function()->type()->result()->type(), op1, true);
 }
 
 static void _doVoidReturn(StatementBuilder* sbuilder)
 {
+    sbuilder->cg()->llvmBuildInstructionCleanup();
+
     auto func = sbuilder->current<declaration::Function>();
 
     // Check if we are in a hook. If so, we return a boolean indicating that
@@ -43,8 +45,10 @@ void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
 
     if ( handler.second ) {
         // If we have a block to jump to on block end, go there.
-        if ( ! cg()->builder()->GetInsertBlock()->getTerminator() )
+        if ( ! cg()->builder()->GetInsertBlock()->getTerminator() ) {
+            cg()->llvmBuildInstructionCleanup();
             cg()->llvmCreateBr(handler.second);
+        }
     }
 
     else {
@@ -61,7 +65,7 @@ void StatementBuilder::visit(statement::instruction::flow::BlockEnd* i)
     }
 }
 
-void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params)
+void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call)
 {
     auto expr = ast::as<expression::Constant>(args);
     auto ftype = ast::as<type::Function>(func->type());
@@ -102,24 +106,31 @@ void StatementBuilder::prepareCall(shared_ptr<Expression> func, shared_ptr<Expre
         assert(def);
         call_params->push_back(def);
     }
+
+    // Must come last as it will change the next llvmCall()
+    if ( before_call )
+        cg()->setInstructionCleanupAfterCall();
 }
 
 void StatementBuilder::visit(statement::instruction::flow::CallVoid* i)
 {
-    CodeGen::expr_list params;
-    prepareCall(i->op1(), i->op2(), &params);
     auto func = cg()->llvmValue(i->op1());
     auto ftype = ast::as<type::Function>(i->op1()->type());
+
+    CodeGen::expr_list params;
+    prepareCall(i->op1(), i->op2(), &params, true);
     cg()->llvmCall(func, ftype, params);
 }
 
 void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
 {
-    CodeGen::expr_list params;
-    prepareCall(i->op1(), i->op2(), &params);
     auto func = cg()->llvmValue(i->op1());
     auto ftype = ast::as<type::Function>(i->op1()->type());
+
+    CodeGen::expr_list params;
+    prepareCall(i->op1(), i->op2(), &params, true);
     auto result = cg()->llvmCall(func, ftype, params);
+
     cg()->llvmStore(i->target(), result);
 }
 
@@ -167,6 +178,8 @@ void StatementBuilder::visit(statement::instruction::flow::IfElse* i)
     auto op2_bb = llvm::cast<llvm::BasicBlock>(op2);
     auto op3_bb = llvm::cast<llvm::BasicBlock>(op3);
 
+    cg()->llvmBuildInstructionCleanup();
+
     cg()->builder()->CreateCondBr(op1, op2_bb, op3_bb);
 }
 
@@ -175,12 +188,14 @@ void StatementBuilder::visit(statement::instruction::flow::Jump* i)
     auto op1 = cg()->llvmValue(i->op1());
     auto op1_bb = llvm::cast<llvm::BasicBlock>(op1);
 
+    cg()->llvmBuildInstructionCleanup();
+
     cg()->builder()->CreateBr(op1_bb);
 }
 
 void StatementBuilder::visit(statement::instruction::flow::Switch* i)
 {
-    auto op1 = cg()->llvmValue(i->op1());
+    auto op1 = cg()->llvmValue(i->op1(), nullptr);
     auto default_ = llvm::cast<llvm::BasicBlock>(cg()->llvmValue(i->op2()));
     auto a1 = ast::as<expression::Constant>(i->op3());
     auto a2 = ast::as<constant::Tuple>(a1->constant());
@@ -205,6 +220,8 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
     }
 
     if ( all_const && ast::isA<type::Integer>(i->op1()->type()) ) {
+        cg()->llvmBuildInstructionCleanup();
+
         // We optimize for constant integers here, for which LLVM directly
         // provides a switch statement.
         auto switch_ = cg()->builder()->CreateSwitch(op1, default_);
@@ -218,21 +235,55 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
 
     else {
         // In all other cases, we build an if-else chain using the type's
-        // standard comparision operator.
+        // standard comparision operator. However, the fact that we need
+        // cleanup tmps before diverting control flow makes this a bit tricky
+        // and we do it in teps: the if-else chain only determines which
+        // block to jump to; then we cleanup tmps; and then we do the branch.
+        //
+        // TODO: We're doing the indirect branch with an integer and switch,
+        // instead of using LLVM's indirect brach statement[1] because
+        // there's evidence[2] that the JIT might not like that ... 
+        //
+        // [1] http://blog.llvm.org/2010/01/address-of-label-and-indirect-branches.html
+        // [2] http://llvm.org/bugs/show_bug.cgi?id=6744
+
+        auto done = cg()->newBuilder("switch-done");
 
         auto cmp = cg()->makeLocal("switch-cmp", builder::boolean::type());
 
+        auto destination = cg()->llvmCreateAlloca(cg()->llvmTypeInt(64));
+        cg()->llvmCreateStore(cg()->llvmConstInt(0, 64), destination); // Zero for default.
+
+        int n = 1;
         for ( auto a : alts ) {
             cg()->llvmInstruction(cmp, instruction::operator_::Equal, i->op1(), builder::codegen::create(i->op1()->type(), a.first));
             auto match = cg()->builder()->CreateICmpEQ(cg()->llvmConstInt(1, 1), cg()->llvmValue(cmp));
             auto next_block = cg()->newBuilder("switch-chain");
-            cg()->builder()->CreateCondBr(match, a.second, next_block->GetInsertBlock());
+            auto found = cg()->newBuilder("switch-match");
+            cg()->builder()->CreateCondBr(match, found->GetInsertBlock(), next_block->GetInsertBlock());
+
+            cg()->pushBuilder(found);
+            cg()->llvmCreateStore(cg()->llvmConstInt(n++, 64), destination);
+            cg()->builder()->CreateBr(done->GetInsertBlock());
+            cg()->popBuilder();
+
             cg()->pushBuilder(next_block);
         }
 
-        // Do the default.
-        cg()->builder()->CreateBr(default_);
+        cg()->builder()->CreateBr(done->GetInsertBlock());
 
+        cg()->pushBuilder(done);
+
+        cg()->llvmBuildInstructionCleanup();
+
+        // Do the indirect branch.
+        auto switch_ = cg()->builder()->CreateSwitch(cg()->builder()->CreateLoad(destination), default_);
+
+        n = 1;
+        for ( auto a : alts )
+            switch_->addCase(cg()->llvmConstInt(n++, 64), a.second);
+
+        cg()->popBuilder();
     }
 }
 

@@ -277,15 +277,30 @@ public:
     /// returns the available list.
     bool debugging(const string& label);
 
+    /// Returns true if a given optimization is enabled.
+    ///
+    /// string: The label for the desired optimization. \a optimizations()
+    /// returns the available list.
+    ///
+    /// \todo: Currently the set of enabled optimizations is hardcoded. We
+    /// don't have a way yet to set them.
+    bool optimizing(const string& label);
+
     /// Returns the library dirs configured.
     const string_list& libraryPaths() const;
 
     /// Returns the available debug streams during code generation.
     static std::list<string> debugStreams();
 
-    /// Returns true if the given lavel correspnds to a valid debugging
+    /// Returns the available optimizations.
+    static std::list<string> optimizations();
+
+    /// Returns true if the given label correspnds to a valid debugging
     /// stream.
     static bool validDebugStream(const string& label);
+
+    /// Returns true if the given label correspnds to a valid optimization.
+    static bool validOptimization(const string& label);
 
 private:
     /// Finalizes an AST before it can be used for compilation. This checks

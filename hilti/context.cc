@@ -314,7 +314,7 @@ llvm::Module* CompilerContext::compile(shared_ptr<Module> module, int debug, boo
 
     _debugAST(this, module, "CodeGen");
 
-    codegen::CodeGen cg(module->compilerContext()->libraryPaths());
+    codegen::CodeGen cg(this, module->compilerContext()->libraryPaths());
     return cg.generateLLVM(module, verify, debug, profile);
 }
 
@@ -516,6 +516,24 @@ bool CompilerContext::validDebugStream(const string& label)
     auto streams = debugStreams();
     return std::find(streams.begin(), streams.end(), label) != streams.end();
 }
+
+bool CompilerContext::optimizing(const string& label)
+{
+    assert(validOptimization(label));
+    return true; // TODO FIXME.
+}
+
+std::list<string> CompilerContext::optimizations()
+{
+    return { "cg-early-gc-release" };
+}
+
+bool CompilerContext::validOptimization(const string& label)
+{
+    auto all = optimizations();
+    return std::find(all.begin(), all.end(), label) != all.end();
+}
+
 
 
 

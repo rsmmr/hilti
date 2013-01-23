@@ -27,7 +27,10 @@ public:
    /// Generates the code for a statement.
    ///
    /// stmt: The statement.
-   void llvmStatement(shared_ptr<Statement> stmt);
+   ///
+   /// cleanup: If true, all temporaries creates are deleted after the
+   /// statement.
+   void llvmStatement(shared_ptr<Statement> stmt, bool cleanup = true);
 
    /// For a pair of expressions, returns the type of one expression into
    /// which the other one can be coerded. Tries either way. If both ways
@@ -59,7 +62,7 @@ protected:
    // statement::instruction::*::* classes.
    #include <autogen/instructions-stmt-builder.h>
 
-   void prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params);
+   void prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call);
 
 };
 

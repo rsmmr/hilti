@@ -16,9 +16,12 @@ StatementBuilder::~StatementBuilder()
 {
 }
 
-void StatementBuilder::llvmStatement(shared_ptr<Statement> stmt)
+void StatementBuilder::llvmStatement(shared_ptr<Statement> stmt, bool cleanup)
 {
     call(stmt);
+
+    if ( cleanup )
+        cg()->llvmBuildInstructionCleanup();
 }
 
 shared_ptr<Type> StatementBuilder::coerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const
@@ -78,7 +81,7 @@ void StatementBuilder::visit(statement::Block* b)
             }
         }
 
-        call(s);
+        llvmStatement(s);
     }
 }
 

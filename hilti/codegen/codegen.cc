@@ -23,7 +23,7 @@
 using namespace hilti;
 using namespace codegen;
 
-CodeGen::CodeGen(const path_list& libdirs)
+CodeGen::CodeGen(CompilerContext* ctx, const path_list& libdirs)
     : _coercer(new Coercer(this)),
       _loader(new Loader(this)),
       _storer(new Storer(this)),
@@ -34,12 +34,18 @@ CodeGen::CodeGen(const path_list& libdirs)
       _debug_info_builder(new DebugInfoBuilder(this)),
       _collector(new passes::Collector())
 {
+    _ctx = ctx;
     _libdirs = libdirs;
     setLoggerName("codegen");
 }
 
 CodeGen::~CodeGen()
 {}
+
+CompilerContext* CodeGen::context() const
+{
+    return _ctx;
+}
 
 llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verify, int debug, int profile)
 {
@@ -371,6 +377,7 @@ llvm::Function* CodeGen::pushFunction(llvm::Function* function, bool push_builde
 {
     unique_ptr<FunctionState> state(new FunctionState);
     state->function = function;
+    state->dtors_after_call = false;
     state->abort_on_excpt = abort_on_excpt;
     state->is_init_func = is_init_func;
     state->context = nullptr;
@@ -621,6 +628,7 @@ void CodeGen::createGlobalsInitFunction()
         assert(init);
         auto addr = llvmGlobal(g.get());
         llvmCreateStore(init, addr);
+        llvmBuildInstructionCleanup();
     }
 
     if ( functionEmpty() ) {
@@ -1672,12 +1680,8 @@ void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, 
     _functions.back()->dtors_after_ins.push_back(std::make_tuple(std::make_tuple(tmp, is_ptr), type));
 }
 
-void CodeGen::llvmBuildFunctionCleanup()
+void CodeGen::llvmBuildInstructionCleanup(bool flush)
 {
-    // Unref locals (incl. parameters).
-    for ( auto l : _functions.back()->locals )
-        llvmDtor(l.second.first, l.second.second, true, "func-cleanup-local");
-
     // Unref tmps.
     for ( auto unref : _functions.back()->dtors_after_ins ) {
         auto dtor = newBuilder("dtor-tmp");
@@ -1688,7 +1692,7 @@ void CodeGen::llvmBuildFunctionCleanup()
         llvm::Value* ptr_val = unref.first.second ? val : tmp;
 
         if ( val->getType()->isStructTy() ) {
-            llvmDtor(ptr_val, unref.second, true, "function-cleanup-struct-tmp");
+            llvmDtor(ptr_val, unref.second, true, "function-instruction-struct-tmp");
             llvmCreateStore(llvmConstNull(val->getType()), tmp);
             continue;
         }
@@ -1698,7 +1702,7 @@ void CodeGen::llvmBuildFunctionCleanup()
 
         pushBuilder(dtor);
 
-        llvmDtor(ptr_val, unref.second, true, "function-cleanup-tmp");
+        llvmDtor(ptr_val, unref.second, true, "instruction-cleanup-tmp");
 
         llvmCreateStore(llvmConstNull(val->getType()), tmp);
         llvmCreateBr(cont);
@@ -1708,6 +1712,21 @@ void CodeGen::llvmBuildFunctionCleanup()
 
         // Leave on stack.
     }
+
+    if ( flush )
+        _functions.back()->dtors_after_ins.clear();
+}
+
+void CodeGen::setInstructionCleanupAfterCall()
+{
+    _functions.back()->dtors_after_call = true;
+}
+
+void CodeGen::llvmBuildFunctionCleanup()
+{
+    // Unref locals (incl. parameters).
+    for ( auto l : _functions.back()->locals )
+        llvmDtor(l.second.first, l.second.second, true, "func-cleanup-local");
 }
 
 llvm::Value* CodeGen::llvmGEP(llvm::Value* addr, llvm::Value* i1, llvm::Value* i2, llvm::Value* i3, llvm::Value* i4)
@@ -1845,6 +1864,8 @@ void CodeGen::llvmRaiseException(llvm::Value* excpt, bool dtor)
 
 void CodeGen::llvmRethrowException()
 {
+    llvmBuildInstructionCleanup(false);
+
     auto func = _functions.back()->function;
 
     auto rt = func->getReturnType();
@@ -1959,6 +1980,8 @@ void CodeGen::llvmCheckException()
     }
 
     // In the current function, an exception triggers an abort.
+
+    llvmBuildInstructionCleanup(false);
 
     auto excpt = llvmCurrentException();
     auto is_null = builder()->CreateIsNull(excpt);
@@ -2571,6 +2594,8 @@ llvm::Value* CodeGen::llvmCallableRun(shared_ptr<type::Callable> cty, llvm::Valu
     // generic pointer into oru function pointer.
     auto result = builder()->CreateCall(func, args);
 
+    llvmBuildInstructionCleanup();
+
     llvmCheckException();
 
     if ( cty->argType()->equal(shared_ptr<Type>(new type::Void())) )
@@ -2714,6 +2739,12 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
     auto rtype = func->getReturnType();
 
     auto result = abi()->createCall(func, llvm_args, cc);
+
+    if ( _functions.back()->dtors_after_call ) {
+        // Cleanup any tmps before we do anything else.
+        llvmBuildInstructionCleanup();
+        _functions.back()->dtors_after_call = false;
+    }
 
     switch ( cc ) {
      case type::function::HILTI_C: {
@@ -3483,7 +3514,7 @@ void CodeGen::llvmInstruction(shared_ptr<Expression> target, shared_ptr<Instruct
     auto resolved = InstructionRegistry::globalRegistry()->resolveStatement(instr, ops);
     assert(resolved);
 
-    _stmt_builder->llvmStatement(resolved);
+    _stmt_builder->llvmStatement(resolved, false);
 }
 
 void CodeGen::llvmInstruction(shared_ptr<Expression> target, const string& mnemo, shared_ptr<Expression> op1, shared_ptr<Expression> op2, shared_ptr<Expression> op3, const Location& l)
@@ -3504,7 +3535,7 @@ void CodeGen::llvmInstruction(shared_ptr<Expression> target, const string& mnemo
     auto resolved = InstructionRegistry::globalRegistry()->resolveStatement(matches.front(), ops);
     assert(resolved);
 
-    _stmt_builder->llvmStatement(resolved);
+    _stmt_builder->llvmStatement(resolved, false);
 }
 
 shared_ptr<hilti::Expression> CodeGen::makeLocal(const string& name, shared_ptr<Type> type)

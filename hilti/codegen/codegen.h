@@ -16,6 +16,7 @@ class Type;
 class Expression;
 class Variable;
 class LogComponent;
+class CompilerContext;
 
 namespace statement { class Instruction; }
 namespace passes { class Collector; }
@@ -98,10 +99,16 @@ class CodeGen : public ast::Logger
 public:
    /// Constructor.
    ///
+   /// ctx: The compiler context the code geneator is used with.
+   ///
    /// libdirs: Path where to find library modules that the code generator
    /// may need.
-   CodeGen(const path_list& libdirs);
+   CodeGen(CompilerContext* ctx, const path_list& libdirs);
    virtual ~CodeGen();
+
+   /// Returns the compiler context the code generator is used with.
+   ///
+   CompilerContext* context() const;
 
    /// Main entry method for compiling a HILTI AST into an LLVM module.
    ///
@@ -1635,6 +1642,25 @@ public:
    // Builds code that needs to run just before the current function returns.
    void llvmBuildFunctionCleanup();
 
+   // Builds code that needs to run after the current instruction. This must
+   // be called after the instruction no longer needs any of its operands but
+   // before control flow potentially diverts. The method is called
+   // automatically by the code generator after each instruction's code is
+   // completely generated, which is sufficient for most instructions (those
+   // that don't divert control flow). For those it's not, they need to call
+   // this method at the appropiate time themselves, but they must ensure
+   // that the code is *always* executed exactly *once*. The method usually
+   // shouldn't be called more than once for the same instruction; if it is,
+   // the subsequent calls won't have any effect as each call flushes the
+   // internal state of cleanup code to run (unless the default argument is changed).
+   //
+   // flush: If false, the state isn't flushed.
+   void llvmBuildInstructionCleanup(bool flush = true);
+
+   /// Tell the next call of llvmCall()/llvmRunHook() to run
+   /// llvmBuildInstructionCleanup() on return.
+   void setInstructionCleanupAfterCall();
+
    /// Allocates and intializes a new struct instance.
    ///
    /// stype: The type, which must be a \a type::Struct.
@@ -2178,6 +2204,7 @@ private:
    unique_ptr<ABI> _abi;
 
    shared_ptr<hilti::Module> _hilti_module = nullptr;
+   CompilerContext* _ctx = nullptr;
    llvm::Module* _libhilti = nullptr;
    llvm::Module* _module = nullptr;
    llvm::DataLayout* _data_layout = nullptr;
@@ -2205,6 +2232,7 @@ private:
        local_map tmps;
        exit_point_list exits;
        dtor_list dtors_after_ins;
+       bool dtors_after_call; // If true, run dtors_after_ins after next llvmCall().
        string next_comment;
        bool abort_on_excpt;
        bool is_init_func;

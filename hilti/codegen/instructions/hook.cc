@@ -35,9 +35,6 @@ void StatementBuilder::visit(statement::instruction::hook::GroupEnabled* i)
 
 void StatementBuilder::visit(statement::instruction::hook::Run* i)
 {
-    CodeGen::expr_list params;
-    prepareCall(i->op1(), i->op2(), &params);
-
     auto func = ast::as<expression::Function>(i->op1())->function();
     auto has_result = (! ast::isA<type::Void>(func->type()->result()->type()));
     auto hook = ast::as<Hook>(func);
@@ -48,6 +45,8 @@ void StatementBuilder::visit(statement::instruction::hook::Run* i)
     if ( has_result )
         result = cg()->llvmAddTmp("hook.rval", cg()->llvmType(i->target()->type()), nullptr, true);
 
+    CodeGen::expr_list params;
+    prepareCall(i->op1(), i->op2(), &params, true);
     auto stopped = cg()->llvmRunHook(hook, params, result);
 
     if ( has_result ) {
@@ -71,6 +70,7 @@ void StatementBuilder::visit(statement::instruction::hook::Stop* i)
         cg()->llvmCreateStore(val, --cg()->function()->arg_end());
     }
 
+    cg()->llvmBuildInstructionCleanup();
     cg()->llvmReturn(0, cg()->llvmConstInt(1, 1)); // Return true.
 }
 

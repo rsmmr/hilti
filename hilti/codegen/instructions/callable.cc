@@ -7,7 +7,7 @@ using namespace codegen;
 void StatementBuilder::visit(statement::instruction::callable::New* i)
 {
     CodeGen::expr_list params;
-    prepareCall(i->op2(), i->op3(), &params);
+    prepareCall(i->op2(), i->op3(), &params, false);
 
     auto func = cg()->llvmValue(i->op2());
     auto ftype = ast::as<type::Function>(i->op2()->type());
