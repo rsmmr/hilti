@@ -6,6 +6,7 @@
 #define LIBHILTI_GLOBALS_H
 
 #include <pthread.h>
+#include <stdio.h>
 
 #include "hook.h"
 #include "types.h"
@@ -40,8 +41,11 @@ struct __hlt_global_state {
     // threading.c
     hlt_thread_mgr*        thread_mgr; // The global thread manager.
     int8_t thread_mgr_terminate;
+
 #ifdef DEBUG
     uint64_t job_counter;
+    FILE* debug_out;
+    _Atomic(uint_fast64_t) debug_counter;
 #endif
 
     // hook.c

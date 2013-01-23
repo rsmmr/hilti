@@ -11,27 +11,30 @@
 #include "string_.h"
 #include "module/module.h"
 
-_Atomic(uint_fast64_t) _counter; // = 0 produces error on Apple?
-
 static FILE* _debug_out()
 {
-    static FILE* debug_out = 0;
+#ifdef DEBUG
+    __hlt_global_state* globals = __hlt_globals();
 
-    if ( debug_out )
-        return debug_out;
+    if ( globals->debug_out )
+        return globals->debug_out;
 
     /// TODO: Should use mutex here.
 
-    debug_out = fopen(hlt_config_get()->debug_out, "w");
+    globals->debug_out = fopen(hlt_config_get()->debug_out, "w");
 
-    if ( ! debug_out ) {
+    if ( ! globals->debug_out ) {
         fprintf(stderr, "hilti: cannot open %s for writing. Aborting.\n", hlt_config_get()->debug_out);
         exit(1);
         }
 
-    setvbuf(debug_out, 0, _IOLBF, 0);
+    setvbuf(globals->debug_out, 0, _IOLBF, 0);
 
-    return debug_out;
+    return globals->debug_out;
+#else
+    assert(false && "_debug_out() called in non-debug code");
+    return 0;
+#endif
 }
 
 static int _want_stream(const char* s, hlt_exception** excpt, hlt_execution_context* ctx)
@@ -65,17 +68,24 @@ static int _want_stream(const char* s, hlt_exception** excpt, hlt_execution_cont
 
 static void _make_prefix(const char* s, char* dst, int len, hlt_exception** excpt, hlt_execution_context* ctx)
 {
+#ifdef DEBUG
+    __hlt_global_state* globals = __hlt_globals();
+
     if ( hlt_is_multi_threaded() ) {
         const char* t = hlt_thread_mgr_current_native_thread();
-        snprintf(dst, len, "%08" PRId64 " [%s/%s] ", ++_counter, s, t);
+        snprintf(dst, len, "%08" PRId64 " [%s/%s] ", ++globals->debug_counter, s, t);
     }
     else
-        snprintf(dst, len, "%08" PRId64 " [%s/-] ", ++_counter, s);
+        snprintf(dst, len, "%08" PRId64 " [%s/-] ", ++globals->debug_counter, s);
 
     int min = (len - 1 < 40 ? len - 1 : 40);
 
     while ( strlen(dst) < min )
         strcat(dst, " ");
+
+#else
+    assert(false && "_make_prefix() called in non-debug code");
+#endif
 }
 
 void __hlt_debug_init()
