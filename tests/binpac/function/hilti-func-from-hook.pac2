@@ -1,4 +1,5 @@
 #
+# @TEST-NO-ALTERNATIVE: jit
 # @TEST-EXEC:  echo 1234567890 | pac-driver-test %INPUT testhilti.hlt >output
 # @TEST-EXEC:  btest-diff output
 #

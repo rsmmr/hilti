@@ -1,7 +1,7 @@
-# $Id$
 #
-# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1  -t   
+# @TEST-EXEC:  pac-driver-test %INPUT >output 2>&1
 # @TEST-EXEC:  btest-diff output
+#
 
 module Test;
 

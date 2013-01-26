@@ -109,21 +109,22 @@ void IDResolver::visit(expression::ID* i)
         return;
     }
 
-#if 0
-    // Check for $$ here because we're going to replace it and thus the
+    // Check use $$ here because we're going to replace it and thus the
     // valdiator won't see ID anymore.
     if ( id->id()->name() == "$$" ) {
         auto h = i->firstParent<Hook>();
 
+        bool ok = false;
+
         if ( h && h->foreach() )
-            return;
+            ok = true;
 
         if ( (! h) && i->firstParent<type::Unit>() )
-            return;
+            ok = true;
 
-        error(i, util::fmt("$$ not defined here"));
+        if ( ! ok )
+            error(i, util::fmt("$$ not defined here"));
     }
-#endif    
 
     auto val = vals.front();
 

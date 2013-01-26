@@ -1,5 +1,6 @@
 #
-# @TEST-EXEC:  echo 1234567890abcdef | pac-driver %INPUT >output    
+# @TEST-NO-ALTERNATIVE: jit
+# @TEST-EXEC:  echo 1234567890abcdef | pac-driver %INPUT >output
 # @TEST-EXEC:  btest-diff output
 #
 

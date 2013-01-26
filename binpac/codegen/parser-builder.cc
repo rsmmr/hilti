@@ -381,7 +381,7 @@ void ParserBuilder::_hiltiCreateParserInitFunction(shared_ptr<type::Unit> unit,
     auto module = unit->firstParent<Module>();
     assert(module);
 
-    auto fname = ::util::fmt("%s::%s", module->id()->name(), unit->id()->pathAsString());
+    auto fname = ::util::fmt("%s::%s", module->id()->name(), unit->id()->pathAsString(module->id()));
 
     hilti::builder::list::element_list mtypes;
     hilti::builder::list::element_list ports;

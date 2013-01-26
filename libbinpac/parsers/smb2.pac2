@@ -133,13 +133,13 @@ type Header = unit {
 	head_length   : uint16;
 	credit_charge : uint16;
 	status        : bitfield(32) {
-		Severity : 0..1 &convert=StatusSeverity;
+		Severity : 0..1 &convert=StatusSeverity($$);
 		Customer : 2;
 		N        : 3;
 		Facility : 4..15;
 		Code     : 16..31;
 	};
-	command       : uint16 &convert=Command;
+	command       : uint16 &convert=Command($$);
 	credits       : uint16;
 	flags         : bitfield(32) {
 		ResponseToRedir   : 0;
@@ -449,7 +449,7 @@ type create_request = unit(header: Header) {
 		Write  : 1;
 		Delete : 2;
 	};
-	create_disposition  : uint32 &convert=Disposition;
+	create_disposition  : uint32 &convert=Disposition($$);
 	create_options      : bitfield(32) {
 		DirectoryFile       : 0;
 		WriteThrough        : 1;
