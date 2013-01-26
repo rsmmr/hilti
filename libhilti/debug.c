@@ -19,8 +19,6 @@ static FILE* _debug_out()
     if ( globals->debug_out )
         return globals->debug_out;
 
-    /// TODO: Should use mutex here.
-
     globals->debug_out = fopen(hlt_config_get()->debug_out, "w");
 
     if ( ! globals->debug_out ) {
@@ -31,6 +29,7 @@ static FILE* _debug_out()
     setvbuf(globals->debug_out, 0, _IOLBF, 0);
 
     return globals->debug_out;
+
 #else
     assert(false && "_debug_out() called in non-debug code");
     return 0;
@@ -135,16 +134,17 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
     int old_state;
     hlt_pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
 
-    FILE* out = _debug_out();
-    flockfile(out);
 
     hlt_string p = hlt_string_from_asciiz(prefix, excpt, ctx);
     hlt_string r = hlt_string_concat_and_unref(p, usr, excpt, ctx);
-    hlt_string_print_n(out, r, 1, 256, excpt, ctx);
-    GC_DTOR(r, hlt_string);
 
+    FILE* out = _debug_out();
+    flockfile(out);
+    hlt_string_print(out, r, 1, excpt, ctx);
     fflush(out);
     funlockfile(out);
+
+    GC_DTOR(r, hlt_string);
 
     hlt_pthread_setcancelstate(old_state, NULL);
 }
@@ -177,6 +177,7 @@ void __hlt_debug_printf_internal(const char* s, const char* fmt, ...)
     va_end(args);
 
     strncat(buffer, "\n", sizeof(buffer) - strlen(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\n';
 
     // We must not terminate while in here.
     int old_state;
