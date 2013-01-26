@@ -59,13 +59,15 @@ function executeWithCache()
 {
     cmdline=$@
 
-    if [ -e "$cache" -a "`cat $cache | sed 's/\n//g'`" == "$cmdline" ]; then
-        # We have already executed this command line.
-        if [ "$TEST_VERBOSE" != "" ]; then
-            echo "$cmdline [cached]" | sed "s#$base/#[...]/#g" >>$TEST_VERBOSE
-        fi
+    if [ -e "$cache" ]; then
+        if [ "`cat $cache | sed 's/\n//g'`" == "$cmdline" ]; then
+            # We have already executed this command line.
+            if [ "$TEST_VERBOSE" != "" ]; then
+                echo "$cmdline [cached]" | sed "s#$base/#[...]/#g" >>$TEST_VERBOSE
+            fi
 
-        return 0;
+            return 0;
+        fi
     fi
 
     echo $cmdline >$cache
