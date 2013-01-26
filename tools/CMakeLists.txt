@@ -22,7 +22,7 @@ target_link_libraries(binpac++ binpacxx ${HILTI_LIBS})
 
 add_executable(hiltic hiltic.cc)
 target_link_libraries(hiltic ${HILTI_LIBS})
-add_dependencies(hiltic hilti-rt)
+add_dependencies(hiltic hilti-rt hilti-rt-dbg)
 
 # We build a 2nd version of hiltic that excludes the JIT support. We
 # use this version for generating libhilti autogen components. The
