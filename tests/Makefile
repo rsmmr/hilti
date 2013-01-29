@@ -10,7 +10,7 @@ tests:
 	-@$(BTEST) -j -f diag.log
 	@mv diag.log .diag.log
 
-	-@$(BTEST) -j -f diag.log -a jit binpac
-	@mv diag.log .diag.log.jit
+	-@$(BTEST) -j -f diag.log -a hilti-build binpac
+	@mv diag.log .diag.log.hb
 
-	@cat .diag.log .diag.log.jit >diag.log
+	@cat .diag.log .diag.log.hb >diag.log
