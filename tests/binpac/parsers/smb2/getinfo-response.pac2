@@ -1,0 +1,13 @@
+#
+# @TEST-EXEC:  cat %DIR/getinfo-response.dat | pac-driver-test %INPUT ${PARSERS}/smb2.pac2 -- -p SMB2::PDU >output
+# @TEST-EXEC:  btest-diff output
+#
+
+module Test;
+
+import parsers/smb2;
+
+on SMB2::PDU::%done {
+    print self;
+    }
+

@@ -221,14 +221,14 @@ type File_Notify_Information = unit {
 type create_context = unit(len: uint32) {
 	%byteorder = BinPAC::ByteOrder::Little;
 
-	#contexts          : list<context> &until(self.offset() == len);
+	#contexts          : list<contextX> &until(self.offset() == len);
 	switch ( len ) {
 		0 -> empty    : bytes &length=0;
-		* -> contexts : list<context> &until($$.next == 0);
+		* -> contexts : list<contextX> &until($$.next == 0);
 	};
 };
 
-type context = unit {
+type contextX = unit {
 	%byteorder = BinPAC::ByteOrder::Little;
 
 	next              : uint32;
