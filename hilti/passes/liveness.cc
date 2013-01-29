@@ -1,4 +1,10 @@
 
+// TODO: This is quite inefficient. We should traverse nodes in reverse CFG
+// order (do a depth-first sorting of its nodes. Also, we should switch to
+// "real" basic blocks by first turning try/catch, foreach, etc. into that
+// structure so that we don't have nested blocks anymore. Then we can do
+// the liveness on just blocks.
+
 #include <functional>
 
 #include "hilti-intern.h"
@@ -48,7 +54,7 @@ size_t Liveness::hashLiveness()
     return hash;
 }
 
-bool Liveness::run(shared_ptr<Node> module)
+bool Liveness::run(shared_ptr<Node> block)
 {
     size_t old_size;
     size_t old_hash;
@@ -57,14 +63,12 @@ bool Liveness::run(shared_ptr<Node> module)
         old_size = _livenesses.size();
         old_hash = hashLiveness();
 
-        // We do a reverse sibling traversal as that'll likely need less
-        // iterations to converge.
-        if ( ! processAllPreOrder(module, true) )
-            return false;
+        for ( auto s : _cfg->depthFirstOrder() )
+            processStatement(s);
 
-        // std::cerr << "-> changed=" << _changed << " old_size=" << old_size << " new_size=" << _livenesses.size()
-        // << " old_hash=" << old_hash << " new_hash=" << hashLiveness() << std::endl;
-        // std::cerr << std::endl;
+        // std::cerr << "-> old_size=" << old_size << " new_size=" << _livenesses.size()
+        //  << " old_hash=" << old_hash << " new_hash=" << hashLiveness() << std::endl;
+        //  std::cerr << std::endl;
 
         // Note we can't track changes as we make them to the sets because
         // during on iteration a set might temporarily change but then revert
@@ -74,8 +78,7 @@ bool Liveness::run(shared_ptr<Node> module)
 
     } while ( old_size != _livenesses.size() || old_hash != hashLiveness() );
 
-    _run = (errors() == 0);
-    return _run;
+    return (errors() == 0);
 }
 
 Liveness::liveness_sets Liveness::liveness(shared_ptr<Statement> stmt) const
@@ -102,70 +105,48 @@ void Liveness::setLiveness(shared_ptr<Statement> stmt, variable_set in, variable
 
     auto sets = i->second;
 
-    if ( *sets.first != in ) {
-        // std::cerr << stmt->render() << " IN : " << renderSet(*sets.first) << " -> " << renderSet(in) << std::endl;
-        *sets.first = in;
-    }
-
-    if ( *sets.second != out ) {
-        // std::cerr << stmt->render() << " OUT: " << renderSet(*sets.second) << " -> " << renderSet(out) << std::endl;
-        *sets.second = out;
-    }
+    *sets.first = in;
+    *sets.second = out;
 }
 
 void Liveness::addLiveness(shared_ptr<Statement> stmt, variable_set in, variable_set out)
 {
-    auto old = liveness(stmt);
-    in = util::set_union(*old.first, in);
-    out = util::set_union(*old.second, out);
-    setLiveness(stmt, in, out);
+    auto cur = liveness(stmt);
+
+    for ( auto i : in )
+        cur.first->insert(i);
+
+    for ( auto i : out )
+        cur.second->insert(i);
 }
 
-void Liveness::visit(Statement* s)
+void Liveness::processStatement(shared_ptr<Statement> stmt)
 {
-    if ( ast::tryCast<statement::Block>(s) )
-        return;
-
-    auto stmt = s->sharedPtr<Statement>();
+    assert(! ast::tryCast<statement::Block>(stmt));
 
     variable_set in, out;
 
     for ( auto succ : *_cfg->successors(stmt) )
         out = util::set_union(out, *liveness(succ).first);
 
-    auto fi = s->flowInfo();
+    auto fi = stmt->flowInfo();
 
     in = out;
 
-    in = util::set_difference(in, fi.defined);
-    in = util::set_difference(in, fi.cleared);
-    in = util::set_union(in, fi.modified);
-    in = util::set_union(in, fi.read);
+    auto remove = util::set_union(fi.defined, fi.cleared);
+    auto add = util::set_union(fi.modified, fi.read);
 
-    out = util::set_difference(out, fi.cleared);
+    if ( remove.size() )
+        in = util::set_difference(in, remove);
+
+    if ( add.size() )
+        in = util::set_union(in, add);
+
+    if ( fi.cleared.size() )
+        out = util::set_difference(out, fi.cleared);
 
     setLiveness(stmt, in, out);
 }
 
-void Liveness::visit(statement::Block* s)
-{
-}
-
-void Liveness::visit(declaration::Function* s)
-{
-    if ( ! s->function()->body() )
-        return;
-
-    // For the first instruction of a function, add the parameters to IN.
-    variable_set parameters;
-
-    for ( auto p : s->function()->type()->parameters() ) {
-        auto expr = std::make_shared<expression::Parameter>(p, p->location());
-        parameters.insert(std::make_shared<Statement::FlowVariable>(expr));
-    }
-
-    if ( auto i = s->function()->body()->firstNonBlock() )
-        addLiveness(i, parameters, variable_set());
-}
 
 

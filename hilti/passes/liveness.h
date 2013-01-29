@@ -2,12 +2,15 @@
 #ifndef HILTI_PASSES_LIVENESS_H
 #define HILTI_PASSES_LIVENESS_H
 
+#include <unordered_map>
+
 #include "../pass.h"
 
 namespace hilti {
 namespace passes {
 
 class CFG;
+class LocalLiveness;
 
 /// Computes liveness information for local variables.
 class Liveness : public Pass<>
@@ -24,6 +27,7 @@ public:
 
     typedef Statement::variable_set variable_set;
     typedef std::pair<shared_ptr<variable_set>, shared_ptr<variable_set>> liveness_sets;
+    typedef std::unordered_map<shared_ptr<Statement>, liveness_sets> liveness_map;
 
     /// Returns liveness sets for a statement. The first element is all
     /// variables live right before the statement, and the second all live
@@ -33,23 +37,17 @@ public:
     liveness_sets liveness(shared_ptr<Statement> stmt) const;
 
 protected:
+    void processStatement(shared_ptr<Statement> s);
     void setLiveness(shared_ptr<Statement> stmt, variable_set in, variable_set out);
     void addLiveness(shared_ptr<Statement> stmt, variable_set in, variable_set out);
-
-    /// Computes a hash over the current liveness sets suitable for detecting
-    /// changes.
     size_t hashLiveness();
-
-    void visit(statement::Block* s);
-    void visit(declaration::Function* s);
-    void visit(Statement* s) override;
 
 private:
     CompilerContext* _context;
     shared_ptr<CFG> _cfg;
     bool _run = false;
 
-    std::map<shared_ptr<Statement>, liveness_sets> _livenesses;
+    liveness_map _livenesses;
 };
 
 }

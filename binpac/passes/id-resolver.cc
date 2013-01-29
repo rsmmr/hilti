@@ -109,6 +109,7 @@ void IDResolver::visit(expression::ID* i)
         return;
     }
 
+#if 0
     // Check use $$ here because we're going to replace it and thus the
     // valdiator won't see ID anymore.
     if ( id->id()->name() == "$$" ) {
@@ -125,6 +126,7 @@ void IDResolver::visit(expression::ID* i)
         if ( ! ok )
             error(i, util::fmt("$$ not defined here"));
     }
+#endif    
 
     auto val = vals.front();
 

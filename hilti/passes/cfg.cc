@@ -4,9 +4,80 @@
 
 using namespace hilti::passes;
 
+// A helper pass that traverses nodes in depth-first order and records all
+// statements it encounters.
+class hilti::passes::DepthOrderTraversal : public Pass<>
+{
+public:
+    DepthOrderTraversal(CFG* cfg) : Pass<>("hilti::cfg::DepthOrderTraversal") {
+        _cfg = cfg;
+    }
+
+    virtual ~DepthOrderTraversal() {}
+
+    bool run(shared_ptr<Node> stmt) override { processOne(stmt); _done.clear(); return true; }
+    const std::list<shared_ptr<Statement>>& depthFirstOrder() const { return _statements; }
+
+protected:
+    void visit(Module* m) override {
+        if ( m->body() )
+            processOne(m->body());
+    }
+
+    void visit(declaration::Function* f) override {
+        if ( f->function()->body() )
+            processOne(f->function()->body());
+    }
+
+    void visit(Statement* s) override {
+        auto stmt = s->sharedPtr<Statement>();
+
+        if ( _done.find(stmt) != _done.end() )
+            return;
+
+        _done.insert(stmt);
+
+        auto b = ast::tryCast<statement::Block>(stmt);
+
+        if ( b ) {
+            auto stmts = b->statements();
+
+            for ( auto d : b->declarations() )
+                processOne(d);
+
+            if ( stmts.size() )
+                processOne(stmts.front());
+        }
+
+        else {
+            for ( auto p : *_cfg->successors(stmt) )
+                processOne(p);
+
+            _statements.push_back(stmt);
+        }
+    }
+
+#if 0
+    void visit(statement::Block* s) override {
+        auto stmt = s->sharedPtr<Statement>();
+
+        if ( _done.find(stmt) != _done.end() )
+            return;
+
+        _done.insert(stmt);
+    }
+#endif
+
+private:
+    CFG* _cfg;
+    std::list<shared_ptr<Statement>> _statements;
+    std::set<shared_ptr<Statement>> _done;
+};
+
 CFG::CFG(CompilerContext* context) : Pass<>("hilti::CFG")
 {
     _context = context;
+    _dot = std::make_shared<DepthOrderTraversal>(this);
 }
 
 CFG::~CFG()
@@ -34,6 +105,10 @@ bool CFG::run(shared_ptr<Node> node)
     _pass = 0;
 
     _run = (errors() == 0);
+
+    if ( _run )
+        _dot->run(module);
+
     return _run;
 }
 
@@ -136,6 +211,12 @@ void CFG::visit(declaration::Function* f)
         if ( body )
             processOne(body);
     }
+}
+
+const std::list<shared_ptr<Statement>>& CFG::depthFirstOrder() const
+{
+    assert(_run);
+    return _dot->depthFirstOrder();
 }
 
 void CFG::visit(statement::Block* s)

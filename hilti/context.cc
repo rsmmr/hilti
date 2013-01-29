@@ -191,6 +191,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
     if ( ! cfg->run(module) )
         return false;
 
+#if 1
     auto liveness = std::make_shared<passes::Liveness>(this, cfg);
 
     _debugAST(this, module, *liveness);
@@ -199,6 +200,9 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
         return false;
 
     module->setPasses(cfg, liveness);
+#else
+    module->setPasses(cfg, 0);
+#endif
 
     return true;
 }

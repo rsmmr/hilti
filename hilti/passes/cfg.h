@@ -2,10 +2,14 @@
 #ifndef HILTI_PASSES_CFG_H
 #define HILTI_PASSES_CFG_H
 
+#include <unordered_map>
+
 #include "../pass.h"
 
 namespace hilti {
 namespace passes {
+
+class DepthOrderTraversal;
 
 /// Builds a control flow graph.
 ///
@@ -49,6 +53,10 @@ public:
     /// it's not clear if it can with the current structure.
     shared_ptr<std::set<shared_ptr<Statement>>> successors(shared_ptr<Statement> stmt);
 
+    /// Returns a depth-first-ordered list of all statements. Must only be
+    /// called after run().
+    const std::list<shared_ptr<Statement>>& depthFirstOrder() const;
+
 protected:
     void addSuccessor(Statement* stmt, shared_ptr<Statement> succ);
     void addSuccessor(shared_ptr<Statement> stmt, shared_ptr<Statement> succ);
@@ -68,10 +76,11 @@ private:
     bool _run = false;
     bool _changed = false;
     int _pass = 0;
+    shared_ptr<DepthOrderTraversal> _dot;
 
     std::list<shared_ptr<Statement>> _siblings;
 
-    typedef std::map<shared_ptr<Statement>, shared_ptr<std::set<shared_ptr<Statement>>>> stmt_map;
+    typedef std::unordered_map<shared_ptr<Statement>, shared_ptr<std::set<shared_ptr<Statement>>>> stmt_map;
 
     stmt_map _predecessors;
     stmt_map _successors;
