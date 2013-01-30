@@ -304,7 +304,7 @@ Input files may be end in one of the following extensions:
                          help="Generate just prototypes for all *.hlt files (including generated ones).")
     optparser.add_option("-b", "--bc", action="store_true", dest="bitcode", default=False,
                          help="Produce a bitcode file for JITing rather than an executable.")
-    optparser.add_option("-d", "--debug", action="count", dest="debug", default=0,
+    optparser.add_option("-d", "--debug", action="count", dest="debug", default=1,
                          help="Compile HILTI code with debugging support; multiple times increases level.")
     optparser.add_option("-B", "--binpac", action="store_true", dest="binpac", default=False,
                          help="Activate BinPAC++ support even if not *.pac2 files are given.")
@@ -315,7 +315,9 @@ Input files may be end in one of the following extensions:
     optparser.add_option("-F", "--profile", action="count", dest="profile", default=0,
                          help="Enable profiling support; each time this option is given, the profiling level is increased by one")
 
-    (options, args) = optparser.parse_args()
+    addl = os.environ.get("HILTI_BUILD_FLAGS", "").split()
+
+    (options, args) = optparser.parse_args(sys.argv[1:] + addl)
 
     if len(args) < 1:
         optparser.error("no input file specified")
