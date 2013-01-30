@@ -76,6 +76,12 @@ public:
    /// Returns: The computed LLVM value.
    llvm::Value* llvmValue(shared_ptr<Ctor> ctor, bool cctor);
 
+   /// Returns the address of a value referenced by an expression, if possible.
+   /// For types that don't support taking their address, returns null.
+   ///
+   /// expr: The expression to evaluate.
+   llvm::Value* llvmValueAddress(shared_ptr<Expression> expr);
+
 protected:
    /// XXX
    void setResult(llvm::Value* _value, bool _cctor, bool _is_ptr) {

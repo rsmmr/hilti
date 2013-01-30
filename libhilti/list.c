@@ -390,18 +390,19 @@ int8_t hlt_iterator_list_eq(const hlt_iterator_list i1, const hlt_iterator_list 
 
 hlt_string hlt_list_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    hlt_string prefix = hlt_string_from_asciiz("[", excpt, ctx);
-    hlt_string postfix = hlt_string_from_asciiz("]", excpt, ctx);
-    hlt_string separator = hlt_string_from_asciiz(", ", excpt, ctx);
-
     const hlt_list* l = *((const hlt_list**)obj);
-    hlt_string s = prefix;
-    hlt_string result = 0;
 
     if ( ! l ) {
         hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
         return 0;
     }
+
+    hlt_string prefix = hlt_string_from_asciiz("[", excpt, ctx);
+    hlt_string postfix = hlt_string_from_asciiz("]", excpt, ctx);
+    hlt_string separator = hlt_string_from_asciiz(", ", excpt, ctx);
+
+    hlt_string s = prefix;
+    hlt_string result = 0;
 
     for ( __hlt_list_node* n = l->head; n; n = n->next ) {
 

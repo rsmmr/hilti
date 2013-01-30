@@ -54,6 +54,17 @@ llvm::Value* Loader::llvmValue(shared_ptr<Expression> expr, bool cctor, shared_p
     return normResult(result, expr->type(), cctor);
 }
 
+llvm::Value* Loader::llvmValueAddress(shared_ptr<Expression> expr)
+{
+    _cctor = false;
+    _LoadResult result;
+    setArg1(nullptr);
+    bool success = processOne(expr, &result);
+    assert(success);
+
+    return result.is_ptr ? result.value : false;
+}
+
 llvm::Value* Loader::llvmValue(shared_ptr<Constant> constant, bool cctor)
 {
     _cctor = cctor;

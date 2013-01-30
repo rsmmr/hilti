@@ -304,7 +304,7 @@ Input files may be end in one of the following extensions:
                          help="Generate just prototypes for all *.hlt files (including generated ones).")
     optparser.add_option("-b", "--bc", action="store_true", dest="bitcode", default=False,
                          help="Produce a bitcode file for JITing rather than an executable.")
-    optparser.add_option("-d", "--debug", action="count", dest="debug", default=1,
+    optparser.add_option("-d", "--debug", action="count", dest="debug", default=0,
                          help="Compile HILTI code with debugging support; multiple times increases level.")
     optparser.add_option("-B", "--binpac", action="store_true", dest="binpac", default=False,
                          help="Activate BinPAC++ support even if not *.pac2 files are given.")

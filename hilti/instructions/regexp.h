@@ -261,7 +261,7 @@ iEnd
 
 iBegin(regexp, MatchTokenAdvanceString, "regexp.match_token_advance")
     iTarget(optype::tuple)
-    iOp1(optype::refMatchTokenState, true)
+    iOp1(optype::refMatchTokenState, false)
     iOp2(optype::string, true)
 
     iValidate {
@@ -294,7 +294,7 @@ iEnd
 
 iBegin(regexp, MatchTokenAdvanceBytes, "regexp.match_token_advance")
     iTarget(optype::tuple)
-    iOp1(optype::refMatchTokenState, true)
+    iOp1(optype::refMatchTokenState, false)
     iOp2(optype::iterBytes, true)
     iOp3(optype::optional(optype::iterBytes), true)
 

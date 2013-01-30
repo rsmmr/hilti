@@ -1,19 +1,19 @@
 #
 # @TEST-EXEC:  hilti-build -d %INPUT -o a.out
 # @TEST-EXEC:  bash -c "echo RUN\ 1 > output"
-# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  ./a.out >output.tmp 2>stderr && cat stderr >>output.tmp
 # @TEST-EXEC:  grep uncaught output.tmp >> output
 # @TEST-EXEC:  bash -c "echo RUN\ 2 >> output"
-# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  ./a.out >output.tmp 2>stderr && cat stderr >>output.tmp
 # @TEST-EXEC:  grep uncaught output.tmp >> output
 # @TEST-EXEC:  bash -c "echo RUN\ 3 >> output"
-# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  ./a.out >output.tmp 2>stderr && cat stderr >>output.tmp
 # @TEST-EXEC:  grep uncaught output.tmp >> output
 # @TEST-EXEC:  bash -c "echo RUN\ 4 >> output"
-# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  ./a.out >output.tmp 2>stderr && cat stderr >>output.tmp
 # @TEST-EXEC:  grep uncaught output.tmp >> output
 # @TEST-EXEC:  bash -c "echo RUN\ 5 >> output"
-# @TEST-EXEC:  ./a.out >output.tmp 2>&1
+# @TEST-EXEC:  ./a.out >output.tmp 2>stderr && cat stderr >>output.tmp
 # @TEST-EXEC:  grep uncaught output.tmp >> output
 # @TEST-EXEC:  btest-diff output
 

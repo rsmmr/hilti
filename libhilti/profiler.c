@@ -474,6 +474,7 @@ void hlt_profiler_start(hlt_string tag, hlt_enum style, uint64_t param, hlt_time
         __hlt_profiler* p = hlt_calloc(1, sizeof(__hlt_profiler));
         p->tag = tag;
         p->tmgr = tmgr;
+        GC_CCTOR(p->tmgr, hlt_timer_mgr);
         p->timer = 0;
         p->style = style;
         p->param = param;
@@ -616,6 +617,7 @@ void hlt_profiler_stop(hlt_string tag, hlt_exception** excpt, hlt_execution_cont
             p->timer = 0;
         }
 
+        GC_DTOR(p->tmgr, hlt_timer_mgr);
         hlt_free(p);
         kh_value(ctx->pstate->profilers, i) = 0;
     }

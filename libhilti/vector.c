@@ -301,6 +301,11 @@ hlt_string hlt_vector_to_string(const hlt_type_info* type, const void* obj, int3
 {
     const hlt_vector* v = *((const hlt_vector**)obj);
 
+    if ( ! v ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+
     hlt_string sep1 = hlt_string_from_asciiz(": ", excpt, ctx);
     hlt_string sep2 = hlt_string_from_asciiz(", ", excpt, ctx);
 

@@ -454,6 +454,13 @@ public:
    /// Returns: The computed LLVM value.
    llvm::Value* llvmValue(shared_ptr<Expression> expr, shared_ptr<hilti::Type> coerce_to = nullptr, bool cctor = false);
 
+   /// Returns the address of a value referenced by an expression, if
+   /// possible. For types that don't support taking their address, returns
+   /// null.
+   ///
+   /// expr: The expression to evaluate.
+   llvm::Value* llvmValueAddress(shared_ptr<Expression> expr);
+
    /// Returns the LLVM value for the current execution context. Depending on
    /// what object currently being generated, the value may refer to
    /// different things.
@@ -1525,7 +1532,10 @@ public:
    void llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> type, bool plusone, bool dtor_first = true);
 
    /// XXXX
-   void llvmGCClear(llvm::Value* val, shared_ptr<Type> type);
+   void llvmGCClear(llvm::Value* addr, shared_ptr<Type> type);
+
+   /// XXXX
+   void llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type);
 
    /// XXXX
    void llvmDebugPrint(const string& stream, const string& msg);
@@ -1655,7 +1665,10 @@ public:
    // internal state of cleanup code to run (unless the default argument is changed).
    //
    // flush: If false, the state isn't flushed.
-   void llvmBuildInstructionCleanup(bool flush = true);
+   void llvmBuildInstructionCleanup(bool flush = true, bool dont_do_locals = false);
+
+   // XXX
+   void llvmDiscardInstructionCleanup();
 
    /// Tell the next call of llvmCall()/llvmRunHook() to run
    /// llvmBuildInstructionCleanup() on return.
@@ -2218,7 +2231,7 @@ private:
    typedef std::map<string, int> label_map;
    typedef std::map<string, IRBuilder*> builder_map;
    typedef std::map<string, std::pair<llvm::Value*, shared_ptr<Type>>> local_map;
-   typedef std::list<std::pair<std::pair<llvm::Value*, bool>, shared_ptr<Type>>> dtor_list;
+   typedef std::multimap<shared_ptr<Statement>, std::tuple<llvm::Value*, bool, shared_ptr<Type>, bool>> dtor_map;
    typedef std::list<std::pair<llvm::BasicBlock*, llvm::Value*>> exit_point_list;
 
    struct FunctionState {
@@ -2231,8 +2244,8 @@ private:
        local_map locals;
        local_map tmps;
        exit_point_list exits;
-       dtor_list dtors_after_ins;
-       bool dtors_after_call; // If true, run dtors_after_ins after next llvmCall().
+       dtor_map dtors_after_ins;
+       bool dtors_after_call; // If true, run dtors_after_ins for the current statement after next llvmCall().
        string next_comment;
        bool abort_on_excpt;
        bool is_init_func;

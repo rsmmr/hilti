@@ -253,6 +253,11 @@ llvm::Value* CodeGen::llvmValue(shared_ptr<Expression> expr, shared_ptr<hilti::T
     return _loader->llvmValue(expr, cctor, coerce_to);
 }
 
+llvm::Value* CodeGen::llvmValueAddress(shared_ptr<Expression> expr)
+{
+    return _loader->llvmValueAddress(expr);
+}
+
 #if 0
 llvm::Value* CodeGen::llvmValue(shared_ptr<Constant> constant)
 {
@@ -1675,24 +1680,77 @@ void CodeGen::llvmBuildExitBlock()
 void CodeGen::llvmDtorAfterInstruction(llvm::Value* val, shared_ptr<Type> type, bool is_ptr)
 {
     auto tmp = llvmAddTmp("dtor", val->getType());
+    auto stmt = _stmt_builder->currentStatement();
+
+    // Note: it's ok here if stmt is null, we use that for all tmps that
+    // aren't directly associated with a statement.
 
     llvmGCAssign(tmp, val, type, true);
-    _functions.back()->dtors_after_ins.push_back(std::make_tuple(std::make_tuple(tmp, is_ptr), type));
+    _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(tmp, is_ptr, type, false)));
 }
 
-void CodeGen::llvmBuildInstructionCleanup(bool flush)
+void CodeGen::llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type)
 {
+    auto stmt = _stmt_builder->currentStatement();
+
+    // Note: it's ok here if stmt is null, we use that for all tmps that
+    // aren't directly associated with a statement.
+
+    auto ti = typeInfo(type);
+
+    if ( ti->dtor.size() == 0 && ti->dtor_func == 0 )
+        return;
+
+    _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(addr, true, type, true)));
+}
+
+void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
+{
+    // TODO: This function is getting messy ... At least the "local" stuff
+    // should be factored out.
+
+    auto stmt = _stmt_builder->currentStatement();
+
+    // Note: it's ok here if stmt is null, we use that for all tmps that
+    // aren't directly associated with a statement.
+
+    // Note: This method may run mutiple times per instruction, and must hece
+    // be safe against doing so. That's normally the case because it removes
+    // all tmps once cleaned up.
+
     // Unref tmps.
-    for ( auto unref : _functions.back()->dtors_after_ins ) {
+    auto range = _functions.back()->dtors_after_ins.equal_range(stmt);
+    for ( auto i = range.first; i != range.second; i++ ) {
+        auto unref = (*i).second;
+        auto tmp = std::get<0>(unref);
+        auto ptr = std::get<1>(unref);
+        auto type = std::get<2>(unref);
+        auto local = std::get<3>(unref);
+
+        if ( local ) {
+            if ( dont_do_locals )
+                continue;
+
+            // See if we indeed know that address as a local. If not, it's a
+            // const parameter that we don't need to unref.
+            for ( auto l : _functions.back()->locals ) {
+                if ( l.second.first == tmp ) {
+                    llvmGCClear(l.second.first, l.second.second);
+                    break;
+                }
+            }
+
+            continue;
+        }
+
         auto dtor = newBuilder("dtor-tmp");
         auto cont = newBuilder("cont");
-        auto tmp = unref.first.first;
         auto val = builder()->CreateLoad(tmp);
 
-        llvm::Value* ptr_val = unref.first.second ? val : tmp;
+        llvm::Value* ptr_val = ptr ? val : tmp;
 
         if ( val->getType()->isStructTy() ) {
-            llvmDtor(ptr_val, unref.second, true, "function-instruction-struct-tmp");
+            llvmDtor(ptr_val, type, true, "function-instruction-struct-tmp");
             llvmCreateStore(llvmConstNull(val->getType()), tmp);
             continue;
         }
@@ -1702,7 +1760,7 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush)
 
         pushBuilder(dtor);
 
-        llvmDtor(ptr_val, unref.second, true, "instruction-cleanup-tmp");
+        llvmDtor(ptr_val, type, true, "instruction-cleanup-tmp");
 
         llvmCreateStore(llvmConstNull(val->getType()), tmp);
         llvmCreateBr(cont);
@@ -1714,7 +1772,17 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush)
     }
 
     if ( flush )
-        _functions.back()->dtors_after_ins.clear();
+        _functions.back()->dtors_after_ins.erase(stmt);
+}
+
+void CodeGen::llvmDiscardInstructionCleanup()
+{
+    auto stmt = _stmt_builder->currentStatement();
+
+    // Note: it's ok here if stmt is null, we use that for all tmps that
+    // aren't directly associated with a statement.
+
+    _functions.back()->dtors_after_ins.erase(stmt);
 }
 
 void CodeGen::setInstructionCleanupAfterCall()
@@ -1724,9 +1792,13 @@ void CodeGen::setInstructionCleanupAfterCall()
 
 void CodeGen::llvmBuildFunctionCleanup()
 {
+    // We used to unref the local here, but that's now done in
+    // StatementBuilder::llvmStatement based on liveness analysis.
+#if 1
     // Unref locals (incl. parameters).
     for ( auto l : _functions.back()->locals )
         llvmDtor(l.second.first, l.second.second, true, "func-cleanup-local");
+#endif
 }
 
 llvm::Value* CodeGen::llvmGEP(llvm::Value* addr, llvm::Value* i1, llvm::Value* i2, llvm::Value* i3, llvm::Value* i4)
@@ -2038,6 +2110,8 @@ void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
     }
 
     if ( _functions.back()->catches.size() ) {
+        llvmBuildInstructionCleanup(false);
+
         // At least one catch clause, check it.
         if ( ! known_exception ) {
             cont = newBuilder("no-excpt");
@@ -2882,10 +2956,12 @@ void CodeGen::llvmGCAssign(llvm::Value* dst, llvm::Value* val, shared_ptr<Type> 
         llvmCctor(dst, type, true, "gc-assign");
 }
 
-void CodeGen::llvmGCClear(llvm::Value* val, shared_ptr<Type> type)
+void CodeGen::llvmGCClear(llvm::Value* addr, shared_ptr<Type> type)
 {
     assert(ast::isA<type::ValueType>(type));
-    llvmDtor(val, type, true, "gc-clear");
+    auto init_val = typeInfo(type)->init_val;
+    llvmDtor(addr, type, true, "gc-clear");
+    llvmCreateStore(init_val, addr);
 }
 
 void CodeGen::llvmDebugPrint(const string& stream, const string& msg)
@@ -3633,11 +3709,13 @@ void CodeGen::llvmProfilerStart(const string& tag, const string& style, int64_t 
 {
     assert(tag.size());
 
-    auto ltag = llvmString(tag);
+    auto ltag = llvmStringFromData(tag);
     auto lstyle = style.size() ? llvmEnum(style) : static_cast<llvm::Value*>(nullptr);
     auto lparam = llvmConstInt(param, 64);
 
     llvmProfilerStart(ltag, lstyle, lparam, tmgr);
+
+    llvmDtor(ltag, builder::string::type(), false, "profiler-start");
 }
 
 void CodeGen::llvmProfilerStop(llvm::Value* tag)
@@ -3658,8 +3736,9 @@ void CodeGen::llvmProfilerStop(const string& tag)
 {
     assert(tag.size());
 
-    auto ltag = llvmString(tag);
+    auto ltag = llvmStringFromData(tag);
     llvmProfilerStop(ltag);
+    llvmDtor(ltag, builder::string::type(), false, "profiler-start");
 }
 
 void CodeGen::llvmProfilerUpdate(llvm::Value* tag, llvm::Value* arg)

@@ -260,7 +260,9 @@ public:
     void call(shared_ptr<NodeBase> node) {
        this->pushCurrent(node);
        this->printDebug(node);
+       this->preAccept(node);
        this->callAccept(node);
+       this->postAccept(node);
        this->popCurrent();
     }
 
@@ -389,6 +391,10 @@ protected:
        _visited.clear();
        Logger::reset();
     }
+
+    /// Called just before a node's accept(). The default implementation does nothing.
+    virtual void preAccept(shared_ptr<ast::NodeBase> node) {};
+    virtual void postAccept(shared_ptr<ast::NodeBase> node) {};
 
     void preOrder(shared_ptr<NodeBase> node, bool reverse = false);
     void postOrder(shared_ptr<NodeBase> node, bool reverse = false);

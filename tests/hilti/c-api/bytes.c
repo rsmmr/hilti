@@ -48,6 +48,8 @@ const char* myexp(const hlt_exception* e)
 
 int main()
 {
+    hlt_init();
+
     const int LEN = 2048;
     int i = 0;
     int8_t* large = hlt_malloc(LEN);

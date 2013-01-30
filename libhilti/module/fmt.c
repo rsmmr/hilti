@@ -31,11 +31,9 @@ static void _add_char(int8_t c, int8_t* buffer, hlt_string_size* bpos, hlt_strin
         if ( *excpt )
             return;
 
-        new_dst = hlt_string_concat(*dst, new_dst, excpt, ctx);
+        *dst = hlt_string_concat_and_unref(*dst, new_dst, excpt, ctx);
         buffer[0] = c;
         *bpos = 1;
-        GC_DTOR(*dst, hlt_string);
-        *dst = new_dst;
     }
 }
 
@@ -212,11 +210,8 @@ hlt_string hilti_fmt(hlt_string fmt, const hlt_type_info* type, const void* tupl
     if ( *excpt )
         return 0;
 
-    if ( dst ) {
-        hlt_string nresult = hlt_string_concat(dst, result, excpt, ctx);
-        GC_DTOR(result, hlt_string);
-        result = nresult;
-    }
+    if ( dst )
+        result = hlt_string_concat_and_unref(dst, result, excpt, ctx);
 
     return result;
 }

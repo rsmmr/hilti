@@ -48,7 +48,13 @@ public:
    /// that) or \c op2 (if op1 can be coerced into that).
    shared_ptr<Type> coerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const;
 
+   /// During visiting, return the currently processed statement.
+   shared_ptr<Statement> currentStatement();
+
 protected:
+   void preAccept(shared_ptr<ast::NodeBase> node) override;
+   void postAccept(shared_ptr<ast::NodeBase> node) override;
+
    void visit(statement::Block* b) override;
    void visit(statement::Try* b) override;
    void visit(statement::try_::Catch* c) override;
@@ -64,6 +70,8 @@ protected:
 
    void prepareCall(shared_ptr<Expression> func, shared_ptr<Expression> args, CodeGen::expr_list* call_params, bool before_call);
 
+private:
+    std::list<shared_ptr<Statement>> _stmts;
 };
 
 }

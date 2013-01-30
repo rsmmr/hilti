@@ -106,19 +106,19 @@ void __hlt_debug_done()
 void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* type, const char* tuple, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     char* s = hlt_string_to_native(stream, excpt, ctx);
+    int want = _want_stream(s, excpt, ctx);
 
-    if ( ! _want_stream(s, excpt, ctx) ) {
+    if ( ! want ) {
         hlt_free(s);
         return;
     }
 
     char prefix[128];
-
     _make_prefix(s, prefix, sizeof(prefix), excpt, ctx);
+    hlt_free(s);
 
     hlt_string usr = hilti_fmt(fmt, type, tuple, excpt, ctx);
     hlt_string indent = hlt_string_from_asciiz("  ", excpt, ctx);
-    GC_CCTOR(indent, hlt_string);
 
     for ( int i = ctx->debug_indent; i; --i ) {
         GC_CCTOR(indent, hlt_string);
@@ -127,8 +127,10 @@ void hlt_debug_printf(hlt_string stream, hlt_string fmt, const hlt_type_info* ty
 
     GC_DTOR(indent, hlt_string);
 
-    if ( *excpt )
+    if ( *excpt ) {
+        GC_DTOR(usr, hlt_string);
         return;
+    }
 
     // We must not terminate while in here.
     int old_state;

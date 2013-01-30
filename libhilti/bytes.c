@@ -187,6 +187,9 @@ hlt_bytes* hlt_bytes_new_from_data(int8_t* data, hlt_bytes_size len, hlt_excepti
         assert(!is_empty(b));
     }
 
+    else
+        hlt_free(data);
+
     return b;
 }
 

@@ -468,6 +468,12 @@ int8_t hlt_iterator_map_eq(hlt_iterator_map i1, hlt_iterator_map i2, hlt_excepti
 hlt_string hlt_map_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_map* m = *((const hlt_map**)obj);
+
+    if ( ! m ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+
     int8_t first = 1;
 
     hlt_string colon = hlt_string_from_asciiz(": ", excpt, ctx);
@@ -737,6 +743,12 @@ int8_t hlt_iterator_set_eq(hlt_iterator_set i1, hlt_iterator_set i2, hlt_excepti
 hlt_string hlt_set_to_string(const hlt_type_info* type, const void* obj, int32_t options, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     const hlt_set* m = *((const hlt_set**)obj);
+
+    if ( ! m ) {
+        hlt_set_exception(excpt, &hlt_exception_null_reference, 0);
+        return 0;
+    }
+
     int8_t first = 1;
 
     hlt_string separator = hlt_string_from_asciiz(", ", excpt, ctx);

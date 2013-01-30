@@ -19,9 +19,45 @@ StatementBuilder::~StatementBuilder()
 void StatementBuilder::llvmStatement(shared_ptr<Statement> stmt, bool cleanup)
 {
     call(stmt);
+}
 
-    if ( cleanup )
-        cg()->llvmBuildInstructionCleanup();
+shared_ptr<Statement> StatementBuilder::currentStatement()
+{
+    return _stmts.size() ? _stmts.back() : nullptr;
+}
+
+void StatementBuilder::preAccept(shared_ptr<ast::NodeBase> node)
+{
+    auto stmt = ast::tryCast<Statement>(node);
+
+    if ( ! stmt )
+        return;
+
+    _stmts.push_back(stmt);
+
+    if ( cg()->hiltiModule()->liveness() ) {
+        auto live = cg()->hiltiModule()->liveness()->liveness(stmt);
+        auto diff = ::util::set_difference(*live.first, *live.second);
+
+        for ( auto v : diff ) {
+            if ( auto addr = cg()->llvmValueAddress(v->expression) )
+                cg()->llvmClearLocalAfterInstruction(addr, v->expression->type());
+        }
+    }
+}
+
+void StatementBuilder::postAccept(shared_ptr<ast::NodeBase> node)
+{
+    auto stmt = ast::tryCast<Statement>(node);
+
+    if ( ! stmt )
+        return;
+
+    // Note that individual instructions may (better: have to) run this
+    // earlier already themselves, in which case this becomes a noop. That's
+    // usually the case for terminators.
+    cg()->llvmBuildInstructionCleanup();
+    _stmts.pop_back();
 }
 
 shared_ptr<Type> StatementBuilder::coerceTypes(shared_ptr<Expression> op1, shared_ptr<Expression> op2) const
@@ -54,6 +90,8 @@ void StatementBuilder::visit(statement::Block* b)
 
     for ( auto d : b->declarations() )
         call(d);
+
+    cg()->llvmBuildInstructionCleanup();
 
     for ( auto s : b->statements() ) {
 
@@ -265,6 +303,7 @@ void StatementBuilder::visit(declaration::Function* f)
     cg()->llvmCreateBr(body);
 
     cg()->pushBuilder(body);
+
     call(func->body());
 
     cg()->popFunction();

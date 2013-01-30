@@ -7,7 +7,6 @@
 using namespace hilti;
 using namespace codegen;
 
-
 void StatementBuilder::visit(statement::instruction::flow::ReturnResult* i)
 {
     auto func = current<declaration::Function>();
@@ -189,7 +188,6 @@ void StatementBuilder::visit(statement::instruction::flow::Jump* i)
     auto op1_bb = llvm::cast<llvm::BasicBlock>(op1);
 
     cg()->llvmBuildInstructionCleanup();
-
     cg()->builder()->CreateBr(op1_bb);
 }
 
