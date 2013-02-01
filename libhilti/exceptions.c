@@ -139,6 +139,16 @@ int8_t __hlt_exception_match(hlt_exception* excpt, hlt_exception_type* type)
     return 0;
 }
 
+int8_t hlt_exception_is_yield(hlt_exception* excpt)
+{
+    // FIXME: It's unfortunate that we need to check the string name here,
+    // but when jitting we may have two copies of the library in our address
+    // space and hence get the wrong type object to check just the address.
+    // This is something we should find a solution for that avoids the
+    // duplicate instances.
+    return strcmp(excpt->type->name, "Yield") == 0;
+}
+
 static void __exception_print(const char* prefix, hlt_exception* exception, hlt_execution_context* ctx)
 {
     hlt_exception* excpt = 0;

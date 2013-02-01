@@ -60,6 +60,7 @@ hlt_bytes* __binpac_filter_base64_decode(binpac_filter* filter_gen, hlt_bytes* d
             }
             else
                 hlt_bytes_append_raw(decoded, buffer, n, excpt, ctx);
+                buffer = 0;
         }
 
         if ( buffer )
@@ -70,5 +71,5 @@ hlt_bytes* __binpac_filter_base64_decode(binpac_filter* filter_gen, hlt_bytes* d
     GC_DTOR(begin, hlt_iterator_bytes);
     GC_DTOR(end, hlt_iterator_bytes);
 
-    return decoded ? decoded : hlt_bytes_new_from_data((int8_t*)"", 0, excpt, ctx);
+    return decoded ? decoded : hlt_bytes_new_from_data(0, 0, excpt, ctx);
 }

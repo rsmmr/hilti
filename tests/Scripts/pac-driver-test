@@ -102,7 +102,7 @@ fi
 #cat >$stdin
 
 if [ "$mode" == "hilti-build" ]; then
-    executeWithCache $hilti_build $build_opts $pac_driver -o a.out || exit 1
+    executeWithCache $hilti_build $build_opts -t $pac_driver -o a.out || exit 1
     execute ./a.out $runtime_opts || exit 1
 
 elif [ "$mode" == "jit" ]; then

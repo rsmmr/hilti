@@ -559,7 +559,7 @@ static hlt_worker_thread* _vthread_to_worker(hlt_thread_mgr* mgr, hlt_vthread_id
 
 int8_t hlt_is_multi_threaded()
 {
-    return hlt_config_get()->num_workers != 0;
+    return __hlt_globals()->multi_threaded;
 }
 
 void __hlt_threading_init()

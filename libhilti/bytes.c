@@ -421,6 +421,12 @@ static inline void normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
 
 }
 
+void __bytes_normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt)
+{
+    return normalize_pos(pos, adj_refcnt);
+}
+
+
 hlt_bytes* hlt_bytes_copy(hlt_bytes* b, hlt_exception** excpt, hlt_execution_context* ctx)
 {
     hlt_iterator_bytes begin = hlt_bytes_begin(b, excpt, ctx);
@@ -697,7 +703,7 @@ int8_t* hlt_bytes_to_raw_buffer(const hlt_bytes* b, int8_t* buffer, hlt_bytes_si
 
 int8_t __hlt_bytes_extract_one(hlt_iterator_bytes* pos, hlt_iterator_bytes end, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(pos, 0);
+    normalize_pos(pos, 1);
     normalize_pos(&end, 0);
 
     if ( is_end(*pos) || hlt_iterator_bytes_eq(*pos, end, excpt, ctx) ) {

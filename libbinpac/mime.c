@@ -100,17 +100,14 @@ static void __connect_one(binpac_sink* sink, hlt_bytes* mtype, hlt_bytes* mtype_
 
         // The C stub for the ctor function may mess with our yield/resume
         // information. We need to restore that afterwards.
-        //
-        //  FIXME: Need to replace with something new?
-        // hlt_continuation* saved_yield = ctx->yield;
-        // hlt_continuation* saved_resume = ctx->resume;
+        hlt_fiber* saved_fiber = ctx->fiber;
+        __hlt_thread_mgr_blockable* saved_blockable = ctx->blockable;
 
         void* pobj = mp->parser->new_func(sink, mtype, cookie, excpt, ctx);
         assert(pobj);
 
-        //  FIXME: Need to replace with something new?
-        // ctx->yield = saved_yield;
-        // ctx->resume = saved_resume;
+        ctx->fiber = saved_fiber;
+        ctx->blockable = saved_blockable;
 
         _binpachilti_sink_connect_intern(sink, mp->parser->type_info, &pobj, mp->parser, mtype_full, excpt, ctx);
 

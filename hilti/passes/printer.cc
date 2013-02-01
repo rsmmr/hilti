@@ -94,7 +94,7 @@ void Printer::printFlow(Statement* stmt, const string& prefix)
     p << util::fmt("%s# %spred: { %s } succ: { %s }%s", pre, s, spred, ssucc, post) << endl;
     p << util::fmt("%s# def: { %s } clear: { %s } mod: { %s } read: { %s }", pre, sdefined, scleared, smodified, sread) << endl;
     p << util::fmt("%s# live-in: { %s } live-out: { %s }%s", pre, sin, sout, post) << endl;
-    // p << util::fmt("%s# live-dead: { %s }%s", pre, sdiff, post) << endl;
+    // p << util::fmt("%s# live-dead: { %s }%s", pre, sdead, post) << endl;
     p << util::fmt("%s%s%s ", pre, _statementName(stmt), post);
 }
 

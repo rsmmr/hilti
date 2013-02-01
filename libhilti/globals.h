@@ -40,6 +40,7 @@ struct __hlt_global_state {
 
     // threading.c
     hlt_thread_mgr*        thread_mgr; // The global thread manager.
+    int8_t multi_threaded;
     int8_t thread_mgr_terminate;
 
 #ifdef DEBUG

@@ -4,6 +4,7 @@
 
 #include "context.h"
 #include "globals.h"
+#include "config.h"
 
 static __hlt_global_state  our_globals;
 static __hlt_global_state* globals = 0;
@@ -17,6 +18,7 @@ void __hlt_global_state_init()
     __hlt_config_init();
 
     globals->context = __hlt_execution_context_new(HLT_VID_MAIN);
+    globals->multi_threaded = (__hlt_globals()->config->num_workers != 0);
 
     __hlt_debug_init();
     __hlt_cmd_queue_init();

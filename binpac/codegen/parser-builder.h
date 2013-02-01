@@ -334,6 +334,9 @@ private:
     // Update the curren input position from what's stored in the parser object.
     void _hiltiUpdateInputPostion();
 
+    // Trim input bytes to current parsing position if we can.
+    void _hiltiTrimInput();
+
     // Turns a unit's parameters into a HILTI function parameter list, adding
     // to the given list.
     void _hiltiUnitParameters(shared_ptr<type::Unit> unit, hilti::builder::function::parameter_list* args) const;

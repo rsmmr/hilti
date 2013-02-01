@@ -1,13 +1,15 @@
 #
-# @TEST-EXEC:  echo FooBarFoo123BarBar | HILTI_DEBUG=binpac:binpac-verbose pac-driver-test %INPUT   
-# @TEST-EXEC:  btest-diff hlt-debug.log
+# @TEST-EXEC:  echo FooBarFoo123BarBar | HILTI_DEBUG=binpac:binpac-verbose pac-driver-test %INPUT >output
+# @TEST-EXEC:  btest-diff output
 
 module Mini;
 
 export type test = unit {
 
-     : /Foo/;
-     : /Bar/;
-     : /Foo[0-9]*Bar/;
-     : /Bar/;
+     a: /Foo/;
+     b: /Bar/;
+     c: /Foo[0-9]*Bar/;
+     d: /Bar/;
+
+     on %done { print self; }
 };

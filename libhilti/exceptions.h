@@ -72,6 +72,9 @@ extern void __hlt_exception_clear_fiber(hlt_exception* excpt);
 /// find the right \c catch handler. If type is null, return true.
 extern int8_t __hlt_exception_match(hlt_exception*, hlt_exception_type* type);
 
+/// Returns true if the given exception is a \a yield exception.
+extern int8_t hlt_exception_is_yield(hlt_exception* excpt);
+
 /// Internal function that generates the output shown to the user when an
 /// exception is not caught, and then aborts processing. This function is
 /// intended for use outside of threads.

@@ -40,6 +40,7 @@ extern "C" {
 #endif
 
 int debug = 0;
+int driver_debug = 0;
 int debug_hooks = 0;
 int profiling = 0;
 int optlevel = 0;
@@ -60,7 +61,7 @@ static void check_exception(hlt_exception* excpt)
         hlt_execution_context* ctx = hlt_global_execution_context();
         hlt_exception_print_uncaught(excpt, ctx);
 
-        if ( excpt->type == &hlt_exception_yield )
+        if ( hlt_exception_is_yield(excpt) || hlt_exception_is_termination(excpt) )
             exit(0);
         else {
             GC_DTOR(excpt, hlt_exception);
@@ -82,13 +83,14 @@ static void usage(const char* prog)
     fprintf(stderr, "  Options:\n\n");
     fprintf(stderr, "    -p <parser>[/<reply-parsers>]  Use given parser(s)\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "    -d            Enable pac-driver's debug output\n");
+    fprintf(stderr, "    -g            Enable pac-driver's debug output\n");
     fprintf(stderr, "    -B            Enable BinPAC++ debugging hooks\n");
     fprintf(stderr, "    -i <n>        Feed input incrementally in chunks of size <n>\n");
     fprintf(stderr, "    -l            Show available parsers\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "    -P            Enable profiling\n");
 #ifdef PAC_DRIVER_JIT
+    fprintf(stderr, "    -d            Enable debug mode for JIT compilation\n");
     fprintf(stderr, "    -D <type>     Debug output during code generation; type can be %s\n", dbgstr.c_str());
     fprintf(stderr, "    -O            Optimization level from 0-3             [Default: 0].\n");
 #endif
@@ -335,7 +337,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
         check_exception(excpt);
 
         if ( ! resume ) {
-            if ( debug )
+            if ( driver_debug )
                 fprintf(stderr, "--- pac-driver: starting parsing (eod=%d).\n", frozen);
 
             void *pobj = (*p->parse_func)(incr_input, 0, &excpt, ctx);
@@ -343,28 +345,37 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
         }
 
         else {
-            if ( debug )
-                fprintf(stderr, "--- pac-driver: resuming parsing (eod=%d).\n", frozen);
+            if ( driver_debug )
+                fprintf(stderr, "--- pac-driver: resuming parsing (eod=%d, excpt=%p).\n", frozen, resume);
 
             void *pobj = (*p->resume_func)(resume, &excpt, ctx);
             GC_DTOR_GENERIC(&pobj, p->type_info);
         }
 
+        if ( driver_debug )
+            fprintf(stderr, "--- pac-driver: back in C.\n");
+
         if ( excpt ) {
-            if ( excpt->type == &hlt_exception_yield ) {
-                if ( debug )
+            if ( hlt_exception_is_yield(excpt) ) {
+                if ( driver_debug )
                     fprintf(stderr, "--- pac-driver: parsing yielded.\n");
 
                 resume = excpt;
                 excpt = 0;
             }
 
-            else
+            else {
+                GC_DTOR(cur, hlt_iterator_bytes);
+                GC_DTOR(cur_end, hlt_iterator_bytes);
+                GC_DTOR(end, hlt_iterator_bytes);
+                GC_DTOR(input, hlt_bytes);
+                GC_DTOR(incr_input, hlt_bytes);
                 check_exception(excpt);
+            }
         }
 
         else if ( ! done ) {
-            if ( debug )
+            if ( driver_debug )
                 fprintf(stderr, "pac-driver: end of input reached even though more could be parsed.");
 
             GC_DTOR(cur_end, hlt_iterator_bytes);
@@ -469,7 +480,7 @@ int main(int argc, char** argv)
     const char* progname = argv[0];
 
     char ch;
-    while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dO:BhD:UlTP")) != -1) {
+    while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dO:BhD:UlTPg")) != -1) {
 
         switch (ch) {
 
@@ -487,6 +498,10 @@ int main(int argc, char** argv)
 
           case 'd':
             ++debug;
+            break;
+
+          case 'g':
+            ++driver_debug;
             break;
 
           case 'B':

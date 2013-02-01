@@ -490,11 +490,16 @@ static hlt_match_token_state* _match_token_init(hlt_regexp* re, hlt_exception** 
     return state;
 }
 
+extern void __bytes_normalize_pos(hlt_iterator_bytes* pos, int adj_refcnt);
+
 static int _match_token_advance(hlt_match_token_state* state,
-                                hlt_iterator_bytes begin, const hlt_iterator_bytes end,
+                                hlt_iterator_bytes begin, hlt_iterator_bytes end,
                                 int8_t final,
                                 hlt_exception** excpt, hlt_execution_context* ctx)
 {
+    __bytes_normalize_pos(&begin, 0);
+    __bytes_normalize_pos(&end, 0);
+
     hlt_bytes_block block;
     void *cookie = 0;
     int last = 0;
@@ -513,14 +518,28 @@ static int _match_token_advance(hlt_match_token_state* state,
             last |= JRX_ASSERTION_EOL | JRX_ASSERTION_EOD;
 
         int block_len = block.end - block.start;
+
+#ifdef _DEBUG_MATCHING
+            fprintf(stderr, "%p feeding |", state);
+            print_bytes_raw((const char*)block.start, block_len, excpt, ctx);
+            fprintf(stderr, "|\n");
+#endif
+
         rc = jrx_regexec_partial(&state->re->regexp, (const char*)block.start, block_len, state->first, last, &state->ms, (last != 0));
 
-        if ( rc == 0 ) {
+#ifdef _DEBUG_MATCHING
+        fprintf(stderr, "%p rc=%d ms->offset=%d\n", state, rc, state->ms.offset);
+#endif
+
+        if ( rc == 0 )
             // No further match possible.
-            return state->acc;
-        }
+            return state->acc > 0 ? state->acc : 0;
 
         if ( rc > 0 ) {
+#ifdef _DEBUG_MATCHING
+                fprintf(stderr, "%p ms->offset=%d\n", state, state->ms.offset-1);
+#endif
+
             // Match found.
             state->acc = rc;
             return state->acc;

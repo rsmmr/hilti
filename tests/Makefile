@@ -13,4 +13,7 @@ tests:
 	-@$(BTEST) -j -f diag.log -a hilti-build binpac
 	@mv diag.log .diag.log.hb
 
-	@cat .diag.log .diag.log.hb >diag.log
+	-@$(BTEST) -j -f diag.log -a incremental binpac
+	@mv diag.log .diag.log.incr
+
+	@cat .diag.log .diag.log.hb .diag.log.incr >diag.log
