@@ -5,6 +5,7 @@
 
 #include "context.h"
 #include "operator.h"
+#include "options.h"
 
 #include "parser/driver.h"
 
@@ -25,14 +26,19 @@
 using namespace binpac;
 using namespace binpac::passes;
 
-shared_ptr<binpac::Module> CompilerContext::load(string path, bool verify, bool finalize)
+const Options& CompilerContext::options() const
+{
+    return *_options;
+}
+
+shared_ptr<binpac::Module> CompilerContext::load(string path, bool finalize)
 {
     path = util::strtolower(path);
 
     if ( ! util::endsWith(path, ".pac2") )
         path += ".pac2";
 
-    string full_path = util::findInPaths(path, _libdirs);
+    string full_path = util::findInPaths(path, options().libdirs_pac2);
 
     if ( full_path.size() == 0 ) {
         error(util::fmt("cannot find input file %s", path.c_str()));
@@ -59,7 +65,7 @@ shared_ptr<binpac::Module> CompilerContext::load(string path, bool verify, bool 
     if ( ! module )
         return nullptr;
 
-    if ( finalize && ! CompilerContext::finalize(module, verify) )
+    if ( finalize && ! CompilerContext::finalize(module) )
         return nullptr;
 
     _modules.insert(std::make_pair(full_path, module));
@@ -72,14 +78,14 @@ shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& s
 {
     binpac_parser::Driver driver;
     driver.forwardLoggingTo(this);
-    driver.enableDebug(debugging("scanner"), debugging("parser"));
+    driver.enableDebug(options().cgDebugging("scanner"), options().cgDebugging("parser"));
 
     return driver.parse(this, in, sname);
 }
 
 static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast::Logger& before)
 {
-    if ( ctx->debugging("dump-ast") ) {
+    if ( ctx->options().cgDebugging("dump-ast") ) {
         std::cerr << std::endl
             << "===" << std::endl
             << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
@@ -89,7 +95,7 @@ static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast
         ctx->dump(module, std::cerr);
     }
 
-    if ( ctx->debugging("print-ast") ) {
+    if ( ctx->options().cgDebugging("print-ast") ) {
         std::cerr << std::endl
             << "===" << std::endl
             << "=== AST for " << module->id()->pathAsString() << " before " << before.loggerName() << std::endl
@@ -100,7 +106,7 @@ static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast
     }
 }
 
-bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
+bool CompilerContext::finalize(shared_ptr<Module> module)
 {
     // Just a double-check ...
     if ( ! OperatorRegistry::globalRegistry()->byKind(operator_::Plus).size() ) {
@@ -122,7 +128,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( ! scope_builder.run(module) )
         return false;
 
-    if ( debugging("scopes") )
+    if ( options().cgDebugging("scopes") )
         scope_printer.run(module);
 
     _debugAST(this, module, id_resolver);
@@ -157,7 +163,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
 
     _debugAST(this, module, validator);
 
-    if ( verify ) {
+    if ( options().verify ) {
         _debugAST(this, module, validator);
 
         if ( ! validator.run(module) )
@@ -169,7 +175,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( ! normalizer.run(module) )
         return false;
 
-    if ( debugging("grammars") )
+    if ( options().cgDebugging("grammars") )
         grammar_builder.enableDebug();
 
     _debugAST(this, module, grammar_builder);
@@ -177,7 +183,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     if ( ! grammar_builder.run(module) )
         return false;
 
-    if ( verify ) {
+    if ( options().verify ) {
         _debugAST(this, module, validator);
 
         if ( ! validator.run(module) )
@@ -187,10 +193,10 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     return true;
 }
 
-shared_ptr<hilti::Module> CompilerContext::compile(shared_ptr<Module> module, int debug, bool verify)
+shared_ptr<hilti::Module> CompilerContext::compile(shared_ptr<Module> module)
 {
-    CodeGen codegen;
-    return codegen.compile(module, debug, verify);
+    CodeGen codegen(this);
+    return codegen.compile(module);
 }
 
 bool CompilerContext::print(shared_ptr<Module> module, std::ostream& out)
@@ -205,42 +211,8 @@ bool CompilerContext::dump(shared_ptr<Node> ast, std::ostream& out)
     return true;
 }
 
-const string_list& CompilerContext::libraryPaths() const
-{
-    return _libdirs;
-}
-
 shared_ptr<hilti::CompilerContext> CompilerContext::hiltiContext() const
 {
     return _hilti_context;
 }
 
-bool CompilerContext::debugging(const string& label)
-{
-    return _debug_streams.find(label) != _debug_streams.end();
-}
-
-bool CompilerContext::enableDebug(std::set<string>& labels)
-{
-    for ( auto l : labels )
-        enableDebug(l);
-
-    return true;
-}
-
-std::list<string> CompilerContext::debugStreams()
-{
-    return { "grammars", "parser", "scanner", "scopes", "dump-ast", "print-ast", "visitors" };
-}
-
-bool CompilerContext::validDebugStream(const string& label)
-{
-    auto streams = debugStreams();
-    return std::find(streams.begin(), streams.end(), label) != streams.end();
-}
-
-shared_ptr<hilti::Type> binpac::CompilerContext::hiltiType(shared_ptr<binpac::Type> type)
-{
-    codegen::TypeBuilder tb(nullptr);
-    return tb.hiltiType(type);
-}

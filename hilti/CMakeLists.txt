@@ -135,6 +135,7 @@ add_library (hilti STATIC
     visitor-interface.cc
     declaration.cc
     function.cc
+    options.cc
 
     builder/block.cc
     builder/module.cc

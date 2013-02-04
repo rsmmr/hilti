@@ -30,11 +30,9 @@ public:
     ///
     /// module: The module. The function takes ownership.
     ///
-    /// optimize: The optimization level, corresponding to \c -Ox
-    ///
     /// Returns: The execution engine to use with nativeFunction(). Null on
     /// error; an error message will have been reported.
-    llvm::ExecutionEngine* jitModule(llvm::Module* module, int optimize);
+    llvm::ExecutionEngine* jitModule(llvm::Module* module);
 
     /// Returns a pointer to a compiled, native function after a module has beed JITed.
     ///

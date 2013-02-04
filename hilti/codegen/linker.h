@@ -6,18 +6,34 @@
 #include "common.h"
 
 namespace hilti {
+
+class CompilerContext;
+class Options;
+
 namespace codegen {
 
 /// HILTI's custom linker. It links together a set of compiled HILTI modules
 /// and inserts additional information and code used by the HILTI run-time.
+///
+/// TODO: We should move all the paths and libraries over into the Options
+/// class.
 class Linker : public ast::Logger {
 public:
    /// Constructor.
    ///
    /// paths: List of directories to search for native libraries.
-   Linker(const path_list& paths) : ast::Logger("codegen::Linker") {
+   Linker(CompilerContext* ctx, const path_list& paths) : ast::Logger("codegen::Linker") {
+       _ctx = ctx;
        _paths = paths;
    };
+
+   /// Returns the compiler context the code generator is used with.
+   ///
+   CompilerContext* context() const;
+
+   /// Returns the options in effecty for code generation. This is a
+   /// convienience method that just forwards to the current context.
+   const Options& options() const;
 
    /// Adds a native library to be linked in when link() is called.
    ///
@@ -45,7 +61,7 @@ public:
    /// the more debug output the linking may generate.
    ///
    /// Returns: The composite module. Passes ownership to caller.
-   llvm::Module* link(string output, const std::list<llvm::Module*>& modules, bool verify, int debug_cg);
+   llvm::Module* link(string output, const std::list<llvm::Module*>& modules);
 
 private:
    bool isHiltiModule(llvm::Module* module);
@@ -56,6 +72,7 @@ private:
    void makeHooks(const std::list<string>& module_names, llvm::Module* module);
    void error(const llvm::Linker& linker, const string& where, const string& file, const string& error="");
 
+   CompilerContext* _ctx;
    path_list _paths;
    path_list _libs;
    path_list _bcas;

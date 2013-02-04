@@ -4,6 +4,7 @@
 #include "stmt-builder.h"
 #include "codegen.h"
 #include "util.h"
+#include "options.h"
 
 using namespace hilti;
 using namespace codegen;
@@ -95,7 +96,7 @@ void StatementBuilder::visit(statement::Block* b)
 
     for ( auto s : b->statements() ) {
 
-        if ( cg()->debugLevel() > 0 && ! ast::isA<statement::Block>(s) && ! cg()->block()->getTerminator() ) {
+        if ( cg()->options().debug && ! ast::isA<statement::Block>(s) && ! cg()->block()->getTerminator() ) {
             // Insert the source instruction as comment into the generated
             // code.
             comment.str(string());
@@ -266,10 +267,10 @@ void StatementBuilder::visit(declaration::Function* f)
 
     auto name = ::util::fmt("%s::%s", cg()->hiltiModule()->id()->name().c_str(), f->id()->name().c_str());
 
-    if ( cg()->debugLevel() > 0 )
+    if ( cg()->options().debug )
         cg()->llvmDebugPrint("hilti-flow", string("entering ") + name);
 
-    if ( cg()->profileLevel() > 1 )
+    if ( cg()->options().profile )
         cg()->llvmProfilerStart(string("func/") + name);
 
     // Create shadow locals for non-const parameters so that we can modify

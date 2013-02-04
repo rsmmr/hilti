@@ -31,19 +31,29 @@ extern "C" {
     #include <libbinpac++.h>
 }
 
+typedef binpac::Options Options;
+
 #else
 
 extern "C" {
     #include <libhilti.h>
     #include <libbinpac++.h>
 }
+
+struct Options {
+    bool debug;
+    bool optimize;
+    bool profile;
+
+    Options() {
+        debug = optimize = profile = false;
+    }
+};
+
 #endif
 
-int debug = 0;
 int driver_debug = 0;
 int debug_hooks = 0;
-int profiling = 0;
-int optlevel = 0;
 
 binpac_parser* request = 0;
 binpac_parser* reply = 0;
@@ -75,7 +85,7 @@ static void check_exception(hlt_exception* excpt)
 static void usage(const char* prog)
 {
 #ifdef PAC_DRIVER_JIT
-    auto dbglist = binpac::CompilerContext::debugStreams();
+    auto dbglist = binpac::Options().cgDebugLabels();
     auto dbgstr = util::strjoin(dbglist.begin(), dbglist.end(), "/");
 #endif
 
@@ -410,25 +420,24 @@ static void parser_exception(const char*fid, hlt_exception* excpt)
 
 // C++ code for JIT version.
 
-bool jitPac2(const std::list<string>& pac2, bool debug, int optlevel)
+bool jitPac2(const std::list<string>& pac2, const binpac::Options& options)
 {
     hilti::init();
     binpac::init();
 
-    PacContext = new binpac::CompilerContext();
-    PacContext->enableDebug(cgdbg);
+    PacContext = new binpac::CompilerContext(options);
 
     std::list<shared_ptr<hilti::Module>> hilti_modules;
 
     for ( auto p : pac2 ) {
-        auto module = PacContext->load(p, true);
+        auto module = PacContext->load(p);
 
         if ( ! module ) {
             fprintf(stderr, "loading %p failed\n", p.c_str());
             return false;
         }
 
-        auto hltmod = PacContext->compile(module, debug);
+        auto hltmod = PacContext->compile(module);
 
         if ( ! hltmod ) {
             fprintf(stderr, "compiling %p failed\n", p.c_str());
@@ -438,14 +447,14 @@ bool jitPac2(const std::list<string>& pac2, bool debug, int optlevel)
         hilti_modules.push_back(hltmod);
     }
 
-    auto llvm_module = PacContext->linkModules("<jit analyzers>", hilti_modules, debug, profiling);
+    auto llvm_module = PacContext->linkModules("<jit analyzers>", hilti_modules);
 
     if ( ! llvm_module ) {
         fprintf(stderr, "linking failed\n");
         return false;
     }
 
-    auto ee = PacContext->hiltiContext()->jitModule(llvm_module, optlevel);
+    auto ee = PacContext->hiltiContext()->jitModule(llvm_module);
 
     if ( ! ee ) {
         fprintf(stderr, "jit failed");
@@ -479,6 +488,8 @@ int main(int argc, char** argv)
 
     const char* progname = argv[0];
 
+    ::Options options;
+
     char ch;
     while ((ch = getopt(argc, argv, "i:p:t:v:a:s:dO:BhD:UlTPg")) != -1) {
 
@@ -497,7 +508,7 @@ int main(int argc, char** argv)
             break;
 
           case 'd':
-            ++debug;
+            options.debug = true;
             break;
 
           case 'g':
@@ -509,7 +520,7 @@ int main(int argc, char** argv)
             break;
 
           case 'P':
-            profiling = 1;
+            options.profile = true;
             break;
 
           case 'l':
@@ -518,14 +529,13 @@ int main(int argc, char** argv)
 
 #ifdef PAC_DRIVER_JIT
          case 'D':
-            cgdbg.insert(optarg);
+            options.cg_debug.insert(optarg);
             break;
 
          case 'O':
-            optlevel = *optarg ? *optarg - '0' : 1;
+            options.optimize = true;
             break;
 #endif
-
 
           case 'h':
             // Fall-through.
@@ -546,7 +556,7 @@ int main(int argc, char** argv)
     if ( ! pac2.size() )
         usage(progname);
 
-    if ( ! jitPac2(pac2, debug, optlevel) )
+    if ( ! jitPac2(pac2, options) )
         return 1;
 #else
     hlt_init();
@@ -560,7 +570,7 @@ int main(int argc, char** argv)
 
     hlt_config cfg = *hlt_config_get();
 
-    if ( profiling ) {
+    if ( options.profile ) {
         fprintf(stderr, "Enabling profiling ...\n");
         cfg.profiling = 1;
     }
@@ -630,7 +640,7 @@ int main(int argc, char** argv)
 
     assert(request && reply);
 
-    if ( profiling ) {
+    if ( options.profile ) {
         hlt_exception* excpt = 0;
         hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
         hlt_profiler_start(profiler_tag, Hilti_ProfileStyle_Standard, 0, 0, &excpt, hlt_global_execution_context());
@@ -639,7 +649,7 @@ int main(int argc, char** argv)
 
     parseSingleInput(request, chunk_size);
 
-    if ( profiling ) {
+    if ( options.profile ) {
         hlt_exception* excpt = 0;
         hlt_string profiler_tag = hlt_string_from_asciiz("app-total", &excpt, hlt_global_execution_context());
         hlt_profiler_stop(profiler_tag, &excpt, hlt_global_execution_context());

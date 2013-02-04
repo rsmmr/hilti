@@ -1,4 +1,5 @@
 #! ctime cwall tag type time wall updates cycles misses alloced heap user 
+0 - func/Main::run B 0 - 0 - - - - 0
 0 - test B 0 - 0 - - - - 0
 0 - test U 0 - 1 - - - - 0
 0 - test U 0 - 2 - - - - 0
@@ -12,3 +13,4 @@
 12000000000 - test U 12000000000 - 8 - - - - 0
 15000000000 - test S 15000000000 - 8 - - - - 0
 15000000000 - test E 15000000000 - 8 - - - - 0
+0 - func/Main::run E 0 - 0 - - - - 0

@@ -82,7 +82,7 @@ public:
    /// compiled module, it will resolve an still unresolved references.
    ///
    /// Returns: The finalized module, or null on error.
-   shared_ptr<hilti::Module> finalize(bool verify = true);
+   shared_ptr<hilti::Module> finalize();
 
    /// Returns the module's AST being built. Note that before calling
    /// finalize(), this remains in an unresolved state.

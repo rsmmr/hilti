@@ -4,21 +4,20 @@
 #include "autogen/binpac-config.h"
 
 #include "context.h"
+#include "options.h"
 #include "hilti/context.h"
 #include "jit/libhilti-jit.h"
 
-binpac::CompilerContext::CompilerContext(const string_list& libdirs)
+binpac::CompilerContext::CompilerContext(const Options& options)
 {
-    auto paths = libdirs;
+    _options = std::shared_ptr<Options>(new Options(options));
+    _hilti_context = std::make_shared<hilti::CompilerContext>(options);
 
-    for ( auto p : configuration().binpac_library_dirs )
-        paths.push_back(p);
-
-    _libdirs = paths;
-    _hilti_context = std::make_shared<hilti::CompilerContext>(paths);
+    if ( options.cgDebugging("visitors") )
+        ast::enableDebuggingForAllVisitors();
 }
 
-llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules, path_list paths, std::list<string> libs, path_list bcas, path_list dylds, bool debug, bool verify, bool profile, bool add_stdlibs, bool add_sharedlibs)
+llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules, std::list<string> libs, path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)
 {
 #if 0
     if ( add_stdlibs ) {
@@ -34,7 +33,7 @@ llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shar
     std::list<llvm::Module*> llvm_modules;
 
     for ( auto m : modules ) {
-        auto llvm_module = _hilti_context->compile(m, debug, verify, profile);
+        auto llvm_module = _hilti_context->compile(m);
 
         if ( ! llvm_module )
             return nullptr;
@@ -43,35 +42,18 @@ llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shar
     }
 
     if ( add_stdlibs ) {
-        if ( debug )
+        if ( options().debug )
             bcas.push_back(configuration().runtime_library_bca_dbg);
         else
             bcas.push_back(configuration().runtime_library_bca);
     };
 
-    return _hilti_context->linkModules(output, llvm_modules, paths, libs, bcas, dylds, debug, verify, add_stdlibs, add_sharedlibs);
+    return _hilti_context->linkModules(output, llvm_modules, libs, bcas, dylds, add_stdlibs, add_sharedlibs);
 }
 
-llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules,
-                                           bool debug, bool profile)
+llvm::Module* binpac::CompilerContext::linkModules(string output, std::list<shared_ptr<hilti::Module>> modules)
 {
     return linkModules(output, modules,
-                       path_list(), std::list<string>(),
-                       path_list(), path_list(),
-                       debug, true, profile);
-}
-
-bool binpac::CompilerContext::enableDebug(const string& label)
-{
-    _hilti_context->enableDebug(label);
-
-    if ( ! validDebugStream(label) )
-        return false;
-
-    _debug_streams.insert(label);
-
-    if ( label == "visitors" )
-        ast::enableDebuggingForAllVisitors();
-
-    return true;
+                       std::list<string>(),
+                       path_list(), path_list());
 }

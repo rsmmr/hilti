@@ -13,7 +13,8 @@ int main(int argc, char** argv)
 {
     hilti::init();
 
-    shared_ptr<hilti::CompilerContext> ctx = std::make_shared<hilti::CompilerContext>();
+    hilti::Options options;
+    shared_ptr<hilti::CompilerContext> ctx = std::make_shared<hilti::CompilerContext>(options);
     auto m = std::make_shared<hilti::builder::ModuleBuilder>(ctx, "Main");
 
     m->importModule("Hilti");
@@ -27,7 +28,7 @@ int main(int argc, char** argv)
 
     // Compile and link into LLVM.
 
-    auto llvm_module = ctx->compile(m->module(), true, true, false);
+    auto llvm_module = ctx->compile(m->module());
 
     if ( ! llvm_module ) {
         fprintf(stderr, "compile failed\n");
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
 
     // JIT to native code.
 
-    auto ee = ctx->jitModule(linked_module, 0);
+    auto ee = ctx->jitModule(linked_module);
 
     if ( ! ee ) {
         fprintf(stderr, "jit failed\n");

@@ -9,6 +9,7 @@
 #include "type.h"
 #include "declaration.h"
 #include "attribute.h"
+#include "options.h"
 
 using namespace binpac;
 using namespace binpac::codegen;
@@ -615,14 +616,14 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiCreateHostFunction(shared_ptr
     auto presult = cg()->builder()->addTmp("presult", _hiltiTypeParseResult());
     auto pfunc = cg()->hiltiParseFunction(unit);
 
-    if ( cg()->debugLevel() > 0 ) {
+    if ( cg()->options().debug > 0 ) {
         _hiltiDebug(unit->id()->name());
         cg()->builder()->debugPushIndent();
     }
 
     cg()->builder()->addInstruction(presult, hilti::instruction::flow::CallResult, pfunc, state()->hiltiArguments());
 
-    if ( cg()->debugLevel() > 0 )
+    if ( cg()->options().debug > 0 )
         cg()->builder()->debugPopIndent();
 
     if ( ! sink )
@@ -996,7 +997,7 @@ void ParserBuilder::_startingProduction(shared_ptr<Production> p, shared_ptr<typ
     cg()->builder()->addComment(util::fmt("Production: %s", util::strtrim(p->render().c_str())));
     cg()->builder()->addComment("");
 
-    if ( cg()->debugLevel() ) {
+    if ( cg()->options().debug ) {
         _hiltiDebugVerbose(util::fmt("parsing %s", util::strtrim(p->render().c_str())));
         _hiltiDebugShowInput("input", state()->cur);
         _hiltiDebugShowToken("look-ahead", state()->lahead);
@@ -1063,7 +1064,7 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
                                             hilti::builder::string::create(name));
         }
 
-        if ( cg()->debugLevel() > 0 && ! ast::isA<type::Unit>(field->type()))
+        if ( cg()->options().debug > 0 && ! ast::isA<type::Unit>(field->type()))
             cg()->builder()->addDebugMsg("binpac", util::fmt("%s = %%s", name), value);
     }
 
@@ -1101,19 +1102,19 @@ shared_ptr<hilti::Expression> ParserBuilder::_hiltiParserDefinition(shared_ptr<t
 
 void ParserBuilder::_hiltiDebug(const string& msg)
 {
-    if ( cg()->debugLevel() > 0 )
+    if ( cg()->options().debug > 0 )
         cg()->builder()->addDebugMsg("binpac", msg);
 }
 
 void ParserBuilder::_hiltiDebugVerbose(const string& msg)
 {
-    if ( cg()->debugLevel() > 0 )
+    if ( cg()->options().debug > 0 )
         cg()->builder()->addDebugMsg("binpac-verbose", string("- ") + msg);
 }
 
 void ParserBuilder::_hiltiDebugShowToken(const string& tag, shared_ptr<hilti::Expression> token)
 {
-    if ( cg()->debugLevel() == 0 )
+    if ( cg()->options().debug == 0 )
         return;
 
     cg()->builder()->addDebugMsg("binpac-verbose", "  * %s is %s", hilti::builder::string::create(tag), token);
@@ -1121,7 +1122,7 @@ void ParserBuilder::_hiltiDebugShowToken(const string& tag, shared_ptr<hilti::Ex
 
 void ParserBuilder::_hiltiDebugShowInput(const string& tag, shared_ptr<hilti::Expression> cur)
 {
-    if ( cg()->debugLevel() == 0 )
+    if ( cg()->options().debug == 0 )
         return;
 
     auto next = cg()->builder()->addTmp("next5", _hiltiTypeBytes());
@@ -1182,7 +1183,7 @@ void ParserBuilder::_hiltiDefineHook(shared_ptr<ID> id, shared_ptr<type::unit::I
     auto unit_module = unit->firstParent<Module>();
     auto current_module = cg()->module();
 
-    if ( debug && cg()->debugLevel() == 0 )
+    if ( debug && cg()->options().debug == 0 )
         return;
 
     auto t = _hookName(id->pathAsString());
@@ -1561,7 +1562,7 @@ void ParserBuilder::_hiltiGetLookAhead(shared_ptr<Production> prod, const std::l
 
     cg()->moduleBuilder()->pushBuilder(done);
 
-    if ( cg()->debugLevel() > 0 )
+    if ( cg()->options().debug > 0 )
         cg()->builder()->addDebugMsg("binpac-verbose", "- new look-ahead is %s", state()->lahead);
 
 }
@@ -2265,7 +2266,7 @@ void ParserBuilder::visit(production::ChildGrammar* c)
     auto child_result = cg()->builder()->addTmp("presult", _hiltiTypeParseResult());
     auto child_func = cg()->hiltiParseFunction(child);
 
-    if ( cg()->debugLevel() > 0 ) {
+    if ( cg()->options().debug > 0 ) {
         if ( ! field->anonymous() )
             _hiltiDebug(field->id()->name());
         else
@@ -2276,7 +2277,7 @@ void ParserBuilder::visit(production::ChildGrammar* c)
 
     cg()->builder()->addInstruction(child_result, hilti::instruction::flow::CallResult, child_func, state()->hiltiArguments());
 
-    if ( cg()->debugLevel() > 0 )
+    if ( cg()->options().debug > 0 )
         cg()->builder()->debugPopIndent();
 
     popState();

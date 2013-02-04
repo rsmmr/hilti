@@ -13,6 +13,8 @@ namespace llvm  { class Module; }
 
 namespace binpac {
 
+class Options;
+
 /// A module context that groups a set of modules compiled jointly. This
 /// class provides the main top-level interface for parsing and compiling
 /// BinPAC++ modules.
@@ -23,7 +25,10 @@ public:
     ///
     /// libdirs: List of directories to search for relative paths. The current
     /// directly will be tried first.
-    CompilerContext(const string_list& libdirs = string_list());
+    CompilerContext(const Options& options);
+
+    /// Returns the set of options in effect.
+    const Options& options() const;
 
     /// Reads a BinPAC++ source file and returns the parsed AST. The function
     /// searches the file in the paths given and reads it in. It then uses uses
@@ -35,13 +40,10 @@ public:
     /// statement. In that case the returned module may not be fully resolved.
     /// Should be used ony for internal purposes.
     ///
-    /// verify: If false, no correctness verification is done. Only applies if
-    /// \a finalize is true.
-    ///
     /// finalize: If false, finalize() isn't called.
     ///
     /// Returns: The parsed AST, or null if errors are encountered.
-    shared_ptr<Module> load(string path, bool verify = true, bool resolve = true);
+    shared_ptr<Module> load(string path, bool finalize = true);
 
     /// Parses BinPAC++ source code into a module AST. Note that before the
     /// AST can be used further, it needs to go through finalize(). The
@@ -67,7 +69,7 @@ public:
     /// verify: If false, no correctness verification is done.
     ///
     /// Returns: True if no errors were found.
-    bool finalize(shared_ptr<Module> module, bool verify = true);
+    bool finalize(shared_ptr<Module> module);
 
     /// Compiles an AST into a HILTI module. This is the main interface to the
     /// code generater. The AST must have passed through finalize(). After
@@ -75,15 +77,9 @@ public:
     ///
     /// module: The module to compile.
     ///
-    /// debug: The debug level to activate for code generation. The higher, the
-    /// more debugging code will be compiled in. Zero disables all debugging.
-    ///
-    /// verify: True if the resulting HILTI module should be checked for
-    /// correctness. This should normally be on except for debugging.
-    ///
     /// Returns: The HILTI module, or null if errors are encountered. Passes
     /// ownership to the caller.
-    shared_ptr<hilti::Module> compile(shared_ptr<Module> module, int debug = 0, bool verify = true);
+    shared_ptr<hilti::Module> compile(shared_ptr<Module> module);
 
     /// Links a set of compiled BinPAC++ modules into a single LLVM module.
     /// All modules produced by compileModule() must be linked (and all
@@ -107,16 +103,6 @@ public:
     /// will be searched along the usual runtime path by the system linker
     /// (optional).
     ///
-    /// debug: The debug level to activate for linking. The higher, the more
-    /// debugging code will be compiled in. Zero disables all debugging. This
-    /// also controls whether the debug or release runtime library will be
-    /// linked in with \a add_stdlibs.
-    ///
-    /// verify: True if the resulting LLVM module should be checked for
-    /// correctness. This should normally be on except for debugging.
-    ///
-    /// profile: True for adding profiling instrumentation at the HILTI level.
-    ///
     /// add_stdlibs: Link in BinPAC++'s standard runtime libraries (and HILTI
     /// standard libraries as well.
     ///
@@ -125,9 +111,9 @@ public:
     ///
     /// Returns: The composite LLVM module, or null if errors are encountered.
     llvm::Module* linkModules(string output, std::list<shared_ptr<hilti::Module>> modules,
-                              path_list paths = path_list(), std::list<string> libs = std::list<string>(),
+                              std::list<string> libs,
                               path_list bcas = path_list(), path_list dylds = path_list(),
-                              bool debug = false, bool verify = true, bool profile = false, bool add_stdlibs = true, bool add_sharedlibs = true);
+                              bool add_stdlibs = true, bool add_sharedlibs = true);
 
     /// Links a set of compiled BinPAC++ modules into a single LLVM module.
     /// All modules produced by compileModule() must be linked (and all
@@ -142,16 +128,8 @@ public:
     /// addition to modules generate by compileModule(), this can include
     /// further ones created in other ways.
     ///
-    /// debug: The debug level to activate for linking. The higher, the more
-    /// debugging code will be compiled in. Zero disables all debugging. This
-    /// also controls whether the debug or release runtime library will be
-    /// linked in with \a add_stdlibs.
-    ///
-    /// profile: True for adding profiling instrumentation at the HILTI level.
-    ///
     /// Returns: The composite LLVM module, or null if errors are encountered.
-    llvm::Module* linkModules(string output, std::list<shared_ptr<hilti::Module>> modules,
-                              bool debug = false, bool profile = false);
+    llvm::Module* linkModules(string output, std::list<shared_ptr<hilti::Module>> modules);
 
     /// Returns the HILTI type that the code generator will use for a given
     /// BinPAC++ type.
@@ -180,46 +158,11 @@ public:
     /// Returns: True if no errors are encountered.
     bool dump(shared_ptr<Node> ast, std::ostream& out);
 
-    /// Enables additional debugging output during code generation.
-    ///
-    /// string: A label for the desired information. \a debugStreams()
-    /// returns the available list.
-    ///
-    /// Returns: True if the label does not correspond to a valid debug
-    /// stream.
-    bool enableDebug(const string& label);
-
-    /// Enables additional debugging output during code generation.
-    ///
-    /// labels: A set of labels, one for each of the desired streams. \a
-    /// debugStreams() returns the available list.
-    ///
-    /// Returns: True if the label does not correspond to a valid debug
-    /// stream.
-    bool enableDebug(std::set<string>& labels);
-
-    /// Returns true if a given debug stream is active.
-    ///
-    /// string: The label for the desired information. \a debugStreams()
-    /// returns the available list.
-    bool debugging(const string& label);
-
-    /// Returns the library dirs configured.
-    const string_list& libraryPaths() const;
-
     /// Returns the HILTI context for building the HILTI modules.
     shared_ptr<hilti::CompilerContext> hiltiContext() const;
 
-    /// Returns the available debug streams during code generation.
-    static std::list<string> debugStreams();
-
-    /// Returns true if the given lavel correspnds to a valid debugging
-    /// stream.
-    static bool validDebugStream(const string& label);
-
 private:
-    string_list _libdirs;
-    std::set<string> _debug_streams;
+    shared_ptr<Options> _options;
     shared_ptr<hilti::CompilerContext> _hilti_context;
 
     /// We keep a global map of all module nodes we have instantiated so far,

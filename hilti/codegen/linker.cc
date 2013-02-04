@@ -2,6 +2,8 @@
 #include "linker.h"
 #include "util.h"
 #include "codegen.h"
+#include "options.h"
+#include "context.h"
 
 // TODO: THis needs cleanup.
 
@@ -115,6 +117,16 @@ bool GlobalsBasePass::runOnBasicBlock(llvm::BasicBlock &bb)
     return true;
 }
 
+CompilerContext* Linker::context() const
+{
+    return _ctx;
+}
+
+const Options& Linker::options() const
+{
+    return _ctx->options();
+}
+
 void Linker::error(const llvm::Linker& linker, const string& where, const string& file, const string& error)
 {
     string err = error.size() ? error : linker.getLastError();
@@ -122,9 +134,10 @@ void Linker::error(const llvm::Linker& linker, const string& where, const string
     ast::Logger::error(::util::fmt("error linking %s in %s: %s", file.c_str(), where.c_str(), err.c_str()));
 }
 
-llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& modules, bool verify, int debug_cg)
+llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& modules)
 {
-    debugSetLevel(debug_cg);
+    if ( options().cgDebugging("linker") )
+        debugSetLevel(1);
 
     if ( modules.size() == 0 )
         fatalError("no modules given to linker");
@@ -153,7 +166,7 @@ llvm::Module* Linker::link(string output, const std::list<llvm::Module*>& module
             return nullptr;
         }
 
-        if ( verify && ! util::llvmVerifyModule(linker.getModule()) ) {
+        if ( options().verify && ! util::llvmVerifyModule(linker.getModule()) ) {
             error(linker, "verify", name);
             return nullptr;
         }

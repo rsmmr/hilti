@@ -1,20 +1,32 @@
 #! ctime cwall tag type time wall updates cycles misses alloced heap user 
-0 - test B 0 - 0 - - - - 0
-0 - test U 0 - 1 - - - - 0
-0 - test E 0 - 1 - - - - 0
+0 - func/Main::run B 0 - 0 - - - - 0
 #! ctime cwall tag type time wall updates cycles misses alloced heap user 
+0 - func/Main::print1 B 0 - 0 - - - - 0
 0 - test B 0 - 0 - - - - 0
 0 - test U 0 - 1 - - - - 0
 0 - test E 0 - 1 - - - - 0
+0 - func/Main::print1 E 0 - 0 - - - - 0
 #! ctime cwall tag type time wall updates cycles misses alloced heap user 
+0 - func/Main::print2 B 0 - 0 - - - - 0
 0 - test B 0 - 0 - - - - 0
 0 - test U 0 - 1 - - - - 0
 0 - test E 0 - 1 - - - - 0
+0 - func/Main::print2 E 0 - 0 - - - - 0
 #! ctime cwall tag type time wall updates cycles misses alloced heap user 
+0 - func/Main::print3 B 0 - 0 - - - - 0
 0 - test B 0 - 0 - - - - 0
 0 - test U 0 - 1 - - - - 0
 0 - test E 0 - 1 - - - - 0
+0 - func/Main::print3 E 0 - 0 - - - - 0
 #! ctime cwall tag type time wall updates cycles misses alloced heap user 
+0 - func/Main::print4 B 0 - 0 - - - - 0
 0 - test B 0 - 0 - - - - 0
 0 - test U 0 - 1 - - - - 0
 0 - test E 0 - 1 - - - - 0
+0 - func/Main::print4 E 0 - 0 - - - - 0
+#! ctime cwall tag type time wall updates cycles misses alloced heap user 
+0 - func/Main::print5 B 0 - 0 - - - - 0
+0 - test B 0 - 0 - - - - 0
+0 - test U 0 - 1 - - - - 0
+0 - test E 0 - 1 - - - - 0
+0 - func/Main::print5 E 0 - 0 - - - - 0

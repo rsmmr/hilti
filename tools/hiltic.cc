@@ -12,26 +12,19 @@ using namespace std;
 
 const char* Name = "hiltic";
 
-int  debug = 0;
-int  profile = 0;
 int  num_output_types = 0;
 int  num_input_files = 0;
-int  optlevel = 0;
 bool output_hilti = false;
 bool output_llvm = false;
 bool output_llvm_individually = false;
 bool output_bitcode = false;
 bool output_prototypes = false;
 bool dump_ast = false;
-bool verify = true;
 bool use_jit = false;
 bool add_stdlibs = false;
 bool disable_linker = false;
 bool cfg = false;
-
-set<string> cgdbg;
 string output;
-path_list paths;
 
 static struct option long_options[] = {
     { "ast",     no_argument, 0, 'A' },
@@ -55,7 +48,7 @@ static struct option long_options[] = {
 
 void usage()
 {
-    auto dbglist = hilti::CompilerContext::debugStreams();
+    auto dbglist = hilti::Options().cgDebugLabels();
     auto dbgstr = util::strjoin(dbglist.begin(), dbglist.end(), "/");
 
     cerr << "Usage: " << Name << " [options] <inputs> [ - <options for JIT main()> ]\n"
@@ -133,7 +126,7 @@ llvm::Module* loadLLVM(const string& path)
 
 llvm::Module* compileHILTI(std::shared_ptr<hilti::CompilerContext> ctx, string path)
 {
-    auto module = ctx->loadModule(path, verify);
+    auto module = ctx->loadModule(path);
 
     if ( ! module )
         error(path, "Aborting due to verification error.");
@@ -168,7 +161,7 @@ llvm::Module* compileHILTI(std::shared_ptr<hilti::CompilerContext> ctx, string p
         return nullptr;
     }
 
-    llvm::Module* llvm_module = ctx->compile(module, debug, verify, profile);
+    llvm::Module* llvm_module = ctx->compile(module);
 
     if ( ! llvm_module )
         error(path, "Aborting due to code generation error.");
@@ -194,7 +187,7 @@ bool runJIT(shared_ptr<hilti::CompilerContext> ctx, llvm::Module* module, std::l
     return false;
 #else
 
-    auto ee =  ctx->jitModule(module, optlevel);
+    auto ee =  ctx->jitModule(module);
 
     if ( ! ee )
         return false;
@@ -227,6 +220,8 @@ int main(int argc, char** argv)
 {
     int num_output_types = 0;
 
+    hilti::Options options;
+
     while ( true ) {
         int c = getopt_long(argc, argv, "AdD:hjpcFPWbClLsVo:O:vI:", long_options, 0);
 
@@ -244,11 +239,11 @@ int main(int argc, char** argv)
             break;
 
          case 'd':
-            ++debug;
+            options.debug = true;
             break;
 
          case 'D':
-            cgdbg.insert(optarg);
+            options.cg_debug.insert(optarg);
             break;
 
          case 'o':
@@ -256,7 +251,7 @@ int main(int argc, char** argv)
             break;
 
          case 'O':
-            optlevel = *optarg ? *optarg - '0' : 1;
+            options.optimize = true;
             break;
 
          case 'p':
@@ -275,7 +270,7 @@ int main(int argc, char** argv)
 
          case 'W':
             output_hilti = true;
-            verify = false;
+            options.verify = false;
             ++num_output_types;
             break;
 
@@ -286,22 +281,22 @@ int main(int argc, char** argv)
 
          case 'L':
             output_llvm = true;
-            verify = false;
+            options.verify = false;
             ++num_output_types;
             break;
 
          case 'V':
             output_llvm_individually = true;
-            verify = false;
+            options.verify = false;
             ++num_output_types;
             break;
 
          case 'I':
-            paths.push_back(optarg);
+            options.libdirs_hlt.push_back(optarg);
             break;
 
          case 'F':
-            ++profile;
+            options.profile = true;
             break;
 
          case 'j':
@@ -376,8 +371,7 @@ int main(int argc, char** argv)
     path_list bcas;
     path_list dylds;
 
-    auto ctx = std::make_shared<hilti::CompilerContext>(paths);
-    ctx->enableDebug(cgdbg);
+    auto ctx = std::make_shared<hilti::CompilerContext>(options);
 
     // Go through input files and prepare LLVM modules.
     for ( auto input : inputs ) {
@@ -415,7 +409,7 @@ int main(int argc, char** argv)
     llvm::Module* linked_module = nullptr;
 
     if ( ! disable_linker ) {
-        linked_module = ctx->linkModules(output, modules, paths, libs, bcas, dylds, debug, verify, add_stdlibs, use_jit);
+        linked_module = ctx->linkModules(output, modules, libs, bcas, dylds, add_stdlibs, use_jit);
 
         if ( ! linked_module )
             error(output, "Aborted linking.");

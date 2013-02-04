@@ -2,6 +2,8 @@
 #include <hilti.h>
 
 #include "codegen.h"
+#include "context.h"
+#include "options.h"
 
 #include "code-builder.h"
 #include "parser-builder.h"
@@ -16,20 +18,28 @@
 
 using namespace binpac;
 
-CodeGen::CodeGen()
+CodeGen::CodeGen(CompilerContext* ctx)
 {
+    _ctx = ctx;
 }
 
 CodeGen::~CodeGen()
 {
-
 }
 
-shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module, int debug, bool verify)
+binpac::CompilerContext* CodeGen::context() const
+{
+    return _ctx;
+}
+
+const binpac::Options& CodeGen::options() const
+{
+    return _ctx->options();
+}
+
+shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module)
 {
     _compiling = true;
-    _debug = debug;
-    _verify = verify;
     _imported_types.clear();
 
     _code_builder = unique_ptr<codegen::CodeBuilder>(new codegen::CodeBuilder(this));
@@ -38,7 +48,7 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module, int debug,
     _coercer = unique_ptr<Coercer>(new Coercer());
 
     try {
-        hilti::path_list paths = module->context()->libraryPaths();
+        hilti::path_list paths = module->context()->options().libdirs_pac2;
         auto id = hilti::builder::id::node(module->id()->name(), module->id()->location());
         auto ctx = module->context()->hiltiContext();
         _mbuilder = std::make_shared<hilti::builder::ModuleBuilder>(ctx, id, module->path(), module->location());
@@ -90,7 +100,7 @@ shared_ptr<hilti::Module> CodeGen::compile(shared_ptr<Module> module, int debug,
         auto m = _mbuilder->finalize();
 
         if ( ! m )
-            return verify ? nullptr : _mbuilder->module();
+            return options().verify ? nullptr : _mbuilder->module();
 
         return m;
     }
@@ -118,11 +128,6 @@ shared_ptr<hilti::builder::BlockBuilder> CodeGen::builder() const
     assert(_compiling);
 
     return _mbuilder->builder();
-}
-
-int CodeGen::debugLevel() const
-{
-    return _debug;
 }
 
 shared_ptr<binpac::type::Unit> CodeGen::unit() const

@@ -11,20 +11,13 @@ using namespace std;
 
 const char* Name = "binpac";
 
-int  debug = 0;
 bool dump_ast = false;
 bool cfg = false;
-bool verify = true;
-bool resolve = true;
 bool output_binpac = false;
 bool output_llvm = false;
 bool add_stdlibs = false;
-bool optlevel = 0;
-
-set<string> cgdbg;
 
 string output = "/dev/stdout";
-binpac::string_list import_paths;
 
 static struct option long_options[] = {
     { "ast",     no_argument, 0, 'A' },
@@ -45,7 +38,7 @@ static struct option long_options[] = {
 
 void usage()
 {
-    auto dbglist = binpac::CompilerContext::debugStreams();
+    auto dbglist = binpac::Options().cgDebugLabels();
     auto dbgstr = util::strjoin(dbglist.begin(), dbglist.end(), "/");
 
     cerr << "Usage: " << Name << " [options] <input.pac2>\n"
@@ -84,6 +77,8 @@ void error(const string& file, const string& msg)
 
 int main(int argc, char** argv)
 {
+    binpac::Options options;
+
     while ( true ) {
         int c = getopt_long(argc, argv, "AcdD:o:nO:WlspI:vh", long_options, 0);
 
@@ -100,11 +95,11 @@ int main(int argc, char** argv)
             break;
 
          case 'd':
-            ++debug;
+            options.debug = true;
             break;
 
          case 'D':
-            cgdbg.insert(optarg);
+            options.cg_debug.insert(optarg);
             break;
 
          case 'o':
@@ -112,12 +107,12 @@ int main(int argc, char** argv)
             break;
 
          case 'n':
-            verify = false;
+            options.verify = true;
             break;
 
          case 'W':
             output_binpac = true;
-            verify = false;
+            options.verify = false;
             break;
 
          case 'p':
@@ -133,11 +128,11 @@ int main(int argc, char** argv)
             break;
 
          case 'O':
-            optlevel = *optarg ? *optarg - '0' : 1;
+            options.optimize = true;
             break;
 
          case 'I':
-            import_paths.push_back(optarg);
+            options.libdirs_pac2.push_back(optarg);
             break;
 
          case 'v':
@@ -172,10 +167,9 @@ int main(int argc, char** argv)
     hilti::init();
     binpac::init();
 
-    auto ctx = std::make_shared<binpac::CompilerContext>(import_paths);
-    ctx->enableDebug(cgdbg);
+    auto ctx = std::make_shared<binpac::CompilerContext>(options);
 
-    auto module = ctx->load(input, verify);
+    auto module = ctx->load(input);
 
     if ( ! module ) {
         error(input, "Aborting due to input error.");
@@ -190,7 +184,7 @@ int main(int argc, char** argv)
     if ( output_binpac )
         return ctx->print(module, out);
 
-    auto hilti_module = ctx->compile(module, debug, verify);
+    auto hilti_module = ctx->compile(module);
 
     if ( ! hilti_module ) {
         error(input, "Aborting due to compilation error.");
@@ -202,7 +196,7 @@ int main(int argc, char** argv)
         cerr << std::endl;
     }
 
-    if ( ctx->debugging("scopes") ) {
+    if ( ctx->options().cgDebugging("scopes") ) {
         hilti::passes::ScopePrinter scope_printer(cerr);
 
         if ( ! scope_printer.run(hilti_module) )
@@ -212,9 +206,9 @@ int main(int argc, char** argv)
     if ( output_llvm ) {
         std::list<shared_ptr<hilti::Module>> mods = { hilti_module };
         auto llvm_module = ctx->linkModules(input, mods,
-                                            path_list(), std::list<string>(),
+                                            std::list<string>(),
                                             path_list(), path_list(),
-                                            debug, verify, false, add_stdlibs);
+                                            false, add_stdlibs);
 
         if ( ! llvm_module ) {
             error(input, "Aborting due to link error.");

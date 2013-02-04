@@ -22,6 +22,9 @@ namespace hilti {
 
 namespace binpac {
 
+class CompilerContext;
+class Options;
+
 namespace codegen {
     class CodeBuilder;
     class TypeBuilder;
@@ -32,8 +35,15 @@ class CodeGen : public ast::Logger
 {
 public:
     /// Constructor.
-    CodeGen();
+    CodeGen(CompilerContext* ctx);
     virtual ~CodeGen();
+
+    /// Returns the compiler context the code generator is used with.
+    CompilerContext* context() const;
+
+    /// Returns the options in effecty for code generation. This is a
+    /// convienience method that just forwards to the current context.
+    const Options& options() const;
 
     /// Compiles a BinPAC++ module into a HILTI module.
     ///
@@ -44,7 +54,7 @@ public:
     /// verify: True if the generated HILTI code should be run HILTI's verifier (usually a good idea...)
     ///
     /// Returns: The HILTI module, or null if an error occured.
-    shared_ptr<hilti::Module> compile(shared_ptr<Module> module, int debug, bool verify);
+    shared_ptr<hilti::Module> compile(shared_ptr<Module> module);
 
     /// Returns the currently compiled module, or null if none.
     shared_ptr<Module> module() const;
@@ -54,9 +64,6 @@ public:
 
     /// Returns the current HILTI block builder.
     shared_ptr<hilti::builder::BlockBuilder> builder() const;
-
-    /// Returns the debug level.
-    int debugLevel() const;
 
     /// Returns the type of the currently parsed unit. The method must only
     /// be called when parsing is in progress.
@@ -262,12 +269,10 @@ public:
     void hiltiImportType(shared_ptr<ID> id, shared_ptr<Type> t);
 
 private:
+    CompilerContext* _ctx;
     bool _compiling = false;
     shared_ptr<Module> _module = nullptr;
     std::map<string, shared_ptr<Type>> _imported_types;
-
-    int _debug;
-    bool _verify;
 
     shared_ptr<hilti::builder::ModuleBuilder> _mbuilder;
 

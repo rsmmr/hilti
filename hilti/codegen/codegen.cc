@@ -5,7 +5,7 @@
 
 #include "codegen.h"
 #include "util.h"
-
+#include "options.h"
 #include "loader.h"
 #include "storer.h"
 #include "unpacker.h"
@@ -47,16 +47,17 @@ CompilerContext* CodeGen::context() const
     return _ctx;
 }
 
-llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod, bool verify, int debug, int profile)
+const Options& CodeGen::options() const
 {
-    _verify = verify;
-    _debug_level = debug;
-    _profile_level = profile;
+    return _ctx->options();
+}
 
+llvm::Module* CodeGen::generateLLVM(shared_ptr<hilti::Module> hltmod)
+{
     _hilti_module = hltmod;
     _functions.clear();
 
-    if ( hltmod->compilerContext()->debugging("codegen") )
+    if ( options().cgDebugging("codegen") )
         debugSetLevel(1);
 
     if ( ! _collector->run(hltmod) )
@@ -1646,12 +1647,12 @@ void CodeGen::llvmBuildExitBlock()
 
         auto name = ::util::fmt("%s::%s", _hilti_module->id()->name().c_str(), leave_func->id()->name().c_str());
 
-        if ( debugLevel() > 0 ) {
+        if ( options().debug ) {
             string msg = string("leaving ") + name;
             llvmDebugPrint("hilti-flow", msg);
         }
 
-        if ( profileLevel() > 1 ) {
+        if ( options().profile ) {
             // As this may be run in an exit block where we won't clean up
             // after us anymore, we do the string's mgt manually here.
             auto str = llvmStringFromData(string("func/") + name);
@@ -2966,8 +2967,7 @@ void CodeGen::llvmGCClear(llvm::Value* addr, shared_ptr<Type> type)
 
 void CodeGen::llvmDebugPrint(const string& stream, const string& msg)
 {
-
-    if ( debugLevel() == 0 )
+    if ( ! options().debug )
         return;
 
     auto arg1 = llvmConstAsciizPtr(stream);
@@ -3678,7 +3678,7 @@ void CodeGen::llvmProfilerStart(llvm::Value* tag, llvm::Value* style, llvm::Valu
 {
     assert(tag);
 
-    if ( _profile_level == 0 )
+    if ( ! options().profile )
         return;
 
     if ( ! style )
@@ -3722,7 +3722,7 @@ void CodeGen::llvmProfilerStop(llvm::Value* tag)
 {
     assert(tag);
 
-    if ( _profile_level == 0 )
+    if ( ! options().profile )
         return;
 
     expr_list args = {
@@ -3745,7 +3745,7 @@ void CodeGen::llvmProfilerUpdate(llvm::Value* tag, llvm::Value* arg)
 {
     assert(tag);
 
-    if ( _profile_level == 0 )
+    if ( ! options().profile )
         return;
 
     if ( ! arg )

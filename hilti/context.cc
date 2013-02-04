@@ -8,25 +8,27 @@
 #include "parser/driver.h"
 #include "autogen/hilti-config.h"
 #include "jit/jit.h"
+#include "options.h"
 
 using namespace hilti;
 using namespace hilti::passes;
 
-CompilerContext::CompilerContext(const string_list libdirs)
+CompilerContext::CompilerContext(const Options& options)
 {
-    string_list paths = libdirs;
+    _options = std::shared_ptr<Options>(new Options(options));
 
-    for ( auto p : hilti::configuration().hilti_library_dirs )
-        paths.push_back(p);
-
-    paths.push_front(".");  // Always add cwd at the front.
-
-    _libdirs = paths;
+    if ( _options->cgDebugging("visitors") )
+        ast::enableDebuggingForAllVisitors();
 }
 
 CompilerContext::~CompilerContext()
 {
     delete _jit;
+}
+
+const Options& CompilerContext::options() const
+{
+    return *_options;
 }
 
 string CompilerContext::searchModule(shared_ptr<ID> id)
@@ -36,7 +38,7 @@ string CompilerContext::searchModule(shared_ptr<ID> id)
     if ( ! util::endsWith(p, ".hlt") )
         p += ".hlt";
 
-    string full_path = util::findInPaths(p, _libdirs);
+    string full_path = util::findInPaths(p, options().libdirs_hlt);
 
     if ( full_path.size() == 0 ) {
         error(util::fmt("cannot find module %s", id->pathAsString()));
@@ -49,13 +51,13 @@ string CompilerContext::searchModule(shared_ptr<ID> id)
         goto error;
     }
 
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Found module %s as %s ...", id->pathAsString(), buf) << std::endl;
 
     return string(buf);
 
 error:
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Did not find module %s ...", id->pathAsString()) << std::endl;
 
     return "";
@@ -63,7 +65,7 @@ error:
 
 bool CompilerContext::importModule(shared_ptr<ID> id)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Importing module %s ...", id->pathAsString()) << std::endl;
 
     auto path = searchModule(id);
@@ -71,12 +73,12 @@ bool CompilerContext::importModule(shared_ptr<ID> id)
     if ( ! path.size() )
         return nullptr;
 
-    return (loadModule(path, false, false) != nullptr);
+    return (loadModule(path, false) != nullptr);
 }
 
-shared_ptr<Module> CompilerContext::loadModule(const string& p, bool verify, bool finalize)
+shared_ptr<Module> CompilerContext::loadModule(const string& p, bool finalize)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Loading module %s ...", p) << std::endl;
 
     char buf[PATH_MAX];
@@ -107,7 +109,7 @@ shared_ptr<Module> CompilerContext::loadModule(const string& p, bool verify, boo
     _modules.insert(std::make_pair(path, module));
 
     if ( finalize ) {
-        if ( ! CompilerContext::finalize(nullptr, verify) )
+        if ( ! CompilerContext::finalize(nullptr) )
             return nullptr;
     }
 
@@ -116,7 +118,7 @@ shared_ptr<Module> CompilerContext::loadModule(const string& p, bool verify, boo
 
 static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const string& before)
 {
-    if ( ctx->debugging("dump-ast") ) {
+    if ( ctx->options().cgDebugging("dump-ast") ) {
         std::cerr << std::endl
             << "===" << std::endl
             << "=== AST for " << module->id()->pathAsString() << " before hilti::" << before << std::endl
@@ -126,7 +128,7 @@ static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const str
         ctx->dump(module, std::cerr);
     }
 
-    if ( ctx->debugging("print-ast") ) {
+    if ( ctx->options().cgDebugging("print-ast") ) {
         std::cerr << std::endl
             << "===" << std::endl
             << "=== AST for " << module->id()->pathAsString() << " before hilti::" << before << std::endl
@@ -142,9 +144,9 @@ static void _debugAST(CompilerContext* ctx, shared_ptr<Module> module, const ast
     _debugAST(ctx, module, before.loggerName());
 }
 
-bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
+bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Finalizing module %s ...", module->id()->pathAsString()) << std::endl;
 
     // Just a double-check ...
@@ -181,7 +183,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
 
     _debugAST(this, module, validator);
 
-    if ( verify && ! validator.run(module) )
+    if ( options().verify && ! validator.run(module) )
         return false;
 
     auto cfg = std::make_shared<passes::CFG>(this);
@@ -209,7 +211,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module, bool verify)
 
 void CompilerContext::addModule(shared_ptr<Module> module)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Adding module %s ...", module->id()->pathAsString()) << std::endl;
 
     string path = module->path();
@@ -226,9 +228,9 @@ void CompilerContext::addModule(shared_ptr<Module> module)
     _modules.insert(std::make_pair(path, module));
 }
 
-bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
+bool CompilerContext::finalize(shared_ptr<Module> module)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Finalizing context...") << std::endl;
 
     if ( module )
@@ -248,7 +250,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
         if ( ! scope_builder.run(module) )
             return false;
 
-        if ( debugging("scopes") ) {
+        if ( options().cgDebugging("scopes") ) {
             _debugAST(this, module, scope_printer);
             scope_printer.run(module);
         }
@@ -269,7 +271,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module, bool verify)
     for ( auto m : _modules ) {
         auto module = m.second;
 
-        if ( ! CompilerContext::_finalizeModule(module, verify) )
+        if ( ! CompilerContext::_finalizeModule(module) )
             goto error;
     }
 
@@ -283,7 +285,7 @@ error:
 
 shared_ptr<Scope> CompilerContext::scopeAlias(shared_ptr<ID> id)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Creating scope alias for module %s ...", id->pathAsString()) << std::endl;
 
     auto path = searchModule(id);
@@ -302,24 +304,24 @@ shared_ptr<Scope> CompilerContext::scopeAlias(shared_ptr<ID> id)
 
 shared_ptr<Module> CompilerContext::parse(std::istream& in, const std::string& sname)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Parsing %s ...", sname) << std::endl;
 
     hilti_parser::Driver driver;
     driver.forwardLoggingTo(this);
-    driver.enableDebug(debugging("scanner"), debugging("parser"));
+    driver.enableDebug(options().cgDebugging("scanner"), options().cgDebugging("parser"));
     return driver.parse(shared_from_this(), in, sname);
 }
 
-llvm::Module* CompilerContext::compile(shared_ptr<Module> module, int debug, bool verify, int profile)
+llvm::Module* CompilerContext::compile(shared_ptr<Module> module)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Compiling module %s ...", module->id()->pathAsString()) << std::endl;
 
     _debugAST(this, module, "CodeGen");
 
-    codegen::CodeGen cg(this, module->compilerContext()->libraryPaths());
-    return cg.generateLLVM(module, verify, debug, profile);
+    codegen::CodeGen cg(this, module->compilerContext()->options().libdirs_hlt);
+    return cg.generateLLVM(module);
 }
 
 bool CompilerContext::print(shared_ptr<Module> module, std::ostream& out, bool cfg)
@@ -355,9 +357,9 @@ bool CompilerContext::writeBitcode(llvm::Module* module, std::ostream& out)
     return true;
 }
 
-llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module*> modules, path_list paths, std::list<string> libs, path_list bcas, path_list dylds, bool debug, bool verify, bool add_stdlibs, bool add_sharedlibs)
+llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module*> modules, std::list<string> libs, path_list bcas, path_list dylds, bool add_stdlibs, bool add_sharedlibs)
 {
-    if ( debugging("context" ) ) {
+    if ( options().cgDebugging("context" ) ) {
         std::list<string> names;
 
         for ( auto m : modules )
@@ -366,17 +368,17 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         std::cerr << util::fmt("Linking modules %s ...", util::strjoin(names, ", ")) << std::endl;
     }
 
-    codegen::Linker linker(libs);
+    codegen::Linker linker(this, libs);
 
     for ( auto l : libs ) {
-        if ( debugging("context" ) )
+        if ( options().cgDebugging("context" ) )
             std::cerr << "Linker: adding native library " << l << std::endl;
 
         linker.addNativeLibrary(l);
     }
 
     for ( auto b : bcas ) {
-        if ( debugging("context" ) )
+        if ( options().cgDebugging("context" ) )
             std::cerr << "Linker: adding bitcode library " << b << std::endl;
 
         linker.addBitcodeArchive(b);
@@ -389,7 +391,7 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         if ( ! type_info )
             return nullptr;
 
-        auto type_info_llvm = compile(type_info, debug);
+        auto type_info_llvm = compile(type_info);
 
         if ( ! type_info_llvm )
             return nullptr;
@@ -397,14 +399,14 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         modules.push_back(type_info_llvm);
 #endif
 
-        auto rlbca = debug ? configuration().runtime_library_bca_dbg : configuration().runtime_library_bca;
+        auto rlbca = options().debug ? configuration().runtime_library_bca_dbg : configuration().runtime_library_bca;
 
-        if ( debugging("context" ) )
+        if ( options().cgDebugging("context" ) )
             std::cerr << "Linker: adding bitcode runtime library " << rlbca << std::endl;
 
         linker.addBitcodeArchive(rlbca);
 
-        if ( debugging("context" ) )
+        if ( options().cgDebugging("context" ) )
             std::cerr << "Linker: adding native runtime library " << configuration().runtime_library_a << std::endl;
 
         linker.addNativeLibrary(configuration().runtime_library_a);
@@ -424,7 +426,7 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         if ( ! util::endsWith(d, configuration().shared_library_suffix) )
             d = d + configuration().shared_library_suffix;
 
-        if ( debugging("context" ) )
+        if ( options().cgDebugging("context" ) )
             std::cerr << "Linker: adding dynamic library " << d << std::endl;
 
         // Sic. This returns true on error ...
@@ -434,7 +436,7 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         }
     }
 
-    if ( debugging("context" ) ) {
+    if ( options().cgDebugging("context" ) ) {
         std::list<string> names;
 
         for ( auto m : modules )
@@ -443,23 +445,23 @@ llvm::Module* CompilerContext::linkModules(string output, std::list<llvm::Module
         std::cerr << util::fmt("  Final set modules to link: %s ...", util::strjoin(names, ", ")) << std::endl;
     }
 
-    return linker.link(output, modules, verify, debugging("linker"));
+    return linker.link(output, modules);
 }
 
-llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module, int optimize)
+llvm::ExecutionEngine* CompilerContext::jitModule(llvm::Module* module)
 {
     if ( ! _jit )
         _jit = new jit::JIT(this);
 
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("JITing module %s ...", module->getModuleIdentifier()) << std::endl;
 
-    return _jit->jitModule(module, optimize);
+    return _jit->jitModule(module);
 }
 
 void* CompilerContext::nativeFunction(llvm::Module* module, llvm::ExecutionEngine* ee, const string& function)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Getting native function %s from module %s ...", function, module->getModuleIdentifier()) << std::endl;
 
     if ( ! _jit )
@@ -470,7 +472,7 @@ void* CompilerContext::nativeFunction(llvm::Module* module, llvm::ExecutionEngin
 
 void CompilerContext::installFunctionTable(const FunctionMapping* ftable)
 {
-    if ( debugging("context" ) )
+    if ( options().cgDebugging("context" ) )
         std::cerr << util::fmt("Installing custom function table ...") << std::endl;
 
     if ( ! _jit )
@@ -478,68 +480,3 @@ void CompilerContext::installFunctionTable(const FunctionMapping* ftable)
 
     _jit->installFunctionTable(ftable);
 }
-
-const string_list& CompilerContext::libraryPaths() const
-{
-    return _libdirs;
-}
-
-bool CompilerContext::debugging(const string& label)
-{
-    return _debug_streams.find(label) != _debug_streams.end();
-}
-
-bool CompilerContext::enableDebug(const string& label)
-{
-    if ( ! validDebugStream(label) )
-        return false;
-
-    _debug_streams.insert(label);
-
-    if ( label == "visitors" )
-        ast::enableDebuggingForAllVisitors();
-
-    return true;
-}
-
-bool CompilerContext::enableDebug(std::set<string>& labels)
-{
-    for ( auto l : labels )
-        enableDebug(l);
-
-    return true;
-}
-
-std::list<string> CompilerContext::debugStreams()
-{
-    return { "codegen", "linker", "parser", "scanner", "scopes", "context", "dump-ast", "print-ast", "visitors" };
-}
-
-bool CompilerContext::validDebugStream(const string& label)
-{
-    auto streams = debugStreams();
-    return std::find(streams.begin(), streams.end(), label) != streams.end();
-}
-
-bool CompilerContext::optimizing(const string& label)
-{
-    assert(validOptimization(label));
-    return true; // TODO FIXME.
-}
-
-std::list<string> CompilerContext::optimizations()
-{
-    return { "cg-early-gc-release" };
-}
-
-bool CompilerContext::validOptimization(const string& label)
-{
-    auto all = optimizations();
-    return std::find(all.begin(), all.end(), label) != all.end();
-}
-
-
-
-
-
-

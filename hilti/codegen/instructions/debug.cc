@@ -2,13 +2,14 @@
 #include <hilti-intern.h>
 
 #include "../stmt-builder.h"
+#include "options.h"
 
 using namespace hilti;
 using namespace codegen;
 
 void StatementBuilder::visit(statement::instruction::debug::Assert* i)
 {
-    if ( cg()->debugLevel() == 0 )
+    if ( cg()->options().debug == 0 )
         return;
 
     auto op1 = cg()->llvmValue(i->op1());

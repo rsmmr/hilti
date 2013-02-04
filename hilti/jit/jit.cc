@@ -9,6 +9,7 @@
 #include <llvm/Module.h>
 
 #include "jit.h"
+#include "options.h"
 #include "llvm/SectionMemoryManager.h"
 
 using namespace hilti;
@@ -56,31 +57,10 @@ JIT::~JIT()
 {
 }
 
-llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module, int optimize)
+llvm::ExecutionEngine* JIT::jitModule(llvm::Module* module)
 {
-    auto opt = llvm::CodeGenOpt::Default;
-
-    switch ( optimize ) {
-     case 0:
-        opt = llvm::CodeGenOpt::None;
-        break;
-
-     case 1:
-        opt = llvm::CodeGenOpt::Less;
-        break;
-
-     case 2:
-        opt = llvm::CodeGenOpt::Default;
-        break;
-
-     case 3:
-        opt = llvm::CodeGenOpt::Aggressive;
-        break;
-
-     default:
-        error("unsupported optimization level");
-        return 0;
-    }
+    // Or llvm::CodeGenOpt::Aggressive? (-O3)
+    auto opt = _ctx->options().optimize ? llvm::CodeGenOpt::Default : llvm::CodeGenOpt::None;
 
     string errormsg;
 

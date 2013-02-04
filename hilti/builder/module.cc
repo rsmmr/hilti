@@ -435,9 +435,9 @@ shared_ptr<hilti::Module> ModuleBuilder::module() const
     return _module;
 }
 
-shared_ptr<hilti::Module> ModuleBuilder::finalize(bool verify)
+shared_ptr<hilti::Module> ModuleBuilder::finalize()
 {
-    if ( ! _module->compilerContext()->finalize(_module, verify) )
+    if ( ! _module->compilerContext()->finalize(_module) )
         return nullptr;
 
     return _module;

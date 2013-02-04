@@ -114,6 +114,7 @@ add_library (binpacxx STATIC
     type.cc
     variable.cc
     visitor-interface.cc
+    options.cc
 
     ${operators_cc}
 

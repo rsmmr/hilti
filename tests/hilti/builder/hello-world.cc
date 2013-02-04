@@ -12,7 +12,8 @@ int main(int argc, char** argv)
 {
     hilti::init();
 
-    shared_ptr<hilti::CompilerContext> ctx = std::make_shared<hilti::CompilerContext>();
+    hilti::Options options;
+    shared_ptr<hilti::CompilerContext> ctx = std::make_shared<hilti::CompilerContext>(options);
     auto m = std::make_shared<hilti::builder::ModuleBuilder>(ctx, "Main");
 
     m->importModule("Hilti");

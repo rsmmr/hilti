@@ -17,6 +17,7 @@ class Expression;
 class Variable;
 class LogComponent;
 class CompilerContext;
+class Options;
 
 namespace statement { class Instruction; }
 namespace passes { class Collector; }
@@ -110,6 +111,10 @@ public:
    ///
    CompilerContext* context() const;
 
+   /// Returns the options in effecty for code generation. This is a
+   /// convienience method that just forwards to the current context.
+   const Options& options() const;
+
    /// Main entry method for compiling a HILTI AST into an LLVM module.
    ///
    /// hltmod: The module to compile.
@@ -126,15 +131,7 @@ public:
    ///
    /// Returns: The compiled LLVM module, or null if errors are encountered.
    /// Passes ownership to the caller.
-   llvm::Module* generateLLVM(shared_ptr<hilti::Module> hltmod, bool verify, int debug, int profile);
-
-   /// Returns the debug level for the generated code. This is the value
-   /// passed into generateLLVM().
-   int debugLevel() const { return _debug_level; }
-
-   /// Returns the profile level for the generated code. This is the value
-   /// passed into generateLLVM().
-   int profileLevel() const { return _profile_level; }
+   llvm::Module* generateLLVM(shared_ptr<hilti::Module> hltmod);
 
    /// Returns the LLVM context to use with all LLVM calls.
    llvm::LLVMContext& llvmContext() { return llvm::getGlobalContext(); }
@@ -2198,9 +2195,6 @@ private:
    void llvmRunDtorsAfterIns();
 
    path_list _libdirs;
-   bool _verify;
-   int _debug_level;
-   int _profile_level;
 
    int _in_check_exception = 0;
    int _in_build_exit = 0;

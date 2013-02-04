@@ -9,6 +9,7 @@
 
 #include "common.h"
 #include "context.h"
+#include "options.h"
 #include "operator.h"
 
 namespace binpac {
