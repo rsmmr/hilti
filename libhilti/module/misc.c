@@ -11,6 +11,11 @@ void hilti_abort(hlt_exception** excpt)
     abort();
 }
 
+void hilti_terminate(hlt_exception** excpt, hlt_execution_context* ctx)
+{
+    hlt_set_exception(excpt, &hlt_exception_termination, 0);
+}
+
 // A non-yielding sleep.
 void hilti_sleep(double secs, hlt_exception** excpt, hlt_execution_context* ctx)
 {

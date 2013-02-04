@@ -48,6 +48,7 @@ hlt_exception_type hlt_exception_profiler_mismatch = { "ProfilerMismatch", &hlt_
 hlt_exception_type hlt_exception_profiler_unknown = { "ProfilerUnknown", &hlt_exception_unspecified, &hlt_type_info_hlt_string };
 hlt_exception_type hlt_exception_no_thread_context = { "NoThreadContext", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_conversion_error = { "ConversionError", &hlt_exception_unspecified, 0 };
+hlt_exception_type hlt_exception_termination = { "Termination", &hlt_exception_unspecified, 0 };
 
 hlt_exception_type hlt_exception_resumable = { "Resumable", &hlt_exception_unspecified, 0 };
 hlt_exception_type hlt_exception_yield = { "Yield", &hlt_exception_resumable, 0}; // FIXME: &hlt_type_info_hlt_int_32 };
@@ -147,6 +148,16 @@ int8_t hlt_exception_is_yield(hlt_exception* excpt)
     // This is something we should find a solution for that avoids the
     // duplicate instances.
     return strcmp(excpt->type->name, "Yield") == 0;
+}
+
+int8_t hlt_exception_is_termination(hlt_exception* excpt)
+{
+    // FIXME: It's unfortunate that we need to check the string name here,
+    // but when jitting we may have two copies of the library in our address
+    // space and hence get the wrong type object to check just the address.
+    // This is something we should find a solution for that avoids the
+    // duplicate instances.
+    return strcmp(excpt->type->name, "Termination") == 0;
 }
 
 static void __exception_print(const char* prefix, hlt_exception* exception, hlt_execution_context* ctx)

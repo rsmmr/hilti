@@ -75,6 +75,9 @@ extern int8_t __hlt_exception_match(hlt_exception*, hlt_exception_type* type);
 /// Returns true if the given exception is a \a yield exception.
 extern int8_t hlt_exception_is_yield(hlt_exception* excpt);
 
+/// Returns true if the given exception is a \a termination exception.
+extern int8_t hlt_exception_is_termination(hlt_exception* excpt);
+
 /// Internal function that generates the output shown to the user when an
 /// exception is not caught, and then aborts processing. This function is
 /// intended for use outside of threads.
@@ -239,6 +242,10 @@ extern hlt_exception_type hlt_exception_no_thread_context;
 
 /// Converting a value from one type to another failed.
 extern hlt_exception_type hlt_exception_conversion_error;
+
+/// Raised by Hilti::terminate() to terminate exectuin.
+extern hlt_exception_type hlt_exception_termination;
+
 
 /// @}
 
