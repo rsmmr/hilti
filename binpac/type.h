@@ -699,10 +699,12 @@ public:
     /// constant: A flag indicating whether the parameter is constant (i.e., a
     /// function invocation won't change its value.)
     ///
+    /// clear: A flag indicating whether the parameter has the \c __clear attribute.
+    ///
     /// default_value: An optional default value for the parameters, or null if none.
     ///
     /// l: A location associated with the expression.
-    Parameter(shared_ptr<binpac::ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value, Location l=Location::None);
+    Parameter(shared_ptr<binpac::ID> id, shared_ptr<Type> type, bool constant, bool clear, shared_ptr<Expression> default_value, Location l=Location::None);
 
     /// Constructor for a return value.
     ///
@@ -714,7 +716,14 @@ public:
     /// l: A location associated with the expression.
     Parameter(shared_ptr<Type> type, bool constant, Location l=Location::None);
 
+    /// Returns true if the parameter has the \c clear attribute set.
+    bool clear() const;
+
     ACCEPT_VISITOR_ROOT();
+
+private:
+    bool _clear;
+
 };
 
 /// Helper type to define a function parameter or return value.

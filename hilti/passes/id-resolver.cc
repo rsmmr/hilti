@@ -7,8 +7,9 @@ IdResolver::~IdResolver()
 {
 }
 
-bool IdResolver::run(shared_ptr<Node> module)
+bool IdResolver::run(shared_ptr<Node> module, bool report_unresolved)
 {
+    _report_unresolved = report_unresolved;
     return processAllPreOrder(module);
 }
 
@@ -25,7 +26,9 @@ void IdResolver::visit(expression::ID* i)
     auto vals = body->scope()->lookup(id->id());
 
     if ( ! vals.size() ) {
-        error(i, util::fmt("unknown ID %s", id->id()->pathAsString().c_str()));
+        if ( _report_unresolved )
+            error(i, util::fmt("unknown ID %s", id->id()->pathAsString().c_str()));
+
         return;
     }
 
@@ -79,7 +82,9 @@ void IdResolver::visit(type::Unknown* t)
     auto vals = body->scope()->lookup(id);
 
     if ( ! vals.size() ) {
-        error(t, util::fmt("unknown type ID %s", id->pathAsString().c_str()));
+        if ( _report_unresolved )
+            error(t, util::fmt("unknown type ID %s", id->pathAsString().c_str()));
+
         return;
     }
 
@@ -93,7 +98,9 @@ void IdResolver::visit(type::Unknown* t)
     auto nt = ast::as<expression::Type>(val);
 
     if ( ! nt ) {
-        error(t, util::fmt("ID %s does not reference a type", id->pathAsString().c_str()));
+        if ( _report_unresolved )
+            error(t, util::fmt("ID %s does not reference a type", id->pathAsString().c_str()));
+
         return;
     }
 
@@ -143,6 +150,7 @@ void IdResolver::visit(declaration::Variable* d)
 
 void IdResolver::visit(statement::ForEach* s)
 {
+#if 0
     // Make sure the sequence type is reseolved.
     preOrder(s->sequence());
 
@@ -156,4 +164,5 @@ void IdResolver::visit(statement::ForEach* s)
         auto expr = std::make_shared<expression::Variable>(var, s->location());
         s->body()->scope()->insert(s->id(), expr);
     }
+#endif    
 }

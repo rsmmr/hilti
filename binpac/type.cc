@@ -670,9 +670,15 @@ bool type::Function::_equal(shared_ptr<binpac::Type> o) const
     return true;
 }
 
-function::Parameter::Parameter(shared_ptr<binpac::ID> id, shared_ptr<Type> type, bool constant, shared_ptr<Expression> default_value, Location l)
+function::Parameter::Parameter(shared_ptr<binpac::ID> id, shared_ptr<Type> type, bool constant, bool clear, shared_ptr<Expression> default_value, Location l)
     : ast::type::mixin::function::Parameter<AstInfo>(id, type, constant, default_value, l)
 {
+    _clear = clear;
+}
+
+bool function::Parameter::clear() const
+{
+    return _clear;
 }
 
 function::Result::Result(shared_ptr<Type> type, bool constant, Location l)

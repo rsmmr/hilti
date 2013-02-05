@@ -1,5 +1,5 @@
 
 >>> e = new myException 42
-wrong-new.hlt:10-10: error, operand type int<64> is not compatible with type string [pass::hilti::Validator]
+wrong-new.hlt:10-11: error, operand type int<64> is not compatible with type string [pass::hilti::Validator]
 wrong-new.hlt: Aborting due to verification error.
 error running hiltic, aborting

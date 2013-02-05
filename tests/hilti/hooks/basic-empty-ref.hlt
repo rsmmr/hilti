@@ -1,0 +1,17 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+declare hook void my_hook(ref<bytes> b)
+
+void run() {
+    local ref<bytes> b = b"213"
+    hook.run my_hook (b)
+    return.void
+}
+

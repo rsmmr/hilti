@@ -9,6 +9,7 @@
 # include "instruction.h"
 # include "scope.h"
 # include "declaration.h"
+# include "flow-info.h"
 
 namespace hilti {
 namespace passes {
@@ -24,51 +25,9 @@ public:
     /// l: An associated location.
     Statement(const Location& l=Location::None);
 
-    /// Structure to describe a variable for data flow analysis.
-    ///
-    /// \todo: Right now we model only local variables and parameters and
-    /// hence the names need to be unique only within functions. If we add
-    /// globals, we need to change that. 
-    struct FlowVariable {
-        FlowVariable(shared_ptr<expression::Variable> variable);
-        FlowVariable(shared_ptr<expression::Parameter> param);
-
-        FlowVariable& operator=(const FlowVariable& other);
-        bool operator==(const FlowVariable& other) const;
-        bool operator<(const FlowVariable& other) const;
-
-        string name;                       /// Name for this variable unique within its function. Used for comparision.
-        shared_ptr<Expression> expression; /// Expression to reference the variable.
-    };
-
-    struct FlowVariablePtrCmp {
-        bool operator()(const shared_ptr<Statement::FlowVariable>& f1, const shared_ptr<Statement::FlowVariable>& f2);
-    };
-
-    typedef std::set<shared_ptr<Statement::FlowVariable>, FlowVariablePtrCmp> variable_set;
-
-    /// Provides data and control flow information for the statement.
-    struct FlowInfo {
-        /// Variables defined by this instruction, i.e., overwritten with a
-        /// new valid value.
-        variable_set defined;
-
-        /// Variables cleared by this instruction, i.e., redefined to no
-        /// longer have a valid value.
-        variable_set cleared;
-
-        /// Variables that have their current value potentially modified by
-        /// this instruction, but not reset/cleared to a new independent value/
-        variable_set modified;
-
-        /// Variables potentially read by this instructionm but not modified.
-        /// This is a superset of \a defined and \a cleared.
-        variable_set read;
-
-        // All potential successor blocks as determined by any of the
-        // statements operands.
-        std::set<shared_ptr<statement::Block>> successors;
-    };
+    typedef ::FlowInfo FlowInfo;
+    typedef ::FlowVariable FlowVariable;
+    typedef ::FlowInfo::variable_set variable_set;
 
     /// Returns a number identying the statement which is unique across all statements.
     uint64_t number() const { return _number; }
@@ -110,8 +69,6 @@ private:
 
     static uint64_t _counter;
 };
-
-extern bool operator==(const shared_ptr<Statement::FlowVariable>& v1, const shared_ptr<Statement::FlowVariable>& v2);
 
 namespace statement {
 
@@ -188,7 +145,10 @@ public:
     void setScope(shared_ptr<Scope> scope) { _scope = scope; }
 
     /// Returns the block's statements.
-    const stmt_list& statements() const { return _stmts; }
+    stmt_list statements() const { return _stmts; }
+
+    /// Sets the block's statements.
+    void setStatements(stmt_list stmts);
 
     /// Returns the block's declaratations..
     const decl_list& declarations() const { return _decls; }
@@ -230,8 +190,12 @@ public:
     /// instruction.
     bool terminated() const;
 
-    /// Remove statements after a terminator.
+    /// Remove nops as well as statements after a terminator.
     void removeUseless();
+
+    /// Returns true if block has no effect when executed (i.e., either is
+    /// empty, or contains only nops).
+    bool nop();
 
     FlowInfo flowInfo() override;
 

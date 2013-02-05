@@ -103,6 +103,12 @@ public:
     /// match those of enableTypeIDs().
     void enableTypeIDs() { ++_print_type_ids; }
 
+    /// XXX
+    void setPrintOriginalIDs(bool org) { _orginal_ids = org; }
+
+    /// XXX
+    bool printOriginalIDs() const { return _orginal_ids; }
+
     void printMetaInfo(const MetaInfo* meta) {
         if ( ! meta->size() )
             return;
@@ -138,13 +144,17 @@ private:
     std::ostream& _out;
     bool _single_line;
     int _indent = 0;
+    bool _orginal_ids = false;
 };
 
 namespace printer {
 
-template<typename Expr, typename Id>
-string scopedID(Expr expr, Id id)
+template<typename AstInfo, typename Expr, typename Id>
+string scopedID(Printer<AstInfo>* printer, Expr expr, Id id)
 {
+    if ( printer->printOriginalIDs() && id->original() )
+        id = id->original();
+
     if ( expr && expr->scope().size() ) {
         auto path = id->pathAsString();
         auto scope = expr->scope() + "::";

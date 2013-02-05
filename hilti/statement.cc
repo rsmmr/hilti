@@ -7,6 +7,7 @@
 #include "instruction.h"
 #include "builder/nodes.h"
 #include "passes/printer.h"
+#include "autogen/instructions.h"
 
 using namespace hilti;
 
@@ -14,21 +15,12 @@ uint64_t Statement::_counter = 0;
 
 static void _addExpressionToVariables(Statement::variable_set* vars, shared_ptr<Expression> expr)
 {
-    if ( auto v = ast::tryCast<expression::Variable>(expr) )
+    if ( auto v = ast::tryCast<expression::Variable>(expr) ) {
         vars->insert(std::make_shared<Statement::FlowVariable>(v));
+    }
 
     if ( auto p = ast::tryCast<expression::Parameter>(expr) )
         vars->insert(std::make_shared<Statement::FlowVariable>(p));
-}
-
-bool Statement::FlowVariablePtrCmp::operator()(const shared_ptr<Statement::FlowVariable>& f1, const shared_ptr<Statement::FlowVariable>& f2)
-{
-    return f1->name < f2->name;
-}
-
-bool hilti::operator==(const shared_ptr<Statement::FlowVariable>& v1, const shared_ptr<Statement::FlowVariable>& v2)
-{
-    return v1->name == v2->name;
 }
 
 Statement::FlowVariable::FlowVariable(shared_ptr<expression::Variable> var)
@@ -40,12 +32,14 @@ Statement::FlowVariable::FlowVariable(shared_ptr<expression::Variable> var)
     else
         name = v->id()->name();
 
+    id = v->id();
     expression = var;
 }
 
 Statement::FlowVariable::FlowVariable(shared_ptr<expression::Parameter> param)
 {
     name = util::fmt("p:%s", param->parameter()->id()->name());
+    id = param->parameter()->id();
     expression = param;
 }
 
@@ -217,21 +211,37 @@ bool statement::Block::terminated() const
 
 void statement::Block::removeUseless()
 {
-    for ( stmt_list::iterator i = _stmts.begin(); i != _stmts.end(); i++ ) {
+    stmt_list nstmts;
 
-        auto s = ast::tryCast<statement::instruction::Resolved>(*i);
+    for ( auto s : _stmts ) {
+        auto i = ast::tryCast<statement::instruction::Resolved>(s);
 
-        if ( ! s )
+        if ( i && ast::isA<instruction::Misc::Nop>(i) )
             continue;
 
-        if ( s->instruction()->terminator() ) {
-            for ( stmt_list::iterator j = ++i; j != _stmts.end(); j++ )
-                removeChild(*j);
+        nstmts.push_back(s);
 
-            _stmts.erase(i, _stmts.end());
+        if ( i && i->instruction()->terminator() )
             break;
-        }
     }
+
+    setStatements(nstmts);
+}
+
+void statement::Block::setStatements(stmt_list stmts)
+{
+    for ( auto s : _stmts )
+        removeChild(s);
+
+    _stmts = stmts;
+
+    for ( auto s : _stmts )
+        addChild(s);
+}
+
+bool statement::Block::nop()
+{
+    assert(false && "not implemented.");
 }
 
 shared_ptr<Statement> statement::Block::firstNonBlock()
@@ -345,7 +355,7 @@ Statement::FlowInfo statement::instruction::Resolved::flowInfo()
     if ( block )
         fi.successors = instruction()->successors(ops, block->scope());
 
-    return fi;
+    return ins->flowInfo(fi);
 }
 
 statement::instruction::Unresolved::Unresolved(shared_ptr<ID> id, const hilti::instruction::Operands& ops, const Location& l)
@@ -441,6 +451,7 @@ Statement::FlowInfo statement::ForEach::flowInfo()
     auto id = _body->scope()->lookup(_id);
     assert(id.size() == 1);
     variable_set iter;
+
     _addExpressionToVariables(&iter, id.front());
 
     variable_set vars;
@@ -452,7 +463,7 @@ Statement::FlowInfo statement::ForEach::flowInfo()
     fi.cleared = ::util::set_union(fi.defined, iter);
     fi.read = ::util::set_union(fi.read, vars);
     fi.read = ::util::set_difference(fi.read, iter);
-    fi.modified = ::util::set_difference(fi.modified, iter);
+    // fi.modified = ::util::set_difference(fi.modified, iter);
 
     return fi;
 }

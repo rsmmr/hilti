@@ -40,6 +40,9 @@ public:
     /// Returns the ID being declared.
     shared_ptr<ID> id() const { return _id; }
 
+    /// Sets the declaration's id.
+    void setID(shared_ptr<ID> id) { this->removeChild(_id); _id = id; this->addChild(_id); }
+
     /// Returns the declarartion linkage.
     Linkage linkage() const { return _linkage; }
 

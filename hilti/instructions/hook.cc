@@ -43,6 +43,11 @@ iBeginCC(hook)
         checkCallResult(rtype, target ? target->type() : nullptr);
     }
 
+    iFlowInfoCC(Run) {
+        fi.modified = util::set_union(fi.modified, fi.defined);
+        return fi;
+    }
+
     iDocCC(Run, R"(    
         Executes the hook *op1* with arguments *op2*, storing the hook's
         return value in *target*.

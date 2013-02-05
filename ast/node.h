@@ -226,6 +226,9 @@ public:
     /// node: An iterator pointing to the child to remove.
     void removeChild(node_list::iterator node);
 
+    /// Removes the node from all its parents.
+    void removeFromParents();
+
     /// Replaces the node with another one in all of the node's parents. Note
     /// that all corresponding node_ptr will reflect the change.
     ///

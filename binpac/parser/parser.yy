@@ -91,6 +91,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %token         BOOL
 %token         BYTES
 %token         CATCH
+%token         CLEAR
 %token         CONST
 %token         CONSTANT
 %token         DEBUG_
@@ -183,7 +184,7 @@ inline shared_ptr<type::unit::item::Field> makeVectorField(shared_ptr<type::unit
 %type <type_and_expr>    type_or_init type_or_opt_init
 %type <id_and_int>       id_with_int
 %type <id_and_ints>      id_with_ints
-%type <bval>             opt_debug opt_foreach opt_param_const
+%type <bval>             opt_debug opt_foreach opt_param_const opt_param_clear
 %type <parameter>        param
 %type <result>           rtype
 %type <parameters>       params opt_params opt_unit_params
@@ -317,8 +318,8 @@ params        : param ',' params                 { $$ = $3; $$.push_front($1); }
 opt_params    : params                           { $$ = $1; }
               | /* empty */                      { $$ = parameter_list(); }
 
-param         : opt_param_const local_id ':' type
-                                                 { $$ = std::make_shared<type::function::Parameter>($2, $4, $1, nullptr, loc(@$)); }
+param         : opt_param_const opt_param_clear local_id ':' type
+                                                 { $$ = std::make_shared<type::function::Parameter>($3, $5, $1, $2, nullptr, loc(@$)); }
 
 rtype         : opt_param_const type             { $$ = std::make_shared<type::function::Result>($2, $1, loc(@$)); }
 
@@ -334,6 +335,10 @@ opt_cc        : CSTRING                          {
 
 opt_param_const
               : CONST                            { $$ = true; }
+              | /* empty */                      { $$ = false; }
+
+opt_param_clear
+              : CLEAR                            { $$ = true; }
               | /* empty */                      { $$ = false; }
 
 stmt          : block                            { $$ = $1; }

@@ -6,70 +6,74 @@ type myException = exception
 void run()
 {
 
+  local ref<myException> e
+  local ref<myException> e_2
   
-      # pred: { <none> } succ: { [0016] }
+  
+      # pred: { <none> } succ: { [0058] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
-      [0025] call Hilti::print ("A")
-      # pred: { [0025] } succ: { [0026] }
+      # now-dead: { <none> }
+      [0057] call Hilti::print ("A")
+      # pred: { [0057] } succ: { [0059] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      # now-dead: { <none> }
+      [0058] exception.__begin_handler @__catch_1 myException
+      # pred: { [0058] } succ: { [0060], [0064] }
       # def: { run%e } clear: { <none> } mod: { <none> } read: { <none> }
-      # live-in: { <none> } live-out: { <none> }
-      [0016] try {
-    
-      local ref<myException> e
-      
-      
-          # pred: { [0016] } succ: { [0027], [0029] }
-          # def: { run%e } clear: { <none> } mod: { <none> } read: { <none> }
-          # live-in: { <none> } live-out: { run%e }
-          [0026] e = new myException
-          # pred: { [0026] } succ: { [0028], [0029] }
-          # def: { <none> } clear: { <none> } mod: { run%e } read: { <none> }
-          # live-in: { run%e } live-out: { <none> }
-          [0027] exception.throw e
-          # pred: { [0027] } succ: { [0029], [0037] }
-          # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-          # live-in: { <none> } live-out: { <none> }
-          [0028] call Hilti::print ("Cannot be reached")
-          # pred: { [0028] } succ: { [0029], [0038] }
-          # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-          # live-in: { <none> } live-out: { <none> }
-          [0037] block.end
-      
-        # pred: { [0037] } succ: { [0029], [0030] }
-        # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-        # live-in: { <none> } live-out: { <none> }
-        [0038] block.end
-    }
-    
-    catch ( ref<myException> e ) {
-    
-      
-          # pred: { [0026], [0027], [0028], [0037], [0038] } succ: { [0039] }
-          # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-          # live-in: { <none> } live-out: { <none> }
-          [0029] call Hilti::print ("Caught it!")
-          # pred: { [0029] } succ: { [0040] }
-          # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-          # live-in: { <none> } live-out: { <none> }
-          [0039] block.end
-      
-        # pred: { [0039] } succ: { [0030] }
-        # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-        # live-in: { <none> } live-out: { <none> }
-        [0040] block.end
-    }
-    
-    
-    
-      # pred: { [0038], [0040] } succ: { [0031] }
+      # live-in: { <none> } live-out: { run%e }
+      # now-dead: { <none> }
+      [0059] e = new myException
+      # pred: { [0059] } succ: { [0061], [0064] }
+      # def: { <none> } clear: { <none> } mod: { run%e } read: { <none> }
+      # live-in: { run%e } live-out: { <none> }
+      # now-dead: { run%e }
+      [0060] exception.throw e
+      # pred: { [0060] } succ: { [0062], [0064] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
-      [0030] call Hilti::print ("C")
-      # pred: { [0030] } succ: { <none> }
+      # now-dead: { <none> }
+      [0061] call Hilti::print ("Cannot be reached")
+      # pred: { [0061] } succ: { [0063], [0064] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
-      [0031] return.void
+      # now-dead: { <none> }
+      [0062] exception.__end_handler
+      # pred: { [0062] } succ: { [0068] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      # now-dead: { <none> }
+      [0063] jump @__catch_cont_1
+  
+  @__catch_1:
+      # pred: { [0059], [0060], [0061], [0062] } succ: { [0065] }
+      # def: { run%e_2 } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      # now-dead: { run%e, run%e_2 }
+      [0064] e_2 = exception.__get_and_clear
+      # pred: { [0064] } succ: { [0066] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      # now-dead: { <none> }
+      [0065] call Hilti::print ("Caught it!")
+      # pred: { [0065] } succ: { [0068] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      # now-dead: { <none> }
+      [0066] jump @__catch_cont_1
+  
+  @__catch_cont_1:
+      # pred: { [0063], [0066] } succ: { [0069] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      # now-dead: { <none> }
+      [0068] call Hilti::print ("C")
+      # pred: { [0068] } succ: { <none> }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { <none> } live-out: { <none> }
+      # now-dead: { <none> }
+      [0069] return.void
   
 }
 
@@ -78,4 +82,6 @@ void run()
   # pred: { <none> } succ: { <none> }
   # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
   # live-in: { <none> } live-out: { <none> }
-  [0041] block.end
+  # now-dead: { <none> }
+  [0071] block.end
+

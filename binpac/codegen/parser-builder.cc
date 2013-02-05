@@ -528,8 +528,8 @@ shared_ptr<hilti::Expression> ParserBuilder::hiltiFunctionNew(shared_ptr<type::U
     _hiltiUnitParameters(unit, &params);
 
     params.push_back(hilti::builder::function::parameter("__sink", _hiltiTypeSink(), false, nullptr));
-    params.push_back(hilti::builder::function::parameter("__mimetype", _hiltiTypeBytes(), true, nullptr));
-    params.push_back(hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), true, nullptr));
+    params.push_back(hilti::builder::function::parameter("__mimetype", _hiltiTypeBytes(), false, nullptr));
+    params.push_back(hilti::builder::function::parameter("__cookie", cg()->hiltiTypeCookie(), false, nullptr));
 
     auto func = cg()->moduleBuilder()->pushFunction(name, rtype, params);
     cg()->moduleBuilder()->exportID(name);

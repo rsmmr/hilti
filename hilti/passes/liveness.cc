@@ -40,12 +40,12 @@ size_t Liveness::hashLiveness()
 
     for ( auto i : _livenesses ) {
         auto stmt = i.first;
-        auto pair = i.second;
+        auto sets = i.second;
 
         hash += hash_ptr(stmt);
         hash *= 17;
 
-        for ( auto v : util::set_union(*pair.first, *pair.second) ) {
+        for ( auto v : util::set_union(util::set_union(*sets.in, *sets.out), *sets.dead) ) {
             hash += hash_str(v->name);
             hash *= 17;
         }
@@ -81,7 +81,7 @@ bool Liveness::run(shared_ptr<Node> block)
     return (errors() == 0);
 }
 
-Liveness::liveness_sets Liveness::liveness(shared_ptr<Statement> stmt) const
+Liveness::LivenessSets Liveness::liveness(shared_ptr<Statement> stmt) const
 {
     auto i = _livenesses.find(stmt);
 
@@ -89,7 +89,108 @@ Liveness::liveness_sets Liveness::liveness(shared_ptr<Statement> stmt) const
         return i->second;
 
     auto empty = std::shared_ptr<variable_set>(new variable_set());
-    return std::make_pair(empty, empty);
+
+    LivenessSets sets;
+    sets.in = sets.out = sets.dead = empty;
+    return sets;
+}
+
+bool Liveness::have(shared_ptr<Statement> stmt) const
+{
+    return  _livenesses.find(stmt) != _livenesses.end();
+}
+
+bool Liveness::liveIn(shared_ptr<Statement> stmt, shared_ptr<hilti::type::function::Parameter> p) const
+{
+    auto block = ast::tryCast<statement::Block>(stmt);
+
+    if ( block )
+        stmt = block->firstNonBlock();
+
+    auto ln = liveness(stmt).in;
+
+    auto fv = std::make_shared<Statement::FlowVariable>(std::make_shared<expression::Parameter>(p));
+    return ln->find(fv) != ln->end();
+}
+
+bool Liveness::liveIn(shared_ptr<Statement> stmt, shared_ptr<variable::Local> v) const
+{
+    auto block = ast::tryCast<statement::Block>(stmt);
+
+    if ( block )
+        stmt = block->firstNonBlock();
+
+    auto ln = liveness(stmt).in;
+
+    auto fv = std::make_shared<Statement::FlowVariable>(std::make_shared<expression::Variable>(v));
+    return ln->find(fv) != ln->end();
+}
+
+bool Liveness::deadOut(shared_ptr<Statement> stmt, shared_ptr<Expression> e) const
+{
+    auto block = ast::tryCast<statement::Block>(stmt);
+
+    if ( block )
+        stmt = block->firstNonBlock();
+
+    auto ln = liveness(stmt).dead;
+
+    shared_ptr<Statement::FlowVariable> fv = nullptr;
+
+
+    if ( auto ep = ast::tryCast<expression::Parameter>(e) )
+        fv = std::make_shared<Statement::FlowVariable>(ep);
+
+    else if ( auto ev = ast::tryCast<expression::Variable>(e) )
+        fv = std::make_shared<Statement::FlowVariable>(ev);
+
+    assert(fv);
+
+    return ln->find(fv) != ln->end();
+}
+
+bool Liveness::liveOut(shared_ptr<Statement> stmt, shared_ptr<Expression> e) const
+{
+    auto block = ast::tryCast<statement::Block>(stmt);
+
+    if ( block )
+        stmt = block->firstNonBlock();
+
+    auto ln = liveness(stmt).out;
+
+    shared_ptr<Statement::FlowVariable> fv = nullptr;
+
+    if ( auto ep = ast::tryCast<expression::Parameter>(e) )
+        fv = std::make_shared<Statement::FlowVariable>(ep);
+
+    else if ( auto ev = ast::tryCast<expression::Variable>(e) )
+        fv = std::make_shared<Statement::FlowVariable>(ev);
+
+    assert(fv);
+
+    return ln->find(fv) != ln->end();
+}
+
+bool Liveness::liveIn(shared_ptr<Statement> stmt, shared_ptr<Expression> e) const
+{
+    auto block = ast::tryCast<statement::Block>(stmt);
+
+    if ( block )
+        stmt = block->firstNonBlock();
+
+    auto ln = liveness(stmt).in;
+
+    shared_ptr<Statement::FlowVariable> fv = nullptr;
+
+    if ( auto ep = ast::tryCast<expression::Parameter>(e) )
+        fv = std::make_shared<Statement::FlowVariable>(ep);
+
+    else if ( auto ev = ast::tryCast<expression::Variable>(e) )
+        fv = std::make_shared<Statement::FlowVariable>(ev);
+
+    assert(fv);
+
+    return ln->find(fv) != ln->end();
 }
 
 void Liveness::setLiveness(shared_ptr<Statement> stmt, variable_set in, variable_set out)
@@ -97,16 +198,32 @@ void Liveness::setLiveness(shared_ptr<Statement> stmt, variable_set in, variable
     auto i = _livenesses.find(stmt);
 
     if ( i == _livenesses.end() ) {
-        auto ein = std::make_shared<variable_set>();
-        auto eout = std::make_shared<variable_set>();
-        auto j = _livenesses.insert(std::make_pair(stmt, std::make_pair(ein, eout)));
+        LivenessSets sets;
+        sets.in = std::make_shared<variable_set>();
+        sets.out = std::make_shared<variable_set>();
+        sets.dead = std::make_shared<variable_set>();
+        auto j = _livenesses.insert(std::make_pair(stmt, sets));
         i = j.first;
     }
 
     auto sets = i->second;
 
-    *sets.first = in;
-    *sets.second = out;
+    *sets.in = in;
+    *sets.out = out;
+
+    auto fi = stmt->flowInfo();
+
+    *sets.dead = ::util::set_difference(in, out);
+    *sets.dead = ::util::set_union(*sets.dead, ::util::set_difference(fi.defined, out));
+
+    variable_set pred_live;
+    for ( auto p : *_cfg->predecessors(stmt) )
+        pred_live = ::util::set_union(pred_live, *liveness(p).out);
+
+    pred_live = ::util::set_difference(pred_live, *sets.in);
+    pred_live = ::util::set_difference(pred_live, *sets.out);
+
+    *sets.dead = ::util::set_union(*sets.dead, pred_live);
 }
 
 void Liveness::addLiveness(shared_ptr<Statement> stmt, variable_set in, variable_set out)
@@ -114,10 +231,10 @@ void Liveness::addLiveness(shared_ptr<Statement> stmt, variable_set in, variable
     auto cur = liveness(stmt);
 
     for ( auto i : in )
-        cur.first->insert(i);
+        cur.in->insert(i);
 
     for ( auto i : out )
-        cur.second->insert(i);
+        cur.out->insert(i);
 }
 
 void Liveness::processStatement(shared_ptr<Statement> stmt)
@@ -127,7 +244,7 @@ void Liveness::processStatement(shared_ptr<Statement> stmt)
     variable_set in, out;
 
     for ( auto succ : *_cfg->successors(stmt) )
-        out = util::set_union(out, *liveness(succ).first);
+        out = util::set_union(out, *liveness(succ).in);
 
     auto fi = stmt->flowInfo();
 

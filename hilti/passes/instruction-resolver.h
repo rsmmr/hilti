@@ -23,7 +23,8 @@ public:
    /// module: The AST to resolve.
    ///
    /// Returns: True if no errors were encountered.
-   bool run(shared_ptr<Node> module) override {
+   bool run(shared_ptr<Node> module, bool report_errors) {
+       _report_errors = report_errors;
        return processAllPreOrder(module);
    }
 
@@ -33,8 +34,10 @@ protected:
    void visit(statement::Block *s) override;
 
 private:
+   bool run(shared_ptr<Node> module) override { assert(false); }
    void processInstruction(shared_ptr<statement::Instruction> instr, shared_ptr<ID> id);
 
+   bool _report_errors = true;
 };
 
 }

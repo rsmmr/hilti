@@ -5,71 +5,155 @@ import Hilti
 void run()
 {
 
+  local int<32> y
+  local iterator<list<int<32>>> __end_1
+  local iterator<list<int<32>>> __iter_1
+  local bool __cmp_1
+  local int<32> x
+  local iterator<list<int<32>>> __end_2
+  local iterator<list<int<32>>> __iter_2
+  local bool __cmp_2
   local ref<list<int<32>>> l
   local string s
   local string addl
   
   
-      # pred: { <none> } succ: { [0026] }
+      # pred: { <none> } succ: { [0080] }
       # def: { run%l } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { run%l }
-      [0025] l = assign list<int<32>>(1, 2, 3, 4, 5)
-      # pred: { [0025] } succ: { [0016] }
+      # now-dead: { <none> }
+      [0079] l = assign list<int<32>>(1, 2, 3, 4, 5)
+      # pred: { [0079] } succ: { [0106] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%l } live-out: { run%l }
-      [0026] call Hilti::print ("A", True)
-      # pred: { [0026], [0039] } succ: { [0015], [0029] }
-      # def: { run%s } clear: { run%s, x } mod: { <none> } read: { run%l }
+      # now-dead: { <none> }
+      [0080] call Hilti::print ("A", True)
+      # pred: { [0080] } succ: { [0081] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { run%l } live-out: { run%l }
-      [0016] for ( x in l ) {
-    
-      
-          # pred: { [0016], [0037] } succ: { [0027], [0038] }
-          # def: { run%s } clear: { run%s, y } mod: { x } read: { run%l }
-          # live-in: { run%l, x } live-out: { run%l, x }
-          [0015] for ( y in l ) {
-        
-          
-              # pred: { [0015] } succ: { [0028] }
-              # def: { run%s } clear: { <none> } mod: { x, y } read: { <none> }
-              # live-in: { run%l, x, y } live-out: { run%l, run%s, x }
-              [0027] s = call Hilti::fmt ("%d %d", (x, y))
-              # pred: { [0027] } succ: { [0036] }
-              # def: { <none> } clear: { <none> } mod: { run%s } read: { <none> }
-              # live-in: { run%l, run%s, x } live-out: { run%l, x }
-              [0028] call Hilti::print (s)
-              # pred: { [0028] } succ: { [0037] }
-              # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-              # live-in: { run%l, x } live-out: { run%l, x }
-              [0036] block.end
-          
-            # pred: { [0036] } succ: { [0015] }
-            # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-            # live-in: { run%l, x } live-out: { run%l, x }
-            [0037] block.end
-        }
-        
-        
-          # pred: { [0015] } succ: { [0039] }
-          # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-          # live-in: { run%l } live-out: { run%l }
-          [0038] block.end
-      
-        # pred: { [0038] } succ: { [0016] }
-        # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
-        # live-in: { run%l } live-out: { run%l }
-        [0039] block.end
-    }
-    
-    
-      # pred: { [0016] } succ: { [0030] }
+      # now-dead: { <none> }
+      [0106] jump @__loop_entry_2
+  
+  @__loop_entry_2:
+      # pred: { [0106] } succ: { [0082] }
+      # def: { run%__iter_2 } clear: { <none> } mod: { run%l } read: { <none> }
+      # live-in: { run%l } live-out: { run%__iter_2, run%l }
+      # now-dead: { <none> }
+      [0081] __iter_2 = begin l
+      # pred: { [0081] } succ: { [0083] }
+      # def: { run%__end_2 } clear: { <none> } mod: { run%l } read: { <none> }
+      # live-in: { run%__iter_2, run%l } live-out: { run%__end_2, run%__iter_2, run%l }
+      # now-dead: { <none> }
+      [0082] __end_2 = end l
+      # pred: { [0082] } succ: { [0084] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { run%__end_2, run%__iter_2, run%l } live-out: { run%__end_2, run%__iter_2, run%l }
+      # now-dead: { <none> }
+      [0083] jump @__loop_cond_2
+  
+  @__loop_cond_2:
+      # pred: { [0083], [0099] } succ: { [0085] }
+      # def: { run%__cmp_2 } clear: { <none> } mod: { run%__end_2, run%__iter_2 } read: { <none> }
+      # live-in: { run%__end_2, run%__iter_2, run%l } live-out: { run%__cmp_2, run%__end_2, run%__iter_2, run%l }
+      # now-dead: { <none> }
+      [0084] __cmp_2 = equal __iter_2 __end_2
+      # pred: { [0084] } succ: { [0086], [0101] }
+      # def: { <none> } clear: { <none> } mod: { run%__cmp_2 } read: { <none> }
+      # live-in: { run%__cmp_2, run%__end_2, run%__iter_2, run%l } live-out: { run%__end_2, run%__iter_2, run%l }
+      # now-dead: { run%__cmp_2 }
+      [0085] if.else __cmp_2 @__loop_end_2 @__loop_body_2
+  
+  @__loop_body_2:
+      # pred: { [0085] } succ: { [0107] }
+      # def: { run%x } clear: { <none> } mod: { run%__iter_2 } read: { <none> }
+      # live-in: { run%__end_2, run%__iter_2, run%l } live-out: { run%__end_2, run%__iter_2, run%l, run%x }
+      # now-dead: { <none> }
+      [0086] x = deref __iter_2
+      # pred: { [0086] } succ: { [0087] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { run%__end_2, run%__iter_2, run%l, run%x } live-out: { run%__end_2, run%__iter_2, run%l, run%x }
+      # now-dead: { <none> }
+      [0107] jump @__loop_entry_1
+  
+  @__loop_entry_1:
+      # pred: { [0107] } succ: { [0088] }
+      # def: { run%__iter_1 } clear: { <none> } mod: { run%l } read: { <none> }
+      # live-in: { run%__end_2, run%__iter_2, run%l, run%x } live-out: { run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x }
+      # now-dead: { <none> }
+      [0087] __iter_1 = begin l
+      # pred: { [0087] } succ: { [0089] }
+      # def: { run%__end_1 } clear: { <none> } mod: { run%l } read: { <none> }
+      # live-in: { run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x } live-out: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x }
+      # now-dead: { <none> }
+      [0088] __end_1 = end l
+      # pred: { [0088] } succ: { [0090] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x } live-out: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x }
+      # now-dead: { <none> }
+      [0089] jump @__loop_cond_1
+  
+  @__loop_cond_1:
+      # pred: { [0089], [0096] } succ: { [0091] }
+      # def: { run%__cmp_1 } clear: { <none> } mod: { run%__end_1, run%__iter_1 } read: { <none> }
+      # live-in: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x } live-out: { run%__cmp_1, run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x }
+      # now-dead: { <none> }
+      [0090] __cmp_1 = equal __iter_1 __end_1
+      # pred: { [0090] } succ: { [0092], [0098] }
+      # def: { <none> } clear: { <none> } mod: { run%__cmp_1 } read: { <none> }
+      # live-in: { run%__cmp_1, run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x } live-out: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x }
+      # now-dead: { run%__cmp_1 }
+      [0091] if.else __cmp_1 @__loop_end_1 @__loop_body_1
+  
+  @__loop_body_1:
+      # pred: { [0091] } succ: { [0093] }
+      # def: { run%y } clear: { <none> } mod: { run%__iter_1 } read: { <none> }
+      # live-in: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x } live-out: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x, run%y }
+      # now-dead: { <none> }
+      [0092] y = deref __iter_1
+      # pred: { [0092] } succ: { [0094] }
+      # def: { run%s } clear: { <none> } mod: { run%x, run%y } read: { <none> }
+      # live-in: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x, run%y } live-out: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%s, run%x }
+      # now-dead: { run%y }
+      [0093] s = call Hilti::fmt ("%d %d", (x, y))
+      # pred: { [0093] } succ: { [0095] }
+      # def: { <none> } clear: { <none> } mod: { run%s } read: { <none> }
+      # live-in: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%s, run%x } live-out: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x }
+      # now-dead: { run%s }
+      [0094] call Hilti::print (s)
+      # pred: { [0094] } succ: { [0096] }
+      # def: { run%__iter_1 } clear: { <none> } mod: { run%__iter_1 } read: { <none> }
+      # live-in: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x } live-out: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x }
+      # now-dead: { <none> }
+      [0095] __iter_1 = incr __iter_1
+      # pred: { [0095] } succ: { [0090] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x } live-out: { run%__end_1, run%__end_2, run%__iter_1, run%__iter_2, run%l, run%x }
+      # now-dead: { <none> }
+      [0096] jump @__loop_cond_1
+  
+  @__loop_end_1:
+      # pred: { [0091] } succ: { [0099] }
+      # def: { run%__iter_2 } clear: { <none> } mod: { run%__iter_2 } read: { <none> }
+      # live-in: { run%__end_2, run%__iter_2, run%l } live-out: { run%__end_2, run%__iter_2, run%l }
+      # now-dead: { run%__end_1, run%__iter_1, run%x }
+      [0098] __iter_2 = incr __iter_2
+      # pred: { [0098] } succ: { [0084] }
+      # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
+      # live-in: { run%__end_2, run%__iter_2, run%l } live-out: { run%__end_2, run%__iter_2, run%l }
+      # now-dead: { <none> }
+      [0099] jump @__loop_cond_2
+  
+  @__loop_end_2:
+      # pred: { [0085] } succ: { [0102] }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
-      [0029] call Hilti::print ("B", True)
-      # pred: { [0029] } succ: { <none> }
+      # now-dead: { run%__end_2, run%__iter_2, run%l }
+      [0101] call Hilti::print ("B", True)
+      # pred: { [0101] } succ: { <none> }
       # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
       # live-in: { <none> } live-out: { <none> }
-      [0030] return.void
+      # now-dead: { <none> }
+      [0102] return.void
   
 }
 
@@ -78,4 +162,6 @@ void run()
   # pred: { <none> } succ: { <none> }
   # def: { <none> } clear: { <none> } mod: { <none> } read: { <none> }
   # live-in: { <none> } live-out: { <none> }
-  [0040] block.end
+  # now-dead: { <none> }
+  [0108] block.end
+

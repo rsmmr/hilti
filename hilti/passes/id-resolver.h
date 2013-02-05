@@ -19,8 +19,11 @@ public:
    ///
    /// module: The AST to resolve.
    ///
+   /// report_unresolved: If true, IDs that we can't resolve are reported as
+   /// errorr; if false, they are simply left untouched.
+   ///
    /// Returns: True if no errors were encountered.
-   bool run(shared_ptr<Node> module) override;
+   bool run(shared_ptr<Node> module, bool report_unresolved);
 
 protected:
    void visit(expression::ID* i) override;
@@ -31,7 +34,10 @@ protected:
    void visit(statement::ForEach* s) override;
 
 private:
+   bool run(shared_ptr<Node> ast) { return false; };
+
    std::set<string> _locals;
+   bool _report_unresolved = true;
 };
 
 }

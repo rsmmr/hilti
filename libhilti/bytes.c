@@ -905,8 +905,6 @@ hlt_iterator_bytes hlt_iterator_bytes_incr(hlt_iterator_bytes old, hlt_exception
 
 hlt_iterator_bytes hlt_iterator_bytes_incr_by(hlt_iterator_bytes old, int64_t n, hlt_exception** excpt, hlt_execution_context* ctx)
 {
-    normalize_pos(&old, 0);
-
     hlt_iterator_bytes pos = hlt_iterator_bytes_copy(old, excpt, ctx);
 
     if ( ! n )

@@ -491,6 +491,7 @@ std::set<shared_ptr<statement::Block>> Instruction::successors(const hilti::inst
         if ( c ) {
             auto l = ast::checkedCast<constant::Label>(c->constant());
             auto exprs = scope->lookup(std::make_shared<ID>(l->value()));
+
             assert(exprs.size() == 1);
             expr = exprs.front();
         }

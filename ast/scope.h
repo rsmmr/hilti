@@ -160,6 +160,14 @@ public:
         return alias;
     }
 
+    /// XXX
+    void mergeFrom(shared_ptr<typename AstInfo::scope> other) {
+        for ( auto i : other->_data->values ) {
+            if ( _data->values.find(i.first) == _data->values.end() )
+                _data->values.insert(i);
+        }
+    }
+
     /// Dumps out a debugging representation of the scope's binding.
     ///
     /// out: The stream to use.

@@ -127,10 +127,23 @@ void StatementBuilder::visit(statement::instruction::flow::CallResult* i)
     auto ftype = ast::as<type::Function>(i->op1()->type());
 
     CodeGen::expr_list params;
+    auto target_old = cg()->llvmValue(i->target());
     prepareCall(i->op1(), i->op2(), &params, true);
     auto result = cg()->llvmCall(func, ftype, params);
+    cg()->llvmDtor(target_old, i->target()->type(), false, "call.result-target-dtor");
 
-    cg()->llvmStore(i->target(), result);
+    auto var = ast::checkedCast<expression::Variable>(i->target());
+
+    if ( (! ast::isA<variable::Local>(var->variable())) ||
+        cg()->hiltiModule()->liveness()->liveOut(i->sharedPtr<Statement>(), i->target()) )
+        cg()->llvmStore(i->target(), result, false);
+
+    else if ( ! cg()->hiltiModule()->liveness()->liveIn(i->sharedPtr<Statement>(), i->target()) )
+        // I'm actually not quite sure why we don't have to dtor otherwise,
+        // but it seems the liveness dead calculation takes care of this ...
+        cg()->llvmDtor(result, i->target()->type(), false, "call.result-unused-dtor");
+
+    cg()->llvmDebugPrint("hilti-trace", "end-of-call-result");
 }
 
 void StatementBuilder::visit(statement::instruction::flow::CallCallableVoid* i)
@@ -240,7 +253,7 @@ void StatementBuilder::visit(statement::instruction::flow::Switch* i)
         //
         // TODO: We're doing the indirect branch with an integer and switch,
         // instead of using LLVM's indirect brach statement[1] because
-        // there's evidence[2] that the JIT might not like that ... 
+        // there's evidence[2] that the JIT might not like that ...
         //
         // [1] http://blog.llvm.org/2010/01/address-of-label-and-indirect-branches.html
         // [2] http://llvm.org/bugs/show_bug.cgi?id=6744

@@ -122,6 +122,8 @@ var                   return token::VAR;
 vector                return token::VECTOR;
 void                  return token::VOID;
 
+__clear               return token::CLEAR;
+
 !=                    return token::NEQ;
 \&\&                  return token::AND;
 \+=                   return token::PLUSASSIGN;

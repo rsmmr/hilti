@@ -7,6 +7,7 @@
 #include "id.h"
 #include "type.h"
 #include "expression.h"
+#include "flow-info.h"
 
 namespace hilti {
 
@@ -366,6 +367,9 @@ public:
    /// Returns information about the instruction for use in the reference documentation.
    Info info() const;
 
+   /// Adapts the default flow information to instruction-specific constraints.
+   FlowInfo flowInfo(FlowInfo fi) { return __flowInfo(fi); }
+
    ACCEPT_VISITOR_ROOT();
 
 protected:
@@ -442,6 +446,9 @@ protected:
 
    // For internal use only. Will be overridden automagically via macros.
    virtual bool __terminator() const { return false; }
+
+   // For internal use only. May adapt the flowinfo.
+   virtual FlowInfo __flowInfo(FlowInfo fi) { return fi; };
 
    node_ptr<ID> _id;
    string _namespace;

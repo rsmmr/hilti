@@ -1,6 +1,7 @@
 
 #include "hilti-intern.h"
 #include "instructions/flow.h"
+#include "instructions/exception.h"
 
 using namespace hilti::passes;
 
@@ -88,21 +89,8 @@ bool CFG::run(shared_ptr<Node> node)
 {
     auto module = ast::checkedCast<Module>(node);
 
-    _pass = 1;
-
-    if ( module->body() && ! processOne(module->body()) )
+    if ( ! processAllPreOrder(node) )
         return false;
-
-    _pass = 2;
-
-    do {
-        _changed = false;
-
-        if ( module->body() && ! processAllPreOrder(module->body()) )
-            return false;
-    } while ( _changed );
-
-    _pass = 0;
 
     _run = (errors() == 0);
 
@@ -221,87 +209,23 @@ const std::list<shared_ptr<Statement>>& CFG::depthFirstOrder() const
 
 void CFG::visit(statement::Block* s)
 {
-    if ( _pass == 1 ) {
-        // Link the non-block statements.
-
-        auto cur = s->statements().begin();
-        auto next = cur;
-        std::advance(next, 1);
-
-        while ( cur != s->statements().end() ) {
-            shared_ptr<Statement> next_instr = nullptr;
-
-            if ( next != s->statements().end() )
-                next_instr = (*next)->firstNonBlock();
-
-            if ( ! next_instr && _siblings.size() )
-                next_instr = _siblings.back();
-
-            if ( next_instr ) {
-                auto ins = ast::tryCast<statement::instruction::Resolved>(*cur);
-
-                if ( ins && ! ins->instruction()->terminator() )
-                    addSuccessor(*cur, next_instr);
-
-                _siblings.push_back(next_instr);
-            }
-
-            processOne(*cur);
-
-            if ( next_instr )
-                _siblings.pop_back();
-
-            ++cur;
-            ++next;
-        }
-
-        for ( auto d : s->declarations() )
-            processOne(d);
-    }
-
-#if 0
-    if ( _pass == 2 ) {
-        // Block chaining is disabled. With the structure of having
-        // statements with subblocks it's not clear how the chaining should
-        // work.
-
-        // Link the blocks.
-        std::set<shared_ptr<Statement>> succs;
-        std::set<shared_ptr<Statement>> preds;
-
-        for ( auto stmt : s->statements() ) {
-            for ( auto t : *successors(stmt) ) {
-                auto p = t->firstParent<statement::Block>();
-                if ( p && p.get() != s && ! s->hasChild(p, true) )
-                    succs.insert(p);
-            }
-
-            for ( auto t : *predecessors(stmt) ) {
-                auto p = t->firstParent<statement::Block>();
-                if ( p && p.get() != s && ! s->hasChild(p, true) )
-                    preds.insert(p);
-            }
-        }
-
-        setSuccessors(s->sharedPtr<Statement>(), succs);
-        setPredecessors(s->sharedPtr<Statement>(), preds);
-    }
-#endif
+    // TODO: Track block flow.
 }
 
 void CFG::visit(statement::instruction::Resolved* s)
 {
-    if ( _pass == 1 ) {
-        auto fi = s->flowInfo();
+    auto fi = s->flowInfo();
 
-        for ( auto succ : fi.successors )
-            addSuccessor(s, succ);
+    for ( auto succ : fi.successors )
+        addSuccessor(s, succ);
 
-        if ( dynamic_cast<statement::instruction::flow::BlockEnd *>(s) && _siblings.size() ) {
-            auto succ = _siblings.back();
-            addSuccessor(s, succ);
-        }
+    if ( s->successor() ) {
+        assert(! s->instruction()->terminator());
+        addSuccessor(s, s->successor());
     }
+
+    for ( auto c : _excpt_handlers )
+        addSuccessor(s, c.first->block());
 }
 
 void CFG::visit(statement::instruction::Unresolved* s)
@@ -309,70 +233,23 @@ void CFG::visit(statement::instruction::Unresolved* s)
     internalError("CFG::visit(statement::instruction::Unresolved* s) should not be reachable");
 }
 
-void CFG::visit(statement::Try* s)
+void CFG::visit(statement::instruction::exception::__BeginHandler* i)
 {
-    if ( _pass == 1 ) {
-        std::set<shared_ptr<Statement>> catches;
+    auto parent = i->firstParent<statement::Block>();
+    assert(parent);
 
-        for ( auto c : s->catches() ) {
-            auto i = c->block()->firstNonBlock();
-            if ( i )
-                catches.insert(i);
+    auto const_ = ast::checkedCast<expression::Constant>(i->op1());
+    auto label = ast::checkedCast<constant::Label>(const_->constant());
+    auto eblock = parent->scope()->lookupUnique(std::make_shared<ID>(label->value()));
+    assert(eblock);
 
-            processOne(c);
-        }
-
-        for ( auto child : s->block()->childs(true) ) {
-
-            if ( ! ast::isA<Statement>(child) )
-                continue;
-
-            if ( ast::isA<statement::Block>(child) )
-                continue;
-
-            // TODO: This is unfortunate. As we don't know which instruction
-            // can throw what kind of exception, we need to add egdes from
-            // each to any catch handler. Eventually we should provide
-            // exception information on a per instruction basis and then
-            // remove limit the edges to what can actually happen.
-            for ( auto c: s->catches() ) {
-                auto i = c->block()->firstNonBlock();
-                addSuccessor(child, i);
-            }
-        }
-
-        auto i = s->block()->firstNonBlock();
-        processOne(s->block());
-        addSuccessor(s, i);
-    }
+    auto block = ast::checkedCast<expression::Block>(eblock);
+    auto type = i->op2() ? ast::checkedCast<expression::Type>(i->op2())->typeValue() : nullptr;
+    _excpt_handlers.push_back(std::make_pair(block, type));
 }
 
-void CFG::visit(statement::try_::Catch* s)
+void CFG::visit(statement::instruction::exception::__EndHandler* i)
 {
-    if ( _pass == 1 ) {
-        auto i = s->block()->firstNonBlock();
-        processOne(s->block());
-    }
+    _excpt_handlers.pop_back();
 }
-
-void CFG::visit(statement::ForEach* s)
-{
-    if ( ! s->body() )
-        return;
-
-    if ( _pass == 1 ) {
-        _siblings.push_back(s->sharedPtr<Statement>());
-        processOne(s->body());
-        _siblings.pop_back();
-
-        auto i = s->body()->firstNonBlock();
-
-        if ( i )
-            addSuccessor(s, i);
-
-        if ( _siblings.size() )
-            addSuccessor(s, _siblings.back());
-    }
-}
-
 

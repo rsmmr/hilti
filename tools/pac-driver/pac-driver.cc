@@ -348,9 +348,12 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
 
     // Feed incrementally.
 
-    hlt_bytes* chunk;
+    hlt_bytes* chunk1;
+    hlt_bytes* chunk2;
     hlt_iterator_bytes end = hlt_bytes_end(input, &excpt, ctx);
     hlt_iterator_bytes cur_end;
+    hlt_iterator_bytes ncur;
+    hlt_iterator_bytes ocur;
     int8_t done = 0;
     hlt_exception* resume = 0;
 
@@ -362,9 +365,11 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
         cur_end = hlt_iterator_bytes_incr_by(cur, chunk_size, &excpt, ctx);
         done = hlt_iterator_bytes_eq(cur_end, end, &excpt, ctx);
 
-        chunk = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
-        hlt_bytes_append(incr_input, chunk, &excpt, ctx);
-        GC_DTOR(chunk, hlt_bytes);
+        chunk1 = hlt_bytes_sub(cur, cur_end, &excpt, ctx);
+        chunk2 = hlt_bytes_copy(chunk1, &excpt, ctx); // FIXME: Need?
+        hlt_bytes_append(incr_input, chunk1, &excpt, ctx);
+        GC_DTOR(chunk1, hlt_bytes);
+        GC_DTOR(chunk2, hlt_bytes);
 
         if ( done )
             hlt_bytes_freeze(incr_input, 1, &excpt, ctx);

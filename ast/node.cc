@@ -105,6 +105,14 @@ void NodeBase::removeChild(node_list::iterator node)
     (*node)->_parents.remove(this);
 }
 
+void NodeBase::removeFromParents()
+{
+    for ( auto p : _parents )
+        p->_childs.remove(this->sharedPtr<NodeBase>());
+
+    _parents.clear();
+}
+
 void NodeBase::replace(shared_ptr<NodeBase> n)
 {
     std::list<std::pair<shared_ptr<NodeBase>, NodeBase*>> add_parents;

@@ -14,11 +14,11 @@ class DepthOrderTraversal;
 /// Builds a control flow graph.
 ///
 /// TODO: This is quite simple yet and a number of things are left to do. We
-/// only link instructions not block, because that a bit tricky with our
-/// nested structure. We don't mark entry and exit point particularly so this
-/// is good only for intra-prodecural analysis. We don't know what exceptions
-/// instructions can throw and hence need to do lots of worst case edges
-/// inside try blocks.
+/// only link instructions not block, though that would be easy to add now
+/// with the flattened block structure. We don't mark entry and exit point
+/// particularly so this is good only for intra-prodecural analysis. We don't
+/// know what exceptions instructions can throw and hence need to do lots of
+/// worst case edges inside try blocks.
 class CFG : public Pass<>
 {
 public:
@@ -65,11 +65,10 @@ protected:
 
     void visit(declaration::Function* f) override;
     void visit(statement::Block* s) override;
-    void visit(statement::Try* s) override;
     void visit(statement::instruction::Resolved* s) override;
     void visit(statement::instruction::Unresolved* s) override;
-    void visit(statement::try_::Catch* s) override;
-    void visit(statement::ForEach* s) override;
+    void visit(statement::instruction::exception::__BeginHandler* i);
+    void visit(statement::instruction::exception::__EndHandler* i);
 
 private:
     CompilerContext* _context;
@@ -79,6 +78,7 @@ private:
     shared_ptr<DepthOrderTraversal> _dot;
 
     std::list<shared_ptr<Statement>> _siblings;
+    std::list<std::pair<shared_ptr<expression::Block>, shared_ptr<Type>>> _excpt_handlers;
 
     typedef std::unordered_map<shared_ptr<Statement>, shared_ptr<std::set<shared_ptr<Statement>>>> stmt_map;
 

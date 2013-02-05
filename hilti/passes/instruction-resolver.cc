@@ -50,7 +50,9 @@ void InstructionResolver::processInstruction(shared_ptr<statement::Instruction> 
                  return;
              }
 
-              error(instr, util::fmt("unknown instruction %s", id->name().c_str()));
+             if ( _report_errors )
+                 error(instr, util::fmt("unknown instruction %s", id->name().c_str()));
+
              return;
          }
 
@@ -80,7 +82,8 @@ void InstructionResolver::processInstruction(shared_ptr<statement::Instruction> 
     for ( auto a : InstructionRegistry::globalRegistry()->byName(id->name()) )
         error_msg += "    " + string(*a) + "\n";
 
-    error(instr, error_msg);
+    if ( _report_errors )
+        error(instr, error_msg);
 }
 
 void InstructionResolver::visit(statement::instruction::Unresolved* s)

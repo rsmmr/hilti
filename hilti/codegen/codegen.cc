@@ -226,8 +226,12 @@ llvm::Value* CodeGen::llvmLocal(const string& name)
 
     auto i = map.find(name);
 
-    if ( i == map.end() )
+    if ( i == map.end() ) {
+        for ( auto l : map )
+            fprintf(stderr, "| %s\n", l.first.c_str());
+
         internalError("unknown local " + name);
+    }
 
     return i->second.first;
 }
@@ -1705,6 +1709,31 @@ void CodeGen::llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type>
     _functions.back()->dtors_after_ins.insert(std::make_pair(stmt, std::make_tuple(addr, true, type, true)));
 }
 
+void CodeGen::llvmClearLocalOnException(shared_ptr<Expression> expr)
+{
+    _functions.back()->locals_cleared_on_excpt.push_back(expr);
+}
+
+void CodeGen::llvmFlushLocalsClearedOnException()
+{
+    _functions.back()->locals_cleared_on_excpt.clear();
+}
+
+void CodeGen::llvmClearLocalAfterInstruction(shared_ptr<Expression> expr)
+{
+    auto stmt = _stmt_builder->currentStatement();
+
+    // Note: it's ok here if stmt is null, we use that for all tmps that
+    // aren't directly associated with a statement.
+
+    auto ti = typeInfo(expr->type());
+
+    if ( ti->dtor.size() == 0 && ti->dtor_func == 0 )
+        return;
+
+    _functions.back()->dtors_after_ins_exprs.insert(std::make_pair(stmt, expr));
+}
+
 void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
 {
     // TODO: This function is getting messy ... At least the "local" stuff
@@ -1719,9 +1748,27 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
     // be safe against doing so. That's normally the case because it removes
     // all tmps once cleaned up.
 
-    // Unref tmps.
-    auto range = _functions.back()->dtors_after_ins.equal_range(stmt);
+    if ( _functions.back()->dtors_after_ins_exprs.size() || _functions.back()->dtors_after_ins.size() )
+        llvmDebugPrint("hilti-trace", string("begin-instr-cleanup in ") + _functions.back()->function->getName().str());
+
+    auto range = _functions.back()->dtors_after_ins_exprs.equal_range(stmt);
     for ( auto i = range.first; i != range.second; i++ ) {
+        if ( dont_do_locals )
+            continue;
+
+        auto tmp = llvmValueAddress((*i).second);
+        auto type = (*i).second->type();
+
+        for ( auto l : _functions.back()->locals ) {
+            if ( l.second.first == tmp ) {
+                llvmGCClear(tmp, type);
+                break;
+            }
+        }
+    }
+
+    auto range2 = _functions.back()->dtors_after_ins.equal_range(stmt);
+    for ( auto i = range2.first; i != range2.second; i++ ) {
         auto unref = (*i).second;
         auto tmp = std::get<0>(unref);
         auto ptr = std::get<1>(unref);
@@ -1772,8 +1819,13 @@ void CodeGen::llvmBuildInstructionCleanup(bool flush, bool dont_do_locals)
         // Leave on stack.
     }
 
-    if ( flush )
+    if ( _functions.back()->dtors_after_ins_exprs.size() || _functions.back()->dtors_after_ins.size() )
+        llvmDebugPrint("hilti-trace", "end-instr-cleanup");
+
+    if ( flush ) {
+        _functions.back()->dtors_after_ins_exprs.erase(stmt);
         _functions.back()->dtors_after_ins.erase(stmt);
+    }
 }
 
 void CodeGen::llvmDiscardInstructionCleanup()
@@ -1795,11 +1847,25 @@ void CodeGen::llvmBuildFunctionCleanup()
 {
     // We used to unref the local here, but that's now done in
     // StatementBuilder::llvmStatement based on liveness analysis.
-#if 1
+#if 0
     // Unref locals (incl. parameters).
     for ( auto l : _functions.back()->locals )
         llvmDtor(l.second.first, l.second.second, true, "func-cleanup-local");
 #endif
+
+    auto func = _functions.back()->leave_func;
+
+    if ( func ) {
+        // If our parameters were passed at +1, we need to unref all the consts
+        // because nobody else does that. For the non-consts, the shadows take
+        // care of that.
+        for ( auto p : func->function()->type()->parameters() ) {
+            if ( ! p->constant() )
+                continue;
+
+            llvmDtor(llvmParameter(p), p->type(), false, "func-cleanup-const");
+        }
+    }
 }
 
 llvm::Value* CodeGen::llvmGEP(llvm::Value* addr, llvm::Value* i1, llvm::Value* i2, llvm::Value* i3, llvm::Value* i4)
@@ -1937,8 +2003,6 @@ void CodeGen::llvmRaiseException(llvm::Value* excpt, bool dtor)
 
 void CodeGen::llvmRethrowException()
 {
-    llvmBuildInstructionCleanup(false);
-
     auto func = _functions.back()->function;
 
     auto rt = func->getReturnType();
@@ -2096,58 +2160,67 @@ llvm::Value* CodeGen::llvmMatchException(shared_ptr<type::Exception> etype, llvm
 
 void CodeGen::llvmTriggerExceptionHandling(bool known_exception)
 {
+#if 0
     if ( _in_check_exception )
         // Make sure we don't recurse.
         return;
 
     ++_in_check_exception;
+#endif
 
-    llvm::Value* is_null = nullptr;
-    IRBuilder* cont = 0;
+    // If we don't know yet whether we have an exception, check that.
+    auto cont = newBuilder("excpt-check-done");
+    IRBuilder* catch_ = nullptr;
+    llvm::Value* current = 0;
 
     if ( ! known_exception ) {
-        auto excpt = llvmCurrentException();
-        is_null = builder()->CreateIsNull(excpt);
+        catch_ = newBuilder("excpt-catch");
+        current = llvmCurrentException();
+        auto is_null = builder()->CreateIsNull(current);
+        llvmCreateCondBr(is_null, cont, catch_);
+        pushBuilder(catch_);
     }
 
-    if ( _functions.back()->catches.size() ) {
-        llvmBuildInstructionCleanup(false);
+    llvmBuildInstructionCleanup(false);
 
-        // At least one catch clause, check it.
-        if ( ! known_exception ) {
-            cont = newBuilder("no-excpt");
-            llvmCreateCondBr(is_null, cont, _functions.back()->catches.back());
-        }
+    for ( auto c : _functions.back()->catches ) {
+        auto next = newBuilder("excpt-catch-next");
+
+        if ( ! current )
+            current = llvmCurrentException();
+
+        auto match = llvmMatchException(c.second, current);
+        auto catch_bb = llvm::cast<llvm::BasicBlock>(llvmValue(c.first));
+
+        builder()->CreateCondBr(match, catch_bb, next->GetInsertBlock());
+
+        pushBuilder(next);
+    }
+
+    for ( auto l : _functions.back()->locals_cleared_on_excpt ) {
+        auto tmp = llvmValueAddress(l);
+
+        if ( tmp )
+            llvmGCClear(tmp, l->type());
 
         else {
-            cont = newBuilder("cannot-be-reached");
-            llvmCreateBr(_functions.back()->catches.back());
+            // A constant parameter.
+            auto p = ast::checkedCast<expression::Parameter>(l);
+            assert(p->parameter()->constant());
+            llvmDtor(llvmValue(l), l->type(), false, "trigger-excpt-handling/const-param");
         }
     }
 
-    else {
-        auto unwind = newBuilder("unwind");
+    llvmRethrowException();
 
-        if ( ! known_exception ) {
-            cont = newBuilder("no-excpt");
-            llvmCreateCondBr(is_null, cont, unwind);
-        }
+    // if ( catch_ )
+    //    popBuilder(catch_);
 
-        else {
-            cont = newBuilder("cannot-be-reached");
-            llvmCreateBr(unwind);
-        }
+    pushBuilder(cont); // Leave on stack.
 
-        pushBuilder(unwind);
-        llvmRethrowException();
-        popBuilder();
-    }
-
-    pushBuilder(cont);
-
-    // Leave on stack.
-
+#if 0
     --_in_check_exception;
+#endif
 }
 
 
@@ -2726,7 +2799,7 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
             assert(! ast::isA<hilti::type::TypeType>(arg_type)); // Not supported.
 
             // Can pass directly but need context.
-            auto arg_value = llvmValue(coerced, ptype);
+            auto arg_value = llvmValue(coerced, ptype, ftype->ccPlusOne());
             llvm_args.push_back(arg_value);
             break;
          }

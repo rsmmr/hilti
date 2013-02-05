@@ -135,10 +135,10 @@ iBeginH(hook, Run, "hook.run")
     iTarget(optype::optional(optype::any))
     iOp1(optype::hook, true)
     iOp2(optype::tuple, true)
+    iFlowInfoH()
 iEndH
 
 iBeginH(hook, Stop, "hook.stop")
     iTerminator()
     iOp1(optype::optional(optype::any), true)
 iEndH
-

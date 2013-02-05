@@ -216,7 +216,7 @@ void Printer::visit(constant::Bitset* b)
     auto expr = b->firstParent<Expression>(); // may fail
 
     printList<shared_ptr<ID>>(b->value(), " | ", "", "",
-              [&] (shared_ptr<ID> id) -> string { return scopedID(expr, id); });
+              [&] (shared_ptr<ID> id) -> string { return scopedID(&p, expr, id); });
 }
 
 void Printer::visit(constant::Bool* b)
@@ -236,7 +236,7 @@ void Printer::visit(constant::Enum* e)
     Printer& p = *this;
     auto expr = e->firstParent<Expression>(); // may fail
 
-    p << scopedID(expr, e->value());
+    p << scopedID(&p, expr, e->value());
 }
 
 #if 0

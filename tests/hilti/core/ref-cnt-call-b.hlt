@@ -1,0 +1,20 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+iterator<bytes> next_token(iterator<bytes> start) {
+    return.result start
+}
+
+void run() {
+    local ref<bytes> b
+    local iterator<bytes> start
+
+    start = begin b"FooBarFooleinX"
+    start = call next_token(start)
+}

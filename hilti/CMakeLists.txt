@@ -127,6 +127,7 @@ add_library (hilti STATIC
     context.cc
     ctor.cc
     expression.cc
+    flow-info.cc
     hilti.cc
     instruction.cc
     module.cc
@@ -143,6 +144,7 @@ add_library (hilti STATIC
     instructions/channel.cc
     instructions/classifier.cc
     instructions/flow.cc
+    instructions/exception.cc
     instructions/hook.cc
     instructions/iosrc.cc
     instructions/misc.cc
@@ -153,10 +155,12 @@ add_library (hilti STATIC
 
     parser/driver.cc
 
+    passes/block-flattener.cc
     passes/block-normalizer.cc
     passes/collector.cc
     passes/id-resolver.cc
     passes/instruction-resolver.cc
+    passes/instruction-normalizer.cc
     passes/printer.cc
     passes/scope-builder.cc
     passes/validator.cc

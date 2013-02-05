@@ -30,28 +30,32 @@ shared_ptr<Statement> StatementBuilder::currentStatement()
 void StatementBuilder::preAccept(shared_ptr<ast::NodeBase> node)
 {
     auto stmt = ast::tryCast<Statement>(node);
+    auto block = ast::tryCast<statement::Block>(node);
 
-    if ( ! stmt )
+    if ( ! stmt || block )
         return;
 
     _stmts.push_back(stmt);
 
-    if ( cg()->hiltiModule()->liveness() ) {
+    if ( cg()->hiltiModule()->liveness() && cg()->hiltiModule()->liveness()->have(stmt) ) {
         auto live = cg()->hiltiModule()->liveness()->liveness(stmt);
-        auto diff = ::util::set_difference(*live.first, *live.second);
 
-        for ( auto v : diff ) {
-            if ( auto addr = cg()->llvmValueAddress(v->expression) )
-                cg()->llvmClearLocalAfterInstruction(addr, v->expression->type());
-        }
+        for ( auto v : *live.dead )
+            cg()->llvmClearLocalAfterInstruction(v->expression);
+
+        for ( auto v : *live.in )
+            cg()->llvmClearLocalOnException(v->expression);
     }
 }
 
 void StatementBuilder::postAccept(shared_ptr<ast::NodeBase> node)
 {
-    auto stmt = ast::tryCast<Statement>(node);
+    cg()->llvmFlushLocalsClearedOnException();
 
-    if ( ! stmt )
+    auto stmt = ast::tryCast<Statement>(node);
+    auto block = ast::tryCast<statement::Block>(node);
+
+    if ( ! stmt || block )
         return;
 
     // Note that individual instructions may (better: have to) run this
@@ -126,6 +130,7 @@ void StatementBuilder::visit(statement::Block* b)
 
 void StatementBuilder::visit(statement::Try* t)
 {
+#if 0
     // Block for try block.
     auto try_ = cg()->newBuilder("try");
     cg()->llvmCreateBr(try_);
@@ -160,10 +165,12 @@ void StatementBuilder::visit(statement::Try* t)
         cg()->popExceptionHandler();
 
     cg()->pushBuilder(normal_cont); // Leave on stack.
+#endif
 }
 
 void StatementBuilder::visit(statement::try_::Catch* c)
 {
+#if 0
     // Create block for passing on to other handlers.
     IRBuilder* no_match = nullptr;
 
@@ -225,6 +232,7 @@ void StatementBuilder::visit(statement::try_::Catch* c)
     call(c->block());
 
     // Leave on stack, Try's visit will remove.
+#endif
 }
 
 void StatementBuilder::visit(declaration::Variable* v)
@@ -240,9 +248,15 @@ void StatementBuilder::visit(declaration::Variable* v)
         // GLobals are taken care of directly by the CodeGen.
         return;
 
-    auto init = local->init() ? cg()->llvmValue(local->init(), local->type(), true) : nullptr;
-    auto name = local->internalName();
+    auto block = v->firstParent<statement::Block>();
+    assert(block);
 
+    llvm::Value* init = nullptr;
+
+    if ( cg()->hiltiModule()->liveness()->liveIn(block, local) )
+        init = local->init() ? cg()->llvmValue(local->init(), local->type(), true) : nullptr;
+
+    auto name = local->internalName();
     cg()->llvmAddLocal(name, local->type(), init);
 }
 
@@ -279,10 +293,23 @@ void StatementBuilder::visit(declaration::Function* f)
         if ( p->constant() )
             continue;
 
-        auto shadow = "__shadow_" + p->id()->name();
         auto init = cg()->llvmParameter(p);
+
+        if ( ! cg()->hiltiModule()->liveness()->liveIn(func->body(), p) ) {
+            // Will never be used, ignore.
+            if ( ftype->ccPlusOne() )
+                cg()->llvmDtor(init, p->type(), false, "unused-shadow-local");
+
+            continue;
+        }
+
+        auto shadow = "__shadow_" + p->id()->name();
         cg()->llvmAddLocal(shadow, p->type(), init);
-        cg()->llvmCctor(cg()->llvmLocal(shadow), p->type(), true, "shadow-local");
+
+        // If it's a plusone function, the shadow takes ownership of the +1
+        // we got passed in. Otherwise, we need to ref once for the shadow.
+        if ( ! ftype->ccPlusOne() )
+            cg()->llvmCctor(cg()->llvmLocal(shadow), p->type(), true, "shadow-local");
     }
 
     if ( hook_decl ) {

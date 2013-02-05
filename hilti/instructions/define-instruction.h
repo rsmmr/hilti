@@ -159,12 +159,12 @@
 /// Defines a default for an instruction's 2st operand.
 ///
 /// def: The default Expression for the operand.
-#define iDefault2(def)  __implementDdefault(2, def)
+#define iDefault2(def)  __implementDefault(2, def)
 
 /// Defines a default for an instruction's 3st operand.
 ///
 /// def: The default Expression for the operand.
-#define iDefault3(def)  __implementDdefault(3, def)
+#define iDefault3(def)  __implementDefault(3, def)
 
 #define __get_op(n) \
     ops[n] ? ops[n]->sharedPtr<Expression>() : shared_ptr<Expression>();
@@ -229,5 +229,13 @@
            shared_ptr<Expression> op1 = __get_op(1); \
            shared_ptr<Expression> op2 = __get_op(2); \
            shared_ptr<Expression> op3 = __get_op(3); \
+
+/// Override flowInfo().
+#define iFlowInfoH() \
+       FlowInfo __flowInfo(FlowInfo fi) override;
+
+#define iFlowInfoCC(cls) \
+       } \
+       FlowInfo cls::__flowInfo(FlowInfo fi) {
 
 #endif

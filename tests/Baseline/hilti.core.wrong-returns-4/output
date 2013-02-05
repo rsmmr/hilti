@@ -1,5 +1,5 @@
 
->>> 
-wrong-returns.hlt:7-7: fatal error, function does not return a value [codegen]
+>>> block.end
+<no location>:: fatal error, function does not return a value [codegen]
 wrong-returns.hlt: Aborting due to code generation error.
 error running hiltic, aborting

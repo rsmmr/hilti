@@ -213,7 +213,7 @@ public:
     /// must only be called during an ongoing visiting process from another
     /// visit method.
     template<typename T>
-    shared_ptr<T> depth() {
+    int depth() {
        int d = 0;
        for ( auto i = _current.rbegin(); i != _current.rend(); i++ ) {
            if ( typeid(**i) == typeid(T) )

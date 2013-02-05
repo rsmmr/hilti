@@ -21,10 +21,10 @@ public:
 
 protected:
    virtual void visit(statement::Block* b);
+   virtual void visit(declaration::Function* f);
 
 private:
-   int block_level = 0;
-
+   uint64_t _anon_cnt = 0;
 };
 
 }

@@ -18,6 +18,7 @@ class ID : public AstInfo::node
 {
 public:
     typedef typename AstInfo::node Node;
+    typedef typename AstInfo::id AstID;
 
     /// A list of the individual components of a scoped identifiers.
     typedef std::list<string> component_list;
@@ -74,6 +75,16 @@ public:
        return _path.back();
     }
 
+    /// XXX
+    void setOriginal(shared_ptr<AstID> org) {
+        _org = org;
+    }
+
+    /// XXX
+    shared_ptr<AstID> original() const {
+        return _org;
+    }
+
     /// Returns the local component of the identifier. For \c Foo::bar this
     /// returns \c bar (as it does for \c bar).
     ///
@@ -109,6 +120,7 @@ public:
 
 private:
     component_list _path;
+    shared_ptr<AstID> _org = nullptr;
 };
 
 

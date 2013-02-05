@@ -1,0 +1,28 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+import Hilti
+
+type A = struct {
+    int<64> i &default=100,
+    bool b,
+    string test &default="Hurz",
+    double d
+    }
+
+ref<A> a()
+{
+    local ref<A> a
+    a = new A
+    return.result a
+}
+
+void run() {
+    local ref<A> x
+    x = call a ()
+    call Hilti::print(x)
+}

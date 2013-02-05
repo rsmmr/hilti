@@ -29,6 +29,7 @@ Printer::Printer(std::ostream& out, bool single_line, bool cfg)
     : ast::passes::Printer<AstInfo>(out, single_line)
 {
     _cfg = cfg;
+    setPrintOriginalIDs(true);
 }
 
 bool Printer::includeFlow() const
@@ -73,12 +74,13 @@ void Printer::printFlow(Statement* stmt, const string& prefix)
     string sin = "n/a";
     string sout = "n/a";
     string sdead = "n/a";
+    string starget = "n/a";
 
     if ( _module->liveness() ) {
         auto liveness = _module->liveness()->liveness(stmt->sharedPtr<Statement>());
-        sin = _variableSetToString(*liveness.first);
-        sout = _variableSetToString(*liveness.second);
-        sdead = _variableSetToString(::util::set_difference(*liveness.first, *liveness.second));
+        sin = _variableSetToString(*liveness.in);
+        sout = _variableSetToString(*liveness.out);
+        sdead = _variableSetToString(*liveness.dead);
     }
 
     string s = "";
@@ -94,12 +96,13 @@ void Printer::printFlow(Statement* stmt, const string& prefix)
     p << util::fmt("%s# %spred: { %s } succ: { %s }%s", pre, s, spred, ssucc, post) << endl;
     p << util::fmt("%s# def: { %s } clear: { %s } mod: { %s } read: { %s }", pre, sdefined, scleared, smodified, sread) << endl;
     p << util::fmt("%s# live-in: { %s } live-out: { %s }%s", pre, sin, sout, post) << endl;
-    // p << util::fmt("%s# live-dead: { %s }%s", pre, sdead, post) << endl;
+    p << util::fmt("%s# now-dead: { %s }%s", pre, sdead, post) << endl;
     p << util::fmt("%s%s%s ", pre, _statementName(stmt), post);
 }
 
 void Printer::visit(Module* m)
 {
+    setPrintOriginalIDs(false);
     _module = m;
 
     Printer& p = *this;
@@ -170,6 +173,7 @@ void Printer::visit(statement::Block* b)
     if ( b->declarations().size() )
         p << endl;
 
+//    p << "--- Begin of block: " <<  (b->id() ? b->id()->name() : "-") << endl;
 #if 0
     printFlow(b, "--- Begin of block");
     p << endl;
@@ -195,6 +199,8 @@ void Printer::visit(statement::Block* b)
 
     for ( auto s : b->statements() )
         p << s << endl;
+
+//   p << "--- End of block: " <<  (b->id() ? b->id()->name() : "-") << endl;
 
 #if 0
     if ( includeFlow() )
@@ -315,13 +321,13 @@ void Printer::visit(expression::Ctor* e)
 void Printer::visit(expression::ID* i)
 {
     Printer& p = *this;
-    p << scopedID(i, i->id());
+    p << scopedID(&p, i, i->id());
 }
 
 void Printer::visit(expression::Variable* v)
 {
     Printer& p = *this;
-    p << scopedID(v, v->variable()->id());
+    p << scopedID(&p, v, v->variable()->id());
 }
 
 void Printer::visit(expression::Parameter* pa)
@@ -333,20 +339,20 @@ void Printer::visit(expression::Parameter* pa)
 void Printer::visit(expression::Function* f)
 {
     Printer& p = *this;
-    p << scopedID(f, f->function()->id());
+    p << scopedID(&p, f, f->function()->id());
 }
 
 void Printer::visit(expression::Module* m)
 {
     Printer& p = *this;
-    p << scopedID(m, m->module()->id());
+    p << scopedID(&p, m, m->module()->id());
 }
 
 void Printer::visit(expression::Type* t)
 {
     Printer& p = *this;
     auto id = t->type()->id();
-    p << (id ? scopedID(t, id) : t->type()->render());
+    p << (id ? scopedID(&p, t, id) : t->type()->render());
 }
 
 void Printer::visit(expression::Default* t)
@@ -1163,7 +1169,7 @@ void Printer::visit(constant::Bitset* c)
     std::list<string> bits;
 
     for ( auto b : c->value() )
-        bits.push_back(scopedID(expr.get(), b));
+        bits.push_back(scopedID(&p, expr.get(), b));
 
     printList(bits, " | ");
 }
@@ -1180,7 +1186,7 @@ void Printer::visit(constant::Enum* c)
     Printer& p = *this;
 
     auto expr = c->firstParent<Expression>();
-    p << scopedID(expr.get(), c->value());
+    p << scopedID(&p, expr.get(), c->value());
 }
 
 void Printer::visit(constant::Interval* c)

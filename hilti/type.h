@@ -972,12 +972,21 @@ public:
    /// Sets the function's calling convention.
    void setCallingConvention(hilti::type::function::CallingConvention cc) { _cc = cc; }
 
+   /// Returns true if this function uses the adapted HILTI/HOOK calling
+   /// convention that passes parameters at +1.
+   bool ccPlusOne() const { return _plusone; }
+
+   /// Sets the function's use of the adapted HILTI/HOOK calling convention
+   /// that passes parameters as plus one.
+   void setCcPlusOne(bool plusone) { _plusone = plusone; }
+
    bool _equal(shared_ptr<hilti::Type> other) const override;
 
    ACCEPT_VISITOR(hilti::Type);
 
 private:
    hilti::type::function::CallingConvention _cc;
+   bool _plusone;
 };
 
 /// Type for hooks.
@@ -992,7 +1001,7 @@ public:
    ///
    /// l: Associated location.
    Hook(shared_ptr<hilti::type::function::Result> result, const function::parameter_list& args, const Location& l=Location::None)
-       : Function(result, args, function::HOOK, l) {}
+       : Function(result, args, function::HOOK, l) { setCcPlusOne(false); /* ccPplus is tricky for the linker. */ }
 
    /// Constructor for a hook type that matches any other hook type (i.e., a
    /// wildcard type).

@@ -154,14 +154,27 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
         internalError("hilti: no operators defined, did you call hilti::init()?");
     }
 
-    passes::IdResolver          id_resolver;
-    passes::InstructionResolver instruction_resolver;
-    passes::BlockNormalizer     block_normalizer;
-    passes::Validator           validator;
+    passes::IdResolver            id_resolver;
+    passes::InstructionResolver   instruction_resolver;
+    passes::InstructionNormalizer instruction_normalizer;
+    passes::BlockNormalizer       block_normalizer;
+    passes::BlockFlattener        block_flattener;
+    passes::Validator             validator;
+    passes::ScopeBuilder          scope_builder(this);
+
+    _debugAST(this, module, instruction_normalizer);
+
+    if ( ! instruction_normalizer.run(module) )
+        return false;
+
+    _debugAST(this, module, block_flattener);
+
+    if ( ! block_flattener.run(module) )
+        return false;
 
     _debugAST(this, module, instruction_resolver);
 
-    if ( ! instruction_resolver.run(module) )
+    if ( ! instruction_resolver.run(module, false) )
         return false;
 
     _debugAST(this, module, block_normalizer);
@@ -169,16 +182,27 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     if ( ! block_normalizer.run(module) )
         return false;
 
+    // Rebuilt scopes.
+    _debugAST(this, module, scope_builder);
+
+    if ( ! scope_builder.run(module) )
+            return false;
+
+    _debugAST(this, module, instruction_resolver);
+
+    if ( ! instruction_resolver.run(module, false) )
+        return false;
+
     // Run these again, we have inserted new instructions.
 
     _debugAST(this, module, id_resolver);
 
-    if ( ! id_resolver.run(module) )
+    if ( ! id_resolver.run(module, true) )
         return false;
 
     _debugAST(this, module, instruction_resolver);
 
-    if ( ! instruction_resolver.run(module) )
+    if ( ! instruction_resolver.run(module, true) )
         return false;
 
     _debugAST(this, module, validator);
@@ -186,6 +210,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     if ( options().verify && ! validator.run(module) )
         return false;
 
+#if 1
     auto cfg = std::make_shared<passes::CFG>(this);
 
     _debugAST(this, module, *cfg);
@@ -193,7 +218,6 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
     if ( ! cfg->run(module) )
         return false;
 
-#if 1
     auto liveness = std::make_shared<passes::Liveness>(this, cfg);
 
     _debugAST(this, module, *liveness);
@@ -203,7 +227,7 @@ bool CompilerContext::_finalizeModule(shared_ptr<Module> module)
 
     module->setPasses(cfg, liveness);
 #else
-    module->setPasses(cfg, 0);
+    module->setPasses(0, 0);
 #endif
 
     return true;
@@ -264,7 +288,7 @@ bool CompilerContext::finalize(shared_ptr<Module> module)
 
         _debugAST(this, module, id_resolver);
 
-        if ( ! id_resolver.run(module) )
+        if ( ! id_resolver.run(module, false) )
             return false;
     }
 

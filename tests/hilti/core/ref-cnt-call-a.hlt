@@ -1,0 +1,20 @@
+#
+# @TEST-EXEC:  hilti-build %INPUT -o a.out
+# @TEST-EXEC:  ./a.out >output 2>&1
+# @TEST-EXEC:  btest-diff output
+
+module Main
+
+void run()
+{
+  local iterator<bytes> __tmp_cur
+  local iterator<bytes> __tmp_presult
+
+   __tmp_cur = begin b"abc"
+   __tmp_presult = call parse_test_internal (__tmp_cur)
+}
+
+iterator<bytes> parse_test_internal(iterator<bytes> __cur)
+{
+    return.result __cur
+}

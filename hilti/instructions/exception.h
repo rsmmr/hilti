@@ -1,58 +1,52 @@
-///
-/// \type Exceptions.
-///
 
 #include "instructions/define-instruction.h"
 
-iBegin(exception, New, "new")
+iBeginH(exception, New, "new")
     iTarget(optype::refException)
     iOp1(optype::typeException, true);
+iEndH
 
-    iValidate {
-        auto type = ast::as<expression::Type>(op1)->typeValue();
-        auto etype = ast::as<type::Exception>(type);
-
-        if ( etype->argType() )
-            error(type, ::util::fmt("exception takes an argument of type %s", etype->argType()->render().c_str()));
-    }
-
-    iDoc(R"(
-        Instantiates a new exception.
-    )")
-
-iEnd
-
-iBegin(exception, NewWithArg, "new")
+iBeginH(exception, NewWithArg, "new")
     iTarget(optype::refException)
     iOp1(optype::typeException, true);
     iOp2(optype::any, true);
+iEndH
 
-    iValidate {
-        auto type = ast::as<expression::Type>(op1)->typeValue();
-        auto etype = ast::as<type::Exception>(type);
-
-        if ( ! etype->argType() )
-            error(type, "exception does not take an argument");
-        else
-            canCoerceTo(op2, etype->argType());
-    }
-
-    iDoc(R"(
-        Instantiates a new exception, with *op1* as its argument.
-    )")
-
-iEnd
-
-iBegin(exception, Throw, "exception.throw")
+iBeginH(exception, Throw, "exception.throw")
     iOp1(optype::refException, true)
+iEndH
 
-    iValidate {
-    }
+iBeginH(exception, __BeginHandler, "exception.__begin_handler")
+    iOp1(optype::label, true)
+    iOp2(optype::optional(optype::typeException), true);
+iEndH
 
-    iDoc(R"(    
-        Throws an exception, diverting control-flow up the stack to the
-        closest handler.
-    )")
+iBeginH(exception, __EndHandler, "exception.__end_handler")
+iEndH
 
-iEnd
+iBeginH(exception, __GetAndClear, "exception.__get_and_clear")
+    iTarget(optype::refException)
+iEndH
 
+iBeginH(exception, __Clear, "exception.__clear")
+iEndH
+
+// iBeginH(exception, __Match, "exception.__match")
+//     iTerminator()
+//     iOp1(optype::typeException, true);
+//     iOp2(optype::label, true)
+//     iOp3(optype::label, true)
+// iEndH
+// 
+// iBeginH(exception, __Current, "exception.__current")
+//     iTarget(optype::refException)
+// iEndH
+// 
+// iBeginH(exception, __Reraise, "exception.__reraise")
+//     iTerminator()
+//     iOp1(optype::typeException, true);
+//     iOp2(optype::label, true)
+//     iOp3(optype::label, true)
+// iEndH
+// #endif
+// 

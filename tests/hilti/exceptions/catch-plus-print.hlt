@@ -26,7 +26,8 @@ void run() {
     }
 
     catch ( ref<myException> e ) {
-       call Hilti::print ("Caught it!")
+       call Hilti::print ("Caught it!", e)
+       call Hilti::print (e)
     }
 
     call Hilti::print (result)

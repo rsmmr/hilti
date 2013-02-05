@@ -1535,6 +1535,15 @@ public:
    void llvmClearLocalAfterInstruction(llvm::Value* addr, shared_ptr<Type> type);
 
    /// XXXX
+   void llvmClearLocalAfterInstruction(shared_ptr<Expression> expr);
+
+   /// XXXX
+   void llvmClearLocalOnException(shared_ptr<Expression> expr);
+
+   /// XXXX
+   void llvmFlushLocalsClearedOnException();
+
+   /// XXXX
    void llvmDebugPrint(const string& stream, const string& msg);
 
    /// Increases the indentation level for debugging output.
@@ -2169,16 +2178,12 @@ private:
    }
 
    friend class StatementBuilder;
-   void pushExceptionHandler(IRBuilder* handler) { // Used by stmt-builder::Try/Catch.
-       _functions.back()->catches.push_back(handler);
+   void pushExceptionHandler(shared_ptr<Expression> block, shared_ptr<type::Exception> type) { // Used by stmt-builder::Begin/EndHandler.
+       _functions.back()->catches.push_front(std::make_pair(block, type));
    }
 
    void popExceptionHandler() { // Used by stmt-builder::Try/Catch.
-       _functions.back()->catches.pop_back();
-   }
-
-   IRBuilder* topExceptionHandler() { // Used by stmt-builder::Try/Catch.
-       return _functions.back()->catches.back();
+       _functions.back()->catches.pop_front();
    }
 
    // Pushing a nullptr disables end of block handling.
@@ -2196,7 +2201,7 @@ private:
 
    path_list _libdirs;
 
-   int _in_check_exception = 0;
+    // int _in_check_exception = 0;
    int _in_build_exit = 0;
 
    unique_ptr<Loader> _loader;
@@ -2221,11 +2226,13 @@ private:
    llvm::Value* _globals_base_func = nullptr;
    llvm::Type* _globals_type = nullptr;
 
+   typedef std::list<std::pair<shared_ptr<Expression>, shared_ptr<type::Exception>>> handler_list;
    typedef std::list<IRBuilder*> builder_list;
    typedef std::map<string, int> label_map;
    typedef std::map<string, IRBuilder*> builder_map;
    typedef std::map<string, std::pair<llvm::Value*, shared_ptr<Type>>> local_map;
    typedef std::multimap<shared_ptr<Statement>, std::tuple<llvm::Value*, bool, shared_ptr<Type>, bool>> dtor_map;
+   typedef std::multimap<shared_ptr<Statement>, shared_ptr<Expression>> dtor_expr_map;
    typedef std::list<std::pair<llvm::BasicBlock*, llvm::Value*>> exit_point_list;
 
    struct FunctionState {
@@ -2237,19 +2244,18 @@ private:
        label_map labels;
        local_map locals;
        local_map tmps;
+       local_map dtor_at_exit;
        exit_point_list exits;
        dtor_map dtors_after_ins;
+       dtor_expr_map dtors_after_ins_exprs;
        bool dtors_after_call; // If true, run dtors_after_ins for the current statement after next llvmCall().
        string next_comment;
        bool abort_on_excpt;
        bool is_init_func;
        llvm::Value* context;
        declaration::Function* leave_func = nullptr;
-
-       // Stack of current catch clauses. When an exception occurs we jump to
-       // top-most, which either handles it or forwards to the one just
-       // beneath it. If not can handles, the last one unwinds further.
-       builder_list catches;
+       handler_list catches;
+       std::list<shared_ptr<Expression>> locals_cleared_on_excpt;
    };
 
    typedef std::list<std::unique_ptr<FunctionState>> function_list;

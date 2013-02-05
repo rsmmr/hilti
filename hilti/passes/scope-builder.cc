@@ -3,6 +3,19 @@
 
 using namespace hilti::passes;
 
+class ScopeClearer : public Pass<>
+{
+public:
+   ScopeClearer() : Pass<>("hilti::ScopeClearer") {}
+   virtual ~ScopeClearer() {}
+
+   bool run(shared_ptr<Node> module) override { return processAllPreOrder(module); }
+
+protected:
+   void visit(statement::Block* b) override { b->scope()->clear(); }
+
+};
+
 shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
 {
     auto id = decl->id();
@@ -46,6 +59,9 @@ shared_ptr<Scope> ScopeBuilder::_checkDecl(Declaration* decl)
 
 bool ScopeBuilder::run(shared_ptr<Node> module)
 {
+    ScopeClearer clearer;
+    clearer.run(module);
+
     auto m = ast::as<Module>(module);
     m->body()->scope()->clear();
 
