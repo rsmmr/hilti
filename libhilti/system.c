@@ -1,6 +1,8 @@
 
 #include <pthread.h>
 #include <getopt.h>
+#include <sys/resource.h>
+#include <autogen/cmake-config.h>
 
 #ifdef __linux__
 #include <sys/prctl.h>
@@ -58,5 +60,30 @@ void hlt_reset_getopt()
     // Works on Apple, not clear it works on BSD in general ...
     optreset = 1;
     optind = 1;
+#endif
+}
+
+void hlt_memory_usage(uint64_t* heap, uint64_t* alloced)
+{
+#ifdef HAVE_MALLINFO
+    // For memory, getrusage() gives bogus results on some Linux systems.
+    // Grmpf.
+    struct mallinfo mi = mallinfo();
+
+    if ( alloced )
+        *alloced = mi.uordblks;
+
+    if ( heap )
+        *heap = mi.arena;
+#else
+    struct rusage r;
+    getrusage(RUSAGE_SELF, &r);
+
+    if ( alloced )
+        *alloced = 0;
+
+    if ( heap )
+        // At least on FreeBSD it's in KB.
+        *heap = r.ru_maxrss * 1024;
 #endif
 }

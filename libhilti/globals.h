@@ -47,6 +47,10 @@ struct __hlt_global_state {
     uint64_t job_counter;
     FILE* debug_out;
     _Atomic(uint_fast64_t) debug_counter;
+    _Atomic(uint_fast64_t) num_allocs;
+    _Atomic(uint_fast64_t) num_deallocs;
+    _Atomic(uint_fast64_t) num_refs;
+    _Atomic(uint_fast64_t) num_unrefs;
 #endif
 
     // hook.c

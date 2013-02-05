@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "memory_.h"
+#include "globals.h"
 #include "rtti.h"
 #include "debug.h"
 
@@ -75,6 +76,7 @@ void* __hlt_malloc(uint64_t size, const char* type, const char* location)
     }
 
 #ifdef DEBUG
+    ++__hlt_globals()->num_allocs;
     _dbg_mem_raw("malloc", p, size, type, location, 0);
 #endif
 
@@ -84,8 +86,10 @@ void* __hlt_malloc(uint64_t size, const char* type, const char* location)
 void* __hlt_realloc(void* p, uint64_t size, const char* type, const char* location)
 {
 #ifdef DEBUG
-    if ( p )
+    if ( p ) {
+        ++__hlt_globals()->num_deallocs;
         _dbg_mem_raw("free", p, size, type, location, "realloc");
+    }
 #endif
 
     p = realloc(p, size);
@@ -96,6 +100,7 @@ void* __hlt_realloc(void* p, uint64_t size, const char* type, const char* locati
     }
 
 #ifdef DEBUG
+    ++__hlt_globals()->num_allocs;
     _dbg_mem_raw("malloc", p, size, type, location, "realloc");
 #endif
 
@@ -112,6 +117,7 @@ void* __hlt_calloc(uint64_t count, uint64_t size, const char* type, const char* 
     }
 
 #ifdef DEBUG
+    ++__hlt_globals()->num_allocs;
     _dbg_mem_raw("calloc", p, count * size, type, location, 0);
 #endif
 
@@ -124,6 +130,7 @@ void __hlt_free(void *memory, const char* type, const char* location)
         return;
 
 #ifdef DEBUG
+    ++__hlt_globals()->num_deallocs;
     _dbg_mem_raw("free", memory, 0, type, location, 0);
 #endif
 
@@ -162,6 +169,7 @@ void __hlt_object_ref(const hlt_type_info* ti, void* obj)
     ++hdr->ref_cnt;
 
 #ifdef DEBUG
+    ++__hlt_globals()->num_refs;
     _dbg_mem_gc("ref", ti, obj, 0, 0);
 #endif
 
@@ -197,6 +205,7 @@ void __hlt_object_unref(const hlt_type_info* ti, void* obj)
     --hdr->ref_cnt;
 
 #ifdef DEBUG
+    ++__hlt_globals()->num_unrefs;
     _dbg_mem_gc("unref", ti, obj, 0, aux);
 #endif
 
@@ -325,4 +334,25 @@ void hlt_free_list_delete(hlt_free_list* list)
     }
 
     hlt_free(list);
+}
+
+hlt_memory_stats hlt_memory_statistics()
+{
+    hlt_memory_stats stats;
+    hlt_memory_usage(&stats.size_heap, &stats.size_alloced);
+
+#ifdef DEBUG
+    __hlt_global_state* globals = __hlt_globals();
+    stats.num_allocs = globals->num_allocs;
+    stats.num_deallocs = globals->num_deallocs;
+    stats.num_refs = globals->num_refs;
+    stats.num_unrefs = globals->num_unrefs;
+#else
+    stats.num_allocs = 0;
+    stats.num_deallocs = 0;
+    stats.num_refs = 0;
+    stats.num_unrefs = 0;
+#endif
+
+    return stats;
 }

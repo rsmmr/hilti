@@ -2299,8 +2299,9 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
     for ( auto a : ftype->parameters() )
         params.push_back(builder::codegen::create(a->type(), arg++));
 
-    llvmDebugPrint("hilti-trace", "FIBER 1");
+    llvmDebugPrint("hilti-flow", ::util::fmt("entering entry fiber for %s", func->id()->pathAsString()));
     auto result = llvmCallInNewFiber(llvmFunction(func), ftype, params);
+    llvmDebugPrint("hilti-flow", ::util::fmt("left entry fiber for %s", func->id()->pathAsString()));
 
     // Copy exception over.
     auto ctx_excpt = llvmCurrentException();
@@ -2337,8 +2338,9 @@ std::pair<llvm::Value*, llvm::Value*> CodeGen::llvmBuildCWrapper(shared_ptr<Func
 
     llvmDtor(yield_excpt, builder::reference::type(builder::exception::typeAny()), false, "c-wrapper/resume");
 
-    llvmDebugPrint("hilti-trace", "FIBER 2");
+    llvmDebugPrint("hilti-flow", ::util::fmt("entering resume fiber for %s", func->id()->pathAsString()));
     result = llvmFiberStart(fiber, rtype);
+    llvmDebugPrint("hilti-flow", ::util::fmt("left resume fiber for %s", func->id()->pathAsString()));
 
     // Copy exception over.
     ctx_excpt = llvmCurrentException();

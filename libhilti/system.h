@@ -6,6 +6,7 @@
 #define LIBHILTI_SYSTEM_H
 
 #include <pthread.h>
+#include <stdint.h>
 
 #ifdef DARWIN
 // We don't have pthread spinlocks on DARWIN.
@@ -31,5 +32,13 @@ void hlt_set_thread_affinity(int core);
 
 /// Resets getopt() state so that one can start scanning another array.
 void hlt_reset_getopt();
+
+/// Returns the current memory usage. Returns the current heap size in \a
+/// heap and the space currently handed out by the malloc library in \a
+/// alloced.
+///
+/// Specifics differ by platform, and not all support both values. Values are
+/// set to null if not supported.
+void hlt_memory_usage(uint64_t* heap, uint64_t* alloced);
 
 #endif

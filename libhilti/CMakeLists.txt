@@ -22,6 +22,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 include(FindRequiredPackage)
 include(EnableLLVMBitcode)
 include(EnableClangDebugging)
+include(CheckFunctionExists)
 
 FindRequiredPackage(FLEX)
 FindRequiredPackage(BISON)
@@ -39,6 +40,10 @@ set(hiltic "${CMAKE_CURRENT_BINARY_DIR}/../tools/hiltic-nojit")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -I${CMAKE_SOURCE_DIR} -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/justrx/src")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_HILTI -std=gnu89 -D_GNU_SOURCE")
+
+check_function_exists(mallinfo HAVE_MALLINFO)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/autogen/cmake-config.h)
 
 ### Generate the C prototypes.
 

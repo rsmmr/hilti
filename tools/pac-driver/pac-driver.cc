@@ -15,10 +15,15 @@
 // and not sure we still need it.
 
 #include <stdio.h>
-#include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
 #include <sys/resource.h>
+
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <stdint.h>
 
 #undef DEBUG
 
@@ -300,6 +305,26 @@ hlt_bytes* readAllInput()
 
 }
 
+static void dump_memstats()
+{
+    if ( ! driver_debug )
+        return;
+
+    hlt_memory_stats stats = hlt_memory_statistics();
+    uint64_t heap = stats.size_heap / 1024 / 1024;
+    uint64_t alloced = stats.size_alloced / 1024 / 1024;
+    uint64_t total_refs = stats.num_refs;
+    uint64_t current_allocs = stats.num_allocs - stats.num_deallocs;
+
+    fprintf(stderr, "--- pac-driver stats: "
+                    "%" PRIu64 "M heap, "
+                    "%" PRIu64 "M alloced, "
+                    "%" PRIu64 " allocations, "
+                    "%" PRIu64 " totals refs"
+                    "\n",
+            heap, alloced, current_allocs, total_refs);
+}
+
 void parseSingleInput(binpac_parser* p, int chunk_size)
 {
     hlt_bytes* input = readAllInput();
@@ -330,6 +355,8 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
     hlt_exception* resume = 0;
 
     hlt_bytes* incr_input = hlt_bytes_new(&excpt, ctx);
+
+    dump_memstats();
 
     while ( ! done ) {
         cur_end = hlt_iterator_bytes_incr_by(cur, chunk_size, &excpt, ctx);
@@ -363,7 +390,7 @@ void parseSingleInput(binpac_parser* p, int chunk_size)
         }
 
         if ( driver_debug )
-            fprintf(stderr, "--- pac-driver: back in C.\n");
+            dump_memstats();
 
         if ( excpt ) {
             if ( hlt_exception_is_yield(excpt) ) {

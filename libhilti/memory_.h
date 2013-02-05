@@ -23,6 +23,20 @@ typedef struct {
     uint64_t ref_cnt;  /// The number of references to the object currently retained.
 } __hlt_gchdr;
 
+/// Statistics about the current state of memory allocations. Some are only
+/// available in debugging mode.
+typedef struct {
+    uint64_t size_heap;     /// Current size of heap in bytes.
+    uint64_t size_alloced;  /// Total number of bytes currently handed out by allocations.
+    uint64_t num_allocs;    /// Total number of calls to allocation functions (debug-only).
+    uint64_t num_deallocs;  /// Total number of calls to deallocation functions (debug-only).
+    uint64_t num_refs;      /// Total number of reference count increments (debug-only).
+    uint64_t num_unrefs;    /// Total number of reference count decrements (debug-only).
+} hlt_memory_stats;
+
+/// Returns statistics about the current state of memory allocations.
+hlt_memory_stats hlt_memory_statistics();
+
 /// Allocates an unmanaged memory chunk of the given size. This operates
 /// pretty much like malloc but it will always return a valid address. If it
 /// can't allocate sufficient memory, the function will terminate the current
