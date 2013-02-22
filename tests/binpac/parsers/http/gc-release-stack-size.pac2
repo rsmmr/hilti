@@ -1,0 +1,42 @@
+# @TEST-EXEC: hilti-build2 %INPUT ${PAC_DRIVER} -O -m -o a.out -S 1024
+# @TEST-EXEC: awk -f generate.awk | ./a.out -U -p HTTP::Requests/HTTP::Replies >output 2>&1
+# @TEST-EXEC: cat output | grep -- --- | awk '{print $NF}' | sort | uniq | wc -l >count
+# @TEST-EXEC: btest-diff count
+#
+# See gc-release.pac2 for more information. This test in addition sets
+# a stack size > 0.
+
+module Test;
+
+import protocols.http;
+
+on HTTP::Message::%done {
+    print "Content-Length:", self.content_length;
+    }
+
+@TEST-START-FILE generate.awk
+# Generates a huge dummy HTTP response in pac-contents chunked format.
+
+function print_chunk()
+{
+    print "# D < 1024 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0";
+    for ( j = 0; j < 1023; j++ )
+        printf("A");
+    print "";
+}
+
+BEGIN {
+    print "# D < 81 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0"
+    print "HTTP/1.1 200 OK"
+    print "Content-Length:", 10000 * 1024;
+    print "Content-Type: application/octet-stream"
+    print ""
+
+    for ( i = 0; i < 10000; i++ )
+        print_chunk();
+    print "# T < 0 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0"
+    }
+@TEST-END-FILE
+
+
+

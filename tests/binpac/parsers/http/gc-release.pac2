@@ -1,0 +1,41 @@
+#
+# @TEST-EXEC: hilti-build2 %INPUT ${PAC_DRIVER} -O -m -o a.out
+# @TEST-EXEC: awk -f generate.awk | pac-driver-test %INPUT ${PARSERS}/http.pac2 -- -i 5 -p HTTP::Replies >output 2>&1
+# @TEST-EXEC: btest-diff output
+#
+# This test checks that with a large HTTP message, the input is parsed
+# in small chunks without buffering them unnecessarily. In other words,
+# even though the input is large, the heap size should stay 
+# constant as memory management cleans up.
+#
+# If this fails, then somewhere a on the upper layers of the call stack
+# a pointer is referencing already processed input, preventing
+# reference counting from cleaning up. If the latter, it can be hard to pinpoint
+# unfortunately where exactly that's happening.
+
+module Test;
+
+import protocols.http;
+
+on HTTP::Message::%done {
+    print "Content-Length:", self.content_length;
+    }
+
+@TEST-START-FILE generate.awk
+# Generates a huge dummy HTTP response.
+
+BEGIN {
+    print "HTTP/1.1 200 OK"
+    print "Content-Length:", 10000 * 1024;
+    print "Content-Type: application/octet-stream"
+    print ""
+
+    for ( i = 0; i < 10000; i++ ) {
+        for ( j = 0; j < 1023; j++ )
+            printf("A");
+        }
+    }
+@TEST-END-FILE
+
+
+
