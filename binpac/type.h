@@ -256,6 +256,13 @@ public:
     /// l: Associated location.
     TypeByName(shared_ptr<ID> id, const Location& l=Location::None);
 
+    /// Constructor.
+    ///
+    /// id: The type name.
+    ///
+    /// l: Associated location.
+    TypeByName(const string& id, const Location& l=Location::None);
+
     /// Returns the referenced type's name.
     const shared_ptr<ID> id() const;
 

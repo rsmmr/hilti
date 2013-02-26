@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "common.h"
+#include "type.h"
 
 namespace binpac {
 
@@ -74,6 +75,7 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(DecrPrefix, "--", UNARY_PREFIX),
     _OP(IncrPrefix, "++", UNARY_PREFIX),
     _OP(New, "new ", UNARY_PREFIX),
+    _OP(Not, "!", UNARY_PREFIX),
 
     _OP(DecrPostfix, "--", UNARY_POSTFIX),
     _OP(IncrPostfix, "++", UNARY_POSTFIX),
@@ -90,7 +92,6 @@ const std::unordered_map<Kind, OperatorDef, std::hash<int>> OperatorDefinitions 
     _OP(Minus, "-", BINARY),
     _OP(Mod, "mod", BINARY),
     _OP(Mult, "*", BINARY_COMMUTATIVE),
-    _OP(Not, "!", BINARY_COMMUTATIVE),
     _OP(Plus, "+", BINARY),
     _OP(PlusAssign, "+=", BINARY),
     _OP(Power, "**", BINARY),
@@ -160,12 +161,14 @@ public:
 
     struct Info {
         operator_::Kind kind;         /// The operator's kind.
+        string namespace_;            /// The namespace is the operator is defined in.
         string kind_txt;              /// A textual rendering of the kind.
         string description;           /// Textual description of the operator.
         string render;                /// Textual rendering of the operator.
-        shared_ptr<Type> type_op1;    /// Type of the operator's first operand.
-        shared_ptr<Type> type_op2;    /// Type of the operator's second operand.
-        shared_ptr<Type> type_op3;    /// Type of the operator's third operand.
+        shared_ptr<Type> type_op1;              /// Type of the operator's first operand.
+        shared_ptr<Type> type_op2;              /// Type of the operator's second operand.
+        shared_ptr<Type> type_op3;              /// Type of the operator's third operand.
+        shared_ptr<Type> type_result;           /// Type of the operator's result.
         std::pair<string, shared_ptr<Type>> type_callarg1; /// Name and type of first method call argument.
         std::pair<string, shared_ptr<Type>> type_callarg2; /// Name and type of first method call argument.
         std::pair<string, shared_ptr<Type>> type_callarg3; /// Name and type of first method call argument.
@@ -299,6 +302,37 @@ protected:
     virtual bool                   __match() { return true; };
     virtual void                   __validate() { };
     virtual string                 __doc() const { return "<No documentation>"; }
+    virtual string                 __namespace() const { return "<no namespace>"; }
+
+    virtual shared_ptr<Type> __docTypeOp1() const    { return __typeOp1() ? __typeOp1() : nullptr; }
+    virtual shared_ptr<Type> __docTypeOp2() const    { return __typeOp2() ? __typeOp2() : nullptr; }
+    virtual shared_ptr<Type> __docTypeOp3() const    { return __typeOp3() ? __typeOp3() : nullptr; }
+    virtual shared_ptr<Type> __docTypeResult() const  { return nullptr; }
+
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg1() const    {
+        auto t = __typeCallArg1();
+        return t.second ? t : std::make_pair(t.first, nullptr);
+    }
+
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg2() const    {
+        auto t = __typeCallArg2();
+        return t.second ? t : std::make_pair(t.first, nullptr);
+    }
+
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg3() const    {
+        auto t = __typeCallArg3();
+        return t.second ? t : std::make_pair(t.first, nullptr);
+    }
+
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg4() const    {
+        auto t = __typeCallArg4();
+        return t.second ? t : std::make_pair(t.first, nullptr);
+    }
+
+    virtual std::pair<string, shared_ptr<Type>> __docTypeCallArg5() const    {
+        auto t = __typeCallArg5();
+        return t.second ? t : std::make_pair(t.first, nullptr);
+    }
 
 private:
     void pushOperands(const expression_list& ops) { __operands.push_back(ops); }

@@ -280,20 +280,22 @@ Operator::Info Operator::info() const
 
     Info info;
     info.kind = _kind;
+    info.namespace_ = __namespace();
     info.kind_txt = i->second.kind_txt;
     info.description = __doc();
     info.render = render();
-    info.type_op1 = __typeOp1();
-    info.type_op2 = __typeOp2();
-    info.type_op3 = __typeOp3();
-    info.type_callarg1 = __typeCallArg1();
-    info.type_callarg2 = __typeCallArg2();
-    info.type_callarg3 = __typeCallArg3();
-    info.type_callarg4 = __typeCallArg4();
-    info.type_callarg5 = __typeCallArg5();
-    info.class_op1 = _clsName(info.type_op1);
-    info.class_op2 = _clsName(info.type_op2);
-    info.class_op3 = _clsName(info.type_op3);
+    info.type_op1 = __docTypeOp1();
+    info.type_op2 = __docTypeOp2();
+    info.type_op3 = __docTypeOp3();
+    info.type_result = __docTypeResult();
+    info.type_callarg1 = __docTypeCallArg1();
+    info.type_callarg2 = __docTypeCallArg2();
+    info.type_callarg3 = __docTypeCallArg3();
+    info.type_callarg4 = __docTypeCallArg4();
+    info.type_callarg5 = __docTypeCallArg5();
+    info.class_op1 = _clsName(__typeOp1());
+    info.class_op2 = _clsName(__typeOp2());
+    info.class_op3 = _clsName(__typeOp3());
     return info;
 }
 

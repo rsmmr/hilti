@@ -2,9 +2,8 @@
 ToDo
 ====
 
-Note that generally much of HILTI's functionality is not yet
-implemented in the new C++ based compiler. This section records
-specific todo items in addition to that.
+This section records specific todo items for HILTI's C++ compiler and
+run-time support.
 
 AST Infrastructure
 ------------------

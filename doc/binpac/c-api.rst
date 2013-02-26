@@ -1,5 +1,5 @@
 
-.. _c-api:
+.. _pac2_c-api:
 
 C API  [Missing]
 ================

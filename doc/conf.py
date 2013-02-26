@@ -41,7 +41,7 @@ todo_include_todos = True
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc','sphinx.ext.autosummary', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.ifconfig', 'sphinx.ext.viewcode',
-              'hlt'
+              'hlt', 'pac2'
               #, 'sphinxcontrib.doxylink'
               ]
 
@@ -82,7 +82,7 @@ release = '0.2'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['build', "scripts", 'old']
+exclude_patterns = ['build', "scripts", 'old', 'hilti/old']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

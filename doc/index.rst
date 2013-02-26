@@ -1,6 +1,7 @@
 
-The HILTI Environment
-=====================
+##################
+BinPAC++ and HILTI
+##################
 
 Version |release|, |today|
 

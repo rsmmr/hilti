@@ -2,7 +2,7 @@
 # Note: Doxygen is configured to write to _build/doxygen.
 BUILDDIR = build
 
-all: mkdir autogen doxygen sphinx
+all: mkdir autogen sphinx
 
 mkdir:
 	test -d $(BUILDDIR)                 || mkdir -p $(BUILDDIR)

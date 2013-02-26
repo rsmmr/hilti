@@ -59,9 +59,9 @@ for line in open(sys.argv[1]):
 			outputs += [(outtmp, out, files[file])]
 
 		if file == "h":
-			regexp = re.compile("^[\t ]*%s(\((.*)\))?.*" % name)
+			regexp = re.compile("^[\t ]*%s\\b(\((.*)\))?.*" % name)
 		else:
-			regexp = re.compile("^[\t ]*%s(\((.*)\))?" % name)
+			regexp = re.compile("^[\t ]*%s\\b(\((.*)\))?" % name)
 
 		macros[name] += [(regexp, file, files[file], content)]
 

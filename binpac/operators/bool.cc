@@ -3,7 +3,7 @@ opBegin(bool_::Equal)
     opOp1(std::make_shared<type::Bool>())
     opOp2(std::make_shared<type::Bool>())
 
-    opDoc("Compares two enum values.")
+    opDoc("Compares two boolean values, returning ``True`` if they are equal.")
 
     opValidate() {
         sameType(op1()->type(), op2()->type());
@@ -31,7 +31,7 @@ opBegin(bool_::LogicalAnd)
     opOp1(std::make_shared<type::Bool>())
     opOp2(std::make_shared<type::Bool>())
 
-    opDoc("Logical 'and'.")
+    opDoc("Returns the logical \"and\" of two booleans.")
 
     opValidate() {
     }
@@ -45,7 +45,7 @@ opBegin(bool_::LogicalOr)
     opOp1(std::make_shared<type::Bool>())
     opOp2(std::make_shared<type::Bool>())
 
-    opDoc("Logical 'or'.")
+    opDoc("Returns the logical \"or\" of two booleans.")
 
     opValidate() {
     }

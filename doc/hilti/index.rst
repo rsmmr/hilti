@@ -1,4 +1,5 @@
 
+================================================================
 HILTI: A High-Level Intermediary Language for Traffic Inspection
 ================================================================
 
@@ -17,7 +18,6 @@ Table of Contents:
    :maxdepth: 3
    :numbered:
 
-   starting
    tools
    hilti
    builder

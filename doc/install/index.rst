@@ -1,4 +1,5 @@
 
+============
 Installation
 ============
 
@@ -8,16 +9,13 @@ Prerequisites
 -------------
 
 The HILTI framework is being developed on MacOS and Linux currently;
-usage on other platforms is likely to fail. Also, it currently
-supports 64-bit OS version only.
+usage on other platforms is likely to fail~(and generally, Linux is
+more to support all functionality right now than MacOS). Also, it
+currently supports 64-bit OS version only.
 
-To compile the framework, you need the following:
-
-* LLVM and Clang 3.1, potentially even newer development versions from
-  SVN/git. (http://llvm.org)
-
-* A recent of version of LLVM's ``libc++`` (http://libcxx.llvm.org),
-  which likely also means a development version.
+To compile the framework, you need LLVM 3.2 and Clang 3.2 from
+http://llvm.org, along with C++11-compatible standard libraries. This
+combo can still be painful to set up; see below for more.
 
 For unit testing:
 
@@ -36,76 +34,64 @@ For generating the documentation:
 
     > easy_install sphinxcontrib-doxylink
 
-Installation 
-------------
+  (TODO: Currently not fully used).
 
 Getting the Code
-~~~~~~~~~~~~~~~~
+----------------
 
 Clone the git repository::
 
     > git clone git://www.icir.org/binpacpp
 
-  There's some other stuff in this repository as well; ignore that and
-  go straight to ``binpacpp/hilti2`` (*not* ``binpacpp/hilti``, that's
-  an old version).
+There's some other stuff in this repository as well; ignore that and
+go straight to ``binpacpp/hilti2`` (*not* ``binpacpp/hilti``, that's
+an old version).
 
 .. note:: Eventually, we well split up the repository into individual
    ones for each component. As things are still moving fast, it's
    however easier to keep them together for now.
 
 Installing LLVM/clang/libc++
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 
-This is a bit cumbersome because we need recent versions of clang and
-its accompanying libraries. We need to compile clang twice: once to
-boostrap and once with the right ``libc++``. Order of the involved
-steps is important. Eventually, this will hopefully all become easy
-and standard, but for now we provide a script that does all the magic.
+If your OS doesn't come with a full LLVM/clang 3.2 setup that also
+includes C++11 standard libraries (which is likely), you'll need to
+compile it yourself. This is a bit cumbersome unfortunately as one
+needs to compile clang twice: once to boostrap and once with the right
+``libc++``. Order of the involved steps is important.
 
-The script is in ``hilti2/scripts/install-llvm``, and it needs a
-*source directory* where it can clone the LLVM repositories into, and
-an *installation directory* into which it will install the compiled
-LLVM infrastructure (e.g., ``/opt/llvm``)::
-
-    ./scripts/install-llvm --install <source dir> <install dir>
-
-This will take a while.
-
-The script has second mode to later update the LLVM installation but
-pulling in changes from the upstream git repositories::
-
-    ./scripts/install-llvm --update <source dir> <install dir>
-
-Note that the script currently pulls in the current development
-version of all LLVM components, which can occasionally be unstable.
+To make this easier, there's a script doing the necessary steps at
+http://github.org/rsmmr/install-llvm. See the installation
+instructions there. In the following we assume that LLVM/clang is
+available via ``PATH``.
 
 Compiling the HILTI framework
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
 .. note:: HILTI doesn't have a nice installation framework yet, it's
    best run just right ouf of the repository. This will eventually
    change as things get more stable. 
 
-Assuming the above succeeded, compiling HILTI itself should be
-straight-forward. Just run make in the top-level directory::
+Compiling HILTI itself should be straight-forward. Just run make in
+the top-level directory::
 
     > cd binpacpp/hilti2
     > make
 
-If everything works right, there should be a binary
+If everything has worked right, there should now be a binary
 ``build/tools/hiltic`` afterwards (as well as a few others).
 
-Next, you should see if a simple test succeeds::
+Next, you should see if two simple tests succeed::
 
      > cd tests
-     > make hello-world
+     > make hello-worlds
+     all 2 tests successful
 
 If there's a problem, ``diag.log`` will contain debugging output.
 
 Just typing ``make`` in ``tests/`` will run the full test-suite.
-However, as things are still in flux, some may be expected to fail.
-Generally, however, the majority should succeeed.
+Generally, the majority should succeeed. However, as things are still
+in flux, some may be expected to fail.
 
 As the HILTI tools aren't installed anywhere system-wide yet, you may
 want to link to them from some directory that's in your ``PATH``, such
@@ -113,7 +99,8 @@ as::
 
      > export PATH=$HOME/bin:$PATH
      > ln -s binpacpp/hilti2/build/tools/{hiltic,hilti-config,binpac++} $HOME/bin
-     > ln -s binpacpp/hilti2/tools/hilti-build} $HOME/bin
+     > ln -s binpacpp/hilti2/build/tools/pac-driver/pac-driver $HOME/bin
+     > ln -s binpacpp/hilti2/tools/hilti-build $HOME/bin
 
 In the remainder of this documentation, we assume that these tools are
-found in the ``PATH``.
+indeed found in the ``PATH``.

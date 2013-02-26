@@ -10,6 +10,6 @@ set of the HILTI abstract machine.
    :glob:
 
    overview
-   hilti/*
+   machine-model/*
    libhilti
 

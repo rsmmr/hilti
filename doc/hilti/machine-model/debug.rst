@@ -4,7 +4,7 @@ Debug Support
 
 TODO.
 
-Instruction
-~~~~~~~~~~~
+Instructions
+~~~~~~~~~~~~
 
 .. include:: /build/autogen/hilti-instr-debug.rst

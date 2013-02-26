@@ -715,7 +715,7 @@ void Printer::visit(type::Any* a)
         return;
 
     Printer& p = *this;
-    p << "(type any)";
+    p << "any";
 }
 
 void Printer::visit(type::Bitset* c)
@@ -725,7 +725,12 @@ void Printer::visit(type::Bitset* c)
 
     Printer& p = *this;
 
-    p << "bitset { ";
+    p << "bitset";
+
+    if ( c->wildcard() )
+        return;
+
+    p << " { ";
 
     bool first = false;
 
@@ -857,10 +862,19 @@ void Printer::visit(type::Integer* i)
 
     Printer& p = *this;
 
-    if ( i->signed_() )
-        p << "int<" << i->width() << ">";
-    else
-        p << "uint<" << i->width() << ">";
+    if ( i->signed_() ) {
+        if ( i->width() )
+            p << "int<" << i->width() << ">";
+        else
+            p << "int<*>";
+    }
+
+    else {
+        if ( i->width() )
+            p << "uint<" << i->width() << ">";
+        else
+            p << "uint<*>";
+    }
 }
 
 void Printer::visit(type::Interval* i)
@@ -878,7 +892,11 @@ void Printer::visit(type::Iterator* i)
         return;
 
     Printer& p = *this;
-    p << "iterator<" << i->argType() << ">";
+
+    if ( i->argType() )
+        p << "iterator<" << i->argType() << ">";
+    else
+        p << "iterator<*>";
 }
 
 void Printer::visit(type::List* l)
@@ -887,7 +905,11 @@ void Printer::visit(type::List* l)
         return;
 
     Printer& p = *this;
-    p << "list<" << l->argType() << ">";
+
+    if ( l->elementType() )
+        p << "list<" << l->elementType() << ">";
+    else
+        p << "list<*>";
 }
 
 void Printer::visit(type::Map* m)
@@ -950,7 +972,11 @@ void Printer::visit(type::Set* s)
         return;
 
     Printer& p = *this;
-    p << "set<" << s->elementType() << ">";
+
+    if ( s->elementType() )
+        p << "set<" << s->elementType() << ">";
+    else
+        p << "set<*>";
 }
 
 void Printer::visit(type::String* s)
@@ -1016,6 +1042,9 @@ void Printer::visit(type::Unit* u)
 
     p << "unit";
 
+    if ( u->wildcard() )
+        return;
+
     if ( u->parameters().size() )
         printList(u->parameters(), ", ", "(", ") ");
 
@@ -1050,7 +1079,11 @@ void Printer::visit(type::Vector* v)
         return;
 
     Printer& p = *this;
-    p << "vector<" << v->elementType() << ">";
+
+    if ( v->elementType() )
+        p << "vector<" << v->elementType() << ">";
+    else
+        p << "vector<*>";
 }
 
 void Printer::visit(type::Void* v)

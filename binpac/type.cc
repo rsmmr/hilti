@@ -161,6 +161,11 @@ TypeByName::TypeByName(shared_ptr<ID> id, const Location& l) : binpac::Type(l)
     _id = id;
 }
 
+TypeByName::TypeByName(const string& id, const Location& l)
+{
+    _id = std::make_shared<ID>(id, l);
+}
+
 const shared_ptr<ID> TypeByName::id() const
 {
     return _id;

@@ -17,3 +17,6 @@ tests:
 	@mv diag.log .diag.log.incr
 
 	@cat .diag.log .diag.log.hb .diag.log.incr >diag.log
+
+hello-worlds:
+	-@$(BTEST) -f diag.log hilti/misc/hello-world.hlt binpac/misc/hello-world.pac2

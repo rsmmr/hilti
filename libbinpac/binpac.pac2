@@ -4,7 +4,10 @@ module BinPAC;
 type ByteOrder = enum { Little = 1, Big = 2, Network = 2, Host = 3 };
 
 # These values must match Hilti::AddrFamily.
+# %begin-AddrFamily
+# IP address family.
 type AddrFamily = enum { IPv4 = 1, IPv6 = 2 };
+# %end-AddrFamily
 
 # These values must match those in binpac.hlt. FIXME: We should have
 # just one definition.

@@ -1,4 +1,5 @@
 
+==================================================
 BinPAC++: A Parser Generator For Network Protocols
 ==================================================
 
@@ -9,7 +10,7 @@ Table of Contents:
    :numbered:
 
    intro
-   reference
+   reference/index
    c-api
    internals
    todo

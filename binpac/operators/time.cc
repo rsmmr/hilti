@@ -103,7 +103,7 @@ opBegin(time::CoerceBool : Coerce)
     opOp1(std::make_shared<type::Time>())
     opOp2(std::make_shared<type::TypeType>(std::make_shared<type::Bool>()))
 
-    opDoc("times coerce to boolean, returning true if the value is non-zero.")
+    opDoc("Times coerce to boolean, returning true if the value is non-zero.")
 
     opValidate() {
     }

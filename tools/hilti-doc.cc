@@ -6,6 +6,7 @@
 #include <hilti.h>
 #include <binpac/type.h>
 #include <binpac/binpac++.h>
+#include <util/util.h>
 #include <time.h>
 
 using namespace std;
@@ -17,13 +18,26 @@ string fmtHiltiType(shared_ptr<hilti::Type> t)
 
 string fmtPacType(shared_ptr<binpac::Type> t)
 {
-    return t ? t->render() : "";
+    if ( ! t )
+        return "";
+
+    auto ttype = ast::tryCast<binpac::type::TypeType>(t);
+
+    if ( ttype )
+        return ttype->typeType() ? ttype->typeType()->render() : "type";
+
+    return t->render();
 }
 
 string fmtPacCallArg(std::pair<string, shared_ptr<binpac::Type>> t)
 {
     if ( ! t.second )
         return "";
+
+    auto ttype = ast::tryCast<binpac::type::TypeType>(t.second);
+
+    if ( ttype )
+        return t.first + ": " + (ttype->typeType() ? ttype->typeType()->render() : "type");
 
     return t.first + ": " + t.second->render();
 }
@@ -88,11 +102,14 @@ int main(int argc, char** argv)
     // Write one section per BinPAC operator.
     for ( auto i : binpac::operators() ) {
         auto info = i->info();
-        cout << "[binpac-operator:" << info.kind_txt << "]" << endl;
+
+        cout << "[binpac-operator:" << info.kind_txt << ":" << i.get() << "]" << endl;
         cout << "kind="             << info.kind_txt << endl;
+        cout << "namespace="        << info.namespace_ << endl;
         cout << "type_op1="         << fmtPacType(info.type_op1) << endl;
         cout << "type_op2="         << fmtPacType(info.type_op2) << endl;
         cout << "type_op3="         << fmtPacType(info.type_op3) << endl;
+        cout << "type_result="      << fmtPacType(info.type_result) << endl;
         cout << "type_callarg1="    << fmtPacCallArg(info.type_callarg1) << endl;
         cout << "type_callarg2="    << fmtPacCallArg(info.type_callarg2) << endl;
         cout << "type_callarg3="    << fmtPacCallArg(info.type_callarg3) << endl;

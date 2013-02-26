@@ -63,12 +63,14 @@ void hlt_reset_getopt()
 #endif
 }
 
+#ifdef HAVE_LINUX
 #include <malloc.h>
+#endif
 
 void hlt_memory_usage(uint64_t* heap, uint64_t* alloced)
 {
 // FIXME: Thos should be HAVE_MALLINFO but our cmake magic doesn't work yet.
-#if 1
+#if 0
     // For memory, getrusage() gives bogus results on some Linux systems.
     // Grmpf.
     struct mallinfo mi = mallinfo();
