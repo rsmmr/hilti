@@ -2761,6 +2761,7 @@ llvm::Value* CodeGen::llvmRunHook(shared_ptr<Hook> hook, const expr_list& args, 
 
 llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, shared_ptr<type::Function> ftype, const expr_list& args, llvm::Value* hook_result, bool excpt_check)
 {
+    bool cleanup_precall = false;
     std::vector<llvm::Value*> llvm_args;
 
     // Prepare return value according to calling convention.
@@ -2796,11 +2797,11 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
         switch ( ftype->callingConvention() ) {
          case type::function::HILTI:
          case type::function::HOOK: {
-            assert(! ast::isA<hilti::type::TypeType>(arg_type)); // Not supported.
-
             // Can pass directly but need context.
+            assert(! ast::isA<hilti::type::TypeType>(arg_type)); // Not supported.
             auto arg_value = llvmValue(coerced, ptype, ftype->ccPlusOne());
             llvm_args.push_back(arg_value);
+            cleanup_precall = ftype->ccPlusOne();
             break;
          }
 
@@ -2888,10 +2889,14 @@ llvm::Value* CodeGen::llvmDoCall(llvm::Value* llvm_func, shared_ptr<Hook> hook, 
     auto func = llvm::cast<llvm::Function>(llvm_func);
     auto rtype = func->getReturnType();
 
+    if ( cleanup_precall && _functions.back()->dtors_after_call ) {
+        llvmBuildInstructionCleanup();
+        _functions.back()->dtors_after_call = false;
+    }
+
     auto result = abi()->createCall(func, llvm_args, cc);
 
-    if ( _functions.back()->dtors_after_call ) {
-        // Cleanup any tmps before we do anything else.
+    if ( ! cleanup_precall && _functions.back()->dtors_after_call ) {
         llvmBuildInstructionCleanup();
         _functions.back()->dtors_after_call = false;
     }
