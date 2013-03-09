@@ -25,7 +25,7 @@ bool reply_code_needs_body(status: uint64)
 }
 
 export type Requests = unit {
-    :  list<Request>;
+    :  list<Request> &transient;
 };
 
 type Request = unit {
@@ -34,7 +34,7 @@ type Request = unit {
 };
 
 export type Replies = unit {
-    :  list<Reply>;
+    :  list<Reply> &transient;
 };
 
 type Reply = unit {
@@ -144,7 +144,7 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
 
       DeliveryMode::Length    -> : bytes &length=msg.content_length &chunked -> self.data;
 
-      DeliveryMode::Multipart -> : list<FullLine> &until($$ == msg.multipart_boundary)
+      DeliveryMode::Multipart -> : list<FullLine> &transient &until($$ == msg.multipart_boundary)
                                    foreach { self.data.write($$); }
 
       DeliveryMode::Chunked   -> : Chunks(self, msg);
@@ -159,8 +159,8 @@ type Body = unit(msg: Message, delivery_mode: DeliveryMode) {
 };
 
 type Chunks = unit(body: Body, msg: Message) {
-    :        list<Chunk(body)> &until($$.length == 0);
-    trailer: list<Header(msg)>
+    :        list<Chunk(body)> &transient &until($$.length == 0);
+    trailer: list<Header(msg)> &transient
                 { msg.headers += self.trailer; }
     :        NewLine;
 };
