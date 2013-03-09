@@ -216,3 +216,8 @@ shared_ptr<hilti::CompilerContext> CompilerContext::hiltiContext() const
     return _hilti_context;
 }
 
+shared_ptr<hilti::Type> binpac::CompilerContext::hiltiType(shared_ptr<binpac::Type> type)
+{
+    codegen::TypeBuilder tb(nullptr);
+    return tb.hiltiType(type);
+}

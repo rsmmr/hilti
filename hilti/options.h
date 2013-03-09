@@ -11,8 +11,9 @@ using std::string;
 namespace hilti {
 
 /// A set of options controlling the compilation and link process.
-struct Options
+class Options
 {
+public:
     typedef std::list<string> string_list;
     typedef std::set<string> string_set;
 

@@ -10,8 +10,9 @@ namespace binpac {
 /// inherits all the HILTi options and adds further BinPAC++-specific ones.
 ///
 /// For the label lists, BinPAC++ options are prefixed with "binpac".
-struct Options : public hilti::Options
+class Options : public hilti::Options
 {
+public:
     Options();
     Options(const Options& other) = default;
     virtual ~Options() {};
