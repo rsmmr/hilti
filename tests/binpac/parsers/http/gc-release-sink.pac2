@@ -1,14 +1,14 @@
-# $Id$
 #
-# @TEST-EXEC: hilti-build2 -t %INPUT ${PAC_DRIVER}  -m -o a.out
-# @TEST-EXEC: awk -f generate.awk | ./a.out -U -p HTTP::Requests/HTTP::Replies >output 2>&1
-# @TEST-EXEC: cat output | grep -- --- | awk '{print $NF}' | sort | uniq | wc -l >tmp
-# @TEST-EXEC: cat output | grep -v -- --- >>tmp
-# @TEST-EXEC: btest-diff tmp
+# @TEST-EXEC: hilti-build ${PAC_DRIVER} ${PARSERS}/http.pac2 %INPUT  -d -o a.out
+# @TEST-EXEC: awk -f generate.awk | ./a.out -i 50 -g -p HTTP::Replies >output 2>&1
+# @TEST-EXEC: cat output | ${SCRIPTS}/canonify-gc-leaks >gc-leaks
+# @TEST-EXEC: cat output | grep SIZE >size
+# @TEST-EXEC: btest-diff size
+# @TEST-EXEC: btest-diff gc-leaks
 
 module Test;
 
-import protocols.http;
+import parsers/http;
 
 export type EatAll = unit {
     %mimetype = "*";
@@ -22,36 +22,25 @@ export type EatAll = unit {
         }
 
     on %done {
-        print self.c;
+        print "SIZE", self.c;
         }
 };
 
 @TEST-START-FILE generate.awk
-# Generates a huge dummy HTTP chunked response in pac-contents chunked format.
-
-function print_chunk()
-{
-    print "# D < 1031 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0";
-    printf("400\x0d\x0a");
-    for ( j = 0; j < 1024; j++ )
-        printf("A");
-    printf("\x0d\x0a");
-}
-
 BEGIN {
-    print "# D < 83 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0"
     print "HTTP/1.1 200 OK"
     print "Content-Type: application/octet-stream"
     print "Transfer-Encoding: chunked"
     print ""
 
-    for ( i = 0; i < 10240; i++ )
-        print_chunk();
+    for ( i = 0; i < 100; i++ ) {
+        printf("400\x0d\x0a");
+        for ( j = 0; j < 1024; j++ )
+            printf("A");
+        printf("\x0d\x0a");
+        }
 
-    print "# D < 5 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0";
     printf("0\x0d\x0a");
     printf("\x0d\x0a");
-
-    print "# T < 0 10.0.0.1:10000/tcp-10.0.0.2:80/tcp 1.0"
     }
- @TEST-END-FILE
+@TEST-END-FILE
