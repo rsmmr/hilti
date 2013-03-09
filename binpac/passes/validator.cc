@@ -541,6 +541,9 @@ void Validator::visit(type::unit::item::Field* f)
         if ( attr->key() == "parse" )
             continue;
 
+        if ( attr->key() == "transient" )
+            continue;
+
         bool found = false;
 
         for ( auto pattr : parseable->parseAttributes() ) {
@@ -580,6 +583,13 @@ void Validator::visit(type::unit::item::Field* f)
             error(attr, "invalid type for &convert's expression");
             return;
         }
+    }
+
+    attr = attributes->lookup("transient");
+
+    if ( attr && attr->value() ) {
+        error(attr, "&transient does not take a value");
+        return;
     }
 
     // Check the type-specific attributes.

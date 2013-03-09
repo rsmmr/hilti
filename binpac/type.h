@@ -1158,6 +1158,11 @@ public:
     /// Returns the parameters passed to sub-type's parsing.
     expression_list parameters() const;
 
+    /// Returns true if this is a transient field. A transient field is used
+    /// for parsing but doesn't actually store the parsed value in the parse
+    /// object.
+    bool transient() const;
+
     shared_ptr<binpac::Type> fieldType() override;
 
     ACCEPT_VISITOR(Item);

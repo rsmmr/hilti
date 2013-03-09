@@ -1051,7 +1051,7 @@ void ParserBuilder::_newValueForField(shared_ptr<Production> p, shared_ptr<type:
             if ( ast::type::trait::hasTrait<type::trait::Sinkable>(field->fieldType()) )
                 cg()->hiltiWriteToSinks(field, value);
 
-            if ( storingValues() ) {
+            if ( storingValues() && ! field->transient() ) {
                 cg()->builder()->addInstruction(hilti::instruction::struct_::Set, state()->self,
                                                 hilti::builder::string::create(name), value);
             }
@@ -2259,6 +2259,7 @@ void ParserBuilder::visit(production::ChildGrammar* c)
     }
 
     auto pstate = std::make_shared<ParserState>(child, subself, state()->data, state()->cur, state()->lahead, state()->lahstart, state()->trim, state()->cookie);
+
     pushState(pstate);
 
     _prepareParseObject(params, state()->cur);

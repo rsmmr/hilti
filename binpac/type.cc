@@ -1044,6 +1044,10 @@ shared_ptr<Type> unit::item::Field::fieldType()
     return ftype;
 }
 
+bool unit::item::Field::transient() const
+{
+    return attributes()->has("transient");
+}
 
 /// Returns the item's associated condition, or null if none.
 shared_ptr<Expression> unit::item::Field::condition() const
@@ -1164,26 +1168,28 @@ unit::item::field::Container::Container(shared_ptr<ID> id,
     addChild(_field);
 
     // Containters always get a high-priority foreach hook that adds the
-    // parsed element.
-    auto body_push = std::make_shared<statement::Block>(nullptr, l);
+    // parsed element (unless they are transient).
+    if ( ! transient() ) {
+        auto body_push = std::make_shared<statement::Block>(nullptr, l);
 
-    auto self = std::make_shared<expression::ID>(std::make_shared<ID>("self", l), l);
-    auto dd = std::make_shared<expression::ID>(std::make_shared<ID>("$$", l), l);
-    expression_list dd_list = { dd };
-    auto params = std::make_shared<constant::Tuple>(dd_list, l);
-    auto name = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>(Item::id()->name(), l), l);
+        auto self = std::make_shared<expression::ID>(std::make_shared<ID>("self", l), l);
+        auto dd = std::make_shared<expression::ID>(std::make_shared<ID>("$$", l), l);
+        expression_list dd_list = { dd };
+        auto params = std::make_shared<constant::Tuple>(dd_list, l);
+        auto name = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>(Item::id()->name(), l), l);
 
-    expression_list ops = { self, name };
-    auto op1 = std::make_shared<expression::UnresolvedOperator>(operator_::Attribute, ops, l);
-    auto op2 = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>("push_back", l), l);
-    auto op3 = std::make_shared<expression::Constant>(params, l);
+        expression_list ops = { self, name };
+        auto op1 = std::make_shared<expression::UnresolvedOperator>(operator_::Attribute, ops, l);
+        auto op2 = std::make_shared<expression::MemberAttribute>(std::make_shared<ID>("push_back", l), l);
+        auto op3 = std::make_shared<expression::Constant>(params, l);
 
-    ops = { op1, op2, op3 };
-    auto push_back = std::make_shared<expression::UnresolvedOperator>(operator_::MethodCall, ops, l);
-    body_push->addStatement(std::make_shared<statement::Expression>(push_back, l));
+        ops = { op1, op2, op3 };
+        auto push_back = std::make_shared<expression::UnresolvedOperator>(operator_::MethodCall, ops, l);
+        body_push->addStatement(std::make_shared<statement::Expression>(push_back, l));
 
-    auto hook_push = std::make_shared<binpac::Hook>(body_push, 254, false, true, l);
-    addHook(hook_push);
+        auto hook_push = std::make_shared<binpac::Hook>(body_push, 254, false, true, l);
+        addHook(hook_push);
+    }
 
     // If they have an &until, they also get another (even higher priority)
     // hook that checks the condition.
