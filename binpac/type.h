@@ -1671,6 +1671,15 @@ public:
     /// id: The item to look up.
     shared_ptr<unit::Item> item(shared_ptr<ID> id) const;
 
+    /// Traverses an ID path to a sub-item and returns it. For example, \c
+    /// a.b.c descends down field \c a, then \c b, and finally returns \c c
+    /// there. Returns null for the item if the path is not valid. The second
+    /// element of the returned tuple is a remaining string if we arrive at
+    /// at leaf item before the path has been fully used (e.g., if with \c
+    /// a.b.c, \c b is an atomic field, it would be set to \c c.), while the
+    /// returned item is \c b.
+    std::pair<shared_ptr<unit::Item>, string> path(const string& path);
+
     /// Returns the unit's scope. The scope may define identifier's local to
     /// expressions and hooks associated with the unit or any of its items.
     /// This method will return null until the ScopeBuilder has run.
@@ -1706,6 +1715,9 @@ protected:
     friend class passes::GrammarBuilder;
 
     void setGrammar(shared_ptr<Grammar> grammar);
+
+    // Internal helper for travesePath().
+    std::pair<shared_ptr<unit::Item>, string> path(string_list path, shared_ptr<Unit> current);
 
 private:
     bool _buffering = false;

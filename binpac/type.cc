@@ -1575,6 +1575,36 @@ shared_ptr<Scope> Unit::scope() const
     return _scope;
 }
 
+std::pair<shared_ptr<unit::Item>, string> Unit::path(string_list p, shared_ptr<Unit> current)
+{
+    auto next = current->item(std::make_shared<ID>(p.front()));
+
+    if ( ! next )
+        return std::make_pair(nullptr, ::util::strjoin(p, "."));
+
+    p.pop_front();
+
+    if ( ! p.size() )
+        return std::make_pair(next, "");
+
+    auto child = ast::tryCast<unit::item::Field>(next);
+
+    if ( ! child )
+        return std::make_pair(next, ::util::strjoin(p, "."));
+
+    auto unit = ast::tryCast<type::Unit>(child->type());
+
+    if ( ! unit )
+        return std::make_pair(next, ::util::strjoin(p, "."));
+
+    return path(p, unit);
+}
+
+std::pair<shared_ptr<unit::Item>, string> Unit::path(const string& p)
+{
+    return path(::util::strsplit(p, "."), this->sharedPtr<Unit>());
+}
+
 shared_ptr<Grammar> Unit::grammar() const
 {
     return _grammar;
